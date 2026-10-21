@@ -580,12 +580,14 @@ async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY
   assert.equal(await page.locator('[data-act="homeDailyCard"]').count(),1,'one exact daily action, not duplicate artwork/credit buttons');
   for(const [attribute,value] of Object.entries({'data-act':'homeDailyCard','data-game':game,'data-id':card.id,'data-name':card.name,'data-date':date}))assert.equal(await control.getAttribute(attribute),value);
   assert.equal(await control.getAttribute('aria-label'),`Explore ${card.name}, Card of the Day`);
-  assert.equal((await page.locator('#homeHero').innerText()).match(/Card of the Day/gi)?.length,1);
+  assert.equal((await page.locator('#homeToday').innerText()).match(/Card of the Day/gi)?.length,1);
+  assert.equal((await page.locator('#homeHero').innerText()).match(/Card of the Day/gi),null,'the header does not repeat the daily card');
   assert.equal(await control.locator('b').textContent(),card.name);
   assert.equal(await control.locator(':scope > span:first-child').innerText(),'Card of the Day');
   assert.equal(await page.locator('.hh-art-link, .hh-search, .hh-deck-link').count(),0,'one daily action without duplicate art or saved-deck links');
   const size=await control.evaluate(n=>{
-    const hero=n.closest('#homeHero'),art=hero.querySelector('.hh-art'),title=n.querySelector('b'),arrow=n.querySelector('.hh-daily-arrow');
+    // The daily action lives in the Today showcase over the card's own art; the header keeps its artwork.
+    const hero=n.closest('#homeToday'),art=hero.querySelector('.today-bg'),header=document.querySelector('#homeHero'),headerArt=header?.querySelector('.hh-art'),title=n.querySelector('b'),arrow=n.querySelector('.hh-daily-arrow');
     const rect=node=>{const r=node.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
     const c=getComputedStyle(n),box=rect(n),a=art?rect(art):null;
     const text=[n.firstElementChild,title].map(node=>{
@@ -607,7 +609,7 @@ async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY
     const effects=[hero,...hero.querySelectorAll('*')].filter(node=>node===hero||node===art||node===art?.querySelector('img')).map(node=>{
       const css=getComputedStyle(node);return {node:node.className,filter:css.filter,backdrop:css.backdropFilter,prefixedBackdrop:css.getPropertyValue('-webkit-backdrop-filter')};
     });
-    return {height:rect(hero).height,art:a,box,arrow:rect(arrow),text,effects,
+    return {height:rect(header).height,headerArt:headerArt?rect(headerArt):null,art:a,box,arrow:rect(arrow),text,effects,
       content:{left:box.left+parseFloat(c.paddingLeft),right:box.right-parseFloat(c.paddingRight),top:box.top+parseFloat(c.paddingTop),bottom:box.bottom-parseFloat(c.paddingBottom)}};
   });
   // This bound belongs to the normal fixtures, not every possible card name.
@@ -615,10 +617,8 @@ async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY
   if(compact)assert(size.height>=300 && size.height<600,`${game}: artwork header stays useful without hiding the dashboard: ${JSON.stringify(size)}`);
   assert(size.box.height>=44 && size.box.width>=44,`${game}: exact daily identity keeps its touch target`);
   assert(size.content.right+8<=size.arrow.left && size.arrow.right<=size.box.right,`${game}: text reserves space for the daily arrow`);
-  if(size.art){
-    assert(size.art.width>=280 && size.art.height>=280,`${game}: immersive artwork remains prominent`);
-    assert(size.art.left<=size.box.left && size.art.right>=size.box.right,`${game}: daily action stays within the artwork header`);
-  }
+  if(size.headerArt)assert(size.headerArt.width>=280 && size.headerArt.height>=280,`${game}: immersive artwork remains prominent`);
+  if(size.art)assert(size.art.left<=size.box.left && size.art.right>=size.box.right,`${game}: daily action stays within the card's own artwork`);
   for(const [index,text] of size.text.entries()){
     assert(text.fontSize>=(index?13:10) && !text.clipped && ['none',''].includes(text.lineClamp),`${game}: daily text is readable and unclipped: ${JSON.stringify(text)}`);
     assert.equal(text.overflowWrap,index?'break-word':'normal');assert.equal(text.wordBreak,'normal');
@@ -784,7 +784,8 @@ try {
     assert.equal(await page.locator('[data-home-resume] button').getAttribute('data-to'),`#${game==='mtg'?'deck':'tdeck'}/saved-${game}/cards`);
     const order=await page.locator('#content > *').evaluateAll(nodes=>nodes.filter(n=>!n.classList.contains('home-sr-only')).map(n=>n.className));
     assert(order[0].includes('home-art-header'),'approved artwork leads Home');
-    assert.deepEqual(order.slice(1),['home-overview home-value-overview','home-resume','home-meta','home-editorial'],'personal information follows the restored header');
+    // The Card of the Day showcase (with today's pack) sits directly below the value.
+    assert.deepEqual(order.slice(1),['home-overview home-value-overview','home-today','home-resume','home-meta','home-editorial'],'personal information follows the restored header');
     assert.equal(await page.locator('#homeQ').count(),1,'one real search entry across responsive placements');
     assert.equal(await page.locator('.home-value-main strong').innerText(), '$25.00');
     assert.match(await page.locator('.home-value-note').innerText(), /Known subtotal.*1 unpriced/);
@@ -1166,7 +1167,7 @@ try {
   await selectGame(rollover.page, 'mtg');
   await Promise.race([delayedDaily.seen, new Promise((_, reject) => setTimeout(() => reject(Error('Rollover daily-card request was not observed')), 15000))]);
   await selectGame(rollover.page, 'ygo');
-  await rollover.page.waitForFunction(id => document.querySelector('.hh-credit')?.dataset.id === id, seeds.ygo.id);
+  await rollover.page.waitForFunction(id => document.querySelector('#homeToday .hh-credit')?.dataset.id === id, seeds.ygo.id);
   delayedDaily.release();
   await rollover.page.waitForFunction(id => JSON.parse(localStorage.getItem('cardforge-hero-v2'))?.mtg?.id === id, seeds.mtg.id);
   await assertDailyIdentity(rollover.page, 'ygo', seeds.ygo, '2026-10-18');
@@ -1174,7 +1175,7 @@ try {
   for (const game of GAME_IDS) {
     await selectGame(rollover.page, game);
     await rollover.page.waitForFunction(({ game, id }) => {
-      const hero = document.querySelector('#homeHero'), credit = hero?.querySelector('.hh-credit');
+      const hero = document.querySelector('#homeToday'), credit = hero?.querySelector('.hh-credit');
       return hero?.dataset.game === game && credit?.dataset.id === id && credit?.dataset.date === '2026-10-18';
     }, { game, id: seeds[game].id });
     await assertDailyIdentity(rollover.page, game, seeds[game], '2026-10-18');

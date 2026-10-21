@@ -489,8 +489,15 @@ export function heroFor(g) {
   return h;
 }
 export function homeHero(g) {
-  const h=heroFor(g),G=GAMES[g],cardAction=h?`data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}"`:'';
-  return `<section class="home-hero home-art-header ${g} ${h?.art?'has-art':'no-art'}" id="homeHero" data-game="${g}" data-daily-date="${h?.date||''}" data-daily-id="${esc(h?.id||'')}">${h?.art&&g==='ptcg'?pokemonArtCrop({game:g,id:h.id},'hh-art',h.art,{loading:'eager'}):h?.art?`<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" data-art-sources="${esc(JSON.stringify([...new Set([h.art,h.artDirect].filter(Boolean))]))}" data-art-index="0">`:''}<div class="hh-shade"></div><div class="hh-body"><p class="eyebrow">${esc(G.name)}</p><h1>Your cards. Your next adventure.</h1><div id="homeSearchDock">${homeSearchMarkup(g)}</div><div class="hh-credits">${cardAction?`<button class="hh-credit" ${cardAction} aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b><span class="hh-daily-arrow" aria-hidden="true">↗</span></button>`:''}</div></div></section>`;
+  const h=heroFor(g),G=GAMES[g];
+  return `<section class="home-hero home-art-header ${g} ${h?.art?'has-art':'no-art'}" id="homeHero" data-game="${g}" data-daily-date="${h?.date||''}" data-daily-id="${esc(h?.id||'')}">${h?.art&&g==='ptcg'?pokemonArtCrop({game:g,id:h.id},'hh-art',h.art,{loading:'eager'}):h?.art?`<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" data-art-sources="${esc(JSON.stringify([...new Set([h.art,h.artDirect].filter(Boolean))]))}" data-art-index="0">`:''}<div class="hh-shade"></div><div class="hh-body"><p class="eyebrow">${esc(G.name)}</p><h1>Your cards. Your next adventure.</h1><div id="homeSearchDock">${homeSearchMarkup(g)}</div></div></section>`;
+}
+// Home "Today": the showcase below the collection value. The Card of the Day's art is its backdrop; the
+// one daily action names the card, and its set (with the real booster pack) paints in beside it.
+export function homeToday(g) {
+  const h=heroFor(g);if(!h)return '';
+  const art=/^img\//.test(h.art||'')?'/'+h.art:h.art||'';
+  return `<section class="home-today" id="homeToday" data-game="${g}" data-daily-date="${h.date}" data-daily-id="${esc(h.id)}"><span class="today-bg" aria-hidden="true">${art?`<img src="${esc(art)}" alt="" referrerpolicy="no-referrer" decoding="async">`:''}</span><span class="today-pack-slot"></span><div class="today-text"><button class="hh-credit" data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}" aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b><span class="hh-daily-arrow" aria-hidden="true">↗</span></button><div class="today-set" aria-live="polite"></div></div></section>`;
 }
 // Cache only the server's shared selection. The old per-device v1 cache is
 // deliberately ignored so everyone moves to the same midnight schedule.
@@ -612,7 +619,7 @@ function tcgStartPath(g) {
 
 export function tcgHome() {
   const g = game(), v = collectionValue(g), st = gs(g);
-  return `${homeHero(g)}<div class="home-overview home-value-overview">${homeValue({ game: g, ...v, decks: st.decks.length, history: readTcgValueHistory(g) })}</div>
+  return `${homeHero(g)}<div class="home-overview home-value-overview">${homeValue({ game: g, ...v, decks: st.decks.length, history: readTcgValueHistory(g) })}</div>${homeToday(g)}
   ${homeResume(g, deck => formatOf(g, deck.format).name)}
   ${quickTiles(g)}
   ${homeEdition(g)}`;

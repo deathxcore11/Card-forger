@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { S, blank } from './store.js';
 import { blankGame, GAME_IDS } from './games.js';
-import { heroState, heroDate, heroResetAt, heroFor, homeHero, loadHero, tcgHome, cache } from './tcg.js';
+import { heroState, heroDate, heroResetAt, heroFor, homeHero, homeToday, loadHero, tcgHome, cache } from './tcg.js';
 import { home } from './views.js';
 const RealDate = Date;
 let now = RealDate.parse('2026-10-17T12:00:00Z');
@@ -18,7 +18,8 @@ const writeDaily = () => storage.set('cardforge-hero-v2', JSON.stringify({ date:
 writeDaily();
 for (const g of GAME_IDS) {
   assert.equal(heroFor(g, { id: 'owned-lead', name: 'Owned lead', deck: true }).id, 'daily-' + g, 'saved-deck argument never overrides daily identity');
-  const html = homeHero(g, 'Welcome back.', true);
+  const hero = homeHero(g, 'Welcome back.', true), html = hero + homeToday(g);
+  assert.doesNotMatch(hero, /homeDailyCard|Card of the Day/, `${g}: the header no longer repeats the daily card`);
   assert.equal((html.match(/data-act="homeDailyCard"/g) || []).length, 1);
   assert.equal((html.match(new RegExp(`data-id="daily-${g}"`, 'g')) || []).length, 1);
   assert.equal((html.match(/>Card of the Day</g) || []).length, 1, `${g}: one visible daily-card label, not a duplicate artwork badge`);
@@ -63,7 +64,7 @@ for (const g of GAME_IDS) {
 const longNames = { mtg:['Emrakul, the Promised End','Asmoranomardicadaistinaculdacar'], ygo:['Blue-Eyes Alternative White Dragon'], ptcg:['Reshiram & Charizard-GX'] };
 for (const g of GAME_IDS) for (const title of longNames[g]) for (const art of [approved[g].art, '']) {
   heroState[g] = { ...approved[g], game:g, date:heroDate(), name:title, art };
-  const html=homeHero(g),name=title.replaceAll('&','&amp;');
+  const html=homeHero(g)+homeToday(g),name=title.replaceAll('&','&amp;');
   assert(html.includes(`<b>${name}</b>`),`${g}: full longer title is never shortened`);
   assert(html.includes(`aria-label="Explore ${name}, Card of the Day"`));
   assert(html.includes(`data-name="${name}"`));

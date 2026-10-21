@@ -4894,17 +4894,27 @@ dialog.sheet:has(.context-card),body.glass dialog.sheet:has(.context-card){max-w
 .card-printing-mini .printing-mini-rarity{display:inline-flex;align-items:center;gap:4px;margin-top:3px;font-size:10px;font-weight:600;line-height:1.2;color:var(--muted,#aab)}
 .card-printing-mini .printing-mini-rarity .rarity-swatch{width:11px;height:11px;border-radius:3px}
 
-/* Home "Today": beside the header's Card of the Day pill, a matching pill with the set's real booster
-   pack peeking out and one quiet line (set, then the card's rarity there). */
-#homeHero .hh-credits{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px}
-.hh-today{display:flex;align-items:center;gap:10px;min-height:44px;max-width:100%;padding:6px 16px 6px 8px;border:1px solid #ffffff20;border-radius:24px;background:#11151ba8;color:#fff;animation:hh-today-in .45s ease both}
-.hh-today.no-pack{padding-left:16px}
-.hh-today-pack{position:relative;flex:none;width:34px;aspect-ratio:400/734;margin:-14px 0 -12px;padding:0;border:0;border-radius:3px;background:#2a2733;cursor:pointer;overflow:hidden;filter:drop-shadow(0 6px 10px #000b);transform:rotate(-6deg);transition:transform .3s ease}
-.hh-today-pack>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hh-today-pack::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,#ffffff50 46%,transparent 62%);background-size:260% 100%;animation:today-sheen 4.2s ease-in-out infinite;pointer-events:none}
-.hh-today-pack:hover,.hh-today-pack:focus-visible{transform:rotate(0) translateY(-3px) scale(1.08)}.hh-today-pack:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
-.hh-today-set{display:grid;gap:1px;min-width:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
-.hh-today-set>span{font-size:10px;line-height:1.4;color:#ffffffa8}.hh-today-set b{font-size:13px;line-height:1.3;overflow-wrap:break-word}.hh-today-set small{font-size:11px;color:color-mix(in srgb,var(--gold) 75%,#fff);text-transform:capitalize}
-.hh-today-set:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:6px}
+/* Home "Today": the Card of the Day showcase below the value. The card's art is the backdrop, its set's
+   real booster pack leans in on the left, and the one daily action names the card above its set. */
+.home-today{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:16px;min-height:128px;margin:0 0 22px;padding:16px 18px;border:1px solid #ffffff1c;border-radius:20px;background:#121218;color:#fff;box-shadow:0 18px 40px #0005}
+.today-bg{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.today-bg img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;transform:scale(1.06);animation:today-drift 26s ease-in-out infinite alternate}
+.today-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#000e 0%,#000b 42%,#0004 100%)}
+.today-pack-slot:empty{display:none}.home-today:has(.today-pack-slot:empty){grid-template-columns:minmax(0,1fr)}
+.today-pack{position:relative;display:block;width:64px;aspect-ratio:400/734;padding:0;border:0;border-radius:4px;background:#2a2733;cursor:pointer;overflow:hidden;filter:drop-shadow(0 12px 16px #000c);transform:rotate(-6deg);transition:transform .35s cubic-bezier(.2,.9,.25,1);animation:today-pack-in .5s ease both}
+.today-pack>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.today-pack::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,#ffffff55 46%,transparent 62%);background-size:260% 100%;animation:today-sheen 4.2s ease-in-out infinite;pointer-events:none}
+.today-pack:hover,.today-pack:focus-visible{transform:rotate(0) translateY(-4px) scale(1.07)}.today-pack:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.today-text{display:grid;gap:6px;min-width:0}
+#homeToday .hh-credit{position:relative;display:grid;gap:3px;width:100%;min-height:44px;margin:0;padding:4px 40px 4px 0;border:0;border-radius:10px;background:none;color:#fff;font:inherit;text-align:left;white-space:normal;overflow-wrap:normal;word-break:normal;cursor:pointer;backdrop-filter:none;-webkit-backdrop-filter:none}
+#homeToday .hh-credit>span:first-child{font-size:11px;font-weight:700;letter-spacing:.06em;line-height:1.4;color:var(--gold);overflow-wrap:normal}
+#homeToday .hh-credit b{font-size:clamp(19px,5vw,24px);line-height:1.15;overflow-wrap:break-word;word-break:normal;min-width:0;max-width:100%;text-shadow:0 2px 12px #000c}
+#homeToday .hh-daily-arrow{position:absolute;right:6px;top:50%;width:16px;transform:translateY(-50%);color:#ffffffb3}
+#homeToday .hh-credit:hover b{text-decoration:underline;text-underline-offset:3px}#homeToday .hh-credit:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.today-set{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-width:0;font-size:12.5px;color:#ffffffc4}
+.today-set-name{min-width:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;overflow-wrap:anywhere}.today-set-name:hover{color:#fff;text-decoration:underline}
+.today-rarity{padding:2px 8px;border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);border-radius:999px;background:#0007;color:color-mix(in srgb,var(--gold) 80%,#fff);font-size:11px;font-weight:650;text-transform:capitalize}
+@keyframes today-drift{from{transform:scale(1.06) translate(0,0)}to{transform:scale(1.14) translate(-2%,-2%)}}
 @keyframes today-sheen{0%{background-position:130% 0}100%{background-position:-30% 0}}
-@keyframes hh-today-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-@media(prefers-reduced-motion:reduce){.hh-today,.hh-today-pack::after{animation:none}.hh-today-pack{transition:none}}
+@keyframes today-pack-in{from{opacity:0;transform:rotate(-14deg) translateY(10px)}to{opacity:1;transform:rotate(-6deg)}}
+@media(min-width:900px){.home-today{min-height:140px;padding:18px 24px;gap:20px}.today-pack{width:76px}}
+@media(prefers-reduced-motion:reduce){.today-bg img,.today-pack,.today-pack::after{animation:none}.today-pack{transition:none}}

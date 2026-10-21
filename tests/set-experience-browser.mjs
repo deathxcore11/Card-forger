@@ -21,10 +21,12 @@ try{
    assert.equal(await page.locator('.set-atmosphere img').count(),1);
    await page.locator('[data-act="openSetPack"]').click();await page.locator('.pack-dialog[open]').waitFor();
    assert.match(await page.locator('.pack-explanation').textContent(),/not a real booster/);
-   await page.locator('[data-pack="open"]').click();assert.equal(await page.locator('.pack-card').count(),10);
+   // Each game's real booster size: Yu-Gi-Oh! core packs hold 9 cards, Magic and Pokémon 10.
+   const packSize=game==='ygo'?9:10;
+   await page.locator('[data-pack="open"]').click();assert.equal(await page.locator('.pack-card').count(),packSize);
    await page.locator('.pack-card').first().click();assert.equal(await page.locator('.pack-card.revealed').count(),1);
    assert.equal(await page.locator('[data-pack="copy"]').isDisabled(),true);
-   await page.locator('[data-pack="reveal-all"]').click();assert.equal(await page.locator('.pack-card.revealed').count(),10);
+   await page.locator('[data-pack="reveal-all"]').click();assert.equal(await page.locator('.pack-card.revealed').count(),packSize);
    const overflow=await page.locator('.pack-dialog').evaluate(n=>({scroll:n.scrollWidth,client:n.clientWidth,outside:[...n.querySelectorAll('button')].filter(b=>{const r=b.getBoundingClientRect(),p=n.getBoundingClientRect();return r.width>0&&r.height>0&&(r.left<p.left-2||r.right>p.right+2);}).map(b=>b.textContent)}));assert(overflow.scroll<=overflow.client+2,JSON.stringify(overflow));assert.deepEqual(overflow.outside,[]);
    assert.equal(await page.evaluate(async()=>{const {S}=await import('/store.js');return JSON.stringify([S.state.collection,S.state.decks,S.state.tcg])===window.__packBefore;}),true,'preview cannot change inventory');
    await page.screenshot({path:`test-results/set-experience-pack-${game}-${width}.png`,fullPage:true,animations:"disabled"});

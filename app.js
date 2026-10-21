@@ -1,5 +1,5 @@
 import {openPackPreview} from './pack-preview.js';
-import {dailyDetails,todayPillMarkup} from './home-today.js';
+import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -3371,20 +3371,6 @@ function paintHomeHero(g) {
   const oldArt = el.querySelector(".hh-art"), newArt = next.querySelector(".hh-art");
   if (oldArt) newArt ? oldArt.replaceWith(newArt) : oldArt.remove();
   else if (newArt) el.prepend(newArt);
-  for (const selector of [".hh-credit"]) {
-    const old = el.querySelector(selector), fresh = next.querySelector(selector);
-    if (old && fresh) {
-      // Keep the focused button node; only its exact-card identity/content changes.
-      for (const attr of [...old.attributes]) old.removeAttribute(attr.name);
-      for (const attr of [...fresh.attributes]) old.setAttribute(attr.name, attr.value);
-      old.innerHTML = fresh.innerHTML;
-    } else if (old) old.remove();
-    else if (fresh) {
-      el.querySelector(".hh-credits")?.remove();
-      el.querySelector(".hh-body").append(next.querySelector(".hh-credits"));
-    }
-  }
-  if (!h) el.querySelector(".hh-credits")?.remove();
   el.dataset.dailyDate = h?.date || "";
   el.dataset.dailyId = h?.id || "";
   el.classList.toggle("has-art", !!h?.art);
@@ -3408,16 +3394,28 @@ function heroArt(g) {
     .then(() => navigationCurrent(screen) && (paintHomeHero(g), paintHomeToday(g)))
     .catch(() => {});
 }
-// Home "Today": the set of the Card of the Day, with its real pack, beside the header's daily pill.
+// Home "Today": the Card of the Day showcase below the value. A new day swaps the card in place (the
+// focused daily button keeps its node), then its set and real booster pack paint in.
 function paintHomeToday(g) {
   if (S.ui.view !== "home" || T.game() !== g) return;
-  const h = T.heroFor(g), dock = $("#homeHero .hh-credits");if (!h || !dock) return;
-  const key = [g, h.date, h.id].join("|");if (dock.dataset.today === key) return;dock.dataset.today = key;
-  const screen = navigationStamp();
+  const h = T.heroFor(g);let el = $("#homeToday");
+  if (!h) return el?.remove();
+  if (!el) { const at = $("#content .home-value-overview");if (!at) return;at.insertAdjacentHTML("afterend", T.homeToday(g));el = $("#homeToday"); }
+  if (el.dataset.game !== g || el.dataset.dailyId !== h.id || el.dataset.dailyDate !== h.date) {
+    const tpl = document.createElement("template");tpl.innerHTML = T.homeToday(g);const next = tpl.content.firstElementChild, old = el.querySelector(".hh-credit"), fresh = next.querySelector(".hh-credit");
+    for (const attr of [...old.attributes]) old.removeAttribute(attr.name);
+    for (const attr of [...fresh.attributes]) old.setAttribute(attr.name, attr.value);
+    old.innerHTML = fresh.innerHTML;fresh.replaceWith(old);
+    for (const k of ["game", "dailyDate", "dailyId"]) el.dataset[k] = next.dataset[k];
+    el.replaceChildren(...next.childNodes);delete el.dataset.painted;
+  }
+  if (el.dataset.painted) return;el.dataset.painted = "1";
+  const screen = navigationStamp(), key = h.id + "|" + h.date;
   dailyDetails(g, h).then(d => {
-    if (!navigationCurrent(screen) || !dock.isConnected || dock.dataset.today !== key || !d?.set) return;
-    dock.querySelector(".hh-today")?.remove();dock.insertAdjacentHTML("beforeend", todayPillMarkup(g, d.set, { rarity: d.rarity }));
-  }).catch(() => { if (dock.dataset.today === key) delete dock.dataset.today; });
+    if (!navigationCurrent(screen) || !el.isConnected || el.dataset.dailyId + "|" + el.dataset.dailyDate !== key || !d?.set) return;
+    el.querySelector(".today-set").innerHTML = todaySetMarkup(g, d.set, { rarity: d.rarity });
+    el.querySelector(".today-pack-slot").innerHTML = todayPackMarkup(g, d.set);
+  }).catch(() => { delete el.dataset.painted; });
 }
 // Opening today's pack goes to the Set of the Day and opens its pack with the Card of the Day as the hit.
 A.homeTodayPack = async (t) => {

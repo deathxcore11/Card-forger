@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import { gameTabs, syncGameTabs, attachGameTabs, homeValue, featureArticle, homeEdition, homeDiscovery, isHomeRevealCurrent, homeDeckReveal, displayDate, refreshHomeCommunity } from './home-ui.js';
 import { communityState } from './community-feed.js';
 import { GAME_IDS } from './games.js';
-import { homeHero, heroState, loadHero, heroFor, heroDate } from './tcg.js';
+import { homeHero, homeToday, heroState, loadHero, heroFor, heroDate } from './tcg.js';
 import { attachHomeSwipe } from './home-swipe.js';
 const store = new Map();
 globalThis.localStorage = { getItem: k => store.get(k) || null, setItem: (k,v) => store.set(k,v) };
@@ -45,9 +45,10 @@ assert.match(link,/Source link · not a live headline/);assert.doesNotMatch(link
 for(const g of GAME_IDS){
   const date=heroDate();
   heroState[g]={game:g,date,name:'Exact daily card',id:'daily-card-'+g,art:'https://example.org/daily.png'};
-  const html=homeHero(g,'Welcome back.',true);
-  assert.equal((html.match(/id="homeHero"/g)||[]).length,1);
-  assert.doesNotMatch(html,/hh-art-link/);assert.match(html,/class="hh-credit"/);
+  const hero=homeHero(g,'Welcome back.',true),html=homeToday(g);
+  assert.equal((hero.match(/id="homeHero"/g)||[]).length,1);
+  // The Card of the Day lives once, in the Today showcase below the value, not in the header.
+  assert.doesNotMatch(hero,/hh-art-link|hh-credit|homeDailyCard/);assert.match(html,/class="hh-credit"/);assert.match(html,/id="homeToday"/);
   assert.equal((html.match(/data-act="homeDailyCard"/g)||[]).length,1,'one unobtrusive daily-card action');
   assert.equal((html.match(new RegExp('data-id="daily-card-'+g+'"','g'))||[]).length,1,'the action opens the exact daily printing');
   assert.match(html,/Card of the Day/);assert.doesNotMatch(html,/From your deck|Open deck|data-to="#(?:deck|tdeck)\//);
@@ -58,7 +59,7 @@ for(const g of GAME_IDS){
   delete heroState[g];
   assert.equal(await loadHero(g),true);
   assert(heroFor(g)?.name);assert.equal(await loadHero(g),false);
-  assert.match(homeHero(g,'Hello'),/Card of the Day/);
+  assert.match(homeToday(g),/Card of the Day/);
 }
 assert.equal(dailyFetches,3,'one server request per game');
 const picker = {}, origin = { game:'mtg', view:'home', sheet:picker };
