@@ -4913,6 +4913,7 @@ dialog.sheet:has(.context-card),body.glass dialog.sheet:has(.context-card){max-w
 .today-set-info{display:grid;gap:5px;min-width:0}.today-set-info .eyebrow{margin:0;font-size:10px;color:#ffffffa6;letter-spacing:.06em}
 .today-set-name{display:flex;align-items:center;gap:8px;min-width:0;min-height:32px;padding:0;border:0;background:none;color:#fff;text-align:left;cursor:pointer;text-shadow:0 1px 8px #000c}.today-set-name img{height:22px;max-width:70px;object-fit:contain;filter:drop-shadow(0 1px 4px #000a)}.today-set-name b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:15px}
 .today-rarity{justify-self:start;padding:3px 9px;border-radius:999px;background:#0008;border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);color:color-mix(in srgb,var(--gold) 80%,#fff);font-size:11px;font-weight:650;backdrop-filter:blur(6px)}
+.home-today[data-game="mtg"] .today-set-name img{filter:invert(1) drop-shadow(0 1px 4px #000a)}.today-rarity{text-transform:capitalize}
 @keyframes today-drift{from{transform:scale(1.06) translate(0,0)}to{transform:scale(1.14) translate(-2%,-2%)}}
 @keyframes today-sheen{0%{background-position:130% 0}100%{background-position:-30% 0}}
 @keyframes today-shimmer{to{background-position:-200% 0}}
