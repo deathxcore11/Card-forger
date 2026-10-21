@@ -4913,6 +4913,10 @@ dialog.sheet:has(.context-card),body.glass dialog.sheet:has(.context-card){max-w
 .today-set-info{display:grid;gap:4px;min-width:0}.today-set-info .eyebrow{margin:0;font-size:10px;color:var(--muted);letter-spacing:.04em}
 .today-set-name{display:flex;align-items:center;gap:8px;min-width:0;min-height:32px;padding:0;border:0;background:none;color:var(--text);text-align:left;cursor:pointer}.today-set-name img{height:22px;max-width:70px;object-fit:contain}.today-set-name b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:1.25}.today-set-name:hover b{text-decoration:underline}
 .today-set-info .set-tile-progress{margin-top:2px}
+.today-head{display:grid;gap:6px;min-width:0}
+.today-card-face:has(.finish-rarity-gl:not([hidden]))~.today-card-glow{opacity:0}
+/* Phones: the card sits beside the title and the set gets the full width beneath, so names and progress never squeeze into a narrow column. */
+@media(max-width:599px){.home-today{grid-template-columns:minmax(96px,36%) minmax(0,1fr);row-gap:16px}.today-body{display:contents}.today-card{grid-row:1}.today-head{grid-column:2;grid-row:1;align-self:center}.today-set{grid-column:1/-1}.today-set-row{grid-template-columns:72px minmax(0,1fr);gap:14px}.today-pack{width:72px}}
 @keyframes today-sheen{0%{background-position:130% 0}100%{background-position:-30% 0}}
 @keyframes today-shimmer{to{background-position:-200% 0}}
 @keyframes today-pack-float{50%{transform:translateY(-4px) rotate(-2deg)}}

@@ -3,7 +3,7 @@
 // Every finish surface draws the WebGL foil: the card page, zoom, gallery cards at every size and
 // cards pulled in the pack opener.
 // The lighter CSS finish is only the fallback when WebGL or the card's analysis is unavailable.
-export const FOIL_SURFACES=['detail','zoom','large','pack'];
+export const FOIL_SURFACES=['detail','zoom','large','pack','today'];
 export const foilSurface=surface=>FOIL_SURFACES.includes(surface);
 export const FOIL_VS='attribute vec2 a;varying vec2 v;void main(){v=(a+1.0)*.5;gl_Position=vec4(a,0.0,1.0);}';
 // One full-screen quad program; returns null when the context or shader is unavailable.
@@ -71,6 +71,16 @@ export function watchFoilLight(overlay,draw){
 export const foilLight=overlay=>{const css=globalThis.getComputedStyle?.(overlay),pct=v=>{const n=parseFloat(v);return Number.isFinite(n)?Math.max(0,Math.min(100,n))/100:.5;};
  return [pct(css?.getPropertyValue('--finish-x')),pct(css?.getPropertyValue('--finish-y'))];};
 // Reads the card at analysis size. Cross-origin (tainted) images throw, which keeps the CSS finish.
+// Scryfall and TCGdex serve card images with open CORS, but the app's <img> tags load them without it,
+// so their pixels are not readable. A foil loads its own CORS copy of the same image for analysis and drawing.
+const copies=new Map();
+export function readableCopy(src){
+ if(copies.has(src))return copies.get(src);
+ const job=new Promise((resolve,reject)=>{const i=new Image();i.crossOrigin='anonymous';i.decoding='async';i.onload=()=>resolve(i);i.onerror=()=>reject(Error('image unavailable'));i.src=src;});
+ job.catch(()=>copies.delete(src));
+ if(copies.size>=24)copies.delete(copies.keys().next().value);
+ copies.set(src,job);return job;
+}
 export function readFoilPixels(img,maxWidth=406){
  const W=Math.max(64,Math.min(maxWidth,Math.round(img.naturalWidth/2))),H=Math.round(W*img.naturalHeight/img.naturalWidth);
  const c=(globalThis.document||img.ownerDocument).createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,W,H);

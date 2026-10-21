@@ -78,7 +78,7 @@ export function containedImageBox(width,height,naturalWidth,naturalHeight){
 }
 export function finishEligible(el){
  if(!el?.dataset?.finishSurface||el.hidden||el.closest?.('[hidden]'))return false;
- return el.dataset.finishSurface==='detail'||el.dataset.finishSurface==='zoom'||el.dataset.finishSurface==='pack'||(el.dataset.finishSurface==='large'&&!!el.closest?.('.view-gallery')&&!el.closest?.('.view-compact,.view-symbols'));
+ return el.dataset.finishSurface==='detail'||el.dataset.finishSurface==='zoom'||el.dataset.finishSurface==='pack'||el.dataset.finishSurface==='today'||(el.dataset.finishSurface==='large'&&!!el.closest?.('.view-gallery')&&!el.closest?.('.view-compact,.view-symbols'));
 }
 function modelOf(el){try{return JSON.parse(el.dataset.finishModel||'{}');}catch{return {};}}
 // Per-image maps must never paint a later fallback or custom scan they were not measured on.
@@ -118,7 +118,7 @@ export function attachFinishPreview(root){
   const img=el.querySelector?.('img'),host=el.dataset.finishSurface==='detail'?(el.querySelector('.cd-zoom')||el):el;
   if(!img||!img.complete||!img.naturalWidth||img.hidden)return;
   if(!finishImageMatches(p,img.currentSrc||img.src))return unmount(el);
-  const overlay=img.ownerDocument.createElement('span');overlay.className='finish-overlay'+(el.dataset.finishSurface==='large'?' finish-auto':'');
+  const overlay=img.ownerDocument.createElement('span');overlay.className='finish-overlay'+(['large','today'].includes(el.dataset.finishSurface)?' finish-auto':'');
   const profile=finishOverlayProfile(p,img.currentSrc||img.src);
   if(profile&&FINISH_MASKS[profile.mask])overlay.style.clipPath=FINISH_MASKS[profile.mask];
   const layers=profile?.artMask?(p.layers||[]).map(l=>({...l,mask:profile.artMask})):(p.layers||[]);

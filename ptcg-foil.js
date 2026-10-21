@@ -5,7 +5,7 @@
 // own foil sheet (ptcg-foil-recipes.js). Approximate simulation, not a physical-foil capture.
 import {analyzeYgoArt} from './ygo-foil-analysis.js';
 import {PTCG_FOIL_RECIPES} from './ptcg-foil-recipes.js';
-import {foilProgram,foilAnalyzer,readFoilPixels,mountFoilCanvas} from './foil-gl.js';
+import {foilProgram,foilAnalyzer,readFoilPixels,readableCopy,mountFoilCanvas} from './foil-gl.js';
 export const PTCG_FOIL_FRAGMENT=`precision highp float;
 varying vec2 v;
 uniform sampler2D u_card;   // card image, resampled to the display size
@@ -71,7 +71,9 @@ void main(){
  // Coverage: the measured mask; behind a holo Pokémon only where the white underbase was left out.
  float cov=mk.a*mix(1.,mk.r,u_r1.z)*(1.-.5*u_r2.y*smoothstep(.52,.64,uv.y));
  vec3 F=foil(u_r1.x,u_r1.y,uv,L,V,N,spot,grad,rl.r,stroke)*(1.+mk.g*u_r1.z*.6);
- vec3 outC=overInk(base,F,cov*.92);
+ // Full-art cards print the illustration in heavy white-backed ink over the foil, so the art keeps half its
+ // weight there; holo windows and reverse frames show the bare foil.
+ vec3 outC=overInk(base,F,cov*mix(.92,.5,u_r2.y));
  if(rel>0.){float rim=pow(max(dot(N,H),0.),24.)*(.35+.65*spot)*clamp(length(grad)*30.,0.,1.);outC+=(1.-outC)*vec3(1.,.97,.92)*rim*rel*cov*.8;}
  if(u_r2.x>0.){vec2 sq=vec2(uv.x,uv.y*u_aspect)*70.,sc=floor(sq);vec2 j=hash2(sc);float on=step(1.-.22*u_r2.x,j.x);
   float pt=1.-smoothstep(.0,.1+.12*j.y,length(fract(sq)-.2-.6*hash2(sc*1.3)));
@@ -133,10 +135,11 @@ export function mountPtcgFoil(overlay,img,treatment,{surface='detail',clip='',ar
  const shape=clip?maskShape(clip):{rule:'nonzero',rings:[[[0,0],[1,0],[1,1],[0,1]]]},art=artClip?maskShape(artClip):shape;if(!shape||!art)return null;
  const src=img.currentSrc||img.src;if(!src)return null;
  const box=r.underbase?artBox(art):[.1,.1,.9,.5],key=src+'|'+treatment+'|'+clip;
- return mountFoilCanvas(overlay,{source:()=>img,key,surface,program:()=>renderer(overlay.ownerDocument),
-  analysis:()=>analyze(src+'|'+box.join(),()=>readFoilPixels(img),{layout:'',box}).then(a=>{
+ const copy=()=>readableCopy(src);
+ return mountFoilCanvas(overlay,{source:copy,key,surface,program:()=>renderer(overlay.ownerDocument),
+  analysis:()=>copy().then(i=>analyze(src+'|'+box.join(),()=>readFoilPixels(i),{layout:'',box}).then(a=>{
    // Coverage is per mask, so it is stamped onto a copy of the cached analysis.
-   const cov=coverage(shape,a.W,a.H),mask=a.mask.slice(),spill=shape.rule==='evenodd'?artOverflow(readFoilPixels(img).data,a.W,a.H,artBox(shape)):null;
-   for(let k=3;k<mask.length;k+=4)mask[k]=Math.round(cov[k-3]*(spill?1-spill[(k-3)/4]:1));return {...a,mask};}),
+   const cov=coverage(shape,a.W,a.H),mask=a.mask.slice(),spill=shape.rule==='evenodd'?artOverflow(readFoilPixels(i).data,a.W,a.H,artBox(shape)):null;
+   for(let k=3;k<mask.length;k+=4)mask[k]=Math.round(cov[k-3]*(spill?1-spill[(k-3)/4]:1));return {...a,mask};})),
   setUniforms:({gl,U})=>{gl.uniform4f(U.u_r1,r.pat,r.tint,r.underbase,r.relief);gl.uniform4f(U.u_r2,r.sparkle,r.soft,0,0);}});
 }

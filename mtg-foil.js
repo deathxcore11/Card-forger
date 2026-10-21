@@ -6,7 +6,7 @@
 // Approximate simulation on reference images, not a physical-foil capture.
 import {analyzeMtgCard,MTG_FRAMES} from './mtg-foil-analysis.js';
 import {MTG_FOIL_RECIPES} from './mtg-foil-recipes.js';
-import {foilProgram,foilAnalyzer,readFoilPixels,mountFoilCanvas} from './foil-gl.js';
+import {foilProgram,foilAnalyzer,readFoilPixels,readableCopy,mountFoilCanvas} from './foil-gl.js';
 export const MTG_FOIL_FRAGMENT=`precision highp float;
 varying vec2 v;
 uniform sampler2D u_card;   // card image, resampled to the display size
@@ -106,16 +106,6 @@ void main(){
  if(u_r2.z>.5){float s=shootingStar(uv);outC=mix(outC,shoulder(F*1.6+vec3(.15)),s*.9);}
  gl_FragColor=vec4(toSrgb(clamp(outC,0.,1.)),1.);
 }`;
-// Scryfall serves card images with open CORS, but the app's <img> tags load them without it, so their
-// pixels are not readable. The foil loads its own CORS copy of the same image for analysis and drawing.
-const copies=new Map();
-export function readableCopy(src){
- if(copies.has(src))return copies.get(src);
- const job=new Promise((resolve,reject)=>{const i=new Image();i.crossOrigin='anonymous';i.decoding='async';i.onload=()=>resolve(i);i.onerror=()=>reject(Error('image unavailable'));i.src=src;});
- job.catch(()=>copies.delete(src));
- if(copies.size>=24)copies.delete(copies.keys().next().value);
- copies.set(src,job);return job;
-}
 const analyze=foilAnalyzer(new URL('./mtg-foil-worker.js',import.meta.url),(data,W,H)=>analyzeMtgCard(data,W,H));
 let shared=null;
 function renderer(doc){
