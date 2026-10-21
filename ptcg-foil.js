@@ -34,7 +34,10 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
  vec3 H=normalize(L+V);vec2 q=vec2(uv.x,uv.y*u_aspect),px=uv*u_px;vec2 g=normalize(vec2(.86,.5));
  float d=1550.,lines=0.,glint=0.,mirror=.35,ex=14.,amp=.75;
  if(pat<1.5){vec2 c=floor(vec2(q.x*70.,q.y*9.));vec2 j=hash2(c);g=normalize(vec2((j.x-.5)*.5,1.));d=1250.+j.y*550.;  // WotC: vertical starlight streaks
-  lines=.5+.5*sin(px.y*.9+j.x*6.28);vec3 w=voro(q*60.);glint=step(.9,hash(w.xy))*pow(max(dot(normalize(vec3((hash2(w.xy)-.5)*.6,1.)),H),0.),90.)*2.;amp=.85;}
+  lines=.5+.5*sin(px.y*.9+j.x*6.28);vec3 w=voro(q*60.);glint=step(.9,hash(w.xy))*pow(max(dot(normalize(vec3((hash2(w.xy)-.5)*.6,1.)),H),0.),90.)*2.;amp=.85;
+  // Four-point stars on three parallax depths: each layer drifts with the tilt and every star lights at its own angle.
+  for(int k=0;k<3;k++){float s=10.+float(k)*9.;vec2 p=q*s+u_tilt*(.35/(1.+float(k))),cc=floor(p),f=fract(p)-.5-(hash2(cc+float(k)*13.)-.5)*.5;vec2 r=hash2(cc+float(k)*29.);
+   float on=step(.72,r.y),star=on*(1.-smoothstep(0.,.012+.01*r.x,abs(f.x*f.y)*14.+length(f)*.09)),fire=pow(max(cos(dot(u_tilt,vec2(3.5))+r.x*6.28),0.),8.);glint+=star*fire*(1.6-.35*float(k));}}
  else if(pat<2.5){vec3 w=voro(q*80.);vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1100.+j.y*800.;mirror=.25;  // e-Card crystal facets
   glint=pow(max(dot(normalize(vec3((j-.5)*.7,1.)),H),0.),120.)*1.4;amp=.8;}
  else if(pat<3.5){g=normalize(vec2(1.,1.));d=1400.;lines=.5+.5*sin((px.x+px.y)*1.1);mirror=.3;amp=.8;}          // EX: fine diagonal lines
@@ -53,6 +56,8 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
  else if(pat<11.5){float ph=height*55.,gr=sin(ph);vec2 gn=length(grad)>1e-4?normalize(grad):vec2(1.,0.);         // textured: contours of the art
   g=gn;d=1250.;lines=.5+.15*gr;N=normalize(N+vec3(gn*cos(ph)*.07,0.));mirror=.4;ex=24.;amp=.72;}
  else if(pat<12.5){g=normalize(vec2(-stroke.y,stroke.x)+1e-4);d=1350.;mirror=.35;amp=.7;}                       // texture that follows the brushwork
+ else if(pat>13.5){float band=pow(.5+.5*sin((q.x+q.y)*5.5-(u_tilt.x+u_tilt.y)*4.5),3.);g=normalize(vec2(1.,1.));d=1500.;  // modern smooth 45° oil-slick band
+  lines=band;amp=mix(.3,1.35,band);mirror=.45;ex=8.;}
  else{vec3 w=voro(q*200.);vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;mirror=.2;    // shiny glitter
   glint=pow(max(dot(normalize(vec3((j-.5)*.5,1.)),H),0.),260.)*3.;amp=.7;}
  vec3 dif=grating(L,V,g,d)*amp;float spec=pow(max(dot(N,H),0.),ex);

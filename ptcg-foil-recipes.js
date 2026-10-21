@@ -3,13 +3,13 @@
 // art, and full-art cards foil the whole face, textured on the eras that emboss it. Each era printed
 // its own foil sheet, so the pattern follows the set; the variant's own foil (cosmos, Poké Ball,
 // Master Ball, gold) wins when the provider names one. Approximate simulations, not physical matches.
-export const PTCG_PATTERN={wotc:1,crystal:2,lines:3,sheen:4,sparkle:5,cosmos:6,firework:7,mirror:8,pokeball:9,masterball:10,texture:11,strokes:12,shiny:13};
+export const PTCG_PATTERN={wotc:1,crystal:2,lines:3,sheen:4,sparkle:5,cosmos:6,firework:7,mirror:8,pokeball:9,masterball:10,texture:11,strokes:12,shiny:13,diagonal:14};
 export const PTCG_TINT={rainbow:0,gold:1,silver:2};
 const P=PTCG_PATTERN,T=PTCG_TINT;
 // soft: full-art cards keep their attack text readable, so the lower half of the card is foiled lightly.
 const r=(label,pat,o={})=>({label,pat,tint:o.tint??T.rainbow,underbase:o.underbase??0,relief:o.relief??0,sparkle:o.sparkle??0,soft:o.soft??0,note:o.note||''});
 export const PTCG_FOIL_RECIPES={
- 'ptcg-wotc-holo':r('WotC holo',P.wotc,{underbase:1,sparkle:.4,note:'1999-2001 holo: streaked starlight foil behind the Pokémon; the Pokémon itself sits on white ink.'}),
+ 'ptcg-wotc-holo':r('WotC holo',P.wotc,{underbase:1,sparkle:.4,note:'1999-2001 holo: streaked starlight foil with four-point stars on three parallax depths behind the Pokémon; the Pokémon itself sits on white ink.'}),
  'ptcg-lc-holo':r('Legendary Collection holo',P.wotc,{underbase:1,sparkle:.4,note:'WotC-style starlight holo behind the Pokémon.'}),
  'ptcg-ecard-holo':r('e-Card holo',P.crystal,{underbase:1,sparkle:.5,note:'e-Card era holo: a fine crystalline foil that breaks the light into small facets.'}),
  'ptcg-ex-holo':r('EX-era holo',P.lines,{underbase:1,note:'2003-2007 holo: fine diagonal lines sweeping behind the Pokémon.'}),
@@ -23,14 +23,14 @@ export const PTCG_FOIL_RECIPES={
  'ptcg-cosmos-reverse':r('Cosmos reverse',P.cosmos,{note:'Cosmos circles everywhere but the art.'}),
  'ptcg-pokeball':r('Poké Ball reverse',P.pokeball,{note:'Poké Ball pattern foil everywhere but the art.'}),
  'ptcg-masterball':r('Master Ball reverse',P.masterball,{note:'Master Ball pattern foil everywhere but the art.'}),
- 'ptcg-full-art':r('Full-art holo',P.sheen,{soft:1,note:'The whole card is foil, smooth.'}),
+ 'ptcg-full-art':r('Full-art holo',P.diagonal,{soft:1,note:'The whole card is foil, smooth, with a 45° rainbow band that sweeps across it.'}),
  'ptcg-textured':r('Textured full art',P.texture,{relief:.5,soft:1,note:'Embossed full art: raised grooves follow the artwork, so the light ripples around it.'}),
  'ptcg-rainbow':r('Rainbow rare',P.texture,{relief:.5,sparkle:.4,soft:1,note:'Rainbow-tinted, textured full art.'}),
  'ptcg-gold':r('Gold secret rare',P.texture,{tint:T.gold,relief:.5,soft:1,note:'Gold foil with embossed texture.'}),
  'ptcg-illustration':r('Illustration rare',P.strokes,{relief:.35,soft:1,note:'The whole illustration is foil, with texture that follows the brushwork.'}),
  'ptcg-special-illustration':r('Special illustration rare',P.strokes,{relief:.6,sparkle:.3,soft:1,note:'Heavily textured, whole-card foil that follows the brushwork.'}),
  'ptcg-shiny':r('Shiny rare',P.shiny,{relief:.3,sparkle:1,soft:1,note:'Sparkling shiny foil across the whole card.'}),
- 'ptcg-double-rare':r('Double rare ex',P.sparkle,{relief:.2,sparkle:.4,soft:1,note:'Whole-card sparkle foil with a light texture.'})
+ 'ptcg-double-rare':r('Double rare ex',P.diagonal,{sparkle:.15,soft:1,note:'Modern ex / V gloss: a smooth 45° oil-slick rainbow band sweeping across the whole card.'})
 };
 const ERA_HOLO={'pk-wotc':'ptcg-wotc-holo','pk-gym':'ptcg-wotc-holo','pk-neo':'ptcg-wotc-holo','pk-lc':'ptcg-lc-holo','pk-ecard':'ptcg-ecard-holo','pk-exa':'ptcg-ex-holo','pk-exb':'ptcg-ex-holo','pk-sv':'ptcg-sv-holo'};
 const ERA_REVERSE={'pk-lc':'ptcg-lc-reverse','pk-ecard':'ptcg-ecard-reverse','pk-sv':'ptcg-sv-reverse'};
