@@ -3,7 +3,7 @@
 // art, and full-art cards foil the whole face, textured on the eras that emboss it. Each era printed
 // its own foil sheet, so the pattern follows the set; the variant's own foil (cosmos, Poké Ball,
 // Master Ball, gold) wins when the provider names one. Approximate simulations, not physical matches.
-export const PTCG_PATTERN={wotc:1,crystal:2,lines:3,sheen:4,sparkle:5,cosmos:6,firework:7,mirror:8,pokeball:9,masterball:10,texture:11,strokes:12,shiny:13,diagonal:14};
+export const PTCG_PATTERN={wotc:1,crystal:2,lines:3,sheen:4,sparkle:5,cosmos:6,firework:7,mirror:8,pokeball:9,masterball:10,texture:11,strokes:12,shiny:13,diagonal:14,confetti:15,ancient:16};
 export const PTCG_TINT={rainbow:0,gold:1,silver:2};
 const P=PTCG_PATTERN,T=PTCG_TINT;
 // soft: full-art cards keep their attack text readable, so the lower half of the card is foiled lightly.
@@ -30,6 +30,8 @@ export const PTCG_FOIL_RECIPES={
  'ptcg-illustration':r('Illustration rare',P.strokes,{relief:.1,soft:1,strength:.6,note:'The whole illustration is foil, with texture that follows the brushwork.'}),
  'ptcg-special-illustration':r('Special illustration rare',P.strokes,{relief:.16,sparkle:.2,soft:1,strength:.65,note:'Heavily textured, whole-card foil that follows the brushwork.'}),
  'ptcg-shiny':r('Shiny rare',P.shiny,{relief:.3,sparkle:1,soft:1,note:'Sparkling shiny foil across the whole card.'}),
+ 'ptcg-confetti':r('Celebrations Classic Collection holo',P.confetti,{underbase:1,sparkle:.25,note:'Classic Collection reprints: Confetti holofoil, scattered flakes that each catch the light at their own angle, over a fine etched grain.'}),
+ 'ptcg-ancient-speckle':r('Ancient speckle holo',P.ancient,{sparkle:.3,note:'Ancient Mew: dense prismatic flecks across the whole card that light up one by one as it tilts; the printed lines and glyphs stay solid.'}),
  'ptcg-double-rare':r('Double rare ex',P.diagonal,{sparkle:.15,soft:1,note:'Modern ex / V gloss: a smooth 45° oil-slick rainbow band sweeping across the whole card.'})
 };
 const ERA_HOLO={'pk-wotc':'ptcg-wotc-holo','pk-gym':'ptcg-wotc-holo','pk-neo':'ptcg-wotc-holo','pk-lc':'ptcg-lc-holo','pk-ecard':'ptcg-ecard-holo','pk-exa':'ptcg-ex-holo','pk-exb':'ptcg-ex-holo','pk-sv':'ptcg-sv-holo'};
@@ -44,6 +46,7 @@ export function ptcgFoilEffect({finish,era='',foil='',rarity='',fullArt=false,te
   return ERA_REVERSE[era]||'ptcg-reverse';
  }
  if(finish!=='holofoil')return '';
+ if(f==='confetti')return 'ptcg-confetti';if(f==='ancient')return 'ptcg-ancient-speckle';
  if(fullArt){
   if(gold||f==='gold')return 'ptcg-gold';
   if(/specialillustration/.test(rar))return 'ptcg-special-illustration';
