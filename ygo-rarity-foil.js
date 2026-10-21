@@ -4,9 +4,12 @@
 // where a reflection grating sends light toward the viewer. One shared WebGL context draws every
 // card into ordinary 2D canvases (browsers cap live contexts at roughly 8-16). Approximate
 // simulation, not a physical-foil capture.
-import {analyzeYgoArt,YGO_ART_BOX} from './ygo-foil-analysis.js';
+import {analyzeYgoArt,YGO_LAYOUT_ART} from './ygo-foil-analysis.js';
 import {YGO_FOIL_RECIPES} from './ygo-foil-recipes.js';
 export const YGO_TEXT_BOX=[.075,.735,.925,.955],YGO_NAME_BAR=[.072,.050,.828,.108];
+// Text that foil must leave readable: Pendulum adds the scale box, Skill has a taller rules box.
+export const YGO_LAYOUT_TEXT={standard:YGO_TEXT_BOX,pendulum:[.062,.613,.938,.955],skill:[.075,.67,.925,.955]};
+const layoutOf=v=>YGO_LAYOUT_ART[v]?v:'standard';
 // A recipe needs WebGL only when it foils something besides the name (the name has its own canvas).
 export const ygoRecipeFor=effect=>{const r=YGO_FOIL_RECIPES[effect];return r&&(r.whole||r.frame||r.art)?r:null;};
 // Full-size only: medium and small gallery tiles keep the lighter CSS finish.
@@ -96,20 +99,20 @@ function readPixels(img){
  const c=img.ownerDocument.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,W,H);
  return {W,H,data:x.getImageData(0,0,W,H).data};
 }
-export function analyzeCardImage(img){
- const src=img?.currentSrc||img?.src||'';if(!src||!img.naturalWidth)return Promise.reject(Error('image not ready'));
- if(analyses.has(src))return analyses.get(src);
+export function analyzeCardImage(img,layout='standard'){
+ layout=layoutOf(layout);const src=img?.currentSrc||img?.src||'',id0=src+'|'+layout;if(!src||!img.naturalWidth)return Promise.reject(Error('image not ready'));
+ if(analyses.has(id0))return analyses.get(id0);
  const job=(async()=>{
   const {W,H,data}=readPixels(img);
-  const local=()=>{const r=analyzeYgoArt(data,W,H);return {W,H,mask:r.mask,relief:r.relief};};
+  const local=()=>{const r=analyzeYgoArt(data,W,H,YGO_LAYOUT_ART[layout]);return {W,H,mask:r.mask,relief:r.relief};};
   const w=getWorker();if(!w)return local();
   return new Promise((resolve,reject)=>{const id=++seq,copy=data.slice().buffer;
    pending.set(id,{resolve:m=>resolve({W,H,mask:new Uint8ClampedArray(m.mask),relief:new Uint8ClampedArray(m.relief)}),reject,retry:()=>{try{resolve(local());}catch(e){reject(e);}}});
-   w.postMessage({id,width:W,height:H,pixels:copy},[copy]);});
+   w.postMessage({id,width:W,height:H,pixels:copy,layout},[copy]);});
  })();
- job.catch(()=>analyses.delete(src));
+ job.catch(()=>analyses.delete(id0));
  if(analyses.size>=32)analyses.delete(analyses.keys().next().value);
- analyses.set(src,job);return job;
+ analyses.set(id0,job);return job;
 }
 // ---- shared renderer ----
 let shared=null;
@@ -122,7 +125,7 @@ function renderer(doc){
  gl.useProgram(prog);gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
  const loc=gl.getAttribLocation(prog,'a');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
  const U={};for(const n of ['u_card','u_mask','u_relief','u_tilt','u_px','u_texel','u_aspect','u_art','u_name','u_text','u_whole','u_frame','u_artL','u_stars'])U[n]=gl.getUniformLocation(prog,n);
- gl.uniform1i(U.u_card,0);gl.uniform1i(U.u_mask,1);gl.uniform1i(U.u_relief,2);gl.uniform4f(U.u_art,...YGO_ART_BOX);gl.uniform4f(U.u_name,...YGO_NAME_BAR);gl.uniform4f(U.u_text,...YGO_TEXT_BOX);
+ gl.uniform1i(U.u_card,0);gl.uniform1i(U.u_mask,1);gl.uniform1i(U.u_relief,2);gl.uniform4f(U.u_name,...YGO_NAME_BAR);
  shared={canvas,gl,U,maps:new Map(),cards:new Map(),lost:false};
  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();shared.lost=true;for(const h of handles)h.fallback();});
  return shared;
@@ -148,9 +151,9 @@ function lru(map,key,make,limit,gl){if(map.has(key)){const v=map.get(key);map.de
  const v=make();map.set(key,v);return v;}
 // Data maps use power-of-two mipmaps (smooth at any size). The card image is resampled once per
 // display size by the browser's own scaler and sampled 1:1, so it is exactly as sharp as the <img>.
-function bindTextures(r,img,a,w,h){
+function bindTextures(r,img,a,w,h,layout){
  const {gl}=r,src=img.currentSrc||img.src,doc=img.ownerDocument;
- const maps=lru(r.maps,src,()=>[a.mask,a.relief].map(bytes=>texture(gl,potData(bytes,a.W,a.H),true)),12,gl);
+ const maps=lru(r.maps,src+'|'+layout,()=>[a.mask,a.relief].map(bytes=>texture(gl,potData(bytes,a.W,a.H),true)),12,gl);
  const card=lru(r.cards,src+'|'+w+'x'+h,()=>{const c=doc.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(img,0,0,w,h);return texture(gl,c,false);},8,gl);
  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,card);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maps[0]);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,maps[1]);
 }
@@ -160,7 +163,8 @@ function tick(){ticking=0;let again=false;for(const h of handles){h.draw();if(h.
 const kick=()=>{if(!ticking&&typeof requestAnimationFrame!=='undefined')ticking=requestAnimationFrame(tick);};
 // Returns a handle, or null when this surface keeps the CSS finish (unsupported rarity, no WebGL).
 // The CSS layers stay underneath and come back automatically if the card shrinks or analysis fails.
-export function mountYgoRarityFoil(overlay,img,effect,{surface='detail',gridSize=()=>globalThis.document?.documentElement?.dataset.gridSize}={}){
+export function mountYgoRarityFoil(overlay,img,effect,{surface='detail',layout='standard',gridSize=()=>globalThis.document?.documentElement?.dataset.gridSize}={}){
+ layout=layoutOf(layout);
  const recipe=ygoRecipeFor(effect);if(!recipe||!overlay||!img)return null;
  const doc=overlay.ownerDocument;if(!renderer(doc))return null;
  const canvas=doc.createElement('canvas');canvas.className='finish-rarity-gl';canvas.setAttribute('aria-hidden','true');canvas.hidden=true;overlay.prepend(canvas);
@@ -174,7 +178,7 @@ export function mountYgoRarityFoil(overlay,img,effect,{surface='detail',gridSize
    const css=globalThis.getComputedStyle?.(overlay),lx=pct(css?.getPropertyValue('--finish-x')),ly=pct(css?.getPropertyValue('--finish-y')),key=[lx.toFixed(4),ly.toFixed(4),w,hh,img.currentSrc].join();
    if(key===last&&!canvas.hidden)return;last=key;
    const {gl,U}=r;if(r.canvas.width!==w||r.canvas.height!==hh){r.canvas.width=w;r.canvas.height=hh;}
-   bindTextures(r,img,analysis,w,hh);
+   bindTextures(r,img,analysis,w,hh,layout);gl.uniform4f(U.u_art,...YGO_LAYOUT_ART[layout]);gl.uniform4f(U.u_text,...YGO_LAYOUT_TEXT[layout]);
    gl.viewport(0,0,w,hh);gl.uniform2f(U.u_tilt,(lx-.5)*2,(ly-.5)*2);gl.uniform2f(U.u_px,w,hh);gl.uniform2f(U.u_texel,1/analysis.W,1/analysis.H);gl.uniform1f(U.u_aspect,img.naturalHeight/img.naturalWidth);gl.uniform3f(U.u_whole,...(recipe.whole||[0,0,0]));gl.uniform3f(U.u_frame,...(recipe.frame||[0,0,0]));gl.uniform3f(U.u_artL,...(recipe.art||[0,0,0]));gl.uniform1f(U.u_stars,recipe.stars?1:0);
    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
    if(canvas.width!==w||canvas.height!==hh){canvas.width=w;canvas.height=hh;}
@@ -192,6 +196,6 @@ export function mountYgoRarityFoil(overlay,img,effect,{surface='detail',gridSize
  for(let n=overlay.parentElement;n&&n!==doc.documentElement;n=n.parentElement)mo?.observe(n,{attributes:true,attributeFilter:['style','class']});
  mo?.observe(doc.documentElement,{attributes:true,attributeFilter:['data-grid-size']});
  const ro=typeof ResizeObserver==='undefined'?null:new ResizeObserver(()=>{h.draw();kick();});ro?.observe(overlay);
- analyzeCardImage(img).then(a=>{if(dead)return;analysis=a;h.draw();kick();}).catch(()=>{});
+ analyzeCardImage(img,layout).then(a=>{if(dead)return;analysis=a;h.draw();kick();}).catch(()=>{});
  return h;
 }

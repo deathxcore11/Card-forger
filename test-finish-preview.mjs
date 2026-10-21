@@ -65,7 +65,8 @@ assert.equal(yp('Prismatic Secret Rare').layers[0].material,'prismatic');assert.
 // Owner-approved recipe (3.86.9): Quarter Century is simulated from its recipe; no watermark is drawn.
 assert.equal(yp('Quarter Century Secret Rare').effect,'ygo-quarter-century');assert.deepEqual(yp('Quarter Century Secret Rare').layers,[{mask:'ygo-art',material:'secret'},{mask:'ygo-name',material:'platinum'}]);
 assert.equal(yp('Grand Master Rare').status,'unknown','An unreviewed rarity still never borrows a look');
-assert.equal(finishEffect('ygo',{...ygo,typeLine:'Pendulum Effect Monster'},{priceEdition:'FIXTURE-001::Super Rare'}),'unknown');
+{const p=resolveFinish('ygo',{...ygo,typeLine:'Pendulum Effect Monster'},{priceEdition:'FIXTURE-001::Super Rare'});assert.equal(p.effect,'ygo-super');assert.equal(p.layout,'pendulum');assert.deepEqual(p.layers.map(l=>l.mask),['ygo-art-pendulum'],'Pendulum foil uses the measured Pendulum art window');}
+assert.equal(finishEffect('ygo',{...ygo,typeLine:'Rush Effect Monster'},{priceEdition:'FIXTURE-001::Super Rare'}),'unknown');
 assert(!selectPreviewFinish('ygo',ygo,{},'Ultra Rare'));
 const exact={...magic,finishPresentations:[{game:'mtg',printingId:'m',finish:'foil',face:1,status:'verified',source:'https://example.test/reference',effectPreset:'back-frame',layers:[{mask:'mtg-frame',material:'metal'}]}]};
 assert.equal(finishEffect('mtg',exact,{priceFinish:'foil',face:1}),'back-frame');assert.equal(finishEffect('mtg',exact,{priceFinish:'foil',face:0}),'mtg-foil');

@@ -1,10 +1,10 @@
 // Yu-Gi-Oh! rarity foil: full-size gating, the white-underbase estimate (subject vs background),
 // and the shader's coverage rules. Pixel rendering is covered by the hosted browser test.
 import assert from 'node:assert/strict';
-import {analyzeYgoArt,YGO_ART_BOX} from './ygo-foil-analysis.js';
+import {analyzeYgoArt,YGO_ART_BOX,YGO_LAYOUT_ART} from './ygo-foil-analysis.js';
 import {ygoFoilFullSize,ygoRecipeFor,YGO_RARITY_FRAGMENT,YGO_FULL_SIZE_PX} from './ygo-rarity-foil.js';
 import {YGO_FOIL_RECIPES,ygoRarityEffect} from './ygo-foil-recipes.js';
-import {resolveFinish} from './finish-effects.js';
+import {resolveFinish,FINISH_MASKS} from './finish-effects.js';
 import {ygoDeckFinishContext} from './tcg.js';
 // Size gate: card page and zoom always; gallery cards only at Large or when drawn wide.
 assert.equal(ygoFoilFullSize('detail',120,'small'),true);assert.equal(ygoFoilFullSize('zoom',90,'medium'),true);
@@ -44,6 +44,19 @@ assert.equal(at(W/2,H*.85),0,'Nothing outside the art window is marked');
 const trap=px.slice();for(let y=0;y<H;y++)for(let x=0;x<W;x++){const art=x>=ax0&&x<ax1&&y>=ay0&&y<ay1;if(!art)trap.set([168,66,128,255],(y*W+x)*4);}
 const t=analyzeYgoArt(trap,W,H);assert.equal(t.spellTrap,true);assert(t.mask[(Math.round(cy-8)*W+Math.round(cx))*4]>110,'Trap art passes foil across the centre too');
 assert.equal(analyzeYgoArt(px,W,H).spellTrap,false,'Monster frames are not Spell/Trap');
+// Layouts: Tokens use the standard window; Pendulum and Skill cards carry their own measured art
+// window (CSS mask and WebGL box agree); Rush Duel stays unavailable.
+const framed=(frame,r)=>resolveFinish('ygo',{...ygoCard(r),frame},{priceEdition:'X-EN001::'+r});
+assert.equal(framed('token','Ultra Rare').layout,undefined,'Tokens use the standard layout');assert.equal(framed('token','Ultra Rare').layers[0].mask,'ygo-art');
+for(const [frame,layout] of [['effect_pendulum','pendulum'],['xyz_pendulum','pendulum'],['skill','skill']])for(const r of ['Super Rare','Secret Rare','Gold Rare','Starlight Rare']){
+ const p=framed(frame,r);assert.equal(p.status,'approximate',frame+' '+r);assert.equal(p.layout,layout,frame+' '+r);
+ for(const l of p.layers)if(/^ygo-art/.test(l.mask)){assert.equal(l.mask,'ygo-art-'+layout);const [t,ri,b,le]=FINISH_MASKS[l.mask].match(/[\d.]+/g).map(Number),box=YGO_LAYOUT_ART[layout];
+  for(const [got,want] of [[t,box[1]*100],[ri,100-box[2]*100],[b,100-box[3]*100],[le,box[0]*100]])assert(Math.abs(got-want)<.05,`${l.mask} matches the WebGL box`);}}
+assert.equal(resolveFinish('ygo',{...ygoCard('Ultra Rare'),frame:'rush'},{priceEdition:'X-EN001::Ultra Rare'}).status,'unknown','Rush Duel stays unavailable');
+// A Pendulum's teal lower border is not a Spell frame.
+const pend=px.slice(),PB=YGO_LAYOUT_ART.pendulum;for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(x>=PB[0]*W&&x<PB[2]*W&&y>=PB[1]*H&&y<PB[3]*H)continue;pend.set(y>H*.5?[50,160,145,255]:[200,110,60,255],(y*W+x)*4);}
+assert.equal(analyzeYgoArt(pend,W,H,PB).spellTrap,false,'Pendulum frames never get Spell/Trap coverage');
+assert.equal(analyzeYgoArt(trap,W,H,YGO_LAYOUT_ART.skill).spellTrap,false,'Skill frames never get Spell/Trap coverage');
 // Shader: text box only touched by Starlight (whole-card glitter, reduced over the rules);
 // coverage otherwise comes from the art mask.
 assert.match(YGO_RARITY_FRAGMENT,/float cov=art\*\(u_artL\.z>1\.5\?1\.:mk\.r\)/,'Art foil follows the underbase mask unless the recipe covers the whole art');
@@ -57,4 +70,4 @@ assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,{printingKey:'GLD1-EN001::G
 assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,null,own(['LOB-005','Ultra Rare'],['LOB-005','Ultra Rare'])),{priceEdition:'LOB-005::Ultra Rare'});
 assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,null,own(['LOB-005','Ultra Rare'],['SDY-006','Common'])),{},'Mixed owned printings never pick one');
 assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,null,own()),{});assert.deepEqual(ygoDeckFinishContext('ptcg',deckCard,null,own(['LOB-005','Ultra Rare'])),{});
-console.log('PASS: every Yu-Gi-Oh! foil rarity in the catalogue resolves to a recipe; full-size gating; cropped subjects stay solid while backgrounds and glows pass foil; rules box only shared by whole-card recipes.');
+console.log('PASS: every Yu-Gi-Oh! foil rarity in the catalogue resolves to a recipe; full-size gating; cropped subjects stay solid while backgrounds and glows pass foil; rules box only shared by whole-card recipes; Pendulum/Skill/Token layouts mapped.');

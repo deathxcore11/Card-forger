@@ -43,7 +43,7 @@ function ygoRarityRail(c,ctx,p){
  const {options,selected}=ygoRarityOptions(c,ctx);if(!options.length)return '';
  const chosen=options.find(o=>o.rarity===selected),quote=chosen&&quoteForContext('ygo',c,ctx);
  const foot=chosen?`${chosen.rarity} · ${quote?.printing?.code||''} ${quote?.printing?.name||''}${chosen.count>1?` · ${chosen.count} ${chosen.label} printings, pick the exact one in Printing & rarity`:''}`:`${options.length} ${options.length===1?'rarity':'rarities'} · tap one to see its shine`;
- return `<div class="finish-preview ygo-rarity-preview" role="group" aria-label="Rarity"><span class="small muted">Rarity</span><span class="finish-choice-hint small muted" hidden aria-hidden="true">Scroll ↔</span><div class="finish-choice-rail" tabindex="0" aria-label="Rarities this card was printed in, scroll horizontally">${options.map(o=>`<button type="button" class="chip ygo-rarity-chip${o.rarity===selected?' on':''}" data-act="ygoPickRarity" data-card-id="${esc(c.id)}" data-edition="${esc(o.key)}" aria-pressed="${o.rarity===selected}" aria-label="${esc(o.rarity)}, ${o.count} ${o.count===1?'printing':'printings'}"><span class="rarity-swatch rarity-swatch-${o.swatch}" aria-hidden="true"></span>${esc(o.label)}${o.count>1?`<small aria-hidden="true">${o.count}</small>`:''}</button>`).join('')}</div><p class="foot" role="status">${esc(foot.trim())}${chosen&&p.effect!=='plain'&&p.status!=='unknown'?' · '+esc(p.reason||'Simulated finish'):''}</p></div>`;
+ return `<div class="finish-preview ygo-rarity-preview" role="group" aria-label="Rarity"><span class="small muted">Rarity</span><div class="finish-choice-rail ygo-rarity-chips" aria-label="Rarities this card was printed in">${options.map(o=>`<button type="button" class="chip ygo-rarity-chip${o.rarity===selected?' on':''}" data-act="ygoPickRarity" data-card-id="${esc(c.id)}" data-edition="${esc(o.key)}" aria-pressed="${o.rarity===selected}" aria-label="${esc(o.rarity)}, ${o.count} ${o.count===1?'printing':'printings'}"><span class="rarity-swatch rarity-swatch-${o.swatch}" aria-hidden="true"></span>${esc(o.label)}${o.count>1?`<small aria-hidden="true">${o.count}</small>`:''}</button>`).join('')}</div><p class="foot" role="status">${esc(foot.trim())}${chosen&&p.effect!=='plain'&&p.status!=='unknown'?' · '+esc(p.reason||'Simulated finish'):''}</p></div>`;
 }
 export function finishPreview(game,c,ctx={}){
  const choices=finishChoices(game,c,ctx),p=resolveFinish(game,c,ctx);
@@ -128,7 +128,7 @@ export function attachFinishPreview(root){
   if(hasFinishPattern(p.materialProfile)&&FINISH_MASKS[layers[0]?.mask]){const pattern=img.ownerDocument.createElement('span');pattern.className='finish-pattern';pattern.style.clipPath=FINISH_MASKS[layers[0].mask];overlay.append(pattern);}
   host.append(overlay);mounted.set(el,{img,host,overlay,model:el.dataset.finishModel,src:img.currentSrc});ro?.observe(img);size(el);
   // Full-size Yu-Gi-Oh! cards get the WebGL rarity foil; the CSS layers stay beneath as the fallback.
-  if(p.game==='ygo')mounted.get(el).rarityFoil=mountYgoRarityFoil(overlay,img,p.effect,{surface:el.dataset.finishSurface});
+  if(p.game==='ygo')mounted.get(el).rarityFoil=mountYgoRarityFoil(overlay,img,p.effect,{surface:el.dataset.finishSurface,layout:p.layout});
   const nameLayer=p.game==='ygo'&&(p.layers||[]).find(l=>l.mask==='ygo-name'),nameMask=nameLayer?ygoNameMask(img):null;
   if(nameMask){
    // Letters from this exact image replace the title-band placeholder; the art foil layers are unchanged.

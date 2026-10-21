@@ -3,6 +3,8 @@
 // image has no layers, so this estimates where the underbase was left out: background reached
 // from the art border without crossing an outline, plus coloured glows. Pure: no DOM.
 export const YGO_ART_BOX=[.1205,.1845,.8795,.7035];
+// Pendulum art is wider and stops at the scale box; Skill art stops above a taller rules box (measured).
+export const YGO_LAYOUT_ART={standard:YGO_ART_BOX,pendulum:[.066,.183,.934,.609],skill:[.118,.174,.882,.662]};
 const ss=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t);};
 export function boxBlur(src,w,h,r,passes=2){
  let a=Float32Array.from(src),b=new Float32Array(a.length);
@@ -20,10 +22,10 @@ export function boxBlur(src,w,h,r,passes=2){
 // Returns two RGBA byte maps the size of the input:
 //  mask   R foil-through, G coloured energy, B level stars (1) / attribute orb (.6)
 //  relief R smoothed brightness, G/B stroke direction (cos 2θ, sin 2θ), A stroke strength
-export function analyzeYgoArt(rgba,W,H){
+export function analyzeYgoArt(rgba,W,H,box=YGO_ART_BOX){
  const N=W*H,r=new Float32Array(N),g=new Float32Array(N),b=new Float32Array(N),lum=new Float32Array(N);
  for(let i=0;i<N;i++){r[i]=rgba[i*4]/255;g[i]=rgba[i*4+1]/255;b[i]=rgba[i*4+2]/255;lum[i]=.2126*r[i]+.7152*g[i]+.0722*b[i];}
- const ax0=Math.round(YGO_ART_BOX[0]*W)+1,ay0=Math.round(YGO_ART_BOX[1]*H)+1,ax1=Math.round(YGO_ART_BOX[2]*W)-1,ay1=Math.round(YGO_ART_BOX[3]*H)-1;
+ const ax0=Math.round(box[0]*W)+1,ay0=Math.round(box[1]*H)+1,ax1=Math.round(box[2]*W)-1,ay1=Math.round(box[3]*H)-1;
  const aw=ax1-ax0,ah=ay1-ay0,AN=aw*ah,at=(i,j)=>(ay0+j)*W+ax0+i;
  const mask=new Uint8ClampedArray(N*4),relief=new Uint8ClampedArray(N*4);
  if(aw<16||ah<16)return {mask,relief};
@@ -79,12 +81,13 @@ export function analyzeYgoArt(rgba,W,H){
   pass[k]=Math.max(bg,en)*(1-(1-ss(.06,.2,lum[k]))*.85);energy[k]=en;
  }
  // Spells and Traps have no monster: their whole illustration is effect art. Their frames are teal
- // (Spell) or magenta (Trap), read from the left border, so they get broad coverage instead.
+ // (Spell) or magenta (Trap), read from the left border, so they get broad coverage instead. Only the
+ // standard layout has Spells and Traps; Pendulum and Skill borders are teal or blue but hold monsters.
  let fr=0,fg=0,fb=0,fn=0;
  for(let j=Math.round(.3*H);j<Math.round(.7*H);j+=2)for(let i=Math.round(.03*W);i<Math.round(.06*W);i++){const k=j*W+i;fr+=r[k];fg+=g[k];fb+=b[k];fn++;}
  fr/=fn;fg/=fn;fb/=fn;
  // Measured: Spell teal (.20,.63,.57), Trap magenta (.66,.26,.50); Fusion violet (.57,.35,.61) has blue above red.
- const spellTrap=(fg>fr+.3&&fb>fr+.25)||(fr>fg+.25&&fr>fb+.08);
+ const spellTrap=box===YGO_ART_BOX&&((fg>fr+.3&&fb>fr+.25)||(fr>fg+.25&&fr>fb+.08));
  if(spellTrap)for(let j=0;j<ah;j++)for(let i=0;i<aw;i++){const k=at(i,j);pass[k]=Math.max(pass[k],.55*(1-(1-ss(.06,.2,lum[k]))*.85));}
  const passS=boxBlur(pass,W,H,1,1);
  // Level stars (saturated red/orange orbs under the name) and the attribute orb.

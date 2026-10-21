@@ -123,7 +123,9 @@
 .finish-overlay[data-material-profile="nec77-etched"] .finish-metal::after{background:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f6eee055,transparent 56%);opacity:.3}
 .finish-overlay[data-material-profile="nec77-etched"] .finish-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#eee5d177,transparent 56%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.34}
 /* Yu-Gi-Oh! rarity row: each chip carries a small swatch of its foil; the count shows how many printings share it. */
-.ygo-rarity-chip{display:inline-flex;align-items:center;gap:.4rem}
+/* Chips wrap rather than scroll so every rarity stays in view at any width. */
+.finish-choice-rail.ygo-rarity-chips{flex-wrap:wrap;overflow:visible}
+.ygo-rarity-chip{display:inline-flex;align-items:center;gap:.4rem;min-height:44px;max-width:100%;white-space:nowrap}
 .ygo-rarity-chip small{font-size:11px;line-height:1;padding:2px 6px;border-radius:999px;background:color-mix(in srgb,currentColor 14%,transparent);opacity:.85}
 .rarity-swatch{flex:0 0 auto;width:16px;height:16px;border-radius:5px;border:1px solid color-mix(in srgb,currentColor 30%,transparent);background:#8b8f96}
 .rarity-swatch-plain{background:linear-gradient(135deg,#6f737a,#9a9ea6)}
