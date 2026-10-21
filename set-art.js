@@ -11,3 +11,25 @@ export async function magicSetArtwork(code,fetcher=fetch){
  const product=(await catalogPromise).get(code.toLowerCase());
  return product?{url:`https://tcgplayer-cdn.tcgplayer.com/product/${product.identifiers.tcgplayerProductId}_200w.jpg`,name:product.name}:null;
 }
+// Booster pack artwork for the pack opener: the set's single booster pack product on TCGplayer
+// (via tcgcsv's public catalogue), never a box, bundle, sleeved pack or other sealed product.
+const PACK_CATEGORY={mtg:1,ygo:2,ptcg:3},packKey=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+export function selectPackProduct(products,setName){
+ const key=packKey(setName),packs=(products||[]).filter(p=>/booster pack/i.test(p.name)&&!/box|display|case|bundle|blister|sleeved|lot|code card|collection|tin|deck|art set/i.test(p.name)&&/^https:\/\/tcgplayer-cdn\.tcgplayer\.com\/product\/\d+_/.test(p.imageUrl||''));
+ const rank=p=>packKey(p.name)===key+'boosterpack'?0:/play booster pack/i.test(p.name)?1:/draft booster pack/i.test(p.name)?2:/1st edition/i.test(p.name)?3:/set booster pack/i.test(p.name)?4:/collector/i.test(p.name)?6:5;
+ return packs.sort((a,b)=>rank(a)-rank(b)||a.name.length-b.name.length)[0]||null;
+}
+export function selectPackGroup(groups,{code='',name=''}={},game=''){
+ const key=packKey(name),abbr=String(code).toLowerCase();
+ const hits=(groups||[]).filter(g=>game==='mtg'&&abbr&&String(g.abbreviation||'').toLowerCase()===abbr||key&&(packKey(g.name)===key||packKey(g.name).endsWith(key)));
+ return hits.sort((a,b)=>(packKey(a.name)===key?0:1)-(packKey(b.name)===key?0:1)||a.name.length-b.name.length)[0]||null;
+}
+const packGroups=new Map();
+export async function packArtwork(game,set,fetcher=fetch){
+ const cat=PACK_CATEGORY[game];if(!cat)return null;
+ const get=u=>fetcher(u,{headers:{'User-Agent':'CardStashy/3.89 (booster pack artwork)',Accept:'application/json'},signal:AbortSignal.timeout(15000)}).then(r=>{if(!r.ok)throw Error('Pack catalogue unavailable');return r.json();});
+ const memo=packGroups.get(cat);if(!memo||Date.now()-memo.at>864e5)packGroups.set(cat,{at:Date.now(),groups:get(`https://tcgcsv.com/tcgplayer/${cat}/groups`).then(d=>d.results||[]).catch(e=>{packGroups.delete(cat);throw e;})});
+ const group=selectPackGroup(await packGroups.get(cat).groups,set,game);if(!group)return null;
+ const product=selectPackProduct((await get(`https://tcgcsv.com/tcgplayer/${cat}/${group.groupId}/products`)).results,set.name||group.name);
+ return product?{url:product.imageUrl.replace(/_\d+w\.jpg$/,'_400w.jpg'),name:product.name}:null;
+}

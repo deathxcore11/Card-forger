@@ -15,7 +15,7 @@ import {archivePriceRoute} from "./historical-archive.js";
 import {pokemonPriceRoute} from "./pokemon-prices.js";
 import {mtgTcgPriceRoute} from "./mtg-tcg-route.js";
 import {pokemonArtRoute, tcgplayerSetsRoute} from "./pokemon-art.js";
-import {magicSetArtwork} from "./set-art.js";
+import {magicSetArtwork,packArtwork} from "./set-art.js";
 import { watchRoute, historyRoute, recordDailyPrices } from "./pricefeed.js";
 import { TOPDECK_API, TOPDECK_FORMATS, WARM_FORMATS, normalizeTopdeck, topdeckBody } from "./topdeck.js";
 import { MTGO_SLUGS, MTGO_INDEX, mtgoEventSlugs, parseMtgoEvent, normalizeMtgo, EDHTOP16_API, edhtop16Query, normalizeEdhtop16 } from "./mtgmeta.js";
@@ -192,6 +192,17 @@ export default {
     if (url.pathname === "/api/ai/deck-review") return aiReviewRoute(request, env);
     if (url.pathname === "/api/ai/ask") return aiAskRoute(request, env);
     if (url.pathname === "/api/ai/identify-card") return scanIdentifyRoute(request, env);
+    // Booster pack artwork for the pack opener, served same-origin and cached for a month.
+    const packImage=url.pathname.match(/^\/img\/pack\/(mtg|ptcg|ygo)\.jpg$/);
+    if(packImage){
+      const code=url.searchParams.get('code')||'',name=url.searchParams.get('name')||'';
+      if(!/^[a-z0-9]{0,8}$/i.test(code)||name.length>120||!(code||name))return new Response('Invalid set',{status:400});
+      const hit=await caches.default.match(request);if(hit)return hit;
+      try{const art=await packArtwork(packImage[1],{code,name});if(!art)return new Response('No pack artwork',{status:404,headers:{'Cache-Control':'public, max-age=86400'}});
+        const upstream=await fetch(art.url,{signal:AbortSignal.timeout(15000)});if(!upstream.ok)return new Response('Pack artwork unavailable',{status:404});
+        const res=new Response(upstream.body,{headers:{'Content-Type':upstream.headers.get('Content-Type')||'image/jpeg','Cache-Control':`public, max-age=${MONTH}`,'X-Art-Source':'tcgcsv / TCGplayer','Access-Control-Allow-Origin':'*'}});ctx.waitUntil(caches.default.put(request,res.clone()));return res;
+      }catch{return new Response('Pack artwork unavailable',{status:503,headers:{'Cache-Control':'no-store'}});}
+    }
     const setImage=url.pathname.match(/^\/img\/mtg-set\/([a-z0-9]{2,8})\.jpg$/i);
     if(setImage){
       const hit=await caches.default.match(request);if(hit)return hit;

@@ -78,7 +78,7 @@ export function containedImageBox(width,height,naturalWidth,naturalHeight){
 }
 export function finishEligible(el){
  if(!el?.dataset?.finishSurface||el.hidden||el.closest?.('[hidden]'))return false;
- return el.dataset.finishSurface==='detail'||el.dataset.finishSurface==='zoom'||(el.dataset.finishSurface==='large'&&!!el.closest?.('.view-gallery')&&!el.closest?.('.view-compact,.view-symbols'));
+ return el.dataset.finishSurface==='detail'||el.dataset.finishSurface==='zoom'||el.dataset.finishSurface==='pack'||(el.dataset.finishSurface==='large'&&!!el.closest?.('.view-gallery')&&!el.closest?.('.view-compact,.view-symbols'));
 }
 function modelOf(el){try{return JSON.parse(el.dataset.finishModel||'{}');}catch{return {};}}
 // Per-image maps must never paint a later fallback or custom scan they were not measured on.

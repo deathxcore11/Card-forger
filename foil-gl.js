@@ -1,8 +1,9 @@
 // Shared WebGL plumbing for the foil renderers (Yu-Gi-Oh! rarity foil, Magic foil): data-map upload,
 // texture caches, analysis worker, canvas lifecycle and one throttled redraw loop for every card.
-// Every finish surface draws the WebGL foil: the card page, zoom, and gallery cards at every size.
+// Every finish surface draws the WebGL foil: the card page, zoom, gallery cards at every size and
+// cards pulled in the pack opener.
 // The lighter CSS finish is only the fallback when WebGL or the card's analysis is unavailable.
-export const FOIL_SURFACES=['detail','zoom','large'];
+export const FOIL_SURFACES=['detail','zoom','large','pack'];
 export const foilSurface=surface=>FOIL_SURFACES.includes(surface);
 export const FOIL_VS='attribute vec2 a;varying vec2 v;void main(){v=(a+1.0)*.5;gl_Position=vec4(a,0.0,1.0);}';
 // One full-screen quad program; returns null when the context or shader is unavailable.
@@ -115,7 +116,7 @@ export function mountFoilCanvas(overlay,{source,key,surface='detail',program,ana
  const fail=()=>{canvas.hidden=true;overlay.classList.remove('rarity-gl');};
  const h={
   draw(){
-   if(dead||!data||!img)return;if(r0.lost)return fail();
+   if(dead||!data||!img?.naturalWidth)return;if(r0.lost)return fail();
    const dpr=Math.min(2,globalThis.devicePixelRatio||1),w=Math.max(1,Math.min(1600,Math.round(overlay.clientWidth*dpr))),hh=Math.max(1,Math.round(w*img.naturalHeight/img.naturalWidth));
    const [lx,ly]=foilLight(overlay),id=[lx.toFixed(4),ly.toFixed(4),w,hh,key].join();
    if(id===last&&!canvas.hidden)return;last=id;
