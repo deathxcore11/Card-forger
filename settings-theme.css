@@ -223,3 +223,5 @@
 
 /* A tab's icon and label are decoration: taps and clicks always land on the tab itself. */
 .settings-tabs [role="tab"]>*{pointer-events:none}
+/* The narrowest phones keep every label on one line in a swipeable rail instead of squeezing a grid. */
+@media(max-width:360px){.settings-page .settings-tabs{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:max-content;scroll-snap-type:x proximity}.settings-page .settings-tabs button{white-space:nowrap;padding-inline:13px;scroll-snap-align:start}}
