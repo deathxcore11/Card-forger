@@ -7,7 +7,7 @@ const {chromium}=await import('playwright'),server=await startServer(),browser=a
 await mkdir('test-results',{recursive:true});
 try{
  for(const game of ['mtg','ptcg','ygo'])for(const width of [320,390,768,1440]){
-  const app=await openSearchApp(browser,server.base,{game,width,height:1000,hasTouch:width<1000,providerOverride:url=>url.pathname.startsWith('/img/mtg-set/')?{body:'<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300"><rect width="200" height="300" fill="#49395f"/></svg>',contentType:'image/svg+xml'}:undefined}),{page}=app;
+  const app=await openSearchApp(browser,server.base,{game,width,height:1000,hasTouch:width<1000,providerOverride:url=>/^\/img\/(?:mtg-set|back)\//.test(url.pathname)?{body:'<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300"><rect width="200" height="300" fill="#49395f"/></svg>',contentType:'image/svg+xml'}:undefined}),{page}=app;
   try{
    await page.emulateMedia({reducedMotion:'no-preference'});
    await page.evaluate(async({game})=>{

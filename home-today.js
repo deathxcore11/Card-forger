@@ -35,10 +35,9 @@ export function homeTodayMarkup(g,h){
  <span class="today-card" data-act="homeTodayCard" aria-hidden="true"><span class="today-card-face"><img alt="" referrerpolicy="no-referrer" hidden></span><span class="today-card-glow"></span></span>
  <div class="today-body"><div class="today-head"><p class="eyebrow">Today</p><h2>${esc(h.name)}</h2><p class="today-sub muted">Card of the Day</p></div><div class="today-set" aria-live="polite"><span class="today-shimmer" aria-hidden="true"></span></div></div></section>`;
 }
-// progress(g,set) returns setProgressMarkup-ready numbers for the release (or null).
-export function todaySetMarkup(g,set,{progressHtml='',rarity=''}={}){
+export function todaySetMarkup(g,set,{rarity=''}={}){
  if(!set)return `<p class="today-sub muted">${esc(rarity)}</p>`;
  const pack=packEligible(g,set)?packArtUrl(g,set):'';
  return `<div class="today-set-row${pack?'':' no-pack'}">${pack?`<button class="today-pack" data-act="homeTodayPack" data-game="${g}" aria-label="Open today’s ${esc(set.name)} pack"><img src="${esc(safeHref(pack))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.today-set-row').classList.add('no-pack');this.closest('.today-pack').remove()"><span class="today-pack-label">Open today’s pack</span></button>`:''}
- <div class="today-set-info"><p class="eyebrow">Set of the Day</p><button class="today-set-name" ${setAction(g,set)}>${set.logo?`<img src="${esc(safeHref(set.logo))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<b>${esc(set.name)}</b></button>${rarity?`<span class="muted small">Today’s card is ${esc(rarity)} here</span>`:''}${progressHtml}</div></div>`;
+ <div class="today-set-info"><p class="eyebrow">Set of the Day</p><button class="today-set-name" ${setAction(g,set)}>${set.logo?`<img src="${esc(safeHref(set.logo))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<b>${esc(set.name)}</b></button>${rarity?`<span class="today-rarity">${esc(rarity)}</span>`:''}</div></div>`;
 }

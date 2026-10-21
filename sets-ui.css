@@ -108,7 +108,7 @@ body:not(.glass) .set-atmosphere{display:none}
 
 /* Pack opening: tear the real booster open, the cards deal out into a fanned hand, and the focused
    card flips up large with its real foil. Every control stays inside the dialog at any width. */
-.pack-dialog{--card-w:min(64vw,300px);width:min(760px,calc(100% - 20px));max-height:calc(100dvh - 20px);box-sizing:border-box;padding:18px 20px 20px;border:1px solid var(--line);border-radius:26px;background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--gold) 9%,var(--bg)),var(--bg) 60%);color:var(--text);overflow:auto;overflow-x:hidden;overscroll-behavior:contain}
+.pack-dialog{--card-w:min(82vw,380px,calc((100dvh - 340px)*63/88));width:min(860px,calc(100% - 20px));max-height:calc(100dvh - 20px);box-sizing:border-box;padding:18px 20px 20px;border:1px solid var(--line);border-radius:26px;background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--gold) 9%,var(--bg)),var(--bg) 60%);color:var(--text);overflow:auto;overflow-x:hidden;overscroll-behavior:contain}
 .pack-dialog:focus{outline:none}.pack-dialog::backdrop{background:#05060be6;backdrop-filter:blur(16px)}
 .pack-header{display:flex;align-items:flex-start;gap:12px}.pack-header>div{flex:1;min-width:0}.pack-header h2{margin:2px 0 0;overflow-wrap:anywhere;font-size:clamp(18px,3vw,26px);letter-spacing:.01em}
 .pack-explanation{margin:4px 0 0;font-size:11px;color:var(--muted);line-height:1.5;opacity:.8}
@@ -131,8 +131,9 @@ body:not(.glass) .set-atmosphere{display:none}
 .pack-focus-card:focus-visible{outline:2px solid var(--gold);outline-offset:6px}
 .pack-focus-meta{display:grid;justify-items:center;gap:2px;margin:0;min-height:2.6em;text-align:center}.pack-focus-meta>b{font-size:15px}.pack-focus-meta>span{font-size:12px;color:var(--muted)}
 .pack-card-back{display:grid;place-items:center;background:radial-gradient(ellipse at 50% 30%,#4a4256,#16161e 72%);box-shadow:inset 0 0 0 3px #b39ae655,inset 0 0 0 7px #0006}.pack-card-back>svg{width:58%;height:auto;filter:drop-shadow(0 4px 10px #000a)}
-.pack-hand{position:relative;height:calc(min(17vw,92px)*88/63 + 26px);margin:0 24px}
-.pack-card{--w:min(17vw,92px);--n:10;position:absolute;left:calc(var(--i)*(100% - var(--w))/(var(--n) - 1));bottom:0;display:grid;width:var(--w);aspect-ratio:63/88;padding:0;border:0;border-radius:6px;background:none;cursor:pointer;transform-origin:50% 100%;z-index:calc(20 - var(--i));
+.pack-card-back{position:relative}.pack-back-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.pack-hand{position:relative;height:calc(min(24vw,128px)*88/63 + 26px);margin:0 18px}
+.pack-card{--w:min(24vw,128px);--n:10;position:absolute;left:calc(var(--i)*(100% - var(--w))/(var(--n) - 1));bottom:0;display:grid;width:var(--w);aspect-ratio:63/88;padding:0;border:0;border-radius:6px;background:none;cursor:pointer;transform-origin:50% 100%;z-index:calc(20 - var(--i));
  transform:translateY(calc(var(--d,0) * var(--d,0) * .6px)) rotate(calc((var(--i) - 4.5) * 2deg));transition:transform .45s cubic-bezier(.2,.9,.25,1),filter .3s;box-shadow:0 8px 14px #0008}
 .pack-card>span{grid-area:1/1;border-radius:inherit;overflow:hidden;backface-visibility:hidden;transition:transform .55s cubic-bezier(.2,.9,.25,1)}.pack-card .pack-card-back>svg{width:64%}
 .pack-card-front{transform:rotateY(-180deg);background:#0b0c10}.pack-card-front>img{width:100%;height:100%;object-fit:contain}.pack-card.revealed>.pack-card-back{transform:rotateY(180deg)}.pack-card.revealed>.pack-card-front{transform:none}

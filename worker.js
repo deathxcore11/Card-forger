@@ -16,6 +16,8 @@ import {pokemonPriceRoute} from "./pokemon-prices.js";
 import {mtgTcgPriceRoute} from "./mtg-tcg-route.js";
 import {pokemonArtRoute, tcgplayerSetsRoute} from "./pokemon-art.js";
 import {magicSetArtwork,packArtwork} from "./set-art.js";
+// Card backs from each game's own image host (Scryfall, the Pokémon TCG site, YGOPRODeck).
+const CARD_BACKS={mtg:'https://backs.scryfall.io/normal/0/a/0aeebaf5-8c7d-4636-9e82-8c27447861f7.jpg',ptcg:'https://tcg.pokemon.com/assets/img/global/tcg-card-back-2x.jpg',ygo:'https://images.ygoprodeck.com/images/cards/back_high.jpg'};
 import { watchRoute, historyRoute, recordDailyPrices } from "./pricefeed.js";
 import { TOPDECK_API, TOPDECK_FORMATS, WARM_FORMATS, normalizeTopdeck, topdeckBody } from "./topdeck.js";
 import { MTGO_SLUGS, MTGO_INDEX, mtgoEventSlugs, parseMtgoEvent, normalizeMtgo, EDHTOP16_API, edhtop16Query, normalizeEdhtop16 } from "./mtgmeta.js";
@@ -202,6 +204,14 @@ export default {
         const upstream=await fetch(art.url,{signal:AbortSignal.timeout(15000)});if(!upstream.ok)return new Response('Pack artwork unavailable',{status:404});
         const res=new Response(upstream.body,{headers:{'Content-Type':upstream.headers.get('Content-Type')||'image/jpeg','Cache-Control':`public, max-age=${MONTH}`,'X-Art-Source':'tcgcsv / TCGplayer','Access-Control-Allow-Origin':'*'}});ctx.waitUntil(caches.default.put(request,res.clone()));return res;
       }catch{return new Response('Pack artwork unavailable',{status:503,headers:{'Cache-Control':'no-store'}});}
+    }
+    // Each game's own card back for face-down pack cards, served same-origin and cached for a month.
+    const backImage=url.pathname.match(/^\/img\/back\/(mtg|ptcg|ygo)\.jpg$/);
+    if(backImage){
+      const hit=await caches.default.match(request);if(hit)return hit;
+      try{const upstream=await fetch(CARD_BACKS[backImage[1]],{signal:AbortSignal.timeout(15000)});if(!upstream.ok||!/^image\//.test(upstream.headers.get('Content-Type')||''))return new Response('Card back unavailable',{status:404,headers:{'Cache-Control':'public, max-age=3600'}});
+        const res=new Response(upstream.body,{headers:{'Content-Type':upstream.headers.get('Content-Type'),'Cache-Control':`public, max-age=${MONTH}`,'Access-Control-Allow-Origin':'*'}});ctx.waitUntil(caches.default.put(request,res.clone()));return res;
+      }catch{return new Response('Card back unavailable',{status:503,headers:{'Cache-Control':'no-store'}});}
     }
     const setImage=url.pathname.match(/^\/img\/mtg-set\/([a-z0-9]{2,8})\.jpg$/i);
     if(setImage){

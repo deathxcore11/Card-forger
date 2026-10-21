@@ -1,6 +1,5 @@
 import {openPackPreview} from './pack-preview.js';
 import {dailyDetails,homeTodayMarkup,todaySetMarkup} from './home-today.js';
-import {setProgressMarkup} from './set-list-ui.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -3427,9 +3426,7 @@ function paintHomeToday(g) {
     // The card wears its own foil with the gallery light sweep (Pokémon holo rares, Magic foil-only printings).
     if (d.card) { const face = el.querySelector(".today-card-face"), probe = document.createElement("span");probe.innerHTML = `<i ${finishAttrs(g, d.card, {}, "today")}></i>`;for (const a of probe.firstChild.attributes) face.setAttribute(a.name, a.value); }
     if (d.image) { img.src = d.image.startsWith("img/") ? "/" + d.image : d.image;img.onload = () => { img.hidden = false;el.classList.add("today-ready"); }; }
-    const set = d.set, release = set && (g === "mtg" ? null : g === "ygo" ? T.currentYgoCatalogue().find(x => x.name === set.name) : { id: set.id, name: set.name, count: set.count });
-    const progress = set && (g === "mtg" ? V.magicSetProgress(set.code, { card_count: set.count }) : release ? T.tcgSetProgress(g, release) : null);
-    el.querySelector(".today-set").innerHTML = todaySetMarkup(g, set, { rarity: d.rarity, progressHtml: progress ? setProgressMarkup({ ...progress, compact: true }).html : "" });
+    el.querySelector(".today-set").innerHTML = todaySetMarkup(g, d.set, { rarity: d.rarity });
     el.dataset.painted = "done";
   }).catch(() => { el.dataset.painted = "";const box = el.querySelector(".today-set");if (box) box.innerHTML = ""; });
 }
