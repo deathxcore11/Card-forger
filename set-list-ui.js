@@ -1,3 +1,4 @@
+import {setAtmosphere} from './set-experience.js';
 import {pokemonVariantChoices} from './pokemon-variant-options.js';
 import {ygoRarity} from './ygo-identity.js';
 import {esc} from './ui.js';
@@ -16,14 +17,15 @@ function pokemonCatalogueMedia(set, name, code) {
  return `<span class="set-media set-media-pokemon-symbol no-art" data-set-symbol-id="${esc(set.id||'')}" role="img" aria-label="${esc(label)}">${symbol}<span class="set-media-fallback" aria-hidden="true"><span class="set-art-code">${esc(code||'—')}</span></span></span>`;
 }
 // Shared emblem treatment. Use verified set logos/symbols; unknown sets keep their code.
-export function setRowContent({name,code,image='',symbol='',pokemonSet=null,ygoSet=null,detail='',count=null,owned=null,printingCount=null,progress=null}){
+export function setRowContent({name,code,image='',symbol='',pokemonSet=null,ygoSet=null,magicSet=null,ambient=false,detail='',count=null,owned=null,printingCount=null,progress=null}){
  name=catalogueText(name);detail=catalogueText(detail);
  // A remote symbol can fail with the artwork URL too. The fallback must be
  // real text, not the same unavailable image painted through a CSS mask.
  const fallback=`<span class="set-art-code">${esc(code)}</span>`,total=knownSetCount(count),prints=knownSetCount(printingCount);
  const media=ygoSet?`<span class="set-media set-media-ygo" role="img" aria-label="${esc(name)} set code ${esc(code)}">${image?`<img src="${esc(image)}" alt="" aria-hidden="true" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.hidden=true">`:''}<span class="set-ygo-emblem" aria-hidden="true"><span>${esc(code||'YGO')}</span></span></span>`:pokemonSet?pokemonCatalogueMedia(pokemonSet,name,code):`<span class="set-media ${image?'':'no-art'}">${image?`<img src="${esc(image)}" alt="${esc(name)} set artwork" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('no-art')">`:''}<span class="set-media-fallback" aria-hidden="true">${fallback}</span></span>`;
+ const atmosphere=ambient?setAtmosphere(ygoSet?"ygo":pokemonSet?"ptcg":"mtg",ygoSet||pokemonSet||magicSet||{code,image}):'';
  const content=`${media}<span class="set-row-main"><b>${pokemonSet?'':symbol}<span>${esc(name)}</span></b><span class="set-row-detail"><span class="set-code-mark">${esc(code)}</span><span>${esc(detail)}</span></span></span><span class="set-row-count">${total!==null?`<b>${total.toLocaleString()}</b><small>${total===1?'card':'cards'}</small>`:prints!==null?`<b>${prints.toLocaleString()}</b><small>printings listed</small><small>unique total unverified</small>`:'<small>Card total</small><b class="count-unknown">Unknown</b>'}${!progress&&owned>0?`<small class="ok-text">${Number(owned).toLocaleString()} owned</small>`:''}</span>`;
- return progress?`<span class="set-tile-body">${content}</span>${setProgressMarkup({...progress,compact:true}).html}`:content;
+ return progress?`${atmosphere}<span class="set-tile-body">${content}</span>${setProgressMarkup({...progress,compact:true}).html}`:atmosphere+content;
 }
 // Headings live outside each year’s grid, so a heading can never consume a card slot.
 export function setYearSections(sets, renderRow, dateOf = set => set.date) {

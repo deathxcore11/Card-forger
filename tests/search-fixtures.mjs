@@ -213,7 +213,20 @@ export async function openSearchApp(browser,base,{game='mtg',width=390,height=10
  }catch(error){error.fixtureDiagnostics=diagnostics();try{await capture(page,'synthetic-search-bootstrap-failure-'+evidenceLabel,{settle:false});}catch(captureError){error.fixtureDiagnostics.screenshotError=captureError.stack;}for(const g of gates)g.release?.();try{await context.close();}catch(close){error.fixtureDiagnostics.cleanupError=close.stack;}throw error;}
 }
 export async function inventorySnapshot(page){return page.evaluate(()=>{const s=window.__uiTestState.state;return JSON.stringify({collection:s.collection,decks:s.decks,printings:s.printings,wishlist:s.wishlist,tcg:s.tcg,myPrices:s.myPrices,priceChoices:s.priceChoices});});}
-export async function noOverflow(page,scope,label){for(const rail of await page.locator(scope+' .card-printing-mini-rail,'+scope+' nav.tabs[role=tablist],'+scope+' .settings-tabs[role=tablist]').all()){const box=await rail.boundingBox();if(box)assert(box.x>=-.5&&box.x+box.width<=(await page.evaluate(()=>innerWidth))+.5,`${label}: printing scroll container fits viewport`);assert.equal(await rail.evaluate(n=>getComputedStyle(n).overflowX),'auto',`${label}: offscreen printings are clipped inside an intentional scrolling rail`);}const r=await page.locator(scope).evaluate(root=>({width:innerWidth,doc:document.documentElement.scrollWidth,scroll:root.scrollWidth,client:root.clientWidth,bad:[...root.querySelectorAll('button,input,select,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('[hidden]')&&!n.closest('.printing-slide[inert]')&&!n.closest('.cs-tabs')&&!n.closest('.card-printing-mini-rail')&&!n.closest('nav.tabs[role=tablist]')&&!n.closest('.settings-tabs[role=tablist]')).filter(n=>{const r=n.getBoundingClientRect();return r.left<-.5||r.right>innerWidth+.5;}).map(n=>({text:n.textContent.slice(0,90),id:n.id,class:n.className}))}));assert(r.doc<=r.width+2&&r.scroll<=r.client+2,`${label}: no horizontal overflow ${JSON.stringify(r)}`);assert.deepEqual(r.bad,[],`${label}: visible controls fit viewport`);}
+// Read one synchronous layout snapshot: separate protocol calls can straddle
+// a legitimate Settings repaint and inspect a detached previous navigation rail.
+// The overflow/viewport assertions are unchanged.
+export async function noOverflow(page,scope,label){
+ const r=await page.locator(scope).evaluate(root=>({
+  width:innerWidth,doc:document.documentElement.scrollWidth,scroll:root.scrollWidth,client:root.clientWidth,
+  rails:[...root.querySelectorAll('.card-printing-mini-rail,nav.tabs[role=tablist],.settings-tabs[role=tablist]')].map(n=>{const b=n.getBoundingClientRect();return {visible:!!n.getClientRects().length,x:b.x,right:b.right,overflow:getComputedStyle(n).overflowX};}),
+  overflowing:[...root.querySelectorAll('*')].filter(n=>n.getClientRects().length&&n.scrollWidth>n.clientWidth+2).slice(0,16).map(n=>({tag:n.tagName,class:n.className,id:n.id,scroll:n.scrollWidth,client:n.clientWidth,overflow:getComputedStyle(n).overflowX})),
+  bad:[...root.querySelectorAll('button,input,select,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('[hidden]')&&!n.closest('.printing-slide[inert]')&&!n.closest('.cs-tabs')&&!n.closest('.card-printing-mini-rail')&&!n.closest('nav.tabs[role=tablist]')&&!n.closest('.settings-tabs[role=tablist]')).filter(n=>{const r=n.getBoundingClientRect();return r.left<-.5||r.right>innerWidth+.5;}).map(n=>({text:n.textContent.slice(0,90),id:n.id,class:n.className}))
+ }));
+ for(const rail of r.rails){if(rail.visible)assert(rail.x>=-.5&&rail.right<=r.width+.5,`${label}: printing scroll container fits viewport`);assert.equal(rail.overflow,'auto',`${label}: offscreen printings are clipped inside an intentional scrolling rail`);}
+ assert(r.doc<=r.width+2&&r.scroll<=r.client+2,`${label}: no horizontal overflow ${JSON.stringify(r)}`);assert.deepEqual(r.bad,[],`${label}: visible controls fit viewport`);
+}
+
 const screenshots=[];
 export async function capture(page,name,{settle=true}={}){
  assert.equal(process.env.GITHUB_ACTIONS,'true','Screenshots are restricted to approved hosted CI');assert.match(page.url(),/^http:\/\/127\.0\.0\.1:\d+\//,'Only the local synthetic app fixture may be captured');assert.match(name,/^synthetic-search-[a-z0-9-]+$/);

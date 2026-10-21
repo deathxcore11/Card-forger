@@ -432,7 +432,7 @@ async function workspaceReplacementCase(app, game) {
   await prepare(app,{from:other},{hash:'#settings',settings:true});
   const marker='Imported fixture '+importGame,next=await page.evaluate(()=>structuredClone(window.__uiTestState.state));
   next.settings.game=importGame;next.settings.authorName=marker;
-  await page.locator('#settings-recovery .settings-disclosure > summary').filter({hasText:/^Restore or check a backup$/}).click();
+  await page.locator('#settings-recovery .settings-disclosure > summary').filter({hasText:/^Import or check a backup$/}).click();
   await page.locator('input[data-change="restoreBackup"]').setInputFiles({name:'synthetic-workspace.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(next))});
   // This is the genuine confirmation, including its asynchronous close animation.
   await page.locator('dialog.cf-dialog[open] [value="ok"]').click();await waitRoute(page,importGame,'#settings');
@@ -441,7 +441,7 @@ async function workspaceReplacementCase(app, game) {
   await page.goBack();await waitRoute(page,other,'#collection/cards');
   assert.equal(await page.evaluate(()=>window.__uiTestState.state.settings.authorName),marker,'Back changes the visit, never revives pre-import workspace data');
   await page.goForward();await waitRoute(page,importGame,'#settings');
-  await page.locator('#settingsTab-account').click();await page.locator('#settingsTab-recovery').click();await page.locator('#settings-recovery .settings-disclosure > summary').filter({hasText:/^Restore or check a backup$/}).click();
+  await page.locator('#settingsTab-account').click();await page.locator('#settingsTab-recovery').click();await page.locator('#settings-recovery .settings-disclosure > summary').filter({hasText:/^Import or check a backup$/}).click();
   await page.locator('[data-act="undoRestore"]').click();await page.locator('dialog.cf-dialog[open] [value="ok"]').click();
   await waitRoute(page,other,'#settings');assert.deepEqual(await collections(page),original);
   assert.notEqual(await page.evaluate(()=>window.__uiTestState.state.settings.authorName),marker);

@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v268";
+const CACHE = "cardforge-shell-v269";
 const ASSETS = [
   "./grid-settings.js", "./price-origin.js", "./collection-display.css",
   "./aura.js", "./aura.css",
@@ -21,6 +21,8 @@ const ASSETS = [
   "./theme-init.js",
   "./magic-matchups.css",
   "./settings-theme.js",
+  "./settings-storage.js",
+  "./mobile-tilt.js", "./set-experience.js", "./pack-preview.js",
   "./sync-merge.js",
   "./recovery-store.js",
   "./magic-card-color.js",

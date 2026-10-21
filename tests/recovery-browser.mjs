@@ -46,6 +46,7 @@ const snapshot=page=>page.evaluate(()=>structuredClone(window.__uiTestState.stat
 async function openRecovery(page){
  if(!await page.locator('#settingsDialog').evaluate(node=>node.open))await page.locator('[data-act="menu"]').click();
  await page.locator('#settingsTab-recovery').click();
+ if(!await page.locator('.settings-history').evaluate(node=>node.open))await page.locator('.settings-history > summary').click();
  await page.waitForFunction(()=>/saved recovery cop/.test(document.querySelector('#recoveryStatus')?.textContent||''));
 }
 async function shot(page,name){
@@ -61,10 +62,20 @@ try{
  await ready(page,'A');
  assert.equal(await page.evaluate(async()=>(await import('/storage.js')).storageBackend()),'IndexedDB','Reload durability evidence uses the actual IndexedDB backend');
  await openRecovery(page);
+ assert.equal(await page.locator('.settings-history').evaluate(node=>node.open),true);
+ const backupEvent=page.waitForEvent('download');
+ await page.locator('[data-act="exportBackup"]').click();
+ const exported=await backupEvent;
+ assert.match(exported.suggestedFilename(),/^CardStashy_Backup_.*\.json$/);
+ await page.locator('#backupExportStatus.success').waitFor();
+ assert.match(await page.locator('#backupExportStatus').innerText(),/Check your downloads/);
+ const exportedData=JSON.parse(await readFile(await exported.path(),'utf8'));
+ assert.deepEqual(exportedData.collection,a.collection,'download preserves the current workspace');
+ checks.push('Actual backup download produces the expected JSON and a persistent inline receipt inside Settings.');
  const restoreA=()=>page.locator('[data-act="restoreRecovery"][data-id="recovery-a"]');
  assert.equal(await page.locator('#recoverySnapshots .recovery-snapshot').count(),1);
  assert.match(await page.locator('#recoverySnapshots').innerText(),/A private recovery copy/);
- assert.match(await page.locator('#recoverySnapshots').innerText(),/9 copies · 1 decks across all games/);
+ assert.match(await page.locator('#recoverySnapshots').innerText(),/9 cards · 1 deck · All games/);
  assert.doesNotMatch(await page.locator('#recoverySnapshots').innerText(),/B private recovery copy/);
  for(const width of [390,768]){await page.setViewportSize({width,height:1000});await noOverflow(page,'#settingsDialog','Recovery list '+width);await shot(page,'recovery-list-'+width);}
  await page.setViewportSize({width:390,height:1000});
