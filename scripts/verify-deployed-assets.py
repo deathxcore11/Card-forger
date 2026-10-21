@@ -33,7 +33,7 @@ MODULES = (
     "pokemon-variant-options.js", "pokemon-promo-evidence.js",
     "magic-card-color.js", "magic-matchups-ui.js", "magic-matchups-controller.js", "magic-matchups.css", "ai-matchup-core.js", "settings-theme.js", "settings-storage.js", "mobile-tilt.js", "set-experience.js", "pack-preview.js", "rarity-emblem.js", "data-loading.js", "settings-theme.css", "theme-init.js", "recovery-store.js", "sync-merge.js", "value-page.js", "value-page.css", "value-history.js", "storage.js", "account-workspaces.js", "account-scope.js", "ygo-identity.js", "vendor/supabase-js-2.110.0.js",
     "finish-effects.js", "pokemon-anniversary-masks.js", "ygo-name-foil.js", "ygo-rarity-foil.js", "ygo-foil-analysis.js", "ygo-foil-recipes.js", "ygo-foil-worker.js", "foil-gl.js", "mtg-foil.js", "mtg-foil-analysis.js", "mtg-foil-recipes.js", "mtg-foil-worker.js", "ptcg-foil.js", "ptcg-foil-recipes.js", "home-today.js", "finish-effects.css", "finish-preview.js", "finish-materials.js", "feel.js",
-    "assets/finishes/cosmos.svg", "assets/finishes/metal-grain.svg", "assets/finishes/abyss-title.svg",
+    "assets/finishes/cosmos.svg", "assets/finishes/metal-grain.svg", "assets/finishes/abyss-title.svg", "assets/finishes/stamp-first-movie.png",
     "scryfall-client.js", "community-profile.js", "shared-deck-view.js", "binders.js", "suggest.js", "deck-box.js", "brand.js", "card-detail-extras.js",
     "condition-feed.js", "condition-refresh-scheduler.js", "condition-value.js",
     "profile-art.js", "pokemon-identity.js", "pokemon-corrections.js", "collection-stack.js", "ygo-set-prices.js", "cloud.js",
