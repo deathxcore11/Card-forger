@@ -5,6 +5,7 @@ import {analyzeYgoArt,YGO_ART_BOX} from './ygo-foil-analysis.js';
 import {ygoFoilFullSize,ygoRecipeFor,YGO_RARITY_FRAGMENT,YGO_FULL_SIZE_PX} from './ygo-rarity-foil.js';
 import {YGO_FOIL_RECIPES,ygoRarityEffect} from './ygo-foil-recipes.js';
 import {resolveFinish} from './finish-effects.js';
+import {ygoDeckFinishContext} from './tcg.js';
 // Size gate: card page and zoom always; gallery cards only at Large or when drawn wide.
 assert.equal(ygoFoilFullSize('detail',120,'small'),true);assert.equal(ygoFoilFullSize('zoom',90,'medium'),true);
 assert.equal(ygoFoilFullSize('large',150,'large'),true,'Large grid setting');
@@ -49,4 +50,11 @@ assert.match(YGO_RARITY_FRAGMENT,/float cov=art\*\(u_artL\.z>1\.5\?1\.:mk\.r\)/,
 assert.match(YGO_RARITY_FRAGMENT,/\(1\.-text\*\(1\.-u_whole\.z\)\)\*\(1\.-name\)/,'Whole-card foil only shares into the rules box and leaves the name bar to the lettering');
 assert.match(YGO_RARITY_FRAGMENT,/float art=inBox\(uv,u_art\),name=inBox\(uv,u_name\),text=inBox\(uv,u_text\),frame=\(1\.-art\)\*\(1\.-text\)\*\(1\.-name\);/,'Frame foil never touches the rules box');
 assert.match(YGO_RARITY_FRAGMENT,/return mix\(base,shoulder\(T\*F\*1\.35\),clamp\(cover,0\.,1\.\)\);/,'Zero coverage returns the exact source pixel');
+// Decks and deck builds: the row's chosen printing, else the copy you own when every owned copy is
+// the same printing and rarity; mixed copies and other games never guess.
+const deckCard={id:'46986414',game:'ygo'},own=(...rows)=>({tcg:{ygo:{collection:rows.map(([printing,rarity])=>({cardId:'46986414',printing,rarity,qty:1}))}}});
+assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,{printingKey:'GLD1-EN001::Gold Rare'},own()),{priceEdition:'GLD1-EN001::Gold Rare'});
+assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,null,own(['LOB-005','Ultra Rare'],['LOB-005','Ultra Rare'])),{priceEdition:'LOB-005::Ultra Rare'});
+assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,null,own(['LOB-005','Ultra Rare'],['SDY-006','Common'])),{},'Mixed owned printings never pick one');
+assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,null,own()),{});assert.deepEqual(ygoDeckFinishContext('ptcg',deckCard,null,own(['LOB-005','Ultra Rare'])),{});
 console.log('PASS: every Yu-Gi-Oh! foil rarity in the catalogue resolves to a recipe; full-size gating; cropped subjects stay solid while backgrounds and glows pass foil; rules box only shared by whole-card recipes.');
