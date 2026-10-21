@@ -9,4 +9,4 @@ export const SUPABASE = {
 };
 
 // The app version shown in Settings. Kept equal to package.json by test-version.mjs.
-export const APP_VERSION = "3.87.0";
+export const APP_VERSION = "3.88.0";
