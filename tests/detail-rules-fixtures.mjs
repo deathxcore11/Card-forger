@@ -130,6 +130,8 @@ export async function openApp(browser,base,{game='mtg',width=390,height=1000,red
    if(url.pathname==='/api/prices/archive'||url.pathname==='/api/prices/recent')return json(historyFixture(url));
    if(url.pathname.startsWith('/api/prices/'))return json({points:[],series:[],cards:[],products:[],variants:[],prices:{},partial:false});
    if(url.pathname.startsWith('/api/meta/ygo'))return json(url.pathname.endsWith('/top')?{results:[]}:[]);
+   // Sealed-product artwork routes (set backdrop, booster pack): deterministic no-artwork answer; the UI falls back.
+   if(/^\/img\/(?:mtg-set|pack)\//.test(url.pathname))return route.fulfill({status:404,contentType:'text/plain',body:'No product artwork fixture'});
    if(!url.pathname.startsWith('/api/')&&!url.pathname.startsWith('/img/'))return route.continue();
   }
   if(url.hostname==='api.scryfall.com'){
