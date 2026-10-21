@@ -6268,7 +6268,14 @@ async function boot() {
       render();
     }
   });
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+  if ("serviceWorker" in navigator) {
+    // The app opens from its saved copy. A release that arrives in the first moments, before anything
+    // has been touched, is switched to straight away; otherwise it is used from the next open.
+    const updating = !!navigator.serviceWorker.controller, opened = Date.now();let touched = false;
+    for (const type of ["pointerdown", "keydown"]) addEventListener(type, () => { touched = true; }, { once: true, capture: true });
+    navigator.serviceWorker.addEventListener("controllerchange", () => { if (updating && !touched && Date.now() - opened < 12000 && !document.querySelector("dialog[open]")) location.reload(); });
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.
   // TCGplayer prices for printings Scryfall leaves unpriced arrive in the background.
   window.addEventListener("cf:tcg-prices", () => { refreshHomeValueGlance(); if (S.ui.sheetCtx?.type === "card" && $("#sheet").open) refreshSheet(); else if (S.ui.view !== "home") render(); });

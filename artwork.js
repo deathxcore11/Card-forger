@@ -39,7 +39,7 @@ export function artworkHTML(c,cls='card-img',large=false){
  const ygo=c?.game==='ygo',value=c?.setContext?c.setContext.price:c?.prices?.usd;
  if(!ygo)rememberPrice(urls[0],c?.prices?.usd);
  const ring=ygo?(Number(value)>0&&!/\b(?:cs-art|hero-art|hh-art|zoom|cover|nc-)/.test(cls)?' '+tierAttrs(tierOf('ygo','',value)):''):tierRing(urls[0],cls);
- return `<img class="${cls}" src="${esc(urls[0])}"${ring} data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="${esc(c.name)}" loading="lazy" referrerpolicy="no-referrer">`;
+ return `<img class="${cls}" src="${esc(urls[0])}"${ring} data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="${esc(c.name)}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
 }
 export function handleArtworkError(e){
  const image=e.target;if(!image?.dataset?.artSources)return;

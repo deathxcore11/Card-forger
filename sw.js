@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v277";
+const CACHE = "cardforge-shell-v278";
 const ASSETS = [
   "./grid-settings.js", "./price-origin.js", "./collection-display.css",
   "./aura.js", "./aura.css",
@@ -219,9 +219,23 @@ const ASSETS = [
   "./icon-512.png",
   "./icon-maskable-512.png",
 ];
-self.addEventListener("install", (e) =>
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS))),
-);
+// Card artwork the app serves itself (packs, card backs, set art, Yu-Gi-Oh! images) is kept across
+// releases in its own cache, trimmed to the most recent images.
+const ART = "cardforge-art-v1", ART_MAX = 800;
+const BASE = self.location.href || self.location.origin + "/";
+// Stylesheets stay network-first (a corrected style reaches open apps at once); they load in parallel.
+const SHELL = new Set(ASSETS.filter((a) => !a.endsWith(".css")).map((a) => new URL(a, BASE).pathname)),
+  PAGES = new Set(["./", "./index.html"].map((a) => new URL(a, BASE).pathname));
+// A new release takes over at once; the page picks it up on its next open.
+self.addEventListener("install", (e) => {
+  self.skipWaiting?.();
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+});
+let trimming = null;
+const trimArt = () => trimming ||= caches.open(ART).then(async (c) => {
+  const keys = await c.keys();
+  await Promise.all(keys.slice(0, Math.max(0, keys.length - ART_MAX)).map((k) => c.delete(k)));
+}).finally(() => { trimming = null; });
 self.addEventListener("activate", (e) =>
   e.waitUntil(
     caches
@@ -256,6 +270,37 @@ self.addEventListener("fetch", (e) => {
             })
             .catch(() => hit);
         return hit || fresh;
+      }),
+    );
+    return;
+  }
+  // Saved artwork appears instantly; new artwork is saved as it is browsed.
+  if (url.pathname.startsWith("/img/")) {
+    e.respondWith(
+      caches.open(ART).then(async (c) => {
+        const hit = await c.match(e.request);
+        if (hit) return hit;
+        const r = await fetch(e.request);
+        if (r.ok && r.type === "basic") { c.put(e.request, r.clone()).then(trimArt, () => {}); }
+        return r;
+      }),
+    );
+    return;
+  }
+  // The app's own scripts are versioned with this worker: they open from the saved copy at once (no
+  // network round trip per module) and refresh in the background in case of a same-version fix.
+  const appPage = e.request.mode === "navigate" && PAGES.has(url.pathname);
+  if (appPage || (e.request.mode !== "navigate" && SHELL.has(url.pathname))) {
+    const key = appPage ? "./index.html" : url.pathname;
+    e.respondWith(
+      caches.open(CACHE).then(async (c) => {
+        const hit = await c.match(key),
+          fresh = fetch(e.request).then((r) => {
+            if (r.ok && r.type === "basic" && !r.redirected) c.put(key, r.clone());
+            return r;
+          });
+        if (hit) { e.waitUntil(fresh.catch(() => {})); return hit; }
+        return fresh.catch(() => Response.error());
       }),
     );
     return;

@@ -123,11 +123,11 @@ export function mountFoilCanvas(overlay,{source,key,surface='detail',program,ana
  const r0=program();if(!r0)return null;
  const doc=overlay.ownerDocument,canvas=doc.createElement('canvas');canvas.className='finish-rarity-gl';canvas.setAttribute('aria-hidden','true');canvas.hidden=true;overlay.prepend(canvas);
  overlay.classList.add('rarity-gl');
- let data=null,img=null,last='',dead=false;
+ let data=null,img=null,last='',dead=false,visible=true;
  const fail=()=>{canvas.hidden=true;overlay.classList.remove('rarity-gl');};
  const h={
   draw(){
-   if(dead||!data||!img?.naturalWidth)return;if(r0.lost)return fail();
+   if(dead||!visible||!data||!img?.naturalWidth)return;if(r0.lost)return fail();
    const dpr=Math.min(2,globalThis.devicePixelRatio||1),w=Math.max(1,Math.min(1600,Math.round(overlay.clientWidth*dpr))),hh=Math.max(1,Math.round(w*img.naturalHeight/img.naturalWidth));
    const [lx,ly]=foilLight(overlay),id=[lx.toFixed(4),ly.toFixed(4),w,hh,key].join();
    if(id===last&&!canvas.hidden)return;last=id;
@@ -140,12 +140,16 @@ export function mountFoilCanvas(overlay,{source,key,surface='detail',program,ana
    canvas.hidden=false;
   },
   // Gallery cards sweep their light with a CSS animation; follow it only while one is running.
-  animated:()=>!dead&&!canvas.hidden&&overlay.classList.contains('finish-auto')&&overlay.isConnected,
+  animated:()=>!dead&&visible&&!canvas.hidden&&overlay.classList.contains('finish-auto')&&overlay.isConnected,
   fallback:fail,
-  dispose(){dead=true;foilLoop.delete(h);r0.handles.delete(h);unwatch();canvas.remove();overlay.classList.remove('rarity-gl');}
+  dispose(){dead=true;foilLoop.delete(h);r0.handles.delete(h);unwatch();io?.disconnect();canvas.remove();overlay.classList.remove('rarity-gl');}
  };
  foilLoop.add(h);r0.handles.add(h);
  const unwatch=watchFoilLight(overlay,()=>h.draw());
+ // Cards scrolled out of view stop drawing (a long gallery would otherwise sweep every foil on it) and
+ // pick up again just before they come back.
+ const io=typeof IntersectionObserver==='undefined'?null:new IntersectionObserver(entries=>{const now=entries.at(-1).isIntersecting;if(now===visible)return;visible=now;if(now){last='';h.draw();foilLoop.kick();}},{rootMargin:'240px'});
+ io?.observe(overlay);
  Promise.all([source(),analysis()]).then(([s,a])=>{if(dead)return;img=s;data=a;h.draw();foilLoop.kick();}).catch(()=>{if(!dead)fail();});
  return h;
 }

@@ -74,9 +74,9 @@ export const cardImage = (c, size = "normal", face = 0) => {
 
 export function img(url, alt, cls = "") {
   const sources = fullCardSources.get(url);
-  if (sources?.length) return `<img class="${esc(cls)}" src="${esc(url)}"${tierRing(url, cls)} data-art-sources="${esc(JSON.stringify(sources))}" data-art-index="0" alt="${esc(alt)}" loading="lazy" referrerpolicy="no-referrer">`;
+  if (sources?.length) return `<img class="${esc(cls)}" src="${esc(url)}"${tierRing(url, cls)} data-art-sources="${esc(JSON.stringify(sources))}" data-art-index="0" alt="${esc(alt)}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
   return url
-    ? `<img class="${cls}" src="${esc(url)}"${tierRing(url, cls)} alt="${esc(alt)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.insertAdjacentHTML('afterend','<span class=&quot;${cls} img-missing&quot; role=&quot;img&quot; aria-label=&quot;Artwork unavailable&quot;>◇<small>Art unavailable</small></span>')">`
+    ? `<img class="${cls}" src="${esc(url)}"${tierRing(url, cls)} alt="${esc(alt)}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.hidden=true;this.insertAdjacentHTML('afterend','<span class=&quot;${cls} img-missing&quot; role=&quot;img&quot; aria-label=&quot;Artwork unavailable&quot;>◇<small>Art unavailable</small></span>')">`
     : `<span class="${cls} img-missing" role="img" aria-label="Artwork unavailable">◇<small>Art unavailable</small></span>`;
 }
 
