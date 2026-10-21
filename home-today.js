@@ -17,7 +17,7 @@ export function dailyDetails(g,h,fetchJson=json){
   if(g==='mtg'){const c=h.printing?.image_uris?h.printing:await fetchJson('https://api.scryfall.com/cards/'+encodeURIComponent(h.id));if(c?.id!==h.id)throw Error('Different card');
    const set=c.set?{code:c.set,name:c.set_name,set_type:c.set_type,digital:!!c.digital,count:null,logo:`https://svgs.scryfall.io/sets/${encodeURIComponent(c.set)}.svg`}:null;
    // Bonus sheets (Mystical Archive, Retro Artifacts…) come in their main set's boosters: today's pack is that one.
-   if(set&&!packEligible('mtg',set)&&!set.digital){const s=await fetchJson('https://api.scryfall.com/sets/'+encodeURIComponent(set.code)).catch(()=>null),parent=s?.parent_set_code&&await fetchJson('https://api.scryfall.com/sets/'+encodeURIComponent(s.parent_set_code)).catch(()=>null);
+   if(set?.set_type==='masterpiece'&&!set.digital){const s=await fetchJson('https://api.scryfall.com/sets/'+encodeURIComponent(set.code)).catch(()=>null),parent=s?.parent_set_code&&await fetchJson('https://api.scryfall.com/sets/'+encodeURIComponent(s.parent_set_code)).catch(()=>null);
     if(parent?.code&&packEligible('mtg',parent))set.pack={code:parent.code,name:parent.name,set_type:parent.set_type,digital:!!parent.digital,released_at:parent.released_at||''};}
    return {image:c.image_uris?.normal||c.card_faces?.[0]?.image_uris?.normal||'',rarity:c.rarity||'',card:c,set};}
   if(g==='ygo'){const d=await fetchJson('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+encodeURIComponent(h.id)),c=d?.data?.[0];if(String(c?.id)!==String(h.id))throw Error('Different card');

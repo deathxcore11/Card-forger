@@ -57,6 +57,7 @@ const noUnc=[...[...Array(12)].map((_,i)=>({id:'nc'+i,name:'NC'+i,rarity:'Common
 for(let i=0;i<50;i++)assert(samplePack('ptcg',noUnc,undefined,seeded,SV).slice(0,7).every(c=>c.rarity==='Common'),'common and uncommon slots never take ex cards');
 // Each game's packs follow the era the set was printed in.
 assert.deepEqual([packEra('ptcg',{id:'base1'}),packEra('ptcg',{id:'swsh7',releaseDate:'2021-08-27'}),packEra('ptcg',{id:'sv08.5'}),packEra('ptcg',{id:'me01',releaseDate:'2025-09-26'})],['wotc','modern','sv','sv']);
+assert.equal(packEra('mtg',{released_at:'1995-06-01'}),'nofoil');assert.equal(packSize('mtg',{released_at:'1995-06-01'}),15);
 assert.deepEqual([packEra('mtg',{released_at:'2003-10-02'}),packEra('mtg',{released_at:'2018-04-27'}),packEra('mtg',{released_at:'2024-08-02'})],['classic','draft','play']);
 assert.deepEqual([packEra('ygo',{date:'2004-03-01'}),packEra('ygo',{tcg_date:'2023-02-09'})],['classic','core']);
 assert.deepEqual([packSize('ptcg',{id:'base1'}),packSize('ptcg',{id:'swsh7',releaseDate:'2021-08-27'}),packSize('ptcg',SV),packSize('mtg',{released_at:'2003-10-02'}),packSize('mtg',{released_at:'2018-04-27'}),packSize('ygo',{date:'2004-03-01'}),packSize('ygo',{date:'2023-02-09'})],[11,11,10,15,14,9,9]);
