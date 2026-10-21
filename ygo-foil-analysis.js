@@ -19,7 +19,7 @@ export function boxBlur(src,w,h,r,passes=2){
 }
 // Returns two RGBA byte maps the size of the input:
 //  mask   R foil-through, G coloured energy, B level stars (1) / attribute orb (.6)
-//  relief R smoothed brightness
+//  relief R smoothed brightness, G/B stroke direction (cos 2θ, sin 2θ), A stroke strength
 export function analyzeYgoArt(rgba,W,H){
  const N=W*H,r=new Float32Array(N),g=new Float32Array(N),b=new Float32Array(N),lum=new Float32Array(N);
  for(let i=0;i<N;i++){r[i]=rgba[i*4]/255;g[i]=rgba[i*4+1]/255;b[i]=rgba[i*4+2]/255;lum[i]=.2126*r[i]+.7152*g[i]+.0722*b[i];}
@@ -93,9 +93,14 @@ export function analyzeYgoArt(rgba,W,H){
  const ocx=.874*W,ocy=.081*H,orr=.042*W;
  for(let j=Math.max(0,Math.round(ocy-orr));j<ocy+orr;j++)for(let i=Math.max(0,Math.round(ocx-orr));i<Math.min(W,ocx+orr);i++)if((i-ocx)**2+(j-ocy)**2<orr*orr)stars[j*W+i]=Math.max(stars[j*W+i],.6);
  const height=boxBlur(lum,W,H,1,1);
+ // Stroke direction (structure tensor) lets Collector's grooves follow the drawing's own lines.
+ const Jxx=new Float32Array(N),Jyy=new Float32Array(N),Jxy=new Float32Array(N);
+ for(let j=1;j<H-1;j++)for(let i=1;i<W-1;i++){const k=j*W+i,dx=lum[k+1]-lum[k-1],dy=lum[k+W]-lum[k-W];Jxx[k]=dx*dx;Jyy[k]=dy*dy;Jxy[k]=dx*dy;}
+ const rad=Math.max(1,Math.round(W/130)),Sxx=boxBlur(Jxx,W,H,rad),Syy=boxBlur(Jyy,W,H,rad),Sxy=boxBlur(Jxy,W,H,rad);
  for(let k=0;k<N;k++){
   mask[k*4]=Math.round(Math.min(1,passS[k])*255);mask[k*4+1]=Math.round(energy[k]*255);mask[k*4+2]=Math.round(stars[k]*255);mask[k*4+3]=255;
-  relief[k*4]=relief[k*4+1]=relief[k*4+2]=Math.round(height[k]*255);relief[k*4+3]=255;
+  const a=Sxx[k]-Syy[k],c=2*Sxy[k],m=Math.hypot(a,c),coh=m/(Sxx[k]+Syy[k]+1e-6);
+  relief[k*4]=Math.round(height[k]*255);relief[k*4+1]=Math.round((a/(m+1e-9)*.5+.5)*255);relief[k*4+2]=Math.round((c/(m+1e-9)*.5+.5)*255);relief[k*4+3]=Math.round(ss(.15,.7,coh)*Math.min(1,m*400)*255);
  }
  return {mask,relief,spellTrap};
 }

@@ -3,6 +3,7 @@ import {ANNIVERSARY_MAPS,ANNIVERSARY_STAMPS} from './pokemon-anniversary-masks.j
 import {quoteForContext,validSetContext} from './pricing-presentation.js';
 import {pokemonVariantChoices,pokemonVariantProductConflict} from './pokemon-variant-options.js';
 import {reviewedCosmosPreview} from './pokemon-promo-evidence.js';
+import {YGO_FOIL_RECIPES,FOIL_PATTERN,ygoRarityEffect} from './ygo-foil-recipes.js';
 export const FINISH_SOURCES = Object.freeze({
  pokemon:'https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic',
  base:'https://images.pokemontcg.io/base1/4_hires.png',
@@ -245,13 +246,16 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   return unknown(key,label);
  }
  const rarity=norm(key);
- // Master YGO images are not mapped to individual edition watermarks. Never invent one.
- if(/quartercentury|ghost|ultimate|collector|gold|parallel/.test(rarity))return unknown(key,label);
  if(/pendulum|rush|token|skill/i.test(`${c.typeLine||''} ${c.type||''} ${c.frame||''}`))return unknown(key,label);
  const name=material=>layer('ygo-name',material),art=material=>layer('ygo-art',material);
  const specs={rare:['ygo-rare',[name('silver')]],superrare:['ygo-super',[art('holo')]],ultrarare:['ygo-ultra',[art('holo'),name('gold')]],secretrare:['ygo-secret',[art('secret'),name('rainbow')]],prismaticsecretrare:['ygo-prismatic',[art('prismatic'),name('rainbow')]],starlightrare:['ygo-starlight',[layer('ygo-broad','starlight')]]};
- const spec=specs[rarity];
- return spec?preset(key,label,...spec,FINISH_SOURCES.ygo):unknown(key,label);
+ if(specs[rarity])return preset(key,label,...specs[rarity],FINISH_SOURCES.ygo);
+ // Every other foil rarity comes from the recipe table. Its CSS layers are the light version shown
+ // on small tiles; full-size cards render the recipe itself with WebGL (ygo-rarity-foil.js).
+ const effect=ygoRarityEffect(rarity),recipe=YGO_FOIL_RECIPES[effect];if(!recipe)return unknown(key,label);
+ const P=FOIL_PATTERN,material=([p,t])=>t===1?'gold':{[P.diag]:'secret',[P.qcr]:'secret',[P.prism]:'prismatic',[P.glitter]:'starlight',[P.ghost]:'silver',[P.emboss]:'gold'}[p]||'holo';
+ const layers=[...(recipe.whole?[layer('ygo-broad',recipe.whole[0]===P.glitter?'starlight':'rainbow')]:[]),...(recipe.art?[art(material(recipe.art))]:[]),...(recipe.frame&&!recipe.whole?[layer('ygo-broad',material(recipe.frame))]:[]),...(recipe.name?[name(recipe.name)]:[])];
+ return preset(key,label,effect,layers,FINISH_SOURCES.ygo);
 }
 export function finishChoices(game,c,ctx={}){
  if(!c?.id||!validSetContext(game,c,ctx))return [];

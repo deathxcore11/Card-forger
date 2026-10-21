@@ -55,6 +55,7 @@ const ASSETS = [
   "./ygo-name-foil.js",
   "./ygo-rarity-foil.js",
   "./ygo-foil-analysis.js",
+  "./ygo-foil-recipes.js",
   "./ygo-foil-worker.js",
   "./assets/finishes/abyss-title.svg",
   "./assets/finishes/cosmos.svg",

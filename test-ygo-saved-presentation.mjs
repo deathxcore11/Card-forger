@@ -24,7 +24,7 @@ for(const [rarity,code,effect]of [["Collector's Rare",'CR','none'],['Common','C'
  const row={...lot,printing:rarity==='Common'?'OWN-EN002':'DIFF-EN001',rarity};
  const projected=savedYgoPresentation(card,row);assert.match(tcgSetBadge(projected),new RegExp('>'+code+'<'));
  const finish=resolveFinish('ygo',projected,{priceEdition:row.printing+'::'+row.rarity});
- if(rarity==='Common')assert.equal(finish.effect,'plain');else assert.equal(finish.status,'unknown','unsupported Collector texture remains explicitly unavailable');
+ if(rarity==='Common')assert.equal(finish.effect,'plain');else assert.equal(finish.effect,'ygo-collector','Owner-approved Collector\'s Rare recipe follows the saved printing\'s rarity, not the cached card');
 }
 for(const missing of [{printing:'',rarity:''},{printing:'MISSING-EN001',rarity:'Ultra Rare'},{printing:'OWN-EN002',rarity:''},{setReleaseUnverified:true},{setReleaseId:'unverified-release'}]){
  const row={...lot,...missing},projected=savedYgoPresentation(card,row);

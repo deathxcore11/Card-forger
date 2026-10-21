@@ -2,14 +2,26 @@
 // and the shader's coverage rules. Pixel rendering is covered by the hosted browser test.
 import assert from 'node:assert/strict';
 import {analyzeYgoArt,YGO_ART_BOX} from './ygo-foil-analysis.js';
-import {ygoFoilFullSize,YGO_RARITY_KIND,YGO_RARITY_FRAGMENT,YGO_FULL_SIZE_PX} from './ygo-rarity-foil.js';
+import {ygoFoilFullSize,ygoRecipeFor,YGO_RARITY_FRAGMENT,YGO_FULL_SIZE_PX} from './ygo-rarity-foil.js';
+import {YGO_FOIL_RECIPES,ygoRarityEffect} from './ygo-foil-recipes.js';
+import {resolveFinish} from './finish-effects.js';
 // Size gate: card page and zoom always; gallery cards only at Large or when drawn wide.
 assert.equal(ygoFoilFullSize('detail',120,'small'),true);assert.equal(ygoFoilFullSize('zoom',90,'medium'),true);
 assert.equal(ygoFoilFullSize('large',150,'large'),true,'Large grid setting');
 assert.equal(ygoFoilFullSize('large',180,'medium'),false,'Medium tiles keep the CSS finish');
 assert.equal(ygoFoilFullSize('large',110,'small'),false,'Small tiles keep the CSS finish');
 assert.equal(ygoFoilFullSize('large',YGO_FULL_SIZE_PX,'medium'),true,'Wide desktop tiles count as full size');
-assert.deepEqual(Object.keys(YGO_RARITY_KIND),['ygo-super','ygo-ultra','ygo-secret','ygo-prismatic','ygo-starlight'],'Only rarities the resolver already recognises; Rare stays name-only');
+// Recipe table: every foil rarity string in the Yu-Gi-Oh! catalogue resolves to a recipe; plain and
+// unknown rarities stay honest.
+const norm=v=>String(v).toLowerCase().replace(/[^a-z0-9]/g,'');
+const catalogue=['Rare','Super Rare','Ultra Rare','Secret Rare','Ultimate Rare','Quarter Century Secret Rare','Platinum Secret Rare','PLatinum Secret Rare',"Collector's Rare",'Starlight Rare','Duel Terminal Normal Parallel Rare','Prismatic Secret Rare','Starfoil Rare','Starfoil','Gold Rare','Shatterfoil Rare','Mosaic Rare','Duel Terminal Rare Parallel Rare','Premium Gold Rare','Gold Secret Rare','Duel Terminal Super Parallel Rare','Duel Terminal Ultra Parallel Rare','Ghost Rare','Ultra Parallel Rare','Platinum Rare',"Ultra Rare (Pharaoh's Rare)",'Normal Parallel Rare','Extra Secret Rare','Ghost/Gold Rare','Super Parallel Rare','Extra Secret','Ultra Secret Rare','Duel Terminal Normal Rare Parallel Rare','10000 Secret Rare'];
+const ygoCard=r=>({id:'46986414',game:'ygo',frame:'normal',type:'Normal Monster',sets:[{rarity:r,code:'X-EN001',name:'X'}]});
+for(const r of catalogue){const effect=ygoRarityEffect(norm(r));assert(YGO_FOIL_RECIPES[effect],'recipe for '+r);
+ const p=resolveFinish('ygo',ygoCard(r),{priceEdition:'X-EN001::'+r});assert.equal(p.status,'approximate',r);assert.equal(p.effect,effect,r);assert(p.layers.length,'CSS fallback layers for '+r);}
+for(const r of ['Common','Short Print','Super Short Print','New','Reprint'])assert.equal(ygoRarityEffect(norm(r)),'',r+' has no foil recipe');
+assert.equal(resolveFinish('ygo',ygoCard('Grand Master Rare'),{priceEdition:'X-EN001::Grand Master Rare'}).status,'unknown','Unreviewed Grand Master Rare stays preview unavailable');
+assert.equal(ygoRecipeFor('ygo-rare'),null,'Rare is name-only: no WebGL layer');
+for(const [effect,r] of Object.entries(YGO_FOIL_RECIPES))if(effect!=='ygo-rare')assert(ygoRecipeFor(effect)&&(r.whole||r.frame||r.art),effect);
 // Synthetic card: blue swirl background, a pale subject with a dark outline whose robe runs into the
 // bottom of the art window (as cropped monsters do), and a glowing eye (bright orange on a dark socket).
 const W=200,H=292,px=new Uint8ClampedArray(W*H*4);
@@ -33,7 +45,8 @@ const t=analyzeYgoArt(trap,W,H);assert.equal(t.spellTrap,true);assert(t.mask[(Ma
 assert.equal(analyzeYgoArt(px,W,H).spellTrap,false,'Monster frames are not Spell/Trap');
 // Shader: text box only touched by Starlight (whole-card glitter, reduced over the rules);
 // coverage otherwise comes from the art mask.
-assert.match(YGO_RARITY_FRAGMENT,/float cover=art\*mk\.r/);
-assert.match(YGO_RARITY_FRAGMENT,/cover=max\(max\(cover,art\*\.35\),\(1\.-art\)\*\(1\.-text\*\.55\)\*\.75\)/);
-assert.match(YGO_RARITY_FRAGMENT,/vec3 outC=mix\(base,shoulder\(T\*F\*1\.35\),clamp\(cover,0\.,1\.\)\);/,'Zero coverage returns the exact source pixel');
-console.log('PASS: Yu-Gi-Oh! rarity foil gates to full-size cards, keeps cropped subjects solid, lets backgrounds and coloured glows pass foil, and leaves the rules box alone except on Starlight.');
+assert.match(YGO_RARITY_FRAGMENT,/float cov=art\*\(u_artL\.z>1\.5\?1\.:mk\.r\)/,'Art foil follows the underbase mask unless the recipe covers the whole art');
+assert.match(YGO_RARITY_FRAGMENT,/\(1\.-text\*\(1\.-u_whole\.z\)\)\*\(1\.-name\)/,'Whole-card foil only shares into the rules box and leaves the name bar to the lettering');
+assert.match(YGO_RARITY_FRAGMENT,/float art=inBox\(uv,u_art\),name=inBox\(uv,u_name\),text=inBox\(uv,u_text\),frame=\(1\.-art\)\*\(1\.-text\)\*\(1\.-name\);/,'Frame foil never touches the rules box');
+assert.match(YGO_RARITY_FRAGMENT,/return mix\(base,shoulder\(T\*F\*1\.35\),clamp\(cover,0\.,1\.\)\);/,'Zero coverage returns the exact source pixel');
+console.log('PASS: every Yu-Gi-Oh! foil rarity in the catalogue resolves to a recipe; full-size gating; cropped subjects stay solid while backgrounds and glows pass foil; rules box only shared by whole-card recipes.');
