@@ -97,6 +97,19 @@ export function analyzeYgoArt(rgba,W,H,box=YGO_ART_BOX){
  const ocx=.874*W,ocy=.081*H,orr=.042*W;
  for(let j=Math.max(0,Math.round(ocy-orr));j<ocy+orr;j++)for(let i=Math.max(0,Math.round(ocx-orr));i<Math.min(W,ocx+orr);i++)if((i-ocx)**2+(j-ocy)**2<orr*orr)stars[j*W+i]=Math.max(stars[j*W+i],.6);
  const height=boxBlur(lum,W,H,1,1);
+ // Each level/rank star is its own round orb: find every orb in the row, fit its circle (centre and radius),
+ // fill it whole (rim, star and line art) and give it a domed surface, so its foil highlight and rainbow
+ // ring sit around its own centre. The Attribute orb gets the same dome.
+ const dome=(cx,cy,R,weight)=>{for(let j=Math.max(0,Math.floor(cy-R-1));j<=Math.min(H-1,Math.ceil(cy+R+1));j++)for(let i=Math.max(0,Math.floor(cx-R-1));i<=Math.min(W-1,Math.ceil(cx+R+1));i++){
+  const d=Math.hypot(i+.5-cx,j+.5-cy)/R;if(d>1)continue;const k=j*W+i,edge=1-ss(.86,1,d);stars[k]=Math.max(stars[k],weight*edge);height[k]=Math.max(height[k],.35+.6*Math.sqrt(1-d*d))*edge+height[k]*(1-edge);}};
+ {const y0=Math.round(.105*H),y1=Math.round(.178*H),x0=Math.round(.06*W),x1=Math.round(.94*W),seen=new Uint8Array(N),minR=.011*W,maxR=.04*W;
+  for(let j=y0;j<y1;j++)for(let i=x0;i<x1;i++){const k0=j*W+i;if(stars[k0]<1||seen[k0])continue;
+   let n=0,sx=0,sy=0,ax=W,ay=H,bx=0,by=0;const q=[k0];seen[k0]=1;
+   while(q.length){const k=q.pop(),x=k%W,y=(k-x)/W;n++;sx+=x;sy+=y;ax=Math.min(ax,x);ay=Math.min(ay,y);bx=Math.max(bx,x);by=Math.max(by,y);
+    for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const nx=x+dx,ny=y+dy;if(nx<x0||ny<y0||nx>=x1||ny>=y1)continue;const kk=ny*W+nx;if(!seen[kk]&&stars[kk]>=1){seen[kk]=1;q.push(kk);}}}
+   const R=((bx-ax)+(by-ay)+2)/4,round=Math.abs((bx-ax)-(by-ay))<=Math.max(2,R*.35);
+   if(R>=minR&&R<=maxR&&round)dome((ax+bx+1)/2,(ay+by+1)/2,R*1.04,1);}}
+ dome(ocx,ocy,orr,.6);
  // Stroke direction (structure tensor) lets Collector's grooves follow the drawing's own lines.
  const Jxx=new Float32Array(N),Jyy=new Float32Array(N),Jxy=new Float32Array(N);
  for(let j=1;j<H-1;j++)for(let i=1;i<W-1;i++){const k=j*W+i,dx=lum[k+1]-lum[k-1],dy=lum[k+W]-lum[k-W];Jxx[k]=dx*dx;Jyy[k]=dy*dy;Jxy[k]=dx*dy;}

@@ -76,10 +76,14 @@ void main(){
    outC=mix(outC,shoulder(mix(silver,outC,.2)*(.55+.9*rim*(.4+.6*spot))+grating(L,V,vec2(.7071),1600.)*.35*spot),art);}
   else if(u_artL.x>5.5&&u_artL.x<6.5){float rim=pow(max(dot(nRel,H),0.),18.)*(.35+.65*spot);outC=outC*(1.-.06*art)+(1.-outC)*mix(vec3(.95,.88,.7),outC*2.,.6)*rim*art*.7;}
   else outC=overInk(outC,foil(u_artL.x,u_artL.y,uv,L,V,H,spot,mk.g,stroke),cov);}
- // Level stars and Attribute: 1 embossed glint, 2 holo, 3 rainbow (Secret), 4 gold.
+ // Level stars and Attribute: 1 embossed glint, 2 holo, 3 rainbow (Secret), 4 gold. Each orb is domed in the
+ // analysis, so its rainbow ring and highlight circle its own centre.
  if(u_stars>.5&&mk.b>.3){float sc=smoothstep(.3,.8,mk.b);
   if(u_stars<1.5){float s=pow(max(dot(nRel,H),0.),30.)*(.3+.7*spot);outC+=(1.-outC)*vec3(1.,.9,.6)*s*.9*sc;}
-  else outC=overInk(outC,foil(u_stars<2.5?1.:u_stars<3.5?2.:1.,u_stars>3.5?1.:0.,uv,L,V,H,spot,0.,stroke),sc*.9);}
+  else{vec2 gr=length(nRel.xy)>.02?normalize(nRel.xy):vec2(1.,0.);vec3 dif=grating(L,V,gr,u_stars>3.5?1500.:1300.);float sp=pow(max(dot(nRel,H),0.),u_stars>3.5?24.:40.)*(.4+.6*spot);
+   // Light only adds to the printed orb: a highlight on its dome and a thin rainbow (or gold) sheen.
+   vec3 metal=u_stars>3.5?vec3(1.,.8,.42):vec3(1.,.97,.9);vec3 sheen=u_stars>3.5?metal*length(dif)*.35:dif*(u_stars>2.5?.42:.3);
+   outC+=(1.-outC)*(metal*sp*.85+sheen*(.45+.55*spot))*sc;}}
  gl_FragColor=vec4(toSrgb(clamp(outC,0.,1.)),1.);
 }`;
 const analyze=foilAnalyzer(new URL('./ygo-foil-worker.js',import.meta.url),(data,W,H,{layout})=>analyzeYgoArt(data,W,H,YGO_LAYOUT_ART[layout]));
