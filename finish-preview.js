@@ -4,6 +4,7 @@ import {finishMaterialProfile,hasFinishPattern,verifiedTitleMask} from './finish
 import {ygoNameMask,nameMaskStyle,mountYgoNameFoil} from './ygo-name-foil.js';
 import {mountYgoRarityFoil} from './ygo-rarity-foil.js';
 import {mountMtgFoil} from './mtg-foil.js';
+import {mountPtcgFoil} from './ptcg-foil.js';
 import {ygoRarityEffect,ygoRarityRank,ygoRaritySwatch} from './ygo-foil-recipes.js';
 import {quoteForContext} from './pricing-presentation.js';
 export {finishChoices,finishEffect,resolveFinish,selectPreviewFinish,finishArtworkCard} from './finish-effects.js';
@@ -128,9 +129,10 @@ export function attachFinishPreview(root){
   for(const l of layers){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];overlay.append(part);}
   if(hasFinishPattern(p.materialProfile)&&FINISH_MASKS[layers[0]?.mask]){const pattern=img.ownerDocument.createElement('span');pattern.className='finish-pattern';pattern.style.clipPath=FINISH_MASKS[layers[0].mask];overlay.append(pattern);}
   host.append(overlay);mounted.set(el,{img,host,overlay,model:el.dataset.finishModel,src:img.currentSrc});ro?.observe(img);size(el);
-  // Full-size Yu-Gi-Oh! and Magic cards get the WebGL foil; the CSS layers stay beneath as the fallback.
+  // Yu-Gi-Oh!, Magic and Pokémon cards get the WebGL foil; the CSS layers stay beneath as the fallback.
   if(p.game==='ygo')mounted.get(el).rarityFoil=mountYgoRarityFoil(overlay,img,p.effect,{surface:el.dataset.finishSurface,layout:p.layout});
   else if(p.game==='mtg'&&p.treatment)mounted.get(el).rarityFoil=mountMtgFoil(overlay,img,p.treatment,{surface:el.dataset.finishSurface,frame:p.frame});
+  else if(p.game==='ptcg'&&p.treatment&&!profile)mounted.get(el).rarityFoil=mountPtcgFoil(overlay,img,p.treatment,{surface:el.dataset.finishSurface,clip:FINISH_MASKS[layers[0]?.mask]||''});
   const nameLayer=p.game==='ygo'&&(p.layers||[]).find(l=>l.mask==='ygo-name'),nameMask=nameLayer?ygoNameMask(img):null;
   if(nameMask){
    // Letters from this exact image replace the title-band placeholder; the art foil layers are unchanged.

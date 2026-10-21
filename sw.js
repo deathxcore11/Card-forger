@@ -59,7 +59,7 @@ const ASSETS = [
   "./ygo-foil-analysis.js",
   "./ygo-foil-recipes.js",
   "./ygo-foil-worker.js",
-  "./foil-gl.js", "./mtg-foil.js", "./mtg-foil-analysis.js", "./mtg-foil-recipes.js", "./mtg-foil-worker.js",
+  "./foil-gl.js", "./mtg-foil.js", "./mtg-foil-analysis.js", "./mtg-foil-recipes.js", "./mtg-foil-worker.js", "./ptcg-foil.js", "./ptcg-foil-recipes.js",
   "./assets/finishes/abyss-title.svg",
   "./assets/finishes/cosmos.svg",
   "./assets/finishes/gamma-title.svg",

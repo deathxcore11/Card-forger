@@ -18,7 +18,9 @@ assert.deepEqual(v.map(x=>x.usd),[.03,.22,.39,13.06]);
 assert.deepEqual(v.map(x=>x.foil),['','','pokeball','masterball']);
 assert(v.slice(1).every(x=>x.finish==='reverse-holofoil'));
 assert.equal(resolveFinish('ptcg',c,{priceFinish:'reverse-holofoil'}).effect,'ptcg-reverse');
-for(const x of v.slice(2)){const p=resolveFinish('ptcg',c,{priceFinish:x.key});assert.equal(p.status,'unknown');assert.deepEqual(p.layers,[]);assert.equal(p.label,x.label);}
+// Poké Ball and Master Ball reverses foil the measured surround with their own pattern sheet.
+for(const [x,t] of [[v[2],'ptcg-pokeball'],[v[3],'ptcg-masterball']]){const p=resolveFinish('ptcg',c,{priceFinish:x.key});assert.equal(p.status,'approximate');assert.equal(p.effect,'ptcg-reverse');assert.deepEqual(p.layers.map(l=>l.mask),['pk-sv-evolved-surround'],'Stage 1 Golurk uses the measured evolved surround');assert.equal(p.treatment,t);assert.equal(p.pattern,x.foil);assert.equal(p.label,x.label);}
+assert.equal(resolveFinish('ptcg',c,{priceFinish:'reverse-holofoil'}).treatment,'ptcg-sv-reverse');
 const bad=structuredClone(raw);bad.variants_detailed[2].pricing.tcgplayer.holofoil.productId=642666;
 assert.equal(pokemonVariants(bad)[2].usd,null,'Mismatched patterned product quote is rejected');
 const unknown=structuredClone(raw);unknown.variants_detailed[2].foil='future-pattern';

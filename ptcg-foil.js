@@ -1,0 +1,117 @@
+// Pokémon foil, rendered with WebGL on the card page, zoom, and gallery cards at every size. Coverage
+// comes from the app's measured frame masks (art window for holo rares, surround for reverse holos,
+// whole card for full arts); inside a holo window the Pokémon sits on white ink and only the
+// background shines (the same subject analysis as Yu-Gi-Oh!). The pattern is the era's or variant's
+// own foil sheet (ptcg-foil-recipes.js). Approximate simulation, not a physical-foil capture.
+import {analyzeYgoArt} from './ygo-foil-analysis.js';
+import {PTCG_FOIL_RECIPES} from './ptcg-foil-recipes.js';
+import {foilProgram,foilAnalyzer,readFoilPixels,mountFoilCanvas} from './foil-gl.js';
+export const PTCG_FOIL_FRAGMENT=`precision highp float;
+varying vec2 v;
+uniform sampler2D u_card;   // card image, resampled to the display size
+uniform sampler2D u_mask;   // R foil-through behind the Pokémon, G coloured energy, A measured coverage
+uniform sampler2D u_relief; // R height, G/B stroke direction, A stroke strength
+uniform vec2 u_tilt;uniform vec2 u_px;uniform vec2 u_texel;uniform float u_aspect;
+uniform vec4 u_r1; // pattern, tint, underbase (1 = Pokémon on white ink), relief
+uniform vec4 u_r2; // sparkle, soft (lower half lighter on full arts)
+const float PI=3.14159265;
+vec3 toLin(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));}
+vec3 toSrgb(vec3 c){return mix(c*12.92,1.055*pow(max(c,vec3(0.)),vec3(1./2.4))-.055,step(vec3(.0031308),c));}
+float hash(vec2 p){p=fract(p*vec2(234.34,435.345));p+=dot(p,p+34.23);return fract(p.x*p.y);}
+vec2 hash2(vec2 p){return vec2(hash(p),hash(p+17.31));}
+vec3 spectrum(float l){vec3 c=vec3(exp(-pow((l-600.)/70.,2.))+.35*exp(-pow((l-440.)/30.,2.)),exp(-pow((l-540.)/60.,2.)),exp(-pow((l-455.)/40.,2.)));return c*smoothstep(380.,420.,l)*(1.-smoothstep(700.,750.,l));}
+// Reflection grating: light reaching the eye satisfies (L+V)·g = mλ/d along grating vector g.
+vec3 grating(vec3 L,vec3 V,vec2 g,float d){float s=abs(dot(L.xy+V.xy,g));vec3 c=vec3(0.);for(int m=1;m<=3;m++)c+=spectrum(d*s/float(m))/float(m);return c;}
+vec3 shoulder(vec3 x){vec3 e=max(x-.82,0.);return min(x,.82)+.18*e/(e+.18);}
+vec3 voro(vec2 q){vec2 n=floor(q),f=fract(q);float d1=8.,d2=8.;vec2 id=n;
+ for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(float(x),float(y)),h=hash2(n+o),r=o+h-f;float d=dot(r,r);if(d<d1){d2=d1;d1=d;id=n+o;}else if(d<d2)d2=d;}
+ return vec3(id,sqrt(d2)-sqrt(d1));}
+// A ball on a tiled sheet: 1 inside, with the centre band and button left bare (seam 0).
+vec2 ball(vec2 q,float scale){vec2 p=q*scale;p.x+=mod(floor(p.y),2.)*.5;vec2 f=fract(p)-.5;float r=length(f);
+ float inside=1.-smoothstep(.3,.32,r),band=smoothstep(.025,.045,abs(f.y)),button=smoothstep(.07,.09,r);return vec2(inside*band*button,f.y);}
+// Pattern -> foil radiance. N is the surface normal (relief included).
+vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad,float height,vec2 stroke){
+ vec3 H=normalize(L+V);vec2 q=vec2(uv.x,uv.y*u_aspect),px=uv*u_px;vec2 g=normalize(vec2(.86,.5));
+ float d=1550.,lines=0.,glint=0.,mirror=.35,ex=14.,amp=.75;
+ if(pat<1.5){vec2 c=floor(vec2(q.x*70.,q.y*9.));vec2 j=hash2(c);g=normalize(vec2((j.x-.5)*.5,1.));d=1250.+j.y*550.;  // WotC: vertical starlight streaks
+  lines=.5+.5*sin(px.y*.9+j.x*6.28);vec3 w=voro(q*60.);glint=step(.9,hash(w.xy))*pow(max(dot(normalize(vec3((hash2(w.xy)-.5)*.6,1.)),H),0.),90.)*2.;amp=.85;}
+ else if(pat<2.5){vec3 w=voro(q*80.);vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1100.+j.y*800.;mirror=.25;  // e-Card crystal facets
+  glint=pow(max(dot(normalize(vec3((j-.5)*.7,1.)),H),0.),120.)*1.4;amp=.8;}
+ else if(pat<3.5){g=normalize(vec2(1.,1.));d=1400.;lines=.5+.5*sin((px.x+px.y)*1.1);mirror=.3;amp=.8;}          // EX: fine diagonal lines
+ else if(pat<4.5){}                                                                                              // broad sheen
+ else if(pat<5.5){vec3 w=voro(q*170.);vec2 j=hash2(w.xy*1.7);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;mirror=.25;  // sparkle
+  glint=pow(max(dot(normalize(vec3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),300.)*1.3;amp=.7;}
+ else if(pat<6.5){float on=0.;for(int k=0;k<2;k++){float s=k==0?9.:17.;vec2 p=q*s,c=floor(p),f=fract(p)-.5-(hash2(c+float(k)*7.)-.5)*.4;  // cosmos circles
+   float rad=.12+.26*hash(c+3.+float(k));float circ=1.-smoothstep(rad-.03,rad,length(f));if(circ>on){on=circ;float a=hash(c+9.)*PI;g=vec2(cos(a),sin(a));d=1050.+hash(c+5.)*900.;}}
+  amp=mix(.45,1.4,on);mirror=.3;lines=on;}
+ else if(pat<7.5){vec2 p=q*5.,c=floor(p),f=fract(p)-.5;float a=atan(f.y,f.x),rr=length(f);  // Legendary Collection firework
+  g=normalize(f+1e-4);d=1200.+hash(c)*600.;float rays=pow(.5+.5*cos(a*18.+hash(c)*6.28),6.)*(1.-smoothstep(.15,.5,rr));lines=rays;amp=mix(.55,1.5,rays);mirror=.3;}
+ else if(pat<8.5){mirror=.6;amp=.55;ex=10.;}                                                                    // plain mirror reverse
+ else if(pat<10.5){vec2 b=ball(q,pat<9.5?7.:6.);float a=b.y>0.?.3:-.6;if(pat>9.5)a+=.9;g=mix(g,vec2(cos(a),sin(a)),b.x);  // Poké / Master Ball
+  d=mix(1500.,b.y>0.?1150.:1350.,b.x);amp=mix(.35,1.35,b.x);lines=b.x;mirror=.3;
+  if(pat>9.5){vec2 p=q*6.;p.x+=mod(floor(p.y),2.)*.5;vec2 f=fract(p)-.5;float bumps=(1.-smoothstep(.06,.08,length(f-vec2(-.15,-.12))))+(1.-smoothstep(.06,.08,length(f-vec2(.15,-.12))));glint=bumps*b.x*pow(max(H.z,0.),20.);}}
+ else if(pat<11.5){float ph=height*55.,gr=sin(ph);vec2 gn=length(grad)>1e-4?normalize(grad):vec2(1.,0.);         // textured: contours of the art
+  g=gn;d=1250.;lines=.5+.15*gr;N=normalize(N+vec3(gn*cos(ph)*.07,0.));mirror=.4;ex=24.;amp=.72;}
+ else if(pat<12.5){g=normalize(vec2(-stroke.y,stroke.x)+1e-4);d=1350.;mirror=.35;amp=.7;}                       // texture that follows the brushwork
+ else{vec3 w=voro(q*200.);vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;mirror=.2;    // shiny glitter
+  glint=pow(max(dot(normalize(vec3((j-.5)*.5,1.)),H),0.),260.)*3.;amp=.7;}
+ vec3 dif=grating(L,V,g,d)*amp;float spec=pow(max(dot(N,H),0.),ex);
+ vec3 metal=tint<.5?vec3(1.):tint<1.5?vec3(1.,.74,.32):vec3(.86,.9,.96);
+ vec3 col=tint<.5?dif*1.9:tint<1.5?metal*(.5*spot+.9*length(dif))*1.3:metal*(.6*spot+.5*length(dif))*1.3+dif*.25;
+ return vec3(.18)*metal+spot*(mirror*spec*metal+col)*(.7+.3*lines)+glint*metal;
+}
+vec3 overInk(vec3 base,vec3 F,float cover){vec3 T=mix(base,base/max(max(base.r,max(base.g,base.b)),.04),.32);return mix(base,shoulder(T*F*1.35),clamp(cover,0.,1.));}
+void main(){
+ vec2 uv=vec2(v.x,1.-v.y);vec3 base=toLin(texture2D(u_card,v).rgb);vec4 mk=texture2D(u_mask,v),rl=texture2D(u_relief,v);
+ vec2 lp=vec2(.5,.45)+u_tilt*.6;vec3 P=vec3(uv.x,uv.y*u_aspect,0.);
+ vec3 L=normalize(vec3(lp.x,lp.y*u_aspect,.85)-P),V=normalize(vec3(.5,.5*u_aspect,2.2)-P),H=normalize(L+V);
+ vec2 dl=(uv-lp)*vec2(1.,u_aspect);float spot=exp(-dot(dl,dl)/.3);
+ vec2 e=u_texel*2.;vec2 grad=vec2(texture2D(u_relief,v+vec2(e.x,0.)).r-texture2D(u_relief,v-vec2(e.x,0.)).r,texture2D(u_relief,v-vec2(0.,e.y)).r-texture2D(u_relief,v+vec2(0.,e.y)).r);
+ float rel=u_r1.w;vec3 N=normalize(vec3(-grad*rel*9.,1.));vec2 stroke=normalize(rl.gb*2.-1.+1e-4);
+ // Coverage: the measured mask; behind a holo Pokémon only where the white underbase was left out.
+ float cov=mk.a*mix(1.,mk.r,u_r1.z)*(1.-.5*u_r2.y*smoothstep(.52,.64,uv.y));
+ vec3 F=foil(u_r1.x,u_r1.y,uv,L,V,N,spot,grad,rl.r,stroke)*(1.+mk.g*u_r1.z*.6);
+ vec3 outC=overInk(base,F,cov*.92);
+ if(rel>0.){float rim=pow(max(dot(N,H),0.),24.)*(.35+.65*spot)*clamp(length(grad)*30.,0.,1.);outC+=(1.-outC)*vec3(1.,.97,.92)*rim*rel*cov*.8;}
+ if(u_r2.x>0.){vec2 sq=vec2(uv.x,uv.y*u_aspect)*70.,sc=floor(sq);vec2 j=hash2(sc);float on=step(1.-.22*u_r2.x,j.x);
+  float pt=1.-smoothstep(.0,.1+.12*j.y,length(fract(sq)-.2-.6*hash2(sc*1.3)));
+  float tw=pow(max(dot(normalize(vec3((hash2(sc+5.)-.5)*.6,1.)),H),0.),30.);outC+=on*pt*(.2+tw*3.)*cov*(.4+.6*spot)*vec3(1.,.97,.9);}
+ gl_FragColor=vec4(toSrgb(clamp(outC,0.,1.)),1.);
+}`;
+// Measured masks are CSS clip-path shapes; drawn once into the analysis grid as foil coverage.
+export function maskShape(clip){
+ const s=String(clip||'').trim(),num=v=>parseFloat(v)/100;
+ if(s.startsWith('inset(')){const parts=s.slice(6,-1).split(/\s+round\s+/)[0].trim().split(/\s+/).map(num);const [t,r=t,b=t,l=r]=parts;return {rule:'nonzero',rings:[[[l,t],[1-r,t],[1-r,1-b],[l,1-b]]]};}
+ if(!s.startsWith('polygon('))return null;
+ let body=s.slice(8,-1),rule='nonzero';if(/^evenodd\s*,/.test(body)){rule='evenodd';body=body.replace(/^evenodd\s*,/,'');}
+ const pts=body.split(',').map(p=>p.trim().split(/\s+/).map(num)).filter(p=>p.length===2&&p.every(Number.isFinite));
+ return pts.length>2?{rule,rings:[pts]}:null;
+}
+export function shapeBox(shape){let x0=1,y0=1,x1=0,y1=0;for(const ring of shape.rings)for(const [x,y] of ring){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}return [x0,y0,x1,y1];}
+// The art window is the shape's inner box: for an evenodd surround, the hole it cuts out.
+export function artBox(shape){if(shape.rule!=='evenodd')return shapeBox(shape);const pts=shape.rings[0],k=pts.findIndex((p,i)=>i>0&&p[0]===pts[0][0]&&p[1]===pts[0][1]);return k>0&&k<pts.length-3?shapeBox({rings:[pts.slice(k+1)]}):shapeBox(shape);}
+function coverage(shape,W,H){
+ const c=(globalThis.document).createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.fillStyle='#fff';
+ const path=new Path2D();for(const ring of shape.rings){ring.forEach(([px,py],i)=>i?path.lineTo(px*W,py*H):path.moveTo(px*W,py*H));path.closePath();}
+ x.fill(path,shape.rule);return x.getImageData(0,0,W,H).data;
+}
+const analyze=foilAnalyzer(new URL('./ygo-foil-worker.js',import.meta.url),(data,W,H,{box})=>analyzeYgoArt(data,W,H,box));
+let shared=null;
+function renderer(doc){
+ if(shared?.lost)return null;
+ if(!shared)shared=foilProgram(doc,PTCG_FOIL_FRAGMENT,['u_card','u_mask','u_relief','u_tilt','u_px','u_texel','u_aspect','u_r1','u_r2']);
+ return shared;
+}
+// Returns a handle, or null when this surface keeps the CSS finish (unknown treatment or mask, no WebGL).
+// clip: the CSS clip-path of the measured mask the CSS layer already uses (or none for full art).
+export function mountPtcgFoil(overlay,img,treatment,{surface='detail',clip='',artClip=''}={}){
+ const r=PTCG_FOIL_RECIPES[treatment];if(!r||!overlay||!img)return null;
+ const shape=clip?maskShape(clip):{rule:'nonzero',rings:[[[0,0],[1,0],[1,1],[0,1]]]},art=artClip?maskShape(artClip):shape;if(!shape||!art)return null;
+ const src=img.currentSrc||img.src;if(!src)return null;
+ const box=r.underbase?artBox(art):[.1,.1,.9,.5],key=src+'|'+treatment+'|'+clip;
+ return mountFoilCanvas(overlay,{source:()=>img,key,surface,program:()=>renderer(overlay.ownerDocument),
+  analysis:()=>analyze(src+'|'+box.join(),()=>readFoilPixels(img),{layout:'',box}).then(a=>{
+   // Coverage is per mask, so it is stamped onto a copy of the cached analysis.
+   const cov=coverage(shape,a.W,a.H),mask=a.mask.slice();for(let k=3;k<mask.length;k+=4)mask[k]=cov[k-3];return {...a,mask};}),
+  setUniforms:({gl,U})=>{gl.uniform4f(U.u_r1,r.pat,r.tint,r.underbase,r.relief);gl.uniform4f(U.u_r2,r.sparkle,r.soft,0,0);}});
+}

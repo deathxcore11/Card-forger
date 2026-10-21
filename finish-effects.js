@@ -5,6 +5,7 @@ import {pokemonVariantChoices,pokemonVariantProductConflict} from './pokemon-var
 import {reviewedCosmosPreview} from './pokemon-promo-evidence.js';
 import {YGO_FOIL_RECIPES,FOIL_PATTERN,ygoRarityEffect} from './ygo-foil-recipes.js';
 import {mtgFoilEffect,mtgFrameKey,MTG_FOIL_RECIPES} from './mtg-foil-recipes.js';
+import {ptcgFoilEffect,PTCG_FOIL_RECIPES} from './ptcg-foil-recipes.js';
 export const FINISH_SOURCES = Object.freeze({
  pokemon:'https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic',
  base:'https://images.pokemontcg.io/base1/4_hires.png',
@@ -280,16 +281,31 @@ export function finishChoices(game,c,ctx={}){
   const cosmosFrame=c.category==='Pokemon'&&/^(?:Holo Rare|Rare)$/i.test(c.rarity||'')?pokemonFrame(c):'';
   if(v.foil==='cosmos'&&v.finish==='holofoil'&&v.size==='standard'&&!v.stamps?.length&&!v.subtype&&cosmosFrame)
    return {...preset(v.key,v.label,'ptcg-holo',[layer(cosmosFrame+'-art','holo')],'https://api.tcgdex.net/v2/en/cards/'+c.id),pattern:'cosmos',materialProfile:'cosmos-holo',reason:'Simulated Cosmos holo · approximate illustration-window coverage'};
+  // Patterned reverse holos (Poké Ball, Master Ball, Cosmos) foil the measured surround with their own
+  // sheet; gold holos keep their measured full-art coverage in gold. Other patterns stay explicit.
+  const reverseFrame=['pokeball','masterball','cosmos'].includes(v.foil)&&finish==='reverse-holofoil'&&v.size!=='jumbo'&&!v.subtype?pokemonFrame(c):'';
+  if(reverseFrame)return {...preset(v.key,v.label,'ptcg-reverse',[layer(reverseFrame+'-surround','rainbow')],'https://api.tcgdex.net/v2/en/cards/'+c.id),pattern:v.foil,reason:'Simulated reverse holo · partial coverage'};
+  if(v.foil==='gold'&&finish==='holofoil'){const gold=effectFor(game,c,v.key,v.label||v.key,ctx,finish);if(gold.status!=='unknown')return {...gold,pattern:'gold'};}
   if(v.foil)return {...unknown(v.key,v.label||v.key),reason:'Patterned finish preview unavailable for this printing.'};
   // Preserve a known variant even when its finish cannot be previewed.
   return finish?effectFor(game,c,v.key,v.label||v.key,ctx,finish):unknown(v.key,v.label||v.key);
- }).map(p=>{const profiles=ANNIVERSARY_STAMPS[c.id];return profiles?{...p,overlayProfiles:profiles,imageSources:[...new Set(profiles.flatMap(x=>x.images))]}:p;});
+ }).map(p=>withPtcgTreatment(c,p)).map(p=>{const profiles=ANNIVERSARY_STAMPS[c.id];return profiles?{...p,overlayProfiles:profiles,imageSources:[...new Set(profiles.flatMap(x=>x.images))]}:p;});
  if(game==='ygo'){
   const printing=quoteForContext(game,c,ctx)?.printing;
   if(!printing?.rarity)return [];
   return [effectFor(game,c,printing.rarity,printing.rarity,ctx,norm(printing.rarity)==='common'?'nonfoil':printing.rarity)];
  }
  return [];
+}
+// Full-size Pokémon cards draw the era's or variant's own foil sheet with WebGL (ptcg-foil.js) over the
+// same measured mask as the CSS layer; the CSS layer stays as the light fallback.
+const PK_MASK_ERA=[[/^pk-(?:base|wotc)/,'pk-wotc'],[/^pk-gym/,'pk-gym'],[/^pk-neo/,'pk-neo'],[/^pk-lc/,'pk-lc'],[/^pk-(?:ecard|expedition)/,'pk-ecard'],[/^pk-exa/,'pk-exa'],[/^pk-exb/,'pk-exb'],[/^pk-dppt/,'pk-dppt'],[/^pk-hgss/,'pk-hgss'],[/^pk-bwxy/,'pk-bwxy'],[/^pk-sm/,'pk-sm'],[/^pk-(?:swsh|cel-)/,'pk-swsh'],[/^pk-sv/,'pk-sv']];
+export function withPtcgTreatment(c,p){
+ if(!p||p.status==='unknown'||p.effect==='plain'||!p.layers?.length)return p;
+ const mask=p.layers[0].mask,era=PK_MASK_ERA.find(([re])=>re.test(mask))?.[1]||'',fullArt=p.effect==='ptcg-full-art'||p.coverage==='full';
+ const finish=p.effect==='ptcg-reverse'?'reverse-holofoil':'holofoil',gold=p.layers.some(l=>l.material==='gold')||p.pattern==='gold';
+ const treatment=ptcgFoilEffect({finish,era:fullArt?'':era,foil:p.pattern||'',rarity:c?.rarity,fullArt,textured:p.texture==='micro-ridges',gold});
+ return treatment&&PTCG_FOIL_RECIPES[treatment]?{...p,treatment}:p;
 }
 // A pricing reference is not a physical finish or an edition selection.
 const requestedVariant=(c,ctx)=>[ctx.priceFinish,ctx.finish,ctx.setVariant,c?.setContext?.variantKey].find(key=>key&&key!=='reference')||'';
