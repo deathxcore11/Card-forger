@@ -1,4 +1,6 @@
 import {openPackPreview} from './pack-preview.js';
+import {dailyDetails,homeTodayMarkup,todaySetMarkup} from './home-today.js';
+import {setProgressMarkup} from './set-list-ui.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -3095,7 +3097,9 @@ A.openSetPack = () => {
  if(!packEligible(game,set)||screen.busy||screen.error||!screen.loaded)return toast("Wait for this set to finish loading.");
  const scope=mutationScope(),ticket=accountGeneration,release=game==='mtg'?screen.code:screen.id;
  const isCurrent=()=>mutationCurrent(scope)&&ticket===accountGeneration&&T.game()===game&&S.ui.view==='set'&&(game==='mtg'?S.ui.set.code:T.ui(game).set.id)===release;
- try{openPackPreview({game,set,cards:screen.cards,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
+ const want=S.ui.packFeatured;S.ui.packFeatured=null;
+ const featured=want?.game===game?screen.cards.find(c=>String(c.id)===String(want.id))||(game==='mtg'?screen.cards.find(c=>c.name===want.name):null):null;
+ try{openPackPreview({game,set,cards:screen.cards,featured,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
   onCopy:copyPlain,
   onDetails:c=>game==='mtg'?A.card({dataset:{name:c.name},printing:c}):A.tCard({dataset:{game,id:String(c.id),setId:set.id}}),
   onWishlist:async cards=>{if(!isCurrent())throw Error("Your workspace changed. Please reopen the preview.");const saved=await commit(state=>{const st=game==='mtg'?state:state.tcg[game];for(const c of cards){const exists=st.wishlist.some(w=>game==='mtg'?key(w.name)===key(c.name):String(w.cardId)===String(c.id));if(!exists)st.wishlist.push({id:uid(),name:c.name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:String(c.id)}),qty:1,addedAt:new Date().toISOString()});}return true;},{enrich:false,guard:()=>isCurrent(),scope});if(saved!==true)throw Error("Your workspace changed. Reopen this preview.");},
@@ -3400,10 +3404,42 @@ function heroArt(g) {
   if (S.ui.view !== "home" || T.game() !== g) return;
   scheduleHeroRollover();
   paintHomeHero(g); // Clear yesterday's art even if today's provider is offline.
+  paintHomeToday(g);
   return T.loadHero(g)
-    .then(() => navigationCurrent(screen) && paintHomeHero(g))
+    .then(() => navigationCurrent(screen) && (paintHomeHero(g), paintHomeToday(g)))
     .catch(() => {});
 }
+// Home "Today": the Card of the Day as the real card beside its own set (Set of the Day).
+function paintHomeToday(g) {
+  if (S.ui.view !== "home" || T.game() !== g) return;
+  const h = T.heroFor(g);if (!h) return;
+  let el = $("#homeToday");
+  if (!el || el.dataset.dailyId !== h.id || el.dataset.dailyDate !== h.date) {
+    const at = el || $("#content .home-value-overview");if (!at) return;
+    const tpl = document.createElement("template");tpl.innerHTML = homeTodayMarkup(g, h);const next = tpl.content.firstElementChild;
+    el ? el.replaceWith(next) : at.after(next);el = next;
+  }
+  if (el.dataset.painted) return;el.dataset.painted = "pending";
+  const screen = navigationStamp();
+  dailyDetails(g, h).then(d => {
+    if (!navigationCurrent(screen) || !el.isConnected || !d) return;
+    const img = el.querySelector(".today-card img");if (d.image) { img.src = d.image.startsWith("img/") ? "/" + d.image : d.image;img.onload = () => { img.hidden = false;el.classList.add("today-ready"); }; }
+    const set = d.set, release = set && (g === "mtg" ? null : g === "ygo" ? T.currentYgoCatalogue().find(x => x.name === set.name) : { id: set.id, name: set.name, count: set.count });
+    const progress = set && (g === "mtg" ? V.magicSetProgress(set.code, { card_count: set.count }) : release ? T.tcgSetProgress(g, release) : null);
+    el.querySelector(".today-set").innerHTML = todaySetMarkup(g, set, { rarity: d.rarity, progressHtml: progress ? setProgressMarkup({ ...progress, compact: true }).html : "" });
+    el.dataset.painted = "done";
+  }).catch(() => { el.dataset.painted = "";const box = el.querySelector(".today-set");if (box) box.innerHTML = ""; });
+}
+// Opening today's pack goes to the Set of the Day and opens its pack with the Card of the Day as the hit.
+A.homeTodayPack = async (t) => {
+  const g = t.dataset.game, h = T.heroFor(g);if (!h || T.game() !== g) return;
+  const d = await dailyDetails(g, h).catch(() => null), set = d?.set;if (!set) return toast("Today’s set is unavailable right now.");
+  S.ui.packFeatured = { game: g, id: h.id, name: h.name, date: h.date };
+  if (g === "mtg") A.set({ dataset: { code: set.code } });else if (g === "ygo") A.tSetByName({ dataset: { name: set.name } });else A.tSet({ dataset: { id: set.id } });
+  const ready = () => { const sc = g === "mtg" ? S.ui.set : T.ui(g).set;return S.ui.view === "set" && sc.loaded && !sc.busy && !sc.error && sc.cards?.length; };
+  for (let i = 0; i < 80 && !ready(); i++) { await new Promise(r => setTimeout(r, 250));if (S.ui.packFeatured?.id !== h.id) return; }
+  if (ready()) A.openSetPack();else S.ui.packFeatured = null;
+};
 // Suspended/mobile tabs recheck the day when foregrounded, not only on navigation.
 document.addEventListener("visibilitychange", () => { if (!document.hidden && S.ui.view === "home") heroArt(T.game()); });
 window.addEventListener("focus", () => { if (S.ui.view === "home") heroArt(T.game()); });

@@ -36,13 +36,17 @@ export function packFinishes(game,picks,random=Math.random){
  if(game==='ptcg')slot(c=>has(c,'reverse-holofoil'),{priceFinish:'reverse-holofoil'});
  return ctx;
 }
-export function openPackPreview({game,set,cards,complete=false,onDetails,onWishlist,onCopy,onBuy,isCurrent=()=>true}){
- let picks=sampleSetCards(cards,10);if(!picks.length)throw Error('Load this set’s cards first.');
+// featured: a card to pull as this pack's last card (today's pack always holds the Card of the Day).
+export function openPackPreview({game,set,cards,complete=false,featured=null,onDetails,onWishlist,onCopy,onBuy,isCurrent=()=>true}){
+ let picks=sampleSetCards(cards,10);
+ if(featured){picks=[...sampleSetCards(cards.filter(c=>String(c.id)!==String(featured.id)),9),featured];}if(!picks.length)throw Error('Load this set’s cards first.');
  const dialog=document.createElement('dialog');dialog.className='pack-dialog';dialog.dataset.game=game;dialog.setAttribute('aria-label',`${set.name} pack`);
  const reduce=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  const cardArt=c=>game==='mtg'?cardImage(c,'normal'):c.imageLarge||c.image||'';
  const fallback=setArtworkSources(game,set,picks[0]),packArt=packArtUrl(game,set),sources=[packArt,...fallback].filter(Boolean);
  let revealed=new Set(),focus=0,ctxs=packFinishes(game,picks),disposed=false,busy=false;
+ // The featured hit comes out in its foil when it has one.
+ if(featured){const last=picks.length-1,f=finishChoices(game,featured,{}).find(v=>v.status!=='unknown'&&v.effect!=='plain');if(f)ctxs[last]=game==='mtg'?{finish:f.key}:game==='ptcg'?{priceFinish:f.key}:{};}
  const back=`<span class="pack-card-back">${brandStaticMark()}</span>`;
  const hand=()=>picks.map((c,i)=>{const rarity=packRarity(game,c);return `<button class="pack-card" data-pack="reveal" data-index="${i}" data-hold-card style="--i:${i};--pack-glow:${TIERS[Math.min(rarity.rank,5)].color}" aria-label="Card ${i+1}, face down" aria-pressed="false">${back}<span class="pack-card-front"><img data-pack-src="${esc(setImageUrl(cardArt(c)))}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true"></span></button>`;}).join('');
  dialog.innerHTML=`<header class="pack-header"><div><h2>${esc(set.name)}</h2><p class="pack-explanation">Free preview · not a real booster or official pull odds · nothing is added to your collection</p></div><button class="icon" data-pack="close" aria-label="Close pack">✕</button></header>

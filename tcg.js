@@ -1,4 +1,5 @@
 import {setAtmosphere,packButton} from './set-experience.js';
+import {homeTodayMarkup} from './home-today.js';
 import {priceOriginBadge,priceOriginNote} from './price-origin.js';
 import {browseSets,setBrowserControls,setBrowserRows,setBrowserDetail} from './set-browser.js';
 import {POKEMON_VARIANT_SCHEMA,pokemonVariantChoices,pokemonVariantProductConflict,samePokemonVariant} from './pokemon-variant-options.js';
@@ -613,6 +614,7 @@ function tcgStartPath(g) {
 export function tcgHome() {
   const g = game(), v = collectionValue(g), st = gs(g);
   return `${homeHero(g)}<div class="home-overview home-value-overview">${homeValue({ game: g, ...v, decks: st.decks.length, history: readTcgValueHistory(g) })}</div>
+  ${homeTodayMarkup(g, heroFor(g))}
   ${homeResume(g, deck => formatOf(g, deck.format).name)}
   ${quickTiles(g)}
   ${homeEdition(g)}`;
