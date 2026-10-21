@@ -149,7 +149,7 @@ try{
   for(const width of [320,1440]){
    await page.setViewportSize({width,height:1000});await frames(page);const detail=await assertArtSurface(page,'#sheet .cd-img',id,expected);
    await noOverflow(page,'#sheetBody',`${id} exact finish detail ${width}`,true);await shot(page,`${promoFile(id)}-detail-${width}`);
-   await page.locator('#sheet .cd-zoom').click();await page.locator('.zoom-card-surface').waitFor();const zoom=await assertArtSurface(page,'.zoom-card-surface',id,expected);
+   await page.locator('#sheet .cd-zoom').click();await page.locator('.zoom-card-surface').waitFor();const zoom=await assertArtSurface(page,'.zoom-card-surface [data-finish-surface="zoom"]',id,expected);
    await noOverflow(page,'dialog.zoom',`${id} exact finish zoom ${width}`,true);await shot(page,`${promoFile(id)}-zoom-${width}`);
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('.zoom-card-surface'));await settleDetail(page,id);
    assert.equal((await selected(page)).key,key,'Zoom close retains explicit finish');await assertNoInventoryChange(page,baseline,id+' detail/zoom');
