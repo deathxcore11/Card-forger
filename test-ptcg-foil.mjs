@@ -43,7 +43,7 @@ const p=withPtcgTreatment({rarity:'Rare'},{effect:'ptcg-holo',status:'approximat
 assert.equal(withPtcgTreatment({},{effect:'ptcg-reverse',status:'approximate',layers:[{mask:'pk-lc-surround'}]}).treatment,'ptcg-lc-reverse');
 assert.equal(withPtcgTreatment({},{effect:'unknown',status:'unknown',layers:[]}).treatment,undefined);
 // Shader: coverage is the measured mask, narrowed by the underbase in holo windows, lighter on the lower half of full arts.
-assert.match(PTCG_FOIL_FRAGMENT,/float cov=mk\.a\*mix\(1\.,mk\.r,u_r1\.z\)\*\(1\.-\.5\*u_r2\.y\*smoothstep\(\.52,\.64,uv\.y\)\);/);
+assert.match(PTCG_FOIL_FRAGMENT,/float cov=smoothstep\(\.35,\.65,mk\.a\)\*mix\(1\.,mk\.r,u_r1\.z\)\*\(1\.-\.5\*u_r2\.y\*smoothstep\(\.52,\.64,uv\.y\)\);/);
 assert.match(PTCG_FOIL_FRAGMENT,/return mix\(base,shoulder\(T\*F\*1\.35\),clamp\(cover,0\.,1\.\)\);/,'Zero coverage returns the exact source pixel');
 // Card images load from TCGdex without CORS, so the foil must read pixels from its own CORS copy, never the <img>.
 assert.equal(typeof readableCopy,'function');
