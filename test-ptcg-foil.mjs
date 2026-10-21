@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import {ptcgFoilEffect,PTCG_FOIL_RECIPES,PTCG_PATTERN} from './ptcg-foil-recipes.js';
 import {maskShape,shapeBox,artBox,artOverflow,PTCG_FOIL_FRAGMENT} from './ptcg-foil.js';
 import {FINISH_MASKS,withPtcgTreatment} from './finish-effects.js';
+import {readableCopy} from './foil-gl.js';
+import {readFileSync} from 'node:fs';
 const holo=era=>ptcgFoilEffect({finish:'holofoil',era}),rev=(era,foil)=>ptcgFoilEffect({finish:'reverse-holofoil',era,foil});
 // Each era prints its own holo sheet; the Pokémon sits on white ink (underbase) in every holo window.
 assert.equal(holo('pk-wotc'),'ptcg-wotc-holo');assert.equal(holo('pk-gym'),'ptcg-wotc-holo');assert.equal(holo('pk-neo'),'ptcg-wotc-holo');
@@ -43,4 +45,10 @@ assert.equal(withPtcgTreatment({},{effect:'unknown',status:'unknown',layers:[]})
 // Shader: coverage is the measured mask, narrowed by the underbase in holo windows, lighter on the lower half of full arts.
 assert.match(PTCG_FOIL_FRAGMENT,/float cov=mk\.a\*mix\(1\.,mk\.r,u_r1\.z\)\*\(1\.-\.5\*u_r2\.y\*smoothstep\(\.52,\.64,uv\.y\)\);/);
 assert.match(PTCG_FOIL_FRAGMENT,/return mix\(base,shoulder\(T\*F\*1\.35\),clamp\(cover,0\.,1\.\)\);/,'Zero coverage returns the exact source pixel');
+// Card images load from TCGdex without CORS, so the foil must read pixels from its own CORS copy, never the <img>.
+assert.equal(typeof readableCopy,'function');
+const ptcgSource=readFileSync(new URL('./ptcg-foil.js',import.meta.url),'utf8');
+assert.match(ptcgSource,/source:copy,/,'Pokémon foil draws from the readable copy');
+assert.doesNotMatch(ptcgSource,/readFoilPixels\(img\)/,'Pokémon foil never reads the untainted-only <img> directly');
+assert.match(PTCG_FOIL_FRAGMENT,/overInk\(base,F,cov\*mix\(\.92,\.5,u_r2\.y\)\)/,'Full arts keep half the illustration under the foil');
 console.log('PASS: Pokémon foil follows each era (WotC, Legendary Collection, e-Card, EX, DP-SWSH, SV) and variant (cosmos, Poké Ball, Master Ball, gold); holo windows keep the Pokémon solid; full arts by rarity keep text readable; every measured mask parses; art breaking out of the window stays ink on reverse holos.');
