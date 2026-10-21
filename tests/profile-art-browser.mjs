@@ -15,7 +15,7 @@ try{
   }
   await page.setViewportSize({width:390,height:900});
   await page.locator('.topbar [data-act="menu"]').click();await page.locator('#settingsTab-account').click();
-  await page.locator('[data-act="profilePhoto"]').click();await page.locator('.profile-art-dialog').waitFor();
+  await page.locator('.profile-photo-control[data-act="profilePhoto"]').click();await page.locator('.profile-art-dialog').waitFor();
   for(const game of ['mtg','ptcg','ygo']){
    const select=page.locator('[data-avatar-game]');await select.click();await page.locator('.glass-select-menu[open]').getByRole('option',{name:{mtg:'Magic: The Gathering',ptcg:'Pokémon',ygo:'Yu-Gi-Oh!'}[game],exact:true}).click();
    await page.locator('[data-avatar-query]').fill('Alpha');await page.locator('[data-avatar-pick]').first().waitFor();
@@ -33,7 +33,7 @@ try{
   const saved=await page.evaluate(()=>window.__uiTestState.state.settings.cardAvatar);assert.equal(saved.game,'ygo');assert.equal(saved.zoom,2);assert(saved.image);
   assert.equal(await page.locator('.topbar .profile-avatar img').getAttribute('src'),saved.image);
   assert.equal(await inventorySnapshot(page),before,'Changing profile art never edits cards or decks');
-  await page.locator('[data-act="profilePhoto"]').click();await page.waitForFunction(()=>document.querySelector('[data-avatar-save]')?.disabled===false);await page.locator('[data-avatar-zoom]').fill('3');await page.keyboard.press('Escape');
+  await page.locator('.profile-photo-control[data-act="profilePhoto"]').click();await page.waitForFunction(()=>document.querySelector('[data-avatar-save]')?.disabled===false);await page.locator('[data-avatar-zoom]').fill('3');await page.keyboard.press('Escape');
   assert.deepEqual(await page.evaluate(()=>window.__uiTestState.state.settings.cardAvatar),saved,'Cancel discards crop changes');
   await page.reload();await page.locator('#app.ready').waitFor();assert.equal(await page.locator('.topbar .profile-avatar img').getAttribute('src'),saved.image,'Avatar survives reload');
   app.health();console.log('PASS: compact header, desktop Sets shortcut, all-game card lookup, mouse/keyboard crop, save/cancel/reload and unchanged inventory.');

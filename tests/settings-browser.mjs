@@ -76,15 +76,16 @@ try{
    // Deterministic real-control regression: a rail scroll between trusted mouse
    // down/up must not be mistaken for a card drag. No click retry or dispatch.
    await page.setViewportSize({width:320,height:900});await page.locator('#settingsTab-app').click();
-   await page.locator('.settings-tabs').evaluate(async n=>{n.scrollLeft=0;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
+   assert(await page.locator('.settings-tabs').evaluate(n=>n.scrollWidth<=n.clientWidth+1),'All four tabs fit in the mobile grid');
+   await page.locator('#settingsDialog').evaluate(async n=>{n.scrollTop=0;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
    const account=page.locator('#settingsTab-account'),accountBox=await account.boundingBox();assert(accountBox&&accountBox.width>0);
-   const traceStart=await page.evaluate(game=>{window.__settingsTraceStep={game,width:320,tab:'account',probe:'non-card-rail-scroll'};return window.__settingsInteractionTrace.length;},game);
+   const traceStart=await page.evaluate(game=>{window.__settingsTraceStep={game,width:320,tab:'account',probe:'non-card-dialog-scroll'};return window.__settingsInteractionTrace.length;},game);
    await page.mouse.move(accountBox.x+accountBox.width/2,accountBox.y+accountBox.height/2);await page.mouse.down();
-   try{await page.locator('.settings-tabs').evaluate(async n=>{n.scrollLeft=8;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});assert.equal(await page.locator('.settings-tabs').evaluate(n=>n.scrollLeft),8);}finally{await page.mouse.up();}
-   assert.equal(await page.locator('.settings-pane:not([hidden])').getAttribute('id'),'settings-account','one actual Account click survives an intervening rail scroll');
+   try{await page.locator('#settingsDialog').evaluate(async n=>{n.scrollTop=8;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});assert.equal(await page.locator('#settingsDialog').evaluate(n=>n.scrollTop),8);}finally{await page.mouse.up();}
+   assert.equal(await page.locator('.settings-pane:not([hidden])').getAttribute('id'),'settings-account','one actual Account click survives an intervening dialog scroll');
    assert.equal(await page.locator('.settings-tabs [aria-selected="true"]').getAttribute('id'),'settingsTab-account');assert.equal(await page.locator('.settings-tabs [tabindex="0"]').getAttribute('id'),'settingsTab-account');
-   const gesture=await page.evaluate(start=>window.__settingsInteractionTrace.slice(start),traceStart),down=gesture.findIndex(e=>e.type==='pointerdown-capture'),scroll=gesture.findIndex(e=>e.type==='scroll-capture'&&e.scrollLeft===8),up=gesture.findIndex(e=>e.type==='pointerup-capture');
-   assert(down>=0&&scroll>down&&up>scroll,'actual rail scroll occurs within the one pointer gesture');
+   const gesture=await page.evaluate(start=>window.__settingsInteractionTrace.slice(start),traceStart),down=gesture.findIndex(e=>e.type==='pointerdown-capture'),scroll=gesture.findIndex(e=>e.type==='scroll-capture'&&e.scrollTop===8),up=gesture.findIndex(e=>e.type==='pointerup-capture');
+   assert(down>=0&&scroll>down&&up>scroll,'actual dialog scroll occurs within the one pointer gesture');
    for(const type of ['pointerdown-capture','pointerup-capture','click-capture','click-bubble']){const events=gesture.filter(e=>e.type===type);assert.equal(events.length,1,type+' occurs once');assert.equal(events[0].target,'settingsTab-account');assert.equal(events[0].trusted,true);}
    gestureChecks.push({game,viewport:320,trace:gesture});assert.equal(await inventorySnapshot(page),original);await capture(page,`synthetic-search-settings-${game}-rail-scroll-single-click`);
    for(const theme of ['dark','light']) {
