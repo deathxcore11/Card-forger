@@ -216,3 +216,7 @@
  .settings-page .settings-theme-choice b {font-size:14px;}
  .settings-page .settings-theme-choice small {font-size:12px;}
 }
+/* Keep theme titles level when one description needs another line. */
+.settings-page .settings-theme-choice {grid-template-rows:52px auto;}
+.settings-page .settings-theme-choice>span:last-child {align-self:start;}
+@media(max-width:520px){.settings-page .settings-theme-choice{grid-template-rows:auto}.settings-page .settings-theme-choice>span:last-child{align-self:center}}
