@@ -1,3 +1,6 @@
+3.91.1 - Ancient Mew
+Ancient Mew, the 2000 movie promo, now has its card picture, and its foil is the full-card speckle of the real card: gold foil scattered edge to edge with coloured flecks that light up one by one as you tilt it.
+
 3.91.0 - Foils everywhere, promo foils and a polished look
 Pressing or hovering a card in your collection, a set or search no longer lays an old rainbow shine over the whole card. Foil cards now show the same realistic holo you see on the card page, staying inside the foil areas and following your finger, and plain cards get only a soft glare instead of looking holographic.
 Every card now glows like a TV with light strips behind it: its price colour softly lights up the space around it, from a quiet grey for bulk cards to green, blue, purple, gold and orange for the most valuable, and purple and better cards slowly circle their light like their border does. This works in all three games, in your collection, set pages, search, decks, the card page and packs.

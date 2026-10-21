@@ -227,7 +227,7 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
    return {...preset(key,label,entry.effect,[layer(entry.mask,entry.effect==='ptcg-full-art'?'rainbow':'holo')],entry.source),imageSources:entry.images,reason:'Simulated finish · measured reference-art window; anniversary mark excluded',...(set==='cel25cc'&&entry.effect==='ptcg-holo'?{pattern:'confetti'}:{})};
   }
   // Ancient Mew (2000 movie promo): its holo is a full-card speckle, flecks of foil edge to edge with no
-  // art window. The card has no provider image yet; the finish is ready for when one is added.
+  // art window. No provider has an image, so we ship a scan (assets/cards/miscp-001.webp).
   if(c.id==='miscp-001'&&physicalFinish==='holofoil')return {...preset(key,label,'ptcg-holo',[layer('card','holo')],'https://www.cardtrader.com/en/cards/152261'),pattern:'ancient',reason:'Simulated finish · full-card speckle holo'};
   // Exact Expedition Alakazam layout shown by the user; standard and jumbo retain separate keys.
   if(set==='ecard1'&&['ecard1-1','ecard1-33'].includes(c.id)){
