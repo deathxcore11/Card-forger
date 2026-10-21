@@ -1,12 +1,11 @@
 /* One compact emblem in the header, Ask, scanner and progress surfaces.
    Mode classes may size the SVG, but never change its card arrangement. */
 .stashy-logo.brand-breathing { overflow:visible; transform-origin:center; }
-.stashy-logo.brand-breathing .brand-backplate { fill:#12161e; stroke:#edd18c; stroke-opacity:.18; stroke-width:1; }
 .stashy-logo.brand-breathing .brand-card { animation:none; transform-origin:64px 98px; transform-box:view-box; }
-.stashy-logo.brand-breathing .brand-left { transform:translate(8px,0) rotate(-12deg); }
-.stashy-logo.brand-breathing .brand-right { transform:translate(-8px,0) rotate(12deg); }
+.stashy-logo.brand-breathing .brand-left { transform:translate(9px,0) rotate(-15deg); }
+.stashy-logo.brand-breathing .brand-right { transform:translate(-9px,0) rotate(15deg); }
 .stashy-logo.brand-breathing .brand-center { transform:none; }
-/* The assistant has an aurora shell; ordinary app navigation keeps its dark plate. */
+/* The assistant has an aurora shell; the emblem itself is transparent everywhere. */
 :is(.ask-launch,.home-ai-submit),:root[data-theme="light"] :is(.ask-launch,.home-ai-submit) {
   color:#29243a;
   background:linear-gradient(115deg,#dfF3ff,#ede4ff,#fff1ce,#dff3ff);
@@ -27,10 +26,20 @@
   .stashy-logo.brand-breathing .brand-left { --dx:16px; animation-delay:-5s; }
   .stashy-logo.brand-breathing .brand-center { --dx:0px; animation-delay:-2.5s; }
   .stashy-logo.brand-breathing .brand-right { --dx:-16px; animation-delay:0s; }
-  /* A light sweep crosses the gold card's foil now and then. */
-  .stashy-logo.brand-breathing .brand-sheen { animation:brand-sheen 7.5s cubic-bezier(.4,0,.2,1) infinite; }
+  /* Each card's own foil: one light moves over the fan, so a 45° sheen cascades across the three cards,
+     the gems' and the ball's highlights slide with it, the Pokémon rainbow wave drifts along its 30°
+     bands with sparkles lighting in turn, and the embossed swirl's raised edge catches the glint. */
+  .stashy-logo.brand-breathing .brand-sheen { animation:brand-sheen 7.5s cubic-bezier(.4,0,.2,1) var(--d,0s) infinite; }
+  .stashy-logo.brand-breathing .brand-glint { animation:brand-glint 3.75s ease-in-out infinite alternate; }
+  .stashy-logo.brand-breathing .brand-wave { animation:brand-wave 5s linear infinite; }
+  .stashy-logo.brand-breathing .brand-spark { transform-box:fill-box; transform-origin:center; animation:brand-spark 2.8s ease-in-out var(--d,0s) infinite; }
+  .stashy-logo.brand-breathing .brand-emboss { animation:brand-emboss 3.75s ease-in-out infinite alternate; }
 }
 @keyframes brand-sheen { 0%,55% {transform:translateX(0)} 85%,100% {transform:translateX(78px)} }
+@keyframes brand-glint { from {transform:translate(-.7px,-.6px)} to {transform:translate(.8px,.7px)} }
+@keyframes brand-wave { to {transform:translate(20.78px,12px)} }
+@keyframes brand-spark { 0%,62%,100% {opacity:0;transform:scale(.3)} 76% {opacity:1;transform:scale(1)} }
+@keyframes brand-emboss { from {opacity:.35} to {opacity:1} }
 @keyframes ask-shimmer { 0%,100% {background-position:0% 50%} 50% {background-position:100% 50%} }
 @keyframes stashy-breathe {
   0%,100% { transform:translateY(0) scale(.98); }

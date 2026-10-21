@@ -3285,7 +3285,6 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 @keyframes stashy-idle {from{transform:rotate(var(--fan-from))}to{transform:rotate(calc(var(--fan-from) * 1.12)) translateY(-1px)}}
 .ask-orb {animation:none!important;background:none;box-shadow:none;border-radius:0;}
 .ask-orb .stashy-logo {width:56px;height:56px;}
-.ask-orb .brand-backplate,.ai-brand-loader .brand-backplate,.ask-brand-progress .brand-backplate {fill:transparent;}
 .ai-brand-loader {width:100px;height:100px;margin:0 auto 12px;}
 .ask-brand-progress {width:48px;height:48px;flex:none;}
 .brand-loading .brand-card,.thinking .ask-orb .brand-card {animation:stashy-fan 1.2s ease-in-out infinite alternate;}
@@ -4596,7 +4595,6 @@ body.glass .cs-tabs button:not(.on):not([aria-selected="true"]) {background:tran
 }
 /* AI entry points share one quiet shell; motion belongs to the card emblem. */
 .ask-launch{background:var(--surface);color:var(--text);border:1px solid var(--line);box-shadow:none;animation:none}
-.ask-launch .brand-backplate{fill:transparent}
 
 /* Finish previews follow verified printing availability, independently of ownership. */
 /* Printing-aware finish styling is in finish-effects.css. */
