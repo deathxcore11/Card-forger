@@ -6,6 +6,7 @@ import {esc,safeHref} from './ui.js';
 import {packArtUrl} from './pack-preview.js';
 import {packEligible} from './set-experience.js';
 const resolved=new Map();
+// TCGdex gives an image base without an extension; a stored copy may already carry one.
 const json=async url=>{const r=await fetch(url,{headers:{Accept:'application/json'}});if(!r.ok)throw Error('Daily details unavailable');return r.json();};
 // The daily card's own printing and release. Nothing is guessed: a card without a release is shown alone.
 export function dailyDetails(g,h,fetchJson=json){
@@ -13,7 +14,7 @@ export function dailyDetails(g,h,fetchJson=json){
  if(resolved.has(key))return resolved.get(key);
  const job=(async()=>{
   if(g==='ptcg'){const c=await fetchJson('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(h.id));if(c?.id!==h.id)throw Error('Different card');
-   return {image:c.image?c.image+'/high.webp':'',rarity:c.rarity||'',set:c.set?.id?{id:c.set.id,name:c.set.name,count:c.set.cardCount?.official||c.set.cardCount?.total||null,logo:c.set.logo?c.set.logo+'.webp':''}:null};}
+   return {image:c.image?(/\.(?:webp|png|jpe?g)$/i.test(c.image)?c.image:c.image+'/high.webp'):'',rarity:c.rarity||'',set:c.set?.id?{id:c.set.id,name:c.set.name,count:c.set.cardCount?.official||c.set.cardCount?.total||null,logo:c.set.logo?c.set.logo+'.webp':''}:null};}
   if(g==='mtg'){const c=h.printing?.image_uris?h.printing:await fetchJson('https://api.scryfall.com/cards/'+encodeURIComponent(h.id));if(c?.id!==h.id)throw Error('Different card');
    return {image:c.image_uris?.normal||c.card_faces?.[0]?.image_uris?.normal||'',rarity:c.rarity||'',set:c.set?{code:c.set,name:c.set_name,set_type:c.set_type,digital:!!c.digital,count:null,logo:`https://svgs.scryfall.io/sets/${encodeURIComponent(c.set)}.svg`}:null};}
   if(g==='ygo'){const d=await fetchJson('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+encodeURIComponent(h.id)),c=d?.data?.[0];if(String(c?.id)!==String(h.id))throw Error('Different card');
