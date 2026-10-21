@@ -36,7 +36,7 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
  vec3 H=normalize(L+V);vec2 q=vec2(uv.x,uv.y*u_aspect),px=uv*u_px;vec2 g=normalize(vec2(.86,.5));
  float d=1550.,lines=0.,glint=0.,mirror=.35,ex=14.,amp=.7,seam=1.;float spec=-1.;
  if(pat<1.5){}                                                                                  // traditional
- else if(pat<2.5){g=normalize(vec2(.6,.8));d=1750.;mirror=.12;ex=8.;amp=.85;}                 // old border: wide, hazy, saturated
+ else if(pat<2.5){g=normalize(vec2(.6,.8));d=1750.;mirror=.1;ex=8.;amp=.65;}                 // old border: wide, hazy, saturated
  else if(pat<3.5){g=vec2(1.,0.);d=1300.;mirror=.9;amp=.6;spec=exp(-pow(H.x/.07,2.))+.35*exp(-pow(H.x/.22,2.));} // FTV: vertical mirror bar
  else if(pat<4.5){vec3 w=voro(q*260.);vec3 n=normalize(vec3((hash2(w.xy)-.5)*.9,1.));        // etched: frosted metal grain
   spec=pow(max(dot(n,H),0.),70.)*2.2+.45*exp(-pow(dot(H.xy,vec2(.7071,.7071))/.12,2.));mirror=1.;amp=.25;d=1650.;}

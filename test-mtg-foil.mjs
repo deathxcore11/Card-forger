@@ -31,9 +31,9 @@ assert.equal(mtgFrameKey({frame:'future'}),'2015');assert.equal(mtgFrameKey({fra
 // Finish wiring: foil printings carry their treatment and frame; nonfoil stays plain.
 const card={id:'x',game:'mtg',set:'40k',collector_number:'1',layout:'normal',finishes:['nonfoil','foil'],frame:'2015',promo_types:['surgefoil'],image_uris:{normal:'https://cards.scryfall.io/normal/front/x.jpg'}};
 const foil=finishChoices('mtg',card,{}).find(v=>v.key==='foil');
-assert.equal(foil.effect,'mtg-foil','CSS fallback effect unchanged');assert.equal(foil.treatment,'mtg-surge');assert.equal(foil.frame,'2015');assert.match(foil.reason,/^Surge foil · simulated finish/);
+assert.equal(foil.effect,'mtg-foil','CSS fallback effect unchanged');assert.equal(foil.treatment,'mtg-surge');assert.equal(foil.frame,'2015');assert.equal(foil.label,'Surge foil','The finish chip names the treatment');assert.equal(foil.reason,'Simulated finish · approximate coverage');
 assert.equal(finishChoices('mtg',card,{}).find(v=>v.key==='nonfoil').treatment,undefined);
-const plain=finishChoices('mtg',{...card,promo_types:[]},{}).find(v=>v.key==='foil');assert.equal(plain.treatment,'mtg-traditional');assert.equal(plain.reason,'Simulated finish · approximate coverage');
+const plain=finishChoices('mtg',{...card,promo_types:[]},{}).find(v=>v.key==='foil');assert.equal(plain.treatment,'mtg-traditional');assert.equal(plain.label,'Traditional foil');
 const cmr={...card,set:'cmr',finishes:['etched'],promo_types:[]};assert.equal(finishChoices('mtg',cmr,{})[0].treatment,'mtg-etched');
 // Analysis: gold ink, fluorescent ink, bare paper and drawn lines are found where they are.
 const W=120,H=168,px=new Uint8ClampedArray(W*H*4);
