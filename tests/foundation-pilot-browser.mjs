@@ -44,7 +44,8 @@ try{
  await page.goto(server.base+'/#search');const query=page.locator('[data-input="tQ"]');await query.fill('Rabsca');await query.press('Enter');await page.locator('#content [data-act="tCard"][data-id="sv08-014"]').click();
  const reverse=page.locator('#sheetBody [data-act="cardFinishPreview"]').filter({hasText:/^Reverse Holo$/i});assert.equal(await reverse.count(),1);await reverse.click();
  const surface=page.locator('#sheetBody [data-finish-surface="detail"]');await page.evaluate(()=>document.querySelector('#sheetBody [data-finish-surface="detail"]').scrollIntoView({block:'center',behavior:'instant'}));assert.equal(await surface.getAttribute('data-finish-effect'),'ptcg-reverse');
- await page.waitForFunction(()=>document.querySelector('#sheetBody .finish-overlay .finish-layer')?.getBoundingClientRect().width>0);
+ // The reverse draws as the WebGL foil when it mounts (CSS layers hidden beneath), else as its CSS layer.
+ await page.waitForFunction(()=>{const o=document.querySelector('#sheetBody .finish-overlay');if(!o)return false;if(o.classList.contains('rarity-gl')){const c=o.querySelector('.finish-rarity-gl');return !!c&&!c.hidden&&c.width>0;}return o.querySelector('.finish-layer')?.getBoundingClientRect().width>0;});
  assert.notEqual(await page.locator('#sheetBody .finish-layer').first().evaluate(n=>getComputedStyle(n).backgroundImage),'none');
  await capture(page,'synthetic-search-foundation-rabsca-reverse');
  await page.locator('#sheetBody [data-act="cardFinishPreview"]').filter({hasText:'Holofoil · Cosmos'}).click();assert.equal(await surface.getAttribute('data-finish-effect'),'ptcg-holo');await capture(page,'synthetic-search-foundation-rabsca-cosmos');

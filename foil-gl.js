@@ -7,8 +7,9 @@ export const FOIL_SURFACES=['detail','zoom','large','pack','today'];
 export const foilSurface=surface=>FOIL_SURFACES.includes(surface);
 export const FOIL_VS='attribute vec2 a;varying vec2 v;void main(){v=(a+1.0)*.5;gl_Position=vec4(a,0.0,1.0);}';
 // One full-screen quad program; returns null when the context or shader is unavailable.
-export function foilProgram(doc,fragment,uniforms){
- const canvas=doc.createElement('canvas'),gl=canvas.getContext('webgl',{alpha:false,antialias:false,preserveDrawingBuffer:false});if(!gl)return null;
+// alpha: the fragment writes premultiplied coverage, so unfoiled pixels stay the page's own <img>.
+export function foilProgram(doc,fragment,uniforms,{alpha=false}={}){
+ const canvas=doc.createElement('canvas'),gl=canvas.getContext('webgl',{alpha,premultipliedAlpha:true,antialias:false,preserveDrawingBuffer:false});if(!gl)return null;
  const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return gl.getShaderParameter(o,gl.COMPILE_STATUS)?o:null;};
  const vs=sh(gl.VERTEX_SHADER,FOIL_VS),fs=sh(gl.FRAGMENT_SHADER,fragment);if(!vs||!fs)return null;
  const prog=gl.createProgram();gl.attachShader(prog,vs);gl.attachShader(prog,fs);gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))return null;
@@ -135,7 +136,7 @@ export function mountFoilCanvas(overlay,{source,key,surface='detail',program,ana
    gl.viewport(0,0,w,hh);gl.uniform2f(U.u_tilt,(lx-.5)*2,(ly-.5)*2);gl.uniform2f(U.u_px,w,hh);gl.uniform2f(U.u_texel,1/data.W,1/data.H);gl.uniform1f(U.u_aspect,img.naturalHeight/img.naturalWidth);
    setUniforms(r0);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
    if(canvas.width!==w||canvas.height!==hh){canvas.width=w;canvas.height=hh;}
-   canvas.getContext('2d').drawImage(r0.canvas,0,0);
+   const out=canvas.getContext('2d');out.clearRect(0,0,w,hh);out.drawImage(r0.canvas,0,0);
    canvas.hidden=false;
   },
   // Gallery cards sweep their light with a CSS animation; follow it only while one is running.

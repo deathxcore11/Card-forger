@@ -51,4 +51,5 @@ const ptcgSource=readFileSync(new URL('./ptcg-foil.js',import.meta.url),'utf8');
 assert.match(ptcgSource,/source:copy,/,'Pokémon foil draws from the readable copy');
 assert.doesNotMatch(ptcgSource,/readFoilPixels\(img\)/,'Pokémon foil never reads the untainted-only <img> directly');
 assert.match(PTCG_FOIL_FRAGMENT,/overInk\(base,F,cov\*mix\(\.92,\.5,u_r2\.y\)\)/,'Full arts keep half the illustration under the foil');
+assert.match(PTCG_FOIL_FRAGMENT,/float a=smoothstep\(0\.,\.03,cov\);gl_FragColor=vec4\(toSrgb\(clamp\(outC,0\.,1\.\)\)\*a,a\);/,'Unfoiled pixels are transparent so the printed card shows through');
 console.log('PASS: Pokémon foil follows each era (WotC, Legendary Collection, e-Card, EX, DP-SWSH, SV) and variant (cosmos, Poké Ball, Master Ball, gold); holo windows keep the Pokémon solid; full arts by rarity keep text readable; every measured mask parses; art breaking out of the window stays ink on reverse holos.');

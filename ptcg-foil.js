@@ -78,7 +78,8 @@ void main(){
  if(u_r2.x>0.){vec2 sq=vec2(uv.x,uv.y*u_aspect)*70.,sc=floor(sq);vec2 j=hash2(sc);float on=step(1.-.22*u_r2.x,j.x);
   float pt=1.-smoothstep(.0,.1+.12*j.y,length(fract(sq)-.2-.6*hash2(sc*1.3)));
   float tw=pow(max(dot(normalize(vec3((hash2(sc+5.)-.5)*.6,1.)),H),0.),30.);outC+=on*pt*(.2+tw*3.)*cov*(.4+.6*spot)*vec3(1.,.97,.9);}
- gl_FragColor=vec4(toSrgb(clamp(outC,0.,1.)),1.);
+ // Outside the foil the canvas is clear, so the card shows through exactly as printed.
+ float a=smoothstep(0.,.03,cov);gl_FragColor=vec4(toSrgb(clamp(outC,0.,1.))*a,a);
 }`;
 // Measured masks are CSS clip-path shapes; drawn once into the analysis grid as foil coverage.
 export function maskShape(clip){
@@ -125,7 +126,7 @@ const analyze=foilAnalyzer(new URL('./ygo-foil-worker.js',import.meta.url),(data
 let shared=null;
 function renderer(doc){
  if(shared?.lost)return null;
- if(!shared)shared=foilProgram(doc,PTCG_FOIL_FRAGMENT,['u_card','u_mask','u_relief','u_tilt','u_px','u_texel','u_aspect','u_r1','u_r2']);
+ if(!shared)shared=foilProgram(doc,PTCG_FOIL_FRAGMENT,['u_card','u_mask','u_relief','u_tilt','u_px','u_texel','u_aspect','u_r1','u_r2'],{alpha:true});
  return shared;
 }
 // Returns a handle, or null when this surface keeps the CSS finish (unknown treatment or mask, no WebGL).

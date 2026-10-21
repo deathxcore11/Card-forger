@@ -5,6 +5,10 @@ import fs from 'node:fs';
 import {normalizePtcg} from '../ptcg.js';
 import {resolveFinish,FINISH_MASKS} from '../finish-effects.js';
 import {startServer,openSearchApp,inventorySnapshot,noOverflow} from './search-fixtures.mjs';
+// The finish as drawn: the WebGL foil canvas when it mounted (its CSS layers are then hidden), else the CSS layers.
+const drawn=(page,root)=>page.waitForFunction(root=>{const o=document.querySelector(root+' .finish-overlay');if(!o)return false;if(o.classList.contains('rarity-gl')){const c=o.querySelector('.finish-rarity-gl');return !!c&&!c.hidden&&c.width>0;}const l=o.querySelector('.finish-layer');return !!l&&l.getBoundingClientRect().width>0;},root);
+// Mask controls compare CSS clip geometry, so they show the CSS layer for the one screenshot.
+const cssOnly=(page,on)=>page.evaluate(on=>{const o=document.querySelector('#sheetBody .finish-overlay');if(!o)return;if(on){o.dataset.wasGl=o.classList.contains('rarity-gl')?'1':'';o.classList.remove('rarity-gl');const c=o.querySelector('.finish-rarity-gl');if(c)c.style.visibility='hidden';}else{if(o.dataset.wasGl)o.classList.add('rarity-gl');const c=o.querySelector('.finish-rarity-gl');if(c)c.style.visibility='';}},on);
 const ids=['sm11-6','sm11-7','sm11-9','sm11-4'];
 const originals=ids.map(id=>JSON.parse(fs.readFileSync(`tests/fixtures/${id}-finish.json`)));
 // Current sm11-6 provider snapshot lacks reverse availability. Preserve it above;
@@ -52,11 +56,11 @@ try{
   }
   await page.locator(`#sheetBody [data-finish="${finish}"]`).click();
   for(const width of [390,692,768,1024,1440]){
-   await page.setViewportSize({width,height:1000});await settle(page);await page.evaluate(()=>document.querySelector('#sheetBody [data-finish-surface="detail"]').scrollIntoView({block:'center',behavior:'instant'}));await frame(page);await page.locator('#sheetBody .finish-layer').waitFor();await page.mouse.move(0,0);await noOverflow(page,'#sheetBody',id+' '+width);
+   await page.setViewportSize({width,height:1000});await settle(page);await page.evaluate(()=>document.querySelector('#sheetBody [data-finish-surface="detail"]').scrollIntoView({block:'center',behavior:'instant'}));await frame(page);await drawn(page,'#sheetBody');await page.mouse.move(0,0);await noOverflow(page,'#sheetBody',id+' '+width);
    await page.waitForFunction(()=>!document.querySelector('#sheet').getAnimations({subtree:true}).some(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState)));
    await page.evaluate(()=>{window.__foilSteady=null;});await page.waitForFunction(()=>{const s=document.querySelector('#sheetBody [data-finish-surface="detail"]'),light=s?.querySelector('.finish-spotlight');if(!light)return false;const r=s.getBoundingClientRect(),v=JSON.stringify([s.style.cssText,r.x,r.y,r.width,r.height,getComputedStyle(light).opacity]),old=window.__foilSteady,now=performance.now();if(!old||old.value!==v){window.__foilSteady={value:v,at:now};return false;}return now-old.at>200;});
    const geometry=await page.evaluate(()=>{const s=document.querySelector('#sheetBody [data-finish-surface="detail"]'),a=s.querySelector('img').getBoundingClientRect(),b=s.querySelector('.finish-overlay').getBoundingClientRect();return {dx:Math.abs(a.left-b.left),dy:Math.abs(a.top-b.top),dw:Math.abs(a.width-b.width),dh:Math.abs(a.height-b.height),model:JSON.parse(s.dataset.finishModel)};});assert(Math.max(geometry.dx,geometry.dy,geometry.dw,geometry.dh)<2,'Overlay follows image after fold/resize');
-   const photo=hidden=>page.evaluate(hidden=>{const s=document.querySelector('#sheetBody [data-finish-surface="detail"]');for(const n of s.querySelectorAll('.finish-layer,.finish-pattern'))n.style.visibility=hidden?'hidden':'';const r=s.querySelector('img').getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};},hidden);
+   const photo=hidden=>page.evaluate(hidden=>{const s=document.querySelector('#sheetBody [data-finish-surface="detail"]');for(const n of s.querySelectorAll('.finish-layer,.finish-pattern,.finish-rarity-gl'))n.style.visibility=hidden?'hidden':'';const r=s.querySelector('img').getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};},hidden);
    const box=await photo(true),plain=await page.screenshot({clip:box,animations:'disabled',path:`test-results/foil-fold-${id}-${finish}-${width}-plain.png`});await photo(false);const foil=await page.screenshot({clip:box,animations:'disabled',path:`test-results/foil-fold-${id}-${finish}-${width}.png`}),pixels=await pixelRegions(page,plain,foil);
    console.log('PIXEL DIAGNOSTIC',id,finish,width,JSON.stringify({geometry,pixels}));report.cases.push({id,finish,width,geometry,pixels});
    // A clipped blend layer changes raster compositing of a few image pixels:
@@ -66,11 +70,11 @@ try{
     for(const zone of ['caption','belowFrame','body'])assert(pixels[zone].mean<.05&&pixels[zone].changedFraction<.01,`${id} holo ${width}: ${zone} stays unfoiled`);
     for(const zone of ['art','topEdge'])assert(pixels[zone].mean>1&&pixels[zone].changedFraction>.1,`${id} holo ${width}: ${zone} visibly covered`);
     if(width===768){
-     const old=await page.evaluate(mask=>{const n=document.querySelector('#sheetBody .finish-layer'),old=n.style.clipPath;n.style.clipPath=mask;return old;},FINISH_MASKS['pk-standard-art']);
+     await cssOnly(page,true);const old=await page.evaluate(mask=>{const n=document.querySelector('#sheetBody .finish-layer'),old=n.style.clipPath;n.style.clipPath=mask;return old;},FINISH_MASKS['pk-standard-art']);
      const shot=await page.screenshot({clip:box,animations:'disabled',path:'test-results/foil-fold-celebi-old-holo-mask.png'}),negative=await pixelRegions(page,plain,shot);
      assert(negative.caption.mean>1&&negative.belowFrame.mean>1,'Old holo mask paints across the caption and below the frame');assert(negative.topEdge.mean<.05,'Old holo mask misses the top of the art');
-     await page.evaluate(mask=>document.querySelector('#sheetBody .finish-layer').style.clipPath=mask,old);report.oldCelebiMaskControl=negative;
-     await page.locator('#sheetBody .cd-zoom').click();await page.locator('dialog.zoom[open] .finish-layer').waitFor();
+     await page.evaluate(mask=>document.querySelector('#sheetBody .finish-layer').style.clipPath=mask,old);await cssOnly(page,false);report.oldCelebiMaskControl=negative;
+     await page.locator('#sheetBody .cd-zoom').click();await drawn(page,'dialog.zoom[open]');
      assert.equal(await page.locator('dialog.zoom[open] [data-finish-surface="zoom"]').evaluate(n=>JSON.parse(n.dataset.finishModel).layers[0].mask),'pk-sm11-4-art','Zoom retains exact Celebi mask');
      await page.screenshot({path:'test-results/foil-fold-celebi-holo-zoom.png'});await page.locator('dialog.zoom [data-z="close"]').click();report.celebiZoom=true;
     }
@@ -78,7 +82,7 @@ try{
     for(const zone of ['art','topEdge','leftEdge','caption'])assert(pixels[zone].mean<.05&&pixels[zone].changedFraction<.01,`${id} ${width}: ${zone} excluded within subpixel compositing tolerance`);assert(pixels.body.mean>1&&pixels.belowFrame.mean>1,'Foil reaches the field immediately below the frame');
    }
    if(id==='sm11-6'&&width===768){
-    const old=await page.evaluate(mask=>{const n=document.querySelector('#sheetBody .finish-layer'),old=n.style.clipPath;n.style.clipPath=mask;return old;},FINISH_MASKS['pk-standard-surround']);const oldShot=await page.screenshot({clip:box,animations:'disabled',path:'test-results/foil-fold-sewaddle-old-mask.png'});const negative=await pixelRegions(page,plain,oldShot);assert(negative.topEdge.mean>1&&negative.leftEdge.mean>1,'Old mask visibly paints inside the illustration');assert(negative.belowFrame.mean<.05,'Old mask leaves an unfoiled gap below the frame');await page.evaluate(mask=>document.querySelector('#sheetBody .finish-layer').style.clipPath=mask,old);report.oldMaskControl=negative;
+    await cssOnly(page,true);const old=await page.evaluate(mask=>{const n=document.querySelector('#sheetBody .finish-layer'),old=n.style.clipPath;n.style.clipPath=mask;return old;},FINISH_MASKS['pk-standard-surround']);const oldShot=await page.screenshot({clip:box,animations:'disabled',path:'test-results/foil-fold-sewaddle-old-mask.png'});const negative=await pixelRegions(page,plain,oldShot);assert(negative.topEdge.mean>1&&negative.leftEdge.mean>1,'Old mask visibly paints inside the illustration');assert(negative.belowFrame.mean<.05,'Old mask leaves an unfoiled gap below the frame');await page.evaluate(mask=>document.querySelector('#sheetBody .finish-layer').style.clipPath=mask,old);await cssOnly(page,false);report.oldMaskControl=negative;
    }
 
   }

@@ -7,6 +7,8 @@ import fs from 'node:fs';
 import {normalizePtcg} from '../ptcg.js';
 import {resolveFinish} from '../finish-effects.js';
 import {startServer,openSearchApp,inventorySnapshot} from './search-fixtures.mjs';
+// The finish as drawn: the WebGL foil canvas when it mounted (its CSS layers are then hidden), else the CSS layers.
+const drawn=(page,root)=>page.waitForFunction(root=>{const o=document.querySelector(root+' .finish-overlay');if(!o)return false;if(o.classList.contains('rarity-gl')){const c=o.querySelector('.finish-rarity-gl');return !!c&&!c.hidden&&c.width>0;}const l=o.querySelector('.finish-layer');return !!l&&l.getBoundingClientRect().width>0;},root);
 // Regions as [x0,y0,x1,y1] fractions of the image, kept ≥0.5% inside measured edges (anti-aliasing).
 const CASES={
  'cel25-23':{foil:{art:[.3,.2,.7,.4],sleeve:[.34,.57,.40,.60]},plain:{title:[.2,.075,.7,.09],paper:[.4,.7,.7,.8]}},
@@ -37,7 +39,7 @@ try{
  }});const {page}=app;await page.emulateMedia({reducedMotion:'no-preference'});const before=await inventorySnapshot(page);
  fs.mkdirSync('test-results',{recursive:true});
  const settle=()=>page.evaluate(()=>new Promise((resolve,reject)=>{const root=document.querySelector('#sheetBody');let quiet;const timeout=setTimeout(()=>{observer.disconnect();reject(Error('Detail did not settle'));},3000);const ready=()=>{clearTimeout(quiet);quiet=setTimeout(()=>{observer.disconnect();clearTimeout(timeout);resolve();},200);};const observer=new MutationObserver(ready);observer.observe(root,{childList:true,subtree:true});ready();}));
- const photo=hidden=>page.evaluate(hidden=>{const surface=document.querySelector('#sheetBody [data-finish-surface="detail"]'),layers=[...surface.querySelectorAll('.finish-layer')],img=surface.querySelector('img');if(!layers.length||!img.complete||!img.naturalWidth)throw Error('Finish surface not ready');for(const l of layers)l.style.visibility=hidden?'hidden':'';const r=img.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};},hidden);
+ const photo=hidden=>page.evaluate(hidden=>{const surface=document.querySelector('#sheetBody [data-finish-surface="detail"]'),layers=[...surface.querySelectorAll('.finish-layer')],img=surface.querySelector('img');if(!layers.length||!img.complete||!img.naturalWidth)throw Error('Finish surface not ready');for(const l of [...layers,...surface.querySelectorAll('.finish-rarity-gl')])l.style.visibility=hidden?'hidden':'';const r=img.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};},hidden);
  const compare=(a,b,regions)=>page.evaluate(async({a,b,regions})=>{
   async function read(s){const i=new Image();i.src='data:image/png;base64,'+s;await i.decode();const c=document.createElement('canvas');c.width=i.width;c.height=i.height;const x=c.getContext('2d');x.drawImage(i,0,0);return {w:c.width,h:c.height,data:x.getImageData(0,0,c.width,c.height).data};}
   const x=await read(a),y=await read(b),out={};
@@ -52,7 +54,7 @@ try{
    await page.locator(`#sheetBody [data-act="cardFinishPreview"][data-finish="${finish}"]`).click();
    await page.waitForFunction(f=>document.querySelector(`#sheetBody [data-finish="${f}"]`)?.getAttribute('aria-pressed')==='true',finish);
    await page.evaluate(()=>document.querySelector('#sheetBody [data-finish-surface="detail"]').scrollIntoView({block:'center',behavior:'instant'}));
-   const surface=page.locator('#sheetBody [data-finish-surface="detail"]');await surface.locator('.finish-layer').first().waitFor();
+   const surface=page.locator('#sheetBody [data-finish-surface="detail"]');await drawn(page,'#sheetBody');
    assert.equal(JSON.parse(await surface.getAttribute('data-finish-model')).layers[0].mask,spec.mask);
    await page.mouse.move(0,0);await settle();
    const box=await photo(true),plain=await page.screenshot({clip:box,animations:'disabled'}),foilBox=await photo(false);assert.deepEqual(foilBox,box,'Material toggling cannot move the card');
