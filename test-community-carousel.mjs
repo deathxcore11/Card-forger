@@ -36,7 +36,7 @@ assert.throws(()=>sharedDeckCopy({...shared,deckSchema:0},'id'),/update/);
 const binder={...shared,kind:'binder',cards:[{id:'1',qty:2,referenceUSD:3.5},{id:'2',qty:1,manualValue:900}]};assert.deepEqual(showcaseValue(binder),{total:7,priced:2,unpriced:1});assert.match(showcaseDetail(binder),/\$7.00/);assert.doesNotMatch(showcaseDetail(binder),/data-community-(source|copy|hide)|data-act=/);assert.match(showcaseDetail(shared),/Save to my decks/);assert.doesNotMatch(showcaseDetail(shared),/data-community-source/);
 console.log('PASS: independent deck copies preserve sections, legacy snapshots cannot silently lose sections, binder values exclude private amounts, and friend previews have no edit actions');
 
-const {brandMark}=await import('./brand.js');for(const mode of ['brand-idle','brand-loading','assistant-button-mark']){const logo=brandMark(mode);assert.match(logo,/brand-breathing/);assert.match(logo,/brand-cycle-left/);assert.match(logo,/brand-cycle-right/);assert.match(logo,/aria-hidden="true"/);}
+const {brandMark}=await import('./brand.js');for(const mode of ['brand-idle','brand-loading','assistant-button-mark']){const logo=brandMark(mode);assert.match(logo,/brand-breathing/);assert.match(logo,/class="brand-cards" clip-path="url\(#bf[0-9a-z]+Q\)"/);assert.doesNotMatch(logo,/brand-cycle/);assert.equal((logo.match(/class="brand-card /g)||[]).length,3);assert.match(logo,/aria-hidden="true"/);}
 
 // A cached/imported row may contain only cardId; rendering must recover its name.
 const {S,blank}=await import('./store.js'),{tcgDeck,cache}=await import('./tcg.js'),{CARDS}=await import('./tests/search-fixtures.mjs');

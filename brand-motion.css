@@ -6,7 +6,6 @@
 .stashy-logo.brand-breathing .brand-left { transform:translate(8px,0) rotate(-12deg); }
 .stashy-logo.brand-breathing .brand-right { transform:translate(-8px,0) rotate(12deg); }
 .stashy-logo.brand-breathing .brand-center { transform:none; }
-.stashy-logo.brand-breathing .brand-cycle { display:none; pointer-events:none; }
 /* The assistant has an aurora shell; ordinary app navigation keeps its dark plate. */
 :is(.ask-launch,.home-ai-submit),:root[data-theme="light"] :is(.ask-launch,.home-ai-submit) {
   color:#29243a;
@@ -20,11 +19,14 @@
 @media (prefers-reduced-motion:no-preference) {
   :is(.ask-launch,.home-ai-submit) { animation:ask-shimmer 7s ease-in-out infinite; }
   .stashy-logo.brand-breathing { animation:stashy-breathe 4.8s ease-in-out infinite; }
-  .stashy-logo.brand-breathing .brand-left { animation:brand-left-rest 18s linear infinite; }
-  .stashy-logo.brand-breathing .brand-right { animation:brand-right-rest 18s linear infinite; }
-  .stashy-logo.brand-breathing .brand-cycle { display:block; transform-origin:64px 98px; transform-box:view-box; opacity:0; }
-  .stashy-logo.brand-breathing .brand-cycle-left { animation:brand-left-front 18s ease-in-out infinite; }
-  .stashy-logo.brand-breathing .brand-cycle-right { animation:brand-right-front 18s ease-in-out infinite; }
+  /* One continuous loop at an even speed: each card rises straight out of the box on the left, arcs over
+     the top and drops straight back in on the right, a third of a cycle behind the card before it. Cards
+     are clipped to the box's own outline, so they only ever disappear into it and never pop or double up.
+     --dx lines each card's art up on the same path. */
+  .stashy-logo.brand-breathing .brand-card { transform-origin:64px 57px; animation:brand-arc 7.5s linear infinite; }
+  .stashy-logo.brand-breathing .brand-left { --dx:16px; animation-delay:-5s; }
+  .stashy-logo.brand-breathing .brand-center { --dx:0px; animation-delay:-2.5s; }
+  .stashy-logo.brand-breathing .brand-right { --dx:-16px; animation-delay:0s; }
   /* A light sweep crosses the gold card's foil now and then. */
   .stashy-logo.brand-breathing .brand-sheen { animation:brand-sheen 7.5s cubic-bezier(.4,0,.2,1) infinite; }
 }
@@ -34,25 +36,27 @@
   0%,100% { transform:translateY(0) scale(.98); }
   50% { transform:translateY(-1px) scale(1.025); }
 }
-/* Hide the matching rear card while its front copy moves: three cards,
-   rather than the old five-card fan with duplicate cards spread out. */
-@keyframes brand-left-rest { 0%,24%,49%,100% {opacity:1} 25%,48% {opacity:0} }
-@keyframes brand-right-rest { 0%,57%,84%,100% {opacity:1} 58%,83% {opacity:0} }
-@keyframes brand-left-front {
-  0%,24%,49%,100% {opacity:0;transform:translate(8px,0) rotate(-12deg)}
-  25%,48% {opacity:1;transform:translate(8px,0) rotate(-12deg)}
-  32%,43% {opacity:1;transform:translate(15px,-4px) rotate(0deg)}
-}
-@keyframes brand-right-front {
-  0%,57%,84%,100% {opacity:0;transform:translate(-8px,0) rotate(12deg)}
-  58%,83% {opacity:1;transform:translate(-8px,0) rotate(12deg)}
-  65%,77% {opacity:1;transform:translate(-17px,-4px) rotate(0deg)}
+@keyframes brand-arc {
+  0% { transform:translate(calc(var(--dx) - 11px),66px) rotate(0deg); }
+  8% { transform:translate(calc(var(--dx) - 11px),53.5px) rotate(-2.7deg); }
+  16% { transform:translate(calc(var(--dx) - 11px),41px) rotate(-5.4deg); }
+  24% { transform:translate(calc(var(--dx) - 11px),28.4px) rotate(-8deg); }
+  32% { transform:translate(calc(var(--dx) - 11px),15.9px) rotate(-10.7deg); }
+  38% { transform:translate(calc(var(--dx) - 10.8px),6.4px) rotate(-11.7deg); }
+  44% { transform:translate(calc(var(--dx) - 7.6px),-2.3px) rotate(-8.3deg); }
+  50% { transform:translate(calc(var(--dx) + 0px),-7px) rotate(0deg); }
+  56% { transform:translate(calc(var(--dx) + 7.7px),-2.2px) rotate(8.4deg); }
+  62% { transform:translate(calc(var(--dx) + 10.8px),6.6px) rotate(11.8deg); }
+  68% { transform:translate(calc(var(--dx) + 11px),15.9px) rotate(10.7deg); }
+  76% { transform:translate(calc(var(--dx) + 11px),28.4px) rotate(8deg); }
+  84% { transform:translate(calc(var(--dx) + 11px),41px) rotate(5.4deg); }
+  92% { transform:translate(calc(var(--dx) + 11px),53.5px) rotate(2.7deg); }
+  100% { transform:translate(calc(var(--dx) + 11px),66px) rotate(0deg); }
 }
 @media (prefers-reduced-motion:reduce) {
   :is(.ask-launch,.home-ai-submit) {animation:none!important;}
-  .stashy-logo.brand-breathing,.stashy-logo.brand-breathing .brand-card,.stashy-logo.brand-breathing .brand-cycle {animation:none!important;}
+  .stashy-logo.brand-breathing,.stashy-logo.brand-breathing .brand-card {animation:none!important;}
   .stashy-logo.brand-breathing .brand-card {opacity:1;}
-  .stashy-logo.brand-breathing .brand-cycle {display:none;}
 }
 @media (forced-colors:active) {
   :is(.ask-launch,.home-ai-submit) {color:ButtonText!important;background:ButtonFace!important;border-color:ButtonText!important;animation:none!important;}

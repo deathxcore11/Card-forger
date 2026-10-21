@@ -65,7 +65,6 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
  else if(pat>15.5&&pat<16.5){  // Ancient speckle (Ancient Mew): gold foil scattered with coloured flecks of varied sizes, each lighting at its own tilt
   vec2 sc=q*130.,gc=floor(sc),f=fract(sc)-.5,rn=hash2(gc);float on=step(.62,rn.y),size=.1+.22*hash(gc+4.),part=on*smoothstep(size,size*.4,length(f-(rn-.5)*.4)),trig=pow(max(0.,cos(dot(u_tilt,vec2(4.5))+rn.x*6.28)),10.),a=rn.x*PI;
   g=vec2(cos(a),sin(a));d=mix(1500.,1000.+hash(gc+9.)*900.,part);mirror=.35;amp=.55+1.6*part*(.35+.65*trig);lines=part;}
- else if(pat>16.5){}
  else if(pat>13.5){float band=pow(.5+.5*sin((q.x+q.y)*5.5-(u_tilt.x+u_tilt.y)*4.5),3.);g=normalize(vec2(1.,1.));d=1500.;  // modern smooth 45° oil-slick band
   lines=band;amp=mix(.3,1.35,band);mirror=.45;ex=8.;}
  else{vec3 w=voro(q*200.);vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;mirror=.2;    // shiny glitter
@@ -163,17 +162,19 @@ function renderer(doc){
 }
 // Returns a handle, or null when this surface keeps the CSS finish (unknown treatment or mask, no WebGL).
 // clip: the CSS clip-path of the measured mask the CSS layer already uses (or none for full art).
-export function mountPtcgFoil(overlay,img,treatment,{surface='detail',clip='',artClip=''}={}){
+// window: the mask was measured on this exact image, so it is the foil window as printed and the foil
+// covers all of it (no white-underbase cut-out guessed behind the Pokémon).
+export function mountPtcgFoil(overlay,img,treatment,{surface='detail',clip='',artClip='',window=false}={}){
  const r=PTCG_FOIL_RECIPES[treatment];if(!r||!overlay||!img)return null;
  const shape=clip?maskShape(clip):{rule:'nonzero',rings:[[[0,0],[1,0],[1,1],[0,1]]]},art=artClip?maskShape(artClip):shape;if(!shape||!art)return null;
  const src=img.currentSrc||img.src;if(!src)return null;
- const box=r.underbase?artBox(art):[.1,.1,.9,.5],key=src+'|'+treatment+'|'+clip;
+ const box=r.underbase?artBox(art):[.1,.1,.9,.5],key=src+'|'+treatment+'|'+clip+(window?'|window':'');
  const copy=()=>readableCopy(src);
  return mountFoilCanvas(overlay,{source:copy,key,surface,program:()=>renderer(overlay.ownerDocument),
   analysis:()=>copy().then(i=>analyze(src+'|'+box.join(),()=>readFoilPixels(i),{layout:'',box}).then(a=>{
    // Coverage is per mask, so it is stamped onto a copy of the cached analysis.
    const cov=coverage(shape,a.W,a.H),mask=a.mask.slice(),spill=shape.rule==='evenodd'?artOverflow(readFoilPixels(i).data,a.W,a.H,artBox(shape)):null;
-   for(let k=3;k<mask.length;k+=4)mask[k]=Math.round(cov[k-3]*(spill?1-spill[(k-3)/4]:1));
+   for(let k=3;k<mask.length;k+=4){mask[k]=Math.round(cov[k-3]*(spill?1-spill[(k-3)/4]:1));if(window)mask[k-3]=255;}
    if(r.strip)ecardStrip(readFoilPixels(i).data,mask,a.W,a.H);return {...a,mask};})),
   setUniforms:({gl,U})=>{gl.uniform4f(U.u_r1,r.pat,r.tint,r.underbase,r.relief);gl.uniform4f(U.u_r2,r.sparkle,r.soft,r.strength,0);}});
 }

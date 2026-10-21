@@ -4589,15 +4589,10 @@ body.glass .cs-tabs button:not(.on):not([aria-selected="true"]) {background:tran
 .community-binder-value strong{font-size:24px}.community-binder-value small{color:var(--muted)}
 .community-dialog footer{position:sticky;bottom:0;padding:14px 0;background:var(--surface);border-top:1px solid var(--line)}
 #sheetBody :is(button,a,input,select,summary){scroll-margin-top:145px;scroll-margin-bottom:24px}
-.brand-cycle{display:none;pointer-events:none}.ai-sigil .stashy-logo{width:48px;height:48px}.ai-sigil{background:transparent;border:0}
+.ai-sigil .stashy-logo{width:48px;height:48px}.ai-sigil{background:transparent;border:0}
 @media(prefers-reduced-motion:no-preference){
  .brand-breathing{animation:stashy-breathe 6s ease-in-out infinite;transform-origin:center}
- .brand-breathing .brand-cycle{display:block;transform-origin:64px 98px;transform-box:view-box;opacity:0}
- .brand-breathing .brand-cycle-left{animation:stashy-cycle-left 18s ease-in-out infinite}
- .brand-breathing .brand-cycle-right{animation:stashy-cycle-right 18s ease-in-out infinite}
  @keyframes stashy-breathe{0%,100%{transform:translateY(0) scale(.98)}50%{transform:translateY(-1.5px) scale(1.025)}}
- @keyframes stashy-cycle-left{0%,24%,50%,100%{opacity:0;transform:rotate(-19deg)}26%{opacity:1;transform:translate(-10px,-7px) rotate(-30deg)}32%,43%{opacity:1;transform:translate(15px,-5px) rotate(0deg)}48%{opacity:1;transform:rotate(-19deg)}}
- @keyframes stashy-cycle-right{0%,57%,85%,100%{opacity:0;transform:rotate(19deg)}59%{opacity:1;transform:translate(10px,-7px) rotate(30deg)}65%,77%{opacity:1;transform:translate(-17px,-5px) rotate(0deg)}83%{opacity:1;transform:rotate(19deg)}}
 }
 /* AI entry points share one quiet shell; motion belongs to the card emblem. */
 .ask-launch{background:var(--surface);color:var(--text);border:1px solid var(--line);box-shadow:none;animation:none}

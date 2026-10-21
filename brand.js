@@ -13,9 +13,11 @@ const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" class
 <linearGradient id="bfB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f58a72"/><stop offset="1" stop-color="#c24f39"/></linearGradient>
 <linearGradient id="bfL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset=".55" stop-color="#ffe9f6" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <clipPath id="bfK"><rect x="39" y="19" width="50" height="76" rx="7"/></clipPath>
+<clipPath id="bfQ"><path d="M0 0h128v76H102v26a10 10 0 0 1-10 10H36a10 10 0 0 1-10-10V76H0z"/></clipPath>
 </defs>
 <rect class="brand-backplate" x="2" y="2" width="124" height="124" rx="29" fill="#11141b" stroke="#d8bb7c" stroke-opacity=".22"/>
 <path d="M27 74h74v6H27z" fill="#8e3626"/>
+<g class="brand-cards" clip-path="url(#bfQ)">
 <g class="brand-card brand-left" transform="translate(8 0) rotate(-12 64 98)" style="--fan-from:-12deg;--fan-to:-12deg">
 <rect x="24" y="25" width="48" height="69" rx="6.5" fill="url(#bfP)" stroke="#0b1f4d" stroke-width="2"/>
 <rect x="28" y="29" width="40" height="61" rx="4" fill="none" stroke="#8fb6ff" stroke-opacity=".35"/>
@@ -37,6 +39,7 @@ const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" class
 <circle cx="64" cy="38.5" r="2.6" fill="#efe6c6"/><circle cx="55.5" cy="42" r="2.6" fill="#5b8fd0"/><circle cx="72.5" cy="42" r="2.6" fill="#2a2430" stroke="#b39371" stroke-width=".6"/><circle cx="52.5" cy="50" r="2.6" fill="#d0563c"/><circle cx="75.5" cy="50" r="2.6" fill="#5c9f62"/>
 <g clip-path="url(#bfK)"><rect class="brand-sheen" x="-11" y="15" width="70" height="84" fill="url(#bfL)"/></g>
 </g>
+</g>
 <g class="brand-box">
 <path d="M26 76h76v26a10 10 0 0 1-10 10H36a10 10 0 0 1-10-10z" fill="url(#bfB)"/>
 <path d="M26 76h76v7H26z" fill="#ffc0b0" opacity=".45"/>
@@ -46,10 +49,8 @@ const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" class
 let seq = 0;
 // Gives one emblem its own gradient and clip ids.
 const own = svg => { const n = (++seq).toString(36); return svg.replace(/\bbf([A-Z])\b/g, `bf${n}$1`); };
-const frontCopy = side => SVG.match(new RegExp(`<g class="brand-card brand-${side}"[\\s\\S]*?<\\/g>`))[0]
-  .replace(`brand-card brand-${side}`, `brand-cycle brand-cycle-${side}`);
-// The moving copies sit behind the box front, so the cards always come out of the box.
-const animatedSVG = SVG.replace('<g class="brand-box">', `${frontCopy('left')}${frontCopy('right')}<g class="brand-box">`);
 export const brandStaticMark = () => own(SVG);
-export const brandMark = (mode = '') => own(animatedSVG.replace('class="stashy-logo"',
+// Animated marks run the cards in one continuous arc out of the box and back (brand-motion.css); the
+// cards are clipped to the space above the box and inside it, so they only ever hide in the box.
+export const brandMark = (mode = '') => own(SVG.replace('class="stashy-logo"',
   `class="stashy-logo ${mode.replace(/[^a-z -]/g, '')} brand-breathing"`));
