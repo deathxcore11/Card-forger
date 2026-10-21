@@ -75,7 +75,7 @@ const draft=samplePack('mtg',mtgSet,undefined,()=>.9,{released_at:'2018-04-27'})
 assert.deepEqual(packFinishes('mtg',[{id:'a',packSlot:'foil',finishes:['nonfoil','foil']},{id:'b',finishes:['nonfoil','foil']}]),[{finish:'foil'},{}]);
 // Yu-Gi-Oh! tournament and prize packs are packs; tins and mega packs from tins are not.
 assert.deepEqual(['OTS TOURNAMENT PACK 12','ASTRAL PACK ONE','SPEED DUEL TOURNAMENT PACK 01','2015 MEGA-TINS MEGA PACK','BOOSTER PACK TIN 2002'].map(name=>packEligible('ygo',{name})),[true,true,true,false,false]);
-assert.equal(packSize('ygo',{name:'OTS TOURNAMENT PACK 12'}),3);
+assert.equal(packSize('ygo',{name:'OTS TOURNAMENT PACK 12'}),3);assert.equal(packSize('ygo',{name:'25th Anniversary Rarity Collection'}),5,'Rarity Collection packs hold 5 cards');
 // A Magic bonus-sheet card (Mystical Archive) opens its main set's booster.
 const sets={soa:{code:'soa',name:'Mystical Archive',set_type:'masterpiece',parent_set_code:'sos'},sos:{code:'sos',name:'Secrets of Strixhaven',set_type:'expansion',released_at:'2026-04-24'}};
 const daze={id:'d1',set:'soa',set_name:'Mystical Archive',set_type:'masterpiece',rarity:'rare',image_uris:{normal:'x'}};

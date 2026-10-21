@@ -1,4 +1,6 @@
-import {openPackPreview,ptcgSetRarities} from './pack-preview.js';
+import {openPackPreview,ptcgSetRarities,trimPackArt} from './pack-preview.js';
+// Booster pack photos trim to the pack itself wherever they appear.
+document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]'))trimPackArt(e.target);},true);
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';

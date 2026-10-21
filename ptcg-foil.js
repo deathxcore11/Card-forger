@@ -19,9 +19,11 @@ vec3 toLin(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.0
 vec3 toSrgb(vec3 c){return mix(c*12.92,1.055*pow(max(c,vec3(0.)),vec3(1./2.4))-.055,step(vec3(.0031308),c));}
 float hash(vec2 p){p=fract(p*vec2(234.34,435.345));p+=dot(p,p+34.23);return fract(p.x*p.y);}
 vec2 hash2(vec2 p){return vec2(hash(p),hash(p+17.31));}
+// Smooth value noise: neighbouring cells blend, so a foil's streaks flow into each other instead of tiling.
+float vnoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
 vec3 spectrum(float l){vec3 c=vec3(exp(-pow((l-600.)/70.,2.))+.35*exp(-pow((l-440.)/30.,2.)),exp(-pow((l-540.)/60.,2.)),exp(-pow((l-455.)/40.,2.)));return c*smoothstep(380.,420.,l)*(1.-smoothstep(700.,750.,l));}
 // Reflection grating: light reaching the eye satisfies (L+V)·g = mλ/d along grating vector g.
-vec3 grating(vec3 L,vec3 V,vec2 g,float d){float s=abs(dot(L.xy+V.xy,g));vec3 c=vec3(0.);for(int m=1;m<=3;m++)c+=spectrum(d*s/float(m))/float(m);return c;}
+vec3 grating(vec3 L,vec3 V,vec2 g,float d,float off){float s=abs(dot(L.xy+V.xy,g))+off;vec3 c=vec3(0.);for(int m=1;m<=3;m++)c+=spectrum(d*s/float(m))/float(m);return c;}
 vec3 shoulder(vec3 x){vec3 e=max(x-.82,0.);return min(x,.82)+.18*e/(e+.18);}
 vec3 voro(vec2 q){vec2 n=floor(q),f=fract(q);float d1=8.,d2=8.;vec2 id=n;
  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(float(x),float(y)),h=hash2(n+o),r=o+h-f;float d=dot(r,r);if(d<d1){d2=d1;d1=d;id=n+o;}else if(d<d2)d2=d;}
@@ -32,9 +34,10 @@ vec2 ball(vec2 q,float scale){vec2 p=q*scale;p.x+=mod(floor(p.y),2.)*.5;vec2 f=f
 // Pattern -> foil radiance. N is the surface normal (relief included).
 vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad,float height,vec2 stroke){
  vec3 H=normalize(L+V);vec2 q=vec2(uv.x,uv.y*u_aspect),px=uv*u_px;vec2 g=normalize(vec2(.86,.5));
- float d=1550.,lines=0.,glint=0.,mirror=.35,ex=14.,amp=.75;
- if(pat<1.5){vec2 c=floor(vec2(q.x*70.,q.y*9.));vec2 j=hash2(c);g=normalize(vec2((j.x-.5)*.5,1.));d=1250.+j.y*550.;  // WotC: vertical starlight streaks
-  lines=.5+.5*sin(px.y*.9+j.x*6.28);vec3 w=voro(q*60.);glint=step(.9,hash(w.xy))*pow(max(dot(normalize(vec3((hash2(w.xy)-.5)*.6,1.)),H),0.),90.)*2.;amp=.85;
+ float d=1550.,lines=0.,glint=0.,mirror=.35,ex=14.,amp=.75,off=0.;
+ if(pat<1.5){  // WotC: vertical starlight streaks that flow into one another (smooth across and along each streak)
+  vec2 sp=vec2(q.x*55.,q.y*.7);vec2 j=vec2(vnoise(sp),vnoise(sp+vec2(31.7,11.3)));g=normalize(vec2(1.,(j.x-.5)*.12));d=1400.;off=j.y*.55;  // each streak carries its own colour
+  lines=.5+.5*vnoise(vec2(q.x*160.,q.y*6.));vec3 w=voro(q*60.);glint=step(.93,hash(w.xy))*pow(max(dot(normalize(vec3((hash2(w.xy)-.5)*.6,1.)),H),0.),60.)*1.1;amp=.85;
   // Four-point stars on three parallax depths: each layer drifts with the tilt and every star lights at its own angle.
   for(int k=0;k<3;k++){float s=10.+float(k)*9.;vec2 p=q*s+u_tilt*(.35/(1.+float(k))),cc=floor(p),f=fract(p)-.5-(hash2(cc+float(k)*13.)-.5)*.5;vec2 r=hash2(cc+float(k)*29.);
    float on=step(.72,r.y),star=on*(1.-smoothstep(0.,.012+.01*r.x,abs(f.x*f.y)*14.+length(f)*.09)),fire=pow(max(cos(dot(u_tilt,vec2(3.5))+r.x*6.28),0.),8.);glint+=star*fire*(1.6-.35*float(k));}}
@@ -43,7 +46,7 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
  else if(pat<3.5){g=normalize(vec2(1.,1.));d=1400.;lines=.5+.5*sin((px.x+px.y)*1.1);mirror=.3;amp=.8;}          // EX: fine diagonal lines
  else if(pat<4.5){}                                                                                              // broad sheen
  else if(pat<5.5){vec3 w=voro(q*170.);vec2 j=hash2(w.xy*1.7);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;mirror=.25;  // sparkle
-  glint=pow(max(dot(normalize(vec3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),300.)*1.3;amp=.7;}
+  glint=pow(max(dot(normalize(vec3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),300.)*.95;amp=.7;}
  else if(pat<6.5){float on=0.;for(int k=0;k<2;k++){float s=k==0?9.:17.;vec2 p=q*s,c=floor(p),f=fract(p)-.5-(hash2(c+float(k)*7.)-.5)*.4;  // cosmos circles
    float rad=.12+.26*hash(c+3.+float(k));float circ=1.-smoothstep(rad-.03,rad,length(f));if(circ>on){on=circ;float a=hash(c+9.)*PI;g=vec2(cos(a),sin(a));d=1050.+hash(c+5.)*900.;}}
   amp=mix(.45,1.4,on);mirror=.3;lines=on;}
@@ -59,8 +62,8 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
  else if(pat>13.5){float band=pow(.5+.5*sin((q.x+q.y)*5.5-(u_tilt.x+u_tilt.y)*4.5),3.);g=normalize(vec2(1.,1.));d=1500.;  // modern smooth 45° oil-slick band
   lines=band;amp=mix(.3,1.35,band);mirror=.45;ex=8.;}
  else{vec3 w=voro(q*200.);vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;mirror=.2;    // shiny glitter
-  glint=pow(max(dot(normalize(vec3((j-.5)*.5,1.)),H),0.),260.)*3.;amp=.7;}
- vec3 dif=grating(L,V,g,d)*amp;float spec=pow(max(dot(N,H),0.),ex);
+  glint=pow(max(dot(normalize(vec3((j-.5)*.5,1.)),H),0.),260.)*2.;amp=.7;}
+ vec3 dif=grating(L,V,g,d,off)*amp;float spec=pow(max(dot(N,H),0.),ex);
  vec3 metal=tint<.5?vec3(1.):tint<1.5?vec3(1.,.74,.32):vec3(.86,.9,.96);
  vec3 col=tint<.5?dif*1.9:tint<1.5?metal*(.5*spot+.9*length(dif))*1.3:metal*(.6*spot+.5*length(dif))*1.3+dif*.25;
  return vec3(.18)*metal+spot*(mirror*spec*metal+col)*(.7+.3*lines)+glint*metal;
@@ -68,6 +71,9 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
 vec3 overInk(vec3 base,vec3 F,float cover){vec3 T=mix(base,base/max(max(base.r,max(base.g,base.b)),.04),.32);return mix(base,shoulder(T*F*1.35),clamp(cover,0.,1.));}
 void main(){
  vec2 uv=vec2(v.x,1.-v.y);vec3 base=toLin(texture2D(u_card,v).rgb);vec4 mk=texture2D(u_mask,v),rl=texture2D(u_relief,v);
+ // The cut-out behind a holo Pokémon is measured on a coarse grid: soften it so the foil tucks in behind
+ // the art along its outline instead of stopping on a stepped edge. The frame's own edge (A) stays exact.
+ vec2 bt=u_texel*1.5;mk.r=(mk.r*4.+texture2D(u_mask,v+vec2(bt.x,0.)).r+texture2D(u_mask,v-vec2(bt.x,0.)).r+texture2D(u_mask,v+vec2(0.,bt.y)).r+texture2D(u_mask,v-vec2(0.,bt.y)).r)/8.;
  vec2 lp=vec2(.5,.45)+u_tilt*.6;vec3 P=vec3(uv.x,uv.y*u_aspect,0.);
  vec3 L=normalize(vec3(lp.x,lp.y*u_aspect,.85)-P),V=normalize(vec3(.5,.5*u_aspect,2.2)-P),H=normalize(L+V);
  vec2 dl=(uv-lp)*vec2(1.,u_aspect);float spot=exp(-dot(dl,dl)/.3);

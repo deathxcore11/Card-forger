@@ -43,6 +43,9 @@ const PACKS={
   core:[...C(7),slot({rare:1}),slot({superrare:72,ultrarare:17,secretrare:8.5,quartercenturysecretrare:2.5},'hit')],
   // Classic boosters: 8 commons and a rare that is sometimes upgraded (Super ~1 in 5, Ultra ~1 in 12, Secret ~1 in 23).
   classic:[...C(8),slot({rare:63,superrare:20,ultrarare:8.5,secretrare:4.5,ultimaterare:2,ghostrare:.6},'hit')],
+  // Rarity Collection: 5 cards, all foil: four Super or Ultra Rares and one rarer foil (Secret, Ultimate,
+  // Collector's, Platinum Secret or Quarter Century Secret). A card printed in several rarities rolls one.
+  rarity:[...Array(4).fill(slot({superrare:3,ultrarare:2})),slot({secretrare:30,ultimaterare:20,collectorsrare:24,platinumsecretrare:10,quartercenturysecretrare:12},'hit')],
   // Tournament and prize packs: 3 cards, the last a rare that is sometimes upgraded.
   tournament:[...C(2),slot({rare:60,superrare:25,ultrarare:10,secretrare:5,ultimaterare:1},'hit')]}
 };
@@ -52,7 +55,7 @@ export function packEra(game,set={}){
  const id=String(set.id||set.code||'').toLowerCase(),y=releaseYear(set),date=String(set.released_at||'');
  if(game==='mtg')return date&&date<'1999-02-15'?'nofoil':date&&date<'2008-10-03'?'classic':date&&date<'2024-02-09'?'draft':'play';
  if(game==='ptcg')return /^(?:sv|me)/.test(id)||y>=2023?'sv':/^(?:base|gym|neo|lc|si)\d*/.test(id)||y&&y<2002?'wotc':'modern';
- if(game==='ygo')return YGO_TOURNAMENT_PACK.test(set.name||'')?'tournament':y&&y<2014?'classic':'core';
+ if(game==='ygo')return /rarity collection/i.test(set.name||'')?'rarity':YGO_TOURNAMENT_PACK.test(set.name||'')?'tournament':y&&y<2014?'classic':'core';
  return '';
 }
 const slotsFor=(game,set)=>PACKS[game]?.[packEra(game,set)]||[];
@@ -114,6 +117,26 @@ export function packRarity(game,card){
  return {label:label?(game==='ygo'?ygoRarity(label):label):'Rarity unconfirmed',rank:label?rarityTier(game,label):0};
 }
 export function packList(cards){const names=new Map();for(const c of cards)names.set(c.name,(names.get(c.name)||0)+1);return [...names].map(([name,n])=>`${n} ${name}`);}
+// Product photos come with studio background and padding around the pack. Trim them to the pack itself
+// so it fills its outline: the corners give the background colour, and the crop keeps everything that
+// differs from it. Cross-origin or blank images are left exactly as they are.
+const trimmed=new WeakSet();
+export function trimPackArt(img){
+ if(!img?.naturalWidth||trimmed.has(img))return;trimmed.add(img);
+ try{
+  const W=img.naturalWidth,H=img.naturalHeight,k=Math.min(1,320/Math.max(W,H)),w=Math.max(1,Math.round(W*k)),h=Math.max(1,Math.round(H*k));
+  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,w,h);const d=x.getImageData(0,0,w,h).data;
+  const at=(i,j)=>(j*w+i)*4,bg=[[0,0],[w-1,0],[0,h-1],[w-1,h-1]].map(([i,j])=>[d[at(i,j)],d[at(i,j)+1],d[at(i,j)+2]]);
+  const ref=[0,1,2].map(n=>bg.reduce((s,b)=>s+b[n],0)/4);if(bg.some(b=>Math.abs(b[0]-ref[0])+Math.abs(b[1]-ref[1])+Math.abs(b[2]-ref[2])>36))return;
+  const fg=(i,j)=>{const o=at(i,j);return d[o+3]>24&&Math.abs(d[o]-ref[0])+Math.abs(d[o+1]-ref[1])+Math.abs(d[o+2]-ref[2])>48;};
+  const busy=(n,col)=>{let hits=0,len=col?h:w;for(let m=0;m<len;m++)if(col?fg(n,m):fg(m,n))hits++;return hits>len*.02;};
+  let l=0,r=w-1,t=0,b=h-1;while(l<r&&!busy(l,true))l++;while(r>l&&!busy(r,true))r--;while(t<b&&!busy(t,false))t++;while(b>t&&!busy(b,false))b--;
+  const cw=r-l+1,ch=b-t+1;if(cw<w*.3||ch<h*.3||cw*ch>w*h*.94)return;
+  const o=document.createElement('canvas'),sx=W/w,sy=H/h;o.width=Math.round(cw*sx);o.height=Math.round(ch*sy);
+  o.getContext('2d').drawImage(img,l*sx,t*sy,cw*sx,ch*sy,0,0,o.width,o.height);
+  o.toBlob(blob=>{if(blob&&img.isConnected){img.src=URL.createObjectURL(blob);img.dataset.trimmed='1';}},'image/png');
+ }catch{}
+}
 // The real booster pack for this set (TCGplayer product art, served same-origin by the worker).
 export function packArtUrl(game,set={}){
  const q=new URLSearchParams(),code=String(set.code||set.id||'').toLowerCase();
@@ -157,7 +180,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const back=`<span class="pack-card-back" data-back="${esc(game)}">${brandStaticMark()}<img class="pack-back-img" src="/img/back/${esc(game)}.jpg" alt="" decoding="async" onerror="this.remove()"></span>`;
  const hand=()=>picks.map((c,i)=>{const rarity=packRarity(game,c);return `<button class="pack-card" data-pack="reveal" data-index="${i}" data-hold-card style="--i:${i};--pack-glow:${TIERS[Math.min(rarity.rank,5)].color}" aria-label="Card ${i+1}, face down" aria-pressed="false">${back}<span class="pack-card-front"><img data-pack-src="${esc(setImageUrl(cardArt(c)))}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true"></span></button>`;}).join('');
  dialog.innerHTML=`<header class="pack-header"><div><h2>${esc(set.name)}</h2><p class="pack-explanation">Free preview · approximate pull rates, not a real booster · nothing is added to your collection</p></div><button class="icon" data-pack="close" aria-label="Close pack">✕</button></header>
-<div class="pack-sealed"><button class="pack-wrapper" data-pack="open" aria-label="Open the ${esc(set.name)} pack"><span class="pack-body"><span class="pack-wrap-art">${sources.length?`<img src="${esc(safeHref(setImageUrl(sources[0])))}" data-sources="${esc(JSON.stringify(sources))}" alt="" referrerpolicy="no-referrer" onerror="const s=JSON.parse(this.dataset.sources),i=(+this.dataset.i||0)+1;if(s[i]){this.dataset.i=i;this.src=s[i];this.closest('.pack-wrapper').classList.add('pack-generic');}else this.hidden=true">`:''}<span class="pack-wrap-brand">${brandStaticMark()}<b>${esc(set.name)}</b></span></span><span class="pack-crimp top"></span><span class="pack-crimp bottom"></span><span class="pack-sheen"></span></span></button></div>
+<div class="pack-sealed"><button class="pack-wrapper" data-pack="open" aria-label="Open the ${esc(set.name)} pack"><span class="pack-body"><span class="pack-wrap-art">${sources.length?`<img data-pack-art src="${esc(safeHref(setImageUrl(sources[0])))}" data-sources="${esc(JSON.stringify(sources))}" alt="" referrerpolicy="no-referrer" onerror="const s=JSON.parse(this.dataset.sources),i=(+this.dataset.i||0)+1;if(s[i]){this.dataset.i=i;this.src=s[i];this.closest('.pack-wrapper').classList.add('pack-generic');}else this.hidden=true">`:''}<span class="pack-wrap-brand">${brandStaticMark()}<b>${esc(set.name)}</b></span></span><span class="pack-crimp top"></span><span class="pack-crimp bottom"></span><span class="pack-sheen"></span></span></button></div>
 <div class="pack-content" hidden><div class="pack-focus"><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"></span>${back}</button><p class="pack-focus-meta" aria-live="polite"><b></b><span></span></p><button type="button" class="pack-tilt" hidden>Enable tilt</button></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
 <div class="pack-actions"><button class="btn ghost pack-reveal-all" data-pack="reveal-all">Reveal all</button><div class="pack-tools" role="group" aria-label="This pack"><button class="pack-tool" data-pack="copy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg><span>Copy list</span></button><button class="pack-tool" data-pack="wish" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span>Wishlist all</span></button><button class="pack-tool" data-pack="buy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14l-1.4 9.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Shop list</span></button></div><button class="btn pack-again" data-pack="again">Open a new pack</button></div></div><p class="pack-status" role="status" aria-live="polite"></p>`;
  document.body.append(dialog);dialog.tabIndex=-1;dialog.showModal();dialog.focus({preventScroll:true});
