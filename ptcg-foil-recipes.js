@@ -7,7 +7,7 @@ export const PTCG_PATTERN={wotc:1,crystal:2,lines:3,sheen:4,sparkle:5,cosmos:6,f
 export const PTCG_TINT={rainbow:0,gold:1,silver:2};
 const P=PTCG_PATTERN,T=PTCG_TINT;
 // soft: full-art cards keep their attack text readable, so the lower half of the card is foiled lightly.
-const r=(label,pat,o={})=>({label,pat,tint:o.tint??T.rainbow,underbase:o.underbase??0,relief:o.relief??0,sparkle:o.sparkle??0,soft:o.soft??0,strip:o.strip??0,note:o.note||''});
+const r=(label,pat,o={})=>({label,pat,tint:o.tint??T.rainbow,underbase:o.underbase??0,relief:o.relief??0,sparkle:o.sparkle??0,soft:o.soft??0,strip:o.strip??0,strength:o.strength??0,note:o.note||''});
 export const PTCG_FOIL_RECIPES={
  'ptcg-wotc-holo':r('WotC holo',P.wotc,{underbase:1,sparkle:.4,note:'1999-2001 holo: streaked starlight foil with four-point stars on three parallax depths behind the Pokémon; the Pokémon itself sits on white ink.'}),
  'ptcg-lc-holo':r('Legendary Collection holo',P.wotc,{underbase:1,sparkle:.4,note:'WotC-style starlight holo behind the Pokémon.'}),
@@ -27,8 +27,8 @@ export const PTCG_FOIL_RECIPES={
  'ptcg-textured':r('Textured full art',P.texture,{relief:.5,soft:1,note:'Embossed full art: raised grooves follow the artwork, so the light ripples around it.'}),
  'ptcg-rainbow':r('Rainbow rare',P.texture,{relief:.5,sparkle:.4,soft:1,note:'Rainbow-tinted, textured full art.'}),
  'ptcg-gold':r('Gold secret rare',P.texture,{tint:T.gold,relief:.5,soft:1,note:'Gold foil with embossed texture.'}),
- 'ptcg-illustration':r('Illustration rare',P.strokes,{relief:.35,soft:1,note:'The whole illustration is foil, with texture that follows the brushwork.'}),
- 'ptcg-special-illustration':r('Special illustration rare',P.strokes,{relief:.6,sparkle:.3,soft:1,note:'Heavily textured, whole-card foil that follows the brushwork.'}),
+ 'ptcg-illustration':r('Illustration rare',P.strokes,{relief:.1,soft:1,strength:.6,note:'The whole illustration is foil, with texture that follows the brushwork.'}),
+ 'ptcg-special-illustration':r('Special illustration rare',P.strokes,{relief:.16,sparkle:.2,soft:1,strength:.65,note:'Heavily textured, whole-card foil that follows the brushwork.'}),
  'ptcg-shiny':r('Shiny rare',P.shiny,{relief:.3,sparkle:1,soft:1,note:'Sparkling shiny foil across the whole card.'}),
  'ptcg-double-rare':r('Double rare ex',P.diagonal,{sparkle:.15,soft:1,note:'Modern ex / V gloss: a smooth 45° oil-slick rainbow band sweeping across the whole card.'})
 };

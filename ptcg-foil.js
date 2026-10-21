@@ -13,7 +13,7 @@ uniform sampler2D u_mask;   // R foil-through behind the Pokémon, G coloured en
 uniform sampler2D u_relief; // R height, G/B stroke direction, A stroke strength
 uniform vec2 u_tilt;uniform vec2 u_px;uniform vec2 u_texel;uniform float u_aspect;
 uniform vec4 u_r1; // pattern, tint, underbase (1 = Pokémon on white ink), relief
-uniform vec4 u_r2; // sparkle, soft (lower half lighter on full arts)
+uniform vec4 u_r2; // sparkle, soft (lower half lighter on full arts), strength (0 = full)
 const float PI=3.14159265;
 vec3 toLin(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));}
 vec3 toSrgb(vec3 c){return mix(c*12.92,1.055*pow(max(c,vec3(0.)),vec3(1./2.4))-.055,step(vec3(.0031308),c));}
@@ -90,6 +90,8 @@ void main(){
  // Full-art cards print the illustration in heavy white-backed ink over the foil, so the art keeps half its
  // weight there; holo windows and reverse frames show the bare foil.
  vec3 outC=overInk(base,F,cov*mix(.92,.5,u_r2.y));
+ // Illustration rares keep their painting's own colour: the foil adds its sheen on top at partial strength.
+ float str=u_r2.z>0.?u_r2.z:1.;outC=mix(base,outC,str);
  if(rel>0.){float rim=pow(max(dot(N,H),0.),24.)*(.35+.65*spot)*clamp(length(grad)*30.,0.,1.);outC+=(1.-outC)*vec3(1.,.97,.92)*rim*rel*cov*.8;}
  if(u_r2.x>0.){vec2 sq=vec2(uv.x,uv.y*u_aspect)*70.,sc=floor(sq);vec2 j=hash2(sc);float on=step(1.-.22*u_r2.x,j.x);
   float pt=1.-smoothstep(.0,.1+.12*j.y,length(fract(sq)-.2-.6*hash2(sc*1.3)));
@@ -166,5 +168,5 @@ export function mountPtcgFoil(overlay,img,treatment,{surface='detail',clip='',ar
    const cov=coverage(shape,a.W,a.H),mask=a.mask.slice(),spill=shape.rule==='evenodd'?artOverflow(readFoilPixels(i).data,a.W,a.H,artBox(shape)):null;
    for(let k=3;k<mask.length;k+=4)mask[k]=Math.round(cov[k-3]*(spill?1-spill[(k-3)/4]:1));
    if(r.strip)ecardStrip(readFoilPixels(i).data,mask,a.W,a.H);return {...a,mask};})),
-  setUniforms:({gl,U})=>{gl.uniform4f(U.u_r1,r.pat,r.tint,r.underbase,r.relief);gl.uniform4f(U.u_r2,r.sparkle,r.soft,0,0);}});
+  setUniforms:({gl,U})=>{gl.uniform4f(U.u_r1,r.pat,r.tint,r.underbase,r.relief);gl.uniform4f(U.u_r2,r.sparkle,r.soft,r.strength,0);}});
 }
