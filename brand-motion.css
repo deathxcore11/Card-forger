@@ -25,7 +25,10 @@
   .stashy-logo.brand-breathing .brand-cycle { display:block; transform-origin:64px 98px; transform-box:view-box; opacity:0; }
   .stashy-logo.brand-breathing .brand-cycle-left { animation:brand-left-front 18s ease-in-out infinite; }
   .stashy-logo.brand-breathing .brand-cycle-right { animation:brand-right-front 18s ease-in-out infinite; }
+  /* A light sweep crosses the gold card's foil now and then. */
+  .stashy-logo.brand-breathing .brand-sheen { animation:brand-sheen 7.5s cubic-bezier(.4,0,.2,1) infinite; }
 }
+@keyframes brand-sheen { 0%,55% {transform:translateX(0)} 85%,100% {transform:translateX(78px)} }
 @keyframes ask-shimmer { 0%,100% {background-position:0% 50%} 50% {background-position:100% 50%} }
 @keyframes stashy-breathe {
   0%,100% { transform:translateY(0) scale(.98); }
