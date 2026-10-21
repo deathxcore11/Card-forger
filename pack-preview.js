@@ -2,7 +2,7 @@ import {esc,safeHref,cardImage} from './ui.js';
 import {rarityTier,TIERS} from './tier.js';
 import {ygoRarity} from './ygo-identity.js';
 import {brandStaticMark} from './brand.js';
-import {setArtworkSources,setImageUrl} from './set-experience.js';
+import {setArtworkSources,setImageUrl,YGO_TOURNAMENT_PACK} from './set-experience.js';
 import {finishAttrs,finishChoices} from './finish-preview.js';
 // A discovery sampler. No collation, print-run odds, purchases or ownership are implied.
 export function sampleSetCards(cards,count=10,random=Math.random){
@@ -39,7 +39,9 @@ const PACKS={
   // Core boosters (2014 on): 7 commons, a rare and a foil (mostly Super, sometimes Ultra, Secret or Quarter Century).
   core:[...C(7),slot({rare:1}),slot({superrare:72,ultrarare:17,secretrare:8.5,quartercenturysecretrare:2.5},'hit')],
   // Classic boosters: 8 commons and a rare that is sometimes upgraded (Super ~1 in 5, Ultra ~1 in 12, Secret ~1 in 23).
-  classic:[...C(8),slot({rare:63,superrare:20,ultrarare:8.5,secretrare:4.5,ultimaterare:2,ghostrare:.6},'hit')]}
+  classic:[...C(8),slot({rare:63,superrare:20,ultrarare:8.5,secretrare:4.5,ultimaterare:2,ghostrare:.6},'hit')],
+  // Tournament and prize packs: 3 cards, the last a rare that is sometimes upgraded.
+  tournament:[...C(2),slot({rare:60,superrare:25,ultrarare:10,secretrare:5,ultimaterare:1},'hit')]}
 };
 const releaseYear=set=>{const y=Number(String(set?.released_at||set?.releaseDate||set?.date||set?.tcg_date||'').slice(0,4));return Number.isFinite(y)&&y>1990?y:0;};
 // Which era's pack this set was printed in.
@@ -47,7 +49,7 @@ export function packEra(game,set={}){
  const id=String(set.id||set.code||'').toLowerCase(),y=releaseYear(set),date=String(set.released_at||'');
  if(game==='mtg')return date&&date<'2008-10-03'?'classic':date&&date<'2024-02-09'?'draft':'play';
  if(game==='ptcg')return /^(?:sv|me)/.test(id)||y>=2023?'sv':/^(?:base|gym|neo|lc|si)\d*/.test(id)||y&&y<2002?'wotc':'modern';
- if(game==='ygo')return y&&y<2014?'classic':'core';
+ if(game==='ygo')return YGO_TOURNAMENT_PACK.test(set.name||'')?'tournament':y&&y<2014?'classic':'core';
  return '';
 }
 const slotsFor=(game,set)=>PACKS[game]?.[packEra(game,set)]||[];

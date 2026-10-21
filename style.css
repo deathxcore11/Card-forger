@@ -4929,3 +4929,36 @@ dialog.sheet:has(.context-card),body.glass dialog.sheet:has(.context-card){max-w
 @keyframes today-pack-in{from{opacity:0;transform:rotate(-14deg) translateY(10px)}to{opacity:1;transform:rotate(-6deg)}}
 @media(min-width:900px){.home-today{min-height:140px;padding:18px 24px;gap:20px}.today-pack{width:76px}}
 @media(prefers-reduced-motion:reduce){.today-bg img,.today-pack,.today-pack::after{animation:none}.today-pack{transition:none}}
+
+/* Meta decks and News slides are showcase cards like the Card of the Day: the art is the backdrop of one
+   rounded card, the copy sits on its dark side, and the heading and slide controls sit quietly outside. */
+#content .home-meta,#content .home-community{border:0;border-radius:0;background:none;box-shadow:none;margin-bottom:22px}
+#content .home-meta-heading,#content .home-community>.section-head{padding:0 4px;margin:0 0 8px;min-height:0}
+#content .home-meta-heading h2,#content .home-community h2{font-size:17px;letter-spacing:-.02em}
+#content .home-meta-heading .link{min-height:36px}
+#content .home-meta-card,#content .home-community .community-feature{position:relative;isolation:isolate;overflow:hidden;min-height:150px;border:1px solid #ffffff1c;border-radius:20px;background:#121218;color:#fff;box-shadow:0 18px 40px #0005,inset 0 1px #ffffff0d}
+#content .home-community .community-feature{display:block;padding:16px 18px}
+#content .home-community .community-feature+.community-feature{margin-top:12px;border-top:1px solid #ffffff1c}
+#content .home-meta-copy{padding:16px 18px}
+#content :is(.home-meta-card,.home-community .community-feature)>.community-art{position:absolute;inset:0;width:100%;height:100%;margin:0;border:0;border-radius:0;z-index:-1;background:#121218}
+#content :is(.home-meta-card,.home-community .community-feature) :is(.community-art-image,.community-art-scan){left:0;right:0;width:100%}
+#content :is(.home-meta-card,.home-community .community-feature) .community-art-window .community-art-image{width:122%}
+#content :is(.home-meta-card,.home-community .community-feature) .community-art .community-art-shade{display:block;background:linear-gradient(90deg,#000e 0%,#000b 45%,#0005 100%),linear-gradient(0deg,#0009,transparent 60%)}
+#content :is(.home-meta-card,.home-community .community-feature) .community-art .community-art-caption{display:block;top:10px;right:12px;max-width:46%;border-radius:999px;padding:3px 9px;font-size:8px;background:#0009}
+#content :is(.home-meta-card,.home-community .community-feature) .community-art-emblem{opacity:.35}
+#content .home-meta-copy>.eyebrow,#content .home-community .community-feature .eyebrow{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--gold);margin:0 0 4px}
+#content .home-meta-copy h3,#content .home-community .community-feature h3{font-size:clamp(18px,4.8vw,22px);line-height:1.18;letter-spacing:-.02em;margin:0 0 6px;text-shadow:0 2px 12px #000c;max-width:none}
+#content .home-meta-result,#content .home-community .community-summary{font-size:12.5px;color:#ffffffc4;margin:0 0 6px}
+#content .home-meta-source,#content .home-meta-method,#content .home-community .community-source{font-size:10.5px;color:#ffffff9c;margin:2px 0}
+#content .home-community .community-pills .chip{padding:2px 8px;border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);border-radius:999px;background:#0007;color:color-mix(in srgb,var(--gold) 80%,#fff);font-size:10.5px;font-weight:650}
+#content .home-meta-footer,#content .home-community .community-footer{padding:4px 4px 0;border:0}
+#content .home-community .community-stage{display:grid;gap:12px;padding:0}
+#content .home-community .community-feature+.community-feature{margin-top:0}
+#content .home-meta-empty .home-meta-copy{padding-top:34px}
+
+/* The Home header art melts into the page: no fill behind it and no colour band at its foot, only the
+   art fading out, so there is no hard edge whatever the page background is (all three games). */
+body[data-view="home"] #content > #homeHero.home-art-header{background:none}
+#homeHero.home-art-header .hh-art{-webkit-mask-image:linear-gradient(#000 30%,#000b 60%,#0004 82%,transparent);mask-image:linear-gradient(#000 30%,#000b 60%,#0004 82%,transparent)}
+#homeHero.home-art-header .hh-shade{background:linear-gradient(90deg,#080b10a0,transparent 85%);-webkit-mask-image:linear-gradient(#000 40%,transparent);mask-image:linear-gradient(#000 40%,transparent)}
+#content .home-resume .home-resume-choose{display:inline;min-height:0;padding:0;border:0;background:none;color:var(--gold);font:inherit;font-weight:650}

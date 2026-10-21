@@ -86,8 +86,18 @@ export function refreshHomeValue(game, root, options, documentRef = globalThis.d
 
 // One recent personal task, supported by a successful saved edit, never by
 // array position, an import timestamp, or Magic's legacy activeDeck fallback.
+const pickedDecks = new Map();
 export function homeResume(game, formatName = deck => deck.format) {
   const recent = lastWorkedDeck(S.state, game), decks = (game === 'mtg' ? S.state : S.state.tcg?.[game])?.decks || [];
+  // No recorded edit yet: show one of the person's own decks (picked at random once per visit), never
+  // labelled as recently worked on, beside the way to choose another.
+  const picked = !recent && decks.length ? decks.find(d => d.id === pickedDecks.get(game)) || decks[Math.floor(Math.random() * decks.length)] : null;
+  if (picked) {
+    pickedDecks.set(game, picked.id);
+    const n = (game === 'mtg' ? picked.cards : picked.zones?.main || []).reduce((total, row) => total + (Number(row.qty) || 0), 0);
+    const to = `#${game === 'mtg' ? 'deck' : 'tdeck'}/${encodeURIComponent(picked.id)}/cards`;
+    return `<section class="home-resume home-resume-pick" data-home-resume="${game}" data-home-deck-pick="${esc(picked.id)}" aria-label="One of your decks"><div><p class="eyebrow">From your decks</p><h2>${esc(picked.name || 'Untitled deck')}</h2><p>${esc(formatName(picked) || GAMES[game].short)} · ${n} ${game === 'ygo' ? 'main-deck cards' : 'cards'} · <button type="button" class="link small home-resume-choose" data-act="go" data-to="#decks">Choose a deck</button></p></div><button type="button" class="home-resume-open" data-act="go" data-to="${esc(to)}" aria-label="Open ${esc(picked.name || 'deck')}">Open <span aria-hidden="true">↗</span></button></section>`;
+  }
   if (!recent) return `<section class="home-resume home-resume-empty" data-home-resume="${game}" aria-label="Resume a deck"><div><h2>Your deck</h2><p>${decks.length ? 'Choose a deck to pick up where you left off.' : 'No saved decks yet.'}</p></div><button type="button" class="link" data-act="go" data-to="#decks">${decks.length ? 'Choose a deck' : 'Open Decks'} <span aria-hidden="true">↗</span></button></section>`;
   const { deck, at } = recent, count = (game === 'mtg' ? deck.cards : deck.zones?.main || []).reduce((total, row) => total + (Number(row.qty) || 0), 0);
   const route = `#${game === 'mtg' ? 'deck' : 'tdeck'}/${encodeURIComponent(deck.id)}/cards`;

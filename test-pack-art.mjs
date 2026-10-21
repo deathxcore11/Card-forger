@@ -2,6 +2,8 @@
 // and a set whose own name contains an excluded word ("Rarity Collection") still finds its pack.
 import assert from 'node:assert/strict';
 import {selectPackProduct,selectPackGroup} from './set-art.js';
+import {packEligible} from './set-experience.js';
+import {dailyDetails} from './home-today.js';
 import {samplePack,rollYgoPrinting,ptcgSetRarities,packEra,packSize,packFinishes} from './pack-preview.js';
 // A fixed-seed generator keeps the statistical checks deterministic.
 const seeded=(a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;})(12345);
@@ -69,4 +71,12 @@ let foils=0;for(let i=0;i<3000;i++)if(samplePack('mtg',mtgSet,undefined,seeded,{
 const draft=samplePack('mtg',mtgSet,undefined,()=>.9,{released_at:'2018-04-27'});assert.equal(draft.length,14);assert.equal(draft.filter(c=>c.packSlot==='foil').length,0);assert.equal(draft.slice(0,10).every(c=>c.rarity==='common'),true,'a draft pack without a foil has 10 commons');
 // Shiny slots: a Magic foil slot pulls in traditional foil; a Pokémon reverse slot as a reverse holo once its variants load.
 assert.deepEqual(packFinishes('mtg',[{id:'a',packSlot:'foil',finishes:['nonfoil','foil']},{id:'b',finishes:['nonfoil','foil']}]),[{finish:'foil'},{}]);
+// Yu-Gi-Oh! tournament and prize packs are packs; tins and mega packs from tins are not.
+assert.deepEqual(['OTS TOURNAMENT PACK 12','ASTRAL PACK ONE','SPEED DUEL TOURNAMENT PACK 01','2015 MEGA-TINS MEGA PACK','BOOSTER PACK TIN 2002'].map(name=>packEligible('ygo',{name})),[true,true,true,false,false]);
+assert.equal(packSize('ygo',{name:'OTS TOURNAMENT PACK 12'}),3);
+// A Magic bonus-sheet card (Mystical Archive) opens its main set's booster.
+const sets={soa:{code:'soa',name:'Mystical Archive',set_type:'masterpiece',parent_set_code:'sos'},sos:{code:'sos',name:'Secrets of Strixhaven',set_type:'expansion',released_at:'2026-04-24'}};
+const daze={id:'d1',set:'soa',set_name:'Mystical Archive',set_type:'masterpiece',rarity:'rare',image_uris:{normal:'x'}};
+const dd=await dailyDetails('mtg',{id:'d1',date:'2026-10-21',printing:daze},async url=>sets[url.split('/').pop()]);
+assert.equal(dd.set.pack.code,'sos');assert.equal(dd.card,daze);
 console.log('PASS: packs follow typical slot structure and pull rates; Yu-Gi-Oh! multi-rarity cards are pulled in one rarity; booster pack artwork picks the set’s own pack, including sets named “Collection”, and never boxes, sleeved packs or boxed collections.');

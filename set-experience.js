@@ -12,8 +12,12 @@ export function setAtmosphere(game,set,card=null){
  const urls=setArtworkSources(game,set,card);if(!urls.length)return '';
  return `<span class="set-atmosphere" aria-hidden="true"><img src="${esc(urls[0])}" data-set-art-sources="${esc(JSON.stringify(urls))}" data-set-art-index="0" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="const a=JSON.parse(this.dataset.setArtSources),i=Number(this.dataset.setArtIndex)+1;this.dataset.setArtIndex=i;if(a[i])this.src=a[i];else{this.onerror=null;this.hidden=true}"></span>`;
 }
+// Yu-Gi-Oh! prize and tournament boosters (OTS, Astral, Champion, Turbo, Speed Duel Tournament Packs) are
+// real packs; tins, decks and boxes are not.
+export const YGO_TOURNAMENT_PACK=/(?:^|\b)(?:(?:OTS |OTS ULTIMATE |SPEED DUEL )?TOURNAMENT PACK|ASTRAL PACK|CHAMPION PACK|TURBO PACK|WINNER'S PACK)\b/i;
 export function packEligible(game,set){
  if(!set)return false;
+ if(game==='ygo'&&YGO_TOURNAMENT_PACK.test(set.name||'')&&!/\btin\b/i.test(set.name||''))return true;
  if(/promo|token|memorabilia|starter|structure deck|theme deck|trainer kit|battle deck|secret lair|championship|tournament|prize|sample|demo|deck exclusiv/i.test(`${set.name||''} ${set.set_type||''} ${set.series||''}`))return false;
  // Scryfall sets have set_type/digital; booster is a CARD field, not a set field.
  if(game==='mtg')return !set.digital&&['core','expansion','masters','draft_innovation','funny'].includes(set.set_type);

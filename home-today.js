@@ -15,7 +15,11 @@ export function dailyDetails(g,h,fetchJson=json){
   if(g==='ptcg'){const c=await fetchJson('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(h.id));if(c?.id!==h.id)throw Error('Different card');
    return {image:c.image?(/\.(?:webp|png|jpe?g)$/i.test(c.image)?c.image:c.image+'/high.webp'):'',rarity:c.rarity||'',set:c.set?.id?{id:c.set.id,name:c.set.name,count:c.set.cardCount?.official||c.set.cardCount?.total||null,logo:c.set.logo?c.set.logo+'.webp':''}:null};}
   if(g==='mtg'){const c=h.printing?.image_uris?h.printing:await fetchJson('https://api.scryfall.com/cards/'+encodeURIComponent(h.id));if(c?.id!==h.id)throw Error('Different card');
-   return {image:c.image_uris?.normal||c.card_faces?.[0]?.image_uris?.normal||'',rarity:c.rarity||'',set:c.set?{code:c.set,name:c.set_name,set_type:c.set_type,digital:!!c.digital,count:null,logo:`https://svgs.scryfall.io/sets/${encodeURIComponent(c.set)}.svg`}:null};}
+   const set=c.set?{code:c.set,name:c.set_name,set_type:c.set_type,digital:!!c.digital,count:null,logo:`https://svgs.scryfall.io/sets/${encodeURIComponent(c.set)}.svg`}:null;
+   // Bonus sheets (Mystical Archive, Retro Artifacts…) come in their main set's boosters: today's pack is that one.
+   if(set&&!packEligible('mtg',set)&&!set.digital){const s=await fetchJson('https://api.scryfall.com/sets/'+encodeURIComponent(set.code)).catch(()=>null),parent=s?.parent_set_code&&await fetchJson('https://api.scryfall.com/sets/'+encodeURIComponent(s.parent_set_code)).catch(()=>null);
+    if(parent?.code&&packEligible('mtg',parent))set.pack={code:parent.code,name:parent.name,set_type:parent.set_type,digital:!!parent.digital,released_at:parent.released_at||''};}
+   return {image:c.image_uris?.normal||c.card_faces?.[0]?.image_uris?.normal||'',rarity:c.rarity||'',card:c,set};}
   if(g==='ygo'){const d=await fetchJson('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+encodeURIComponent(h.id)),c=d?.data?.[0];if(String(c?.id)!==String(h.id))throw Error('Different card');
    // Prefer a booster release it was printed in (so today's pack is real), else its first printing.
    const s=c.card_sets?.find(x=>packEligible('ygo',{name:x.set_name}))||c.card_sets?.[0];return {image:`img/ygo/${encodeURIComponent(h.id)}.jpg`,rarity:s?.set_rarity||'',set:s?{name:s.set_name,code:String(s.set_code||'').split('-')[0],count:null,logo:''}:null};}
@@ -31,6 +35,6 @@ export function todaySetMarkup(g,set,{rarity=''}={}){
 }
 // The set's real booster pack as a tappable visual (opens today's pack); nothing when it has none.
 export function todayPackMarkup(g,set){
- const pack=set&&packEligible(g,set)?packArtUrl(g,set):'';
- return pack?`<button class="today-pack" data-act="homeTodayPack" data-game="${g}" aria-label="Open today’s ${esc(set.name)} pack"><img src="${esc(safeHref(pack))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.today-pack').remove()"></button>`:'';
+ const from=set?.pack||set,pack=from&&packEligible(g,from)?packArtUrl(g,from):'';
+ return pack?`<button class="today-pack" data-act="homeTodayPack" data-game="${g}" aria-label="Open today’s ${esc(from.name)} pack"><img src="${esc(safeHref(pack))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.today-pack').remove()"></button>`:'';
 }
