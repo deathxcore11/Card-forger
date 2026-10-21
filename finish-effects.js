@@ -4,6 +4,7 @@ import {quoteForContext,validSetContext} from './pricing-presentation.js';
 import {pokemonVariantChoices,pokemonVariantProductConflict} from './pokemon-variant-options.js';
 import {reviewedCosmosPreview} from './pokemon-promo-evidence.js';
 import {YGO_FOIL_RECIPES,FOIL_PATTERN,ygoRarityEffect} from './ygo-foil-recipes.js';
+import {mtgFoilEffect,mtgFrameKey,MTG_FOIL_RECIPES} from './mtg-foil-recipes.js';
 export const FINISH_SOURCES = Object.freeze({
  pokemon:'https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic',
  base:'https://images.pokemontcg.io/base1/4_hires.png',
@@ -194,9 +195,11 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   const layout=c.layout||'normal';
   if(!['normal','transform','modal_dfc','adventure','leveler','saga','class','token','double_faced_token','planar'].includes(layout)||layout==='planar')return unknown(key,label);
   if(face && !c.card_faces?.[face]?.image_uris)return unknown(key,label);
-  if(physicalFinish==='foil')return preset(key,label,'mtg-foil',[layer('card','rainbow')],FINISH_SOURCES.scryfall);
+  // Full-size cards draw the printing's own treatment (old-border, surge, galaxy, oil slick...) with
+  // WebGL (mtg-foil.js), chosen from its Scryfall data; the CSS layer stays as the light fallback.
+  if(physicalFinish==='foil'){const treatment=mtgFoilEffect(c,'foil');return {...preset(key,label,'mtg-foil',[layer('card','rainbow')],FINISH_SOURCES.scryfall),treatment,frame:mtgFrameKey(c),...(treatment==='mtg-traditional'?{}:{reason:MTG_FOIL_RECIPES[treatment].label+' · simulated finish · approximate coverage'})};}
   if(physicalFinish==='etched'&&c.id==='3305c70f-188a-4c01-b605-d583ded84e18'&&c.set==='nec'&&String(c.collector_number)==='77'&&c.layout==='normal'&&face===0&&['legendary','inverted','etched'].every(x=>c.frame_effects?.includes(x))&&!c.full_art&&!c.borderless)return {...preset(key,label,'mtg-nec77-etched',[layer('mtg-nec77-metal','metal')],'https://magic.wizards.com/en/news/feature/kamigawa-neon-dynasty-product-overview-2022-01-27'),reason:'Simulated foil-etched finish · approximate metallic coverage'};
-  if(physicalFinish==='etched'&&['cmr','clb'].includes(c.set)&&layout==='normal'&&!c.borderless&&!c.full_art&&!c.frame_effects?.some(x=>['showcase','extendedart'].includes(x)))return preset(key,label,'mtg-etched',[layer('mtg-frame','metal')],FINISH_SOURCES.etched);
+  if(physicalFinish==='etched'&&['cmr','clb'].includes(c.set)&&layout==='normal'&&!c.borderless&&!c.full_art&&!c.frame_effects?.some(x=>['showcase','extendedart'].includes(x)))return {...preset(key,label,'mtg-etched',[layer('mtg-frame','metal')],FINISH_SOURCES.etched),treatment:'mtg-etched',frame:'2015'};
   return unknown(key,label);
  }
  if(game==='ptcg'){

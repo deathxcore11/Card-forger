@@ -1,25 +1,21 @@
-// Yu-Gi-Oh! rarity foil, rendered with WebGL for full-size cards (card page, zoom, and Large gallery
-// cards in collections, binders and decks). Every rarity is a recipe (ygo-foil-recipes.js) drawn by
+// Yu-Gi-Oh! rarity foil, rendered with WebGL for full-size cards (card page, zoom, and Large and
+// Medium gallery cards in collections, binders and decks). Every rarity is a recipe (ygo-foil-recipes.js) drawn by
 // one shader: foil is simulated under the ink, so unlit it reads as dark metal and colour appears
 // where a reflection grating sends light toward the viewer. One shared WebGL context draws every
 // card into ordinary 2D canvases (browsers cap live contexts at roughly 8-16). Approximate
 // simulation, not a physical-foil capture.
 import {analyzeYgoArt,YGO_LAYOUT_ART} from './ygo-foil-analysis.js';
 import {YGO_FOIL_RECIPES} from './ygo-foil-recipes.js';
+import {foilFullSize,foilProgram,foilAnalyzer,readFoilPixels,mountFoilCanvas} from './foil-gl.js';
 export const YGO_TEXT_BOX=[.075,.735,.925,.955],YGO_NAME_BAR=[.072,.050,.828,.108];
 // Text that foil must leave readable: Pendulum adds the scale box, Skill has a taller rules box.
 export const YGO_LAYOUT_TEXT={standard:YGO_TEXT_BOX,pendulum:[.062,.613,.938,.955],skill:[.075,.67,.925,.955]};
 const layoutOf=v=>YGO_LAYOUT_ART[v]?v:'standard';
 // A recipe needs WebGL only when it foils something besides the name (the name has its own canvas).
 export const ygoRecipeFor=effect=>{const r=YGO_FOIL_RECIPES[effect];return r&&(r.whole||r.frame||r.art)?r:null;};
-// Card page, zoom, and Large and Medium gallery cards; Small tiles (and any tile too narrow to read
-// the pattern) keep the lighter CSS finish.
-export const YGO_FULL_SIZE_PX=260,YGO_MIN_TILE_PX=120;
-export function ygoFoilFullSize(surface,width,gridSize){
- if(surface==='detail'||surface==='zoom')return true;
- return surface==='large'&&(gridSize==='large'||width>=YGO_FULL_SIZE_PX||gridSize!=='small'&&width>=YGO_MIN_TILE_PX);
-}
-const VS='attribute vec2 a;varying vec2 v;void main(){v=(a+1.0)*.5;gl_Position=vec4(a,0.0,1.0);}';
+// Same size gate as every full-size foil: card page, zoom, Large and Medium gallery cards.
+export {FOIL_FULL_SIZE_PX as YGO_FULL_SIZE_PX,FOIL_MIN_TILE_PX as YGO_MIN_TILE_PX} from './foil-gl.js';
+export const ygoFoilFullSize=foilFullSize;
 export const YGO_RARITY_FRAGMENT=`precision highp float;
 varying vec2 v;
 uniform sampler2D u_card;uniform sampler2D u_mask;uniform sampler2D u_relief;
@@ -84,123 +80,23 @@ void main(){
  if(u_stars>.5&&mk.b>.3){float s=pow(max(dot(nRel,H),0.),30.)*(.3+.7*spot);outC+=(1.-outC)*vec3(1.,.9,.6)*s*.9;}
  gl_FragColor=vec4(toSrgb(clamp(outC,0.,1.)),1.);
 }`;
-// ---- analysis (worker when available) ----
-const analyses=new Map();let worker=null,workerFailed=false,seq=0;const pending=new Map();
-function getWorker(){
- if(worker||workerFailed||typeof Worker==='undefined')return worker;
- try{worker=new Worker(new URL('./ygo-foil-worker.js',import.meta.url),{type:'module'});
-  worker.onmessage=e=>{const p=pending.get(e.data.id);if(!p)return;pending.delete(e.data.id);e.data.error?p.reject(Error(e.data.error)):p.resolve(e.data);};
-  worker.onerror=()=>{workerFailed=true;worker=null;for(const p of pending.values())p.retry();pending.clear();};
- }catch{workerFailed=true;worker=null;}
- return worker;
-}
-// Reads the card at analysis size. Cross-origin (tainted) images throw, which keeps the CSS finish.
-function readPixels(img){
- const W=Math.max(64,Math.min(406,Math.round(img.naturalWidth/2))),H=Math.round(W*img.naturalHeight/img.naturalWidth);
- const c=img.ownerDocument.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,W,H);
- return {W,H,data:x.getImageData(0,0,W,H).data};
-}
+const analyze=foilAnalyzer(new URL('./ygo-foil-worker.js',import.meta.url),(data,W,H,{layout})=>analyzeYgoArt(data,W,H,YGO_LAYOUT_ART[layout]));
 export function analyzeCardImage(img,layout='standard'){
- layout=layoutOf(layout);const src=img?.currentSrc||img?.src||'',id0=src+'|'+layout;if(!src||!img.naturalWidth)return Promise.reject(Error('image not ready'));
- if(analyses.has(id0))return analyses.get(id0);
- const job=(async()=>{
-  const {W,H,data}=readPixels(img);
-  const local=()=>{const r=analyzeYgoArt(data,W,H,YGO_LAYOUT_ART[layout]);return {W,H,mask:r.mask,relief:r.relief};};
-  const w=getWorker();if(!w)return local();
-  return new Promise((resolve,reject)=>{const id=++seq,copy=data.slice().buffer;
-   pending.set(id,{resolve:m=>resolve({W,H,mask:new Uint8ClampedArray(m.mask),relief:new Uint8ClampedArray(m.relief)}),reject,retry:()=>{try{resolve(local());}catch(e){reject(e);}}});
-   w.postMessage({id,width:W,height:H,pixels:copy,layout},[copy]);});
- })();
- job.catch(()=>analyses.delete(id0));
- if(analyses.size>=32)analyses.delete(analyses.keys().next().value);
- analyses.set(id0,job);return job;
+ layout=layoutOf(layout);const src=img?.currentSrc||img?.src||'';if(!src||!img.naturalWidth)return Promise.reject(Error('image not ready'));
+ return analyze(src+'|'+layout,()=>readFoilPixels(img),{layout});
 }
-// ---- shared renderer ----
+// One shared WebGL context draws every card into ordinary 2D canvases.
 let shared=null;
 function renderer(doc){
- if(shared?.lost)return null;if(shared)return shared;
- const canvas=doc.createElement('canvas'),gl=canvas.getContext('webgl',{alpha:false,antialias:false,preserveDrawingBuffer:false});if(!gl)return null;
- const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return gl.getShaderParameter(o,gl.COMPILE_STATUS)?o:null;};
- const vs=sh(gl.VERTEX_SHADER,VS),fs=sh(gl.FRAGMENT_SHADER,YGO_RARITY_FRAGMENT);if(!vs||!fs)return null;
- const prog=gl.createProgram();gl.attachShader(prog,vs);gl.attachShader(prog,fs);gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))return null;
- gl.useProgram(prog);gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
- const loc=gl.getAttribLocation(prog,'a');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
- const U={};for(const n of ['u_card','u_mask','u_relief','u_tilt','u_px','u_texel','u_aspect','u_art','u_name','u_text','u_whole','u_frame','u_artL','u_stars'])U[n]=gl.getUniformLocation(prog,n);
- gl.uniform1i(U.u_card,0);gl.uniform1i(U.u_mask,1);gl.uniform1i(U.u_relief,2);gl.uniform4f(U.u_name,...YGO_NAME_BAR);
- shared={canvas,gl,U,maps:new Map(),cards:new Map(),lost:false};
- canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();shared.lost=true;for(const h of handles)h.fallback();});
+ if(shared?.lost)return null;
+ if(!shared&&(shared=foilProgram(doc,YGO_RARITY_FRAGMENT,['u_card','u_mask','u_relief','u_tilt','u_px','u_texel','u_aspect','u_art','u_name','u_text','u_whole','u_frame','u_artL','u_stars'])))shared.gl.uniform4f(shared.U.u_name,...YGO_NAME_BAR);
  return shared;
 }
-const pot=n=>2**Math.max(5,Math.round(Math.log2(n)));
-// Data maps carry independent values in all four channels, so they are resampled here: a 2D canvas
-// would premultiply by alpha and corrupt them. Power-of-two size lets WebGL 1 build mipmaps.
-function potData(d,w,h){const W=pot(w),H=pot(h),o=new ImageData(W,H);
- for(let j=0;j<H;j++){const y=Math.min(h-1.001,Math.max(0,(j+.5)*h/H-.5)),y0=Math.floor(y),fy=y-y0;
-  for(let i=0;i<W;i++){const x=Math.min(w-1.001,Math.max(0,(i+.5)*w/W-.5)),x0=Math.floor(x),fx=x-x0,k=(j*W+i)*4,a=(y0*w+x0)*4,b=a+4,c=a+w*4,e=c+4;
-   for(let q=0;q<4;q++)o.data[k+q]=(d[a+q]*(1-fx)+d[b+q]*fx)*(1-fy)+(d[c+q]*(1-fx)+d[e+q]*fx)*fy;}}
- return o;}
-function texture(gl,source,mip){
- const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
- gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source);
- gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
- if(mip){gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);}
- else{gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);}
- return t;
-}
-function lru(map,key,make,limit,gl){if(map.has(key)){const v=map.get(key);map.delete(key);map.set(key,v);return v;}
- while(map.size>=limit){const [k,v]=map.entries().next().value;for(const t of [].concat(v))gl.deleteTexture(t);map.delete(k);}
- const v=make();map.set(key,v);return v;}
-// Data maps use power-of-two mipmaps (smooth at any size). The card image is resampled once per
-// display size by the browser's own scaler and sampled 1:1, so it is exactly as sharp as the <img>.
-function bindTextures(r,img,a,w,h,layout){
- const {gl}=r,src=img.currentSrc||img.src,doc=img.ownerDocument;
- const maps=lru(r.maps,src+'|'+layout,()=>[a.mask,a.relief].map(bytes=>texture(gl,potData(bytes,a.W,a.H),true)),12,gl);
- const card=lru(r.cards,src+'|'+w+'x'+h,()=>{const c=doc.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(img,0,0,w,h);return texture(gl,c,false);},8,gl);
- gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,card);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maps[0]);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,maps[1]);
-}
-// ---- mounted surfaces ----
-const handles=new Set();let ticking=0;
-// Gallery sweeps redraw at most ~30 times a second: a screen of foil cards stays smooth on phones.
-let lastSweep=0;
-function tick(now=0){ticking=0;let again=false;const sweep=now-lastSweep>=32;if(sweep)lastSweep=now;
- for(const h of handles){const anim=h.animated();if(anim)again=true;if(!anim||sweep)h.draw();}
- if(again)ticking=requestAnimationFrame(tick);}
-const kick=()=>{if(!ticking&&typeof requestAnimationFrame!=='undefined')ticking=requestAnimationFrame(tick);};
 // Returns a handle, or null when this surface keeps the CSS finish (unsupported rarity, no WebGL).
-// The CSS layers stay underneath and come back automatically if the card shrinks or analysis fails.
-export function mountYgoRarityFoil(overlay,img,effect,{surface='detail',layout='standard',gridSize=()=>globalThis.document?.documentElement?.dataset.gridSize}={}){
+export function mountYgoRarityFoil(overlay,img,effect,{surface='detail',layout='standard',gridSize}={}){
  layout=layoutOf(layout);
  const recipe=ygoRecipeFor(effect);if(!recipe||!overlay||!img)return null;
- const doc=overlay.ownerDocument;if(!renderer(doc))return null;
- const canvas=doc.createElement('canvas');canvas.className='finish-rarity-gl';canvas.setAttribute('aria-hidden','true');canvas.hidden=true;overlay.prepend(canvas);
- let analysis=null,last='',dead=false;
- const pct=v=>{const n=parseFloat(v);return Number.isFinite(n)?Math.max(0,Math.min(100,n))/100:.5;};
- const active=()=>!dead&&analysis&&!shared?.lost&&ygoFoilFullSize(surface,overlay.clientWidth,gridSize());
- const h={
-  draw(){
-   if(!active()){if(!canvas.hidden){canvas.hidden=true;overlay.classList.remove('rarity-gl');}return;}
-   const r=shared,dpr=Math.min(2,globalThis.devicePixelRatio||1),w=Math.max(1,Math.min(1600,Math.round(overlay.clientWidth*dpr))),hh=Math.max(1,Math.round(w*img.naturalHeight/img.naturalWidth));
-   const css=globalThis.getComputedStyle?.(overlay),lx=pct(css?.getPropertyValue('--finish-x')),ly=pct(css?.getPropertyValue('--finish-y')),key=[lx.toFixed(4),ly.toFixed(4),w,hh,img.currentSrc].join();
-   if(key===last&&!canvas.hidden)return;last=key;
-   const {gl,U}=r;if(r.canvas.width!==w||r.canvas.height!==hh){r.canvas.width=w;r.canvas.height=hh;}
-   bindTextures(r,img,analysis,w,hh,layout);gl.uniform4f(U.u_art,...YGO_LAYOUT_ART[layout]);gl.uniform4f(U.u_text,...YGO_LAYOUT_TEXT[layout]);
-   gl.viewport(0,0,w,hh);gl.uniform2f(U.u_tilt,(lx-.5)*2,(ly-.5)*2);gl.uniform2f(U.u_px,w,hh);gl.uniform2f(U.u_texel,1/analysis.W,1/analysis.H);gl.uniform1f(U.u_aspect,img.naturalHeight/img.naturalWidth);gl.uniform3f(U.u_whole,...(recipe.whole||[0,0,0]));gl.uniform3f(U.u_frame,...(recipe.frame||[0,0,0]));gl.uniform3f(U.u_artL,...(recipe.art||[0,0,0]));gl.uniform1f(U.u_stars,recipe.stars?1:0);
-   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-   if(canvas.width!==w||canvas.height!==hh){canvas.width=w;canvas.height=hh;}
-   canvas.getContext('2d').drawImage(r.canvas,0,0);
-   if(canvas.hidden){canvas.hidden=false;overlay.classList.add('rarity-gl');}
-  },
-  // Gallery cards sweep their light with a CSS animation; follow it only while one is running.
-  animated:()=>!dead&&!canvas.hidden&&overlay.classList.contains('finish-auto')&&overlay.isConnected,
-  fallback(){canvas.hidden=true;overlay.classList.remove('rarity-gl');},
-  dispose(){dead=true;handles.delete(h);mo?.disconnect();ro?.disconnect();canvas.remove();overlay.classList.remove('rarity-gl');}
- };
- handles.add(h);
- // Light coordinates are inline custom properties set on an ancestor (pointer, gyro, zoom).
- const mo=typeof MutationObserver==='undefined'?null:new MutationObserver(()=>h.draw());
- for(let n=overlay.parentElement;n&&n!==doc.documentElement;n=n.parentElement)mo?.observe(n,{attributes:true,attributeFilter:['style','class']});
- mo?.observe(doc.documentElement,{attributes:true,attributeFilter:['data-grid-size']});
- const ro=typeof ResizeObserver==='undefined'?null:new ResizeObserver(()=>{h.draw();kick();});ro?.observe(overlay);
- analyzeCardImage(img,layout).then(a=>{if(dead)return;analysis=a;h.draw();kick();}).catch(()=>{});
- return h;
+ const doc=overlay.ownerDocument,src=img.currentSrc||img.src;
+ return mountFoilCanvas(overlay,{source:()=>img,key:src+'|'+layout,surface,...(gridSize?{gridSize}:{}),program:()=>renderer(doc),analysis:()=>analyzeCardImage(img,layout),
+  setUniforms:({gl,U})=>{gl.uniform4f(U.u_art,...YGO_LAYOUT_ART[layout]);gl.uniform4f(U.u_text,...YGO_LAYOUT_TEXT[layout]);gl.uniform3f(U.u_whole,...(recipe.whole||[0,0,0]));gl.uniform3f(U.u_frame,...(recipe.frame||[0,0,0]));gl.uniform3f(U.u_artL,...(recipe.art||[0,0,0]));gl.uniform1f(U.u_stars,recipe.stars?1:0);}});
 }

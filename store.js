@@ -96,7 +96,7 @@ const KEEP = ["conditionQuotes","pdhCommander","pdhCommanderCheckedAt",
   "colors", "color_identity", "produced_mana", "keywords", "power", "toughness",
   "loyalty", "legalities", "prices", "set", "set_name", "collector_number", "rarity",
   "edhrec_rank", "scryfall_uri", "finishes", "layout", "checkedAt",
-  "flavor_text", "artist", "released_at", "set_type", "full", "promo", "frame_effects",
+  "flavor_text", "artist", "released_at", "set_type", "full", "promo", "frame_effects", "frame", "promo_types",
   "border_color", "full_art", "reserved", "penny_rank", "game_changer", "purchase_uris", "rulings_uri", "tcgplayer_id", "tcgplayer_etched_id", "image_status", "illustration_id",
 ];
 export function slim(c) {
