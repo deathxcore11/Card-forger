@@ -139,6 +139,10 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  // A set page tags its cards with the release they were listed under; only a Yu-Gi-Oh! printing needs
  // it. Elsewhere that unverified tag would hide the pulled card's foil, so the pack goes without it.
  if(game!=='ygo'){cards=cards.map(({setContext,...c})=>c);if(featured){const {setContext,...f}=featured;featured=f;}}
+ // A Yu-Gi-Oh! card in this pack was printed in this release by definition, so its release is the
+ // verified one (display only), and its pulled printing's foil can show.
+ const inRelease=c=>c?.setContext?.releaseId?{...c,setContext:{...c.setContext,game:'ygo',cardId:c.id,status:'resolved'}}:c;
+ if(game==='ygo'){cards=cards.map(inRelease);featured=featured&&inRelease(featured);}
  const size=packSize(game,set);
  let picks=samplePack(game,cards,size,Math.random,set);
  if(featured){picks=[...samplePack(game,cards.filter(c=>String(c.id)!==String(featured.id)),size-1,Math.random,set).slice(0,size-1),featured];}if(!picks.length)throw Error('Load this set’s cards first.');
