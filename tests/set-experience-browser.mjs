@@ -12,7 +12,7 @@ try{
    await page.emulateMedia({reducedMotion:'no-preference'});
    await page.evaluate(async({game})=>{
     const {S}=await import('/store.js'),T=await import('/tcg.js'),{setRowContent}=await import('/set-list-ui.js'),{packButton,setAtmosphere}=await import('/set-experience.js');
-    const set=game==='mtg'?{code:'fxa',name:'Synthetic Magic expansion',booster:true,set_type:'expansion',card_count:12}:game==='ptcg'?{id:'base1',name:'Base Set',code:'BASE1',count:12}:{id:'fixture-ygo-pack',name:'Duelist Revolution',code:'DREV'};
+    const set=game==='mtg'?{code:'fxa',name:'Synthetic Magic expansion',digital:false,set_type:'expansion',card_count:12}:game==='ptcg'?{id:'base1',name:'Base Set',code:'BASE1',count:12}:{id:'fixture-ygo-pack',name:'Duelist Revolution',code:'DREV'};
     const cards=Array.from({length:12},(_,i)=>({id:'pack-'+i,name:'Synthetic card '+i,game,rarity:i%2?'common':'mythic',set:game==='mtg'?'fxa':{id:set.id,name:set.name},image:'https://search-fixtures.invalid/pack.svg',imageLarge:'https://search-fixtures.invalid/pack.svg',image_uris:{normal:'https://search-fixtures.invalid/pack.svg'},setContext:game==='ygo'?{printing:{rarity:'Ultra Rare'}}:undefined}));
     S.ui.view='set';const screen=game==='mtg'?S.ui.set:T.ui(game).set;Object.assign(screen,{code:'fxa',id:set.id,info:set,cards,loaded:true,busy:false,error:'',contents:{completeness:'complete'},q:'',filter:'all',sort:'name',limit:120});
     window.__packBefore=JSON.stringify([S.state.collection,S.state.decks,S.state.tcg]);

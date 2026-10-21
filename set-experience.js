@@ -14,8 +14,9 @@ export function setAtmosphere(game,set,card=null){
 }
 export function packEligible(game,set){
  if(!set)return false;
- if(/promo|token|memorabilia|starter|structure deck|theme deck|trainer kit|battle deck|commander|secret lair|championship|tournament|prize|sample|demo|deck exclusiv/i.test(`${set.name||''} ${set.set_type||''} ${set.series||''}`))return false;
- if(game==='mtg')return !!set.booster;
+ if(/promo|token|memorabilia|starter|structure deck|theme deck|trainer kit|battle deck|secret lair|championship|tournament|prize|sample|demo|deck exclusiv/i.test(`${set.name||''} ${set.set_type||''} ${set.series||''}`))return false;
+ // Scryfall sets have set_type/digital; booster is a CARD field, not a set field.
+ if(game==='mtg')return !set.digital&&['core','expansion','masters','draft_innovation','funny'].includes(set.set_type);
  if(game==='ygo'){const norm=s=>String(s||'').normalize('NFKD').toLowerCase().replace(/[^a-z0-9]/g,'');return ['Booster Packs','Duelist Packs'].some(k=>(YGO_OFFICIAL_CATEGORIES[k]||[]).some(n=>norm(n)===norm(set.name)));}
  return game==='ptcg'&&/^(?:base[1-5]|gym[12]|neo[1-4]|ecard[1-3]|ex(?:[1-9]|1[0-6])|dp[1-7]|pl[1-4]|hgss[1-4]|bw\d+|xy\d+|sm\d+(?:\.5)?|swsh\d+(?:\.5)?|sv\d+(?:\.5[wb]?)?|me\d+(?:\.5)?|cel25|col1|g1|det1|dv1|dc1|lc|30th)$/.test(set.id||'');
 }
