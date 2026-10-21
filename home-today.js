@@ -4,6 +4,7 @@
 // the app already uses; results are kept for the day in memory.
 import {esc,safeHref} from './ui.js';
 import {packArtUrl} from './pack-preview.js';
+import {packEligible} from './set-experience.js';
 const resolved=new Map();
 const json=async url=>{const r=await fetch(url,{headers:{Accept:'application/json'}});if(!r.ok)throw Error('Daily details unavailable');return r.json();};
 // The daily card's own printing and release. Nothing is guessed: a card without a release is shown alone.
@@ -14,10 +15,10 @@ export function dailyDetails(g,h,fetchJson=json){
   if(g==='ptcg'){const c=await fetchJson('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(h.id));if(c?.id!==h.id)throw Error('Different card');
    return {image:c.image?c.image+'/high.webp':'',rarity:c.rarity||'',set:c.set?.id?{id:c.set.id,name:c.set.name,count:c.set.cardCount?.official||c.set.cardCount?.total||null,logo:c.set.logo?c.set.logo+'.webp':''}:null};}
   if(g==='mtg'){const c=h.printing?.image_uris?h.printing:await fetchJson('https://api.scryfall.com/cards/'+encodeURIComponent(h.id));if(c?.id!==h.id)throw Error('Different card');
-   return {image:c.image_uris?.normal||c.card_faces?.[0]?.image_uris?.normal||'',rarity:c.rarity||'',set:c.set?{code:c.set,name:c.set_name,count:null,logo:`https://svgs.scryfall.io/sets/${encodeURIComponent(c.set)}.svg`}:null};}
+   return {image:c.image_uris?.normal||c.card_faces?.[0]?.image_uris?.normal||'',rarity:c.rarity||'',set:c.set?{code:c.set,name:c.set_name,set_type:c.set_type,digital:!!c.digital,count:null,logo:`https://svgs.scryfall.io/sets/${encodeURIComponent(c.set)}.svg`}:null};}
   if(g==='ygo'){const d=await fetchJson('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+encodeURIComponent(h.id)),c=d?.data?.[0];if(String(c?.id)!==String(h.id))throw Error('Different card');
-   // Its first printing names the release the card debuted in.
-   const s=c.card_sets?.[0];return {image:`img/ygo/${encodeURIComponent(h.id)}.jpg`,rarity:s?.set_rarity||'',set:s?{name:s.set_name,code:String(s.set_code||'').split('-')[0],count:null,logo:''}:null};}
+   // Prefer a booster release it was printed in (so today's pack is real), else its first printing.
+   const s=c.card_sets?.find(x=>packEligible('ygo',{name:x.set_name}))||c.card_sets?.[0];return {image:`img/ygo/${encodeURIComponent(h.id)}.jpg`,rarity:s?.set_rarity||'',set:s?{name:s.set_name,code:String(s.set_code||'').split('-')[0],count:null,logo:''}:null};}
   return null;
  })();
  job.catch(()=>resolved.delete(key));resolved.set(key,job);return job;
@@ -33,7 +34,7 @@ export function homeTodayMarkup(g,h){
 // progress(g,set) returns setProgressMarkup-ready numbers for the release (or null).
 export function todaySetMarkup(g,set,{progressHtml='',rarity=''}={}){
  if(!set)return `<p class="today-sub muted">${esc(rarity)}</p>`;
- const pack=packArtUrl(g,set);
- return `<div class="today-set-row"><button class="today-pack" data-act="homeTodayPack" data-game="${g}" aria-label="Open today’s ${esc(set.name)} pack">${pack?`<img src="${esc(safeHref(pack))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.today-pack').classList.add('no-pack');this.remove()">`:''}<span class="today-pack-label">Open today’s pack</span></button>
+ const pack=packEligible(g,set)?packArtUrl(g,set):'';
+ return `<div class="today-set-row${pack?'':' no-pack'}">${pack?`<button class="today-pack" data-act="homeTodayPack" data-game="${g}" aria-label="Open today’s ${esc(set.name)} pack"><img src="${esc(safeHref(pack))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.today-set-row').classList.add('no-pack');this.closest('.today-pack').remove()"><span class="today-pack-label">Open today’s pack</span></button>`:''}
  <div class="today-set-info"><p class="eyebrow">Set of the Day</p><button class="today-set-name" ${setAction(g,set)}>${set.logo?`<img src="${esc(safeHref(set.logo))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<b>${esc(set.name)}</b></button>${rarity?`<span class="muted small">Today’s card is ${esc(rarity)} here</span>`:''}${progressHtml}</div></div>`;
 }
