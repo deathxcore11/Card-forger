@@ -63,9 +63,15 @@ export function installHelpMarkup(guide = installGuide()) {
 }
 // The signed Android beta served from downloads/ (details and checksum beside it).
 export const ANDROID_BETA = Object.freeze({ version: "0.3.0 beta", href: "/downloads/cardstashy-android-beta-0.3.0.apk", bytes: 24309522, sha256: "9abb7a497410e1431c9c95dfa7934f832bcee93e813459f1395660baaa0c455a" });
-export function androidBetaMarkup(beta = ANDROID_BETA) {
+export const isAndroid = (ua = globalThis.navigator?.userAgent || "") => /Android/i.test(ua);
+// Settings > App install card. Android phones get the full app (APK) as the main action;
+// iPhone and computers keep the home-screen install, which is the only option there.
+export function installCardMarkup(mark = "", { ua = globalThis.navigator?.userAgent || "", nativeApp = !!globalThis.CARDSTASHY_NATIVE, beta = ANDROID_BETA } = {}) {
+  const heading = title => `<div class="settings-card-heading"><span class="settings-secondary-brand">${mark}</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>${title}</h2></div></div>`;
+  if (nativeApp) return `<section class="panel settings-card">${heading("CardStashy for Android")}<p class="muted small">You’re using the Android app.</p></section>`;
+  if (!isAndroid(ua)) return `<section class="panel settings-card">${heading("Install CardStashy")}<p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>${esc(installGuide(ua).title)}</summary>${installHelpMarkup(installGuide(ua))}</details></section>`;
   const size = (beta.bytes / 1048576).toFixed(1);
-  return `<div class="android-beta"><a class="btn" href="${esc(beta.href)}" download>Download Android app (beta)</a><p class="foot">Version ${esc(beta.version)} · ${size} MB. Open the file on your Android phone; the first time, Android asks you to allow installs from your browser. Sign-in, prices and scanning work as on the web.</p><details class="settings-disclosure"><summary>Verify the download</summary><p class="foot">SHA-256 <code>${esc(beta.sha256)}</code></p></details></div>`;
+  return `<section class="panel settings-card android-beta">${heading("Get the Android app")}<p class="muted small">The full CardStashy app for your phone: collection, decks, prices, scanning and your account.</p><a class="btn" href="${esc(beta.href)}" download>Download the app (beta)</a><p class="foot">Version ${esc(beta.version)} · ${size} MB. Open the file when it finishes; the first time, Android asks you to allow installs from your browser.</p><details class="settings-disclosure"><summary>Verify the download</summary><p class="foot">SHA-256 <code>${esc(beta.sha256)}</code></p></details><details class="settings-disclosure"><summary>Prefer a home-screen shortcut?</summary><p class="foot">Adds the website to your home screen instead of installing the app.</p><button class="link small" data-act="install">Add shortcut</button></details></section>`;
 }
 export const dismissInstall = () => write({ dismissedAt: Date.now() });
 

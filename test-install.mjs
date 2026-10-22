@@ -43,7 +43,7 @@ offered=true;ctx.S.ui.view='home';await ctx.A.install();assert.equal(sheets.leng
 console.log('PASS: real Install action opens desktop help when the native prompt is unavailable, preserves Settings, and avoids duplicate dialogs.');
 // Android beta download: the Settings link, the served file, its checksum and the app-link fingerprint agree.
 {
-  const { ANDROID_BETA, androidBetaMarkup } = await import("./install.js");
+  const { ANDROID_BETA, installCardMarkup } = await import("./install.js");
   const { ANDROID_APPS } = await import("./worker.js");
   const { createHash } = await import("node:crypto");
   const file = "." + ANDROID_BETA.href, apk = fs.readFileSync(file), meta = JSON.parse(fs.readFileSync(file.replace(/\.apk$/, ".json"), "utf8"));
@@ -54,8 +54,17 @@ console.log('PASS: real Install action opens desktop help when the native prompt
   const app = ANDROID_APPS.find(a => a.package === meta.package);
   assert.deepEqual(app?.sha256, [meta.signingCertificateSha256], "assetlinks names the beta's signing certificate");
   assert.ok(ANDROID_APPS.some(a => a.package === "dev.workers.deathxcore11.cardforge2.twa"), "the earlier TWA entry stays");
-  const html = androidBetaMarkup();
-  assert.match(html, /href="\/downloads\/cardstashy-android-beta-0\.3\.0\.apk" download/); assert.match(html, new RegExp(sha));
+  // Android phones: the app download replaces the home-screen install as the main action.
+  const android = installCardMarkup("", { ua: "Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/141.0 Mobile Safari/537.36", nativeApp: false });
+  assert.match(android, /Get the Android app/); assert.match(android, /<a class="btn" href="\/downloads\/cardstashy-android-beta-0\.3\.0\.apk" download>/); assert.match(android, new RegExp(sha));
+  assert.doesNotMatch(android, /<button class="btn" data-act="install">/, "the shortcut install is secondary on Android");
+  // Computers and iPhone keep the home-screen install and never see the APK.
+  for (const ua of ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/141.0 Safari/537.36", "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/605.1"]) {
+    const other = installCardMarkup("", { ua, nativeApp: false });
+    assert.match(other, /Install CardStashy/); assert.match(other, /data-act="install"/); assert.doesNotMatch(other, /\.apk/);
+  }
+  // Inside the Android app there is nothing to install.
+  assert.doesNotMatch(installCardMarkup("", { ua: "Android", nativeApp: true }), /\.apk|data-act="install"/);
   const sw = fs.readFileSync("./sw.js", "utf8");
   assert.match(sw, /url\.pathname\.startsWith\("\/downloads\/"\)\) return;/, "downloads bypass the service worker");
   assert.doesNotMatch(sw.slice(0, sw.indexOf("];")), /downloads|\.apk/, "the APK is never precached");
