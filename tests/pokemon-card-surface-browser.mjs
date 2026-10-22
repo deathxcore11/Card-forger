@@ -18,7 +18,7 @@ try{for(const width of [320,390,768,1440]){
   await page.waitForFunction(()=>{const n=document.querySelector('#content .lot-art[data-entry="lot-ptcg-0"] img.card-img');return n.complete&&n.naturalWidth===600;});
   const measureGeometry=n=>{const img=n.querySelector('img.card-img'),o=n.querySelector('.finish-overlay'),s=getComputedStyle(n),i=getComputedStyle(img),r=n.getBoundingClientRect(),ir=img.getBoundingClientRect(),or=o.getBoundingClientRect();return {padding:parseFloat(s.paddingTop),ratio:ir.width/ir.height,natural:img.naturalWidth/img.naturalHeight,fit:i.objectFit,top:ir.top-r.top,left:ir.left-r.left,right:r.right-ir.right,bottom:r.bottom-ir.bottom,frameRadius:s.borderTopLeftRadius,imageRadius:i.borderTopLeftRadius,glitterInset:getComputedStyle(n,'::after').inset,overlay:{x:or.left-ir.left,y:or.top-ir.top,w:or.width-ir.width,h:or.height-ir.height},opacity:getComputedStyle(o.querySelector('.finish-pattern')).opacity};};
   const geometry=await tile.evaluate(measureGeometry);
-  assert.equal(geometry.padding,5);assert.equal(geometry.fit,'contain');assert(Math.abs(geometry.ratio-geometry.natural)<.002);assert(Math.abs(geometry.top-5)<.1);assert(Math.abs(geometry.left-5)<.1);assert(Math.abs(geometry.right-5)<.1);assert(Math.abs(geometry.bottom-5)<.1);assert.equal(geometry.glitterInset,'5px');for(const value of Object.values(geometry.overlay))assert(Math.abs(value)<1.1);assert.equal(geometry.opacity,'0.18');
+  assert.equal(geometry.padding,3.75);assert.equal(geometry.fit,'contain');assert(Math.abs(geometry.ratio-geometry.natural)<.002);assert(Math.abs(geometry.top-3.75)<.1);assert(Math.abs(geometry.left-3.75)<.1);assert(Math.abs(geometry.right-3.75)<.1);assert(Math.abs(geometry.bottom-3.75)<.1);assert.equal(geometry.glitterInset,'3.75px');for(const value of Object.values(geometry.overlay))assert(Math.abs(value)<1.1);assert.equal(geometry.opacity,'0.18');
   await tile.click();await page.locator('#sheet .cs-banner .cs-art').first().waitFor();
   // The context already requests no-preference. Diagnose Playwright's
   // per-page emulateMedia replacement on a separate page so it cannot clear
@@ -46,7 +46,7 @@ try{for(const width of [320,390,768,1440]){
     // Wait for that cycle before the single geometry assertion, never retry it.
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     const g=await tile.evaluate(measureGeometry);
-    assert.equal(g.padding,5);assert(Math.abs(g.ratio-g.natural)<.002);assert(Math.abs(g.top-5)<.1);assert(Math.abs(g.left-5)<.1);assert(Math.abs(g.right-5)<.1);assert(Math.abs(g.bottom-5)<.1);assert.equal(g.glitterInset,'5px');for(const value of Object.values(g.overlay))assert(Math.abs(value)<1.1,JSON.stringify({resizedWidth,geometry:g}));
+    assert.equal(g.padding,3.75);assert(Math.abs(g.ratio-g.natural)<.002);assert(Math.abs(g.top-3.75)<.1);assert(Math.abs(g.left-3.75)<.1);assert(Math.abs(g.right-3.75)<.1);assert(Math.abs(g.bottom-3.75)<.1);assert.equal(g.glitterInset,'3.75px');for(const value of Object.values(g.overlay))assert(Math.abs(value)<1.1,JSON.stringify({resizedWidth,geometry:g}));
     resizeChecks.push({width:resizedWidth,geometry:g});
    }
   }
@@ -105,8 +105,8 @@ for(const game of ['ptcg','mtg','ygo']){
    await tile.evaluate(n=>n.closest('.lot').dataset.tier='t2');
    await noOverflow(page,'#content','Actual '+game+' frame '+width,true);
    const geometry=await tile.evaluate(n=>{const img=n.querySelector('img'),r=n.getBoundingClientRect(),i=img.getBoundingClientRect();return {padding:getComputedStyle(n).paddingTop,radius:getComputedStyle(n).borderTopLeftRadius,innerRadius:getComputedStyle(img).borderTopLeftRadius,left:i.left-r.left,right:r.right-i.right,top:i.top-r.top,bottom:r.bottom-i.bottom,ratio:i.width/i.height,natural:img.naturalWidth/img.naturalHeight,fit:getComputedStyle(img).objectFit};});
-   assert.equal(geometry.padding,'5px','All games retain full shared frame weight');assert.equal(geometry.radius,'calc(4.75% + 5px) calc(3.5% + 5px)','Outer corner is the card corner plus the band, as on the card page');assert.equal(geometry.innerRadius,'4.75% 3.5%','Inner corner is the printed card corner');
-   if(game==='ptcg'){for(const side of ['left','right','top','bottom'])assert(Math.abs(geometry[side]-5)<.2,'No black internal moat '+side);assert(Math.abs(geometry.ratio-geometry.natural)<.002);assert.equal(geometry.fit,'contain');}
+   assert.equal(geometry.padding,'3.75px','All games retain full shared frame weight');assert.equal(geometry.radius,'calc(4.75% + 3.75px) calc(3.5% + 3.75px)','Outer corner is the card corner plus the band, as on the card page');assert.equal(geometry.innerRadius,'4.75% 3.5%','Inner corner is the printed card corner');
+   if(game==='ptcg'){for(const side of ['left','right','top','bottom'])assert(Math.abs(geometry[side]-3.75)<.2,'No black internal moat '+side);assert(Math.abs(geometry.ratio-geometry.natural)<.002);assert.equal(geometry.fit,'contain');}
    await capture(page,'pokemon-actual-frame-'+game+'-'+width);
    const cornerShot=await tile.screenshot({path:RESULTS+'/pokemon-actual-corners-'+game+'-'+width+'.png'});
    const cornerPixels=await page.evaluate(async bytes=>{const bitmap=await createImageBitmap(new Blob([new Uint8Array(bytes)],{type:'image/png'})),c=document.createElement('canvas');c.width=bitmap.width;c.height=bitmap.height;const ctx=c.getContext('2d');ctx.drawImage(bitmap,0,0);return [[2,2],[1,3],[3,1]].flatMap(([x,y])=>[[x,y],[c.width-1-x,y],[x,c.height-1-y],[c.width-1-x,c.height-1-y]]).map(([x,y])=>Array.from(ctx.getImageData(x,y,1,1).data));},Array.from(cornerShot));

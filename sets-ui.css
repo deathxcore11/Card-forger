@@ -285,8 +285,8 @@ body:not(.glass) .set-atmosphere{display:none}
 .set-card-toolbar>.searchbar{margin:0;min-width:0}
 .set-card-toolbar .searchbar input{min-height:44px;width:100%}
 .set-card-toolbar .set-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0;min-width:0}
-.set-card-toolbar .set-controls>.seg{flex:0 0 auto}
-.set-card-toolbar .set-controls>select,.set-card-toolbar .set-controls>.glass-select{flex:1 1 130px;min-width:0;width:auto}
+.set-card-toolbar .set-controls>.seg{flex:0 0 auto;margin:0}
+.set-card-toolbar .set-controls>select,.set-card-toolbar .set-controls>.glass-select{flex:1 1 110px;min-width:0;width:auto}
 .set-card-toolbar .set-controls .glass-select>button{min-height:44px}
 .set-card-toolbar .set-controls>.view-switch{flex:none;margin-left:auto}
 .set-results.list-bar{margin:7px 0 8px;min-height:0}
