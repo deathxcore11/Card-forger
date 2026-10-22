@@ -8,6 +8,7 @@ import {attachZoomMotion} from './mobile-tilt.js';
 import {rarityEmblem} from './rarity-emblem.js';
 import {ygoSetReference} from './ygo-set-prices.js';
 import {pkCatalogueSymbolSources} from './emblems.js';
+import {drawMtgBooster} from './mtg-boosters.js';
 // A discovery sampler. No collation, print-run odds, purchases or ownership are implied.
 export function sampleSetCards(cards,count=10,random=Math.random){
  const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),c])).values()];
@@ -52,6 +53,42 @@ const PACKS={
   // Tournament and prize packs: 3 cards, the last a rare that is sometimes upgraded.
   tournament:[...C(2),slot({rare:60,superrare:25,ultrarare:10,secretrare:5,ultimaterare:1},'hit')]}
 };
+// Per-set pull rates for Scarlet & Violet and Mega Evolution boosters: chance per pack, from TCGplayer
+// Authentication Center pack samples (1,200 to 8,500 packs per set, via pullrates.com, October 2026).
+// Illustration rares, special illustration rares, ACE SPECs, shiny rares and Black White rares take the
+// second reverse holo's place; double, ultra and hyper rares take the rare's.
+const PTCG_SET_RATES={
+ 'sv01':{doublerare:1/7,ultrarare:1/15,hyperrare:1/54,illustrationrare:1/13,specialillustrationrare:1/32},
+ 'sv02':{doublerare:1/7,ultrarare:1/15,hyperrare:1/57,illustrationrare:1/13,specialillustrationrare:1/32},
+ 'sv03':{doublerare:1/7,ultrarare:1/15,hyperrare:1/52,illustrationrare:1/13,specialillustrationrare:1/32},
+ 'sv03.5':{doublerare:1/8,ultrarare:1/16,hyperrare:1/51,illustrationrare:1/12,specialillustrationrare:1/32},
+ 'sv04':{doublerare:1/6,ultrarare:1/15,hyperrare:1/82,illustrationrare:1/13,specialillustrationrare:1/47},
+ 'sv04.5':{doublerare:1/6,ultrarare:1/15,hyperrare:1/62,shinyrare:1/4,shinyultrarare:1/13,illustrationrare:1/14,specialillustrationrare:1/58},
+ 'sv05':{doublerare:1/6,ultrarare:1/15,hyperrare:1/188,illustrationrare:1/13,specialillustrationrare:1/86,acespecrare:1/20},
+ 'sv06':{doublerare:1/6,ultrarare:1/15,hyperrare:1/146,illustrationrare:1/13,specialillustrationrare:1/86,acespecrare:1/20},
+ 'sv06.5':{doublerare:1/6,ultrarare:1/15,hyperrare:1/144,illustrationrare:1/12,specialillustrationrare:1/67,acespecrare:1/20},
+ 'sv07':{doublerare:1/6,ultrarare:1/15,hyperrare:1/137,illustrationrare:1/13,specialillustrationrare:1/90,acespecrare:1/20},
+ 'sv08':{doublerare:1/6,ultrarare:1/15,hyperrare:1/188,illustrationrare:1/13,specialillustrationrare:1/87,acespecrare:1/20},
+ 'sv08.5':{doublerare:1/6,ultrarare:1/13,hyperrare:1/180,specialillustrationrare:1/45,acespecrare:1/21},
+ 'sv09':{doublerare:1/6,ultrarare:1/15,hyperrare:1/150,illustrationrare:1/13,specialillustrationrare:1/90},
+ 'sv10':{doublerare:1/6,ultrarare:1/15,hyperrare:1/188,illustrationrare:1/13,specialillustrationrare:1/86},
+ 'sv10.5w':{doublerare:1/5,ultrarare:1/17,illustrationrare:1/6,specialillustrationrare:1/80,blackwhiterare:1/496},
+ 'sv10.5b':{doublerare:1/5,ultrarare:1/17,illustrationrare:1/6,specialillustrationrare:1/80,blackwhiterare:1/496},
+ 'me01':{doublerare:1/5,ultrarare:1/12,megahyperrare:1/1260,illustrationrare:1/9,specialillustrationrare:1/101},
+ 'me02':{doublerare:1/5,ultrarare:1/12,megahyperrare:1/1260,illustrationrare:1/9,specialillustrationrare:1/80},
+ 'me02.5':{doublerare:1/5,ultrarare:1/21,megahyperrare:1/540,illustrationrare:1/9,specialillustrationrare:1/70},
+ 'me03':{doublerare:1/5,ultrarare:1/12,megahyperrare:1/1786,illustrationrare:1/9,specialillustrationrare:1/81},
+ 'me04':{doublerare:1/5,ultrarare:1/12,megahyperrare:1/956,illustrationrare:1/9,specialillustrationrare:1/83},
+ 'me05':{doublerare:1/5,ultrarare:1/12,megahyperrare:1/1081,illustrationrare:1/9,specialillustrationrare:1/80}
+};
+const PTCG_REVERSE_HITS=new Set(['illustrationrare','specialillustrationrare','acespecrare','shinyrare','shinyultrarare','blackwhiterare']);
+// The set's own two last slots, from its rates; the leftover chance keeps the slot's normal fill.
+function ptcgSetSlots(rates){
+ const pick=keys=>Object.fromEntries(Object.entries(rates).filter(([k])=>keys(k))),special=pick(k=>PTCG_REVERSE_HITS.has(k)),hits=pick(k=>!PTCG_REVERSE_HITS.has(k));
+ const rest=o=>Math.max(0,1-Object.values(o).reduce((a,b)=>a+b,0));
+ const r2=rest(special),h=rest(hits);
+ return [...C(4),...U(3),slot({common:.6,uncommon:.3,rare:.1},'reverse'),slot({common:.6*r2,uncommon:.3*r2,rare:.1*r2,...special},'reverse'),slot({rare:h,...hits},'hit')];
+}
 const releaseYear=set=>{const y=Number(String(set?.released_at||set?.releaseDate||set?.date||set?.tcg_date||'').slice(0,4));return Number.isFinite(y)&&y>1990?y:0;};
 // Which era's pack this set was printed in.
 export function packEra(game,set={}){
@@ -61,7 +98,8 @@ export function packEra(game,set={}){
  if(game==='ygo')return /rarity collection/i.test(set.name||'')?'rarity':YGO_TOURNAMENT_PACK.test(set.name||'')?'tournament':y&&y<2014?'classic':'core';
  return '';
 }
-const slotsFor=(game,set)=>PACKS[game]?.[packEra(game,set)]||[];
+const slotsFor=(game,set)=>game==='ptcg'&&PTCG_SET_RATES[String(set?.id||'').toLowerCase()]?ptcgSetSlots(PTCG_SET_RATES[String(set.id).toLowerCase()]):PACKS[game]?.[packEra(game,set)]||[];
+export const ptcgSetRates=id=>PTCG_SET_RATES[String(id||'').toLowerCase()]||null;
 // A rare Pokémon god pack: every hit slot is an illustration or special illustration rare.
 const GOD_SLOT=slot({illustrationrare:2,specialillustrationrare:1},'hit'),GOD_PACK_ODDS=1/1000;
 // Draft boosters: about 1 pack in 3 swaps a common for a foil of any rarity.
@@ -161,7 +199,8 @@ export function packFinishes(game,picks){
   // A reverse slot is a reverse holo even when the card is a rare that also comes in holo.
   if(game==='ptcg'&&c.packSlot==='reverse'&&has(c,'reverse-holofoil'))return {priceFinish:'reverse-holofoil'};
   if(game==='ptcg'&&has(c,'holofoil')&&!has(c,'normal'))return {priceFinish:'holofoil'};
-  if(game==='mtg'&&c.packSlot==='foil'&&c.finishes?.includes('foil'))return {finish:'foil'};
+  // A foil sheet's card comes out foil (or etched, when that is its only foil finish).
+  if(game==='mtg'&&(c.packSlot==='foil'||c.packFoil))return c.finishes?.includes('foil')?{finish:'foil'}:c.finishes?.includes('etched')?{finish:'etched'}:{};
   return {};
  });
 }
@@ -177,8 +216,8 @@ export function packPrice(game,c,pulled={}){
 // Set symbol sources, best first: Magic's Scryfall symbol, or Pokémon's symbol from the site, pokesymbols.com, then TCGdex.
 const setEmblems=(game,set)=>game==='mtg'&&/^[a-z0-9]{2,8}$/i.test(set.code||'')?[`https://svgs.scryfall.io/sets/${encodeURIComponent(String(set.code).toLowerCase())}.svg`]:game==='ptcg'?pkCatalogueSymbolSources(set):[];
 // hydrate: loads a pulled card's full record (Pokémon set lists carry no variants), so its holo or
-// reverse holo can be drawn.
-export function openPackPreview({game,set,cards,complete=false,featured=null,hydrate=null,onDetails,onWishlist,onCopy,onBuy,isCurrent=()=>true}){
+// reverse holo can be drawn. booster: a Magic set's real booster sheets ({data, cards} from mtg-boosters.js).
+export function openPackPreview({game,set,cards,complete=false,featured=null,hydrate=null,booster=null,onDetails,onWishlist,onCopy,onBuy,isCurrent=()=>true}){
  // A set page tags its cards with the release they were listed under; only a Yu-Gi-Oh! printing needs
  // it. Elsewhere that unverified tag would hide the pulled card's foil, so the pack goes without it.
  if(game!=='ygo'){cards=cards.map(({setContext,...c})=>c);if(featured){const {setContext,...f}=featured;featured=f;}}
@@ -186,9 +225,10 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  // verified one (display only), and its pulled printing's foil can show.
  const inRelease=c=>c?.setContext?.releaseId?{...c,setContext:{...c.setContext,game:'ygo',cardId:c.id,status:'resolved'}}:c;
  if(game==='ygo'){cards=cards.map(inRelease);featured=featured&&rollYgoPrinting(inRelease(featured),Math.random,featured.featuredRarity);}
- const size=packSize(game,set);
- let picks=samplePack(game,cards,size,Math.random,set);
- if(featured){picks=[...samplePack(game,cards.filter(c=>String(c.id)!==String(featured.id)),size-1,Math.random,set).slice(0,size-1),featured];}if(!picks.length)throw Error('Load this set’s cards first.');
+ const size=packSize(game,set),draw=()=>booster?drawMtgBooster(booster.data,booster.cards,Math.random):samplePack(game,cards,size,Math.random,set);
+ let picks=draw();
+ // Today's pack: the Card of the Day takes the hit's place.
+ if(featured){picks=booster?[...picks.slice(0,-1).filter(c=>String(c.id)!==String(featured.id)),featured]:[...samplePack(game,cards.filter(c=>String(c.id)!==String(featured.id)),size-1,Math.random,set).slice(0,size-1),featured];}if(!picks.length)throw Error('Load this set’s cards first.');
  const dialog=document.createElement('dialog');dialog.className='pack-dialog';dialog.dataset.game=game;dialog.setAttribute('aria-label',`${set.name} pack`);
  const reduce=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  const cardArt=c=>game==='mtg'?cardImage(c,'normal'):c.imageLarge||c.image||'';
@@ -199,7 +239,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  // Face-down cards wear the game's own card back (same-origin from the worker); the emblem stays beneath if it can't load.
  const back=`<span class="pack-card-back" data-back="${esc(game)}">${brandStaticMark()}<img class="pack-back-img" src="/img/back/${esc(game)}.jpg" alt="" decoding="async" onerror="this.remove()"></span>`;
  const hand=()=>picks.map((c,i)=>{return `<button class="pack-card" data-pack="reveal" data-index="${i}" data-hold-card style="--i:${i}" aria-label="Card ${i+1}, face down" aria-pressed="false">${back}<span class="pack-card-front"><img data-pack-src="${esc(setImageUrl(cardArt(c)))}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true"></span></button>`;}).join('');
- dialog.innerHTML=`<header class="pack-header"><div class="pack-title">${(([first,...rest])=>first?`<img class="pack-emblem" data-game="${esc(game)}" src="${esc(first)}" data-alt="${esc(rest.join(' '))}" alt="" referrerpolicy="no-referrer" onerror="const n=this.dataset.alt.split(' ').filter(Boolean);if(n.length){this.src=n.shift();this.dataset.alt=n.join(' ')}else this.remove()">`:'')(setEmblems(game,set))}<h2>${esc(set.name)}</h2><p class="pack-explanation">Free preview with approximate pull rates, not a real booster. Nothing is added to your collection.</p></div><div class="pack-header-tools"><button type="button" class="pack-tilt" title="Tilt your device to move the foil light" hidden>Enable tilt</button><button class="icon" data-pack="close" aria-label="Close pack">✕</button></div></header>
+ dialog.innerHTML=`<header class="pack-header"><div class="pack-title">${(([first,...rest])=>first?`<img class="pack-emblem" data-game="${esc(game)}" src="${esc(first)}" data-alt="${esc(rest.join(' '))}" alt="" referrerpolicy="no-referrer" onerror="const n=this.dataset.alt.split(' ').filter(Boolean);if(n.length){this.src=n.shift();this.dataset.alt=n.join(' ')}else this.remove()">`:'')(setEmblems(game,set))}<h2>${esc(set.name)}</h2><p class="pack-explanation">${booster?'Free preview drawn from this set’s real booster sheets and pull rates (MTGJSON). Nothing is added to your collection.':'Free preview with approximate pull rates, not a real booster. Nothing is added to your collection.'}</p></div><div class="pack-header-tools"><button type="button" class="pack-tilt" title="Tilt your device to move the foil light" hidden>Enable tilt</button><button class="icon" data-pack="close" aria-label="Close pack">✕</button></div></header>
 <div class="pack-sealed"><button class="pack-wrapper" data-pack="open" aria-label="Open the ${esc(set.name)} pack"><span class="pack-body"><span class="pack-wrap-art">${sources.length?`<img data-pack-art src="${esc(safeHref(setImageUrl(sources[0])))}" data-sources="${esc(JSON.stringify(sources))}" alt="" referrerpolicy="no-referrer" onerror="const s=JSON.parse(this.dataset.sources),i=(+this.dataset.i||0)+1;if(s[i]){this.dataset.i=i;this.src=s[i];this.closest('.pack-wrapper').classList.add('pack-generic');}else this.hidden=true">`:''}<span class="pack-wrap-brand">${brandStaticMark()}<b>${esc(set.name)}</b></span></span><span class="pack-crimp top"></span><span class="pack-crimp bottom"></span><span class="pack-sheen"></span></span></button></div>
 <div class="pack-content" hidden><div class="pack-focus"><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><i class="pack-backlight" aria-hidden="true"></i><i class="pack-frame" aria-hidden="true"></i><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"></span>${back}</button><p class="pack-focus-meta" aria-live="polite"><b></b><span class="pack-rarity"></span></p></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
 <div class="pack-actions"><button class="btn ghost pack-reveal-all" data-pack="reveal-all">Reveal all</button><div class="pack-tools" role="group" aria-label="This pack"><button class="pack-tool" data-pack="copy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg><span>Copy list</span></button><button class="pack-tool" data-pack="wish" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span>Wishlist all</span></button><button class="pack-tool" data-pack="buy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14l-1.4 9.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Shop list</span></button></div><button class="btn pack-again" data-pack="again">Open a new pack</button></div></div><p class="pack-status" role="status" aria-live="polite"></p>`;
@@ -267,7 +307,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   if(action==='reveal')return reveal(i);
   if(action==='focus'){if(swipe?.moved){swipe=null;return;}swipe=null;if(!revealed.has(focus))return reveal(focus);close();return onDetails(picks[focus],ctxs[focus]||{});}
   if(action==='reveal-all'){picks.forEach((_,j)=>{if(!revealed.has(j))reveal(j);});show(Math.floor(picks.length/2));return;}
-  if(action==='again'){picks=samplePack(game,cards,size,Math.random,set);ctxs=packFinishes(game,picks);fill();revealed=new Set();dialog.classList.remove('pack-done','pack-dealt');handEl.innerHTML=hand();wireHold();for(const x of dialog.querySelectorAll('[data-pack="copy"],[data-pack="wish"],[data-pack="buy"]'))x.disabled=true;status.textContent='';
+  if(action==='again'){picks=draw();ctxs=packFinishes(game,picks);fill();revealed=new Set();dialog.classList.remove('pack-done','pack-dealt');handEl.innerHTML=hand();wireHold();for(const x of dialog.querySelectorAll('[data-pack="copy"],[data-pack="wish"],[data-pack="buy"]'))x.disabled=true;status.textContent='';
    requestAnimationFrame(()=>dialog.classList.add('pack-dealt'));show(0);return;}
   if(['copy','wish','buy'].includes(action)&&revealed.size===picks.length){
    busy=true;b.disabled=true;try{if(action==='wish'){await onWishlist(picks);status.textContent='Saved to your wishlist.';b.textContent='On wishlist';}

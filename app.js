@@ -3,6 +3,7 @@ import {createDeckPipeline} from './deck-pipeline.js';
 import {createDeckExperience} from './deck-experience.js';
 import { configureAiAuth, invalidateAiAuth } from './ai-auth.js';
 import {openPackPreview,ptcgSetRarities,trimPackArt} from './pack-preview.js';
+import {loadMtgBooster,mtgBoosterCards} from './mtg-boosters.js';
 // Booster pack photos trim to the pack itself wherever they appear.
 document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]'))trimPackArt(e.target);},true);
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
@@ -3140,11 +3141,15 @@ A.openSetPack = async () => {
  let cards=screen.cards;
  // Pull rates need every Pokémon card's rarity; summaries without one are filled from TCGdex first.
  if(game==='ptcg'&&cards.some(c=>!c.rarity)){toast("Shuffling the pack…");const map=await ptcgSetRarities(screen.id,set?.cardCount?.total||set?.count||cards.length).catch(()=>new Map());if(!isCurrent())return;cards=cards.map(c=>c.rarity||!map.has(String(c.id))?c:{...c,rarity:map.get(String(c.id))});}
+ // Magic packs use the set's real booster sheets when they are baked (all cards they can give are
+ // fetched once); otherwise, and offline, the era's pack table.
+ let booster=null;
+ if(game==='mtg'){const data=await loadMtgBooster(screen.code);if(!isCurrent())return;if(data){toast("Shuffling the pack…");const map=await mtgBoosterCards(data,cards).catch(()=>null);if(!isCurrent())return;if(map?.size)booster={data,cards:map};}}
  // Today's pack guarantees the Card of the Day on its first opening each day; after that it opens with the
  // set's normal pull rates like any other pack.
  const dayKey=want&&`cardstashy-today-pack:${game}:${want.date}:${want.id}`;let firstToday=!!want;try{if(dayKey&&localStorage.getItem(dayKey))firstToday=false;}catch{}
  const found=firstToday&&want?.game===game?cards.find(c=>String(c.id)===String(want.id))||(game==='mtg'?cards.find(c=>c.name===want.name)||want.card||null:null):null,featured=found&&want.rarity?{...found,featuredRarity:want.rarity}:found;
- try{openPackPreview({game,set,cards,featured,hydrate:game==='ptcg'?c=>T.SOURCES.ptcg.get(String(c.id),{prices:true}):null,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
+ try{openPackPreview({game,set,cards,featured,booster,hydrate:game==='ptcg'?c=>T.SOURCES.ptcg.get(String(c.id),{prices:true}):null,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
   onCopy:copyPlain,
   // A pulled card opens on its card page in the printing and finish that came out of the pack.
   onDetails:(c,pulled={})=>game==='mtg'?A.card({dataset:{name:c.name,...(pulled.finish?{setFinish:pulled.finish}:{})},printing:c}):A.tCard({dataset:{game,id:String(c.id),setId:set.id,...(pulled.priceFinish?{setVariant:pulled.priceFinish}:{}),...(game==='ygo'&&c.setContext?.printing?{printing:c.setContext.printing.code+'::'+c.setContext.printing.rarity}:{})}}),
