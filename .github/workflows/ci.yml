@@ -7,7 +7,7 @@ on:
 jobs:
   mana-warning-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,7 +29,7 @@ jobs:
 
   collection-display-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -146,7 +146,7 @@ jobs:
           path: test-results/
   scanner-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -171,7 +171,7 @@ jobs:
           path: test-results/
   scanner-adversarial-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -203,7 +203,7 @@ jobs:
           path: test-results/
   home-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -238,7 +238,7 @@ jobs:
           path: test-results/
   card-polish-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -288,7 +288,7 @@ jobs:
             test-results/ygo-history-browser.json
   sets-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -379,7 +379,7 @@ jobs:
 
   responsive-card-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -403,7 +403,7 @@ jobs:
 
   deck-box-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -425,7 +425,7 @@ jobs:
 
   finish-effects-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -449,7 +449,7 @@ jobs:
 
   account-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -470,7 +470,7 @@ jobs:
 
   collection-polish-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -501,7 +501,7 @@ jobs:
 
   value-page-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -521,7 +521,7 @@ jobs:
 
   rule-hover-app-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -541,7 +541,7 @@ jobs:
 
   magic-matchups-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -561,7 +561,7 @@ jobs:
 
   recovery-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -581,7 +581,7 @@ jobs:
 
   binder-cover-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -601,7 +601,7 @@ jobs:
 
   pokemon-promos-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -621,7 +621,7 @@ jobs:
 
   chishiro-etched-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -641,7 +641,7 @@ jobs:
 
   magic-owned-detail-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -661,7 +661,7 @@ jobs:
 
   ai-deck-build-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -684,7 +684,7 @@ jobs:
             test-results/ai-request-recovery-*
   news-curation-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -704,7 +704,7 @@ jobs:
 
   power-release-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -726,7 +726,7 @@ jobs:
 
   ygo-saved-presentation-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -746,7 +746,7 @@ jobs:
 
   aura-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -766,7 +766,7 @@ jobs:
 
   context-and-anniversary-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:

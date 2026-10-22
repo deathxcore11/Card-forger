@@ -68,5 +68,15 @@ console.log('PASS: real Install action opens desktop help when the native prompt
   const sw = fs.readFileSync("./sw.js", "utf8");
   assert.match(sw, /url\.pathname\.startsWith\("\/downloads\/"\)\) return;/, "downloads bypass the service worker");
   assert.doesNotMatch(sw.slice(0, sw.indexOf("];")), /downloads|\.apk/, "the APK is never precached");
-  console.log("PASS: Android beta download matches its checksum and app-link fingerprint.");
+  // A Settings page cached before an update links an APK that is gone: the Worker (which only sees
+  // missing files) forwards it to the current one instead of a failed download.
+  const worker = (await import("./worker.js")).default;
+  const hit = async (p, method = "GET") => worker.fetch(new Request("https://cardstashy.com" + p, { method }), { ASSETS: { fetch: () => new Response("asset") } }, {});
+  for (const old of ["/downloads/cardstashy-android-beta-0.3.1.apk", "/downloads/cardstashy-android-beta-0.3.2.apk"]) {
+    const r = await hit(old);assert.equal(r.status, 302, old);assert.equal(r.headers.get("Location"), ANDROID_BETA.href);assert.equal(r.headers.get("Cache-Control"), "no-store");
+  }
+  assert.equal((await hit("/downloads/cardstashy-android-beta-0.3.2.apk", "HEAD")).status, 302);
+  for (const other of ["/downloads/cardstashy-android-beta-0.3.2.json", "/downloads/other.apk", "/downloads/cardstashy-android-beta-x.apk"]) assert.notEqual((await hit(other)).status, 302, other);
+  assert.equal((await hit("/downloads/cardstashy-android-beta-0.3.2.apk", "POST")).status === 302, false);
+  console.log("PASS: Android beta download matches its checksum and app-link fingerprint; links to earlier APKs forward to the current one.");
 }
