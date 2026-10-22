@@ -41,3 +41,23 @@ vm.runInContext(source.slice(source.indexOf('A.install = async'),source.indexOf(
 await ctx.A.install();assert.equal(sheets.length,1);assert.equal(sheets[0].context.type,'install-help');assert.match(sheets[0].html,/Install this site as an app/);assert.doesNotMatch(sheets[0].html,/Add to Home screen/);assert.equal(paints,0);
 offered=true;ctx.S.ui.view='home';await ctx.A.install();assert.equal(sheets.length,1,'native prompts never open a second help overlay');assert.equal(paints,1);
 console.log('PASS: real Install action opens desktop help when the native prompt is unavailable, preserves Settings, and avoids duplicate dialogs.');
+// Android beta download: the Settings link, the served file, its checksum and the app-link fingerprint agree.
+{
+  const { ANDROID_BETA, androidBetaMarkup } = await import("./install.js");
+  const { ANDROID_APPS } = await import("./worker.js");
+  const { createHash } = await import("node:crypto");
+  const file = "." + ANDROID_BETA.href, apk = fs.readFileSync(file), meta = JSON.parse(fs.readFileSync(file.replace(/\.apk$/, ".json"), "utf8"));
+  assert.equal(apk.length, ANDROID_BETA.bytes); assert.ok(apk.length < 25 * 1048576, "Cloudflare serves files up to 25 MiB");
+  const sha = createHash("sha256").update(apk).digest("hex");
+  assert.equal(sha, ANDROID_BETA.sha256); assert.equal(meta.sha256, sha); assert.equal(meta.bytes, apk.length);
+  assert.equal(fs.readFileSync(file + ".sha256", "utf8"), `${sha}  ${file.split("/").pop()}\n`);
+  const app = ANDROID_APPS.find(a => a.package === meta.package);
+  assert.deepEqual(app?.sha256, [meta.signingCertificateSha256], "assetlinks names the beta's signing certificate");
+  assert.ok(ANDROID_APPS.some(a => a.package === "dev.workers.deathxcore11.cardforge2.twa"), "the earlier TWA entry stays");
+  const html = androidBetaMarkup();
+  assert.match(html, /href="\/downloads\/cardstashy-android-beta-0\.3\.0\.apk" download/); assert.match(html, new RegExp(sha));
+  const sw = fs.readFileSync("./sw.js", "utf8");
+  assert.match(sw, /url\.pathname\.startsWith\("\/downloads\/"\)\) return;/, "downloads bypass the service worker");
+  assert.doesNotMatch(sw.slice(0, sw.indexOf("];")), /downloads|\.apk/, "the APK is never precached");
+  console.log("PASS: Android beta download matches its checksum and app-link fingerprint.");
+}

@@ -61,6 +61,12 @@ export function installGuide(ua = globalThis.navigator?.userAgent || "", install
 export function installHelpMarkup(guide = installGuide()) {
   return `<ol class="foot">${guide.steps.map(step=>`<li>${esc(step)}</li>`).join('')}</ol><p class="foot">If an install prompt is unavailable, use the browser menu above. Searches and updated prices need internet.</p>`;
 }
+// The signed Android beta served from downloads/ (details and checksum beside it).
+export const ANDROID_BETA = Object.freeze({ version: "0.3.0 beta", href: "/downloads/cardstashy-android-beta-0.3.0.apk", bytes: 22919441, sha256: "63ae7060241af2c00b5806192113657d2f3d2dcd6ff133224c0704131ac1c773" });
+export function androidBetaMarkup(beta = ANDROID_BETA) {
+  const size = (beta.bytes / 1048576).toFixed(1);
+  return `<div class="android-beta"><a class="btn" href="${esc(beta.href)}" download>Download Android app (beta)</a><p class="foot">Version ${esc(beta.version)} · ${size} MB. Open the file on your Android phone; the first time, Android asks you to allow installs from your browser. Sign-in, prices and scanning work as on the web.</p><details class="settings-disclosure"><summary>Verify the download</summary><p class="foot">SHA-256 <code>${esc(beta.sha256)}</code></p></details></div>`;
+}
 export const dismissInstall = () => write({ dismissedAt: Date.now() });
 
 // Who sees the nudge: not installed, not dismissed in the last 30 days, used the app before or

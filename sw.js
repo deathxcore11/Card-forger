@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v286";
+const CACHE = "cardforge-shell-v287";
 const ASSETS = [
   "./ai-auth.js",
   "./grid-settings.js", "./price-origin.js", "./collection-display.css",
@@ -256,6 +256,8 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET" || url.origin !== self.location.origin) return;
   // API responses (including connection status) must not enter the offline shell cache.
   if (url.pathname.startsWith("/api/")) return;
+  // App downloads go straight to the network (a navigation would otherwise be saved as the start page).
+  if (url.pathname.startsWith("/downloads/")) return;
   // Tour videos stream with range requests, which the shell cache cannot store.
   if (/\.(mp4|webm)$/.test(url.pathname)) return;
   // The instant-scan index is large and changes rarely: serve the saved copy at once and refresh
