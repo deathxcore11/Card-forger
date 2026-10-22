@@ -119,7 +119,9 @@
    metallic grain, not rainbow foil. Soft-light preserves the printed white text.
    Coverage is supplied by its exact-printing mask, including the rules field. */
 .finish-overlay[data-material-profile="nec77-etched"] .finish-metal{background-image:url('assets/finishes/metal-grain.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f1dfb8b3 0%,#b79c7044 30%,transparent 64%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.62}
-.finish-overlay[data-material-profile="nec77-etched"] .finish-metal::after{background:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f6eee055,transparent 56%);opacity:.3}
+/* Etched foil throws a soft rainbow as the light crosses its frosted grain: a pale spectrum band that
+   slides with the light, kept faint so the metal still reads as frosted, not mirror foil. */
+.finish-overlay[data-material-profile="nec77-etched"] .finish-metal::after{background:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f6eee055,transparent 56%),linear-gradient(115deg,transparent 22%,#8fd8ff 36%,#c8a4ff 45%,#ff9fcb 53%,#ffe08f 61%,#9bf0c4 69%,transparent 80%) var(--finish-x) var(--finish-y)/260% 260% no-repeat;mix-blend-mode:screen;opacity:.42}
 .finish-overlay[data-material-profile="nec77-etched"] .finish-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#eee5d177,transparent 56%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.34}
 /* Yu-Gi-Oh! rarity row: each chip carries a small swatch of its foil; the count shows how many printings share it. */
 /* Chips wrap rather than scroll so every rarity stays in view at any width. */

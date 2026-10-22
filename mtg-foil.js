@@ -38,8 +38,9 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
  if(pat<1.5){}                                                                                  // traditional
  else if(pat<2.5){g=normalize(vec2(.6,.8));d=1750.;mirror=.1;ex=8.;amp=.65;}                 // old border: wide, hazy, saturated
  else if(pat<3.5){g=vec2(1.,0.);d=1300.;mirror=.9;amp=.6;spec=exp(-pow(H.x/.07,2.))+.35*exp(-pow(H.x/.22,2.));} // FTV: vertical mirror bar
- else if(pat<4.5){vec3 w=voro(q*260.);vec3 n=normalize(vec3((hash2(w.xy)-.5)*.9,1.));        // etched: frosted metal grain
-  spec=pow(max(dot(n,H),0.),70.)*2.2+.45*exp(-pow(dot(H.xy,vec2(.7071,.7071))/.12,2.));mirror=1.;amp=.25;d=1650.;}
+ else if(pat<4.5){vec3 w=voro(q*260.);vec2 j=hash2(w.xy);vec3 n=normalize(vec3((j-.5)*.9,1.));        // etched: frosted metal grain
+  // Each grain bends the light a little differently, so the frost throws a soft rainbow as it tilts.
+  spec=pow(max(dot(n,H),0.),70.)*2.2+.45*exp(-pow(dot(H.xy,vec2(.7071,.7071))/.12,2.));mirror=1.;g=normalize(vec2(1.,(j.x-.5)*.7));amp=.42;d=1450.+j.y*400.;}
  else if(pat<5.5){float ph=height*55.,gr=sin(ph);vec2 gn=length(grad)>1e-4?normalize(grad):vec2(1.,0.); // textured: contours of the art
   g=gn;d=1250.;lines=.5+.5*gr;N=normalize(N+vec3(gn*cos(ph)*.12,0.));mirror=.4;ex=24.;amp=.8;lines=.5+.25*gr;}
  else if(pat<6.5){float w1=sin(q.x*30.+sin(q.y*9.)*2.),w2=sin((q.x+q.y)*24.+sin(q.x*7.)*2.5);      // surge: crossing waves

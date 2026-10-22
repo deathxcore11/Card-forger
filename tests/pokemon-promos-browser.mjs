@@ -195,8 +195,9 @@ try{
  assert.equal(manualConflict.price,.77,'A valid private manual value survives product quarantine');assert.equal(manualConflict.request,null,'Manual value never authorizes a wrong-product condition request');
  const manualLabel=await page.locator('#content .lot-art[data-entry="promo-conflicting-manual"]').evaluate(n=>n.closest('.lot').querySelector('.price').textContent);assert.match(manualLabel,/\$0\.77/);
  report.checks.push({phase:'conflicting-product-manual-value-retained',manualConflict,conflictedDetail});
- // Unsupported pattern/art and unreviewed Trainer layouts remain unknown.
- for(const id of ['swshp-SWSH074','swshp-SWSH251']){await openOwned(page,id);const state=await selected(page);assert.equal(state.model.status,'unknown');assert.deepEqual(state.model.layers,[]);await closeSheet(page);report.checks.push({id,phase:'unsupported-control',state});}
+ // Promo patterns and unreviewed Trainer layouts show an approximate foil, labelled as such; the unmeasured
+ // Trainer layout gets whole-card coverage, never a borrowed window.
+ for(const id of ['swshp-SWSH074','swshp-SWSH251']){await openOwned(page,id);const state=await selected(page);assert.equal(state.model.status,'approximate');assert.match(state.model.reason,/approximate/);if(id==='swshp-SWSH251')assert.deepEqual(state.model.layers.map(l=>l.mask),['card']);await closeSheet(page);report.checks.push({id,phase:'approximate-control',state});}
  // Real scanner pile/inline printing UI, without camera, OCR, or Save.
  const scannerCards=data.cards.filter(c=>STAMPED_IDS.includes(c.id)||['swshp-SWSH013','swshp-SWSH220','swsh3-161'].includes(c.id));
  await mkdir(RESULTS,{recursive:true});await app.context.tracing.start({screenshots:true,snapshots:true,sources:true});scannerTrace=true;
