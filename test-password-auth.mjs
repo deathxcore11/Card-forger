@@ -18,8 +18,9 @@ assert.deepEqual(calls[3],['updateUser',{password:'new test passphrase'}]);
 auth.signInWithPassword = async()=>({error:{code:'invalid_credentials',message:'Invalid login credentials'}});
 await assert.rejects(flow.login('test@example.com','test passphrase'),/Email or password is incorrect/);
 assert.match(authError({code:'email_not_confirmed'}),/Confirm your email/);
-assert.match(authError({code:'email_address_not_authorized'}),/SMTP/);
+assert.match(authError({code:'email_address_not_authorized'}),/couldn’t send email/);
 assert.match(authError({code:'flow_state_not_found'}),/same browser/);
+assert.doesNotMatch(authError({message:'Supabase SMTP configuration error'}),/Supabase|SMTP|configuration/);
 console.log('PASS: password login/signup/reset Auth calls, validation, redirects and actionable errors; no live email sent.');
 
 const { signedOutAccount } = await import('./views.js');

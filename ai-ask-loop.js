@@ -44,7 +44,7 @@ export async function resumeBuildChoice({choice,context,tools,signal,current=()=
  const check=validateBuildProposal(args,contract);
  if(!check.ok)return partialAnswer([{name:'build_deck',out:proposalFeedback(check,{terminal:true})}],'');
  const live=()=>current()&&!signal?.aborted&&context.scope?.(args.game)!==false;
- const out=await tools.build_deck(check.args,{allowCorrection:false,allowUnverifiedInfinite,current:live,signal});
+ const out=await tools.build_deck(check.args,{userRequest:contract.request,allowCorrection:false,allowUnverifiedInfinite,current:live,signal});
  if(!live())return current()&&!signal?.aborted?reply('Your workspace changed while preparing the draft. Nothing was saved.'):null;
  onBuildContext({...context,args:check.args,contract,choice:out.choice,formats:out.formats,choices:buildChoices(out)});
  return partialAnswer([{name:'build_deck',out:{...out,terminal:true}}],'');
@@ -89,12 +89,12 @@ export async function runAskLoop({game,items,tools,fetcher=fetch,signal,current=
     if(buildAttempts>ASK_LIMITS.buildProposals)return {call,out:{terminal:true,note:'The bounded correction limit was reached. Review the last verified draft; nothing was saved.'}};
     // A model-chosen format is an assumption. The app offers actual formats
     // when the player has not selected one, retaining the rest of this request.
-    if(!contract.format&&!acceptedBuilds)args.format='';
+    if(!contract.format&&!acceptedBuilds)args.format=tools.defaultBuildFormat?.(args.game||game)||'';
     const check=validateBuildProposal(args,contract);
     if(!check.ok){out=proposalFeedback(check,{terminal:check.requiresChoice||buildAttempts>=ASK_LIMITS.buildProposals});if(out.requiresChoice)onBuildContext({args:{...check.args},contract:userContract,scope:requestScope,choice:out.choice,formats:out.formats,choices:buildChoices(out)});seen.set(key,Promise.resolve(out));return {call,out};}
     args=check.args;
     if(!acceptedBuilds)contract=lockBuildContract(args,contract);
-    handshake={allowCorrection:buildAttempts<ASK_LIMITS.buildProposals,revision:acceptedBuilds>0,current:()=>current()&&requestScope?.(args.game||game)!==false,signal};
+    handshake={userRequest:userContract.request,allowCorrection:buildAttempts<ASK_LIMITS.buildProposals,revision:acceptedBuilds>0,current:()=>current()&&requestScope?.(args.game||game)!==false,signal};
     acceptedBuilds++;
    }
    const pending=Promise.resolve().then(()=>!current()||signal?.aborted?{cancelled:true}:tools?.[call.name]?.(args,handshake)??{error:'Not available in this app.'}).catch(e=>({error:String(e.message||e).slice(0,200)}));seen.set(key,pending);

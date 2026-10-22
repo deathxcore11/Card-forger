@@ -500,10 +500,13 @@ export const ygoSource = {
     }
     throw Error("Couldn’t pick a random card. Try again.");
   },
+  async archetypeNames() {
+    archetypes ||= get("/archetypes.php").then((d) => (Array.isArray(d) ? d : []).map((a) => a.archetype_name)).catch((e) => ((archetypes = null), Promise.reject(e)));
+    return [...await archetypes].filter(n=>typeof n==='string'&&n.trim()).sort();
+  },
   // Cards of a random archetype with enough members to build around.
   async randomArchetype() {
-    archetypes ||= get("/archetypes.php").then((d) => (Array.isArray(d) ? d : []).map((a) => a.archetype_name)).catch((e) => ((archetypes = null), Promise.reject(e)));
-    const names = await archetypes;
+    const names = await this.archetypeNames();
     for (let i = 0; i < 5; i++) {
       const name = names[Math.floor(Math.random() * names.length)];
       const r = await this.search({ archetype: name, size: 100 });

@@ -18,7 +18,7 @@ assert.match(page,/Showcase<\/span><small>Coming soon/);assert.match(page,/Deck 
 console.log('PASS: normalized collector fractions, exact number prefixes, grouped finish identities, explicit finish choice, private showcase fields and accepted-friend-only profiles');
 
 const grouped=showcaseSections([clean,{...clean,key:'binder:z',kind:'binder'}],true);
-assert.match(grouped,/aria-label="Binders"/);assert.match(grouped,/aria-label="Decks"/);assert.match(grouped,/data-community-source="deck:x"/);assert.match(grouped,/deck-box/);assert.doesNotMatch(page,/data-community-requests/);
+assert.match(grouped,/aria-label="Binders"/);assert.match(grouped,/aria-label="Decks"/);assert.match(grouped,/data-community-source="deck:x"/);assert.match(grouped,/deck-box/);assert.match(page,/data-community-requests/);assert.doesNotMatch(page,/data-community-blocks/);
 assert.equal(incomingRequestCount({people:[{relationship:'pending',incoming:true},{relationship:'pending',incoming:false},{relationship:'accepted',incoming:true}]}),1);
 const {miniPrintingMarkup,detailSetProgress}=await import('./card-detail-extras.js');
 const mini=miniPrintingMarkup({game:'ptcg',card,cards:[card]});assert.equal((mini.match(/class="card-printing-mini"/g)||[]).length,1);assert.match(mini,/data-id="cel25-23"/);assert.doesNotMatch(mini,/data-act="tOwn"/);

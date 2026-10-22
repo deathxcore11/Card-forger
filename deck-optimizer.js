@@ -5,7 +5,7 @@ export function purchaseCost(rows,{key=r=>r.cardId || r.name,owned=()=>0,price=(
  const counts=new Map();for(const r of rows){const k=key(r),old=counts.get(k);counts.set(k,{row:r,qty:(old?.qty||0)+r.qty});}
  let cost=0,unknown=0;for(const {row,qty} of counts.values()){
   const missing=Math.max(0,qty-Math.max(0,owned(row))),p=price(row);
-  if(!missing)continue;if(p==null||!Number.isFinite(Number(p))||Number(p)<0)unknown+=missing;else cost+=missing*Number(p);
+  if(!missing)continue;if(p==null||typeof p==='string'&&!p.trim()||!Number.isFinite(Number(p))||Number(p)<0)unknown+=missing;else cost+=missing*Number(p);
  }return {cost,unknown};
 }
 export function comparePower(a,b){

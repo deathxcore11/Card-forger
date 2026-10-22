@@ -1,3 +1,6 @@
+import {checkRelease,acknowledgeRelease,onReleaseChange,releaseDot,releaseState} from './release-status.js';
+import {createDeckPipeline} from './deck-pipeline.js';
+import {createDeckExperience} from './deck-experience.js';
 import { configureAiAuth, invalidateAiAuth } from './ai-auth.js';
 import {openPackPreview,ptcgSetRarities,trimPackArt} from './pack-preview.js';
 // Booster pack photos trim to the pack itself wherever they appear.
@@ -537,7 +540,11 @@ async function loadSetIndex(force = false) {
 
 // Every printing in a set, straight from Scryfall, so new sets appear as soon as Scryfall has them.
 const setCache = new Map();
-async function loadSet(code) {
+function loadSet(code,{join=false}={}){
+ const st=S.ui.set;if(join&&st.code===code&&st.busy&&st.loadPromise)return st.loadPromise;
+ const job=loadSetCards(code);st.loadPromise=job;return job.finally(()=>{if(st.loadPromise===job)st.loadPromise=null;});
+}
+async function loadSetCards(code) {
   const st = S.ui.set, generation = (st.generation || 0) + 1, screen=navigationStamp();
   st.generation = generation;
   const current = () => S.ui.set === st && st.code === code && st.generation === generation && navigationCurrent(screen);
@@ -1138,6 +1145,7 @@ function render() {
 
 const tcgCtx = {};
 
+
 // Every page remembers where you were. Going back (the browser's back, or a link to the page you
 // came from, like "All sets") returns you to that spot instead of the top; going forward starts a
 // new page at the top. Lists that fill in after the page draws (set grids, results) are waited for.
@@ -1347,6 +1355,22 @@ for(const name of ['click','input','change'])document.addEventListener(name,e=>{
    ========================================================= */
 
 const A = {}; // click actions
+const deckPipeline=createDeckPipeline({S,T,api,resolve,cacheCard,meta,priceOf,inv,tcgCtx});
+const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game:T.game,
+ identity:()=>{const account=accountGeneration;return ()=>!accountLocked&&account===accountGeneration;},
+ coachHooks:(result,deck)=>result.request.game==='mtg'?V.mtgCoachHooks(deck,result.power):T.tcgCoachHooks(result.request.game,deck,T.SOURCES[result.request.game].formats.find(f=>f.id===result.request.format),result.power),
+ scope:()=>{const scope=mutationScope(),state=S.state,stamp=JSON.stringify([state.collection,state.decks,state.tcg]);return ()=>mutationCurrent(scope)&&S.state===state&&JSON.stringify([state.collection,state.decks,state.tcg])===stamp;},
+ root:()=>$('#sheetBody'),isOpen:()=>$('#sheet').open&&S.ui.sheetCtx?.type==='deck-flow',
+ paint:html=>{$('#sheetBody').innerHTML=html;},open:html=>openSheet(html,{type:'deck-flow'}),
+ onInput:fn=>document.addEventListener('input',e=>{if(e.target.matches('[data-flow-field]'))fn(e);}),
+ random:async request=>{if(request.game!=='mtg')return deckPipeline.resolveSeed(request);const f=formatOf(request.format),theme=String(request.theme||'').replace(/[^\p{L}\p{N} '-]/gu,'').slice(0,80);return cacheCard(await api('/cards/random?'+new URLSearchParams({q:`${f.legality?'f:'+f.legality:'game:paper'} -t:land ${f.commander?'is:commander':''} ${theme?`(t:"${theme}" or o:"${theme}")`:''}`})));},
+ save:async(result,current)=>{const write=scopedCommit(),r=result.request,id=uid(),name=(r.seedCard?.name||result.deck.buildAround||'My deck')+' · '+r.formatName;
+  if(!current())throw Error('Your workspace changed. Rebuild this deck.');
+  const d=r.game==='mtg'?withSnapshot({...structuredClone(result.deck),id,name,budget:r.budget,versions:[]},'Generated'):{...structuredClone(result.deck),id,name,format:r.format,createdAt:new Date().toISOString()};
+  await write(state=>{if(!current())throw Error('Your workspace changed.');if(r.game==='mtg')state.decks.push(d);else{state.tcg||={};state.tcg[r.game]||=T.gs(r.game);state.tcg[r.game].decks.push(d);}},{msg:'Saved to My decks.'});
+ },export:text=>download('CardStashy-deck.txt',text,'text/plain'),
+ card:(game,row)=>game==='mtg'?A.card({dataset:{name:row.name}}):A.tCard({dataset:{id:row.id}})
+});
 A.aiDeckReview = t => showAiReview(t.dataset.ai, render);
 const C = {}; // change handlers
 C.chooseLocation = t => chooseLocation(t);
@@ -1361,7 +1385,7 @@ registerWorkbench({A,C,commit,render,openSheet,closeSheet,refreshSheet,toast,
 });
 
 // Yu-Gi-Oh! and Pokémon actions (tcg.js).
-setTimeout(() => Object.assign(tcgCtx, { A, C, I, commit, render, openSheet, closeSheet, refreshSheet, toast, go, download, copyText, busy, rerenderKeepingFocus, writeRecord, invalidateMagicSearch: () => dbInvalidate(false), switchGame, navigationStamp, navigationCurrent, openPrintingPicker: printingPicker.open }) && (T.registerTcg(tcgCtx), registerCardMenus()), 0);
+setTimeout(() => Object.assign(tcgCtx, { A, C, I, commit, render, openSheet, closeSheet, refreshSheet, toast, go, download, copyText, busy, rerenderKeepingFocus, writeRecord, invalidateMagicSearch: () => dbInvalidate(false), switchGame, navigationStamp, navigationCurrent, openPrintingPicker: printingPicker.open, openDeckFlow:request=>deckExperience.open(request) }) && (T.registerTcg(tcgCtx), registerCardMenus()), 0);
 
 // Press and hold (data-hold="action"): runs that action instead of the tap's, with a haptic tick.
 let holdTimer = null, heldTarget = null, holdAt = null;
@@ -2228,6 +2252,7 @@ const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.st
 A.menu = () => settingsPopup.open();
 A.addFriend=()=>community.add();
 A.friendRequests=()=>community.requests();
+A.blockedAccounts=()=>community.blocks();
 A.myCommunity=()=>community.mine();
 A.closeSettings = () => settingsPopup.close();
 
@@ -2574,7 +2599,7 @@ A.askRules = (button) => {
   rulesGuideOrigin = origin;
 };
 A.askOpen = (options={}) => {
-  askTools ||= makeAskTools({ S, T, A, go, navigationStamp, navigationCurrent, toast, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx,
+  askTools ||= makeAskTools({ S, T, A, go, navigationStamp, navigationCurrent, toast, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx, deckExperience,
     captureAskScope: () => { const scope=mutationScope(); return () => mutationCurrent(scope); },
     openMtgDraft: (draft, current) => {
       if (!current?.() || T.game() !== 'mtg') return toast("Your account or workspace changed. Ask again in the current workspace.");
@@ -2590,17 +2615,11 @@ A.askOpen = (options={}) => {
     } });
   openAsk({ game: T.game(), prefill:typeof options.query==='string'?options.query:'', tools: askTools, show: (s) => safely(askTools.open(s)) });
 };
-A.buildFrom = async (t) => {
-
-  const c = meta(t.dataset.name) || (await resolve(t.dataset.name, true)),
-    B = S.ui.build,
-    options = formatsFor(c, FORMATS),
-    ctxDeck = deckById(S.ui.sheetCtx?.deckId),
-    deckFmt = ctxDeck ? formatOf(ctxDeck).name : "";
-  Object.assign(B, { baseDeck:null,seed: c.name, results: {}, msg: "", openTier: null, format: (options.find((f) => f.name === deckFmt) || options[0])?.name || "" });
-  openSheet(V.buildSheet(), { type: "build" });
-  if (B.format) runBuild();
+A.buildFrom = async t => {
+ const scope=mutationScope(),c=meta(t.dataset.name)||await resolve(t.dataset.name,true);if(!mutationCurrent(scope))return;
+ const formats=formatsFor(c,FORMATS);deckExperience.open({game:'mtg',seed:c.name,seedCard:c,format:formats[0]?.name||'Standard'});
 };
+
 A.optimizeMtgDeck = async () => {
 
  const d=currentDeck();if(!d)return;await resolveNames(d.cards.map(r=>r.name));
@@ -2896,11 +2915,11 @@ A.createAccount = t => runAuth(t,"Creating account…",async()=>{
  if(data?.session)return "Account created. You’re signed in.";
  // Supabase hides existing accounts: an already-registered email comes back with no identities and no email is sent.
  if(data?.user && Array.isArray(data.user.identities) && !data.user.identities.length)return "That email already has an account. Log in, or use Forgot password.";
- return "Check your inbox and spam for the confirmation email (sender: Supabase Auth unless the site uses its own mail service). Nothing after a few minutes? Tap “Resend confirmation email”.";
+ return "Check your email to finish creating your account. If it hasn’t arrived, check spam or resend the confirmation email.";
 });
 A.resendConfirm = t => runAuth(t,"Sending…",async()=>{
  await resendConfirmation($("#signupEmail")?.value.trim() || $("#signEmail")?.value.trim() || "");
- return "Confirmation email sent again. Check spam and promotions too. Still nothing? The site's email service needs setting up (Supabase → Authentication → SMTP).";
+ return "Confirmation email sent again. Check your inbox and spam folder; use the newest link.";
 });
 A.forgotPassword = t => runAuth(t,"Sending…",async()=>{
  await requestPasswordReset($("#resetEmail")?.value.trim() || "");return "If an account exists, a reset link will arrive. Open it in this browser.";
@@ -3134,7 +3153,7 @@ A.set = (t) => {
   const code = t.dataset.code;
   if (!code) return;
   closeSheet();
-  go("#set/" + encodeURIComponent(code.toLowerCase()));
+  return go("#set/" + encodeURIComponent(code.toLowerCase()));
 };
 I.setsSearch = (t) => {
   S.ui.sets.q=t.value;S.ui.sets.limit=80;rerenderKeepingFocus();
@@ -3240,9 +3259,14 @@ window.matchMedia?.("(min-width:1200px)").addEventListener?.("change",()=>placeG
 const deckBoxTransitions=createDeckBoxTransitions();
 function refreshProfileAvatar(){
  const button=document.querySelector('.topbar [data-act="menu"]');if(!button)return;
- const a=cloudInfo(),requests=accountLocked?0:(S.ui.communityRequests||0),important=!accountLocked&&a.user&&(a.pending||a.status.state==='error')?1:0,count=requests+important;
- const html=(accountLocked ? profileAvatar(null,{}) : profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,a.profile||{}))+(count?`<span class="account-notice-badge" aria-hidden="true">${count>99?'99+':count}</span>`:'');
- button.setAttribute('aria-label',`Profile and settings${count?`, ${count} notification${count===1?'':'s'}`:''}`);
+ const a=cloudInfo(),requests=accountLocked?0:(S.ui.communityRequests||0),important=!accountLocked&&a.user&&(a.pending||a.status.state==='error');
+ for(const nav of document.querySelectorAll('[data-nav="community"]')){
+  nav.querySelector('.community-request-badge')?.remove();
+  nav.setAttribute('aria-label',`Community${requests?`, ${requests} pending friend request${requests===1?'':'s'}`:''}`);
+  if(requests)nav.insertAdjacentHTML('beforeend',`<span class="community-request-badge" aria-hidden="true">${requests>99?'99+':requests}</span>`);
+ }
+ const html=(accountLocked ? profileAvatar(null,{}) : profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,a.profile||{}))+releaseDot()+(important?'<span class="account-sync-notice" aria-hidden="true">!</span>':'');
+ button.setAttribute('aria-label',`Profile and settings${releaseState().unread?', unread release notes':''}${important?', account saving needs attention':''}`);
  if(button.innerHTML!==html)button.innerHTML=html;
  button.classList.add('profile-menu');button.title='Profile & settings';
 }
@@ -3262,7 +3286,7 @@ const community=createCommunity({account:cloudInfo,request:communityRequest,rere
  onChange:data=>{S.ui.communityRequests=incomingRequestCount(data);refreshProfileAvatar();if(settingsPopup.isOpen)settingsPopup.refresh();},
  copyDeck:async item=>{const generation=accountGeneration,owner=cloudInfo().user?.id;if(accountLocked||!owner)throw Error('Sign in before saving a deck.');const d=sharedDeckCopy(item,uid());await commit(state=>{(item.game==='mtg'?state:state.tcg[item.game]).decks.push(d);},{enrich:false,guard:()=>{if(accountLocked||generation!==accountGeneration||cloudInfo().user?.id!==owner)throw Error('Your account changed. Please try again.');return true;}});},
  editItem:async item=>{const generation=accountGeneration;if(accountLocked)return;await navigate({game:item.game,hash:item.kind==='binder'?'#collection':item.game==='mtg'?'#deck/'+item.key.slice(('deck:'+item.game+':').length)+'/cards':'#tdeck/'+item.key.slice(('deck:'+item.game+':').length),mode:'push'});if(generation!==accountGeneration||T.game()!==item.game)return;if(item.kind==='binder')A.editBinder({dataset:{binder:item.key.slice(7)}});},
- chooseArt:kind=>(kind==='header'?headerPicker:profilePicker).open(),editProfile:()=>{community.close();S.ui.settingsTab='account';settingsPopup.open();},signIn:()=>{S.ui.settingsTab='account';settingsPopup.open();},
+ chooseArt:kind=>(kind==='header'?headerPicker:profilePicker).open(),editProfile:()=>{community.close();S.ui.settingsTab='account';settingsPopup.open();},signIn:()=>{S.ui.settingsTab='account';S.ui.authMode='login';S.ui.authFeedback=null;settingsPopup.open();document.querySelector('#signEmail')?.focus({preventScroll:true});},
  openArt:a=>openZoom({src:a.image,alt:a.name}),
  openShared:openSharedShowcase,
  showcaseChoices:()=>{
@@ -3444,18 +3468,29 @@ function paintHomeToday(g) {
   }).catch(() => { delete el.dataset.painted; });
 }
 // Opening today's pack goes to the Set of the Day and opens its pack with the Card of the Day as the hit.
-A.homeTodayPack = async (t) => {
-  const g = t.dataset.game, h = T.heroFor(g);if (!h || T.game() !== g) return;
-  const d = await dailyDetails(g, h).catch(() => null), set = d?.set?.pack || d?.set;if (!set) return toast("Today’s set is unavailable right now.");
-  // A bonus-sheet card is pulled from its main set's pack, so it travels with the request.
-  S.ui.packFeatured = { game: g, id: h.id, name: h.name, date: h.date, rarity: d.rarity || '', card: d.set.pack ? d.card : null };
-  if (g === "mtg") A.set({ dataset: { code: set.code } });else if (g === "ygo") A.tSetByName({ dataset: { name: set.name } });else A.tSet({ dataset: { id: set.id } });
-  const ready = () => { const sc = g === "mtg" ? S.ui.set : T.ui(g).set;return S.ui.view === "set" && sc.loaded && !sc.busy && !sc.error && sc.cards?.length; };
-  // Big sets load their card details for a while; keep waiting while the person stays on this set.
-  const onSet = () => S.ui.view === "set" && T.game() === g;
-  if (!ready()) toast("Opening today’s pack as soon as the set has loaded…");
-  for (let i = 0; i < 720 && !ready(); i++) { await new Promise(r => setTimeout(r, 250));if (S.ui.packFeatured?.id !== h.id) return;if (i > 8 && !onSet()) { S.ui.packFeatured = null;return; } }
-  if (ready()) A.openSetPack();else { S.ui.packFeatured = null;toast("This set is still loading. Tap Open Pack when it’s ready."); }
+let homePackRequest=0;
+A.homeTodayPack = async t => {
+ const token=++homePackRequest,g=t.dataset.game,h=T.heroFor(g),scope=mutationScope(),origin=navigationStamp();
+ if(!h||T.game()!==g)return;
+ const active=()=>token===homePackRequest&&mutationCurrent(scope)&&T.game()===g;
+ t.disabled=true;
+ try{
+  const d=await dailyDetails(g,h),set=d?.set?.pack||d?.set;
+  if(!active()||!navigationCurrent(origin))return;
+  if(!set)throw Error('Today’s set could not load. Try opening the pack again.');
+  const featured={game:g,id:h.id,name:h.name,date:h.date,rarity:d.rarity||'',card:d.set?.pack?d.card:null};
+  S.ui.packFeatured=featured;toast('Loading the set for today’s pack…');
+  if(g==='mtg')await A.set({dataset:{code:set.code}});else if(g==='ygo')await A.tSetByName({dataset:{name:set.name}});else await A.tSet({dataset:{id:set.id}});
+  if(!active()||S.ui.view!=='set'||S.ui.packFeatured!==featured)return;
+  const screen=navigationStamp();
+  if(g==='mtg'){const st=S.ui.set;if(!st.loaded||st.busy)await loadSet(st.code,{join:true});}
+  else await tcgCtx.openSet(S.ui.tsetId,false,g);
+  if(!active()||!navigationCurrent(screen)||S.ui.packFeatured!==featured)return;
+  const st=g==='mtg'?S.ui.set:T.ui(g).set;
+  if(!st.loaded||st.busy||st.error||!st.cards?.length)throw Error(st.error||'The set could not finish loading. Retry the set, then tap Open Pack.');
+  await A.openSetPack();
+ }catch(e){if(active()){S.ui.packFeatured=null;toast(e.message||'Could not load today’s pack. Try again.');}}
+ finally{if(t.isConnected)t.disabled=false;}
 };
 // Suspended/mobile tabs recheck the day when foregrounded, not only on navigation.
 document.addEventListener("visibilitychange", () => { if (!document.hidden && S.ui.view === "home") heroArt(T.game()); });
@@ -6338,3 +6373,11 @@ boot().catch((e) => {
 });
 
 C.tradeOption=t=>{const ctx=S.ui.sheetCtx;if(!['card','tcard'].includes(ctx?.type))return;const f=t.dataset.field;if(!['mode','tolerance','credit','valuation','targetEntry'].includes(f))return;ctx.tradeOptions ||= {};ctx.tradeOptions[f]=['mode','valuation','targetEntry'].includes(f)?t.value:Number(t.value);refreshSheet();};
+
+// All new-deck entry points share the same compact setup. Existing saved-deck optimization stays separate.
+A.homeRandomDeck=A.randomDeckOptions=A.randomDeck=()=>{deckExperience.open({game:T.game()});return A.flowRandom();};
+
+A.checkRelease=async()=>{await checkRelease();settingsPopup.refresh();};
+document.addEventListener('toggle',e=>{if(e.target.matches?.('details[data-release-item]')&&e.target.open){acknowledgeRelease(e.target.dataset.releaseItem);e.target.querySelectorAll('.release-dot').forEach(n=>n.remove());}},true);
+onReleaseChange(()=>{refreshProfileAvatar();document.querySelectorAll('.release-dot,[data-release-unread]').forEach(n=>{if(!releaseState().unread)n.remove();});});
+void checkRelease();

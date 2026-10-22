@@ -28,7 +28,7 @@ memory.set(THEME_KEY,'light');listeners.get('storage')({key:THEME_KEY,storageAre
 memory.clear();listeners.get('storage')({key:null,storageArea:storage});assert.equal(document.documentElement.dataset.theme,'dark');
 stop();assert.equal(listeners.size,0);
 
-assert.deepEqual(SETTINGS_TABS.map(x=>x[1]),['Account','Storage & backup','Help & about','Appearance']);
+assert.deepEqual(SETTINGS_TABS.map(x=>x[1]),['Profile & account','Appearance & behavior','Backup & downloads','About & help']);
 assert.equal(normalizeSettingsTab('backup'),'recovery');assert.equal(normalizeSettingsTab('anything'),'account');
 for (const [tab] of SETTINGS_TABS) {
   const html=settingsTabs(tab);assert.equal((html.match(/role="tab"/g)||[]).length,4);
@@ -39,10 +39,10 @@ const rail={scrollWidth:520,clientWidth:300,offsetLeft:20,scrollLeft:0};
 const buttons=SETTINGS_TABS.map(([id],i)=>({dataset:{id},parentElement:rail,offsetLeft:i*130,offsetWidth:130,setAttribute(name,value){this[name]=value;}}));
 const panes=SETTINGS_TABS.map(([id])=>({id:'settings-'+id}));
 const root={querySelectorAll:selector=>selector==='.settings-pane'?panes:selector==='.settings-save-overview [data-act="settingsTab"]'?[]:buttons};
-assert.equal(activateSettingsTab(root,'app'),'app');assert.deepEqual(panes.map(x=>x.hidden),[true,true,true,false]);
-assert.deepEqual(buttons.map(x=>x.tabIndex),[-1,-1,-1,0]);assert.equal(rail.scrollLeft,220);
+assert.equal(activateSettingsTab(root,'app'),'app');assert.deepEqual(panes.map(x=>x.hidden),[true,false,true,true]);
+assert.deepEqual(buttons.map(x=>x.tabIndex),[-1,0,-1,-1]);assert.equal(rail.scrollLeft,0);
 activateSettingsTab(root,'account');assert.equal(rail.scrollLeft,0);
-activateSettingsTab(root,'backup');assert.equal(panes[1].hidden,false);assert.equal(buttons[1]['aria-selected'],'true');
+activateSettingsTab(root,'backup');assert.equal(panes[2].hidden,false);assert.equal(buttons[2]['aria-selected'],'true');
 
 const boot=readFileSync(new URL('./theme-init.js',import.meta.url),'utf8');
 for(const value of ['light','dark','aura','unexpected',null]) {

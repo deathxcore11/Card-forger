@@ -155,3 +155,29 @@ reset('ygo');ctx.baseFixture=exactSaved.saved;S.state.tcg.ygo.decks=[ctx.baseFix
 reset('ygo');ctx.baseFixture={...exactSaved.saved,zones:{main:[{cardId:yseed.id,qty:1,ygoPurchaseSelection:{printingKey:requestedPrinting,edition:'1st-edition'}},{cardId:yseed.id,qty:1,ygoPurchaseSelection:{printingKey:requestedPrinting,edition:'unlimited'}}]}};const beforeConflict=JSON.stringify(S.ui.tbuild);vm.runInContext('openBuild("ygo",["yseed"],"",baseFixture)',ctx);assert.equal(JSON.stringify(S.ui.tbuild),beforeConflict);assert.match(messages.at(-1),/separate purchase editions.*unchanged/);
 console.log('PASS: real detail→Build explicit/automatic/unknown edition isolation, saved row identity, and saved-deck optimization constraint preservation; conflicting edition rows stop for individual review.');
 assert.equal(liveCalls,0);console.log('PASS: actual YGO manual/random/Ask handoffs retain full legal uncapped lists with explicit unknown cost; finite tiers remain honest drafts. No network/account/paid AI calls.');
+// The new manual/chat adapter executes the same real TCG assembly and optimizer,
+// then applies the shared complete-list/plan gate. No legacy popup or Save runs.
+const {createDeckPipeline}=await import('./deck-pipeline.js');
+const flow=createDeckPipeline({S,T:{...T,SOURCES:sources},tcgCtx:ctx.c});
+reset('ptcg');energy.prices.usd=.1;named.set(energy.name,energy);
+let sharedResult=await flow.build({game:'ptcg',format:'standard',seedCard:seed,budget:20,preferOwned:true,easy:true});
+assert(sharedResult.ok,sharedResult.message);assert.equal(sharedResult.rows.reduce((n,r)=>n+r.qty,0),60);assert(flow.recheck(sharedResult));assert.equal(S.state.tcg.ptcg.decks.length,0);
+energy.prices.usd=null;sharedResult=await flow.build({game:'ptcg',format:'standard',seedCard:seed,budget:20});assert(sharedResult.ok,sharedResult.message);assert.equal(sharedResult.pricing.estimate,null);assert(sharedResult.pricing.unpriced>0);
+reset('ygo');sources.ygo.search=async()=>({cards:yarch});ystaples[0].text='';
+sharedResult=await flow.build({game:'ygo',format:'tcg',seedCard:yseed,budget:20});assert(sharedResult.ok,sharedResult.message);assert.equal(sharedResult.rows.filter(r=>r.zone==='main').reduce((n,r)=>n+r.qty,0),40);assert(sharedResult.rows.some(r=>r.id===yseed.id));assert(flow.recheck(sharedResult));
+sources.ygo.search=async()=>({cards:[...yarch,fusion]});sharedResult=await flow.build({game:'ygo',format:'tcg',seedCard:fusion,budget:''});assert.equal(sharedResult.ok,false,'unverified core Fusion route cannot become a successful generated deck');assert.equal(S.state.tcg.ygo.decks.length,0);
+console.log('PASS: shared actual Pokémon/YGO construction returns complete 60/40 lists with honest unknown prices; unsupported core Fusion blocks success and nothing auto-saves.');
+// Shared pricing must use deckStats' allocation across logical Energy reprints.
+const {priceDeck,inspectDeckPlan}=await import('./deck-construction.js');
+const energyReprint={...energy,id:'energy-second-print',prices:{usd:1}};energy.prices.usd=1;T.cache.ptcg[energyReprint.id]=energyReprint;
+reset('ptcg',[{cardId:energy.id,key:'name:'+energy.name,name:energy.name,qty:4}]);
+const split={format:'standard',zones:{main:[{cardId:energy.id,qty:4},{cardId:energyReprint.id,qty:4}],extra:[],side:[]}};
+const splitAssessment=T.flowAssessment('ptcg',split),splitPrice=priceDeck(splitAssessment.rows,'purchase');
+assert.equal(splitPrice.ownedCopies,4);assert.equal(splitPrice.purchaseEstimate,4);assert.equal(splitPrice.purchaseEstimate,splitAssessment.diagnostics.knownPurchaseSubtotal);
+// Candidate-specific attacker identity survives reprinting, and swaps recheck it.
+const evolved={...seed,id:'evolved',name:'Fixture evolved',stage:'Stage1',basicPokemon:false,evolveFrom:seed.name};
+const attackRows=[{card:seed,id:seed.id,qty:4,zone:'main'},{card:evolved,id:evolved.id,qty:4,zone:'main'},{card:energy,id:energy.id,qty:12,zone:'main'}];
+let plan=inspectDeckPlan({game:'ptcg',seedCard:seed},attackRows,{planAttackers:['a-different-candidate-id']});
+assert.deepEqual(plan.attackers.map(c=>c.id),[evolved.id]);assert.equal(plan.issues.length,0);
+plan=inspectDeckPlan({game:'ptcg',seedCard:seed},attackRows.filter(r=>r.id!==energy.id),{planAttackers:['a-different-candidate-id']});assert(plan.issues.some(i=>/no attack supported/.test(i)));
+console.log('PASS: logical inventory is allocated once across Energy reprints; each candidate checks its actual attacker and Energy.');

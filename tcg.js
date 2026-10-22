@@ -1908,7 +1908,7 @@ export function draftPath(tiers, i, label) {
   return `<p class="small draft-path">To finish: ${next >= 0 ? `the “${esc(label(tiers[next]))}” version fills every slot for ${usd(tiers[next].cost)}` : `add ${open} card${open === 1 ? "" : "s"} you own, or raise the budget`}.</p>`;
 }
 export const TCG_TIERS = { ygo: [0, 10, 25, 50, 100, Infinity], ptcg: [0, 10, 25, 50, 100, Infinity] };
-const tcgBudgets = B => [...new Set([...TCG_TIERS[B.game],...(B.custom!==undefined && B.custom!=="" && Number.isFinite(Number(B.custom))?[Math.max(0,Number(B.custom))]:[])])].sort((a,b)=>a-b);
+const tcgBudgets = B => B.constructionBudgets || [...new Set([...TCG_TIERS[B.game],...(B.custom!==undefined && B.custom!=="" && Number.isFinite(Number(B.custom))?[Math.max(0,Number(B.custom))]:[])])].sort((a,b)=>a-b);
 const tierName = (t) => (t.meta ? "Tournament list" : t.variant ? `${t.variant}${t.coversText ? ` · ${t.coversText}` : ""}` : t.budget === 0 ? "Your cards only" : t.budget === Infinity ? "No budget limit" : "Up to $" + t.budget);
 const buildable = (g, c) => (c ? formatsOf(g).filter((f) => SOURCES[g].legality(c, f) !== "not_legal" && SOURCES[g].limit(c, f) > 0 && (g === "ygo" || c.category === "Pokemon")) : []);
 
@@ -1966,6 +1966,16 @@ export function tcgBuildDiagnostics(g, tier, f = formatOf(g, tier.format)) {
     purchaseEstimate: purchaseEstimateVerified ? knownPurchaseSubtotal : null, knownPurchaseSubtotal,
     unpricedPurchaseCopies: stats.unknown, purchaseEstimateVerified, withinBudget,
     ready: complete && legalChecked && !missingEnergy && !missingRequiredSeeds.length && (limit === Infinity || withinBudget) };
+}
+export function flowAssessment(g, deck) {
+  const f=formatOf(g,deck.format),stats=deckStats(g,deck);
+  return {diagnostics:tcgBuildDiagnostics(g,deck,f), issues:SOURCES[g].validate(deck,id=>cardOf(g,id),f),
+    power:tcgPower(g,{...deck,id:'shared-builder:'+g},f,id=>cardOf(g,id)),
+    rows:stats.rows.map((x,index)=>({id:x.r.cardId,name:x.c?.name||x.r.name,qty:x.r.qty,zone:x.zone,card:x.c,
+      // deckStats has already allocated logical inventory across all printings.
+      // Keep that allocation per row; never reuse the full inventory on each row.
+      priceKey:`${x.r.cardId}:${x.zone}:${index}`,owned:x.got,selection:x.r.ptcgPurchaseSelection||x.r.ygoPurchaseSelection,
+      price:g==='ygo'?ygoPurchaseReference(x.c,deck.ygoPurchaseSelections?.[x.r.cardId]||x.r.ygoPurchaseSelection).value:referenceEntryPrice(x.c,x.r.ptcgPurchaseSelection||{})}))};
 }
 const buildSaveStatus = d => {
   const x = d.buildDiagnostics;
@@ -3385,13 +3395,15 @@ export function registerTcg(c) {
     } else line.push({ card: seed, want: seed.ruleBox ? Math.min(3, w[0]) : w[0] });
     return f.copies === 1 ? line.map((x) => ({ ...x, want: 1 })) : line;
   };
-  const runTBuild = async () => {
-    const B = S.ui.tbuild,
-      G = B.game,
+  const runTBuild = async (B = S.ui.tbuild, {detached=false, onStatus=()=>{}, current=()=>true}={}) => {
+    const refresh=()=>{if(!detached)c.refreshSheet();};
+    const G = B.game,
       f = formatOf(G, B.format),
       seed = cardOf(G, B.seed),
       status = (m) => {
-        B.msg = m;
+        if(!current())throw new DOMException('Build replaced','AbortError');
+        B.msg = m; onStatus(m);
+        if(detached)return;
         const el = document.querySelector("#sheetBody [role=status]");
         if (el) el.textContent = m;
       };
@@ -3400,10 +3412,11 @@ export function registerTcg(c) {
     B.error = false;
     B.openTier = null;
     B.evidence = "";
-    c.refreshSheet();
+    refresh();
     try {
       const m = ownedMap(G),
-        owned = (card) => ownedOf(G, card, m),
+        preferred = card => B.preferOwned ? ownedOf(G,card,m) : 0,
+        owned = (card) => B.budgetBasis === "total" ? 0 : ownedOf(G, card, m),
         priceOf = (card) => G === "ygo" ? ygoPurchaseReference(card, B.ygoPurchaseSelections?.[card?.id]).value : price(card),
         seeds = (B.seeds || [B.seed]).map((id) => cardOf(G, id)).filter(Boolean);
       status(B.metaSnapshot ? "Checking the selected tournament snapshot…" : "Checking what tournament decks play right now…");
@@ -3434,18 +3447,22 @@ export function registerTcg(c) {
           B.evidence = staples ? `No recent tournament list plays ${archs[0] || seed.name}, so staples are the format’s most played generic cards — check they suit the engine.` : "";
         }
         if (!staples?.length) staples = (await SOURCES.ygo.byNames(YGO_STAPLES).catch(() => [])).map(remember).sort((a, b) => YGO_STAPLES.indexOf(a.name) - YGO_STAPLES.indexOf(b.name));
-        results = budgets.map((budget) => ({ budget, ...buildYgo({ f, seed, seeds, archetype: arch, staples, limit: SOURCES.ygo.limit, legal: SOURCES.ygo.legality, owned, price: priceOf, budget }) }));
+        results = budgets.map((budget) => ({ budget, ...buildYgo({ f, seed, seeds, archetype: arch, staples, limit: SOURCES.ygo.limit, legal: SOURCES.ygo.legality, owned, price: priceOf, budget, easy:B.easy, preferred }) }));
         upPool = [...staples, ...arch];
       } else {
         const line = [];
         let climbNote = "";
         for (const [i, p] of seeds.filter((x) => x.category === "Pokemon").slice(0, 3).entries()) {
           status(`Finding the evolution line for ${p.name}…`);
-          const selected = await ptcgCheapest(p, f);
+          const selected = B.preserveSeedPrintings ? p : await ptcgCheapest(p, f);
           const top = i === 0 ? await climb(selected, f, new Set((meta?.decks || []).flatMap((d) => (d.list || []).filter((r) => r.kind === "Pokemon").map((r) => r.name)))) : selected;
           if (top.name !== p.name) climbNote = `${p.name} evolves into ${top.name}, so the deck is built to attack with ${top.name}.`;
-          for (const x of await lineFor(top, f, i === 0)) if (!line.some((y) => y.card.id === x.card.id)) line.push(x);
+          for (const x of await lineFor(top, f, i === 0)) {
+            if(B.preserveSeedPrintings){const required=seeds.find(s=>sameCardLogic(G,s,x.card));if(required)x.card=required;}
+            if (!line.some((y) => y.card.id === x.card.id)) line.push(x);
+          }
         }
+        B.planAttackers=line.filter(x=>!line.some(y=>y.card.evolveFrom===x.card.name)).map(x=>x.card.id);
         // Enough Basic Pokémon (about 10) that most opening hands have one — the meta's favourites first.
         status("Adding support Pokémon…");
         let basics = line.filter((x) => x.card.basicPokemon).reduce((a, x) => a + x.want, 0);
@@ -3479,7 +3496,7 @@ export function registerTcg(c) {
         const trainers = [...chosen, ...got.filter(Boolean)];
         const types = [...new Set(line.flatMap((x) => x.card.attackCosts || []))].filter((t) => t in { Grass: 1, Fire: 1, Water: 1, Lightning: 1, Psychic: 1, Fighting: 1, Darkness: 1, Metal: 1 });
         const energy = (await Promise.all((types.length ? types : (seed.types || []).slice(0, 1)).slice(0, 2).map((t) => ptcgBest(energyName(t), formatOf("ptcg", "unlimited"))))).filter(Boolean);
-        results = budgets.map((budget) => ({ budget, ...buildPtcg({ line, trainers, energy, owned, price: priceOf, budget }) }));
+        results = budgets.map((budget) => ({ budget, ...buildPtcg({ line, trainers, energy, owned, price: priceOf, budget, easy:B.easy, preferred }) }));
         upPool = trainers.map((x) => x.card);
       }
       // Tournament decks compete for every affordable tier, rather than being a disconnected extra row.
@@ -3494,11 +3511,12 @@ export function registerTcg(c) {
       }
       const base=B.baseDeck ? gs(G).decks.find(d=>d.id===B.baseDeck && d.format===f.id) : null;
       if(base)proven.push({...structuredClone(base),label:'Your current deck',total:base.zones.main.reduce((a,r)=>a+r.qty,0),size:G==='ygo'?f.main[0]:60,warnings:[]});
-      const rows=d=>Object.values(d.zones).flat(),evaluate=d=>tcgPower(G,{...d,id:'builder:'+G,format:f.id},f,id=>cardOf(G,id)),cost=d=>{const s=deckStats(G,{...d,ygoPurchaseSelections:B.ygoPurchaseSelections});return {cost:s.buy,unknown:s.unknown};};
+      const rows=d=>Object.values(d.zones).flat(),evaluate=d=>tcgPower(G,{...d,id:'builder:'+G,format:f.id},f,id=>cardOf(G,id)),cost=d=>purchaseCost(Object.values(d.zones||{}).flat(),{key:r=>r.cardId,owned:r=>owned(cardOf(G,r.cardId)),price:r=>priceOf(cardOf(G,r.cardId))});
       const seedKeys=new Set(seeds.map(s=>s.id)),targets=[...proven,...results.slice(-1)];
       const candidates=await refineCandidates([...results,...proven],{evaluate,cost,status,rounds:2,maxNeighbors:12,
        accept:d=>!SOURCES[G].validate(d,id=>cardOf(G,id),f).some(x=>x.level==='bad'),
        neighbors:d=>targets.flatMap(target=>towardDeck(d,target,{protectedKeys:seedKeys,zoneOf:r=>G==='ptcg'?cardOf(G,r.cardId)?.category:'main'}))});
+      B.candidates=candidates;
       results=bestBudgetDecks(candidates,budgets,{
         evaluate,cost,
         accept:d=>seeds.every(seed=>rows(d).some(r=>r.cardId===seed.id || (G==='ptcg' && sameCardLogic(G,cardOf(G,r.cardId),seed))))
@@ -3577,8 +3595,21 @@ export function registerTcg(c) {
       B.error = true;
     } finally {
       B.busy = false;
-      c.refreshSheet();
+      refresh();
     }
+  };
+  // Detached construction is shared by the compact builder and Ask. It never
+  // writes sheet state, saves a deck, or opens another setup screen.
+  c.prepareDeck = async (request, options={}) => {
+    const G=request.game, seed=remember(request.seedCard);
+    const B={game:G, seed:seed.id, seeds:(request.seedCards||[seed]).map(card=>remember(card).id),
+      format:request.format, easy:request.easy, preferOwned:request.preferOwned, budgetBasis:request.budgetBasis, constructionBudgets:request.constructionBudgets,
+      ygoPurchaseSelections:request.ygoPurchaseSelections||{}, preserveSeedPrintings:true, results:{}, busy:false};
+    await runTBuild(B,{...options,detached:true});
+    if(B.error)throw Error(B.msg);
+    const requiredSeeds=(B.seeds||[]).map(id=>({id,name:cardOf(G,id)?.name,zone:G==='ygo'&&cardOf(G,id)?.extra?'extra':'main',exactPrinting:G==='ptcg'||!!cardOf(G,id)?.setContext}));
+    return [...(B.candidates||[]),...(B.results[B.format]||[])].map(d=>({...d,format:B.format,requiredSeeds,
+      zones:Object.fromEntries(Object.entries(d.zones||{}).map(([zone,rows])=>[zone,rows.map(r=>({...r,...(request.ptcgPurchaseSelections?.[r.cardId]?{ptcgPurchaseSelection:request.ptcgPurchaseSelections[r.cardId]}:{})}))]))}));
   };
   const openBuild = (G, ids, metaKey = "",baseDeck=null,requestedFormat="",metaSnapshot=null,initial={}) => {
     if(initial.current?.()===false)return;
@@ -3596,6 +3627,7 @@ export function registerTcg(c) {
     // Pokémon decks are built around Pokémon; put them first.
     cards.sort((a, b) => (G === "ptcg" ? (b.category === "Pokemon") - (a.category === "Pokemon") : 0));
     const fmts = buildable(G, cards[0]);
+    if(!baseDeck&&c.openDeckFlow&&cards.length)return c.openDeckFlow({game:G,seed:cards[0].name,seedCard:cards[0],seedCards:cards,format:requestedFormat||fmts[0]?.id,budget:initial.budget??'',ygoPurchaseSelections:initial.ygoPurchaseSelections});
     S.ui.tbuild = { game: G, seed: cards[0]?.id, seeds: cards.map((x) => x.id), format: baseDeck?.format || fmts.find(f=>f.id===requestedFormat)?.id || fmts[0]?.id || "",baseDeck:baseDeck?.id, custom:initial.budget===undefined||initial.budget===""?"":String(Math.max(0,Math.min(100000,Number(initial.budget)||0))), results: {}, busy: false, msg: "", openTier: null, metaKey, ...(metaSnapshot ? { metaSnapshot } : {}), ...(G === "ygo" ? { ygoPurchaseSelections: initial.ygoPurchaseSelections || {} } : {}) };
     openSheet(tcgBuildSheet(), { type: "tbuild" });
     if (fmts.length) runTBuild();
@@ -3625,6 +3657,8 @@ export function registerTcg(c) {
       if(sheet.ygoEditionExplicit||sheet.priceYgoEdition&&sheet.ygoPriceDefault!==sheet.priceYgoEdition)selection.edition=sheet.priceYgoEdition||"";
       ygoPurchaseSelections={[card.id]:selection};
     }
+    const ptcgPurchaseSelections=G==='ptcg'&&sheet?.type==='tcard'&&sheet.id===card.id&&sheet.priceFinish?{[card.id]:{variant:sheet.priceFinish,productId:card.variants?.find(v=>v.key===sheet.priceFinish)?.productId||''}}:undefined;
+    if(c.openDeckFlow)return c.openDeckFlow({game:G,seed:card.name,seedCard:card,format:t.dataset.format||buildable(G,card)[0]?.id,budget:t.initialBudget??'',ygoPurchaseSelections,ptcgPurchaseSelections});
     openBuild(G,[card.id],"",null,t.dataset.format||"",null,{budget:t.initialBudget,current,ygoPurchaseSelections});
   };
   // Build around several cards at once (e.g. everything you own from one archetype).
@@ -4341,7 +4375,7 @@ export function registerTcg(c) {
       if(!U.loaded){U.id='';U.info=null;U.cards=[];U.contents=null;}
     }
   };
-  A.tSet=t=>{setNavigationGeneration++;closeSheet();go('#set/'+encodeURIComponent(t.dataset.id));};
+  A.tSet=t=>{setNavigationGeneration++;closeSheet();return go('#set/'+encodeURIComponent(t.dataset.id));};
   A.tSetByName=async t=>{
 
     const G=g(),name=t.dataset.name,sheet=S.ui.sheetCtx,navigation=++setNavigationGeneration,screen=navigationStamp();
@@ -4350,9 +4384,13 @@ export function registerTcg(c) {
     const result=G==='ygo'?resolveSetRelease(ui(G).sets.list,name):{set:ui(G).sets.list.find(x=>x.name===name)};
     closeSheet();
     // Ambiguous old names/codes reach the release chooser, never the first array entry.
-    go('#set/'+encodeURIComponent(result.set?.id||name));
+    return go('#set/'+encodeURIComponent(result.set?.id||name));
   };
-  c.openSet=async(id,force=false,expectedGame=g())=>{
+  c.openSet=(id,force=false,expectedGame=g())=>{
+    const U=ui(expectedGame).set;if(!force&&U.id===id&&U.busy&&U.loadPromise)return U.loadPromise;
+    const job=loadTcgSet(id,force,expectedGame);U.loadPromise=job;return job.finally(()=>{if(U.loadPromise===job)U.loadPromise=null;});
+  };
+  const loadTcgSet=async(id,force=false,expectedGame=g())=>{
     if(expectedGame!==g())return;
     const G=expectedGame,U=ui(G).set,screen=navigationStamp();
     if(!force&&U.id===id&&(U.busy||U.loaded&&!U.error))return;

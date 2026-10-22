@@ -1,3 +1,4 @@
+import {RELEASE} from '../release-record.js';
 // Public-provider-shaped, entirely synthetic browser QA. Importing this module
 // never starts a server/browser or performs a request. No real user data is used.
 import assert from 'node:assert/strict';
@@ -217,6 +218,7 @@ export async function openApp(browser,base,{game='ygo',hash='#sets',width=390,he
   if(isHistoryURL(url)){const reply=await historyReply(url,record);return fulfill(reply.body,reply.status||200);}
   if(url.origin===base){
    if(url.pathname==='/catalog.json')return fulfill({cards:[],snapshot_date:'2000-01-01'});
+   if(url.pathname==='/api/releases/current')return fulfill(RELEASE);
    if(url.pathname==='/api/community')return fulfill({game:url.searchParams.get('game'),status:'unavailable',items:[],fetchedAt:ISO});
    if(url.pathname==='/api/prices/yugioh-set')return fulfill({name:url.searchParams.get('name'),code:url.searchParams.get('code'),status:'ready',source:MP25_PRICE.source,updatedAt:ISO,products:url.searchParams.get('name')===MP25.name?MP25_PRICE.printings.map(p=>({...p,name:'Ancient Gear Dark Golem'})):[]});
    if(url.pathname==='/api/prices/yugioh'&&url.searchParams.get('id')===MP25_PRICE.cardId)return fulfill(MP25_PRICE);

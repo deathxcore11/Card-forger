@@ -22,12 +22,14 @@ try{
    if(!signedIn){assert.equal(await page.locator('.auth-card .profile-photo-row').count(),1,'guest profile belongs inside the account card');assert.equal(await page.locator('.settings-account-layout > .panel').count(),1,'one cohesive account card');}
    const profileDetails=page.locator('.account > details').first();
    if(signedIn)await profileDetails.locator('summary').click();
+   else await page.getByText('Choose profile artwork',{exact:true}).click();
    for(const selector of ['.profile-photo-source','.profile-photo-control']){
     await page.locator('#settings-account '+selector).click();await page.locator('.profile-art-dialog[open]').waitFor();
     assert.equal(await page.locator('.zoom-overlay').count(),0,'profile task opens the editor, not artwork zoom');
     await page.locator('[data-avatar-close]').click();await page.locator('.profile-art-dialog').waitFor({state:'detached'});
    }
    if(signedIn)await profileDetails.locator('summary').click();
+   else await page.getByText('Choose profile artwork',{exact:true}).click();
    for(const theme of modes){
     await page.locator('#settingsTab-app').click();await page.locator('#settingsTheme-'+theme).check();
     for(const width of widths){

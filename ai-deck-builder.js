@@ -26,7 +26,7 @@ export async function prepareMtgDeck(args,x) {
  };
  const f=formatOf(args.format),budget=Number(args.budget)>0?Math.min(10000,Number(args.budget)):Infinity,basis=['purchase','owned'].includes(args.budget_basis)?args.budget_basis:'total',limit=basis==='owned'?0:budget;
  if(f.id==='limited')return {requiresChoice:true,note:'Limited needs the cards from your draft or sealed pool. Choose a constructed format or provide that pool.'};
- if(f.id==='paupercommander')return {requiresChoice:true,note:'This AI draft path does not yet verify Pauper Commander’s separate commander-rarity rule. Choose Commander, or use the existing Pauper Commander builder and review its commander eligibility check.'};
+ if(f.id==='paupercommander'&&!args.flow)return {requiresChoice:true,note:'This AI draft path does not yet verify Pauper Commander’s separate commander-rarity rule. Choose Commander, or use the existing Pauper Commander builder and review its commander eligibility check.'};
  const style=clean(args.style),seedName=clean(args.seed),leaderName=clean(args.commander),catalog={},warnings=[],goal=normalizeDeckGoal(args.goal,style);
  const unverifiedInfinite=args.avoid_infinite===true&&args.allowUnverifiedInfinite===true;
  if(args.avoid_infinite===true&&!unverifiedInfinite)return {requiresChoice:true,choice:'infinite',goal,note:'You asked for no infinite combos. CardStashy cannot verify every possible loop. You can review an explicitly unverified draft, revise the restriction, or name specific cards to exclude. An exclusion list alone cannot prove there are no infinite combos. Nothing was saved.'};
@@ -74,8 +74,8 @@ export async function prepareMtgDeck(args,x) {
   const intent=requestedIntent(discoveryStyle);
   const fallback=suggested.filter(c=>c&&intent.other.length===0&&intent.tribes.every(t=>tribalSupport(c,t))&&intent.roles.every(r=>themeSupport(c,{roles:[r]}).length>0));
   const candidates=[...choices,...fallback.filter(c=>!choices.some(found=>cardKey(found.name)===cardKey(c.name)))];
-  const usable=candidates.filter(c=>!excludedKeys.has(cardKey(c.name))&&(!requestedColors.length||fitsColors(c,allowedColors))&&requiredCards.every(r=>!f.commander||fitsColors(r,c.color_identity||[]))&&isLegal(c,f)&&(!f.commander||canLead(c,f)||f.id==='paupercommander')&&(!seed||!f.commander||fitsColors(seed,c.color_identity||[]))).filter(c=>basis==='owned'?available(x,c.name)>0:limit===Infinity||quote(c)!==null&&quote(c)<=limit);
-  const chosen=usable[0];
+  const usable=candidates.filter(c=>!excludedKeys.has(cardKey(c.name))&&(!requestedColors.length||fitsColors(c,allowedColors))&&requiredCards.every(r=>!f.commander||fitsColors(r,c.color_identity||[]))&&isLegal(c,f)&&(!f.commander||canLead(c,f)||f.id==='paupercommander')&&(!seed||!f.commander||fitsColors(seed,c.color_identity||[]))).filter(c=>basis==='owned'?available(x,c.name)>0:args.flow||limit===Infinity||quote(c)!==null&&quote(c)<=limit);
+  const chosen=usable[args.flow ? Math.abs(Number(args.randomSeed)||0)%Math.min(usable.length,24) : 0];
   if(!chosen)return {requiresChoice:true,note:seed?`I found ${seed.name}, but no compatible priced commander in this search. Name a commander to use with it.`:warnings.some(w=>w.startsWith('Some card lookups'))?`The card search could not finish, so I cannot verify a ${f.name} build-around yet. Try again, or name a card to build around.`:`I could not find a verified ${f.name} build-around for that theme in this search. Name a card to build around.`,warnings:[...new Set(warnings)]};
   if(f.commander){lead=chosen;if(f.id==='paupercommander'){lead.pdhCommander=true;remember(lead);}}else seed=chosen;
   if(!seed)seed=chosen;
@@ -97,8 +97,12 @@ export async function prepareMtgDeck(args,x) {
  });
  if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
  const own=n=>available(x,n),required=[...new Map([seed,...requiredCards].filter(c=>c&&cardKey(c.name)!==cardKey(lead?.name)).map(c=>[cardKey(c.name),{name:c.name,qty:1}])).values()];
+ if(args.flow&&args.preferOwned!==false)for(const c of Object.values(x.S?.catalog||{}))if(c?.name&&available(x,c.name)>0&&!catalog[cardKey(c.name)]&&isLegal(c,f)&&fitsColors(c,colors))remember(c);
  const buildCatalog=Object.fromEntries(Object.entries(catalog).filter(([,c])=>!excludedKeys.has(cardKey(c.name))));
- const draft=buildDeck({format:f.name,seeds:[seed],commander:lead,requestedStyle:style,goal,suggestedCards:suggested.filter(Boolean).map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
+ const options=({format:f.name,seeds:[seed],commander:lead,easy:args.easy===true,preferred:args.preferOwned===true?c=>own(c.name):()=>0,requestedStyle:style,goal,suggestedCards:suggested.filter(Boolean).map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
+ const candidates=(args.constructionBudgets||[limit]).flatMap(cap=>[false,...(args.flow?[true]:[])].map(completionFirst=>buildDeck({...options,budget:cap,completionFirst})));
+ const finish=draft=>{
+
  const pricing=deckPriceCoverage(draft.cards,catalog,own,quote),validation=validateDeck(draft,catalog,[],[]),issues=[...validation.issues];
  if(f.id==='oathbreaker')issues.push({kind:'unverified',text:'Oathbreaker requires a signature spell. This draft path has not selected or checked that special command-zone requirement.'});
  for(const row of draft.cards){const c=catalog[cardKey(row.name)];if(c&&!Array.isArray(c.color_identity))issues.push({kind:'unverified',text:`${row.name}: color identity data is missing.`});}
@@ -115,4 +119,6 @@ export async function prepareMtgDeck(args,x) {
  const note=`${unverifiedInfinite?'Unverified draft':ready?'Checked draft':'Partial draft'}: ${draft.total}/${f.size} cards${lead?`, led by ${lead.name}`:''}, including ${seed.name}. ${pricing.totalEstimate===null?'Whole-deck estimate incomplete':`Whole-deck estimate $${pricing.totalEstimate.toFixed(2)}`}; ${pricing.purchaseEstimate===null?'purchase estimate incomplete':`$${pricing.purchaseEstimate.toFixed(2)} to buy with available owned copies`}. ${unverifiedInfinite?'Infinite combos have not been verified. Review the warnings before using or saving this draft.':ready?'Review the exact list before saving.':'Review the warnings before using or saving it.'}`;
  const availableCopies=Object.fromEntries(draft.cards.map(r=>[cardKey(r.name),Math.min(r.qty,own(r.name))])),referencePrices=Object.fromEntries(draft.cards.map(r=>[cardKey(r.name),quote(catalog[cardKey(r.name)])]));
  return {draft:{...draft,...pricing,goal,goalDescription:goalDescription(goal),goalVerified:false,unverifiedConstraints:unverifiedInfinite?['infinite_combos']:[],requiredCards:requiredCards.map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),requestedColors,availableCopies,referencePrices,preparedAt:new Date().toISOString(),budget:limit,budgetBasis:basis,cost:pricing.purchaseEstimate,unknown:pricing.unpricedPurchaseCopies,owned:pricing.ownedCopies,buildAround:seed.name,commanderReason,legalChecked,complete,withinBudget,issues,warnings:[...new Set([...draft.warnings,...warnings,...issues.map(i=>i.text)])],note,preparedByAsk:true},result:{game:'mtg',requestedStyle:style,goal,goalDescription:goalDescription(goal),goalVerified:false,unverifiedConstraints:unverifiedInfinite?['infinite_combos']:[],requiredCards:requiredCards.map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),requestedColors,ready,partial:!ready,format:f.name,seed:seed.name,commander:lead?.name||'',commanderReason,total:draft.total,target:f.size,lands:draft.lands,legalChecked,withinBudget,budget:limit===Infinity?'no limit':limit,budgetBasis:basis,...pricing,note,warnings:[...new Set([...warnings,...issues.map(i=>i.text)])].slice(0,8)}};
+ };
+ return args.flow?{candidates:candidates.map(finish)}:finish(candidates[0]);
 }

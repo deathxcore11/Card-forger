@@ -35,6 +35,7 @@ export function completionSummary(rows,owned,unit){
 
 export function makeAskTools(x) {
   const { S, T } = x;
+  let lastSharedBuild=null;
   const metaTargets = new Map();
   const visuals = new Map(), exactCards = new Map(), exactAliases = new Map();
   let exactCardSequence = 0;
@@ -230,6 +231,16 @@ export function makeAskTools(x) {
       const formats=g==='mtg'?FORMATS.map(f=>({id:f.name,name:f.name})):T.SOURCES[g].formats;
       const selected=formats.find(f=>[f.id,f.name].some(n=>n.toLowerCase()===String(format||'').toLowerCase()));
       if(!selected)return {game:g,requiresChoice:true,formats:formats.map(f=>({id:f.id,name:f.name})),note:'Choose a format before preparing a deck. No deck has been changed.'};
+      if(x.deckExperience){
+        const previous=lastSharedBuild?.current()&&/^\s*(?:keep|same|make (?:it|that)|adjust|change|closer|cheaper|easier|simpler)/i.test(handshake.userRequest||'')&&lastSharedBuild.result.request.game===g&&lastSharedBuild.result.request.format===selected.id?lastSharedBuild.result:null;
+        const result=await x.deckExperience.build({...checked.args,previousDeck:previous?.deck,seed:seed||previous?.request.seed,seedCard:seed&&seed!==previous?.request.seed?null:previous?.request.seedCard,game:g,format:selected.id,budget:budget===0?null:budget,theme:previous&&/^(?:easy|easier|simple|simpler|beginner|cheaper|closer|easy to play)(?: deck)?$/i.test(want.trim())?previous.request.theme:g==='mtg'?want:g==='ptcg'?(['Grass','Fire','Water','Lightning','Psychic','Fighting','Darkness','Metal','Dragon','Colorless'].find(t=>new RegExp('\\b'+t+'\\b','i').test(want))||''):(!seed&&!vagueDeckStyle(want)?want:''),easy:/easy|easier|beginner|simple|simpler/i.test(style||'')},{current:preparingCurrent});
+        if(!preparingCurrent())return {cancelled:true,terminal:true,note:'This request or workspace changed. Nothing was saved.'};
+        if(!result.ok)return {game:g,terminal:true,complete:false,note:result.message,issues:result.details||[]};
+        lastSharedBuild={result,current:scopeCurrent};
+        const resultId=x.deckExperience.register(result,scopeCurrent);
+        x.pending=()=>{};x.pending.current=scopeCurrent;x.pendingGame=g;x.pending.resultId=resultId;
+        return {game:g,terminal:true,ready:true,complete:true,reviewAvailable:true,format:result.request.formatName,seed:result.request.seedCard?.name||result.deck.buildAround,budget:result.request.budget,budgetBasis:result.pricing.basis,estimate:result.pricing.estimate,knownSubtotal:result.pricing.subtotal,unpricedCopies:result.pricing.unpriced,budgetStatus:result.budgetStatus,delta:result.delta,cards:result.rows.map(r=>({name:r.name,qty:r.qty,zone:r.zone})),note:'One complete list is shown in this conversation. Save is available here; nothing was saved automatically. Power is a heuristic, not a win rate.'};
+      }
       if (g === 'mtg') {
         const buildContext={...x,api:(...a)=>cachedBuildRead('api:'+JSON.stringify(a),()=>x.api(...a)),resolve:(...a)=>cachedBuildRead('resolve:'+JSON.stringify(a),()=>x.resolve(...a))};
         const built = await prepareMtgDeck({ style:want, budget:$, format:selected.name, seed, commander, budget_basis,goal,required_cards,excluded_cards,colors,avoid_infinite,candidate_cards,allowUnverifiedInfinite:handshake.allowUnverifiedInfinite===true,current:preparingCurrent },buildContext);
@@ -309,12 +320,13 @@ export function makeAskTools(x) {
     return g=>identity()&&stateVersion(g)===versions.get(g);
   };
   // A builder prepared during this question appears as one more tappable item.
-  tools.reset = () => { buildEpoch++; x.pending = null; suggestions = []; exactAliases.clear(); buildReads.clear(); buildReadVersion=null; bestBuild=null; };
+  tools.reset = ({forgetBuild=false}={}) => { if(forgetBuild)lastSharedBuild=null; buildEpoch++; x.pending = null; suggestions = []; exactAliases.clear(); buildReads.clear(); buildReadVersion=null; bestBuild=null; };
+  tools.defaultBuildFormat=x.deckExperience?g=>({mtg:'Standard',ygo:'tcg',ptcg:'standard'}[g]):undefined;
   tools.buildFormats=()=>Object.fromEntries(GAMES.map(g=>[g,(g==='mtg'?FORMATS:T.SOURCES?.[g]?.formats||[]).map(f=>({id:f.id,name:f.name}))]));
   tools.cancel = () => { buildEpoch++; x.pending = null; buildReads.clear(); buildReadVersion=null; bestBuild=null; };
   tools.suggestedItems = () => suggestions;
   tools.canonicalItem = s => { const exact=s.kind==='card'?exactCardFor(s):null; return exact?{...s,ref:exact.ref,label:s.label||exact.card.name}:s.kind==='meta'?suggestions.find(x=>x.game===s.game&&(x.ref===s.ref||x.label===s.ref||x.label===s.label))||s:s; };
-  tools.pendingItem = () => { if (!x.pending) return null; const ref = 'builder-' + (++buildId); builders.set(ref,x.pending); const item={kind:'build',game:x.pendingGame,ref,label:x.pendingGame==='mtg'?'Review the deck draft':'Open the deck builder'};if(x.pending.visual)visuals.set(visualKey(item),structuredClone(x.pending.visual));return item; };
+  tools.pendingItem = () => { if (!x.pending) return null; const ref = 'builder-' + (++buildId); builders.set(ref,x.pending); const item={kind:'build',game:x.pendingGame,ref,label:x.pending.resultId?'Your deck':x.pendingGame==='mtg'?'Review the deck draft':'Open the deck builder'};if(x.pending.visual)visuals.set(visualKey(item),structuredClone(x.pending.visual));return item; };
   // What a tapped answer item opens, in the right game.
   tools.open = async (s) => {
     s=tools.canonicalItem(s);
@@ -349,6 +361,7 @@ export function makeAskTools(x) {
     s=tools.canonicalItem(s);
     let img = '', price = null, card = null;
     const deck = s.kind === 'meta' || s.kind === 'deck', visual = visuals.get(visualKey(s));
+    if(s.kind==='build'&&builders.get(s.ref)?.resultId)return x.deckExperience.markup(builders.get(s.ref).resultId);
     if(s.kind==='build'&&visual){
       const art=visual.image?(s.game==='ptcg'?pokemonArtCrop(visual.card,'ask-build-image',visual.image):`<img src="${x.esc(visual.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('ask-art-unavailable')"><span class="ask-build-art-fallback">Artwork unavailable</span>`):'<span class="ask-build-no-art">Artwork unavailable</span>';
       const estimate=typeof visual.estimate==='number'&&Number.isFinite(visual.estimate)?`$${visual.estimate.toFixed(2)} reference estimate`:s.game==='mtg'?'Price estimate incomplete':'Review list and prices in the builder';

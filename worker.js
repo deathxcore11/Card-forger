@@ -1,3 +1,4 @@
+import {RELEASE} from './release-record.js';
 import { checkNativeBackendRequest, withNativeResponseHeaders, createSupabaseBearerVerifier, isNativeAdmitted, releaseNativeAdmission } from './native-backend-contract.js';
 import { NATIVE_ORIGIN } from './native-service-policy.js';
 import { SUPABASE } from './config.js';
@@ -292,6 +293,8 @@ export default {
   ...handlers,
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    if(url.pathname==='/api/releases/current'&&['GET','HEAD'].includes(request.method))return new Response(request.method==='HEAD'?null:JSON.stringify(RELEASE),{headers:{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*'}});
+
     const callback = androidCallbackLanding(request, url);
     if (callback) return callback;
     // Only a file that no longer exists reaches the Worker: an older APK link goes to the current one.
