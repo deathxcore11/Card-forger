@@ -45,7 +45,7 @@ import {syncDataLoading} from './data-loading.js';
 import {ownedCardLots,quickQuantity,adjustOwnedLot} from './quick-quantity.js';
 import {conditionName,conditionValue,conditionPriceHtml,conditionManualPlaceholder,attachConditionInfo} from './condition-value.js';
 import { showAiReview, clearAiReviews } from './ai-review.js';
-import { openAsk, clearAskConversations } from './ai-ask.js';
+import { openAsk, closeAsk, clearAskConversations } from './ai-ask.js';
 import { isDeckBuildRequest } from './ai-deck-goal.js';
 import { openRulesAsk, closeRulesAsk, clearRulesConversations } from './ai-rules.js';
 import { makeAskTools } from './ai-tools.js';
@@ -386,7 +386,8 @@ async function resolve(name, fuzzy = false, refresh = false) {
 async function resolveNames(names, progress = () => {}, refresh = false) {
   const wanted = [...new Map(names.filter(Boolean).map((n) => [key(n), n])).values()].filter((n) => refresh || !meta(n)),
     failed = [],
-    matched = new Map();
+    matched = new Map(),
+    retried = new Set();
   for (let i = 0; i < wanted.length; i += 75) {
     const chunk = wanted.slice(i, i + 75);
     progress(`Loading card data ${Math.min(i + 75, wanted.length)}/${wanted.length}…`);
@@ -402,7 +403,9 @@ async function resolveNames(names, progress = () => {}, refresh = false) {
         for (const a of aliases) matched.set(key(a), c.name);
       }
       for (const n of chunk) if (!matched.has(key(n))) failed.push(n);
-    } catch {
+    } catch (e) {
+      // A batch the database couldn't be reached for gets one more pass after a cooldown.
+      if (e?.network && !retried.has(i)) { retried.add(i); progress("The card database is busy; trying again…"); await new Promise((r) => setTimeout(r, 4000)); i -= 75; continue; }
       failed.push(...chunk);
     }
   }
@@ -1369,7 +1372,10 @@ const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game
   const d=r.game==='mtg'?withSnapshot({...structuredClone(result.deck),id,name,budget:r.budget,versions:[]},'Generated'):{...structuredClone(result.deck),id,name,format:r.format,createdAt:new Date().toISOString()};
   await write(state=>{if(!current())throw Error('Your workspace changed.');if(r.game==='mtg')state.decks.push(d);else{state.tcg||={};state.tcg[r.game]||=T.gs(r.game);state.tcg[r.game].decks.push(d);}},{msg:'Saved to My decks.'});
  },export:text=>download('CardStashy-deck.txt',text,'text/plain'),
- card:async(game,row)=>{const account=accountGeneration;if(T.game()!==game)await switchGame(game);if(account!==accountGeneration||accountLocked||T.game()!==game)return;return game==='mtg'?A.card({dataset:{name:row.name}}):A.tCard({dataset:{id:row.id,...(game==='ptcg'?{setVariant:row.selection?.variant||''}:{printing:row.selection?.printingKey||'',edition:row.selection?.edition||''})}});}
+ card:async(game,row)=>{const account=accountGeneration;
+  // A result from another game opens its card in that game; the assistant (whose conversation is kept
+  // per game) closes first, since an open dialog otherwise holds the game switch.
+  if(T.game()!==game){closeAsk();await switchGame(game);}if(account!==accountGeneration||accountLocked||T.game()!==game)return;return game==='mtg'?A.card({dataset:{name:row.name}}):A.tCard({dataset:{id:row.id,...(game==='ptcg'?{setVariant:row.selection?.variant||''}:{printing:row.selection?.printingKey||'',edition:row.selection?.edition||''})}});}
 });
 A.aiDeckReview = t => showAiReview(t.dataset.ai, render);
 const C = {}; // change handlers
@@ -2304,7 +2310,7 @@ A.card = async (t) => {
       if(!navigationCurrent(screen) || S.ui.sheetCtx !== ctx || T.game() !== "mtg" || !$("#sheet").open)return;
     } catch (e) {
       if(!navigationCurrent(screen) || S.ui.sheetCtx !== ctx || T.game() !== "mtg" || !$("#sheet").open)return;
-      $("#sheetBody").innerHTML = `<div class="sheet-head"><h2>${esc(name)}</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="note warn">${esc(e.message)}</div><p class="muted small">Check the spelling. You can fix the name by removing this card and adding the correct one.</p>${ctx.deckId ? `<button class="link danger" data-act="deckRemove" data-name="${esc(name)}">Remove from deck</button>` : ""}`;
+      $("#sheetBody").innerHTML = `<div class="sheet-head"><h2>${esc(name)}</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="note warn">${esc(e.message)}</div>${e?.network ? `<button class="btn small" data-act="card" data-name="${esc(name)}">Try again</button>` : `<p class="muted small">Check the spelling. You can fix the name by removing this card and adding the correct one.</p>`}${ctx.deckId ? `<button class="link danger" data-act="deckRemove" data-name="${esc(name)}">Remove from deck</button>` : ""}`;
       return;
     }
   }

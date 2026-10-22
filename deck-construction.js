@@ -137,7 +137,7 @@ export function chooseDeck(candidates,request) {
  const winner=valid[0];
  if(!winner){
   const nearest=[...candidates].sort((a,b)=>Number(b.check.complete)-Number(a.check.complete)||a.plan.issues.length-b.plan.issues.length)[0];
-  return {ok:false,request,code:request.ownedOnly?'owned-inventory':'construction',message:request.ownedOnly?'Your available owned cards could not form a complete, checked deck for this request.':nearest?.check.issues?.[0]||nearest?.plan.issues?.[0]||'The loaded card pool could not produce a complete, checked deck. Try another build-around or retry card loading.',details:[...(nearest?.check.issues||[]),...(nearest?.plan.issues||[])].slice(0,6)};
+  return {ok:false,request,code:request.ownedOnly?'owned-inventory':'construction',message:request.ownedOnly?'Your available owned cards could not form a complete, checked deck for this request.':(reason=>reason?`Couldn’t build a complete, checked deck: ${reason}`:'The loaded card pool could not produce a complete, checked deck. Try another build-around or retry card loading.')(nearest?.check.issues?.[0]||nearest?.plan.issues?.[0]),details:[...(nearest?.check.issues||[]),...(nearest?.plan.issues||[])].slice(0,6)};
  }
  const delta=request.budget!==null&&winner.pricing.estimate!==null?cents(winner.pricing.estimate-request.budget):null;
  return {ok:true,...winner,request,budgetStatus:budgetClass(winner)===3?'outside-target':winner.pricing.estimate===null?'unverified':delta>0?'over-target':'within-target',delta,

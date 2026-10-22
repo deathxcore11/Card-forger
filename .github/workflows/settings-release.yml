@@ -30,6 +30,7 @@ jobs:
             test-results/set-experience*
             test-results/settings-release-layout.json
             test-results/shared-deck-*
+            test-results/synthetic-search-shared-deck-*
             test-results/synthetic-search-settings-release-*
 
   foil-compatibility:

@@ -1258,8 +1258,15 @@ try {
   assert(artMotion.length >= 2 && artMotion.every(n => n.transition === '0s' && n.animation === 'none'), 'reduced motion removes community and lower Meta artwork transitions');
   await reduced.page.screenshot({ path: resolve(RESULTS, 'home-mtg-390-reduced-motion.png'), fullPage: true, animations: 'disabled' });
   await startReveal(reduced.page, 'mtg');
-  const animationNames = await reduced.page.locator('.home-reveal-fan > *').evaluateAll(nodes => nodes.map(n => getComputedStyle(n).animationName));
-  assert(animationNames.length === 3 && animationNames.every(name => name === 'none'), 'reduced motion removes every reveal animation');
+  // Random deck now opens the compact setup (seed art, format, theme, budget, Generate). Its visible
+  // artwork and controls must exist and carry no motion under reduced motion.
+  const setupMotion = await reduced.page.evaluate(() => {
+    const root = document.querySelector('.deck-flow'), nodes = root ? [root, ...root.querySelectorAll('*')] : [];
+    const shown = n => { const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+    return { art: !!root?.querySelector('.deck-seed-art') && shown(root.querySelector('.deck-seed-art')), generate: !!root?.querySelector('[data-act="flowGenerate"]') && shown(root.querySelector('[data-act="flowGenerate"]')), count: nodes.length, moving: nodes.filter(n => { const cs = getComputedStyle(n); return cs.animationName !== 'none' && parseFloat(cs.animationDuration) > 0.01 || parseFloat(cs.transitionDuration) > 0.01; }).map(n => n.className || n.tagName).slice(0, 5) };
+  });
+  assert(setupMotion.art && setupMotion.generate && setupMotion.count > 5, 'the deck setup shows its seed artwork and Generate action: ' + JSON.stringify(setupMotion));
+  assert.deepEqual(setupMotion.moving, [], 'reduced motion removes every setup animation and transition');
   await reduced.page.screenshot({ path: resolve(RESULTS, 'home-mtg-reveal-reduced-motion.png'), fullPage: true, animations: 'disabled' });
   await reduced.close();
   report.push('Reduced-motion Home and actual card reveal evidence, with all reveal animations disabled');

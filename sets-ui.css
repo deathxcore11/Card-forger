@@ -108,7 +108,7 @@ body:not(.glass) .set-atmosphere{display:none}
 
 /* Pack opening: tear the real booster open, the cards deal out into a fanned hand, and the focused
    card flips up large with its real foil. Every control stays inside the dialog at any width. */
-.pack-dialog{--hand-w:min(19vw,112px,calc(100dvh*.12));--card-w:min(84vw,400px,calc((100dvh - 300px - var(--hand-w)*1.4)*63/88));width:min(860px,calc(100% - 20px));max-height:calc(100dvh - 16px);box-sizing:border-box;padding:14px 18px 14px;border:1px solid var(--line);border-radius:26px;background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--gold) 9%,var(--bg)),var(--bg) 60%);color:var(--text);overflow:auto;overflow-x:hidden;overscroll-behavior:contain}
+.pack-dialog{--hand-w:min(19vw,112px,calc(100dvh*.12));--card-w:min(84vw,400px,calc((100vw - 58px)/1.06),calc((100dvh - 300px - var(--hand-w)*1.4)*63/88));width:min(860px,calc(100% - 20px));max-height:calc(100dvh - 16px);box-sizing:border-box;padding:14px 18px 14px;border:1px solid var(--line);border-radius:26px;background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--gold) 9%,var(--bg)),var(--bg) 60%);color:var(--text);overflow:auto;overflow-x:hidden;overscroll-behavior:contain}
 .pack-dialog:focus{outline:none}.pack-dialog::backdrop{background:#05060be6;backdrop-filter:blur(16px)}
 .pack-header{display:flex;align-items:flex-start;gap:12px}.pack-header>div{flex:1;min-width:0}.pack-header h2{margin:2px 0 0;font-size:clamp(17px,3vw,24px);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pack-explanation{margin:2px 0 0;font-size:10.5px;color:var(--muted);line-height:1.4;opacity:.8}
@@ -169,7 +169,7 @@ body:not(.glass) .set-atmosphere{display:none}
 .pack-tilt[aria-pressed="true"]{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 50%,transparent)}
 .pack-tilt[hidden]{display:none}
 @media(prefers-reduced-motion:reduce){.pack-focus-card.pack-slide-next,.pack-focus-card.pack-slide-prev{animation:none}}
-.pack-focus{position:relative}.pack-focus>.pack-tilt{position:absolute;right:2px;bottom:4px}
+.pack-focus{position:relative;overflow-x:clip;overflow-clip-margin:16px}.pack-focus>.pack-tilt{position:absolute;right:2px;bottom:4px}
 /* Tilt: a small round control beside the close button, clear of every card; its words stay for screen readers. */
 .pack-header>.pack-header-tools{display:flex;align-items:center;gap:8px;flex:none}
 .pack-header-tools>.pack-tilt{position:relative;width:40px;height:40px;min-height:0;padding:0;border-radius:50%;font-size:0;color:transparent;background:#ffffff0a;border:1px solid #ffffff24}

@@ -14,7 +14,7 @@ try{
    for(const width of [320,390,540,768,1024]){
     await page.setViewportSize({width,height:900});await noOverflow(page,'#sheet',`${game} compact setup ${width}`);
     await page.locator('.deck-flow .settings-disclosure summary').click();await noOverflow(page,'#sheet',`${game} preferences ${width}`);await page.locator('.deck-flow .settings-disclosure summary').click();
-    if(width===390)await capture(page,'shared-deck-setup-'+game);
+    if(width===390)await capture(page,'synthetic-search-shared-deck-setup-'+game);
    }
    await page.emulateMedia({reducedMotion:'reduce'});await page.addStyleTag({content:'html {font-size:24px!important}'});await page.setViewportSize({width:390,height:900});await noOverflow(page,'#sheet',`${game} enlarged text`);
    await page.locator('#sheet [data-act="closeSheet"]').first().click();assert.equal(await page.locator('#sheet[open]').count(),0);app.health();checks.push(game+' compact setup, touch layout and Back');
