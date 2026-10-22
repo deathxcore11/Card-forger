@@ -1,0 +1,26 @@
+{
+  "source": "Player screenshot, 2026-10-22",
+  "game": "ygo",
+  "format": "tcg",
+  "requiredCard": "Psiics, Moonlight of the Ghoti",
+  "reportedResult": {
+    "mainCopies": 26,
+    "target": 40,
+    "extraCopies": 0,
+    "budget": 100,
+    "purchaseEstimate": 98.22,
+    "requiredCardPresent": false,
+    "difficultyLabel": "Hard to play",
+    "saveOffered": true,
+    "purchaseOffered": true
+  },
+  "acceptance": {
+    "successfulResult": false,
+    "saveOffered": false,
+    "purchaseOffered": false,
+    "difficultyLabel": null,
+    "preserveInputs": true,
+    "doNotAssumeHigherBudgetFixesMissingData": true,
+    "completeResultMustIncludeRequiredCardAndUsableSummonSupport": true
+  }
+}

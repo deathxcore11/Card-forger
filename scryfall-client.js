@@ -2,7 +2,7 @@
 // hold a scanner lookup behind its entire network timeout. Three bounded slots,
 // one shared rate gate (including retries), and a deadline that includes queuing.
 // https://scryfall.com/docs/api/rate-limits
-export function createScryfallClient({fetcher=(...args)=>fetch(...args),timeoutMs=16000,intervalMs=110,collectionIntervalMs=510,maxActive=3}={}) {
+export function createScryfallClient({fetcher=(...args)=>fetch(...args),timeoutMs=16000,intervalMs=110,collectionIntervalMs=510,maxActive=3,networkBackoffMs=1000}={}) {
  const waiting=[];let active=0,nextStart=0,nextCollection=0,wake=0;
  const error=(signal)=>Error(signal?.aborted?'Card lookup cancelled.':'Card lookup timed out. Check your connection and try again.');
  const pump=()=>{
@@ -45,8 +45,11 @@ export function createScryfallClient({fetcher=(...args)=>fetch(...args),timeoutM
      },ctl.signal,/^\/cards\/collection(?:\?|$)/.test(path));
     }catch(e){
      if(ctl.signal.aborted||e.name==='AbortError')throw error(options.signal);
-     if(attempt>=2||e.status&&!e.retry)throw e;
-     nextStart=Math.max(nextStart,Date.now()+(attempt?1500:600));
+     // No response at all (TypeError "Failed to fetch"): usually Scryfall's rate limiter, whose
+     // 429 carries no CORS headers. Every request backs off together, longer each time.
+     const network=!e.status&&e instanceof TypeError;
+     if(e.status&&!e.retry||attempt>=2)throw network?Object.assign(Error('Couldn’t reach the card database (Scryfall). It may be busy for a moment; try again shortly.'),{network:true}):e;
+     nextStart=Math.max(nextStart,Date.now()+(network?networkBackoffMs*2**attempt:attempt?1500:600));
     }
    }
   }finally{clearTimeout(timer);options.signal?.removeEventListener('abort',cancel);}

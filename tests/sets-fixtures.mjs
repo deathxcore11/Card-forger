@@ -1,3 +1,4 @@
+import {RELEASE} from '../release-record.js';
 // Hosted Sets regression fixtures. No browser is imported or started here.
 // The server/helper architecture is shared read-only with the detail suite.
 // Every provider response is synthetic; no live API, AI, payment or cloud write
@@ -158,6 +159,7 @@ export async function openSetsApp(browser,base,{game='ygo',hash='#sets',width=39
   if(url.origin===historyEndpoint.origin&&url.pathname===historyEndpoint.pathname)return fulfill(history(url));
   if(url.origin===base){
    if(url.pathname==='/catalog.json')return fulfill({cards:[],snapshot_date:'2000-01-01'});
+   if(url.pathname==='/api/releases/current')return fulfill(RELEASE);
    if(url.pathname==='/api/community')return fulfill({game:url.searchParams.get('game'),status:'unavailable',items:[],fetchedAt:ISO});
    if(url.pathname==='/api/prices/archive'||url.pathname==='/api/prices/recent')return fulfill(history(url));
    if(setPrices&&url.pathname==='/api/prices/yugioh-set')return fulfill({name:LOB.name,code:'LOB',status:'ready',source:'Synthetic set price fixture',updatedAt:ISO,products:[{name:'Dark Energy',code:'LOB-118',rarity:'Common',productId:100001,quotes:[{edition:'1st Edition',market:15},{edition:'Unlimited',market:12.34}]},{name:'Blue-Eyes White Dragon',code:'LOB-001',rarity:'Ultra Rare',productId:100002,quotes:[{edition:'1st Edition',market:150}]}]});

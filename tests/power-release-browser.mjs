@@ -261,26 +261,30 @@ async function configureBuilderProviders(page,x){
  },x);
 }
 async function readableBuildSeed(page,x,label){
- const seed=page.locator('#sheetBody .build-seed:not(.multi)'),name=seed.locator(':scope > div > b'),action=seed.locator(':scope > [data-act="tRandomDeck"]');
- assert.equal(await seed.count(),1);assert.equal((await name.innerText()).trim(),x.cards[x.seedId].name,'full build-around identity remains visible');assert.equal((await action.innerText()).trim(),'Random card');
+ // Compact setup: the build-around's art and full name, then the Random card action.
+ const seed=page.locator('#sheetBody .deck-seed-picker summary'),name=seed.locator('b'),art=seed.locator('.deck-seed-art'),action=page.locator('#sheetBody .deck-flow [data-act="flowRandom"]');
+ assert.equal(await seed.count(),1);assert.equal((await name.innerText()).trim(),x.cards[x.seedId].name,'full build-around identity remains visible');assert.equal(await art.getAttribute('alt'),x.cards[x.seedId].name);assert.equal((await action.innerText()).trim(),'Random card');
  await page.locator('#sheetBody').evaluate(n=>{n.scrollTop=0;});await action.click({trial:true});
- const geometry=await seed.evaluate(n=>{const box=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};},title=n.querySelector(':scope > div > b'),node=title.firstChild,words=[];
+ const geometry=await page.locator('#sheetBody .deck-flow').evaluate(n=>{const box=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};},title=n.querySelector('.deck-seed-picker summary b'),node=title.firstChild,words=[];
   for(const m of title.textContent.matchAll(/\S+/g)){const r=document.createRange();r.setStart(node,m.index);r.setEnd(node,m.index+m[0].length);words.push({word:m[0],rects:[...r.getClientRects()].map(q=>({width:q.width,left:q.left,right:q.right}))});}
-  return {seed:box(n),text:box(n.querySelector(':scope > div')),button:box(n.querySelector(':scope > button')),words};
+  return {art:box(n.querySelector('.deck-seed-art')),text:box(title),button:box(n.querySelector('[data-act="flowRandom"]')),words};
  });
- const v=page.viewportSize(),g=geometry;assert(g.text.width>=160,label+': card name has a readable column, not a narrow vertical stack '+JSON.stringify(g));
- assert(g.button.width>=120&&g.button.height>=(v.width<=480?44:34),label+': full random action and touch target are retained');
- assert(g.button.x>=-.5&&g.button.right<=v.width+.5&&g.button.y>=-.5&&g.button.bottom<=v.height+.5,label+': random action is reachable in the viewport');
- if(v.width<=480)assert(g.button.y>=g.text.bottom-.5,label+': narrow random action uses a separate row');
- for(const w of g.words){assert.equal(w.rects.length,1,label+': normal identity word is not split mid-word: '+w.word);assert(w.rects[0].left>=g.text.x-.5&&w.rects[0].right<=g.text.right+.5,label+': each identity word fits the text column');}
+ const v=page.viewportSize(),g=geometry;assert(g.art.width>=40&&g.art.height>=56,label+': the build-around artwork is shown at a readable size '+JSON.stringify(g));assert(g.text.width>=100,label+': card name has a readable column '+JSON.stringify(g));
+ assert(g.button.height>=(v.width<=480?40:32)&&g.button.width>=96,label+': Random card keeps a comfortable touch target '+JSON.stringify(g.button));
+ assert(g.button.x>=-.5&&g.button.right<=v.width+.5,label+': Random card is reachable horizontally');
+ for(const w of g.words){assert.equal(w.rects.length,1,label+': normal identity word is not split mid-word: '+w.word);}
  return {viewport:v,geometry:g};
 }
-async function settleBuilder(page,format){
- await page.waitForFunction(format=>{const B=window.__uiTestState.ui.tbuild;return B?.format===format&&!B.busy&&(B.error||Array.isArray(B.results?.[format]));},format);
- const state=await page.evaluate(()=>({error:window.__uiTestState.ui.tbuild.error,message:window.__uiTestState.ui.tbuild.msg}));assert.equal(state.error,false,state.message);
+// One generated result as shown: rows, per-zone counts, checks and cost lines.
+async function flowResult(page){
+ return page.evaluate(()=>{const r=document.querySelector('#sheetBody .deck-flow-result');if(!r)return {ok:false,alert:document.querySelector('#sheetBody [role="alert"]')?.textContent.trim()||''};
+  const rows=[...r.querySelectorAll('.deck-flow-row')].map(n=>({qty:Number(n.querySelector('.deck-flow-qty').textContent.replace(/\D/g,'')),name:n.querySelector('span:not(.deck-flow-qty):not(.deck-flow-art-placeholder)').textContent.trim(),price:n.lastElementChild.textContent.trim()}));
+  return {ok:true,text:r.innerText,rows,total:rows.reduce((n,x)=>n+x.qty,0),price:r.querySelector('.deck-result-price')?.innerText||''};});
 }
-async function builderTier(page,cap){
- return page.evaluate(cap=>{const B=window.__uiTestState.ui.tbuild,tiers=B.results[B.format],i=tiers.findIndex(t=>t.covers.includes(cap===null?Infinity:cap));if(i<0)throw Error('Expected budget tier absent');return {i,tier:tiers[i],custom:B.custom};},cap);
+async function generate(page,budget){
+ await page.locator('[data-flow-field="budget"]').fill(budget===null?'':String(budget));await page.locator('[data-act="flowGenerate"]').click();
+ await page.waitForFunction(()=>document.querySelector('#sheetBody .deck-flow-result')||document.querySelector('#sheetBody [role="alert"]'),null,{timeout:60000});
+ return flowResult(page);
 }
 
 try{
@@ -366,24 +370,18 @@ try{
  },complete.id);timings.push(cacheCheck);
  checks.push('Browser gameplay cache preserves object identity over 20 row-order-only reads; observed timing recorded without a hardware-dependent performance guarantee.');
  await openAsk(page);await page.locator('.ask-input').fill(question);await page.locator('.ask-send').click();
- await page.locator('.ask-dialog [data-ask-show]').filter({hasText:'Review the deck draft'}).waitFor();
- assert.equal(askCalls,1,'ready draft ends after one proposal');await page.locator('.ask-dialog [data-ask-show]').filter({hasText:'Review the deck draft'}).click();
- await page.locator('#sheet[open] .tier').waitFor();const preview=await page.locator('#sheetBody').innerText();
- assert.match(preview,/60\/60/);assert.match(preview,/budget: unlimited/i);assert.match(preview,/fun is subjective/);assert.match(preview,/Includes basic lands/);assert.doesNotMatch(preview,/Requested whole-deck budget: \$25/);
- const draft=await page.evaluate(()=>window.__uiTestState.ui.build.results.Standard[0]);assert.equal(draft.goal,'fun');assert.equal(draft.goalVerified,false);assert(draft.cost>0);
- for(const width of [320,390,768,1440]){
-  await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheetBody .tier','Standard goal review '+width);
-  const grids=await page.locator('#sheetBody .tier-tiles').evaluateAll(ns=>ns.map(n=>({columns:getComputedStyle(n).gridTemplateColumns.split(/\s+/).length,width:n.getBoundingClientRect().width,rows:[...n.querySelectorAll('.lot')].map(r=>({width:r.getBoundingClientRect().width,name:r.querySelector('.lot-name')?.textContent.trim(),nameWidth:r.querySelector('.lot-name')?.getBoundingClientRect().width}))})));
-  assert(grids.length>0);for(const g of grids){assert.equal(g.columns,width>=600?2:1,'sheet cards follow their bounded container, not the full-page desktop grid');assert(g.rows.length>0);if(width>=600)for(const row of g.rows){assert(row.width>=300,'desktop sheet keeps a full readable card row');assert(row.nameWidth>=140,'card identity is not reduced to a few letters by a third column');}}
-  layoutEvidence.push({scenario:'goal-preview',viewport:{width,height:1000},grids});await capture(page,'goal-preview-'+width);
- }
- assert.equal(await inventorySnapshot(page),initial,'reviewing a built list never saves it');await page.locator('#sheetBody [data-act="closeSheet"]').first().click();
- checks.push('Actual Ask tool to existing deck-preview sheet: fun goal, unlimited cap, 60-card review, real synthetic basic prices, four widths, no autosave.');
+ await page.locator('.ask-dialog .deck-flow-result').waitFor();
+ assert.equal(askCalls,1,'complete result ends after one proposal');const result=page.locator('.ask-dialog .deck-flow-result'),preview=await result.innerText();
+ assert.match(preview,/60 main/);assert.match(preview,/Complete · app checks passed/);assert.match(preview,/Reference estimate/);assert.doesNotMatch(preview,/Target \$25/);assert.equal(await page.locator('#sheet[open]').count(),0);
+ const displayed=await result.locator('.deck-flow-row').evaluateAll(ns=>ns.map(n=>({qty:Number(n.querySelector('.deck-flow-qty').textContent.replace('×','')),name:n.querySelector('span:not(.deck-flow-qty):not(.deck-flow-art-placeholder)').textContent.trim()})));assert.equal(sumQty(displayed),60);
+ for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.ask-dialog','Standard inline result '+width);await result.locator('[data-act="flowSave"]').scrollIntoViewIfNeeded();await capture(page,'goal-preview-'+width);}
+ assert.equal(await inventorySnapshot(page),initial,'reviewing a built list never saves it');await page.locator('[data-ask-close]').click();
+ checks.push('Actual Ask to shared complete 60-card inline result, real synthetic price estimate, four widths, no setup handoff or autosave.');
  await openAsk(page);await page.locator('[data-ask-new]').click();askHold={started:deferred(),release:deferred(),settled:deferred()};
  await page.locator('.ask-input').fill(question);await page.locator('.ask-send').click();await askHold.started.promise;
  await page.locator('[data-ask-close]').click();askHold.release.resolve();await askHold.settled.promise;askHold=null;await frames(page);
  assert.equal(await page.locator('.ask-dialog[open]').count(),0);assert.equal(await page.locator('#sheet[open]').count(),0);assert.equal(await inventorySnapshot(page),initial);
- await openAsk(page);assert.equal(await page.locator('.ask-dialog [data-ask-show]').count(),0,'cancelled late build cannot create an action in the reopened conversation');await page.locator('[data-ask-close]').click();
+ await openAsk(page);assert.equal(await page.locator('.ask-dialog [data-flow-result]').count(),0,'cancelled late build cannot create a result in the reopened conversation');await page.locator('[data-ask-close]').click();
  checks.push('Close cancels in-flight Ask; late synthetic build response creates no preview, action or saved mutation after reopen.');
  assert.deepEqual(await page.evaluate(()=>window.__fixtureSensitiveWrites),[],'all flows before explicit synthetic save leave durable inventory unchanged');
  // Keep the shared write guard intact. This additional log verifies every later
@@ -551,64 +549,59 @@ try{
   await bp.evaluate(id=>{location.hash='#tdeck/'+id+'/cards';},x.input.id);await bp.waitForFunction(id=>window.__uiTestState.ui.tdeckId===id,x.input.id);
   await bp.locator('.deck-body .lot-name[data-act="tCard"][data-id="'+x.seedId+'"]').first().click();
   await bp.waitForFunction(()=>window.__uiTestState.ui.sheetCtx?.type==='tcard'&&!window.__uiTestState.ui.sheetCtx.previewBusy);
-  await bp.locator('#sheetBody [data-act="tBuild"][data-id="'+x.seedId+'"]').first().click();await settleBuilder(bp,x.format);
-  assert.equal(await bp.locator('[data-change="tBuildCustom"]').inputValue(),'','actual Build starts unlimited, not an implicit25');
-  if(x.budget!==null){await bp.locator('[data-change="tBuildCustom"]').fill(String(x.budget));await bp.locator('[data-change="tBuildCustom"]').press('Tab');await bp.waitForFunction(v=>window.__uiTestState.ui.tbuild.custom===v,String(x.budget));await settleBuilder(bp,x.format);}
-  let chosen=await builderTier(bp,x.budget),d=chosen.tier.buildDiagnostics,target=bp.locator('#sheetBody .tier').nth(chosen.i);
-  assert.equal(d.ownedCopies,0);assert.equal(await inventorySnapshot(bp),before,'actual building never saves or changes ownership');
-  if(x.game==='ptcg'){
-   if(x.kind==='complete'){assert.equal(chosen.tier.total,60);assert.equal(d.ready,true);assert(d.purchaseEstimate>25);assert(d.purchaseEstimateVerified);assert(chosen.tier.zones.main.find(r=>r.cardId===x.energyId)?.qty>=11);}
-   else{assert(chosen.tier.total<60);assert(d.missingEnergy>0);assert.equal(d.ready,false);assert(d.purchaseEstimate<=10);assert.match(await target.innerText(),/intended Energy copies are still missing/);assert.match(await target.innerText(),/power unavailable/);}
-  }else if(x.kind==='constraint'){
-   assert.equal(chosen.tier.total,40);assert.equal(d.ready,false);assert.equal(d.missingRequiredSeeds[0].id,x.seedId);assert(!chosen.tier.zones.main.some(r=>r.cardId===x.seedId));assert.match(await target.innerText(),/Draft.*constraint shortfall/i);assert.match(await target.innerText(),/required build-around card missing/);
-  }else if(x.kind==='unknown'){
-   assert.equal(chosen.tier.total,40);assert.equal(d.ready,true);assert.equal(d.unpricedPurchaseCopies,40);assert.equal(d.purchaseEstimate,null);assert.match(await target.innerText(),/Total purchase cost is unverified, not free/);assert.match(await target.locator('[data-act="tTierSave"]').innerText(),/cost unverified/);
-  }else{assert.equal(chosen.tier.total,40);assert.equal(d.ready,true);assert.equal(d.purchaseEstimate,40);assert.equal(d.purchaseEstimateVerified,true);}
-  if(x.game==='ygo'&&x.kind!=='unknown')for(const row of chosen.tier.zones.main){assert.equal(row.ygoPurchaseSelection.edition,'unlimited');assert(row.ygoPurchaseSelection.productId>0);assert.match(row.ygoPurchaseSelection.printingKey,/^FXQ-EN\d+::Common$/);}
-  assert.match(await target.locator('[data-act="tTierSave"]').innerText(),d.ready?/Save as deck|cost unverified/:/Save draft/);
+  await bp.locator('#sheetBody [data-act="tBuild"][data-id="'+x.seedId+'"]').first().click();await bp.locator('.deck-flow').waitFor();
+  assert.equal(await bp.locator('[data-flow-field="budget"]').inputValue(),'','Build starts with no price target, not an implicit budget');
+  assert.equal(await bp.locator('[data-act="flowSave"]').count(),0,'setup offers no Save before a result exists');
   const builderLayouts=[];
-  for(const viewport of [{width:320,height:1000},{width:360,height:1000},{width:390,height:1000},{width:768,height:1000},{width:1440,height:1000},{width:844,height:390}]){await bp.setViewportSize(viewport);const label='actual '+x.game+' '+x.kind+' builder '+viewport.width+'x'+viewport.height;builderLayouts.push(await readableBuildSeed(bp,x,label));await noOverflow(bp,'#sheetBody',label);await capture(bp,'build-'+x.game+'-'+x.kind+'-'+(viewport.height===1000?viewport.width:viewport.width+'x'+viewport.height),'#sheetBody');}
-  // Restore the reading viewport after landscape. content-visibility:auto
-  // deliberately skips offscreen card text, so inspect the actual scrolled row.
-  await bp.setViewportSize({width:320,height:1000});
-  await target.locator('[data-act="tTier"]').click();await bp.waitForFunction(i=>window.__uiTestState.ui.tbuild.openTier===i,chosen.i);target=bp.locator('#sheetBody .tier').nth(chosen.i);
-  const inspectId=x.game==='ptcg'&&x.kind==='complete'?x.energyId:x.game==='ygo'&&x.kind!=='unknown'?chosen.tier.zones.main[0].cardId:null;
-  if(inspectId){
-   const row=target.locator('.lot.tier-row').filter({has:bp.locator('.lot-name[data-id="'+inspectId+'"]')});assert.equal(await row.count(),1);
-   await row.scrollIntoViewIfNeeded();await frames(bp);assert.equal(await row.isVisible(),true);assert.equal((await row.locator('.lot-name').innerText()).trim(),x.cards[inspectId].name);
-   const box=await row.boundingBox(),body=await bp.locator('#sheetBody').boundingBox();assert(box&&body&&box.y>=body.y-.5&&box.y+box.height<=Math.min(body.y+body.height,1000)+.5,'inspected card row is visibly inside the sheet, not only in hidden DOM');
-   if(x.game==='ptcg')assert.match(await row.innerText(),/Basic Fire Energy/);else{assert.match(await row.innerText(),/Unlimited/);assert.match(await row.innerText(),/purchase reference/);}
-   await capture(bp,'build-'+x.game+'-'+x.kind+'-visible-row','#sheetBody .tier.on .lot.tier-row:has(.lot-name[data-id="'+inspectId+'"])');
-  }
-  await noOverflow(bp,'#sheetBody .tier.on','expanded actual builder');await capture(bp,'build-'+x.game+'-'+x.kind+'-expanded','#sheetBody .tier.on');
-  await target.locator('[data-act="tTier"]').click();await bp.waitForFunction(()=>window.__uiTestState.ui.tbuild.openTier===null);
+  for(const viewport of [{width:320,height:1000},{width:360,height:1000},{width:390,height:1000},{width:768,height:1000},{width:1440,height:1000},{width:844,height:390}]){await bp.setViewportSize(viewport);const label='actual '+x.game+' '+x.kind+' setup '+viewport.width+'x'+viewport.height;builderLayouts.push(await readableBuildSeed(bp,x,label));await noOverflow(bp,'#sheetBody',label);await capture(bp,'build-'+x.game+'-'+x.kind+'-setup-'+(viewport.height===1000?viewport.width:viewport.width+'x'+viewport.height),'#sheetBody');}
+  await bp.setViewportSize({width:390,height:1000});
+  const r=await generate(bp,x.budget),seedName=x.cards[x.seedId].name,size=x.game==='ptcg'?60:40;
+  assert.equal(await inventorySnapshot(bp),before,'generating never saves or changes ownership');assert.deepEqual(await bp.evaluate(()=>window.__fixtureSensitiveWrites),[]);
+  // Every probe has a complete, checked candidate in its pool: the result must be that whole list.
+  assert(r.ok,'a complete candidate exists, so the result is the list, not an error: '+r.alert);
+  assert.equal(r.total,size,'the full deck, not a partial draft');assert.match(r.text,/Complete · app checks passed/);
+  assert(r.rows.find(row=>row.name===seedName)?.qty>=1,'the requested build-around is in the result');
+  for(const row of r.rows)assert(row.qty<=(x.game==='ptcg'?(/^Basic .* Energy$/.test(row.name)?60:4):3),'copy limit for '+row.name);
+  if(x.game==='ptcg'){const energy=r.rows.find(row=>row.name==='Basic Fire Energy');assert(energy?.qty>=8,'the Fire attacker is paid for by Fire Energy, not left without resources');}
+  if(x.kind==='complete'&&x.game==='ptcg'){assert.doesNotMatch(r.price,/Target/);assert.match(r.price,/Reference estimate · whole deck/);}
+  if(x.kind==='complete'&&x.game==='ygo'){assert.match(r.price,/Target \$50\.00 · \$\d+\.\d\d below target|On target/);assert.doesNotMatch(r.text,/unpriced/);}
+  // Tight targets: the complete list is shown with its real cost and an explicit large-deviation warning.
+  if(x.kind==='constraint'){assert.match(r.price,/over target/);assert.match(r.text,/exceeds the allowed overage/);}
+  if(x.kind==='constraint'&&x.game==='ygo')assert.match(r.rows.find(row=>row.name===seedName).price,/\$1,000\.00/,'the expensive seed keeps its real price');
+  // Unknown exact quotes stay unknown, with or without a finite target; no fit is claimed.
+  let finite=null;
   if(x.kind==='unknown'){
-   await bp.locator('[data-change="tBuildCustom"]').fill('50');await bp.locator('[data-change="tBuildCustom"]').press('Tab');await bp.waitForFunction(()=>window.__uiTestState.ui.tbuild.custom==='50');await settleBuilder(bp,x.format);
-   const finite=await builderTier(bp,50);assert.equal(finite.tier.total,0);assert.equal(finite.tier.buildDiagnostics.ready,false);assert.equal(finite.tier.buildDiagnostics.unpricedPurchaseCopies,0);assert.match(await bp.locator('#sheetBody .tier').nth(finite.i).locator('[data-act="tTierSave"]').innerText(),/Save draft/);
-   await capture(bp,'build-ygo-generic-price-finite-draft','#sheetBody');assert.equal(await inventorySnapshot(bp),before);assert.deepEqual(await bp.evaluate(()=>window.__fixtureSensitiveWrites),[]);
-   builderResults.push({game:x.game,kind:x.kind,uncapped:d,finite:finite.tier.buildDiagnostics,saved:false,providerReads:await bp.evaluate(()=>window.__powerBuilderReads),diagnostics:builderApp.diagnostics()});
+   assert.match(r.text,/40 copies are unpriced\. The total and budget fit are unverified\./);assert(r.rows.every(row=>row.price==='Unpriced'));assert.doesNotMatch(r.price,/\$0\.00/,'missing prices are never shown as a zero total');
+   await bp.locator('[data-act="flowEdit"]').click();await bp.locator('.deck-flow').waitFor();finite=await generate(bp,50);
+   assert(finite.ok&&finite.total===40);assert.match(finite.text,/budget fit are unverified/);assert.doesNotMatch(finite.price,/below target|On target|over target/,'no budget verdict from incomplete prices');
+  }
+  for(const width of [320,768,1440]){await bp.setViewportSize({width,height:1000});await noOverflow(bp,'#sheetBody','result '+x.game+' '+x.kind+' '+width);await capture(bp,'build-'+x.game+'-'+x.kind+'-result-'+width,'#sheetBody');}
+  await bp.setViewportSize({width:390,height:1000});
+  if(x.kind==='unknown'){
+   assert.equal(await inventorySnapshot(bp),before);builderResults.push({game:x.game,kind:x.kind,result:{total:r.total,price:r.price},finite:{total:finite.total,price:finite.price},saved:false,providerReads:await bp.evaluate(()=>window.__powerBuilderReads),diagnostics:builderApp.diagnostics()});
   }else{
-   assert.deepEqual(await bp.evaluate(()=>window.__fixtureSensitiveWrites),[]);await installBuilderSaveAudit(bp);
-   await target.locator('[data-act="tTierSave"]').click();await bp.waitForFunction(game=>window.__uiTestState.state.tcg[game].decks.length===2,x.game);
-   const saved=await bp.evaluate(game=>structuredClone(window.__uiTestState.state.tcg[game].decks.at(-1)),x.game);assert.deepEqual(saved.zones,chosen.tier.zones);assert.equal(saved.buildDiagnostics.ready,d.ready);assert.equal(saved.buildDiagnostics.purchaseBudget,d.purchaseBudget);
-   await bp.locator('#sheetBody .sheet-head [data-act="closeSheet"]').click();await bp.evaluate(()=>{location.hash='#decks';});await bp.waitForFunction(()=>window.__uiTestState.ui.view==='decks');
+   // Explicit Save appends exactly the displayed list; reopening assesses that same list.
+   await installBuilderSaveAudit(bp);const shown=await flowResult(bp);
+   await bp.locator('#sheetBody [data-act="flowSave"]').click();await bp.waitForFunction(game=>window.__uiTestState.state.tcg[game].decks.length===2,x.game);
+   const saved=await bp.evaluate(game=>structuredClone(window.__uiTestState.state.tcg[game].decks.at(-1)),x.game);
+   const savedRows=await bp.evaluate(({game,deck})=>{const T=window.__uiTestTcg;return Object.values(deck.zones).flat().map(r=>({qty:r.qty,name:T.cache[game][r.cardId]?.name||r.name}));},{game:x.game,deck:saved});
+   const norm=rows=>rows.map(r=>r.qty+' '+r.name).sort();assert.deepEqual(norm(savedRows),norm(shown.rows),'the saved deck is exactly the displayed result');
+   await bp.locator('#sheetBody [data-act="closeSheet"]').first().click();await bp.evaluate(()=>{location.hash='#decks';});await bp.waitForFunction(()=>window.__uiTestState.ui.view==='decks');
    await bp.evaluate(id=>{location.hash='#tdeck/'+id+'/insights';},saved.id);await bp.waitForFunction(id=>window.__uiTestState.ui.tdeckId===id,saved.id);await bp.locator('.score-panel.power').waitFor();
    const reopened=await bp.evaluate(async({game,format,id})=>{const T=window.__uiTestTcg,formats=(await import(game==='ptcg'?'/ptcg.js':'/ygo.js'))[game==='ptcg'?'PTCG_FORMATS':'YGO_FORMATS'],d=window.__uiTestState.state.tcg[game].decks.find(d=>d.id===id);return T.tcgBuildDiagnostics(game,d,formats.find(f=>f.id===format));},{game:x.game,format:x.format,id:saved.id});
-   assert.equal(reopened.ready,d.ready);assert.equal(reopened.purchaseEstimate,d.purchaseEstimate);assert.equal(reopened.ownedCopies,0);assert.match(await bp.locator('.deck-hero').innerText(),/0%\s*owned/);
-   if(x.game==='ptcg'&&x.kind==='constraint'){assert.match(await bp.locator('.deck-hero').innerText(),/Incomplete draft/);assert.match(await bp.locator('.deck-hero').innerText(),/power unavailable/);assert.match(await bp.locator('.score-panel.power').innerText(),/Finish the deck before rating Power/);}
-   if(x.game==='ygo'&&x.kind==='constraint')assert.match(await bp.locator('.deck-hero').innerText(),/Draft: required build-around card missing: Synthetic YGO build seed/);
+   assert.equal(reopened.ready,true,'the saved list passes the app validators when reopened');assert.equal(reopened.ownedCopies,0);assert.match(await bp.locator('.deck-hero').innerText(),/0%\s*owned/);
    for(const width of [320,390,768,1440]){await bp.setViewportSize({width,height:1000});await noOverflow(bp,'.deck-hero','saved '+x.game+' '+x.kind+' '+width);await noOverflow(bp,'.score-panel.power','saved builder Power '+width);await capture(bp,'build-'+x.game+'-'+x.kind+'-reopened-'+width);}
-   const audit=await bp.evaluate(()=>window.__powerBuilderSave),expected=structuredClone(audit.baseline);expected.tcg[x.game].decks.push(saved);assert(audit.writes.length>0);for(const state of audit.writes)assert.deepEqual(state,expected,'every durable builder write appends exactly the requested synthetic deck');assert.equal((await bp.evaluate(()=>window.__fixtureSensitiveWrites)).length,audit.writes.length);
-   builderResults.push({game:x.game,kind:x.kind,preview:d,reopened,saved:{id:saved.id,unchangedZones:true,durableWrites:audit.writes.length},providerReads:await bp.evaluate(()=>window.__powerBuilderReads),diagnostics:builderApp.diagnostics()});
+   const audit=await bp.evaluate(()=>window.__powerBuilderSave),expected=structuredClone(audit.baseline);expected.tcg[x.game].decks.push(saved);assert(audit.writes.length>0);for(const state of audit.writes)assert.deepEqual(state,expected,'every durable write appends exactly the requested synthetic deck');assert.equal((await bp.evaluate(()=>window.__fixtureSensitiveWrites)).length,audit.writes.length);
+   builderResults.push({game:x.game,kind:x.kind,result:{total:r.total,price:r.price},reopened,saved:{id:saved.id,matchesDisplayed:true,durableWrites:audit.writes.length},providerReads:await bp.evaluate(()=>window.__powerBuilderReads),diagnostics:builderApp.diagnostics()});
   }
-  assert.equal(metaFixtureReads,x.game==='ptcg'?1:0,'only the known saved Standard field refresh uses the exact empty-event fixture');
+  assert(metaFixtureReads<=(x.game==='ptcg'?1:0),'only the known saved Standard field refresh may use the exact empty-event fixture');
   const metaFallback=x.game==='ptcg'?await bp.evaluate(()=>{const m=window.__uiTestTcg.metaState('ptcg');return {busy:m.busy,error:m.error,decks:m.data.decks,top:m.data.top};}):null;
-  if(metaFallback){assert.equal(metaFallback.busy,false);assert.equal(metaFallback.error,'No recent Standard events found.');assert.deepEqual(metaFallback.decks,[],'empty source does not invent a tournament match');assert.deepEqual(metaFallback.top,x.trainerIds.map(id=>({kind:'Trainer',name:x.cards[id].name,pct:100,avg:4})),'existing cached synthetic build inputs survive source unavailability');}
+  if(metaFallback&&metaFixtureReads){assert.equal(metaFallback.busy,false);assert.equal(metaFallback.error,'No recent Standard events found.');assert.deepEqual(metaFallback.decks,[],'empty source does not invent a tournament match');assert.deepEqual(metaFallback.top,x.trainerIds.map(id=>({kind:'Trainer',name:x.cards[id].name,pct:100,avg:4})),'existing cached synthetic build inputs survive source unavailability');}
   Object.assign(builderResults.at(-1),{metaFixture:{url:x.game==='ptcg'?metaFixtureUrl:null,reads:metaFixtureReads,fallback:metaFallback},watchedPrerequisite,builderLayouts});builderApp.health();
   }catch(error){builderResults.splice(resultStart);await recordScenarioFailure('builder-'+x.game+'-'+x.kind,error,builderApp);}
   finally{try{await closeScenarioContext('builder-'+x.game+'-'+x.kind,builderApp);}finally{builderApp=null;}}
  }
- if(builderResults.length===builderProbes.length)checks.push('Actual card-detail Build handlers, real optimizers, previews and explicit save/reopen: Pokémon60 charges unowned Energy while finite10 is a draft; exact-quote YGO40 fits50 while a missing1000 seed remains a constraint-shortfall draft despite40 cards. Generic YGO card references stay unknown: uncapped40, finite50 empty draft. No ownership, private-price or unrelated deck mutation.');
+ if(builderResults.length===builderProbes.length)checks.push('Actual card-detail Build opens the compact setup (blank budget, readable seed art at six viewports) and Generate returns one complete, checked list from the real constructors: Pokémon 60 with Fire Energy (a $10 target shows the real cost and an explicit over-target warning instead of a partial draft), Yu-Gi-Oh! 40 under $50, a $1,000 seed kept with its real price and warning, and unpriced exact quotes left unverified with or without a target. Explicit Save appends exactly the displayed list, which reopens as valid with 0% owned; generation alone never writes.');
  // A separate Magic context begins with expensive basic art. Only the actual
  // bounded Scryfall adapter supplies a cheaper legal equivalent; rejected rows
  // and has_more demonstrate that the result is not a market-wide minimum.

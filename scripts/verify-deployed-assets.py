@@ -22,6 +22,8 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 HOSTS = ("https://cardstashy.com/", "https://cardforge2.deathxcore11.workers.dev/")
 KEY_ASSETS = ("index.html", "config.js", "sw.js")
 MODULES = (
+    "deck-construction.js", "deck-pipeline.js", "deck-experience.js", "deck-preferences.js",
+    "release-record.js", "release-status.js", "downloads/index.html", "downloads/download.js",
     "grid-settings.js", "price-origin.js", "collection-display.css",
     "aura.js", "aura.css",
     "brand-motion.css",
@@ -54,7 +56,7 @@ MODULES = (
     "adapt.js", "ai-ask.js", "ai-ui.js", "auth-form.js", "auto-browse.js", "build-overlay.js", "buy.js", "card-actions.js",
     "collection-locations.js", "collection-sort.js", "daily-clock.js", "deck-flow.js", "deck-safety.js", "deckaudit.js",
     "dialog.js", "extras.js", "facts.js", "feedback-layer.js", "format-upgrades.js", "games.js", "glass-select.js", "guide.js",
-    "icons.js", "importance.js", "install.js", "android-beta.js", "matchup.js", "matchups-ui.js", "mtg-cheap.js", "mtg-route-coverage.js", "mtg-tags.js",
+    "icons.js", "importance.js", "install.js", "android-beta.js", "matchup.js", "matchups-ui.js", "mtg-cheap.js", "mtg-boosters.js", "data/mtg-boosters/index.json", "mtg-route-coverage.js", "mtg-tags.js",
     "password-auth.js", "pokemon-catalogue-supplement.js", "pokemon-prices.js", "pokemon-role.js", "pokemon-set-art.js",
     "price-reference.js", "pricehist.js", "printing-carousel.js", "ptcg-glc-rules.js", "ptcg-product.js", "quick-quantity.js",
     "rule-hover.js", "scanart.js", "scanner-lookup.js", "scanner-review.js", "share.js", "sharedprices.js", "store.js",

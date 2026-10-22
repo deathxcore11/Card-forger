@@ -1,3 +1,4 @@
+import {setupBurden} from './deck-preferences.js';
 // Deck generators for Yu-Gi-Oh! and Pokémon. Pure assembly (no network) so the
 // rules can be tested; tcg.js fetches the candidate cards and calls these.
 // Picks prefer cards you own and stay inside a purchase budget.
@@ -64,7 +65,7 @@ const add = (m, c, n, why) => {
  * opts: f (format), seed, seeds (extra must-include cards), archetype (cards), staples (cards),
  *       limit(card, f), legal(card, f), owned(card), price(card), budget
  */
-export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], limit, legal, owned, price, budget, completionFirst = false }) {
+export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], limit, legal, owned, price, budget, completionFirst = false, easy = false, preferred = () => 0 }) {
   const picks = [seed, ...seeds.filter((c) => c.id !== seed.id)],
     isSeed = (c) => picks.some((x) => x.id === c.id),
     ok = (c) => legal(c, f) !== "not_legal" && limit(c, f) > 0,
@@ -74,7 +75,7 @@ export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], li
     target = f.main[0],
     count = (m) => rowsOf(m).reduce((a, r) => a + r.qty, 0),
     lvl = (c) => (c.category === "Monster" ? (c.level || 4) : 0),
-    order = (c) => (isSeed(c) ? -1 : c.category === "Monster" ? (lvl(c) <= 4 ? 0 : 3) : c.category === "Spell" ? 1 : 2);
+    order = (c) => (easy?setupBurden('ygo',c):0)-(preferred(c)>0?.2:0)+(isSeed(c) ? -1 : c.category === "Monster" ? (lvl(c) <= 4 ? 0 : 3) : c.category === "Spell" ? 1 : 2);
   if(completionFirst){
     const pool=[...new Map([...picks,...archetype,...staples].filter(ok).map(c=>[c.id,c])).values()];
     for(const c of picks.filter(ok))add(c.extra?extra:main,c,pick.take(c,1),"Your build-around card");
@@ -112,7 +113,7 @@ export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], li
   const total = count(main),
     warnings = [];
   if(total<target){
-    const cheap=buildYgo({f,seed,seeds,archetype,staples,limit,legal,owned,price,budget,completionFirst:true});
+    const cheap=buildYgo({f,seed,seeds,archetype,staples,limit,legal,owned,price,budget,completionFirst:true,easy,preferred});
     const kept=picks.every(c=>[...cheap.zones.main,...cheap.zones.extra].some(r=>r.cardId===c.id));
     if(kept&&cheap.total>total)return cheap;
   }
@@ -126,7 +127,8 @@ export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], li
  * Pokémon: the evolution line, legal Trainer staples, and basic Energy to exactly 60.
  * opts: line ([{card, want}] Basic → Stage 2), trainers ([{card, want}]), energy (cards), owned, price, budget
  */
-export function buildPtcg({ line = [], trainers = [], energy = [], owned, price, budget, completionFirst = false }) {
+export function buildPtcg({ line = [], trainers = [], energy = [], owned, price, budget, completionFirst = false, easy = false, preferred = () => 0 }) {
+  trainers=[...trainers].sort((a,b)=>(easy?setupBurden('ptcg',a.card)-setupBurden('ptcg',b.card):0)||Number(preferred(b.card)>0)-Number(preferred(a.card)>0));
   const pick = picker({ owned, price, budget, filler: completionFirst?0:0.1 }),
     deck = new Map(),
     count = () => rowsOf(deck).reduce((a, r) => a + r.qty, 0),
@@ -161,7 +163,7 @@ export function buildPtcg({ line = [], trainers = [], energy = [], owned, price,
   const total = count(),
     warnings = [];
   if(total<60){
-    const cheap=buildPtcg({line,trainers,energy,owned,price,budget,completionFirst:true});
+    const cheap=buildPtcg({line,trainers,energy,owned,price,budget,completionFirst:true,easy,preferred});
     const kept=line.every(({card,want})=>(cheap.zones.main.find(r=>r.cardId===card.id)?.qty||0)>=want);
     if(kept&&cheap.total>total)return cheap;
   }

@@ -1,3 +1,4 @@
+import {RELEASE} from '../release-record.js';
 // Real application-shell regression. Run in the authorized CI browser job:
 //   node tests/home-browser.mjs
 // Validate fixture schemas without starting a browser:
@@ -337,6 +338,7 @@ async function openApp(options = {}) {
         return json({game:g,date,card:{game:g,date,id:c.id,name:c.name,art:g==='mtg'?c.image_uris.art_crop:g==='ygo'?c.art:c.imageLarge,artDirect:g==='ygo'?c.artDirect:''}});
       }
       if (url.pathname === '/api/meta/curation') return json({ status: 'unavailable', rankedIds: [], annotations: [] });
+      if (url.pathname === '/api/releases/current') return json(RELEASE);
       if (url.pathname === '/api/community') return json(feed(url.searchParams.get('game'), options.emptyFeed, options));
       if (url.pathname === '/api/meta/mtg') {
         if (emblemsWait && url.searchParams.get('format') === DEFAULT_MTG_META_FORMAT) { seenEmblems(); await emblemsWait; }
@@ -670,32 +672,19 @@ async function safeSourceLink(article, game, selector = 'a.community-open') {
   assert.equal(href.username + href.password + href.port, '');
   assert(!href.hostname.endsWith('.invalid'), 'source action points to the intended official provider, never a fixture or unsafe host');
 }
-async function chooseFormat(page, game) {
-  await page.locator('#randomFormat').click();
-  await page.locator('.glass-select-menu[open]').getByRole('option', { name: game === 'ygo' ? 'Advanced (TCG)' : 'Standard', exact: true }).click();
+async function chooseFormat(page,game){await page.locator('[data-flow-field="format"]').selectOption(game==='ygo'?'tcg':game==='mtg'?'Standard':'standard');}
+async function openDeckRandom(page){
+ await page.evaluate(()=>{location.hash='#decks';});await page.waitForFunction(()=>document.body.dataset.view==='decks');
+ await page.locator('[data-act="randomDeckOptions"]').first().click();
 }
-async function openDeckRandom(page) {
-  await page.evaluate(()=>{location.hash='#decks';});
-  await page.waitForFunction(()=>document.body.dataset.view==='decks');
-  await page.locator('[data-act="randomDeckOptions"]').first().click();
-}
-async function startReveal(page, game) {
-  await openDeckRandom(page);
-  await page.locator('#randomFormat').waitFor();
-  assert.equal(await page.locator('#randomFormat').inputValue(), '', 'format is an explicit user choice');
-  assert.equal(await page.locator('#randomTheme').inputValue(), '', 'theme stays optional');
-  await page.locator('[data-act="randomDeckStart"]').click();
-  await page.waitForFunction(() => /Choose a format/.test(document.querySelector('#toast').textContent));
-  assert.equal(await page.locator('.home-deck-reveal').count(), 0, 'no decorative reveal before format/selection');
-  await chooseFormat(page, game);
-  await page.locator('[data-act="randomDeckStart"]').click();
-  await page.locator('.home-deck-reveal').waitFor();
-  assert.equal(await page.locator('.home-deck-reveal h3').innerText(), seeds[game].name, 'reveal names the actual provider-selected card');
-  assert.match(await page.locator('.home-deck-reveal').innerText(), /not a finished deck/);
-  const image = page.locator('.home-reveal-fan img');
-  assert.equal(await image.getAttribute('alt'), seeds[game].name);
-  await scrollStable(page, image);
-  await page.waitForFunction(() => { const n = document.querySelector('.home-reveal-fan img'); return n?.complete && n.naturalWidth > 0; });
+async function startReveal(page,game){
+ await openDeckRandom(page);await page.locator('.deck-seed-art').waitFor();
+ assert.equal(await page.locator('[data-flow-field="format"]').inputValue(),game==='ygo'?'tcg':game==='mtg'?'Standard':'standard','supported default is visible');
+ assert.equal(await page.locator('[data-flow-field="theme"]').inputValue(),'','theme remains optional');
+ assert.equal(await page.locator('[data-flow-field="budget"]').inputValue(),'','blank means no price target');
+ assert.equal(await page.locator('.deck-seed-picker summary b').innerText(),seeds[game].name);
+ const image=page.locator('.deck-seed-art');assert.equal(await image.getAttribute('alt'),seeds[game].name);await scrollStable(page,image);
+ await page.waitForFunction(()=>{const n=document.querySelector('.deck-seed-art');return n?.complete&&n.naturalWidth>0;});
 }
 
 try {
@@ -1134,8 +1123,8 @@ try {
       await p.clock.fastForward(1);
       await p.waitForFunction(game=>document.querySelector('[data-home-meta-open]')?.dataset.key===`fixture-${game}-replacement`,game);
       await p.locator('#sheetBody [data-act="tMetaBuild"]').click();
-      await p.waitForFunction(({game,key})=>window.__homeTestState.ui.sheetCtx?.type==='tbuild' && window.__homeTestState.ui.tbuild?.game===game && window.__homeTestState.ui.tbuild?.metaKey===key,{game,key:retainedKey});
-      const built=await p.evaluate(()=>{const B=window.__homeTestState.ui.tbuild;return {game:B.metaSnapshot.game,source:B.metaSnapshot.data.source,keys:B.metaSnapshot.data.decks.map(d=>d.key)};});
+      await p.waitForFunction(({game,key})=>window.__homeTestState.ui.sheetCtx?.type==='deck-flow' && window.__homeTestState.ui.sheetCtx.request?.game===game && window.__homeTestState.ui.sheetCtx.request?.metaKey===key,{game,key:retainedKey});
+      const built=await p.evaluate(()=>{const B=window.__homeTestState.ui.sheetCtx.request;return {game:B.metaSnapshot.game,source:B.metaSnapshot.data.source,keys:B.metaSnapshot.data.decks.map(d=>d.key)};});
       assert.deepEqual(built,{game,source:captured.source,keys:captured.keys},'downstream builder retains original exact source dataset after rail replacement');
     }
     await closeSheet(p);
@@ -1198,40 +1187,28 @@ try {
     const random = await openApp({ game });
     const before = await inventorySnapshot(random.page);
     await startReveal(random.page, game);
-    await random.page.evaluate(()=>{window.__foldReveal={node:document.querySelector('.home-deck-reveal'),context:window.__homeTestState.ui.sheetCtx,decks:document.querySelector('#content'),opener:document.querySelector('[data-act="randomDeckOptions"]')};});
+    await random.page.evaluate(()=>{window.__foldReveal={node:document.querySelector('.deck-flow'),context:window.__homeTestState.ui.sheetCtx,decks:document.querySelector('#content'),opener:document.querySelector('[data-act="randomDeckOptions"]')};});
     for(const viewport of FOLD_SEQUENCE) {
       await random.page.setViewportSize(viewport);
-      assert(await random.page.evaluate(()=>{const r=window.__foldReveal;return r.node===document.querySelector('.home-deck-reveal')&&r.context===window.__homeTestState.ui.sheetCtx&&r.decks===document.querySelector('#content')&&r.opener===document.querySelector('[data-act="randomDeckOptions"]');}),'resizing never restarts the random selection or remounts the Decks page behind it');
-      assert.equal(await random.page.locator('.home-deck-reveal h3').innerText(),seeds[game].name);
-      assert.equal(await random.page.locator('.home-reveal-fan img').getAttribute('alt'),seeds[game].name);
+      assert(await random.page.evaluate(()=>{const r=window.__foldReveal;return r.node===document.querySelector('.deck-flow')&&r.context===window.__homeTestState.ui.sheetCtx&&r.decks===document.querySelector('#content')&&r.opener===document.querySelector('[data-act="randomDeckOptions"]');}),'resizing never restarts the random selection or remounts the Decks page behind it');
+      assert.equal(await random.page.locator('.deck-seed-picker summary b').innerText(),seeds[game].name);
+      assert.equal(await random.page.locator('.deck-seed-art').getAttribute('alt'),seeds[game].name);
     }
     assert.equal(await inventorySnapshot(random.page), before, 'revealing and resizing a card does not create a deck or alter the collection');
-    if (game === 'mtg') {
-      const running = await random.page.evaluate(async () => {
-        const { S } = await import('/store.js');
-        Object.assign(S.ui.build, { busy: true, seed: 'Previous running card', format: 'Modern', results: { Modern: [{ marker: 'do not replace' }] } });
-        return JSON.stringify(S.ui.build);
-      });
-      await random.page.locator('[data-act="homeBuildReveal"]').click();
-      assert.equal(await random.page.evaluate(async () => JSON.stringify((await import('/store.js')).S.ui.build)), running, 'in-flight Magic build state is never relabelled or discarded');
-      assert.equal(await random.page.locator('.home-deck-reveal h3').innerText(), seeds.mtg.name, 'pending real card remains visible and retryable');
-      assert.match(await random.page.locator('#toast').innerText(), /still running/);
-      await random.page.evaluate(async () => { (await import('/store.js')).S.ui.build.busy = false; });
-    }
-    await random.page.locator('[data-act="homeBuildReveal"]').click();
-    await random.page.waitForFunction(({ game, seed }) => {
-      const S = window.__homeTestState;
-      return game === 'mtg' ? S.ui.sheetCtx?.type === 'build' && S.ui.build.seed === seed.name && S.ui.build.format === 'Standard'
-        : S.ui.sheetCtx?.type === 'tbuild' && S.ui.tbuild.seed === seed.id && S.ui.tbuild.format === (game === 'ygo' ? 'tcg' : 'standard');
-    }, { game, seed: seeds[game] });
-    assert.equal(await inventorySnapshot(random.page), before, 'builder handoff is still an unsaved plan');
+    const beforeBuilder=await random.page.evaluate(()=>JSON.stringify(window.__homeTestState.ui.build));
+    await random.page.locator('[data-act="flowGenerate"]').click();
+    await random.page.waitForFunction(()=>document.querySelector('[data-flow-result]')||(!document.querySelector('[data-act="flowGenerate"]')?.disabled&&document.querySelector('.deck-flow [role="status"]')?.textContent));
+    assert.equal(await inventorySnapshot(random.page),before,'construction never auto-saves');
+    if(game==='mtg')assert.equal(await random.page.evaluate(()=>JSON.stringify(window.__homeTestState.ui.build)),beforeBuilder,'detached construction never overwrites another builder');
+    if(await random.page.locator('[data-flow-result]').count())assert.match(await random.page.locator('[data-flow-result]').innerText(),/Complete/);
+    else {assert.equal(await random.page.locator('[data-act="flowSave"]').count(),0);assert.equal(await random.page.locator('[data-flow-field="format"]').inputValue(),game==='ygo'?'tcg':game==='mtg'?'Standard':'standard','failure preserves choices');}
     await random.close();
   }
   const cancel = await openApp();
   await openDeckRandom(cancel.page);
   await chooseFormat(cancel.page, 'mtg');
   const held = cancel.holdSelection();
-  await cancel.page.locator('[data-act="randomDeckStart"]').click();
+  await cancel.page.locator('[data-act="flowRandom"]').click();
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(Error('Random provider request was not observed')), 15000);
     held.seen.then(() => { clearTimeout(timer); resolve(); }, reject);
@@ -1242,7 +1219,7 @@ try {
   held.release();
   await cancel.page.waitForFunction(() => window.__homeTestState.catalog['llanowar elves']?.checkedAt > '2026-10-17T12:00:00.000Z');
   await cancel.page.waitForTimeout(200);
-  assert.equal(await cancel.page.locator('.home-deck-reveal').count(), 0, 'late response cannot reveal across closed picker/game navigation');
+  assert.equal(await cancel.page.locator('#sheet[open] .deck-flow').count(), 0, 'late response cannot reveal across closed picker/game navigation');
   assert.equal(await cancel.page.locator('#game-tab-ptcg').getAttribute('aria-selected'),'true');
   await cancel.close();
   report.push('All-game explicit format → real provider-selected card → same seed/format builder, with no inventory mutation; busy Magic build preserved/retryable; late selection cancelled');
@@ -1281,8 +1258,15 @@ try {
   assert(artMotion.length >= 2 && artMotion.every(n => n.transition === '0s' && n.animation === 'none'), 'reduced motion removes community and lower Meta artwork transitions');
   await reduced.page.screenshot({ path: resolve(RESULTS, 'home-mtg-390-reduced-motion.png'), fullPage: true, animations: 'disabled' });
   await startReveal(reduced.page, 'mtg');
-  const animationNames = await reduced.page.locator('.home-reveal-fan > *').evaluateAll(nodes => nodes.map(n => getComputedStyle(n).animationName));
-  assert(animationNames.length === 3 && animationNames.every(name => name === 'none'), 'reduced motion removes every reveal animation');
+  // Random deck now opens the compact setup (seed art, format, theme, budget, Generate). Its visible
+  // artwork and controls must exist and carry no motion under reduced motion.
+  const setupMotion = await reduced.page.evaluate(() => {
+    const root = document.querySelector('.deck-flow'), nodes = root ? [root, ...root.querySelectorAll('*')] : [];
+    const shown = n => { const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+    return { art: !!root?.querySelector('.deck-seed-art') && shown(root.querySelector('.deck-seed-art')), generate: !!root?.querySelector('[data-act="flowGenerate"]') && shown(root.querySelector('[data-act="flowGenerate"]')), count: nodes.length, moving: nodes.filter(n => { const cs = getComputedStyle(n); return cs.animationName !== 'none' && parseFloat(cs.animationDuration) > 0.01 || parseFloat(cs.transitionDuration) > 0.01; }).map(n => n.className || n.tagName).slice(0, 5) };
+  });
+  assert(setupMotion.art && setupMotion.generate && setupMotion.count > 5, 'the deck setup shows its seed artwork and Generate action: ' + JSON.stringify(setupMotion));
+  assert.deepEqual(setupMotion.moving, [], 'reduced motion removes every setup animation and transition');
   await reduced.page.screenshot({ path: resolve(RESULTS, 'home-mtg-reveal-reduced-motion.png'), fullPage: true, animations: 'disabled' });
   await reduced.close();
   report.push('Reduced-motion Home and actual card reveal evidence, with all reveal animations disabled');

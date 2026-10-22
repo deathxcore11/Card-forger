@@ -63,23 +63,23 @@ try{
   await page.locator('[data-nav="community"]:visible').first().click();await page.locator('.community-layout[aria-busy="false"]').waitFor();
   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.community-page',`signed-in Community ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-community-account-${width}`);}
   assert.match(await page.locator('.community-avatar-open img').getAttribute('src'),/Gengar-A/,'Community renders the current account avatar');
-  assert.equal(await page.locator('[data-community-add]').count(),1);assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.writes),[]);
-  assert.equal(await page.locator('[data-community-requests]').count(),0,'Requests live in Account');
+  assert.equal(await page.locator('[data-community-panel="friends"]').count(),1);assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.writes),[]);
+  assert.equal(await page.locator('[data-community-requests]').count(),1,'Requests live in Community');
   assert.equal(await page.locator('.community-kind-section').count(),2);
   await page.locator('[data-community-share="deck"]').click();await page.locator('.community-dialog[open]').waitFor();
   assert.equal(await page.locator('[data-community-kind="deck"]').getAttribute('aria-selected'),'true');assert.equal(await page.locator('.community-share-choices [data-community-preview]').count(),1);
   await page.locator('[data-community-kind="binder"]').click();assert.equal(await page.locator('.community-share-choices [data-community-preview="binder:profile-binder"]').count(),1);
   await page.locator('[data-community-filter]').fill('no match');assert.equal(await page.locator('.community-share-choices [data-community-preview]').count(),0);await page.locator('[data-community-filter]').fill('');
   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.community-dialog',`sharing picker ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-community-sharing-${width}`);}
-  await page.locator('[data-community-close]').click();await page.locator('[data-act="menu"]').click();assert.equal(await page.locator('[data-act="friendRequests"] .account-inline-count').textContent(),'1');
-  await page.locator('[data-act="addFriend"]').click();await page.locator('[data-community-search]').waitFor();
+  await page.locator('[data-community-close]').click();assert.equal(await page.locator('[data-nav="community"]:visible .community-request-badge').first().textContent(),'1');assert.equal(await page.locator('.topbar .account-count').count(),0);
+  await page.locator('[data-community-panel="friends"]').click();await page.locator('[data-community-panel="add"]').click();await page.locator('[data-community-search]').waitFor();
   for(const query of ['C@example.invalid','friend_c']){
    await page.locator('[data-community-search] input').fill(query);await page.locator('[data-community-search] button').click();
    await page.waitForFunction(()=>!document.querySelector('[data-community-search] button').disabled);
    assert.match(await page.locator('[data-community-found]').innerText(),/friend_c/);
   }
   await page.locator('[data-community-close]').click();
-  await page.locator('[data-act="friendRequests"]').click();await page.locator('[data-community-action="accept"]').click();await page.locator('.community-dialog').waitFor({state:'detached'});assert.equal(await page.locator('[data-act="friendRequests"] .account-inline-count').count(),0);await page.locator('[data-act="closeSettings"]').click();
+  await page.locator('[data-community-requests]').click();await page.locator('[data-community-action="accept"]').click();await page.locator('[data-friends-content]').getByText('No pending requests.',{exact:true}).waitFor();assert.equal(await page.locator('[data-nav="community"] .community-request-badge').count(),0);await page.locator('[data-community-close]').click();
   const ownerSnapshot=await page.evaluate(()=>JSON.stringify(window.__accountFixture.model.items.C));const myCards=await page.evaluate(()=>JSON.stringify(window.__uiTestState.state.collection));
   await page.locator('[data-community-person="C"]').click();await page.locator('[data-community-item="binder:friend-binder"]').waitFor();assert.equal(await page.locator('.community-dialog [data-community-source]').count(),0,'friend has no edit controls');
   await page.locator('[data-community-item="binder:friend-binder"]').click();await page.locator('#sheet .stash-open-book').waitFor();

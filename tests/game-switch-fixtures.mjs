@@ -1,3 +1,4 @@
+import {RELEASE} from '../release-record.js';
 // Hosted real-shell fixtures. Import/validation never starts a server, browser,
 // screenshot, camera, OCR worker or provider request. All records are synthetic.
 import assert from 'node:assert/strict';
@@ -264,6 +265,7 @@ export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 39
       if (u.origin === base) {
         if (u.pathname === '/catalog.json') return fulfill({cards: [], snapshot_date: '2000-01-01'});
         if (u.pathname === '/api/meta/curation') return fulfill({game:u.searchParams.get('game'),format:u.searchParams.get('format'),status:'unavailable',rankedIds:[],annotations:[]});
+        if (u.pathname === '/api/releases/current') return fulfill(RELEASE);
         if (u.pathname === '/api/community') return fulfill(fixtures.storage['cardforge-community-v2'][u.searchParams.get('game')]?.data || {items: [], status: 'unavailable'});
         if (['/api/prices/recent', '/api/prices/archive'].includes(u.pathname)) return fulfill(historyBody(u));
         if (['/api/prices/pokemon', '/api/prices/yugioh', '/api/prices/yugioh-set', '/api/prices/conditions', '/api/prices/mtg'].includes(u.pathname)) return fulfill({status: 'unavailable', quotes: [], cards: [], products: [], variants: [], prices: {}, printings: [], partial: false});

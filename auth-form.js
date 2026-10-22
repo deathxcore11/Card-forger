@@ -1,6 +1,6 @@
 // Form values live only in the DOM and this render-local snapshot, never in saved state.
 const IDS=['signEmail','signPassword','signupEmail','signupPassword','signupConfirm','resetEmail','resetPassword','resetConfirm'];
-const eye='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="password-eye-slash" d="m4 3 16 18"/></svg>';
+const eye='<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="password-eye-slash" d="m4 3 16 18"/></svg>';
 export function passwordField(input,label='password'){
  const id=input.match(/id="([^"]+)"/)?.[1];
  return `<span class="password-field">${input}<button type="button" class="password-toggle" data-act="togglePassword" data-field="${id}" aria-controls="${id}" aria-label="Show ${label}" data-label="${label}" aria-pressed="false">${eye}</button></span>`;

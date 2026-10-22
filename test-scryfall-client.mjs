@@ -17,4 +17,12 @@ assert.equal(peak,2,'Bounded in-flight requests');assert(Date.now()-started<145,
 let attempts=0;const busy=createScryfallClient({timeoutMs:70,fetcher:async()=>{attempts++;return new Response('',{status:429,headers:{'Retry-After':'60'}});}});
 await assert.rejects(busy('/cards/busy'),/timed out/);assert.equal(attempts,1,'Provider cooldown is not bypassed by retries');
 let missing=0;const bad=createScryfallClient({fetcher:async()=>{missing++;return Response.json({details:'Not found'},{status:404});}});await assert.rejects(bad('/cards/missing'),/Not found/);assert.equal(missing,1);
+// No response at all (Scryfall's limiter answers without CORS headers): back off together, longer each
+// time, then say the database could not be reached, never "Failed to fetch" or a spelling problem.
+let tries=[];const flaky=createScryfallClient({networkBackoffMs:20,fetcher:async()=>{tries.push(Date.now());if(tries.length<3)throw new TypeError('Failed to fetch');return Response.json({id:'late'});}});
+assert.equal((await flaky('/cards/late')).id,'late','a request that gets through after a cooldown succeeds');
+assert(tries[1]-tries[0]>=20&&tries[2]-tries[1]>=40,'network failures back off longer each time');
+tries=[];const down=createScryfallClient({networkBackoffMs:5,fetcher:async()=>{tries.push(1);throw new TypeError('Failed to fetch');}});
+await assert.rejects(down('/cards/down'),e=>e.network===true&&/Couldn’t reach the card database/.test(e.message)&&!/Failed to fetch/.test(e.message));
+assert.equal(tries.length,3,'three tries before giving up, so a dead provider fails in seconds');
 console.log('PASS: slow background request cannot block exact lookup; shared start pacing, bounded concurrency, queue-inclusive deadlines, cancellation and provider cooldown.');

@@ -1,3 +1,4 @@
+import {RELEASE} from '../release-record.js';
 // Deterministic Search / printing-picker fixtures. Importing this module never
 // imports a browser, starts a server, takes screenshots, or contacts a provider.
 import assert from 'node:assert/strict';
@@ -183,10 +184,13 @@ export async function openSearchApp(browser,base,{game='mtg',width=390,height=10
   if(url.origin===base){
    if(url.pathname==='/catalog.json')return fulfill({cards:[],snapshot_date:'2000-01-01'});
    if(url.pathname==='/api/daily-card'){const g=url.searchParams.get('game'),c=CARDS[g]?.[0];return fulfill({game:g,date:'2026-10-17',card:{id:c?.id,name:c?.name,art:''}});}
+   if(url.pathname==='/api/releases/current')return fulfill(RELEASE);
    if(url.pathname==='/api/community')return fulfill({game:url.searchParams.get('game'),status:'unavailable',items:[],fetchedAt:ISO});
    if(url.pathname==='/api/prices/yugioh'&&url.searchParams.get('id')==='89631139')return fulfill({cardId:'89631139',printings:[{code:'LOB-001',rarity:'Ultra Rare',productId:123456,quotes:[{edition:'1st Edition',market:777}]},{code:'FXX-001',rarity:'Ultra Rare',productId:234567,quotes:[{edition:'1st Edition',market:31},{edition:'Unlimited',market:11}]}],partial:false,source:'Synthetic exact-price fixture',updatedAt:ISO});
    if(url.pathname.startsWith('/api/prices/'))return fulfill({points:[],series:[],cards:[],products:[],variants:[],prices:{},partial:false});
    if(url.pathname.startsWith('/api/meta/'))return fulfill({events:[],decks:[],archetypes:[],top:[]});
+   // Same-origin booster-pack and card-back art (the pack opener): a synthetic, labelled placeholder.
+   if(/^\/img\/(?:pack|back)\/(?:mtg|ptcg|ygo)\.jpg$/.test(url.pathname))return fulfill(SVG,200,'image/svg+xml');
    if(!url.pathname.startsWith('/api/')&&!url.pathname.startsWith('/img/')){record.settled=true;return route.continue();}
   }
   const fixture=providerFixture(url);if(fixture!==undefined)return fulfill(fixture);

@@ -16,3 +16,4 @@ supabase/.temp/
 tests/__pycache__/
 
 scripts/record-tour/.seed.json
+.cache/

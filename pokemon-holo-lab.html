@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Pokémon Holo Lab</title>
+<style>
+:root{--bg:#121318;--fg:#eceef3;--muted:#9aa0ad;--line:#2a2d36;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:20px 16px 8px;max-width:1200px;margin:auto}
+h1{margin:0 0 4px;font-size:20px}
+p{margin:0;color:var(--muted)}
+.bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:12px}
+label{color:var(--muted)}
+main{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;padding:16px;max-width:1200px;margin:auto}
+figure{margin:0}
+canvas{width:100%;aspect-ratio:63/88;border-radius:6px;display:block;background:#000;touch-action:none}
+figcaption{margin-top:6px;font-size:12px}
+figcaption b{display:block;font-size:13px}
+figcaption span{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+<h1>Pokémon holo lab</h1>
+<p>The 39 holo patterns, drawn by the same shader as the card pages, on a plain stand-in card. Move the pointer (or drag) to tilt, or let it sweep.</p>
+<div class="bar"><label><input type="checkbox" id="auto" checked> Auto sweep</label><label>Coverage <select id="cover"><option value="full">Whole card</option><option value="window">Art window (holo)</option><option value="surround">Everything but the art (reverse)</option></select></label></div>
+</header>
+<main id="grid"></main>
+<script type="module">
+import {PTCG_FOIL_FRAGMENT} from './ptcg-foil.js';
+import {PTCG_FOIL_RECIPES,PTCG_HOLO_PATTERNS} from './ptcg-foil-recipes.js';
+const W=252,H=352,gl=Object.assign(document.createElement('canvas'),{width:W,height:H}).getContext('webgl',{preserveDrawingBuffer:true,premultipliedAlpha:true});
+const grid=document.getElementById('grid');
+if(!gl){grid.textContent='WebGL is not available in this browser.';throw Error('no webgl');}
+const sh=(type,src)=>{const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;};
+const prog=gl.createProgram();gl.attachShader(prog,sh(gl.VERTEX_SHADER,'attribute vec2 p;varying vec2 v;void main(){v=p*.5+.5;gl_Position=vec4(p,0.,1.);}'));gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,PTCG_FOIL_FRAGMENT));gl.linkProgram(prog);gl.useProgram(prog);
+gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);const loc=gl.getAttribLocation(prog,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+const U=n=>gl.getUniformLocation(prog,n);
+const tex=(unit,src)=>{const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src);
+ for(const [k,v] of [[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]])gl.texParameteri(gl.TEXTURE_2D,k,v);return t;};
+const art=[.085,.1,.915,.47];
+// Stand-in card: a yellow frame, a pale art window with a dark "Pokémon" silhouette and grey text lines.
+const card=document.createElement('canvas');card.width=W;card.height=H;{const c=card.getContext('2d');c.fillStyle='#e8c84a';c.fillRect(0,0,W,H);c.fillStyle='#d9dde4';c.fillRect(10,10,W-20,H-20);
+ c.fillStyle='#b9c7d8';c.fillRect(art[0]*W,art[1]*H,(art[2]-art[0])*W,(art[3]-art[1])*H);c.fillStyle='#3a3550';c.beginPath();c.ellipse(W*.5,H*.31,W*.17,H*.11,0,0,7);c.fill();
+ c.fillStyle='#22252c';c.font='bold 15px system-ui';c.fillText('Stand-in',W*.1,H*.075);c.fillStyle='#8a8f99';for(let i=0;i<5;i++)c.fillRect(W*.12,H*(.56+i*.07),W*(.76-(i%2)*.2),5);}
+const masks={};
+for(const kind of ['full','window','surround']){const m=document.createElement('canvas');m.width=W;m.height=H;const c=m.getContext('2d');c.fillStyle='rgba(255,0,0,0)';c.clearRect(0,0,W,H);
+ const box=()=>[art[0]*W,art[1]*H,(art[2]-art[0])*W,(art[3]-art[1])*H];
+ if(kind==='full'){c.fillStyle='rgb(255,0,0)';c.fillRect(0,0,W,H);}
+ else if(kind==='window'){c.fillStyle='rgb(255,0,0)';c.fillRect(...box());c.fillStyle='rgb(0,0,0)';c.beginPath();c.ellipse(W*.5,H*.31,W*.17,H*.11,0,0,7);c.fill();}
+ else{c.fillStyle='rgb(255,0,0)';c.fillRect(0,0,W,H);c.clearRect(...box());}
+ // Alpha carries the coverage; fully covered pixels need alpha 255 even where R is 0 (the Pokémon on white ink).
+ const d=c.getImageData(0,0,W,H);for(let k=0;k<d.data.length;k+=4){const inWin=kind==='window'&&((k/4)%W)>=art[0]*W&&((k/4)%W)<art[2]*W&&Math.floor(k/4/W)>=art[1]*H&&Math.floor(k/4/W)<art[3]*H;d.data[k+3]=kind==='window'?(inWin?255:0):d.data[k]?255:0;}
+ c.putImageData(d,0,0);masks[kind]=m;}
+const relief=document.createElement('canvas');relief.width=relief.height=4;{const c=relief.getContext('2d');c.fillStyle='rgb(0,128,128)';c.fillRect(0,0,4,4);}
+tex(0,card);const maskTex=tex(1,masks.full);tex(2,relief);
+gl.uniform1i(U('u_card'),0);gl.uniform1i(U('u_mask'),1);gl.uniform1i(U('u_relief'),2);gl.uniform2f(U('u_px'),W,H);gl.uniform2f(U('u_texel'),1/W,1/H);gl.uniform1f(U('u_aspect'),H/W);
+gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+const cells=PTCG_HOLO_PATTERNS.map(p=>{const f=document.createElement('figure'),cv=document.createElement('canvas');cv.width=W;cv.height=H;const r=PTCG_FOIL_RECIPES[p.key];
+ f.append(cv);const cap=document.createElement('figcaption');cap.innerHTML=`<b>#${p.n} ${p.name}</b><span></span>`;cap.querySelector('span').textContent=r.note;f.append(cap);grid.append(f);return {cv,ctx:cv.getContext('2d'),r};});
+let tilt=[0,0],auto=true,cover='full';
+const autoBox=document.getElementById('auto');autoBox.onchange=()=>{auto=autoBox.checked;};
+document.getElementById('cover').onchange=e=>{cover=e.target.value;gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maskTex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,masks[cover]);};
+addEventListener('pointermove',e=>{if(auto&&e.pointerType==='mouse')return;tilt=[e.clientX/innerWidth*2-1,e.clientY/innerHeight*2-1];});
+grid.addEventListener('pointermove',e=>{autoBox.checked=auto=false;tilt=[e.clientX/innerWidth*2-1,e.clientY/innerHeight*2-1];});
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function frame(t){
+ if(auto&&!reduce)tilt=[Math.sin(t/1700)*.8,Math.cos(t/2300)*.6];
+ gl.uniform2f(U('u_tilt'),tilt[0],tilt[1]);
+ for(const c of cells){const r=c.r,win=cover==='window';
+  // The window coverage puts the Pokémon on white ink; other coverages foil everything they cover.
+  gl.uniform4f(U('u_r1'),r.pat,r.tint,win?1:0,r.relief);gl.uniform4f(U('u_r2'),r.sparkle,cover==='full'?r.soft:0,r.strength,r.coat||0);
+  gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  c.ctx.drawImage(card,0,0);c.ctx.drawImage(gl.canvas,0,0);}
+ if(!reduce||!auto)requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

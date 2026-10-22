@@ -28,9 +28,10 @@ export const ygoRarityKind=label=>YGO_RARITY_KIND[ygoRarityCode(label)]||'common
 const SHIMMER=new Set(['gold','shine','holo','mythic','special','quarter','starlight','ghost','collector','prismatic','platinum','ultimate','secret','ultra']);
 const GEM='<svg class="rx-gem" viewBox="0 0 20 20" aria-hidden="true"><path class="rx-gem-body" d="M10 1.5 18 7.2 15 18H5L2 7.2Z"/><path class="rx-gem-facet" d="M10 1.5 13 7.2 10 18 7 7.2Z M2 7.2H18"/></svg>';
 export function rarityKind(game,label){return game==='mtg'?mtgRarityKind(label):game==='ygo'?ygoRarityKind(label):pkRarityKind(label);}
-export function rarityEmblem(game,label){
+// finish: the physical finish pulled (Foil, Reverse Holo...), shown in the same pill before the rarity.
+export function rarityEmblem(game,label,{finish=''}={}){
  if(!label)return '';
- const kind=rarityKind(game,label),shine=SHIMMER.has(kind)?' rx-shine':'';
+ const kind=rarityKind(game,label),shine=SHIMMER.has(kind)?' rx-shine':'',title=finish?`${finish} · ${label}`:label;
  const mark=game==='mtg'?GEM:game==='ptcg'?`<span class="rx-mark" aria-hidden="true">${pkRarity(label)}</span>`:'';
- return `<span class="rx rx-${game} rx-${kind}${shine}" title="${esc(label)}">${mark}<span class="rx-text">${esc(String(label).replace(/^./,ch=>ch.toUpperCase()))}</span></span>`;
+ return `<span class="rx rx-${game} rx-${kind}${shine}" title="${esc(title)}">${mark}<span class="rx-text">${finish?`<span class="rx-finish">${esc(finish)}</span> · `:''}${esc(String(label).replace(/^./,ch=>ch.toUpperCase()))}</span></span>`;
 }

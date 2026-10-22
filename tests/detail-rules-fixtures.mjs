@@ -1,3 +1,4 @@
+import {RELEASE} from '../release-record.js';
 // Shared real-app fixture server. This module does not import or launch a browser.
 // Provider shapes use the production adapters; synthetic art tests layout only.
 import assert from 'node:assert/strict';
@@ -124,6 +125,7 @@ export async function openApp(browser,base,{game='mtg',width=390,height=1000,red
   if(url.origin===base){
    if(url.pathname==='/catalog.json')return json({cards:[],snapshot_date:'2000-01-01'});
    if(url.pathname==='/api/daily-card'){const g=url.searchParams.get('game'),c=CARDS[g]?.[0];return json({game:g,date:'2026-10-17',card:{id:c?.id,name:c?.name,art:''}});}
+   if(url.pathname==='/api/releases/current')return json(RELEASE);
    if(url.pathname==='/api/community')return json({game:url.searchParams.get('game'),status:'unavailable',items:[],fetchedAt:ISO});
    if(url.pathname==='/api/meta/curation')return json({game:url.searchParams.get('game'),format:url.searchParams.get('format'),status:'unavailable',rankedIds:[],annotations:[]});
    if(url.pathname==='/api/meta/mtg')return json(metaFeed('mtg'));

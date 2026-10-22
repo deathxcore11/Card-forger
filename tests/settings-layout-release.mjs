@@ -22,21 +22,24 @@ try{
    if(!signedIn){assert.equal(await page.locator('.auth-card .profile-photo-row').count(),1,'guest profile belongs inside the account card');assert.equal(await page.locator('.settings-account-layout > .panel').count(),1,'one cohesive account card');}
    const profileDetails=page.locator('.account > details').first();
    if(signedIn)await profileDetails.locator('summary').click();
+   else await page.getByText('Choose profile artwork',{exact:true}).click();
    for(const selector of ['.profile-photo-source','.profile-photo-control']){
     await page.locator('#settings-account '+selector).click();await page.locator('.profile-art-dialog[open]').waitFor();
     assert.equal(await page.locator('.zoom-overlay').count(),0,'profile task opens the editor, not artwork zoom');
     await page.locator('[data-avatar-close]').click();await page.locator('.profile-art-dialog').waitFor({state:'detached'});
    }
    if(signedIn)await profileDetails.locator('summary').click();
+   else await page.getByText('Choose profile artwork',{exact:true}).click();
    for(const theme of modes){
     await page.locator('#settingsTab-app').click();await page.locator('#settingsTheme-'+theme).check();
     for(const width of widths){
      await page.setViewportSize({width,height:1000});
      for(const tab of ['account','recovery','info','app']){
       await page.locator('#settingsTab-'+tab).click();
+      await page.locator('#settings-'+tab).waitFor({state:'visible'});
       assert(await page.locator('[data-settings-save-status]').evaluate(n=>n.scrollWidth<=n.clientWidth+1), 'Save status remains fully readable, never shortened by the header ellipsis rule');
       await noOverflow(page,'#settingsDialog',`${game}/${signedIn?'account':'guest'}/${theme}/${width}/${tab}`);
-      const pane=await page.locator('#settings-'+tab).boundingBox();const content=await page.locator('.settings-dialog .settings-page').boundingBox();assert(pane.width>=content.width-48,'section uses the available content width');
+      const sizes=await page.evaluate(tab=>{const pane=document.querySelector('#settings-'+tab),content=document.querySelector('.settings-dialog .settings-page');return {visible:!pane.hidden,pane:pane.getBoundingClientRect().width,content:content.getBoundingClientRect().width};},tab);assert(sizes.visible&&sizes.pane>=sizes.content-48,'section uses the available content width');
       checks.push({game,signedIn,theme,width,tab});
      }
     }

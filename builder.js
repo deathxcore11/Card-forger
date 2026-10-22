@@ -1,3 +1,4 @@
+import {setupBurden} from './deck-preferences.js';
 import { functionalIn } from "./deck-safety.js";
 // Format-aware deck generator: builds a full, legal deck around one or more
 // seed cards, preferring cards you own and staying inside a purchase budget.
@@ -96,7 +97,7 @@ export function scoreCard(c, seedTags, seedSubs, { free = 0, size = 60, tokenKin
  *       available(name) → free copies you own, price(card) → USD or null,
  *       budget (USD for cards you must buy), colors (optional override)
  */
-export function buildDeck({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [] }) {
+export function buildDeck({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, easy = false, preferred = () => 0, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [] }) {
   const f = formatOf(format);
   if (f.id === "limited") throw Error("Limited decks come from the cards you open — build those by hand.");
   if ((!Number.isFinite(budget) && budget!==Infinity) || budget < 0) throw Error("Enter a budget of $0 or more.");
@@ -160,7 +161,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     canAfford=(extra,reserve=0,keepMana=true)=>budget===Infinity || extra===0 || (unknown===0 && extra!==Infinity && spent+extra+reserve+(keepMana?manaReserve():0)<=budget+1e-6);
 
   const pool = [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && isLegal(c) && fitsColors(c, deckColors)).map((c) => [cardKey(c.name), c])).values()],
-    scored = pool.map((c) => ({ c, s: scoreCard(c, seedTags, seedSubs, { free: available(c.name), size, tokenKinds:intent.tokenKinds, goal }) + goalCardPreference(c,goal,{suggested:suggestedCards.some(name=>cardKey(name)===cardKey(c.name))}) + (styleFit(c,intent.requested)?(goal === "theme"?16:8):0) }));
+    scored = pool.map((c) => ({ c, s: -(easy?setupBurden('mtg',c)*3:0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds:intent.tokenKinds, goal }) + goalCardPreference(c,goal,{suggested:suggestedCards.some(name=>cardKey(name)===cardKey(c.name))}) + (styleFit(c,intent.requested)?(goal === "theme"?16:8):0) }));
   // Seeds go in first at full copies, then everything else by score.
   for (const s of seeds) {
     const hit = scored.find((x) => cardKey(x.c.name) === cardKey(s.name));
@@ -268,7 +269,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     open = Math.max(0, size - total);
   if(total>size)throw Error("Generated deck exceeds its target; no version was applied.");
   if(open && !completionFirst){
-    const economical=buildDeck({format,seeds,base,catalog,available,price,budget,colors,commander,completionFirst:true,requestedStyle,goal,suggestedCards,excludedCards});
+    const economical=buildDeck({format,seeds,base,catalog,available,price,budget,colors,commander,completionFirst:true,easy,preferred,requestedStyle,goal,suggestedCards,excludedCards});
     const seedKept=seeds.every(seed=>isLand(seed)||economical.cards.some(r=>cardKey(r.name)===cardKey(seed.name)));
     if(seedKept && economical.open<open)return economical;
   }

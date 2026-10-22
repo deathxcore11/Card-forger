@@ -72,7 +72,7 @@ try{
    await page.locator('[data-act="menu"]').click();
    assert(await page.locator('#settingsDialog').evaluate(n=>n.matches(':modal')));
    assert.equal(page.url(),url);assert.equal(await page.locator('#settingsDialog [data-act="setGame"]').count(),0);
-   assert.deepEqual(await page.locator('.settings-tabs [role=tab]').allTextContents(),['Account','Storage & backup','Help & about','Appearance']);
+   assert.deepEqual(await page.locator('.settings-tabs [role=tab] > span:nth-child(2)').allTextContents(),['Profile & account','Appearance & behavior','Backup & downloads','About & help']);
    // Deterministic real-control regression: a rail scroll between trusted mouse
    // down/up must not be mistaken for a card drag. No click retry or dispatch.
    await page.setViewportSize({width:320,height:900});await page.locator('#settingsTab-app').click();
@@ -118,10 +118,10 @@ try{
    await page.locator('#settingsTab-account').click();await page.locator('#settings-account [data-act="settingsTab"][data-id="recovery"]').click();await noOverflow(page,'#settingsDialog',game+' recovery');
    await page.locator('#settingsTab-app').focus();await page.keyboard.press('Home');
    assert.equal(await page.evaluate(()=>document.activeElement.id),'settingsTab-account');
-   await page.keyboard.press('ArrowRight');assert.equal(await page.evaluate(()=>document.activeElement.id),'settingsTab-recovery');
-   await page.keyboard.press('End');assert.equal(await page.evaluate(()=>document.activeElement.id),'settingsTab-app');
+   await page.keyboard.press('ArrowRight');assert.equal(await page.evaluate(()=>document.activeElement.id),'settingsTab-app');
+   await page.keyboard.press('End');assert.equal(await page.evaluate(()=>document.activeElement.id),'settingsTab-info');
    await page.keyboard.press('ArrowRight');assert.equal(await page.evaluate(()=>document.activeElement.id),'settingsTab-account');
-   await page.keyboard.press('ArrowLeft');assert.equal(await page.evaluate(()=>document.activeElement.id),'settingsTab-app');
+   await page.keyboard.press('ArrowLeft');assert.equal(await page.evaluate(()=>document.activeElement.id),'settingsTab-info');
    await page.locator('#settingsTab-info').click();assert(await page.locator('.settings-tour[data-act="replayTour"]').isVisible());
    await page.locator('#infoQuery').fill('scan');assert(await page.locator('#info-scan').isVisible());
    await page.locator('#settingsTab-app').click();assert(await page.locator('[data-act="resetOnboarding"]').isVisible());

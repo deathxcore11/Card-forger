@@ -11,7 +11,7 @@ export function partialAnswer(records,reason='I reached the search limit.') {
  const build=[...records].reverse().find(r=>r.name==='build_deck');
  if(build){const r=build.out,preview=[...records].reverse().find(x=>x.name==='build_deck'&&x.out?.reviewAvailable)?.out;
   if(preview&&preview!==r){const fields=[...new Set((r.violations||[]).map(v=>v.field.replaceAll('_',' ')))];return {text:[preview.note,fields.length?'A suggested revision changed your '+fields.join(', ')+' and was discarded. The original draft is retained.':'Further refinement could not finish. The earlier draft is retained for review.','Tap '+(preview.actionLabel||'Review the deck draft')+' to inspect the cards and checks.'].filter(Boolean).join(' ').slice(0,1200),source:'app',show:[],choices:[],suggestions:[]};}
-  return {text:[r.userNote||r.note||r.error||'The deck draft could not be completed.',preview&&preview!==r?preview.note:'',preview?'Tap '+(preview.actionLabel||'Review the deck draft')+' to inspect the cards and checks.':'',!r.terminal?reason:''].filter(Boolean).join(' ').slice(0,1200),source:'app',show:[],choices:buildChoices(r),suggestions:Array.isArray(r.suggestions)?r.suggestions.slice(0,3):[]};}
+  return {text:[r.userNote||r.note||r.error||'The deck draft could not be completed.',preview&&preview!==r?preview.note:'',preview&&!preview.inlineResult?'Tap '+(preview.actionLabel||'Review the deck draft')+' to inspect the cards and checks.':'',!r.terminal?reason:''].filter(Boolean).join(' ').slice(0,1200),source:'app',show:[],choices:buildChoices(r),suggestions:Array.isArray(r.suggestions)?r.suggestions.slice(0,3):[]};}
  const useful=records.flatMap(r=>(r.out?.card?[r.out.card]:r.out?.cards||[]).filter(c=>c?.name).map(card=>({card,game:r.out.game}))).slice(0,6);
  const errors=[...new Set(records.map(r=>r.out?.error).filter(Boolean))].slice(0,2);
  return {text:[reason,useful.length?'Here are the cards I could verify so far.':errors.join(' ')||'I could not verify enough app data for a complete answer.','Nothing was saved.'].join(' '),source:'app',show:useful.map(({card:c,game})=>({kind:'card',game:['mtg','ptcg','ygo'].includes(game)?game:'mtg',ref:c.ref||c.id||c.name,label:c.name})),suggestions:[]};
@@ -44,7 +44,7 @@ export async function resumeBuildChoice({choice,context,tools,signal,current=()=
  const check=validateBuildProposal(args,contract);
  if(!check.ok)return partialAnswer([{name:'build_deck',out:proposalFeedback(check,{terminal:true})}],'');
  const live=()=>current()&&!signal?.aborted&&context.scope?.(args.game)!==false;
- const out=await tools.build_deck(check.args,{allowCorrection:false,allowUnverifiedInfinite,current:live,signal});
+ const out=await tools.build_deck(check.args,{userRequest:contract.request,allowCorrection:false,allowUnverifiedInfinite,current:live,signal});
  if(!live())return current()&&!signal?.aborted?reply('Your workspace changed while preparing the draft. Nothing was saved.'):null;
  onBuildContext({...context,args:check.args,contract,choice:out.choice,formats:out.formats,choices:buildChoices(out)});
  return partialAnswer([{name:'build_deck',out:{...out,terminal:true}}],'');
@@ -89,12 +89,12 @@ export async function runAskLoop({game,items,tools,fetcher=fetch,signal,current=
     if(buildAttempts>ASK_LIMITS.buildProposals)return {call,out:{terminal:true,note:'The bounded correction limit was reached. Review the last verified draft; nothing was saved.'}};
     // A model-chosen format is an assumption. The app offers actual formats
     // when the player has not selected one, retaining the rest of this request.
-    if(!contract.format&&!acceptedBuilds)args.format='';
+    if(!contract.format&&!acceptedBuilds)args.format=tools.defaultBuildFormat?.(args.game||game)||'';
     const check=validateBuildProposal(args,contract);
     if(!check.ok){out=proposalFeedback(check,{terminal:check.requiresChoice||buildAttempts>=ASK_LIMITS.buildProposals});if(out.requiresChoice)onBuildContext({args:{...check.args},contract:userContract,scope:requestScope,choice:out.choice,formats:out.formats,choices:buildChoices(out)});seen.set(key,Promise.resolve(out));return {call,out};}
     args=check.args;
     if(!acceptedBuilds)contract=lockBuildContract(args,contract);
-    handshake={allowCorrection:buildAttempts<ASK_LIMITS.buildProposals,revision:acceptedBuilds>0,current:()=>current()&&requestScope?.(args.game||game)!==false,signal};
+    handshake={userRequest:userContract.request,allowCorrection:buildAttempts<ASK_LIMITS.buildProposals,revision:acceptedBuilds>0,current:()=>current()&&requestScope?.(args.game||game)!==false,signal};
     acceptedBuilds++;
    }
    const pending=Promise.resolve().then(()=>!current()||signal?.aborted?{cancelled:true}:tools?.[call.name]?.(args,handshake)??{error:'Not available in this app.'}).catch(e=>({error:String(e.message||e).slice(0,200)}));seen.set(key,pending);

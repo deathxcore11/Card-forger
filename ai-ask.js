@@ -7,7 +7,7 @@ import { aiOrb } from './ai-ui.js';
 import { runAskLoop, resumeBuildChoice } from './ai-ask-loop.js';
 export { boundedToolOutput } from './ai-ask-loop.js';
 
-const STEP = { search_cards: 'Searching cards', card_details: 'Reading the card', my_collection: 'Checking your collection', list_sets: 'Looking through sets', set_cards: 'Pricing the set', meta_decks: 'Checking tournament results', my_decks: 'Opening your decks', build_deck: 'Setting up the deck builder', answer: 'Writing the answer' };
+const STEP = { search_cards: 'Searching cards', card_details: 'Reading the card', my_collection: 'Checking your collection', list_sets: 'Looking through sets', set_cards: 'Pricing the set', meta_decks: 'Checking tournament results', my_decks: 'Opening your decks', build_deck: 'Building and checking your deck', answer: 'Writing the answer' };
 const EXAMPLES = {
   mtg: ['What\'s the most competitive Modern deck right now?', 'What\'s my most valuable card?', 'Build me a mono-red deck for $50', 'What\'s the newest Magic set?'],
   ygo: ['What\'s the best deck in the meta right now?', 'Do I have cards for a strong deck?', 'What does Ash Blossom do?', 'Most valuable card I own?'],
@@ -74,7 +74,7 @@ export function closeAsk() {
 export function restartAsk() {
   if (!state) return;
   const { game, tools, show } = state;
-  closeAsk(); conversations.delete(game); tools?.reset?.();
+  closeAsk(); conversations.delete(game); tools?.reset?.({forgetBuild:true});
   return openAsk({ game, tools, show });
 }
 export function clearAskConversations() { closeAsk(); conversations.clear(); }

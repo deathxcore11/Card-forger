@@ -1,14 +1,14 @@
 name: Settings release verification
 on:
   push:
-    branches: [codex/settings-storage-refresh]
+    branches: [codex/settings-storage-refresh, codex/shared-deck-flow]
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   settings-layout:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -18,7 +18,9 @@ jobs:
           node-version: 22
       - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
       - run: npx playwright install --with-deps chromium
+      - run: python -m unittest discover -s tests -p test_verify_android_release.py -v
       - run: node tests/settings-layout-release.mjs
+      - run: node tests/shared-deck-browser.mjs
       - run: node tests/set-experience-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
@@ -27,11 +29,13 @@ jobs:
           path: |
             test-results/set-experience*
             test-results/settings-release-layout.json
+            test-results/shared-deck-*
+            test-results/synthetic-search-shared-deck-*
             test-results/synthetic-search-settings-release-*
 
   foil-compatibility:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
