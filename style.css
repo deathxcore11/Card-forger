@@ -1095,6 +1095,8 @@ details.trouble code { word-break: break-word; }
 .auth-divider:before,.auth-divider:after { content:""; height:1px; background:var(--line); flex:1; }
 .settings-disclosure { border-top:1px solid var(--line); padding:17px 0; margin-top:18px; }
 .settings-disclosure summary { cursor:pointer; font-size:13px; color:var(--muted); }
+.android-beta .btn { max-width:100%; white-space:normal; text-align:center; }
+.android-beta .foot, .android-beta code { overflow-wrap:anywhere; }
 .settings-disclosure[open] summary { color:var(--text); margin-bottom:14px; }
 .settings-disclosure .actions { margin-top:14px; }
 .settings-danger,.settings-source { border:1px solid var(--line); padding:20px; border-radius:16px; }
