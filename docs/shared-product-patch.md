@@ -3,7 +3,7 @@
 This branch is a release candidate, not a published release. Production
 base: `79b43e2a9d9c27add971db5ce3b47f79c009768b` (published website 3.91.10,
 Android 0.3.3-beta). Candidate: website 3.92.0 and Android 0.4.0-beta
-(versionCode 5, bundled interface 3.92.0), built from commit `08301ce`. Nothing
+(versionCode 5, bundled interface 3.92.0), built from commit `d6f1011`. Nothing
 is deployed or promoted until the owner approves the release.
 
 ## Shared behavior implemented
@@ -100,12 +100,12 @@ cause has been established and no production setting was changed.
 ## Android artifact
 
 `downloads/cardstashy-android-beta-0.4.0.apk`: com.cardstashy.app 0.4.0-beta,
-versionCode 5, 25,895,363 bytes, SHA-256
-`8bafa78810002b1a9388725f5636f18ee5bbc48de76f3d983d7b1b5bc8afe317`, signed with the
+versionCode 5, 25895355 bytes, SHA-256
+`e0c84b2fef11f2b1766cdfb9fc2e83ede0347f36e906506d9756c6dea44bf5b3`, signed with the
 established certificate (E6:E4:01…3F:55). Built from the current
 com.cardstashy.app Capacitor source (the pipeline that produced 0.3.0–0.3.3; the
 earlier note calling it the old dev.cardstashy.integration project was wrong),
-pinned to `08301ce` with every shared file taken from the commit by `git show`.
+pinned to `d6f1011` with every shared file taken from the commit by `git show`.
 
 The app adapts ten shared files (exports, auth exchange, scanner and foil
 lifecycle, offline art, image URL mapping, settings storage, safe-area insets).
