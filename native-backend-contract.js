@@ -83,7 +83,8 @@ export function createSupabaseBearerVerifier({ url, key, fetcher, timeoutMs = 80
     try {
       const response = await fetcher(base.origin + '/auth/v1/user', {
         headers: { apikey: key, Authorization: authorization, Accept: 'application/json' },
-        redirect: 'error', credentials: 'omit', signal: controller.signal,
+        // Cloudflare Workers reject redirect:'error'; 'manual' leaves any redirect as a non-OK response.
+        redirect: 'manual', credentials: 'omit', signal: controller.signal,
       });
       if (!response.ok) return null;
       const user = await response.json();

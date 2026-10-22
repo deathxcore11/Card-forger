@@ -10,7 +10,7 @@ const user={id:'11111111-1111-4111-8111-111111111111',is_anonymous:false};
 let identity=user, authCalls=0, providerCalls=0, reservations=0, quota=true, authError=false;
 const oldFetch=globalThis.fetch;
 globalThis.fetch=async(url,init)=>{
- if(String(url)==='https://noxfmbwuytnbvfgukpiv.supabase.co/auth/v1/user') { authCalls++; assert.equal(init.redirect,'error'); assert.equal(init.credentials,'omit'); assert.match(init.headers.Authorization,/^Bearer /); if(authError)throw Error('offline');return identity===null?new Response('',{status:401}):Response.json(identity); }
+ if(String(url)==='https://noxfmbwuytnbvfgukpiv.supabase.co/auth/v1/user') { authCalls++; if(init.redirect==='error')throw TypeError('Invalid redirect value (Cloudflare Workers)'); assert.equal(init.redirect,'manual'); assert.equal(init.credentials,'omit'); assert.match(init.headers.Authorization,/^Bearer /); if(authError)throw Error('offline');return identity===null?new Response('',{status:401}):Response.json(identity); }
  if(String(url)==='https://api.openai.com/v1/responses') {providerCalls++;assert.equal(init.headers.Authorization,'Bearer synthetic-provider-key','client session never becomes provider credential');const payload=JSON.parse(init.body);assert.equal(payload.store,false);const name=payload.text?.format?.name;
  if(name==='scan_hints')return Response.json({status:'completed',output:[{content:[{type:'output_text',text:JSON.stringify({name:'Island',number:'1',set:'Test',game:'mtg',readable:true})}]}]});
  if(!name)return Response.json({output:[{type:'function_call',call_id:'call1',name:'card_details',arguments:'{"game":"mtg","name":"Island"}'}]});
