@@ -72,7 +72,7 @@ console.log('PASS: real Install action opens desktop help when the native prompt
   // missing files) forwards it to the current one instead of a failed download.
   const worker = (await import("./worker.js")).default;
   const hit = async (p, method = "GET") => worker.fetch(new Request("https://cardstashy.com" + p, { method }), { ASSETS: { fetch: () => new Response("asset") } }, {});
-  for (const old of ["/downloads/cardstashy-android-beta-0.3.1.apk", "/downloads/cardstashy-android-beta-0.3.2.apk"]) {
+  for (const old of ["/downloads/cardstashy-android-beta-0.3.1.apk", "/downloads/cardstashy-android-beta-0.3.2.apk", "/downloads/cardstashy-android-beta-0.3.3.apk"]) {
     const r = await hit(old);assert.equal(r.status, 302, old);assert.equal(r.headers.get("Location"), ANDROID_BETA.href);assert.equal(r.headers.get("Cache-Control"), "no-store");
   }
   assert.equal((await hit("/downloads/cardstashy-android-beta-0.3.2.apk", "HEAD")).status, 302);

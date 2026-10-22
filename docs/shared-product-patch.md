@@ -1,9 +1,10 @@
 # Coordinated web and Android patch — draft
 
-This branch is an implementation candidate, not a published release. Production
-base: `79b43e2a9d9c27add971db5ce3b47f79c009768b`. Published website 3.91.10;
-Android 0.3.3-beta (versionCode 4), bundled interface 3.91.8. No new version or
-signed Android artifact has been declared.
+This branch is a release candidate, not a published release. Production
+base: `79b43e2a9d9c27add971db5ce3b47f79c009768b` (published website 3.91.10,
+Android 0.3.3-beta). Candidate: website 3.92.0 and Android 0.4.0-beta
+(versionCode 5, bundled interface 3.92.0), built from commit `7825421`. Nothing
+is deployed or promoted until the owner approves the release.
 
 ## Shared behavior implemented
 
@@ -77,20 +78,59 @@ Cloudflare marked the draft-branch preview failed. Its GitHub check supplies no
 error text, and the detailed dashboard log requires authentication. No queue-reset
 cause has been established and no production setting was changed.
 
+## Mega-patch additions (3.92.0 candidate)
+
+- Packs: Magic packs follow MTGJSON booster sheets for 174 sets
+  (`data/mtg-boosters/`); Scarlet & Violet and Mega Evolution packs use measured
+  per-set pull rates. Other sets keep the era table.
+- Pokémon holo redesign: the 39 patterns of the brief as shader branches, a
+  top-side coat for Poké Ball / Master Ball stamps, an ACE SPEC magenta tint, and a
+  router by TCGdex set id and special rarity. `pokemon-holo-lab.html` shows all 39
+  with tilt. Deliberate deviations pending scans: WotC main sets keep Starlight and
+  the Scarlet & Violet reverse keeps its measured sheen. Light Pokémon in holo
+  windows (N's Reshiram) stay ink.
+- Scryfall busy/429 (no CORS headers, so "Failed to fetch"): requests back off
+  and retry, the meta-deck import retries a failed batch once, and the card sheet
+  offers Try again instead of a spelling hint.
+- Home retries the Card of the Day (15 s, 1 min, after the 5-minute server
+  cooldown) instead of leaving Magic's hero blank for the day.
+
+## Android artifact
+
+`downloads/cardstashy-android-beta-0.4.0.apk`: com.cardstashy.app 0.4.0-beta,
+versionCode 5, 25,894,839 bytes, SHA-256
+`d90f4b772795ec29ef596a9c5e19c359d9f62b236bdbd0bd0e3a96bbe4b158b4`, signed with the
+established certificate (E6:E4:01…3F:55). Built from the current
+com.cardstashy.app Capacitor source (the pipeline that produced 0.3.0–0.3.3; the
+earlier note calling it the old dev.cardstashy.integration project was wrong),
+pinned to `7825421` with every shared file taken from the commit by `git show`.
+
+The app adapts ten shared files (exports, auth exchange, scanner and foil
+lifecycle, offline art, image URL mapping, settings storage, safe-area insets).
+Those transforms now live in `scripts/android-native/` (verbatim copies of the
+Android build's) and `scripts/verify-android-release.py` requires each APK file
+to equal the source after exactly those transforms; every other shared file must
+match byte for byte. Result: 240 shared assets checked, 0 errors, signature,
+package, versionCode/name and checksum matched, `releaseApproved: true`,
+`physicalDeviceTested: false`.
+
+## Cloudflare preview failures
+
+The draft-branch preview builds fail with Cloudflare error 10067: the account has
+reached the Workers Free limit of 100 Durable Object namespaces. Each preview
+upload of a Worker with Durable Object classes needs namespaces, so the failure
+is account quota, not this code. Fix (owner decision): delete obsolete preview
+namespaces in the Cloudflare dashboard, or move to Workers Paid. Nothing was
+deleted or changed.
+
 ## Release blockers / remaining evidence
 
-1. Obtain the CURRENT native source and established signing/build workflow that
-   produced com.cardstashy.app 0.3.3-beta. The available portable source is the
-   older dev.cardstashy.integration project with network gates disabled. It must
-   not be repackaged under a different identity or have its guards bypassed.
-2. Build a new signed APK with these shared modules and assets, increment native
-   versionCode, set one matching web/bundled interface version, then populate
-   release-record.js from the verified artifact. Do not change the record merely
-   to make an old APK appear current.
-3. Run `python scripts/verify-android-release.py --source . --apk <signed.apk>`
-   with apksigner and apkanalyzer. It checks shared bytes, versions, package,
-   certificate, checksum and size. `--bundle-only` is diagnostic and never gives
-   release approval. The old APK intentionally fails the shared-source gate.
+1. Done: signed 0.4.0-beta (versionCode 5) from the current native source with
+   interface 3.92.0; release-record.js populated from the verified artifact.
+2. Done: `python scripts/verify-android-release.py --source . --apk
+   downloads/cardstashy-android-beta-0.4.0.apk` passes (see Android artifact).
+3. Owner: approve Durable Object namespace cleanup or a plan change so previews
+   build again (see Cloudflare preview failures).
 4. Test the actual installed APK: cold/slow Home pack opening, exact single/multi
    printing foil, card art, scanner/collection/save, Android Back, native update
    manifest transport, download/install update, and account callback after cold
@@ -115,5 +155,5 @@ cause has been established and no production setting was changed.
    coordinated artifact publication and explicit release readiness. Keep this PR
    draft; do not merge it while these blockers remain.
 
-No production deploy, native rebuild, version promotion or automated release
+No production deploy, version promotion or automated release
 notification is part of this draft publication.

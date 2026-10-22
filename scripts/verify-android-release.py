@@ -33,6 +33,11 @@ def normalized(path, data):
         data = re.sub(rb'bytes\s*:\s*\d+', b'bytes:0', data)
     return data
 
+def native_expected(source, shared):
+    adapted=set(node(source, "import {NATIVE_ADAPTED} from './scripts/android-native/bundle.mjs'; console.log(JSON.stringify(NATIVE_ADAPTED))"))
+    paths=sorted(p for p in shared if p in adapted or p.endswith('.css'))
+    return json.loads(subprocess.check_output(['node','scripts/android-native/bundle.mjs'],cwd=source,text=True,input=json.dumps(paths))) if paths else {}
+
 def bundle_check(source, apk, record):
     errors=[]
     shared=set(node(source, "import {moduleGraph} from './scripts/module-graph.mjs'; console.log(JSON.stringify(moduleGraph()))"))
@@ -42,11 +47,16 @@ def bundle_check(source, apk, record):
     # actual app modules, CSS, foil assets, icons and artwork must match.
     shared.difference_update({'','index.html','manifest.json','sw.js'})
     shared={p for p in shared if not p.endswith('.apk') and (source/p).is_file()}
+    # A few files are adapted by the reviewed native transforms (scripts/android-native/bundle.mjs);
+    # the APK must hold exactly those transforms of the source, and every other file byte for byte.
+    expected=native_expected(source, shared)
     with zipfile.ZipFile(apk) as archive:
         for name in sorted(shared):
             try: actual=archive.read('assets/public/'+name)
             except KeyError: errors.append('APK missing shared asset: '+name);continue
-            if normalized(name,actual)!=normalized(name,(source/name).read_bytes()): errors.append('APK differs from shared source: '+name)
+            if name in expected: ok=hashlib.sha256(actual).hexdigest()==expected[name]
+            else: ok=normalized(name,actual)==normalized(name,(source/name).read_bytes())
+            if not ok: errors.append('APK differs from shared source: '+name)
     current=node(source, "import {APP_VERSION} from './config.js'; console.log(JSON.stringify(APP_VERSION))").split(' · ')[0]
     if record['webVersion']!=current or record['android']['interfaceVersion']!=current:
         errors.append('Website, published release and bundled interface versions must match.')

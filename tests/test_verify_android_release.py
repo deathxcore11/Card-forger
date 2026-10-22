@@ -1,5 +1,7 @@
 """Offline packaging gate tests; no Android SDK, signing key or account involved."""
+import hashlib
 import importlib.util
+import shutil
 import pathlib
 import tempfile
 import unittest
@@ -23,7 +25,7 @@ class BundleGateTests(unittest.TestCase):
                 with zipfile.ZipFile(apk, 'w') as out:
                     out.writestr('assets/public/app.js', app)
                     out.writestr('assets/public/config.js', f'export const APP_VERSION = "{version} · Android 1.0";')
-            with patch.object(gate, 'node', side_effect=lambda source, code: ['app.js', 'config.js'] if 'moduleGraph' in code else '9.1.0'):
+            with patch.object(gate, 'node', side_effect=lambda source, code: ['app.js', 'config.js'] if 'moduleGraph' in code else '9.1.0'), patch.object(gate, 'native_expected', return_value={}):
                 build((root / 'app.js').read_text())
                 self.assertEqual(gate.bundle_check(root, apk, record)['errors'], [])
                 build('old interface')
@@ -32,6 +34,19 @@ class BundleGateTests(unittest.TestCase):
                 self.assertIn('APK differs from shared source: config.js', gate.bundle_check(root, apk, record)['errors'])
                 record['android']['interfaceVersion'] = '9.0.0'
                 self.assertTrue(any('versions must match' in e for e in gate.bundle_check(root, apk, record)['errors']))
+
+    def test_native_adaptations_must_be_exactly_the_reviewed_transforms(self):
+        repo = pathlib.Path(__file__).parents[1]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            shutil.copytree(repo / 'scripts/android-native', root / 'scripts/android-native')
+            (root / 'style.css').write_text('.top{padding-top:env(safe-area-inset-top)}')
+            (root / 'plain.js').write_text('export const x = 1;')
+            expected = gate.native_expected(root, {'style.css', 'plain.js'})
+            self.assertEqual(set(expected), {'style.css'}, 'only adapted files and CSS get a transformed hash')
+            adapted = b'.top{padding-top:max(env(safe-area-inset-top), var(--safe-area-inset-top, 0px))}'
+            self.assertEqual(expected['style.css'], hashlib.sha256(adapted).hexdigest())
+            self.assertNotEqual(expected['style.css'], hashlib.sha256((root / 'style.css').read_bytes()).hexdigest(), 'an unadapted stylesheet fails the gate')
 
     def test_only_self_referential_fields_may_differ(self):
         one = b"{sha256:'abc',bytes:1,interfaceVersion:'9.1.0'}"
