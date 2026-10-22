@@ -186,8 +186,8 @@ void main(){
  // Coverage: the measured mask, and behind a holo Pokémon only where the white underbase was left out.
  // The mask is measured at analysis resolution, and its edge is re-sharpened so it stays as crisp as the CSS clip.
  // Weak foil-through on a light subject (a white Pokémon against a pale sky) is analysis leakage, not
- // background: below about a quarter it is the white underbase, so the Pokémon stays printed ink.
- float cov=smoothstep(.35,.65,mk.a)*mix(1.,smoothstep(.22,.6,mk.r),u_r1.z)*(1.-.5*u_r2.y*smoothstep(.52,.64,uv.y));
+ // background: the faintest foil-through fades out, so the Pokémon stays printed ink.
+ float cov=smoothstep(.35,.65,mk.a)*mix(1.,smoothstep(.05,.35,mk.r),u_r1.z)*(1.-.5*u_r2.y*smoothstep(.52,.64,uv.y));
  vec3 F=foil(u_r1.x,u_r1.y,uv,L,V,N,spot,grad,rl.r,stroke)*(1.+mk.g*u_r1.z*.6);
  // Reverse holos print their text, symbols and outlines in opaque ink over the foil: dark ink stays solid
  // and the foil shows through the lighter areas only. (Holo windows and full arts keep their own rules.)
