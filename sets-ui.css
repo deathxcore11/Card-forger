@@ -51,7 +51,7 @@
 .set-grid .ygo-set-meta>.ellip{white-space:normal;overflow:visible;overflow-wrap:anywhere;line-height:1.4}
 .set-grid .ygo-set-meta .set-price{display:flex;flex-wrap:wrap;gap:3px 7px;min-width:0;white-space:normal;overflow-wrap:anywhere;font-weight:700}
 .set-grid .set-price>small{font-size:11px;font-weight:400;color:var(--muted)}
-.set-grid>.grid-card[data-tier="tn"]>.card-img{box-sizing:border-box;border:5px solid transparent;border-radius:calc(4.75% + 5px) / calc(3.5% + 5px);background:linear-gradient(160deg,#a7afb8,#6f7780) border-box}
+.set-grid>.grid-card[data-tier="tn"]>.card-img{box-sizing:border-box;border:var(--grid-frame-width) solid transparent;border-radius:calc(4.75% + var(--grid-frame-width)) / calc(3.5% + var(--grid-frame-width));background:linear-gradient(160deg,#a7afb8,#6f7780) border-box}
 
 /* One calm catalogue shell for all three games. Native selects use the existing glass menu. */
 .set-browser-controls{display:grid;gap:14px;min-width:0;padding:18px;border:1px solid var(--line);border-radius:20px;background:color-mix(in srgb,var(--surface) 94%,transparent)}
@@ -266,3 +266,50 @@ body:not(.glass) .set-atmosphere{display:none}
    width) and attached to its edge, with the coloured shadow behind it. */
 .pack-focus-card>.pack-frame{inset:calc(var(--card-w)*-.03);border-radius:calc(var(--card-w)*.046 + var(--card-w)*.03)}
 .pack-card::before{inset:-3px;border-radius:9px}
+
+/* Set detail: the existing glass hero carries identity and collection together. */
+.set-overview.set-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,280px) auto;gap:22px;align-items:center;padding:18px 20px;margin:4px 0 16px}
+.set-identity{display:flex;align-items:center;gap:16px;min-width:0}
+.set-identity .set-icon.huge{width:52px;height:52px;flex:none}
+.set-identity .set-logo.big{width:86px;max-height:64px;object-fit:contain;flex:none}
+.set-overview h1{font-size:clamp(20px,2.1vw,28px);line-height:1.2;letter-spacing:-.035em;margin:5px 0}
+.set-overview .set-hero-main>p{margin:5px 0 0;font-size:11px}
+.set-overview>.set-collection-progress{min-width:0;margin:0;padding:0 0 0 22px;border:0;border-left:1px solid var(--line);border-radius:0;background:none}
+.set-overview .set-progress-top{gap:10px}
+.set-overview .set-progress-top p{font-size:12px}
+.set-overview .set-progress-top>strong{font-size:26px;color:var(--gold)}
+.set-overview .set-progress-track{height:5px;margin:10px 0 0}
+.set-overview .set-progress-caption{font-size:10px;line-height:1.4;margin:7px 0 0}
+.set-overview .set-open-pack{margin:0;justify-content:center;max-width:130px}
+.set-card-toolbar{display:grid;gap:8px;min-width:0}
+.set-card-toolbar>.searchbar{margin:0;min-width:0}
+.set-card-toolbar .searchbar input{min-height:44px;width:100%}
+.set-card-toolbar .set-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0;min-width:0}
+.set-card-toolbar .set-controls>.seg{flex:0 0 auto}
+.set-card-toolbar .set-controls>select,.set-card-toolbar .set-controls>.glass-select{flex:1 1 130px;min-width:0;width:auto}
+.set-card-toolbar .set-controls .glass-select>button{min-height:44px}
+.set-card-toolbar .set-controls>.view-switch{flex:none;margin-left:auto}
+.set-results.list-bar{margin:7px 0 8px;min-height:0}
+.set-results.list-bar>p{margin:0;font-size:11px}
+@media(max-width:999px){
+ .set-overview.set-hero{grid-template-columns:minmax(0,1fr) auto;gap:14px 18px}
+ .set-overview>.set-identity{grid-column:1/-1}
+ .set-overview>.set-collection-progress{border-left:0;padding:0}
+ .set-overview .set-open-pack{max-width:none}
+}
+@media(max-width:599px){
+ .set-overview.set-hero{padding:14px;gap:14px 12px;border-radius:18px;margin-bottom:12px}
+ .set-identity{gap:12px}
+ .set-identity .set-icon.huge{width:38px;height:38px}
+ .set-identity .set-logo.big{width:58px;max-height:48px}
+ .set-overview h1{font-size:20px}
+ .set-overview .set-progress-top>strong{font-size:23px}
+ .set-overview .set-progress-top .eyebrow{font-size:9px;margin-bottom:4px}
+ .set-overview .set-progress-top p{font-size:11px}
+ .set-overview .set-open-pack{font-size:12px;padding:8px 10px;gap:3px;flex-direction:column}
+ .set-overview .set-open-pack>span{font-size:9px}
+ .set-card-toolbar .set-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .set-card-toolbar .set-controls>.seg{grid-column:1/-1;justify-self:start}
+ .set-card-toolbar .set-controls>select,.set-card-toolbar .set-controls>.glass-select{width:100%}
+ .set-card-toolbar .set-controls>.view-switch{justify-self:end;max-width:100%;margin-left:0}
+}

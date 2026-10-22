@@ -523,19 +523,18 @@ export function setPage() {
   let list = filterSortSetCards(all,"mtg",{q,rarity:st.rarity,finish:st.finish,sort:st.sort}).filter(c=>st.filter === "all" || (st.filter === "owned" ? ownedOf(c) : !ownedOf(c)));
   if (st.sort === "price") list = list.slice().sort((a, b) => (Number.isFinite(price(b))?price(b):-1) - (Number.isFinite(price(a))?price(a):-1));
   const rarities = facets.rarities;
-  return `<div class="set-hero">${setAtmosphere("mtg",info||{code:st.code},all[0])}${info ? `<span class="set-icon huge" style="--icon:url('${esc(info.icon_svg_uri || setIconUrl(info.code))}')" aria-hidden="true"></span>` : ""}
+  return `<div class="set-hero set-overview">${setAtmosphere("mtg",info||{code:st.code},all[0])}<div class="set-identity">${info ? `<span class="set-icon huge" style="--icon:url('${esc(info.icon_svg_uri || setIconUrl(info.code))}')" aria-hidden="true"></span>` : ""}
     <div class="set-hero-main"><button class="link small" data-act="go" data-to="#sets">← All sets</button>
       <h1>${esc(info?.name || st.code.toUpperCase())}</h1>
-      <p class="muted small">${info ? `${esc(info.code.toUpperCase())} · ${esc(SET_TYPES[info.set_type] || info.set_type || "")} · ${esc(info.released_at || "")} · ${info.card_count} cards` : ""}</p>
-    </div>${packButton("mtg",info,{ready:st.loaded&&!st.busy&&!st.error&&all.length>0})}</div>
+      <p class="muted small">${info ? `${esc(info.code.toUpperCase())} · ${esc(SET_TYPES[info.set_type] || info.set_type || "")} · ${esc(info.released_at || "")}` : ""}</p>
+    </div></div>${all.length ? progress.html : ""}${packButton("mtg",info,{ready:st.loaded&&!st.busy&&!st.error&&all.length>0})}</div>
   ${st.error ? `<div class="note warn">${esc(st.error)} <button class="link" data-act="setReload">Try again</button></div>` : ""}
-  ${all.length ? progress.html : ""}
-  <div class="searchbar"><input type="search" value="${esc(st.q)}" placeholder="Search this set" data-input="setSearch" aria-label="Search this set" autocomplete="off"></div>
+  <div class="set-card-toolbar"><div class="searchbar"><input type="search" value="${esc(st.q)}" placeholder="Search this set" data-input="setSearch" aria-label="Search this set" autocomplete="off"></div>
   <div class="set-controls">${segmented("setFilter", st.filter, [["all", "All"], ["owned", "Owned"], ["missing", "Missing"]])}
     <select data-change="setRarity" aria-label="Rarity">${options([["all", "All rarities"], ...rarities.map((r) => [r, RARITY[r] || r])], st.rarity)}</select>
     ${facets.finishes.length?`<select data-change="setFinish" aria-label="Finish">${options([["all","All finishes"],...facets.finishes.map(f=>[f,({nonfoil:"Nonfoil",foil:"Foil",etched:"Etched"})[f]||f])],st.finish||"all")}</select>`:""}
-    <select data-change="setSort" aria-label="Sort">${options([["number", "Set order"], ["price", "Price: high to low"], ["name", "Name"], ["set","Set"], ["rarity","Rarity"], ["finish","Finish"]], st.sort)}</select></div>
-  <div class="list-bar"><p class="muted small">${st.busy ? `Loading ${all.length ? all.length + " of " + (st.total || "…") : ""} cards…` : all.length ? `${list.length.toLocaleString()} match · Scryfall prices, TCGplayer's where Scryfall has none` : ""}</p>${viewControl("mtg", "set")}</div>
+    <select data-change="setSort" aria-label="Sort">${options([["number", "Set order"], ["price", "Price: high to low"], ["name", "Name"], ["set","Set"], ["rarity","Rarity"], ["finish","Finish"]], st.sort)}</select>${viewControl("mtg", "set")}</div></div>
+  <div class="list-bar set-results"><p class="muted small">${st.busy ? `Loading ${all.length ? all.length + " of " + (st.total || "…") : ""} cards…` : all.length ? `${list.length.toLocaleString()} cards` : ""}</p></div>
   <div class="card-grid set-grid">${list
     .slice(0, st.limit)
     .map((c) => {

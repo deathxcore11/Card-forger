@@ -11,7 +11,7 @@ assert.equal(finishMaterialProfile('ptcg',card,model),'line-holo');
 assert.equal(model.layers[0].mask,'pk-cel-art','Quiet texture must retain its artwork-only mask');
 const style=readFileSync('style.css','utf8'),foil=readFileSync('finish-effects.css','utf8');
 assert.match(style,/#content\.view-gallery \.display-list \.lot:not\(\.wanted\) \.lot-art\[data-finish-game="ptcg"\] \{ aspect-ratio:auto;/);
-assert.match(style,/\.lot\[data-tier\]:not\(\[data-tier="tn"\]\):not\(\.wanted\) \.lot-art\[data-finish-game="ptcg"\] \{ padding:5px;/);
+assert.match(style,/\.lot\[data-tier\]:not\(\[data-tier="tn"\]\):not\(\.wanted\) \.lot-art\[data-finish-game="ptcg"\] \{ padding:var\(--grid-frame-width\);/);
 assert.match(style,/\.lot-art\[data-finish-game="ptcg"\] > img\.card-img \{[^}]*height:auto; aspect-ratio:auto; object-fit:contain;/);
 assert.match(foil,/\.finish-overlay\[data-material-profile="line-holo"\] \.finish-pattern\{[^}]*opacity:\.18\}/,'Scoped opacity must equal generic selector specificity, not be silently overridden');
 for(const width of [150,240,390]){
@@ -38,5 +38,5 @@ assert.equal(await (await response).text(),'corrected-five-pixel-css');assert.eq
 console.log('PASS: installed shell precaches corrected stylesheet, retires only obsolete shell cache, and serves fresh network CSS.');
 
 // One frame everywhere: the outer corner is the card's own corner plus the 5px band, as on the card page.
-assert.match(style,/lot-art\[data-finish-game="ptcg"\] \{ aspect-ratio:auto; border-radius:calc\(4\.75% \+ 5px\) \/ calc\(3\.5% \+ 5px\);/);
+assert.match(style,/lot-art\[data-finish-game="ptcg"\] \{ aspect-ratio:auto; border-radius:calc\(4\.75% \+ var\(--grid-frame-width\)\) \/ calc\(3\.5% \+ var\(--grid-frame-width\)\);/);
 assert.match(style,/lot-art\[data-finish-game="ptcg"\] > img\.card-img \{[^}]*border-radius:4\.75% \/ 3\.5%;/);
