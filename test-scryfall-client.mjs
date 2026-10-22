@@ -24,5 +24,5 @@ assert.equal((await flaky('/cards/late')).id,'late','a request that gets through
 assert(tries[1]-tries[0]>=20&&tries[2]-tries[1]>=40,'network failures back off longer each time');
 tries=[];const down=createScryfallClient({networkBackoffMs:5,fetcher:async()=>{tries.push(1);throw new TypeError('Failed to fetch');}});
 await assert.rejects(down('/cards/down'),e=>e.network===true&&/Couldn’t reach the card database/.test(e.message)&&!/Failed to fetch/.test(e.message));
-assert.equal(tries.length,4,'four tries before giving up');
+assert.equal(tries.length,3,'three tries before giving up, so a dead provider fails in seconds');
 console.log('PASS: slow background request cannot block exact lookup; shared start pacing, bounded concurrency, queue-inclusive deadlines, cancellation and provider cooldown.');
