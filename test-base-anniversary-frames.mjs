@@ -23,14 +23,14 @@ for(const e of golden.cards){
  assert.equal(pokemonFrame(c),'','Anniversary identities cannot inherit a modern era');
  // Synthetic holo tests exercise coverage only. They never claim the source offers it.
  const fixture={...c,variants:[{key:'holofoil',finish:'holofoil',label:'Synthetic holo coverage witness'}]},model=resolveFinish('ptcg',fixture,{priceFinish:'holofoil'});
- if(e.status==='unavailable'){assert.equal(model.status,'unknown',e.id);assert.deepEqual(model.layers,[]);}
+ // No measured map: never a borrowed region; a foil printing gets whole-card approximate coverage instead.
+ if(e.status==='unavailable'){assert(model.status==='unknown'?model.layers.length===0:model.layers.every(l=>l.mask==='card')&&/whole-card approximate/.test(model.reason),e.id);}
  else{
   assert.equal(model.layers[0]?.mask,e.mask,e.id);assert.equal(FINISH_MASKS[e.mask],e.css);assert(!model.layers.some(l=>l.mask.startsWith('pk-swsh')));
   assert.equal(createHash('sha256').update(fs.readFileSync('tests/fixtures/anniversary-frames/'+e.file)).digest('hex'),e.sha256);
   assert(finishImageMatches(model,e.source));assert(!finishImageMatches(model,'https://example.test/different-edition.png'));
   if(e.id.startsWith('30th-c-'))assert(finishImageMatches(model,`https://cardstashy.com/img/ptcg/l/${e.id}.jpg?v=2`));
-  assert.equal(resolveFinish('ptcg',{...fixture,imageLarge:'https://example.test/other.png'},{priceFinish:'holofoil'}).status,'unknown');
-  assert.equal(resolveFinish('ptcg',{...fixture,variants:[{key:'holofoil',finish:'holofoil',imageLarge:'https://example.test/edition.png'}]},{priceFinish:'holofoil'}).status,'unknown');
+  for(const other of [resolveFinish('ptcg',{...fixture,imageLarge:'https://example.test/other.png'},{priceFinish:'holofoil'}),resolveFinish('ptcg',{...fixture,variants:[{key:'holofoil',finish:'holofoil',imageLarge:'https://example.test/edition.png'}]},{priceFinish:'holofoil'})]){assert(!other.layers.some(l=>l.mask===e.mask),e.id+' map is measured on one image only');assert.deepEqual(other.layers.map(l=>l.mask),['card'],e.id);}
  }
  assert.equal(JSON.stringify(c),before);assert.deepEqual(finishChoices('ptcg',c),original,'No availability or price mutation');
  if(e.id.startsWith('30th'))assert(original.every(p=>p.effect==='plain'),'Generated Normal availability is preserved; maps do not invent holo offers');
@@ -39,7 +39,7 @@ assert.deepEqual(counts,{cel25cc:25,'30th-c':30,'30th':158,cel25:1});
 const regular=normalizePtcg(read('test-fixtures/finish-effects/cel25-10.json'));
 assert.equal(resolveFinish('ptcg',regular,{priceFinish:regular.variants[0].key}).layers[0]?.mask,'pk-cel-art','Regular Celebrations retains its current map');
 for(const set of ['cel25cc','cel25c','30th-c','30th']){
- const future={id:set+'-unknown',set:{id:set},name:'Future EX',stage:'Stage2',rarity:'Ultra Rare',variants:[{key:'holofoil',finish:'holofoil'}]};assert.equal(resolveFinish('ptcg',future,{priceFinish:'holofoil'}).status,'unknown');
+ const future={id:set+'-unknown',set:{id:set},name:'Future EX',stage:'Stage2',rarity:'Ultra Rare',variants:[{key:'holofoil',finish:'holofoil'}]};{const p=resolveFinish('ptcg',future,{priceFinish:'holofoil'});assert.deepEqual(p.layers.map(l=>l.mask),['card'],set+': an unmapped anniversary card gets whole-card coverage, never another map');assert.match(p.reason,/whole-card approximate/);}
 }
 console.log('PASS: 16 Base Set fronts across 64 edition choices, all 25+30 Classic and 158 main anniversary identities, source hashes, exact-image guards, unavailable special layouts and no finish/price mutations.');
 

@@ -4,6 +4,7 @@
 // as recessed foil by the detail view's existing light position. Approximate
 // simulation over a flat image, not a physical-foil capture.
 // Name bar measured on 813x1185 YGOPRODeck renders: clears descenders, stops before the Attribute orb.
+import {frameThrottle} from './foil-gl.js';
 export const YGO_NAME_BOX=[.072,.050,.828,.108];
 export const YGO_NAME_RARITY={silver:1,gold:2,rainbow:3,platinum:4};
 const masks=new Map();
@@ -106,9 +107,9 @@ export function mountYgoNameFoil(overlay,img,material,mask){
  };
  // Light coordinates are inline custom properties set on an ancestor (pointer, gyro, zoom).
  // Watch those style attributes instead of running a per-frame loop.
- const mo=typeof MutationObserver==='undefined'?null:new MutationObserver(draw);
+ const request=frameThrottle(draw),mo=typeof MutationObserver==='undefined'?null:new MutationObserver(request);
  for(let n=overlay.parentElement;n&&n!==doc.documentElement;n=n.parentElement)mo?.observe(n,{attributes:true,attributeFilter:['style','class']});
- const ro=typeof ResizeObserver==='undefined'?null:new ResizeObserver(draw);ro?.observe(canvas);
+ const ro=typeof ResizeObserver==='undefined'?null:new ResizeObserver(request);ro?.observe(canvas);
  draw();
- return {canvas,draw,dispose(){mo?.disconnect();ro?.disconnect();canvas.remove();gl.getExtension('WEBGL_lose_context')?.loseContext();}};
+ return {canvas,draw,dispose(){request.cancel();mo?.disconnect();ro?.disconnect();canvas.remove();gl.getExtension('WEBGL_lose_context')?.loseContext();}};
 }

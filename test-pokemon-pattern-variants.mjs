@@ -25,7 +25,7 @@ const bad=structuredClone(raw);bad.variants_detailed[2].pricing.tcgplayer.holofo
 assert.equal(pokemonVariants(bad)[2].usd,null,'Mismatched patterned product quote is rejected');
 const unknown=structuredClone(raw);unknown.variants_detailed[2].foil='future-pattern';
 assert.equal(pokemonVariants(unknown)[2].usd,null,'Unknown pattern cannot borrow Holofoil pricing');
-assert.equal(finishChoices('ptcg',normalizePtcg(unknown))[2].status,'unknown');
+{const u=finishChoices('ptcg',normalizePtcg(unknown))[2],plain=resolveFinish('ptcg',c,{priceFinish:'reverse-holofoil'});assert.equal(u.status,'approximate');assert.deepEqual(u.layers,plain.layers,'An unreviewed pattern keeps the plain reverse window');assert.equal(u.treatment,'ptcg-sv-reverse','and the era sheet, never a borrowed pattern');}
 const t=normalizePtcg(JSON.parse(readFileSync('tests/fixtures/typhlosion-swsh10-052.json')));
 assert.equal(t.variants.length,3);const stamped=t.variants.find(x=>x.stamps.includes('set-logo'));
 assert.equal(stamped.label,'Set-logo stamped · Holofoil');assert.equal(stamped.cmProduct,660427);assert.equal(stamped.productId,undefined);assert.equal(stamped.usd,null);

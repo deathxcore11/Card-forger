@@ -9,6 +9,6 @@ assert.equal(await verifiedTitleMask('9753964','https://fixture.test/cors',async
 assert.equal(await verifiedTitleMask('other','https://fixture.test/exact',()=>{throw Error('Must not request');}),'');
 const card={id:'base4-20',set:{id:'base4'},variants:[{key:'holofoil',finish:'holofoil'}]};
 const model=resolveFinish('ptcg',card,{priceFinish:'holofoil'});assert.equal(model.layers[0].mask,'pk-base4-20-art');assert.equal(finishMaterialProfile('ptcg',card,model),'cosmos-holo');
-assert.equal(resolveFinish('ptcg',{...card,id:'base4-19'},{priceFinish:'holofoil'}).effect,'unknown');
+{const other=resolveFinish('ptcg',{...card,id:'base4-19'},{priceFinish:'holofoil'});assert.equal(other.effect,'ptcg-holo');assert.equal(other.layers[0].mask,'pk-wotc-art','Other Base Set 2 cards use the Base Set era window, never base4-20\'s exact traced mask');}
 assert.equal(finishMaterialProfile('ptcg',card,{effect:'plain',layers:[]}), '');
 console.log('PASS: approved exact layout, unknown layout fallback, byte-verified title masks and unavailable-image fallback.');

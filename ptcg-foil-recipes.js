@@ -3,7 +3,7 @@
 // art, and full-art cards foil the whole face, textured on the eras that emboss it. Each era printed
 // its own foil sheet, so the pattern follows the set; the variant's own foil (cosmos, Poké Ball,
 // Master Ball, gold) wins when the provider names one. Approximate simulations, not physical matches.
-export const PTCG_PATTERN={wotc:1,crystal:2,lines:3,sheen:4,sparkle:5,cosmos:6,firework:7,mirror:8,pokeball:9,masterball:10,texture:11,strokes:12,shiny:13,diagonal:14,confetti:15,ancient:16};
+export const PTCG_PATTERN={wotc:1,crystal:2,lines:3,sheen:4,sparkle:5,cosmos:6,firework:7,mirror:8,pokeball:9,masterball:10,texture:11,strokes:12,shiny:13,diagonal:14,confetti:15,ancient:16,emblem:17,cracked:18};
 export const PTCG_TINT={rainbow:0,gold:1,silver:2};
 const P=PTCG_PATTERN,T=PTCG_TINT;
 // soft: full-art cards keep their attack text readable, so the lower half of the card is foiled lightly.
@@ -23,6 +23,10 @@ export const PTCG_FOIL_RECIPES={
  'ptcg-cosmos-reverse':r('Cosmos reverse',P.cosmos,{note:'Cosmos circles everywhere but the art.'}),
  'ptcg-pokeball':r('Poké Ball reverse',P.pokeball,{note:'Poké Ball pattern foil everywhere but the art.'}),
  'ptcg-masterball':r('Master Ball reverse',P.masterball,{note:'Master Ball pattern foil everywhere but the art.'}),
+ 'ptcg-emblem-reverse':r('Emblem reverse',P.emblem,{note:'Energy-symbol, League and set-logo reverse holos: rows of small raised emblems everywhere but the art (approximate tile shape).'}),
+ 'ptcg-cracked-reverse':r('Cracked Ice reverse',P.cracked,{sparkle:.2,note:'Cracked Ice shards everywhere but the art.'}),
+ 'ptcg-emblem-holo':r('League holo',P.emblem,{underbase:1,note:'League promo holo: rows of small raised emblems behind the Pokémon (approximate tile shape).'}),
+ 'ptcg-cracked-ice':r('Cracked Ice holo',P.cracked,{underbase:1,sparkle:.2,note:'Cracked Ice holo: large shards of foil, each catching the light at its own angle, behind the Pokémon.'}),
  'ptcg-full-art':r('Full-art holo',P.diagonal,{soft:1,note:'The whole card is foil, smooth, with a 45° rainbow band that sweeps across it.'}),
  'ptcg-textured':r('Textured full art',P.texture,{relief:.5,soft:1,note:'Embossed full art: raised grooves follow the artwork, so the light ripples around it.'}),
  'ptcg-rainbow':r('Rainbow rare',P.texture,{relief:.5,sparkle:.4,soft:1,note:'Rainbow-tinted, textured full art.'}),
@@ -42,7 +46,10 @@ const norm=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 export function ptcgFoilEffect({finish,era='',foil='',rarity='',fullArt=false,textured=false,gold=false}={}){
  const f=norm(foil),rar=norm(rarity);
  if(finish==='reverse-holofoil'){
-  if(f==='pokeball')return 'ptcg-pokeball';if(f==='masterball')return 'ptcg-masterball';if(f==='cosmos')return 'ptcg-cosmos-reverse';
+  if(f==='masterball')return 'ptcg-masterball';if(/ball$/.test(f))return 'ptcg-pokeball';if(f==='cosmos')return 'ptcg-cosmos-reverse';
+  // Energy-symbol, League and set-logo sheets are rows of small emblems.
+  if(['energy','league','setlogo','teamrocket'].includes(f))return 'ptcg-emblem-reverse';
+  if(f==='crackedice')return 'ptcg-cracked-reverse';if(f==='tinsel')return 'ptcg-sv-reverse';
   return ERA_REVERSE[era]||'ptcg-reverse';
  }
  if(finish!=='holofoil')return '';
@@ -51,11 +58,13 @@ export function ptcgFoilEffect({finish,era='',foil='',rarity='',fullArt=false,te
   if(gold||f==='gold')return 'ptcg-gold';
   if(/specialillustration/.test(rar))return 'ptcg-special-illustration';
   if(/^illustrationrare/.test(rar))return 'ptcg-illustration';
-  if(/rainbow/.test(rar)||rar==='hyperrare'&&!/^(sv|me)/.test(era))return 'ptcg-rainbow';
+  if(/rainbow/.test(rar)||f==='rainbow'||rar==='hyperrare'&&!/^(sv|me)/.test(era))return 'ptcg-rainbow';
   if(/shiny/.test(rar))return 'ptcg-shiny';
   if(rar==='doublerare')return 'ptcg-double-rare';
   return textured?'ptcg-textured':'ptcg-full-art';
  }
- if(f==='cosmos')return 'ptcg-cosmos';
+ if(f==='cosmos')return 'ptcg-cosmos';if(f==='crackedice')return 'ptcg-cracked-ice';
+ // Tinsel promos glitter like the Scarlet & Violet sheet; League promos carry the emblem sheet.
+ if(f==='tinsel')return 'ptcg-sv-holo';if(f==='league')return 'ptcg-emblem-holo';
  return ERA_HOLO[era]||'ptcg-classic-holo';
 }

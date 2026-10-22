@@ -1496,8 +1496,6 @@ details.trouble code { word-break: break-word; }
 .cd-zoom { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; border-radius: 4.75% / 3.5%; }
 .cd-zoom .card-img { transition: transform 0.18s, box-shadow 0.18s; }
 .cd-zoom:active .card-img { transform: scale(0.97); }
-.zoom-badge { position: absolute; right: 8px; bottom: 8px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; color: #fff; background: rgba(8, 10, 14, 0.62); backdrop-filter: blur(6px); box-shadow: 0 2px 8px #0007, inset 0 0 0 1px #ffffff2a; }
-.zoom-badge .ico { width: 18px; height: 18px; }
 dialog.zoom { --fade: 1; position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: rgb(4 5 8 / calc(0.985 * var(--fade))); color: #fff; overflow: hidden; }
 dialog.zoom::backdrop { background: transparent; }
 .zoom-stage { position: absolute; inset: 0; display: grid; place-items: center; touch-action: none; overflow: hidden; cursor: zoom-in; }
@@ -5023,11 +5021,19 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 /* Card page: the band and aura live on the zoom holder around the image. */
 .cd-img .cd-zoom:has(> img.card-img[data-tier]) { --frame-w: clamp(6px, 2.4vw, 10px); --aura-blur: 52px; box-sizing: border-box; padding: var(--frame-w); border-radius: calc(4.75% + var(--frame-w)) / calc(3.5% + var(--frame-w)); background: linear-gradient(160deg, #a7afb8, #6f7780); }
 .cd-img .cd-zoom > img.card-img[data-tier] { outline: 0; box-shadow: none; animation: none; }
+/* The card page keeps its glow still (an animated blurred shadow repaints the whole area every frame); the frame itself still swirls and shines. */
 .cd-img .cd-zoom:has(> img.card-img[data-tier="t0"]) { --aura-1: #a7afb8; --aura-2: #6f7780; --aura-mix: 30%; }
 .cd-img .cd-zoom:has(> img.card-img[data-tier="t1"]) { --aura-1: #7be3a8; --aura-2: #2fae68; --aura-mix: 55%; background: linear-gradient(160deg, #7be3a8, #2fae68); }
 .cd-img .cd-zoom:has(> img.card-img[data-tier="t2"]) { --aura-1: #8cc6ff; --aura-2: #2f7fe0; --aura-mix: 60%; background: linear-gradient(160deg, #8cc6ff, #2f7fe0); }
-.cd-img .cd-zoom:has(> img.card-img[data-tier="t3"]) { --aura-1: #b46cff; --aura-2: #6fd0ff; --aura-mix: 70%; background: conic-gradient(from var(--swirl), #b46cff, #6fd0ff, #ff7ad9, #b46cff); animation: tier-swirl 6s linear infinite, aura-orbit 9s linear infinite; }
-.cd-img .cd-zoom:has(> img.card-img[data-tier="t4"]) { --aura-1: #ffd34d; --aura-2: #ffb020; --aura-mix: 70%; background: linear-gradient(115deg, #b8860b 0%, #ffd34d 30%, #fff6c9 45%, #ffd34d 60%, #b8860b 100%) 0 0 / 300% 100%; animation: tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite, aura-orbit 10s linear infinite; }
-.cd-img .cd-zoom:has(> img.card-img[data-tier="t5"]) { --aura-1: #ff7a1a; --aura-2: #ffd08a; --aura-mix: 75%; background: linear-gradient(115deg, #c2410c 0%, #ff7a1a 30%, #ffd08a 45%, #ff7a1a 60%, #c2410c 100%) 0 0 / 300% 100%; animation: tier-shine 2.6s ease-in-out infinite, aura-orbit 6s linear infinite; }
+.cd-img .cd-zoom:has(> img.card-img[data-tier="t3"]) { --aura-1: #b46cff; --aura-2: #6fd0ff; --aura-mix: 70%; background: conic-gradient(from var(--swirl), #b46cff, #6fd0ff, #ff7ad9, #b46cff); animation: tier-swirl 6s linear infinite; }
+.cd-img .cd-zoom:has(> img.card-img[data-tier="t4"]) { --aura-1: #ffd34d; --aura-2: #ffb020; --aura-mix: 70%; background: linear-gradient(115deg, #b8860b 0%, #ffd34d 30%, #fff6c9 45%, #ffd34d 60%, #b8860b 100%) 0 0 / 300% 100%; animation: tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite; }
+.cd-img .cd-zoom:has(> img.card-img[data-tier="t5"]) { --aura-1: #ff7a1a; --aura-2: #ffd08a; --aura-mix: 75%; background: linear-gradient(115deg, #c2410c 0%, #ff7a1a 30%, #ffd08a 45%, #ff7a1a 60%, #c2410c 100%) 0 0 / 300% 100%; animation: tier-shine 2.6s ease-in-out infinite; }
 .cd-img .cd-zoom:has(> img.card-img[data-tier]) { box-shadow: -12px -9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px 9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) -6px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c; }
 @media (prefers-reduced-motion: reduce) { .view-gallery .card-grid .grid-card img.card-img[data-tier], .cd-img .cd-zoom { animation: none !important; } }
+/* Search color chips: one tap per mana color, the selected one lifted and ringed. */
+.filter-pips { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 12px; }
+.filter-pip { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s; }
+.filter-pip .pip { width: 24px; height: 24px; font-size: 12px; }
+.filter-pip .pip-M { background: conic-gradient(var(--W), var(--U), var(--B), var(--R), var(--G), var(--W)); }
+.filter-pip[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold); transform: translateY(-1px); }
+.filter-pip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }

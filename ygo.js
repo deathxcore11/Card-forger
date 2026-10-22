@@ -1,3 +1,4 @@
+import { parseCollectorQuery, ygoCodeCandidates } from "./collector-search.js";
 import {ygoRarity} from './ygo-identity.js';
 import {applyYgoPrices} from './ygo-prices.js';
 // Yu-Gi-Oh! adapter. Data: YGOPRODeck (db.ygoprodeck.com) — card text, every
@@ -200,6 +201,17 @@ const num = (v) => (v === undefined || v === null || v === "" || Number(v) <= 0 
 export const ygoImage = (id, small = true) => `img/ygo/${small ? "s/" : ""}${encodeURIComponent(id)}.jpg`;
 export const ygoImageDirect = (id, small = true) => `https://images.ygoprodeck.com/images/cards${small ? "_small" : ""}/${encodeURIComponent(id)}.jpg`;
 
+// YGOPRODeck sometimes lists one printing twice under two spellings ("Starfoil" and "Starfoil Rare").
+// Normalised they are the same set, code and rarity; two identical rows would make the printing ambiguous,
+// so keep one, preferring the row with a price and then the canonical spelling.
+function uniquePrintings(rows) {
+  const out = new Map();
+  for (const row of rows) {
+    const key = row.code + "::" + row.rarity + "::" + row.name, prev = out.get(key);
+    if (!prev || (prev.price === null && row.price !== null) || (prev.price === row.price && prev.rarityRaw !== prev.rarity && row.rarityRaw === row.rarity)) out.set(key, row);
+  }
+  return [...out.values()];
+}
 export function normalizeYgo(c) {
   const p = c.card_prices?.[0] || {},
     type = c.type || "",
@@ -236,7 +248,7 @@ export function normalizeYgo(c) {
     def: c.linkval === undefined ? c.def ?? null : null,
     link: c.linkval ?? null,
     archetype: c.archetype || "",
-    sets: (c.card_sets || []).map((s) => ({ code: s.set_code, name: s.set_name, rarity: ygoRarity(s.set_rarity), rarityRaw:s.set_rarity, price: num(s.set_price) })),
+    sets: uniquePrintings((c.card_sets || []).map((s) => ({ code: s.set_code, name: s.set_name, rarity: ygoRarity(s.set_rarity), rarityRaw:s.set_rarity, price: num(s.set_price) }))),
     prices: {
       usd: num(p.tcgplayer_price),
       eur: num(p.cardmarket_price),
@@ -406,6 +418,17 @@ export const ygoSource = {
   formats: YGO_FORMATS,
   async search(spec = {}) {
     const { q = "", text = "", type = "", attribute = "", race = "", level = "", format = "", set = "", archetype = "", sort = "name", page = 0, size = 60, paging = null } = normalizeYgoSearch(spec);
+    // A printed code ("BLZD-EN010", "blzd 10", "en010 blzd") finds that card exactly; otherwise search by name.
+    const collector = !page && !text ? parseCollectorQuery("ygo", q) : null;
+    if (collector) {
+      for (const code of ygoCodeCandidates(collector)) {
+        const hit = await get("/cardsetsinfo.php", { setcode: code }).catch(() => null);
+        if (!hit?.id) continue;
+        const d = await get("/cardinfo.php", { id: hit.id, misc: "yes" }).catch(() => null);
+        const cards = (d?.data || []).map(normalizeYgo);
+        if (cards.length) return { cards, total: cards.length, more: false, printing: hit.set_code };
+      }
+    }
     // YGOPRODeck sorts stats low to high only, so "high to low" pages from the end and reverses.
     const desc = /^(atk|def|level)Desc$/.test(sort),
       p = { num: size, offset: page * size, misc: "yes", sort: desc ? sort.slice(0, -4) : ["new", "atk", "def", "level"].includes(sort) ? sort : "name" };

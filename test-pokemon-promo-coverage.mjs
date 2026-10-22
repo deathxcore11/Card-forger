@@ -30,7 +30,7 @@ await test('Ponyta General Mills seller link remains product 232767',()=>assert(
 await test('General Mills label is distinguishable from ordinary Holofoil',()=>assert.match(pony.variants.find(v=>v.productId===232767).label,/General Mills/));
 await test('Snorlax date is honestly stale, not a finish-price mismatch',()=>assert(quoteIsStale(presentationQuote('ptcg',snorlax,'holofoil'),Date.parse('2026-10-19T00:00:00Z'))));
 await test('Snorlax source-confirmed Cosmos has bounded approximate art preview',()=>{const m=resolveFinish('ptcg',snorlax,{priceFinish:'holofoil'});assert.equal(m.status,'approximate');assert.equal(m.layers[0].mask,'pk-swsh-art');assert.equal(finishMaterialProfile('ptcg',snorlax,m),'cosmos-holo');});
-await test('Unknown patterns are not promoted by Cosmos support',()=>{const c=structuredClone(snorlax);c.variants[0].foil='future-unreviewed-pattern';assert.equal(resolveFinish('ptcg',c,{priceFinish:'holofoil'}).status,'unknown');});
+await test('Unknown patterns keep the measured window and the era foil, never a borrowed sheet',()=>{const c=structuredClone(snorlax);c.variants[0].foil='future-unreviewed-pattern';const plain=structuredClone(snorlax);plain.variants[0].foil='';const a=resolveFinish('ptcg',c,{priceFinish:'holofoil'}),b=resolveFinish('ptcg',plain,{priceFinish:'holofoil'});assert.equal(a.status,'approximate');assert.deepEqual(a.layers,b.layers);assert.equal(a.treatment,b.treatment);assert.notEqual(a.treatment,'ptcg-cosmos');});
 await test('No availability means no fabricated Snorlax holo',()=>assert.deepEqual(finishChoices('ptcg',{...snorlax,variants:[]}),[]));
 await test('Later second Holofoil quote cannot overwrite Ponyta Cosmos saved identity',()=>{const raw=fixture('SWSH013');raw.variants_detailed[1].pricing.tcgplayer={holofoil:{productId:232767,marketPrice:12.34}};const v=pokemonVariants(raw);assert.equal(v.length,2);assert.deepEqual(v.map(x=>[x.key,x.productId]),[['holofoil',206430],['detail:jr7oetx1mqug9',232767]]);assert.equal(v.find(x=>x.productId===232767).usd,12.34);});
 await test('Wrong-product patterned quote is rejected',()=>{const raw=fixture('SWSH013');raw.variants_detailed[0].pricing.tcgplayer.holofoil.productId=232767;assert.equal(pokemonVariants(raw).find(v=>v.foil==='cosmos').usd,null);});
@@ -58,9 +58,10 @@ await test('A changed primary source bucket cannot move the reviewed saved key',
 await test('All seven reviewed Cosmos IDs use bounded material and exact standard art window',()=>{
  for(const id of REVIEWED_COSMOS_PROMOS){const c=normalizePtcg(fixture(id.split('-')[1])),v=c.variants.find(v=>v.foil==='cosmos'),m=resolveFinish('ptcg',c,{priceFinish:v.key});assert.equal(m.status,'approximate',id);assert.equal(m.layers[0].mask,'pk-swsh-art',id);assert.equal(finishMaterialProfile('ptcg',c,m),'cosmos-holo');}
 });
-await test('Unknown promo and unsupported Trainer controls stay unsupported',()=>{
- for(const id of ['SWSH074','SWSH251']){const c=normalizePtcg(fixture(id));assert.equal(resolveFinish('ptcg',c,{priceFinish:c.variants[0].key}).status,'unknown',id);}
- for(const changes of [{id:'swshp-unknown'},{category:'Trainer'},{set:{id:'swsh1'}}])assert.equal(resolveFinish('ptcg',{...snorlax,...changes},{priceFinish:'holofoil'}).status,'unknown');
+await test('Promo and Trainer layouts show an approximate foil: the era window for promo Pokémon, the whole card for unmeasured Trainers',()=>{
+ const pika=resolveFinish('ptcg',normalizePtcg(fixture('SWSH074')),{priceFinish:'holofoil'});assert.equal(pika.status,'approximate');assert.equal(pika.pattern,'cosmos');assert.match(pika.reason,/approximate/);
+ const boss=resolveFinish('ptcg',normalizePtcg(fixture('SWSH251')),{priceFinish:'holofoil'});assert.equal(boss.status,'approximate');assert.equal(boss.coverage,'full');assert.deepEqual(boss.layers.map(l=>l.mask),['card']);assert.match(boss.reason,/whole-card approximate/);
+ for(const changes of [{id:'swshp-unknown'},{category:'Trainer'},{set:{id:'swsh1'}}]){const p=resolveFinish('ptcg',{...snorlax,...changes},{priceFinish:'holofoil'});assert.equal(p.status,'approximate',JSON.stringify(changes));assert.match(p.reason,/approximate/,JSON.stringify(changes));}
 });
 await test('Cosmos and ordinary material never claim a shared generic preview',()=>assert.equal(resolveFinish('ptcg',pony).status,'unknown'));
 await test('Familiar Bell reverse is explicitly partial and no artwork mask is used',()=>{

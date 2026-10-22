@@ -35,15 +35,17 @@ for(const [id,set,stage,frame] of cases){
 assert.equal(resolveFinish('ptcg',card('me01-016','me01','Basic'),{priceFinish:'reverse-holofoil'}).effect,'ptcg-reverse','Mega Evolution reverse is visible');
 // Basic never receives an invented evolution cut-out; a missing stage stays Basic.
 for(const set of ['dp1','hgss1','bw1','xy1','sm1','swsh1','sv01','me01'])for(const stage of ['Basic',undefined])assert(!pokemonFrame(card('x',set,stage)).includes('evolved'),set+' Basic window');
-// Trainers use their own measured frame; promo Trainers and unmeasured layouts stay unmasked.
+// Trainers use their own measured frame; promo Trainers and unmeasured layouts get whole-card approximate
+// coverage (never a borrowed window); WotC promos use the WotC window.
 assert.deepEqual(mask(card('pl1-111','pl1',undefined,'Trainer'),'reverse-holofoil'),['pk-dppt-trainer-surround']);
 assert.deepEqual(mask(card('sv01-169','sv01',undefined,'Trainer'),'holofoil'),['pk-sv-trainer-art']);
-for(const c of [card('swshp-SWSH251','swshp',undefined,'Trainer'),card('xy1-133','xy1',undefined,'Energy'),card('xy3-55','xy3','BREAK'),{...card('ex14-100','ex14','Basic'),name:'Blaziken ex'},card('basep-1','basep','Basic')])
- for(const finish of ['holofoil','reverse-holofoil'])assert.equal(resolveFinish('ptcg',c,{priceFinish:finish}).status,'unknown',c.id+' '+finish);
+for(const c of [card('swshp-SWSH251','swshp',undefined,'Trainer'),card('xy1-133','xy1',undefined,'Energy'),card('xy3-55','xy3','BREAK'),{...card('ex14-100','ex14','Basic'),name:'Blaziken ex'}])
+ for(const finish of ['holofoil','reverse-holofoil']){const p=resolveFinish('ptcg',c,{priceFinish:finish});assert.deepEqual(p.layers.map(l=>l.mask),['card'],c.id+' '+finish);assert.match(p.reason,/whole-card approximate/,c.id+' '+finish);}
+assert.deepEqual(mask(card('basep-1','basep','Basic'),'holofoil'),['pk-wotc-art']);
 // LV.X carries foil across the whole frame; it has no reverse window.
 const lvx=card('pl1-122','pl1','LEVEL-UP','Pokemon','Rare Holo LV.X');
 assert.deepEqual(mask(lvx,'holofoil'),['card']);assert.equal(resolveFinish('ptcg',lvx,{priceFinish:'holofoil'}).coverage,'full');
-assert.equal(resolveFinish('ptcg',lvx,{priceFinish:'reverse-holofoil'}).status,'unknown');
+{const r=resolveFinish('ptcg',lvx,{priceFinish:'reverse-holofoil'});assert.deepEqual(r.layers.map(l=>l.mask),['card']);assert.match(r.reason,/whole-card approximate/);}
 // Pre-Diamond & Pearl eras: WotC, e-Card and EX frames, Basic/evolved/Trainer.
 for(const [id,set,stage,frame,cat] of [['base2-46','base2','Stage1','pk-wotc-evolved'],['base5-10','base5','Basic','pk-gym'],['gym1-38','gym1','Basic','pk-gym'],['neo4-37','neo4','Stage1','pk-neo-evolved'],['lc-97','lc','Basic','pk-lc'],['ecard1-120','ecard1','Basic','pk-ecard'],['ecard3-1','ecard3','Stage1','pk-ecard-evolved'],['ex2-69','ex2','Basic','pk-exa'],['ex14-10','ex14','Stage1','pk-exb-evolved'],['ex1-90','ex1',undefined,'pk-exa-trainer','Trainer']]){
  const c=card(id,set,stage,cat);assert.equal(pokemonFrame(c),frame,id);assert.deepEqual(mask(c,'holofoil'),[frame+'-art'],id);assert.deepEqual(mask(c,'reverse-holofoil'),[frame+'-surround'],id);

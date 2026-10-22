@@ -24,9 +24,11 @@ assert.equal(finishEffect('mtg',{...magic,finishes:['nonfoil']},{priceFinish:'fo
 assert.equal(finishEffect('mtg',{...magic,finishes:['nonfoil'],frame_effects:['extendedart'],rarity:'mythic',prices:{usd:'999'}}),'plain');
 assert.deepEqual(finishChoices('mtg',{id:'unknown',rarity:'mythic',prices:{usd_foil:'999'}}),[]);
 assert.equal(finishEffect('mtg',magic,{priceFinish:'etched'}),'mtg-etched');
-assert.equal(finishEffect('mtg',{...magic,set:'sta'},{priceFinish:'etched'}),'unknown','Do not copy Commander Legends etched coverage onto Strixhaven');
+assert.equal(finishEffect('mtg',{...magic,set:'sta'},{priceFinish:'etched'}),'mtg-etched','Strixhaven etched cards show the etched foil');
+assert.deepEqual(resolveFinish('mtg',{...magic,set:'sta'},{priceFinish:'etched'}).layers,[{mask:'card',material:'metal'}],'Do not copy Commander Legends measured etched frame coverage onto Strixhaven');
 assert.notDeepEqual(resolveFinish('mtg',magic,{priceFinish:'foil'}).layers,resolveFinish('mtg',magic,{priceFinish:'etched'}).layers);
-assert.equal(finishEffect('mtg',{...magic,layout:'split'},{priceFinish:'foil'}),'unknown');
+assert.deepEqual(resolveFinish('mtg',{...magic,layout:'split'},{priceFinish:'foil'}).layers,[{mask:'card',material:'rainbow'}],'Split cards print their foil across the whole face');
+assert.equal(finishEffect('mtg',{...magic,layout:'planar'},{priceFinish:'foil'}),'unknown','Sideways planes stay unmasked');
 const dfc={...magic,layout:'transform',card_faces:[{image_uris:{}},{image_uris:{}}]};
 assert.equal(resolveFinish('mtg',dfc,{face:1,priceFinish:'foil'}).face,1);
 assert.equal(finishEffect('mtg',{...dfc,card_faces:[{}]},{face:1,priceFinish:'foil'}),'unknown');
@@ -34,11 +36,11 @@ const variants=[{key:'normal',label:'Normal',usd:2},{key:'holofoil',label:'Holof
 const base={id:'base1-4',game:'ptcg',set:{id:'base1'},category:'Pokemon',rarity:'Rare',variants:[variants[1]]};
 assert.equal(finishEffect('ptcg',base,{priceFinish:'holofoil'}),'ptcg-holo');
 assert.equal(resolveFinish('ptcg',base,{priceFinish:'holofoil'}).layers[0].mask,'pk-base1-4-art');
-assert.equal(finishEffect('ptcg',{...base,id:'other-4',set:{id:'other'}},{priceFinish:'holofoil'}),'unknown');
+{const other=resolveFinish('ptcg',{...base,id:'other-4',set:{id:'other'}},{priceFinish:'holofoil'});assert.deepEqual(other.layers.map(l=>l.mask),['card'],'An unknown layout gets whole-card coverage, never base1-4\'s exact mask');assert.match(other.reason,/whole-card approximate/);}
 const sv={id:'sv01-001',game:'ptcg',set:{id:'sv01'},category:'Pokemon',rarity:'Common',variants};
 assert.equal(finishEffect('ptcg',sv,{priceFinish:'reverse-holofoil'}),'ptcg-reverse');
 assert.equal(resolveFinish('ptcg',{...sv,category:'Trainer'},{priceFinish:'reverse-holofoil'}).layers[0].mask,'pk-sv-trainer-surround','Measured Trainer frame, not the Pokémon window');
-assert.equal(finishEffect('ptcg',{...sv,category:'Energy'},{priceFinish:'reverse-holofoil'}),'unknown','Unmeasured Energy layouts stay unmasked');
+{const energy=resolveFinish('ptcg',{...sv,category:'Energy'},{priceFinish:'reverse-holofoil'});assert.deepEqual(energy.layers.map(l=>l.mask),['card'],'Unmeasured Energy layouts get whole-card coverage, not a Pokémon window');assert.match(energy.reason,/whole-card approximate/);}
 assert.equal(finishEffect('ptcg',{...sv,id:'sv01-199',rarity:'Illustration Rare'},{priceFinish:'holofoil'}),'ptcg-full-art');
 assert.equal(finishEffect('ptcg',{...sv,rarity:'Full Art'},{priceFinish:'holofoil'}),'ptcg-full-art','Full art layout applies only after explicit holo availability');
 assert(finishChoices('ptcg',sv).some(x=>x.key==='firstEdition'&&x.status==='unknown'));
@@ -123,7 +125,7 @@ assert.deepEqual(finishChoices('ptcg',gengar30).map(v=>v.key),['normal'],'Incomp
 // Only an exact source-supplied Holofoil variant unlocks the calibrated region.
 const gengarFoil={...gengar30,variants:[{key:'holofoil',label:'Holofoil',usd:null}]};
 assert.equal(finishEffect('ptcg',gengarFoil,{priceFinish:'holofoil'}),'ptcg-full-art');
-assert.equal(finishEffect('ptcg',{...gengarFoil,id:'30th-090'},{priceFinish:'holofoil'}),'unknown','Anniversary special layouts cannot inherit another printing’s full-card map');
+{const other=resolveFinish('ptcg',{...gengarFoil,id:'30th-090'},{priceFinish:'holofoil'}),own=resolveFinish('ptcg',gengarFoil,{priceFinish:'holofoil'});assert.notDeepEqual(other.layers,own.layers,'Anniversary special layouts cannot inherit another printing’s full-card map');assert.deepEqual(other.layers.map(l=>l.mask),['card']);assert.match(other.reason,/whole-card approximate/);}
 console.log('PASS: exact Gengar 154/128 full-art region is supported only with explicit Holofoil availability; generated catalogue data and another printing do not inherit it.');
 
 const charizard=normalizePtcg(await fixture('swsh4.5sv-SV107'));

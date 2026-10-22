@@ -4868,6 +4868,14 @@ C.dbFilter = (t) => {
   dbInvalidate();
   render();
 };
+// Color chips toggle: tapping the selected color clears it.
+A.dbColorChip = (t) => {
+  const f = S.ui.db.filters;
+  f.cardColor = f.cardColor === t.dataset.value ? "" : t.dataset.value;
+  if (dbHasQuery()) return dbSearch();
+  dbInvalidate();
+  render();
+};
 A.dbChip = (t) => {
   const f = S.ui.db.filters,
     k = t.dataset.field;
@@ -5007,10 +5015,17 @@ async function dbSearch(next = false) {
       try { d = await run(spec.term); }
       catch (e) {
         if (!current()) return;
+        // No printing with that set code and number: the words may be a name after all ("2 goblin").
+        if (spec.collector && /didn.t match any cards|no cards found/i.test(e.message)) {
+          d = await run(spec.typed).catch(() => { throw Error(`No card numbered ${spec.collector.number} in set ${spec.collector.set.toUpperCase()}.`); });
+          if (!current()) return;
+          note = `No card numbered ${spec.collector.number} in set ${spec.collector.set.toUpperCase()}, so these are cards named “${spec.typed}”.`;
+        } else {
         const words = spec.term;
         if (spec.syntax || !words.includes(" ") || !/didn.t match any cards|no cards found/i.test(e.message)) throw e;
         d = await run(`o:"${words.replace(/"/g, "")}"`);
         note = `No card names match “${words}”, so these are cards whose text says it.`;
+        }
       }
     }
     if (!current()) return;

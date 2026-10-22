@@ -1,3 +1,4 @@
+import { parseCollectorQuery } from "./collector-search.js";
 import {applyPokemonCorrections} from './pokemon-corrections.js';
 import {POKEMON_VARIANT_SCHEMA,pokemonDetailedRecords,pokemonPhysicalFinish,pokemonSourceIdentity,pokemonSourceLiteral,syncPokemonVariantAliases} from './pokemon-variant-options.js';
 import {pokemonPromoEvidence,pokemonPromoAliasMatches,pokemonPromoRootProduct} from './pokemon-promo-evidence.js';
@@ -502,6 +503,22 @@ export function ptcgPrintingMatches(card, row, set = card?.set) {
     codes = [setId, set?.id, set?.tcgOnline, set?.abbreviation?.official, set?.abbreviation?.normal, typeof set?.abbreviation === "string" ? set.abbreviation : null, set?.abbreviations?.official];
   return collectorKey(number) === collectorKey(row.number) && codes.some(code => code && String(code).toLowerCase() === String(row.set).toLowerCase());
 }
+// TCGdex sets matching a typed code: its own id ("sv02", also "sv2"), its printed code ("PAL"), or the printed
+// set size of "045/193".
+async function pokemonSetsFor({ set = "", total = 0 }) {
+  const ids = new Set();
+  if (set) {
+    const padded = set.replace(/^([a-z]+)(\d)$/i, "$10$2");
+    for (const id of new Set([set, padded])) if (await get("/sets/" + encodeURIComponent(id)).catch(() => null)) ids.add(id);
+    for (const row of (await get("/sets", { "abbreviation.official": set.toUpperCase() }).catch(() => null)) || []) if (row?.id) ids.add(row.id);
+  }
+  if (total) {
+    const sized = ((await get("/sets", { "cardCount.official": String(total) }).catch(() => null)) || []).map(row => row?.id).filter(Boolean);
+    if (!set) sized.forEach(id => ids.add(id));
+    else for (const id of [...ids]) if (!sized.includes(id)) ids.delete(id);
+  }
+  return [...ids];
+}
 export const ptcgSource = {
   game: "ptcg",
   formats: PTCG_FORMATS,
@@ -509,6 +526,15 @@ export const ptcgSource = {
   // set's real release order, and page through it here.
   async search(spec = {}) {
     const { q = "", category = "", type = "", set = "", rarity = "", stage = "", hp = "", format = "", number = "", sort = "new", page = 0, size = 48, exactName = false } = normalizePtcgSearch(spec);
+    // A printed set code and number ("pal 45", "sv02 045", "045/193") finds that card in that set.
+    const collector = !set && !number && !exactName ? parseCollectorQuery("ptcg", q) : null;
+    if (collector) {
+      const ids = await pokemonSetsFor(collector);
+      if (ids.length) {
+        const found = (await Promise.all(ids.map(id => this.search({ ...spec, q: "", set: id, number: collector.number, page: 0 })))).flatMap(r => r.cards);
+        if (found.length) return { cards: found.slice(page * size, (page + 1) * size), total: found.length, more: (page + 1) * size < found.length };
+      }
+    }
     // Empty search browses the complete physical-card catalogue, paged below.
     const p = {},
       legal = PTCG_FORMATS.find((f) => f.id === format)?.legal;

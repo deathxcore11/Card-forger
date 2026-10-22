@@ -65,6 +65,12 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
  else if(pat>15.5&&pat<16.5){  // Ancient speckle (Ancient Mew): gold foil scattered with coloured flecks of varied sizes, each lighting at its own tilt
   vec2 sc=q*130.,gc=floor(sc),f=fract(sc)-.5,rn=hash2(gc);float on=step(.62,rn.y),size=.1+.22*hash(gc+4.),part=on*smoothstep(size,size*.4,length(f-(rn-.5)*.4)),trig=pow(max(0.,cos(dot(u_tilt,vec2(4.5))+rn.x*6.28)),10.),a=rn.x*PI;
   g=vec2(cos(a),sin(a));d=mix(1500.,1000.+hash(gc+9.)*900.,part);mirror=.35;amp=.55+1.6*part*(.35+.65*trig);lines=part;}
+ else if(pat>16.5&&pat<17.5){  // Emblem tiles (energy-symbol, League and set-logo reverses): rows of small raised discs, each its own angle
+  vec2 sc=q*15.;sc.x+=mod(floor(sc.y),2.)*.5;vec2 c=floor(sc),f=fract(sc)-.5;float r0=length(f),disc=1.-smoothstep(.27,.3,r0),ring=1.-smoothstep(.015,.04,abs(r0-.3)),a=hash(c)*PI;
+  g=mix(normalize(vec2(1.,1.)),vec2(cos(a),sin(a)),disc);d=mix(1500.,1100.+hash(c+2.)*650.,disc);lines=max(disc,ring);amp=.5+.75*disc+.4*ring;mirror=.4;}
+ else if(pat>17.5&&pat<18.5){  // Cracked Ice: large shards, each its own angle and colour, with bright crack lines between them
+  vec3 w=voro(q*7.);vec2 j=hash2(w.xy);float a=j.x*PI,crack=1.-smoothstep(0.,.035,w.z);g=vec2(cos(a),sin(a));d=1050.+j.y*850.;
+  amp=.95;mirror=.35;lines=.6+.4*j.y;glint=crack*pow(max(dot(normalize(vec3((j-.5)*.6,1.)),H),0.),30.)*1.2;}
  else if(pat>13.5){float band=pow(.5+.5*sin((q.x+q.y)*5.5-(u_tilt.x+u_tilt.y)*4.5),3.);g=normalize(vec2(1.,1.));d=1500.;  // modern smooth 45° oil-slick band
   lines=band;amp=mix(.3,1.35,band);mirror=.45;ex=8.;}
  else{vec3 w=voro(q*200.);vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;mirror=.2;    // shiny glitter

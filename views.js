@@ -216,30 +216,27 @@ export const savedRow = (list, runAct, delAct) =>
 export function search() {
   const db = S.ui.db,
     f = db.filters,
-    deck = currentDeck(),
     chips = mtgFilterChips(f),
     shown = db.results.filter((c) => (f.own === "owned" ? inv(c.name).owned > 0 : f.own === "missing" ? !inv(c.name).owned : true));
   return `<div class="page-head"><h1>Search cards</h1>${viewControl("mtg","search")}<div class="search-tools"><button class="chip tool-chip" data-act="compareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">◈ Sets</button><button class="chip tool-chip" data-act="dbRandom" aria-label="Random card">🎲 Random</button></div></div>
-  <div class="searchbar search-query"><input id="dbTerm" type="search" data-suggest="mtg" value="${esc(db.term)}" placeholder="Card name, or words like “draw a card”" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch">${db.busy ? "Search again" : "Search"}</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI">${brandMark("assistant-button-mark")}<span>Ask</span></button></div>
+  <div class="searchbar search-query"><input id="dbTerm" type="search" data-suggest="mtg" value="${esc(db.term)}" placeholder="Card name, set + number (TRK 323), or “draw a card”" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch">${db.busy ? "Search again" : "Search"}</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI">${brandMark("assistant-button-mark")}<span>Ask</span></button></div>
   ${chipRow(chips, "dbChip", "dbClear")}
   ${savedRow(savedSearches("mtg"), "dbSaved", "dbSavedDel")}
   <details class="filters" id="magic-search-filters"><summary>Filters${chips.length ? ` · ${chips.length} on` : ""}</summary>
-    <p class="list-head">Everyday</p><div class="grid2">
-    <label>Show<select data-change="dbFilter" data-field="own">${options([["", "All cards"], ["owned", "Cards I own"], ["missing", "Cards I don’t own"]], f.own || "")}</select></label>
-    <label>Max price $<input type="number" min="0" step="0.5" value="${esc(f.maxPrice)}" data-change="dbFilter" data-field="maxPrice" placeholder="Any"></label>
-    <label>Type<select data-change="dbFilter" data-field="type">${options([["", "Any"], ...["creature", "instant", "sorcery", "artifact", "enchantment", "land", "planeswalker", "legendary creature"].map((x) => [x, x])], f.type)}</select></label>
+    <p class="list-head">Color</p>
+    <div class="filter-pips" role="group" aria-label="Card color">${[["W","White"],["U","Blue"],["B","Black"],["R","Red"],["G","Green"],["M","Multicolor"],["C","Colorless"]].map(([k,l])=>`<button class="filter-pip" data-act="dbColorChip" data-value="${k}" aria-pressed="${f.cardColor===k}" aria-label="${l}" title="${l}"><i class="pip pip-${k}">${k==="M"?"":k==="C"?"◇":""}</i></button>`).join("")}</div>
+    <div class="grid2">
     <label>Sort<select data-change="dbFilter" data-field="sort">${options(MTG_SORTS, f.sort || "")}</select></label>
-    ${deck ? `<button class="btn ghost small span2" data-act="dbFitDeck">Only cards that fit “${esc(deck.name.slice(0, 28))}”</button>` : ""}
-    </div>
-    <p class="list-head">Colors &amp; format</p><div class="grid2">
-    <label>Card color<select data-change="dbFilter" data-field="cardColor">${options([["", "Any"], ["W", "White"], ["U", "Blue"], ["B", "Black"], ["R", "Red"], ["G", "Green"], ["M", "Multicolor"], ["C", "Colorless"]], f.cardColor || "")}</select></label>
-    <label title="Commander rules: every mana symbol on the card must be within these colors">Commander identity within<select data-change="dbFilter" data-field="color">${options([["", "Any"], ...COLOR_ID], f.color)}</select></label>
-    <label class="span2">Legal in<select data-change="dbFilter" data-field="format">${options([["", "Any format"], ...ALL_FORMATS.filter((x) => x.legality).map((x) => [x.legality, x.name])], f.format)}</select></label>
+    <label>Type<select data-change="dbFilter" data-field="type">${options([["", "Any"], ...["creature", "instant", "sorcery", "artifact", "enchantment", "land", "planeswalker", "legendary creature"].map((x) => [x, x])], f.type)}</select></label>
+    <label>Legal in<select data-change="dbFilter" data-field="format">${options([["", "Any format"], ...ALL_FORMATS.filter((x) => x.legality).map((x) => [x.legality, x.name])], f.format)}</select></label>
+    <label>Max price $<input type="number" min="0" step="0.5" value="${esc(f.maxPrice)}" data-change="dbFilter" data-field="maxPrice" placeholder="Any"></label>
+    <label class="span2">Show<select data-change="dbFilter" data-field="own">${options([["", "All cards"], ["owned", "Cards I own"], ["missing", "Cards I don’t own"]], f.own || "")}</select></label>
     </div>
     <details class="advanced" id="magic-search-advanced"><summary>Advanced</summary><div class="grid2">
     <label>Rarity<select data-change="dbFilter" data-field="rarity">${options([["", "Any"], ["common", "Common"], ["uncommon", "Uncommon"], ["rare", "Rare"], ["mythic", "Mythic"], ["special", "Special"]], f.rarity || "")}</select></label>
     <label>Mana value<select data-change="dbFilter" data-field="mv">${options([["", "Any"], ...["0", "1", "2", "3", "4", "5", "6", "7+"].map((x) => [x, x])], f.mv || "")}</select></label>
-    <label class="span2">Set code<input value="${esc(f.set || "")}" placeholder="e.g. FDN" maxlength="6" data-change="dbFilter" data-field="set" autocapitalize="characters"></label>
+    <label title="Commander rules: every mana symbol on the card must be within these colors">Commander identity<select data-change="dbFilter" data-field="color">${options([["", "Any"], ...COLOR_ID], f.color)}</select></label>
+    <label>Set code<input value="${esc(f.set || "")}" placeholder="e.g. FDN" maxlength="6" data-change="dbFilter" data-field="set" autocapitalize="characters"></label>
     </div><p class="foot">The search box also takes Scryfall syntax, e.g. <code>t:angel o:draw id&lt;=w</code>.</p></details>
   </details>
   <div class="row between"><span class="muted small">${db.results.length ? `${db.total.toLocaleString()} cards${f.own ? ` · ${shown.length} ${f.own === "owned" ? "owned" : "not owned"} among loaded cards` : ""}` : "Live from Scryfall"}</span>${db.term.trim() || chips.length ? `<button class="link small" data-act="dbSave">☆ Save this search</button>` : ""}</div>
@@ -367,7 +364,7 @@ export function cardSheet(c, ctx = {}) {
   </div>`;
   const overview = `
     <div class="cs-card">
-      <div class="cd-art-stack"><div class="cd-img" ${finishAttrs('mtg',shown,ctx,'detail')}><button class="cd-zoom" data-hold-card="true" data-entry="${esc(ctx.entryId||ctx.entry||'')}" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}${finishPreview('mtg',shown,ctx)}<button class="btn ghost small card-profile-photo" data-act="cardProfilePhoto" data-name="${esc(name)}">Use as profile photo</button>${miniPrintingMarkup({game:'mtg',card:shown,cards:ctx.prints||[],busy:ctx.printsBusy||ctx.detailsBusy,error:ctx.printsError})}</div>
+      <div class="cd-art-stack"><div class="cd-img" ${finishAttrs('mtg',shown,ctx,'detail')}><button class="cd-zoom" data-hold-card="true" data-entry="${esc(ctx.entryId||ctx.entry||'')}" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}</button></div>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}${finishPreview('mtg',shown,ctx)}<button class="btn ghost small card-profile-photo" data-act="cardProfilePhoto" data-name="${esc(name)}">Use as profile photo</button>${miniPrintingMarkup({game:'mtg',card:shown,cards:ctx.prints||[],busy:ctx.printsBusy||ctx.detailsBusy,error:ctx.printsError})}</div>
       <div class="cs-card-side">${readableText}${alertStatus("mtg",trackedQuote("mtg",shown)?.id,name)}
 
         ${inDecks.length ? `<p class="small own-line">In ${inDecks.map((d) => esc(d.name)).join(", ")}</p>` : ""}

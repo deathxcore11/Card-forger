@@ -12,6 +12,7 @@ export const MTG_FOIL_RECIPES={
  'mtg-oldborder':r('Old-border foil','1999–2003',P.oldborder,{stamp:1,note:'Wider, hazier, more saturated band, with the shooting-star foil mark in the rules box.'}),
  'mtg-ftv':r('From the Vault foil','2008–2017',P.ftv,{note:'Hyper-glossy laminate: a sharp vertical mirror bar sweeps left to right.'}),
  'mtg-etched':r('Foil-etched','2020–today',P.etched,{cover:C.frame,note:'Art printed on white; the frame is frosted metal grain that sparkles instead of mirroring.'}),
+ 'mtg-etched-full':r('Foil-etched (borderless)','2021–today',P.etched,{note:'Borderless etched cards have no frame: the frosted metal grain runs across the whole face, art included.'}),
  'mtg-textured':r('Textured foil','2022–today',P.textured,{relief:.9,note:'Raised grooves follow the artwork\'s own contours, so light ripples around the drawing.'}),
  'mtg-surge':r('Surge foil','2022–today',P.surge,{sparkle:.5,note:'Crossing wave fields and sparks; bands surge in different directions.'}),
  'mtg-galaxy':r('Galaxy foil','2022–today',P.galaxy,{sparkle:1,note:'Traditional foil with a field of star points that twinkle on and off.'}),

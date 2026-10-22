@@ -1,4 +1,5 @@
 import { scanNamesFor } from "./scan.js";
+import { parseCollectorQuery } from "./collector-search.js";
 export function searchQuery(
   name,
   { color = "", cardColor = "", type = "", format = "", maxPrice = "", rarity = "", mv = "", set = "" } = {},
@@ -35,11 +36,14 @@ export function hasMagicSearchQuery(term, filters = {}) {
 }
 export function magicSearchSpec(term, filters = {}) {
   const frozen = Object.freeze(Object.fromEntries(["color", "cardColor", "type", "format", "maxPrice", "rarity", "mv", "set", "sort", "own", "fits"].map(k => [k, String(filters[k] ?? "").trim()])));
-  term = String(term || "").trim();
+  const typed = String(term || "").trim();
+  // A set code and collector number ("0323 trk", "trk 323") finds that exact printing.
+  const collector = parseCollectorQuery("mtg", typed);
+  term = collector ? `e:${collector.set} cn:${collector.number}` : typed;
   const query = searchQuery(term, frozen);
   if (!hasMagicSearchQuery(term, frozen)) throw Error("Type a card name or pick a filter.");
   const syntax = /[:<>=]/.test(term), order = frozen.sort === "usdAsc" ? "usd" : frozen.sort || (syntax ? "edhrec" : "name");
-  return Object.freeze({ term, filters: frozen, query, syntax, order, dir: frozen.sort === "usdAsc" ? "asc" : ["usd", "released", "rarity"].includes(order) ? "desc" : "auto" });
+  return Object.freeze({ term, typed, collector, filters: frozen, query, syntax, order, dir: frozen.sort === "usdAsc" ? "asc" : ["usd", "released", "rarity"].includes(order) ? "desc" : "auto" });
 }
 // Continuations are provider paths, not arbitrary URLs. Reject cycles in the caller.
 export function scryfallSearchPath(cursor) {

@@ -21,7 +21,7 @@ export const FINISH_MASKS = Object.freeze({
  'pk-stamp-first-movie':'inset(11.5% 11% 74.5% 56.5%)',
  ...Object.fromEntries(Object.values(ANNIVERSARY_MAPS).flatMap(p=>[p,...(p.alternates||[])]).map(p=>[p.mask,p.css])),
  ...Object.fromEntries(Object.values(ANNIVERSARY_STAMPS).flat().map(p=>[p.mask,p.css])),
- card:'inset(0 round 4% / 3%)',
+ card:'inset(0 round 4.75% / 3.5%)',
  'pk-expedition-art':'polygon(25% 12.4%,96.5% 12.4%,96.5% 48.2%,25% 48.2%,18% 47.4%,13% 44.8%,10% 40%,10% 22%,12% 17.8%,17% 14.4%)',
  // Conservative known reverse-foil field. E-reader strips/frame are deliberately excluded.
  'pk-expedition-field':'inset(51.5% 4% 14% 12%)',
@@ -184,7 +184,9 @@ function exactOverride(game,c,key,face){
 // Measured frame family for ordinary Pokémon/Trainer fronts (see FINISH_MASKS),
 // or '' when the printed layout has no reviewed geometry. Stage picks the
 // Basic or evolved window; it never adds a finish.
-const PK_FRAME_ERAS=[[/^base[1-3]$/i,'pk-wotc'],[/^(?:base5|gym[12])$/i,'pk-gym'],[/^neo[1-4]$/i,'pk-neo'],[/^lc$/i,'pk-lc'],[/^ecard[1-3]$/i,'pk-ecard'],[/^ex[1-6]$/i,'pk-exa'],[/^ex(?:[7-9]|1[0-6])$/i,'pk-exb'],[/^(?:dp|pl)/i,'pk-dppt'],[/^(?:hgss|col)/i,'pk-hgss'],[/^(?:bw|xy|g1$|dc1|dv1)/i,'pk-bwxy'],[/^(?:sm|det1)/i,'pk-sm'],[/^(?:swsh|cel25$|pgo)/i,'pk-swsh'],[/^(?:sv|me)/i,'pk-sv']];
+// Promo, reprint and McDonald's sets share the layout of the expansions printed beside them.
+const PK_FRAME_ERAS=[[/^(?:base4|basep|si1)$/i,'pk-wotc'],[/^pop1$/i,'pk-exa'],[/^(?:np|exu|pop[2-5])$/i,'pk-exb'],[/^pop[6-9]$/i,'pk-dppt'],
+ [/^20\d\d(?:bw|xy)$/i,'pk-bwxy'],[/^20\d\dsm$/i,'pk-sm'],[/^20\d\dswsh$/i,'pk-swsh'],[/^20\d\dsv$/i,'pk-sv'],[/^base[1-3]$/i,'pk-wotc'],[/^(?:base5|gym[12])$/i,'pk-gym'],[/^neo[1-4]$/i,'pk-neo'],[/^lc$/i,'pk-lc'],[/^ecard[1-3]$/i,'pk-ecard'],[/^ex[1-6]$/i,'pk-exa'],[/^ex(?:[7-9]|1[0-6])$/i,'pk-exb'],[/^(?:dp|pl)/i,'pk-dppt'],[/^(?:hgss|col)/i,'pk-hgss'],[/^(?:bw|xy|g1$|dc1|dv1)/i,'pk-bwxy'],[/^(?:sm|det1)/i,'pk-sm'],[/^(?:swsh|cel25$|pgo)/i,'pk-swsh'],[/^(?:sv|me)/i,'pk-sv']];
 export function pokemonFrame(c){
  const set=c?.set?.id||'',base=PK_FRAME_ERAS.find(([re])=>re.test(set))?.[1],category=norm(c?.category||'Pokemon'),stage=norm(c?.stage);
  if(!base||(set==='cel25'&&ANNIVERSARY_MAPS[c.id]))return '';
@@ -203,13 +205,20 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
  if(game==='mtg'){
   // Face-wide traditional foil is safe on supported portrait layouts; etched needs its own frame.
   const layout=c.layout||'normal';
-  if(!['normal','transform','modal_dfc','adventure','leveler','saga','class','token','double_faced_token','planar'].includes(layout)||layout==='planar')return unknown(key,label);
+  // Every portrait layout prints its foil across the whole face. Planes and Battles are printed sideways
+  // and stay unmasked until measured.
+  if(!['normal','transform','modal_dfc','adventure','leveler','saga','class','token','double_faced_token','split','flip','meld','mutate','prototype','case','host','augment','emblem','art_series','reversible_card','prepare','front_card'].includes(layout))return unknown(key,label);
   if(face && !c.card_faces?.[face]?.image_uris)return unknown(key,label);
   // Full-size cards draw the printing's own treatment (old-border, surge, galaxy, oil slick...) with
   // WebGL (mtg-foil.js), chosen from its Scryfall data; the CSS layer stays as the light fallback.
   if(physicalFinish==='foil'){const treatment=mtgFoilEffect(c,'foil');return {...preset(key,treatment==='mtg-traditional'?label:MTG_FOIL_RECIPES[treatment].label,'mtg-foil',[layer('card','rainbow')],FINISH_SOURCES.scryfall),treatment,frame:mtgFrameKey(c)};}
   if(physicalFinish==='etched'&&c.id==='3305c70f-188a-4c01-b605-d583ded84e18'&&c.set==='nec'&&String(c.collector_number)==='77'&&c.layout==='normal'&&face===0&&['legendary','inverted','etched'].every(x=>c.frame_effects?.includes(x))&&!c.full_art&&!c.borderless)return {...preset(key,label,'mtg-nec77-etched',[layer('mtg-nec77-metal','metal')],'https://magic.wizards.com/en/news/feature/kamigawa-neon-dynasty-product-overview-2022-01-27'),reason:'Simulated foil-etched finish · approximate metallic coverage'};
   if(physicalFinish==='etched'&&['cmr','clb'].includes(c.set)&&layout==='normal'&&!c.borderless&&!c.full_art&&!c.frame_effects?.some(x=>['showcase','extendedart'].includes(x)))return {...preset(key,label,'mtg-etched',[layer('mtg-frame','metal')],FINISH_SOURCES.etched),treatment:'mtg-etched',frame:'2015'};
+  // Every other etched printing (Secret Lair, Mystical Archive, showcase, inverted, retro frames) draws the
+  // etched treatment over its own frame era. Only Commander Legends frames were measured, so the CSS
+  // fallback here frosts the whole face rather than borrowing that frame's coverage.
+  // Borderless etched cards have no frame to frost, so the etching covers the whole face.
+  if(physicalFinish==='etched'){const frame=mtgFrameKey(c);return {...preset(key,label,'mtg-etched',[layer('card','metal')],FINISH_SOURCES.etched),treatment:frame==='borderless'?'mtg-etched-full':'mtg-etched',frame};}
   return unknown(key,label);
  }
  if(game==='ptcg'){
@@ -258,6 +267,8 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   // LV.X fronts carry their foil across the whole silver frame, not one window.
   if(category==='pokemon'&&/^(?:dp|pl|hgss|col)/i.test(set)&&(norm(c.stage)==='levelup'||/lvx/.test(rarity))&&physicalFinish==='holofoil')return {...preset(key,label,'ptcg-holo',[layer('card','holo')],FINISH_SOURCES.pokemon),coverage:'full',reason:'Simulated LV.X holo · whole-card approximate coverage'};
   if(c.id==='swsh3-161'&&set==='swsh3'&&category==='trainer'&&physicalFinish==='reverse-holofoil')return {...preset(key,label,'ptcg-reverse',[layer('pk-swsh-trainer-field','rainbow')],'https://api.tcgdex.net/v2/en/cards/swsh3-161'),reason:'Simulated reverse holo · partial coverage',coverage:'partial'};
+  // Energy cards have no measured frame: their foil covers the whole face (approximate).
+  if(category==='energy'&&['holofoil','reverse-holofoil'].includes(physicalFinish))return {...preset(key,label,physicalFinish==='holofoil'?'ptcg-holo':'ptcg-reverse',[layer('card',physicalFinish==='holofoil'?'holo':'rainbow')],FINISH_SOURCES.pokemon),coverage:'full',reason:'Simulated finish · whole-card approximate coverage'};
   const frame=fullArt?'':pokemonFrame(c);
   if(frame&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(set==='cel25'&&frame==='pk-swsh'?'pk-cel-art':frame+'-art','holo')],FINISH_SOURCES.pokemon);
   if(frame&&physicalFinish==='reverse-holofoil')return preset(key,label,'ptcg-reverse',[layer(frame+'-surround',/^sv/i.test(set)?'tiles':'rainbow')],/^pk-sm(?:-evolved)?$/.test(frame)?'https://api.tcgdex.net/v2/en/cards/sm11-6':FINISH_SOURCES.pokemon);
@@ -290,28 +301,47 @@ export function finishChoices(game,c,ctx={}){
  if(game==='mtg')return ['nonfoil','foil','etched'].filter(key=>c.finishes?.includes(key)).map(key=>effectFor(game,c,key,{nonfoil:'Nonfoil',foil:'Traditional foil',etched:'Etched foil'}[key],ctx,key));
  if(game==='ptcg')return pokemonVariantChoices(c,requestedVariant(c,ctx)).filter(v=>v.key).map(v=>{
   const finish=variantFinish(v);
+  // A pattern name on a nonfoil printing describes nothing that shines.
+  if(finish==='nonfoil')return effectFor(game,c,v.key,v.label||v.key,ctx,finish);
+  // TCGdex calls the classic WotC starlight holo "galaxy": that is the era's own holo, not a separate sheet.
+  if(v.foil==='galaxy')v={...v,foil:''};
   // Pattern metadata is real identity, not permission to fake a generic texture.
   // Keep the selectable variant while its distinct physical pattern is unsupported.
   if(reviewedCosmosPreview(c,v))return {...preset(v.key,v.label,'ptcg-holo',[layer('pk-swsh-art','holo')],'https://api.tcgdex.net/v2/en/cards/'+c.id),pattern:'cosmos',materialProfile:'cosmos-holo'};
   // Measured ordinary frames give Cosmos an illustration window. This is an
   // approximate preview, not exact-printing art or authentication of a
   // physical foil. Other patterns/layouts stay explicit.
-  const cosmosFrame=c.category==='Pokemon'&&/^(?:Holo Rare|Rare)$/i.test(c.rarity||'')?pokemonFrame(c):'';
-  if(v.foil==='cosmos'&&v.finish==='holofoil'&&v.size==='standard'&&!v.stamps?.length&&!v.subtype&&cosmosFrame)
+  // Promos and stamped printings keep the same illustration window; the stamp is printed over it.
+  const cosmosFrame=['Pokemon','Trainer'].includes(c.category)?pokemonFrame(c):'';
+  if(v.foil==='cosmos'&&finish==='holofoil'&&v.size==='standard'&&!v.subtype&&cosmosFrame)
    return {...preset(v.key,v.label,'ptcg-holo',[layer(cosmosFrame+'-art','holo')],'https://api.tcgdex.net/v2/en/cards/'+c.id),pattern:'cosmos',materialProfile:'cosmos-holo',reason:'Simulated Cosmos holo · approximate illustration-window coverage'};
   // Patterned reverse holos (Poké Ball, Master Ball, Cosmos) foil the measured surround with their own
   // sheet; gold holos keep their measured full-art coverage in gold. Other patterns stay explicit.
-  const reverseFrame=['pokeball','masterball','cosmos'].includes(v.foil)&&finish==='reverse-holofoil'&&v.size!=='jumbo'&&!v.subtype?pokemonFrame(c):'';
-  if(reverseFrame)return {...preset(v.key,v.label,'ptcg-reverse',[layer(reverseFrame+'-surround','rainbow')],'https://api.tcgdex.net/v2/en/cards/'+c.id),pattern:v.foil,reason:'Simulated reverse holo · partial coverage'};
+  // Ball sheets (Poké, Great, Dusk, Friend, Love, Quick...), Master Ball, Cosmos and emblem sheets (energy symbols,
+  // League and set logos). Energy cards have no measured surround, so their sheet covers the whole face.
+  const sheet=['masterball','cosmos','energy','league','set-logo','team-rocket','cracked-ice','tinsel'].includes(v.foil)||/ball$/.test(v.foil||'');
+  const reverseFrame=sheet&&finish==='reverse-holofoil'&&v.size!=='jumbo'&&!v.subtype?pokemonFrame(c)||(c.category==='Energy'?'card':''):'';
+  if(reverseFrame)return {...preset(v.key,v.label,'ptcg-reverse',[layer(reverseFrame==='card'?'card':reverseFrame+'-surround','rainbow')],'https://api.tcgdex.net/v2/en/cards/'+c.id),pattern:v.foil,reason:reverseFrame==='card'?'Simulated reverse holo · whole-card approximate coverage':'Simulated reverse holo · partial coverage'};
+  // Rainbow-sheet printings are the Rainbow Rare full-art treatment.
+  if(v.foil==='rainbow'&&finish==='holofoil')return {...preset(v.key,v.label,'ptcg-full-art',[layer('card','rainbow'),layer('card','micro')],FINISH_SOURCES.pokemon),coverage:'full',texture:'micro-ridges',pattern:'rainbow'};
+  // Cracked Ice sits in the illustration window of the measured frame.
+  const iceFrame=v.foil==='cracked-ice'&&finish==='holofoil'?pokemonFrame(c):'';
+  if(iceFrame)return {...preset(v.key,v.label,'ptcg-holo',[layer(iceFrame+'-art','holo')],'https://api.tcgdex.net/v2/en/cards/'+c.id),pattern:'cracked-ice'};
   if(v.foil==='gold'&&finish==='holofoil'){const gold=effectFor(game,c,v.key,v.label||v.key,ctx,finish);if(gold.status!=='unknown')return {...gold,pattern:'gold'};}
-  if(v.foil)return {...unknown(v.key,v.label||v.key),reason:'Patterned finish preview unavailable for this printing.'};
+  // Known patterns on a measured frame keep that frame's window, with the sheet named.
+  const placed=finish&&!['holofoil','reverse-holofoil'].includes(finish)?null:finish?effectFor(game,c,v.key,v.label||v.key,ctx,finish):null;
+  if(placed&&placed.status!=='unknown')return v.foil?{...placed,pattern:v.foil}:placed;
+  // A foil printing whose layout has no measured window (EX-era Pokémon-ex and Gold Star, World Championship
+  // decks, jumbo and special promos) still shines: its sheet covers the whole face, marked approximate.
+  if(['holofoil','reverse-holofoil'].includes(finish))return {...preset(v.key,v.label||v.key,finish==='holofoil'?'ptcg-holo':'ptcg-reverse',[layer('card',finish==='holofoil'?'holo':'rainbow')],'https://api.tcgdex.net/v2/en/cards/'+c.id),coverage:'full',...(v.foil?{pattern:v.foil}:{}),reason:'Simulated finish · whole-card approximate coverage'};
   // Preserve a known variant even when its finish cannot be previewed.
   return finish?effectFor(game,c,v.key,v.label||v.key,ctx,finish):unknown(v.key,v.label||v.key);
  }).map(p=>withPtcgTreatment(c,p)).map(p=>{const profiles=ANNIVERSARY_STAMPS[c.id];return profiles?{...p,overlayProfiles:profiles,imageSources:[...new Set(profiles.flatMap(x=>x.images))]}:p;}).map(p=>withPrintedStamp(c,p));
  if(game==='ygo'){
   const printing=quoteForContext(game,c,ctx)?.printing;
   if(!printing?.rarity)return [];
-  return [effectFor(game,c,printing.rarity,printing.rarity,ctx,norm(printing.rarity)==='common'?'nonfoil':printing.rarity)];
+  // Short Prints and Super Short Prints are Commons printed in smaller numbers: no foil.
+  return [effectFor(game,c,printing.rarity,printing.rarity,ctx,/^(?:common|shortprint|supershortprint)$/.test(norm(printing.rarity))?'nonfoil':printing.rarity)];
  }
  return [];
 }

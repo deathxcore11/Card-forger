@@ -41,8 +41,9 @@ for(const extra of [{key:'normal',finish:'normal'},{key:'reverse',finish:'revers
 }
 assert.equal(resolveFinish('ptcg',{...card,variants:[]}).effect,'unknown');
 const unproven={...card,id:'base4-19',set:{id:'base4'}};
-assert.equal(resolveFinish('ptcg',unproven).effect,'unknown','Same finish is insufficient without supported presentation');
-assert.equal(resolveFinish('ptcg',unproven,{priceFinish:first}).effect,'unknown');
+// Base Set 2 prints both editions on the Base Set layout, so they share the era window (never another card's exact mask).
+assert.equal(resolveFinish('ptcg',unproven).effect,'ptcg-holo');assert.equal(resolveFinish('ptcg',unproven).layers[0].mask,'pk-wotc-art');
+assert.equal(resolveFinish('ptcg',unproven,{priceFinish:first}).layers[0].mask,'pk-wotc-art');
 const exact={...card,finishPresentations:[{game:'ptcg',printingId:card.id,finish:first,face:0,status:'approximate',source:'https://example.test/evidence',effectPreset:'specific-holo',layers:[{mask:'card',material:'holo'}]}]};
 assert.equal(resolveFinish('ptcg',exact).effect,'unknown','Distinct masks/effects cannot be collapsed');
 assert.equal(resolveFinish('ptcg',exact,{priceFinish:first}).effect,'specific-holo');

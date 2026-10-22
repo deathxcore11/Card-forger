@@ -62,12 +62,22 @@ export const foilLoop={
 };
 // Redraw when the light moves (inline custom properties set on an ancestor by pointer, gyro and zoom)
 // or the card changes size (gallery size setting, rotation).
-export function watchFoilLight(overlay,draw){
+// Style changes can arrive many times per frame (pointer, gyro, sheet scroll), and each draw renders the
+// card and copies it out of WebGL, so they are coalesced into one draw on the next animation frame.
+export function frameThrottle(fn){
+ let id=0;const raf=typeof requestAnimationFrame==='undefined'?null:requestAnimationFrame;
+ const run=()=>{id=0;fn();};
+ const request=()=>{if(!raf)return fn();if(!id)id=raf(run);};
+ request.cancel=()=>{if(id&&typeof cancelAnimationFrame!=='undefined')cancelAnimationFrame(id);id=0;};
+ return request;
+}
+export function watchFoilLight(overlay,drawNow){
+ const draw=frameThrottle(drawNow);
  const doc=overlay.ownerDocument,mo=typeof MutationObserver==='undefined'?null:new MutationObserver(draw);
  for(let n=overlay.parentElement;n&&n!==doc.documentElement;n=n.parentElement)mo?.observe(n,{attributes:true,attributeFilter:['style','class']});
  mo?.observe(doc.documentElement,{attributes:true,attributeFilter:['data-grid-size']});
  const ro=typeof ResizeObserver==='undefined'?null:new ResizeObserver(()=>{draw();foilLoop.kick();});ro?.observe(overlay);
- return ()=>{mo?.disconnect();ro?.disconnect();};
+ return ()=>{draw.cancel();mo?.disconnect();ro?.disconnect();};
 }
 export const foilLight=overlay=>{const css=globalThis.getComputedStyle?.(overlay),pct=v=>{const n=parseFloat(v);return Number.isFinite(n)?Math.max(0,Math.min(100,n))/100:.5;};
  return [pct(css?.getPropertyValue('--finish-x')),pct(css?.getPropertyValue('--finish-y'))];};
@@ -133,7 +143,7 @@ export function mountFoilCanvas(overlay,{source,key,surface='detail',program,ana
   draw(){
    if(dead||!visible||!data||!img?.naturalWidth)return;if(r0.lost)return fail();
    const dpr=Math.min(2,globalThis.devicePixelRatio||1),w=Math.max(1,Math.min(1600,Math.round(overlay.clientWidth*dpr))),hh=Math.max(1,Math.round(w*img.naturalHeight/img.naturalWidth));
-   const [lx,ly]=foilLight(overlay),id=[lx.toFixed(4),ly.toFixed(4),w,hh,key].join();
+   const [lx,ly]=foilLight(overlay),id=[lx.toFixed(3),ly.toFixed(3),w,hh,key].join();
    if(id===last&&!canvas.hidden)return;last=id;
    const {gl,U}=r0;if(r0.canvas.width!==w||r0.canvas.height!==hh){r0.canvas.width=w;r0.canvas.height=hh;}
    bindFoilTextures(r0,img,data,w,hh,key);
