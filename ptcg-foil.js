@@ -13,7 +13,7 @@ uniform sampler2D u_mask;   // R foil-through behind the Pokémon, G coloured en
 uniform sampler2D u_relief; // R height, G/B stroke direction, A stroke strength
 uniform vec2 u_tilt;uniform vec2 u_px;uniform vec2 u_texel;uniform float u_aspect;
 uniform vec4 u_r1; // pattern, tint, underbase (1 = Pokémon on white ink), relief
-uniform vec4 u_r2; // sparkle, soft (lower half lighter on full arts), strength (0 = full)
+uniform vec4 u_r2; // sparkle, soft (lower half lighter on full arts), strength (0 = full), top-side coat
 const float PI=3.14159265;
 vec3 toLin(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));}
 vec3 toSrgb(vec3 c){return mix(c*12.92,1.055*pow(max(c,vec3(0.)),vec3(1./2.4))-.055,step(vec3(.0031308),c));}
@@ -28,6 +28,12 @@ vec3 shoulder(vec3 x){vec3 e=max(x-.82,0.);return min(x,.82)+.18*e/(e+.18);}
 vec3 voro(vec2 q){vec2 n=floor(q),f=fract(q);float d1=8.,d2=8.;vec2 id=n;
  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(float(x),float(y)),h=hash2(n+o),r=o+h-f;float d=dot(r,r);if(d<d1){d2=d1;d1=d;id=n+o;}else if(d<d2)d2=d;}
  return vec3(id,sqrt(d2)-sqrt(d1));}
+// Small printed emblems (energy-symbol sheets): a ring, a diamond, a drop-like triangle or a four-point star.
+float emblem(vec2 f,float h){float r=length(f),s;
+ if(h<.25)s=abs(r-.24)-.07;else if(h<.5)s=abs(f.x)+abs(f.y)-.34;else if(h<.75){vec2 p=f;p.y+=.08;s=max(abs(p.x)*.866+p.y*.5,-p.y)-.2;}else s=pow(abs(f.x),.5)+pow(abs(f.y),.5)-.62;
+ return 1.-smoothstep(0.,.03,s);}
+// Top-side coats (Poké Ball / Master Ball stamps) shine over the printed ink, only where the stamp is.
+float coatMask=0.;
 // A ball on a tiled sheet: 1 inside, with the centre band and button left bare (seam 0).
 vec2 ball(vec2 q,float scale){vec2 p=q*scale;p.x+=mod(floor(p.y),2.)*.5;vec2 f=fract(p)-.5;float r=length(f);
  float inside=1.-smoothstep(.3,.32,r),band=smoothstep(.025,.045,abs(f.y)),button=smoothstep(.07,.09,r);return vec2(inside*band*button,f.y);}
@@ -35,6 +41,7 @@ vec2 ball(vec2 q,float scale){vec2 p=q*scale;p.x+=mod(floor(p.y),2.)*.5;vec2 f=f
 vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad,float height,vec2 stroke){
  vec3 H=normalize(L+V);vec2 q=vec2(uv.x,uv.y*u_aspect),px=uv*u_px;vec2 g=normalize(vec2(.86,.5));
  float d=1550.,lines=0.,glint=0.,mirror=.35,ex=14.,amp=.75,off=0.;
+ coatMask=0.;
  if(pat<1.5){  // WotC: vertical starlight streaks that flow into one another (smooth across and along each streak)
   vec2 sp=vec2(q.x*55.,q.y*.7);vec2 j=vec2(vnoise(sp),vnoise(sp+vec2(31.7,11.3)));g=normalize(vec2(1.,(j.x-.5)*.12));d=1400.;off=j.y*.55;  // each streak carries its own colour
   lines=.5+.5*vnoise(vec2(q.x*160.,q.y*6.));vec3 w=voro(q*60.);glint=step(.93,hash(w.xy))*pow(max(dot(normalize(vec3((hash2(w.xy)-.5)*.6,1.)),H),0.),60.)*1.1;amp=.85;
@@ -49,11 +56,13 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
   glint=pow(max(dot(normalize(vec3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),300.)*.95;amp=.7;}
  else if(pat<6.5){float on=0.;for(int k=0;k<2;k++){float s=k==0?9.:17.;vec2 p=q*s,c=floor(p),f=fract(p)-.5-(hash2(c+float(k)*7.)-.5)*.4;  // cosmos circles
    float rad=.12+.26*hash(c+3.+float(k));float circ=1.-smoothstep(rad-.03,rad,length(f));if(circ>on){on=circ;float a=hash(c+9.)*PI;g=vec2(cos(a),sin(a));d=1050.+hash(c+5.)*900.;}}
+  vec2 pq=floor(q*250.)/250.*14.,pc=floor(pq),pf=fract(pq)-.5;float ring=(1.-smoothstep(.02,.05,abs(length(pf)-.18)))*step(.8,hash(pc+21.));
+  float ang=atan(pf.y,pf.x),spiral=(1.-smoothstep(.0,.05,abs(length(pf)-(.08+.05*(ang+PI))*1.)))*step(.9,hash(pc+33.));on=max(on,max(ring,spiral)*.8);
   amp=mix(.45,1.4,on);mirror=.3;lines=on;}
  else if(pat<7.5){vec2 p=q*5.,c=floor(p),f=fract(p)-.5;float a=atan(f.y,f.x),rr=length(f);  // Legendary Collection firework
   g=normalize(f+1e-4);d=1200.+hash(c)*600.;float rays=pow(.5+.5*cos(a*18.+hash(c)*6.28),6.)*(1.-smoothstep(.15,.5,rr));lines=rays;amp=mix(.55,1.5,rays);mirror=.3;}
  else if(pat<8.5){mirror=.6;amp=.55;ex=10.;}                                                                    // plain mirror reverse
- else if(pat<10.5){vec2 b=ball(q,pat<9.5?7.:6.);float a=b.y>0.?.3:-.6;if(pat>9.5)a+=.9;g=mix(g,vec2(cos(a),sin(a)),b.x);  // Poké / Master Ball
+ else if(pat<10.5){vec2 b=ball(q,pat<9.5?7.:6.);coatMask=b.x;float a=b.y>0.?.3:-.6;if(pat>9.5)a+=.9;g=mix(g,vec2(cos(a),sin(a)),b.x);  // Poké / Master Ball
   d=mix(1500.,b.y>0.?1150.:1350.,b.x);amp=mix(.35,1.35,b.x);lines=b.x;mirror=.3;
   if(pat>9.5){vec2 p=q*6.;p.x+=mod(floor(p.y),2.)*.5;vec2 f=fract(p)-.5;float bumps=(1.-smoothstep(.06,.08,length(f-vec2(-.15,-.12))))+(1.-smoothstep(.06,.08,length(f-vec2(.15,-.12))));glint=bumps*b.x*pow(max(H.z,0.),20.);}}
  else if(pat<11.5){float ph=height*55.,gr=sin(ph);vec2 gn=length(grad)>1e-4?normalize(grad):vec2(1.,0.);         // textured: contours of the art
@@ -66,18 +75,101 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
   vec2 sc=q*130.,gc=floor(sc),f=fract(sc)-.5,rn=hash2(gc);float on=step(.62,rn.y),size=.1+.22*hash(gc+4.),part=on*smoothstep(size,size*.4,length(f-(rn-.5)*.4)),trig=pow(max(0.,cos(dot(u_tilt,vec2(4.5))+rn.x*6.28)),10.),a=rn.x*PI;
   g=vec2(cos(a),sin(a));d=mix(1500.,1000.+hash(gc+9.)*900.,part);mirror=.35;amp=.55+1.6*part*(.35+.65*trig);lines=part;}
  else if(pat>16.5&&pat<17.5){  // Emblem tiles (energy-symbol, League and set-logo reverses): rows of small raised discs, each its own angle
-  vec2 sc=q*15.;sc.x+=mod(floor(sc.y),2.)*.5;vec2 c=floor(sc),f=fract(sc)-.5;float r0=length(f),disc=1.-smoothstep(.27,.3,r0),ring=1.-smoothstep(.015,.04,abs(r0-.3)),a=hash(c)*PI;
-  g=mix(normalize(vec2(1.,1.)),vec2(cos(a),sin(a)),disc);d=mix(1500.,1100.+hash(c+2.)*650.,disc);lines=max(disc,ring);amp=.5+.75*disc+.4*ring;mirror=.4;}
+  vec2 sc=q*9.;sc.x+=mod(floor(sc.y),2.)*.5;vec2 c=floor(sc),f=fract(sc)-.5;float em=emblem(f*1.1,hash(c)),odd=mod(c.x+c.y,2.);
+  g=mix(normalize(vec2(1.,1.)),odd>.5?normalize(vec2(.3,-.3)):normalize(vec2(-.3,.3)),em);d=mix(1500.,odd>.5?1150.:1450.,em);lines=em;amp=.45+.9*em;mirror=.4;}
  else if(pat>17.5&&pat<18.5){  // Cracked Ice: large shards, each its own angle and colour, with bright crack lines between them
   vec3 w=voro(q*7.);vec2 j=hash2(w.xy);float a=j.x*PI,crack=1.-smoothstep(0.,.035,w.z);g=vec2(cos(a),sin(a));d=1050.+j.y*850.;
   amp=.95;mirror=.35;lines=.6+.4*j.y;glint=crack*pow(max(dot(normalize(vec3((j-.5)*.6,1.)),H),0.),30.)*1.2;}
+ else if(pat>18.5){
+  if(pat<19.5){ // 5 Rainbow Mirror: grain-free mirror under a diffraction film that sweeps the spectrum with the light
+   g=normalize(vec2(1.,1.));d=1500.;off=fract((q.x+q.y)*.55-(u_tilt.x+u_tilt.y)*.45)*.9;mirror=.55;ex=12.;amp=1.25;}
+  else if(pat<20.5){ // 6 Big Glitter: tight hex grid of hard dots, each tilted its own way
+   vec2 p=q*95.;p.x+=mod(floor(p.y),2.)*.5;vec2 c=floor(p),f=fract(p)-.5;float dt=1.-smoothstep(.34,.38,length(f));vec2 j=hash2(c);float a=j.x*PI;
+   g=mix(g,vec2(cos(a),sin(a)),dt);d=mix(1500.,1050.+j.y*850.,dt);lines=dt;amp=mix(.4,1.25,dt);mirror=.3;
+   glint=dt*pow(max(dot(normalize(vec3((j-.5)*.9,1.)),H),0.),120.)*1.2;}
+  else if(pat<21.5){ // 8 Energy Symbols II: two rotated scatters of emblems at two sizes
+   float best=0.;for(int k=0;k<2;k++){float s=k==0?5.:11.;vec2 p=k==0?q*s:mat2(.906,-.423,.423,.906)*q*s;vec2 c=floor(p),f=fract(p)-.5;float em=emblem(f,hash(c+float(k)*5.));
+    if(em>best){best=em;float a=(k==0?.6:-.6)+hash(c)*.4;g=vec2(cos(a),sin(a));d=1100.+hash(c+2.)*700.;}}
+   lines=best;amp=mix(.45,1.35,best);mirror=.35;}
+  else if(pat<22.5){ // 10 Pinwheel: four blades per tile, each blade its own facet angle
+   vec2 p=q*14.,c=floor(p),f=fract(p)-.5;float quad=(f.x>0.?1.:0.)+(f.y>0.?2.:0.),diag=step(abs(f.y),abs(f.x)),blade=mod(quad+diag,4.),a=blade*PI*.5+.4;
+   g=vec2(cos(a),sin(a));d=1150.+blade*120.;lines=smoothstep(0.,.04,min(abs(f.x),abs(f.y)))*smoothstep(0.,.04,abs(abs(f.x)-abs(f.y)));amp=mix(.35,1.3,lines);mirror=.3;}
+  else if(pat<23.5){ // 11 EX Emerald: gem octagons, four-point stars and rings in a lattice
+   vec2 p=q*10.,c=floor(p),f=fract(p)-.5;float m=mod(c.x+2.*c.y,3.),s;
+   if(m<.5)s=max(max(abs(f.x),abs(f.y)),(abs(f.x)+abs(f.y))*.707)-.32;else if(m<1.5)s=pow(abs(f.x),.5)+pow(abs(f.y),.5)-.62;else s=abs(length(f)-.26)-.05;
+   float on=1.-smoothstep(0.,.03,s),a=m*1.05+hash(c)*.3;g=mix(g,vec2(cos(a),sin(a)),on);d=mix(1500.,1100.+m*220.,on);lines=on;amp=mix(.4,1.35,on);mirror=.35;
+   glint=on*step(.5,m)*step(m,1.5)*pow(max(dot(normalize(vec3((hash2(c)-.5)*.6,1.)),H),0.),60.);}
+  else if(pat<24.5){ // 12 Poké Ball hologram: one large ball floating in the card, lit like a sphere
+   vec2 dc=vec2(uv.x-.5,(uv.y-.72)*u_aspect);float R=.24,rr=length(dc),inside=1.-smoothstep(R-.01,R,rr);
+   vec3 sn=normalize(vec3(dc,sqrt(max(0.,R*R-dot(dc,dc)))));float band=smoothstep(.012,.02,abs(dc.y)),btn=smoothstep(.05,.06,rr);
+   g=normalize(dc+1e-4);d=1200.+rr*1500.;lines=inside*band*btn;amp=mix(.4,1.4,lines);mirror=.3;glint=inside*band*pow(max(dot(sn,H),0.),40.)*1.3;}
+  else if(pat<25.5){ // 13 Vertical Sheen Rainbow: brushed vertical hairlines, saturated bands sweeping left to right
+   g=vec2(1.,0.);d=1350.;off=fract(q.x*2.-u_tilt.x*1.5)*.8;lines=.6+.4*vnoise(vec2(q.x*400.,q.y*3.));amp=1.15;mirror=.3;ex=10.;}
+  else if(pat<26.5){ // 14 Vertical Sheen: a silvery pillar of light sliding with the tilt
+   float bar=exp(-pow((uv.x-(.5+u_tilt.x*.48))*5.,2.));g=vec2(1.,0.);d=1500.;lines=bar;amp=mix(.15,.9,bar);mirror=mix(.25,.9,bar);ex=8.;}
+  else if(pat<28.5){ // 15 Cosmos II (pixel) / 16 Cosmos III (smooth HD): bokeh orbs at several depths
+   bool hd=pat>27.5;vec2 qq=hd?q:floor(q*140.)/140.;float on=0.;
+   for(int k=0;k<4;k++){if(!hd&&k>1)break;float s=7.+float(k)*6.;vec2 p=qq*s+u_tilt*(.2/(1.+float(k))),c=floor(p),f=fract(p)-.5-(hash2(c+float(k)*11.)-.5)*.45;
+    float rad=.1+.28*hash(c+float(k)*3.),e=hd?.12:.02,circ=(1.-smoothstep(rad-e,rad,length(f)))*(hd?.85:1.);if(circ>on){on=circ;float a=hash(c+9.)*PI;g=vec2(cos(a),sin(a));d=1050.+hash(c+5.)*900.;}}
+   amp=mix(.4,1.35,on);mirror=hd?.35:.45;lines=on;}
+  else if(pat<30.5){ // 17 Tinsel / 18 Tinsel II: horizontal wavy ribbons with fine vertical striations
+   bool two=pat>29.5;float rows=two?52.:28.,row=floor(uv.y*rows),bh=hash(vec2(row,3.)),sgn=two?mod(row,2.)*2.-1.:1.,w=sin(uv.x*400.+bh*6.28),a=PI*.5+sgn*(.35+.25*w);
+   g=vec2(cos(a),sin(a));d=1250.+bh*500.;lines=(.55+.45*abs(w))*(smoothstep(.5,.38,abs(fract(uv.y*rows)-.5))+.3);amp=.95;mirror=.35;}
+  else if(pat<31.5){ // 20 Diagonal Left Sheen: the mirrored -45° band
+   float band=pow(.5+.5*sin((q.x-q.y)*5.5-(u_tilt.x-u_tilt.y)*4.5),3.);g=normalize(vec2(1.,-1.));d=1500.;lines=band;amp=mix(.3,1.35,band);mirror=.45;ex=8.;}
+  else if(pat<32.5){ // 21 Horizontal Sheen: a wide bar sweeping top to bottom
+   float bar=exp(-pow((uv.y-(.5+u_tilt.y*.48))*5.,2.));g=vec2(0.,1.);d=1450.;lines=bar;amp=mix(.2,1.2,bar);mirror=mix(.25,.8,bar);ex=8.;}
+  else if(pat<33.5){ // 22 Striped Vertical Sheen: the vertical pillar broken into pin-stripes
+   float bar=exp(-pow((uv.x-(.5+u_tilt.x*.48))*5.,2.)),st=pow(sin(uv.x*160.)*.5+.5,3.);g=vec2(1.,0.);d=1450.;lines=bar*st;amp=mix(.2,1.3,bar*st);mirror=mix(.25,.85,bar);ex=8.;}
+  else if(pat<34.5){ // 23 Prism: interlocking triangular facets, each a flat mirror
+   vec2 p=q*7.,sk=vec2(p.x+p.y*.57735,p.y*1.1547),c=floor(sk),f=fract(sk);float up=step(f.x+f.y,1.);vec2 j=hash2(c*2.+up);float a=j.x*PI;
+   g=vec2(cos(a),sin(a));d=1050.+j.y*850.;lines=.6+.4*smoothstep(0.,.05,min(min(f.x,f.y),abs(1.-f.x-f.y)));amp=1.05;mirror=.35;
+   glint=pow(max(dot(normalize(vec3((j-.5)*.7,1.)),H),0.),70.)*1.1;}
+  else if(pat<35.5||(pat>42.5&&pat<43.5)){ // 24 Starlight II (art box) / 33 ex Starfoil (whole card): crisp four-point stars
+   bool full=pat>42.5;g=normalize(vec2(1.,.3));d=1450.;mirror=.15;amp=.4;
+   for(int k=0;k<3;k++){float s=full?(k==0?25.:k==1?45.:80.)*.35:9.+float(k)*8.;vec2 p=q*s+u_tilt*(.3/(1.+float(k))),cc=floor(p),f=fract(p)-.5-(hash2(cc+float(k)*13.)-.5)*.5;vec2 r=hash2(cc+float(k)*29.);
+    float on=step(full?.55:.7,r.y),sd=abs(f.x)*abs(f.y)*14.+length(f)*.09,star=on*(1.-smoothstep(.01,.12,sd*4.)),fire=pow(max(cos(dot(u_tilt,vec2(3.5))+r.x*6.28),0.),24.);glint+=star*(.6+fire*4.)*(1.-.25*float(k));}}
+  else if(pat<36.5){ // 25 Water Web: domain-warped caustic ridges
+   vec2 w=q*8.+vec2(vnoise(q*6.+u_tilt*.3),vnoise(q*6.+vec2(5.2,1.3)-u_tilt*.3))*1.6;float n=vnoise(w)*2.-1.,ridge=pow(1.-abs(n),6.);
+   g=normalize(vec2(vnoise(w+3.)-.5,vnoise(w+7.)-.5)+1e-4);d=1150.+ridge*500.;lines=ridge;amp=mix(.4,1.4,ridge);mirror=.35;}
+  else if(pat<37.5){ // 26 Radiant: diagonally woven micro-diamonds catching opposite tilt axes
+   float wv=sin((px.x+px.y)*.9)*sin((px.x-px.y)*.9),cell=step(0.,wv);g=cell>.5?normalize(vec2(1.,1.)):normalize(vec2(1.,-1.));d=1250.+cell*200.;lines=.5+.5*abs(wv);amp=1.05;mirror=.35;
+   glint=pow(abs(wv),8.)*pow(max(H.z,0.),30.)*.6;}
+  else if(pat<39.5){ // 27 Rainbow Glitter / 28 Rainbow Glitter Sheen: fine coloured flakes, each lighting at its own tilt
+   vec3 w=voro(q*110.);vec2 j=hash2(w.xy);float a=j.x*PI,trig=pow(max(0.,cos(dot(u_tilt,vec2(5.))+j.y*6.28)),6.);g=vec2(cos(a),sin(a));d=950.+j.y*1000.;mirror=.25;amp=.55+1.2*trig;
+   glint=trig*pow(max(dot(normalize(vec3((j-.5)*.7,1.)),H),0.),40.)*.8;
+   if(pat>38.5){float band=pow(.5+.5*sin((q.x+q.y)*5.5-(u_tilt.x+u_tilt.y)*4.5),3.);amp=.6*mix(.3,1.35,band)+.8*amp;lines=band;}}
+  else if(pat<40.5){ // 29 ACE SPEC: circuit grid of squares and X crosses (magenta tint)
+   vec2 p=q*45.,f=fract(p)-.5;float x=min(abs(f.x-f.y),abs(f.x+f.y)),sq=abs(max(abs(f.x),abs(f.y))-.42),on=max(1.-smoothstep(0.,.06,x),1.-smoothstep(0.,.05,sq));
+   float a=on>.5?.785:0.;g=vec2(cos(a),sin(a));d=1300.;lines=on;amp=mix(.5,1.3,on);mirror=.4;}
+  else if(pat<41.5){ // 31 Prismatic Poké Ball (top-side coat): radial diffraction inside each ball
+   vec2 b=ball(q,6.),p=q*6.;p.x+=mod(floor(p.y),2.)*.5;vec2 f=fract(p)-.5;g=normalize(f+1e-4);d=900.+length(f)*2400.;off=length(f)*2.;coatMask=b.x;lines=b.x;amp=mix(.2,1.6,b.x);mirror=.3;}
+  else if(pat<42.5){ // 32 Radiant Collection: soft pastel dots, hearts and stars with a pearly sheen
+   vec2 p=q*18.;p.x+=mod(floor(p.y),2.)*.5;vec2 c=floor(p),f=fract(p)-.5;float h=hash(c),s;
+   if(h<.4)s=length(f)-.22;else if(h<.7)s=pow(abs(f.x),.5)+pow(abs(f.y),.5)-.55;else{vec2 hp=vec2(abs(f.x),f.y+.05);s=min(length(hp-vec2(.09,.06))-.12,max(abs(f.x)*.9+f.y*.8-.1,-f.y-.25));}
+   float on=1.-smoothstep(-.02,.06,s);g=vec2(cos(h*PI),sin(h*PI));d=1250.;lines=on;amp=mix(.35,.95,on);mirror=.5;ex=4.;}
+  else if(pat<44.5){ // 34 Sequin: overlapping cupped discs
+   vec2 p=q*vec2(16.,22./u_aspect);p.x+=mod(floor(p.y),2.)*.5;vec2 c=floor(p),f=fract(p)-.5;float disc=1.-smoothstep(.46,.48,length(f));
+   g=normalize(f+1e-4);d=1100.+hash(c)*700.;N=normalize(mix(N,normalize(vec3(f,.8)),disc));lines=disc;amp=mix(.4,1.25,disc);mirror=.45;ex=18.;}
+  else if(pat<45.5){ // 35 Crosshatch: checkerboard of ±45° grooves
+   vec2 c=floor(q*35.);float even=mod(c.x+c.y,2.),gv=even>.5?sin((px.x+px.y)*1.6):sin((px.x-px.y)*1.6);g=even>.5?normalize(vec2(1.,-1.)):normalize(vec2(1.,1.));d=1350.;lines=.5+.5*gv;amp=.95;mirror=.35;}
+  else if(pat<46.5){ // 36 TCG Classic: crushed-opal diamond dust inside, prism bars along the border
+   if(min(min(uv.x,1.-uv.x),min(uv.y,1.-uv.y))<.06){vec2 j=hash2(floor(uv*vec2(40.,12.)));float a=j.x*PI;g=vec2(cos(a),sin(a));d=1100.+j.y*800.;lines=.7;amp=1.1;mirror=.35;}
+   else{vec3 w=voro(q*190.);vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;mirror=.3;amp=.8;glint=pow(max(dot(normalize(vec3((j-.5)*.6,1.)),H),0.),200.)*1.3;}}
+  else if(pat<47.5){ // 38 Acid Wash: marbled veins of raw foil
+   float f1=vnoise(q*6.)*.5+vnoise(q*12.)*.25+vnoise(q*24.)*.125,vein=smoothstep(.45,.52,sin(f1*12.+u_tilt.x*.5)*.5+.5);
+   g=normalize(vec2(vnoise(q*9.)-.5,vnoise(q*9.+4.)-.5)+1e-4);d=1200.+f1*700.;lines=vein;amp=mix(.15,1.35,vein);mirror=mix(.2,.7,vein);}
+  else{ // 39 Disco: square mirror tiles with mortar, snapping on in steps
+   vec2 p=uv*vec2(32.,44.),c=floor(p),f=fract(p);float mortar=step(.06,f.x)*step(.06,f.y);vec2 j=floor(hash2(c)*6.)/6.;float a=j.x*PI,snap=step(.8,cos(dot(u_tilt,vec2(4.))+j.y*6.28));
+   g=vec2(cos(a),sin(a));d=1050.+j.y*900.;lines=mortar;amp=mortar*(.4+1.2*snap);mirror=.5*mortar;glint=mortar*snap*.5;}
+ }
  else if(pat>13.5){float band=pow(.5+.5*sin((q.x+q.y)*5.5-(u_tilt.x+u_tilt.y)*4.5),3.);g=normalize(vec2(1.,1.));d=1500.;  // modern smooth 45° oil-slick band
   lines=band;amp=mix(.3,1.35,band);mirror=.45;ex=8.;}
  else{vec3 w=voro(q*200.);vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;mirror=.2;    // shiny glitter
   glint=pow(max(dot(normalize(vec3((j-.5)*.5,1.)),H),0.),260.)*2.;amp=.7;}
  vec3 dif=grating(L,V,g,d,off)*amp;float spec=pow(max(dot(N,H),0.),ex);
- vec3 metal=tint<.5?vec3(1.):tint<1.5?vec3(1.,.74,.32):vec3(.86,.9,.96);
- vec3 col=tint<.5?dif*1.9:tint<1.5?metal*(.5*spot+.9*length(dif))*1.3:metal*(.6*spot+.5*length(dif))*1.3+dif*.25;
+ vec3 metal=tint<.5?vec3(1.):tint<1.5?vec3(1.,.74,.32):tint<2.5?vec3(.86,.9,.96):vec3(1.,.32,.74);
+ vec3 col=tint<.5?dif*1.9:tint<1.5?metal*(.5*spot+.9*length(dif))*1.3:tint<2.5?metal*(.6*spot+.5*length(dif))*1.3+dif*.25:metal*(.6*spot+.6*length(dif))*1.25+dif*.45;
  return vec3(.18)*metal+spot*(mirror*spec*metal+col)*(.7+.3*lines)+glint*metal;
 }
 vec3 overInk(vec3 base,vec3 F,float cover){vec3 T=mix(base,base/max(max(base.r,max(base.g,base.b)),.04),.32);return mix(base,shoulder(T*F*1.35),clamp(cover,0.,1.));}
@@ -97,11 +189,14 @@ void main(){
  vec3 F=foil(u_r1.x,u_r1.y,uv,L,V,N,spot,grad,rl.r,stroke)*(1.+mk.g*u_r1.z*.6);
  // Reverse holos print their text, symbols and outlines in opaque ink over the foil: dark ink stays solid
  // and the foil shows through the lighter areas only. (Holo windows and full arts keep their own rules.)
- float rev=(1.-step(.5,u_r1.z))*(1.-step(.5,u_r2.y)),ink=smoothstep(.03,.22,dot(base,vec3(.2126,.7152,.0722)));
+ float rev=(1.-step(.5,u_r1.z))*(1.-step(.5,u_r2.y))*(1.-step(.5,u_r2.w)),ink=smoothstep(.03,.22,dot(base,vec3(.2126,.7152,.0722)));
  cov*=mix(1.,ink,rev);
  // Full-art cards print the illustration in heavy white-backed ink over the foil, so the art keeps half its
  // weight there, while holo windows and reverse frames show the bare foil.
  vec3 outC=overInk(base,F,cov*mix(.92,.5,u_r2.y));
+ // A top-side coat is varnish stamped over the print: the stamp reflects white-silver light over whatever
+ // ink is under it (never multiplied by it), and the rest of the card stays as printed.
+ if(u_r2.w>.5)outC=base+(1.-base)*clamp(F*1.1-.18,0.,1.)*coatMask*cov;
  // Illustration rares keep their painting's own colour: the foil adds its sheen on top at partial strength.
  float str=u_r2.z>0.?u_r2.z:1.;outC=mix(base,outC,str);
  if(rel>0.){float rim=pow(max(dot(N,H),0.),24.)*(.35+.65*spot)*clamp(length(grad)*30.,0.,1.);outC+=(1.-outC)*vec3(1.,.97,.92)*rim*rel*cov*.8;}
@@ -182,5 +277,5 @@ export function mountPtcgFoil(overlay,img,treatment,{surface='detail',clip='',ar
    const cov=coverage(shape,a.W,a.H),mask=a.mask.slice(),spill=shape.rule==='evenodd'?artOverflow(readFoilPixels(i).data,a.W,a.H,artBox(shape)):null;
    for(let k=3;k<mask.length;k+=4){mask[k]=Math.round(cov[k-3]*(spill?1-spill[(k-3)/4]:1));if(window)mask[k-3]=255;}
    if(r.strip)ecardStrip(readFoilPixels(i).data,mask,a.W,a.H);return {...a,mask};})),
-  setUniforms:({gl,U})=>{gl.uniform4f(U.u_r1,r.pat,r.tint,r.underbase,r.relief);gl.uniform4f(U.u_r2,r.sparkle,r.soft,r.strength,0);}});
+  setUniforms:({gl,U})=>{gl.uniform4f(U.u_r1,r.pat,r.tint,r.underbase,r.relief);gl.uniform4f(U.u_r2,r.sparkle,r.soft,r.strength,r.coat||0);}});
 }

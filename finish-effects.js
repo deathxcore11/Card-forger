@@ -352,7 +352,7 @@ export function withPtcgTreatment(c,p){
  if(!p||p.status==='unknown'||p.effect==='plain'||!p.layers?.length)return p;
  const mask=p.layers[0].mask,era=PK_MASK_ERA.find(([re])=>re.test(mask))?.[1]||'',fullArt=p.effect==='ptcg-full-art'||p.coverage==='full';
  const finish=p.effect==='ptcg-reverse'?'reverse-holofoil':'holofoil',gold=p.layers.some(l=>l.material==='gold')||p.pattern==='gold';
- const treatment=ptcgFoilEffect({finish,era:fullArt?'':era,foil:p.pattern||'',rarity:c?.rarity,fullArt,textured:p.texture==='micro-ridges',gold});
+ const treatment=ptcgFoilEffect({finish,era:fullArt?'':era,foil:p.pattern||'',rarity:c?.rarity,fullArt,textured:p.texture==='micro-ridges',gold,set:c?.set?.id,number:c?.set?.number??c?.localId});
  return treatment&&PTCG_FOIL_RECIPES[treatment]?{...p,treatment}:p;
 }
 // A pricing reference is not a physical finish or an edition selection.

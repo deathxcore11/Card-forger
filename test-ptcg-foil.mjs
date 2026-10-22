@@ -10,7 +10,26 @@ const holo=era=>ptcgFoilEffect({finish:'holofoil',era}),rev=(era,foil)=>ptcgFoil
 // Each era prints its own holo sheet; the Pokémon sits on white ink (underbase) in every holo window.
 assert.equal(holo('pk-wotc'),'ptcg-wotc-holo');assert.equal(holo('pk-gym'),'ptcg-wotc-holo');assert.equal(holo('pk-neo'),'ptcg-wotc-holo');
 assert.equal(holo('pk-lc'),'ptcg-lc-holo');assert.equal(holo('pk-ecard'),'ptcg-ecard-holo');assert.equal(holo('pk-exb'),'ptcg-ex-holo');
-assert.equal(holo('pk-dppt'),'ptcg-classic-holo');assert.equal(holo('pk-swsh'),'ptcg-classic-holo');assert.equal(holo('pk-sv'),'ptcg-sv-holo');
+assert.equal(holo('pk-dppt'),'ptcg-ex-holo');assert.equal(holo('pk-hgss'),'ptcg-ex-holo');assert.equal(holo('pk-sm'),'ptcg-water-web');assert.equal(holo('pk-swsh'),'ptcg-vsheen');assert.equal(holo('pk-sv'),'ptcg-sv-holo');assert.equal(holo('pk-bwxy'),'ptcg-classic-holo');
+assert.equal(PTCG_FOIL_RECIPES['ptcg-ex-holo'].pat,PTCG_PATTERN.cosmos,'EX to HGSS holos print Cosmos');
+// Per-set sheets (TCGdex set ids) and special rarities, from the redesign brief.
+{const H=(set,o={})=>ptcgFoilEffect({finish:'holofoil',era:'pk-bwxy',set,...o}),R=(set,era='pk-exb')=>ptcgFoilEffect({finish:'reverse-holofoil',era,set});
+ assert.equal(H('bw1'),'ptcg-tinsel');assert.equal(H('bw2'),'ptcg-tinsel2');assert.equal(H('xy1'),'ptcg-vsheen');assert.equal(H('xy12'),'ptcg-starlight2');assert.equal(H('col1'),'ptcg-vsheen-spectrum');
+ assert.equal(ptcgFoilEffect({finish:'holofoil',era:'pk-sm',set:'det1'}),'ptcg-striped');assert.equal(ptcgFoilEffect({finish:'holofoil',era:'pk-sv',set:'sv03.5'}),'ptcg-cosmos-hd');
+ assert.equal(R('ex5'),'ptcg-energy2-reverse');assert.equal(R('ex8'),'ptcg-pinwheel-reverse');assert.equal(R('ex9'),'ptcg-emerald-reverse');assert.equal(R('ex10'),'ptcg-ball-hologram-reverse');assert.equal(R('ex12'),'ptcg-reverse');assert.equal(R('ex1','pk-exa'),'ptcg-rmirror-reverse');
+ assert.equal(R('bw3','pk-bwxy'),'ptcg-emblem-reverse');assert.equal(R('xy3','pk-bwxy'),'ptcg-reverse');assert.equal(R('sv01','pk-sv'),'ptcg-sv-reverse','the SV reverse keeps its measured sheet');
+ assert.equal(ptcgFoilEffect({finish:'reverse-holofoil',era:'pk-sv',set:'sv08.5',foil:'pokeball'}),'ptcg-prismatic-pokeball');assert.equal(ptcgFoilEffect({finish:'reverse-holofoil',era:'pk-sv',set:'sv08.5',foil:'masterball'}),'ptcg-prismatic-masterball');
+ assert.equal(H('bw7',{rarity:'ACE SPEC Rare'}),'ptcg-ace-spec');assert.equal(H('swsh10',{rarity:'Radiant Rare',fullArt:true}),'ptcg-radiant');assert.equal(H('swsh4',{rarity:'Amazing Rare'}),'ptcg-rainbow-glitter');
+ assert.equal(H('sm7',{rarity:'Rare Prism Star'}),'ptcg-prism');assert.equal(H('xy8',{rarity:'Rare BREAK'}),'ptcg-prism');assert.equal(H('g1',{number:'RC5'}),'ptcg-rc-dots');
+ assert.equal(H('sm115',{rarity:'Shiny rare',fullArt:true}),'ptcg-rainbow-glitter');assert.equal(H('swsh4.5',{rarity:'Shiny rare',fullArt:true}),'ptcg-glitter-sheen');
+ assert.equal(ptcgFoilEffect({finish:'holofoil',era:'pk-swsh',foil:'league'}),'ptcg-crosshatch');assert.equal(ptcgFoilEffect({finish:'holofoil',era:'pk-bwxy',foil:'tinsel'}),'ptcg-tinsel');
+ assert.equal(ptcgFoilEffect({finish:'holofoil',era:'pk-sv',rarity:'Double rare'}),'ptcg-double-rare');assert.equal(PTCG_FOIL_RECIPES['ptcg-double-rare'].pat,PTCG_PATTERN.starfoil);
+ assert.equal(PTCG_FOIL_RECIPES['ptcg-pokeball'].coat,1,'Poké Ball stamps are a top-side coat');assert.equal(PTCG_FOIL_RECIPES['ptcg-reverse'].coat,0);}
+// All 39 patterns of the brief have a treatment, each pattern id is drawn by its own shader branch.
+{const {PTCG_HOLO_PATTERNS}=await import('./ptcg-foil-recipes.js');assert.equal(PTCG_HOLO_PATTERNS.length,39);for(const p of PTCG_HOLO_PATTERNS)assert(PTCG_FOIL_RECIPES[p.key],p.name);
+ assert.equal(new Set(PTCG_HOLO_PATTERNS.map(p=>PTCG_FOIL_RECIPES[p.key].pat)).size,39,'each of the 39 looks has its own pattern id');
+ assert.equal(Math.max(...Object.values(PTCG_PATTERN)),48);}
+assert.match(PTCG_FOIL_FRAGMENT,/if\(u_r2\.w>\.5\)outC=base\+\(1\.-base\)\*clamp\(F\*1\.1-\.18,0\.,1\.\)\*coatMask\*cov;/,'Top-side coats brighten over the ink instead of multiplying it');
 assert.equal(ptcgFoilEffect({finish:'holofoil',era:'pk-swsh',foil:'cosmos'}),'ptcg-cosmos');
 for(const k of Object.keys(PTCG_FOIL_RECIPES).filter(k=>/holo$|cosmos$/.test(k)))assert.equal(PTCG_FOIL_RECIPES[k].underbase,1,k+' keeps the Pokémon solid');
 // Reverse holos: Legendary Collection fireworks, e-Card crystal, and the named pattern sheets.
