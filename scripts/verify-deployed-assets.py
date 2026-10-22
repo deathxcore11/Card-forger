@@ -28,7 +28,7 @@ MODULES = (
     "game-tabs.css", "game-tab-mtg.jpg", "game-tab-ygo.png", "game-tab-ptcg.jpg",
     "power.js", "deckpower.js", "insights.js", "builder.js", "planner.js", "deck-optimizer.js", "engine-map.js", "pairing.js", "scouting.js", "formats.js", "goldfish.js", "tier-card.js", "ai-review.js",
     "ai-build-contract.js", "ai-deck-goal.js", "coach-evidence.js", "commander-criteria.js", "commander-strategy.js", "mtg-effects.js",
-    "ai-ask-loop.js", "ai-deck-builder.js", "meta-curation.js", "community-curation.css", "set-browser.js", "set-release-metadata.js",
+    "ai-auth.js", "ai-ask-loop.js", "ai-deck-builder.js", "meta-curation.js", "community-curation.css", "set-browser.js", "set-release-metadata.js",
     "magic-owned-detail.js",
     "pokemon-variant-options.js", "pokemon-promo-evidence.js",
     "magic-card-color.js", "magic-matchups-ui.js", "magic-matchups-controller.js", "magic-matchups.css", "ai-matchup-core.js", "settings-theme.js", "settings-storage.js", "mobile-tilt.js", "set-experience.js", "pack-preview.js", "rarity-emblem.js", "data-loading.js", "collector-search.js", "settings-theme.css", "theme-init.js", "recovery-store.js", "sync-merge.js", "value-page.js", "value-page.css", "value-history.js", "storage.js", "account-workspaces.js", "account-scope.js", "ygo-identity.js", "vendor/supabase-js-2.110.0.js",
