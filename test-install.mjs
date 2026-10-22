@@ -56,7 +56,7 @@ console.log('PASS: real Install action opens desktop help when the native prompt
   assert.ok(ANDROID_APPS.some(a => a.package === "dev.workers.deathxcore11.cardforge2.twa"), "the earlier TWA entry stays");
   // Android phones: the app download replaces the home-screen install as the main action.
   const android = installCardMarkup("", { ua: "Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/141.0 Mobile Safari/537.36", nativeApp: false });
-  assert.match(android, /Get the Android app/); assert.match(android, /<a class="btn" href="\/downloads\/cardstashy-android-beta-0\.3\.0\.apk" download>/); assert.match(android, new RegExp(sha));
+  assert.match(android, /Get the Android app/); assert.ok(android.includes(`<a class="btn" href="${ANDROID_BETA.href}" download>`)); assert.match(android, new RegExp(sha));
   assert.doesNotMatch(android, /<button class="btn" data-act="install">/, "the shortcut install is secondary on Android");
   // Computers and iPhone keep the home-screen install and never see the APK.
   for (const ua of ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/141.0 Safari/537.36", "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/605.1"]) {
