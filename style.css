@@ -5081,3 +5081,8 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .deck-flow :is(.btn,.icon),.deck-flow-result .btn{min-height:44px}
 .deck-flow .check{display:flex;align-items:center;gap:10px;min-height:44px;padding-block:8px}
 .deck-flow-art-placeholder{display:block;width:100%;height:46px;border-radius:4px;background:var(--surface-2);border:1px solid var(--line)}
+
+.settings-page .btn:not(.ghost):not(.danger){background:var(--brand-action);color:var(--brand-action-ink);border-color:var(--brand-action)}
+.deck-setup-fields .field small{font-size:12px;line-height:1.5;color:var(--muted);font-weight:400}
+
+.deck-flow-qty{white-space:nowrap}

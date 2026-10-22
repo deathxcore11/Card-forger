@@ -1123,8 +1123,8 @@ try {
       await p.clock.fastForward(1);
       await p.waitForFunction(game=>document.querySelector('[data-home-meta-open]')?.dataset.key===`fixture-${game}-replacement`,game);
       await p.locator('#sheetBody [data-act="tMetaBuild"]').click();
-      await p.waitForFunction(({game,key})=>window.__homeTestState.ui.sheetCtx?.type==='tbuild' && window.__homeTestState.ui.tbuild?.game===game && window.__homeTestState.ui.tbuild?.metaKey===key,{game,key:retainedKey});
-      const built=await p.evaluate(()=>{const B=window.__homeTestState.ui.tbuild;return {game:B.metaSnapshot.game,source:B.metaSnapshot.data.source,keys:B.metaSnapshot.data.decks.map(d=>d.key)};});
+      await p.waitForFunction(({game,key})=>window.__homeTestState.ui.sheetCtx?.type==='deck-flow' && window.__homeTestState.ui.sheetCtx.request?.game===game && window.__homeTestState.ui.sheetCtx.request?.metaKey===key,{game,key:retainedKey});
+      const built=await p.evaluate(()=>{const B=window.__homeTestState.ui.sheetCtx.request;return {game:B.metaSnapshot.game,source:B.metaSnapshot.data.source,keys:B.metaSnapshot.data.decks.map(d=>d.key)};});
       assert.deepEqual(built,{game,source:captured.source,keys:captured.keys},'downstream builder retains original exact source dataset after rail replacement');
     }
     await closeSheet(p);

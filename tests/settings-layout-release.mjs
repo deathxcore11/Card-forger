@@ -36,9 +36,10 @@ try{
      await page.setViewportSize({width,height:1000});
      for(const tab of ['account','recovery','info','app']){
       await page.locator('#settingsTab-'+tab).click();
+      await page.locator('#settings-'+tab).waitFor({state:'visible'});
       assert(await page.locator('[data-settings-save-status]').evaluate(n=>n.scrollWidth<=n.clientWidth+1), 'Save status remains fully readable, never shortened by the header ellipsis rule');
       await noOverflow(page,'#settingsDialog',`${game}/${signedIn?'account':'guest'}/${theme}/${width}/${tab}`);
-      const pane=await page.locator('#settings-'+tab).boundingBox();const content=await page.locator('.settings-dialog .settings-page').boundingBox();assert(pane.width>=content.width-48,'section uses the available content width');
+      const sizes=await page.evaluate(tab=>{const pane=document.querySelector('#settings-'+tab),content=document.querySelector('.settings-dialog .settings-page');return {visible:!pane.hidden,pane:pane.getBoundingClientRect().width,content:content.getBoundingClientRect().width};},tab);assert(sizes.visible&&sizes.pane>=sizes.content-48,'section uses the available content width');
       checks.push({game,signedIn,theme,width,tab});
      }
     }

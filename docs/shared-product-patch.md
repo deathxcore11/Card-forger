@@ -54,6 +54,29 @@ existing Tests workflow. It must run on this branch; local CI guards are retaine
 Screenshots and results must be inspected before claiming responsive layout,
 visual polish or foil compatibility verified.
 
+## Follow-up after the first hosted run
+
+The first candidate (07cddba) passed hosted foil compatibility, finish effects,
+scanner, recovery and multiple card-view checks. Its Settings matrix failed on a
+pane-measurement race; other failures included old builder/Friends selectors and
+missing new modules in the deployed-byte verifier. The follow-up awaits the
+visible pane and measures both rectangles atomically, keeps the assertions,
+updates tests for inline results and Community requests, and extends the fixed
+asset verification list. Hosted reruns remain required; these edits alone are not
+passing browser evidence.
+
+The run also exposed a real handoff regression: a tournament source snapshot was
+not forwarded into the compact builder. The request and detached construction now
+retain that exact snapshot. Shared results participate in card-view Back history;
+cross-game result cards open in their own game. Serialized Pokémon finish prices
+now agree in generated and reopened saved decks. Budget basis/overage is visible
+next to the field, native update availability has a direct action, and Settings
+primary actions use the existing purple brand token.
+
+Cloudflare marked the draft-branch preview failed. Its GitHub check supplies no
+error text, and the detailed dashboard log requires authentication. No queue-reset
+cause has been established and no production setting was changed.
+
 ## Release blockers / remaining evidence
 
 1. Obtain the CURRENT native source and established signing/build workflow that
@@ -80,11 +103,15 @@ visual polish or foil compatibility verified.
    The new verified-download surface is consistent, but the pre-existing Worker
    redirect from an old APK filename to a new binary still permits old external
    checksum text to disagree. Do not describe this historical case as solved.
-7. Broaden realistic provider fixtures across every offered format and inspect
+7. Finish auditing all legacy generation entry points, including the existing
+   Ideas inspector and tournament adaptation. The new shared flow blocks partial
+   success, but old editor/inspection paths still have their own draft controls.
+   Do not claim every historical path has been replaced.
+8. Broaden realistic provider fixtures across every offered format and inspect
    generated plans before release. Conservative summon support can reject viable
    strategies; no assertion that a rejected deck is impossible or unaffordable is
    made. No new all-game matchup coverage or win rates are claimed.
-8. Verify latest website and workers.dev deployed asset bytes only AFTER review,
+9. Verify latest website and workers.dev deployed asset bytes only AFTER review,
    coordinated artifact publication and explicit release readiness. Keep this PR
    draft; do not merge it while these blockers remain.
 

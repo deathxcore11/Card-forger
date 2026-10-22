@@ -43,7 +43,7 @@ export function createDeckPipeline(x) {
   request.seedCard=seed;request.seed=seed?.name||request.seed||'';
   if(request.game==='mtg'){
    const built=await prepareMtgDeck({...request,flow:true,style:[request.theme,request.easy?'easy to play':'',request.style].filter(Boolean).join(' '),budget_basis:request.ownedOnly?'owned':request.budgetBasis,current:options.current},x);
-   if(!built.candidates)return {error:built.note||'The card service could not complete this request.'};
+   if(!built.candidates)return {error:built.choice==='infinite'?'The app cannot verify that every possible infinite combo is excluded. No deck was presented. Name specific cards to exclude, or revise that requirement.':built.note||'The card service could not complete this request.'};
    const candidates=built.candidates.map(c=>c.draft);if(request.previousDeck)candidates.unshift(structuredClone(request.previousDeck));
    return refineCandidates(candidates,{evaluate:d=>assess(d,request).power,cost:d=>{const p=priceDeck(assess(d,request).rows,request.budgetBasis);return {cost:p.subtotal,unknown:p.unpriced};},accept:d=>assess(d,request).check.legal,neighbors:d=>candidates.flatMap(target=>towardDeck(d,target,{protectedKeys:new Set([request.seed,request.commander,...(request.required_cards||[])].filter(Boolean))})),rounds:2,maxNeighbors:12,status:options.onStatus});
   }

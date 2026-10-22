@@ -1361,7 +1361,7 @@ const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game
  coachHooks:(result,deck)=>result.request.game==='mtg'?V.mtgCoachHooks(deck,result.power):T.tcgCoachHooks(result.request.game,deck,T.SOURCES[result.request.game].formats.find(f=>f.id===result.request.format),result.power),
  scope:()=>{const scope=mutationScope(),state=S.state,stamp=JSON.stringify([state.collection,state.decks,state.tcg]);return ()=>mutationCurrent(scope)&&S.state===state&&JSON.stringify([state.collection,state.decks,state.tcg])===stamp;},
  root:()=>$('#sheetBody'),isOpen:()=>$('#sheet').open&&S.ui.sheetCtx?.type==='deck-flow',
- paint:html=>{$('#sheetBody').innerHTML=html;},open:html=>openSheet(html,{type:'deck-flow'}),
+ paint:html=>{$('#sheetBody').innerHTML=html;},open:(html,request)=>openSheet(html,{type:'deck-flow',request}),
  onInput:fn=>document.addEventListener('input',e=>{if(e.target.matches('[data-flow-field]'))fn(e);}),
  random:async request=>{if(request.game!=='mtg')return deckPipeline.resolveSeed(request);const f=formatOf(request.format),theme=String(request.theme||'').replace(/[^\p{L}\p{N} '-]/gu,'').slice(0,80);return cacheCard(await api('/cards/random?'+new URLSearchParams({q:`${f.legality?'f:'+f.legality:'game:paper'} -t:land ${f.commander?'is:commander':''} ${theme?`(t:"${theme}" or o:"${theme}")`:''}`})));},
  save:async(result,current)=>{const write=scopedCommit(),r=result.request,id=uid(),name=(r.seedCard?.name||result.deck.buildAround||'My deck')+' · '+r.formatName;
@@ -1369,7 +1369,7 @@ const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game
   const d=r.game==='mtg'?withSnapshot({...structuredClone(result.deck),id,name,budget:r.budget,versions:[]},'Generated'):{...structuredClone(result.deck),id,name,format:r.format,createdAt:new Date().toISOString()};
   await write(state=>{if(!current())throw Error('Your workspace changed.');if(r.game==='mtg')state.decks.push(d);else{state.tcg||={};state.tcg[r.game]||=T.gs(r.game);state.tcg[r.game].decks.push(d);}},{msg:'Saved to My decks.'});
  },export:text=>download('CardStashy-deck.txt',text,'text/plain'),
- card:(game,row)=>game==='mtg'?A.card({dataset:{name:row.name}}):A.tCard({dataset:{id:row.id}})
+ card:async(game,row)=>{const account=accountGeneration;if(T.game()!==game)await switchGame(game);if(account!==accountGeneration||accountLocked||T.game()!==game)return;return game==='mtg'?A.card({dataset:{name:row.name}}):A.tCard({dataset:{id:row.id,...(game==='ptcg'?{setVariant:row.selection?.variant||''}:{printing:row.selection?.printingKey||'',edition:row.selection?.edition||''})}});}
 });
 A.aiDeckReview = t => showAiReview(t.dataset.ai, render);
 const C = {}; // change handlers

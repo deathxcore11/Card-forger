@@ -366,24 +366,18 @@ try{
  },complete.id);timings.push(cacheCheck);
  checks.push('Browser gameplay cache preserves object identity over 20 row-order-only reads; observed timing recorded without a hardware-dependent performance guarantee.');
  await openAsk(page);await page.locator('.ask-input').fill(question);await page.locator('.ask-send').click();
- await page.locator('.ask-dialog [data-ask-show]').filter({hasText:'Review the deck draft'}).waitFor();
- assert.equal(askCalls,1,'ready draft ends after one proposal');await page.locator('.ask-dialog [data-ask-show]').filter({hasText:'Review the deck draft'}).click();
- await page.locator('#sheet[open] .tier').waitFor();const preview=await page.locator('#sheetBody').innerText();
- assert.match(preview,/60\/60/);assert.match(preview,/budget: unlimited/i);assert.match(preview,/fun is subjective/);assert.match(preview,/Includes basic lands/);assert.doesNotMatch(preview,/Requested whole-deck budget: \$25/);
- const draft=await page.evaluate(()=>window.__uiTestState.ui.build.results.Standard[0]);assert.equal(draft.goal,'fun');assert.equal(draft.goalVerified,false);assert(draft.cost>0);
- for(const width of [320,390,768,1440]){
-  await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheetBody .tier','Standard goal review '+width);
-  const grids=await page.locator('#sheetBody .tier-tiles').evaluateAll(ns=>ns.map(n=>({columns:getComputedStyle(n).gridTemplateColumns.split(/\s+/).length,width:n.getBoundingClientRect().width,rows:[...n.querySelectorAll('.lot')].map(r=>({width:r.getBoundingClientRect().width,name:r.querySelector('.lot-name')?.textContent.trim(),nameWidth:r.querySelector('.lot-name')?.getBoundingClientRect().width}))})));
-  assert(grids.length>0);for(const g of grids){assert.equal(g.columns,width>=600?2:1,'sheet cards follow their bounded container, not the full-page desktop grid');assert(g.rows.length>0);if(width>=600)for(const row of g.rows){assert(row.width>=300,'desktop sheet keeps a full readable card row');assert(row.nameWidth>=140,'card identity is not reduced to a few letters by a third column');}}
-  layoutEvidence.push({scenario:'goal-preview',viewport:{width,height:1000},grids});await capture(page,'goal-preview-'+width);
- }
- assert.equal(await inventorySnapshot(page),initial,'reviewing a built list never saves it');await page.locator('#sheetBody [data-act="closeSheet"]').first().click();
- checks.push('Actual Ask tool to existing deck-preview sheet: fun goal, unlimited cap, 60-card review, real synthetic basic prices, four widths, no autosave.');
+ await page.locator('.ask-dialog .deck-flow-result').waitFor();
+ assert.equal(askCalls,1,'complete result ends after one proposal');const result=page.locator('.ask-dialog .deck-flow-result'),preview=await result.innerText();
+ assert.match(preview,/60 main/);assert.match(preview,/Complete · app checks passed/);assert.match(preview,/Reference estimate/);assert.doesNotMatch(preview,/Target \$25/);assert.equal(await page.locator('#sheet[open]').count(),0);
+ const displayed=await result.locator('.deck-flow-row').evaluateAll(ns=>ns.map(n=>({qty:Number(n.querySelector('.deck-flow-qty').textContent.replace('×','')),name:n.querySelector('span:not(.deck-flow-qty):not(.deck-flow-art-placeholder)').textContent.trim()})));assert.equal(sumQty(displayed),60);
+ for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.ask-dialog','Standard inline result '+width);await result.locator('[data-act="flowSave"]').scrollIntoViewIfNeeded();await capture(page,'goal-preview-'+width);}
+ assert.equal(await inventorySnapshot(page),initial,'reviewing a built list never saves it');await page.locator('[data-ask-close]').click();
+ checks.push('Actual Ask to shared complete 60-card inline result, real synthetic price estimate, four widths, no setup handoff or autosave.');
  await openAsk(page);await page.locator('[data-ask-new]').click();askHold={started:deferred(),release:deferred(),settled:deferred()};
  await page.locator('.ask-input').fill(question);await page.locator('.ask-send').click();await askHold.started.promise;
  await page.locator('[data-ask-close]').click();askHold.release.resolve();await askHold.settled.promise;askHold=null;await frames(page);
  assert.equal(await page.locator('.ask-dialog[open]').count(),0);assert.equal(await page.locator('#sheet[open]').count(),0);assert.equal(await inventorySnapshot(page),initial);
- await openAsk(page);assert.equal(await page.locator('.ask-dialog [data-ask-show]').count(),0,'cancelled late build cannot create an action in the reopened conversation');await page.locator('[data-ask-close]').click();
+ await openAsk(page);assert.equal(await page.locator('.ask-dialog [data-flow-result]').count(),0,'cancelled late build cannot create a result in the reopened conversation');await page.locator('[data-ask-close]').click();
  checks.push('Close cancels in-flight Ask; late synthetic build response creates no preview, action or saved mutation after reopen.');
  assert.deepEqual(await page.evaluate(()=>window.__fixtureSensitiveWrites),[],'all flows before explicit synthetic save leave durable inventory unchanged');
  // Keep the shared write guard intact. This additional log verifies every later

@@ -1,4 +1,4 @@
-export const BROWSE_TYPES=new Set(['card','tcard','proven','idea','market','buy','tbuild','build','variant-art','zoom','binder','matchup','matchup-import']);
+export const BROWSE_TYPES=new Set(['card','tcard','proven','idea','market','buy','tbuild','build','deck-flow','variant-art','zoom','binder','matchup','matchup-import']);
 export function sheetKey(ctx){return ctx ? [ctx.type,ctx.game||'',ctx.id||ctx.name||ctx.key||ctx.binder||ctx.deckId||'',ctx.print?.id||'',ctx.setId||'',ctx.setReleaseUnverified?'unverified':'',ctx.entryId||ctx.entry||'',ctx.priceFinish||ctx.finish||ctx.setVariant||''].join('|') : '';}
 export class SheetHistory{
  constructor(limit=12){this.limit=limit;this.items=[];}

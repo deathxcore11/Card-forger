@@ -239,7 +239,7 @@ export function makeAskTools(x) {
         lastSharedBuild={result,current:scopeCurrent};
         const resultId=x.deckExperience.register(result,scopeCurrent);
         x.pending=()=>{};x.pending.current=scopeCurrent;x.pendingGame=g;x.pending.resultId=resultId;
-        return {game:g,terminal:true,ready:true,complete:true,reviewAvailable:true,format:result.request.formatName,seed:result.request.seedCard?.name||result.deck.buildAround,budget:result.request.budget,budgetBasis:result.pricing.basis,estimate:result.pricing.estimate,knownSubtotal:result.pricing.subtotal,unpricedCopies:result.pricing.unpriced,budgetStatus:result.budgetStatus,delta:result.delta,cards:result.rows.map(r=>({name:r.name,qty:r.qty,zone:r.zone})),note:'One complete list is shown in this conversation. Save is available here; nothing was saved automatically. Power is a heuristic, not a win rate.'};
+        return {game:g,terminal:true,ready:true,complete:true,reviewAvailable:true,inlineResult:true,format:result.request.formatName,seed:result.request.seedCard?.name||result.deck.buildAround,budget:result.request.budget,budgetBasis:result.pricing.basis,estimate:result.pricing.estimate,knownSubtotal:result.pricing.subtotal,unpricedCopies:result.pricing.unpriced,budgetStatus:result.budgetStatus,delta:result.delta,cards:result.rows.map(r=>({name:r.name,qty:r.qty,zone:r.zone})),note:'One complete list is shown in this conversation. Save is available here; nothing was saved automatically. Power is a heuristic, not a win rate.'};
       }
       if (g === 'mtg') {
         const buildContext={...x,api:(...a)=>cachedBuildRead('api:'+JSON.stringify(a),()=>x.api(...a)),resolve:(...a)=>cachedBuildRead('resolve:'+JSON.stringify(a),()=>x.resolve(...a))};
