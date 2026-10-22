@@ -90,7 +90,9 @@ const YGO_RARITY_WEIGHT={common:50,shortprint:20,rare:20,superrare:12,ultrarare:
 // prefer: a rarity to pull when this set printed the card in it (today's pack pulls the Card of the Day
 // in the rarity shown on Home).
 export function rollYgoPrinting(card,random=Math.random,prefer=''){
- const prints=(card.setContext?.printings||[]).filter(p=>p?.rarity);if(prints.length<2||card.setContext?.printing)return card;
+ // A card printed once in the set is pulled in that printing too: without a chosen printing its foil
+ // (and price) cannot be resolved and the card shows plain.
+ const prints=(card.setContext?.printings||[]).filter(p=>p?.rarity);if(!prints.length||card.setContext?.printing)return card;
  const weight=p=>YGO_RARITY_WEIGHT[R(p.rarity)]??2,total=prints.reduce((n,p)=>n+weight(p),0);let r=random()*total,chosen=prints.at(-1);
  const wanted=prefer&&prints.find(p=>R(p.rarity)===R(prefer));
  if(wanted)chosen=wanted;else for(const p of prints){r-=weight(p);if(r<=0){chosen=p;break;}}

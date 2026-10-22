@@ -41,7 +41,12 @@ const multi={id:'y1',name:'Y1',setContext:{printings:[{code:'RA01-EN001',rarity:
 const low=rollYgoPrinting(multi,()=>0),high=rollYgoPrinting(multi,()=>.999);
 assert.equal(low.setContext.printing.rarity,'Super Rare');assert.equal(high.setContext.printing.rarity,'Quarter Century Secret Rare');
 assert.equal(low.setContext.printings.length,1);assert.equal(multi.setContext.printings.length,2,'the shared card is never changed');
-const single={id:'y2',name:'Y2',setContext:{printings:[{rarity:'Common'}]}};assert.equal(rollYgoPrinting(single),single,'a single printing is left as it is');
+// A card printed once in the set is pulled in that printing, so its foil and price resolve (a Secret
+// Rare printed only once used to come out plain).
+const once={code:'BLC1-EN060',rarity:'Secret Rare'},single={id:'y2',name:'Y2',setContext:{printings:[once]}},pulledOnce=rollYgoPrinting(single);
+assert.equal(pulledOnce.setContext.printing,once);assert.equal(pulledOnce.setContext.printingAmbiguous,false);assert.equal(pulledOnce.rarity,'Secret Rare');
+const chosen={...single,setContext:{printings:[once],printing:once}};assert.equal(rollYgoPrinting(chosen),chosen,'an already chosen printing is kept');
+const none={id:'y3',name:'Y3',setContext:{printings:[]}};assert.equal(rollYgoPrinting(none),none);
 // Pokémon rarities come from TCGdex by exact rarity, most common first, stopping once the whole set is covered.
 const asked=[];const fake=async url=>{const r=decodeURIComponent(new URL(url).searchParams.get('rarity')).replace(/^eq:/,'');asked.push(r);return {ok:true,json:async()=>({Common:[{id:'x-1'},{id:'x-2'}],Uncommon:[{id:'x-3'}],'Double rare':[{id:'x-4'}]})[r]||[]};};
 const rmap=await ptcgSetRarities('x',4,fake);assert.equal(rmap.get('x-4'),'Double rare');assert.equal(rmap.get('x-1'),'Common');assert.equal(rmap.size,4);
