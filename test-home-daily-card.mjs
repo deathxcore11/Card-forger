@@ -170,4 +170,7 @@ for (const scenario of [{ view: 'collection', game: 'mtg' }, { view: 'home', gam
   vm.runInNewContext(repaintSource + '\npaintHomeHero("mtg");', { S: { ui: { view: scenario.view } }, T: { game: () => scenario.game }, $: () => { throw Error('A late daily result touched another view/game'); } });
 }
 globalThis.Date = RealDate;
+// A failed daily source is retried while Home stays open (15 s, 1 min, then after the server's 5-minute cooldown).
+{const app=fs.readFileSync('app.js','utf8');assert.match(app,/const HERO_RETRY_MS = \[15_000, 60_000, 330_000\];/);
+ assert.match(app,/heroRetryTimer = setTimeout\(\(\) => navigationCurrent\(screen\) && !T\.heroFor\(g\) && heroArt\(g\), HERO_RETRY_MS\[heroRetries\+\+\]\);/);}
 console.log('PASS: all-game daily identity with owned decks, exact shared art/control targets, v1 cache retirement, cache/reload/date isolation, concurrent rollover, provider failure/retry, safe artwork fallback and stale exact-print click guards.');

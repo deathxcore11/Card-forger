@@ -3452,9 +3452,18 @@ function heroArt(g) {
   paintHomeHero(g); // Clear yesterday's art even if today's provider is offline.
   paintHomeToday(g);
   return T.loadHero(g)
-    .then(() => navigationCurrent(screen) && (paintHomeHero(g), paintHomeToday(g)))
-    .catch(() => {});
+    .then(() => { heroRetries = 0; return navigationCurrent(screen) && (paintHomeHero(g), paintHomeToday(g)); })
+    .catch(() => {
+      // The daily source (Scryfall for Magic) can be briefly unavailable; the server cools down for five
+      // minutes, so try again a few times while Home stays open instead of leaving it blank all day.
+      if (heroRetries >= HERO_RETRY_MS.length) return;
+      clearTimeout(heroRetryTimer);
+      heroRetryTimer = setTimeout(() => navigationCurrent(screen) && !T.heroFor(g) && heroArt(g), HERO_RETRY_MS[heroRetries++]);
+      heroRetryTimer?.unref?.();
+    });
 }
+const HERO_RETRY_MS = [15_000, 60_000, 330_000];
+let heroRetries = 0, heroRetryTimer = null;
 // Home "Today": the Card of the Day showcase below the value. A new day swaps the card in place (the
 // focused daily button keeps its node), then its set and real booster pack paint in.
 function paintHomeToday(g) {
