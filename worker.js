@@ -1,6 +1,7 @@
 import { checkNativeBackendRequest, withNativeResponseHeaders, createSupabaseBearerVerifier, isNativeAdmitted, releaseNativeAdmission } from './native-backend-contract.js';
 import { NATIVE_ORIGIN } from './native-service-policy.js';
 import { SUPABASE } from './config.js';
+import { ANDROID_BETA, ANDROID_BETA_OLD_APK } from './android-beta.js';
 import {aiMatchupRoute} from './ai-matchup-route.js';
 export {DailyCards} from './daily-card-route.js';
 import {dailyCardRoute} from './daily-card-route.js';
@@ -293,6 +294,9 @@ export default {
     const url = new URL(request.url);
     const callback = androidCallbackLanding(request, url);
     if (callback) return callback;
+    // Only a file that no longer exists reaches the Worker: an older APK link goes to the current one.
+    if ((request.method === 'GET' || request.method === 'HEAD') && ANDROID_BETA_OLD_APK.test(url.pathname) && url.pathname !== ANDROID_BETA.href)
+      return new Response(null, { status: 302, headers: { Location: ANDROID_BETA.href, 'Cache-Control': 'no-store' } });
     const native = request.headers.get('Origin') === NATIVE_ORIGIN;
     const aiPost = request.method === 'POST' && /^\/api\/ai\/(?:ask|deck-review|matchup|identify-card)$/.test(url.pathname);
     if (!native && !aiPost) return handlers.fetch(request, env, ctx);
