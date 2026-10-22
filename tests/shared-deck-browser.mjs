@@ -25,7 +25,9 @@ try{
  try{
   await page.locator('[data-act="menu"]').click();assert(await page.locator('[data-release-unread]').count()>0);
   await page.locator('#settingsTab-recovery').click();assert(await page.locator('[data-release-unread]').count()>0,'opening Settings or Downloads alone does not acknowledge notes');
-  await page.locator('#settings-recovery details[data-release-item] summary').click();assert.equal(await page.locator('.release-dot').count(),0,'the actual release item clears all dots for this release');
+  await page.locator('#settings-recovery details[data-release-item] summary').click();
+  // <details> fires its toggle event in a later task, so wait for it (bounded) before counting.
+  await page.waitForFunction(()=>!document.querySelector('.release-dot'),null,{timeout:3000}).catch(()=>{});assert.equal(await page.locator('.release-dot').count(),0,'the actual release item clears all dots for this release');
   await page.locator('#settingsTab-account').click();const eye=page.locator('#settings-account .password-toggle').first();
   if(await eye.count()){await eye.click();assert.equal(await eye.getAttribute('aria-pressed'),'true');assert.equal(await eye.locator('svg').getAttribute('stroke'),'currentColor');await eye.click();assert.equal(await eye.getAttribute('aria-pressed'),'false');}
   guest.health();checks.push('Release acknowledgment only on actual item; visible accessible password control');
