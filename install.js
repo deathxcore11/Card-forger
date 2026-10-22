@@ -62,7 +62,7 @@ export function installHelpMarkup(guide = installGuide()) {
   return `<ol class="foot">${guide.steps.map(step=>`<li>${esc(step)}</li>`).join('')}</ol><p class="foot">If an install prompt is unavailable, use the browser menu above. Searches and updated prices need internet.</p>`;
 }
 // The signed Android beta served from downloads/ (details and checksum beside it).
-export const ANDROID_BETA = Object.freeze({ version: "0.3.1 beta", href: "/downloads/cardstashy-android-beta-0.3.1.apk", bytes: 24310018, sha256: "085863b61ce5c3fb959cb07b556293683790a9e1faf669b28167597b246eb613" });
+export const ANDROID_BETA = Object.freeze({ version: "0.3.2 beta", href: "/downloads/cardstashy-android-beta-0.3.2.apk", bytes: 24314822, sha256: "b729eeba2588d70f7a61805537a4dbbcee5446b794d1b68914c76abea6638b59" });
 export const isAndroid = (ua = globalThis.navigator?.userAgent || "") => /Android/i.test(ua);
 // Settings > App install card. Android phones get the full app (APK) as the main action;
 // iPhone and computers keep the home-screen install, which is the only option there.
