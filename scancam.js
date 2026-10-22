@@ -1,3 +1,4 @@
+import { aiFetch, invalidateAiAuth } from './ai-auth.js';
 import {mountFeedback,removeFeedback} from './feedback-layer.js';
 import {scannerLookupHTML,scannerCandidateCarousel,scannerBrowseHTML,scannerBrowseFilters,createScannerBrowse,scanHelp} from './scanner-review.js';
 import {attachPrintingCarousel} from './printing-carousel.js';
@@ -800,6 +801,7 @@ export function registerScanner(ctx) {
   const stopCamera = () => suspendCamera();
   ctx.stopCamera = stopCamera;
   ctx.accountChanged=()=>{
+    invalidateAiAuth();
     lifecycleGeneration++;stopCamera();closePop();
     for(const draft of photoDrafts.values())if(draft?.url)URL.revokeObjectURL(draft.url);
     photoDrafts.clear();switchSource=null;suspended=false;
@@ -1456,7 +1458,7 @@ export function registerScanner(ctx) {
       let image=st.shot;
       if(!ctx.identifyPhoto){const photo=await loadImage(image);if(!current())return;const scale=Math.min(1,1400/Math.max(photo.naturalWidth,photo.naturalHeight)),canvas=document.createElement('canvas');canvas.width=Math.round(photo.naturalWidth*scale);canvas.height=Math.round(photo.naturalHeight*scale);canvas.getContext('2d').drawImage(photo,0,0,canvas.width,canvas.height);image=canvas.toDataURL('image/jpeg',.88);}
       if(!current())return;
-      const hints=ctx.identifyPhoto?await ctx.identifyPhoto({game:q.game||game(),image}):await fetch('/api/ai/identify-card',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(50000),body:JSON.stringify({game:q.game||game(),image})}).then(async r=>{const result=await r.json();if(!r.ok)throw Error(result.message||'AI photo help is unavailable. Try the name and bottom number.');return result;});
+      const hints=ctx.identifyPhoto?await ctx.identifyPhoto({game:q.game||game(),image}):await aiFetch('/api/ai/identify-card',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(50000),body:JSON.stringify({game:q.game||game(),image})}).then(async r=>{const result=await r.json();if(!r.ok)throw Error(result.message||'AI photo help is unavailable. Try the name and bottom number.');return result;});
       if(!current())return;
       const G=q.game||game();
       if(hints.game!=='unknown'&&hints.game!==G){q.aiMessage='This looks like a different game. Switch games and try again, or enter the name and bottom number.';return;}

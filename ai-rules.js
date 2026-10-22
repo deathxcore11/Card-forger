@@ -1,3 +1,4 @@
+import { aiFetch } from './ai-auth.js';
 // Rules-only AI companion. Session memory stays local and is never sent as official evidence.
 import { esc } from './ui.js';
 import { aiOrb } from './ai-ui.js';
@@ -142,7 +143,8 @@ export async function askRules(question, fetcher) {
   const pending = (async () => {
     try {
       await Promise.resolve(); // Set pending before even a synchronously failing transport.
-      const response = await (fetcher || session.fetcher)('/api/ai/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...session.context, question, ...(priorQuestions.length ? { priorQuestions } : {}) }), signal: AbortSignal.any([controller.signal, AbortSignal.timeout(70000)]) });
+      if (session.generation !== generation) return;
+      const response = await aiFetch('/api/ai/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...session.context, question, ...(priorQuestions.length ? { priorQuestions } : {}) }), signal: AbortSignal.any([controller.signal, AbortSignal.timeout(70000)]) }, fetcher || session.fetcher);
       let data; try { data = await response.json(); } catch { throw Error('The rules guide is unavailable. Check your connection.'); }
       if (session.generation !== generation) return;
       if (!response.ok) throw Error(data.message || 'The rules guide is unavailable right now.');

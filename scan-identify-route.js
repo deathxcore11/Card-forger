@@ -1,3 +1,4 @@
+import { isNativeAdmitted } from './native-backend-contract.js';
 // Photo interpretation only. No catalogue IDs, prices, guessed condition, or
 // save action come from the model. The browser resolves hints to real records.
 const reply=(body,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
@@ -20,7 +21,7 @@ export async function scanIdentifyRoute(request,env,{fetcher=fetch}={}) {
  const limited=env.AI_LIMITS_ENABLED!=='false',available=!!(env.OPENAI_API_KEY&&(!limited||env.AI_REVIEW_LIMITS));
  if(request.method==='GET')return reply({available});
  if(request.method!=='POST')return reply({message:'Use POST.'},405);
- if(request.headers.get('Origin')!==new URL(request.url).origin||request.headers.get('Sec-Fetch-Site')==='cross-site')return reply({message:'Open photo identification from CardStashy.'},403);
+ if (!isNativeAdmitted(request) && (request.headers.get('Origin')!==new URL(request.url).origin||request.headers.get('Sec-Fetch-Site')==='cross-site'))return reply({message:'Open photo identification from CardStashy.'},403);
  if(!available)return reply({message:'AI photo help is unavailable right now. Enter the card name and bottom number instead.'},503);
  if(!/^application\/json(?:;|$)/i.test(request.headers.get('Content-Type')||''))return reply({message:'Send JSON.'},415);
  try {

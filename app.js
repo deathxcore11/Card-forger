@@ -1,3 +1,4 @@
+import { configureAiAuth, invalidateAiAuth } from './ai-auth.js';
 import {openPackPreview,ptcgSetRarities,trimPackArt} from './pack-preview.js';
 // Booster pack photos trim to the pack itself wherever they appear.
 document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]'))trimPackArt(e.target);},true);
@@ -40,7 +41,7 @@ import {brandMark} from './brand.js';
 import {syncDataLoading} from './data-loading.js';
 import {ownedCardLots,quickQuantity,adjustOwnedLot} from './quick-quantity.js';
 import {conditionName,conditionValue,conditionPriceHtml,conditionManualPlaceholder,attachConditionInfo} from './condition-value.js';
-import { showAiReview } from './ai-review.js';
+import { showAiReview, clearAiReviews } from './ai-review.js';
 import { openAsk, clearAskConversations } from './ai-ask.js';
 import { isDeckBuildRequest } from './ai-deck-goal.js';
 import { openRulesAsk, closeRulesAsk, clearRulesConversations } from './ai-rules.js';
@@ -1692,6 +1693,7 @@ attachRuleHover();
 attachSuggest({lookup:homeLookup});
 attachGlassSelects();
 configureConditionAuth(cloudAccessToken);
+configureAiAuth(cloudAccessToken);
 let conditionScheduler=createConditionRefreshScheduler();
 function conditionCardFor(entry,game){
  const card=game==='mtg'?(entry.printingVerified&&S.state.printings?.[entry.printingId])||meta(entry.name):T.cardOf(game,entry.cardId);
@@ -6221,6 +6223,7 @@ async function boot() {
     reconciled:()=>{if(!accountLocked&&!valueHistoryReady){valueHistoryReady=true;importReadyValueHistory();}},
     recovered:()=>{if(settingsPopup.isOpen)settingsPopup.refresh();},
     accountChanged: () => {
+      invalidateAiAuth();clearAiReviews();
       dismissConditionInfo();aiMatchups.reset();resetMatchups();matchupImport=null;
       accountLocked=true;valueHistoryReady=false;accountGeneration++;workspaceVisitRevision++;lastUndo=null;
       community.reset();deckBoxTransitions.reset();clearConditionAttempts();conditionScheduler=createConditionRefreshScheduler();
@@ -6305,7 +6308,7 @@ async function boot() {
   window.addEventListener('storage',async event=>{
     if(event.key!=='cardstashy-workspace-changed'||accountLocked)return;
     if(!await accountWorkspaces.current()){
-      accountLocked=true;accountGeneration++;pauseLocalConflict();
+      accountLocked=true;accountGeneration++;invalidateAiAuth();clearAiReviews();pauseLocalConflict();
       for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
       render();
     }

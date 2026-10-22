@@ -55,3 +55,7 @@ daily-card-route.js
 
 weekly-curation.js
 weekly-curation-route.js
+
+# Server-only exact native admission; never exposed as static assets.
+native-backend-contract.js
+native-service-policy.js

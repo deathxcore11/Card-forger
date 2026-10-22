@@ -26,6 +26,7 @@ let finish, signal, called=0;
 openAsk();
 const pending=ask('old question',async(u,init)=>{called++;signal=init.signal;return new Promise(r=>finish=r);});
 await ask('double tap',()=>{throw Error('Duplicate request');});
+await new Promise(resolve=>setImmediate(resolve));
 assert.equal(called,1);
 closeAsk();assert.equal(signal.aborted,true,'closing aborts the pending network request');
 openAsk({game:'ptcg'});
@@ -43,7 +44,9 @@ assert.deepEqual(JSON.parse(boundedToolOutput({cards:[]})),{cards:[]});
 // Repeated cancellation must never surface stale errors or leave a new dialog busy.
 for(let i=0;i<100;i++){
  openAsk();let reject;
- const p=ask('pending network question',()=>new Promise((r,j)=>reject=j));closeAsk();openAsk();
+ const p=ask('pending network question',()=>new Promise((r,j)=>reject=j));
+ while(!reject) await new Promise(r=>setImmediate(r));
+ closeAsk();openAsk();
  reject(Error('stale failure'));await p;closeAsk();
 }
 console.log('PASS: one Ask on Search, no Search/Ask prompts on personal Home in all three games; duplicate-submit guard, close/reopen network and tool races, 100 cancellation cycles, valid bounded tool JSON.');

@@ -1,3 +1,4 @@
+import { aiFetch } from './ai-auth.js';
 import {parseMatchupIntent,selectMatchupOpponent,buildMatchupRequest,validateMatchupAnalysis,matchupFormat} from './ai-matchup-core.js';
 export const matchupFingerprint=deck=>JSON.stringify([deck?.id,deck?.format,deck?.cards,deck?.side,deck?.commander,deck?.commanders]);
 // All results are ephemeral. A request never writes a collection, deck or Power score.
@@ -39,7 +40,7 @@ export function createMagicMatchups({getDeck,state,lookup,loadMeta,metaKey,resol
    await resolveNames(names);if(!valid(op))return;
    const request=buildMatchupRequest({deck:op.deck,opponent:op.st.opponent,lookup,question:op.st.question,mode:op.st.mode});
    const selection=JSON.stringify([op.st.opponent,op.st.question,op.st.mode]);op.st.request=request;
-   const response=await fetcher('/api/ai/matchup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.any([op.controller.signal,AbortSignal.timeout(110000)])});
+   const response=await aiFetch('/api/ai/matchup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.any([op.controller.signal,AbortSignal.timeout(110000)])}, fetcher);
    const body=await response.json();if(!valid(op)||selection!==JSON.stringify([op.st.opponent,op.st.question,op.st.mode]))return;
    if(!response.ok)throw Error(body.message||'AI Matchups is unavailable. Please try again later.');
    op.st.result=validateMatchupAnalysis(body.analysis||body,request);

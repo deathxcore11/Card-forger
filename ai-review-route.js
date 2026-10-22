@@ -1,3 +1,4 @@
+import { isNativeAdmitted } from './native-backend-contract.js';
 import {cleanCriteria, coachHandProfile} from './coach-evidence.js';
 export {cleanCriteria} from './coach-evidence.js';
 import {matchupCutIsExplained} from './pokemon-role.js';
@@ -242,7 +243,7 @@ export async function aiReviewRoute(request, env, { fetcher = fetch } = {}) {
   if (request.method !== 'POST') return reply({ message: 'Use POST for a deck review.' }, 405, { Allow: 'GET, POST' });
   if (!configured) return reply({ message: 'AI review is not connected yet. Your deck checks still work.' }, 503);
   const origin = request.headers.get('Origin');
-  if (origin !== new URL(request.url).origin || request.headers.get('Sec-Fetch-Site') === 'cross-site') return reply({ message: 'Open AI review from this app.' }, 403);
+  if (!isNativeAdmitted(request) && (origin !== new URL(request.url).origin || request.headers.get('Sec-Fetch-Site') === 'cross-site')) return reply({ message: 'Open AI review from this app.' }, 403);
   if (!/^application\/json(?:;|$)/i.test(request.headers.get('Content-Type') || '')) return reply({ message: 'Send a JSON deck.' }, 415);
   try {
     const deck = cleanDeck(await readBounded(request));

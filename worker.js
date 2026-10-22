@@ -1,3 +1,6 @@
+import { checkNativeBackendRequest, withNativeResponseHeaders, createSupabaseBearerVerifier, isNativeAdmitted, releaseNativeAdmission } from './native-backend-contract.js';
+import { NATIVE_ORIGIN } from './native-service-policy.js';
+import { SUPABASE } from './config.js';
 import {aiMatchupRoute} from './ai-matchup-route.js';
 export {DailyCards} from './daily-card-route.js';
 import {dailyCardRoute} from './daily-card-route.js';
@@ -139,7 +142,7 @@ export async function lensUpload(request, url, fetchImpl = fetch) {
   const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
   if (request.method !== "POST") return json({ error: "POST a picture." }, 405);
   const origin = request.headers.get("Origin");
-  if (origin && origin !== url.origin) return json({ error: "Not allowed." }, 403);
+  if (!isNativeAdmitted(request) && origin && origin !== url.origin) return json({ error: "Not allowed." }, 403);
   const type = request.headers.get("Content-Type") || "";
   if (!/^image\/(jpeg|png|webp)$/.test(type)) return json({ error: "Send a JPEG, PNG or WebP picture." }, 415);
   const img = await request.arrayBuffer();
@@ -166,7 +169,7 @@ export function assetLinks(apps = ANDROID_APPS) {
 
 export const PRICE_CRON = "41 7 * * *";
 
-export default {
+const handlers = {
   // Daily refresh of the popular formats, so visitors rarely wait on TopDeck.
   async scheduled(event, env, ctx) {
     // Separate trigger for shared price history (each run has its own request budget).
@@ -256,5 +259,48 @@ export default {
     const res = new Response(upstream.body, { headers: { "Content-Type": type, "Cache-Control": `public, max-age=${MONTH}, immutable` } });
     ctx.waitUntil(cache.put(request, res.clone()));
     return res;
+  },
+};
+
+// Native PKCE callbacks belong to the Android verifier, never the web app.
+const ANDROID_CALLBACK_PATH = '/auth/android/callback';
+const ANDROID_CALLBACK_HTML = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>Return to CardStashy on Android</title></head><body><main><h1>Return to CardStashy on Android</h1><p>This sign-in link belongs to the Android app. Open CardStashy on your Android device to continue.</p><p>If sign-in did not finish or this link did not open the app, start sign-in again inside the Android app and use a fresh link. This web page cannot complete Android sign-in.</p><p>Keep this window private. You can close it after returning to the app.</p></main></body></html>';
+function androidCallbackLanding(request, url) {
+  // Reserve callback-like aliases too: never send their code to the SPA fallback.
+  let path = url.pathname;
+  for (let i = 0; i < 4 && path.includes('%'); i++) {
+    try { const next = decodeURIComponent(path); if (next === path) break; path = next; } catch { break; }
+  }
+  if (path !== ANDROID_CALLBACK_PATH && !path.startsWith(ANDROID_CALLBACK_PATH + '/')) return null;
+  const headers = {
+    'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
+    'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff',
+    'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',
+    'Content-Security-Policy': "default-src 'none'; script-src 'none'; style-src 'none'; img-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'",
+  };
+  const canonical = url.origin === 'https://cardstashy.com' && url.pathname === ANDROID_CALLBACK_PATH;
+  if (!canonical) return new Response(request.method === 'HEAD' ? null : 'Not found.', { status: 404, headers });
+  if (!['GET', 'HEAD'].includes(request.method)) return new Response('Method not allowed.', { status: 405, headers: { ...headers, Allow: 'GET, HEAD' } });
+  return new Response(request.method === 'HEAD' ? null : ANDROID_CALLBACK_HTML, { status: 200, headers });
+}
+
+// Preserve all legacy web paths except the explicitly required signed-in AI POST.
+export default {
+  ...handlers,
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const callback = androidCallbackLanding(request, url);
+    if (callback) return callback;
+    const native = request.headers.get('Origin') === NATIVE_ORIGIN;
+    const aiPost = request.method === 'POST' && /^\/api\/ai\/(?:ask|deck-review|matchup|identify-card)$/.test(url.pathname);
+    if (!native && !aiPost) return handlers.fetch(request, env, ctx);
+    let verifyBearer;
+    if (aiPost) {
+      try { verifyBearer = createSupabaseBearerVerifier({ url: env.SUPABASE_URL || SUPABASE.url, key: env.SUPABASE_ANON_KEY || SUPABASE.key, fetcher: fetch }); } catch {}
+    }
+    const admission = await checkNativeBackendRequest(request, { verifyBearer });
+    if (!admission.allowed) return admission.response;
+    try { return withNativeResponseHeaders(await handlers.fetch(request, env, ctx), admission); }
+    finally { releaseNativeAdmission(request); }
   },
 };

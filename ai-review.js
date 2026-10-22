@@ -1,3 +1,4 @@
+import { aiFetch } from './ai-auth.js';
 import {powerEligibility, shownPower} from './power.js';
 import {mtgResourceProfile} from './mtg-effects.js';
 import {cleanCriteria, cleanConstructed, coachHandProfile} from './coach-evidence.js';
@@ -327,6 +328,7 @@ function updateDialog() {
   body.innerHTML = aiReviewDialogContent(activeDialog.entry, activeDialog.stale);
   activeDialog.node.querySelector('.ai-dialog-status').textContent = activeDialog.stale ? 'Deck changed' : activeDialog.entry.busy ? 'Coaching in progress' : activeDialog.entry.error ? 'Coaching unavailable' : 'Coaching ready';
 }
+export function clearAiReviews() { closeAiReview(); entries.clear(); }
 export function closeAiReview() {
   if (!activeDialog) return;
   const { node, key } = activeDialog; activeDialog = null;
@@ -419,8 +421,11 @@ export async function runAiReview(key, render, fetcher = fetch) {
   const entry = entries.get(key); if (!entry || entry.busy || entry.result) return;
   entry.busy = true; entry.error = ''; entry.errorCode = ''; entry.verified = null; render(); updateDialog();
   try {
-    const r = await fetcher('/api/ai/deck-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(await withCandidates(entry)), signal: AbortSignal.timeout(110000) });
+    const request = await withCandidates(entry);
+    if (entries.get(key) !== entry) return;
+    const r = await aiFetch('/api/ai/deck-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), signal: AbortSignal.timeout(110000) }, fetcher);
     let data; try { data = await r.json(); } catch { throw Error('AI coaching is unavailable. Check your connection and try later.'); }
+    if (entries.get(key) !== entry) return;
     if (!r.ok) throw Object.assign(Error(data.message || 'AI coaching is unavailable. Try later.'), { code: data.code || '' });
     if (!data || typeof data.headline !== 'string' || !data.pilot || !data.pressure || !Array.isArray(data.improve)) throw Error('AI coaching returned an unreadable response.');
     entry.result = data; entry.verified = null;

@@ -1,3 +1,4 @@
+import { isNativeAdmitted } from './native-backend-contract.js';
 import { prepareRulesQuestion, finishRulesQuestion } from './ai-rules-route.js';
 import { isDeckBuildRequest } from './ai-deck-goal.js';
 // Ask AI: an in-app assistant. OpenAI decides which of the app's own functions to call; the app
@@ -91,7 +92,7 @@ export async function aiAskRoute(request, env, { fetcher = fetch } = {}) {
   if (request.method !== 'POST') return reply({ message: 'Use POST.' }, 405);
   if (!configured) return reply({ message: 'Ask AI is not connected yet.' }, 503);
   const origin = request.headers.get('Origin');
-  if (origin !== new URL(request.url).origin || request.headers.get('Sec-Fetch-Site') === 'cross-site') return reply({ message: 'Open Ask AI from this app.' }, 403);
+  if (!isNativeAdmitted(request) && (origin !== new URL(request.url).origin || request.headers.get('Sec-Fetch-Site') === 'cross-site')) return reply({ message: 'Open Ask AI from this app.' }, 403);
   if (!/^application\/json(?:;|$)/i.test(request.headers.get('Content-Type') || '')) return reply({ message: 'Send JSON.' }, 415);
   try {
     const raw = await readBounded(request);

@@ -106,8 +106,8 @@ for (const game of ['mtg', 'ygo', 'ptcg']) {
 const d = { id: 'race', cards: [{ name: 'Test', qty: 1 }] }, lookup = () => ({ name: 'Test', oracle_text: card.text });
 aiReviewPanel('mtg', d, lookup, p); let finish;
 const pending = runAiReview('mtg:race', () => {}, () => new Promise(resolve => { finish = resolve; }));
-d.cards[0].qty = 2; aiReviewPanel('mtg', d, lookup, p);
 while (!finish) await new Promise(r => setTimeout(r, 1));
+d.cards[0].qty = 2; aiReviewPanel('mtg', d, lookup, p);
 finish(Response.json({ ...review, omitted: 0 })); await pending;
 assert.doesNotMatch(aiReviewPanel('mtg', d, lookup, p), /Needs fodder/);
 // Model output is escaped in the UI, including citations.

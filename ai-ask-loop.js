@@ -1,3 +1,4 @@
+import { aiFetch } from './ai-auth.js';
 import {readBuildContract,applyUserBuildIntent,validateBuildProposal,lockBuildContract,proposalFeedback} from './ai-build-contract.js';
 import {isDeckBuildRequest} from './ai-deck-goal.js';
 // Shared, bounded orchestration. Repeated calls never spend another lookup and a
@@ -60,7 +61,7 @@ export async function runAskLoop({game,items,tools,fetcher=fetch,signal,current=
  for(let round=0;round<ASK_LIMITS.rounds;round++){
   if(!current()||signal?.aborted)return interrupted();
   const finish=round===ASK_LIMITS.rounds-1||records.length>=ASK_LIMITS.tools;
-  const r=await fetcher('/api/ai/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({game,items,finish}),signal:signal?AbortSignal.any([signal,AbortSignal.timeout(70000)]):AbortSignal.timeout(70000)});
+  const r=await aiFetch('/api/ai/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({game,items,finish}),signal:signal?AbortSignal.any([signal,AbortSignal.timeout(70000)]):AbortSignal.timeout(70000)}, fetcher);
   if(!current()||signal?.aborted)return interrupted();
   let data;try{data=await r.json();}catch{throw Error('Ask AI is unavailable. Check your connection.');}
   if(!current()||signal?.aborted)return interrupted();

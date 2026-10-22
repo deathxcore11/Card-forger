@@ -1,3 +1,4 @@
+import { isNativeAdmitted } from './native-backend-contract.js';
 // Server-only, one bounded paid call through the existing shared AI allowance.
 import { cleanMatchupRequest, validateMatchupAnalysis, matchupAnalysisSchema, MATCHUP_INSTRUCTIONS } from './ai-matchup-core.js';
 import { loadServerRulePack, retrieveRules, sourceCoverage } from './rules-retrieval.js';
@@ -19,7 +20,7 @@ export async function aiMatchupRoute(request,env,{fetcher=fetch}={}) {
   if(request.method==='GET')return reply({available:configured,game:'mtg',beta:true,scoreChanges:false,limitsEnabled});
   if(request.method!=='POST')return reply({message:'Use POST for an AI matchup.'},405,{Allow:'GET, POST'});
   if(!configured)return reply({message:'AI Matchups is not connected yet. Your decks and Power checks are unchanged.'},503);
-  if(request.headers.get('Origin')!==new URL(request.url).origin||request.headers.get('Sec-Fetch-Site')==='cross-site')return reply({message:'Open AI Matchups from this app.'},403);
+  if (!isNativeAdmitted(request) && (request.headers.get('Origin')!==new URL(request.url).origin||request.headers.get('Sec-Fetch-Site')==='cross-site'))return reply({message:'Open AI Matchups from this app.'},403);
   if(!/^application\/json(?:;|$)/i.test(request.headers.get('Content-Type')||''))return reply({message:'Send a JSON matchup.'},415);
   try {
     const context=cleanMatchupRequest(await readBounded(request));
