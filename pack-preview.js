@@ -193,6 +193,14 @@ export function packArtUrl(game,set={}){
 }
 // Which cards come out shiny, the way real boosters work: holo-only Pokémon (holo rares, full arts) in
 // their foil, Pokémon reverse slots as reverse holos, and Magic's foil slot in traditional foil.
+// The finish a pulled card came out in, named next to its rarity: reverse holos and holos for
+// Pokémon (unless the rarity already says Holo), foils and etched foils for Magic. Yu-Gi-Oh! rarities
+// already name their finish.
+export function packFinishLabel(game,pulled={},rarity=''){
+ if(game==='ptcg'){if(pulled.priceFinish==='reverse-holofoil')return 'Reverse Holo';if(pulled.priceFinish==='holofoil'&&!/holo/i.test(rarity))return 'Holo';}
+ if(game==='mtg'){if(pulled.finish==='foil')return 'Foil';if(pulled.finish==='etched')return 'Etched foil';}
+ return '';
+}
 export function packFinishes(game,picks){
  const has=(c,k)=>finishChoices(game,c,{}).some(v=>v.key===k&&v.status!=='unknown');
  return picks.map(c=>{
@@ -264,7 +272,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   focusCard.setAttribute('aria-label',open?`${c.name}. Open card`:`Card ${focus+1}, face down. Reveal`);
   if(open){const src=setImageUrl(cardArt(c));if(faceImg.getAttribute('src')!==src)faceImg.src=src;const attrs=finishAttrs(game,c,ctxs[focus],'pack');const tmp=document.createElement('span');tmp.innerHTML=`<i ${attrs}></i>`;const i2=tmp.firstChild;for(const a of ['data-finish-game','data-finish-effect','data-finish-model'])face.setAttribute(a,i2.getAttribute(a));face.dataset.finishSurface='pack';}
   else{face.removeAttribute('data-finish-model');faceImg.removeAttribute('src');focusCard.style.removeProperty('aspect-ratio');}
-  meta.querySelector('b').textContent=open?c.name:'';meta.querySelector('.pack-rarity').innerHTML=open?rarityEmblem(game,rarity.label):'';
+  meta.querySelector('b').textContent=open?c.name:'';meta.querySelector('.pack-rarity').innerHTML=open?rarityEmblem(game,rarity.label,{finish:packFinishLabel(game,ctxs[focus]||{},rarity.label)}):'';
  };
  // Pulled shiny slots load their full card in the background and pick up their holo before they are seen.
  let deal=0;const fill=()=>{if(!hydrate)return;const n=++deal,now=picks;now.forEach((c,i)=>{if((!c.packSlot&&packRarity(game,c).rank<2)||c.variants?.length||(featured&&c===featured))return;

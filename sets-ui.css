@@ -220,6 +220,8 @@ body:not(.glass) .set-atmosphere{display:none}
 .rx-mark{display:inline-flex;align-items:center}.rx-mark img.pkr{height:13px;max-width:34px}.rx-mark .rar{font-size:13px;letter-spacing:0}
 .rx-gem{width:15px;height:15px;flex:none;filter:drop-shadow(0 1px 1px #0009)}.rx-gem-body{fill:var(--gem,#222)}.rx-gem-facet{fill:none;stroke:#ffffff70;stroke-width:.7}
 .rx-shine .rx-text{background:var(--rx-foil) 0 0/250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rx-sweep 3.2s linear infinite}
+.rx-finish{background:linear-gradient(100deg,#e9edf3 15%,#9fe6ff 30%,#ffc6f0 45%,#fff3a8 60%,#e9edf3 75%) 0 0/250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rx-sweep 3.2s linear infinite;font-weight:700}
+@media (prefers-reduced-motion:reduce){.rx-finish{animation:none}}
 @keyframes rx-sweep{to{background-position:-250% 0}}
 /* Magic: the set-symbol colours. */
 .rx-mtg.rx-common{--gem:#1d1d1f}.rx-mtg.rx-common .rx-gem-facet{stroke:#ffffffa0}

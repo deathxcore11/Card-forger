@@ -57,6 +57,8 @@ assert.deepEqual(shapeBox(maskShape(FINISH_MASKS.card)),[0,0,1,1]);
  assert(at(60,18)>.9,'The head above the window is kept as ink');
  assert.equal(at(5,Y(.3)),0,'Frame beside the window stays foil');assert.equal(at(X(.5),Y(.5)+1),0,'The thin window border stays foil');
  assert.equal(at(60,Y(.61)),0,'Attack text below the window is not mistaken for overflow');assert.equal(at(60,Y(.3)),0,'Inside the window is left to the window mask');}
+// Rows with only the card id still reach the set's own sheet (bw1-5 -> Black & White Tinsel).
+assert.equal(withPtcgTreatment({id:'bw1-5',rarity:'Rare'},{effect:'ptcg-holo',status:'approximate',layers:[{mask:'pk-bwxy-art',material:'holo'}]}).treatment,'ptcg-tinsel');
 // Preset wiring: treatments follow the measured mask's era; unknown and plain presets stay untouched.
 const p=withPtcgTreatment({rarity:'Rare'},{effect:'ptcg-holo',status:'approximate',layers:[{mask:'pk-neo-art',material:'holo'}]});assert.equal(p.treatment,'ptcg-wotc-holo');
 assert.equal(withPtcgTreatment({},{effect:'ptcg-reverse',status:'approximate',layers:[{mask:'pk-lc-surround'}]}).treatment,'ptcg-lc-reverse');

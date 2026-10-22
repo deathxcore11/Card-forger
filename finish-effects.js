@@ -348,11 +348,14 @@ export function finishChoices(game,c,ctx={}){
 // Full-size Pokémon cards draw the era's or variant's own foil sheet with WebGL (ptcg-foil.js) over the
 // same measured mask as the CSS layer; the CSS layer stays as the light fallback.
 const PK_MASK_ERA=[[/^pk-(?:base|wotc)/,'pk-wotc'],[/^pk-gym/,'pk-gym'],[/^pk-neo/,'pk-neo'],[/^pk-lc/,'pk-lc'],[/^pk-(?:ecard|expedition)/,'pk-ecard'],[/^pk-exa/,'pk-exa'],[/^pk-exb/,'pk-exb'],[/^pk-dppt/,'pk-dppt'],[/^pk-hgss/,'pk-hgss'],[/^pk-bwxy/,'pk-bwxy'],[/^pk-sm/,'pk-sm'],[/^pk-(?:swsh|cel-)/,'pk-swsh'],[/^pk-sv/,'pk-sv']];
+// The printing's TCGdex set id and number pick the set's own foil sheet. Saved rows may carry only
+// the card id (set-id plus number), so read them from it when the set object is absent.
+const ptcgPrint=c=>{const m=String(c?.id||'').match(/^(.+)-([^-]+)$/);return {set:c?.set?.id||m?.[1]||'',number:c?.set?.number??c?.localId??m?.[2]??''};};
 export function withPtcgTreatment(c,p){
  if(!p||p.status==='unknown'||p.effect==='plain'||!p.layers?.length)return p;
  const mask=p.layers[0].mask,era=PK_MASK_ERA.find(([re])=>re.test(mask))?.[1]||'',fullArt=p.effect==='ptcg-full-art'||p.coverage==='full';
  const finish=p.effect==='ptcg-reverse'?'reverse-holofoil':'holofoil',gold=p.layers.some(l=>l.material==='gold')||p.pattern==='gold';
- const treatment=ptcgFoilEffect({finish,era:fullArt?'':era,foil:p.pattern||'',rarity:c?.rarity,fullArt,textured:p.texture==='micro-ridges',gold,set:c?.set?.id,number:c?.set?.number??c?.localId});
+ const treatment=ptcgFoilEffect({finish,era:fullArt?'':era,foil:p.pattern||'',rarity:c?.rarity,fullArt,textured:p.texture==='micro-ridges',gold,...ptcgPrint(c)});
  return treatment&&PTCG_FOIL_RECIPES[treatment]?{...p,treatment}:p;
 }
 // A pricing reference is not a physical finish or an edition selection.

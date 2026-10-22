@@ -88,4 +88,11 @@ const dd=await dailyDetails('mtg',{id:'d1',date:'2026-10-21',printing:daze},asyn
 assert.equal(dd.set.pack.code,'sos');assert.equal(dd.card,daze);
 const resh=normalizePtcg({id:'sv10-017',localId:'017',name:'Reshiram',category:'Pokemon',rarity:'Rare',set:{id:'sv10',name:'X'},variants:{normal:false,reverse:true,holo:true,firstEdition:false}});
 assert.deepEqual(packFinishes('ptcg',[{...resh,packSlot:'reverse'},{...resh,packSlot:'hit'},resh]),[{priceFinish:'reverse-holofoil'},{priceFinish:'holofoil'},{priceFinish:'holofoil'}],'a holo rare shines in its pack; in a reverse slot it is a reverse holo');
+// The reveal names the finish beside the rarity, in the same pill.
+{const {packFinishLabel}=await import('./pack-preview.js'),{rarityEmblem}=await import('./rarity-emblem.js');
+ assert.equal(packFinishLabel('ptcg',{priceFinish:'reverse-holofoil'},'Uncommon'),'Reverse Holo');assert.equal(packFinishLabel('ptcg',{priceFinish:'holofoil'},'Rare'),'Holo');
+ assert.equal(packFinishLabel('ptcg',{priceFinish:'holofoil'},'Rare Holo'),'','the rarity already says Holo');assert.equal(packFinishLabel('ptcg',{},'Common'),'');
+ assert.equal(packFinishLabel('mtg',{finish:'foil'},'common'),'Foil');assert.equal(packFinishLabel('mtg',{finish:'etched'},'rare'),'Etched foil');assert.equal(packFinishLabel('mtg',{},'common'),'');assert.equal(packFinishLabel('ygo',{},'Secret Rare'),'');
+ const pill=rarityEmblem('mtg','common',{finish:'Foil'});assert.match(pill,/<span class="rx-finish">Foil<\/span> · Common/);assert.match(pill,/title="Foil · common"/);assert.doesNotMatch(rarityEmblem('mtg','common'),/rx-finish/);
+ assert.match((await import('node:fs')).readFileSync('pack-preview.js','utf8'),/rarityEmblem\(game,rarity\.label,\{finish:packFinishLabel\(game,ctxs\[focus\]\|\|\{\},rarity\.label\)\}\)/,'the reveal passes the pulled finish');}
 console.log('PASS: packs follow typical slot structure and pull rates; Yu-Gi-Oh! multi-rarity cards are pulled in one rarity; booster pack artwork picks the set’s own pack, including sets named “Collection”, and never boxes, sleeved packs or boxed collections.');
