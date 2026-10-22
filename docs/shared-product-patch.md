@@ -3,7 +3,7 @@
 This branch is a release candidate, not a published release. Production
 base: `79b43e2a9d9c27add971db5ce3b47f79c009768b` (published website 3.91.10,
 Android 0.3.3-beta). Candidate: website 3.92.0 and Android 0.4.0-beta
-(versionCode 5, bundled interface 3.92.0), built from commit `7825421`. Nothing
+(versionCode 5, bundled interface 3.92.0), built from commit `08301ce`. Nothing
 is deployed or promoted until the owner approves the release.
 
 ## Shared behavior implemented
@@ -92,18 +92,20 @@ cause has been established and no production setting was changed.
 - Scryfall busy/429 (no CORS headers, so "Failed to fetch"): requests back off
   and retry, the meta-deck import retries a failed batch once, and the card sheet
   offers Try again instead of a spelling hint.
+- Pack reveals name the finish beside the rarity (Reverse Holo, Holo, Foil,
+  Etched foil), in the same rarity pill.
 - Home retries the Card of the Day (15 s, 1 min, after the 5-minute server
   cooldown) instead of leaving Magic's hero blank for the day.
 
 ## Android artifact
 
 `downloads/cardstashy-android-beta-0.4.0.apk`: com.cardstashy.app 0.4.0-beta,
-versionCode 5, 25,894,839 bytes, SHA-256
-`d90f4b772795ec29ef596a9c5e19c359d9f62b236bdbd0bd0e3a96bbe4b158b4`, signed with the
+versionCode 5, 25,895,363 bytes, SHA-256
+`8bafa78810002b1a9388725f5636f18ee5bbc48de76f3d983d7b1b5bc8afe317`, signed with the
 established certificate (E6:E4:01…3F:55). Built from the current
 com.cardstashy.app Capacitor source (the pipeline that produced 0.3.0–0.3.3; the
 earlier note calling it the old dev.cardstashy.integration project was wrong),
-pinned to `7825421` with every shared file taken from the commit by `git show`.
+pinned to `08301ce` with every shared file taken from the commit by `git show`.
 
 The app adapts ten shared files (exports, auth exchange, scanner and foil
 lifecycle, offline art, image URL mapping, settings storage, safe-area insets).
@@ -119,9 +121,8 @@ package, versionCode/name and checksum matched, `releaseApproved: true`,
 The draft-branch preview builds fail with Cloudflare error 10067: the account has
 reached the Workers Free limit of 100 Durable Object namespaces. Each preview
 upload of a Worker with Durable Object classes needs namespaces, so the failure
-is account quota, not this code. Fix (owner decision): delete obsolete preview
-namespaces in the Cloudflare dashboard, or move to Workers Paid. Nothing was
-deleted or changed.
+was account quota, not this code. The owner has since moved the account to a paid
+plan; nothing was deleted.
 
 ## Release blockers / remaining evidence
 
@@ -129,8 +130,7 @@ deleted or changed.
    interface 3.92.0; release-record.js populated from the verified artifact.
 2. Done: `python scripts/verify-android-release.py --source . --apk
    downloads/cardstashy-android-beta-0.4.0.apk` passes (see Android artifact).
-3. Owner: approve Durable Object namespace cleanup or a plan change so previews
-   build again (see Cloudflare preview failures).
+3. Done by the owner: paid Cloudflare plan; confirm the next preview build passes.
 4. Test the actual installed APK: cold/slow Home pack opening, exact single/multi
    printing foil, card art, scanner/collection/save, Android Back, native update
    manifest transport, download/install update, and account callback after cold
