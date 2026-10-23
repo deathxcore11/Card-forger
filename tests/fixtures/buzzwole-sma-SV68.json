@@ -1,0 +1,86 @@
+{
+  "category": "Pokemon",
+  "id": "sma-SV68",
+  "illustrator": "5ban Graphics",
+  "image": "https://assets.tcgdex.net/en/sm/sma/SV68",
+  "localId": "SV68",
+  "name": "Buzzwole-GX",
+  "rarity": "Shiny rare",
+  "set": {
+    "cardCount": {
+      "official": 94,
+      "total": 94
+    },
+    "id": "sma",
+    "name": "Hidden Fates Shiny Vault",
+    "symbol": "https://assets.tcgdex.net/univ/sm/sma/symbol"
+  },
+  "variants": {
+    "firstEdition": false,
+    "holo": false,
+    "normal": true,
+    "reverse": false,
+    "wPromo": false
+  },
+  "variants_detailed": [
+    {
+      "type": "normal",
+      "size": "standard",
+      "variantId": "generated"
+    }
+  ],
+  "dexId": [
+    794
+  ],
+  "hp": 190,
+  "types": [
+    "Fighting"
+  ],
+  "suffix": "GX",
+  "attacks": [
+    {
+      "cost": [
+        "Fighting"
+      ],
+      "name": "Jet Punch",
+      "effect": "This attack does 30 damage to 1 of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)",
+      "damage": 30
+    },
+    {
+      "cost": [
+        "Fighting",
+        "Fighting",
+        "Fighting"
+      ],
+      "name": "Knuckle Impact",
+      "effect": "This Pokémon can't attack during your next turn.",
+      "damage": 160
+    },
+    {
+      "cost": [
+        "Fighting",
+        "Fighting",
+        "Fighting"
+      ],
+      "name": "Absorption-GX",
+      "effect": "This attack does 40 damage for each of your remaining Prize cards. (You can't use more than 1 GX attack in a game.)",
+      "damage": 40
+    }
+  ],
+  "weaknesses": [
+    {
+      "type": "Psychic",
+      "value": "×2"
+    }
+  ],
+  "retreat": 2,
+  "legal": {
+    "standard": false,
+    "expanded": true
+  },
+  "updated": "2026-08-20T17:19:03+01:00",
+  "pricing": {
+    "cardmarket": null,
+    "tcgplayer": null
+  }
+}

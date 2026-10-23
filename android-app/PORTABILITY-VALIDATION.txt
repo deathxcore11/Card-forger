@@ -1,0 +1,21 @@
+PORTABLE EXPORT VALIDATION — 22 October 2026
+
+Checks run against this export copy:
+- npm test: 100 passed, 0 failed, with CARDSTASHY_SOURCE unset.
+- npm run build:web: 280 explicit output files from the included source snapshot.
+- Capacitor copy + verify-native-bundle: all packaged assets matched; 722 imports resolve.
+- Negative integrity test: editing shared-source/config.js made the build fail with a
+  snapshot hash mismatch; original bytes restored afterward.
+- Native Java compilation/unit tests passed on the identical staged Java source before
+  export. No Android APK was assembled as part of this export.
+
+Dependency-install limitation:
+For export validation, the existing installed dependency tree from the identical
+package-lock.json was temporarily made available. A clean npm ci download was NOT rerun
+on a separate new machine. That temporary link is not included. New machines must run
+npm ci; standard npm/Gradle downloads and a suitable local SDK/JDK are required.
+
+The archive contains required Gradle wrapper jar and checksummed shared source inputs,
+not dependency caches, compiled app outputs, release credentials or user sessions.
+No live account requests, signing, APK publication or network-gate activation occurred.
+Synthetic checks do not establish physical-device behavior or full-feature parity.

@@ -45,8 +45,8 @@ export function createScryfallClient({fetcher=(...args)=>fetch(...args),timeoutM
      },ctl.signal,/^\/cards\/collection(?:\?|$)/.test(path));
     }catch(e){
      if(ctl.signal.aborted||e.name==='AbortError')throw error(options.signal);
-     // No response at all (TypeError "Failed to fetch"): usually Scryfall's rate limiter, whose
-     // 429 carries no CORS headers. Every request backs off together, longer each time.
+     // No readable response (TypeError "Failed to fetch") can be a connection,
+     // CORS or provider failure. Back off together without guessing the cause.
      const network=!e.status&&e instanceof TypeError;
      if(e.status&&!e.retry||attempt>=2)throw network?Object.assign(Error('Couldn’t reach the card database (Scryfall). It may be busy for a moment; try again shortly.'),{network:true}):e;
      nextStart=Math.max(nextStart,Date.now()+(network?networkBackoffMs*2**attempt:attempt?1500:600));

@@ -1,0 +1,13 @@
+import { existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+const executable=name=>{const r=spawnSync('sh',['-c',`command -v ${name}`],{encoding:'utf8'});return r.status===0?r.stdout.trim():null;};
+const java=executable('java'),javac=executable('javac');
+const roots=[process.env.ANDROID_HOME,process.env.ANDROID_SDK_ROOT,'/opt/android-sdk','/opt/android','/usr/local/lib/android/sdk'].filter(Boolean);
+const sdk=roots.find(x=>existsSync(path.join(x,'platforms'))&&existsSync(path.join(x,'build-tools')))||null;
+const report={node:process.version,java,javaVersion:java?spawnSync(java,['-version'],{encoding:'utf8'}).stderr.trim():null,javac,androidSdk:sdk,adb:executable('adb'),sdkmanager:executable('sdkmanager'),gradleWrapper:existsSync('android/gradlew'),apkBuildReady:!!javac&&!!sdk,blockers:[]};
+if(!javac)report.blockers.push('JDK compiler javac is missing; the installed Java runtime is not a full JDK.');
+if(!sdk)report.blockers.push('Android SDK platforms and build-tools are not installed/configured.');
+if(!report.adb)report.blockers.push('adb is absent; no device/emulator validation is available here.');
+console.log(JSON.stringify(report,null,2));
+if(!report.apkBuildReady)process.exitCode=2;

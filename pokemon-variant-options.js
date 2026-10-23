@@ -1,6 +1,6 @@
 import {pokemonPromoRootProduct} from './pokemon-promo-evidence.js';
 // Pure Pokémon identity helpers. Prices never distinguish physical variants.
-export const POKEMON_VARIANT_SCHEMA=13;
+export const POKEMON_VARIANT_SCHEMA=14;
 export const pokemonPhysicalFinish=v=>v?.finish||({normal:'normal',holo:'holofoil',reverse:'reverse-holofoil'}[v?.type])||({'normal':'normal','holofoil':'holofoil','reverse-holofoil':'reverse-holofoil','1st-edition':'normal','1st-edition-holofoil':'holofoil',unlimited:'normal','unlimited-holofoil':'holofoil'}[v?.key])||'';
 const product=v=>String(v?.thirdParty?.tcgplayer||v?.productId||'');
 const legacyDetailBase=d=>'detail:'+(d.variantId||JSON.stringify([d.type,d.subtype,d.stamp,d.size]));

@@ -2,6 +2,8 @@
 // Shared CDNs are tenant/path restricted; a host alone never proves provenance.
 export const NEWS_SOURCES = Object.freeze({
   wizards: Object.freeze({ game: 'mtg', name: 'Wizards of the Coast', url: 'https://magic.wizards.com/en/news/announcements', official: true }),
+  'pokemon-rules': Object.freeze({ game: 'ptcg', name: 'The Pokémon Company', url: 'https://www.pokemon.com/us/play-pokemon/about/', official: true }),
+  'konami-limited': Object.freeze({ game: 'ygo', name: 'Konami', url: 'https://www.yugioh-card.com/en/limited/', official: true }),
   serebii: Object.freeze({ game: 'ptcg', name: 'Serebii', url: 'https://www.serebii.net/', official: false }),
   pokeguardian: Object.freeze({ game: 'ptcg', name: 'PokéGuardian', url: 'https://www.pokeguardian.com/', official: false }),
   konami: Object.freeze({ game: 'ygo', name: 'Konami', url: 'https://www.yugioh-card.com/en/news/', official: true }),
@@ -25,6 +27,8 @@ export function safeNewsArticle(value, game, sourceId, kind = 'news') {
   if (!source || !u || u.origin !== new URL(source.url).origin || u.search || u.hash) return '';
   const path = u.pathname;
   const valid = sourceId === 'wizards' ? kind === 'news' && /^\/en\/news\/announcements\/[a-z0-9-]+\/?$/.test(path)
+    : sourceId === 'pokemon-rules' ? kind === 'news' && /^\/us\/play-pokemon\/about\/mega-evolution\/[a-z0-9-]+-rule-changes-announcement$/.test(path)
+    : sourceId === 'konami-limited' ? kind === 'news' && /^\/en\/limited\/list_20\d{2}-\d{2}-\d{2}\/$/.test(path)
     : sourceId === 'serebii' ? kind === 'news' && /^\/news\/20\d{2}\/\d{2}-[A-Za-z]+-20\d{2}\.shtml$/.test(path) && path.split('/')[2] === path.match(/-(20\d{2})\.shtml$/)?.[1]
     : sourceId === 'pokeguardian' ? kind === 'news' && /^\/[1-9]\d{3,11}_[a-z0-9-]+\/?$/.test(path)
     : sourceId === 'konami' ? kind === 'news' && /^\/en\/news\/[a-z0-9_-]+\/?$/.test(path)

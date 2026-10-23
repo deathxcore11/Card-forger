@@ -1,0 +1,40 @@
+package dev.cardstashy.integration;
+
+import android.os.Bundle;
+import android.webkit.WebView;
+import androidx.activity.OnBackPressedCallback;
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {
+    private boolean backPending = false;
+
+    @Override public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(CardStashyPlatform.class);
+        registerPlugin(CardStashyArtwork.class);
+        registerPlugin(CardStashyAuth.class);
+        registerPlugin(CardStashyHaptics.class);
+        super.onCreate(savedInstanceState);
+        // Card art at the app's own /img/ paths, cached on the phone like the website's service worker.
+        bridge.setWebViewClient(new CardStashyWebViewClient(bridge));
+        // System Back (gesture or button) asks the app first: it closes the topmost layer or returns one screen.
+        // Only when the app has nothing left to return to does Back fall through to Android's own behaviour.
+        // A cancelled predictive gesture never reaches this callback, so it changes nothing.
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() {
+                WebView web = bridge == null ? null : bridge.getWebView();
+                if (web == null || backPending) { if (web == null) systemBack(this); return; }
+                backPending = true;
+                web.evaluateJavascript("(function(){try{return !!(globalThis.cardstashyBack&&globalThis.cardstashyBack());}catch(e){return false;}})()", result -> {
+                    backPending = false;
+                    if (!"true".equals(result)) systemBack(this);
+                });
+            }
+        });
+    }
+
+    private void systemBack(OnBackPressedCallback callback) {
+        callback.setEnabled(false);
+        getOnBackPressedDispatcher().onBackPressed();
+        callback.setEnabled(true);
+    }
+}

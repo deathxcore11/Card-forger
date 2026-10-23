@@ -1,0 +1,32 @@
+#native-integration-status { position: relative; z-index: 100; padding: 6px 12px; font: 12px/1.4 system-ui,sans-serif; background: #243144; color: #fff; text-align: center; }
+html[data-native-app-state="background"] .finish-auto { animation-play-state: paused !important; }
+/* Phone layouts reset the top bar's padding-block, which drops the website's status-bar inset;
+   keep the inset (the build makes env() read Capacitor's --safe-area-inset-top) above the buttons. */
+@media (max-width:1199px) { html .topbar { padding-top: calc(env(safe-area-inset-top) + 8px); } }
+@media (min-width:700px) and (max-width:1199px) and (max-height:600px) { html .topbar { padding-top: calc(env(safe-area-inset-top) + 6px); } }
+/* Pop-ups are sized against the whole screen. In the app, keep each one between the status and
+   navigation bars so a tall one never puts its close button under the status bar. Every rule
+   below mirrors the website's own breakpoint and equals its value when there are no insets. */
+html :is(.settings-dialog,.profile-art-dialog,.pack-dialog,.community-dialog,.tabletop-dialog,.ai-review-dialog,.ask-dialog):modal {
+  --app-safe-top: env(safe-area-inset-top);
+  --app-safe-bottom: env(safe-area-inset-bottom);
+  --app-safe-height: calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom));
+}
+/* Centred pop-ups: centre within the safe area. */
+html :is(.settings-dialog,.profile-art-dialog,.pack-dialog,.community-dialog,.tabletop-dialog):modal { top: var(--app-safe-top); bottom: var(--app-safe-bottom); }
+html .settings-dialog:modal, html .profile-art-dialog:modal { max-height: calc(var(--app-safe-height) - 32px); }
+html .pack-dialog:modal { max-height: calc(var(--app-safe-height) - 16px); }
+html .community-dialog:modal { max-height: min(92dvh, calc(var(--app-safe-height) - 16px)); }
+html .tabletop-dialog:modal { max-height: min(94dvh, calc(var(--app-safe-height) - 16px)); }
+@media (max-width:699px) { html .tabletop-dialog:modal { max-height: min(96dvh, calc(var(--app-safe-height) - 8px)); } }
+@media (max-width:520px) { html .settings-dialog:modal { max-height: calc(var(--app-safe-height) - 16px); } }
+@media (min-width:521px) {
+  html :is(.ai-review-dialog,.ask-dialog):modal { top: var(--app-safe-top); bottom: var(--app-safe-bottom); }
+  html .ai-review-dialog:modal { max-height: min(85dvh, calc(var(--app-safe-height) - 16px)); }
+  html .ask-dialog:modal { height: min(760px, 88dvh, calc(var(--app-safe-height) - 16px)); }
+}
+/* Phone bottom sheets already sit above the navigation bar; stop their top below the status bar. */
+@media (max-width:520px) {
+  html .ai-review-dialog:modal { max-height: min(88dvh, calc(100dvh - var(--app-safe-top) - max(12px, var(--app-safe-bottom)) - 8px)); }
+  html .ask-dialog:modal { height: min(92dvh, calc(100dvh - var(--app-safe-top) - max(8px, var(--app-safe-bottom)) - 8px)); }
+}

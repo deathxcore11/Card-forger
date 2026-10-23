@@ -1,0 +1,15 @@
+diff --git a/mtg-foil.js b/mtg-foil.js
+index d30bc8a..d0edacb 100644
+--- a/mtg-foil.js
++++ b/mtg-foil.js
+@@ -92,6 +92,10 @@ void main(){
+  // patterned sheets are softer there so the text stays easy to read.
+  if(mode>1.5&&(mode<2.5||mode>3.5))cov*=1.-text;
+  float patterned=step(4.5,pat)*(1.-step(6.5,pat)*step(pat,7.5))*(1.-step(16.5,pat));cov*=1.-.45*text*patterned;
++ // Frame-etched artwork has zero foil coverage. Skip its expensive grain/grating work,
++ // preserving colour conversion, borderless effects and any future coverage-independent stamp.
++ // Keep texture reads above the return so mipmap derivatives remain defined at art boundaries.
++ if(pat>3.5&&pat<4.5&&mode>.5&&mode<1.5&&cov==0.&&u_r2.z<=.5){gl_FragColor=vec4(toSrgb(clamp(base,0.,1.)),1.);return;}
+  vec3 F=foil(pat,tint,uv,L,V,N,spot,grad,rl.r);
+  // Thin film replaces the grating colour (oil slick): colour depends on view angle and film thickness.
+  if(u_r2.x>.5){float t=320.+260.*rl.r+120.*hash(floor(uv*u_px/3.));vec3 f=film(dot(N,V),t);F=f*(.15+spot*(1.4*pow(max(dot(N,H),0.),16.)+.5));}

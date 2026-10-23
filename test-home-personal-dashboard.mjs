@@ -104,11 +104,11 @@ const handlers=new Map(),root={querySelector:()=>null,addEventListener:(name,fn)
 try{
  globalThis.document={body:{dataset:{view:'home',game:'ygo'}},activeElement:target};
  communityState('ygo').data={game:'ygo',status:'ready',items:[0,1,2,3].map(i=>({...story,id:'fixture-'+i,title:'Headline '+i,url:'https://ygorganization.com/synthetic-story-'+i}))};
- const initial=homeCommunity('ygo');assert.equal((initial.match(/class="community-feature /g)||[]).length,3);assert.match(initial,/1–3 \/ 5/);
- const cleanup=attachHomeCommunity(root);handlers.get('click')({target});assert.equal(position.textContent,'4–5 / 5');assert.equal(focused,1);
- assert.equal((stage.innerHTML.match(/class="community-feature /g)||[]).length,2);
+ const initial=homeCommunity('ygo');assert.equal((initial.match(/class="community-feature /g)||[]).length,3);assert.match(initial,/1–3 \/ 4/);
+ const cleanup=attachHomeCommunity(root);handlers.get('click')({target});assert.equal(position.textContent,'4–4 / 4');assert.equal(focused,1);
+ assert.equal((stage.innerHTML.match(/class="community-feature /g)||[]).length,1);
  let prevented=0,stopped=0;handlers.get('keydown')({target,key:'ArrowLeft',preventDefault(){prevented++;},stopPropagation(){stopped++;}});
- assert.equal(position.textContent,'1–3 / 5');assert.equal(prevented,1);assert.equal(stopped,1);assert.equal(globalThis.document.body.dataset.game,'ygo');
+ assert.equal(position.textContent,'1–3 / 4');assert.equal(prevented,1);assert.equal(stopped,1);assert.equal(globalThis.document.body.dataset.game,'ygo');
  handlers.get('keydown')({target,key:'Enter',preventDefault(){throw Error('native disclosure key was stolen');}});
  cleanup();assert.equal(handlers.size,0);
 } finally {globalThis.document=oldDocument;communityState('ygo').data=oldState;}

@@ -111,7 +111,7 @@ export function ptcgFoilEffect({finish,era='',foil='',rarity='',fullArt=false,te
  if(/amazing/.test(rar))return 'ptcg-rainbow-glitter';
  if(/prismstar|break/.test(rar))return 'ptcg-prism';
  if(/^rc\d/i.test(String(number)))return 'ptcg-rc-dots';
- if(/shiny/.test(rar)&&['sma','sm115'].includes(s))return 'ptcg-rainbow-glitter';
+ if(/shiny/.test(rar)&&['sma','sm115'].includes(s)&&!fullArt)return 'ptcg-rainbow-glitter';
  if(/shiny/.test(rar)&&['swsh4.5','swsh45sv'].includes(s))return 'ptcg-glitter-sheen';
  if(fullArt){
   if(gold||f==='gold')return 'ptcg-gold';

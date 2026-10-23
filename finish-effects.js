@@ -257,9 +257,10 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   if(set==='neo1'&&c.id==='neo1-9'&&physicalFinish==='holofoil')return {...preset(key,label,'ptcg-holo',[layer('pk-neo1-9-art','holo')],'https://api.tcgdex.net/v2/en/cards/neo1-9'),reason:'Simulated illustration-window holo'};
   // Finish availability is still source-supplied. Layout identifies where that
   // known finish catches the light; it never adds a variant or a price.
-  const fullArt=/fullart|illustration|rainbow|shinyvmax|shinyv|secret|hyperrare|ultrarare/.test(rarity)||/^(vmax|vstar)$/i.test(c.stage||'')||(!/^ex\d/.test(set)&&/\s(?:V|GX|EX|ex|VMAX|VSTAR|V-UNION)$/.test(c.name||''));
+  const shinyGX=set==='sma'&&/shiny/.test(rarity)&&/[\s-]GX$/.test(c.name||'');
+  const fullArt=/fullart|illustration|rainbow|shinyvmax|shinyv|secret|hyperrare|ultrarare/.test(rarity)||/^(vmax|vstar)$/i.test(c.stage||'')||(!/^ex\d/.test(set)&&/[\s-](?:V|GX|EX|ex|VMAX|VSTAR|V-UNION)$/.test(c.name||''));
   if(physicalFinish==='holofoil'&&fullArt){
-   const textured=/specialillustration|shiny.*vmax|rainbow|fullart|ultrarare|rareultra|hyperrare/.test(rarity)||/^vmax$/i.test(c.stage||'');
+   const textured=shinyGX||/specialillustration|shiny.*vmax|rainbow|fullart|ultrarare|rareultra|hyperrare/.test(rarity)||/^vmax$/i.test(c.stage||'');
    const gold=/^(sv|me)/i.test(set)&&rarity==='hyperrare';
    return {...preset(key,label,'ptcg-full-art',[layer('card',gold?'gold':'rainbow'),...(textured?[layer('card','micro')]:[])],FINISH_SOURCES.pokemon),coverage:'full',texture:textured?'micro-ridges':'smooth'};
   }

@@ -1,0 +1,3775 @@
+{
+  "schema": 1,
+  "version": "3.93.1",
+  "commit": "87615c276ebf075c56db059a54f87d898fe1268a",
+  "tree": "722217bcec2c75b5224005aab30148ac7ad2e29d",
+  "repository": "https://github.com/deathxcore11/Card-forger",
+  "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
+  "files": [
+    {
+      "path": ".assetsignore",
+      "bytes": 979,
+      "sha256": "224a7994e4d224d3098ae13612c94b0df8779abc2530b6ea84609135d2af6072"
+    },
+    {
+      "path": "account-scope.js",
+      "bytes": 738,
+      "sha256": "2fcb0c0d12524ee218f20a97d4fd44594404926e2be45144fd0230dc68636a9a"
+    },
+    {
+      "path": "account-workspaces.js",
+      "bytes": 2942,
+      "sha256": "185eceedb2284cd93c97f803d7666036a34278d370c0706355cbb433899ac434"
+    },
+    {
+      "path": "adapt.js",
+      "bytes": 6023,
+      "sha256": "d4d3dfd90c28ae3e31f0f1f1da4f6b57d4f72d1732a897910ea34bb62d78f794"
+    },
+    {
+      "path": "ai-ask-loop.js",
+      "bytes": 12854,
+      "sha256": "9129533099b9b7a20c93828d9ff1c56ff52206440df69648a2021bd5e88cf8d0"
+    },
+    {
+      "path": "ai-ask.js",
+      "bytes": 10678,
+      "sha256": "d3c22e279a0e366b652ce1abb0c56e48788004186a91dc1fe9e70b40e1db2d0f"
+    },
+    {
+      "path": "ai-auth.js",
+      "bytes": 2237,
+      "sha256": "e49db54b41542d3c5749a66f1703e1da639420ab7d58d04aaa2f11e9148f133f"
+    },
+    {
+      "path": "ai-build-contract.js",
+      "bytes": 19250,
+      "sha256": "78b9ad214b090e218817cced35d24e4d9944aeb2e9452f336de69db80b3d402e"
+    },
+    {
+      "path": "ai-deck-builder.js",
+      "bytes": 18592,
+      "sha256": "ff7b1fb6db136d83a533c2e1d8139e4b473ad77fdc2bcdaaabf70558cd935784"
+    },
+    {
+      "path": "ai-deck-goal.js",
+      "bytes": 3410,
+      "sha256": "9214d7450d6a53988325d458b3df17034198aec768b0e6fd0838d64a88d128b3"
+    },
+    {
+      "path": "ai-matchup-core.js",
+      "bytes": 19712,
+      "sha256": "cf2092c98f42ba9f7211a2622b6afba37b0d9a86b0b0d956a2b9d9bd1226fddd"
+    },
+    {
+      "path": "ai-review.js",
+      "bytes": 53165,
+      "sha256": "fd7a6598f8b6cbe8dc702fabad1eaace83d00392b6126cbe44a60aa9550c2d93"
+    },
+    {
+      "path": "ai-rules-panel.js",
+      "bytes": 821,
+      "sha256": "34c82c4fa054888e39aa19d8081a31b79c014707ee4580af9aa2e2da2cf73cdc"
+    },
+    {
+      "path": "ai-rules.js",
+      "bytes": 22079,
+      "sha256": "ceb3a2e1c1d2b2646f9661dbb03433fe199b4b33d176381d8e44719d5cb774f7"
+    },
+    {
+      "path": "ai-tools.js",
+      "bytes": 43231,
+      "sha256": "39fe6e73caf3b9eeacbeb9717f72b3f455885df79d9869f1c9aa7e66ae8e8d51"
+    },
+    {
+      "path": "ai-ui.js",
+      "bytes": 141,
+      "sha256": "21ffebc3465da24436504a60a35d21d536231c0f125c954d63bbadc637181cee"
+    },
+    {
+      "path": "android-beta.js",
+      "bytes": 372,
+      "sha256": "9897e0568a4cf5543158eccce5e69067b0747b3f27cccf43393e2205bcdbed95"
+    },
+    {
+      "path": "app-info.js",
+      "bytes": 10035,
+      "sha256": "a8b808b310d40462a45c077983f6ee4196bde474b58275caf5effc2c2a1871dd"
+    },
+    {
+      "path": "app.js",
+      "bytes": 398528,
+      "sha256": "31905671d6f38d0e07e1422ac6f5743315ea1f91e2253af2a81833146600b608"
+    },
+    {
+      "path": "artwork.js",
+      "bytes": 7123,
+      "sha256": "abb307ff9c1c918ddd3d6734c95d8608041aa59a46fbd8cf5fa00e57878cd825"
+    },
+    {
+      "path": "assets/cards/miscp-001.webp",
+      "bytes": 328020,
+      "sha256": "26f85f7fa026898ba9f643b73731bdf07c7153e2d423b96c60725e2c0975e80e"
+    },
+    {
+      "path": "assets/finishes/abyss-title.svg",
+      "bytes": 25450,
+      "sha256": "a19a9a11ac14dfa52d825ddb71143c012fdaafcbfedbede4aa626481f45b9bdc"
+    },
+    {
+      "path": "assets/finishes/cosmos.svg",
+      "bytes": 6292,
+      "sha256": "e61afc13d986a5e6a3896822e0f0ee4ea4d167f1f54ce10b0bc9c9e629d9ad23"
+    },
+    {
+      "path": "assets/finishes/gamma-title.svg",
+      "bytes": 17803,
+      "sha256": "651385d9d0e59fdf489af1ec052075eafa84710e8872d18b758a1b1a14fa2e34"
+    },
+    {
+      "path": "assets/finishes/metal-grain.svg",
+      "bytes": 501909,
+      "sha256": "23c3af85da5241f9045c684ccc69a8e0edaa9b572364f3f7b39c07cce92c359f"
+    },
+    {
+      "path": "assets/finishes/omega-title.svg",
+      "bytes": 17491,
+      "sha256": "c21388d24fe7934f9c4e62090c5007b19c081d7f1e99ca037ba42ba771b7eb2d"
+    },
+    {
+      "path": "assets/finishes/relief-flow.svg",
+      "bytes": 169737,
+      "sha256": "acee3930d20794a3fab01e8314feee0eecf135faa7b91cd5acc20aaf4cfda913"
+    },
+    {
+      "path": "assets/finishes/stamp-first-movie.png",
+      "bytes": 38988,
+      "sha256": "ae86de9d535c60a0911d605ce3d5711881b5b189b8694efadf5cd0134dacb6a6"
+    },
+    {
+      "path": "assets/finishes/starlight.svg",
+      "bytes": 17602,
+      "sha256": "bf109f2b49f11b78f78581453a4ab7b41b0393397abb0a133dc2c7345bc3c3fd"
+    },
+    {
+      "path": "assets/finishes/water-pattern.svg",
+      "bytes": 12218,
+      "sha256": "c233d03e173490b20e1e90dd475b2ce6c0c182715e7d8ca99fc37fac9dfcb324"
+    },
+    {
+      "path": "aura.css",
+      "bytes": 2092,
+      "sha256": "ebd2c9f171be5107cdc6d1ad0555776536eafe7ddf1c9fb3265c8dcb36da49cd"
+    },
+    {
+      "path": "aura.js",
+      "bytes": 9179,
+      "sha256": "0f1168aca18bc258a7202f4b7e02cf3b6547e3ac470192d93e081a9cdb2e6417"
+    },
+    {
+      "path": "auth-form.js",
+      "bytes": 2532,
+      "sha256": "8fd5bb791621c6ee0ad5753fe156fd90e8ae1c9967174b414e847b7917549b79"
+    },
+    {
+      "path": "auto-browse.js",
+      "bytes": 1972,
+      "sha256": "74c99d40f926fc90edab2d9f6fe41bbbd556c479e67d3ce8132850c0987ee98c"
+    },
+    {
+      "path": "binders.js",
+      "bytes": 20720,
+      "sha256": "14ed61dda2bb6a21e84808d79b3cd621b609ffbc2ca767bfc4c6f06541fa4415"
+    },
+    {
+      "path": "brand-motion.css",
+      "bytes": 4211,
+      "sha256": "fa16a3ce3b92687c505ea2df2158418631686e2a84c37a95eaad0d9b0e309578"
+    },
+    {
+      "path": "brand.js",
+      "bytes": 12004,
+      "sha256": "60b3b0f745ebf1133d16de4ef703eabfd24a188d530158ecf0a922c39f6bd2d9"
+    },
+    {
+      "path": "build-overlay.js",
+      "bytes": 858,
+      "sha256": "a9786cc7959da8ab6e3c8c33ea829ecbd39bfdb7e58d4abfc4ee85bfe2d76aea"
+    },
+    {
+      "path": "builder.js",
+      "bytes": 21983,
+      "sha256": "da36b25ef35412264ff313511b173cc4125ba833db766833e5da038c93561511"
+    },
+    {
+      "path": "buy.js",
+      "bytes": 3139,
+      "sha256": "18f38713b33382a746d2cac97c8530fbe4b295bf090613e16f6749ad87954e93"
+    },
+    {
+      "path": "card-actions.js",
+      "bytes": 6085,
+      "sha256": "73054bb3a1f66cb03b1a11b7632fa4d86a520dcaf16343970d51b7b50402a169"
+    },
+    {
+      "path": "card-detail-extras.js",
+      "bytes": 3764,
+      "sha256": "61ff71ba3ab072df69035065348500fcd165ba3b3e4ebea0f96251b99cbc8791"
+    },
+    {
+      "path": "catalog-tools.js",
+      "bytes": 9169,
+      "sha256": "789c7511d33aaec308848ba14793ef5f94feae456ff39a0d12c0e926f3cc19d5"
+    },
+    {
+      "path": "catalog.json",
+      "bytes": 71892,
+      "sha256": "d4c3d638d9d6342c8c4fc5fdc29b8bd94fbb028a9afeafcd151c942064a10370"
+    },
+    {
+      "path": "cloud.js",
+      "bytes": 28934,
+      "sha256": "d80f6c9e48470cd1e1ebe41dd46c3bff4108afe235e9d4e6af050b8d037ef1e1"
+    },
+    {
+      "path": "coach-evidence.js",
+      "bytes": 17151,
+      "sha256": "ca9e8c563a8e06c274079b11ea2691bbd10af1f268e7886f953e71f418cf7a99"
+    },
+    {
+      "path": "collection-display.css",
+      "bytes": 6601,
+      "sha256": "000552528d864ef9f99dee5718724a76302dafd9bb5191a1d537c76c818b356e"
+    },
+    {
+      "path": "collection-locations.js",
+      "bytes": 3767,
+      "sha256": "d1ecfd96bd1b69e06820e79f7b3b3f5c3aee9d5cbedc6ff2729df846aa636135"
+    },
+    {
+      "path": "collection-order.js",
+      "bytes": 535,
+      "sha256": "74cd041eb7b8397c66a4c06cfc706087757960bfaa07bbfdb94be34bfb0e18c5"
+    },
+    {
+      "path": "collection-sort.js",
+      "bytes": 2572,
+      "sha256": "2c935ebe1ebb92e3363890cdd7010cc6a6ffad77cd07675e44b3c2d815d8b530"
+    },
+    {
+      "path": "collection-stack.js",
+      "bytes": 6380,
+      "sha256": "d5d8c8b31a69e4de3bc9c295ccbb8c31795dfd0977fdc1b18faa8053b143d152"
+    },
+    {
+      "path": "collector-search.js",
+      "bytes": 3088,
+      "sha256": "93fec67b44ba06b61cafdf9eab3761af2cf1359e1b017320d262684c58985f85"
+    },
+    {
+      "path": "commander-criteria.js",
+      "bytes": 24922,
+      "sha256": "09d3a9dad3fbe7d8bfa6e228eecb87a0266718de8ef7485083b1e89519fc2530"
+    },
+    {
+      "path": "commander-strategy.js",
+      "bytes": 50180,
+      "sha256": "8bb9113ef830f920c0f79d7dd087d4322f7c0d12b52abc3fabe6a9009683c26e"
+    },
+    {
+      "path": "community-art.js",
+      "bytes": 8682,
+      "sha256": "a0d0fa892d074cda7dad6369497ab579e671debf498f6d69cef597894e8d9e5e"
+    },
+    {
+      "path": "community-curation.css",
+      "bytes": 3571,
+      "sha256": "163d9171888b61e50801e4d34bdac3fd029367bccf793f263d1bedb84a114f33"
+    },
+    {
+      "path": "community-edition.js",
+      "bytes": 2642,
+      "sha256": "e00157bf360046a038704455f2865dc2b29586692bb83f74c882fb4fd27850a6"
+    },
+    {
+      "path": "community-feed.js",
+      "bytes": 15919,
+      "sha256": "4a3d5213027e739297753f900d38db16abf5a86441207c3874e831e8a9bde05f"
+    },
+    {
+      "path": "community-profile.js",
+      "bytes": 26040,
+      "sha256": "9748154d14e15836e94b793a0a4d5ad719b1ca58bbb0ec1fc408eefb923ff372"
+    },
+    {
+      "path": "community-sources.js",
+      "bytes": 5222,
+      "sha256": "5f0e02bd19d0b9068637c302850c9e371ac399099ede279584e7d45718fbded5"
+    },
+    {
+      "path": "condition-feed.js",
+      "bytes": 5717,
+      "sha256": "1c4103b031d7ee4c9dfeaac2a625730520083acb2426ea944d98ad414fc696d6"
+    },
+    {
+      "path": "condition-refresh-scheduler.js",
+      "bytes": 6200,
+      "sha256": "c7d1a705fa526f6190ad1fe195b86627b53dae3a8ffaf0ff8cd826f3b3bd1688"
+    },
+    {
+      "path": "condition-value.js",
+      "bytes": 13107,
+      "sha256": "d74de09e51263c161785a52297b7adf02c92b41fe46a271c41686341ad5e4678"
+    },
+    {
+      "path": "confidence.js",
+      "bytes": 17312,
+      "sha256": "6e78820c5e32d35f733b4ceefb17b903fa9c48c7874740d666bce0ce8a610c5d"
+    },
+    {
+      "path": "config.js",
+      "bytes": 601,
+      "sha256": "869f2a85223afc656cc38c56e83913949aa00951389e24a0777b11629f8a93be"
+    },
+    {
+      "path": "core.js",
+      "bytes": 20528,
+      "sha256": "afde1efb68f3609a5e2a412fab4c8962c0ccde7371f9b88f42340686e6e6f1a7"
+    },
+    {
+      "path": "daily-clock.js",
+      "bytes": 1175,
+      "sha256": "1b11bcc493f9c270c503e854766fdcf0f753d8fbce173529951ae55657e2cc13"
+    },
+    {
+      "path": "data-loading.js",
+      "bytes": 865,
+      "sha256": "322e5f2d571ef1fba1e0895c200571d5d608faf2d6b33cc7856491be9a8dd17d"
+    },
+    {
+      "path": "data/mtg-boosters/10e.json",
+      "bytes": 34577,
+      "sha256": "25acb39e29f060920f2e13b340a3cd9b64be40f093f75c07e02f769e05549477"
+    },
+    {
+      "path": "data/mtg-boosters/2ed.json",
+      "bytes": 13881,
+      "sha256": "0736927d10b9ca1faf29b26b3057082f81084571b660565a4405a5e9d821c9fb"
+    },
+    {
+      "path": "data/mtg-boosters/2x2.json",
+      "bytes": 38270,
+      "sha256": "da40543dea845f2587a468152c720d68ef4427674331d857502055af6d8c83bb"
+    },
+    {
+      "path": "data/mtg-boosters/2xm.json",
+      "bytes": 30155,
+      "sha256": "faa7d97315dc5b7402428820b0ecee81f574f22559f830002e3f8b23177c23ad"
+    },
+    {
+      "path": "data/mtg-boosters/3ed.json",
+      "bytes": 13924,
+      "sha256": "0e6ba0750cc70b3b6bc6ef5f5b20e795d54fd9ce1e200f3716f16768ad626f10"
+    },
+    {
+      "path": "data/mtg-boosters/4ed.json",
+      "bytes": 15831,
+      "sha256": "c0f2d056aa4342e6194611066642d8434458f4731b5ff4335c61465bd6d8c45b"
+    },
+    {
+      "path": "data/mtg-boosters/5dn.json",
+      "bytes": 15025,
+      "sha256": "a08abf436aff344a0873834eba1c14f56c1500db81ec3966f88b8b6c8772fabb"
+    },
+    {
+      "path": "data/mtg-boosters/5ed.json",
+      "bytes": 18667,
+      "sha256": "c89e211e15048c7794ea02bf0c7273d14c43f0ba4963f5f5dd85d6e674f0cfc3"
+    },
+    {
+      "path": "data/mtg-boosters/6ed.json",
+      "bytes": 14410,
+      "sha256": "80ebf812882c8a508411a6f2be2046bbff2618852cfd2155c7d1906d8af73042"
+    },
+    {
+      "path": "data/mtg-boosters/7ed.json",
+      "bytes": 31740,
+      "sha256": "5607959267a1edc28bf7a436bb4db3f124a66a02f319239ea70f802ef0654ca1"
+    },
+    {
+      "path": "data/mtg-boosters/8ed.json",
+      "bytes": 31739,
+      "sha256": "98a233e292f64b7e5df0234c386395c9531829488d58808282e11d4f86feb60a"
+    },
+    {
+      "path": "data/mtg-boosters/9ed.json",
+      "bytes": 31739,
+      "sha256": "5002fc24c6d5895405a5f22ee42fb7e06a8296dd322c81b031e70c77ac4a2813"
+    },
+    {
+      "path": "data/mtg-boosters/a25.json",
+      "bytes": 22685,
+      "sha256": "4a5aca5c6639c1b387383bb4f672c8cf4ba3e2410586e0301d14cbe4f5858215"
+    },
+    {
+      "path": "data/mtg-boosters/acr.json",
+      "bytes": 13282,
+      "sha256": "ec5df1c19549a5857f08e4efdd8ab5756ae5eb671fa89c04703d54f8d7e9c5f0"
+    },
+    {
+      "path": "data/mtg-boosters/aer.json",
+      "bytes": 19196,
+      "sha256": "d2c9f11646030c890c96103737f611ba3e3566d956b83ff301eddfe396595914"
+    },
+    {
+      "path": "data/mtg-boosters/afr.json",
+      "bytes": 32549,
+      "sha256": "28c4d3a6663b64b5f951bacd4a16d53dd5f1a934b3007309a808c9b17b43fb02"
+    },
+    {
+      "path": "data/mtg-boosters/akh.json",
+      "bytes": 25708,
+      "sha256": "16acd09a2dfc1241123d000548e38daf13757e836c51cc6ef491e191403f3364"
+    },
+    {
+      "path": "data/mtg-boosters/ala.json",
+      "bytes": 22208,
+      "sha256": "f9818c7eee42798d28f88373caace88bc9cde39a0df9706ead9d034d477bea2f"
+    },
+    {
+      "path": "data/mtg-boosters/all.json",
+      "bytes": 8763,
+      "sha256": "d475f606758e2fff0a16725bf0b2aa4ed4f147816ee22c3ce15612fc0550d131"
+    },
+    {
+      "path": "data/mtg-boosters/apc.json",
+      "bytes": 12796,
+      "sha256": "eeb40c7801343a45f17e85486247661ec753560de8a19fdd0e1e4c8eb231ca3d"
+    },
+    {
+      "path": "data/mtg-boosters/arb.json",
+      "bytes": 13794,
+      "sha256": "e108988f69ca3ab8762c20e88e2765d600d3b79d981f7fc1300f6f1b686c5c27"
+    },
+    {
+      "path": "data/mtg-boosters/arn.json",
+      "bytes": 4122,
+      "sha256": "dc7435c29e57332a4aeeb5236683616ff01ecc8d729cfdbebe323a20f908642a"
+    },
+    {
+      "path": "data/mtg-boosters/atq.json",
+      "bytes": 4465,
+      "sha256": "aa865c0d41390e36e2b9f209ef6747e47fd8a861931381dbd43ad13e3768dcf9"
+    },
+    {
+      "path": "data/mtg-boosters/avr.json",
+      "bytes": 22095,
+      "sha256": "88e70dd7f1a8a7ec9aa7b7d417a14148bca66dd7fccb3ef9a2aad82b17657214"
+    },
+    {
+      "path": "data/mtg-boosters/bbd.json",
+      "bytes": 26610,
+      "sha256": "66d18cd8e5331b13660d266fd5a3f41da9a23418402c695e92a285a5458b2c80"
+    },
+    {
+      "path": "data/mtg-boosters/bfz.json",
+      "bytes": 26252,
+      "sha256": "46a12ba3961d633404490e592d8d33a2fd758d478288b6cbfe8b044885ef8997"
+    },
+    {
+      "path": "data/mtg-boosters/blb.json",
+      "bytes": 46994,
+      "sha256": "cffa45e63e3b1702b18c5c61f8c44dff93376500838e80cf516f3dfd16798196"
+    },
+    {
+      "path": "data/mtg-boosters/bng.json",
+      "bytes": 15584,
+      "sha256": "3c6b1ed00f929e4e888e2d70203c3905ef266ea82bcbd203c142ab6d51baaeb9"
+    },
+    {
+      "path": "data/mtg-boosters/bok.json",
+      "bytes": 15025,
+      "sha256": "077cc2ebec4b00b614b825a67cde1eba5d664b9e58e4dbb90d5ded8da13cb0c5"
+    },
+    {
+      "path": "data/mtg-boosters/bro.json",
+      "bytes": 37867,
+      "sha256": "fc7b2f4f91c4c619abad9657a20eabb437953c73d04fa01abeedfb006bbb4d92"
+    },
+    {
+      "path": "data/mtg-boosters/chk.json",
+      "bytes": 26412,
+      "sha256": "be99e4485bf7cd468bb48f6eef9050db1b2a54d3930b1c881e5c68298f27646a"
+    },
+    {
+      "path": "data/mtg-boosters/chr.json",
+      "bytes": 5540,
+      "sha256": "41b3aedd44cb7e87cdac975a6348cd6fb9cae5e9d70f8f7c24c2eb247a093cb2"
+    },
+    {
+      "path": "data/mtg-boosters/clb.json",
+      "bytes": 41126,
+      "sha256": "ef979d878c9f3cc196b2d6b67aad8adf4408fc819ed8eacfa148994c8dfccb9e"
+    },
+    {
+      "path": "data/mtg-boosters/clu.json",
+      "bytes": 15565,
+      "sha256": "376fc1fd3432b663937e02c1142175ac8025d7b7340fefc83b22fff2002180e7"
+    },
+    {
+      "path": "data/mtg-boosters/cmm.json",
+      "bytes": 46792,
+      "sha256": "622b8cb8cb4cf74b26ed136b39313ebf002362a8a1d7fc35e7d9e31c8d25a9b8"
+    },
+    {
+      "path": "data/mtg-boosters/cmr.json",
+      "bytes": 37356,
+      "sha256": "2f1354978ffdd681074f22eafe7d1709c1e2db30eccc40cd5638cd45b684c12b"
+    },
+    {
+      "path": "data/mtg-boosters/cn2.json",
+      "bytes": 20546,
+      "sha256": "44cd069e16ff562a04210c9b7e9aa94a86cadb629804f97ba0a885aa94a0f844"
+    },
+    {
+      "path": "data/mtg-boosters/cns.json",
+      "bytes": 18943,
+      "sha256": "f94ca623f7c35d88648ed929a5eebcf847ad8c28cd4e77e1864732a6d79ff298"
+    },
+    {
+      "path": "data/mtg-boosters/con.json",
+      "bytes": 13809,
+      "sha256": "fda465f3043bf536894bb3fd58534507fd7f6c291133b1ec16a324cf29c92944"
+    },
+    {
+      "path": "data/mtg-boosters/csp.json",
+      "bytes": 13815,
+      "sha256": "e86da4499c13aaaec8bb4bfb2d3684fb51bbe4a1ad7153593cc4e2df5760242b"
+    },
+    {
+      "path": "data/mtg-boosters/dbl.json",
+      "bytes": 50076,
+      "sha256": "ef01020ba7b4b01460daa9fab73066e71b2059a85df2630443e1d869e2cb2f20"
+    },
+    {
+      "path": "data/mtg-boosters/dft.json",
+      "bytes": 50556,
+      "sha256": "c59c9f925c30d61650b88334fb9254572afd35ef2c9ed42e1c83ee00397fb0b8"
+    },
+    {
+      "path": "data/mtg-boosters/dgm.json",
+      "bytes": 14614,
+      "sha256": "068fc8c78ce9a6cf905e4cdf9ac0466223fa2fc3b8346290f73fa05b2cb3fb8e"
+    },
+    {
+      "path": "data/mtg-boosters/dis.json",
+      "bytes": 16300,
+      "sha256": "b9c8a7734543d3ca447a7b13285135129a26535265728bccdf699032e99ef64e"
+    },
+    {
+      "path": "data/mtg-boosters/dka.json",
+      "bytes": 14835,
+      "sha256": "cfbbbc43ffdb87757755842d0a102b5026bdc2324973eda67842aafb37cec6fd"
+    },
+    {
+      "path": "data/mtg-boosters/dmr.json",
+      "bytes": 42900,
+      "sha256": "67770e403829af599060381d55581e10b2afca204beee7cebe5b5f5315c39440"
+    },
+    {
+      "path": "data/mtg-boosters/dmu.json",
+      "bytes": 30934,
+      "sha256": "9ca7ac10ad980459314398ad07a55e4879b1c11b4575ea24eee35d0f93c3a5ab"
+    },
+    {
+      "path": "data/mtg-boosters/dom.json",
+      "bytes": 24607,
+      "sha256": "a6ad2c915b8e4d8343b6614981d317dafa84d175d2e5d6f65aa256eeeaa07f9b"
+    },
+    {
+      "path": "data/mtg-boosters/drk.json",
+      "bytes": 5282,
+      "sha256": "36f091dccea45a2e9c4b78fc97ad89bc534bbf73ce4ac23fa2f51046e3448658"
+    },
+    {
+      "path": "data/mtg-boosters/dsk.json",
+      "bytes": 50796,
+      "sha256": "f7cab87aec8effe3ae2c6adc201ca15c0d538bac7a906969a627697d3fc2389a"
+    },
+    {
+      "path": "data/mtg-boosters/dst.json",
+      "bytes": 15025,
+      "sha256": "95c6b59e7ae6992d60f4948c56c6ff881c1b55c9e81345e99580434387c5b653"
+    },
+    {
+      "path": "data/mtg-boosters/dtk.json",
+      "bytes": 23875,
+      "sha256": "86f4b69804338510e148f4bbaad04dfccaa0cc87d6e1d33d82e6794cf335b6f5"
+    },
+    {
+      "path": "data/mtg-boosters/ecl.json",
+      "bytes": 49764,
+      "sha256": "4f8174997e3a68d9f9eae9cac47496f0a320c61458bda85b6db710a76806a8f9"
+    },
+    {
+      "path": "data/mtg-boosters/eld.json",
+      "bytes": 27093,
+      "sha256": "48a30194e8563a068b9737d5219c7915f4dc00ae157f16977ac1fc93e0ad3ab2"
+    },
+    {
+      "path": "data/mtg-boosters/ema.json",
+      "bytes": 22685,
+      "sha256": "6f3455a8b1f5b691ad698f81603a7796a8fc4fb3cbe5ff4be67f1db0f309f50a"
+    },
+    {
+      "path": "data/mtg-boosters/emn.json",
+      "bytes": 20213,
+      "sha256": "21bab0660b52691ec5b6fcea3bce7d9d08a22edde80192a0b2b958bb4b2e6bbc"
+    },
+    {
+      "path": "data/mtg-boosters/eoe.json",
+      "bytes": 48721,
+      "sha256": "73d5b2ea09a4dbf45a6b5a4093f59dfdb5c3e23a9f7065e72b2e8c46e625f935"
+    },
+    {
+      "path": "data/mtg-boosters/eve.json",
+      "bytes": 15834,
+      "sha256": "4b7a251ca126cb1c898311d63e24d52c562fdd35fe682f15638c5013d1948a4f"
+    },
+    {
+      "path": "data/mtg-boosters/exo.json",
+      "bytes": 6369,
+      "sha256": "56d2d67c05e04d6c864c622e80dd15c53d677a575b6f4e9cd5b32ee9ceaad59b"
+    },
+    {
+      "path": "data/mtg-boosters/fdn.json",
+      "bytes": 50854,
+      "sha256": "9beff72fc8a97710181a952e4dd131a50b4da442d737913c34d57aa5bd9b2d84"
+    },
+    {
+      "path": "data/mtg-boosters/fem.json",
+      "bytes": 8206,
+      "sha256": "c625041f5a0c1c90107bf627c13e2e4c24c144b5c1240b4f9b83c437cc37c5ef"
+    },
+    {
+      "path": "data/mtg-boosters/fin.json",
+      "bytes": 64368,
+      "sha256": "d5d18b343c6aa57e489180b89820b7b47486d6f2f0bbe781f64a5af6734ae73c"
+    },
+    {
+      "path": "data/mtg-boosters/fra.json",
+      "bytes": 298969,
+      "sha256": "6ab8ba6f285482c61e7e8677f18d45fb7723a029164f9c71eddec45eccd85b26"
+    },
+    {
+      "path": "data/mtg-boosters/frf.json",
+      "bytes": 16256,
+      "sha256": "d565b2547b370ebe2446bb3beb8e930d0f916959f4ca56dea8a69e29cb13d8e6"
+    },
+    {
+      "path": "data/mtg-boosters/fut.json",
+      "bytes": 15849,
+      "sha256": "fcef2d9934b526eb7df2ad7e43c2000030068d5352a06b9901db0faf041c367c"
+    },
+    {
+      "path": "data/mtg-boosters/gpt.json",
+      "bytes": 15010,
+      "sha256": "e3e67d4a43fc680a385a1854e0b2746e8d9b9ce6e3b4a27358803dd6fa6e96b8"
+    },
+    {
+      "path": "data/mtg-boosters/grn.json",
+      "bytes": 23427,
+      "sha256": "65decfeb1960ebb305c07ab56bcfd382afb1fc8213f41884b7e9f4070dd81302"
+    },
+    {
+      "path": "data/mtg-boosters/gtc.json",
+      "bytes": 23796,
+      "sha256": "724aa389b3358c8361a535426f2b93b10e3f41b750db5b28156077d6924363c7"
+    },
+    {
+      "path": "data/mtg-boosters/hml.json",
+      "bytes": 6185,
+      "sha256": "bef5fde29cba140a9a09525a4e351b0a65b3dc422f2b048887600fd957669099"
+    },
+    {
+      "path": "data/mtg-boosters/hob.json",
+      "bytes": 34232,
+      "sha256": "3b0164864fc46139039cf90a6319f8f27cabef6ac47c720e9be179e034fcebe6"
+    },
+    {
+      "path": "data/mtg-boosters/hou.json",
+      "bytes": 19232,
+      "sha256": "7df01aacc11620c68a18ce93f05992751731fd9a63ee6796fbc487d102906632"
+    },
+    {
+      "path": "data/mtg-boosters/ice.json",
+      "bytes": 15831,
+      "sha256": "584f4842a774b8e496578b0fc6b02e464907dbac88f5a0dcec0a7bda0b794fa0"
+    },
+    {
+      "path": "data/mtg-boosters/iko.json",
+      "bytes": 28405,
+      "sha256": "225aece708c9c176252057ac1ba3e7c1f6a1cf22a0bd37c772e4bf3fe9d9a463"
+    },
+    {
+      "path": "data/mtg-boosters/ima.json",
+      "bytes": 22685,
+      "sha256": "1309854407c728c735fde5313b17157ddad6e596a3a3fee3f608bf32c48300ce"
+    },
+    {
+      "path": "data/mtg-boosters/index.json",
+      "bytes": 6417,
+      "sha256": "52bd49046db8ce8a303f5641a9708430421ac522510296ab0eb7cca69aa369ed"
+    },
+    {
+      "path": "data/mtg-boosters/inr.json",
+      "bytes": 51765,
+      "sha256": "0aa1c9a3c3426549cd5bcd219998e46e5ba8cfd08d4dcc0e5770dc308521cb5e"
+    },
+    {
+      "path": "data/mtg-boosters/inv.json",
+      "bytes": 30112,
+      "sha256": "1870af00cfab6e24356dfb66518da8d2780d676dcf0ffcf6838d240b3342978d"
+    },
+    {
+      "path": "data/mtg-boosters/isd.json",
+      "bytes": 23690,
+      "sha256": "e5cbdec0a1b14d00864ad42b3c56000ce930c5a800451a54cbe1469af0d265b4"
+    },
+    {
+      "path": "data/mtg-boosters/jou.json",
+      "bytes": 16306,
+      "sha256": "d6ad26a4bed462e58d1a903ff89b4b4ef804daae7f2b55aac60896c732a993e3"
+    },
+    {
+      "path": "data/mtg-boosters/jud.json",
+      "bytes": 13118,
+      "sha256": "1c2bbcbf7dd1f7e25a5ca18a9846613df1eedb67d14ac27437132a3750427e8f"
+    },
+    {
+      "path": "data/mtg-boosters/khm.json",
+      "bytes": 30390,
+      "sha256": "d0a96b3a41daa25b37a4a0fc67e1671d8127ce4798642d1a3570a3531abfac21"
+    },
+    {
+      "path": "data/mtg-boosters/kld.json",
+      "bytes": 25489,
+      "sha256": "fb330a59daf426ba294c5e7c6b878579b34914678cbe54c7f9784928e94c8d0d"
+    },
+    {
+      "path": "data/mtg-boosters/ktk.json",
+      "bytes": 23983,
+      "sha256": "ce504c24a7b9a6f935d64688db48f5815e2913b58b6559c3ff046481e1c81a87"
+    },
+    {
+      "path": "data/mtg-boosters/lci.json",
+      "bytes": 32000,
+      "sha256": "faff6b54afa91552d237edf4c33157c76c01afe22da9b4a965107d351d33b291"
+    },
+    {
+      "path": "data/mtg-boosters/lea.json",
+      "bytes": 13408,
+      "sha256": "52f2dd4dc08f728337a54d0d7aa5e168b4a555536bf88ded3c7a490d24a73f13"
+    },
+    {
+      "path": "data/mtg-boosters/leb.json",
+      "bytes": 13881,
+      "sha256": "18c026f0b68057118b98bc6e2efbaf6c46deed5463ff4b9a3ec7474e2971a90a"
+    },
+    {
+      "path": "data/mtg-boosters/leg.json",
+      "bytes": 13537,
+      "sha256": "b78a51fdbbdc475bfd76d5d4db7ba0cd98e5c1f6a09424666fb39e829753bcff"
+    },
+    {
+      "path": "data/mtg-boosters/lgn.json",
+      "bytes": 13305,
+      "sha256": "b7c41d58685aad30248923c8e3852f29218c81b6b341fa61a0d384df7ab33dc0"
+    },
+    {
+      "path": "data/mtg-boosters/lrw.json",
+      "bytes": 25937,
+      "sha256": "ab2b7e827ba86a9c99a859270c46d7a6ab42ffe045a2bef431662ffb5197f3f1"
+    },
+    {
+      "path": "data/mtg-boosters/ltr.json",
+      "bytes": 35028,
+      "sha256": "a5ec2743db564cc1ad85334842023375ac1cfb2422f0ca6cb70b11c9046d1d7a"
+    },
+    {
+      "path": "data/mtg-boosters/m10.json",
+      "bytes": 22223,
+      "sha256": "a49a7cdd7164d94c14787e568abb13cdcc357302ff75aa097de045d304fc2f5d"
+    },
+    {
+      "path": "data/mtg-boosters/m11.json",
+      "bytes": 22223,
+      "sha256": "acc6590a784b1ac6ab2affb1d1e7b5d6ca4d75c97235b0040474bf208bd64a4b"
+    },
+    {
+      "path": "data/mtg-boosters/m12.json",
+      "bytes": 22223,
+      "sha256": "b3a8b4646eb7bcf174969bb321877407e9a033b8a63c8a4d35fc8194d32061ad"
+    },
+    {
+      "path": "data/mtg-boosters/m13.json",
+      "bytes": 22223,
+      "sha256": "5aa23628314b43713ac63d30f05772be90073f4a0e7fdaebb81a1cdd4dc22cb3"
+    },
+    {
+      "path": "data/mtg-boosters/m14.json",
+      "bytes": 22223,
+      "sha256": "dfd3d28793294fa37e64ba667db495bd4c219ebdad7c453d35b57d34b9fa65ea"
+    },
+    {
+      "path": "data/mtg-boosters/m15.json",
+      "bytes": 23983,
+      "sha256": "2e9f126121c47db74432e8da4973f46e0805aea1f8b8eb2778f6d4f949cb9343"
+    },
+    {
+      "path": "data/mtg-boosters/m19.json",
+      "bytes": 25487,
+      "sha256": "56d0498621f0423fdad220a22194e65d312db450922d3719d0fd083a969f0ee7"
+    },
+    {
+      "path": "data/mtg-boosters/m20.json",
+      "bytes": 25007,
+      "sha256": "1674d805eb812a4526cce1191661cc2e4f404a59ee274c56a977ba9e9fb77aab"
+    },
+    {
+      "path": "data/mtg-boosters/m21.json",
+      "bytes": 31301,
+      "sha256": "45394cf764633dc72d4b0b9ee478cb18307c894c3ede989c9c363c248c5523a7"
+    },
+    {
+      "path": "data/mtg-boosters/mat.json",
+      "bytes": 9022,
+      "sha256": "b63bf0f5d2c01824d640b5a34685a53da37760b8269c61b46f09500f2d0b0c00"
+    },
+    {
+      "path": "data/mtg-boosters/mb1.json",
+      "bytes": 78786,
+      "sha256": "2694111b72af30b05ca0201d99b0505ad2d7e2684839a3ad0bba754a9dfad6a7"
+    },
+    {
+      "path": "data/mtg-boosters/mb2.json",
+      "bytes": 84625,
+      "sha256": "073cc459c429937554ac3dfc134bc067b916e6fc25388545f37cec71e53f8375"
+    },
+    {
+      "path": "data/mtg-boosters/mbc.json",
+      "bytes": 110693,
+      "sha256": "eda54101d9080270f9c9e5f423776fe09225ee49899d3812122cad2a83623f57"
+    },
+    {
+      "path": "data/mtg-boosters/mbs.json",
+      "bytes": 13864,
+      "sha256": "dd5593b6cf5e779395fd88d32ef096853f4da1be90792545ce26428fe7593513"
+    },
+    {
+      "path": "data/mtg-boosters/mh1.json",
+      "bytes": 23091,
+      "sha256": "dc48e926615c7d35ca7ef1041719c69599a33cb4795e5e57d56c47d5220da45c"
+    },
+    {
+      "path": "data/mtg-boosters/mh2.json",
+      "bytes": 41324,
+      "sha256": "ee630d1fb5835a5b228037679a3c224b46178f70e94ec95d455e0faa07314cc3"
+    },
+    {
+      "path": "data/mtg-boosters/mh3.json",
+      "bytes": 63663,
+      "sha256": "b54668e28393812d06d84d0b94dbeef05a5193237668ad0088fde11b19c18bda"
+    },
+    {
+      "path": "data/mtg-boosters/mid.json",
+      "bytes": 30436,
+      "sha256": "33236116cf56b1e6ba207238fd5113a401e83d15143bb0f1baf95d3c19e568ed"
+    },
+    {
+      "path": "data/mtg-boosters/mir.json",
+      "bytes": 14410,
+      "sha256": "cba2c14e6897e20458287a53a77815b03acbb34ecd39f0d192077db33fbdbae4"
+    },
+    {
+      "path": "data/mtg-boosters/mkm.json",
+      "bytes": 53551,
+      "sha256": "65d629b0a14a9594da48fc1cc161454c073c9dd0fbb9b93dee5b1623898b684b"
+    },
+    {
+      "path": "data/mtg-boosters/mm2.json",
+      "bytes": 22685,
+      "sha256": "e4250d8ddd4818bd183d9de7e47c86652fd52a3bbb32cc10c84905ad8e8efa6f"
+    },
+    {
+      "path": "data/mtg-boosters/mm3.json",
+      "bytes": 22685,
+      "sha256": "9c11f9fb6e0c531e42340ccf3f8570baddf5dd7eefe4e53fe24ab5e2c526b10d"
+    },
+    {
+      "path": "data/mtg-boosters/mma.json",
+      "bytes": 20832,
+      "sha256": "dbb468c77713870ef79d243ccb6de332d8a82dc0614d9ac2119f9a4cba152f1d"
+    },
+    {
+      "path": "data/mtg-boosters/mmq.json",
+      "bytes": 30112,
+      "sha256": "2db94dbac0d97aac6a057d9b51af11e93257602d03b5bd8c5b2ca88dfd23fd40"
+    },
+    {
+      "path": "data/mtg-boosters/mom.json",
+      "bytes": 35932,
+      "sha256": "f4f8e6806af59a95687811bca32a927e0f2b91832a055ac4add7a0ae66dc23c5"
+    },
+    {
+      "path": "data/mtg-boosters/mor.json",
+      "bytes": 13359,
+      "sha256": "fa372710c857295a8b00ed2c5a30599380a6c4900ac00e5c808ec8546e2734ed"
+    },
+    {
+      "path": "data/mtg-boosters/mrd.json",
+      "bytes": 26326,
+      "sha256": "d2056eab12be575f56528b2a0252b6031cde41e2134921bd7f313ffc74748906"
+    },
+    {
+      "path": "data/mtg-boosters/msh.json",
+      "bytes": 58199,
+      "sha256": "7d22a48d087b3d6766d6b6cb23c209ffdecd5beb8052d86aeee1af9b55499d22"
+    },
+    {
+      "path": "data/mtg-boosters/nem.json",
+      "bytes": 13135,
+      "sha256": "0b47f721846f67a99b64ba00f0ea57e53dd6a18871b405afb187a831b367f366"
+    },
+    {
+      "path": "data/mtg-boosters/neo.json",
+      "bytes": 38232,
+      "sha256": "9fe501345e4ecaa5830bddb361c3362d51cc6e3f364c955e536f5eff3d1ff092"
+    },
+    {
+      "path": "data/mtg-boosters/nph.json",
+      "bytes": 15769,
+      "sha256": "12bf49a92ac81ea10322588968acaddd93861a6fb2364698b7c5ff86c17c709e"
+    },
+    {
+      "path": "data/mtg-boosters/ody.json",
+      "bytes": 30112,
+      "sha256": "a2e4f27df3d8edd99310521428e8b98a8b3790548efaf672702b5be987817051"
+    },
+    {
+      "path": "data/mtg-boosters/ogw.json",
+      "bytes": 19804,
+      "sha256": "4302be8e59461e1424535e6c8e67702bdc772c76bd3c4264c3e06dc8af39f7d4"
+    },
+    {
+      "path": "data/mtg-boosters/one.json",
+      "bytes": 31881,
+      "sha256": "9bf96c9b6a0f183f6ea523ea48b3b01492f15bffa6024038951db8bfa6a6d5a3"
+    },
+    {
+      "path": "data/mtg-boosters/ons.json",
+      "bytes": 30110,
+      "sha256": "0e7ad5e5814a93de813c2bbf22b420c26301fa7c915f7b7ba2caf3bbf55e075e"
+    },
+    {
+      "path": "data/mtg-boosters/ori.json",
+      "bytes": 24571,
+      "sha256": "bc4584c3032362273e99c996fab020a0b7c381986a81b17ef8f631b1950e1d8c"
+    },
+    {
+      "path": "data/mtg-boosters/otj.json",
+      "bytes": 46249,
+      "sha256": "45a16e46281f13541a3849ef928acb746466f47e1a606d41fc2590e2b3f9e3a2"
+    },
+    {
+      "path": "data/mtg-boosters/pcy.json",
+      "bytes": 13135,
+      "sha256": "aa0abeb742fe05fea0aaccc26cf738f73b2b503ac8f84ac410f39d0c466991d5"
+    },
+    {
+      "path": "data/mtg-boosters/plc.json",
+      "bytes": 14909,
+      "sha256": "904ab65473b7033de28d1939c9b7d33c6e77f75cec3a3b08826f546954740b56"
+    },
+    {
+      "path": "data/mtg-boosters/pls.json",
+      "bytes": 13264,
+      "sha256": "f60f2923d56ddd4a4b810d737cb2fc3a90b94210db48f0748f6e2587480ac972"
+    },
+    {
+      "path": "data/mtg-boosters/rav.json",
+      "bytes": 26311,
+      "sha256": "0e16fabec3b9a28a034d6bb670e5a45cdd7aacf845bc0342ddd3e9f41ae565dc"
+    },
+    {
+      "path": "data/mtg-boosters/ren.json",
+      "bytes": 5411,
+      "sha256": "048f91255ee19a998c642244deb5b5244d97be3375c1193d6e5858e745957ab2"
+    },
+    {
+      "path": "data/mtg-boosters/rin.json",
+      "bytes": 3132,
+      "sha256": "4ac7e582dbe6c729b82fdc631fe78024663930a63ef519559844fba931032c8b"
+    },
+    {
+      "path": "data/mtg-boosters/rix.json",
+      "bytes": 17810,
+      "sha256": "784e1fa15d8eddfc34198b1eda11f8f7e427ff5032de35b7082a9bd680ee8810"
+    },
+    {
+      "path": "data/mtg-boosters/rna.json",
+      "bytes": 23427,
+      "sha256": "5ff7062258d580c3927a01769c6a7841960a7a8066b86bc0ec1d603bc138a8e7"
+    },
+    {
+      "path": "data/mtg-boosters/roe.json",
+      "bytes": 22203,
+      "sha256": "ba816ad1e1d8fd3c6b5471785223bcd123edcb85e5ee7deedead358639921748"
+    },
+    {
+      "path": "data/mtg-boosters/rtr.json",
+      "bytes": 24765,
+      "sha256": "0911ea9cac4269bedac5bf993e2508b2b9ddf39fb12f1c297bdcf619d7c22ef6"
+    },
+    {
+      "path": "data/mtg-boosters/rvr.json",
+      "bytes": 34428,
+      "sha256": "152b15adc368253d80a4fc42643bc5b4f1891f25bfcd62dfb684e580eff2da92"
+    },
+    {
+      "path": "data/mtg-boosters/scg.json",
+      "bytes": 13133,
+      "sha256": "b430677b685acedb736bd181fb7b438b0a11e8d6c34517b54cf8d0658ac801e8"
+    },
+    {
+      "path": "data/mtg-boosters/shm.json",
+      "bytes": 25922,
+      "sha256": "747aa238b4b7f5066e4c42583f37be6fa132ffdd467bac7f4c27a48b472fd1fa"
+    },
+    {
+      "path": "data/mtg-boosters/snc.json",
+      "bytes": 32737,
+      "sha256": "05211ba4b74e4175b026e8904228c38f8d0eed5a5380d581fbcb8e451a4ac9e6"
+    },
+    {
+      "path": "data/mtg-boosters/soi.json",
+      "bytes": 26486,
+      "sha256": "4331d9f64ee8c3e73cb7631fdbfbe23fb389200b859cc40668850a0c637805d5"
+    },
+    {
+      "path": "data/mtg-boosters/sok.json",
+      "bytes": 15025,
+      "sha256": "96386e558072ca76187d53cb57e0cd3316ea80614c2649eb5910654432cce108"
+    },
+    {
+      "path": "data/mtg-boosters/som.json",
+      "bytes": 22223,
+      "sha256": "9ad61992f49c325c7b1536ce29cbcbb14464c6e5fce661aa40a748bfdd1f46a7"
+    },
+    {
+      "path": "data/mtg-boosters/sos.json",
+      "bytes": 48923,
+      "sha256": "12118044013ffebebd43ce36ef51f8c88775e5d5e8adac92ce5ad7572b7cda03"
+    },
+    {
+      "path": "data/mtg-boosters/spm.json",
+      "bytes": 34054,
+      "sha256": "305f12b510279f9d5d1183fafc55e2447a20a4e618c872008f3f4007ef9adc9b"
+    },
+    {
+      "path": "data/mtg-boosters/sth.json",
+      "bytes": 6369,
+      "sha256": "bcba8f411c652aa012b894c74c6b8bebbc2239523bab3e64065d114938891aa0"
+    },
+    {
+      "path": "data/mtg-boosters/stx.json",
+      "bytes": 31384,
+      "sha256": "98fd9997fcc358d606ec2f01b14ffa875e0d5271e740362b5d01078fff8dce3f"
+    },
+    {
+      "path": "data/mtg-boosters/sum.json",
+      "bytes": 13924,
+      "sha256": "8e0dd1338cd8c38568d46aa9673aebe9863915110cbeafaba614b1126bed3f0f"
+    },
+    {
+      "path": "data/mtg-boosters/tdm.json",
+      "bytes": 53959,
+      "sha256": "1033fa03a7154519263397bc2cf301d931a4537e57ffd4846808fa876a8a0a8b"
+    },
+    {
+      "path": "data/mtg-boosters/thb.json",
+      "bytes": 24469,
+      "sha256": "bf1255dbd1888f1d5a772bd291c46651d8f35cfe462c1d74f201469775a26a4f"
+    },
+    {
+      "path": "data/mtg-boosters/ths.json",
+      "bytes": 22223,
+      "sha256": "13778f3539f146adf9ccdfefc587e921a740b54c25615a219af422f395d50479"
+    },
+    {
+      "path": "data/mtg-boosters/tla.json",
+      "bytes": 53260,
+      "sha256": "05e5ed10b0bfd3692a147ce3010d8c2056baf3b80e08ce2ea71bf58cce863cf1"
+    },
+    {
+      "path": "data/mtg-boosters/tmp.json",
+      "bytes": 14410,
+      "sha256": "473dd446300abf01b67cdf64f12c6cd7550b7a8224db874cab3e1375366bbf49"
+    },
+    {
+      "path": "data/mtg-boosters/tmt.json",
+      "bytes": 36410,
+      "sha256": "6e40d21eec9678959bf34a87886a08db72cfed847de1cf07954cb6c44370f56e"
+    },
+    {
+      "path": "data/mtg-boosters/tor.json",
+      "bytes": 13133,
+      "sha256": "d210820e645706f57538a29465620a2f4d7ec19d9fca57a073dac3ba10bf79ee"
+    },
+    {
+      "path": "data/mtg-boosters/tsp.json",
+      "bytes": 37478,
+      "sha256": "aebf99d1b248e248b0cc141be974cb3d0a8a8776f2323b41f16043335f0180bd"
+    },
+    {
+      "path": "data/mtg-boosters/tsr.json",
+      "bytes": 36328,
+      "sha256": "cc52e5ee38ec1f97313cecaa4bc38ea851f5646d8b42b52fffa8c3751382b966"
+    },
+    {
+      "path": "data/mtg-boosters/uds.json",
+      "bytes": 13135,
+      "sha256": "5fff35013b88fd5064218f7779403c2ac8c40bad8cd6566c3966e502886981b1"
+    },
+    {
+      "path": "data/mtg-boosters/ugl.json",
+      "bytes": 4088,
+      "sha256": "91d69770dc49111a4e1d9c468d0576f115ab86ea9e4d7b017f7e1a642541aae1"
+    },
+    {
+      "path": "data/mtg-boosters/ulg.json",
+      "bytes": 13135,
+      "sha256": "befc1bd7a9e04ec960a3c0f84c0187b8b52c8f6d5a9222968bc4d2f4b3bfc127"
+    },
+    {
+      "path": "data/mtg-boosters/uma.json",
+      "bytes": 23077,
+      "sha256": "161acf99213c93965b2b2d4c1a5eb5e9f387c4fd8458694f0afcf0ebba6b9fd4"
+    },
+    {
+      "path": "data/mtg-boosters/unf.json",
+      "bytes": 34912,
+      "sha256": "4af9bce179dbae1a8172e5e75882ded30d6df5480837e8457291d1847dd14ec9"
+    },
+    {
+      "path": "data/mtg-boosters/unh.json",
+      "bytes": 12760,
+      "sha256": "98d71a04b354e4dcb12104d6f573ce27b00c4d48ad6695dbc855034fac324dc4"
+    },
+    {
+      "path": "data/mtg-boosters/usg.json",
+      "bytes": 14410,
+      "sha256": "8ffd62b623383619843a2b3f8479775b1b1bba94e76e5e38c326b0165c332e05"
+    },
+    {
+      "path": "data/mtg-boosters/ust.json",
+      "bytes": 24516,
+      "sha256": "aaee2d99fde738618db1ce198697afd1f1ab734d36d0dd9bcb51190cb09d1ef0"
+    },
+    {
+      "path": "data/mtg-boosters/vis.json",
+      "bytes": 7401,
+      "sha256": "6f5505f68c7a043020a12e186c50e52f7369bec05e8a6221d8c3a6ea64f0d499"
+    },
+    {
+      "path": "data/mtg-boosters/vow.json",
+      "bytes": 30905,
+      "sha256": "b1fa1c560fa3a854b95b559089b87209f27d254222ef465f08c0ebb6ce4572cf"
+    },
+    {
+      "path": "data/mtg-boosters/war.json",
+      "bytes": 24311,
+      "sha256": "eebb2e4ef1f5ca4695eee45cf65e7a0b395b7f4a7b592a12cf248d2d5ea46427"
+    },
+    {
+      "path": "data/mtg-boosters/woe.json",
+      "bytes": 35763,
+      "sha256": "e0b0aa4772706f82dce1a7a8f22dd43c99aa258de05c028a37a0dc8f4e85d867"
+    },
+    {
+      "path": "data/mtg-boosters/wth.json",
+      "bytes": 7401,
+      "sha256": "7aaf58d6939e386e04d4e8c928607032cf440dc4eaf7f3ac322fed8e3f726b86"
+    },
+    {
+      "path": "data/mtg-boosters/wwk.json",
+      "bytes": 13809,
+      "sha256": "10956b19d53345f7489913a40d82b80adecffc8e90a0635825bceda6f2db3681"
+    },
+    {
+      "path": "data/mtg-boosters/xln.json",
+      "bytes": 25210,
+      "sha256": "4fd853d90b5c0d70e71860c876d43af9ab67ca977e622b9754d4b7b8360632e2"
+    },
+    {
+      "path": "data/mtg-boosters/zen.json",
+      "bytes": 22223,
+      "sha256": "417faf3ef072f36df43273775acd5e7db8185e0760b3edc6f5f3996c42c9b8dc"
+    },
+    {
+      "path": "data/mtg-boosters/znr.json",
+      "bytes": 28760,
+      "sha256": "9f1da068767f2248999e6ac51a4c02d62f1df9e13671e0a5587465261702af99"
+    },
+    {
+      "path": "deck-box.js",
+      "bytes": 4974,
+      "sha256": "48d0a0c57c881408370f01e9c733e83dac923efac8c79d3340429b79deb68a78"
+    },
+    {
+      "path": "deck-construction.js",
+      "bytes": 14475,
+      "sha256": "8865eac70dbb817adf1b544c09951cea4fae0b59c7de0179b1873cb8ed1c6376"
+    },
+    {
+      "path": "deck-experience.js",
+      "bytes": 17760,
+      "sha256": "f5ac625177bb30d3c47a71d31a9c88c1895a7f6e3a2e502fe2c1a2b8ac98609d"
+    },
+    {
+      "path": "deck-flow.js",
+      "bytes": 6138,
+      "sha256": "7b82d8b51a5c8fcf696f059e447259cacc7bd0b3d02ca0ea9589e61400abe61d"
+    },
+    {
+      "path": "deck-optimizer.js",
+      "bytes": 19175,
+      "sha256": "4e39fa51bce699074fe16a5432d17d512638669860a3a4ccd2db57ca22e0dfee"
+    },
+    {
+      "path": "deck-pipeline.js",
+      "bytes": 9176,
+      "sha256": "b858641e9976e3f6e30b578411ce287bc717422beb72ec059f7f8e6ebff56ac1"
+    },
+    {
+      "path": "deck-preferences.js",
+      "bytes": 935,
+      "sha256": "c3b084d4cf4a9e661588aebb2163e25d9e9a8369c584052f8e5ac298d5e4e9fc"
+    },
+    {
+      "path": "deck-safety.js",
+      "bytes": 1943,
+      "sha256": "0ee1e06a23ade6e1cfbad163accb5858d53ecd615e4740aafa17269434fe3fcf"
+    },
+    {
+      "path": "deck-seeds.js",
+      "bytes": 871,
+      "sha256": "744b69c6c943d65d3242ddc74edeb58b7af5b38d3924b6846612dfd4dc830948"
+    },
+    {
+      "path": "deckaudit.js",
+      "bytes": 3502,
+      "sha256": "895dc335495ad977b653d2c906735225ae3ed5308df29572454977fb166c81ab"
+    },
+    {
+      "path": "deckpower.js",
+      "bytes": 116520,
+      "sha256": "0d51113b2e7cddc27b7e523981705ee1893201488d2cd5f6a480c40dfc9083c4"
+    },
+    {
+      "path": "dialog.js",
+      "bytes": 2818,
+      "sha256": "d3bce22894062ed0e173b390253f0638031a638318c4a66c548c57ba8178b167"
+    },
+    {
+      "path": "emblems.js",
+      "bytes": 15066,
+      "sha256": "0f3e1baeea5bbe94feed8fc62ecc8991a7d198de219fde0c235e8b3d3240e694"
+    },
+    {
+      "path": "engine-map.js",
+      "bytes": 5694,
+      "sha256": "b79fda584976097b1d727414a6fe615e86c293874dd54a961671e535f3c0b4f5"
+    },
+    {
+      "path": "extras.js",
+      "bytes": 22043,
+      "sha256": "33fc5ca8360779c90069651552207375e792200c5ff86e38863ff50c66dd2192"
+    },
+    {
+      "path": "facts.js",
+      "bytes": 7993,
+      "sha256": "a4a23f95470785dc1351d1dfb1f17ad15b9fa9f8ae8ec375557affc0337b3ffc"
+    },
+    {
+      "path": "feedback-layer.js",
+      "bytes": 1648,
+      "sha256": "3e864b903b98f87d476cb5eb150eb9f44dc2cc33665460282c5bf51cd5c59e6d"
+    },
+    {
+      "path": "feel.js",
+      "bytes": 20752,
+      "sha256": "c720d9d835a007e6e54f8ded00fe7bdce5c0eb4943c0dfb66e85499c52fba59a"
+    },
+    {
+      "path": "finish-effects.css",
+      "bytes": 18991,
+      "sha256": "6ae7ab7aadec1d7913dea694ccbb4789668af8bfbbf2372367cf1a6309ce1065"
+    },
+    {
+      "path": "finish-effects.js",
+      "bytes": 50099,
+      "sha256": "e1812e2950d3ae1eb03da51f737f98575e835f871d23fbce1a95755ea1866906"
+    },
+    {
+      "path": "finish-materials.js",
+      "bytes": 2645,
+      "sha256": "c63e7c193743e124432d9a7d45c7809d0ce0656ce0de9148872a2f7ec6d2bcdd"
+    },
+    {
+      "path": "finish-preview.js",
+      "bytes": 18699,
+      "sha256": "9e0464bc80c658887231606a1f5f417cb55c45ab1b1db6ffe3ac3955e2a26454"
+    },
+    {
+      "path": "foil-gl.js",
+      "bytes": 13419,
+      "sha256": "d41e88f3484f5bcaf14c931eb0e7095414b2d4aca2c260f7e86a6051fc1c5568"
+    },
+    {
+      "path": "format-upgrades.js",
+      "bytes": 3779,
+      "sha256": "2ed23fd8c63219a5095055650483fba7a40b0b9c0ffcba41714ca146e1c6d99e"
+    },
+    {
+      "path": "formats.js",
+      "bytes": 9922,
+      "sha256": "5982aa0ead244f965d5fa982c32bbe500f93ea24f4a976ca608e0746798772e9"
+    },
+    {
+      "path": "game-navigation.js",
+      "bytes": 5330,
+      "sha256": "4083958f756b6d49f260b6f5db6cae912b9cfc3cf456f2cb87873bf91497b6d0"
+    },
+    {
+      "path": "game-tab-mtg.jpg",
+      "bytes": 88301,
+      "sha256": "f47c3617b3e476bf72c062c88be0b2087248b52bdc8239c97fd0993f193a9575"
+    },
+    {
+      "path": "game-tab-ptcg.jpg",
+      "bytes": 419153,
+      "sha256": "483b921b677c8b42b49e0b8cd4a4eb39bfc5badd6b95172c8574bb2144e09283"
+    },
+    {
+      "path": "game-tab-ygo.png",
+      "bytes": 433606,
+      "sha256": "df6a2d9bac23a9465f0233962c69e1939c67d0fc5c12b95f6a6ea43aa52c2f8d"
+    },
+    {
+      "path": "game-tabs.css",
+      "bytes": 3304,
+      "sha256": "b77ca5dea45d0e841705b32e1338be508d2dce3dc05483f32049a7ff790c0278"
+    },
+    {
+      "path": "games.js",
+      "bytes": 1104,
+      "sha256": "e05afb6c8c6d19e9d238529fad73b9e5ee10b2866a694de7257708a5ebb7cebb"
+    },
+    {
+      "path": "glass-select.js",
+      "bytes": 12754,
+      "sha256": "fc04e41e14bfc0e6fe12adda2520d787c8845c3fa91bc3b9dceb6e1b217eb38e"
+    },
+    {
+      "path": "goldfish.js",
+      "bytes": 36808,
+      "sha256": "8a1f1edd0431eafe60d94cb831933cdb0a9194fbf938c7e564d493df00ae8d8e"
+    },
+    {
+      "path": "grid-settings.js",
+      "bytes": 7100,
+      "sha256": "82585230208d2e84ef4af0f94456aa54df1274e83fd0c82f962df73696d7592c"
+    },
+    {
+      "path": "guide.js",
+      "bytes": 44314,
+      "sha256": "209b1f5e9493a6fab286ff09a83b131f3f645651128976a7666b5c9d8a6793b0"
+    },
+    {
+      "path": "historical-archive.js",
+      "bytes": 7618,
+      "sha256": "5d080f507522511c59b91c37d8d00ea1c2332fff998875a5d3452a006b457128"
+    },
+    {
+      "path": "home-deck-activity.js",
+      "bytes": 3446,
+      "sha256": "99de7c5fcf1c0b72a7086ee744a04e35c873e33930ccc9d2cd36dc120858622c"
+    },
+    {
+      "path": "home-search.js",
+      "bytes": 9508,
+      "sha256": "b795e4345f9957421ae330aeb89815b9929874f6bf3a27c4a0db6977d2254e56"
+    },
+    {
+      "path": "home-swipe.js",
+      "bytes": 4304,
+      "sha256": "d414a4d9af92aab3cdc14041430ea52ecb4bad673a8715e81d95359d49869b45"
+    },
+    {
+      "path": "home-today.js",
+      "bytes": 4408,
+      "sha256": "ba4308cd6354e5e2a1d57094be3a9b27ffef00524afcfefbda5d43b28a878edd"
+    },
+    {
+      "path": "home-ui.js",
+      "bytes": 37348,
+      "sha256": "dbd5dd03074267d8a6d41646d1475a6ee3a2c0b0a52ae95031b1e95688950185"
+    },
+    {
+      "path": "icon-192.png",
+      "bytes": 41670,
+      "sha256": "594a4a88e0360abde070daa1791d13cbfdabdf2cf62da3bb34e47520a6b0ed75"
+    },
+    {
+      "path": "icon-512.png",
+      "bytes": 198476,
+      "sha256": "d962cb17c0cd38a32fa03dc72f21de87217a89d49b1b7c78da76d862028f64ac"
+    },
+    {
+      "path": "icon-maskable-512.png",
+      "bytes": 153347,
+      "sha256": "61c83ad2ba7a4f122d8c8f05ad69e0b886064957139d9f380a04d790553c6c95"
+    },
+    {
+      "path": "icon.svg",
+      "bytes": 10809,
+      "sha256": "3358290846419615c32d8fb112a069f6d1bfe72814709d486d6c68372d871f65"
+    },
+    {
+      "path": "icons.js",
+      "bytes": 13933,
+      "sha256": "6b88326442557efc6c7fe9efc7f07b86da68bae90d33c6b31372bbf2c9aab48d"
+    },
+    {
+      "path": "img/news/2026-10-19-magic-delay.webp",
+      "bytes": 158718,
+      "sha256": "54758e5944aadc38c0e05d63d8f6d9f8015f02ac3e0288841c92fe4ed1755deb"
+    },
+    {
+      "path": "img/news/2026-10-19-ygo-list.webp",
+      "bytes": 146522,
+      "sha256": "b66f75d1290a8eb8cfbe48ff24827a2f402e768888c2aab9bfdd75c6890eabb5"
+    },
+    {
+      "path": "img/news/2026-10-22-pokemon-rules.webp",
+      "bytes": 107788,
+      "sha256": "4ba338e7152355d3106f2c5ae32ff362be8c44f299727c586e4f793de3ba5dd8"
+    },
+    {
+      "path": "importance.js",
+      "bytes": 20547,
+      "sha256": "b8185eb8c103e0457fd22efc1e7a7bd5b3c75b462f7666cbbbc5b6c5f9853c3d"
+    },
+    {
+      "path": "index.html",
+      "bytes": 15972,
+      "sha256": "f2423d47d2bd39a2a81cc318f4eb2018eef12b4720319a4c7c620370b0f987ec"
+    },
+    {
+      "path": "insights.js",
+      "bytes": 30457,
+      "sha256": "50cb67b092533daa7b82fac762c6d8bb2c3c93da67314e2d10e653f35760f31c"
+    },
+    {
+      "path": "install.js",
+      "bytes": 7856,
+      "sha256": "1eeec9eeb93832db62bbadb3c137a1e3a2308437ce573a0ea889815d1b442e46"
+    },
+    {
+      "path": "magic-card-color.js",
+      "bytes": 474,
+      "sha256": "0cecf2fe696f060efb7086664da84ac4dc78f1c95270c91a60280e5f23ab9de5"
+    },
+    {
+      "path": "magic-matchups-controller.js",
+      "bytes": 5832,
+      "sha256": "206c667579a06a72ecebea372966dfd4074c7c12d96ad30300fea0e730647e46"
+    },
+    {
+      "path": "magic-matchups-ui.js",
+      "bytes": 12327,
+      "sha256": "a90f83139540e08b220ecef5d9254eff70fd3b59e0f3ceb7b31d2a2fd48500e0"
+    },
+    {
+      "path": "magic-matchups.css",
+      "bytes": 4742,
+      "sha256": "b098188b6168f3f9727561e523ee43103f67eeb70d5ed47faedb3f8c2b535fd6"
+    },
+    {
+      "path": "magic-owned-detail.js",
+      "bytes": 3991,
+      "sha256": "464876557b7c759ecb4c3a2d05fec0682e071f8b4474a3c4072df3e51c0cf903"
+    },
+    {
+      "path": "manifest.webmanifest",
+      "bytes": 884,
+      "sha256": "9647f2f171f03cc593672f56db8284cf1b2966a9b05435a91919f100a5059f83"
+    },
+    {
+      "path": "matchup.js",
+      "bytes": 32385,
+      "sha256": "a8de56b41bb1666a85708b84a4389575bdfef38f2fe98f57e0e9f0d926895116"
+    },
+    {
+      "path": "matchups-ui.js",
+      "bytes": 15785,
+      "sha256": "1e6a1284a94f4ead4dfad0e136046468b4c4fa4b86dac6a11a7cfdccae1bc4cd"
+    },
+    {
+      "path": "meta-curation.js",
+      "bytes": 7586,
+      "sha256": "e6bb57cd63bbfc1132bd6bb90771b46613f1422e6c4d570c1eda803f5af2534a"
+    },
+    {
+      "path": "meta.js",
+      "bytes": 14774,
+      "sha256": "9652565c9a5c0debdf630a6336059eedc41ed11fbfd7d722e74641549aa84b0f"
+    },
+    {
+      "path": "mobile-tilt.js",
+      "bytes": 3499,
+      "sha256": "6a0b231089bb058eb4e765e5a3881d7071cf98a5986ebc42e6178e839d310686"
+    },
+    {
+      "path": "mtg-boosters.js",
+      "bytes": 4441,
+      "sha256": "43fc70af4ea2ffed129af698c738d6687e8833a7d5b2b348a8cf660d400053dd"
+    },
+    {
+      "path": "mtg-cheap.js",
+      "bytes": 4208,
+      "sha256": "cd3eb4d7bd5a5430b9c00ba58f2e9e4890554bfeafa23e8ebb7419282028fb92"
+    },
+    {
+      "path": "mtg-effects.js",
+      "bytes": 23077,
+      "sha256": "494c1a43ca769b633ba853ede0b77185528361836bf39ac8fa872759737a2442"
+    },
+    {
+      "path": "mtg-foil-analysis.js",
+      "bytes": 3296,
+      "sha256": "d734b4f42e7a8db32f2083db2a7d4d82fb4445aca23cf3ddafea58ccbbb5cb34"
+    },
+    {
+      "path": "mtg-foil-recipes.js",
+      "bytes": 7809,
+      "sha256": "b23fddb5aa170a42c8cbd7dab3df0efb1be1c92c5fc117a6f3cfabd68328cc11"
+    },
+    {
+      "path": "mtg-foil-worker.js",
+      "bytes": 457,
+      "sha256": "bf54a94b2150c9ddbc616c37f888b66fce5229f2d474b64f1fb1565b20eb1c58"
+    },
+    {
+      "path": "mtg-foil.js",
+      "bytes": 12793,
+      "sha256": "3df5647c9b0ab28aef675d3ad4c4fbc494a01854511b003cdc1e8ea9d9c97414"
+    },
+    {
+      "path": "mtg-route-coverage.js",
+      "bytes": 7796,
+      "sha256": "eb7d43cf24b723bcec522de09937deb5ed251abd021e93bd5a710941d082aeda"
+    },
+    {
+      "path": "mtg-tags.js",
+      "bytes": 1320,
+      "sha256": "dc1d28cb9595d58b0b5051c3f214719465bf3f73ced08f86be536bf036c8c77c"
+    },
+    {
+      "path": "mtg-tags.json",
+      "bytes": 86303,
+      "sha256": "80b10d435aeae3f245814f905440d26e00dfb794631fa605a57412cddee0238e"
+    },
+    {
+      "path": "mtg-tcgprice.js",
+      "bytes": 6308,
+      "sha256": "dc0511eb7edbb414867602cf8e8f173de90890137524904dff525588e2ae5e94"
+    },
+    {
+      "path": "native-service-policy.js",
+      "bytes": 6238,
+      "sha256": "965dd1b76062b8684119a7377010531b7018ffcd7cd794dc4908399456dd5172"
+    },
+    {
+      "path": "pack-preview.js",
+      "bytes": 41249,
+      "sha256": "c20873ded16899abbed6f1ce3d3daa666990d0a43ca6e4c12b54f2aae8491146"
+    },
+    {
+      "path": "package.json",
+      "bytes": 8872,
+      "sha256": "7c419815df2122c6e3ec223a0f7239f8db6afd61876446b8e4c4e1008e099f5e"
+    },
+    {
+      "path": "pairing.js",
+      "bytes": 22487,
+      "sha256": "c7d1fa62c4e2cb1ae0e2cc571268d0d9dba417fcb15b7599eac0e3f54c1df2a7"
+    },
+    {
+      "path": "password-auth.js",
+      "bytes": 2730,
+      "sha256": "60fc207eec408abfe294077e0b9e20ba08c504c91bcb409eb68a21afeca4ee21"
+    },
+    {
+      "path": "planner.js",
+      "bytes": 18369,
+      "sha256": "01c55d007efb5618377f7a2d75f48ca02b4820c35e3be6f5772ce9a63fd6dd38"
+    },
+    {
+      "path": "pokemon-anniversary-masks.js",
+      "bytes": 367118,
+      "sha256": "29e0c3e3103a03c2d295b1f2ccfe7e40a844b484100aa4a61fbe35777647a554"
+    },
+    {
+      "path": "pokemon-art.js",
+      "bytes": 8161,
+      "sha256": "bde7b32ba6388ec00c344a2f935d9883fd3803dacb8ecc80141f09c665dfd830"
+    },
+    {
+      "path": "pokemon-catalogue-supplement.js",
+      "bytes": 3204,
+      "sha256": "bb04ab13b21791507042116209cb34264890b5e8ac8a0b9b30ddb57a7ab2a937"
+    },
+    {
+      "path": "pokemon-corrections.js",
+      "bytes": 7567,
+      "sha256": "b6396ce5f3eb1d6d676ac1c7b72b4bcf88c0d2637d15a0921da9faf5106dcdc9"
+    },
+    {
+      "path": "pokemon-identity.js",
+      "bytes": 1769,
+      "sha256": "4126dcb8926f3d69c6801fc6e791fec80c31daf2c0f18bbd0f2ef38d56617dcd"
+    },
+    {
+      "path": "pokemon-prices.js",
+      "bytes": 6399,
+      "sha256": "72fa4306a4c52b2aaa334cc5fe4bfd1e0749cc7039ba69b88f82d619c6d4dc18"
+    },
+    {
+      "path": "pokemon-promo-evidence.js",
+      "bytes": 2611,
+      "sha256": "1d4e82315b91bf8cb05c055461a0e383a653feef01d0bc9cb6cd9f2f9090e696"
+    },
+    {
+      "path": "pokemon-role.js",
+      "bytes": 1327,
+      "sha256": "4c33bd5adf9ae86c2a56298e57e6f196395ebdf2764ce281c662991367658b2e"
+    },
+    {
+      "path": "pokemon-set-art.js",
+      "bytes": 32139,
+      "sha256": "b73f62fcd6f6f5edc46cb67a1c5de269e8bbf121995504db9307048cf7368bf0"
+    },
+    {
+      "path": "pokemon-variant-options.js",
+      "bytes": 7196,
+      "sha256": "638e93bc9b48dd04cc779a411b40106db446859b1a5c311a8febe3a2f2d810fc"
+    },
+    {
+      "path": "power.js",
+      "bytes": 45840,
+      "sha256": "70995f03688682201e51d9ba7086b79cc7dcc5ad2d4c70a30c5648225aaa76f5"
+    },
+    {
+      "path": "price-origin.js",
+      "bytes": 2356,
+      "sha256": "6dbee6e6dd48f1f08a635653ec563caf16815e43c9915cafdd63b3834206c1f8"
+    },
+    {
+      "path": "price-reference.js",
+      "bytes": 598,
+      "sha256": "54fab155607d71843914cb96ebd5e8825c6e8f6302ea12e34c8e427f2f148418"
+    },
+    {
+      "path": "pricehist.js",
+      "bytes": 10023,
+      "sha256": "f1c045fef7b4cecd9cb4ee74108a1dc5560bb415d2e0a094493a2d5391452c8c"
+    },
+    {
+      "path": "pricing-presentation.js",
+      "bytes": 31593,
+      "sha256": "67fbba3c65eac1c625e60d7fce034918481218b6209fbae5446b092bab934e93"
+    },
+    {
+      "path": "printing-carousel.js",
+      "bytes": 10578,
+      "sha256": "d34abed99a1fc2154844f239fcb99e41ef3500d659871c3c3db967af669687c5"
+    },
+    {
+      "path": "printing-picker.css",
+      "bytes": 6908,
+      "sha256": "3be3237b71df0244edefabf58509aa22e49bd226ef9a5a6dd86ad2d420383dbf"
+    },
+    {
+      "path": "printing-picker.js",
+      "bytes": 25265,
+      "sha256": "c7d99e813143da1bab9028652a9b1003435827623f4a804ba1c61e935c53645b"
+    },
+    {
+      "path": "profile-art.js",
+      "bytes": 13158,
+      "sha256": "e2c0eedbeaf4848db0c35a7fbf115288cff7fffd234037a089978f887960983a"
+    },
+    {
+      "path": "ptcg-foil-recipes.js",
+      "bytes": 15701,
+      "sha256": "3931d5a40d634a3381764e4c8b52d37c93a2916fab74949d56318808f3b7f4f7"
+    },
+    {
+      "path": "ptcg-foil.js",
+      "bytes": 31159,
+      "sha256": "5a062609c66de12653ed6f95fd9241b3642aa6c779cd764d2029567bebb18f3d"
+    },
+    {
+      "path": "ptcg-glc-rules.js",
+      "bytes": 2346,
+      "sha256": "83d1281345ec8d6a8cf09028162acfcc0c90c2113f97511f509768a2d39b366e"
+    },
+    {
+      "path": "ptcg-product.js",
+      "bytes": 4338,
+      "sha256": "b26360b5b62480665b9281eec5b8c75cb95c776db20002128d37f41dd6758b2d"
+    },
+    {
+      "path": "ptcg.js",
+      "bytes": 56452,
+      "sha256": "cb2108adea5577e3db9e2e6a89a496f91398a77ab7de4bcbb13a0bf7175a7cc6"
+    },
+    {
+      "path": "quick-quantity.js",
+      "bytes": 4566,
+      "sha256": "655ccb06e3fb5faf70184a849ea4379cf123ddf7b55a4634bf9f4f0742ff4ee3"
+    },
+    {
+      "path": "rarity-emblem.js",
+      "bytes": 2677,
+      "sha256": "493354bcd30705cab0f447e44ffeef714f0c31ef693417e9d29b21e9f568c28e"
+    },
+    {
+      "path": "recent-history.js",
+      "bytes": 5873,
+      "sha256": "604745c2278fcccf65fecbcbd45891833c12fd1af6f4194b22baf49435be8b96"
+    },
+    {
+      "path": "recovery-store.js",
+      "bytes": 3565,
+      "sha256": "8394f32e2fe33c6874229f2d82cb3a449bf1c35af06c87bed1d89e5d046fe52a"
+    },
+    {
+      "path": "release-record.js",
+      "bytes": 1010,
+      "sha256": "f2921df7a1ed57872745104d761462ff7522e7c1c91c9c5775691c5ebd28ea6e"
+    },
+    {
+      "path": "release-status.js",
+      "bytes": 4034,
+      "sha256": "11f99960f1aa37c4d6eccb7e1df57220fcc01aec694771d2a54c65cf19fc878b"
+    },
+    {
+      "path": "rule-corpus.js",
+      "bytes": 2704,
+      "sha256": "c73301b679b2c9c1c6aabbea4f99d493738620c724bc09387c2cec8f62919d91"
+    },
+    {
+      "path": "rule-dex.js",
+      "bytes": 24407,
+      "sha256": "4d6a51dbc7b2a3cbb15faa4404ce1aed77ab789c762212d04c1480c2eb94f9e9"
+    },
+    {
+      "path": "rule-hover.js",
+      "bytes": 4640,
+      "sha256": "5948f80dcd827a418ceb962659f1247ed40985807ab051ca2438e84a77409505"
+    },
+    {
+      "path": "rule-learning.js",
+      "bytes": 22548,
+      "sha256": "a7ffaf6bbf8c428e855cf144a5ad158c7c8ba3cbc0252c571e8cf2497dc438a7"
+    },
+    {
+      "path": "rule-lessons.js",
+      "bytes": 23551,
+      "sha256": "acfccb9ea2153407b7d26c8ddb9d725e459f6fb34332b9302bee104a4cac7318"
+    },
+    {
+      "path": "rule-reference.js",
+      "bytes": 14115,
+      "sha256": "1be69458e407f1ba9d81de8cf5ce966253f64bcfa3cbb91f7b49256f5d1e3501"
+    },
+    {
+      "path": "rulebooks/manifest.json",
+      "bytes": 454,
+      "sha256": "9a832da237e5d1d907f6d4ed23e1de9fe6331d0c9d1bef421fb5ad3cb72e0b28"
+    },
+    {
+      "path": "rulebooks/mtg-rules-v1.json.gz",
+      "bytes": 301677,
+      "sha256": "e7eddeeb3dd0a39e40342e3f83cc39b79833b9376a510b494b0baa3663236aa3"
+    },
+    {
+      "path": "rulebooks/ptcg-rules-v1.json.gz",
+      "bytes": 60554,
+      "sha256": "5038e74e2e98119b4b537f5720b0d2300eef56f71a911d7d007c8abf706415fa"
+    },
+    {
+      "path": "rulebooks/ygo-rules-v1.json.gz",
+      "bytes": 28740,
+      "sha256": "9b661079ab1d807553a3fd3e0feefd28d7e166ab66243a64148d180aa19d1d0c"
+    },
+    {
+      "path": "rules.js",
+      "bytes": 6216,
+      "sha256": "60a388b8ae07a99ef42f99370993fdd64cadd296135e91edb68092de0084cb85"
+    },
+    {
+      "path": "scan-batch.js",
+      "bytes": 5363,
+      "sha256": "ff2b4856b846f408e9a9ef008b4dd31e80c534bcdbfa8264c220b7a95939110b"
+    },
+    {
+      "path": "scan-catalog.js",
+      "bytes": 9209,
+      "sha256": "395f8957a86faf021750330084611d89f0700b2c28d72c9917892bb2b3e2589c"
+    },
+    {
+      "path": "scan-signals.js",
+      "bytes": 10140,
+      "sha256": "fe987219e5441be46ebb9902d27944356a8ad7f31cb84f6923ee17080130d4dd"
+    },
+    {
+      "path": "scan-vision.js",
+      "bytes": 21081,
+      "sha256": "ef0be8022e703e46eba26a3cc433461b583c54941f4fddc4d01c2196dc475866"
+    },
+    {
+      "path": "scan.js",
+      "bytes": 24262,
+      "sha256": "f3ac6294c2d0f3fce8cd10089626d8848f11c242382bd3b09082915aa36257cd"
+    },
+    {
+      "path": "scanart.js",
+      "bytes": 7607,
+      "sha256": "c72b86193b19e2ac29db51d9327dd3e153fa23f64d4b1dd0f7c76db6f9cd9e4c"
+    },
+    {
+      "path": "scancam.js",
+      "bytes": 146315,
+      "sha256": "51557da0a1e73286c8d18d7a96123d53c319a01dd0d113b98a6fff4c37b7b107"
+    },
+    {
+      "path": "scanidx/TCGDEX-LICENSE.txt",
+      "bytes": 1063,
+      "sha256": "12e7dd2d018848b9997d0226c4632f01da86ec4bf6ebe0c8b19953d5e5eeb6ff"
+    },
+    {
+      "path": "scanidx/catalog-manifest.json",
+      "bytes": 16778,
+      "sha256": "b8239d3712f47d87f7847f31cd6316c260666c2c69e35712a9274ad9381bdda6"
+    },
+    {
+      "path": "scanidx/mtg-catalog-v1.json.gz",
+      "bytes": 6686221,
+      "sha256": "a8c9a71c385c96917095449254e0a9996cebd31b50099e9e542b32ac9bd57750"
+    },
+    {
+      "path": "scanidx/mtg-ids.txt",
+      "bytes": 1816256,
+      "sha256": "06451db02b0cbbe56d512292de1603da5352c832cedfb079f4c05852b0a8f4d3"
+    },
+    {
+      "path": "scanidx/mtg-signals-v1.json.gz",
+      "bytes": 656319,
+      "sha256": "7fafe711cf5c2ee691544a44992aa8ee73a0c520d8cb906b257c8734051c9f63"
+    },
+    {
+      "path": "scanidx/mtg.bin",
+      "bytes": 932672,
+      "sha256": "f250efdac74189e99b2a18d2f157afc355b06fe2eb087d0f1b595a345a0b3dd1"
+    },
+    {
+      "path": "scanidx/ptcg-catalog-v1.json.gz",
+      "bytes": 314319,
+      "sha256": "e4f063e5d9fa7ff41540c19f8d70e600c105ffa0c222bb5159aca2ed3d0d953a"
+    },
+    {
+      "path": "scanidx/ptcg-ids.txt",
+      "bytes": 424607,
+      "sha256": "67a7ba44952c7e99a72e9622998c76c8c77aca779d71a4393172c86e29d4f0e8"
+    },
+    {
+      "path": "scanidx/ptcg-signals-v1.json.gz",
+      "bytes": 208765,
+      "sha256": "1d01ce7ca7e3a42accc709f1efa0770160d574546fd10c02af2d38d1dd95cb8d"
+    },
+    {
+      "path": "scanidx/ptcg.bin",
+      "bytes": 386194,
+      "sha256": "a5eacfe7836b2256f98d4d3fd22a0c8f8fb0b66b398418f0ac8b03dcfaa011a9"
+    },
+    {
+      "path": "scanidx/ygo-catalog-v1.json.gz",
+      "bytes": 749936,
+      "sha256": "5c658690dfbac252ac98663c2f8b77a2aa4018cefa2b4fb40db717afa5588364"
+    },
+    {
+      "path": "scanidx/ygo-ids.txt",
+      "bytes": 263105,
+      "sha256": "ef37ee9bcce19eba301f560d7ea579692a8d7d8694a3606e575120a1c340d9d9"
+    },
+    {
+      "path": "scanidx/ygo-signals-v1.json.gz",
+      "bytes": 153368,
+      "sha256": "ecd15ea7395450373a6f2ed3071b140cfc2369fbbf3841037044dbe6ab4a5ccf"
+    },
+    {
+      "path": "scanidx/ygo.bin",
+      "bytes": 280801,
+      "sha256": "a3478b2ffaff7a6c1852d2c3fa9373e328a07f9d97cb999c609875fa7fc8a58d"
+    },
+    {
+      "path": "scanner-lookup.js",
+      "bytes": 6121,
+      "sha256": "1cd8221b62febb729dcce799b91d282362dbcf010ba16a1c7931b07dec3e34b0"
+    },
+    {
+      "path": "scanner-printing.js",
+      "bytes": 9065,
+      "sha256": "a7f6af35179546ecf04e8f11d21d5a134faedc82a3c037f9970b4ef2cbf735a0"
+    },
+    {
+      "path": "scanner-review.js",
+      "bytes": 9808,
+      "sha256": "019ee91210f25399881bbe50ecec574aa9cd36af1fc46a2ef9d794270ee764ad"
+    },
+    {
+      "path": "scansession.js",
+      "bytes": 4981,
+      "sha256": "db344ebb83f2acbb726fb1d30667b8e9282f68f869aa6b2d3f95c51d9bbac688"
+    },
+    {
+      "path": "scouting.js",
+      "bytes": 9608,
+      "sha256": "51d95c80bd65fa3cb8ddc8df812cb098a1a4e1e9edeb912d045a5fb31e8c6aa1"
+    },
+    {
+      "path": "scryfall-client.js",
+      "bytes": 3991,
+      "sha256": "26c4ad3ffcf6e335abecdbea84b701ded51b6c3c4c76969b333ae064b9fc85e0"
+    },
+    {
+      "path": "set-browser.js",
+      "bytes": 10028,
+      "sha256": "59030da4c034b53174738642c62eec7765c4314e44e716f38d0d129a8bb423f1"
+    },
+    {
+      "path": "set-experience.js",
+      "bytes": 2920,
+      "sha256": "a127f4d27c77fe337fd8a0360d7e7b54069912eba37f0d6c27343eefd1d67c09"
+    },
+    {
+      "path": "set-list-ui.js",
+      "bytes": 11735,
+      "sha256": "c1e5d738bf8c8e8a1a413d1f296c7268a3cdacf64c5822eed676bc9f55466304"
+    },
+    {
+      "path": "set-release-metadata.js",
+      "bytes": 34242,
+      "sha256": "674badaf892873727fc9dbea064996645aae8bbf81b826587c3c10d3afbb09a3"
+    },
+    {
+      "path": "sets-ui.css",
+      "bytes": 36925,
+      "sha256": "13fa1fddbf70bce13d2083cff41184a9f05e92cca0ca1059be8e52a5286bbef2"
+    },
+    {
+      "path": "settings-dialog.js",
+      "bytes": 3152,
+      "sha256": "bea10fb19a7e94d5db42f4f65c7375458d45bfc81d202331b2d9f2036bcd88a5"
+    },
+    {
+      "path": "settings-storage.js",
+      "bytes": 1109,
+      "sha256": "ea4c31dcd7c73f4b7dc4470c54072a0b4faa2b9f1f4a20829efd23a82a0295a8"
+    },
+    {
+      "path": "settings-theme.css",
+      "bytes": 23659,
+      "sha256": "f08f98b253920790239eba54931f3511a1cabbf410eacb43b9e50500899e5c3e"
+    },
+    {
+      "path": "settings-theme.js",
+      "bytes": 4940,
+      "sha256": "6593595b113594791e6231f787d5d665d84bc99746158716475923a992348f8f"
+    },
+    {
+      "path": "share.js",
+      "bytes": 7453,
+      "sha256": "42c161e77f6656eac3db5ff218df9e6f4eda573c851dbd80f390e0d73d6ec63c"
+    },
+    {
+      "path": "shared-deck-view.js",
+      "bytes": 2145,
+      "sha256": "d4566664022eda9482cd0d0dc7c678d3af97c459a7fb9bb5b315fd871ec0028a"
+    },
+    {
+      "path": "shared-history.js",
+      "bytes": 8039,
+      "sha256": "1622f6cbb7a5aa2badfe69c803766abb90380586554c3555a7bda6d4477ea9b9"
+    },
+    {
+      "path": "sharedprices.js",
+      "bytes": 4170,
+      "sha256": "b8cffbab0eb67b5eeb9866c4e6d696c13fefc2ba60bc02ca25bd6fa9e59ae166"
+    },
+    {
+      "path": "sheet-history.js",
+      "bytes": 879,
+      "sha256": "3f598a2607f3e0d80ce41de7eedeacea400e6948c644fce192dd1f13190c17e8"
+    },
+    {
+      "path": "storage.js",
+      "bytes": 4985,
+      "sha256": "4d688ebc66fe16f685273b27010f4f87d152ee5332f0ad78c9d9a7b3daa812c6"
+    },
+    {
+      "path": "store.js",
+      "bytes": 5574,
+      "sha256": "f3e151ea2b18a26fc0561723cdcd0368ec75be28224d1045a1a4e90be6d7f01e"
+    },
+    {
+      "path": "strategy-risk.js",
+      "bytes": 3438,
+      "sha256": "cb2d4351d9633c858c0b3732eade696e9f19e60637f95373a78ddd6bc4b318ab"
+    },
+    {
+      "path": "strategy.js",
+      "bytes": 11372,
+      "sha256": "43109cffa92ecf854fa2b7a317dec49bbc665965d644c69c6c96b406e1d35d02"
+    },
+    {
+      "path": "style.css",
+      "bytes": 528029,
+      "sha256": "0eee1f2b033985d25694d879e6d55d8accdf6934639fb6a7ea5244be6b34b2d5"
+    },
+    {
+      "path": "suggest.js",
+      "bytes": 8660,
+      "sha256": "bd31f9d5e87883d166fb815b6e528c66fd61ea50599430ef9d14b7df5df857d4"
+    },
+    {
+      "path": "sw.js",
+      "bytes": 10374,
+      "sha256": "b3965314ac6c03bbfd7395797cce6e8bdf57f4dd741c8d136ea6281feee889c7"
+    },
+    {
+      "path": "sync-merge.js",
+      "bytes": 5271,
+      "sha256": "0a6fdd613fb9341e3819c77efb93d98ddcacffaf4828c240540509e4949fc64d"
+    },
+    {
+      "path": "tabletop-themes.js",
+      "bytes": 2844,
+      "sha256": "8fc24e0692941e152b874cbde304576977915e94120360b7946dcf8a71ece6b0"
+    },
+    {
+      "path": "tabletop.js",
+      "bytes": 17589,
+      "sha256": "38913fbbb489c3fe421bd93b01e8da794756be31f1f2a2265f8cf8d15bac9604"
+    },
+    {
+      "path": "tcg.js",
+      "bytes": 362735,
+      "sha256": "b4809ec8d1956aa7198c5f53b6652b0ba7d00871d264d4d42fd35cfc64b7e216"
+    },
+    {
+      "path": "tcgbuild.js",
+      "bytes": 12157,
+      "sha256": "06c6af2a354b7f23583ab6b518f01668fddd144155d79bece03d63f7fb3be9d1"
+    },
+    {
+      "path": "tcgcompare.js",
+      "bytes": 5949,
+      "sha256": "41be760b1d962e9488cf8edaa123b01e40244189e97b9b9e8c1bd6397d610f25"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-001-high.webp",
+      "bytes": 60324,
+      "sha256": "92205481f611b2c51ab642814a4652206a903623ddb1d20915b41aff157a2102"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-002-high.webp",
+      "bytes": 65654,
+      "sha256": "f0043a739a4fd0744ef263666788750d6c613bb681c58af4ea2c80bc2353fbb1"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-003-high.webp",
+      "bytes": 58334,
+      "sha256": "9b7aa864e41a3977a8da0e55c05e2878310f8bd80a7173c8a037c71c3322ebbb"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-004-high.webp",
+      "bytes": 69178,
+      "sha256": "c049c84e57a2c2af4be7e10f7f84d3c1cbbe69293c242f1ed6d3bfc3a90f1d56"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-005-high.webp",
+      "bytes": 66596,
+      "sha256": "e8d256ee0bd4353f5cd69142568fb04e788fff816b90fa2313fa273cbd107690"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-006-high.webp",
+      "bytes": 49162,
+      "sha256": "ab5d186ba1438484058ca64a12cfd8e81698623fcd909c836d9d2a9c3f2240cd"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-007-high.webp",
+      "bytes": 71144,
+      "sha256": "b1635429c9b3c798793f2bf079bdf77dacd209a2a605ff0c10e55215b4f76025"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-008-high.webp",
+      "bytes": 69372,
+      "sha256": "9374d1641a4945951c35940ea96f69b3a09019870b30c28fbc07d1db2813832f"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-009-high.webp",
+      "bytes": 51584,
+      "sha256": "fe8fc11c0278957c278546d8b3eb0e9352291e95c5c78b0e8be45b8a1a2b0245"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-010-high.webp",
+      "bytes": 54396,
+      "sha256": "e719c303ae744f8b0c52b5f95f053082451c3887c5c696ff771758fc7a74ffb7"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-011-high.webp",
+      "bytes": 60740,
+      "sha256": "e627e173926035bd7cd6f69a4e0b7112c68485c38eabece785b122e6122d56b5"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-012-high.webp",
+      "bytes": 64692,
+      "sha256": "09d0f88abbab379751e252a438c004bbc3bfd6a79992b742cf7d88ae7e73ce43"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-013-high.webp",
+      "bytes": 66626,
+      "sha256": "d7f911df883007cb708a92b85b999de862e350addd08dc712e612cf666db970b"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-014-high.webp",
+      "bytes": 59388,
+      "sha256": "c3c6041834e52a0df7c33928a291ba8d7840e7ec1cfdbda633feebdbd1831406"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-015-low.webp",
+      "bytes": 22920,
+      "sha256": "10423b35cd3921f612e12e9c5091ed4dd4ca3cf699d9fc5be10e88150690f7e8"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-016-high.webp",
+      "bytes": 72256,
+      "sha256": "9aaa45c2f99eda5180505f0ce9b20bf8a5cf6e1e96919e35300a8d24dce3b9e7"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-017-high.webp",
+      "bytes": 59222,
+      "sha256": "fe3e11c3df473635a7f03eaad6ffd7d97d79c1fb798c44c51d8d66b9801eeb2d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-018-high.webp",
+      "bytes": 64412,
+      "sha256": "7b14afe7da52e74c94aa424f4a11d684559bdf34000f371694adef72fbcdfd07"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-019-high.webp",
+      "bytes": 77852,
+      "sha256": "3dbd8ae7d71d8f8fa8c1c19e54b5599c97985cc55f4735a9802d96f5ef0d2153"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-020-high.webp",
+      "bytes": 64744,
+      "sha256": "b2c7c46c1c2c57a2c0498189f9ad2bc00ff8c1e69b8613b7a2a342567aeddb8d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-021-low.webp",
+      "bytes": 27570,
+      "sha256": "e4e28d5d83dc0e19e515ad4a6aebdeafa253ffb86315ee71a3ffb99d8ee04114"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-022-high.webp",
+      "bytes": 84820,
+      "sha256": "a5f5ee660c2b0cbcd6333787d16a87095893d776acfac95544f5b1c847a4c0be"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-023-high.webp",
+      "bytes": 55892,
+      "sha256": "32441df73f72e1069e74a39760bc74dda852644fd5e6e898fb1c3a9994d88cd3"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-024-high.webp",
+      "bytes": 64890,
+      "sha256": "eb9247a2efe4f9ba47abb103143974ce7289adca8166254c097c9324eac94c91"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-025-high.webp",
+      "bytes": 57112,
+      "sha256": "20d6186f86afa0a9254900709dc5a2fdd8941a044cf7a71f07b5ea40b9dddbbe"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-026-high.webp",
+      "bytes": 42248,
+      "sha256": "60f459af9a32371f83d4b7b36b80bff197cd405c23fe652f51988f939a38e0be"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-027-high.webp",
+      "bytes": 49268,
+      "sha256": "9494dc96a9a494a9926df59d0fd6c5f3666250de149506047d497a52bfbff343"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-028-high.webp",
+      "bytes": 68672,
+      "sha256": "c80047909c5cf765652a07d8477aaa08585075376a0162573c133d4d85974a3c"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-029-high.webp",
+      "bytes": 53852,
+      "sha256": "109cf2de9e75a40e3584f0163de3a6e120c226e2da2b58995e297cee6a731417"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-030-high.webp",
+      "bytes": 65350,
+      "sha256": "2e7dd2d5f682a7fedaf69826dfee4842592129a313c2c984d07d6e038b791c9f"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-031-high.webp",
+      "bytes": 50524,
+      "sha256": "b918f95658fe0ace5ca7e69c2dd7d9ac413d27d4e07bae8f667f6482b8b59b65"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-032-high.webp",
+      "bytes": 76188,
+      "sha256": "b34a02391e3bc8de62ae227300946b4b722dc499577bb6c0e3f5430db98dfd67"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-033-high.webp",
+      "bytes": 71368,
+      "sha256": "b4774c8dc2ea81791832c12cdda647b867e20494df5bba187d78d3b0c80f819d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-034-high.webp",
+      "bytes": 49656,
+      "sha256": "1e1870acd8e8ccb8a12d68279d9c626d4ac1376b818e4c6593033796d7ff9329"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-035-high.webp",
+      "bytes": 65330,
+      "sha256": "ddd0df6c2c67955666f8a8884108af2d1f73d07f09d4fd631209d4eeb46feb43"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-036-high.webp",
+      "bytes": 52602,
+      "sha256": "eda4a03a435892fdb8b788cc49c6332ccba127f10e8eb0f5de6b732f1f3453ce"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-037-high.webp",
+      "bytes": 65466,
+      "sha256": "4e3af8fd37af8aa566df682b25ece0679faa87f26f55d31d1c66db79f1880f86"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-038-high.webp",
+      "bytes": 73910,
+      "sha256": "e98bc046aa316b1bca3aa1a64b843e9267afa1a89949c567bdaeedfeb28c4f00"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-039-high.webp",
+      "bytes": 68036,
+      "sha256": "4e70179ae91c198ae2bad30d985e56970dc5e60ef8113821a100a8d679cd125b"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-040-high.webp",
+      "bytes": 97366,
+      "sha256": "ba06d9a148dded7e7e785befbad95c58a633cfb29528619392195db95af07cef"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-041-high.webp",
+      "bytes": 49786,
+      "sha256": "85ecacdc8cbd96507eb426a63b3cf32b01918e34fe74d0104d4c827a5c0c6092"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-042-high.webp",
+      "bytes": 73768,
+      "sha256": "9c0c6c3e5bf698b43003f131deaa0f3cd30449dbd3c708059cb0e3f9caf2d2e2"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-043-high.webp",
+      "bytes": 64982,
+      "sha256": "74e7f28026e4356f3e9f56cdb7ac8b444e68db78b6c56da2fbff8062b5699241"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-044-high.webp",
+      "bytes": 64336,
+      "sha256": "d270ee442f9065236df938602109ea8c795406e2435b1d4c07ad8fa021dcc77b"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-045-high.webp",
+      "bytes": 55778,
+      "sha256": "08f819031a1ea94334801f497d44c91ec01feba6335b99fc124ed9d7996495fc"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-046-high.webp",
+      "bytes": 58758,
+      "sha256": "5ddc2a7b8f5a78b0c9613f2557d11c20729ae92f460411aae262b4d7101b4fa1"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-047-high.webp",
+      "bytes": 49714,
+      "sha256": "34427b4b65aa235e5a472780fb713121a1772178f30e136b5dd4c59ef37fbb80"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-048-high.webp",
+      "bytes": 66258,
+      "sha256": "ded449fafc75bbd963f00152d8fc6b337d872585347277acc6d74c64047767f8"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-049-high.webp",
+      "bytes": 48196,
+      "sha256": "8d847d2ba047297c9d9049cd14ad236f71339143de3e9f7bfdfd37cc10ea9501"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-050-high.webp",
+      "bytes": 55618,
+      "sha256": "cfb6efbad0716e53960eedb94916d915f85dfb4dd8e8798308e639b82baf4637"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-051-high.webp",
+      "bytes": 73108,
+      "sha256": "379ba8ddab608412312b931acec7c2feb951e711cd3e69d6444e39bc5929bed7"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-052-high.webp",
+      "bytes": 73298,
+      "sha256": "7a54dcce141b554b343c1ae9365eb07ba4dfdbb3ab8e50a3adf59a2e922be8a7"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-053-low.webp",
+      "bytes": 23306,
+      "sha256": "21188e85a542f1de62d25ec5b045d3572209950cbed22ee09f1bf0b8c979a090"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-054-low.webp",
+      "bytes": 24828,
+      "sha256": "c2cdd0042d70444623afb89735e4d7886db075d4f3f7f15e3f2bb34620a686f0"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-055-high.webp",
+      "bytes": 59748,
+      "sha256": "4cc31792995b22d8dc38b2ba453d30a648bcc61e22d39fa27e3deb4bfb6b3f2f"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-056-high.webp",
+      "bytes": 60490,
+      "sha256": "4f504ca029530fca5384b4e70ebc8e58e5d53004bf32d25508381e11a25112c4"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-057-high.webp",
+      "bytes": 68440,
+      "sha256": "e3eef792f0ffb84fffdf9efffd350187feac5e0e2183a2d4509f56acd85e317e"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-058-high.webp",
+      "bytes": 43948,
+      "sha256": "fa98cc6bebc607eda239e9457dc87b58eae628209de8141ef704ed44bfc9aec0"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-059-high.webp",
+      "bytes": 68624,
+      "sha256": "060c2c1ce87c4455e6e66aa4bef639311ab059aeb66918549c227fee06f5aa6a"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-060-high.webp",
+      "bytes": 71438,
+      "sha256": "21c42bb908bed33293f8318acd159a1ecfa22d0c0b257a31afab37b6b6be734f"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-061-high.webp",
+      "bytes": 50272,
+      "sha256": "9acb15013028d4716d6efad9991146c2da9b5a53e2ee5074363a24f7c770b879"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-062-high.webp",
+      "bytes": 60794,
+      "sha256": "0d4496dd3e324bf5a95f92e40822a966bf37dbc610f22bcd6851e1bfce13b2f6"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-063-high.webp",
+      "bytes": 62950,
+      "sha256": "004c77f16e9c560745900ac3f088b5f64f6da7de8de0044861ce4e56aaae0ee2"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-064-low.webp",
+      "bytes": 26094,
+      "sha256": "cd005ff0b2c493c4214dbe8cdfc112fc412da8228de2d7d8b931c57736b0a43b"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-065-high.webp",
+      "bytes": 57096,
+      "sha256": "55d12627a46a09956da7609665d620a6ba13914fd5075b5a26c527fc9319e733"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-066-low.webp",
+      "bytes": 23812,
+      "sha256": "aeebf82eaa2dab60449cff9617215db01ac80d798de0acd660bc09495581875d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-067-high.webp",
+      "bytes": 46130,
+      "sha256": "c0a41004c51b3d1dfbc012299b6323845b99e9f798397ca2c8baa70f90cbca2a"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-068-high.webp",
+      "bytes": 63088,
+      "sha256": "995eb2d298a015c5c9f39bbe1086d459de3f391114d731648993cf1f3e29805d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-069-high.webp",
+      "bytes": 57470,
+      "sha256": "343f2f544753df181fd79f26431401cd812b7f95e8e93849960c9903516cfc88"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-070-low.webp",
+      "bytes": 21458,
+      "sha256": "cc6a317aeb631023e8a4f4bf31be1135dfed8f5b558b03f439f187a87fe42826"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-071-low.webp",
+      "bytes": 22048,
+      "sha256": "1d100ee0ae7b38c8dcbfb35af8b5ee8948cd5a26719d04fbc83bb7b7d589bc64"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-072-high.webp",
+      "bytes": 69972,
+      "sha256": "95542fecb024d72f8d03ad99e33e73e1c175a572a5401068a9f8970e4c9e1971"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-073-high.webp",
+      "bytes": 60562,
+      "sha256": "5be254880dee9b7dc38691771c1a339659182ac51fba3ef54712bc786bb23758"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-074-high.webp",
+      "bytes": 57308,
+      "sha256": "ef4b518894583c48d2f8c2e02bcc501f251f5da68baec726aca7b47850c9e4b9"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-075-high.webp",
+      "bytes": 57378,
+      "sha256": "fe1724cfee4f94c336d0468f0e1fa6b756c94192bf16df6e53bdfed939473056"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-076-high.webp",
+      "bytes": 56280,
+      "sha256": "afea45e309ba66b3f244d39675f73b4b9747fca439df0f38d95aa3d1d524cf2d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-077-high.webp",
+      "bytes": 57278,
+      "sha256": "b66dd9a546dc768d4e637734b416411031268efa07046a757463e6aeae11d20d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-078-high.webp",
+      "bytes": 53608,
+      "sha256": "e9f8e044181389c86008a366cd611e0e24b531c6ce8b68528553cebff19d9301"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-079-high.webp",
+      "bytes": 72054,
+      "sha256": "eb2b4410daa9e5529a23e24cf7ce1b4cf351e6bfd3afd1daf216493880cabcaf"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-080-high.webp",
+      "bytes": 63164,
+      "sha256": "207cfcaeec76e30f96f0360a15749c80e2cf1ddad52f3f431a2611423ada03a3"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-081-high.webp",
+      "bytes": 57272,
+      "sha256": "380d3e2b30a41fba3ba5e272459ee4901b68800ecf35193e0a268711acf4a5ca"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-082-high.webp",
+      "bytes": 67270,
+      "sha256": "f97fcd80acf1157f8d131bd2f079043d76d8e9791c9c34646291eb2e9f42159a"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-083-high.webp",
+      "bytes": 70166,
+      "sha256": "4424edb8fa5bdf3d3697e28152902095dd96cf044ff5fb15c88aa6d14d7331a3"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-084-high.webp",
+      "bytes": 66696,
+      "sha256": "222211678cf405ddce8b91168bd1c82f94c35ae418db412a2c86c23d91caf612"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-085-high.webp",
+      "bytes": 65072,
+      "sha256": "e1727d898a7335396add73d3a3c0306cbb84e45ae2599ba55cb1bea9221ebb6a"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-086-high.webp",
+      "bytes": 53932,
+      "sha256": "f4c26f75218c78b42b478954104d8cb6b6ceeda1da5b1fee563e76633f06539c"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-087-high.webp",
+      "bytes": 61964,
+      "sha256": "a04dc147ee923704236fade88b25cc23656d6fcfeacc02fdd8aae30b86455393"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-088-high.webp",
+      "bytes": 59174,
+      "sha256": "b2e7088f15e58202288616984d44a8f7f55687ec79c94b3c7fe2b25dee546d77"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-089-high.webp",
+      "bytes": 71516,
+      "sha256": "90e71b0ce3fe592f7a74abf4f5e413cd6acb167b5481ca4857615038d2534fea"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-090-low.webp",
+      "bytes": 23132,
+      "sha256": "00dfb3a1c16381bb7d6b2c27895ecf489c6efbb0634091fe754db15db7dda578"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-091-high.webp",
+      "bytes": 62632,
+      "sha256": "a8338ec3a043498d4cd497d43502ebdd86e1fdc1ef7cea440d1327c49a56317c"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-092-low.webp",
+      "bytes": 22590,
+      "sha256": "e418ada7d262d9cceea607a09c349c35e07b4acc632369875f088eeaa748a6f6"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-093-high.webp",
+      "bytes": 57162,
+      "sha256": "86e8066a9222ff2c181052cfc67609be858f9c2c7a36dab18ae73fe3ba8cd63e"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-094-high.webp",
+      "bytes": 66044,
+      "sha256": "c614ecb723bfe969cce5b4bff55eb1eddc6a226799488bc239df89205055c163"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-095-high.webp",
+      "bytes": 46222,
+      "sha256": "37b9b04717d9cc76e691612340267b5cbfa79628a44feb9000445e4c2246bb48"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-096-high.webp",
+      "bytes": 66418,
+      "sha256": "524a0087918c127e536e5befcb1476a9fff2a740b8a7f40cdfb18da284ebd8f8"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-097-high.webp",
+      "bytes": 54304,
+      "sha256": "47e0ea102e30a2b0883210b7eaf6225391141725d9020bb25797210e296ce17f"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-098-high.webp",
+      "bytes": 63586,
+      "sha256": "1ea833cce1e831ad8d4e07c7c79f7e5c94090299fb8e5ef0ff0cd8a9a84b96d8"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-099-high.webp",
+      "bytes": 69160,
+      "sha256": "531e6ec26067df9ddae4e7da58a9cec33a41912c615498788608f8c25980e1b1"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-100-high.webp",
+      "bytes": 66826,
+      "sha256": "c7c1fed520f3e1265464b54ff4d6b186cbe5c0c2d669f89d4ce76920f1e4bf1d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-101-high.webp",
+      "bytes": 67200,
+      "sha256": "6a55c0b0862bafd0ff6a22340f272318a65e709b0e53570153608c3f499e0708"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-102-low.webp",
+      "bytes": 21330,
+      "sha256": "fb946a93ad78fb6f5545d14dfae058f7ed6865e1dfc1f0cee6e28031c762cfd0"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-103-high.webp",
+      "bytes": 53898,
+      "sha256": "b872627a0b7b02b73b45681de9451b3614cf26418660d00091f7bf1339d9858b"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-104-high.webp",
+      "bytes": 64768,
+      "sha256": "f8a7642f2325a3316a4f4fa432785817266169cc92e87ee81f973deb9182c289"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-105-high.webp",
+      "bytes": 70096,
+      "sha256": "5892d33f0ae969df1ec27b7ac54337515b986e3a35b50897b2d77c0a804681ba"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-106-high.webp",
+      "bytes": 65122,
+      "sha256": "8cca172bbcaa6c40e8bd9e194157c366fa4e3c4c155ef7496ac57e1a13c38968"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-107-high.webp",
+      "bytes": 69210,
+      "sha256": "09609216210cdf0970b358a32ea02ce4c20ce572c0574ddce54ff393265a5616"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-108-high.webp",
+      "bytes": 76172,
+      "sha256": "967ab7e2cd87b4caca2ee8a83446e2d2ea3a4534f659b03c149cc45c70c15724"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-109-low.webp",
+      "bytes": 23020,
+      "sha256": "08cd2d635056859f6c6566e2706f06182f33367bb60e2d4951c0de456772120d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-110-high.webp",
+      "bytes": 51464,
+      "sha256": "4765fae2b08e79e34ef1275e0243ee6698369e64314073f042ab5ecd25d6580b"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-111-high.webp",
+      "bytes": 50186,
+      "sha256": "4cac7ff8f7797decffecd50a31437f925c7f1db89cc990b5c63ae82b5141ba24"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-112-high.webp",
+      "bytes": 65266,
+      "sha256": "86609078f07b5953fcfcf8de3a8f440d6e024c017bcabdf5f99dc2ee6da3be09"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-113-high.webp",
+      "bytes": 50988,
+      "sha256": "35f7c5fa92bbbaedaf3b096699ec46d3a67fe59a0533f8ebadb5d777cc38e4b7"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-114-high.webp",
+      "bytes": 57494,
+      "sha256": "4b9b13df8057d2fc50daec3d306437e1036cdf1bde30fcdca06c439117f3c105"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-115-high.webp",
+      "bytes": 67192,
+      "sha256": "fcd048ef40d996e344a361dc21f690fb9e1ce448b593257b7a08317e2d82de40"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-116-high.webp",
+      "bytes": 70026,
+      "sha256": "7ff8c2cdc8747ab9aaa77e6f89b01feaa701cb8c511e4f59e999398d35c91c4a"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-117-high.webp",
+      "bytes": 49930,
+      "sha256": "b36b7c8a78d460b28d4a4ac1dec5f9c19bc8e860b761ef8023aeeeb69bc183d9"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-118-high.webp",
+      "bytes": 48768,
+      "sha256": "e7e3f11beaa06ce7466eb543ca567cdcb0a807c3db042d66a443a13e9bd6a935"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-119-high.webp",
+      "bytes": 61684,
+      "sha256": "d1d4329fbef64f29c617c050949b6eac78a952473cce8e3811f84dcaabd9e677"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-120-high.webp",
+      "bytes": 52544,
+      "sha256": "b4804c10de808fbf1ed2fdda622ef5c991d33cf4c40179ee901858056b71d5a5"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-121-high.webp",
+      "bytes": 68568,
+      "sha256": "e468e1041664a1480844f1c16f5d7910f0a403381c6b5def7ba5f631338cbb51"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-122-high.webp",
+      "bytes": 43708,
+      "sha256": "af9e3ab60713724f4e8ffc717ca770c32e5d8d81e31220a59797579b7e3beb4f"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-123-high.webp",
+      "bytes": 60220,
+      "sha256": "8030eeb0114e076c23b20da60c221e3cc380d4316cdaa5f7c1dc9f0afc64fa94"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-124-high.webp",
+      "bytes": 42930,
+      "sha256": "2e67cc14de61ed242938889ff7b73c2807cb760499e18a5759412c00d28250dd"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-125-high.webp",
+      "bytes": 56534,
+      "sha256": "5fa0fe3e5c19ff7afae8e0a5f8629b971feca09723500b49b9be62a4e9cb978e"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-126-high.webp",
+      "bytes": 38502,
+      "sha256": "60d4131897ae19d33d46463a32eb45807765a443b5c696b964c52b484eda6ff4"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-127-high.webp",
+      "bytes": 37004,
+      "sha256": "a5a2bcc9da7881b8687bab50b0e3b44f8042ed1e73117b928fe5dd53d11edcd1"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-128-high.webp",
+      "bytes": 48102,
+      "sha256": "e6e7c489c5a6ad7940a9a4224d22e4e98fcdcdf98ccd5a8dd9c1005ee34dd7c6"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-129-low.webp",
+      "bytes": 27848,
+      "sha256": "35e89d9b2042df61f933ad6935adae860c5e53d4ea36bdc7e035be1a3be4ba17"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-130-low.webp",
+      "bytes": 29284,
+      "sha256": "145d7cc7cc093478f74ce8a4ca93749ed69efc978d3ff868283355541cfaffaf"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-131-low.webp",
+      "bytes": 19554,
+      "sha256": "6c2c27b3a61e690586ca4740b4c7059a59e144067fbe8c869878c021793f48d9"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-132-low.webp",
+      "bytes": 26844,
+      "sha256": "7eaf447c782c3bda865d71453284534b75ff2807a4f564fbec1cfc56ee7035a3"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-133-low.webp",
+      "bytes": 30084,
+      "sha256": "7e18aa6df2ed0ade09cb3f0b5a049c20d2d576e68b2a7c22d25d4cd7109e7208"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-134-low.webp",
+      "bytes": 35704,
+      "sha256": "260acaffbfed4550829fc43948920213497c0f9105ffc72fd411fe95d16c7415"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-135-low.webp",
+      "bytes": 33136,
+      "sha256": "7fe0fc381f3e7c531add42b2fce63f4d484f587c2ada2d0c303a6b25f806f2df"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-136-low.webp",
+      "bytes": 25220,
+      "sha256": "6c4b150fcb44a3bfe77c4a61008beab4994604efcf4f960b7a9d09a2538d1b7b"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-137-low.webp",
+      "bytes": 32886,
+      "sha256": "8f8a4c563de232264c82837df2dad66c120c7549cfa11141dd8b6c4122ac996f"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-138-low.webp",
+      "bytes": 30500,
+      "sha256": "2fc2623b3ea1aa8c6afa88b292657459c4fa00936ff045e3db957ea9ae4f498b"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-139-low.webp",
+      "bytes": 26548,
+      "sha256": "ed88028f2521641ae8837a829e443917ed82b8aff61e4d2f5d4e373c5a516080"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-140-low.webp",
+      "bytes": 23846,
+      "sha256": "90b7285feb86e393cd78d34f84daee5304661b23961e97e243fe1b1f2ad18113"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-141-low.webp",
+      "bytes": 27388,
+      "sha256": "6b68431f465eae459979a90bfe82b2a4b56e7cafe80cc2eb870b53615ce2ade9"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-142-low.webp",
+      "bytes": 30500,
+      "sha256": "3781757e83f39a525c587c7b531c479f8e1c1c7db0874762a1a0e43332a1f63f"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-143-low.webp",
+      "bytes": 26492,
+      "sha256": "5c120b29bd9a784ce48228b041a0a3f771b7d2012993bea7503bb1451a8709cc"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-144-low.webp",
+      "bytes": 28168,
+      "sha256": "52a7f93bd13375cca8694e39ca118bdb1f84acae09b59cb401cbcb99aaf5662f"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-145-low.webp",
+      "bytes": 26346,
+      "sha256": "3d4bdfd2b9842c397705434e374a840ce5799ab1deb3083592be82565e6f460b"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-146-low.webp",
+      "bytes": 35198,
+      "sha256": "84b54f7ccff3150103e85f2bef286ee1a812d43b80781c7b3938872b454c89d0"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-147-low.webp",
+      "bytes": 28400,
+      "sha256": "3792374026f1b805d4bfa2fa0ad8107e1a53ccb6a56f78c2513bdf04daf75e00"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-148-low.webp",
+      "bytes": 34586,
+      "sha256": "18c3206cc8d2e598b2e99cf7a3589245c8125801ab1c0e0c177b96859eed5ec4"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-149-low.webp",
+      "bytes": 32060,
+      "sha256": "5acf8ef93de9aa30b33dc4886fb8693ec5e2a8a5e4dbdc3029f9a76f2e25870f"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-150-low.webp",
+      "bytes": 32336,
+      "sha256": "0df49fc3dcd1674f20199f50c6d4ed3fca90a48d310f7c65500383a8d3be26bb"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-151-low.webp",
+      "bytes": 34490,
+      "sha256": "4361f2c74d14c188b1ed929bc8f01d33d99fc0dc88dc6be7ab393394eea4e867"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-152-low.webp",
+      "bytes": 36336,
+      "sha256": "149364aebc3a676c685d91637e3d87106f434e244a62c5f7e73b17f31ae566c4"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-153-low.webp",
+      "bytes": 31130,
+      "sha256": "19725c31011592a2f6761c7f37975fcc035b0b2dd0bbec534ebdfd0d6b49da45"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-154-high.webp",
+      "bytes": 104942,
+      "sha256": "5bb6f40aa77cebcb710a998e469f6d12c0c06a9c7fb7b5986ab0dccf0ff74c5d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-155-low.webp",
+      "bytes": 34808,
+      "sha256": "1505c89a56eaa1450736ace65b47951034042b47ec8ba431089afeaa4bcdc826"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-156-low.webp",
+      "bytes": 30292,
+      "sha256": "26894cb15be3992bd7224cce5a9017da694b184fba4b772bded1feb224bb2474"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-157-low.webp",
+      "bytes": 26024,
+      "sha256": "7fe869bd052425b35f18d53c6e0be0f0980dfc6a1f07bad97f5de67c301830b8"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-158-low.webp",
+      "bytes": 21014,
+      "sha256": "8ebaf7c2cc2f765b8d9f0b1a96d5f6a1e2f9c9eb1112a172ab089101a264cbbb"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-001-source.jpg",
+      "bytes": 135487,
+      "sha256": "80fbbccfb625e62d3b29c39f1a263efb201527333723773b5e8888995eb228ce"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-002-source.jpg",
+      "bytes": 113308,
+      "sha256": "e51ebef6f7e82ec96e9ef71487e5ac23b6b14b9be40bb6f67b86911fe49a721a"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-003-source.jpg",
+      "bytes": 145224,
+      "sha256": "1be59215c931f73d8beb5cfed7467b03b065515742ac066159f1e12696016d52"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-004-source.jpg",
+      "bytes": 143864,
+      "sha256": "9ee6759b64ff388cbb1ba25846c5eda9d14717150d469528f925888d756ab1f5"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-005-source.jpg",
+      "bytes": 95585,
+      "sha256": "8c595e7ad17b76523419f8bd86357b3c3db884c90bb34c6592839fe6a049f0cc"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-006-source.jpg",
+      "bytes": 113772,
+      "sha256": "960319374c44e9be89641d1c91add246a79d610cbddd190e0a380b9ad3f8da1a"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-007-source.jpg",
+      "bytes": 117039,
+      "sha256": "b17a6aa7c7e1efc2180abf0e52b583e3935b5e37615a5467554ac96c77ccf4eb"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-008-source.jpg",
+      "bytes": 158840,
+      "sha256": "6679d39753189fabfd0e851cd0ccc84b59de2058b5ea2da34e84fbe71b49accf"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-009-source.jpg",
+      "bytes": 144840,
+      "sha256": "2b34cde1343c711ddb968210deef3f147a98cb4bf91b2e766ef315a6823bfb45"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-010-source.jpg",
+      "bytes": 102504,
+      "sha256": "5889de8a44f1b768442e7788e3d0f86c80614db1260f4854524761cb7dd6de8c"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-011-source.jpg",
+      "bytes": 102117,
+      "sha256": "22f51717e898866a86ef40c53346b693e8b3e7c5b4fbc0f22efe4943b9387fd2"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-012-source.jpg",
+      "bytes": 102184,
+      "sha256": "7835611cf603c775fbd7b890cc3cb1bbb044d7daf11b75fdd2feb95356512a1e"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-013-source.jpg",
+      "bytes": 153708,
+      "sha256": "79ab7e8ffc66e9a670db22aa2da8c3301483e201f7eb4e1aac5c60af8243e378"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-014-source.jpg",
+      "bytes": 115809,
+      "sha256": "6e16a8352d81428d63f19979c3d256d204d51263d8a67f8e750d5969b5a6c325"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-015-source.jpg",
+      "bytes": 107231,
+      "sha256": "1ba223ea159215e0c9f8bbf56acb6f9529772331bce7f56d9395d4fa1fba94d7"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-016-source.jpg",
+      "bytes": 143939,
+      "sha256": "fd34ac937650eb270d9c95db6c074460bf46efe2f49564b969ea546c9bbf1852"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-017-source.jpg",
+      "bytes": 174794,
+      "sha256": "d93101a7ea10df18410f1a0beb82fb76f47ffdc5ae377a502b92c98f83433013"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-018-source.jpg",
+      "bytes": 107578,
+      "sha256": "5316f7541d186c958df088dac4727eda9a9a03138c4d6f9cb776c758bd927ab3"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-019-source.jpg",
+      "bytes": 104929,
+      "sha256": "1f99ebd340a88e4045a936b99cea294c59785187d636a7e6bbd0a60de97caae7"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-020-source.jpg",
+      "bytes": 117754,
+      "sha256": "eb5819924c26df3d641d3026d53ef10dee1f50ec251222141c8ebd0b833c108e"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-021-source.jpg",
+      "bytes": 96768,
+      "sha256": "824435ae5c0bc24673e18d313be7f15c9ea8d2fbbaac2c38a42a0a08b9f603b4"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-022-source.jpg",
+      "bytes": 125515,
+      "sha256": "516b3e6bb93d91ac33e3de0a8d8d431e1b2b9a5fa77d30b13b28ad893b838f78"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-023-source.jpg",
+      "bytes": 151803,
+      "sha256": "eeb3231d147cb0d90c3ca48fe8f0a5e666efa9c84c2f610c68116f4ed3d6115b"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-024-source.jpg",
+      "bytes": 124597,
+      "sha256": "a907de0dbe37e824d199a3426a1b734efee5d7cd2a06065b7c0a5f6c44523d37"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-025-source.jpg",
+      "bytes": 155997,
+      "sha256": "5aee1fc89193bf299d4ba1fee01791495b60f49d5b64eebde041ba46c87a3860"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-026-source.jpg",
+      "bytes": 160742,
+      "sha256": "d53c7ef71983ecfd71e1796dd6061de695b9b81780ad74caf51cf038f362d9e1"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-027-source.jpg",
+      "bytes": 135741,
+      "sha256": "692c5942a5d4ebe3b86f8d42b59d74df42ecb5a7652a04a6d2fcf55fa29a7fa6"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-028-source.jpg",
+      "bytes": 135868,
+      "sha256": "d2e2821716a8373fdacf7cba711d21383ef7a1e39a205de794e9f2817fdde420"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-029-source.jpg",
+      "bytes": 121450,
+      "sha256": "bd8dc3095ea1f27cdd31afb213dc895b32026ea02100124f62d8a9eb97f209cd"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/30th-c-030-source.jpg",
+      "bytes": 232322,
+      "sha256": "711bdf9aac78b7fa4b434e2224ed882e0bb3e9aebc6d89e803c210d895e74bff"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-1-high.webp",
+      "bytes": 80152,
+      "sha256": "ce40bc890c0c6bc31a85b342eefd61e1794e83ee33c314d7eb73c257ea6a870c"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-10-high.webp",
+      "bytes": 73896,
+      "sha256": "cd5748662956403906c64ee2a9c1fe646e8d2be960bbf3b49c305f5b14cdd66d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-11-high.webp",
+      "bytes": 63438,
+      "sha256": "6b2bbc3dcc32ef0e7f9eda61d3336decf7792c9e1a190c66ced3cb760d5a1746"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-12-high.webp",
+      "bytes": 64166,
+      "sha256": "4da018d773b1404b70927d8865ef0312583a9b94922ad3e1fa9007ac7c81dbee"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-13-high.webp",
+      "bytes": 55746,
+      "sha256": "41114c5dd72dc64f76f57f634015820d07375b289400e5951f0751aca0cfa85b"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-14-high.webp",
+      "bytes": 50104,
+      "sha256": "6f57d85e3f94d53ccc60a5f395f87536f810c9464f0f75ecce223a56db08fd73"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-15-high.webp",
+      "bytes": 58142,
+      "sha256": "52ad731ed8f07c22e8ad41d636ea158fe431be4c58a9b7ff6b2220d214b25ef1"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-16-high.webp",
+      "bytes": 91704,
+      "sha256": "058a1ccffbe22c6cfcaf767d08bb37b6527c17dc5699e92749530c7e8a2bb021"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-17-high.webp",
+      "bytes": 81768,
+      "sha256": "706ae54ede44e6441f3e0efc7b1aaaa5b1659b40297ff387171f45389330656d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-18-high.webp",
+      "bytes": 91716,
+      "sha256": "017da25bb13f81f76ae10eacb721905eb65aeb407f8f50d97a57c001e3f23f29"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-19-high.webp",
+      "bytes": 96578,
+      "sha256": "9e7f788bee7c8cac4c35bbf411484fb952728b1810b734f3e296ed2909d424c3"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-2-high.webp",
+      "bytes": 86742,
+      "sha256": "be1db68a50a2baacaba9eb0d41e8e7f9ff8147cfc8829bd6310dcba6c8ff5371"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-20-high.webp",
+      "bytes": 69692,
+      "sha256": "d233d7a5a9e83d050b97a93dd2dd1da4d19d26ff56e7ce415062d8abe77d75a0"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-21-high.webp",
+      "bytes": 87480,
+      "sha256": "2d4d9e3b168915e994420b1865e6fb16a56cda3837992d59ddb1233d7a536b3d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-22-high.webp",
+      "bytes": 70460,
+      "sha256": "fbf1772544f39b2bdd50cedf5fe4f7cc97072bb8bc74541dd546b2b0ddd84a70"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-23-high.webp",
+      "bytes": 57720,
+      "sha256": "3eea093be87e440895c2ebc86b2a879342de2fbbacc49948a06ac59db6afd3c7"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-24-high.webp",
+      "bytes": 61750,
+      "sha256": "d8b9459ca35e9fbf890a0c74efa23ff4507f0380973fd838f776536a3dea8ef7"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-25-source.png",
+      "bytes": 573664,
+      "sha256": "a37ea80c99983b706bda400b12d3da06b8499e190028e2642264927d84b3b3ba"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-3-high.webp",
+      "bytes": 95368,
+      "sha256": "33d22aba9bbde966da2790d84d18434085d3547986c7067d10fa6df5c9b57dd3"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-4-high.webp",
+      "bytes": 74428,
+      "sha256": "69e8a7c4b71972e1b4702425e4616c7fc1f9ac4f06b66bae9487f926cfd5de54"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-5-high.webp",
+      "bytes": 79844,
+      "sha256": "9bb19f22c03a74c615e26c6c04fb5721038e13bc69e04e147c2ba193167f2508"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-6-high.webp",
+      "bytes": 65620,
+      "sha256": "bf6dd952cfbd1975f1845cd1740686653130963d3f03edfcc5c69941523ed6a4"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-7-high.webp",
+      "bytes": 72034,
+      "sha256": "7df2d65a3b44de2b204a28583af18fdfc9d5234cc78f96db2e8cdfe42631d12a"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-8-high.webp",
+      "bytes": 46792,
+      "sha256": "e99b15ed510673c00535b584496d44cee865b5dacc7732299f0fc708fd246852"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25-9-high.webp",
+      "bytes": 69792,
+      "sha256": "c86d687d0e0084a0b0586e8383ac550353e163272375e5df9c45416e553f6f30"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC001-source.png",
+      "bytes": 603172,
+      "sha256": "63a67e90a2fbfad4080e923e7ae6c8d2bd1a4963939a18f307b5fb09cc926741"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC002-source.png",
+      "bytes": 608186,
+      "sha256": "04d91a6572cff33e29d350d6cb85ced95affb9b9e51c04202eacc70f2622faf4"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC003-source.png",
+      "bytes": 681046,
+      "sha256": "db9ce935ef50e757b4c832cda557268df7b3d321cd51a4dd31cbb23bfa4626d6"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC004-source.png",
+      "bytes": 361145,
+      "sha256": "98d390414c80cf421aa5b4dcab64b1ce92a56f993e50b6baaf3d6e676d6bdb5d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC005-source.png",
+      "bytes": 624734,
+      "sha256": "fa44cd7467c247e0de709c19cc437c0adb07fa8e5b8ed23ed7a64664d087cd13"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC006-source.png",
+      "bytes": 341847,
+      "sha256": "39f5eea24d4caa71fb1f15c670cafd7baaf2a922d9441da32062c66927e57c92"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC007-source.png",
+      "bytes": 609610,
+      "sha256": "6d9b589d5d337f8ede3d49416d2852f2c34616ea8e9036dc2878a8046bc61b10"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC008-source.png",
+      "bytes": 680365,
+      "sha256": "3ea796c1aff5d4c66085cc1b6aa303939ac9709233d5c08d8f0cd556fe9ceb4d"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC009-source.png",
+      "bytes": 618364,
+      "sha256": "2528e249ace61f9069f758e72deb941e6120620e5002d1e5cb86ace6527c4732"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC010-source.png",
+      "bytes": 559859,
+      "sha256": "978be65eeeda27a161ebb12127a7836d8587bd138916581d5c935c1460469842"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC011-source.png",
+      "bytes": 691383,
+      "sha256": "3ab065887e44818de2a722241b64a2fd94f2042ce00c02ecd21913db087fd12f"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC012-source.png",
+      "bytes": 329878,
+      "sha256": "2cb1478e0af9b18982604f7e46e6c9c20cd5c17620aee7534f9ec1f2468db5dd"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC013-source.png",
+      "bytes": 508646,
+      "sha256": "1ebd507258f2c3035a86ebc752dd68f3efb07404a7ebbae403acbbf88ca3e8f9"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC014-source.png",
+      "bytes": 529920,
+      "sha256": "3d3da82e3f7148dd5eca26293c6c17cc7eaad2530f4515d4a9f43ac1812c623e"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC015-source.png",
+      "bytes": 564730,
+      "sha256": "4aa9d94ac93eaab6a5b454b76124421359dd62ca2aa8029302d585c18894119f"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC016-source.png",
+      "bytes": 673671,
+      "sha256": "5fa04fce385cbdce1d1c130a39f2cb2948168cec9178e6ead521b14e28182255"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC017-source.png",
+      "bytes": 699801,
+      "sha256": "8b62a66c212a9a3baca57ada857ca8e888e5c80728df2465cb4f2e6cef4681bc"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC018-source.png",
+      "bytes": 703194,
+      "sha256": "5356035da54917c4d83f409fe80fbcb64f91c45c69bb39e17c5f84c859ebbbdb"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC019-source.png",
+      "bytes": 795024,
+      "sha256": "5dfa731baf3f883c007699532dc47b336d631d9fd00a6269e4222d733f7606a9"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC020-source.png",
+      "bytes": 386590,
+      "sha256": "4fb0761060c543c6eebd67e2864073c456bbd1ebe8b502b7470c42dde658c352"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC021-source.png",
+      "bytes": 468183,
+      "sha256": "e788f96cc1def28559f7efd7974d9aa651b0ef4f8f8461193b6145ffed20f118"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC022-source.png",
+      "bytes": 731166,
+      "sha256": "819ce86229708382c39f42d283484978d0bf723fb93c2d4179a73cdd191e6760"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC023-source.png",
+      "bytes": 905447,
+      "sha256": "2e32fbdb5a16ff981f17673784ae7230af868a4247cff6e4b19b106670c9d3cd"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC024-source.png",
+      "bytes": 783476,
+      "sha256": "7a658b91c4afd483351b1befa78ee0843cc9ebe9565d74c705e27b47b0864b3e"
+    },
+    {
+      "path": "tests/fixtures/anniversary-frames/cel25cc-CC025-source.png",
+      "bytes": 680906,
+      "sha256": "b7d304a1fbc5d285c655a1ca4b12c1e00f02343aac69ba2e20dfb23c644eddfc"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-1-high.webp",
+      "bytes": 91838,
+      "sha256": "aacc56f3eec4aa94ce19d23827a8a67fc63caba4487f9c11f961152ae70e4145"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-1-low.webp",
+      "bytes": 19730,
+      "sha256": "99b3cd5c38e6aaf236ac71a54d6c9180f2b5b4ff6a9dd8f1a5d4c082a0b8e1e1"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-10-high.webp",
+      "bytes": 70936,
+      "sha256": "b264c56b77d55bb2826ef2b1a95de3fcf608685bfc3eddbfadef8197c968a5e3"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-10-low.webp",
+      "bytes": 18182,
+      "sha256": "78ceb295994ffd6c2cd7e5db62ffd84b03372fd12b4903bdddc7e28f70e0b1ce"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-11-high.webp",
+      "bytes": 84992,
+      "sha256": "7654062742480de9805124e9dde9b3c389fb05db37278e1f89596b40f57d2b0b"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-11-low.webp",
+      "bytes": 21572,
+      "sha256": "5aa30e5abc17995d3fb098224e793913713c31ed5c85a102f8c73055abfb3b00"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-12-high.webp",
+      "bytes": 73562,
+      "sha256": "430e8a8275726cd8bca20e83fcf8977174a36b0da979d41ade759a0b5e8959ed"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-12-low.webp",
+      "bytes": 20042,
+      "sha256": "5be941afdc52b0aedd253c40dad3196facf306a5dac4b8ff051673d17b4427c5"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-13-high.webp",
+      "bytes": 81310,
+      "sha256": "c01cb3f0dc9c7fa1d2efb3b3744d1ff431b673097af7ffcf8198bf71b55e1721"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-13-low.webp",
+      "bytes": 20970,
+      "sha256": "7de5f7029d44ec78f622281478f4973e99d3e6c4cf6ce3976197373b865b55c1"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-14-high.webp",
+      "bytes": 78308,
+      "sha256": "58e5ce01f52b51c2a82ab583040ca68505a6c0e94704c670a47d0243575cea94"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-14-low.webp",
+      "bytes": 21148,
+      "sha256": "242d8d77927c340e3913cb25f44de2d9b992ea06d2db826003a53919342d5457"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-15-high.webp",
+      "bytes": 73408,
+      "sha256": "21dd830f76f5f6332405bd02a038480420efdcb08939c0a0b17a423962d46e1b"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-15-low.webp",
+      "bytes": 18934,
+      "sha256": "33aa2a48e90edb74ee20443fb2f71d919909026480f7ae65b8e55faf12db1287"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-16-high.webp",
+      "bytes": 69776,
+      "sha256": "612a9cf191a1a023d0aa30ea1ddbcc219126452e596c5ec8b56cd8d3a8a6c250"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-16-low.webp",
+      "bytes": 18936,
+      "sha256": "c0770e5e2edd00627db8d32bb535abf01eee77cf46468c793e656d4ba7236c1f"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-2-high.webp",
+      "bytes": 97988,
+      "sha256": "fbbca6fe68777fb7a2f4b5335bd932ed5d6d363c8cab0a9ed30046adc4f4bfb3"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-2-low.webp",
+      "bytes": 24054,
+      "sha256": "7c8f0ca78f8ed45a72455e19527de969fc54337493b898053aabedc40cc50d85"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-3-high.webp",
+      "bytes": 65846,
+      "sha256": "d87dd8f51e4e61785fef24d5e903032ca4427679a1634758f8efb3060991d76f"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-3-low.webp",
+      "bytes": 17938,
+      "sha256": "77bff14158c5625004b9807c8eb55840f5cdc278d982c172ceb4c0c597e704bb"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-4-high.webp",
+      "bytes": 78590,
+      "sha256": "0a1e077b13319e2e50c63d54b3afdecabe57f6dfdd07377a6979efbea48fe254"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-4-low.webp",
+      "bytes": 20190,
+      "sha256": "f9ab1488b2145f3d055acb7669bb9caf18165dd75c8df19a9e4f55c2a2640c4a"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-5-high.webp",
+      "bytes": 74532,
+      "sha256": "0ee4e3738f74b696947eb65719d8f235f8abb07c30d52615200c17c9255bcea1"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-5-low.webp",
+      "bytes": 18772,
+      "sha256": "b314bd2d850173bd3ee7e40ed919c93c73b28cdfadbd0af17302ca7d13002ac9"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-6-high.webp",
+      "bytes": 86904,
+      "sha256": "06d682c8f72f1d51951ad4035211ab7a202e3e50fbdad091918b69a1e685f460"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-6-low.webp",
+      "bytes": 20772,
+      "sha256": "8c16059a61b60a9ee4e0c158e6dd5a89a71b983321743f2911e4535e5aec0652"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-7-high.webp",
+      "bytes": 62722,
+      "sha256": "8f1c13f945785d700dcfbec3d19e78ab21f2abf8a49e81a2da7c9566619b25d5"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-7-low.webp",
+      "bytes": 16272,
+      "sha256": "d52a896bab70d9a0f5f6c9ad00018de616071ce891fe1c8b02a22a0c91544068"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-8-high.webp",
+      "bytes": 85086,
+      "sha256": "3104c69eb8ba533c2ce9fecdc24839dad9dd1a473ba021e6b30838a911d2233c"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-8-low.webp",
+      "bytes": 21748,
+      "sha256": "52fd2c148d8f3a40f6ea55c67d1e13893187bd265627b3708755af938849f534"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-9-high.webp",
+      "bytes": 86824,
+      "sha256": "7e42d0fd9009bca50f6890bad7ec9496b18d482296874809d43df2e5d1c69fd2"
+    },
+    {
+      "path": "tests/fixtures/base-set-frames/base1-9-low.webp",
+      "bytes": 20208,
+      "sha256": "830a6bf682254aaffb5a7f3f2c8a5588d375c333e77f1f0b144903dd01ed8eb7"
+    },
+    {
+      "path": "tests/fixtures/pokemon-promos/SWSH012.webp",
+      "bytes": 67384,
+      "sha256": "6f7b1cd0c6387d8838e3705959c6a0b861e52db573b737ed7f2bc282fa68e014"
+    },
+    {
+      "path": "tests/fixtures/pokemon-promos/SWSH013.webp",
+      "bytes": 67410,
+      "sha256": "d30ff8652c8639a7caaca1e5a286cd2af4ab3d99977942973869b668e1d4fa2e"
+    },
+    {
+      "path": "tests/fixtures/pokemon-promos/SWSH032.webp",
+      "bytes": 75998,
+      "sha256": "a6525ade5b152cea940e78982b20f44de2eeb0af02d7e5c473f6fe7682084532"
+    },
+    {
+      "path": "tests/fixtures/pokemon-promos/SWSH034.webp",
+      "bytes": 102612,
+      "sha256": "f57cf6a80dd11999532fb2f950ef8a1102891172034bdb45fce08215c20c2881"
+    },
+    {
+      "path": "tests/fixtures/pokemon-promos/SWSH040.webp",
+      "bytes": 71154,
+      "sha256": "1cf2b384d8e82e6e61372d076337949df6f635ac21aa000563ed3595c2180bbf"
+    },
+    {
+      "path": "tests/fixtures/pokemon-promos/SWSH060.webp",
+      "bytes": 104668,
+      "sha256": "4bf1a348e7db5a4dff7c7d04ad0b41e8287c52de1cc67504b88059c6d20e1c75"
+    },
+    {
+      "path": "tests/fixtures/pokemon-promos/SWSH220.webp",
+      "bytes": 57526,
+      "sha256": "8cc95bd523caedb3bb8e35a5842a4dfc85d0d4f503877002d9d8f88bd19d7180"
+    },
+    {
+      "path": "tests/fixtures/pokemon-promos/swsh3-161.webp",
+      "bytes": 37646,
+      "sha256": "0f43edeb1cbb64b8301f9206546fa67c94f8f93f796a2f6c70be850988026572"
+    },
+    {
+      "path": "tests/frame-art/dp1-31.webp",
+      "bytes": 120628,
+      "sha256": "32e9074e1617d144966ffdafe1f564899f36e716145da200e5eb95ac2150ed3b"
+    },
+    {
+      "path": "tests/frame-art/dp5-33.webp",
+      "bytes": 139092,
+      "sha256": "05db177c7264f8ce6a8e6a94f258422728d2551b21653a822796c57cfe57f164"
+    },
+    {
+      "path": "tests/frame-art/hgss3-15.webp",
+      "bytes": 79856,
+      "sha256": "ba565084c5770f23831a440bf0a81dae487459b1487e73b3a2b7823d830352df"
+    },
+    {
+      "path": "tests/frame-art/me01-016.webp",
+      "bytes": 69106,
+      "sha256": "ab8684f52833548c4828a757ea1fac42d9079d5fb749c3f478b2af16ced5f3b2"
+    },
+    {
+      "path": "tests/frame-art/ptcg.webp",
+      "bytes": 73928,
+      "sha256": "09d4f795599248d94ccae05cff6334d16cf048bc4b001bd9fa492afe4de7aedb"
+    },
+    {
+      "path": "tests/frame-art/sm11-4.webp",
+      "bytes": 64830,
+      "sha256": "3a978d50ea5d9bab5eb1cb10a7afe66eb81dc8da415e7a9007e861d96990f3ee"
+    },
+    {
+      "path": "tests/frame-art/sm11-6.webp",
+      "bytes": 80122,
+      "sha256": "1a98908851b134a27bda1b7da254c0710ce656bcc6da754c3dbdc93ebbb2dd22"
+    },
+    {
+      "path": "tests/frame-art/sm11-7.webp",
+      "bytes": 88764,
+      "sha256": "6a426895f6b36e64d8ac2a5d9ab5d94df823a8d120eac5451568972595f40b43"
+    },
+    {
+      "path": "tests/frame-art/sm11-9.webp",
+      "bytes": 82892,
+      "sha256": "d77862b42f186b649ec67c06f48175b31861e3e04a9dffb759618e2c04c03838"
+    },
+    {
+      "path": "tests/frame-art/sv03-001.webp",
+      "bytes": 56088,
+      "sha256": "a8aee87cad36f404646f2893cfef87d2099cd5259a863468bb7731fdd55607ed"
+    },
+    {
+      "path": "tests/frame-art/sv09-003.webp",
+      "bytes": 65536,
+      "sha256": "1200acdcf634281be4ff72dd0ffb7771b3c43c395cf3a1f1a5fe01e1fceb7df0"
+    },
+    {
+      "path": "theme-init.js",
+      "bytes": 929,
+      "sha256": "c7d6f1201f1bc107a27e0b53906c1f418d14e07efe7c8596b3364c0a57d13272"
+    },
+    {
+      "path": "tier-card.js",
+      "bytes": 3575,
+      "sha256": "7c97d450e9bb17c6befc8294856944959602d54793f096d8cc4a1a482fe8d818"
+    },
+    {
+      "path": "tier.js",
+      "bytes": 3023,
+      "sha256": "e752b29e55b52472102e32db18a95cef7c70802fb7592c2756307066538d315e"
+    },
+    {
+      "path": "tiles.js",
+      "bytes": 2033,
+      "sha256": "0e669d41733496927393af2cd4403b4cb082aac0f5a204b56b02547745e48c4a"
+    },
+    {
+      "path": "tour-scenes.js",
+      "bytes": 7349,
+      "sha256": "4deca64ae56b8939a1d98eb07300a6166ffb9e460d535ecf424fc05f2e77df96"
+    },
+    {
+      "path": "tour.js",
+      "bytes": 11379,
+      "sha256": "07463b51a6d4ef43d636ee2ffa59fef87fe2eaa8158712cd9c42f37054f88f58"
+    },
+    {
+      "path": "tour/ask.jpg",
+      "bytes": 40124,
+      "sha256": "0e9892a9b59fcc02fed6c8b61c88efcdc92a4e906634c08ec57313d29650ffcc"
+    },
+    {
+      "path": "tour/ask.mp4",
+      "bytes": 269699,
+      "sha256": "5bd34cd3bce6d7f471d8a7364d8acab7aef808baed23758c4b5f32f0de3f6660"
+    },
+    {
+      "path": "tour/ask.webm",
+      "bytes": 294744,
+      "sha256": "4880484e4f51495364cd87e5f9313929f62d3a63d3fdc7f24288d357d90b27de"
+    },
+    {
+      "path": "tour/collection.jpg",
+      "bytes": 71421,
+      "sha256": "62d926f853ac21d8726763463a827c31a46267ba9b75ff6cff44cd6968036db6"
+    },
+    {
+      "path": "tour/collection.mp4",
+      "bytes": 642770,
+      "sha256": "411934c9979cbc8190c6bc6a30f1f28585dd887a2dff0ced5a856d607f5b6d80"
+    },
+    {
+      "path": "tour/collection.webm",
+      "bytes": 646638,
+      "sha256": "b9cfa9ccecb8f1b3751b7f7fab278e3e1e8cf86a1b329de27180792dd2ea3f3a"
+    },
+    {
+      "path": "tour/decks.jpg",
+      "bytes": 62148,
+      "sha256": "716b6627722e34b923771b5f54b29e463e2748eabe9a6d3012afb7c7cf3a3015"
+    },
+    {
+      "path": "tour/decks.mp4",
+      "bytes": 528799,
+      "sha256": "ed404e4e08b1e3e348032d0e545736eb2339a5c83be85944aeb7bcb42c1af342"
+    },
+    {
+      "path": "tour/decks.webm",
+      "bytes": 454138,
+      "sha256": "b549f97ddbea2496be5b278ef48fcb68b31221ced7be4afd0dc929ceb4071bce"
+    },
+    {
+      "path": "tour/find.jpg",
+      "bytes": 55822,
+      "sha256": "8df56461920c5d1fc780e55691e7eba9c30d4327ff85ddb0c1dbeb2f35f2edf1"
+    },
+    {
+      "path": "tour/find.mp4",
+      "bytes": 479608,
+      "sha256": "43bf703f45d5f98899a4e46aa514b2c8b9e9fedbee39173e19424dd524341250"
+    },
+    {
+      "path": "tour/find.webm",
+      "bytes": 508834,
+      "sha256": "95e4169c7012ab67b01590eadf7210a2ac49e2799e5d3884043469451ef7d116"
+    },
+    {
+      "path": "tour/power.jpg",
+      "bytes": 73866,
+      "sha256": "68508bb7dca394b16fb7f05852647eec77732f7ca6cad094d3706ebac04bc651"
+    },
+    {
+      "path": "tour/power.mp4",
+      "bytes": 153896,
+      "sha256": "e9dae0c09fc424405094a0a593678a8cba6b433844d8dfe0b94e022760714388"
+    },
+    {
+      "path": "tour/power.webm",
+      "bytes": 187135,
+      "sha256": "6b7850c3f4c9b4360e566d70e4b20cf87b519e60f16c48923346244e628f269e"
+    },
+    {
+      "path": "trade.js",
+      "bytes": 9899,
+      "sha256": "8a9226ceef7633eed3ce9deb4fc030a129d94a4b5102d42cebd6c84b3d4f0bfc"
+    },
+    {
+      "path": "ui.js",
+      "bytes": 13848,
+      "sha256": "8757c5194817622fba6a407e319be39e67ee54f34770e0029554e7f98a6b90b8"
+    },
+    {
+      "path": "value-history.js",
+      "bytes": 2418,
+      "sha256": "482ac6ef703375918982aca5e8e608628ae10036297f7a90de2b1589e89bf96f"
+    },
+    {
+      "path": "value-page.css",
+      "bytes": 9321,
+      "sha256": "4660814ec9ab21dfe8e3d88d79fba25385bfbbfdd44ef0de93e8ccb6bad2f8ba"
+    },
+    {
+      "path": "value-page.js",
+      "bytes": 18524,
+      "sha256": "0dc38929c6069d35586e1155b6c653cff1e66a1af88358dc9b691b7fe71fd8b2"
+    },
+    {
+      "path": "vendor/SUPABASE-LICENSE.txt",
+      "bytes": 1065,
+      "sha256": "334dd6820e2eaeab2064e7c59001b810566728a28a41a7c1dbf69bbee17d0936"
+    },
+    {
+      "path": "vendor/TESSERACT-LICENSE.txt",
+      "bytes": 11357,
+      "sha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1"
+    },
+    {
+      "path": "vendor/supabase-js-2.110.0.js",
+      "bytes": 205938,
+      "sha256": "595fb65c5f14fabf58cebb8edf8f6e1f741709837757ba3dda2e6c0b977d60b1"
+    },
+    {
+      "path": "vendor/tesseract.min.js",
+      "bytes": 62961,
+      "sha256": "10fff78484067759c43028a02a72d76d0b90eb17302bb23b58a9ec5410bc928b"
+    },
+    {
+      "path": "vendor/worker.min.js",
+      "bytes": 111162,
+      "sha256": "38645599043239c0eb6db08a6504a92dcdc292200535f3e9339cd77c4443b842"
+    },
+    {
+      "path": "views.js",
+      "bytes": 190874,
+      "sha256": "be14b65919e4fa98b0fe15cba35fd2ff7245e17cd95f3c4e6982f35c31017a46"
+    },
+    {
+      "path": "workbench-ui.js",
+      "bytes": 34507,
+      "sha256": "e72a0c9bc0149f51b3c396c057b34815e8e3c66de05a114e4032ec0aa32ac007"
+    },
+    {
+      "path": "ygo-foil-analysis.js",
+      "bytes": 10139,
+      "sha256": "3bd6e4a29f92de1d70a0a72991c8b3b8a8d14a48d26174e20cf0b332dcfb6e6d"
+    },
+    {
+      "path": "ygo-foil-recipes.js",
+      "bytes": 7418,
+      "sha256": "a157b62c2fc4287eab30f6b2e8c3b20a94953cc178c68e5aada4653c3b45cbdb"
+    },
+    {
+      "path": "ygo-foil-worker.js",
+      "bytes": 528,
+      "sha256": "dc2382c77ec6503b888ef4b9059cb4f45932eebeb78fb6ed24c0eaf88c05434a"
+    },
+    {
+      "path": "ygo-history-identity.js",
+      "bytes": 11113,
+      "sha256": "fade0236136c1d4d7f56c259dff4ac253cbf1145d7f4ebfd211238cff3289532"
+    },
+    {
+      "path": "ygo-identity.js",
+      "bytes": 1614,
+      "sha256": "49bfc25d09543ccca80ed60b27b29c09ba07b537019009e870982236a93c2368"
+    },
+    {
+      "path": "ygo-name-foil.js",
+      "bytes": 9320,
+      "sha256": "a7a63089eb201041669be66fc426a2aa2d86ea697fc3ac806134884de0f832b7"
+    },
+    {
+      "path": "ygo-price-selection.js",
+      "bytes": 6008,
+      "sha256": "dc6a6ca913d8b63e3f7e71dce8c714b282e3e3c51d6312b8056e102185511252"
+    },
+    {
+      "path": "ygo-prices.js",
+      "bytes": 6579,
+      "sha256": "e47525c176a15a42a1cbf9eaf46bd03be8f5563c57fc83007201bb6b3b654132"
+    },
+    {
+      "path": "ygo-rarity-foil.js",
+      "bytes": 12333,
+      "sha256": "267637c97e651a2314e8811e175ef27e23bd40f56b51a56cd0304ebcf46e1300"
+    },
+    {
+      "path": "ygo-set-prices.js",
+      "bytes": 7207,
+      "sha256": "57f238f70c50edf33afcc266c6e38621bb83aca15894cb4e36d32fd57462e328"
+    },
+    {
+      "path": "ygo.js",
+      "bytes": 35144,
+      "sha256": "b42324cae78909b3a3086c242c2c64b27b8965d20e0ec1499291fd5498c4aeb7"
+    },
+    {
+      "path": "zoom.js",
+      "bytes": 12391,
+      "sha256": "a45b8f80503ecf8a150f06cbff7088a1a830d306a4518f581cec6fe265387021"
+    }
+  ]
+}

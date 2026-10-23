@@ -191,7 +191,8 @@ export async function openSearchApp(browser,base,{game='mtg',width=390,height=10
    if(url.pathname.startsWith('/api/meta/'))return fulfill({events:[],decks:[],archetypes:[],top:[]});
    // Same-origin booster-pack and card-back art (the pack opener): a synthetic, labelled placeholder.
    if(/^\/img\/(?:pack|back)\/(?:mtg|ptcg|ygo)\.jpg$/.test(url.pathname))return fulfill(SVG,200,'image/svg+xml');
-   if(!url.pathname.startsWith('/api/')&&!url.pathname.startsWith('/img/')){record.settled=true;return route.continue();}
+   // Reviewed news art is a real static file in img/news/, unlike the /img/ image proxy.
+   if(!url.pathname.startsWith('/api/')&&(!url.pathname.startsWith('/img/')||url.pathname.startsWith('/img/news/'))){record.settled=true;return route.continue();}
   }
   const fixture=providerFixture(url);if(fixture!==undefined)return fulfill(fixture);
   unexpected.push(`${req.method()} ${url.href}`);return fulfill({error:'Unmapped request blocked; no external request forwarded.'},451);

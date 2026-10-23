@@ -127,9 +127,40 @@ store.ui.set=fresh('fxa');const retryOld=loadHarness.loadSet('fxa');const retryN
 jobs[4].resolve({code:'fxa'});await tick();jobs[5].resolve({data:[m1],total_cards:2,has_more:true,next_page:'https://api.scryfall.com/cards/search?page=2'});await tick();jobs[6].reject(Error('page two failed'));await retryNew;
 assert.equal(store.ui.set.complete,false);assert.match(store.ui.set.error,/Some cards/);assert.equal(vm.runInContext("setCache.has('fxa')",loadHarness),false);
 jobs[3].resolve({code:'fxa',name:'Obsolete retry'});await retryOld;assert.notEqual(store.ui.set.info.name,'Obsolete retry');
-const repaired=loadHarness.loadSet('fxa');jobs[7].resolve({code:'fxa',name:'Repaired'});await tick();jobs[8].resolve({data:[m1,m1,{...m1,id:'magic-a-2',collector_number:'2'},m2],total_cards:2,has_more:false});await repaired;
+const repaired=loadHarness.loadSet('fxa',{resume:true});
+assert.equal(store.ui.set.cards.length,1,'Retry retains already loaded cards while waiting');
+assert.equal(store.ui.set.busy,true);assert.equal(jobs[7].path,'/cards/search?page=2','Retry fetches only the failed page, not metadata or page one');
+jobs[7].resolve({data:[m1,m1,{...m1,id:'magic-a-2',collector_number:'2'},m2],total_cards:2,has_more:false});await repaired;
 assert.equal(store.ui.set.cards.length,2);assert.equal(store.ui.set.complete,true);assert.equal(store.ui.set.error,'');
-console.log('PASS: actual Magic set loader rejects cross-route/same-route stale results, deduplicates printing IDs, excludes cross-set rows and retries partial loads without caching false completeness.');
+// Missing/foreign/repeating continuations and truncated final pages never cache completeness.
+for(const [label,payload] of [
+ ['missing',{data:[m1],total_cards:2,has_more:true}],
+ ['foreign',{data:[m1],total_cards:2,has_more:true,next_page:'https://example.com/cards/search?page=2'}],
+ ['wrong-endpoint',{data:[m1],total_cards:2,has_more:true,next_page:'https://api.scryfall.com/cards/random'}],
+ ['truncated',{data:[m1],total_cards:2,has_more:false}],
+ ['malformed',{total_cards:0,has_more:false}]
+]){
+ vm.runInContext("setCache.delete('fxa')",loadHarness);store.ui.set=fresh('fxa');
+ const index=jobs.length,task=loadHarness.loadSet('fxa');jobs[index].resolve({code:'fxa'});await tick();jobs[index+1].resolve(payload);await task;
+ assert.equal(store.ui.set.complete,false,label);assert.match(store.ui.set.error,/incomplete/,label);assert.equal(vm.runInContext("setCache.has('fxa')",loadHarness),false,label);
+}
+// A repeating cursor cannot loop forever; the total pagination budget also
+// survives a retry instead of allowing another unbounded block of 30 pages.
+store.ui.set=fresh('fxa');let cycleIndex=jobs.length,cycle=loadHarness.loadSet('fxa');
+jobs[cycleIndex].resolve({code:'fxa'});await tick();
+jobs[cycleIndex+1].resolve({data:[m1],total_cards:2,has_more:true,next_page:'https://api.scryfall.com'+jobs[cycleIndex+1].path});await cycle;
+assert.match(store.ui.set.error,/incomplete/);assert.equal(jobs.length,cycleIndex+2);
+store.ui.set=fresh('fxa');const budgetIndex=jobs.length,budget=loadHarness.loadSet('fxa');jobs[budgetIndex].resolve({code:'fxa'});await tick();
+for(let i=0;i<30;i++){jobs[budgetIndex+1+i].resolve({data:[{...m1,id:'bounded-'+i}],total_cards:31,has_more:true,next_page:'https://api.scryfall.com/cards/search?page='+(i+2)});await tick();}
+await budget;assert.equal(store.ui.set.cards.length,30);assert.equal(store.ui.set.complete,false);assert.equal(store.ui.set.pagination,null);assert.equal(jobs.length,budgetIndex+31);
+// A first-page failure can also resume without repeating the successful metadata read.
+store.ui.set=fresh('fxa');let index=jobs.length,task=loadHarness.loadSet('fxa');jobs[index].resolve({code:'fxa'});await tick();jobs[index+1].reject(Error('network'));await task;
+index=jobs.length;task=loadHarness.loadSet('fxa',{resume:true});assert.match(jobs[index].path,/^\/cards\/search/);jobs[index].resolve({data:[m1],total_cards:1,has_more:false});await task;assert.equal(store.ui.set.complete,true);
+// The UI retry action must explicitly resume (render cannot auto-load a partially loaded set).
+const reloadCode=app.slice(app.indexOf('A.setReload ='),app.indexOf('I.setSearch ='));
+let retried;vm.runInNewContext(reloadCode,{A:loadHarness.A={},S:store,setCache:new Map(),loadSet:(code,options)=>retried={code,options},render(){}});loadHarness.A.setReload();
+assert.equal(retried.code,'fxa');assert.equal(retried.options.resume,true);
+console.log('PASS: Magic pagination isolates stale results, resumes failed pages with cards visible, and rejects malformed/truncated catalogues without caching false completeness.');
 
 // AI result cards carry a short stable local ref, not a generic name/ID relookup.
 result=await ai.set_cards({game:'ygo',set:anniversary.id});
