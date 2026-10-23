@@ -440,6 +440,12 @@ jobs:
       - name: Check finish controls across phone, foldable, tablet and desktop widths
         run: |
           node tests/finish-effects-browser.mjs
+      - name: Check Pokémon tournament formats and native-compatible service paths
+        if: ${{ !cancelled() }}
+        run: node tests/pokemon-meta-browser.mjs
+      - name: Check pack-to-card details foil and phone tilt
+        if: ${{ !cancelled() }}
+        run: node tests/pack-detail-effects-browser.mjs
       - name: Inspect actual printing masks and moving detail light
         if: ${{ !cancelled() }}
         run: node tests/visual-repair-browser.mjs
@@ -447,7 +453,9 @@ jobs:
         if: always()
         with:
           name: finish-effects-browser-evidence
-          path: test-results/finish-effects-*
+          path: |
+            test-results/finish-effects-*
+            test-results/pokemon-meta-*
 
   account-browser:
     runs-on: ubuntu-latest

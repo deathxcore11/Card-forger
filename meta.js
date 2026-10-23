@@ -47,7 +47,7 @@ export const metaState = (g) => {
   return state[g];
 };
 
-const needsArtworkRefresh = (g, M) => g === "ptcg" && M.data && M.data.artSchema !== PTCG_ART_SCHEMA && !M.artRefreshAttempted;
+const needsArtworkRefresh = (g, M) => (g === "ptcg" || g.startsWith("ptcg:")) && M.data && M.data.artSchema !== PTCG_ART_SCHEMA && !M.artRefreshAttempted;
 export const metaNeedsRefresh = (g) => {
   const M = metaState(g);
   return !M.data || Date.now() - M.at >= TTL || !!needsArtworkRefresh(g, M);
@@ -75,9 +75,9 @@ export async function loadMeta(g, force = false) {
   M.busy = true;
   M.error = "";
   M.code = "";
-  M.promise = (g.startsWith("mtg:") ? mtgMeta(g.slice(4)) : g === "ygo" ? ygoMeta() : ptcgMeta())
+  M.promise = (g.startsWith("mtg:") ? mtgMeta(g.slice(4)) : g === "ygo" ? ygoMeta() : ptcgMeta({format:g.startsWith("ptcg:")?g.slice(5):"standard"}))
     .then(async (data) => {
-      try { const game = g.startsWith('mtg:') ? 'mtg' : g, format = g.startsWith('mtg:') ? g.slice(4) : game === 'ptcg' ? 'Standard' : 'TCG'; const response = await fetch(`api/meta/curation?${new URLSearchParams({game,format})}`, { headers: { Accept:'application/json' }, signal: AbortSignal.timeout(4000) }); if (response.ok) data = applyMetaOverlay(data, await response.json()); } catch {}
+      try { if(g.startsWith('ptcg:'))throw Error('No weekly overlay for this format'); const game = g.startsWith('mtg:') ? 'mtg' : g, format = g.startsWith('mtg:') ? g.slice(4) : game === 'ptcg' ? 'Standard' : 'TCG'; const response = await fetch(`api/meta/curation?${new URLSearchParams({game,format})}`, { headers: { Accept:'application/json' }, signal: AbortSignal.timeout(4000) }); if (response.ok) data = applyMetaOverlay(data, await response.json()); } catch {}
       M.data = data;
       M.at = Date.now();
       M.artRefreshAttempted = false;
@@ -86,7 +86,7 @@ export async function loadMeta(g, force = false) {
       return data;
     })
     .catch((e) => {
-      M.error = e.message || "Couldn’t load the current meta.";
+      M.error = e instanceof TypeError ? "Couldn’t reach the tournament service. Check your connection and try again." : e.message || "Couldn’t load the current meta.";
       M.code = e.code || "";
       if (!M.data) throw e;
       return M.data;
@@ -199,17 +199,19 @@ export async function ygoMeta({ fetchImpl = globalThis.fetch, now = Date.now(), 
 // Organizers decorate event names with emoji ("🏆Moujii's Dojo🏆"); show the plain name.
 export const cleanName = (s) => String(s || "").replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, "").replace(/\s{2,}/g, " ").trim();
 
+export const PTCG_META_FORMATS = Object.freeze({standard:{id:'STANDARD',name:'Standard',minPlayers:24},expanded:{id:'EXPANDED',name:'Expanded',minPlayers:8},glc:{id:'GLC',name:'Gym Leader Challenge',minPlayers:8}});
 const LIMITLESS = "https://play.limitlesstcg.com/api";
-export async function ptcgMeta({ fetchImpl = globalThis.fetch, now = Date.now(), server = false } = {}) {
-  const source = async path => { const r = await fetchImpl(LIMITLESS + path, { redirect: 'error', signal: AbortSignal.timeout(12000), headers: { Accept: 'application/json' } }); if (!r.ok) throw Error('Limitless is unavailable right now (' + r.status + ').'); return r.json(); };
-  const list = await source("/tournaments?game=PTCG&format=STANDARD&limit=100");
+export async function ptcgMeta({ fetchImpl = globalThis.fetch, now = Date.now(), server = false, format = 'standard' } = {}) {
+  const spec=Object.hasOwn(PTCG_META_FORMATS,format)?PTCG_META_FORMATS[format]:null;if(!spec)throw Error('This Pokémon format is not available from the connected tournament feed.');
+  const source = async path => { const r = await fetchImpl(server ? LIMITLESS + path : path.startsWith('/tournaments?') ? 'api/meta/ptcg/tournaments?format='+format : 'api/meta/ptcg/'+path.split('/').at(-1)+'?id='+path.split('/')[2], { redirect: 'error', signal: AbortSignal.timeout(12000), headers: { Accept: 'application/json' } }); if (!r.ok) throw Error('Limitless tournament results are unavailable right now (' + r.status + '). Try again shortly.'); return r.json(); };
+  const list = await source("/tournaments?game=PTCG&format="+spec.id+"&limit=100");
   const cutoff = now - 21 * 864e5;
-  const validEvents = (Array.isArray(list) ? list : []).filter(t => t && /^[a-zA-Z0-9_-]{1,80}$/.test(t.id || '') && (!t.game || t.game === 'PTCG') && (!t.format || t.format === 'STANDARD'));
+  const validEvents = (Array.isArray(list) ? list : []).filter(t => t && /^[a-zA-Z0-9_-]{1,80}$/.test(t.id || '') && (!t.game || t.game === 'PTCG') && (!t.format || t.format === spec.id));
   const events = validEvents
-    .filter((t) => Date.parse(sourceDate(t.date)) >= cutoff && Date.parse(sourceDate(t.date)) <= now && (!t.game || t.game === "PTCG") && (!t.format || t.format === "STANDARD") && t.players >= 24)
+    .filter((t) => Date.parse(sourceDate(t.date)) >= cutoff && Date.parse(sourceDate(t.date)) <= now && (!t.game || t.game === "PTCG") && (!t.format || t.format === spec.id) && t.players >= spec.minPlayers)
     .sort((a, b) => b.players - a.players)
     .slice(0, 6);
-  if (!events.length) throw Error("No recent Standard events found.");
+  if (!events.length) throw Error("No recent "+spec.name+" events with at least "+spec.minPlayers+" players were found in the last 21 days.");
   const standings = await Promise.all(events.map((t) => source(`/tournaments/${t.id}/standings`).then((s) => ({ t, s })).catch(() => ({ t, s: [] }))));
   // Real results for the Matchups tab: every round of the biggest recent events (up to 12),
   // tallied by archetype and head to head (realMatchup in matchup.js).
@@ -246,7 +248,7 @@ export async function ptcgMeta({ fetchImpl = globalThis.fetch, now = Date.now(),
           a.cover = { ...cover, source: { eventId: t.id, rank: Number.isFinite(rank) ? rank : null } };
           a.coverRank = rank;
         }
-        const d = { key: "ptcg:" + t.id + ":" + p.placing, name: p.deck.name, archetype: p.deck.id, icons: p.deck.icons || [], event: cleanName(t.name), place: p.placing === 1 ? "Winner" : p.placing === 2 ? "Runner-Up" : "Top " + (p.placing <= 4 ? 4 : p.placing <= 8 ? 8 : p.placing), rank: p.placing, players: t.players, player: p.name || "", date: t.date?.slice(0, 10) || "", list: rows, url: `https://play.limitlesstcg.com/tournament/${t.id}/player/${encodeURIComponent(p.player || "")}/decklist` };
+        const d = { formatId:format, key: "ptcg:" + t.id + ":" + p.placing, name: p.deck.name, archetype: p.deck.id, icons: p.deck.icons || [], event: cleanName(t.name), place: p.placing === 1 ? "Winner" : p.placing === 2 ? "Runner-Up" : "Top " + (p.placing <= 4 ? 4 : p.placing <= 8 ? 8 : p.placing), rank: p.placing, players: t.players, player: p.name || "", date: t.date?.slice(0, 10) || "", list: rows, url: `https://play.limitlesstcg.com/tournament/${t.id}/player/${encodeURIComponent(p.player || "")}/decklist` };
         // Keep a real representative accessible without polluting Top-8 stats.
         if(rows.length&&(!a.representative||d.rank<a.representative.rank))a.representative=d;
         if (!(p.placing && p.placing <= 8)) continue;
@@ -265,11 +267,12 @@ export async function ptcgMeta({ fetchImpl = globalThis.fetch, now = Date.now(),
     }
   return {
     game: "ptcg",
-    format: "Standard",
+    format: spec.name,
+    formatId: format,
     fetchedAt: new Date(now).toISOString(),
     artSchema: PTCG_ART_SCHEMA,
     results: games.length ? { ...tallyResults(games), events: resultEvents.length } : null,
-    source: "Limitless — " + events.length + " recent Standard events, " + players + " players",
+    source: "Limitless — " + events.length + " recent "+spec.name+" events, " + players + " players",
     events: events.map((t) => ({ name: cleanName(t.name), players: t.players, date: t.date?.slice(0, 10) })),
     decks: decks.sort((a, b) => a.rank - b.rank || b.players - a.players),
     archetypes: [...arch.values()].filter((a) => a.id !== "other").sort((a, b) => b.count - a.count).map((a) => ({ id: a.id, name: a.name, icons: a.icons, count: a.count, top8: a.top8, share: a.count / Math.max(1, players), best: a.best?.key || "", representative: a.best || a.representative || null, cover: pokemonDeckCover(a.best) || a.cover })),

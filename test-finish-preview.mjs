@@ -1,7 +1,8 @@
+import {foregroundDialog} from './feedback-layer.js';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {finishChoices,finishEffect,resolveFinish,selectPreviewFinish,finishArtworkCard,FINISH_MASKS} from './finish-effects.js';
-import {finishAttrs,finishPreview,containedImageBox,finishEligible,attachFinishPreview} from './finish-preview.js';
+import {finishAttrs,finishPreview,containedImageBox,finishEligible,attachFinishPreview,finishSwatch} from './finish-preview.js';
 import {presentationQuote} from './pricing-presentation.js';
 import {normalizePtcg,pokemonVariants} from './ptcg.js';
 import {zoomCardOptions} from './zoom.js';
@@ -143,3 +144,19 @@ assert.deepEqual(zk.layers,[{mask:'pk-cel-art',material:'holo'}]);
 assert.deepEqual(mc.layers,[{mask:'card',material:'rainbow'}]);assert.equal(mc.texture,'smooth');
 assert(vc.layers.some(l=>l.material==='micro'));assert.equal(vc.texture,'micro-ridges');
 console.log('PASS: same Holofoil label maps to Zekrom illustration-only, Mega Charizard smooth full-face and shiny VMAX textured full-face.');
+
+// Suspended pack remains open and later in DOM order. Losing focus to a details
+// refresh must still leave the shared sheet selected for foil and sensor motion.
+{
+ const node=(name,under=false)=>({name,classList:{contains:c=>under&&c==='pack-under'}});
+ const sheet=node('sheet'),pack=node('pack',true),zoom=node('zoom'),doc={querySelectorAll:()=>[sheet,pack]};
+ assert.equal(foregroundDialog(doc),sheet);
+ doc.activeElement={closest:()=>sheet};assert.equal(foregroundDialog(doc),sheet);
+ doc.querySelectorAll=()=>[sheet,pack,zoom];doc.activeElement={closest:()=>zoom};assert.equal(foregroundDialog(doc),zoom);
+ doc.activeElement=null;assert.equal(foregroundDialog(doc),zoom,'an unrelated front overlay still blocks effects behind it');
+ doc.querySelectorAll=()=>[pack];assert.equal(foregroundDialog(doc),pack,'suspension alone never falls through to the background page');
+ doc.querySelectorAll=()=>[];assert.equal(foregroundDialog(doc),null);
+}
+console.log('PASS: pack details, focused modal, nested zoom, and empty modal stack share foreground ownership.');
+
+assert.equal(finishSwatch('mtg',{effect:'plain'}),'plain');assert.equal(finishSwatch('mtg',{key:'foil',effect:'mtg-foil'}),'rainbow');assert.equal(finishSwatch('mtg',{key:'etched',effect:'mtg-etched'}),'silver');assert.equal(finishSwatch('ptcg',{key:'reverse-holofoil',effect:'ptcg-reverse'}),'reverse');assert.equal(finishSwatch('ptcg',{key:'holofoil',effect:'ptcg-holo'}),'glitter');assert.equal(finishSwatch('ptcg',{status:'unknown'}),'unknown');

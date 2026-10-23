@@ -2,6 +2,14 @@
 // modal, and move it back when that dialog closes or its contents are replaced.
 const managed=new Set();let observing=false,serial=0;
 const order=new WeakMap();
+// A later DOM sibling is not necessarily above an earlier dialog in the native
+// top layer. Pack inspection deliberately keeps its dialog open underneath #sheet.
+export function foregroundDialog(root=globalThis.document){
+ const dialogs=[...(root?.querySelectorAll?.('dialog[open]')||[])];
+ const active=dialogs.filter(d=>!d.hidden&&!d.classList?.contains('pack-under'));
+ const focused=(root?.activeElement||root?.ownerDocument?.activeElement)?.closest?.('dialog[open]');
+ return (active.includes(focused)?focused:null)||active.at(-1)||dialogs.at(-1)||null;
+}
 export function feedbackHost(doc=document){
  const dialogs=[...doc.querySelectorAll('dialog[open]')].filter(d=>{try{return d.matches(':modal');}catch{return true;}});
  const focused=doc.activeElement?.closest?.('dialog[open]');

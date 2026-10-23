@@ -1,6 +1,6 @@
 import {motionTiltOn} from './mobile-tilt.js';
 import {attachFinishPreview} from './finish-preview.js';
-import {mountFeedback,removeFeedback} from './feedback-layer.js';
+import {mountFeedback,removeFeedback,foregroundDialog} from './feedback-layer.js';
 // How the app feels: haptics and motion.
 // Haptics: vibration patterns on Android; on iPhone (no web vibration) a hidden system switch is
 // toggled, which iOS 18+ answers with its own light tap. Motion: a card flies into Collection when
@@ -347,8 +347,7 @@ export function attachTilt(root = typeof document === "undefined" ? null : docum
 // when it opens. iOS asks for motion access the first time you touch a card (Apple requires a tap).
 export function motionCard(root=document) {
   // An open sheet owns the visible card, even when a card page remains behind it.
-  const dialogs=Array.from(root.querySelectorAll('dialog[open]'));
-  const scope=dialogs.at(-1)||root.querySelector('#content')||root;
+  const scope=foregroundDialog(root)||root.querySelector('#content')||root;
   return Array.from(scope.querySelectorAll('.cd-img')).find(c=>{
     const r=c.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth;
   })||null;

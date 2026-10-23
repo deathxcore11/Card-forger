@@ -190,6 +190,11 @@ const flush=()=>{const q=frames;frames=[];q.forEach(f=>f());};
 attachTilt(root);assert.equal(win.handlers.deviceorientation.length,1);
 win.emit('deviceorientation',{beta:30,gamma:0});flush();assert(background.classes.has('gyro'));
 root.dialogs=[dialog];mutation();flush();assert(card.classes.has('gyro'),'opening the first dialog consumes the last available sample without a zoom round trip');
+// The pack is appended after #sheet in DOM order but is suspended beneath it.
+const packBehind=new Node('pack-dialog pack-under');packBehind.cards=[];
+root.dialogs=[dialog,packBehind];assert.equal(motionCard(root),card,'pack inspection keeps detail gyro in the foreground');
+root.emit('pointerdown',{target:card});win.emit('deviceorientation',{beta:40,gamma:10});flush();root.emit('pointercancel',{target:card});
+root.dialogs=[dialog];
 assert.equal(motionCard(root),card);win.emit('deviceorientation',{beta:42,gamma:12});flush();assert.notEqual(card.values['--tx'],'0deg');
 card.classList.remove('gyro','tilting');card.classList.add('shine-once');
 root.emit('pointerdown',{target:card});assert(!card.classes.has('shine-once'),'first touch removes animation fill before it can mask tilt');assert.notEqual(card.values['--tx'],'0deg');

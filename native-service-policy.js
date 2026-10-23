@@ -4,6 +4,7 @@ export const NATIVE_ORIGIN = 'https://android-integration.cardstashy.invalid';
 export const SERVICE_ORIGIN = 'https://cardstashy.com';
 const READ = new Set([
   '/api/releases/current',
+  '/api/meta/ptcg/tournaments', '/api/meta/ptcg/standings', '/api/meta/ptcg/pairings',
   '/api/daily-card', '/api/community', '/api/meta/curation', '/api/tcgplayer/sets',
   '/api/prices/recent', '/api/prices/archive', '/api/prices/conditions',
   '/api/prices/yugioh-set', '/api/prices/yugioh', '/api/prices/pokemon',

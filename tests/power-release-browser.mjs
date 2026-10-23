@@ -534,7 +534,7 @@ try{
    if(x.game==='ygo')for(const c of Object.values(x.cards))f.storage['cardstashy-watch-sent-v1']['ygo:'+c.id]=Date.parse(ISO);
    const meta=f.storage['cardforge-meta-v1'][x.game].data;meta.decks=[];meta.top=x.trainerIds.map(id=>({kind:'Trainer',name:x.cards[id].name,pct:100,avg:4}));
   }});
-  const bp=builderApp.page,before=await inventorySnapshot(bp),metaFixtureUrl='https://play.limitlesstcg.com/api/tournaments?game=PTCG&format=STANDARD&limit=100';let metaFixtureReads=0;
+  const bp=builderApp.page,before=await inventorySnapshot(bp),metaFixtureUrl=server.base+'/api/meta/ptcg/tournaments?format=standard';let metaFixtureReads=0;
   const watchedPrerequisite=x.game==='ygo'?await bp.evaluate(ids=>{const watched=JSON.parse(localStorage.getItem('cardstashy-watch-sent-v1')||'{}'),now=Date.now();return ids.map(id=>({id,at:watched['ygo:'+id],registrationNeeded:now-(watched['ygo:'+id]||0)>20*864e5}));},Object.keys(x.cards)):[];
   for(const w of watchedPrerequisite){assert.equal(w.at,Date.parse(ISO),'only the declared prior synthetic tracking timestamp is seeded');assert.equal(w.registrationNeeded,false,'this scenario starts already tracked, so no duplicate daily-watch registration is needed');}
   // Reopened Standard Power auto-refreshes an empty tournament field, even

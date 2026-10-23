@@ -67,7 +67,7 @@ import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarit
 import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, energyName } from "./tcgbuild.js";
 import { ygoSource, ygoZoneRange, ygoImageDirect, YGO_SET_CACHE_KEY, YGO_SET_LEGACY_CACHE_KEY, normalizeYgoSets, migrateYgoSetCache, resolveYgoSet, ygoSetPrintings, normalizeYgoSearch, ygoSearchFormatLabel, ygoSearchFormatSupported, ygoSearchEligibility, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, ptcgImage, ptcgPrintingMatches, normalizePtcgSearch, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
-import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.js";
+import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName, PTCG_META_FORMATS } from "./meta.js";
 import { tcgPower, powerPanel, powerChip, shownPower, asShown, powerReadiness } from "./power.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { rankPairs, ygoTags, ptcgTags } from "./pairing.js";
@@ -878,7 +878,7 @@ function tcgCardGuide(g, c) {
 function tcgCardMeta(g, c) {
   const M = metaState(g);
   return cardMetaTab(g, c, cardMetaUsage(g, c), {
-    deckAttrs: (set, d) => `data-act="tMetaDeck" data-key="${esc(d.key)}"`,
+    deckAttrs: (set, d) => `data-act="tMetaDeck" data-key="${esc(d.key)}" data-meta-key="${esc(g==='ptcg'&&d.formatId&&d.formatId!=='standard'?'ptcg:'+d.formatId:g)}"`,
     buildAttrs: `data-act="tBuild" data-id="${esc(c.id)}"`,
     loadAttrs: M.data && Date.now() - M.at < 12 * 3600e3 ? "" : `data-act="cardMetaLoad" data-key="${g}"`,
     loadLabel: g === "ygo" ? "Load recent Yu-Gi-Oh! tournament decks" : "Load recent Pokémon tournament decks",
@@ -1167,7 +1167,7 @@ const metaStatus = (g, M) =>
 function metaDeckRow(g, d, m) {
   const o = metaOwned(g, d, m),
     cover = g === "ygo" ? cardOf("ygo", d.cover) : metaPokemonCover(d);
-  return `<button class="meta-row" data-act="tMetaDeck" data-key="${esc(d.key)}">
+  return `<button class="meta-row" data-act="tMetaDeck" data-key="${esc(d.key)}" data-meta-key="${esc(g==='ptcg'&&d.formatId&&d.formatId!=='standard'?'ptcg:'+d.formatId:g)}">
     <span class="meta-art">${g === "ygo" ? (cover ? imgTag(cover, "mini-art") : `<img class="mini-art" src="${esc(ygoImageDirect(d.cover))}" alt="" loading="lazy" referrerpolicy="no-referrer">`) : cover ? pokemonArtCrop(cover, "meta-card-art") : (d.icons||[]).map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("")}</span>
     <span class="meta-main"><b class="ellip">${esc(d.name)}</b><small class="muted ellip">${esc(d.place)} · ${esc(cleanName(d.event))}${d.players ? ` · ${d.players} players` : ""}</small>
       <span class="meta-own">${bar(o.pct)}<small>${Math.round(o.pct * 100)}% owned${o.cost !== null && o.pct < 1 ? ` · ${usd(o.cost, 0)} to finish` : ""}</small></span></span></button>`;
@@ -1211,14 +1211,15 @@ function ideasView(g) {
   ${metaStatus(g, M)}${closest.length ? `<div class="list">${closest.map(({ d }) => metaDeckRow(g, d, m)).join("")}</div>` : ""}`;
 }
 
+export const metaBrowseKey = g => g==='ptcg' && ui(g).metaFormat && ui(g).metaFormat!=='standard' && PTCG_META_FORMATS[ui(g).metaFormat] ? 'ptcg:'+ui(g).metaFormat : g;
 function metaView(g) {
-  const M = metaState(g),
+  const M = metaState(metaBrowseKey(g)),
     m = ownedMap(g),
     data = M.data,
     format = ui(g).metaFormat || META_FORMAT[g],
     label = formatOf(g,format).name,
     header = `<section class="panel tournament-panel"><h3>Tournament results</h3><p class="muted small">Recent tournament lists, matched against your cards. Choose a format to see its coverage.</p><div class="fmt-chips" role="group" aria-label="Tournament format">${formatsOf(g).map(f=>`<button class="chip pick ${f.id===format?'on':''}" data-act="tMetaFormat" data-id="${f.id}" aria-pressed="${f.id===format}">${esc(f.name)}</button>`).join('')}</div>`;
-  if(format!==META_FORMAT[g])return header+`<div class="meta-format-empty"><h3>${esc(label)}</h3><p class="muted">Tournament results for this format aren’t available from the connected feed yet.</p><button class="btn ghost small" data-act="tNewDeck" data-format="${esc(format)}">Create a ${esc(label)} deck</button><button class="link small" data-act="tMetaFormat" data-id="${META_FORMAT[g]}">View ${esc(formatOf(g,META_FORMAT[g]).name)} results</button></div></section>`;
+  if(format!==META_FORMAT[g] && !(g==='ptcg' && PTCG_META_FORMATS[format]))return header+`<div class="meta-format-empty"><h3>${esc(label)}</h3><p class="muted">Tournament results for this format aren’t available from the connected feed yet.</p><button class="btn ghost small" data-act="tNewDeck" data-format="${esc(format)}">Create a ${esc(label)} deck</button><button class="link small" data-act="tMetaFormat" data-id="${META_FORMAT[g]}">View ${esc(formatOf(g,META_FORMAT[g]).name)} results</button></div></section>`;
   if (!data) return header+(metaStatus(g, M) || `<p class="muted small center pad">Loading recent ${esc(label)} results…</p>`)+`</section>`;
   const top = data.top.slice(0, 12);
   return header+`<p class="evidence small"><b>${esc(label)}</b> · ${esc(data.source)} · updated ${esc(new Date(M.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))} <button class="link small" data-act="tMetaRefresh">⟳ Refresh</button></p>
@@ -1231,14 +1232,14 @@ function metaView(g) {
         cover = g === "ptcg" ? metaPokemonCover(best, a.cover) : null,
         art = g === "ygo" && best?.cover ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(best.cover)}.jpg` : "",
         illustrated = art || cover;
-      return `<button class="arch ${illustrated ? "has-art" : "no-cover"}" data-act="tMetaDeck" data-key="${esc(a.best||a.representative?.key||'')}" ${a.best||a.representative ? "" : "disabled"}>${cover ? pokemonArtCrop(cover, "arch-art") : art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.closest('.arch').classList.add('no-cover')">` : `<span class="arch-art arch-art-fallback" aria-hidden="true"></span>`}<span class="arch-art-state">Art unavailable</span><span class="arch-icons">${g === "ptcg" ? (a.icons||[]).map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="clamp2">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${!a.best && g === "ptcg" ? `<small class="arch-list-state">${a.representative?`View list · ${esc(a.representative.place)}`:"No published list available"}</small>` : ""}${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
+      return `<button class="arch ${illustrated ? "has-art" : "no-cover"}" data-act="tMetaDeck" data-key="${esc(a.best||a.representative?.key||'')}" data-meta-key="${esc(metaBrowseKey(g))}" ${a.best||a.representative ? "" : "disabled"}>${cover ? pokemonArtCrop(cover, "arch-art") : art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.closest('.arch').classList.add('no-cover')">` : `<span class="arch-art arch-art-fallback" aria-hidden="true"></span>`}<span class="arch-art-state">Art unavailable</span><span class="arch-icons">${g === "ptcg" ? (a.icons||[]).map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="clamp2">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${!a.best && g === "ptcg" ? `<small class="arch-list-state">${a.representative?`View list · ${esc(a.representative.place)}`:"No published list available"}</small>` : ""}${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
     })
     .join("")}</div>
   <div class="section-head"><h2>Most played cards</h2></div>
   <div class="chips wrap">${top.map((t) => `<button class="chip" ${g === "ygo" ? `data-act="tCard" data-id="${esc(t.id)}"` : `data-act="tOtherPrintings" data-name="${esc(t.name)}"`}>${esc(t.name)} <span class="muted">${Math.round(t.pct)}%</span></button>`).join("")}</div>
   <div class="section-head"><h2>Recent top lists</h2></div>
   <div class="list">${data.decks.slice(0, 40).map((d) => metaDeckRow(g, d, m)).join("")}</div>
-  <p class="foot">${g === "ygo" ? "Lists from YGOPRODeck’s Tournament Meta Decks (WCQ Regionals, YCS and more)." : "Top 8 lists from the biggest recent Standard events on Limitless."} “Owned” matches your collection${g === "ptcg" ? " by card name; basic Energy counts as owned" : ""}.</p></section>`;
+  <p class="foot">${g === "ygo" ? "Lists from YGOPRODeck’s Tournament Meta Decks (WCQ Regionals, YCS and more)." : "Top 8 lists from recent ${esc(label)} events on Limitless."} “Owned” matches your collection${g === "ptcg" ? " by card name; basic Energy counts as owned" : ""}.</p></section>`;
 }
 
 /* ---------- closest proven deck (shared by all three games) ---------- */
@@ -3766,10 +3767,10 @@ export function registerTcg(c) {
   // ----- meta decks & ideas -----
   let metaCardsLoading = false;
   // Load the meta (and, for Yu-Gi-Oh!, the cards in it, for names and prices).
-  c.loadMeta = async (G, force = false) => {
-    const M = metaState(G),screen=navigationStamp();
+  c.loadMeta = async (G, force = false, sourceKey = G) => {
+    const M = metaState(sourceKey),screen=navigationStamp();
     if (M.busy) return;
-    const p = loadMeta(G, force).catch(() => null);
+    const p = loadMeta(sourceKey, force).catch(() => null);
     setTimeout(()=>navigationCurrent(screen)&&render(), 0);
     const data = await p;
     if(navigationCurrent(screen))render();
@@ -3785,8 +3786,8 @@ export function registerTcg(c) {
       }
     }
   };
-  A.tMetaFormat = t => {const G=g();if(!formatsOf(G).some(f=>f.id===t.dataset.id))return;ui(G).metaFormat=t.dataset.id;render();if(t.dataset.id===META_FORMAT[G])c.loadMeta(G);};
-  A.tMetaRefresh = () => {const G=g();if(!ui(G).metaFormat||ui(G).metaFormat===META_FORMAT[G])return c.loadMeta(G,true);};
+  A.tMetaFormat = t => {const G=g();if(!formatsOf(G).some(f=>f.id===t.dataset.id))return;ui(G).metaFormat=t.dataset.id;render();if(t.dataset.id===META_FORMAT[G]||G==='ptcg'&&PTCG_META_FORMATS[t.dataset.id])c.loadMeta(G,false,metaBrowseKey(G));};
+  A.tMetaRefresh = () => {const G=g();if(!ui(G).metaFormat||ui(G).metaFormat===META_FORMAT[G]||G==='ptcg'&&PTCG_META_FORMATS[ui(G).metaFormat])return c.loadMeta(G,true,metaBrowseKey(G));};
   // ----- closest proven deck -----
   const refreshProven = () => S.ui.sheetCtx?.type === "proven" && openSheet(provenSheetHtml(), S.ui.sheetCtx, document.querySelector("#sheetBody")?.scrollTop || 0);
   c.refreshProven = refreshProven;
@@ -3866,6 +3867,7 @@ export function registerTcg(c) {
   };
   const tcgProvenSpec = (G, d, snapshot = null) => {
     const meta = snapshot || metaState(G).data,
+      pokemonFormat = G==='ptcg' && ['standard','expanded','glc'].includes(meta?.formatId||d.formatId) ? meta?.formatId||d.formatId : 'standard',
       buildMeta = { token: String(++provenBuildSequence), game: G, deck: d, data: meta },
       m = ownedMap(G),
       genericKeys = new Set((meta?.top || []).filter((x) => x.pct >= 30).map((x) => (G === "ygo" ? x.id : x.name)));
@@ -3917,7 +3919,7 @@ export function registerTcg(c) {
         });
       };
       const resolve = async (rows, status, {prices=true}={}) => {
-        const std = formatOf("ptcg", "standard"), any = formatOf("ptcg", "unlimited"),
+        const std = formatOf("ptcg", pokemonFormat), any = formatOf("ptcg", "unlimited"),
           requests = [...new Map(rows.map(row => { const request = pkRequest(row); return [request.key, request]; })).values()],
           todo = requests.filter(r => needsCardRefresh("ptcg", pkByPrinting.get(r.key)) || prices && purchaseQuote(pkByPrinting.get(r.key)) == null), failed = [];
         let i = 0;
@@ -3964,17 +3966,17 @@ export function registerTcg(c) {
         }
         if (missed.length) throw Error(`Nothing saved: ${missed.length} unmatched printings. Retry matching ${missed.slice(0, 5).join(", ")}.`);
         if (!zones.main.length) throw Error("No cards matched. Nothing saved.");
-        const deck = { id: uid(), name: `${d.name} · ${label}`.slice(0, 100), format: "standard", zones, createdAt: new Date().toISOString(), source: { kind: label === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, url: d.url } };
+        const deck = { id: uid(), name: `${d.name} · ${label}`.slice(0, 100), format: pokemonFormat, zones, createdAt: new Date().toISOString(), source: { kind: label === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, url: d.url } };
         // Preserve this list's resource plan and the effective adaptation cap.
         // Exact printing IDs stay unchanged; unknown prices never become free Energy.
-        deck.buildDiagnostics = tcgBuildDiagnostics(G, { ...deck, budget: purchaseBudget, energyTarget: d.list.filter(r => r.kind === "Energy" || isBasicEnergyName(r.name)).reduce((n, r) => n + r.qty, 0) }, formatOf(G, "standard"));
+        deck.buildDiagnostics = tcgBuildDiagnostics(G, { ...deck, budget: purchaseBudget, energyTarget: d.list.filter(r => r.kind === "Energy" || isBasicEnergyName(r.name)).reduce((n, r) => n + r.qty, 0) }, formatOf(G, pokemonFormat));
         await mutate((state) => state.decks.push(deck), { msg: `Saved ${buildSaveStatus(deck)}: “${deck.name}”.` }, G);
         if (g() === G && S.ui.sheetCtx === savingSheet) {
           closeSheet();
           go("#tdeck/" + deck.id);
         }
       };
-      evidence = `Tournament-backed · Standard · ${esc(d.place)} at ${esc(cleanName(d.event))} (${d.players} players) · compared with ${meta.decks.length} Top 8 lists from ${meta.events?.length || "recent"} events in the last 21 days`;
+      evidence = `Tournament-backed · ${esc(meta.format||"Standard")} · ${esc(d.place)} at ${esc(cleanName(d.event))} (${d.players} players) · compared with ${meta.decks.length} Top 8 lists from ${meta.events?.length || "recent"} events in the last 21 days`;
       attribution = `Decklists from <a href="https://play.limitlesstcg.com" target="_blank" rel="noopener">Limitless</a>. Prices are TCGplayer market estimates. Basic Energy uses your actual collection quantities and the selected printing’s verified price; missing quotes remain unpriced.`;
     }
     return {
@@ -4016,8 +4018,11 @@ export function registerTcg(c) {
   A.tMetaDeck = (t) => {
     const G = g(), captured = t.dataset.homeMetaOpen !== undefined ? homeMetaSnapshot(t, G) : null;
     if (t.dataset.homeMetaOpen !== undefined && !captured) return toast("This Home list has changed. Choose the current visible list.");
-    const d = captured?.deck || metaState(G).data?.decks.find((x) => x.key === t.dataset.key) || metaState(G).data?.archetypes?.map(a=>a.representative).find(d=>d?.key===t.dataset.key);
-    if (d) c.openProven(tcgProvenSpec(G, d, captured?.data));
+    const sourceKey=t.dataset.metaKey||G;
+    if(sourceKey!==G && !(G==='ptcg'&&['ptcg:expanded','ptcg:glc'].includes(sourceKey)))return;
+    const snapshot=captured?.data||metaState(sourceKey).data;
+    const d = captured?.deck || snapshot?.decks.find((x) => x.key === t.dataset.key) || snapshot?.archetypes?.map(a=>a.representative).find(d=>d?.key===t.dataset.key);
+    if (d) c.openProven(tcgProvenSpec(G, d, snapshot));
   };
   // Budget versions of a tournament deck: build around its signature cards.
   A.tMetaBuild = async (t) => {
@@ -4045,7 +4050,7 @@ export function registerTcg(c) {
           .slice(0, 8);
       if (!sig.length) throw Error("Couldn’t find this deck’s signature cards.");
       closeSheet();
-      openBuild(G, sig.map((x) => x.id), d.key, null, "", { game: G, data: meta });
+      openBuild(G, sig.map((x) => x.id), d.key, null, G==='ptcg'?meta.formatId||'standard':"", { game: G, data: meta });
     } catch (e) {
       if (current()) toast(e.message);
     } finally {
