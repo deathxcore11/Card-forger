@@ -2,7 +2,7 @@
 // structured; coverage = where it shows (whole card, frame only, or an ink found in the image);
 // relief = embossed height taken from the art; film = thin-film colour instead of a grating.
 // Approximate simulations from reference; not certified physical-foil matches.
-export const MTG_PATTERN={traditional:1,oldborder:2,ftv:3,etched:4,textured:5,surge:6,galaxy:7,halo:8,confetti:9,doublerainbow:10,fracture:11,ripple:12,mana:13,dragonscale:14,rainbow:15,invisible:16,raised:17,silver:18};
+export const MTG_PATTERN={traditional:1,oldborder:2,ftv:3,etched:4,textured:5,surge:6,galaxy:7,halo:8,confetti:9,doublerainbow:10,fracture:11,ripple:12,mana:13,dragonscale:14,rainbow:15,invisible:16,raised:17,silver:18,ampersand:19,scanline:20};
 export const MTG_COVER={whole:0,frame:1,gold:2,neon:3,paper:4,lines:5};
 export const MTG_TINT={rainbow:0,gold:1,silver:2};
 const P=MTG_PATTERN,C=MTG_COVER,T=MTG_TINT;
@@ -32,19 +32,32 @@ export const MTG_FOIL_RECIPES={
  'mtg-gilded':r('Gilded foil','2022',P.traditional,{tint:T.gold,cover:C.gold,relief:.6,note:'Raised gold foil on the gold ink only; the rest is matte.'}),
  'mtg-neon':r('Neon ink foil','2022–today',P.traditional,{cover:C.neon,note:'Fluorescent ink glows over the foil; neon parts stay vivid even unlit.'}),
  'mtg-silver':r('Silver foil','2024–today',P.silver,{tint:T.silver,note:'Achromatic silver mirror with only a hint of colour.'}),
- 'mtg-firstplace':r('First-place foil','2025',P.traditional,{tint:T.gold,sparkle:.3,note:'Gold-toned foil with a few sparks (approximate).'})
+ 'mtg-firstplace':r('First-place foil','2025',P.silver,{tint:T.gold,note:'A gold-plated mirror sheet across the whole card.'}),
+ 'mtg-masterpiece':r('Masterpiece foil','2015–2017',P.silver,{tint:T.silver,note:'Zendikar Expeditions, Kaladesh Inventions, Amonkhet Invocations: a high-gloss mirror finish.'}),
+ 'mtg-ampersand':r('Ampersand foil','2021',P.ampersand,{note:'Traditional foil with a large glossy D&D ampersand stamped across the card (approximate shape).'}),
+ 'mtg-silverscreen':r('Silver screen foil','2022',P.silver,{tint:T.silver,note:'Black-and-white film look: a silver nitrate sheen over the monochrome art.'}),
+ 'mtg-scroll':r('Scroll foil','2023',P.silver,{tint:T.silver,cover:C.paper,note:'Parchment-matte ink; only the paper areas take a liquid-silver sheen.'}),
+ 'mtg-vaultboy':r('Vault Boy foil','2024',P.scanline,{note:'Fallout Pip-Boy screen: CRT scanlines rolling through the foil.'}),
+ 'mtg-pds':r('Premium Deck foil','2009–2011',P.ftv,{relief:0,note:'Premium Deck Series: a softer version of the From the Vault mirror bar.'}),
+ 'mtg-emblem':r('Set emblem foil','2025–today',P.mana,{note:'A set\'s own emblem pressed into the foil (approximate shape).'})
 };
 // promo_types that name a foil treatment, most specific first (oil slick cards are also raised).
 const PROMO=[['oilslick','mtg-oilslick'],['stepandcompleat','mtg-compleat'],['gilded','mtg-gilded'],['neonink','mtg-neon'],['textured','mtg-textured'],
  ['surgefoil','mtg-surge'],['galaxyfoil','mtg-galaxy'],['halofoil','mtg-halo'],['confettifoil','mtg-confetti'],['doublerainbow','mtg-doublerainbow'],['serialized','mtg-doublerainbow'],
  ['fracturefoil','mtg-fracture'],['rainbowfoil','mtg-rainbow'],['ripplefoil','mtg-ripple'],['manafoil','mtg-mana'],['dragonscalefoil','mtg-dragonscale'],
- ['invisibleink','mtg-invisible'],['silverfoil','mtg-silver'],['firstplacefoil','mtg-firstplace'],['raisedfoil','mtg-raised'],['embossed','mtg-embossed']];
+ ['invisibleink','mtg-invisible'],['silverfoil','mtg-silver'],['firstplacefoil','mtg-firstplace'],['raisedfoil','mtg-raised'],['embossed','mtg-embossed'],
+ ['ampersand','mtg-ampersand'],['silverscreen','mtg-silverscreen'],['scroll','mtg-scroll'],['poster','mtg-scroll'],['vaultboy','mtg-vaultboy']];
+const PDS=new Set(['h09','pd2','pd3']);
 // Picks the treatment from the card's own Scryfall data; finish is 'foil' or 'etched'.
 export function mtgFoilEffect(c,finish='foil'){
  if(finish==='etched')return 'mtg-etched';if(finish!=='foil')return '';
  const promos=c?.promo_types||[];for(const [k,e] of PROMO)if(promos.includes(k))return e;
- if(c?.set_type==='from_the_vault')return 'mtg-ftv';
+ // A newer set-specific foil Scryfall names (chocobotrackfoil, ...) shows as a set emblem foil, not plain traditional.
+ if(promos.some(p=>/foil$/.test(p)&&p!=='foil'))return 'mtg-emblem';
+ if(c?.set_type==='from_the_vault')return 'mtg-ftv';if(c?.set_type==='masterpiece')return 'mtg-masterpiece';if(PDS.has(c?.set))return 'mtg-pds';
  if(c?.frame==='1997'||c?.frame==='1993')return 'mtg-oldborder';
  return 'mtg-traditional';
 }
+// Rares and mythics printed in the M15 frame (2015 onward) carry the oval holo security stamp.
+export const mtgHoloStamp=c=>c?.frame==='2015'&&['rare','mythic'].includes(c?.rarity)&&c?.border_color!=='borderless';
 export const mtgFrameKey=c=>c?.border_color==='borderless'||c?.full_art?'borderless':c?.frame==='1993'?'1997':['1997','2003','2015'].includes(c?.frame)?c.frame:'2015';

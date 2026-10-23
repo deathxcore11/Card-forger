@@ -15,7 +15,7 @@ uniform sampler2D u_relief; // R height, G/B stroke direction, A stroke strength
 uniform vec2 u_tilt;uniform vec2 u_px;uniform vec2 u_texel;uniform float u_aspect;
 uniform vec4 u_art;uniform vec4 u_text;
 uniform vec4 u_r1; // pattern, tint, coverage, relief
-uniform vec4 u_r2; // film, sparkle, stamp, keep (share of the printed art left visible)
+uniform vec4 u_r2; // film, sparkle, stamp (1 shooting star, 2 M15 holo stamp), keep (share of the printed art left visible)
 const float PI=3.14159265;
 vec3 toLin(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));}
 vec3 toSrgb(vec3 c){return mix(c*12.92,1.055*pow(max(c,vec3(0.)),vec3(1./2.4))-.055,step(vec3(.0031308),c));}
@@ -63,7 +63,11 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
  else if(pat<16.5){vec2 p=q*14.,f=fract(p)-.5;float dm=abs(f.x)+abs(f.y);                       // invisible ink: hidden lattice
   glint=(smoothstep(.34,.36,dm)-smoothstep(.42,.44,dm))*pow(max(dot(N,H),0.),26.)*1.8;}
  else if(pat<17.5){}                                                                             // raised / embossed: traditional + relief
- else{mirror=.9;amp=.3;ex=16.;}                                                                  // silver
+ else if(pat<18.5){mirror=.9;amp=.3;ex=16.;}                                                     // silver
+ else if(pat<19.5){vec2 c=(uv-vec2(.5,.4))*vec2(1.,u_aspect);                                   // ampersand: a big glossy & stamped over traditional foil
+  float top=abs(length(c-vec2(-.02,-.13))-.075)-.022,bot=abs(length(c-vec2(0.,.07))-.12)-.026,tail=max(abs(dot(c-vec2(.05,.03),normalize(vec2(.62,.78)))-0.)-.024,length(c-vec2(.05,.03))-.2);
+  float amp_=1.-smoothstep(0.,.012,min(min(top,bot),tail));glint=amp_*(.35+pow(max(dot(N,H),0.),12.)*1.4);lines=1.-.3*amp_;}
+ else{g=vec2(0.,1.);d=1400.;lines=.55+.45*sin(px.y*1.2);mirror=.35;amp=.75;}                       // Vault Boy: CRT scanlines over the foil
  vec3 dif=grating(L,V,g,d)*amp;
  if(pat>9.5&&pat<10.5)dif=grating(L,V,normalize(vec2(.86,.5)),1450.)*.8+grating(L,V,normalize(vec2(-.5,.86)),1650.)*.8;
  if(spec<0.)spec=pow(max(dot(N,H),0.),ex);
@@ -106,7 +110,9 @@ void main(){
   float tw=pow(max(dot(normalize(vec3((hash2(sc+5.)-.5)*.6,1.)),H),0.),30.);outC+=on*pt*(.25+tw*3.)*cov*(.4+.6*spot)*vec3(1.,.97,.9);}
  // Fluorescent ink glows under any light, on top of its foil.
  if(mode>2.5&&mode<3.5)outC+=base*mk.g*.45*(.6+.4*spot);
- if(u_r2.z>.5){float s=shootingStar(uv);outC=mix(outC,shoulder(F*1.6+vec3(.15)),s*.9);}
+ if(u_r2.z>.5&&u_r2.z<1.5){float s=shootingStar(uv);outC=mix(outC,shoulder(F*1.6+vec3(.15)),s*.9);}
+ // M15-era holo stamp: the oval security stamp at the bottom centre flashes silver on its own.
+ if(u_r2.z>1.5){vec2 o=(uv-vec2(.5,.925))/vec2(.03,.012);float ov=1.-smoothstep(.8,1.,length(o));vec3 hs=grating(L,V,normalize(vec2(.3,1.)),1500.)*1.5+vec3(.75,.78,.82)*pow(max(dot(N,H),0.),30.)*spot;outC=mix(outC,shoulder(hs+vec3(.2)),ov*.85);}
  gl_FragColor=vec4(toSrgb(clamp(outC,0.,1.)),1.);
 }`;
 const analyze=foilAnalyzer(new URL('./mtg-foil-worker.js',import.meta.url),(data,W,H)=>analyzeMtgCard(data,W,H));
@@ -117,11 +123,11 @@ function renderer(doc){
  return shared;
 }
 // Returns a handle, or null when this surface keeps the CSS finish (unknown treatment, no WebGL).
-export function mountMtgFoil(overlay,img,treatment,{surface='detail',frame='2015'}={}){
+export function mountMtgFoil(overlay,img,treatment,{surface='detail',frame='2015',holostamp=false}={}){
  const r=MTG_FOIL_RECIPES[treatment],box=MTG_FRAMES[frame]||MTG_FRAMES['2015'];if(!r||!overlay||!img)return null;
  const src=img.currentSrc||img.src;if(!src)return null;
  const copy=()=>readableCopy(src);
  return mountFoilCanvas(overlay,{source:copy,key:src,surface,program:()=>renderer(overlay.ownerDocument),
   analysis:()=>copy().then(i=>analyze(src,()=>readFoilPixels(i,372))),
-  setUniforms:({gl,U})=>{gl.uniform4f(U.u_art,...box.art);gl.uniform4f(U.u_text,...box.text);gl.uniform4f(U.u_r1,r.pat,r.tint,r.cover,r.relief);gl.uniform4f(U.u_r2,r.film,r.sparkle,r.stamp,r.keep||0);}});
+  setUniforms:({gl,U})=>{gl.uniform4f(U.u_art,...box.art);gl.uniform4f(U.u_text,...box.text);gl.uniform4f(U.u_r1,r.pat,r.tint,r.cover,r.relief);gl.uniform4f(U.u_r2,r.film,r.sparkle,r.stamp||(holostamp?2:0),r.keep||0);}});
 }
