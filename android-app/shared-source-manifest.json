@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "3.93.2",
-  "commit": "a87afd6a6494a224b3a0c3d9ed2aa6345905f640",
-  "tree": "e7a14af48984c8d69a6e2915e09d677f413cdda0",
+  "version": "3.93.3",
+  "commit": "311b9a0c7ae2e465c6da98f307ccb6cc2008e2f9",
+  "tree": "41484dcedaef347b7cfe08318859bf0568bbe302",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -329,7 +329,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "e66482255387a8db40cd15d8563660d80aacbd5337fea4f866eb54db5c52e7d2"
+      "sha256": "0fa37e50e371e0f2826becc1ba0bf5e7f55883a78394293e4e391da98333ef4a"
     },
     {
       "path": "core.js",
@@ -1318,8 +1318,8 @@
     },
     {
       "path": "finish-effects.js",
-      "bytes": 50099,
-      "sha256": "e1812e2950d3ae1eb03da51f737f98575e835f871d23fbce1a95755ea1866906"
+      "bytes": 51601,
+      "sha256": "4e41844eb8a415470d5777b5577d6997c06fc9d388639def68c183149c726a91"
     },
     {
       "path": "finish-materials.js",
@@ -1563,8 +1563,8 @@
     },
     {
       "path": "mtg-foil-recipes.js",
-      "bytes": 7809,
-      "sha256": "b23fddb5aa170a42c8cbd7dab3df0efb1be1c92c5fc117a6f3cfabd68328cc11"
+      "bytes": 9660,
+      "sha256": "315782cbad391c4f6b59a75f61da5353a018f9c4970068afa9a5596974be3117"
     },
     {
       "path": "mtg-foil-worker.js",
@@ -1608,8 +1608,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 8908,
-      "sha256": "f82c63c85910e2641a051e606457a72629e66d9ea43634caabb0aeed848faaac"
+      "bytes": 8939,
+      "sha256": "bd726f153572af18cc731ca21a00d582783f4d8ae66b488c719691aa59586a2e"
     },
     {
       "path": "pairing.js",
@@ -1723,13 +1723,13 @@
     },
     {
       "path": "ptcg-foil-recipes.js",
-      "bytes": 15701,
-      "sha256": "3931d5a40d634a3381764e4c8b52d37c93a2916fab74949d56318808f3b7f4f7"
+      "bytes": 16663,
+      "sha256": "7bbc3b1b9ce6277618f205da423e2f1139c7873198d959a596c2536aa8c71790"
     },
     {
       "path": "ptcg-foil.js",
-      "bytes": 31159,
-      "sha256": "5a062609c66de12653ed6f95fd9241b3642aa6c779cd764d2029567bebb18f3d"
+      "bytes": 31149,
+      "sha256": "3e8e77fc97956ea3cee6de76b28f9a1376a13a8c5ef75c5546ae18a32a4abaa6"
     },
     {
       "path": "ptcg-glc-rules.js",
@@ -1768,8 +1768,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 934,
-      "sha256": "7c14dca8288e823f9455af9c7a5d9e247ce84c9bd930bc5c32859512e472fe87"
+      "bytes": 1073,
+      "sha256": "cb0be9b4ae9fd09153f2c49586513cd9058e5abdb020250131ae631f7971f3bc"
     },
     {
       "path": "release-status.js",
@@ -2069,7 +2069,7 @@
     {
       "path": "sw.js",
       "bytes": 10374,
-      "sha256": "65f6dd20623d55216241730d2c33d54ba5b0dfd209dc736bda0d624ce5a158b3"
+      "sha256": "fd5040e5bcbd0f9d1e889284aa6f7e6c6c02f3e62d7f5f1d70d1103da7d2856b"
     },
     {
       "path": "sync-merge.js",
@@ -2088,8 +2088,8 @@
     },
     {
       "path": "tcg.js",
-      "bytes": 363760,
-      "sha256": "f50a4877f2aa61e3c63cd66ac03d4e317fc7d4740d678b6f6c1ee4383b8dc833"
+      "bytes": 364276,
+      "sha256": "8692643f4b57b3679cd7c118556fb19fcb1d7ea4b869b4d5604f52583175987c"
     },
     {
       "path": "tcgbuild.js",
@@ -3718,8 +3718,8 @@
     },
     {
       "path": "ygo-foil-recipes.js",
-      "bytes": 7418,
-      "sha256": "a157b62c2fc4287eab30f6b2e8c3b20a94953cc178c68e5aada4653c3b45cbdb"
+      "bytes": 8661,
+      "sha256": "fa39f79c2744b9facb9d2d8d741ecb19204f73de473a880e3e2be55284116bd6"
     },
     {
       "path": "ygo-foil-worker.js",
