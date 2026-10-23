@@ -94,7 +94,7 @@ function carouselNewsFixture(game) {
   return {game,status:'ready',fetchedAt:ISO,checkedAt:ISO,items:[1,2,3,4].map(i=>({game,sourceId,kind:'news',title:`Synthetic ${game} navigation story ${i}`,url:prefix+i,publishedAt:'2026-10-16',fetchedAt:ISO}))};
 }
 export function carouselPages(game) {
-  const ids=carouselNewsFixture(game).items.map(row=>row.url).concat(`link:${game}:events`,game==='ptcg'?[`link:${game}:news`]:[]),total=ids.length;
+  const ids=carouselNewsFixture(game).items.map(row=>row.url),total=ids.length;
   return [{position:`1–3 / ${total}`,ids:ids.slice(0,3)},{position:`4–${total} / ${total}`,ids:ids.slice(3)}];
 }
 export function makeGameSwitchFixtures(game = 'mtg', {carouselNews = false} = {}) {
@@ -194,7 +194,7 @@ export async function validateGameSwitchFixtures() {
     const fixture=makeGameSwitchFixtures(g,{carouselNews:true}),state=communityState(g),saved={...state};
     try {
       Object.assign(state,{data:fixture.storage['cardforge-community-v3'][g].data,at:NOW,error:''});
-      const slides=communitySlides(g,{now:NOW,metaState:{data:{decks:[],events:[]}}}).filter(row=>row.kind!=='deck'&&row.category!=='decks').sort((a,b)=>Number(a.kind==='link')-Number(b.kind==='link'));
+      const slides=communitySlides(g,{now:NOW,metaState:{data:{decks:[],events:[]}}}).filter(row=>row.kind!=='deck'&&row.kind!=='link'&&row.category!=='decks').sort((a,b)=>Number(a.kind==='link')-Number(b.kind==='link'));
       const expected=carouselPages(g),page=communityPage(g,slides);
       assert.equal(slides.filter(row=>row.kind==='news').length,4,'Every distinct synthetic story survives real provenance/date validation');
       assert.equal(new Set(slides.map(row=>row.id)).size,slides.length);

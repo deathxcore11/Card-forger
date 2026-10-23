@@ -181,7 +181,7 @@ await Promise.all(Array.from({ length: 8 }, () => loadCommunity('mtg', { fetchIm
 await loadCommunity('mtg', { fetchImpl, now: now + COMMUNITY_DAY - 1 }); assert.equal(calls, 1);
 await loadCommunity('mtg', { fetchImpl: async () => { calls++; throw Error('Offline'); }, now: now + COMMUNITY_DAY }); assert.equal(communityState('mtg').data.items[0].stale, true); assert.equal(communityState('mtg').data.items[0].publishedAt, news.publishedAt);
 await loadCommunity('mtg', { fetchImpl, now: now + COMMUNITY_DAY + 5 }); assert.equal(calls, 2, 'client failure does not trigger retry loops');
-assert.equal(communitySlides('mtg', { metaState: M, now: now + 8 * COMMUNITY_DAY }).some(x => x.kind === 'news'), false, 'retention enforced while rendering even offline');
+assert.equal(communitySlides('mtg', { metaState: M, now: now + 8 * COMMUNITY_DAY }).some(x => x.url === news.url), false, 'expired cached story is removed even when a newer reviewed edition is available');
 
 // A v2 success or failure may contain useful data, but its daily lock must not
 // hide the fixed endpoint. Migrate per game and persist even a failed attempt.
@@ -215,7 +215,7 @@ for (const outage of [false, true]) {
   assert.equal(requests, 3, 'v3 success/failure backoff survives reload, despite fresh legacy data');
   for (const game of ['mtg', 'ptcg', 'ygo']) {
     await restored.loadCommunity(game, { now: now + COMMUNITY_DAY, fetchImpl });
-    assert.equal(restored.communitySlides(game, { metaState: { data: null }, now: now + 8 * COMMUNITY_DAY }).some(x => x.kind === 'news' || x.kind === 'event'), false, 'migrated data still expires after seven days');
+    assert.equal(restored.communitySlides(game, { metaState: { data: null }, now: now + 8 * COMMUNITY_DAY }).some(x => legacy[game].data.items.some(old => old.url === x.url)), false, 'migrated data still expires after seven days; newer reviewed stories are independent');
   }
   assert.equal(requests, 6, 'normal daily attempts resume after migration');
 }
