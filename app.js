@@ -1630,7 +1630,8 @@ function registerCardMenus() {
 
     if (!quickCard || quickCard.game !== T.game()) return;
     const {game,card} = quickCard;
-    await A[game === "mtg" ? "wish" : "tWish"]({dataset:{name:card.name,id:card.id}}); closeSheet(false);
+    // The same toggle as the card page's Wishlist button: one identity rule, one write, Undo in the toast.
+    closeSheet(false); await A.cardWishlist({dataset:{game,name:card.name,id:card.id}});
   };
   A.quickDeck = () => {
     if (!quickCard || quickCard.game !== T.game()) return;
@@ -3392,11 +3393,14 @@ A.cardOwnedDetails=async t=>{
 A.cardWishlist=async t=>{
   const commit=scopedCommit();
  const game=t.dataset.game,name=t.dataset.name,id=t.dataset.id;if(game!==T.game())return;
- let added=false;
- const saved=await commit(state=>{const st=game==='mtg'?state:state.tcg[game],matches=w=>game==='mtg'?key(w.name)===key(name):String(w.cardId)===String(id);
-  if(st.wishlist.some(matches))st.wishlist=st.wishlist.filter(w=>!matches(w));
-  else{st.wishlist.push({id:uid(),name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:id}),qty:1,addedAt:new Date().toISOString()});added=true;}
- },{enrich:false});toast(added?'Added to wishlist.':'Removed from wishlist.');
+ // One wishlist toggle for the card page and the hold/right-click menu, by the game's identity rule (Magic by
+ // name, Pokémon and Yu-Gi-Oh! by card id). Only the wishlist changes: owned copies, decks and the screen stay put.
+ const matches=w=>game==='mtg'?key(w.name)===key(name):String(w.cardId)===String(id),current=game==='mtg'?S.state:T.gs(game);
+ const adding=!current.wishlist.some(matches);
+ await commit(state=>{const st=game==='mtg'?state:state.tcg[game];
+  st.wishlist=st.wishlist.filter(w=>!matches(w));
+  if(adding)st.wishlist.push({id:uid(),name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:id}),qty:1,addedAt:new Date().toISOString()});
+ },{enrich:false,undo:adding?'Added to wishlist.':'Removed from wishlist.'});
 };
 A.cardDeckPicker=t=>{
  const game=t.dataset.game;if(game!==T.game())return;

@@ -89,7 +89,7 @@ export function cardActionButtons({game, wished=false, existing=false, second=fa
     ['quickCompare','compare','Compare',second ? 'Use as the second card' : 'Choose another card while browsing'],
     ['quickOwn','cardStack','Add to collection'],
     ['quickDeck','decks','Add to deck'],
-    ['quickWish','heart',wished && game !== 'mtg' ? 'Remove from wishlist' : 'Add to wishlist'],
+    ['quickWish','heart',wished ? 'Remove from wishlist' : 'Add to wishlist'],
     ['quickBinder','binder',existing ? 'Move to binder' : 'Add to binder'],
   ];
   return `${quantityHtml}<div class="context-group card-action-list" aria-label="Card actions">${actions.map(([act,icon,label,hint])=>contextAction(act,icon,label,{hint})).join('')}</div>`;
