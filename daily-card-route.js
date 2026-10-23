@@ -1,13 +1,14 @@
 import { dailyDate, nextDailyReset, DAILY_TIME_ZONE } from './daily-clock.js';
-import { packEligible } from './set-experience.js';
 
 const GAMES = ['mtg', 'ygo', 'ptcg'];
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const different = (card, previous) => card && card.id !== previous?.id && card.name !== previous?.name;
-// The set a card's pack opens from: Scryfall's set code, a TCGdex id's set prefix, or (Yu-Gi-Oh!) the first
-// booster release it was printed in, the one Home shows and opens.
+// The set a card's pack opens from: Scryfall's set code, a TCGdex id's set prefix, or (Yu-Gi-Oh!) its first
+// release that is not a tin, deck, promo or tournament product (close to the booster Home opens; it only has to
+// tell days' sets apart).
 const ptcgSet = id => String(id || '').match(/^(.+)-[^-]+$/)?.[1] || '';
-const ygoSet = sets => (sets || []).find(s => packEligible('ygo', { name: s.set_name }))?.set_name || sets?.[0]?.set_name || '';
+const NOT_A_PACK = /\btin\b|promo|structure deck|starter|deck|tournament|championship|prize|mega-pack|collector|box/i;
+const ygoSet = sets => (sets || []).find(s => !NOT_A_PACK.test(s.set_name || ''))?.set_name || sets?.[0]?.set_name || '';
 const setOf = card => card?.set || (card?.game === 'ptcg' ? ptcgSet(card.id) : '');
 // The last few days' sets: today's pack opens a set none of them did, while the pool has one.
 const RECENT_SETS = 3;
