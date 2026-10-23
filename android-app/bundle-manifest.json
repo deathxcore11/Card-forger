@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "87615c276ebf075c56db059a54f87d898fe1268a",
-  "sourceVersion": "3.93.1",
+  "commit": "a87afd6a6494a224b3a0c3d9ed2aa6345905f640",
+  "sourceVersion": "3.93.2",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -566,8 +566,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 404156,
-      "sha256": "2cfab790006df472c04807fbe59a7bb297e3770aa613acb359e1fc87521feec8"
+      "bytes": 404283,
+      "sha256": "970e2093f84be438479b0e1e09ffb4243abcaa68b1c2d8552b2792f92f5b467c"
     },
     {
       "path": "artwork.js",
@@ -797,7 +797,7 @@
     {
       "path": "config.js",
       "bytes": 627,
-      "sha256": "dd8ca268d4baa049193aa9dbedde33cf1b27ba1ba98c77ae7816af5814f8caa8"
+      "sha256": "caabd65576c3c92581f059bdfe035817e4980f19a4719a3ca28851a4ff5761bf"
     },
     {
       "path": "core.js",
@@ -1771,18 +1771,18 @@
     },
     {
       "path": "feedback-layer.js",
-      "bytes": 1648,
-      "sha256": "3e864b903b98f87d476cb5eb150eb9f44dc2cc33665460282c5bf51cd5c59e6d"
+      "bytes": 2211,
+      "sha256": "084ac243e3aa2d8d4680175d2e17a8a5e15f0c6a9a07b6599c4eede9bba28aab"
     },
     {
       "path": "feel.js",
-      "bytes": 20752,
-      "sha256": "c720d9d835a007e6e54f8ded00fe7bdce5c0eb4943c0dfb66e85499c52fba59a"
+      "bytes": 20710,
+      "sha256": "b2c9876d71ea4b31da74f99ce2fad037adfeac698821cdb898adf6307565112d"
     },
     {
       "path": "finish-effects.css",
-      "bytes": 18991,
-      "sha256": "6ae7ab7aadec1d7913dea694ccbb4789668af8bfbbf2372367cf1a6309ce1065"
+      "bytes": 19312,
+      "sha256": "d1ff9a1b4da5ac87ce58efd0702182bae09cc54404efd265024ac8fd35377d98"
     },
     {
       "path": "finish-effects.js",
@@ -1796,8 +1796,8 @@
     },
     {
       "path": "finish-preview.js",
-      "bytes": 18784,
-      "sha256": "d932ab1dd50d8e64cfd94681633c099b0316798c88147e3c980327c78a3845d4"
+      "bytes": 19383,
+      "sha256": "4d8021a02c6cd2a4ba980c205e6f22d90f7096b38720636aa4d0440de73f2491"
     },
     {
       "path": "foil-gl.js",
@@ -2001,8 +2001,8 @@
     },
     {
       "path": "meta.js",
-      "bytes": 14774,
-      "sha256": "9652565c9a5c0debdf630a6336059eedc41ed11fbfd7d722e74641549aa84b0f"
+      "bytes": 15776,
+      "sha256": "83cb7a76ed1f4a22fb5b2e695664001036d0a5d1e5e39732a3af675071cfcdd3"
     },
     {
       "path": "mobile-tilt.js",
@@ -2091,8 +2091,8 @@
     },
     {
       "path": "native-service-policy.js",
-      "bytes": 6238,
-      "sha256": "965dd1b76062b8684119a7377010531b7018ffcd7cd794dc4908399456dd5172"
+      "bytes": 6325,
+      "sha256": "357407d4ef4748421eaed1a01793df33515caf76c7d617eec759caac15eedf2d"
     },
     {
       "path": "native-transport.js",
@@ -2266,8 +2266,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1010,
-      "sha256": "f2921df7a1ed57872745104d761462ff7522e7c1c91c9c5775691c5ebd28ea6e"
+      "bytes": 934,
+      "sha256": "7c14dca8288e823f9455af9c7a5d9e247ce84c9bd930bc5c32859512e472fe87"
     },
     {
       "path": "release-status.js",
@@ -2581,8 +2581,8 @@
     },
     {
       "path": "tcg.js",
-      "bytes": 362749,
-      "sha256": "5c89fee7d28576baccc12e2d05b44944e8ccdf1f22b2ff9bf5a6ed696e0fb94d"
+      "bytes": 363774,
+      "sha256": "cc511c43ecc1d6c16ad8e04319c3ab3b67b941e8aa4b9d8338ae477e1b03eead"
     },
     {
       "path": "tcgbuild.js",

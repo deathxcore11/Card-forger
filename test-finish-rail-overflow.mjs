@@ -15,6 +15,8 @@ for(const change of [{known:false},{direct:false},{connected:false},{visible:fal
 assert(auditedFinishChoiceControl({...control,game:'mtg',finishRail:{...rail,game:'mtg'}}));
 assert(auditedFinishChoiceControl({...control,game:'ygo',finishRail:{...rail,action:'',game:'',cardId:'',finish:''}}));
 assert(!auditedFinishChoiceControl({...control,game:'ygo'}),'YGO cannot masquerade as an unrelated actionable finish selector');
+assert(auditedFinishChoiceControl({...control,game:'ygo',finishRail:{...rail,action:'ygoPickRarity',game:'',cardId:'38814750',edition:'HSRD-EN031::Ultra Rare',finish:''}}),'Exact Yu-Gi-Oh! rarity actions stay inside the audited rail');
+assert(!auditedFinishChoiceControl({...control,game:'ygo',finishRail:{...rail,action:'ygoPickRarity',game:'',edition:'',finish:''}}),'Missing printing identity is rejected');
 const zoom=1.25,scaled=Object.fromEntries(['left','right','top','bottom','width','height'].map(k=>[k,control[k]*zoom]));
 const scaledRail=Object.fromEntries(['left','right','top','bottom','contentLeft','client','scroll','position'].map(k=>[k,rail[k]*zoom]));
 assert(auditedFinishChoiceControl({...control,...scaled,viewport:400,finishRail:{...rail,...scaledRail,scale:zoom}}),'visual zoom keeps rail/control geometry in matching coordinate space');

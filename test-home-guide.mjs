@@ -51,7 +51,7 @@ for(const game of ['mtg','ptcg','ygo']){
 let artSearches=0;const resolveArt=createTableArtResolver({ptcg:{search:async()=>{artSearches++;return {cards:[{id:'wrong',brief:true},{id:'right',brief:true}]};},get:async id=>({id,game:'ptcg',name:id,category:'Pokemon',types:[id==='right'?'Water':'Fire'],image:'https://assets.tcgdex.net/fixture/high.webp'})}});
 const art=await Promise.all([resolveArt('ptcg','Water'),resolveArt('ptcg','Water')]);assert.equal(artSearches,1);assert(art.every(c=>c.id==='right'),'art must actually match the selected type');assert.equal((await resolveArt('mtg','U')).name,'Island');
 for(const game of ['ptcg','ygo']){
- S.state.settings.game=game;S.ui.decksTab='inspiration';T.ui(game).metaFormat=game==='ptcg'?'expanded':'goat';
+ S.state.settings.game=game;S.ui.decksTab='inspiration';T.ui(game).metaFormat=game==='ptcg'?'unlimited':'goat';
  const html=T.tcgDecks();assert.match(html,/Tournament format/);assert.match(html,/aren’t available from the connected feed/);assert.doesNotMatch(html,/class="arch-grid"|Most played cards/,'unsupported formats never relabel current tournament lists');
  assert.match(T.tcgNewDeckSheet(T.ui(game).metaFormat),new RegExp('value="'+T.ui(game).metaFormat+'" selected'));
 }

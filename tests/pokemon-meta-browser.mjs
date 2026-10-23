@@ -17,7 +17,7 @@ try{
    const id=url.searchParams.get('id');return[{placing:1,player:'fixture',deck:{id,name:'Synthetic '+id,icons:[]},decklist:{pokemon:[{name:CARDS.ptcg[0].name,count:4,set:'FXA',number:'1'}]}}];
   }});
   const {page}=app,before=await inventorySnapshot(page);
-  await page.evaluate(()=>{location.hash='#decks';});await page.locator('[data-act="decksTab"][data-id="inspiration"]').click();
+  await page.evaluate(()=>{location.hash='#decks';});await page.getByRole('tab',{name:'Meta decks',exact:true}).click();
   for(const [format,label]of [['standard','Standard'],['expanded','Expanded'],['glc','Gym Leader Challenge']]){
    await page.locator(`[data-act="tMetaFormat"][data-id="${format}"]`).click();
    await page.locator(`[data-act="tMetaDeck"][data-key="ptcg:${format}-fixture:1"]`).first().waitFor();

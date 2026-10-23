@@ -40,15 +40,19 @@ try{
    const attrs=game==='mtg'?`data-act="card" data-name="${esc(card.name)}" data-set-finish="foil"`:`data-act="tCard" data-game="${game}" data-id="${esc(card.id)}" data-set-id="${esc(set.id)}" ${game==='ptcg'?'data-set-variant="holofoil"':'data-printing="LOB-001::Ultra Rare"'}`;
    document.querySelector('#content').innerHTML=`<button ${attrs} data-set-i="0">Inspect set card</button>${packButton(game,set,{ready:true})}`;
   },{game,card,set});
-  await page.locator('[data-set-i="0"]').click();
-  const detail=page.locator('#sheetBody .cd-img');await detail.scrollIntoViewIfNeeded();await detail.locator('.finish-overlay').waitFor();
+  const settleDetails=async()=>{
+   await page.waitForFunction(game=>{const c=window.__uiTestState.ui.sheetCtx;return document.querySelector('#sheet')?.open&&c&&(game==='mtg'?c.type==='card'&&!c.detailsBusy&&!c.printsBusy:c.type==='tcard'&&!c.previewBusy);},game);
+   await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+  };
+  await page.locator('[data-set-i="0"]').click();await settleDetails();
+  const detail=page.locator('#sheetBody .cd-img');await detail.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await detail.locator('.finish-overlay').waitFor();
   const fromSet=await detail.getAttribute('data-finish-model');
   await page.locator('#sheet [data-act="closeSheet"]').click();
   await page.locator('[data-act="openSetPack"]').click();await page.locator('[data-pack="open"]').click();
   await page.locator('.pack-card').first().click();
   const pack=page.locator('.pack-dialog');const pulls=await pack.locator('.pack-card').evaluateAll(ns=>ns.map(n=>n.getAttribute('aria-label')));
   await page.locator('.pack-face .finish-overlay').waitFor();
-  await page.locator('.pack-focus-card').click();await detail.scrollIntoViewIfNeeded();await detail.locator('.finish-overlay').waitFor();
+  await page.locator('.pack-focus-card').click();await settleDetails();await detail.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await detail.locator('.finish-overlay').waitFor();
   assert.equal(await detail.getAttribute('data-finish-model'),fromSet,'Pack details use the identical printing/finish model as the set');
   assert(await pack.evaluate(n=>n.classList.contains('pack-under')&&n.open));
   assert(await page.evaluate(()=>[...document.querySelectorAll('dialog[open]')].at(-1).classList.contains('pack-dialog')),'Regression keeps pack later in DOM order');

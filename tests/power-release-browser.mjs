@@ -596,7 +596,7 @@ try{
   }
   assert(metaFixtureReads<=(x.game==='ptcg'?1:0),'only the known saved Standard field refresh may use the exact empty-event fixture');
   const metaFallback=x.game==='ptcg'?await bp.evaluate(()=>{const m=window.__uiTestTcg.metaState('ptcg');return {busy:m.busy,error:m.error,decks:m.data.decks,top:m.data.top};}):null;
-  if(metaFallback&&metaFixtureReads){assert.equal(metaFallback.busy,false);assert.equal(metaFallback.error,'No recent Standard events found.');assert.deepEqual(metaFallback.decks,[],'empty source does not invent a tournament match');assert.deepEqual(metaFallback.top,x.trainerIds.map(id=>({kind:'Trainer',name:x.cards[id].name,pct:100,avg:4})),'existing cached synthetic build inputs survive source unavailability');}
+  if(metaFallback&&metaFixtureReads){assert.equal(metaFallback.busy,false);assert.equal(metaFallback.error,'No recent Standard events with at least 24 players were found in the last 21 days.');assert.deepEqual(metaFallback.decks,[],'empty source does not invent a tournament match');assert.deepEqual(metaFallback.top,x.trainerIds.map(id=>({kind:'Trainer',name:x.cards[id].name,pct:100,avg:4})),'existing cached synthetic build inputs survive source unavailability');}
   Object.assign(builderResults.at(-1),{metaFixture:{url:x.game==='ptcg'?metaFixtureUrl:null,reads:metaFixtureReads,fallback:metaFallback},watchedPrerequisite,builderLayouts});builderApp.health();
   }catch(error){builderResults.splice(resultStart);await recordScenarioFailure('builder-'+x.game+'-'+x.kind,error,builderApp);}
   finally{try{await closeScenarioContext('builder-'+x.game+'-'+x.kind,builderApp);}finally{builderApp=null;}}
