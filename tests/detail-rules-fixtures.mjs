@@ -272,7 +272,7 @@ export function auditedCollectionControl(control,audit){
 export function auditedFinishChoiceControl(control){
  const r=control.finishRail;
  return control.root==='sheetBody'&&['mtg','ptcg','ygo'].includes(control.game)&&control.tag==='BUTTON'&&r?.known&&r.direct&&r.connected&&r.visible&&r.focusable&&r.chip&&r.type==='button'&&['true','false'].includes(r.pressed)&&
-  (control.game==='ygo'?!r.action:r.action==='cardFinishPreview'&&r.game===control.game&&!!r.cardId&&!!r.finish)&&
+  (control.game==='ygo'?(!r.action||(r.action==='ygoPickRarity'&&!r.game&&!!r.cardId&&/^[^:]+::.+$/.test(r.edition||''))):r.action==='cardFinishPreview'&&r.game===control.game&&!!r.cardId&&!!r.finish)&&
   /^(auto|scroll)$/.test(r.overflow)&&r.display==='flex'&&r.wrap==='nowrap'&&r.left>=-.5&&r.right<=control.viewport+.5&&r.right>r.left&&r.client>0&&r.scroll>r.client+1&&r.scale>0&&r.position>=-1&&r.position<=r.scroll-r.client+2&&
   Number.isFinite(r.scroll)&&control.width>0&&control.width<=r.scroll+2&&Math.abs(control.right-control.left-control.width)<.5&&control.height>=44*r.scale-.5&&control.left+r.position>=r.contentLeft-2&&control.right+r.position<=r.contentLeft+r.scroll+2&&control.top>=r.top-2&&control.bottom<=r.bottom+2;
 }
@@ -305,7 +305,7 @@ export async function noOverflow(page,scope,label,settleFinite=false,collectionA
    if(finish){
     const r=finish.getBoundingClientRect(),css=getComputedStyle(finish),scale=r.width/finish.offsetWidth;
     let visible=true;for(let ancestor=n;ancestor&&ancestor!==root;ancestor=ancestor.parentElement){const s=getComputedStyle(ancestor);if(s.visibility!=='visible'||s.opacity==='0'||s.display==='none')visible=false;}
-    finishRail={known:finish.matches('.finish-preview > .finish-choice-rail')&&finish.parentElement?.parentElement?.matches('.cd-art-stack'),direct:n.parentElement===finish,connected:finish.isConnected&&n.isConnected,visible,focusable:n.tabIndex>=0&&!n.disabled,chip:n.matches('.chip'),type:n.type,pressed:n.getAttribute('aria-pressed'),action:n.dataset.act||'',game:n.dataset.game||'',cardId:n.dataset.cardId||'',finish:n.dataset.finish||'',left:r.left,right:r.right,top:r.top,bottom:r.bottom,scale,contentLeft:r.left+finish.clientLeft*scale,client:finish.clientWidth*scale,scroll:finish.scrollWidth*scale,position:finish.scrollLeft*scale,overflow:css.overflowX,display:css.display,wrap:css.flexWrap};
+    finishRail={known:finish.matches('.finish-preview > .finish-choice-rail')&&finish.parentElement?.parentElement?.matches('.cd-art-stack'),direct:n.parentElement===finish,connected:finish.isConnected&&n.isConnected,visible,focusable:n.tabIndex>=0&&!n.disabled,chip:n.matches('.chip'),type:n.type,pressed:n.getAttribute('aria-pressed'),action:n.dataset.act||'',game:n.dataset.game||'',cardId:n.dataset.cardId||'',finish:n.dataset.finish||'',edition:n.dataset.edition||'',left:r.left,right:r.right,top:r.top,bottom:r.bottom,scale,contentLeft:r.left+finish.clientLeft*scale,client:finish.clientWidth*scale,scroll:finish.scrollWidth*scale,position:finish.scrollLeft*scale,overflow:css.overflowX,display:css.display,wrap:css.flexWrap};
    }
    const family=n.closest('.set-browser-quick');let familyRail=null;
    if(family){

@@ -7,7 +7,7 @@ const html=finishPreview('mtg',card,{priceFinish:'etched'});
 assert.match(html,/class="finish-choice-rail" tabindex="0" aria-label="Card finishes, scroll horizontally"/);
 assert.match(html,/class="finish-choice-hint small muted" hidden aria-hidden="true">Scroll ↔/);
 assert.match(html,/data-finish="etched" aria-pressed="true"/);
-assert.equal((html.match(/type="button" class="chip(?: on)?"/g)||[]).length,3);
+assert.equal((html.match(/type="button" class="chip finish-choice-chip(?: on)?"/g)||[]).length,3);
 assert.doesNotMatch(html,/tabindex="-1"|onkeydown|onwheel/,'native buttons and keyboard scrolling stay intact');
 const css=await readFile(new URL('./finish-effects.css',import.meta.url),'utf8');
 assert.match(css,/\.finish-choice-rail\{[^}]*flex-wrap:nowrap[^}]*width:100%[^}]*min-width:0[^}]*max-width:100%[^}]*overflow-x:auto[^}]*scroll-behavior:auto[^}]*scrollbar-width:thin/);

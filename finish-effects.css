@@ -124,9 +124,9 @@
 .finish-overlay[data-material-profile="nec77-etched"] .finish-metal::after{background:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f6eee055,transparent 56%),linear-gradient(115deg,transparent 22%,#8fd8ff 36%,#c8a4ff 45%,#ff9fcb 53%,#ffe08f 61%,#9bf0c4 69%,transparent 80%) var(--finish-x) var(--finish-y)/260% 260% no-repeat;mix-blend-mode:screen;opacity:.42}
 .finish-overlay[data-material-profile="nec77-etched"] .finish-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#eee5d177,transparent 56%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.34}
 /* Yu-Gi-Oh! rarity row: each chip carries a small swatch of its foil; the count shows how many printings share it. */
-/* Chips wrap rather than scroll so every rarity stays in view at any width. */
-.finish-choice-rail.ygo-rarity-chips{flex-wrap:wrap;overflow:visible}
-.ygo-rarity-chip{display:inline-flex;align-items:center;gap:.4rem;min-height:44px;max-width:100%;white-space:nowrap}
+/* All games use one swipeable row; long rarity lists never turn into a wall of pills. */
+.finish-choice-rail.ygo-rarity-chips{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden}
+.finish-choice-chip,.ygo-rarity-chip{display:inline-flex;align-items:center;gap:.4rem;min-height:44px;max-width:100%;white-space:nowrap}
 .ygo-rarity-chip small{font-size:11px;line-height:1;padding:2px 6px;border-radius:999px;background:color-mix(in srgb,currentColor 14%,transparent);opacity:.85}
 .rarity-swatch{flex:0 0 auto;width:16px;height:16px;border-radius:5px;border:1px solid color-mix(in srgb,currentColor 30%,transparent);background:#8b8f96}
 .rarity-swatch-plain{background:linear-gradient(135deg,#6f737a,#9a9ea6)}
@@ -152,3 +152,6 @@
    light. Box 56.5%–89% x 11.5%–25.5% of the card; the traced letter mask fills that box exactly. */
 .finish-stamp-silver{opacity:.95;mix-blend-mode:screen;background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#ffffffd0,transparent 55%),linear-gradient(115deg,#9aa4b0 10%,#e9eef5 30%,#9ff0ff 42%,#ffd0f4 50%,#fff3b0 58%,#e9eef5 70%,#8d97a3 90%);background-size:100% 100%,260% 260%;background-position:0 0,var(--finish-x) var(--finish-y);-webkit-mask:url("assets/finishes/stamp-first-movie.png") 83.704% 13.372%/32.5% 14% no-repeat;mask:url("assets/finishes/stamp-first-movie.png") 83.704% 13.372%/32.5% 14% no-repeat}
 .finish-auto .finish-stamp-silver{opacity:.85}
+
+.rarity-swatch-reverse{background:linear-gradient(135deg,#6ac9dd,#b69ceb 42%,#edc886);box-shadow:inset 0 0 0 4px color-mix(in srgb,var(--surface,#171a22) 80%,transparent)}
+.rarity-swatch-unknown{background:repeating-linear-gradient(135deg,#727681 0 3px,#424650 3px 6px)}

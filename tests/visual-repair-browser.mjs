@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {startServer,openApp,inventorySnapshot} from './detail-rules-fixtures.mjs';
-import {noOverflow} from './search-fixtures.mjs';
+import {noOverflow} from './detail-rules-fixtures.mjs';
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Hosted browser QA only.');
 const {chromium}=await import('playwright'),server=await startServer(),browser=await chromium.launch();
 const failures=[];

@@ -1,7 +1,7 @@
 // Hosted real-app integration. Art is explicitly synthetic, not mask-calibration evidence.
 import assert from 'node:assert/strict';
 import {CARDS,startServer,openApp,closeSheet,inventorySnapshot,capture} from './detail-rules-fixtures.mjs';
-import {noOverflow} from './search-fixtures.mjs';
+import {noOverflow} from './detail-rules-fixtures.mjs';
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Finish browser QA runs only in hosted GitHub Actions.');
 const {chromium}=await import('playwright');
 const server=await startServer(),browser=await chromium.launch();
@@ -77,6 +77,8 @@ try{for(const game of ['ygo','ptcg','mtg']){
   await page.waitForFunction(()=>!document.querySelector('#content .finish-overlay'));
   await page.waitForFunction(()=>{const c=window.__uiTestState.ui.sheetCtx;return document.querySelector('#sheet')?.open&&!c?.detailsBusy&&!c?.printsBusy;});
   const before=await inventorySnapshot(page),preview=page.locator('#sheet .finish-preview');await preview.waitFor();
+  assert.equal(await preview.locator('.finish-choice-rail').evaluate(n=>getComputedStyle(n).flexWrap),'nowrap','All games use the same bounded swipe rail');
+  assert.equal(await preview.locator('.rarity-swatch').count(),await preview.locator('.finish-choice-rail button').count(),'Each available finish has its own material swatch');
   if(game!=='ygo')await preview.locator(`[data-finish="${game==='mtg'?'foil':'reverse-holofoil'}"]`).click();
   const selection=await page.evaluate(()=>JSON.stringify((c=>[c.type,c.game,c.id,c.print?.id,c.priceFinish,c.setVariant,c.priceEdition,c.priceYgoEdition])(window.__uiTestState.ui.sheetCtx)));
   for(const width of [320,390,673,768,1024,1440]){

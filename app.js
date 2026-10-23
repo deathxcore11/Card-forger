@@ -1124,10 +1124,11 @@ function render() {
     if (ui.view === "set" && g === "ptcg") { const U=T.ui(g).set,k=U.generation+":"+U.id; if (U.loaded && !U.busy && !U.detailsBusy && U.detailsTried !== k && U.cards.some(c=>(T.cardOf(g,c.id)||c).brief)) { U.detailsTried=k; setTimeout(() => navigationCurrent(screen) && A.tSetDetails?.(), 0); } }
     if (ui.view === "set" && ui.tsetId && T.ui(g).set.id !== ui.tsetId) { const id=ui.tsetId; setTimeout(() => navigationCurrent(screen) && tcgCtx.openSet?.(id, false, g), 0); }
     // Ideas, Meta decks and Deck Power need the current tournament meta.
-    const MS = T.metaState(g);
-    if ((ui.view === "tdeck" || (ui.view === "decks" && (!ui.decksTab || ["ideas", "inspiration", "mine"].includes(ui.decksTab)))) && !MS.busy && T.metaNeedsRefresh(g) && !autoLoaded.has("meta" + g + MS.at)) {
-      autoLoaded.add("meta" + g + MS.at);
-      setTimeout(() => navigationCurrent(screen) && tcgCtx.loadMeta?.(g), 0);
+    const metaKey = ui.view==='decks'&&ui.decksTab==='inspiration'?T.metaBrowseKey(g):g;
+    const MS = T.metaState(metaKey);
+    if ((ui.view === "tdeck" || (ui.view === "decks" && (!ui.decksTab || ["ideas", "inspiration", "mine"].includes(ui.decksTab)))) && !MS.busy && T.metaNeedsRefresh(metaKey) && !autoLoaded.has("meta" + metaKey + MS.at)) {
+      autoLoaded.add("meta" + metaKey + MS.at);
+      setTimeout(() => navigationCurrent(screen) && tcgCtx.loadMeta?.(g,false,metaKey), 0);
     }
     // Load card data and prices for what's on screen.
     const ids = ui.view === "collection" && (!T.ui(g).coll.tab || T.ui(g).coll.tab === "cards") ? [...document.querySelectorAll(".lot-art[data-id]")].map(e=>e.dataset.id) : ui.view === "collection" || (ui.view === "decks" && ui.decksTab === "ideas") ? T.gs(g).collection.map((e) => e.cardId) : ui.view === "tdeck" ? (T.gs(g).decks.find((d) => d.id === ui.tdeckId)?.zones ? ["main", "extra", "side"].flatMap((z) => T.gs(g).decks.find((d) => d.id === ui.tdeckId).zones[z].map((r) => r.cardId)) : []) : ui.view === "home" || ui.view === "decks" ? T.gs(g).decks.flatMap((d) => (d.zones.main || []).slice(0, 1).map((r) => r.cardId)) : [];

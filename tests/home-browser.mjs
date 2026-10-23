@@ -303,7 +303,7 @@ async function openApp(options = {}) {
       url.origin === BASE && url.pathname === '/api/community' && url.searchParams.get('game') === game ? 'news' :
       game === 'mtg' && url.origin === BASE && url.pathname === '/api/meta/mtg' && url.searchParams.get('format') === DEFAULT_MTG_META_FORMAT ||
       game === 'ygo' && url.origin === BASE && url.pathname === '/api/meta/ygo/decks' && url.searchParams.get('offset') === '0' ||
-      game === 'ptcg' && url.hostname === 'play.limitlesstcg.com' && url.pathname === '/api/tournaments' ? 'decks' : null);
+      game === 'ptcg' && url.origin === BASE && url.pathname === '/api/meta/ptcg/tournaments' ? 'decks' : null);
     if (pendingHomeSource) { homeSources.counts[pendingHomeSource]++; homeSources[pendingHomeSource].started(); await homeSources[pendingHomeSource].wait; }
     const isMarketHistory = url.origin === MARKET_HISTORY.origin && url.pathname === MARKET_HISTORY.pathname;
     if (isMarketHistory && request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET', 'access-control-allow-headers': 'apikey' }, body: '' });
@@ -373,10 +373,10 @@ async function openApp(options = {}) {
       const body = ptcgFixture(url);
       if (body !== undefined) return json(body);
     }
-    if (url.hostname === 'play.limitlesstcg.com') {
-      if (url.pathname === '/api/tournaments') return json([{ id: 'fixture', name: 'Fixture tournament', players: 32, date: '2026-10-15T12:00:00.000Z' }]);
-      if (url.pathname === '/api/tournaments/fixture/standings') return json([{ player: '1', name: 'Public fixture player', placing: 1, deck: { id: 'pikachu', name: 'Pikachu', icons: ['pikachu'] }, decklist: { pokemon: [{ count: 4, name: 'Pikachu', set: 'SSP', number: '57' }] } }]);
-      if (url.pathname === '/api/tournaments/fixture/pairings') return json([]);
+    if (url.origin === BASE && url.pathname.startsWith('/api/meta/ptcg/')) {
+      if (url.pathname === '/api/meta/ptcg/tournaments') return json([{ id: 'fixture', name: 'Fixture tournament', players: 32, date: '2026-10-15T12:00:00.000Z' }]);
+      if (url.pathname === '/api/meta/ptcg/standings' && url.searchParams.get('id')==='fixture') return json([{ player: '1', name: 'Public fixture player', placing: 1, deck: { id: 'pikachu', name: 'Pikachu', icons: ['pikachu'] }, decklist: { pokemon: [{ count: 4, name: 'Pikachu', set: 'SSP', number: '57' }] } }]);
+      if (url.pathname === '/api/meta/ptcg/pairings' && url.searchParams.get('id')==='fixture') return json([]);
     }
     unexpected.push(`${request.method()} ${url.href}`);
     // Never forward unknown requests to the Internet, even on a failing test.

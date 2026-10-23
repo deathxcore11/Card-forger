@@ -17,21 +17,21 @@ globalThis.document={body:{append:()=>{}},querySelector:s=>s==='#sheetBody'?{scr
 globalThis.fetch=async input=>{network++;assert.equal(input,'api/tcgplayer/sets?game=ptcg','no live AI/account/provider calls');return Response.json({sets:[{name:'Fixture Energy A',code:'FXA'},{name:'Fixture Energy B',code:'FXB'},{name:'Fixture Main',code:'FXM'}]});};
 const fresh=(id,name,category='Pokemon',usd=.1,setName='Fixture Main')=>({...normalizePtcg({id,name,localId:id.split('-').at(-1),category,stage:category==='Pokemon'?'Basic':undefined,hp:category==='Pokemon'?70:undefined,types:category==='Pokemon'?['Fire']:undefined,attacks:category==='Pokemon'?[{name:'Ember',cost:['Fire'],damage:'20'}]:[],energyType:category==='Energy'?'Normal':undefined,legal:{standard:true,expanded:true},set:{id:id.split('-')[0],name:setName},image:'https://fixture.invalid/card'}),prices:{usd},fetchedAt:new Date().toISOString()});
 let A,c,cards,deck;
-async function open({quote=3,ownedEnergy=0,missing=false}={}){
+async function open({quote=3,ownedEnergy=0,missing=false,format='standard'}={}){
  S.state=blank();S.state.settings.game='ptcg';S.state.tcg={ptcg:blankGame()};S.ui.sheetCtx=null;
  const seed=fresh('main-1','Fixture attack seed'),trainers=Array.from({length:11},(_,i)=>fresh('main-'+(i+2),'Fixture Trainer '+i,'Trainer')),
    energyA=fresh('energyA-80','Basic Fire Energy','Energy',quote,'Fixture Energy A'),energyB=fresh('energyB-81','Basic Fire Energy','Energy',quote==null||String(quote).trim()===''?quote:quote+1,'Fixture Energy B');
  cards=[seed,...trainers,energyA,energyB];for(const card of cards)T.cache.ptcg[card.id]=card;
  if(ownedEnergy)S.state.tcg.ptcg.collection.push({cardId:energyA.id,key:'name:Basic Fire Energy',name:energyA.name,qty:ownedEnergy});
  deck={key:'adapt-fixture',name:'Fixture tournament list',place:'1st',event:'Local fixture',players:1,list:cards.map((card,i)=>({name:card.name,set:card.set.id,number:card.set.number,kind:card.category,qty:i>=12?6:4}))};
- metaState('ptcg').data={decks:[deck],top:[],events:[]};
+ deck.formatId=format;metaState(format==='standard'?'ptcg':'ptcg:'+format).data={formatId:format,format:format==='glc'?'Gym Leader Challenge':format==='expanded'?'Expanded':'Standard',decks:[deck],top:[],events:[]};
  T.SOURCES.ptcg.get=async id=>{if(missing&&id===energyA.id)throw Error('Fixture printing missing');return cards.find(c=>c.id===id);};
  T.SOURCES.ptcg.tournamentCard=async row=>missing&&row.set===energyA.set.id?null:cards.find(card=>card.name===row.name&&card.set.id===row.set&&card.set.number===row.number)||null;
  T.SOURCES.ptcg.cheapestPrint=async()=>{throw Error('Explicit tournament printing must not be replaced');};
  T.SOURCES.ptcg.byName=async()=>{throw Error('Explicit tournament printing must not resolve by name');};
  if(missing)delete T.cache.ptcg[energyA.id];
  A={};c={A,C:{},I:{},commit:async(fn,options)=>{fn(S.state);if(options?.msg)messages.push(options.msg);},render:()=>{},openSheet:(html,ctx)=>{rendered=html;S.ui.sheetCtx=ctx;},closeSheet:()=>{S.ui.sheetCtx=null;},toast:m=>messages.push(m),writeRecord:async()=>{},go:()=>{},busy:()=>()=>{}};
- T.registerTcg(c);A.tMetaDeck({dataset:{key:deck.key}});while(T.proven.busy)await new Promise(r=>setImmediate(r));return T.proven.current.rows;
+ T.registerTcg(c);A.tMetaDeck({dataset:{key:deck.key,metaKey:format==='standard'?'ptcg':'ptcg:'+format}});while(T.proven.busy)await new Promise(r=>setImmediate(r));return T.proven.current.rows;
 }
 const collection=()=>JSON.stringify(S.state.tcg.ptcg.collection);
 async function save(mode='original'){
@@ -58,3 +58,6 @@ await open({quote:null});assert.equal(await save('draft'),null);assert.match(mes
 await open({missing:true});await A.provenSave({dataset:{}});assert.equal(S.state.tcg.ptcg.decks.length,0);assert.match(T.provenSheetHtml(),/Nothing saved: 1 unmatched printings/);
 assert.equal(network,1,'only the local set-code fixture is requested');
 console.log('PASS: real Pokémon tournament inspector/adaptation/save/reopen/Buy uses actual Energy quantities, known or unknown purchase quotes, persisted finite caps, and exact saved printings; no fabricated ownership, no SVE substitution, no live network/account writes.');
+
+for(const format of ['expanded','glc']){await open({format});const result=await save();assert.equal(result.saved.format,format,'Tournament Save retains source format');assert(result.saved.zones.main.length);}
+console.log('PASS: Expanded/GLC exact tournament save retains format and collection identity.');

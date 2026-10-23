@@ -1,3 +1,4 @@
+import {pokemonMetaRoute} from './pokemon-meta-route.js';
 import {RELEASE} from './release-record.js';
 import { checkNativeBackendRequest, withNativeResponseHeaders, createSupabaseBearerVerifier, isNativeAdmitted, releaseNativeAdmission } from './native-backend-contract.js';
 import { NATIVE_ORIGIN } from './native-service-policy.js';
@@ -242,6 +243,7 @@ const handlers = {
     if (url.pathname === "/api/prices/mtg-tcg") return mtgTcgPriceRoute(url,ctx);
     if (url.pathname === "/api/prices/watch") return watchRoute(request, env);
     if (url.pathname === "/api/prices/history") return historyRoute(url, env, ctx);
+    if (["/api/meta/ptcg/tournaments","/api/meta/ptcg/standings","/api/meta/ptcg/pairings"].includes(url.pathname)) return pokemonMetaRoute(request,url,ctx);
     if (url.pathname === "/api/meta/mtg" || url.pathname === "/api/meta/mtg/coverage") return mtgRoute(url, env, ctx);
     if (url.pathname === "/api/meta/ygo/decks" || url.pathname === "/api/meta/ygo/top") return ygoMeta(url, ctx);
     const m = url.pathname.match(/^\/img\/ygo\/(s\/|a\/)?(\d{1,12})\.jpg$/),

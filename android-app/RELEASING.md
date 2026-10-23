@@ -33,6 +33,10 @@ node scripts/rebaseline-source.mjs /path/to/Card-forger <commit> [new-file.js ..
 # In android/app/build.gradle raise versionCode (must be higher than the published one) and versionName.
 npm run build:web
 npx cap sync android
+# Backend contract tests exercise the server-only module at this same commit.
+mkdir -p staging
+git -C /path/to/Card-forger show <commit>:native-backend-contract.js > staging/native-backend-contract.js
+git -C /path/to/Card-forger show <commit>:native-service-policy.js > staging/native-service-policy.js
 npm test
 cd android
 CARDSTASHY_SIGNING=/secure/path/signing.properties ./gradlew :app:testDebugUnitTest :app:assembleRelease

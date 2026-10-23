@@ -1,3 +1,4 @@
+import {foregroundDialog} from './feedback-layer.js';
 import {esc} from './ui.js';
 import {finishChoices,resolveFinish,FINISH_MASKS} from './finish-effects.js';
 import {finishMaterialProfile,hasFinishPattern,verifiedTitleMask} from './finish-materials.js';
@@ -47,12 +48,20 @@ function ygoRarityRail(c,ctx,p){
  const {options,selected}=ygoRarityOptions(c,ctx);if(!options.length)return '';
  const chosen=options.find(o=>o.rarity===selected),quote=chosen&&quoteForContext('ygo',c,ctx);
  const foot=chosen?`${chosen.rarity} · ${quote?.printing?.code||''} ${quote?.printing?.name||''}${chosen.count>1?` · ${chosen.count} ${chosen.label} printings, pick the exact one in Printing & rarity`:''}`:`${options.length} ${options.length===1?'rarity':'rarities'} · tap one to see its shine`;
- return `<div class="finish-preview ygo-rarity-preview" role="group" aria-label="Rarity"><span class="small muted">Rarity</span><div class="finish-choice-rail ygo-rarity-chips" aria-label="Rarities this card was printed in">${options.map(o=>`<button type="button" class="chip ygo-rarity-chip${o.rarity===selected?' on':''}" data-act="ygoPickRarity" data-card-id="${esc(c.id)}" data-edition="${esc(o.key)}" aria-pressed="${o.rarity===selected}" aria-label="${esc(o.rarity)}, ${o.count} ${o.count===1?'printing':'printings'}"><span class="rarity-swatch rarity-swatch-${o.swatch}" aria-hidden="true"></span>${esc(o.label)}${o.count>1?`<small aria-hidden="true">${o.count}</small>`:''}</button>`).join('')}</div><p class="foot" role="status">${esc(foot.trim())}${chosen&&p.effect!=='plain'&&p.status!=='unknown'?' · '+esc(p.reason||'Simulated finish'):''}</p></div>`;
+ return `<div class="finish-preview ygo-rarity-preview" role="group" aria-label="Rarity"><span class="small muted">Rarity</span><span class="finish-choice-hint small muted" hidden aria-hidden="true">Scroll ↔</span><div class="finish-choice-rail ygo-rarity-chips" tabindex="0" aria-label="Rarities this card was printed in">${options.map(o=>`<button type="button" class="chip ygo-rarity-chip${o.rarity===selected?' on':''}" data-act="ygoPickRarity" data-card-id="${esc(c.id)}" data-edition="${esc(o.key)}" aria-pressed="${o.rarity===selected}" aria-label="${esc(o.rarity)}, ${o.count} ${o.count===1?'printing':'printings'}"><span class="rarity-swatch rarity-swatch-${o.swatch}" aria-hidden="true"></span>${esc(o.label)}${o.count>1?`<small aria-hidden="true">${o.count}</small>`:''}</button>`).join('')}</div><p class="foot" role="status">${esc(foot.trim())}${chosen&&p.effect!=='plain'&&p.status!=='unknown'?' · '+esc(p.reason||'Simulated finish'):''}</p></div>`;
+}
+// Swatches explain the material without turning price or rarity into availability.
+export function finishSwatch(game,choice){
+ if(choice.status==='unknown'||choice.effect==='unknown')return 'unknown';
+ if(choice.effect==='plain')return 'plain';
+ if(choice.key==='etched')return 'silver';
+ if(choice.key==='reverse-holofoil')return 'reverse';
+ return game==='ptcg'?'glitter':'rainbow';
 }
 export function finishPreview(game,c,ctx={}){
  const choices=finishChoices(game,c,ctx),p=resolveFinish(game,c,ctx);
  if(game==='ygo'){const rail=ygoRarityRail(c,ctx,p);if(rail)return rail;}
- return `<div class="finish-preview" role="group" aria-label="Card finish"><span class="small muted">Finish</span><span class="finish-choice-hint small muted" hidden aria-hidden="true">Scroll ↔</span><div class="finish-choice-rail" tabindex="0" aria-label="Card finishes, scroll horizontally">${game==='ygo'&&!choices.length?'<button type="button" class="chip" data-act="cardTab" data-tab="prices">Choose printing</button>':''}${choices.map(v=>`<button type="button" class="chip${v.key===p.key?' on':''}" ${game==='ygo'?'':`data-act="cardFinishPreview" data-game="${esc(game)}" data-card-id="${esc(c.id)}" data-finish="${esc(v.key)}"`} aria-pressed="${v.key===p.key}">${esc(v.label)}</button>`).join('')}</div><p class="foot" role="status">${esc(p.effect==='plain'?'Nonfoil · no simulated shine':p.status==='unknown'?(game==='ygo'&&!choices.length?'Choose the set code and rarity to preview its finish.':'Finish preview unavailable for this printing.'):(p.key&&p.label?p.label+' · ':'')+(p.reason||'Simulated finish'))}</p></div>`;
+ return `<div class="finish-preview" role="group" aria-label="Card finish"><span class="small muted">Finish</span><span class="finish-choice-hint small muted" hidden aria-hidden="true">Scroll ↔</span><div class="finish-choice-rail" tabindex="0" aria-label="Card finishes, scroll horizontally">${game==='ygo'&&!choices.length?'<button type="button" class="chip" data-act="cardTab" data-tab="prices">Choose printing</button>':''}${choices.map(v=>`<button type="button" class="chip finish-choice-chip${v.key===p.key?' on':''}" ${game==='ygo'?'':`data-act="cardFinishPreview" data-game="${esc(game)}" data-card-id="${esc(c.id)}" data-finish="${esc(v.key)}"`} aria-pressed="${v.key===p.key}"><span class="rarity-swatch rarity-swatch-${finishSwatch(game,v)}" aria-hidden="true"></span>${esc(v.label)}</button>`).join('')}</div><p class="foot" role="status">${esc(p.effect==='plain'?'Nonfoil · no simulated shine':p.status==='unknown'?(game==='ygo'&&!choices.length?'Choose the set code and rarity to preview its finish.':'Finish preview unavailable for this printing.'):(p.key&&p.label?p.label+' · ':'')+(p.reason||'Simulated finish'))}</p></div>`;
 }
 // Reveal a newly selected finish within its own rail, never by scrollIntoView
 // (which can move the card sheet or page). Repeated renders must respect swipes.
@@ -99,7 +108,7 @@ export function attachFinishPreview(root){
  const mounted=new Map(),watched=new Set(),choiceRails=new Set(),cleanups=[];
  const on=(el,type,fn,options)=>{el?.addEventListener?.(type,fn,options);cleanups.push(()=>el?.removeEventListener?.(type,fn,options));};
  const visible=el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom>0&&r.top<(globalThis.innerHeight||Infinity)&&r.right>0&&r.left<(globalThis.innerWidth||Infinity);};
- const foreground=el=>{const top=[...(globalThis.document?.querySelectorAll?.('dialog[open]')||[])].at(-1);return !top||top.contains(el);};
+ const foreground=el=>{const top=foregroundDialog();return !top||top.contains(el);};
  const allowed=el=>finishEffectsOn()&&!reduced()&&!globalThis.document?.hidden&&finishEligible(el)&&el.isConnected!==false&&foreground(el);
  const unmount=el=>{const m=mounted.get(el);if(m){ro?.unobserve(m.img);m.nameFoil?.dispose();m.rarityFoil?.dispose();m.overlay.remove();mounted.delete(el);}};
  const size=el=>{

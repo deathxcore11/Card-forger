@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "version": "3.93.1",
-  "commit": "87615c276ebf075c56db059a54f87d898fe1268a",
-  "tree": "722217bcec2c75b5224005aab30148ac7ad2e29d",
+  "version": "3.93.2",
+  "commit": "a87afd6a6494a224b3a0c3d9ed2aa6345905f640",
+  "tree": "e7a14af48984c8d69a6e2915e09d677f413cdda0",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
     {
       "path": ".assetsignore",
-      "bytes": 979,
-      "sha256": "224a7994e4d224d3098ae13612c94b0df8779abc2530b6ea84609135d2af6072"
+      "bytes": 1068,
+      "sha256": "faf31228d27d863485ea558abc98b036a5f9185acaba36af422706216d48c52b"
     },
     {
       "path": "account-scope.js",
@@ -98,8 +98,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 398528,
-      "sha256": "31905671d6f38d0e07e1422ac6f5743315ea1f91e2253af2a81833146600b608"
+      "bytes": 398655,
+      "sha256": "90649b6da79f4cb49a531ff7d8e14524195a4487b028c4437981b1f90367c1ce"
     },
     {
       "path": "artwork.js",
@@ -329,7 +329,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "869f2a85223afc656cc38c56e83913949aa00951389e24a0777b11629f8a93be"
+      "sha256": "e66482255387a8db40cd15d8563660d80aacbd5337fea4f866eb54db5c52e7d2"
     },
     {
       "path": "core.js",
@@ -1303,18 +1303,18 @@
     },
     {
       "path": "feedback-layer.js",
-      "bytes": 1648,
-      "sha256": "3e864b903b98f87d476cb5eb150eb9f44dc2cc33665460282c5bf51cd5c59e6d"
+      "bytes": 2211,
+      "sha256": "084ac243e3aa2d8d4680175d2e17a8a5e15f0c6a9a07b6599c4eede9bba28aab"
     },
     {
       "path": "feel.js",
-      "bytes": 20752,
-      "sha256": "c720d9d835a007e6e54f8ded00fe7bdce5c0eb4943c0dfb66e85499c52fba59a"
+      "bytes": 20710,
+      "sha256": "b2c9876d71ea4b31da74f99ce2fad037adfeac698821cdb898adf6307565112d"
     },
     {
       "path": "finish-effects.css",
-      "bytes": 18991,
-      "sha256": "6ae7ab7aadec1d7913dea694ccbb4789668af8bfbbf2372367cf1a6309ce1065"
+      "bytes": 19312,
+      "sha256": "d1ff9a1b4da5ac87ce58efd0702182bae09cc54404efd265024ac8fd35377d98"
     },
     {
       "path": "finish-effects.js",
@@ -1328,8 +1328,8 @@
     },
     {
       "path": "finish-preview.js",
-      "bytes": 18699,
-      "sha256": "9e0464bc80c658887231606a1f5f417cb55c45ab1b1db6ffe3ac3955e2a26454"
+      "bytes": 19298,
+      "sha256": "8c7039ec52e9d7509c5aff4e967a7c93e58fec5a77d0031dee987b6f7162d86b"
     },
     {
       "path": "foil-gl.js",
@@ -1533,8 +1533,8 @@
     },
     {
       "path": "meta.js",
-      "bytes": 14774,
-      "sha256": "9652565c9a5c0debdf630a6336059eedc41ed11fbfd7d722e74641549aa84b0f"
+      "bytes": 15776,
+      "sha256": "83cb7a76ed1f4a22fb5b2e695664001036d0a5d1e5e39732a3af675071cfcdd3"
     },
     {
       "path": "mobile-tilt.js",
@@ -1598,8 +1598,8 @@
     },
     {
       "path": "native-service-policy.js",
-      "bytes": 6238,
-      "sha256": "965dd1b76062b8684119a7377010531b7018ffcd7cd794dc4908399456dd5172"
+      "bytes": 6325,
+      "sha256": "357407d4ef4748421eaed1a01793df33515caf76c7d617eec759caac15eedf2d"
     },
     {
       "path": "pack-preview.js",
@@ -1608,8 +1608,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 8872,
-      "sha256": "7c419815df2122c6e3ec223a0f7239f8db6afd61876446b8e4c4e1008e099f5e"
+      "bytes": 8908,
+      "sha256": "f82c63c85910e2641a051e606457a72629e66d9ea43634caabb0aeed848faaac"
     },
     {
       "path": "pairing.js",
@@ -1768,8 +1768,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1010,
-      "sha256": "f2921df7a1ed57872745104d761462ff7522e7c1c91c9c5775691c5ebd28ea6e"
+      "bytes": 934,
+      "sha256": "7c14dca8288e823f9455af9c7a5d9e247ce84c9bd930bc5c32859512e472fe87"
     },
     {
       "path": "release-status.js",
@@ -2069,7 +2069,7 @@
     {
       "path": "sw.js",
       "bytes": 10374,
-      "sha256": "b3965314ac6c03bbfd7395797cce6e8bdf57f4dd741c8d136ea6281feee889c7"
+      "sha256": "65f6dd20623d55216241730d2c33d54ba5b0dfd209dc736bda0d624ce5a158b3"
     },
     {
       "path": "sync-merge.js",
@@ -2088,8 +2088,8 @@
     },
     {
       "path": "tcg.js",
-      "bytes": 362735,
-      "sha256": "b4809ec8d1956aa7198c5f53b6652b0ba7d00871d264d4d42fd35cfc64b7e216"
+      "bytes": 363760,
+      "sha256": "f50a4877f2aa61e3c63cd66ac03d4e317fc7d4740d678b6f6c1ee4383b8dc833"
     },
     {
       "path": "tcgbuild.js",
