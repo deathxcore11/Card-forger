@@ -1,3 +1,4 @@
+import { editionStories, expiredEditionStory } from './community-edition.js';
 import { curatedMetaDecks } from './meta-curation.js';
 import { metaState as readMetaState } from './meta.js';
 import { communityDeckArtwork, safeCommunityImage } from './community-art.js';
@@ -49,7 +50,7 @@ export function communitySlideUrl(game, slide) {
 function validItems(items, game, now) {
   const seen = new Set();
   return (Array.isArray(items) ? items : []).slice(0, 36).map(x => {
-    if (x?.game !== game || !['news', 'event'].includes(x.kind)) return null;
+    if (expiredEditionStory(x, now) || x?.game !== game || !['news', 'event'].includes(x.kind)) return null;
     const weekly = x.cadence === 'weekly', retention = weekly ? 14 * COMMUNITY_TTL : RETENTION;
     const source = newsSource(x.sourceId, game), url = safeNewsArticle(x.url, game, x.sourceId, x.kind), title = text(x.title), fetchedAt = stamp(x.fetchedAt), publishedAt = stamp(x.publishedAt), startsAt = stamp(x.startsAt), endsAt = stamp(x.endsAt);
     if (!url || !title || !fetchedAt || seen.has(x.sourceId === 'serebii' ? url + ':' + title : url) || now - Date.parse(fetchedAt) > retention || Date.parse(fetchedAt) > now + 60000) return null;
@@ -140,7 +141,7 @@ export function communitySlides(game, { metaState: M, metaKey, format = 'Standar
   if (!games.includes(game)) return [];
   metaKey ||= game === 'mtg' ? `mtg:${format}` : game;
   M ||= readMetaState(metaKey);
-  const info = COMMUNITY_LINKS[game], N = communityState(game), items = validItems(N.data?.items, game, now), news = items.filter(x => x.kind === 'news'), events = items.filter(x => x.kind === 'event').sort((a, b) => a.startsAt.localeCompare(b.startsAt)), decks = metaDeckSlides(game, M, metaKey, now), result = resultSlide(game, M, now);
+  const info = COMMUNITY_LINKS[game], N = communityState(game), items = validItems([...(N.data?.items || []), ...editionStories(game, now)], game, now), news = items.filter(x => x.kind === 'news'), events = items.filter(x => x.kind === 'event').sort((a, b) => a.startsAt.localeCompare(b.startsAt)), decks = metaDeckSlides(game, M, metaKey, now), result = resultSlide(game, M, now);
   const link = (category, title, summary, url = info[category]) => ({ id: `link:${game}:${category}`, game, kind: 'link', category, title, summary, url, source: category === 'decks' ? game === 'ptcg' ? 'Limitless' : game === 'ygo' ? 'YGOPRODeck' : format === 'EDH' ? 'EDHTop16' : 'Magic Online' : category === 'events' && game === 'ptcg' ? 'Pokémon' : info.source, publishedAt: '', fetchedAt: '', dateLabel: '', stale: false });
   const newsLink = link('news', `${info.name} news`, N.error || N.data?.status === 'unavailable' ? 'Automatic headlines unavailable. Open the news source.' : 'Open the news source. This is a source link, not a fetched story.');
   const eventsLink = link('events', `Find ${info.name} events`, 'Browse the official event listings for dates, locations and registration.');

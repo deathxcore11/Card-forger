@@ -25,3 +25,5 @@
 @media(min-width:760px) { .home-community .community-stage { grid-template-columns:repeat(3,minmax(0,1fr)); } .home-community .community-feature { min-height:340px; padding:84px 18px 18px; } .home-community .community-feature h3 { font-size:20px; } }
 @media(max-width:360px) { .home-community .community-stage { padding-inline:8px; gap:9px; } .home-community .community-feature { padding-inline:15px; min-height:260px; } }
 @media(prefers-reduced-motion:reduce) { .home-community .community-art-image { transition:none; } }
+
+.community-source-links{display:flex;flex-wrap:wrap;gap:.5rem 1.25rem;margin:.75rem 0;font-size:.875rem}.community-source-links a{color:var(--accent,#dec17e);padding:.35rem 0}

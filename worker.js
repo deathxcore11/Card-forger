@@ -183,15 +183,16 @@ const handlers = {
       } catch {}
       return;
     }
+    if (event?.cron === '17 6 * * *') {
+      try { const result=await scheduledWeeklyCuration(env, {loadMtg:format=>mtgMeta(env,format,30,null)}); if(['deadline','unavailable'].includes(result.status))console.warn('Shared weekly curation paused; unclaimed feeds remain due and existing snapshots remain available.'); }
+      catch { console.warn('Shared weekly curation could not complete; existing snapshots remain available.'); }
+    }
     for (const f of WARM_FORMATS) {
       try {
         await mtgMeta(env, f, 30, null, { force: true });
       } catch {}
     }
-    if (event?.cron === '17 6 * * *') {
-      try { const result=await scheduledWeeklyCuration(env, {loadMtg:format=>mtgMeta(env,format,30,null)}); if(['deadline','unavailable'].includes(result.status))console.warn('Shared weekly curation paused; unclaimed feeds remain due and existing snapshots remain available.'); }
-      catch { console.warn('Shared weekly curation could not complete; existing snapshots remain available.'); }
-    }
+
   },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);

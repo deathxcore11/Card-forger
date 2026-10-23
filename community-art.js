@@ -1,5 +1,6 @@
 // Source-bound artwork for Home. Deck art must belong to the exact list;
 // News may use a fixed, explicitly labelled game illustration, never random art.
+import { editionArtwork } from './community-edition.js';
 import { pokemonDeckCover } from './artwork.js';
 import { GAMES, GAME_ICON } from './games.js';
 import { esc } from './ui.js';
@@ -71,12 +72,13 @@ export function communityArtwork(game, slide = {}, { compact = false } = {}) {
   const verifiedStory = ['news','event'].includes(slide.kind) && slide.sourceId ? safeNewsArticle(slide.url, game, slide.sourceId, slide.kind) : slide.kind !== 'news' ? sourceUrl(slide.url, game) : '';
   const illustrated = !deckContext && !!verifiedStory && ['news', 'event', 'link'].includes(slide.kind), illustration = illustrated ? COMMUNITY_ILLUSTRATIONS[game] : null;
   if (!deckContext && !publisherImage && !illustration) return '';
-  const src = deckImage || publisherImage || illustration?.url || '', kind = deckImage ? 'card' : publisherImage ? 'publisher' : illustration ? 'illustrative' : 'theme';
+  const storyArt = editionArtwork(game, slide);
+  const src = deckImage || storyArt || publisherImage || illustration?.url || '', kind = deckImage ? 'card' : storyArt ? 'ai-illustration' : publisherImage ? 'publisher' : illustration ? 'illustrative' : 'theme';
   const fallback = compact ? 'Game theme' : deckContext ? 'Game theme · deck art unavailable' : 'Illustrative game theme';
-  const credit = deckImage ? (cleanName(slide.artwork.name) ? `Featured card: ${slide.artwork.name}` : 'Deck artwork') : publisherImage ? 'Source image' : illustration?.label || 'Game theme';
+  const credit = deckImage ? (cleanName(slide.artwork.name) ? `Featured card: ${slide.artwork.name}` : 'Deck artwork') : storyArt ? 'AI illustration · not official artwork' : publisherImage ? 'Source image' : illustration?.label || 'Game theme';
   const image = src ? `<img class="community-art-image" data-community-image src="${esc(src)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : '';
   const visual = (deckImage || kind === 'illustrative') && game === 'ptcg' ? `<span class="community-art-scan"><span class="community-art-window">${image}</span></span>` : image;
-  return `<span class="community-art${compact ? ' community-art-compact' : ''}" data-community-art data-art-game="${game}" data-art-kind="${kind}" data-art-state="${src ? 'pending' : 'missing'}"${illustration ? ` data-art-fallback="${esc(illustration.url)}" data-art-fallback-label="${esc(illustration.label)}"` : ''}${deckImage ? ` data-art-card="${esc(slide.artwork.cardId)}" data-art-deck="${esc(slide.deckKey)}"` : ''}${deckImage || publisherImage ? ` data-art-source="${esc(slide.url)}"` : ''} aria-hidden="true">${deckContext || illustrated ? `<span class="community-art-theme"><span class="community-art-orbit"></span><span class="community-art-emblem">${GAME_ICON[game]}</span><span class="community-art-lines"></span></span>` : ''}${visual}<span class="community-art-shade"></span><span class="community-art-caption community-art-fallback">${fallback}</span>${src ? `<span class="community-art-caption community-art-credit">${esc(credit)}</span>` : ''}</span>`;
+  return `<span class="community-art${compact ? ' community-art-compact' : ''}" data-community-art data-art-game="${game}" data-art-kind="${kind}" data-art-state="${src ? 'pending' : 'missing'}"${illustration ? ` data-art-fallback="${esc(illustration.url)}" data-art-fallback-label="${esc(illustration.label)}"` : ''}${deckImage ? ` data-art-card="${esc(slide.artwork.cardId)}" data-art-deck="${esc(slide.deckKey)}"` : ''}${deckImage || storyArt || publisherImage ? ` data-art-source="${esc(slide.url)}"` : ''} aria-hidden="true">${deckContext || illustrated ? `<span class="community-art-theme"><span class="community-art-orbit"></span><span class="community-art-emblem">${GAME_ICON[game]}</span><span class="community-art-lines"></span></span>` : ''}${visual}<span class="community-art-shade"></span><span class="community-art-caption community-art-fallback">${fallback}</span>${src ? `<span class="community-art-caption community-art-credit">${esc(credit)}</span>` : ''}</span>`;
 }
 
 // One request per exact image. Publisher failure gets one fixed illustration,

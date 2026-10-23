@@ -1,5 +1,6 @@
 // Public editorial curation only. No account, collection, chat or payment data.
 import { collectCommunity, retainCommunityItems, communityText } from './community-feed-route.js';
+import { editionStories } from './community-edition.js';
 import { NEWS_SOURCES } from './community-sources.js';
 import { metaCurationCandidates, applyMetaCuration } from './meta-curation.js';
 
@@ -12,6 +13,12 @@ const CRON_OFFSET = (6 * 60 + 17) * 60000;
 const nextWeek = now => Date.parse(curationWeek(now)) + WEEK_MS + CRON_OFFSET;
 const nextDailyCheck = now => { const today = Math.floor(now / 864e5) * 864e5 + CRON_OFFSET; return today > now ? today : today + 864e5; };
 export const curationPlan = () => [ ...['mtg','ptcg','ygo'].map(game => ({ kind: 'news', game, format: '' })), ...CURATION_FORMATS.map(format => ({ kind: 'meta', game: 'mtg', format })), ...['ptcg','ygo'].map(game => ({ kind: 'meta', game, format: game === 'ptcg' ? 'Standard' : 'TCG' })) ];
+const day = now => new Date(now).toISOString().slice(0,10);
+function sourceDue(spec, attempt, now) {
+  if (!attempt || attempt.week < curationWeek(now)) return true;
+  if (attempt.week > curationWeek(now) || spec.kind !== 'news') return false;
+  return (attempt.day || String(attempt.startedAt || attempt.completedAt || '').slice(0,10) || attempt.week) < day(now);
+}
 const specKey = ({ kind, game, format = '' }) => `${kind}:${game}:${format}`;
 const specFrom = url => curationPlan().find(row => row.kind === url.searchParams.get('kind') && row.game === url.searchParams.get('game') && row.format === (url.searchParams.get('format') || ''));
 const iso = now => new Date(now).toISOString();
@@ -40,7 +47,7 @@ export function deterministicNews(data, now = Date.now()) {
   const seen = new Set();
   const items = retainCommunityItems(data?.items, now).sort((a,b) => Number(b.important) - Number(a.important) || Number(!!NEWS_SOURCES[b.sourceId]?.official) - Number(!!NEWS_SOURCES[a.sourceId]?.official) || String(b.publishedAt || b.startsAt).localeCompare(String(a.publishedAt || a.startsAt))).filter(row => {
     const key = `${row.kind}:${titleKey(row)}`; if (seen.has(key)) return false; seen.add(key); return true;
-  }).map(row => ({ ...row, category: newsCategory(row), whyItMatters: newsReason(row), editorial: 'source-ranked' }));
+  }).map(row => ({ ...row, category: newsCategory(row), whyItMatters: safeText(row.evidence, 180) || newsReason(row), editorial: 'source-ranked' }));
   return { ...data, items };
 }
 function requestBody(spec, candidates, model) {
@@ -87,7 +94,7 @@ export class WeeklyCuration {
     const url = new URL(request.url), now = this.now();
     if (url.pathname === '/weekly/due' && request.method === 'GET') {
       const week = curationWeek(now), due = [];
-      for (const spec of curationPlan()) if (!(await this.storage.get(`attempt:${specKey(spec)}`))?.week || (await this.storage.get(`attempt:${specKey(spec)}`)).week !== week) due.push(spec);
+      for (const spec of curationPlan()) if (sourceDue(spec, await this.storage.get(`attempt:${specKey(spec)}`), now)) due.push(spec);
       return json({ week, due });
     }
     const spec = specFrom(url); if (!spec) return json({ error: 'Unsupported curation feed' }, 400);
@@ -100,10 +107,11 @@ export class WeeklyCuration {
   }
   async read(spec, now) {
     const saved = await this.storage.get(`feed:${specKey(spec)}`), attempt = await this.storage.get(`attempt:${specKey(spec)}`);
-    const base = saved || { game: spec.game, format: spec.format, items: [], selections: [], status: 'unavailable', fetchedAt: '', checkedAt: '', error: 'The first shared weekly refresh has not completed yet.' };
-    const stale = !saved || saved.week !== curationWeek(now) || attempt?.status === 'failed';
-    const items = spec.kind === 'news' ? retainCommunityItems(base.items, now, 14 * 864e5).map(row => ({ ...row, stale: stale || row.stale || row.kind === 'news' && now - Date.parse(row.publishedAt) > 7 * 864e5 })) : undefined;
-    return { ...base, ...(items ? { items } : {}), stale, cadence: 'weekly', nextCheckAt: iso(attempt?.week === curationWeek(now) ? nextWeek(now) : nextDailyCheck(now)), ...(stale && saved ? { error: 'Showing the last verified weekly snapshot; a fresh curation is unavailable.' } : {}) };
+    const seed = spec.kind === 'news' ? editionStories(spec.game, now) : [];
+    const base = saved || (seed.length ? { game:spec.game, items:seed, status:'ready', fetchedAt:seed[0].fetchedAt, checkedAt:seed[0].fetchedAt } : null) || { game: spec.game, format: spec.format, items: [], selections: [], status: 'unavailable', fetchedAt: '', checkedAt: '', error: 'The first shared weekly refresh has not completed yet.' };
+    const stale = saved ? saved.week !== curationWeek(now) || attempt?.status === 'failed' : !seed.length;
+    const items = spec.kind === 'news' ? retainCommunityItems([...(base.items || []), ...editionStories(spec.game, now)], now, 14 * 864e5).map(row => ({ ...row, stale: stale || row.stale || row.kind === 'news' && now - Date.parse(row.publishedAt) > 7 * 864e5 })) : undefined;
+    return { ...base, ...(items ? { items } : {}), stale, cadence: 'weekly', nextCheckAt: iso(spec.kind !== 'news' && attempt?.week === curationWeek(now) ? nextWeek(now) : nextDailyCheck(now)), ...(stale && saved ? { error: 'Showing the last verified weekly snapshot; a fresh curation is unavailable.' } : {}) };
   }
   async refresh(spec, source, now, {signal,deadline=now+120000}={}) {
     const alive=()=>{if(signal?.aborted||this.now()>=deadline)throw Error('Curation deadline reached');};
@@ -111,7 +119,7 @@ export class WeeklyCuration {
     const fetchSource=(url,init={})=>{alive();return this.fetchImpl(url,{...init,signal:AbortSignal.any([...(signal?[signal]:[]),...(init.signal?[init.signal]:[]),AbortSignal.timeout(Math.max(1,deadline-this.now()))])});};
     alive();
     const key = specKey(spec), week = curationWeek(now);
-    const claimed = await this.storage.transaction(async tx => { const previous = await tx.get(`attempt:${key}`); alive(); if (previous?.week >= week) return false; await tx.put(`attempt:${key}`, { week, status: 'started', startedAt: iso(now) }); return true; });
+    const claimed = await this.storage.transaction(async tx => { const previous = await tx.get(`attempt:${key}`); alive(); if (!sourceDue(spec, previous, now)) return null; await tx.put(`attempt:${key}`, { week, day:day(now), status: 'started', startedAt: iso(now) }); return { aiAllowed: previous?.week !== week }; });
     if (!claimed) return this.read(spec, now);
     try {
       const previous = await this.storage.get(`feed:${key}`);
@@ -121,7 +129,7 @@ export class WeeklyCuration {
       if (!candidates.length || spec.kind === 'news' && data.status === 'unavailable') throw Error('No verified source candidates');
       let aiStatus = 'source-ranked';
       const model = this.env.OPENAI_MODEL || 'gpt-4.1-mini', rate = modelRate(model);
-      if (this.env.OPENAI_API_KEY && rate) {
+      if (claimed.aiAllowed && this.env.OPENAI_API_KEY && rate) {
         const prepared = prepareCurationRequest(spec, candidates, model);
         if (prepared.rows.length) {
           const estimatedUsd = (prepared.inputTokenUpperBound * rate.input + CURATION_LIMITS.outputTokens * rate.output) / 1e6;
@@ -147,16 +155,16 @@ export class WeeklyCuration {
             } catch { aiStatus = 'provider-unavailable'; }
           } else aiStatus = 'budget-exhausted';
         }
-      } else aiStatus = this.env.OPENAI_API_KEY ? 'model-not-approved' : 'not-configured';
-      if (aiStatus === 'provider-unavailable' && previous) { await this.finishAttempt(key, week, { status: 'failed', completedAt: iso(now), aiStatus }); return this.read(spec, now); }
+      } else aiStatus = !claimed.aiAllowed ? 'source-only-daily' : this.env.OPENAI_API_KEY ? 'model-not-approved' : 'not-configured';
+      if (spec.kind !== 'news' && aiStatus === 'provider-unavailable' && previous) { await this.finishAttempt(key, week, { day:day(now), status: 'failed', completedAt: iso(now), aiStatus }); return this.read(spec, now); }
       // Source-valid deterministic refresh is useful even if AI is unavailable.
       // On total source failure the previous feed is left completely untouched.
       alive();
-      const result = { ...data, game: spec.game, format: spec.format, week, cadence: 'weekly', curationVersion: CURATION_VERSION, curatedAt: iso(now), nextCheckAt: iso(nextWeek(now)), aiStatus };
+      const result = { ...data, game: spec.game, format: spec.format, week, cadence: 'weekly', curationVersion: CURATION_VERSION, curatedAt: iso(now), nextCheckAt: iso(spec.kind === 'news' ? nextDailyCheck(now) : nextWeek(now)), aiStatus };
       if (spec.kind === 'news') result.items = result.items.map(({ evidence, ...row }) => ({ ...row, cadence: 'weekly' }));
-      await this.storage.transaction(async tx => { if ((await tx.get(`attempt:${key}`))?.week !== week) return; await tx.put(`feed:${key}`, result); await tx.put(`attempt:${key}`, { week, status: 'completed', completedAt: iso(now), aiStatus }); });
+      await this.storage.transaction(async tx => { const attempt = await tx.get(`attempt:${key}`); if (attempt?.week !== week || attempt.day !== day(now)) return; await tx.put(`feed:${key}`, result); await tx.put(`attempt:${key}`, { week, day:day(now), status: 'completed', completedAt: iso(now), aiStatus }); });
       return this.read(spec, now);
-    } catch { await this.finishAttempt(key, week, { status: 'failed', completedAt: iso(now) }); return this.read(spec, now); }
+    } catch { await this.finishAttempt(key, week, { day:day(now), status: 'failed', completedAt: iso(now) }); return this.read(spec, now); }
   }
-  async finishAttempt(key, week, fields) { await this.storage.transaction(async tx => { if ((await tx.get(`attempt:${key}`))?.week === week) await tx.put(`attempt:${key}`, { week, ...fields }); }); }
+  async finishAttempt(key, week, fields) { await this.storage.transaction(async tx => { const attempt = await tx.get(`attempt:${key}`); if (attempt?.week === week && attempt.day === fields.day) await tx.put(`attempt:${key}`, { week, ...fields }); }); }
 }
