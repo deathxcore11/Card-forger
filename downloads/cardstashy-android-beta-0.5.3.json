@@ -1,7 +1,7 @@
 {
   "package": "com.cardstashy.app",
-  "versionName": "0.5.2-beta",
-  "versionCode": 11,
+  "versionName": "0.5.3-beta",
+  "versionCode": 12,
   "appSource": "CardStashy 3.93.2 (commit a87afd6a6494a224b3a0c3d9ed2aa6345905f640)",
   "minSdk": 24,
   "targetSdk": 36,
