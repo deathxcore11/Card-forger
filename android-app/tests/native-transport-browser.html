@@ -1,0 +1,21 @@
+<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; img-src 'none'; connect-src 'none'"><body><pre id="result">RUNNING</pre><script type="module">
+import { installNativeTransport } from '../runtime/native-transport.js';
+const failures=[];let count=0;
+const equal=(a,b,label)=>{count++;if(a!==b)failures.push(label+': '+a+' !== '+b);};
+const opened=[],errors=[];
+const realm={location:{origin:'https://android-integration.cardstashy.invalid'},fetch:async()=>new Response(),open:window.open,document,Element,HTMLImageElement,HTMLSourceElement,MutationObserver};
+const original={fetch:realm.fetch,open:realm.open,inner:Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML'),src:Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src')};
+const restore=installNativeTransport({enabled:true,realm,openExternal:async value=>opened.push(value),onError:message=>errors.push(message)});
+const host=document.createElement('div');document.body.append(host);
+const img=new Image();img.src='img/ygo/42.jpg';equal(img.getAttribute('src'),'https://cardstashy.com/img/ygo/42.jpg','src setter');
+img.setAttribute('src','/img/ygo/a/42.jpg');equal(img.getAttribute('src'),'https://cardstashy.com/img/ygo/a/42.jpg','attribute setter');
+host.innerHTML='<img id="inner" src="img/ygo/s/42.jpg" data-keep="&amp;">';equal(host.querySelector('img').getAttribute('src'),'https://cardstashy.com/img/ygo/s/42.jpg','innerHTML');equal(host.querySelector('img').getAttribute('data-keep'),'&','serialized attributes');
+host.insertAdjacentHTML('beforeend','<img id="insert" src="img/pack/ptcg.jpg">');equal(host.querySelector('#insert').getAttribute('src'),'https://cardstashy.com/img/pack/ptcg.jpg','insertAdjacentHTML');
+host.querySelector('#insert').outerHTML='<img id="outer" src="img/back/mtg.jpg">';equal(host.querySelector('#outer').getAttribute('src'),'https://cardstashy.com/img/back/mtg.jpg','outerHTML');
+img.srcset='img/ygo/42.jpg 1x, img/ygo/s/42.jpg 2x';equal(img.getAttribute('srcset'),'https://cardstashy.com/img/ygo/42.jpg 1x, https://cardstashy.com/img/ygo/s/42.jpg 2x','srcset');
+equal(realm.open(''),null,'blank popup returns null for shared Lens/export fallback');
+realm.open('https://example.com/card');await Promise.resolve();equal(opened[0]?.url,'https://example.com/card','system browser open');
+host.innerHTML='<a href="https://example.com/buy">Buy</a>';const event=new MouseEvent('click',{bubbles:true,cancelable:true});host.querySelector('a').dispatchEvent(event);await Promise.resolve();equal(event.defaultPrevented,true,'external navigation prevented');equal(opened[1]?.url,'https://example.com/buy','anchor system browser');
+restore();equal(realm.fetch,original.fetch,'restore fetch');equal(realm.open,original.open,'restore open');equal(Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML').set,original.inner.set,'restore HTML descriptor');equal(Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src').set,original.src.set,'restore image descriptor');
+document.querySelector('#result').textContent=JSON.stringify({passed:failures.length===0,assertions:count,failures});
+</script>

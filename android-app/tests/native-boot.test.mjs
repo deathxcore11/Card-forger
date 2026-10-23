@@ -1,0 +1,53 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+
+const root = path.resolve(import.meta.dirname, '..');
+// The Android bridge (native-bridge.js) only carries messages. Without @capacitor/core the
+// entry module finds no Capacitor.registerPlugin and the app never leaves its static page.
+test('the packaged page loads @capacitor/core before the native entry module', async () => {
+  const html = await readFile(path.join(root, 'www/index.html'), 'utf8');
+  const version = JSON.parse(await readFile(path.join(root, 'node_modules/@capacitor/core/package.json'), 'utf8')).version;
+  const core = html.indexOf(`<script src="vendor/capacitor-core-${version}.js"></script>`), entry = html.indexOf('<script type="module" src="native-entry.js"></script>');
+  assert.ok(core > 0 && entry > core, 'core script precedes native-entry.js');
+  const bundled = await readFile(path.join(root, `www/vendor/capacitor-core-${version}.js`), 'utf8');
+  assert.match(bundled, /registerPlugin=/);
+  assert.equal(bundled, await readFile(path.join(root, `android/app/src/main/assets/public/vendor/capacitor-core-${version}.js`), 'utf8'));
+});
+test('a start-up failure is shown instead of the static loading page', async () => {
+  const entry = await readFile(path.join(root, 'runtime/native-entry.js'), 'utf8');
+  assert.match(entry, /addEventListener\('error', startupFailed\); addEventListener\('unhandledrejection', startupFailed\);/);
+  assert.ok(entry.indexOf("addEventListener('error'") < entry.indexOf("registerPlugin"), 'listeners are installed before the first native lookup');
+});
+// Card art from /img/ loads from https://cardstashy.com in the app, not the page's own origin.
+test('foil image matching uses the URL the app actually loads', async () => {
+  const preview = await readFile(path.join(root, 'www/finish-preview.js'), 'utf8');
+  assert.equal((preview.match(/globalThis\.CARDSTASHY_IMAGE_URL\?\./g) || []).length, 2, 'both sides of the foil image match use the app image URL');
+  assert.match(await readFile(path.join(root, 'runtime/native-entry.js'), 'utf8'), /'CARDSTASHY_IMAGE_URL'/);
+});
+test('card art is served at the app origin by the native art cache, with the website routes only', async () => {
+  const transport = await readFile(path.join(root, 'runtime/native-transport.js'), 'utf8');
+  assert.match(transport, /const appImageURL = route => NATIVE_ORIGIN \+ route\.url\.slice\(SERVICE_ORIGIN\.length\);/);
+  assert.doesNotMatch(transport, /crossorigin|cors=app/, 'no CORS workaround: same-origin art is readable');
+  const client = await readFile(path.join(root, 'android/app/src/main/java/dev/cardstashy/integration/CardStashyWebViewClient.java'), 'utf8');
+  assert.match(client, /"GET"\.equals\(request\.getMethod\(\)\)/); assert.match(client, /setInstanceFollowRedirects\(false\)/);
+  const cache = await readFile(path.join(root, 'android/app/src/main/java/dev/cardstashy/integration/ImageCache.java'), 'utf8');
+  const policy = await readFile(path.join(root, 'runtime/native-service-policy.js'), 'utf8');
+  // Every website image route in the JS policy has its Java twin (same five patterns).
+  // The Pokémon canonical-path check also starts with /img/ but is not a route.
+  assert.equal((policy.replace(/const pokemon = pathname\.match\([^;]*;/, '').match(/\^\\\/img\\\//g) || []).length, 5); assert.equal((cache.match(/Pattern\.compile\("\^\/img\//g) || []).length, 5);
+  assert.match(await readFile(path.join(root, 'android/app/src/main/java/dev/cardstashy/integration/MainActivity.java'), 'utf8'), /bridge\.setWebViewClient\(new CardStashyWebViewClient\(bridge\)\)/);
+});
+// Capacitor reports the status and navigation bars as --safe-area-inset-*; the phone layouts
+// reset the top bar's padding-block and size pop-ups against the whole screen.
+test('the top bar and pop-ups stay clear of the status bar', async () => {
+  const css = await readFile(path.join(root, 'www/native-integration.css'), 'utf8'), site = await readFile(path.join(root, 'www/style.css'), 'utf8');
+  assert.match(site, /\.topbar\{grid-template-columns:auto minmax\(0,1fr\) auto;gap:8px;padding-block:8px\}/, 'the phone rule this guards against is still in the website');
+  assert.match(css, /@media \(max-width:1199px\) \{ html \.topbar \{ padding-top: calc\(max\(env\(safe-area-inset-top\), var\(--safe-area-inset-top, 0px\)\) \+ 8px\); \} \}/);
+  for (const name of ['settings', 'profile-art', 'pack', 'community', 'tabletop', 'ai-review', 'ask']) {
+    assert.match(css, new RegExp(`html \\.${name}-dialog:modal \\{ (max-height|height):`), `${name} dialog is capped to the safe area`);
+    assert.ok((await readFile(path.join(root, 'shared-source', name === 'pack' ? 'sets-ui.css' : 'style.css'), 'utf8')).includes(`.${name}-dialog`), `${name} dialog still exists`);
+  }
+  assert.ok(site.indexOf('var(--safe-area-inset-top, 0px)') > 0, 'website env() insets also read the injected values');
+});

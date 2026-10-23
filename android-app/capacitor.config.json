@@ -1,0 +1,14 @@
+{
+  "appId": "com.cardstashy.app",
+  "appName": "CardStashy Beta",
+  "webDir": "www",
+  "server": {
+    "hostname": "android-integration.cardstashy.invalid",
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  }
+}
