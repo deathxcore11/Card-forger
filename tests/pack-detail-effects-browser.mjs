@@ -58,8 +58,11 @@ try{
   assert(await page.evaluate(()=>[...document.querySelectorAll('dialog[open]')].at(-1).classList.contains('pack-dialog')),'Regression keeps pack later in DOM order');
   assert(await page.evaluate(async()=>{const {motionCard}=await import('/feel.js');return motionCard()===document.querySelector('#sheetBody .cd-img');}));
   await page.waitForFunction(()=>!document.querySelector('.pack-face .finish-overlay'));
+  // A real mouse hovering the details owns tilt until it leaves. Move it away
+  // before testing phone sensor input; pointer input is checked separately below.
+  await page.mouse.move(0,0);
   await page.evaluate(()=>window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{beta:30,gamma:0})));
-  await page.waitForTimeout(50);
+  await page.waitForFunction(()=>document.querySelector('#sheetBody .cd-img')?.classList.contains('gyro'));
   await page.evaluate(()=>window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{beta:42,gamma:12})));
   await page.waitForFunction(()=>{const c=document.querySelector('#sheetBody .cd-img');return c.classList.contains('gyro')&&parseFloat(c.style.getPropertyValue('--tx'))>0;});
   await detail.hover();await page.mouse.move((await detail.boundingBox()).x+20,(await detail.boundingBox()).y+40);
