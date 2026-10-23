@@ -6,7 +6,7 @@ The pack and the standard card sheet are separate native dialogs, but both entry
 
 ## Pokémon tournament data
 
-The Android CSP intentionally does not admit direct Limitless connections. Pokémon Meta previously fetched that host directly. It now uses three read-only same-origin service routes for tournaments, standings and pairings. These are included in both copies of the native transport policy. The Worker constructs fixed Limitless URLs, accepts known formats/IDs only, caps response size and time, rejects redirects/malformed JSON, omits credentials and caches public arrays for six hours.
+The Android CSP intentionally does not admit direct Limitless connections. Pokémon Meta previously fetched that host directly. It now uses three read-only same-origin service routes for tournaments, standings and pairings. These are included in both copies of the native transport policy. The Worker constructs fixed Limitless URLs, accepts known formats/IDs only, caps response size and time, uses Workers-supported manual redirect mode and rejects every redirect/non-OK response and malformed JSON, omits credentials and caches public arrays for six hours.
 
 The source's games metadata was checked at https://play.limitlesstcg.com/api/games and its official API documentation at https://docs.limitlesstcg.com/developer/games and https://docs.limitlesstcg.com/developer/tournaments. Supported app formats are Standard, Expanded and Gym Leader Challenge. Unlimited has no corresponding format in that source, so the UI keeps an explicit coverage message and never substitutes Standard results.
 

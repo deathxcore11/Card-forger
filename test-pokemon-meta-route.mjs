@@ -5,7 +5,7 @@ import {planServiceRequest,NATIVE_ORIGIN} from './native-service-policy.js';
 const now=Date.now(),date=new Date(now-864e5).toISOString(),calls=[],jobs=[],data=new Map();
 const cache={match:async k=>data.get(k.url)?.clone(),put:async(k,r)=>{data.set(k.url,r.clone());}};
 const ctx={waitUntil:p=>jobs.push(p)};
-const fetchImpl=async(url,init)=>{calls.push(url);assert.equal(init.credentials,'omit');assert.equal(init.redirect,'error');assert.deepEqual([...new Headers(init.headers).keys()],['accept']);return Response.json([{id:'fixture-event',game:'PTCG',format:'STANDARD',players:24,date}]);};
+const fetchImpl=async(url,init)=>{calls.push(url);assert.equal(init.credentials,'omit');assert.equal(init.redirect,'manual');assert.deepEqual([...new Headers(init.headers).keys()],['accept']);return Response.json([{id:'fixture-event',game:'PTCG',format:'STANDARD',players:24,date}]);};
 const route=(path,opts={})=>{const url=new URL('https://cardstashy.com/api/meta/ptcg/'+path);return pokemonMetaRoute(new Request(url,opts.request),url,ctx,{fetchImpl:opts.fetchImpl||fetchImpl,cache:opts.cache===false?null:cache});};
 assert.equal((await route('tournaments?format=standard')).status,200);await Promise.all(jobs);await route('tournaments?format=standard');assert.equal(calls.length,1,'public source responses are shared/cached');
 await route('tournaments?format=expanded');await route('tournaments?format=glc');assert(calls.some(x=>x.includes('format=EXPANDED')));assert(calls.some(x=>x.includes('format=GLC')));
@@ -13,7 +13,7 @@ await route('standings?id=fixture-event');await route('pairings?id=fixture-event
 const before=calls.length;
 for(const path of ['tournaments?format=unlimited','tournaments?format=__proto__','tournaments?url=https://attacker.invalid','tournaments?format=standard&format=glc','standings?id=../secret','standings?id=a%2Fb','standings?id=a&token=secret','pairings?id='])assert.equal((await route(path)).status,400,path);
 assert.equal(calls.length,before);assert.equal((await route('tournaments',{request:{method:'POST'}})).status,405);
-for(const bad of [()=>new Response('bad JSON'),()=>Response.json({not:'array'}),()=>new Response('x'.repeat(4*1024*1024+1)),()=>new Response('',{status:429}),()=>{throw Error('outage');}])assert.equal((await route('standings?id=failure',{cache:false,fetchImpl:async()=>bad()})).status,502);
+for(const bad of [()=>new Response('bad JSON'),()=>Response.json({not:'array'}),()=>new Response('x'.repeat(4*1024*1024+1)),()=>new Response('',{status:302,headers:{Location:'https://attacker.invalid/'}}),()=>new Response('',{status:429}),()=>{throw Error('outage');}])assert.equal((await route('standings?id=failure',{cache:false,fetchImpl:async()=>bad()})).status,502);
 const plan=planServiceRequest(NATIVE_ORIGIN+'/api/meta/ptcg/tournaments?format=expanded');assert.equal(plan.request.url,'https://cardstashy.com/api/meta/ptcg/tournaments?format=expanded');assert.equal(plan.request.credentials,'omit');assert.throws(()=>planServiceRequest('/api/meta/ptcg/tournaments',{headers:{Authorization:'Bearer fixture'}}),/Authorization/);
 const oldFetch=globalThis.fetch,oldStore=globalThis.localStorage;const memory=new Map();globalThis.localStorage={getItem:k=>memory.get(k),setItem:(k,v)=>memory.set(k,v)};
 const clientCalls=[];let failExpanded=false;

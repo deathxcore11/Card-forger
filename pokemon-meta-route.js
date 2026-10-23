@@ -18,7 +18,8 @@ export async function pokemonMetaRoute(request,url,ctx={}, {fetchImpl=globalThis
  const key=new Request('https://cardstashy.cache/ptcg-meta/'+encodeURIComponent(path));
  const hit=await cache?.match(key);if(hit)return hit;
  try{
-  const upstream=await fetchImpl(ORIGIN+path,{redirect:'error',credentials:'omit',headers:{Accept:'application/json'},signal:AbortSignal.timeout(12000)});
+  // Workers support manual redirects; a 3xx is rejected by the non-OK gate below.
+  const upstream=await fetchImpl(ORIGIN+path,{redirect:'manual',credentials:'omit',headers:{Accept:'application/json'},signal:AbortSignal.timeout(12000)});
   if(!upstream.ok)throw Error('Limitless tournament service is unavailable ('+upstream.status+'). Try again shortly.');
   if(Number(upstream.headers.get('Content-Length'))>maxBytes)throw Error('Tournament response exceeds the size limit.');
   const reader=upstream.body?.getReader();if(!reader)throw Error('Empty tournament response.');
