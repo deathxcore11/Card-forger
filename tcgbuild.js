@@ -99,7 +99,7 @@ export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], li
       const want = Math.min(limit(c, f), isSeed(c) ? (picks.length > 6 ? Math.max(1, owned(c)) : 3) : order(c) < 2 ? 3 : 2, cap - count(main));
       add(main, c, pick.take(c, want, target - count(main) - want), isSeed(c) ? "Your build-around card" : c.category === "Monster" ? "Archetype monster" : "Archetype " + c.category.toLowerCase());
     }
-  for (const c of staples.filter((c) => ok(c) && !main.has(c.id))) {
+  for (const c of staples.filter((c) => ok(c) && !c.extra && !main.has(c.id))) {
     if (count(main) >= target) break;
     const want = Math.min(limit(c, f), 3, target - count(main));
     add(main, c, pick.take(c, want, target - count(main) - want), "Staple");
@@ -109,6 +109,11 @@ export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], li
   for (const c of ex) {
     if (count(extra) >= f.extra) break;
     add(extra, c, pick.take(c, Math.min(limit(c, f), isSeed(c) ? 2 : 1, f.extra - count(extra))), isSeed(c) ? "Your build-around card" : "Archetype Extra Deck");
+  }
+  // Extra Deck staples (S:P Little Knight, Accesscode Talker...) fill what the archetype leaves of the Extra Deck, never the Main Deck.
+  for (const c of staples.filter((c) => ok(c) && c.extra && !extra.has(c.id))) {
+    if (count(extra) >= f.extra) break;
+    add(extra, c, pick.take(c, Math.min(limit(c, f), 1, f.extra - count(extra))), "Staple");
   }
   const total = count(main),
     warnings = [];

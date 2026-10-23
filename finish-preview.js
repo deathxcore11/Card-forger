@@ -135,13 +135,14 @@ export function attachFinishPreview(root){
   host.append(overlay);mounted.set(el,{img,host,overlay,model:el.dataset.finishModel,src:img.currentSrc});ro?.observe(img);size(el);
   // Yu-Gi-Oh!, Magic and Pokémon cards get the WebGL foil; the CSS layers stay beneath as the fallback.
   if(p.game==='ygo')mounted.get(el).rarityFoil=mountYgoRarityFoil(overlay,img,p.effect,{surface:el.dataset.finishSurface,layout:p.layout,stars:p.stars});
-  else if(p.game==='mtg'&&p.treatment)mounted.get(el).rarityFoil=mountMtgFoil(overlay,img,p.treatment,{surface:el.dataset.finishSurface,frame:p.frame});
+  else if(p.game==='mtg'&&p.treatment)mounted.get(el).rarityFoil=mountMtgFoil(overlay,img,p.treatment,{surface:el.dataset.finishSurface,frame:p.frame,holostamp:!!p.holostamp});
   else if(p.game==='ptcg'&&p.treatment)mounted.get(el).rarityFoil=mountPtcgFoil(overlay,img,p.treatment,{surface:el.dataset.finishSurface,clip:FINISH_MASKS[layers[0]?.mask]||'',window:!!profile});
   const nameLayer=p.game==='ygo'&&(p.layers||[]).find(l=>l.mask==='ygo-name'),nameMask=nameLayer?ygoNameMask(img):null;
   if(nameMask){
    // Letters from this exact image replace the title-band placeholder; the art foil layers are unchanged.
    for(const n of overlay.querySelectorAll('.finish-name-region')){Object.assign(n.style,nameMaskStyle(nameMask.alphaUrl));n.classList.add('finish-title-glyphs');}
-   if(detail){const m=mounted.get(el);m.nameFoil=mountYgoNameFoil(overlay,img,nameLayer.material,nameMask);}
+   // The big card faces (detail, zoom, a pulled pack card) also draw the lettering's own WebGL foil.
+   if(detail||el.dataset.finishSurface==='pack'){const m=mounted.get(el);m.nameFoil=mountYgoNameFoil(overlay,img,nameLayer.material,nameMask);}
   }else if(p.game==='ygo'&&overlay.querySelector('.finish-name-region')){
    const src=img.currentSrc;
    void verifiedTitleMask(p.printingId,src).then(mask=>{if(!mask||mounted.get(el)?.overlay!==overlay||img.currentSrc!==src)return;for(const n of overlay.querySelectorAll('.finish-name-region')){n.style.clipPath='none';n.style.maskImage=`url("${mask}")`;n.classList.add('finish-title-glyphs');}});

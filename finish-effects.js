@@ -3,8 +3,8 @@ import {ANNIVERSARY_MAPS,ANNIVERSARY_STAMPS} from './pokemon-anniversary-masks.j
 import {quoteForContext,validSetContext} from './pricing-presentation.js';
 import {pokemonVariantChoices,pokemonVariantProductConflict} from './pokemon-variant-options.js';
 import {reviewedCosmosPreview} from './pokemon-promo-evidence.js';
-import {YGO_FOIL_RECIPES,FOIL_PATTERN,ygoRarityEffect} from './ygo-foil-recipes.js';
-import {mtgFoilEffect,mtgFrameKey,MTG_FOIL_RECIPES} from './mtg-foil-recipes.js';
+import {YGO_FOIL_RECIPES,FOIL_PATTERN,ygoRarityEffect,ygoSetEffect,YGO_MODERN_FROM} from './ygo-foil-recipes.js';
+import {mtgFoilEffect,mtgFrameKey,mtgHoloStamp,MTG_FOIL_RECIPES} from './mtg-foil-recipes.js';
 import {ptcgFoilEffect,PTCG_FOIL_RECIPES} from './ptcg-foil-recipes.js';
 export const FINISH_SOURCES = Object.freeze({
  pokemon:'https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic',
@@ -211,7 +211,7 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   if(face && !c.card_faces?.[face]?.image_uris)return unknown(key,label);
   // Full-size cards draw the printing's own treatment (old-border, surge, galaxy, oil slick...) with
   // WebGL (mtg-foil.js), chosen from its Scryfall data; the CSS layer stays as the light fallback.
-  if(physicalFinish==='foil'){const treatment=mtgFoilEffect(c,'foil');return {...preset(key,treatment==='mtg-traditional'?label:MTG_FOIL_RECIPES[treatment].label,'mtg-foil',[layer('card','rainbow')],FINISH_SOURCES.scryfall),treatment,frame:mtgFrameKey(c)};}
+  if(physicalFinish==='foil'){const treatment=mtgFoilEffect(c,'foil');return {...preset(key,treatment==='mtg-traditional'?label:MTG_FOIL_RECIPES[treatment].label,'mtg-foil',[layer('card','rainbow')],FINISH_SOURCES.scryfall),treatment,frame:mtgFrameKey(c),...(mtgHoloStamp(c)?{holostamp:true}:{})};}
   if(physicalFinish==='etched'&&c.id==='3305c70f-188a-4c01-b605-d583ded84e18'&&c.set==='nec'&&String(c.collector_number)==='77'&&c.layout==='normal'&&face===0&&['legendary','inverted','etched'].every(x=>c.frame_effects?.includes(x))&&!c.full_art&&!c.borderless)return {...preset(key,label,'mtg-nec77-etched',[layer('mtg-nec77-metal','metal')],'https://magic.wizards.com/en/news/feature/kamigawa-neon-dynasty-product-overview-2022-01-27'),reason:'Simulated foil-etched finish · approximate metallic coverage'};
   if(physicalFinish==='etched'&&['cmr','clb'].includes(c.set)&&layout==='normal'&&!c.borderless&&!c.full_art&&!c.frame_effects?.some(x=>['showcase','extendedart'].includes(x)))return {...preset(key,label,'mtg-etched',[layer('mtg-frame','metal')],FINISH_SOURCES.etched),treatment:'mtg-etched',frame:'2015'};
   // Every other etched printing (Secret Lair, Mystical Archive, showcase, inverted, retro frames) draws the
@@ -281,17 +281,17 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
  if(/rush/i.test(frameText))return unknown(key,label);
  const layout=/pendulum/i.test(frameText)?'pendulum':/skill/i.test(frameText)?'skill':'standard',artMask=layout==='standard'?'ygo-art':'ygo-art-'+layout;
  // Level/Rank stars and the Attribute icon are foil on some rarities: holo on Super and Ultra Rares printed
- // from July 2017, rainbow on Secret Rares, gold on Gold Rares, embossed on Ultimate (and Starlight's
+ // from Breakers of Shadow (Feb 2016), rainbow on modern Secret Rares, gold on Gold Rares, embossed on Ultimate (and Starlight's
  // whole-card glitter). Older Super/Ultra printings, or an unknown print date, keep plain stars.
- const printed=String(c.setContext?.date||ctx.releaseDate||''),modern=printed>='2017-07';
- const starFoil=/^(ultimaterare|starlightrare)$/.test(rarity)?1:/^(superrare|ultrarare|ultrararepharaohsrare)$/.test(rarity)?(modern?2:0):/secret/.test(rarity)&&!/gold|platinum|quartercentury/.test(rarity)?3:/gold/.test(rarity)?4:0;
+ const printed=String(c.setContext?.date||ctx.releaseDate||''),modern=printed>=YGO_MODERN_FROM;
+ const starFoil=/^(ultimaterare|starlightrare)$/.test(rarity)?1:/^(superrare|ultrarare|ultrararepharaohsrare)$/.test(rarity)?(modern?2:0):/secret/.test(rarity)&&!/gold|platinum|quartercentury/.test(rarity)?(modern?3:0):/gold/.test(rarity)?4:0;
  const withLayout=p0=>{const p=starFoil?{...p0,stars:starFoil}:p0;return layout==='standard'?p:{...p,layout};};
  const name=material=>layer('ygo-name',material),art=material=>layer(artMask,material);
  const specs={rare:['ygo-rare',[name('silver')]],superrare:['ygo-super',[art('holo')]],ultrarare:['ygo-ultra',[art('holo'),name('gold')]],secretrare:['ygo-secret',[art('secret'),name('rainbow')]],prismaticsecretrare:['ygo-prismatic',[art('prismatic'),name('rainbow')]],starlightrare:['ygo-starlight',[layer('ygo-broad','starlight')]]};
  if(specs[rarity])return withLayout(preset(key,label,...specs[rarity],FINISH_SOURCES.ygo));
  // Every other foil rarity comes from the recipe table. Its CSS layers are the light version shown
  // on small tiles; full-size cards render the recipe itself with WebGL (ygo-rarity-foil.js).
- const effect=ygoRarityEffect(rarity),recipe=YGO_FOIL_RECIPES[effect];if(!recipe)return unknown(key,label);
+ const effect=ygoSetEffect(ygoRarityEffect(rarity),{code:c.setContext?.code,date:printed}),recipe=YGO_FOIL_RECIPES[effect];if(!recipe)return unknown(key,label);
  const P=FOIL_PATTERN,material=([p,t])=>t===1?'gold':{[P.diag]:'secret',[P.qcr]:'secret',[P.prism]:'prismatic',[P.glitter]:'starlight',[P.ghost]:'silver',[P.emboss]:'gold'}[p]||'holo';
  const layers=[...(recipe.whole?[layer('ygo-broad',recipe.whole[0]===P.glitter?'starlight':'rainbow')]:[]),...(recipe.art?[art(material(recipe.art))]:[]),...(recipe.frame&&!recipe.whole?[layer('ygo-broad',material(recipe.frame))]:[]),...(recipe.name?[name(recipe.name)]:[])];
  return withLayout(preset(key,label,effect,layers,FINISH_SOURCES.ygo));
