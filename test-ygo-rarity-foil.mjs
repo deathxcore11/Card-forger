@@ -68,4 +68,13 @@ assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,{printingKey:'GLD1-EN001::G
 assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,null,own(['LOB-005','Ultra Rare'],['LOB-005','Ultra Rare'])),{priceEdition:'LOB-005::Ultra Rare'});
 assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,null,own(['LOB-005','Ultra Rare'],['SDY-006','Common'])),{},'Mixed owned printings never pick one');
 assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,null,own()),{});assert.deepEqual(ygoDeckFinishContext('ptcg',deckCard,null,own(['LOB-005','Ultra Rare'])),{});
+// Set-aware generations (English TCG foil index): Ultimate Rares by era, Duel Terminal parallels by series,
+// Pharaoh's Rare hieroglyphs, whole-card Platinum Secret Rares; the modern layout starts with Breakers of Shadow.
+{const R=await import('./ygo-foil-recipes.js');
+ assert.equal(R.ygoSetEffect('ygo-ultimate',{code:'SOD',date:'2004-03-01'}),'ygo-ultimate-classic');assert.equal(R.ygoSetEffect('ygo-ultimate',{code:'BOSH',date:'2016-02-04'}),'ygo-ultimate');
+ assert.equal(R.ygoSetEffect('ygo-ultimate',{code:'OP16',date:'2021-04-01'}),'ygo-ultimate-prismatic');assert.equal(R.ygoSetEffect('ygo-ultimate',{code:'RA03'}),'ygo-ultimate-prismatic');
+ assert.equal(R.ygoSetEffect('ygo-ultra-parallel',{code:'DT02'}),'ygo-ultra-parallel-dots');assert.equal(R.ygoSetEffect('ygo-super-parallel',{code:'DT07'}),'ygo-super-parallel-shatter');
+ assert.equal(R.ygoSetEffect('ygo-secret',{code:'LOB'}),'ygo-secret');assert.equal(R.ygoRarityEffect('ultrararepharaohsrare'),'ygo-pharaoh');
+ for(const k of ['ygo-ultimate-classic','ygo-ultimate-prismatic','ygo-pharaoh','ygo-ultra-parallel-dots','ygo-super-parallel-shatter'])assert(R.YGO_FOIL_RECIPES[k],k);
+ assert.equal(R.YGO_FOIL_RECIPES['ygo-platinum-secret'].whole[0],R.FOIL_PATTERN.diag,'Platinum Secret covers the whole card');assert.equal(R.YGO_MODERN_FROM,'2016-02-04');}
 console.log('PASS: every Yu-Gi-Oh! foil rarity in the catalogue resolves to a recipe; every gallery size; cropped subjects stay solid while backgrounds and glows pass foil; rules box only shared by whole-card recipes; Pendulum/Skill/Token layouts mapped.');

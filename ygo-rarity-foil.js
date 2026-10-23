@@ -35,7 +35,7 @@ vec3 voro(vec2 q){vec2 n=floor(q),f=fract(q);float d1=8.,d2=8.;vec2 id=n;
  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(float(x),float(y)),h=hash2(n+o),r=o+h-f;float d=dot(r,r);if(d<d1){d2=d1;d1=d;id=n+o;}else if(d<d2)d2=d;}
  return vec3(id,sqrt(d2)-sqrt(d1));}
 // One pattern primitive -> foil radiance. Patterns: 1 lines 2 diagonal 3 prism 4 glitter 7 stroke
-// 8 mosaic 9 shatter 10 stars 11 parallel 12 quarter century. Tints: 0 rainbow 1 gold 2 silver 3 platinum.
+// 8 mosaic 9 shatter 10 stars 11 parallel 12 quarter century 13 hieroglyph 14 dot matrix. Tints: 0 rainbow 1 gold 2 silver 3 platinum.
 vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 H,float spot,float energy,vec2 stroke){
  vec2 px=uv*u_px,q=vec2(uv.x,uv.y*u_aspect);vec2 g=vec2(1.,0.);float d=1400.,lines=0.,glint=0.,mirror=.5,ex=40.,seam=1.;
  if(pat<1.5){d=1350.;lines=.5+.5*sin(px.x*2.0944);mirror=.7;ex=14.;}
@@ -47,6 +47,12 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 H,float spot,float ene
  else if(pat<9.5){vec3 w=voro(q*vec2(7.,4.));vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1200.+j.y*800.;glint=(1.-smoothstep(0.,.035,w.z))*pow(max(dot(normalize(vec3((j-.5)*.8,1.)),H),0.),20.)*1.5;mirror=.35;}
  else if(pat<10.5){vec2 c=floor(q*26.),f=fract(q*26.)-.5;float star=step(length(f),.18+.12*cos(atan(f.y,f.x)*5.+hash(c)*6.28));vec2 j=hash2(c);g=star>.5?vec2(cos(j.x*PI),sin(j.x*PI)):vec2(1.,0.);d=star>.5?1100.+j.y*700.:1600.;lines=star;mirror=.3;}
  else if(pat<11.5){g=vec2(0.,1.);d=1500.;lines=.5+.5*sin(px.y*2.0944);mirror=.6;ex=18.;}
+ else if(pat>12.5&&pat<13.5){vec2 c=floor(q*vec2(9.,9.)),f=fract(q*vec2(9.,9.))-.5;float k=mod(c.x+c.y,2.),glyph;  // Pharaoh's Rare: hieroglyphs that only show at one tilt
+  if(k<.5){float loop=abs(length((f-vec2(0.,.17))*vec2(1.3,1.))-.13)-.035,bar=max(abs(f.x)-.03,abs(f.y+.12)-.2),arm=max(abs(f.x)-.2,abs(f.y-.0)-.03);glyph=1.-smoothstep(0.,.03,min(loop,min(bar,arm)));}  // ankh
+  else{vec2 e=f*vec2(1.,1.9);float lid=abs(length(e)-.26)-.03,pupil=length(f)-.07,tear=max(abs(f.x+.04)-.03,abs(f.y+.17)-.1);glyph=1.-smoothstep(0.,.03,min(lid,min(pupil,tear)));}  // Eye of Wdjat
+  float show=exp(-pow((u_tilt.x-.35)/.22,2.))*exp(-pow((u_tilt.y+.1)/.5,2.));g=vec2(.7071,.7071);d=1300.;lines=glyph*show;mirror=.5;glint=glyph*show*pow(max(H.z,0.),20.)*1.2;}
+ else if(pat>13.5){vec2 c=floor(q*64.),f=fract(q*64.)-.5;float dm=1.-smoothstep(.26,.32,max(abs(f.x),abs(f.y)));vec2 j=hash2(c);  // Duel Terminal: square dot matrix
+  g=normalize(vec2(1.,(j.x-.5)*.3));d=mix(1500.,1200.+j.y*500.,dm);lines=dm;mirror=.35;}
  else{vec2 r=vec2(uv.x+uv.y*u_aspect,uv.x-uv.y*u_aspect);vec2 j=hash2(floor(r*vec2(130.,30.)));float a=PI*.25+(j.x-.5)*.3;g=vec2(cos(a),-sin(a));d=1150.+j.y*600.;vec3 w=voro(q*110.);glint=pow(max(dot(normalize(vec3((hash2(w.xy)-.5)*.5,1.)),H),0.),300.)*1.6;mirror=.3;}
  vec3 dif=grating(L,V,g,d)*seam;float spec=pow(max(H.z,0.),ex);
  vec3 metal=tint<.5?vec3(1.):tint<1.5?vec3(1.,.74,.32):tint<2.5?vec3(.86,.9,.96):vec3(.92,.94,1.);
