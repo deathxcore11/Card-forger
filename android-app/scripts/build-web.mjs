@@ -32,7 +32,9 @@ const extras = ['assets/cards/miscp-001.webp', 'assets/finishes/stamp-first-movi
   'vendor/tesseract.min.js', 'vendor/worker.min.js', 'vendor/TESSERACT-LICENSE.txt', 'vendor/SUPABASE-LICENSE.txt',
   'scanidx/catalog-manifest.json', 'scanidx/TCGDEX-LICENSE.txt', 'rulebooks/manifest.json'];
 for (const game of ['mtg', 'ptcg', 'ygo']) extras.push(`scanidx/${game}.bin`, `scanidx/${game}-ids.txt`, `scanidx/${game}-catalog-v1.json.gz`, `scanidx/${game}-signals-v1.json.gz`, `rulebooks/${game}-rules-v1.json.gz`);
-for (const name of ['collection', 'power', 'decks', 'ask', 'find']) for (const ext of ['mp4', 'webm', 'jpg']) extras.push(`tour/${name}.${ext}`);
+// The tour lists WebM first and Android's WebView plays it, so the MP4 copies (for Safari) stay off the APK:
+// they would only add ~1.9 MB and push the download past Cloudflare's 25 MiB per-file limit.
+for (const name of ['collection', 'power', 'decks', 'ask', 'find']) for (const ext of ['webm', 'jpg']) extras.push(`tour/${name}.${ext}`);
 // Real Magic booster sheets load from /data/mtg-boosters/<set>.json; the app ships them so packs open offline.
 for (const file of await readdir(path.join(source, 'data/mtg-boosters')).catch(() => [])) if (/^[a-z0-9]{2,8}\.json$|^index\.json$/.test(file)) extras.push(`data/mtg-boosters/${file}`);
 const ignored = (await readFile(path.join(source, '.assetsignore'), 'utf8')).split('\n').map(x => x.trim()).filter(x => x && !x.startsWith('#'));

@@ -436,19 +436,14 @@
     "tour-scenes.js",
     "tour.js",
     "tour/ask.jpg",
-    "tour/ask.mp4",
     "tour/ask.webm",
     "tour/collection.jpg",
-    "tour/collection.mp4",
     "tour/collection.webm",
     "tour/decks.jpg",
-    "tour/decks.mp4",
     "tour/decks.webm",
     "tour/find.jpg",
-    "tour/find.mp4",
     "tour/find.webm",
     "tour/power.jpg",
-    "tour/power.mp4",
     "tour/power.webm",
     "trade.js",
     "ui.js",
@@ -2635,11 +2630,6 @@
       "sha256": "0e9892a9b59fcc02fed6c8b61c88efcdc92a4e906634c08ec57313d29650ffcc"
     },
     {
-      "path": "tour/ask.mp4",
-      "bytes": 269699,
-      "sha256": "5bd34cd3bce6d7f471d8a7364d8acab7aef808baed23758c4b5f32f0de3f6660"
-    },
-    {
       "path": "tour/ask.webm",
       "bytes": 294744,
       "sha256": "4880484e4f51495364cd87e5f9313929f62d3a63d3fdc7f24288d357d90b27de"
@@ -2648,11 +2638,6 @@
       "path": "tour/collection.jpg",
       "bytes": 71421,
       "sha256": "62d926f853ac21d8726763463a827c31a46267ba9b75ff6cff44cd6968036db6"
-    },
-    {
-      "path": "tour/collection.mp4",
-      "bytes": 642770,
-      "sha256": "411934c9979cbc8190c6bc6a30f1f28585dd887a2dff0ced5a856d607f5b6d80"
     },
     {
       "path": "tour/collection.webm",
@@ -2665,11 +2650,6 @@
       "sha256": "716b6627722e34b923771b5f54b29e463e2748eabe9a6d3012afb7c7cf3a3015"
     },
     {
-      "path": "tour/decks.mp4",
-      "bytes": 528799,
-      "sha256": "ed404e4e08b1e3e348032d0e545736eb2339a5c83be85944aeb7bcb42c1af342"
-    },
-    {
       "path": "tour/decks.webm",
       "bytes": 454138,
       "sha256": "b549f97ddbea2496be5b278ef48fcb68b31221ced7be4afd0dc929ceb4071bce"
@@ -2680,11 +2660,6 @@
       "sha256": "8df56461920c5d1fc780e55691e7eba9c30d4327ff85ddb0c1dbeb2f35f2edf1"
     },
     {
-      "path": "tour/find.mp4",
-      "bytes": 479608,
-      "sha256": "43bf703f45d5f98899a4e46aa514b2c8b9e9fedbee39173e19424dd524341250"
-    },
-    {
       "path": "tour/find.webm",
       "bytes": 508834,
       "sha256": "95e4169c7012ab67b01590eadf7210a2ac49e2799e5d3884043469451ef7d116"
@@ -2693,11 +2668,6 @@
       "path": "tour/power.jpg",
       "bytes": 73866,
       "sha256": "68508bb7dca394b16fb7f05852647eec77732f7ca6cad094d3706ebac04bc651"
-    },
-    {
-      "path": "tour/power.mp4",
-      "bytes": 153896,
-      "sha256": "e9dae0c09fc424405094a0a593678a8cba6b433844d8dfe0b94e022760714388"
     },
     {
       "path": "tour/power.webm",
