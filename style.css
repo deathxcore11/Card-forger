@@ -5064,6 +5064,10 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .deck-seed-art{display:block;width:min(64vw,200px);max-height:285px;object-fit:contain;border-radius:12px;filter:drop-shadow(0 8px 16px #0004)}
 .deck-seed-picker summary b{font-size:1.15rem;text-align:center}.deck-seed-picker summary small{color:var(--muted)}
 .deck-seed-empty{padding:32px 12px;color:var(--muted)}
+/* Compact setup on phones: the build-around art stays the centrepiece without pushing the form off screen. */
+@media(max-width:600px){.deck-seed-art{width:min(42vw,168px);max-height:235px}.deck-seed-picker{margin:6px 0}.deck-seed-picker summary{gap:4px}.deck-flow .field{margin:6px 0}}
+.deck-flow .field-title small{font-weight:400;margin-left:4px}
+.deck-format-lock{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}.deck-format-lock>span{color:var(--muted)}.deck-format-lock>b{flex:1}
 .deck-setup-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px;margin-top:12px}.deck-setup-fields>.field:last-child{grid-column:1/-1}
 .deck-result-head{display:flex;gap:18px;align-items:center;margin:12px 0 20px}.deck-result-head img{width:105px;max-height:150px;object-fit:contain;border-radius:9px}.deck-result-head h2{font-size:1.25rem;margin:3px 0;overflow-wrap:anywhere}
 .deck-result-price{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;padding:12px 0;border-block:1px solid var(--line)}.deck-result-price strong{font-size:1.5rem}.deck-result-price span{font-size:.875rem;color:var(--muted)}.deck-result-price .warn-text{color:var(--gold)}

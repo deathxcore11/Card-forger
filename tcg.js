@@ -1,4 +1,5 @@
 import {setAtmosphere,packButton} from './set-experience.js';
+import {normalizeSeeds} from './deck-seeds.js';
 import {priceOriginBadge,priceOriginNote} from './price-origin.js';
 import {browseSets,setBrowserControls,setBrowserRows,setBrowserDetail} from './set-browser.js';
 import {POKEMON_VARIANT_SCHEMA,pokemonVariantChoices,pokemonVariantProductConflict,samePokemonVariant} from './pokemon-variant-options.js';
@@ -3417,7 +3418,7 @@ export function registerTcg(c) {
         preferred = card => B.preferOwned ? ownedOf(G,card,m) : 0,
         owned = (card) => B.budgetBasis === "total" ? 0 : ownedOf(G, card, m),
         priceOf = (card) => G === "ygo" ? ygoPurchaseReference(card, B.ygoPurchaseSelections?.[card?.id]).value : price(card),
-        seeds = (B.seeds || [B.seed]).map((id) => cardOf(G, id)).filter(Boolean);
+        seeds = (B.seeds?.length ? B.seeds : [B.seed]).map((id) => cardOf(G, id)).filter(Boolean);
       status(B.metaSnapshot ? "Checking the selected tournament snapshot…" : "Checking what tournament decks play right now…");
       const meta = B.metaSnapshot?.game === G ? B.metaSnapshot.data : await metaFor(G),budgets=tcgBudgets(B);
       let results = [], upPool = [];
@@ -3601,7 +3602,7 @@ export function registerTcg(c) {
   // writes sheet state, saves a deck, or opens another setup screen.
   c.prepareDeck = async (request, options={}) => {
     const G=request.game, seed=remember(request.seedCard);
-    const B={game:G, seed:seed.id, seeds:(request.seedCards||[seed]).map(card=>remember(card).id),
+    const B={game:G, seed:seed.id, seeds:normalizeSeeds(seed,request.seedCards).map(card=>remember(card).id),
       format:request.format, easy:request.easy, preferOwned:request.preferOwned, budgetBasis:request.budgetBasis, constructionBudgets:request.constructionBudgets, metaKey:request.metaKey||"", metaSnapshot:request.metaSnapshot,
       ygoPurchaseSelections:request.ygoPurchaseSelections||{}, preserveSeedPrintings:true, results:{}, busy:false};
     await runTBuild(B,{...options,detached:true});

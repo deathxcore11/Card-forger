@@ -6395,7 +6395,9 @@ boot().catch((e) => {
 C.tradeOption=t=>{const ctx=S.ui.sheetCtx;if(!['card','tcard'].includes(ctx?.type))return;const f=t.dataset.field;if(!['mode','tolerance','credit','valuation','targetEntry'].includes(f))return;ctx.tradeOptions ||= {};ctx.tradeOptions[f]=['mode','valuation','targetEntry'].includes(f)?t.value:Number(t.value);refreshSheet();};
 
 // All new-deck entry points share the same compact setup. Existing saved-deck optimization stays separate.
-A.homeRandomDeck=A.randomDeckOptions=A.randomDeck=()=>{deckExperience.open({game:T.game()});return A.flowRandom();};
+A.homeRandomDeck=A.randomDeckOptions=()=>{deckExperience.open({game:T.game()});return A.flowRandom();};
+// Random Commander is a Magic Commander deck around a random commander-eligible card, whatever format was last used.
+A.randomDeck=()=>{deckExperience.open({game:'mtg',format:'Commander',commanderLock:true});return A.flowRandom();};
 
 A.checkRelease=async()=>{await checkRelease();settingsPopup.refresh();};
 document.addEventListener('toggle',e=>{if(e.target.matches?.('details[data-release-item]')&&e.target.open){acknowledgeRelease(e.target.dataset.releaseItem);e.target.querySelectorAll('.release-dot').forEach(n=>n.remove());}},true);
