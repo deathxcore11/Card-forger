@@ -1,6 +1,7 @@
 import {syncPokemonVariantAliases} from './pokemon-variant-options.js';
 import {referenceQuote} from './price-reference.js';
 import {pickGroup,pickProduct} from './pokemon-art.js';
+import {pokemonFinishAllowed} from './pokemon-corrections.js';
 // Exact product/finish fallback; listing estimates are explicitly distinguished.
 export function applyProductPrices(card,body){
  if(body?.cardId!==card.id)return false;
@@ -10,14 +11,14 @@ export function applyProductPrices(card,body){
  const known = new Set(card.variants.map(v=>String(v.productId || "")).filter(Boolean));
  for(const q of body.quotes || []) {
   const subtype=String(q.subTypeName || "");
-  if(!known.has(String(q.productId)) || !/^(?:1st Edition|Unlimited) (?:Holofoil|Normal)$/.test(subtype) || !referenceQuote(q))continue;
+  if(!known.has(String(q.productId)) || !/^(?:1st Edition|Unlimited) (?:Holofoil|Normal)$/.test(subtype) || !referenceQuote(q)||!pokemonFinishAllowed(card,/Holofoil$/.test(subtype)?'holofoil':'normal'))continue;
   const key="product:"+q.productId+":"+subtype.toLowerCase().replace(/ /g,"-");
   if(!card.variants.some(v=>v.key===key)){card.variants.push({key,label:subtype,productId:q.productId,usd:referenceQuote(q).value,priceKind:referenceQuote(q).kind,market:q.marketPrice,low:q.lowPrice,mid:q.midPrice,productFallback:true});changed=true;}
  }
  // A product the Worker found by set, number and name: every finish of this card is that product.
  if(body.matchedProduct){
   card.variants ||= [];
-  for(const q of body.quotes || []){const key={normal:'normal',holofoil:'holofoil','reverse holofoil':'reverse-holofoil'}[String(q.subTypeName).toLowerCase()];if(key&&!card.variants.some(v=>v.key===key))card.variants.push({key,label:{normal:'Normal',holofoil:'Holofoil','reverse-holofoil':'Reverse Holo'}[key],usd:null});}
+  for(const q of body.quotes || []){const key={normal:'normal',holofoil:'holofoil','reverse holofoil':'reverse-holofoil'}[String(q.subTypeName).toLowerCase()];if(key&&pokemonFinishAllowed(card,key)&&!card.variants.some(v=>v.key===key))card.variants.push({key,label:{normal:'Normal',holofoil:'Holofoil','reverse-holofoil':'Reverse Holo'}[key],usd:null});}
   for(const v of card.variants)if(!v.productId&&["normal","holofoil","reverse-holofoil"].includes(v.key))v.productId=body.matchedProduct;
  }
  for(const v of card.variants || []){

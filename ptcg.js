@@ -1,5 +1,5 @@
 import { parseCollectorQuery } from "./collector-search.js";
-import {applyPokemonCorrections} from './pokemon-corrections.js';
+import {applyPokemonCorrections,pokemonFinishAllowed} from './pokemon-corrections.js';
 import {POKEMON_VARIANT_SCHEMA,pokemonDetailedRecords,pokemonPhysicalFinish,pokemonSourceIdentity,pokemonSourceLiteral,syncPokemonVariantAliases} from './pokemon-variant-options.js';
 import {pokemonPromoEvidence,pokemonPromoAliasMatches,pokemonPromoRootProduct} from './pokemon-promo-evidence.js';
 import {referenceQuote} from './price-reference.js';
@@ -57,6 +57,7 @@ export function pokemonVariants(c) {
     out.set(key, { key, label:record.providerIdConflict?label+" · source identity unconfirmed":label, finish, foil, sourceLiteral:JSON.stringify(d),sourceLiterals:[JSON.stringify(d)],sourceCanonicalLiteral:pokemonSourceLiteral(d),sourceIdentity:pokemonSourceIdentity(d),sourceRecordIndexes:[record.sourceIndex],legacyKey:record.legacyKey,bindingStatus:"source-record", ...(exactPatternQuote && q === exactPatternQuote ? {pricePrinting:"Holofoil"} : {}), size:d.size??null, language:d.language??null,region:d.region??null,edition:d.edition??null,artIdentity:d.artIdentity??null,subtype:d.subtype||"", stamps:[...(d.stamp||[])], usd:record.providerIdConflict?null:referenceQuote(q)?.value??null, priceKind:referenceQuote(q)?.kind, low:n(q.lowPrice), mid:n(q.midPrice), market:n(q.marketPrice), productId:q.productId || d.thirdParty?.tcgplayer, cmProduct:d.thirdParty?.cardmarket, sourceUpdatedAt:d.pricing?.tcgplayer?.updated||null, detailed:true, image: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image)) : "", imageLarge: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image,"high")) : "" });
   }
   for (const v of legacy) {
+    if(!pokemonFinishAllowed(c,pokemonPhysicalFinish(v)))continue;
     const have = out.get(v.key);
     if (!have) {
       if(v.key==='holofoil'&&pokemonPromoRootProduct(c.id)&&String(v.productId)!==String(pokemonPromoRootProduct(c.id))){out.set(v.key,{key:v.key,label:'Version identity unconfirmed',usd:null});continue;}
@@ -93,6 +94,7 @@ export function applyFallbackPrices(c, hit) {
     if (usd == null) continue;
     const key = PTCG_API_KEYS[k] || k,
       variant = c.variants?.find((x) => x.key === key);
+    if(!pokemonFinishAllowed(c,pokemonPhysicalFinish({key})))continue;
     if (variant && variant.usd == null) {
       Object.assign(variant,{usd,market:n(v.market),mid:n(v.mid),low:n(v.low),priceKind:ref.kind});
       variant.fallback = true;updatedKeys.push(variant.key);
@@ -248,6 +250,7 @@ export function normalizePtcg(c) {
     name: c.name,
     category: c.category || "Pokemon",
     ...(c.corrections?{corrections:c.corrections}:{}),...(c.correctionConflicts?{correctionConflicts:c.correctionConflicts}:{}),
+    ...(c.finishAvailability?{finishAvailability:c.finishAvailability}:{}),
     typeLine: [c.category === "Pokemon" ? "Pokémon" : c.category, c.stage?.replace(/^Stage(\d)/, "Stage $1"), c.trainerType, c.energyType && c.energyType + " Energy", c.types?.join("/")].filter(Boolean).join(" · "),
     text,
     stats,

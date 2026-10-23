@@ -27,6 +27,27 @@ export const POKEMON_CORRECTIONS = Object.freeze([{
  rationale:'TCGplayer prices product 42425 only as 1st Edition Holofoil, but the provider bound it to the Unlimited holo record, so no condition or market quote could ever match. Saved keys are variantId-based and unchanged; a copy saved with this product on the Unlimited version reports a product mismatch instead of borrowing a price.',
  reviewStatus:'owner-approved 2026-10-20',author:'Claude',reviewer:'owner',supersedes:null,
 }]);
+export const SHINY_VAULT_FINISH_CORRECTION=Object.freeze({
+ correctionId:'HIDDEN-FATES-SHINY-VAULT-GENERATED-FINISH',
+ source:'https://assets.pokemon.com/assets/cms2/pdf/trading-card-game/checklist/sm115_web_cardlist_en.pdf',
+ scope:'English Hidden Fates Shiny Vault SV1–SV94',
+ rationale:'The official checklist identifies foil Shiny Vault printings; the generated normal placeholder is not evidence of a nonfoil edition.'
+});
+// Restrict only a reviewed correction, never infer availability from a price.
+export const pokemonFinishAllowed=(card,finish)=>!card?.finishAvailability||card.finishAvailability.finishes.includes(finish);
+function correctShinyVaultFinish(card){
+ const match=/^sma-SV([1-9]\d?)$/.exec(card?.id||'');
+ if(!match||Number(match[1])>94||card.set?.id!=='sma'||String(card.localId)!=='SV'+match[1])return card;
+ const rows=card.variants_detailed||[],flags=card.variants||{},correction=SHINY_VAULT_FINISH_CORRECTION;
+ if(!flags.normal||flags.holo||flags.reverse||flags.firstEdition||flags.wPromo)return card;
+ // Only replace the provider's empty, generated placeholder. Real product,
+ // edition, art or price descriptors require a new review, not an overwrite.
+ if(rows.length!==1||rows[0].type!=='normal'||rows[0].size!=='standard'||rows[0].variantId!=='generated'||Object.keys(rows[0]).some(k=>!['type','size','variantId'].includes(k)))
+  return {...card,correctionConflicts:[...(card.correctionConflicts||[]),correction.correctionId]};
+ return {...card,variants:{...flags,normal:false,holo:true},variants_detailed:[{type:'holo',size:'standard',variantId:'generated'}],
+  corrections:[...(card.corrections||[]),correction.correctionId],
+  finishAvailability:{finishes:['holofoil'],...correction,sourceVariants:{...flags},sourceDetails:rows.map(d=>({...d}))}};
+}
 export function applyPokemonCorrections(card) {
  let result=card;
  for(const correction of POKEMON_CORRECTIONS){
@@ -57,5 +78,5 @@ export function applyPokemonCorrections(card) {
   result={...result,attacks:result.attacks.map((a,i)=>i===1?{...a,name:correction.replacement,sourceName:a.name,printedNameProvenance:correction.correctionId}:a),
    corrections:[...(result.corrections||[]),correction.correctionId]};
  }
- return result;
+ return correctShinyVaultFinish(result);
 }

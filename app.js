@@ -544,43 +544,61 @@ async function loadSetIndex(force = false) {
 
 // Every printing in a set, straight from Scryfall, so new sets appear as soon as Scryfall has them.
 const setCache = new Map();
-function loadSet(code,{join=false}={}){
+function loadSet(code,{join=false,resume=false}={}){
  const st=S.ui.set;if(join&&st.code===code&&st.busy&&st.loadPromise)return st.loadPromise;
- const job=loadSetCards(code);st.loadPromise=job;return job.finally(()=>{if(st.loadPromise===job)st.loadPromise=null;});
+ const job=loadSetCards(code,{resume});st.loadPromise=job;return job.finally(()=>{if(st.loadPromise===job)st.loadPromise=null;});
 }
-async function loadSetCards(code) {
+async function loadSetCards(code,{resume=false}={}) {
   const st = S.ui.set, generation = (st.generation || 0) + 1, screen=navigationStamp();
   st.generation = generation;
   const current = () => S.ui.set === st && st.code === code && st.generation === generation && navigationCurrent(screen);
   if (setCache.has(code)) {
-    Object.assign(st, setCache.get(code), { loaded: true, busy: false });
+    Object.assign(st, setCache.get(code), { loaded: true, busy: false, error: "", pagination: null });
     return render();
   }
   st.busy = true;
   st.error = "";
   st.complete = false;
-  st.cards = [];
+  // Keep successful pages while retrying the failed request. A cursor belongs
+  // to one exact set and is advanced only after a whole page is validated.
+  const continuing=resume&&st.pagination?.code===code&&st.pagination.path;
+  if(!continuing){st.cards=[];st.total=0;st.info=null;st.loaded=false;st.pagination=null;}
   try {
-    const info = await api("/sets/" + encodeURIComponent(code));
-    if(!current())return;
-    st.info = info;
-    if(T.game() === "mtg" && S.ui.view === "set")render();
-    let path = "/cards/search?" + new URLSearchParams({ q: "e:" + code, unique: "prints", order: "set", dir: "asc", include_extras: "true", include_variations: "true" });
-    const cards = new Map();
-    for (let page = 0; path && page < 30 && current(); page++) {
-      const d = await api(path);
+    if(!st.info){
+      const info = await api("/sets/" + encodeURIComponent(code));
       if(!current())return;
-      st.total = d.total_cards || st.total;
-      for(const c of d.data || [])if(c.id && c.set === code)cards.set(c.id,slim(c));
+      st.info = info;
+    }
+    if(T.game() === "mtg" && S.ui.view === "set")render();
+    const cursor=continuing?st.pagination:{code,path:"/cards/search?" + new URLSearchParams({ q: "e:" + code, unique: "prints", order: "set", dir: "asc", include_extras: "true", include_variations: "true" }),seen:[]};
+    st.pagination=cursor;
+    const cards = new Map(st.cards.map(c=>[c.id,c]));
+    const incomplete=()=>Error("The provider list is incomplete. Try again to finish loading this set.");
+    while(cursor.path&&current()) {
+      if(cursor.seen.length>=30){st.pagination=null;throw incomplete();}
+      const path=cursor.path,d = await api(path);
+      if(!current())return;
+      if(!Array.isArray(d.data)||typeof d.has_more!=="boolean")throw incomplete();
+      let next=null;
+      if(d.has_more){
+        // Never turn a missing, foreign or repeating next_page into a complete
+        // catalogue (or silently request a different provider endpoint).
+        let url;try{url=new URL(d.next_page);}catch{throw incomplete();}
+        if(url.origin!=="https://api.scryfall.com"||url.pathname!=="/cards/search"||url.username||url.password||url.hash)throw incomplete();
+        next=url.pathname+url.search;
+        if(next===path||cursor.seen.includes(next))throw incomplete();
+      }
+      if(Number.isInteger(d.total_cards)&&d.total_cards>=0)st.total=d.total_cards;
+      for(const c of d.data)if(c.id && c.set === code)cards.set(c.id,slim(c));
       st.cards = [...cards.values()];
-      path = d.has_more && d.next_page ? new URL(d.next_page).pathname + new URL(d.next_page).search : null;
+      cursor.seen.push(path);cursor.path=next;
       if(T.game() === "mtg" && S.ui.view === "set")render();
     }
     if (current()) {
+      if(st.total!==st.cards.length){st.pagination=null;throw incomplete();}
       st.loaded = true;
-      st.complete = !path;
-      if(st.complete)setCache.set(code, { info: st.info, cards: st.cards, total: st.total, complete: true });
-      else st.error = "The provider list is incomplete. Refresh to try again.";
+      st.complete = true;st.pagination=null;
+      setCache.set(code, { info: st.info, cards: st.cards, total: st.total, complete: true });
       ensureTcgPrices(st.cards);
     }
   } catch (e) {
@@ -3209,7 +3227,7 @@ A.setsReload = () => {
 };
 A.setReload = () => {
   setCache.delete(S.ui.set.code);
-  Object.assign(S.ui.set, { info: null, cards: [], loaded: false, busy: false, complete: false, error: "", generation: (S.ui.set.generation || 0) + 1 });
+  loadSet(S.ui.set.code,{resume:true});
   render();
 };
 I.setSearch = (t) => {

@@ -21,7 +21,7 @@ assert.equal(PTCG_FOIL_RECIPES['ptcg-ex-holo'].pat,PTCG_PATTERN.cosmos,'EX to HG
  assert.equal(ptcgFoilEffect({finish:'reverse-holofoil',era:'pk-sv',set:'sv08.5',foil:'pokeball'}),'ptcg-prismatic-pokeball');assert.equal(ptcgFoilEffect({finish:'reverse-holofoil',era:'pk-sv',set:'sv08.5',foil:'masterball'}),'ptcg-prismatic-masterball');
  assert.equal(H('bw7',{rarity:'ACE SPEC Rare'}),'ptcg-ace-spec');assert.equal(H('swsh10',{rarity:'Radiant Rare',fullArt:true}),'ptcg-radiant');assert.equal(H('swsh4',{rarity:'Amazing Rare'}),'ptcg-rainbow-glitter');
  assert.equal(H('sm7',{rarity:'Rare Prism Star'}),'ptcg-prism');assert.equal(H('xy8',{rarity:'Rare BREAK'}),'ptcg-prism');assert.equal(H('g1',{number:'RC5'}),'ptcg-rc-dots');
- assert.equal(H('sm115',{rarity:'Shiny rare',fullArt:true}),'ptcg-rainbow-glitter');assert.equal(H('swsh4.5',{rarity:'Shiny rare',fullArt:true}),'ptcg-glitter-sheen');
+ assert.equal(H('sm115',{rarity:'Shiny rare',fullArt:true}),'ptcg-shiny');assert.equal(H('swsh4.5',{rarity:'Shiny rare',fullArt:true}),'ptcg-glitter-sheen');
  assert.equal(ptcgFoilEffect({finish:'holofoil',era:'pk-swsh',foil:'league'}),'ptcg-crosshatch');assert.equal(ptcgFoilEffect({finish:'holofoil',era:'pk-bwxy',foil:'tinsel'}),'ptcg-tinsel');
  assert.equal(ptcgFoilEffect({finish:'holofoil',era:'pk-sv',rarity:'Double rare'}),'ptcg-double-rare');assert.equal(PTCG_FOIL_RECIPES['ptcg-double-rare'].pat,PTCG_PATTERN.starfoil);
  assert.equal(PTCG_FOIL_RECIPES['ptcg-pokeball'].coat,1,'Poké Ball stamps are a top-side coat');assert.equal(PTCG_FOIL_RECIPES['ptcg-reverse'].coat,0);}
