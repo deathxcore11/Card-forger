@@ -75,3 +75,14 @@ assert(over.ok);assert(!over.requestSatisfied);assert.equal(over.validation.budg
 assert.equal(chooseDeck([candidate('stronger',90,0,90),candidate('owned',90,60,20)],cap).deck.id,'stronger');
 const copied=slim({...valk,flavor_name:'Printing alias',all_parts:[{component:'combo_piece',name:'Related real record',id:'fixture'}]});assert.equal(copied.flavor_name,'Printing alias');assert.equal(copied.all_parts.length,1);
 console.log('PASS: thin tribal pools fail the final plan check, access is measured without pretending strength; cap/target, unknown quotes and strongest-vs-owned remain distinct.');
+// End-to-end selection, including a genuinely offline operation over a bounded
+// loaded pool. Synthetic records isolate the constraint; they are not a real deck.
+const pureLead=synthetic('Synthetic purity leader','Flying, lifelink','Legendary Creature — Angel');
+const purePool=[pureLead,basic,...Array.from({length:70},(_,i)=>synthetic('Synthetic pure Angel '+i,'Flying, lifelink','Creature — Angel')),...Array.from({length:20},(_,i)=>synthetic('Synthetic excluded Human '+i,'Draw a card.','Creature — Human'))];
+for(const offline of [false,true]){
+ const catalog=Object.fromEntries(purePool.map(c=>[c.name.toLowerCase(),c]));
+ const context={S:{catalog},meta:n=>catalog[n.toLowerCase()],resolve:async n=>catalog[n.toLowerCase()],cacheCard:c=>(catalog[c.name.toLowerCase()]=c),inv:()=>({available:0}),api:async()=>{if(offline)throw Error('Synthetic offline provider');return {data:purePool};}};
+ const result=await prepareMtgDeck({style:'Angels with lifelink',format:'Commander',seed:pureLead.name,commander:pureLead.name,budget:100,creatureTypesOnly:['Angel']},context);
+ assert(result.result.ready,JSON.stringify(result.result));assert.equal(result.draft.total,100);assert(!result.draft.cards.some(r=>r.name.includes('excluded Human')));assert(result.result.totalEstimate<=100);
+}
+console.log('PASS: actual selector builds 100 cards within cap from a bounded online/offline fixture pool, enforces Angel-only creatures and retains noncreature land support without AI.');

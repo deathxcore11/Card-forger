@@ -3,9 +3,10 @@
 // updated live by the task; pass its id when the task updates it by id.
 import {brandMark} from "./brand.js";
 import { esc } from "./ui.js";
-export const buildOverlay = (msg = "", { title = "Building your decks", note = "Finding complete decks that fit your cards and budget, then checking their strength. This can take up to a minute.", id = "" } = {}) => `<div class="build-overlay" aria-live="polite"><div class="build-pop">
+export const buildOverlay = (msg = "", { title = "Building your decks", note = "Finding complete decks that fit your cards and budget, then checking their strength. This can take up to a minute.", id = "", cancelAct = "" } = {}) => `<div class="build-overlay" aria-live="polite"><div class="build-pop">
   <div class="build-brand" aria-hidden="true">${brandMark("brand-loading")}</div>
   <b>${esc(title)}</b>
   <p role="status"${id ? ` id="${esc(id)}"` : ""}>${esc(msg || "Getting started…")}</p>
   <small>${esc(note)}</small>
+  ${cancelAct ? `<button class="btn ghost" data-act="${esc(cancelAct)}">Cancel build</button>` : ''}
 </div></div>`;

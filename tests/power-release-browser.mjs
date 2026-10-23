@@ -278,7 +278,7 @@ async function readableBuildSeed(page,x,label){
 // One generated result as shown: rows, per-zone counts, checks and cost lines.
 async function flowResult(page){
  return page.evaluate(()=>{const r=document.querySelector('#sheetBody .deck-flow-result');if(!r)return {ok:false,alert:document.querySelector('#sheetBody [role="alert"]')?.textContent.trim()||''};
-  const rows=[...r.querySelectorAll('.deck-flow-row')].map(n=>({qty:Number(n.querySelector('.deck-flow-qty').textContent.replace(/\D/g,'')),name:n.querySelector('span:not(.deck-flow-qty):not(.deck-flow-art-placeholder)').textContent.trim(),price:n.lastElementChild.textContent.trim()}));
+  const rows=[...r.querySelectorAll('[data-act="flowCard"]')].map(n=>({qty:Number(n.dataset.flowQty),name:n.dataset.flowName,price:n.lastElementChild.textContent.trim()}));
   return {ok:true,text:r.innerText,rows,total:rows.reduce((n,x)=>n+x.qty,0),price:r.querySelector('.deck-result-price')?.innerText||''};});
 }
 async function generate(page,budget){
@@ -374,7 +374,7 @@ try{
  await page.locator('.ask-dialog .deck-flow-result').waitFor();
  assert.equal(askCalls,1,'complete result ends after one proposal');const result=page.locator('.ask-dialog .deck-flow-result'),preview=await result.innerText();
  assert.match(preview,/60 main/);assert.match(preview,/Complete · structure checked/);assert.match(preview,/Reference estimate/);assert.doesNotMatch(preview,/Target \$25/);assert.equal(await page.locator('#sheet[open]').count(),0);
- const displayed=await result.locator('.deck-flow-row').evaluateAll(ns=>ns.map(n=>({qty:Number(n.querySelector('.deck-flow-qty').textContent.replace('×','')),name:n.querySelector('span:not(.deck-flow-qty):not(.deck-flow-art-placeholder)').textContent.trim()})));assert.equal(sumQty(displayed),60);
+ const displayed=await result.locator('[data-act="flowCard"]').evaluateAll(ns=>ns.map(n=>({qty:Number(n.dataset.flowQty),name:n.dataset.flowName})));assert.equal(sumQty(displayed),60);
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.ask-dialog','Standard inline result '+width);await result.locator('[data-act="flowSave"]').scrollIntoViewIfNeeded();await capture(page,'goal-preview-'+width);}
  assert.equal(await inventorySnapshot(page),initial,'reviewing a built list never saves it');await page.locator('[data-ask-close]').click();
  checks.push('Actual Ask to shared complete 60-card inline result, real synthetic price estimate, four widths, no setup handoff or autosave.');

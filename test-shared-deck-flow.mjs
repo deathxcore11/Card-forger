@@ -52,3 +52,15 @@ const unsafeId=experience.register(result,scope());changeAccountOnSave=true;
 await assert.rejects(actions.flowSave({dataset:{result:unsafeId}}),/account changed while saving/);
 assert.throws(()=>actions.flowExport({dataset:{result:unsafeId}}),/account or collection changed/);
 console.log('PASS: Save → Export stays usable; account changes before or during Save remain blocked.');
+
+// Every game and inline/manual result uses the same existing deck design.
+for(const game of ['mtg','ygo','ptcg']){
+ const html=deckResultMarkup({...result,request:{...result.request,game}},'presentation');
+ assert.match(html,/class="cs-hero compact/);assert.match(html,/class="cs-title"/);
+ assert.match(html,/list compact deck-compact-list/);assert.match(html,/mini-row art-row deck-compact-row/);
+ assert.doesNotMatch(html,/deck-flow-row|Tournament-backed/);
+ const busy=deckSetupMarkup({request:{...request,game},busy:true,status:'Checking the selected cards…'},pipeline.formats);
+ assert.match(busy,/Your deck is being built/);assert.match(busy,/brand-loading/);assert.match(busy,/flowCancelBuild/);
+ assert.doesNotMatch(busy,/data-flow-field/,'in-progress setup exposes cancellation, not editable stale inputs');
+}
+console.log('PASS: shared generated-deck presentation and branded progress for all three games.');

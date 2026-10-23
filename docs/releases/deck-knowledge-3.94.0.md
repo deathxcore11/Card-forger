@@ -8,6 +8,7 @@ Request preservation, spending policy, recognized strategic support and card exp
 
 - The dated Scryfall vocabulary snapshot supplies 365 creature types and 223 keyword abilities, plus action/ability-word vocabulary. A catalog name establishes recognition, not full mechanical modeling. Source URLs, retrieval date and response hashes are retained in `mtg-vocabulary.js`.
 - Explicit supported subtype/keyword requests survive model omissions. Recognized directives such as “only Angel creatures” and “without Angels” also become type restrictions, distinct from a tribal preference. Noncreature support spells remain permitted by an Angel-only creature restriction. Unknown prose remains reviewable, not verified.
+- Deck generation reuses the existing animated CardStashy-logo progress pop-up, with live status and cancellation. Cancelled/closed builds cannot replace a newer view. Completion opens the deck automatically; failures restore the setup and choices. Budget rebuilds use the same progress presentation. Generated manual/Ask results use the existing artwork header, reference-printing badges and readable compact deck rows. Generated results remain clearly distinct from tournament evidence.
 - Numeric budgets default to strict caps. Only explicit flexibility enables target mode. Complete but over-cap/unpriced candidates cannot pass a finite cap. Flexible targets may present disclosed alternatives. Estimates exclude tax/shipping and are not checkout quotes.
 - Selection and final checks share recognized tribal and effect evidence. Commander plans receive primary support checks even without an explicit style. Two supporting library copies are only a minimum sanity check: passing is **not** proof of adequate tribal density, consistency or competitive quality. Natural support access in the first 11 cards is shown separately from casting, tutors, mulligans and game execution.
 - Corrected demonstrated life-gain ownership/variable-output recognition, Angel-or-Cleric alternatives, changeling and multiword creature types. Shared life-gain evidence is also used by the constructed assessment. Common entering-trigger, life-gain and life-payment blockers appear as conditional coexistence warnings; sequencing/removing the blocker can restore a route. This is not a complete rules simulator.
@@ -22,9 +23,13 @@ Request preservation, spending policy, recognized strategic support and card exp
 
 `tests/deck-knowledge-browser.mjs` runs the real application with synthetic providers, artwork and local state at 390 and 1440 px for all three games. It checks expanded reminders, hover/tap behavior, typed discovery, same-Search card return, explicit loaded-only scope and fixture health. Screenshots below are synthetic UI evidence, not physical-card appearance or live-provider proof.
 
+- [Build progress pop-up](deck-knowledge/building-phone.png)
+- [Generated deck rows](deck-knowledge/generated-deck-phone.png)
 - [Magic phone](deck-knowledge/magic-phone.png)
 - [Yu-Gi-Oh! phone](deck-knowledge/yugioh-phone.png)
 - [Pokémon phone](deck-knowledge/pokemon-phone.png)
+
+`tests/deck-build-presentation-browser.mjs` exercises the real builder with synthetic providers at phone/desktop sizes: animated logo, reduced motion, cancellation/late response, automatic completion, shared card rows, failed-cap recovery and no automatic save.
 
 Final suite, hosted checks, signed bundle comparison and deployment verification are recorded separately when completed. Physical Android interaction is untested in this environment.
 
