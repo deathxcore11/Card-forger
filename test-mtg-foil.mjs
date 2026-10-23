@@ -51,4 +51,6 @@ assert(at(12,100,3)>120&&at(60,60,3)<20,'Drawn lines found, flat paper has none'
 assert.match(MTG_FOIL_FRAGMENT,/if\(mode>1\.5&&\(mode<2\.5\|\|mode>3\.5\)\)cov\*=1\.-text;/);
 assert.match(MTG_FOIL_FRAGMENT,/cov\*=1\.-\.45\*text\*patterned;/);
 assert.match(MTG_FOIL_FRAGMENT,/return mix\(base,shoulder\(T\*F\*1\.35\),clamp\(cover,0\.,1\.\)\);/,'Zero coverage returns the exact source pixel');
+// Textured foil keeps the art and text readable: gentle relief and half the printed art left visible.
+{const t=MTG_FOIL_RECIPES['mtg-textured'];assert(t.relief<=.4,'textured relief stays gentle');assert(t.keep>=.4,'textured foil keeps the printed art visible');}
 console.log('PASS: Magic foil router picks each printing\'s treatment from Scryfall data (old border, FTV, textured, surge, galaxy, oil slick, compleat, gilded, neon, serialized, fracture, raised); recipes, frames, finish wiring and ink analysis verified.');

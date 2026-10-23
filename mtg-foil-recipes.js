@@ -6,14 +6,14 @@ export const MTG_PATTERN={traditional:1,oldborder:2,ftv:3,etched:4,textured:5,su
 export const MTG_COVER={whole:0,frame:1,gold:2,neon:3,paper:4,lines:5};
 export const MTG_TINT={rainbow:0,gold:1,silver:2};
 const P=MTG_PATTERN,C=MTG_COVER,T=MTG_TINT;
-const r=(label,era,pat,o={})=>({label,era,pat,tint:o.tint??T.rainbow,cover:o.cover??C.whole,relief:o.relief??0,film:o.film??0,sparkle:o.sparkle??0,stamp:o.stamp??0,note:o.note||''});
+const r=(label,era,pat,o={})=>({label,era,pat,tint:o.tint??T.rainbow,cover:o.cover??C.whole,relief:o.relief??0,film:o.film??0,sparkle:o.sparkle??0,stamp:o.stamp??0,keep:o.keep??0,note:o.note||''});
 export const MTG_FOIL_RECIPES={
  'mtg-traditional':r('Traditional foil','2003–today',P.traditional,{note:'Foil under the whole card; inks tint it, dark ink absorbs it. A broad diagonal rainbow rolls across as you tilt.'}),
  'mtg-oldborder':r('Old-border foil','1999–2003',P.oldborder,{stamp:1,note:'Wider, hazier, more saturated band, with the shooting-star foil mark in the rules box.'}),
  'mtg-ftv':r('From the Vault foil','2008–2017',P.ftv,{note:'Hyper-glossy laminate: a sharp vertical mirror bar sweeps left to right.'}),
  'mtg-etched':r('Foil-etched','2020–today',P.etched,{cover:C.frame,note:'Art printed on white; the frame is frosted metal grain that sparkles instead of mirroring.'}),
  'mtg-etched-full':r('Foil-etched (borderless)','2021–today',P.etched,{note:'Borderless etched cards have no frame: the frosted metal grain runs across the whole face, art included.'}),
- 'mtg-textured':r('Textured foil','2022–today',P.textured,{relief:.9,note:'Raised grooves follow the artwork\'s own contours, so light ripples around the drawing.'}),
+ 'mtg-textured':r('Textured foil','2022–today',P.textured,{relief:.3,keep:.5,note:'Fine raised grooves follow the artwork\'s own contours, so light ripples around the drawing while the art and text stay clear.'}),
  'mtg-surge':r('Surge foil','2022–today',P.surge,{sparkle:.5,note:'Crossing wave fields and sparks; bands surge in different directions.'}),
  'mtg-galaxy':r('Galaxy foil','2022–today',P.galaxy,{sparkle:1,note:'Traditional foil with a field of star points that twinkle on and off.'}),
  'mtg-halo':r('Halo foil','2023–today',P.halo,{note:'A swirling halo pattern: rainbow arcs wheel around the centre.'}),

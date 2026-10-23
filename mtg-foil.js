@@ -15,7 +15,7 @@ uniform sampler2D u_relief; // R height, G/B stroke direction, A stroke strength
 uniform vec2 u_tilt;uniform vec2 u_px;uniform vec2 u_texel;uniform float u_aspect;
 uniform vec4 u_art;uniform vec4 u_text;
 uniform vec4 u_r1; // pattern, tint, coverage, relief
-uniform vec4 u_r2; // film, sparkle, stamp, unused
+uniform vec4 u_r2; // film, sparkle, stamp, keep (share of the printed art left visible)
 const float PI=3.14159265;
 vec3 toLin(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));}
 vec3 toSrgb(vec3 c){return mix(c*12.92,1.055*pow(max(c,vec3(0.)),vec3(1./2.4))-.055,step(vec3(.0031308),c));}
@@ -42,7 +42,7 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
   // Each grain bends the light a little differently, so the frost throws a soft rainbow as it tilts.
   spec=pow(max(dot(n,H),0.),70.)*2.2+.45*exp(-pow(dot(H.xy,vec2(.7071,.7071))/.12,2.));mirror=1.;g=normalize(vec2(1.,(j.x-.5)*.7));amp=.42;d=1450.+j.y*400.;}
  else if(pat<5.5){float ph=height*55.,gr=sin(ph);vec2 gn=length(grad)>1e-4?normalize(grad):vec2(1.,0.); // textured: contours of the art
-  g=gn;d=1250.;lines=.5+.5*gr;N=normalize(N+vec3(gn*cos(ph)*.12,0.));mirror=.4;ex=24.;amp=.8;lines=.5+.25*gr;}
+  g=gn;d=1250.;N=normalize(N+vec3(gn*cos(ph)*.04,0.));mirror=.3;ex=24.;amp=.6;lines=.5+.2*gr;}
  else if(pat<6.5){float w1=sin(q.x*30.+sin(q.y*9.)*2.),w2=sin((q.x+q.y)*24.+sin(q.x*7.)*2.5);      // surge: crossing waves
   g=normalize(vec2(cos(w1*1.6+q.y*3.),sin(w2*1.6))+1e-4);d=1250.+300.*w1;lines=.5+.5*w1*w2;mirror=.35;amp=.9;}
  else if(pat<7.5){}                                                                              // galaxy: traditional + stars (sparkle)
@@ -95,7 +95,9 @@ void main(){
  vec3 F=foil(pat,tint,uv,L,V,N,spot,grad,rl.r);
  // Thin film replaces the grating colour (oil slick): colour depends on view angle and film thickness.
  if(u_r2.x>.5){float t=320.+260.*rl.r+120.*hash(floor(uv*u_px/3.));vec3 f=film(dot(N,V),t);F=f*(.15+spot*(1.4*pow(max(dot(N,H),0.),16.)+.5));}
- vec3 outC=overInk(base,F,cov*.92);
+ // keep: how much of the printed illustration stays visible under the foil (textured foils are
+ // printed over the art, like Pokémon full arts: the art keeps its weight and the text stays readable).
+ float keep=u_r2.w;vec3 outC=overInk(base,F,cov*.92*(1.-keep));
  // Raised relief: glossy rims where the embossed height turns toward the light.
  if(rel>0.){float rim=pow(max(dot(N,H),0.),24.)*(.35+.65*spot)*clamp(length(grad)*30.,0.,1.);outC+=(1.-outC)*vec3(1.,.97,.92)*rim*rel*cov*.8;}
  // Galaxy / surge sparks: sparse star points that twinkle as the light moves.
@@ -121,5 +123,5 @@ export function mountMtgFoil(overlay,img,treatment,{surface='detail',frame='2015
  const copy=()=>readableCopy(src);
  return mountFoilCanvas(overlay,{source:copy,key:src,surface,program:()=>renderer(overlay.ownerDocument),
   analysis:()=>copy().then(i=>analyze(src,()=>readFoilPixels(i,372))),
-  setUniforms:({gl,U})=>{gl.uniform4f(U.u_art,...box.art);gl.uniform4f(U.u_text,...box.text);gl.uniform4f(U.u_r1,r.pat,r.tint,r.cover,r.relief);gl.uniform4f(U.u_r2,r.film,r.sparkle,r.stamp,0);}});
+  setUniforms:({gl,U})=>{gl.uniform4f(U.u_art,...box.art);gl.uniform4f(U.u_text,...box.text);gl.uniform4f(U.u_r1,r.pat,r.tint,r.cover,r.relief);gl.uniform4f(U.u_r2,r.film,r.sparkle,r.stamp,r.keep||0);}});
 }
