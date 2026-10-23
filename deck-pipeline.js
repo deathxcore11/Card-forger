@@ -15,14 +15,24 @@ export function createDeckPipeline(x) {
   const src=T.SOURCES[request.game],f=formats[request.game].find(f=>f.id===request.format)||formats[request.game][0];
   const compatible=c=>c&&!c.brief&&(request.game!=='ptcg'||c.category==='Pokemon')&&(!src.legality||src.legality(c,f)==='legal')&&(!src.limit||src.limit(c,f)>0);
   let card=request.seedCard;
-  if(!card&&request.seed){card=await src.byName?.(request.seed);if(!card){const found=await src.search({q:request.seed,exactName:true,format:f.id,size:12});card=found.cards?.find(c=>cardKey(c.name)===cardKey(request.seed));}}
+  // A typed name can match many printings: use one that is legal in the chosen format (the first match is often an
+  // older, rotated printing), and only fall back to the plain lookup when no printing in the format matches.
+  if(!card&&request.seed){
+   const found=await src.search({q:request.seed,exactName:true,format:f.id,size:24}).catch(()=>({cards:[]}));
+   for(const c of (found.cards||[]).filter(c=>cardKey(c.name)===cardKey(request.seed))){const full=await Promise.resolve().then(()=>src.get(c.id)).catch(()=>null);if(compatible(full)){card=full;break;}}
+   if(!card)card=await src.byName?.(request.seed);
+  }
   if(!card&&!request.seed){
    const pool=request.game==='ygo'?request.theme?(await src.search({archetype:request.theme,size:100})).cards:(await src.randomArchetype()).cards:(await src.search({category:'Pokemon',type:request.theme||'',format:f.id,size:100})).cards;
    const choices=(pool||[]).filter(c=>request.game!=='ygo'||c.category==='Monster'&&!c.extra);
    const start=Math.abs(request.randomSeed||0)%Math.max(1,choices.length);
-   for(let i=0;i<Math.min(12,choices.length);i++){const candidate=choices[(start+i)%choices.length];const full=candidate.brief?await src.get(candidate.id):candidate;if(compatible(full)){card=full;break;}}
+   for(let i=0;i<Math.min(12,choices.length);i++){const candidate=choices[(start+i)%choices.length];const full=await Promise.resolve().then(()=>src.get(candidate.id)).catch(()=>null);if(compatible(full)){card=full;break;}}
   }
   if(card?.brief)card=await src.get(card.id);
+  // Name the actual problem: no such card, a non-Pokémon seed, or a card not legal in the format.
+  if(!card&&request.seed)throw Error(`No card named “${request.seed}” was found. Check the spelling, or pick the card from search.`);
+  if(card&&request.game==='ptcg'&&card.category!=='Pokemon')throw Error(`${card.name} is a ${String(card.category||'non-Pokémon').toLowerCase()} card. Choose a Pokémon to build around.`);
+  if(card&&!compatible(card))throw Error(`${card.name} is not legal in ${f.name}. Choose another format or card.`);
   if(!compatible(card))throw Error(`Could not verify the build-around in ${f.name}. Check the card and format, or retry card loading.`);
   if(request.theme&&request.game==='ptcg'&&!card.types?.includes(request.theme))throw Error(`${card.name} does not match the ${request.theme} type preference. Change the card or theme.`);
   if(request.theme&&request.game==='ygo'&&card.archetype!==request.theme)throw Error(`${card.name} is not in the selected ${request.theme} archetype. Change the card or theme.`);

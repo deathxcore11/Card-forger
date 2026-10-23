@@ -1,4 +1,5 @@
 import {setAtmosphere,packButton} from './set-experience.js';
+import {normalizeSeeds} from './deck-seeds.js';
 import {priceOriginBadge,priceOriginNote} from './price-origin.js';
 import {browseSets,setBrowserControls,setBrowserRows,setBrowserDetail} from './set-browser.js';
 import {POKEMON_VARIANT_SCHEMA,pokemonVariantChoices,pokemonVariantProductConflict,samePokemonVariant} from './pokemon-variant-options.js';
@@ -1008,11 +1009,11 @@ export function tcgCollection() {
    value:unit==null?null:unit*(x.w?1:x.e.qty),impact:x.c?impactScore(g,x.c):null,rarity:rarityOf(x),recent:Number.isFinite(Date.parse(x.e.addedAt))?Date.parse(x.e.addedAt):null};};
   rows.sort((a,b)=>compareCollectionRows(descriptor(a),descriptor(b),U.sort,U.direction));
   if (U.tab === "value") return tcgValueView(g);
-  if (U.tab === "binders") return `<div class="page-head"><h1>Collection</h1><button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div>${segmented("tCollTab","binders",[["cards","Cards"],["binders","Binders"],["value","Value"]])}${binderShelf(st.collection.map(entry=>({entry,card:cardOf(g,entry.cardId),image:cardOf(g,entry.cardId)?.variants?.find(v=>v.key===entry.variant)?.image || cardOf(g,entry.cardId)?.image || "",game:g})),g,S.state.settings.binders || [])}`;
-  return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${viewControl(g,"collection")}${selectionControl(g)}<button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div></div>
+  if (U.tab === "binders") return `<div class="page-head"><h1>Collection</h1></div>${segmented("tCollTab","binders",[["cards","Cards"],["binders","Binders"],["value","Value"]])}${binderShelf(st.collection.map(entry=>({entry,card:cardOf(g,entry.cardId),image:cardOf(g,entry.cardId)?.variants?.find(v=>v.key===entry.variant)?.image || cardOf(g,entry.cardId)?.image || "",game:g})),g,S.state.settings.binders || [])}`;
+  return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${viewControl(g,"collection")}${selectionControl(g)}</div></div>
   ${segmented("tCollTab", "cards", [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"]])}
-  ${st.collection.length || wantRows.length ? `<div class="coll-summary"><button class="cs-value" data-act="tCollTab" data-id="value" aria-label="See collection value"><b data-count="${Math.round(v.total)}" data-money="1">${usd(v.total, 0)}</b><span>${v.copies} card${v.copies === 1 ? "" : "s"}${wantRows.length ? ` · ${wantRows.length} wanted` : ""}${Math.min(rows.length, U.limit || 120) < rows.length ? ` · showing ${Math.min(rows.length, U.limit || 120)} of ${rows.length}` : rows.length !== st.collection.length + wantRows.length ? ` · showing ${rows.length}` : ""}${v.unpriced ? ` · ${v.unpriced} unpriced` : ""}</span></button><button class="icon" data-act="tRefreshPrices" aria-label="Refresh prices">${actionIcon("refresh")}</button></div>` : ""}
-  ${st.collection.length || wantRows.length ? `<div class="coll-tools"><div class="collection-primary-tools">${collectionSortControls(g,U.sort,U.direction)}<input type="search" value="${esc(U.q)}" placeholder="Search your cards" data-input="tCollQ" aria-label="Search collection"></div><div class="filter-pills"><select data-change="tCollSet" aria-label="Set">${options([["", "All sets"], ...setNames.map((x) => [x, x])], U.set)}</select><select data-change="tCollKind" data-field="kind" aria-label="Kind">${options([["", "All kinds"], ...kinds], U.kind)}</select>${rarities.length > 1 ? `<select data-change="tCollKind" data-field="rarity" aria-label="Rarity">${options([["", "All rarities"], ...rarities.map((x) => [x, x])], U.rarity)}</select>` : ""}${wantRows.length ? `<select data-change="tCollKind" data-field="show" aria-label="Show">${options([["all", "Owned + wanted"], ["owned", "Owned"], ["wanted", `Wanted · ${wantRows.length}`]], show)}</select>` : ""}</div></div>
+  ${st.collection.length || wantRows.length ? `<div class="coll-summary"><button class="cs-value" data-act="tCollTab" data-id="value" aria-label="See collection value"><b data-count="${Math.round(v.total)}" data-money="1">${usd(v.total, 0)}</b><span>${v.copies} card${v.copies === 1 ? "" : "s"}${wantRows.length ? ` · ${wantRows.length} on wishlist` : ""}${Math.min(rows.length, U.limit || 120) < rows.length ? ` · showing ${Math.min(rows.length, U.limit || 120)} of ${rows.length}` : rows.length !== st.collection.length + wantRows.length ? ` · showing ${rows.length}` : ""}${v.unpriced ? ` · ${v.unpriced} unpriced` : ""}</span></button><button class="icon" data-act="tRefreshPrices" aria-label="Refresh prices">${actionIcon("refresh")}</button></div>` : ""}
+  ${st.collection.length || wantRows.length ? `<div class="coll-tools"><div class="collection-primary-tools">${collectionSortControls(g,U.sort,U.direction)}<input type="search" value="${esc(U.q)}" placeholder="Search your cards" data-input="tCollQ" aria-label="Search collection"></div><div class="filter-pills"><select data-change="tCollSet" aria-label="Set">${options([["", "All sets"], ...setNames.map((x) => [x, x])], U.set)}</select><select data-change="tCollKind" data-field="kind" aria-label="Kind">${options([["", "All kinds"], ...kinds], U.kind)}</select>${rarities.length > 1 ? `<select data-change="tCollKind" data-field="rarity" aria-label="Rarity">${options([["", "All rarities"], ...rarities.map((x) => [x, x])], U.rarity)}</select>` : ""}${wantRows.length ? `<select data-change="tCollKind" data-field="show" aria-label="Show">${options([["all", "Owned + wishlist"], ["owned", "Owned"], ["wanted", `Wishlist · ${wantRows.length}`]], show)}</select>` : ""}</div></div>
   <div class="list display-list deal">${rows.slice(0,U.limit || 120)
     .map(({ e, c, w }, i) => {
       if (w) return wantedLot(g, w, c, i);
@@ -1023,14 +1024,14 @@ export function tcgCollection() {
     })
     .join("")}</div>${selectionTray(g)}${!rows.length ? empty("No matching cards", "Try a different search or filter.") : ""}${rows.length > (U.limit || 120) ? `<button class="btn ghost block" data-act="tCollMore">Load more · ${rows.length-(U.limit || 120)} remaining</button>` : ""}`
   : empty(`No ${esc(GAMES[g].short)} cards yet`, "Search for a card and tap “Add to collection”, or import a list.", `<button class="btn" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="tImportColl">Paste a list</button>`)}
-  ${st.collection.length || wantRows.length ? `<div class="actions wrap">${wantRows.length ? `<button class="btn ghost small" data-act="tWishCopy">Copy wanted list · ${usd(wantTotal, 0)}</button>` : ""}<button class="btn ghost small" data-act="tImportColl">↥ Paste a list</button><button class="btn ghost small" data-act="tExportColl">↓ Export CSV</button></div>` : ""}`;
+  ${st.collection.length || wantRows.length ? `<div class="actions wrap">${wantRows.length ? `<button class="btn ghost small" data-act="tWishCopy">Copy wishlist · ${usd(wantTotal, 0)}</button>` : ""}<button class="btn ghost small" data-act="tImportColl">↥ Paste a list</button><button class="btn ghost small" data-act="tExportColl">↓ Export CSV</button></div>` : ""}`;
 }
 // A card you want but don't own: same row, greyed out in an empty sleeve. Touch it and the
 // colour peeks through; "Got it" adds it with the usual details, × drops it from the list.
 function wantedLot(g, w, c, i) {
   const p = price(c);
   const t = tcgTier(c, null, p);
-  return `<div class="lot wanted" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}"><button class="lot-art" ${finishAttrs(g,c,{})}  data-act="tCard" data-id="${esc(w.cardId)}" aria-label="Open ${esc(w.name)} (wanted, not owned)">${imgTag(c)}${tileBadges(c)}<span class="want-tag" aria-hidden="true">${actionIcon("heart")}Wanted</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(w.cardId)}">${esc(w.name)}</button><span class="lot-sub"><span class="want-chip">Not owned</span>${rowBadges(c)}${esc(c?.set?.name || "")}</span></div><div class="lot-side"><span class="price">${p == null ? "—" : usd(p)}</span><span class="want-actions"><button class="btn small want-got" data-act="tOwn" data-id="${esc(w.cardId)}">＋ Got it</button><button class="want-x" data-act="tWish" data-id="${esc(w.cardId)}" aria-label="Remove ${esc(w.name)} from wishlist">×</button></span></div></div>`;
+  return `<div class="lot wanted" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}"><button class="lot-art" ${finishAttrs(g,c,{})}  data-act="tCard" data-id="${esc(w.cardId)}" aria-label="Open ${esc(w.name)} (on your wishlist, not owned)">${imgTag(c)}${tileBadges(c)}<span class="want-tag" aria-hidden="true">${actionIcon("heart")}Wishlist</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(w.cardId)}">${esc(w.name)}</button><span class="lot-sub"><span class="want-chip">Not owned</span>${rowBadges(c)}${esc(c?.set?.name || "")}</span></div><div class="lot-side"><span class="price">${p == null ? "—" : usd(p)}</span><span class="want-actions"><button class="btn small want-got" data-act="tOwn" data-id="${esc(w.cardId)}">＋ Got it</button><button class="want-x" data-act="tWish" data-id="${esc(w.cardId)}" aria-label="Remove ${esc(w.name)} from wishlist">×</button></span></div></div>`;
 }
 // Owned cards worth trading or holding, from tournament play rates (see importance.js).
 function tcgTradeAdvice(g) {
@@ -3417,7 +3418,7 @@ export function registerTcg(c) {
         preferred = card => B.preferOwned ? ownedOf(G,card,m) : 0,
         owned = (card) => B.budgetBasis === "total" ? 0 : ownedOf(G, card, m),
         priceOf = (card) => G === "ygo" ? ygoPurchaseReference(card, B.ygoPurchaseSelections?.[card?.id]).value : price(card),
-        seeds = (B.seeds || [B.seed]).map((id) => cardOf(G, id)).filter(Boolean);
+        seeds = (B.seeds?.length ? B.seeds : [B.seed]).map((id) => cardOf(G, id)).filter(Boolean);
       status(B.metaSnapshot ? "Checking the selected tournament snapshot…" : "Checking what tournament decks play right now…");
       const meta = B.metaSnapshot?.game === G ? B.metaSnapshot.data : await metaFor(G),budgets=tcgBudgets(B);
       let results = [], upPool = [];
@@ -3601,7 +3602,7 @@ export function registerTcg(c) {
   // writes sheet state, saves a deck, or opens another setup screen.
   c.prepareDeck = async (request, options={}) => {
     const G=request.game, seed=remember(request.seedCard);
-    const B={game:G, seed:seed.id, seeds:(request.seedCards||[seed]).map(card=>remember(card).id),
+    const B={game:G, seed:seed.id, seeds:normalizeSeeds(seed,request.seedCards).map(card=>remember(card).id),
       format:request.format, easy:request.easy, preferOwned:request.preferOwned, budgetBasis:request.budgetBasis, constructionBudgets:request.constructionBudgets, metaKey:request.metaKey||"", metaSnapshot:request.metaSnapshot,
       ygoPurchaseSelections:request.ygoPurchaseSelections||{}, preserveSeedPrintings:true, results:{}, busy:false};
     await runTBuild(B,{...options,detached:true});

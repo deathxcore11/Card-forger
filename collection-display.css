@@ -27,3 +27,35 @@
  :root[data-grid-size="small"] #content.view-gallery :is(.card-grid,.display-list) {grid-template-columns:repeat(3,minmax(0,1fr));}
  :root[data-grid-size="medium"] #content.view-gallery :is(.card-grid,.display-list) {grid-template-columns:repeat(2,minmax(0,1fr));}
 }
+
+/* Compact view on phones: one neat card pill. The art spans the row; the name, printing line and a single control
+   line (price · condition, then quantity and Edit) sit beside it, so there is no empty band and no third line. Rows being selected keep their batch layout. */
+@media (max-width: 480px) {
+  body[data-view="collection"] #content.view-compact .display-list > .lot:not(:has(> .batch-mark)) { grid-template-columns: 52px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 12px; row-gap: 6px; padding: 8px 10px; align-items: center; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot:not(:has(> .batch-mark)) > .lot-art { grid-row: 1 / span 2; align-self: start; width: 52px; height: 73px; min-width: 0; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot:not(:has(> .batch-mark)) > .lot-art .img-missing { font-size: 9px; line-height: 1.15; padding: 2px; overflow-wrap: anywhere; text-align: center; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot:not(:has(> .batch-mark)) > .lot-info { align-self: end; gap: 1px; min-width: 0; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot:not(:has(> .batch-mark)) > .lot-info .lot-name { font-size: 15px; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot:not(:has(> .batch-mark)) > .lot-info .tag { padding: 1px 6px; font-size: 11px; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot:not(:has(> .batch-mark)) > .lot-side { grid-column: -2; grid-row: 2; align-self: start; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; width: 100%; min-width: 0; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot:not(:has(> .batch-mark)) > .lot-side .lot-value { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot:not(:has(> .batch-mark)) > .lot-side .stepper { margin-left: auto; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot:not(:has(> .batch-mark)) > .lot-side [data-act="editLot"] { min-height: 44px; padding-inline: 4px; }
+}
+
+/* Collection tools on phones: Sort with its direction on top, search under it, then the filters on one full-width
+   line, so every control lines up on the same left and right edges and long labels never clip. */
+@media (max-width: 600px) {
+  .coll-tools { gap: 8px; margin-bottom: 10px; }
+  .coll-tools > .collection-primary-tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .coll-tools .collection-sort-controls { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; width: 100%; flex: none; }
+  .coll-tools .collection-sort-label { flex: 1 1 auto; min-width: 0; font-size: 0; gap: 0; }
+  .coll-tools .collection-direction-label { flex: 0 0 88px; margin-left: 0; }
+  .coll-tools .collection-primary-tools > input[type="search"] { width: 100%; min-height: 44px; }
+  .coll-tools .collection-sort-controls select { width: 100%; height: 44px; min-height: 44px; font-size: 12px; padding-left: 11px; letter-spacing: -.1px; }
+}
+/* The narrowest phones give the longest sort names the full row; direction sits under it on the right. */
+@media (max-width: 360px) {
+  .coll-tools .collection-sort-controls { flex-wrap: wrap; justify-content: flex-end; }
+  .coll-tools .collection-sort-label { flex: 1 0 100%; }
+}

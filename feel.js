@@ -44,10 +44,21 @@ const iosTap = () => {
 };
 const canVibrate = () => typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
 const isIOS = () => typeof navigator !== "undefined" && (/iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1));
+// Pack-opening feel: a small, consistent vocabulary. On Android the native shell plays system haptic primitives
+// (they follow the phone's own haptic settings and hardware); the web falls back to short vibration patterns, and
+// a pack's moments never stack into a long buzz.
+export const PACK_PATTERNS = { "pack-tear": [6, 26, 6, 26, 12], "pack-land": 4, "pack-reveal": 10, "pack-value-2": 16, "pack-value-3": [12, 60, 18], "pack-value-4": [10, 40, 10, 90, 26] };
+const native = () => globalThis.CARDSTASHY_HAPTICS || null;
+// Stops anything still playing (a pack closed mid-sequence).
+export function cancelHaptics() {
+  try { if (native()) native().cancel(); else if (canVibrate()) navigator.vibrate(0); } catch {}
+}
 export function haptic(kind = "tap") {
   if (!hapticsOn()) return;
   try {
-    if (canVibrate()) navigator.vibrate(PATTERNS[kind] ?? PATTERNS.tap);
+    // One path per event: the native shell when it is there, otherwise web vibration, never both.
+    if (native()) native().perform(kind);
+    else if (canVibrate()) navigator.vibrate(PATTERNS[kind] ?? PACK_PATTERNS[kind] ?? PATTERNS.tap);
     else if (isIOS()) {
       iosTap();
       // A second beat for success/warn while the tap still counts as the user's gesture.

@@ -1,7 +1,7 @@
-const CACHE = "cardforge-shell-v297";
+const CACHE = "cardforge-shell-v298";
 const ASSETS = [
   "./release-record.js", "./release-status.js",
-  "./deck-preferences.js", "./deck-construction.js", "./deck-pipeline.js", "./deck-experience.js",
+  "./deck-preferences.js", "./deck-construction.js", "./deck-pipeline.js", "./deck-experience.js", "./deck-seeds.js",
   "./ai-auth.js",
   "./grid-settings.js", "./price-origin.js", "./collection-display.css",
   "./aura.js", "./aura.css",

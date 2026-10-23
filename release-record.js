@@ -1,7 +1,7 @@
 // Published release metadata. APK identity is recorded only after verifying the
 // signed artifact; a web deploy never changes the installed app's identity.
 export const RELEASE = Object.freeze({
- id:'web-3.92.3-android-0.4.3',date:'2026-10-23',webVersion:'3.92.3',
- changes:['Card of the Day picks a different set every day, so today\'s pack opens a new set.','Today\'s pack pulls the Pokémon Card of the Day in its foil (it came out plain).','Pokémon Special Illustration and Illustration Rares show a clear rainbow foil without coloured contour lines over the art.'],
- android:Object.freeze({version:'0.4.3 beta',versionName:'0.4.3-beta',versionCode:8,interfaceVersion:'3.92.3',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.4.3.apk',bytes:25899275,sha256:'f67b6fb6aea575ff1b96e3fba51c962cfcae315aca26c896ddab692212203aa3'})
+ id:'web-3.93.0-android-0.5.0',date:'2026-10-23',webVersion:'3.93.0',
+ changes:['Android Back (gesture or button) now steps back through the app: card page, pack, screen, and only leaves the app from Home.','Opening a card from a pack keeps that same pack open underneath; close the card to carry on.','Pack opening has tactile feedback: the tear, cards landing, each reveal, and a distinct accent for valuable pulls.','Deck builder: Random card and typed names always build around the chosen card; old errors clear when you change the card; Random Commander stays Commander.','Collection on phones: compact card rows and one tidy row of sort and filter controls.','Wishlist: hold or right-click any card for Add to wishlist / Remove from wishlist (the same as the card page), with Undo; one Wishlist wording everywhere.'],
+ android:Object.freeze({version:'0.5.0 beta',versionName:'0.5.0-beta',versionCode:9,interfaceVersion:'3.93.0',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.5.0.apk',bytes:25907056,sha256:'ff255da3b945f6e3bcf4a909a4b81f306a699fa91fba8cccf31dbd42186cdf26'})
 });

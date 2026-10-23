@@ -1343,6 +1343,30 @@ function applyHistory() {
 let pendingHistoryId=null;
 window.addEventListener("popstate",applyHistory);
 window.addEventListener("hashchange",applyHistory);
+// One Back for the whole app (Android's system Back gesture/button calls it through the native shell): the
+// topmost layer closes first (a dropdown, the pack, a card page one step at a time), then the screen returns along
+// the app's own history; a screen opened cold returns to its parent. Only with nothing left does Back leave the app.
+const dialogOpenedAt=new WeakMap();let dialogTick=0;
+if(typeof MutationObserver!=='undefined'&&document.documentElement)new MutationObserver(records=>{for(const r of records)if(r.target.tagName==='DIALOG'&&r.target.open)dialogOpenedAt.set(r.target,++dialogTick);}).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['open']});
+const topDialog=()=>[...document.querySelectorAll('dialog[open]')].sort((a,b)=>(dialogOpenedAt.get(b)||0)-(dialogOpenedAt.get(a)||0))[0]||null;
+const parentRoute=hash=>/^#(?:t?set)\//.test(hash)?'#sets':/^#(?:t?deck)\//.test(hash)?'#decks':/^#collection\/./.test(hash)?'#collection':'#home';
+let backBusy=0;
+function appBack(){
+  // A second Back while the first is still settling (a fast double swipe) does nothing rather than skipping a level.
+  if(Date.now()-backBusy<250)return true;backBusy=Date.now();
+  const top=topDialog();
+  if(top){
+    if(top.id==='sheet'){if(sheetTrail.length||S.ui.sheetCtx?.type==='printing-picker')A.sheetHistoryBack();else closeSheet();return true;}
+    // Each dialog keeps its own Escape handling (the pack disposes itself, settings restore history…).
+    const cancel=new Event('cancel',{cancelable:true});if(top.dispatchEvent(cancel)&&top.open)top.close();return true;
+  }
+  // Home is the root: Back there leaves the app (it never walks back through earlier game switches).
+  const hash=normalizeRoute(location.hash);
+  if(!hash||hash==='#home'||hash==='#')return false;
+  if((activeEntry?.index||0)>0){history.back();return true;}
+  void navigate({game:T.game(),hash:parentRoute(hash),mode:'replace'});return true;
+}
+globalThis.cardstashyBack=()=>{try{return appBack();}catch{return false;}};
 // App links use the same history path, including same-hash game changes.
 document.addEventListener("click",e=>{
   const a=e.target.closest?.('a[href^="#"]');
@@ -1606,7 +1630,8 @@ function registerCardMenus() {
 
     if (!quickCard || quickCard.game !== T.game()) return;
     const {game,card} = quickCard;
-    await A[game === "mtg" ? "wish" : "tWish"]({dataset:{name:card.name,id:card.id}}); closeSheet(false);
+    // The same toggle as the card page's Wishlist button: one identity rule, one write, Undo in the toast.
+    closeSheet(false); await A.cardWishlist({dataset:{game,name:card.name,id:card.id}});
   };
   A.quickDeck = () => {
     if (!quickCard || quickCard.game !== T.game()) return;
@@ -3368,11 +3393,14 @@ A.cardOwnedDetails=async t=>{
 A.cardWishlist=async t=>{
   const commit=scopedCommit();
  const game=t.dataset.game,name=t.dataset.name,id=t.dataset.id;if(game!==T.game())return;
- let added=false;
- const saved=await commit(state=>{const st=game==='mtg'?state:state.tcg[game],matches=w=>game==='mtg'?key(w.name)===key(name):String(w.cardId)===String(id);
-  if(st.wishlist.some(matches))st.wishlist=st.wishlist.filter(w=>!matches(w));
-  else{st.wishlist.push({id:uid(),name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:id}),qty:1,addedAt:new Date().toISOString()});added=true;}
- },{enrich:false});toast(added?'Added to wishlist.':'Removed from wishlist.');
+ // One wishlist toggle for the card page and the hold/right-click menu, by the game's identity rule (Magic by
+ // name, Pokémon and Yu-Gi-Oh! by card id). Only the wishlist changes: owned copies, decks and the screen stay put.
+ const matches=w=>game==='mtg'?key(w.name)===key(name):String(w.cardId)===String(id),current=game==='mtg'?S.state:T.gs(game);
+ const adding=!current.wishlist.some(matches);
+ await commit(state=>{const st=game==='mtg'?state:state.tcg[game];
+  st.wishlist=st.wishlist.filter(w=>!matches(w));
+  if(adding)st.wishlist.push({id:uid(),name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:id}),qty:1,addedAt:new Date().toISOString()});
+ },{enrich:false,undo:adding?'Added to wishlist.':'Removed from wishlist.'});
 };
 A.cardDeckPicker=t=>{
  const game=t.dataset.game;if(game!==T.game())return;
@@ -6395,7 +6423,9 @@ boot().catch((e) => {
 C.tradeOption=t=>{const ctx=S.ui.sheetCtx;if(!['card','tcard'].includes(ctx?.type))return;const f=t.dataset.field;if(!['mode','tolerance','credit','valuation','targetEntry'].includes(f))return;ctx.tradeOptions ||= {};ctx.tradeOptions[f]=['mode','valuation','targetEntry'].includes(f)?t.value:Number(t.value);refreshSheet();};
 
 // All new-deck entry points share the same compact setup. Existing saved-deck optimization stays separate.
-A.homeRandomDeck=A.randomDeckOptions=A.randomDeck=()=>{deckExperience.open({game:T.game()});return A.flowRandom();};
+A.homeRandomDeck=A.randomDeckOptions=()=>{deckExperience.open({game:T.game()});return A.flowRandom();};
+// Random Commander is a Magic Commander deck around a random commander-eligible card, whatever format was last used.
+A.randomDeck=()=>{deckExperience.open({game:'mtg',format:'Commander',commanderLock:true});return A.flowRandom();};
 
 A.checkRelease=async()=>{await checkRelease();settingsPopup.refresh();};
 document.addEventListener('toggle',e=>{if(e.target.matches?.('details[data-release-item]')&&e.target.open){acknowledgeRelease(e.target.dataset.releaseItem);e.target.querySelectorAll('.release-dot').forEach(n=>n.remove());}},true);

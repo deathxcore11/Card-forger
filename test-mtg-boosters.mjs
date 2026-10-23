@@ -56,5 +56,5 @@ assert.equal(await loadMtgBooster('zzz',stub),null);
 // The pack opener uses the real sheets for Magic, and the shell keeps the module offline.
 const app=readFileSync('app.js','utf8'),sw=readFileSync('sw.js','utf8'),preview=readFileSync('pack-preview.js','utf8');
 assert.match(app,/const data=await loadMtgBooster\(screen\.code\)/);assert.match(app,/openPackPreview\(\{game,set,cards,featured,booster,/);
-assert.match(preview,/if\(action==='again'\)\{picks=draw\(\);/);assert.match(sw,/"\.\/mtg-boosters\.js"/);
+assert.match(preview,/if\(action==='again'\)\{[^}]*?picks=draw\(\);/);assert.match(sw,/"\.\/mtg-boosters\.js"/);
 console.log('PASS: Magic packs follow each set’s real booster sheets: layouts by weight, colour-balanced commons, a foil in 9 of 40 packs, mythic odds, bonus cards fetched once, era table when no data.');
