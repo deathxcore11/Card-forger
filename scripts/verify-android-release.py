@@ -43,6 +43,9 @@ def bundle_check(source, apk, record):
     shared=set(node(source, "import {moduleGraph} from './scripts/module-graph.mjs'; console.log(JSON.stringify(moduleGraph()))"))
     shell=(source/'sw.js').read_text().split('const ASSETS = [',1)[1].split('];',1)[0]
     shared.update(re.findall(r'[\"\']\./([^\"\']+)[\"\']',shell))
+    # Native transport imports this policy directly; the browser app does not.
+    # A stale copy silently blocks otherwise valid services such as update checks.
+    shared.add('native-service-policy.js')
     # index, manifest, entry and service worker are native-shell-specific. The
     # actual app modules, CSS, foil assets, icons and artwork must match.
     shared.difference_update({'','index.html','manifest.json','sw.js'})

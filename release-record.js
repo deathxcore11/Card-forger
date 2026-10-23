@@ -1,7 +1,7 @@
 // Published release metadata. APK identity is recorded only after verifying the
 // signed artifact; a web deploy never changes the installed app's identity.
 export const RELEASE = Object.freeze({
- id:'web-3.92.0-android-0.4.0',date:'2026-10-22',webVersion:'3.92.0',
- changes:['One deck builder for all three games, with checked prices and a single Save.','Packs open with each set’s real contents and pull rates (Magic booster sheets, Scarlet & Violet and Mega Evolution rates).','Pokémon holo redesign: 39 holo patterns matched to each set, special rarity and promo.','Cards and prices retry when the card database is busy instead of failing.'],
- android:Object.freeze({version:'0.4.0 beta',versionName:'0.4.0-beta',versionCode:5,interfaceVersion:'3.92.0',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.4.0.apk',bytes:25895347,sha256:'a690660a408969c70772fa1530e546ffb72cc95bdaf7249ac3d9251f9b363ca5'})
+ id:'web-3.92.1-android-0.4.1',date:'2026-10-23',webVersion:'3.92.1',
+ changes:['Set pages combine the set and your progress in one header, with search above compact filter, sort and view controls.','Card grid borders are 25% thinner.','Pack art shows for every Pokémon and Yu-Gi-Oh! set in the app.','The app recognises its own version and checks for updates correctly.'],
+ android:Object.freeze({version:'0.4.1 beta',versionName:'0.4.1-beta',versionCode:6,interfaceVersion:'3.92.1',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.4.1.apk',bytes:25896363,sha256:'5bda66162fe5ceeef26af87bef92c3699cea816cdd039c2d4301649f59c2492e'})
 });

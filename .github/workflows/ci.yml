@@ -302,6 +302,8 @@ jobs:
         run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
       - name: Install test browser
         run: npx playwright install --with-deps chromium
+      - name: Verify compact set layout on phone, tablet and desktop
+        run: node tests/compact-set-browser.mjs
       - name: Inspect public bulk set price coverage (read only)
         run: node tests/probe-ygo-set-prices.mjs
       - name: Test exact releases, ownership, filters and responsive Sets

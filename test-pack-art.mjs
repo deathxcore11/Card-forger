@@ -5,7 +5,21 @@ import {selectPackProduct,selectPackGroup} from './set-art.js';
 import {packEligible} from './set-experience.js';
 import {dailyDetails} from './home-today.js';
 import {normalizePtcg} from './ptcg.js';
-import {samplePack,rollYgoPrinting,ptcgSetRarities,packEra,packSize,packFinishes} from './pack-preview.js';
+import {samplePack,rollYgoPrinting,ptcgSetRarities,packEra,packSize,packFinishes,packArtUrl} from './pack-preview.js';
+import {todayPackMarkup} from './home-today.js';
+// The shipped Android 0.4.0 ImageCache accepts this encoded query alphabet.
+// URLSearchParams' '+' spaces caused valid multi-word sets to fail before a fetch.
+const nativeImageQuery=/^[A-Za-z0-9=&._%-]{0,200}$/;
+assert(!nativeImageQuery.test('code=sv04&name=Paradox+Rift'),'reproduce the old Android cache rejection');
+for(const [game,set] of [['ptcg',{id:'sv04',name:'Paradox Rift'}],['ygo',{code:'LOB',name:'Legend of Blue Eyes White Dragon'}],['ygo',{name:'25th Anniversary Rarity Collection'}],['mtg',{code:'dsk',name:'Duskmourn: House of Horror'}],['ptcg',{id:'neo4',name:'Neo Destiny'}],['ptcg',{id:'ex14',name:'EX Crystal Guardians *'}]]){
+ const url=new URL(packArtUrl(game,set),'https://cardstashy.com');
+ assert(nativeImageQuery.test(url.search.slice(1)),url.href);
+ assert.equal(url.searchParams.get('name'),set.name,'encoding preserves the exact set identity');
+ assert.equal(url.pathname,`/img/pack/${game}.jpg`);
+}
+for(const [game,set] of [['ptcg',{id:'sv04',name:'Paradox Rift'}],['ygo',{code:'LOB',name:'Legend of Blue Eyes White Dragon'}]]){
+ const html=todayPackMarkup(game,set);assert.match(html,/data-pack-art/);assert.match(html,/name=[^\"]*%20/);assert.doesNotMatch(html,/name=[^\"]*\+/);
+}
 // A fixed-seed generator keeps the statistical checks deterministic.
 const seeded=(a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;})(12345);
 const img=n=>`https://tcgplayer-cdn.tcgplayer.com/product/${n}_200w.jpg`;

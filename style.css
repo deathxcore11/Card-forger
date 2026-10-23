@@ -1,4 +1,5 @@
 @import url("./value-page.css");
+:root { --grid-frame-width: 3.75px; }
 /* Cardforge — mobile-first, dark. One accent (gold), color only where it means something. */
 :root {
   --bg: #0f1115;
@@ -2250,7 +2251,7 @@ details.ingredient[open] > summary b { color: var(--accent); }
 #content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { animation: tier-gold-ring 3.4s ease-in-out infinite; }
 @keyframes tier-gold-ring { 50% { outline-color: #fff0b0; } }
 /* Tier frame: a solid 5px band of the tier colour around the card (padding, so nothing covers it). */
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art { outline: 0; padding: 5px; border-radius: calc(4.75% + 5px) / calc(3.5% + 5px); background: var(--tier, #8b939c); }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art { outline: 0; padding: var(--grid-frame-width); border-radius: calc(4.75% + var(--grid-frame-width)) / calc(3.5% + var(--grid-frame-width)); background: var(--tier, #8b939c); }
 #content.view-gallery .display-list .lot[data-tier="t0"]:not(.wanted) .lot-art { background: linear-gradient(160deg, #a7afb8, #6f7780); }
 #content.view-gallery .display-list .lot[data-tier="t1"]:not(.wanted) .lot-art { background: linear-gradient(160deg, #7be3a8, #2fae68); }
 #content.view-gallery .display-list .lot[data-tier="t2"]:not(.wanted) .lot-art { background: linear-gradient(160deg, #8cc6ff, #2f7fe0); }
@@ -2258,8 +2259,8 @@ details.ingredient[open] > summary b { color: var(--accent); }
 #content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { background: linear-gradient(115deg, #b8860b 0%, #ffd34d 30%, #fff6c9 45%, #ffd34d 60%, #b8860b 100%) 0 0 / 300% 100%; animation: tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite; }
 #content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art { background: linear-gradient(115deg, #c2410c 0%, #ff7a1a 30%, #ffd08a 45%, #ff7a1a 60%, #c2410c 100%) 0 0 / 300% 100%; animation: tier-shine 2.6s ease-in-out infinite, tier-fire 2.4s ease-in-out infinite; }
 #content.view-gallery .display-list .lot:not(.wanted) .lot-art > img, #content.view-gallery .display-list .lot:not(.wanted) .lot-art > .img-missing { border-radius: 4.75% / 3.5%; position: relative; z-index: 1; }
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art::after { inset: 5px; border-radius: 4.75% / 3.5%; }
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art .tile-chrome { left: 5px; right: 5px; top: 5px; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art::after { inset: var(--grid-frame-width); border-radius: 4.75% / 3.5%; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art .tile-chrome { left: var(--grid-frame-width); right: var(--grid-frame-width); top: var(--grid-frame-width); }
 
 /* ===== One look for every card thumbnail in the app: a price-tier ring drawn inside the edge ===== */
 img[data-tier] { outline: 2px solid var(--tier); outline-offset: -2px; border-radius: 6px; }
@@ -2451,17 +2452,17 @@ img[data-tier="t5"] { animation: tier-fire-ring 2.4s ease-in-out infinite; }
 :is(.view-compact, .view-symbols) .card-grid .owned-badge { position: absolute; right: 10px; bottom: 8px; }
 /* The tier outline around the whole row, animated exactly like collection rows. */
 :is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier]:not([data-tier="tn"]) { border-color: transparent; }
-:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier]:not([data-tier="tn"])::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 2px; pointer-events: none; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier]:not([data-tier="tn"])::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
 :is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t0"]::before { background: linear-gradient(90deg, #6f7780 0 38%, #e9eef2 50%, #6f7780 62% 100%) 0 0 / 320px 100% repeat-x; animation: fx-x320 7s linear infinite; }
 :is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t1"]::before { background: linear-gradient(90deg, #1f8a50 0%, #2fae68 20%, #c4ffde 25%, #2fae68 30%, #1f8a50 50%, #2fae68 70%, #c4ffde 75%, #2fae68 80%, #1f8a50 100%) 0 0 / 260px 100% repeat-x; animation: fx-x260 5s linear infinite; }
 :is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t2"]::before { background: linear-gradient(90deg, #1d5fb0 0%, #2f7fe0 30%, #e2f4ff 45%, #7fc3ff 50%, #2f7fe0 65%, #1d5fb0 100%) 0 0 / 200px 100% repeat-x; animation: fx-x200r 3.6s linear infinite; }
-:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t3"]::before { padding: 2.5px; background: linear-gradient(180deg, #b46cff, #6fd0ff, #ff7ad9, #ffe27a, #7dffb2, #b46cff) 0 0 / 100% 360px repeat-y; animation: fx-y360 4.5s linear infinite; }
-:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t4"]::before { padding: 2.5px; background: linear-gradient(90deg, #9a6f08 0%, #e2b53a 30%, #ffd34d 42%, #fffbe6 50%, #ffd34d 58%, #e2b53a 70%, #9a6f08 100%) 0 0 / 240px 100% repeat-x; animation: fx-x240 2.4s linear infinite; }
-:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t5"]::before { padding: 3px; background: linear-gradient(90deg, rgba(255,240,190,0) 0%, rgba(255,240,190,.85) 50%, rgba(255,240,190,0) 100%) 0 0 / 160px 100% repeat-x, linear-gradient(180deg, #a3330a 0%, #ff7a1a 25%, #ffb050 50%, #ff5a10 75%, #a3330a 100%) 0 0 / 100% 140px repeat-y; animation: fx-fire 1.6s linear infinite; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t3"]::before { padding: 1.875px; background: linear-gradient(180deg, #b46cff, #6fd0ff, #ff7ad9, #ffe27a, #7dffb2, #b46cff) 0 0 / 100% 360px repeat-y; animation: fx-y360 4.5s linear infinite; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t4"]::before { padding: 1.875px; background: linear-gradient(90deg, #9a6f08 0%, #e2b53a 30%, #ffd34d 42%, #fffbe6 50%, #ffd34d 58%, #e2b53a 70%, #9a6f08 100%) 0 0 / 240px 100% repeat-x; animation: fx-x240 2.4s linear infinite; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t5"]::before { padding: 2.25px; background: linear-gradient(90deg, rgba(255,240,190,0) 0%, rgba(255,240,190,.85) 50%, rgba(255,240,190,0) 100%) 0 0 / 160px 100% repeat-x, linear-gradient(180deg, #a3330a 0%, #ff7a1a 25%, #ffb050 50%, #ff5a10 75%, #a3330a 100%) 0 0 / 100% 140px repeat-y; animation: fx-fire 1.6s linear infinite; }
 :is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t5"] { animation: ring-glow 1.8s ease-in-out infinite alternate; }
 
 /* Big-card view: the card sits in an animated 5px tier frame (padding + background on the image). */
-.view-gallery .card-grid > .grid-card[data-tier]:not([data-tier="tn"]) > img.card-img, .card-grid:not(.small-grid) > .grid-card[data-tier]:not([data-tier="tn"]) > img.card-img { padding: 5px; border-radius: 12px; outline: 0; box-shadow: 0 10px 24px -14px rgba(0,0,0,.8); }
+.view-gallery .card-grid > .grid-card[data-tier]:not([data-tier="tn"]) > img.card-img, .card-grid:not(.small-grid) > .grid-card[data-tier]:not([data-tier="tn"]) > img.card-img { padding: var(--grid-frame-width); border-radius: 12px; outline: 0; box-shadow: 0 10px 24px -14px rgba(0,0,0,.8); }
 .card-grid > .grid-card[data-tier] > img.card-img { outline: 0 !important; }
 .card-grid > .grid-card[data-tier="t0"] > img.card-img { background: linear-gradient(90deg, #6f7780 0 38%, #e9eef2 50%, #6f7780 62% 100%) 0 0 / 320px 100% repeat-x; animation: fx-x320 7s linear infinite; }
 .card-grid > .grid-card[data-tier="t1"] > img.card-img { background: linear-gradient(90deg, #1f8a50 0%, #2fae68 20%, #c4ffde 25%, #2fae68 30%, #1f8a50 50%, #2fae68 70%, #c4ffde 75%, #2fae68 80%, #1f8a50 100%) 0 0 / 260px 100% repeat-x; animation: fx-x260 5s linear infinite; }
@@ -2470,16 +2471,16 @@ img[data-tier="t5"] { animation: tier-fire-ring 2.4s ease-in-out infinite; }
 .card-grid > .grid-card[data-tier="t4"] > img.card-img { background: linear-gradient(90deg, #9a6f08 0%, #e2b53a 30%, #ffd34d 42%, #fffbe6 50%, #ffd34d 58%, #e2b53a 70%, #9a6f08 100%) 0 0 / 240px 100% repeat-x; animation: fx-x240 2.4s linear infinite, fx-glow-g 2.4s ease-in-out infinite alternate; }
 .card-grid > .grid-card[data-tier="t5"] > img.card-img { background: linear-gradient(90deg, rgba(255,240,190,0) 0%, rgba(255,240,190,.85) 50%, rgba(255,240,190,0) 100%) 0 0 / 160px 100% repeat-x, linear-gradient(180deg, #a3330a 0%, #ff7a1a 25%, #ffb050 50%, #ff5a10 75%, #a3330a 100%) 0 0 / 100% 140px repeat-y; animation: fx-fire 1.6s linear infinite, fx-glow-f .9s ease-in-out infinite alternate; }
 :is(.view-compact, .view-symbols) .card-grid > .grid-card > img.card-img { padding: 0 !important; background: none !important; animation: none !important; box-shadow: none !important; }
-.card-grid > .grid-card[data-tier]:not([data-tier="tn"]) > .tile-chrome { left: 5px; right: 5px; top: 5px; }
+.card-grid > .grid-card[data-tier]:not([data-tier="tn"]) > .tile-chrome { left: var(--grid-frame-width); right: var(--grid-frame-width); top: var(--grid-frame-width); }
 :is(.view-compact, .view-symbols) .card-grid > .grid-card > .tile-chrome { left: auto; right: auto; top: auto; }
 @media (prefers-reduced-motion: reduce) { .card-grid > .grid-card::before, .card-grid > .grid-card > img.card-img, .card-grid > .grid-card { animation: none !important; } }
 /* Pokémon collection art follows its intrinsic ratio. A fixed 63/88 host plus
    contain was adding dark letterboxing inside the decorative tier frame. */
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] { aspect-ratio:auto; border-radius:calc(4.75% + 5px) / calc(3.5% + 5px); }
-#content.view-gallery .display-list .lot[data-tier]:not([data-tier="tn"]):not(.wanted) .lot-art[data-finish-game="ptcg"] { padding:5px; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] { aspect-ratio:auto; border-radius:calc(4.75% + var(--grid-frame-width)) / calc(3.5% + var(--grid-frame-width)); }
+#content.view-gallery .display-list .lot[data-tier]:not([data-tier="tn"]):not(.wanted) .lot-art[data-finish-game="ptcg"] { padding:var(--grid-frame-width); }
 #content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] > img.card-img { display:block; width:100%; height:auto; aspect-ratio:auto; object-fit:contain; border-radius:4.75% / 3.5%; }
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"]::after { inset:5px; border-radius:7px; }
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] .tile-chrome { left:5px; right:5px; top:5px; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"]::after { inset:var(--grid-frame-width); border-radius:7px; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] .tile-chrome { left:var(--grid-frame-width); right:var(--grid-frame-width); top:var(--grid-frame-width); }
 /* Selection never remounts the card or interrupts its tier animation. */
 .display-list .lot:has(.batch-mark) { position:relative; }
 #content.view-gallery .display-list .lot > .batch-mark { position:absolute; top:12px; left:12px; z-index:8; padding:6px; border-radius:10px; background:rgba(12,16,23,.85); }
@@ -5011,7 +5012,7 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
    the card image (5px, 12px corners). The card page draws the same band on the card's holder instead, so
    the card image (and the foil laid over it) stays exactly the printed card. ===== */
 .view-gallery .card-grid .grid-card img.card-img[data-tier] {
-  outline: 0; box-sizing: border-box; border: 5px solid transparent; border-radius: calc(4.75% + 5px) / calc(3.5% + 5px); background-origin: border-box; background-clip: border-box;
+  outline: 0; box-sizing: border-box; border: var(--grid-frame-width) solid transparent; border-radius: calc(4.75% + var(--grid-frame-width)) / calc(3.5% + var(--grid-frame-width)); background-origin: border-box; background-clip: border-box;
   background-image: linear-gradient(160deg, #a7afb8, #6f7780);
 }
 .view-gallery .card-grid .grid-card img.card-img[data-tier="t1"] { background-image: linear-gradient(160deg, #7be3a8, #2fae68); }

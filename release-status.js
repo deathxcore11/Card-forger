@@ -5,9 +5,8 @@ const KEY='cardstashy-release-seen-v1';
 let latest=RELEASE,error='',checked=false,flight=null;
 const listeners=new Set();
 const storage=()=>{try{return globalThis.localStorage;}catch{return null;}};
-export function runtimeVersions(){
- const native=globalThis.CARDSTASHY_NATIVE;
- return {native:!!native,nativeVersion:native?.versionName||APP_VERSION.match(/Android\s+([^\s]+)/)?.[1]||null,nativeBuild:Number.isInteger(native?.versionCode)?native.versionCode:null,interfaceVersion:APP_VERSION.split(/\s+[·|]/)[0]};
+export function runtimeVersions({native=globalThis.CARDSTASHY_NATIVE,appVersion=APP_VERSION}={}){
+ return {native:!!native,nativeVersion:native?.versionName||appVersion.match(/\bAndroid(?:\s+app)?\s+(\d+\.\d+\.\d+(?:-[\w.-]+)?)/i)?.[1]||null,nativeBuild:Number.isInteger(native?.versionCode)?native.versionCode:null,interfaceVersion:appVersion.split(/\s+[·|]/)[0]};
 }
 const compare=(a,b)=>{const aa=String(a).match(/\d+/g)||[],bb=String(b).match(/\d+/g)||[];for(let i=0;i<Math.max(aa.length,bb.length);i++){const delta=Number(aa[i]||0)-Number(bb[i]||0);if(delta)return delta;}return 0;};
 export function releaseState({release=latest,runtime=runtimeVersions(),store=storage()}={}){

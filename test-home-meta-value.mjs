@@ -366,7 +366,10 @@ for(const game of ['mtg','ygo','ptcg']) for(const initial of [0,1]) {
   assert.equal(refreshHomeCommunity(game,root,options),loading,'return subscribes without replacing the provider promise');
   assert.equal(refreshHomeCommunity(game,root,options),loading,'repeat render stays bounded');
   const newsSource={mtg:{sourceId:'wizards',url:'https://magic.wizards.com/en/news/announcements/arriving'},ygo:{sourceId:'konami',url:'https://www.yugioh-card.com/en/news/arriving'},ptcg:{sourceId:'pokeguardian',url:'https://www.pokeguardian.com/3412574_arriving'}}[game];
-  communityState(game).data={items:[{game,...newsSource,kind:'news',title:'Arriving current story',source:'Original publisher',publishedAt:day,fetchedAt:new Date().toISOString()}],status:'ready'};
+  // The repaint uses the real clock. This is a request-race test, so keep its
+  // arriving story current instead of aging out the fixed value-history date.
+  const storyTime=new Date().toISOString();
+  communityState(game).data={items:[{game,...newsSource,kind:'news',title:'Arriving current story',source:'Original publisher',publishedAt:storyTime,fetchedAt:storyTime}],status:'ready'};
   news.resolve(); await new Promise(r=>setImmediate(r));
   assert.match(second.html,/Arriving current story/,'news is not held hostage by pending decks');
   metaState(homeMetaKey(game)).data={source:source[game],decks:[deck(game,'arriving')]};decks.resolve();await loading;

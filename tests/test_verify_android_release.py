@@ -48,6 +48,25 @@ class BundleGateTests(unittest.TestCase):
             self.assertEqual(expected['style.css'], hashlib.sha256(adapted).hexdigest())
             self.assertNotEqual(expected['style.css'], hashlib.sha256((root / 'style.css').read_bytes()).hexdigest(), 'an unadapted stylesheet fails the gate')
 
+    def test_native_transport_policy_cannot_be_stale(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            (root / 'sw.js').write_text('const ASSETS = [];')
+            policy = "export const releaseRoute = '/api/releases/current';"
+            (root / 'native-service-policy.js').write_text(policy)
+            record = {'webVersion': '9.1.0', 'android': {'interfaceVersion': '9.1.0'}}
+            apk = root / 'fixture.apk'
+            with patch.object(gate, 'node', side_effect=lambda source, code: [] if 'moduleGraph' in code else '9.1.0'), patch.object(gate, 'native_expected', return_value={}):
+                for bundled, expected in [(None, 'APK missing shared asset: native-service-policy.js'), ('old route inventory', 'APK differs from shared source: native-service-policy.js'), (policy, None)]:
+                    with zipfile.ZipFile(apk, 'w') as out:
+                        if bundled is not None:
+                            out.writestr('assets/public/native-service-policy.js', bundled)
+                    errors = gate.bundle_check(root, apk, record)['errors']
+                    if expected:
+                        self.assertIn(expected, errors)
+                    else:
+                        self.assertEqual(errors, [])
+
     def test_only_self_referential_fields_may_differ(self):
         one = b"{sha256:'abc',bytes:1,interfaceVersion:'9.1.0'}"
         self.assertEqual(gate.normalized('release-record.js', one), gate.normalized('release-record.js', b"{sha256:'def',bytes:2,interfaceVersion:'9.1.0'}"))

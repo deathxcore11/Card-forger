@@ -195,7 +195,7 @@ try{
  await withApp('ygo-set-reference-prices',{game:'ygo',setPrices:true},async app=>{
   const {page}=app;await readyIndex(page);const before=await inventorySnapshot(page);await openSet(page,'ygo',LOB.id);
   const tile=await cardTile(page,'ygo','4614116');assert.match(await tile.innerText(),/\$12\.34–\$15\.00/);assert.match(await tile.innerText(),/Market range/);assert.equal(await tile.getAttribute('data-tier'),'t2');
-  const edge=await tile.locator('img.card-img').evaluate(n=>({padding:parseFloat(getComputedStyle(n).paddingLeft),animation:getComputedStyle(n).animationName}));assert(edge.padding>=5&&edge.animation!=='none','YGO set card uses the shared animated price frame');
+  const edge=await tile.locator('img.card-img').evaluate(n=>({padding:parseFloat(getComputedStyle(n).paddingLeft),animation:getComputedStyle(n).animationName}));assert.equal(edge.padding,3.75,'YGO set frame is 25% thinner');assert.notEqual(edge.animation,'none','YGO set card retains the shared animated price frame');
   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'#content','YGO set reference '+width);await capture(page,'sets-ygo-priced-'+width);}
   await select(page,'[data-change="tSetEdition"]','1st-edition');assert.match(await tile.innerText(),/\$15\.00/);assert.doesNotMatch(await tile.innerText(),/\$12\.34/);
   await select(page,'[data-change="tSetEdition"]','limited');assert.match(await tile.innerText(),/No quote yet/);assert.equal(await tile.getAttribute('data-tier'),'tn');

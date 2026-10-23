@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import {passwordField,togglePassword} from './auth-form.js';
 import {signedOutAccount,settings} from './views.js';
 import {createCommunity,communityPage} from './community-profile.js';
-import {releaseState,checkRelease,acknowledgeRelease} from './release-status.js';
+import {releaseState,checkRelease,acknowledgeRelease,runtimeVersions} from './release-status.js';
+import {planServiceRequest,NATIVE_ORIGIN} from './native-service-policy.js';
 import {RELEASE} from './release-record.js';
 import worker from './worker.js';
 import {S,blank} from './store.js';
@@ -20,6 +21,20 @@ const a=community.refresh(),b=community.refresh();assert.equal(a,b,'requests awa
 const stale=community.refresh();await Promise.resolve();who='C';community.reset();finish({people:[{id:'PRIVATE_A'}]});await stale;assert.equal(community.data,null,'old-account completion cannot populate the new account');
 globalThis.document=prior.document;globalThis.window=prior.window;
 const memory=new Map(),store={getItem:k=>memory.get(k),setItem:(k,v)=>memory.set(k,v)};
+for(const label of ['3.92.0 · Android app 0.4.0-beta','3.92.0 · Android 0.4.0-beta']){
+ const runtime=runtimeVersions({native:{platform:'android'},appVersion:label});assert.equal(runtime.nativeVersion,'0.4.0-beta');assert.equal(runtime.interfaceVersion,'3.92.0');
+ assert.equal(releaseState({store,runtime,release:{...RELEASE,android:{...RELEASE.android,versionName:'0.4.0-beta'}}}).update,false,'same installed APK must not claim an update');
+}
+assert.equal(runtimeVersions({native:{},appVersion:'3.92.0 · Android app unavailable'}).nativeVersion,null);
+assert.equal(runtimeVersions({native:{versionName:'0.5.0-beta',versionCode:6},appVersion:'3.92.0 · Android app 0.4.0-beta'}).nativeVersion,'0.5.0-beta','native metadata takes precedence');
+const nativeRuntime=globalThis.CARDSTASHY_NATIVE;globalThis.CARDSTASHY_NATIVE={platform:'android'};
+await checkRelease(async(url,init)=>{
+ const plan=planServiceRequest(url,init);assert.equal(plan.kind,'service');assert.equal(plan.request.credentials,'omit');assert(!plan.request.headers.has('Authorization'));
+ const headers=new Headers(plan.request.headers);headers.set('Origin',NATIVE_ORIGIN);
+ const response=await worker.fetch(new Request(plan.request,{headers}),{},{});assert.equal(response.status,200);assert.equal(response.headers.get('Access-Control-Allow-Origin'),'*','public release metadata allows credential-free native reads');return response;
+});assert.equal(releaseState({store}).error,'');assert.equal(releaseState({store}).checked,true);globalThis.CARDSTASHY_NATIVE=nativeRuntime;
+assert.throws(()=>planServiceRequest('/api/releases/current',{method:'POST'}),/Method/);
+assert.throws(()=>planServiceRequest('/api/releases/current',{headers:{Authorization:'Bearer fixture'}}),/Authorization/);
 let state=releaseState({store,runtime:{native:true,nativeBuild:3,nativeVersion:'0.3.2-beta',interfaceVersion:'3.91.7'}});assert(state.update);assert(state.unread);
 const previousStorage=globalThis.localStorage;globalThis.localStorage=store;assert(acknowledgeRelease(RELEASE.id));state=releaseState({store,runtime:{native:true,nativeBuild:3,nativeVersion:'0.3.2-beta',interfaceVersion:'3.91.7'}});assert(!state.unread);assert(state.update,'reading release notes does not install the app');
 assert(releaseState({store,release:{...RELEASE,id:'next'},runtime:{native:false,interfaceVersion:'3.91.10'}}).unread);

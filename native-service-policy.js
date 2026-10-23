@@ -1,7 +1,9 @@
-// Server-only native route inventory. No network side effects.
+// Shared native/server route inventory. Bundle this exact file in Android so
+// the transport and server agree on available services. No network side effects.
 export const NATIVE_ORIGIN = 'https://android-integration.cardstashy.invalid';
 export const SERVICE_ORIGIN = 'https://cardstashy.com';
 const READ = new Set([
+  '/api/releases/current',
   '/api/daily-card', '/api/community', '/api/meta/curation', '/api/tcgplayer/sets',
   '/api/prices/recent', '/api/prices/archive', '/api/prices/conditions',
   '/api/prices/yugioh-set', '/api/prices/yugioh', '/api/prices/pokemon',
@@ -50,5 +52,35 @@ export function resolveServiceURL(input) {
     path: pathname, image, ai,
     methods: Object.freeze(image || READ.has(pathname) ? ['GET'] : ai ? ['GET', 'POST'] : ['POST']),
     authorizationAllowed: ai || pathname === '/api/prices/conditions' });
+}
+
+// Returns a transport-ready Request for inventoried service calls only. It does
+// not send it. Passthrough keeps both original arguments untouched. Callers must
+// not inject credentials after planning or follow redirects outside this policy.
+export function planServiceRequest(input, init = {}) {
+  const route = resolveServiceURL(input);
+  if (route.kind === 'passthrough') return Object.freeze({ kind: 'passthrough', input, init });
+  const method = String(init.method || (input instanceof Request ? input.method : 'GET')).toUpperCase();
+  if (!route.methods.includes(method)) fail('Method is not allowed for this route');
+  const headers = new Headers(init.headers ?? (input instanceof Request ? input.headers : undefined));
+  for (const name of headers.keys()) if (!['accept', 'content-type', 'authorization'].includes(name)) fail('Service header is not allowed: ' + name);
+  const authorization = headers.get('authorization');
+  if (authorization && (!route.authorizationAllowed || !/^Bearer [A-Za-z0-9._-]{1,8192}$/.test(authorization))) fail('Authorization is not allowed for this destination');
+  // User requirement: model-invoking AI calls require a signed-in session.
+  // The backend must independently validate the token; this is not authorization.
+  if (route.ai && method === 'POST' && !authorization) fail('Sign in before using AI');
+  if (method === 'POST' && route.ai && !/^application\/json(?:;|$)/i.test(headers.get('content-type') || '')) fail('AI requests require JSON');
+  if (route.path === '/api/lens' && !/^image\/(?:jpeg|png|webp)$/.test(headers.get('content-type') || '')) fail('Lens requests require an image');
+  let base = input instanceof Request ? input.clone() : undefined;
+  // Build from a clone so the caller's Request/body remains usable; platform
+  // Request implements body, signal and init override semantics without re-encoding.
+  const source = base ? new Request(base, init) : new Request(route.url, init);
+  const request = new Request(route.url, {
+    method, headers, body: ['GET', 'HEAD'].includes(method) ? undefined : source.body,
+    ...(source.body ? { duplex: 'half' } : {}), signal: source.signal,
+    credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer',
+    cache: source.cache, integrity: source.integrity, keepalive: false,
+  });
+  return Object.freeze({ kind: 'service', route, request });
 }
 
