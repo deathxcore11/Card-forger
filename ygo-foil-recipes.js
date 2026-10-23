@@ -58,6 +58,20 @@ for(const k of ['ygo-parallel','ygo-rare-parallel','ygo-super-parallel','ygo-ult
 // Modern foil layout (Attribute and Level/Rank stars foiled on Super, Ultra and Secret Rares; Gen 2
 // Ultimate Rares) starts with Breakers of Shadow.
 export const YGO_MODERN_FROM='2016-02-04';
+// The SELECTED printing's own release, so set, search, collection and pack views resolve one printing the
+// same way. The set prefix comes from its printed code (OP16-EN001 -> OP16); the date from its exact named
+// release in the catalogue (registered by tcg.js). The browsing page's set context is used only when it is
+// that same release. Missing data stays missing: no date means the date-based rules do not apply.
+let releaseLookup=()=>[];
+export const setYgoReleaseLookup=fn=>{releaseLookup=typeof fn==='function'?fn:()=>[];};
+export function ygoPrintingRelease(printing,setContext=null){
+ const code=(String(printing?.code||'').match(/^([A-Z0-9]+)-/i)?.[1]||'').toUpperCase(),name=String(printing?.name||'').normalize('NFC').trim();
+ const same=setContext&&String(setContext.name||'').normalize('NFC').trim()===name&&(!code||String(setContext.code||'').toUpperCase()===code);
+ if(same)return {code,date:String(setContext.date||''),source:'set-context'};
+ let found=[];try{found=(name&&code?releaseLookup(name,code):[])||[];}catch{}
+ const dates=[...new Set(found.map(r=>String(r?.date||'')).filter(Boolean))];
+ return {code,date:dates.length===1?dates[0]:'',source:dates.length===1?'catalogue':dates.length?'ambiguous':'missing'};
+}
 // The printing's own set picks the generation of a rarity: Ultimate Rares (classic art-and-rim relief
 // before BOSH, full-frame relief after, a sparkle border from OTS Pack 16 and the Rarity Collections)
 // and Duel Terminal parallels. code: the set code (DT05, OP16, RA01...); date: the print date.

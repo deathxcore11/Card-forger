@@ -17,7 +17,15 @@ const cases=[
  [{name:'Mondrak, Glory Dominus',set:'one',promo_types:['stepandcompleat','boosterfun']},'mtg-compleat'],
  [{name:'Void Rend',set:'snc',promo_types:['gilded','boosterfun']},'mtg-gilded'],
  [{name:'Cavern of Souls',set:'lci',promo_types:['neonink']},'mtg-neon'],
- [{name:'Sol Ring',set:'sld',promo_types:['serialized']},'mtg-doublerainbow'],
+ // Serialized double-rainbow cards carry their own tag (Scryfall LTR 748z: serialized, poster, doublerainbow).
+ [{name:'The One Ring',set:'ltr',collector_number:'748z',promo_types:['boosterfun','serialized','poster','doublerainbow','universesbeyond']},'mtg-doublerainbow'],
+ // A serial number is not a material: the 1/1 One Ring (LTR 0) is traditional foil.
+ [{name:'The One Ring',set:'ltr',collector_number:'0',promo_types:['boosterfun','serialized','universesbeyond']},'mtg-traditional'],
+ // Poster and scroll are art/frame styles; silverfoil names the scroll showcase's material (LTR 697).
+ [{name:'The One Ring',set:'ltr',collector_number:'748',promo_types:['boosterfun','poster','universesbeyond']},'mtg-traditional'],
+ [{name:'The One Ring',set:'ltr',collector_number:'697',promo_types:['boosterfun','silverfoil','scroll','universesbeyond']},'mtg-silver'],
+ // Innistrad: Double Feature foils are silver screen with no promo tag (DBL 1 Adeline).
+ [{name:'Adeline, Resplendent Cathar',set:'dbl',collector_number:'1'},'mtg-silverscreen'],
  [{name:'Llanowar Elves',set:'fdn',promo_types:['fracturefoil','japanshowcase','boosterfun']},'mtg-fracture'],
  [{name:'Underworld Breach',set:'sld',promo_types:['raisedfoil']},'mtg-raised']];
 for(const [c,want] of cases)assert.equal(mtgFoilEffect(c,'foil'),want,c.name);
@@ -57,7 +65,7 @@ assert.match(MTG_FOIL_FRAGMENT,/return mix\(base,shoulder\(T\*F\*1\.35\),clamp\(
 // unknown set-specific '...foil' promo types, and the M15 holo stamp on modern rares and mythics.
 {const R=await import('./mtg-foil-recipes.js');
  assert.equal(mtgFoilEffect({set_type:'masterpiece',set:'kld'}),'mtg-masterpiece');assert.equal(mtgFoilEffect({set:'pd2'}),'mtg-pds');
- for(const [p,e] of [['ampersand','mtg-ampersand'],['silverscreen','mtg-silverscreen'],['scroll','mtg-scroll'],['vaultboy','mtg-vaultboy'],['chocobotrackfoil','mtg-emblem'],['textured','mtg-textured']])assert.equal(mtgFoilEffect({promo_types:[p]}),e,p);
+ for(const [p,e] of [['ampersand','mtg-ampersand'],['silverscreen','mtg-silverscreen'],['scroll','mtg-traditional'],['vaultboy','mtg-vaultboy'],['chocobotrackfoil','mtg-traditional'],['textured','mtg-textured']])assert.equal(mtgFoilEffect({promo_types:[p]}),e,p);
  assert.equal(mtgFoilEffect({promo_types:['boosterfun']}),'mtg-traditional','non-foil promo types keep traditional');
  assert(R.mtgHoloStamp({frame:'2015',rarity:'mythic'}));assert(!R.mtgHoloStamp({frame:'2015',rarity:'common'}));assert(!R.mtgHoloStamp({frame:'2003',rarity:'rare'}));
  for(const k of ['mtg-masterpiece','mtg-ampersand','mtg-silverscreen','mtg-scroll','mtg-vaultboy','mtg-pds','mtg-emblem'])assert(MTG_FOIL_RECIPES[k],k);}

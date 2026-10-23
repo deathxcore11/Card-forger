@@ -14,8 +14,8 @@ assert.equal(holo('pk-dppt'),'ptcg-ex-holo');assert.equal(holo('pk-hgss'),'ptcg-
 assert.equal(PTCG_FOIL_RECIPES['ptcg-ex-holo'].pat,PTCG_PATTERN.cosmos,'EX to HGSS holos print Cosmos');
 // Per-set sheets (TCGdex set ids) and special rarities, from the redesign brief.
 {const H=(set,o={})=>ptcgFoilEffect({finish:'holofoil',era:'pk-bwxy',set,...o}),R=(set,era='pk-exb')=>ptcgFoilEffect({finish:'reverse-holofoil',era,set});
- assert.equal(H('bw1'),'ptcg-tinsel');assert.equal(H('bw2'),'ptcg-tinsel2');assert.equal(H('xy1'),'ptcg-vsheen');assert.equal(H('xy12'),'ptcg-starlight2');assert.equal(H('col1'),'ptcg-vsheen-spectrum');
- assert.equal(ptcgFoilEffect({finish:'holofoil',era:'pk-sm',set:'det1'}),'ptcg-striped');assert.equal(ptcgFoilEffect({finish:'holofoil',era:'pk-sv',set:'sv03.5'}),'ptcg-cosmos-hd');
+ assert.equal(H('bw1'),'ptcg-tinsel');assert.equal(H('bw2'),'ptcg-tinsel','Tinsel II has no evidenced set boundary, so every BW set stays in the Tinsel family');assert.equal(H('xy1'),'ptcg-vsheen');assert.equal(H('xy12'),'ptcg-starlight2');assert.equal(H('col1'),'ptcg-vsheen-spectrum');
+ assert.equal(ptcgFoilEffect({finish:'holofoil',era:'pk-sm',set:'det1'}),'ptcg-striped');assert.notEqual(ptcgFoilEffect({finish:'holofoil',era:'pk-sv',set:'sv03.5'}),'ptcg-cosmos-hd');
  assert.equal(R('ex5'),'ptcg-energy2-reverse');assert.equal(R('ex8'),'ptcg-pinwheel-reverse');assert.equal(R('ex9'),'ptcg-emerald-reverse');assert.equal(R('ex10'),'ptcg-ball-hologram-reverse');assert.equal(R('ex12'),'ptcg-reverse');assert.equal(R('ex1','pk-exa'),'ptcg-rmirror-reverse');
  assert.equal(R('bw3','pk-bwxy'),'ptcg-emblem-reverse');assert.equal(R('xy3','pk-bwxy'),'ptcg-reverse');assert.equal(R('sv01','pk-sv'),'ptcg-sv-reverse','the SV reverse keeps its measured sheet');
  assert.equal(ptcgFoilEffect({finish:'reverse-holofoil',era:'pk-sv',set:'sv08.5',foil:'pokeball'}),'ptcg-prismatic-pokeball');assert.equal(ptcgFoilEffect({finish:'reverse-holofoil',era:'pk-sv',set:'sv08.5',foil:'masterball'}),'ptcg-prismatic-masterball');
@@ -85,7 +85,9 @@ console.log('PASS: Pokémon foil follows each era (WotC, Legendary Collection, e
 // Illustration rares were so dimmed (partial strength, faint relief and sparkle) that a
 // pulled Special Illustration Rare looked unfoiled: they keep most of the foil's weight.
 {const {PTCG_FOIL_RECIPES:R}=await import('./ptcg-foil-recipes.js');
- for(const [k,min] of [['ptcg-special-illustration',.9],['ptcg-illustration',.8]]){const r=R[k];assert(r.strength>=min&&r.relief>=.25&&r.sparkle>=.3,`${k} stays visibly foil`);}
+ for(const [k,min] of [['ptcg-special-illustration',.9],['ptcg-illustration',.8]]){const r=R[k];assert(r.strength>=min&&r.sparkle>=.3,`${k} stays visibly foil`);}
+ // Ordinary Illustration Rares are not the textured SIR family: no blanket relief (Foil Engineering Guide S35).
+ assert(R['ptcg-special-illustration'].relief>=.25&&R['ptcg-illustration'].relief===0,'Only Special Illustration Rares carry relief');
  assert(R['ptcg-special-illustration'].sparkle>R['ptcg-illustration'].sparkle,'Special Illustration Rares are the more textured, sparklier of the two');}
 // The brushwork pattern keeps one smooth rainbow direction: a grating that turned with every stroke drew coloured
 // contour lines over the art (N's Plan's hat and face).

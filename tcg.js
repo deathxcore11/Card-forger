@@ -1,4 +1,5 @@
 import {setAtmosphere,packButton} from './set-experience.js';
+import {setYgoReleaseLookup} from './ygo-foil-recipes.js';
 import {normalizeSeeds} from './deck-seeds.js';
 import {priceOriginBadge,priceOriginNote} from './price-origin.js';
 import {browseSets,setBrowserControls,setBrowserRows,setBrowserDetail} from './set-browser.js';
@@ -940,6 +941,10 @@ function readYgoSetCache(){
 }
 export function currentYgoCatalogue(){const list=ui('ygo').sets.list;return list.length?list:readYgoSetCache()?.list||[];}
 // Collection ordering still needs uniquely named release dates, independently of detail selection.
+// Every view's Yu-Gi-Oh! foil resolves the selected printing's release through this one lookup: its exact
+// release name and printed prefix. The cached catalogue is read once; the live list replaces it when loaded.
+let ygoReleaseCache=null;
+setYgoReleaseLookup((name,code)=>{const live=ui('ygo').sets.list,list=live.length?live:(ygoReleaseCache??=(readYgoSetCache()?.list||[]));return releaseIndex(list).nameCodes.get(JSON.stringify([name,code]))||[];});
 const ygoSetIndex=()=>new Map([...releaseIndex(currentYgoCatalogue()).names].filter(([,sets])=>sets.length===1).map(([name,sets])=>[name,sets[0]]));
 // A selected display release is separate from the browse scope and quote choices.
 // Unknown or reused printing mappings must not navigate to an unrelated release.
