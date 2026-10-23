@@ -1,4 +1,5 @@
 import { mtgEffectProfile, mtgLinkEvidence } from './mtg-effects.js';
+import { commanderTheme, CREATURE_THEMES, creatureTypes as cardCreatureTypes } from './planner.js';
 // Pairing: which cards go well with a card, and why.
 //
 // 1. Tags — every card *provides* things (an artifact, a token, a Tuner, a Fire Pokémon, an
@@ -53,7 +54,7 @@ export function mtgTags(c) {
     creature && ["Flying", "Hexproof", "Menace", "Shroud"].some((k) => kw.has(k)) && "evasive",
     /add \{/.test(t) && !/Land/.test(type) && "ramp",
     (Number(c?.cmc) >= 6 || /\{x\}/.test(words(c?.mana_cost))) && "big",
-    ...faces.flatMap(f => creatureTypes(f.type_line || c?.type_line || "")).map((s) => "sub:" + s),
+    ...cardCreatureTypes(c).map((s) => "sub:" + s),
   );
   const needs = set(
     /whenever (an|another) artifact[^.]*enters|for each artifact|artifacts? you control|affinity for artifacts|improvise|metalcraft/.test(t) && "artifact",
@@ -76,10 +77,12 @@ export function mtgTags(c) {
   // Replace broad token/blink/mana guesses with effect-compatible evidence. The
   // remaining tags are deliberately still heuristic; consumers can see the status.
   const effects = mtgEffectProfile(c);
-  for (const tag of ["artifact", "token", "fodder", "etb", "blink", "ramp", "extra_land"]) provides.delete(tag);
-  for (const tag of ["token", "etb"]) needs.delete(tag);
+  for (const tag of ["artifact", "token", "fodder", "etb", "blink", "ramp", "extra_land", "lifegain"]) provides.delete(tag);
+  for (const tag of ["token", "etb", "lifegain"]) needs.delete(tag);
   for (const effect of effects.provides) provides.add(effect.tag);
   for (const effect of effects.needs) needs.add(effect.tag);
+  for(const tribe of commanderTheme(c).tribes)needs.add('sub:'+tribe);
+  if(creature&&/\bchangeling\b|(?:is|are) every creature type/i.test(t))for(const tribe of CREATURE_THEMES)provides.add('sub:'+tribe);
   return { provides, needs, effects };
 }
 
@@ -87,7 +90,7 @@ export const MTG_PROVIDE_Q = {
   artifact: '(o:"create a treasure" or o:"create a clue" or o:"create a food" or (t:artifact cmc<=2))',
   enchantment: "t:enchantment cmc<=2", creature_token: 'o:create o:"creature token"', token: 'o:create o:"creature token"', fodder: 'o:create o:"creature token"',
   counters: 'o:put o:"+1/+1 counter"', spell: "(t:instant or t:sorcery) cmc<=2 (o:draw or o:damage)", discard: 'o:"discard a card" o:draw',
-  mill: "(o:mill or o:surveil)", lifegain: '(keyword:lifelink or o:"gain 3 life")', sac_outlet: 'o:"sacrifice a creature:"',
+  mill: "(o:mill or o:surveil)", lifegain: '(keyword:lifelink or (o:gain o:life))', sac_outlet: 'o:"sacrifice a creature:"',
   etb: 't:creature o:"when" o:"enters"', blink: 'o:exile o:return o:"to the battlefield"', extra_land: '(o:"play an additional land" or (o:"search your library for a basic land" o:battlefield))',
   evasive: "t:creature (keyword:flying or keyword:hexproof) cmc<=3", ramp: '(o:"add {" or o:"search your library for a basic land") cmc<=3 -t:land',
 };

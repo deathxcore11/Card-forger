@@ -3,12 +3,14 @@
 import { DECK_GOALS, inferDeckGoal, normalizeDeckGoal } from './ai-deck-goal.js';
 import { FORMATS } from './formats.js';
 import { cardKey } from './core.js';
+import { CREATURE_THEMES } from './planner.js';
+import { tribePattern, keywordPattern, MTG_VOCABULARY } from './mtg-vocabulary.js';
 const text = v => typeof v==='string'?v.trim():'';
 const same = (a,b) => cardKey(String(a||''))===cardKey(String(b||''));
 const names = rows => [...new Map((Array.isArray(rows)?rows:[]).map(text).filter(Boolean).map(n=>[cardKey(n),n])).values()];
 const COLORS={white:'W',blue:'U',black:'B',red:'R',green:'G',colorless:'C'};
-const THEMES=/\b(?:dragons?|goblins?|zombies?|elves|elf|slivers?|artifacts?|tokens?|lifegain|landfall|graveyard|spellslinger|vampires?|angels?|dinosaurs?|merfolk)\b/gi;
-const themeKey=s=>s.toLowerCase().replace(/elves|elf/,'elf').replace(/s$/,'');
+const THEMES=new RegExp('\\b(?:'+CREATURE_THEMES.map(tribePattern).join('|')+'|'+keywordPattern+'|artifacts?|tokens?|life[- ]?gain|landfall|graveyard|spellslinger|counters?)\\b','gi');
+const themeKey=s=>CREATURE_THEMES.find(t=>new RegExp('^'+tribePattern(t)+'$','i').test(s))?.toLowerCase()||MTG_VOCABULARY['keyword-abilities'].find(t=>t.toLowerCase()===s.toLowerCase())?.toLowerCase()||s.toLowerCase().replace(/life[- ]gain/,'lifegain').replace(/s$/,'');
 const violations = (code,field,message) => ({code,field,message});
 // Only an entirely generic request authorizes automatic card selection. Unknown
 // words, quoted names and card directives keep exact-name handling intact.
@@ -18,10 +20,11 @@ const genericBuildRequest=request=>/\b(?:build|make|create)\b[^.!?]*\bdeck\b/i.t
 
 export function applyUserBuildIntent(input,contract={}) {
  if(!input||typeof input!=='object'||Array.isArray(input))return input;
- const args={...input};
+ const args={budgetMode:'cap',creatureTypesOnly:[],excludedSubtypes:[],...input};
+ for(const field of ['creatureTypesOnly','excludedSubtypes'])if(contract[field])args[field]=[...contract[field]];
  // Copy trusted, retained player selections rather than paying the model to
  // repeat them. Budget ambiguity and missing-amount choices remain validation.
- for(const field of ['game','format','goal','seed','commander','budget','budget_basis'])if(contract[field]!==undefined)args[field]=contract[field];
+ for(const field of ['game','format','goal','seed','commander','budget','budget_basis','budgetMode'])if(contract[field]!==undefined)args[field]=contract[field];
  if(contract.colors?.length)args.colors=[...contract.colors];
  if(typeof args.style==='string'&&contract.themes?.length){const missing=contract.themes.filter(t=>!(args.style.match(THEMES)||[]).map(themeKey).includes(t));if(missing.length)args.style=[...missing,args.style].join(' ').slice(0,120);}
  const explicit=names([contract.seed,contract.commander,...(contract.required_cards||[])]);
@@ -44,7 +47,7 @@ export function readBuildContract(items=[],retained=null,options={}) {
  const continuation=!fresh&&(follow||!newBuild);
  const previous=continuation?(retained||(latestIndex>0?readBuildContract(items.slice(0,latestIndex),null,options):null)):null;
  const prior=previous?.cancelled?null:previous;
- const out={request:request.slice(0,600),required_cards:[],excluded_cards:[],colors:[],themes:[]};
+ const out={request:request.slice(0,600),required_cards:[],excluded_cards:[],colors:[],themes:[],creatureTypesOnly:[],excludedSubtypes:[]};
  if(genericBuildRequest(request))out.autoSelectSeed=true;
  else if(newBuild||prior?.autoSelectSeed&&!genericBuildLanguage(request)||/["“”]|\b(?:build around|include|must have|must use|stars|featuring|led by)\b/i.test(request))out.autoSelectSeed=false;
  if(/\b(?:affordable|cheap|budget[- ]friendly|low[- ]cost|inexpensive|budget deck|doesn['’]t cost (?:that|too) much)\b/i.test(request))out.costConscious=true;
@@ -68,6 +71,9 @@ export function readBuildContract(items=[],retained=null,options={}) {
  const bareBudget=new RegExp('\\b(?:budget\\s*(?:of|is|:|=)?|under|below|at most|up to)\\s*('+moneyNumber+')','gi');
  for(const m of request.matchAll(bareBudget))if(!negated(m)&&!/^(?:\s*)(?:cards?|copies|lands?|creatures?|spells?|mana|minutes?|hours?|days?|percent|%|per card)\b/i.test(afterAmount(m))&&(/budget/i.test(m[0])||/\b(?:budget|spend|cost|price|dollars?|usd|deck)\b/i.test(request)))amounts.push(Number(m[1].replaceAll(',','')));
  if(new Set(amounts).size===1)out.budget=amounts[0];
+ // Spending amounts are caps unless the player explicitly permits flexibility.
+ if(amounts.length)out.budgetMode=/\b(?:flexible (?:budget|target)|budget target|approximate budget|around \$|about \$)\b|\bcan go (?:a little )?over\b/i.test(request)?'target':'cap';
+ if(/\b(?:strict|hard) (?:budget|cap)|\b(?:under|below|at most|no more than)\s*\$?\s*\d/i.test(request))out.budgetMode='cap';
  const uncapped=/\b(?:no (?:spending |budget )?(?:limit|cap)|without (?:a )?(?:budget |spending )?(?:limit|cap))\b/i.test(request)||/\bunlimited\b/i.test(request)&&(out.format!=='Unlimited'||unlimitedBudget);
  if(uncapped)out.budget=0;
  // A vague "budget deck" is a cost-conscious preference, not consent to an
@@ -87,7 +93,7 @@ export function readBuildContract(items=[],retained=null,options={}) {
  else {
   const pair=request.match(/\b(white|blue|black|red|green)(?:\s*(?:and|\/|[-+])\s*(?:white|blue|black|red|green)){1,4}\b/i);
   if(pair)out.colors=[...new Set(pair[0].toLowerCase().match(/white|blue|black|red|green/g).map(c=>COLORS[c]))];
-  else {const single=request.match(/\b(white|blue|black|red|green|colorless)\s+(?:deck|commander deck)\b/i);if(single)out.colors=[COLORS[single[1].toLowerCase()]];}
+  else {const single=request.match(/\b(white|blue|black|red|green|colou?rless)\s+(?:(?:Standard|Modern|Pioneer|Commander|Legacy|Vintage|Pauper)\s+)?(?:deck|commander deck)\b/i);if(single)out.colors=[COLORS[single[1].toLowerCase().replace('colourless','colorless')]];}
  }
  for(const m of request.matchAll(/\b(?:must include|must have|include|keep|build around)\s+["“]([^"”]{1,120})["”]/gi))out.required_cards.push(m[1]);
  for(const m of request.matchAll(/\b(?:exclude|without|no|don't use|do not use|avoid)\s+["“]([^"”]{1,120})["”]/gi))out.excluded_cards.push(m[1]);
@@ -96,13 +102,20 @@ export function readBuildContract(items=[],retained=null,options={}) {
  if(/\b(?:no|without|avoid|don't (?:use|include|want|allow|permit)|do not (?:use|include|want|allow|permit))\s+(?:(?:any|all)\s+)?infinite(?:[ -](?:combos?|loops?))?\b/i.test(comboText))out.avoid_infinite=true;
  else if(/\b(?:(?:allow|permit)\s+infinite(?: combos?| loops?)?|infinite (?:combos?|loops?) (?:are )?(?:fine|ok(?:ay)?|allowed)|(?:remove|drop|relax)\s+(?:the |that )?(?:no[ -])?infinite(?:[ -](?:combo|loop)s?)?(?: restriction)?)\b/i.test(comboText)&&! /\b(?:don't|do not|not)\s+allow\b/i.test(comboText))out.avoid_infinite=false;
  // Preserve common explicit themes even if the proposed AI style drops them.
- const positive=request.replace(/["“][^"”]*["”]/g,'').replace(/\b(?:no|without|avoid)\s+[^,.;]*(?=[,.;]|$)/gi,'');
+ const positive=request.replace(/["“][^"”]*["”]/g,'').replace(/\b(?:build around|around|include|must have|must use|featuring|led by|commander is)\s+([^,;.!]+?)(?=\s+(?:with|under|for|budget)\b|[,;.!]|$)/gi,(full,named)=>genericBuildLanguage(named)?full:' ').replace(/\b(?:no|without|avoid)\s+[^,.;]*(?=[,.;]|$)/gi,'');
  out.themes=[...new Set((positive.match(THEMES)||[]).map(themeKey))];
+ const unquotedTypes=request.replace(/["“][^"”]*["”]/g,'');
+ for(const type of CREATURE_THEMES){
+  const pattern=tribePattern(type);
+  if(new RegExp('\\b(?:only|strictly)\\s+'+pattern+'(?:[- ]only)?\\s+creatures?\\b|\\b'+pattern+'[- ]only\\s+creatures?\\b|\\ball creatures (?:must be|are)\\s+'+pattern+'\\b','i').test(unquotedTypes))out.creatureTypesOnly.push(type);
+  if(new RegExp('\\b(?:no|without|avoid)\\s+(?:any )?'+pattern+'(?=\\s*(?:(?:creatures?|cards?)\\s*)?(?:$|[,.;!?])|\\s+(?:and|but|with)\\b)','i').test(unquotedTypes))out.excludedSubtypes.push(type);
+ }
  out.required_cards=names(out.required_cards);out.excluded_cards=names(out.excluded_cards);
  const merged={...prior,...out,continuation:!!prior,provenance:{...prior?.provenance}};
  // Retain only user-authored constraints. Prior assistant prose and model
  // defaults are never parsed as requirements, including the combo boolean.
- for(const field of ['required_cards','excluded_cards','colors','themes'])if(!out[field].length&&prior?.[field])merged[field]=[...prior[field]];
+ for(const field of ['required_cards','excluded_cards','colors','themes','creatureTypesOnly','excludedSubtypes'])if(!out[field].length&&prior?.[field])merged[field]=[...prior[field]];
+ merged.themes=merged.themes.filter(t=>!merged.excludedSubtypes.some(ex=>ex.toLowerCase()===t));
  for(const field of ['required_cards','excluded_cards'])merged[field]=names([...(prior?.[field]||[]),...out[field]]);
  if(/\b(?:remove|drop|clear) (?:all |the )?exclusions\b|\bno exclusions\b/i.test(request))merged.excluded_cards=[];
  for(const m of request.matchAll(/\b(?:allow|remove (?:the )?exclusion(?: for)?)\s+["“]([^"”]+)["”]/gi))merged.excluded_cards=merged.excluded_cards.filter(n=>!same(n,m[1]));
@@ -111,13 +124,20 @@ export function readBuildContract(items=[],retained=null,options={}) {
  if(merged.budget!==undefined)delete merged.budgetUnspecified;
  if(out.budget!==undefined&&(amounts.length||uncapped)&&!out.ambiguousBudget){delete merged.ambiguousBudget;if(!out.zeroBudget)delete merged.zeroBudget;}
  if(merged.budget_basis==='owned')delete merged.zeroBudget;
- for(const field of ['game','format','goal','commander','budget','budget_basis','avoid_infinite','required_cards','excluded_cards','colors','themes'])if(out[field]!==undefined&&(!Array.isArray(out[field])||out[field].length)&&!(field==='budget'&&!amounts.length&&!uncapped))merged.provenance[field]={source:'user',turn:latestIndex,text:request.slice(0,600)};
+ for(const field of ['game','format','goal','commander','budget','budget_basis','budgetMode','avoid_infinite','required_cards','excluded_cards','colors','themes','creatureTypesOnly','excludedSubtypes'])if(out[field]!==undefined&&(!Array.isArray(out[field])||out[field].length)&&!(field==='budget'&&!amounts.length&&!uncapped))merged.provenance[field]={source:'user',turn:latestIndex,text:request.slice(0,600)};
  return merged;
 }
 
 export function validateBuildProposal(input,contract={}) {
  if(!input||typeof input!=='object'||Array.isArray(input))return {ok:false,args:{},violations:[violations('arguments','request','Send a complete deck request object.')]};
  const args={...input},errors=[];
+ for(const field of ['creatureTypesOnly','excludedSubtypes']){
+  if(args[field]!==undefined&&(!Array.isArray(args[field])||args[field].length>8||args[field].some(t=>!CREATURE_THEMES.includes(t))))errors.push(violations('invalid_types',field,'Use at most eight exact creature subtypes.'));
+  args[field]=Array.isArray(args[field])?args[field]:[];
+  for(const type of contract[field]||[])if(!args[field].includes(type))errors.push(violations('changed_constraint',field,`Keep the requested ${type} type restriction.`));
+ }
+ args.budgetMode=contract.budgetMode||args.budgetMode||'cap';
+ if(!['cap','target'].includes(args.budgetMode))errors.push(violations('invalid_budget_mode','budgetMode','Use a strict cap or an explicitly flexible target.'));
  if(args.game!==undefined&&!['mtg','ygo','ptcg'].includes(args.game))errors.push(violations('invalid_game','game','Choose mtg, ygo, or ptcg.'));
  if(contract.budgetUnspecified&&Number(args.budget)>0)errors.push(violations('unrequested_budget','budget','No numeric spending cap was requested. Use budget 0 for no limit, or ask the player to choose a cap; do not invent one.'));
  else if(contract.budgetUnspecified&&contract.costConscious)errors.push(violations('unrequested_budget','budget','The player asked for affordability without an amount. Ask for a numeric spending choice; do not decide what is affordable for them.'));
@@ -144,7 +164,7 @@ export function validateBuildProposal(input,contract={}) {
  // A required schema boolean is not evidence of a player request. Normalize
  // unsolicited restrictions locally so one mistaken default cannot stop a build.
  if(Object.hasOwn(contract,'avoid_infinite'))args.avoid_infinite=contract.avoid_infinite===true;
- for(const field of ['game','format','goal','commander','seed','budget','budget_basis','style'])if(contract[field]!==undefined&&!same(args[field],contract[field]))errors.push(violations('changed_constraint',field,`Keep the requested ${field}: ${contract[field]}.`));
+ for(const field of ['game','format','goal','commander','seed','budget','budget_basis','budgetMode','style'])if(contract[field]!==undefined&&!same(args[field],contract[field]))errors.push(violations('changed_constraint',field,`Keep the requested ${field}: ${contract[field]}.`));
  if(contract.avoid_infinite&&!args.avoid_infinite)errors.push(violations('changed_constraint','avoid_infinite','Keep the requested no-infinite-combos constraint.'));
  if(contract.colors?.length&&[...args.colors].sort().join('')!==[...contract.colors].sort().join(''))errors.push(violations('changed_constraint','colors',`Keep the requested colors: ${contract.colors.join(', ')}.`));
  for(const field of ['required_cards','excluded_cards'])for(const n of contract[field]||[])if(!(field==='required_cards'&&[args.seed,args.commander].some(c=>same(c,n)))&&!args[field].some(c=>same(c,n)))errors.push(violations('changed_constraint',field,`Keep ${n} in ${field}.`));
@@ -157,7 +177,7 @@ export function validateBuildProposal(input,contract={}) {
 export function lockBuildContract(args,original={}) {
  // Once a valid proposal has been accepted, the only revision input is a small
  // list of candidate identities. It cannot buy success by relaxing constraints.
- return {...original,...Object.fromEntries(['game','format','goal','style','seed','commander','budget','budget_basis','avoid_infinite'].map(k=>[k,args[k]])),required_cards:[...args.required_cards],excluded_cards:[...args.excluded_cards],colors:[...args.colors]};
+ return {...original,...Object.fromEntries(['game','format','goal','style','seed','commander','budget','budget_basis','budgetMode','avoid_infinite'].map(k=>[k,args[k]])),creatureTypesOnly:[...args.creatureTypesOnly],excludedSubtypes:[...args.excludedSubtypes],required_cards:[...args.required_cards],excluded_cards:[...args.excluded_cards],colors:[...args.colors]};
 }
 export function proposalFeedback(check,{terminal=false}={}) {
  const budgetChoice=check.violations.some(v=>v.code==='unrequested_budget');

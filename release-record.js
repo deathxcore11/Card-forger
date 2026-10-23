@@ -1,7 +1,6 @@
-// Published release metadata. APK identity is recorded only after verifying the
-// signed artifact; a web deploy never changes the installed app's identity.
+// Coordinated website/Android release; the signed artifact hash is filled after verification.
 export const RELEASE = Object.freeze({
- id:'web-3.93.3-android-0.5.3',date:'2026-10-23',webVersion:'3.93.3',
- changes:['Foil follows the exact printing: a serial number, poster art or a scroll frame no longer changes a Magic card\'s foil, and newer foils (silver scroll, gleaming gold, singularity, cosmic, facet, Chocobo Track) show their real names.','Pokémon star, Cosmos and Starfoil patterns stay fixed in the card while you tilt; Ball reverse holos keep their own motif and ordinary Illustration Rares are no longer textured.','Yu-Gi-Oh! printings look the same from search, your collection, packs and their set page.'],
- android:Object.freeze({version:'0.5.3 beta',versionName:'0.5.3-beta',versionCode:12,interfaceVersion:'3.93.3',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.5.3.apk',bytes:24251535,sha256:'07fd0000b9b02244aa1ed49b8c0a50d2db440f1d1ed59e0aae2ef5b6060e9788'})
+ id:'web-3.94.0-android-0.6.0',date:'2026-10-23',webVersion:'3.94.0',
+ changes:['Deck requests preserve more creature types and keyword abilities, explicit creature-type restrictions and strict spending caps. Flexible budget targets remain an explicit choice.','Commander builds check recognized support and show access estimates. Life-gain direction, changeling, alternative subtypes and common self-conflicts use shared evidence; legality is distinct from strategic strength.','Explore related cards by type, ability or Yu-Gi-Oh! archetype using existing Search, with a return to the original card. Pokémon Ability-name results are explicitly limited to loaded card data.','More than 250 Magic keyword/action definitions link to the dated official rulebook; additional Pokémon and Yu-Gi-Oh! reminders retain hover, touch and exact-source navigation.'],
+ android:Object.freeze({version:'0.6.0 beta',versionName:'0.6.0-beta',versionCode:13,interfaceVersion:'3.94.0',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.6.0.apk',bytes:0,sha256:'PENDING_SIGNED_ARTIFACT'})
 });

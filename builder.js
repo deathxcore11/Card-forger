@@ -10,33 +10,39 @@ import { commanderTheme, creatureTypes, CREATURE_THEMES, tribalSupport, themeSup
 import { formatOf, canLead, legalityIn } from "./formats.js";
 import { splitBasics } from "./extras.js";
 import { goalCardPreference } from "./ai-deck-goal.js";
-import { mtgResourceProfile } from "./mtg-effects.js";
+import { mtgResourceProfile, mtgEffectProfile, mtgSelfConflicts } from "./mtg-effects.js";
+import { atLeastOne } from './deckaudit.js';
+import { requestedKeywords, tribePattern } from './mtg-vocabulary.js';
+import { mtgAbilityEvidence } from './mtg-effects.js';
 
 const BASIC = { W: "Plains", U: "Island", B: "Swamp", R: "Mountain", G: "Forest", C: "Wastes" };
-const THEMES = ["Tokens", "Graveyard", "Spells", "Dragons", "Artifacts", "Lifegain", "Landfall", "Counters"];
+const THEMES = ["Tokens", "Graveyard", "Spells", "Dragons", "Artifacts", "Lifegain", "Lifelink", "Landfall", "Counters"];
 const TIERS = [0, 10, 25, 50, 100, Infinity];
 export const BUDGET_TIERS = TIERS;
 
 // Creature types and similar subtypes on a card ("Goblin Warrior" → Goblin, Warrior).
-export const subtypes = (c) =>
-  (typeText(c).split(" // ")[0].split("—")[1] || "").trim().split(/\s+/).filter((w) => w.length > 2);
+export const subtypes = creatureTypes;
 
 const ident = (c) => c?.color_identity || [];
 export const fitsColors = (c, colors) => ident(c).every((x) => colors.includes(x));
 
 // Keep explicit style independent from inferred commander/seed mechanics.
-const THEME_TERMS = {Tokens:'(o:"creature token" or o:populate)',Graveyard:'o:graveyard',Spells:'(t:instant or t:sorcery or o:"instant or sorcery")',Dragons:'t:dragon',Artifacts:'(t:artifact or o:artifact)',Lifegain:'(o:"gain" o:life)',Landfall:'o:landfall',Counters:'(o:"+1/+1 counter" or o:proliferate)'};
-const STYLE_ROLES = {token:"Tokens",graveyard:"Graveyard",reanimator:"Graveyard",spells:"Spells",spellslinger:"Spells",artifact:"Artifacts",lifegain:"Lifegain",landfall:"Landfall",counter:"Counters",proliferate:"Counters"};
+const THEME_TERMS = {Tokens:'(o:"creature token" or o:populate)',Graveyard:'o:graveyard',Spells:'(t:instant or t:sorcery or o:"instant or sorcery")',Dragons:'t:dragon',Artifacts:'(t:artifact or o:artifact)',Lifegain:'(keyword:lifelink or (o:gain o:life))',Lifelink:'(keyword:lifelink or o:lifelink)',Landfall:'o:landfall',Counters:'(o:"+1/+1 counter" or o:proliferate)'};
+const STYLE_ROLES = {token:"Tokens",graveyard:"Graveyard",reanimator:"Graveyard",spells:"Spells",spellslinger:"Spells",artifact:"Artifacts",lifegain:"Lifegain",lifelink:"Lifelink",landfall:"Landfall",counter:"Counters",proliferate:"Counters"};
 export function requestedIntent(style = "") {
-  const words = String(style).toLowerCase().replace(/\+1\/\+1/g,"counter").match(/[\p{L}\p{N}]+/gu) || [],
-    noise = new Set("a an the and or with for of mono white blue black red green colorless deck decks good budget tribal commander build around focused focus theme strongest best optimized optimal strong powerful competitive fun casual silly janky jank chaos chaotic weak bad".split(" ")),
+  const positive=String(style).replace(/\b(?:no|without|avoid|don't use|do not use)\s+[^,.;]*(?=[,.;]|$)/gi,' '),
+    abilities=requestedKeywords(positive).filter(k=>!['Lifelink','Landfall','Proliferate'].includes(k)),
+    matchedTribes=CREATURE_THEMES.filter(t=>new RegExp('\\b'+tribePattern(t)+'\\b','i').test(positive)),
+    stripped=[...abilities,...matchedTribes].reduce((s,k)=>s.replace(new RegExp('\\b'+(matchedTribes.includes(k)?tribePattern(k):k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))+'\\b','gi'),' '),positive),
+    words = stripped.toLowerCase().replace(/life[- ]gain/g,'lifegain').replace(/\+1\/\+1/g,"counter").match(/[\p{L}\p{N}]+/gu) || [],
+    noise = new Set("a an the and or with for of mono white blue black red green colorless deck decks good budget tribal kindred commander build around focused focus theme themed strongest best optimized optimal strong powerful competitive fun casual silly janky jank chaos chaotic weak bad easy easier to play simple simpler beginner friendly prefer preferably".split(" ")),
     terms = [...new Set(words.filter(w => !noise.has(w)).map(w => ({elves:"elf",dwarves:"dwarf",spells:"spells"})[w] || (w.endsWith("s")?w.slice(0,-1):w)))].slice(0,6),
-    tribes = terms.map(w => CREATURE_THEMES.find(t => t.toLowerCase() === w)).filter(Boolean),
+    tribes = matchedTribes,
     roles = [...new Set(terms.map(w => STYLE_ROLES[w]).filter(Boolean))],
     other = terms.filter(w => !STYLE_ROLES[w] && !tribes.some(t => t.toLowerCase() === w));
-  return {style:String(style).trim(),tribes,roles,other};
+  return {style:String(style).trim(),tribes,roles,abilities,other};
 }
-const tribeQuery = t => `(t:${t.toLowerCase()} or o:${t.toLowerCase()})`;
+const tribeQuery = t => {const v=/^[a-z]+$/i.test(t)?t.toLowerCase():`"${t.toLowerCase()}"`;return `(t:${v} or o:${v})`;};
 const roleQuery = roles => {const terms=[...new Set(roles.map(r=>THEME_TERMS[r]).filter(Boolean))];return terms.length===1?terms[0]:terms.length?'('+terms.join(' or ')+')':'';};
 export function themeQueries(seed, style = "") {
   const theme = commanderTheme(seed), requested = requestedIntent(style),
@@ -46,7 +52,7 @@ export function themeQueries(seed, style = "") {
     other = requested.other.length?'('+requested.other.map(w=>`t:"${w}" or o:"${w}"`).join(' or ')+')':'';
   // Separate requests keep a popular generic support pool from crowding actual
   // payoff subjects out of the provider's first page. No subtype-slot truncation.
-  return [...new Set([...requested.tribes.map(tribeQuery),explicit,other,...tribes.map(tribeQuery),support].filter(Boolean))];
+  return [...new Set([...requested.tribes.map(tribeQuery),...requested.abilities.map(k=>`keyword:"${k.toLowerCase()}"`),explicit,other,...tribes.map(tribeQuery),support].filter(Boolean))];
 }
 export function themeQuery(seed, style = "") {
   const queries = themeQueries(seed,style);
@@ -57,7 +63,41 @@ function seedIntent(seeds, style = "") {
   return {tokenKinds:[...new Set(themes.flatMap(t=>t.tokenKinds))],tags:[...new Set([...requested.roles,...themes.flatMap(t=>t.roles.filter(r=>THEMES.includes(r)))])],subs:[...new Set([...requested.tribes,...themes.flatMap((t,i)=>t.tribes.length?t.tribes:t.roles.some(r=>THEMES.includes(r))?[]:creatureTypes(seeds[i]))])],requested};
 }
 function styleFit(c, requested) {
-  return requested.tribes.some(t=>tribalSupport(c,t)) || themeSupport(c,{roles:requested.roles}).length > 0 || requested.other.some(w=>new RegExp('\\b'+w+'s?\\b','i').test(typeText(c)+' '+rulesText(c)));
+  return requested.tribes.some(t=>tribalSupport(c,t)) || requested.abilities.some(k=>mtgAbilityEvidence(c,k).length) || themeSupport(c,{roles:requested.roles}).length > 0 || requested.other.some(w=>new RegExp('\\b'+w+'s?\\b','i').test(typeText(c)+' '+rulesText(c)));
+}
+
+// Minimum evidence checks, not a universal tribal quota or a power rating.
+// Access counts physical cards in the library; commanders are accessible only
+// from their zone and token output is never counted as cards drawn.
+export function inspectMtgTheme(rows,{style='',commander=''}={}) {
+  const main=rows.filter(r=>!['side','extra'].includes(r.zone)&&r.card&&r.qty>0),
+    lead=main.find(r=>cardKey(r.name||r.card.name)===cardKey(commander))?.card,
+    library=main.filter(r=>cardKey(r.name||r.card.name)!==cardKey(commander)),
+    N=library.reduce((n,r)=>n+r.qty,0),seen=Math.min(N,11),requested=requestedIntent(style),inferred=commanderTheme(lead),
+    tribes=[...new Set([...requested.tribes,...inferred.tribes])],groups=[],issues=[],notes=[];
+  const check=(label,test,source)=>{
+    const matches=library.filter(r=>test(r.card)),copies=matches.reduce((n,r)=>n+r.qty,0),access=N?atLeastOne(N,copies,seen):0;
+    groups.push({label,source,copies,library:N,seen,access,cards:matches.map(r=>({name:r.name||r.card.name,qty:r.qty}))});
+    if(copies<2)issues.push(`${label}: only ${copies} supporting library ${copies===1?'card':'cards'} found. This is below the two-copy sanity check; the loaded pool does not establish this plan.`);
+    else if(access<.5)notes.push(`${label}: ${Math.round(access*100)}% chance to naturally see support in the first ${seen} cards; access is limited before searches and extra draws.`);
+  };
+  for(const tribe of tribes)check(tribe+' plan',c=>tribalSupport(c,tribe),requested.tribes.includes(tribe)?'requested':'commander');
+  for(const role of requested.roles)check(role+' plan',c=>themeSupport(c,{roles:[role]}).length>0,'requested');
+  // Use the commander's recognized input plan even with no explicit style.
+  // Choose one primary route rather than requiring every incidental output.
+  if(lead&&!tribes.length&&!requested.roles.length){
+    const primary=['Artifacts','Spells','Landfall','Lifegain','Graveyard','Counters','Tokens'].find(role=>inferred.roles.includes(role));
+    if(primary)check(primary+' commander plan',c=>themeSupport(c,{roles:[primary],tokenKinds:inferred.tokenKinds}).length>0,'commander');
+  }
+  for(const ability of requested.abilities)check(ability+' ability',c=>mtgAbilityEvidence(c,ability).length>0,'requested');
+  if(requested.roles.includes('Lifegain')){
+    const sources=main.filter(r=>mtgEffectProfile(r.card).provides.some(e=>e.tag==='lifegain'));
+    if(!sources.length)issues.push('The requested life-gain plan has no recognized source of your own life gain.');
+  }
+  const unknown=requested.other;
+  if(unknown.length)notes.push('Theme terms requiring review: '+unknown.join(', ')+'. Matching text does not verify a franchise or strategic plan.');
+  const status=issues.length?'insufficient':unknown.length?'unverified':groups.length?'supported':'not-requested';
+  return {status,groups,issues,notes,unverifiedTerms:unknown,method:'Two supporting library copies are a minimum sanity check, not proof of an effective strategy. Access excludes mulligans, tutors, casting costs and game simulation.'};
 }
 
 // Candidate heuristics, not optimization of the complete Power analysis.
@@ -111,7 +151,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   // Colors: the leader's identity, else the seeds', else the base list's.
   let deckColors = colors || (lead ? ident(lead) : [...new Set([...seeds, ...base.map((b) => catalog[cardKey(b.name)])].flatMap(ident))]);
   if (!deckColors.length) deckColors = ["C"];
-  const intent = seedIntent(seeds,requestedStyle),
+  const intent = seedIntent([...seeds,...(lead&&!seeds.includes(lead)?[lead]:[])],requestedStyle),
     seedTags = intent.tags,
     seedSubs = intent.subs,
     rows = new Map(),
@@ -161,7 +201,8 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     canAfford=(extra,reserve=0,keepMana=true)=>budget===Infinity || extra===0 || (unknown===0 && extra!==Infinity && spent+extra+reserve+(keepMana?manaReserve():0)<=budget+1e-6);
 
   const pool = [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && isLegal(c) && fitsColors(c, deckColors)).map((c) => [cardKey(c.name), c])).values()],
-    scored = pool.map((c) => ({ c, s: -(easy?setupBurden('mtg',c)*3:0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds:intent.tokenKinds, goal }) + goalCardPreference(c,goal,{suggested:suggestedCards.some(name=>cardKey(name)===cardKey(c.name))}) + (styleFit(c,intent.requested)?(goal === "theme"?16:8):0) }));
+    supports=c=>seedSubs.some(t=>tribalSupport(c,t))||themeSupport(c,{roles:seedTags,tokenKinds:intent.tokenKinds}).length>0,
+    scored = pool.map((c) => ({ c, plan:supports(c), s: -(easy?setupBurden('mtg',c)*3:0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds:intent.tokenKinds, goal }) + goalCardPreference(c,goal,{suggested:suggestedCards.some(name=>cardKey(name)===cardKey(c.name))}) + (styleFit(c,intent.requested)?(goal === "theme"?16:8):0) - (mtgSelfConflicts([...seeds,...(lead?[lead]:[]),c]).length?24:0) }));
   // Seeds go in first at full copies, then everything else by score.
   for (const s of seeds) {
     const hit = scored.find((x) => cardKey(x.c.name) === cardKey(s.name));
@@ -188,7 +229,8 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   while(remaining.length){
     const counts=new Map();for(const row of rows.values())for(const role of engineRoles(catalog[cardKey(row.name)] || {}))counts.set(role,(counts.get(role)||0)+row.qty*(role === "Ramp"?candidateRampWeight(catalog[cardKey(row.name)] || {}):1));
     const targets=f.commander?{Removal:8,Draw:10,Ramp:10,Wipe:3}:{Removal:6,Draw:6,Ramp:4,Wipe:2};
-    const adaptive=x=>x.s+engineRoles(x.c).reduce((n,r)=>n+(targets[r]===undefined?0:(counts.get(r)||0)<targets[r]?3*(r === "Ramp"?candidateRampWeight(x.c):1):-3),0);
+    const supportCopies=[...rows.values()].filter(r=>supports(catalog[cardKey(r.name)]||{})).reduce((n,r)=>n+r.qty,0);
+    const adaptive=x=>x.s+(x.plan&&supportCopies<Math.ceil(spellTarget*.35)?6:0)+engineRoles(x.c).reduce((n,r)=>n+(targets[r]===undefined?0:(counts.get(r)||0)<targets[r]?3*(r === "Ramp"?candidateRampWeight(x.c):1):-3),0);
     remaining.sort((a,b)=>adaptive(b)-adaptive(a)||a.c.name.localeCompare(b.c.name));
     const {c}=remaining.shift();
     const left = spellTarget - nonland();

@@ -5,6 +5,8 @@ import { comparePower } from './deck-optimizer.js';
 import { engineMap } from './engine-map.js';
 import { strategicRisk } from './strategy-risk.js';
 import {pokemonEnergyCapability} from './deckpower.js';
+import { inspectMtgTheme } from './builder.js';
+import { fitsTypeRestrictions } from './planner.js';
 export const DECK_POLICY = Object.freeze({overagePercent:10,overageMaximum:5,maxCandidates:24});
 const cents=n=>Math.round(n*100)/100;
 const key=s=>String(s||'').normalize('NFKC').toLowerCase().trim();
@@ -16,12 +18,13 @@ export function normalizeDeckRequest(input={},formats={}) {
  const raw=input.budget,target=raw===undefined||raw===null||raw===''||raw===Infinity?null:Number(raw);
  if(target!==null&&(!Number.isFinite(target)||target<0||target>100000))throw Error('Enter a budget between $0 and $100,000, or leave it blank.');
  const budgetBasis=input.budgetBasis||input.budget_basis||'total',ownedOnly=input.ownedOnly===true||budgetBasis==='owned';
- const allowance=target===null?0:cents(Math.min(target*DECK_POLICY.overagePercent/100,DECK_POLICY.overageMaximum));
+ const budgetMode=input.budgetMode==='target'?'target':'cap';
+ const allowance=target===null||budgetMode==='cap'?0:cents(Math.min(target*DECK_POLICY.overagePercent/100,DECK_POLICY.overageMaximum));
  return {...input,game,format:game==='mtg'?selected.name:selected.id,formatName:selected.name,
   theme:String(input.theme??input.style??'').trim(),budget:target,budgetBasis:budgetBasis==='purchase'||budgetBasis==='owned'?'purchase':'total',
-  ownedOnly,preferOwned:input.preferOwned!==false,easy:input.easy===true||/easy to play|beginner|simple/i.test(input.style||''),
+  ownedOnly,budgetMode,preferOwned:input.preferOwned??input.goal!=='strongest',easy:input.easy===true||/easy to play|beginner|simple/i.test(input.style||''),
   randomSeed:Number.isFinite(input.randomSeed)?input.randomSeed:Math.floor(Math.random()*0x7fffffff),
-  allowance,constructionBudgets:ownedOnly?[0]:target===null?[Infinity]:[...new Set([target,target+allowance,Infinity])]};
+  allowance,constructionBudgets:ownedOnly?[0]:target===null?[Infinity]:budgetMode==='cap'?[target]:[...new Set([target,target+allowance,Infinity])]};
 }
 export function priceDeck(rows,basis='total') {
  const grouped=new Map();
@@ -113,6 +116,7 @@ export function inspectDeckPlan(request,rows,deck={}) {
    }else unresolved();
   }
  }else{
+  for(const c of cards)if(!fitsTypeRestrictions(c,request))issues.push(`${c.name} conflicts with the explicit creature-type restriction.`);
   const lands=main.filter(r=>/\bLand\b/.test(r.card?.type_line||''));
   if(lands.reduce((s,r)=>s+r.qty,0)<Math.floor(main.reduce((s,r)=>s+r.qty,0)*.25))issues.push('The deck has too few lands for the supported construction plan.');
   const produces=new Set(lands.flatMap(r=>r.card?.produced_mana||r.card?.color_identity||[]));
@@ -125,22 +129,29 @@ export function inspectDeckPlan(request,rows,deck={}) {
  for(const name of request.excluded_cards||[])if(rows.some(r=>key(r.card?.name)===key(name)))issues.push(`Excluded card ${name} was selected.`);
  const analysisRows=rows.map(r=>({...r,c:r.card}));
  const engine=engineMap(request.game,analysisRows,{commanders:deck.commander?[deck.commander]:[]});
+ const theme=request.game==='mtg'?inspectMtgTheme(rows,{style:request.theme||request.style,commander:deck.commander}):null;
+ if(theme){issues.push(...theme.issues);notes.push(...theme.notes);}
+ for(const conflict of engine.conflicts||[])notes.push(conflict.reason);
  const risks=strategicRisk(request.game,analysisRows);
  // Preference measures setup burden, not text length or a fake skill rating.
  const setup=main.reduce((sum,r)=>sum+setupBurden(request.game,r.card)*r.qty,0);
- return {attackers,issues:[...new Set(issues)],notes:[...new Set([...notes,...(deck.repairNotes||[])])],engine,risks,setupBurden:setup};
+ return {attackers,issues:[...new Set(issues)],notes:[...new Set([...notes,...(deck.repairNotes||[])])],engine,theme,risks,setupBurden:setup};
 }
 export function chooseDeck(candidates,request) {
- const valid=candidates.filter(c=>c.check.complete&&c.check.legal&&!c.plan.issues.length&&(!request.ownedOnly||c.pricing.ownedCopies===c.pricing.copies));
+ const valid=candidates.filter(c=>c.check.complete&&c.check.legal&&!c.plan.issues.length&&(!request.ownedOnly||c.pricing.ownedCopies===c.pricing.copies)&&
+  (request.budgetMode!=='cap'||request.budget===null||c.pricing.estimate!==null&&c.pricing.estimate<=request.budget+1e-6));
  const budgetClass=c=>request.budget===null?0:c.pricing.estimate===null?2:c.pricing.estimate<=request.budget?0:c.pricing.estimate<=request.budget+request.allowance+1e-6?1:3;
  valid.sort((a,b)=>budgetClass(a)-budgetClass(b)||(request.easy?a.plan.setupBurden-b.plan.setupBurden:0)||(budgetClass(a)===3?a.pricing.estimate-b.pricing.estimate:0)||(request.preferOwned?b.pricing.ownedCopies/b.pricing.copies-a.pricing.ownedCopies/a.pricing.copies:0)||comparePower(b.power,a.power)||a.pricing.unpriced-b.pricing.unpriced||a.pricing.subtotal-b.pricing.subtotal);
  const winner=valid[0];
  if(!winner){
   const nearest=[...candidates].sort((a,b)=>Number(b.check.complete)-Number(a.check.complete)||a.plan.issues.length-b.plan.issues.length)[0];
-  return {ok:false,request,code:request.ownedOnly?'owned-inventory':'construction',message:request.ownedOnly?'Your available owned cards could not form a complete, checked deck for this request.':(reason=>reason?`Couldn’t build a complete, checked deck: ${reason}`:'The loaded card pool could not produce a complete, checked deck. Try another build-around or retry card loading.')(nearest?.check.issues?.[0]||nearest?.plan.issues?.[0]),details:[...(nearest?.check.issues||[]),...(nearest?.plan.issues||[])].slice(0,6)};
+  const priceIssue=request.budgetMode==='cap'&&request.budget!==null&&nearest?.check.complete&&nearest?.check.legal&&!nearest?.plan.issues.length?`No complete candidate has a verified ${request.budgetBasis==='purchase'?'purchase':'whole-deck'} estimate within your $${request.budget.toFixed(2)} cap. Unknown prices and over-budget lists cannot pass this cap.`:null;
+  return {ok:false,request,code:request.ownedOnly?'owned-inventory':priceIssue?'budget-cap':'construction',message:request.ownedOnly?'Your available owned cards could not form a complete, checked deck for this request.':(reason=>reason?`Couldn’t build a complete, checked deck: ${reason}`:'The loaded card pool could not produce a complete, checked deck. Try another build-around or retry card loading.')(priceIssue||nearest?.check.issues?.[0]||nearest?.plan.issues?.[0]),details:[...(priceIssue?[priceIssue]:[]),...(nearest?.check.issues||[]),...(nearest?.plan.issues||[])].slice(0,6)};
  }
  const delta=request.budget!==null&&winner.pricing.estimate!==null?cents(winner.pricing.estimate-request.budget):null;
- return {ok:true,...winner,request,budgetStatus:budgetClass(winner)===3?'outside-target':winner.pricing.estimate===null?'unverified':delta>0?'over-target':'within-target',delta,
+ const budgetVerified=winner.pricing.estimate!==null&&(request.budget===null||delta<=0),themeVerified=winner.plan.theme?.status==='supported';
+ const requestSatisfied=(request.budget===null||budgetVerified)&&winner.plan.theme?.status!=='unverified';
+ return {ok:true,...winner,request,budgetVerified,themeVerified,requestSatisfied,validation:{complete:true,legal:true,budget:request.budget===null?'not-requested':budgetVerified?'pass':winner.pricing.estimate===null?'unverified':'fail',theme:winner.plan.theme?.status||'unverified',competitive:'unverified'},budgetStatus:budgetClass(winner)===3?'outside-target':winner.pricing.estimate===null?'unverified':delta>0?'over-target':'within-target',delta,
   compared:candidates.length,summary:`${request.seedCard?.name||winner.deck.buildAround||request.seed||'Your deck'} · ${request.formatName}`};
 }
 export async function constructDeck(input,adapter,options={}) {

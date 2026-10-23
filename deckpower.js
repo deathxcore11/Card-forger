@@ -15,7 +15,7 @@ import {pokemonRole} from './pokemon-role.js';
 import { simulate, poolOf, has as hasTag, countTag, atLeastOne, allIn, evidence } from "./deckaudit.js";
 import { mtgGoldfish, ptcgGoldfish, ygoGoldfish } from "./goldfish.js";
 import { mtgTagged } from "./mtg-tags.js";
-import { mtgResourceProfile, manaCostValue } from "./mtg-effects.js";
+import { mtgEffectProfile,mtgResourceProfile, manaCostValue } from "./mtg-effects.js";
 import { inCommandZone } from "./core.js";
 
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
@@ -85,7 +85,7 @@ export function mtgConstructedCardProfile(c, rows = []) {
   const requires = (kind, evidence, status, cards = [], extra = {}) => requirements.push({kind, evidence, status, cards, ...extra});
   const hasLifePayoff = rows.some(r => /whenever you gain life|if you gained life/.test(text(r.c)));
   const lifeSource = x => text(x).split("\n").some(line => {
-    if (!/\bgain (?:\d+|x|that much) life|\blifelink\b|create [^.]*food token/.test(line)) return false;
+    if (!mtgEffectProfile(x).provides.some(e=>e.tag==='lifegain')&&!/create [^.]*food token/.test(line)) return false;
     const typed = line.match(/cast (?:a|an) (\w+) spell|control another (\w+)/);
     return !typed || rows.some(r => new RegExp(`\\b${typed[1] || typed[2]}\\b`,"i").test(type(r.c)) && (!typed[2] || r.c !== x || r.qty > 1));
   });

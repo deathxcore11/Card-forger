@@ -683,6 +683,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Test complete inline AI decks, exact cards, export and explicit save
         run: node tests/ai-deck-build-browser.mjs
+      - name: Test expanded rules, typed discovery and source-card Back
+        run: node tests/deck-knowledge-browser.mjs
       - name: Test homepage defaults, unsupported requirements and missing-data failures
         run: node tests/ai-request-recovery-browser.mjs
       - uses: actions/upload-artifact@v4

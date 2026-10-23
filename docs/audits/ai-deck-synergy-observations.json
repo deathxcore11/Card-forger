@@ -1,0 +1,107 @@
+{
+  "baseline": "5b98a8981f9b97e7e0c4fbc02847b0cc3f248876",
+  "scope": "Production deterministic code; real Scryfall snapshots; mocked discovery/prices/fillers. No live language-model quality or competitive strength claim.",
+  "observations": {
+    "intentRetention": [
+      {
+        "request": "Build me a mono-white Modern Cats deck under $700",
+        "retainedThemes": [],
+        "proposedStyle": "artifacts",
+        "acceptedAfterDroppingRequestedPreference": true
+      },
+      {
+        "request": "Build me a mono-white Modern deck under $700 with lifelink and Angels",
+        "retainedThemes": [
+          "angel"
+        ],
+        "proposedStyle": "Angels",
+        "acceptedAfterDroppingRequestedPreference": true
+      }
+    ],
+    "lifegain": {
+      "taintedRemedySupport": [
+        "Lifegain support"
+      ],
+      "taintedRemedyThemeBonus": 3,
+      "valkyrieProvidesLife": false,
+      "valkyrieTribalNeeds": [
+        "sub:Cleric"
+      ]
+    },
+    "changeling": {
+      "tribalHelper": true,
+      "pairingProvidesCat": false
+    },
+    "selfInterference": {
+      "soulWardenStillListedAsLifeProvider": true,
+      "planIssues": [],
+      "unsupported": [],
+      "limit": "Hushbringer/Torpor Orb suppress creature-entering triggers while present; the list can sequence around them, but the recognized link carries no such condition or self-conflict warning."
+    },
+    "matchup": {
+      "buildToolFields": [
+        "game",
+        "style",
+        "budget",
+        "format",
+        "seed",
+        "commander",
+        "budget_basis",
+        "goal",
+        "required_cards",
+        "excluded_cards",
+        "colors",
+        "avoid_infinite",
+        "candidate_cards"
+      ],
+      "savedDeckToolFields": [
+        "game"
+      ]
+    },
+    "budgetGate": {
+      "ok": true,
+      "status": "outside-target",
+      "delta": 200,
+      "allowance": 5
+    },
+    "selectionPriority": {
+      "defaultPreferOwned": true,
+      "winner": "more-owned",
+      "limit": "Comparator diagnostic with controlled assessment values, not an actual 90-versus-20 competitive deck comparison."
+    },
+    "thinThemePool": {
+      "ok": true,
+      "total": 100,
+      "nonCommanderCats": 1,
+      "planIssues": [],
+      "check": {
+        "complete": true,
+        "legal": true,
+        "issues": []
+      },
+      "budgetStatus": "within-target",
+      "queries": [
+        "f:commander id<=gw -t:land (t:cat or o:cat) prefer:usd-low",
+        "f:commander id<=gw -t:land usd<=0.5 prefer:usd-low",
+        "f:commander id<=gw -t:land cmc<=3 (o:destroy or o:exile or o:counter) prefer:usd-low",
+        "f:commander id<=gw -t:land (o:draw or o:search) prefer:usd-low",
+        "f:commander id<=gw -t:land (o:\"add {\" or o:\"mana of\") prefer:usd-low",
+        "f:commander id<=gw t:land -t:basic usd<=1 prefer:usd-low",
+        "!\"Forest\" game:paper unique:prints usd>=0 -border:gold -border:silver -is:oversized -set_type:memorabilia legal:commander t:basic",
+        "!\"Plains\" game:paper unique:prints usd>=0 -border:gold -border:silver -is:oversized -set_type:memorabilia legal:commander t:basic"
+      ],
+      "followedNextPage": false
+    },
+    "toolReadySemantics": {
+      "ready": true,
+      "complete": true,
+      "budgetStatus": "outside-target",
+      "hasThemeValidation": false,
+      "note": "One complete list is shown in this conversation. Save is available here; nothing was saved automatically. Power is a heuristic, not a win rate."
+    }
+  },
+  "controls": {
+    "catPayoffDetected": true,
+    "changelingAcceptedByTribalHelper": true
+  }
+}
