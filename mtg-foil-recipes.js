@@ -41,23 +41,42 @@ export const MTG_FOIL_RECIPES={
  'mtg-pds':r('Premium Deck foil','2009–2011',P.ftv,{relief:0,note:'Premium Deck Series: a softer version of the From the Vault mirror bar.'}),
  'mtg-emblem':r('Set emblem foil','2025–today',P.mana,{note:'A set\'s own emblem pressed into the foil (approximate shape).'})
 };
-// promo_types that name a foil treatment, most specific first (oil slick cards are also raised).
+// promo_types that name a foil material, most specific first (oil slick cards are also raised). Only material
+// names belong here: frame and art styles (scroll, poster, showcase...) and serial numbers describe how a card
+// looks or is numbered, not its foil. The serialized double-rainbow cards carry their own 'doublerainbow' tag;
+// a serial number alone (the 1/1 One Ring, nonfoil Secret Lair serials) never selects a foil.
 const PROMO=[['oilslick','mtg-oilslick'],['stepandcompleat','mtg-compleat'],['gilded','mtg-gilded'],['neonink','mtg-neon'],['textured','mtg-textured'],
- ['surgefoil','mtg-surge'],['galaxyfoil','mtg-galaxy'],['halofoil','mtg-halo'],['confettifoil','mtg-confetti'],['doublerainbow','mtg-doublerainbow'],['serialized','mtg-doublerainbow'],
+ ['surgefoil','mtg-surge'],['galaxyfoil','mtg-galaxy'],['halofoil','mtg-halo'],['confettifoil','mtg-confetti'],['doublerainbow','mtg-doublerainbow'],
  ['fracturefoil','mtg-fracture'],['rainbowfoil','mtg-rainbow'],['ripplefoil','mtg-ripple'],['manafoil','mtg-mana'],['dragonscalefoil','mtg-dragonscale'],
  ['invisibleink','mtg-invisible'],['silverfoil','mtg-silver'],['firstplacefoil','mtg-firstplace'],['raisedfoil','mtg-raised'],['embossed','mtg-embossed'],
- ['ampersand','mtg-ampersand'],['silverscreen','mtg-silverscreen'],['scroll','mtg-scroll'],['poster','mtg-scroll'],['vaultboy','mtg-vaultboy']];
+ ['ampersand','mtg-ampersand'],['silverscreen','mtg-silverscreen'],['vaultboy','mtg-vaultboy']];
+// Named materials Scryfall reports that have no calibrated model yet. They keep their real name and draw the
+// closest existing material, marked approximate; they are never a made-up set emblem.
+export const MTG_UNMODELLED=Object.freeze({
+ silverscroll:{name:'Silver scroll foil',as:'mtg-silver'},gleaminggold:{name:'Gleaming gold foil',as:'mtg-firstplace'},
+ singularityfoil:{name:'Singularity foil',as:'mtg-traditional'},cosmicfoil:{name:'Cosmic foil',as:'mtg-traditional'},
+ facetfoil:{name:'Facet foil',as:'mtg-traditional'},chocobotrackfoil:{name:'Chocobo Track foil',as:'mtg-traditional'}});
 const PDS=new Set(['h09','pd2','pd3']);
-// Picks the treatment from the card's own Scryfall data; finish is 'foil' or 'etched'.
-export function mtgFoilEffect(c,finish='foil'){
- if(finish==='etched')return 'mtg-etched';if(finish!=='foil')return '';
- const promos=c?.promo_types||[];for(const [k,e] of PROMO)if(promos.includes(k))return e;
- // A newer set-specific foil Scryfall names (chocobotrackfoil, ...) shows as a set emblem foil, not plain traditional.
- if(promos.some(p=>/foil$/.test(p)&&p!=='foil'))return 'mtg-emblem';
- if(c?.set_type==='from_the_vault')return 'mtg-ftv';if(c?.set_type==='masterpiece')return 'mtg-masterpiece';if(PDS.has(c?.set))return 'mtg-pds';
- if(c?.frame==='1997'||c?.frame==='1993')return 'mtg-oldborder';
- return 'mtg-traditional';
+// Innistrad: Double Feature prints its foils on silver screen stock; the records carry no promo tag for it.
+const SET_MATERIAL={dbl:'mtg-silverscreen'};
+const NOT_MATERIAL=new Set(['foil','serialized','scroll','poster','boosterfun','universesbeyond']);
+// The printing's material profile for the SELECTED finish ('foil' or 'etched'); a nonfoil copy has none.
+// status: 'family' = a documented treatment family (exact optics still calibrated by eye);
+// 'approximate' = the real material is named but drawn with a stand-in. unrecognized: foil-like tags kept
+// as data for review, never turned into a guessed shader.
+export function mtgFoilProfile(c,finish='foil'){
+ if(finish==='etched')return {treatment:'mtg-etched',status:'family',name:'',unrecognized:[]};
+ if(finish!=='foil')return {treatment:'',status:'family',name:'',unrecognized:[]};
+ const promos=c?.promo_types||[];
+ for(const [k,e] of PROMO)if(promos.includes(k))return {treatment:e,status:'family',name:'',unrecognized:[]};
+ const named=promos.find(p=>MTG_UNMODELLED[p]);
+ if(named)return {treatment:MTG_UNMODELLED[named].as,status:'approximate',name:MTG_UNMODELLED[named].name,unrecognized:[]};
+ const unrecognized=promos.filter(p=>/foil$/.test(p)&&!NOT_MATERIAL.has(p));
+ const base=SET_MATERIAL[c?.set]||(c?.set_type==='from_the_vault'?'mtg-ftv':c?.set_type==='masterpiece'?'mtg-masterpiece':PDS.has(c?.set)?'mtg-pds':c?.frame==='1997'||c?.frame==='1993'?'mtg-oldborder':'mtg-traditional');
+ return {treatment:base,status:unrecognized.length?'approximate':'family',name:'',unrecognized};
 }
+// Picks the treatment from the card's own Scryfall data; finish is 'foil' or 'etched'.
+export const mtgFoilEffect=(c,finish='foil')=>mtgFoilProfile(c,finish).treatment;
 // Rares and mythics printed in the M15 frame (2015 onward) carry the oval holo security stamp.
 export const mtgHoloStamp=c=>c?.frame==='2015'&&['rare','mythic'].includes(c?.rarity)&&c?.border_color!=='borderless';
 export const mtgFrameKey=c=>c?.border_color==='borderless'||c?.full_art?'borderless':c?.frame==='1993'?'1997':['1997','2003','2015'].includes(c?.frame)?c.frame:'2015';

@@ -11,7 +11,7 @@ const P=PTCG_PATTERN,T=PTCG_TINT;
 // soft: full-art cards keep their attack text readable, so the lower half of the card is foiled lightly.
 const r=(label,pat,o={})=>({label,pat,tint:o.tint??T.rainbow,underbase:o.underbase??0,relief:o.relief??0,sparkle:o.sparkle??0,soft:o.soft??0,strip:o.strip??0,strength:o.strength??0,coat:o.coat??0,note:o.note||''});
 export const PTCG_FOIL_RECIPES={
- 'ptcg-wotc-holo':r('WotC holo',P.wotc,{underbase:1,sparkle:.4,note:'1999-2001 holo: streaked starlight foil with four-point stars on three parallax depths behind the Pokémon; the Pokémon itself sits on white ink.'}),
+ 'ptcg-wotc-holo':r('WotC holo',P.wotc,{underbase:1,sparkle:.4,note:'1999-2001 holo: streaked starlight foil with four-point stars at three sizes, fixed in the foil, each lighting at its own angle behind the Pokémon; the Pokémon itself sits on white ink.'}),
  'ptcg-lc-holo':r('Legendary Collection holo',P.wotc,{underbase:1,sparkle:.4,note:'WotC-style starlight holo behind the Pokémon.'}),
  'ptcg-ecard-holo':r('e-Card holo',P.crystal,{underbase:1,sparkle:.5,strip:1,note:'e-Card era holo: a fine crystalline foil that breaks the light into small facets; the e-Reader dashes down the left border are holo too.'}),
  'ptcg-ex-holo':r('EX-era holo',P.cosmos,{underbase:1,note:'2003-2011 holo (EX to HeartGold SoulSilver): Cosmos circles behind the Pokémon.'}),
@@ -32,7 +32,7 @@ export const PTCG_FOIL_RECIPES={
  'ptcg-textured':r('Textured full art',P.texture,{relief:.5,soft:1,note:'Embossed full art: raised grooves follow the artwork, so the light ripples around it.'}),
  'ptcg-rainbow':r('Rainbow rare',P.texture,{relief:.5,sparkle:.4,soft:1,note:'Rainbow-tinted, textured full art.'}),
  'ptcg-gold':r('Gold secret rare',P.texture,{tint:T.gold,relief:.5,soft:1,note:'Gold foil with embossed texture.'}),
- 'ptcg-illustration':r('Illustration rare',P.strokes,{relief:.26,sparkle:.3,soft:1,strength:.9,note:'The whole illustration is foil, with texture that follows the brushwork.'}),
+ 'ptcg-illustration':r('Illustration rare',P.strokes,{relief:0,sparkle:.3,soft:1,strength:.9,note:'The whole illustration is foil. Ordinary Illustration Rares are not the textured Special Illustration family, so no relief is added (texture unverified).'}),
  'ptcg-special-illustration':r('Special illustration rare',P.strokes,{relief:.28,sparkle:.55,soft:1,strength:1,note:'Heavily textured, whole-card foil that follows the brushwork.'}),
  'ptcg-shiny':r('Shiny rare',P.shiny,{relief:.3,sparkle:1,soft:1,note:'Sparkling shiny foil across the whole card.'}),
  'ptcg-confetti':r('Celebrations Classic Collection holo',P.confetti,{underbase:1,sparkle:.25,note:'Classic Collection reprints: Confetti holofoil, scattered flakes that each catch the light at their own angle, over a fine etched grain.'}),
@@ -47,7 +47,7 @@ export const PTCG_FOIL_RECIPES={
  'ptcg-vsheen-spectrum':r('Vertical Sheen Rainbow holo',P.vsheenRainbow,{underbase:1,note:'Call of Legends: brushed vertical hairlines with saturated bands sweeping across.'}),
  'ptcg-vsheen':r('Vertical Sheen holo',P.vsheen,{tint:T.silver,underbase:1,note:'XY and Sword & Shield holo: a silvery pillar of light sliding with the tilt.'}),
  'ptcg-cosmos-pixel':r('Cosmos II holo',P.cosmosPixel,{underbase:1,note:'Blister and POP promo cosmos: pixel-stepped orbs.'}),
- 'ptcg-cosmos-hd':r('Cosmos III holo',P.cosmosHd,{underbase:1,note:'151 and modern promo cosmos: soft bokeh orbs on four depths.'}),
+ 'ptcg-cosmos-hd':r('Cosmos III holo',P.cosmosHd,{underbase:1,note:'Modern promo cosmos and the 151 special Energy: soft bokeh orbs at four sizes, fixed in the foil.'}),
  'ptcg-tinsel':r('Tinsel holo',P.tinsel,{underbase:1,note:'Black & White holo: wavy horizontal ribbons with fine striations.'}),
  'ptcg-tinsel2':r('Tinsel II holo',P.tinsel2,{underbase:1,note:'Black & White holo: finer ribbons, alternate rows leaning opposite ways.'}),
  'ptcg-diagonal-left':r('Diagonal Left Sheen',P.diagonalLeft,{soft:1,note:'The mirrored −45° rainbow band.'}),
@@ -84,12 +84,17 @@ const ERA_REVERSE={'pk-lc':'ptcg-lc-reverse','pk-ecard':'ptcg-ecard-reverse','pk
 // Deliberate deviations from the brief, pending scans: WotC main sets keep Starlight (TCGdex calls it "galaxy"),
 // and the Scarlet & Violet reverse keeps its measured sheen.
 const bw=/^bw\d+$/,xy=/^xy\d+$/;
-const SET_HOLO={col1:'ptcg-vsheen-spectrum',xy12:'ptcg-starlight2',det1:'ptcg-striped','sv03.5':'ptcg-cosmos-hd'};
+// 151's HD Cosmos belongs to its two special holo Energy variants, not to every holo in the set, so it is not a set rule.
+const SET_HOLO={col1:'ptcg-vsheen-spectrum',xy12:'ptcg-starlight2',det1:'ptcg-striped'};
 const SET_REVERSE={ex5:'ptcg-energy2-reverse',ex6:'ptcg-emblem-reverse',ex8:'ptcg-pinwheel-reverse',ex9:'ptcg-emerald-reverse',ex10:'ptcg-ball-hologram-reverse',
  ex11:'ptcg-reverse',ex12:'ptcg-reverse',ex13:'ptcg-reverse',ex14:'ptcg-reverse',ex15:'ptcg-reverse',ex16:'ptcg-reverse'};
-const setHolo=set=>SET_HOLO[set]||(bw.test(set)?(Number(set.slice(2))%2?'ptcg-tinsel':'ptcg-tinsel2'):xy.test(set)?'ptcg-vsheen':'');
+// Black & White holos are the horizontal-line Tinsel family. Which sets used the finer Tinsel II sheet is not
+// evidenced (odd/even set numbers and the Dragon Vault boundary are both guesses), so it is not routed.
+const setHolo=set=>SET_HOLO[set]||(bw.test(set)?'ptcg-tinsel':xy.test(set)?'ptcg-vsheen':'');
 const setReverse=set=>SET_REVERSE[set]||(bw.test(set)?'ptcg-emblem-reverse':'');
 const norm=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+// A provider-named pattern with no model yet: its display name, or ''. The renderer marks it approximate.
+export const ptcgUnmodelledFoil=foil=>{const f=norm(foil);return /ball$/.test(f)&&!['pokeball','masterball'].includes(f)?f.replace(/ball$/,'').replace(/^./,x=>x.toUpperCase())+' Ball':'';};
 // Picks the treatment. finish: holofoil | reverse-holofoil; era: the measured frame family (pk-wotc,
 // pk-sv...) or '' for full art; foil: the variant's own foil name from the provider, if any; set and
 // number: the TCGdex set id and the printed number, for the per-set sheets and subsets.
@@ -97,7 +102,9 @@ export function ptcgFoilEffect({finish,era='',foil='',rarity='',fullArt=false,te
  const f=norm(foil),rar=norm(rarity),s=String(set||'').toLowerCase();
  if(finish==='reverse-holofoil'){
   const prismatic=s==='sv08.5';
-  if(f==='masterball')return prismatic?'ptcg-prismatic-masterball':'ptcg-masterball';if(/ball$/.test(f))return prismatic?'ptcg-prismatic-pokeball':'ptcg-pokeball';if(f==='cosmos')return 'ptcg-cosmos-reverse';
+  // Only the Poké Ball and Master Ball sheets are modelled. Love, Friend, Quick, Dusk and other Ball motifs keep
+  // their own identity (ptcgUnmodelledFoil) and fall through to the plain reverse sheet; they never become Poké Balls.
+  if(f==='masterball')return prismatic?'ptcg-prismatic-masterball':'ptcg-masterball';if(f==='pokeball')return prismatic?'ptcg-prismatic-pokeball':'ptcg-pokeball';if(f==='cosmos')return 'ptcg-cosmos-reverse';
   // Energy-symbol and set-logo sheets are rows of small emblems.
   if(['energy','league','setlogo','teamrocket'].includes(f))return 'ptcg-emblem-reverse';
   if(f==='crackedice')return 'ptcg-cracked-reverse';if(f==='tinsel')return 'ptcg-sv-reverse';

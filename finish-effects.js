@@ -3,9 +3,9 @@ import {ANNIVERSARY_MAPS,ANNIVERSARY_STAMPS} from './pokemon-anniversary-masks.j
 import {quoteForContext,validSetContext} from './pricing-presentation.js';
 import {pokemonVariantChoices,pokemonVariantProductConflict} from './pokemon-variant-options.js';
 import {reviewedCosmosPreview} from './pokemon-promo-evidence.js';
-import {YGO_FOIL_RECIPES,FOIL_PATTERN,ygoRarityEffect,ygoSetEffect,YGO_MODERN_FROM} from './ygo-foil-recipes.js';
-import {mtgFoilEffect,mtgFrameKey,mtgHoloStamp,MTG_FOIL_RECIPES} from './mtg-foil-recipes.js';
-import {ptcgFoilEffect,PTCG_FOIL_RECIPES} from './ptcg-foil-recipes.js';
+import {YGO_FOIL_RECIPES,FOIL_PATTERN,ygoRarityEffect,ygoSetEffect,ygoPrintingRelease,YGO_MODERN_FROM} from './ygo-foil-recipes.js';
+import {mtgFoilProfile,mtgFrameKey,mtgHoloStamp,MTG_FOIL_RECIPES} from './mtg-foil-recipes.js';
+import {ptcgFoilEffect,ptcgUnmodelledFoil,PTCG_FOIL_RECIPES} from './ptcg-foil-recipes.js';
 export const FINISH_SOURCES = Object.freeze({
  pokemon:'https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic',
  base:'https://images.pokemontcg.io/base1/4_hires.png',
@@ -211,7 +211,13 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   if(face && !c.card_faces?.[face]?.image_uris)return unknown(key,label);
   // Full-size cards draw the printing's own treatment (old-border, surge, galaxy, oil slick...) with
   // WebGL (mtg-foil.js), chosen from its Scryfall data; the CSS layer stays as the light fallback.
-  if(physicalFinish==='foil'){const treatment=mtgFoilEffect(c,'foil');return {...preset(key,treatment==='mtg-traditional'?label:MTG_FOIL_RECIPES[treatment].label,'mtg-foil',[layer('card','rainbow')],FINISH_SOURCES.scryfall),treatment,frame:mtgFrameKey(c),...(mtgHoloStamp(c)?{holostamp:true}:{})};}
+  if(physicalFinish==='foil'){
+   // The material comes from the printing's own Scryfall record. A named material without a calibrated model keeps
+   // its real name and says what stands in for it; unrecognized foil tags are kept for review, not guessed.
+   const m=mtgFoilProfile(c,'foil'),treatment=m.treatment,name=m.name||(treatment==='mtg-traditional'?label:MTG_FOIL_RECIPES[treatment].label);
+   const reason=m.name?`${m.name} · not yet modelled; shown with ${MTG_FOIL_RECIPES[treatment].label.toLowerCase()}`:m.unrecognized.length?`Unrecognized foil (${m.unrecognized.join(', ')}) · shown as ${MTG_FOIL_RECIPES[treatment].label.toLowerCase()}`:undefined;
+   return {...preset(key,name,'mtg-foil',[layer('card','rainbow')],FINISH_SOURCES.scryfall),treatment,profileStatus:m.status,...(reason?{reason}:{}),...(m.unrecognized.length?{unrecognizedTags:m.unrecognized}:{}),frame:mtgFrameKey(c),...(mtgHoloStamp(c)?{holostamp:true}:{})};
+  }
   if(physicalFinish==='etched'&&c.id==='3305c70f-188a-4c01-b605-d583ded84e18'&&c.set==='nec'&&String(c.collector_number)==='77'&&c.layout==='normal'&&face===0&&['legendary','inverted','etched'].every(x=>c.frame_effects?.includes(x))&&!c.full_art&&!c.borderless)return {...preset(key,label,'mtg-nec77-etched',[layer('mtg-nec77-metal','metal')],'https://magic.wizards.com/en/news/feature/kamigawa-neon-dynasty-product-overview-2022-01-27'),reason:'Simulated foil-etched finish · approximate metallic coverage'};
   if(physicalFinish==='etched'&&['cmr','clb'].includes(c.set)&&layout==='normal'&&!c.borderless&&!c.full_art&&!c.frame_effects?.some(x=>['showcase','extendedart'].includes(x)))return {...preset(key,label,'mtg-etched',[layer('mtg-frame','metal')],FINISH_SOURCES.etched),treatment:'mtg-etched',frame:'2015'};
   // Every other etched printing (Secret Lair, Mystical Archive, showcase, inverted, retro frames) draws the
@@ -284,15 +290,19 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
  // Level/Rank stars and the Attribute icon are foil on some rarities: holo on Super and Ultra Rares printed
  // from Breakers of Shadow (Feb 2016), rainbow on modern Secret Rares, gold on Gold Rares, embossed on Ultimate (and Starlight's
  // whole-card glitter). Older Super/Ultra printings, or an unknown print date, keep plain stars.
- const printed=String(c.setContext?.date||ctx.releaseDate||''),modern=printed>=YGO_MODERN_FROM;
+ // The selected printing's own release decides; never the page the card was opened from.
+ const release=ctx.ygoPrinting?ygoPrintingRelease(ctx.ygoPrinting,c.setContext):{code:String(c.setContext?.code||''),date:String(c.setContext?.date||'')};
+ const printed=release.date,modern=!!printed&&printed>=YGO_MODERN_FROM;
  const starFoil=/^(ultimaterare|starlightrare)$/.test(rarity)?1:/^(superrare|ultrarare|ultrararepharaohsrare)$/.test(rarity)?(modern?2:0):/secret/.test(rarity)&&!/gold|platinum|quartercentury/.test(rarity)?(modern?3:0):/gold/.test(rarity)?4:0;
- const withLayout=p0=>{const p=starFoil?{...p0,stars:starFoil}:p0;return layout==='standard'?p:{...p,layout};};
+ // Rarities that share another's sheet until their own is modelled say so instead of claiming it.
+ const standIn={extrasecretrare:'Extra Secret Rare',extrasecret:'Extra Secret Rare','10000secretrare':'10,000 Secret Rare'}[rarity];
+ const withLayout=p0=>{let p=starFoil?{...p0,stars:starFoil}:p0;p={...p,printingRelease:release,...(standIn?{profileStatus:'approximate',reason:`${standIn} · not yet modelled; shown as Secret Rare`}:{})};return layout==='standard'?p:{...p,layout};};
  const name=material=>layer('ygo-name',material),art=material=>layer(artMask,material);
  const specs={rare:['ygo-rare',[name('silver')]],superrare:['ygo-super',[art('holo')]],ultrarare:['ygo-ultra',[art('holo'),name('gold')]],secretrare:['ygo-secret',[art('secret'),name('rainbow')]],prismaticsecretrare:['ygo-prismatic',[art('prismatic'),name('rainbow')]],starlightrare:['ygo-starlight',[layer('ygo-broad','starlight')]]};
  if(specs[rarity])return withLayout(preset(key,label,...specs[rarity],FINISH_SOURCES.ygo));
  // Every other foil rarity comes from the recipe table. Its CSS layers are the light version shown
  // on small tiles; full-size cards render the recipe itself with WebGL (ygo-rarity-foil.js).
- const effect=ygoSetEffect(ygoRarityEffect(rarity),{code:c.setContext?.code,date:printed}),recipe=YGO_FOIL_RECIPES[effect];if(!recipe)return unknown(key,label);
+ const effect=ygoSetEffect(ygoRarityEffect(rarity),{code:release.code,date:printed}),recipe=YGO_FOIL_RECIPES[effect];if(!recipe)return unknown(key,label);
  const P=FOIL_PATTERN,material=([p,t])=>t===1?'gold':{[P.diag]:'secret',[P.qcr]:'secret',[P.prism]:'prismatic',[P.glitter]:'starlight',[P.ghost]:'silver',[P.emboss]:'gold'}[p]||'holo';
  const layers=[...(recipe.whole?[layer('ygo-broad',recipe.whole[0]===P.glitter?'starlight':'rainbow')]:[]),...(recipe.art?[art(material(recipe.art))]:[]),...(recipe.frame&&!recipe.whole?[layer('ygo-broad',material(recipe.frame))]:[]),...(recipe.name?[name(recipe.name)]:[])];
  return withLayout(preset(key,label,effect,layers,FINISH_SOURCES.ygo));
@@ -342,7 +352,7 @@ export function finishChoices(game,c,ctx={}){
   const printing=quoteForContext(game,c,ctx)?.printing;
   if(!printing?.rarity)return [];
   // Short Prints and Super Short Prints are Commons printed in smaller numbers: no foil.
-  return [effectFor(game,c,printing.rarity,printing.rarity,ctx,/^(?:common|shortprint|supershortprint)$/.test(norm(printing.rarity))?'nonfoil':printing.rarity)];
+  return [effectFor(game,c,printing.rarity,printing.rarity,{...ctx,ygoPrinting:printing},/^(?:common|shortprint|supershortprint)$/.test(norm(printing.rarity))?'nonfoil':printing.rarity)];
  }
  return [];
 }
@@ -357,7 +367,9 @@ export function withPtcgTreatment(c,p){
  const mask=p.layers[0].mask,era=PK_MASK_ERA.find(([re])=>re.test(mask))?.[1]||'',fullArt=p.effect==='ptcg-full-art'||p.coverage==='full';
  const finish=p.effect==='ptcg-reverse'?'reverse-holofoil':'holofoil',gold=p.layers.some(l=>l.material==='gold')||p.pattern==='gold';
  const treatment=ptcgFoilEffect({finish,era:fullArt?'':era,foil:p.pattern||'',rarity:c?.rarity,fullArt,textured:p.texture==='micro-ridges',gold,...ptcgPrint(c)});
- return treatment&&PTCG_FOIL_RECIPES[treatment]?{...p,treatment}:p;
+ const unmodelled=ptcgUnmodelledFoil(p.pattern);
+ const marked=unmodelled?{...p,profileStatus:'approximate',reason:`${unmodelled} pattern not yet modelled · shown as a plain reverse sheet`}:p;
+ return treatment&&PTCG_FOIL_RECIPES[treatment]?{...marked,treatment}:marked;
 }
 // A pricing reference is not a physical finish or an edition selection.
 const requestedVariant=(c,ctx)=>[ctx.priceFinish,ctx.finish,ctx.setVariant,c?.setContext?.variantKey].find(key=>key&&key!=='reference')||'';

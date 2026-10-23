@@ -45,8 +45,8 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
  if(pat<1.5){  // WotC: vertical starlight streaks that flow into one another (smooth across and along each streak)
   vec2 sp=vec2(q.x*55.,q.y*.7);vec2 j=vec2(vnoise(sp),vnoise(sp+vec2(31.7,11.3)));g=normalize(vec2(1.,(j.x-.5)*.12));d=1400.;off=j.y*.55;  // each streak carries its own colour
   lines=.5+.5*vnoise(vec2(q.x*160.,q.y*6.));vec3 w=voro(q*60.);glint=step(.93,hash(w.xy))*pow(max(dot(normalize(vec3((hash2(w.xy)-.5)*.6,1.)),H),0.),60.)*1.1;amp=.85;
-  // Four-point stars on three parallax depths: each layer drifts with the tilt and every star lights at its own angle.
-  for(int k=0;k<3;k++){float s=10.+float(k)*9.;vec2 p=q*s+u_tilt*(.35/(1.+float(k))),cc=floor(p),f=fract(p)-.5-(hash2(cc+float(k)*13.)-.5)*.5;vec2 r=hash2(cc+float(k)*29.);
+  // Four-point stars on three scales, fixed in the card: tilt never moves them, it only decides which ones light.
+  for(int k=0;k<3;k++){float s=10.+float(k)*9.;vec2 p=q*s,cc=floor(p),f=fract(p)-.5-(hash2(cc+float(k)*13.)-.5)*.5;vec2 r=hash2(cc+float(k)*29.);
    float on=step(.72,r.y),star=on*(1.-smoothstep(0.,.012+.01*r.x,abs(f.x*f.y)*14.+length(f)*.09)),fire=pow(max(cos(dot(u_tilt,vec2(3.5))+r.x*6.28),0.),8.);glint+=star*fire*(1.6-.35*float(k));}}
  else if(pat<2.5){vec3 w=voro(q*110.);vec2 sm=vec2(vnoise(q*28.),vnoise(q*28.+7.3));vec2 j=mix(hash2(w.xy),sm,.6);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1100.+j.y*800.;mirror=.25;  // e-Card crystal: fine facets whose colours blend into their neighbours
   glint=pow(max(dot(normalize(vec3((hash2(w.xy)-.5)*.7,1.)),H),0.),160.)*.8;amp=.72;}
@@ -111,9 +111,9 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
    g=vec2(1.,0.);d=1350.;off=fract(q.x*2.-u_tilt.x*1.5)*.8;lines=.6+.4*vnoise(vec2(q.x*400.,q.y*3.));amp=1.15;mirror=.3;ex=10.;}
   else if(pat<26.5){ // 14 Vertical Sheen: a silvery pillar of light sliding with the tilt
    float bar=exp(-pow((uv.x-(.5+u_tilt.x*.48))*5.,2.));g=vec2(1.,0.);d=1500.;lines=bar;amp=mix(.15,.9,bar);mirror=mix(.25,.9,bar);ex=8.;}
-  else if(pat<28.5){ // 15 Cosmos II (pixel) / 16 Cosmos III (smooth HD): bokeh orbs at several depths
+  else if(pat<28.5){ // 15 Cosmos II (pixel) / 16 Cosmos III (smooth HD): bokeh orbs at several sizes, fixed in the card
    bool hd=pat>27.5;vec2 qq=hd?q:floor(q*140.)/140.;float on=0.;
-   for(int k=0;k<4;k++){if(!hd&&k>1)break;float s=7.+float(k)*6.;vec2 p=qq*s+u_tilt*(.2/(1.+float(k))),c=floor(p),f=fract(p)-.5-(hash2(c+float(k)*11.)-.5)*.45;
+   for(int k=0;k<4;k++){if(!hd&&k>1)break;float s=7.+float(k)*6.;vec2 p=qq*s,c=floor(p),f=fract(p)-.5-(hash2(c+float(k)*11.)-.5)*.45;
     float rad=.1+.28*hash(c+float(k)*3.),e=hd?.12:.02,circ=(1.-smoothstep(rad-e,rad,length(f)))*(hd?.85:1.);if(circ>on){on=circ;float a=hash(c+9.)*PI;g=vec2(cos(a),sin(a));d=1050.+hash(c+5.)*900.;}}
    amp=mix(.4,1.35,on);mirror=hd?.35:.45;lines=on;}
   else if(pat<30.5){ // 17 Tinsel / 18 Tinsel II: horizontal wavy ribbons with fine vertical striations
@@ -131,10 +131,11 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
    glint=pow(max(dot(normalize(vec3((j-.5)*.7,1.)),H),0.),70.)*1.1;}
   else if(pat<35.5||(pat>42.5&&pat<43.5)){ // 24 Starlight II (art box) / 33 ex Starfoil (whole card): crisp four-point stars
    bool full=pat>42.5;g=normalize(vec2(1.,.3));d=1450.;mirror=.15;amp=.4;
-   for(int k=0;k<3;k++){float s=full?(k==0?25.:k==1?45.:80.)*.35:9.+float(k)*8.;vec2 p=q*s+u_tilt*(.3/(1.+float(k))),cc=floor(p),f=fract(p)-.5-(hash2(cc+float(k)*13.)-.5)*.5;vec2 r=hash2(cc+float(k)*29.);
+   for(int k=0;k<3;k++){float s=full?(k==0?25.:k==1?45.:80.)*.35:9.+float(k)*8.;vec2 p=q*s,cc=floor(p),f=fract(p)-.5-(hash2(cc+float(k)*13.)-.5)*.5;vec2 r=hash2(cc+float(k)*29.);
     float on=step(full?.55:.7,r.y),sd=abs(f.x)*abs(f.y)*14.+length(f)*.09,star=on*(1.-smoothstep(.01,.12,sd*4.)),fire=pow(max(cos(dot(u_tilt,vec2(3.5))+r.x*6.28),0.),24.);glint+=star*(.6+fire*4.)*(1.-.25*float(k));}}
   else if(pat<36.5){ // 25 Water Web: domain-warped caustic ridges
-   vec2 w=q*8.+vec2(vnoise(q*6.+u_tilt*.3),vnoise(q*6.+vec2(5.2,1.3)-u_tilt*.3))*1.6;float n=vnoise(w)*2.-1.,ridge=pow(1.-abs(n),6.);
+   // Ridges fixed in the card: tilt changes only how they catch the light.
+   vec2 w=q*8.+vec2(vnoise(q*6.),vnoise(q*6.+vec2(5.2,1.3)))*1.6;float n=vnoise(w)*2.-1.,ridge=pow(1.-abs(n),6.);
    g=normalize(vec2(vnoise(w+3.)-.5,vnoise(w+7.)-.5)+1e-4);d=1150.+ridge*500.;lines=ridge;amp=mix(.4,1.4,ridge);mirror=.35;}
   else if(pat<37.5){ // 26 Radiant: diagonally woven micro-diamonds catching opposite tilt axes
    float wv=sin((px.x+px.y)*.9)*sin((px.x-px.y)*.9),cell=step(0.,wv);g=cell>.5?normalize(vec2(1.,1.)):normalize(vec2(1.,-1.));d=1250.+cell*200.;lines=.5+.5*abs(wv);amp=1.05;mirror=.35;
