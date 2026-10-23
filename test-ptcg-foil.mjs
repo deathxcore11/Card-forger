@@ -87,3 +87,7 @@ console.log('PASS: Pokémon foil follows each era (WotC, Legendary Collection, e
 {const {PTCG_FOIL_RECIPES:R}=await import('./ptcg-foil-recipes.js');
  for(const [k,min] of [['ptcg-special-illustration',.9],['ptcg-illustration',.8]]){const r=R[k];assert(r.strength>=min&&r.relief>=.25&&r.sparkle>=.3,`${k} stays visibly foil`);}
  assert(R['ptcg-special-illustration'].sparkle>R['ptcg-illustration'].sparkle,'Special Illustration Rares are the more textured, sparklier of the two');}
+// The brushwork pattern keeps one smooth rainbow direction: a grating that turned with every stroke drew coloured
+// contour lines over the art (N's Plan's hat and face).
+assert.match(PTCG_FOIL_FRAGMENT,/g=normalize\(mix\(vec2\(\.86,\.5\),across,\.18\)\)/,'brushwork foil leans only slightly with the strokes');
+assert.doesNotMatch(PTCG_FOIL_FRAGMENT,/g=normalize\(vec2\(-stroke\.y,stroke\.x\)/,'no grating that follows each stroke');

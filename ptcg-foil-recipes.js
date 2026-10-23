@@ -33,7 +33,7 @@ export const PTCG_FOIL_RECIPES={
  'ptcg-rainbow':r('Rainbow rare',P.texture,{relief:.5,sparkle:.4,soft:1,note:'Rainbow-tinted, textured full art.'}),
  'ptcg-gold':r('Gold secret rare',P.texture,{tint:T.gold,relief:.5,soft:1,note:'Gold foil with embossed texture.'}),
  'ptcg-illustration':r('Illustration rare',P.strokes,{relief:.26,sparkle:.3,soft:1,strength:.9,note:'The whole illustration is foil, with texture that follows the brushwork.'}),
- 'ptcg-special-illustration':r('Special illustration rare',P.strokes,{relief:.38,sparkle:.55,soft:1,strength:1,note:'Heavily textured, whole-card foil that follows the brushwork.'}),
+ 'ptcg-special-illustration':r('Special illustration rare',P.strokes,{relief:.28,sparkle:.55,soft:1,strength:1,note:'Heavily textured, whole-card foil that follows the brushwork.'}),
  'ptcg-shiny':r('Shiny rare',P.shiny,{relief:.3,sparkle:1,soft:1,note:'Sparkling shiny foil across the whole card.'}),
  'ptcg-confetti':r('Celebrations Classic Collection holo',P.confetti,{underbase:1,sparkle:.25,note:'Classic Collection reprints: Confetti holofoil, scattered flakes that each catch the light at their own angle, over a fine etched grain.'}),
  'ptcg-ancient-speckle':r('Ancient speckle holo',P.ancient,{tint:T.gold,sparkle:.3,note:'Ancient Mew: the whole face is gold foil scattered with coloured flecks of varied sizes that light up one by one as it tilts; the raised gold glyphs and lines stay solid.'}),

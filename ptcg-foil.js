@@ -67,7 +67,11 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
   if(pat>9.5){vec2 p=q*6.;p.x+=mod(floor(p.y),2.)*.5;vec2 f=fract(p)-.5;float bumps=(1.-smoothstep(.06,.08,length(f-vec2(-.15,-.12))))+(1.-smoothstep(.06,.08,length(f-vec2(.15,-.12))));glint=bumps*b.x*pow(max(H.z,0.),20.);}}
  else if(pat<11.5){float ph=height*55.,gr=sin(ph);vec2 gn=length(grad)>1e-4?normalize(grad):vec2(1.,0.);         // textured: contours of the art
   g=gn;d=1250.;lines=.5+.15*gr;N=normalize(N+vec3(gn*cos(ph)*.07,0.));mirror=.4;ex=24.;amp=.72;}
- else if(pat<12.5){g=normalize(vec2(-stroke.y,stroke.x)+1e-4);d=1350.;mirror=.35;amp=.7;}                       // texture that follows the brushwork
+ else if(pat<12.5){vec2 across=normalize(vec2(-stroke.y,stroke.x)+1e-4);  // texture that follows the brushwork
+  // The rainbow keeps one smooth diagonal, only leaning a little with the strokes: a grating that turned with every
+  // stroke changed colour wherever the brushwork did, drawing coloured contour lines over the art. The brushwork
+  // shows as fine raised ridges along each stroke (light, not hue).
+  g=normalize(mix(vec2(.86,.5),across,.18));d=1350.;lines=.5+.5*sin(dot(px,across)*1.3);N=normalize(N+vec3(across*sin(dot(px,across)*1.3)*.05,0.));mirror=.35;amp=.7;}
  else if(pat>14.5&&pat<15.5){  // Confetti (Celebrations Classic Collection): flakes of foil, each its own angle and colour, over a fine etched grain
   vec3 w=voro(q*46.);vec2 j=hash2(w.xy);float flake=step(.35,j.y)*smoothstep(0.,.05,w.z),a=j.x*PI;g=mix(vec2(1.,0.),vec2(cos(a),sin(a)),flake);d=mix(1500.,1050.+hash(w.xy+3.)*800.,flake);
   lines=.5+.5*sin((px.x-px.y)*.63);amp=mix(.45,1.3,flake);mirror=.3;glint=flake*pow(max(dot(normalize(vec3((j-.5)*.8,1.)),H),0.),90.)*.9;}
