@@ -13,6 +13,7 @@ globalThis.document = {
 const deck = { id: 'popup', cards: [{ name: 'Engine', qty: 4 }] }, p = { heuristic: 60, formatName: 'Casual' }, lookup = () => ({ name: 'Engine', oracle_text: 'Draw two cards.' });
 const report = { headline: 'Draw cards.', priority: '', identity: { plan: 'Draw cards.', howItWins: '', winCards: [], engineCards: [] }, explain: [], beyond: [], pilot: { hand: null, lines: [] }, pressure: { scenarios: [] }, improve: [], tests: [], omitted: 0 };
 aiReviewPanel('mtg', deck, lookup, p);
+const compact=aiReviewPanel('mtg', deck, lookup, p, {}, {compact:true});assert.match(compact,/AI review/);assert.match(compact,/stashy-logo/);assert.match(compact,/data-ai="mtg:popup"/);assert.doesNotMatch(compact,/ai-review-launch/);
 let complete, calls = 0;
 const fetcher = async () => { calls++; return new Promise(resolve => { complete = resolve; }); };
 const pending = showAiReview('mtg:popup', () => {}, fetcher);

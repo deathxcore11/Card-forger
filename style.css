@@ -5070,8 +5070,8 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .deck-format-lock{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}.deck-format-lock>span{color:var(--muted)}.deck-format-lock>b{flex:1}
 .deck-setup-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px;margin-top:12px}.deck-setup-fields>.field:last-child{grid-column:1/-1}
 .deck-flow-result>.cs-hero{margin:0;border-radius:18px;height:180px}.deck-flow-result>.cs-title{margin-top:-28px}.deck-flow-result>.cs-title h2{overflow-wrap:break-word}.ask-msg .deck-flow-result>.cs-hero{height:150px}
-.deck-result-price{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;padding:12px 0;border-block:1px solid var(--line)}.deck-result-price strong{font-size:1.5rem}.deck-result-price span{font-size:.875rem;color:var(--muted)}.deck-result-price .warn-text{color:var(--gold)}
-.deck-flow-result>.actions{margin-top:10px}.deck-flow-cards{margin-top:18px}.deck-flow-cards summary,.deck-adjust summary{cursor:pointer;padding:12px 0;min-height:44px}.deck-flow-cards h3{font-size:1rem;margin:18px 0 8px}.deck-flow-cards h3 span{color:var(--muted)}
+.deck-result-price{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;padding:12px 0;border-block:1px solid var(--line)}.deck-result-price strong{font-size:1.5rem}.deck-result-price>div{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}.deck-result-price span{font-size:.875rem;color:var(--muted)}.deck-result-price .warn-text{color:var(--gold)}
+.deck-flow-result>.actions{margin-top:14px}.deck-flow-cards{margin-top:16px}.deck-flow-cards h3{font-size:1rem;margin:18px 0 8px}.deck-flow-cards h3 span{color:var(--muted)}
 
 .ask-items:has(.deck-flow-result){display:block}.ask-msg .deck-flow-result{width:100%}.ask-msg .deck-flow-result .ai-review{padding:12px 0;border:0;box-shadow:none;background:transparent}
 @media(max-width:420px){.deck-setup-fields{grid-template-columns:1fr}}
@@ -5089,3 +5089,7 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 
 .settings-page .btn:not(.ghost):not(.danger){background:var(--brand-action);color:var(--brand-action-ink);border-color:var(--brand-action)}
 .deck-setup-fields .field small{font-size:12px;line-height:1.5;color:var(--muted);font-weight:400}
+
+/* Generated decks use the established Meta inspector, with one clear action row. */
+.deck-result-actions{display:flex;align-items:flex-start;gap:10px;margin:14px 0}.deck-result-actions>.btn,.deck-coach-action{flex:1;min-width:0}.deck-coach-action>.btn{width:100%;display:flex;justify-content:center;align-items:center;gap:7px}.deck-coach-action .stashy-logo{width:28px;height:28px;flex:none}.deck-coach-action small{display:block;font-size:10px;line-height:1.4;color:var(--muted);margin:5px 2px 0}.deck-budget-rebuild{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:end;padding:14px 0;border-block:1px solid var(--line)}.deck-budget-rebuild .field{margin:0}.deck-budget-rebuild>.btn{margin-bottom:0}.deck-budget-rebuild>[role=status]{grid-column:1/-1;margin:0}.deck-budget-rebuild>[role=status]:empty{display:none}.deck-result-checks>summary{cursor:pointer;min-height:44px;padding:12px 0}.deck-flow-result>.cs-hero{height:200px}.deck-flow-result>.cs-title{margin-top:-30px}.deck-flow-result .deck-flow-cards h3{font-size:.95rem}
+@media(max-width:420px){.deck-budget-rebuild{grid-template-columns:minmax(0,1fr)}.deck-budget-rebuild>.btn{width:100%}.deck-result-actions{gap:8px}.deck-coach-action small{font-size:10px}}
