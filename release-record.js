@@ -3,5 +3,5 @@
 export const RELEASE = Object.freeze({
  id:'web-3.92.3-android-0.4.3',date:'2026-10-23',webVersion:'3.92.3',
  changes:['Card of the Day picks a different set every day, so today\'s pack opens a new set.','Today\'s pack pulls the Pokémon Card of the Day in its foil (it came out plain).','Pokémon Special Illustration and Illustration Rares show a clear rainbow foil without coloured contour lines over the art.'],
- android:Object.freeze({version:'0.4.3 beta',versionName:'0.4.3-beta',versionCode:8,interfaceVersion:'3.92.3',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.4.3.apk',bytes:25898843,sha256:'2483223f3b71be00c3171bcbd84a71da866e27f74af895615321dd949967b453'})
+ android:Object.freeze({version:'0.4.3 beta',versionName:'0.4.3-beta',versionCode:8,interfaceVersion:'3.92.3',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.4.3.apk',bytes:25899275,sha256:'f67b6fb6aea575ff1b96e3fba51c962cfcae315aca26c896ddab692212203aa3'})
 });
