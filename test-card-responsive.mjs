@@ -238,14 +238,14 @@ assert.doesNotMatch(batchLayout,/view-gallery|font-size|overflow|word-break|whit
 assert(css.indexOf('/* Narrow Collection batch rows')<css.indexOf('/* Condition badges and prices'),'Later, more-specific condition footer retains its independent layout');
 console.log('PASS: narrow direct Collection batch rows only, explicit art/batch tracks and aligned full-row actions; ordinary/gallery/wide styles unchanged.');
 const conditionLayout=css.slice(css.indexOf('/* Condition badges and prices'),css.indexOf('/* A tablet/desktop list',css.indexOf('/* Condition badges and prices')));
-assert.match(conditionLayout,/@media \(max-width:480px\)/);assert.equal((conditionLayout.match(/body\[data-view="collection"\]/g)||[]).length,5);assert.equal((conditionLayout.match(/:has\(> \.lot-side > \.lot-value\)/g)||[]).length,5);
-for(const declaration of ['grid-template-columns:minmax(0,1fr)','grid-template-columns:auto minmax(0,1fr)','grid-column:1/-1;grid-row:2','max-width:none'])assert(conditionLayout.includes(declaration),declaration);
+assert.match(conditionLayout,/@media \(max-width:480px\)/);assert.equal((conditionLayout.match(/body\[data-view="collection"\]/g)||[]).length,7);assert.equal((conditionLayout.match(/:has\(> \.lot-side > \.lot-value\)/g)||[]).length,9);
+for(const declaration of ['grid-template-columns:30px 58px minmax(0,1fr)','grid-template-columns:minmax(0,1fr)','grid-template-columns:auto minmax(0,1fr)','grid-column:1/-1;grid-row:2','max-width:none'])assert(conditionLayout.includes(declaration),declaration);
 // The phone compact view is now one pill (collection-display.css): art spans both lines and the controls share
 // one line beside it, instead of a full-width control band plus a separate Edit line.
 {const pill=readFileSync('collection-display.css','utf8');const block=pill.slice(pill.indexOf('/* Compact view on phones: one neat card pill.'));
- for(const d of ['grid-template-columns: 52px minmax(0, 1fr)','grid-row: 1 / span 2','grid-column: -2; grid-row: 2','flex-wrap: nowrap','margin-left: auto','min-height: 44px'])assert(block.includes(d),d);}
+ for(const d of ['grid-template-columns: 52px minmax(0, 1fr)','grid-row: 1 / span 2','grid-column: -2; grid-row: 2','flex-wrap: wrap','.lot:not(:has(> .batch-mark))','margin-left: auto','min-height: 44px'])assert(block.includes(d),d);}
 assert.doesNotMatch(conditionLayout,/view-gallery|font-size|overflow|word-break|white-space|display:none/,'Only real space changes; gallery, fonts, wrapping and visible content remain intact');
-assert.equal((conditionLayout.match(/:has\(> \.batch-mark\)/g)||[]).length,1,'Symbols explicitly preserves the independent batch column (compact does in collection-display.css)');
+assert.equal((conditionLayout.match(/:has\(> \.batch-mark\)/g)||[]).length,5,'Compact and symbols explicitly preserve the independent batch column; the compact pill applies only outside batch');
 console.log('PASS: narrow Collection condition badge grid reflow, explicit art/batch columns, full-width note and no ordinary/gallery/wide/font/clipping changes.');
 const rowContainer=css.slice(css.indexOf('/* A tablet/desktop list'),css.indexOf('@media(prefers-reduced-motion:reduce){.brand-idle',css.indexOf('/* A tablet/desktop list')));
 assert.equal((rowContainer.match(/body\[data-view="collection"\]/g)||[]).length,7);assert.equal((rowContainer.match(/\.display-list > \.lot:has\(> \.batch-mark\)/g)||[]).length,7);

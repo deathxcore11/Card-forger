@@ -3306,11 +3306,13 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 /* Condition badges and prices share a compact row; narrow Collection rows
    preserve room for printing metadata and the independent batch column. */
 @media (max-width:480px) {
+  body[data-view="collection"] #content.view-compact .display-list > .lot:has(> .lot-side > .lot-value):has(> .batch-mark) {grid-template-columns:30px 58px minmax(0,1fr);}
   body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .lot-side > .lot-value) {grid-template-columns:minmax(0,1fr);}
   body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .lot-side > .lot-value):has(> .batch-mark) {grid-template-columns:auto minmax(0,1fr);}
-  body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .lot-side > .lot-value) > .lot-side {grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;justify-items:start;}
-  body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .lot-side > .lot-value) > .lot-side > .stepper {grid-column:2;grid-row:1;justify-self:end;}
-  body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .lot-side > .lot-value) > .lot-side > .lot-value {grid-column:1;grid-row:1;justify-self:start;max-width:none;}
+  body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .lot-side > .lot-value) > .lot-side,
+  body[data-view="collection"] #content.view-compact .display-list > .lot:has(> .lot-side > .lot-value):has(> .batch-mark) > .lot-side {grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;justify-items:start;}
+  body[data-view="collection"] :is(#content.view-symbols .display-list > .lot:has(> .lot-side > .lot-value), #content.view-compact .display-list > .lot:has(> .lot-side > .lot-value):has(> .batch-mark)) > .lot-side > .stepper {grid-column:2;grid-row:1;justify-self:end;}
+  body[data-view="collection"] :is(#content.view-symbols .display-list > .lot:has(> .lot-side > .lot-value), #content.view-compact .display-list > .lot:has(> .lot-side > .lot-value):has(> .batch-mark)) > .lot-side > .lot-value {grid-column:1;grid-row:1;justify-self:start;max-width:none;}
 }
 /* A tablet/desktop list can give a batch row less room than a phone. Query
    the row itself, not the viewport, and reflow only its children. Explicit
