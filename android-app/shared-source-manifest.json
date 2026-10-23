@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "version": "3.93.0",
-  "commit": "952c015c80792d9e2b4840e1d1b005f04b8cd7b7",
-  "tree": "de44a2e8c1bb928a0bc93bf21a9b2c414bf4a75c",
+  "version": "3.93.1",
+  "commit": "87615c276ebf075c56db059a54f87d898fe1268a",
+  "tree": "722217bcec2c75b5224005aab30148ac7ad2e29d",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
     {
       "path": ".assetsignore",
-      "bytes": 967,
-      "sha256": "777fffb78b967437361ef1915d919c6f1fd49a1c4a265bbc3207293246cad2db"
+      "bytes": 979,
+      "sha256": "224a7994e4d224d3098ae13612c94b0df8779abc2530b6ea84609135d2af6072"
     },
     {
       "path": "account-scope.js",
@@ -98,8 +98,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 397392,
-      "sha256": "8774edc3ed1850bb4c274eb632bd717dd4c527060d7569f31e370199cf809682"
+      "bytes": 398528,
+      "sha256": "31905671d6f38d0e07e1422ac6f5743315ea1f91e2253af2a81833146600b608"
     },
     {
       "path": "artwork.js",
@@ -278,18 +278,23 @@
     },
     {
       "path": "community-art.js",
-      "bytes": 8467,
-      "sha256": "4a78e0f3c45ecbd4fe3deaae6bdd9c015a1fc4c47a45b482edc5f2431024779e"
+      "bytes": 8682,
+      "sha256": "a0d0fa892d074cda7dad6369497ab579e671debf498f6d69cef597894e8d9e5e"
     },
     {
       "path": "community-curation.css",
-      "bytes": 3394,
-      "sha256": "99db840d0e03ccfc0214775aa83422c12890ab2f47f0c74370a837e3477b5ab9"
+      "bytes": 3571,
+      "sha256": "163d9171888b61e50801e4d34bdac3fd029367bccf793f263d1bedb84a114f33"
+    },
+    {
+      "path": "community-edition.js",
+      "bytes": 2642,
+      "sha256": "e00157bf360046a038704455f2865dc2b29586692bb83f74c882fb4fd27850a6"
     },
     {
       "path": "community-feed.js",
-      "bytes": 15767,
-      "sha256": "ccdd4416519d5fdacf70ac52c03523bf40cc83df78cc6edf0fb0bf8d3da82cd4"
+      "bytes": 15919,
+      "sha256": "4a3d5213027e739297753f900d38db16abf5a86441207c3874e831e8a9bde05f"
     },
     {
       "path": "community-profile.js",
@@ -298,8 +303,8 @@
     },
     {
       "path": "community-sources.js",
-      "bytes": 4672,
-      "sha256": "174d0ecb511cbb41010172d4523eb41a885f94f5c2e04228228de293f7156d36"
+      "bytes": 5222,
+      "sha256": "5f0e02bd19d0b9068637c302850c9e371ac399099ede279584e7d45718fbded5"
     },
     {
       "path": "condition-feed.js",
@@ -324,7 +329,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "6228bfb4719e7f02e56a818bbafd8da8980616876704e12ea3ed482957b8ef36"
+      "sha256": "869f2a85223afc656cc38c56e83913949aa00951389e24a0777b11629f8a93be"
     },
     {
       "path": "core.js",
@@ -1313,8 +1318,8 @@
     },
     {
       "path": "finish-effects.js",
-      "bytes": 50007,
-      "sha256": "889e2581580b3c708b0a7bd38ce7c708b2c7a31ecdd6d424d4727090abcb6cb1"
+      "bytes": 50099,
+      "sha256": "e1812e2950d3ae1eb03da51f737f98575e835f871d23fbce1a95755ea1866906"
     },
     {
       "path": "finish-materials.js",
@@ -1418,8 +1423,8 @@
     },
     {
       "path": "home-ui.js",
-      "bytes": 37005,
-      "sha256": "318be924ef423652f0a23b2124fc35a7835a99823535a1efaec7ed6e47f15bbf"
+      "bytes": 37348,
+      "sha256": "dbd5dd03074267d8a6d41646d1475a6ee3a2c0b0a52ae95031b1e95688950185"
     },
     {
       "path": "icon-192.png",
@@ -1447,14 +1452,29 @@
       "sha256": "6b88326442557efc6c7fe9efc7f07b86da68bae90d33c6b31372bbf2c9aab48d"
     },
     {
+      "path": "img/news/2026-10-19-magic-delay.webp",
+      "bytes": 158718,
+      "sha256": "54758e5944aadc38c0e05d63d8f6d9f8015f02ac3e0288841c92fe4ed1755deb"
+    },
+    {
+      "path": "img/news/2026-10-19-ygo-list.webp",
+      "bytes": 146522,
+      "sha256": "b66f75d1290a8eb8cfbe48ff24827a2f402e768888c2aab9bfdd75c6890eabb5"
+    },
+    {
+      "path": "img/news/2026-10-22-pokemon-rules.webp",
+      "bytes": 107788,
+      "sha256": "4ba338e7152355d3106f2c5ae32ff362be8c44f299727c586e4f793de3ba5dd8"
+    },
+    {
       "path": "importance.js",
       "bytes": 20547,
       "sha256": "b8185eb8c103e0457fd22efc1e7a7bd5b3c75b462f7666cbbbc5b6c5f9853c3d"
     },
     {
       "path": "index.html",
-      "bytes": 15917,
-      "sha256": "c7d66a56db0e8f405cfbdca70103a62bf814ca6ffcd85f380e897221001334c9"
+      "bytes": 15972,
+      "sha256": "f2423d47d2bd39a2a81cc318f4eb2018eef12b4720319a4c7c620370b0f987ec"
     },
     {
       "path": "insights.js",
@@ -1588,8 +1608,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 8806,
-      "sha256": "788856dd4d883117bdb731e7b14143bf42b9ad3cfa3bb13511292598b9c1c230"
+      "bytes": 8872,
+      "sha256": "7c419815df2122c6e3ec223a0f7239f8db6afd61876446b8e4c4e1008e099f5e"
     },
     {
       "path": "pairing.js",
@@ -1623,8 +1643,8 @@
     },
     {
       "path": "pokemon-corrections.js",
-      "bytes": 5753,
-      "sha256": "6d7a41424880d68ed6076bbe2e582a609a6bf80e600cec774ae79e0f591f4b11"
+      "bytes": 7567,
+      "sha256": "b6396ce5f3eb1d6d676ac1c7b72b4bcf88c0d2637d15a0921da9faf5106dcdc9"
     },
     {
       "path": "pokemon-identity.js",
@@ -1633,8 +1653,8 @@
     },
     {
       "path": "pokemon-prices.js",
-      "bytes": 6229,
-      "sha256": "f32337119ec5338216f5d9eaeed03a46b6bb9523f84fb2ba3e3feab13e3f3db5"
+      "bytes": 6399,
+      "sha256": "72fa4306a4c52b2aaa334cc5fe4bfd1e0749cc7039ba69b88f82d619c6d4dc18"
     },
     {
       "path": "pokemon-promo-evidence.js",
@@ -1654,7 +1674,7 @@
     {
       "path": "pokemon-variant-options.js",
       "bytes": 7196,
-      "sha256": "14ad87d5c083aa24e7082a40925e44c1b11e8f28d889790190d6a0448b4bef63"
+      "sha256": "638e93bc9b48dd04cc779a411b40106db446859b1a5c311a8febe3a2f2d810fc"
     },
     {
       "path": "power.js",
@@ -1703,8 +1723,8 @@
     },
     {
       "path": "ptcg-foil-recipes.js",
-      "bytes": 15691,
-      "sha256": "aab7a112f1f5949b0d288d471ccb248c861014f9fdcd03b2e13b1cb28f740122"
+      "bytes": 15701,
+      "sha256": "3931d5a40d634a3381764e4c8b52d37c93a2916fab74949d56318808f3b7f4f7"
     },
     {
       "path": "ptcg-foil.js",
@@ -1723,8 +1743,8 @@
     },
     {
       "path": "ptcg.js",
-      "bytes": 56217,
-      "sha256": "73ac6671808f7c25d7da351b597ad1b942728f91ca3abbd64ae27c1cbeef690a"
+      "bytes": 56452,
+      "sha256": "cb2108adea5577e3db9e2e6a89a496f91398a77ab7de4bcbb13a0bf7175a7cc6"
     },
     {
       "path": "quick-quantity.js",
@@ -1748,8 +1768,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1307,
-      "sha256": "f59f3217ed6244cf06ed7bb9616cae3261ada39f54c6fdc737ec43253f8b4dc6"
+      "bytes": 1010,
+      "sha256": "f2921df7a1ed57872745104d761462ff7522e7c1c91c9c5775691c5ebd28ea6e"
     },
     {
       "path": "release-status.js",
@@ -1943,8 +1963,8 @@
     },
     {
       "path": "scryfall-client.js",
-      "bytes": 4017,
-      "sha256": "3bcdb71f1015485aad8380a3e38617d76c62e68cedf69f21543dabe1d9863d8b"
+      "bytes": 3991,
+      "sha256": "26c4ad3ffcf6e335abecdbea84b701ded51b6c3c4c76969b333ae064b9fc85e0"
     },
     {
       "path": "set-browser.js",
@@ -2048,8 +2068,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 10221,
-      "sha256": "eb2914ebab9ea65a677517f6d8d6e90362c9b8ef7a370447f7f7ceb77111faab"
+      "bytes": 10374,
+      "sha256": "b3965314ac6c03bbfd7395797cce6e8bdf57f4dd741c8d136ea6281feee889c7"
     },
     {
       "path": "sync-merge.js",
