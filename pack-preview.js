@@ -189,7 +189,10 @@ export function trimPackArt(img){
 export function packArtUrl(game,set={}){
  const q=new URLSearchParams(),code=String(set.code||set.id||'').toLowerCase();
  if(/^[a-z0-9]{1,8}$/.test(code))q.set('code',code);if(set.name)q.set('name',String(set.name).slice(0,120));
- return q.toString()?`/img/pack/${game}.jpg?${q}`:'';
+ // Android's image cache accepts percent-encoded queries, but rejects form-style
+ // '+' spaces and literal '*'. Keep the same set name on both runtimes.
+ const query=q.toString().replace(/\+/g,'%20').replace(/\*/g,'%2A');
+ return query?`/img/pack/${game}.jpg?${query}`:'';
 }
 // Which cards come out shiny, the way real boosters work: holo-only Pokémon (holo rares, full arts) in
 // their foil, Pokémon reverse slots as reverse holos, and Magic's foil slot in traditional foil.
