@@ -16,7 +16,7 @@ export const NEWS_EDITION = Object.freeze({
 });
 export function editionStories(game, now = Date.now()) {
   if (now < Date.parse(NEWS_EDITION.checkedAt) || now >= Date.parse(NEWS_EDITION.expiresAt)) return [];
-  return NEWS_EDITION.stories.filter(row => row.game === game).map(({art, ...row}) => ({...row, id:row.url, kind:'news', fetchedAt:NEWS_EDITION.checkedAt, evidence:row.summary, whyItMatters:row.summary, editorial:'source-ranked'}));
+  return NEWS_EDITION.stories.filter(row => row.game === game).map(({art, ...row}) => ({...row, id:row.url, kind:'news', cadence:'weekly', fetchedAt:NEWS_EDITION.checkedAt, evidence:row.summary, whyItMatters:row.summary, editorial:'source-ranked'}));
 }
 // Exact article identity, never an arbitrary image URL received from a cache.
 export function editionArtwork(game, slide) {

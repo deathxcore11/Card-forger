@@ -887,8 +887,10 @@ try {
     await article.locator('.community-open').focus();await page.keyboard.press('ArrowRight');
     assert.equal(await article.getAttribute('data-slide-id'),secondPageId);
     assert(await article.locator('.community-open').evaluate(n=>n===document.activeElement),'keyboard from a headline moves focus to the new page, not a detached link');
-    const links=page.locator('.community-feature.feature-link');
-    for(let i=0;i<await links.count();i++){assert.match(await links.nth(i).innerText(),/Source link · not a live headline/);assert.equal(await links.nth(i).locator('time').count(),0);await safeSourceLink(links.nth(i),game);}
+    assert.equal(await page.locator('.community-feature.feature-link').count(),0);
+    const directory=page.locator('.community-source-links');assert.equal(await directory.locator('a').count(),2);
+    await safeSourceLink(directory,game,'a:first-child');await safeSourceLink(directory,game,'a:last-child');
+    assert.equal(await directory.locator('time').count(),0,'directories never impersonate dated stories');
     assert.doesNotMatch(await page.locator('#content').innerText(),/UNSAFE FIXTURE|UNTRUSTED FIXTURE/);
     await page.locator('[data-community-step="1"]').click();assert.equal(await article.getAttribute('data-slide-id'),firstId,'manual pages wrap predictably');
   }
@@ -965,7 +967,9 @@ try {
     await visibleHeaderArt(unknown.page);
     assert.match(await unknown.page.locator('.hh-credit').innerText(), /Card of the Day/i);
     assert.equal(await unknown.page.locator('.hh-deck-link').count(), 0);
-    assert((await unknown.page.locator('.community-feature.feature-link').count()) >= 2);
+    assert.equal(await unknown.page.locator('.community-feature.feature-link').count(),0);
+    assert.equal(await unknown.page.locator('.community-source-links a').count(),2);
+    assert.match(await unknown.page.locator('.community-empty').innerText(),/No live stories/);
     assert.equal(await unknown.page.locator('.community-feature time').count(), 0);
     for(const width of EVIDENCE_WIDTHS){
       await unknown.page.setViewportSize({width,height:viewportHeight(width)});
