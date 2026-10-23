@@ -297,9 +297,22 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const open=()=>{const w=dialog.querySelector('.pack-wrapper');const done=()=>{dialog.querySelector('.pack-sealed').hidden=true;dialog.querySelector('.pack-content').hidden=false;dialog.classList.add('pack-dealt');show(0);focusCard.focus({preventScroll:true});};
   if(reduce()){done();return;}w.classList.add('tearing');setTimeout(done,620);};
  const close=()=>{if(disposed)return;disposed=true;cancelAnimationFrame(raf);stopTilt();dialog.close();dialog.remove();};
+ // Inspecting a pulled card opens its page above the pack. The pack stays exactly as it is underneath (same pulls,
+ // reveals, focused card, nothing re-dealt or replayed), paused while covered, and is back when that page closes.
+ let suspended=false;
+ const resume=()=>{if(disposed||!suspended)return;suspended=false;dialog.classList.remove('pack-under');if(!raf)raf=requestAnimationFrame(light);focusCard.focus({preventScroll:true});};
+ const inspect=i=>{
+  if(suspended)return;suspended=true;dialog.classList.add('pack-under');cancelAnimationFrame(raf);raf=0;
+  const sheet=document.querySelector('#sheet');
+  Promise.resolve().then(()=>onDetails(picks[i],ctxs[i]||{})).catch(()=>{}).then(()=>{
+   if(disposed)return;
+   // The page may not open (offline, changed account): the pack comes straight back.
+   if(sheet?.open)sheet.addEventListener('close',resume,{once:true});else resume();
+  });
+ };
  // Light follows the pointer (or tilt) over the focused card; at rest it drifts slowly.
  let raf=0,t0=performance.now(),pointer=null;
- const light=now=>{raf=0;if(disposed||!dialog.isConnected)return;
+ const light=now=>{raf=0;if(disposed||suspended||!dialog.isConnected)return;
   // While the phone's tilt drives the card, the resting drift steps aside.
   if(!pointer&&/perspective/.test(focusCard.style.transform)){raf=requestAnimationFrame(light);return;}const [x,y]=pointer||[50+44*Math.sin((now-t0)/1500),42+30*Math.sin((now-t0)/2100)];focusCard.style.setProperty('--mx',x+'%');focusCard.style.setProperty('--my',y+'%');
   // Only a pointer tilts the card; at rest just the light drifts, so the card itself stays still.
@@ -315,7 +328,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const slide=step=>{const next=focus+step;if(next<0||next>=picks.length)return;show(next);if(reduce())return;focusCard.classList.remove('pack-slide-next','pack-slide-prev');void focusCard.offsetWidth;focusCard.classList.add(step>0?'pack-slide-next':'pack-slide-prev');};
  focusCard.addEventListener('animationend',e=>{if(/^pack-slide/.test(e.animationName))focusCard.classList.remove('pack-slide-next','pack-slide-prev');});
  // Phones, tablets and foldables can tilt the revealed card to play with its foil.
- const stopTilt=attachZoomMotion({dialog,surface:focusCard,button:dialog.querySelector('.pack-tilt'),active:()=>!disposed&&revealed.has(focus)&&!dialog.querySelector('.pack-content').hidden});
+ const stopTilt=attachZoomMotion({dialog,surface:focusCard,button:dialog.querySelector('.pack-tilt'),active:()=>!disposed&&!suspended&&revealed.has(focus)&&!dialog.querySelector('.pack-content').hidden});
  const handEl=dialog.querySelector('.pack-hand');handEl.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&!e.buttons){const b=e.target.closest('.pack-card');if(b)show(+b.dataset.index);return;}if(!e.buttons)return;const r=handEl.getBoundingClientRect();show(Math.round((e.clientX-r.left)/r.width*(picks.length-1)));});
  dialog.addEventListener('keydown',e=>{if(dialog.querySelector('.pack-content').hidden)return;if(e.key==='ArrowRight'){e.preventDefault();slide(1);}else if(e.key==='ArrowLeft'){e.preventDefault();slide(-1);}});
  dialog.addEventListener('close',close);dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
@@ -324,7 +337,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   if(!isCurrent()){status.textContent='Your account or game changed. Close this pack and open it again.';return;}
   if(action==='open')return open();
   if(action==='reveal')return reveal(i);
-  if(action==='focus'){if(swipe?.moved){swipe=null;return;}swipe=null;if(!revealed.has(focus))return reveal(focus);close();return onDetails(picks[focus],ctxs[focus]||{});}
+  if(action==='focus'){if(swipe?.moved){swipe=null;return;}swipe=null;if(!revealed.has(focus))return reveal(focus);return inspect(focus);}
   if(action==='reveal-all'){picks.forEach((_,j)=>{if(!revealed.has(j))reveal(j);});show(Math.floor(picks.length/2));return;}
   if(action==='again'){picks=draw();ctxs=packFinishes(game,picks);fill();revealed=new Set();dialog.classList.remove('pack-done','pack-dealt');handEl.innerHTML=hand();wireHold();for(const x of dialog.querySelectorAll('[data-pack="copy"],[data-pack="wish"],[data-pack="buy"]'))x.disabled=true;status.textContent='';
    requestAnimationFrame(()=>dialog.classList.add('pack-dealt'));show(0);return;}
