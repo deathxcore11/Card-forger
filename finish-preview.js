@@ -141,7 +141,8 @@ export function attachFinishPreview(root){
   if(nameMask){
    // Letters from this exact image replace the title-band placeholder; the art foil layers are unchanged.
    for(const n of overlay.querySelectorAll('.finish-name-region')){Object.assign(n.style,nameMaskStyle(nameMask.alphaUrl));n.classList.add('finish-title-glyphs');}
-   if(detail){const m=mounted.get(el);m.nameFoil=mountYgoNameFoil(overlay,img,nameLayer.material,nameMask);}
+   // The big card faces (detail, zoom, a pulled pack card) also draw the lettering's own WebGL foil.
+   if(detail||el.dataset.finishSurface==='pack'){const m=mounted.get(el);m.nameFoil=mountYgoNameFoil(overlay,img,nameLayer.material,nameMask);}
   }else if(p.game==='ygo'&&overlay.querySelector('.finish-name-region')){
    const src=img.currentSrc;
    void verifiedTitleMask(p.printingId,src).then(mask=>{if(!mask||mounted.get(el)?.overlay!==overlay||img.currentSrc!==src)return;for(const n of overlay.querySelectorAll('.finish-name-region')){n.style.clipPath='none';n.style.maskImage=`url("${mask}")`;n.classList.add('finish-title-glyphs');}});

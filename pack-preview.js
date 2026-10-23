@@ -234,7 +234,8 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  if(game!=='ygo'){cards=cards.map(({setContext,...c})=>c);if(featured){const {setContext,...f}=featured;featured=f;}}
  // A Yu-Gi-Oh! card in this pack was printed in this release by definition, so its release is the
  // verified one (display only), and its pulled printing's foil can show.
- const inRelease=c=>c?.setContext?.releaseId?{...c,setContext:{...c.setContext,game:'ygo',cardId:c.id,status:'resolved'}}:c;
+ // The pack's own release date stands in when a card's context lacks one: star and Attribute foil depend on the print era.
+ const inRelease=c=>c?.setContext?.releaseId?{...c,setContext:{...c.setContext,game:'ygo',cardId:c.id,status:'resolved',date:c.setContext.date||set?.date||''}}:c;
  if(game==='ygo'){cards=cards.map(inRelease);featured=featured&&rollYgoPrinting(inRelease(featured),Math.random,featured.featuredRarity);}
  const size=packSize(game,set),draw=()=>booster?drawMtgBooster(booster.data,booster.cards,Math.random):samplePack(game,cards,size,Math.random,set);
  let picks=draw();
