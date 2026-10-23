@@ -9,6 +9,7 @@ import {rarityEmblem} from './rarity-emblem.js';
 import {ygoSetReference} from './ygo-set-prices.js';
 import {pkCatalogueSymbolSources} from './emblems.js';
 import {drawMtgBooster} from './mtg-boosters.js';
+import {haptic,cancelHaptics} from './feel.js';
 // A discovery sampler. No collation, print-run odds, purchases or ownership are implied.
 export function sampleSetCards(cards,count=10,random=Math.random){
  const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),c])).values()];
@@ -220,6 +221,17 @@ export function packFinishes(game,picks){
 export function packNeedsHydration(game,c,hit=false){return !c.variants?.length&&(hit||!!c.packSlot||packRarity(game,c).rank>=2);}
 // The featured hit's finish: its first real foil, or null when it has none (yet).
 export function packHitFinish(game,c){const f=finishChoices(game,c,{}).find(v=>v.status!=='unknown'&&v.effect!=='plain');return f?game==='mtg'?{finish:f.key}:game==='ptcg'?{priceFinish:f.key}:{}:null;}
+// The price a pull's haptic may trust: only the exact pulled finish or printing, never packPrice's display
+// fallbacks (a card's generic price, another printing). Unknown means the ordinary flip.
+export function trustedPackPrice(game,c,pulled={}){
+ const n=v=>{const x=Number(v);return Number.isFinite(x)&&x>0?x:null;};
+ if(game==='mtg')return n(pulled.finish==='foil'?c?.prices?.usd_foil:pulled.finish==='etched'?c?.prices?.usd_etched:c?.prices?.usd);
+ if(game==='ptcg'){const key=pulled.priceFinish||(c?.variants?.some(v=>v.key==='normal')?'normal':'');const v=key&&(c?.variants||[]).find(x=>x.key===key);return v?n(v.usd??v.market):null;}
+ return n(ygoSetReference(c)?.low);
+}
+// One reveal, one feel: ordinary pulls get the plain flip; a trusted $10+ pull gets a distinct accent, a little
+// richer at $50 and $200, never longer or harsher with value.
+export function packRevealHaptic(price){const t=priceTier(price);return t>=4?'pack-value-4':t===3?'pack-value-3':t===2?'pack-value-2':'pack-reveal';}
 // featured: a card to pull as this pack's last card (today's pack always holds the Card of the Day).
 // The pulled card's market price for what came out of the pack (its finish or printing), or null.
 export function packPrice(game,c,pulled={}){
@@ -289,20 +301,29 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  let deal=0;const fill=()=>{if(!hydrate)return;const n=++deal,now=picks;now.forEach((c,i)=>{const hit=!!featured&&c===featured;if(!packNeedsHydration(game,c,hit))return;
   Promise.resolve().then(()=>hydrate(c)).then(full=>{if(disposed||n!==deal||!full||String(full.id)!==String(c.id))return;
    const {setContext,...rest}=full;now[i]={...c,...rest,name:c.name,rarity:c.rarity||full.rarity,packSlot:c.packSlot};ctxs[i]=(hit&&featuredFinish(now[i]))||packFinishes(game,[now[i]])[0];if(revealed.has(i))setTier(dialog.querySelector(`.pack-card[data-index="${i}"]`),tierOf(i));if(focus===i&&revealed.has(i))show(i);}).catch(()=>{});});};
- const reveal=i=>{if(!Number.isInteger(i)||!picks[i])return;if(!revealed.has(i)){revealed.add(i);const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');img.src=img.dataset.packSrc;b.classList.add('revealed');b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
+ const feelOf=i=>packRevealHaptic(trustedPackPrice(game,picks[i],ctxs[i]||{}));
+ const reveal=(i,{silent=false}={})=>{if(!Number.isInteger(i)||!picks[i])return;if(!revealed.has(i)){revealed.add(i);if(!silent)haptic(feelOf(i));const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');img.src=img.dataset.packSrc;b.classList.add('revealed');b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
    setTier(b,tierOf(i));status.textContent=`${revealed.size} of ${picks.length} revealed`;
    if(revealed.size===picks.length){dialog.classList.add('pack-done');if(picks.godPack)status.textContent='God pack! Every hit is an illustration rare.';for(const x of dialog.querySelectorAll('.pack-actions [disabled]'))x.disabled=false;}}
   show(i);};
  fill();
- const open=()=>{const w=dialog.querySelector('.pack-wrapper');const done=()=>{dialog.querySelector('.pack-sealed').hidden=true;dialog.querySelector('.pack-content').hidden=false;dialog.classList.add('pack-dealt');show(0);focusCard.focus({preventScroll:true});};
-  if(reduce()){done();return;}w.classList.add('tearing');setTimeout(done,620);};
- const close=()=>{if(disposed)return;disposed=true;cancelAnimationFrame(raf);stopTilt();dialog.close();dialog.remove();};
+ // Feel: the tear as the seam opens, a few dry contacts as the cards settle (not one per card, which would blur into
+ // a buzz), one contact per first reveal. Anything pending stops when the pack closes or a card page opens over it.
+ const timers=new Set();let opening=false;
+ const later=(fn,ms)=>{const t=setTimeout(()=>{timers.delete(t);if(!disposed)fn();},ms);timers.add(t);};
+ const quiet=()=>{for(const t of timers)clearTimeout(t);timers.clear();cancelHaptics();};
+ const open=()=>{if(opening||disposed||!dialog.querySelector('.pack-content').hidden)return;opening=true;const w=dialog.querySelector('.pack-wrapper');
+  const done=()=>{opening=false;w.classList.remove('tearing');dialog.querySelector('.pack-sealed').hidden=true;dialog.querySelector('.pack-content').hidden=false;dialog.classList.add('pack-dealt');show(0);focusCard.focus({preventScroll:true});
+   if(!reduce())for(const ms of [150,320,490])later(()=>{if(!suspended)haptic('pack-land');},ms);};
+  haptic('pack-tear');
+  if(reduce()){done();return;}w.classList.add('tearing');later(done,620);};
+ const close=()=>{if(disposed)return;quiet();disposed=true;cancelAnimationFrame(raf);stopTilt();dialog.close();dialog.remove();};
  // Inspecting a pulled card opens its page above the pack. The pack stays exactly as it is underneath (same pulls,
  // reveals, focused card, nothing re-dealt or replayed), paused while covered, and is back when that page closes.
  let suspended=false;
  const resume=()=>{if(disposed||!suspended)return;suspended=false;dialog.classList.remove('pack-under');if(!raf)raf=requestAnimationFrame(light);focusCard.focus({preventScroll:true});};
  const inspect=i=>{
-  if(suspended)return;suspended=true;dialog.classList.add('pack-under');cancelAnimationFrame(raf);raf=0;
+  if(suspended)return;suspended=true;quiet();dialog.classList.add('pack-under');cancelAnimationFrame(raf);raf=0;
   const sheet=document.querySelector('#sheet');
   Promise.resolve().then(()=>onDetails(picks[i],ctxs[i]||{})).catch(()=>{}).then(()=>{
    if(disposed)return;
@@ -338,9 +359,11 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   if(action==='open')return open();
   if(action==='reveal')return reveal(i);
   if(action==='focus'){if(swipe?.moved){swipe=null;return;}swipe=null;if(!revealed.has(focus))return reveal(focus);return inspect(focus);}
-  if(action==='reveal-all'){picks.forEach((_,j)=>{if(!revealed.has(j))reveal(j);});show(Math.floor(picks.length/2));return;}
-  if(action==='again'){picks=draw();ctxs=packFinishes(game,picks);fill();revealed=new Set();dialog.classList.remove('pack-done','pack-dealt');handEl.innerHTML=hand();wireHold();for(const x of dialog.querySelectorAll('[data-pack="copy"],[data-pack="wish"],[data-pack="buy"]'))x.disabled=true;status.textContent='';
-   requestAnimationFrame(()=>dialog.classList.add('pack-dealt'));show(0);return;}
+  // Reveal All is one moment: a single feel for the best newly revealed pull, not every card's at once.
+  if(action==='reveal-all'){const order=['pack-reveal','pack-value-2','pack-value-3','pack-value-4'];let best=-1;picks.forEach((_,j)=>{if(!revealed.has(j)){best=Math.max(best,order.indexOf(feelOf(j)));reveal(j,{silent:true});}});if(best>=0)haptic(order[best]);show(Math.floor(picks.length/2));return;}
+  // A new pack is a new sealed pack: it waits to be torn open, rather than dealing straight away.
+  if(action==='again'){quiet();opening=false;picks=draw();ctxs=packFinishes(game,picks);fill();revealed=new Set();dialog.classList.remove('pack-done','pack-dealt');handEl.innerHTML=hand();wireHold();for(const x of dialog.querySelectorAll('[data-pack="copy"],[data-pack="wish"],[data-pack="buy"]'))x.disabled=true;status.textContent='';
+   dialog.querySelector('.pack-content').hidden=true;const sealed=dialog.querySelector('.pack-sealed');sealed.hidden=false;sealed.querySelector('.pack-wrapper')?.classList.remove('tearing');sealed.querySelector('.pack-wrapper')?.focus({preventScroll:true});return;}
   if(['copy','wish','buy'].includes(action)&&revealed.size===picks.length){
    busy=true;b.disabled=true;try{if(action==='wish'){await onWishlist(picks);status.textContent='Saved to your wishlist.';b.textContent='On wishlist';}
     else if(action==='copy'){const ok=await onCopy(packList(picks).join('\n'));status.textContent=ok?'Card list copied.':'Could not copy. Select the list below.';if(!ok){const area=document.createElement('textarea');area.readOnly=true;area.value=packList(picks).join('\n');area.setAttribute('aria-label','Pack card list');status.after(area);area.select();}}

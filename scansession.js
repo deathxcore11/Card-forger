@@ -1,3 +1,4 @@
+import {haptic} from './feel.js';
 import {YGO_EDITIONS} from './ygo-identity.js';
 import {privateKey} from './account-scope.js';
 // Scan sessions: defaults you set once (finish, condition, language, quantity), a running list of
@@ -81,7 +82,8 @@ export function sessionText(list) {
 // Short success/fail sounds (no files) and a tap of vibration.
 let audio = null;
 export function feedback(kind, prefs) {
-  if (prefs.haptics && navigator.vibrate) navigator.vibrate(kind === "ok" ? 25 : [40, 60, 40]);
+  // The scanner's own switch and the app-wide Haptics setting both have to be on; one shared haptic path.
+  if (prefs.haptics) haptic(kind === "ok" ? "success" : "error");
   if (!prefs.sounds) return;
   try {
     audio ||= new (window.AudioContext || window.webkitAudioContext)();
