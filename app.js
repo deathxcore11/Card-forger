@@ -1347,7 +1347,7 @@ window.addEventListener("hashchange",applyHistory);
 // topmost layer closes first (a dropdown, the pack, a card page one step at a time), then the screen returns along
 // the app's own history; a screen opened cold returns to its parent. Only with nothing left does Back leave the app.
 const dialogOpenedAt=new WeakMap();let dialogTick=0;
-new MutationObserver(records=>{for(const r of records)if(r.target.tagName==='DIALOG'&&r.target.open)dialogOpenedAt.set(r.target,++dialogTick);}).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['open']});
+if(typeof MutationObserver!=='undefined'&&document.documentElement)new MutationObserver(records=>{for(const r of records)if(r.target.tagName==='DIALOG'&&r.target.open)dialogOpenedAt.set(r.target,++dialogTick);}).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['open']});
 const topDialog=()=>[...document.querySelectorAll('dialog[open]')].sort((a,b)=>(dialogOpenedAt.get(b)||0)-(dialogOpenedAt.get(a)||0))[0]||null;
 const parentRoute=hash=>/^#(?:t?set)\//.test(hash)?'#sets':/^#(?:t?deck)\//.test(hash)?'#decks':/^#collection\/./.test(hash)?'#collection':'#home';
 let backBusy=0;
@@ -1360,10 +1360,11 @@ function appBack(){
     // Each dialog keeps its own Escape handling (the pack disposes itself, settings restore history…).
     const cancel=new Event('cancel',{cancelable:true});if(top.dispatchEvent(cancel)&&top.open)top.close();return true;
   }
-  if((activeEntry?.index||0)>0){history.back();return true;}
+  // Home is the root: Back there leaves the app (it never walks back through earlier game switches).
   const hash=normalizeRoute(location.hash);
-  if(hash&&hash!=='#home'&&hash!=='#'){void navigate({game:T.game(),hash:parentRoute(hash),mode:'replace'});return true;}
-  return false;
+  if(!hash||hash==='#home'||hash==='#')return false;
+  if((activeEntry?.index||0)>0){history.back();return true;}
+  void navigate({game:T.game(),hash:parentRoute(hash),mode:'replace'});return true;
 }
 globalThis.cardstashyBack=()=>{try{return appBack();}catch{return false;}};
 // App links use the same history path, including same-hash game changes.

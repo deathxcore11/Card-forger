@@ -4,7 +4,7 @@ export const collectionSortOptions=(game)=>[['set-order','Set year · card numbe
 export const defaultCollectionDirection=sort=>['name','set','rarity','color','mv'].includes(sort)?'asc':'desc';
 export function collectionSortControls(game,sort,direction){
  const items=collectionSortOptions(game),selected=items.some(([key])=>key===sort)?sort:'recent',dir=direction||defaultCollectionDirection(selected),prefix=game==='mtg'?'':'t';
- return `<div class="collection-sort-controls"><label class="collection-sort-label">Sort<select data-change="${prefix? 'tCollSort':'collSort'}" aria-label="Sort collection">${options(items,selected)}</select></label><label class="collection-direction-label"><span class="sr-only">Sort direction</span><select data-change="${prefix?'tCollDirection':'collDirection'}" aria-label="Collection sort direction">${options([['asc','Ascending'],['desc','Descending']],dir)}</select></label></div>`;
+ return `<div class="collection-sort-controls"><label class="collection-sort-label">Sort<select data-change="${prefix? 'tCollSort':'collSort'}" aria-label="Sort collection">${options(items,selected)}</select></label><label class="collection-direction-label"><span class="sr-only">Sort direction</span><select data-change="${prefix?'tCollDirection':'collDirection'}" aria-label="Collection sort direction">${options([['asc','↑ Asc'],['desc','↓ Desc']],dir)}</select></label></div>`;
 }
 const present=x=>x!==null&&x!==undefined&&x!==''&&!(typeof x==='number'&&!Number.isFinite(x));
 function compareKnown(a,b,dir,numeric=false){if(!present(a)||!present(b))return present(a)?-1:present(b)?1:0;const n=numeric?Number(a)-Number(b):collator.compare(String(a),String(b));return dir==='desc'?-n:n;}

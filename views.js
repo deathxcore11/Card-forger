@@ -681,7 +681,7 @@ export function compareSheet() {
 
 export function collection() {
   const tab = S.ui.collTab;
-  return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${S.ui.collTab === "cards" ? viewControl("mtg","collection")+selectionControl("mtg") : ""}<button class="btn small" data-act="addCard">＋ Add</button><button class="icon" data-act="collMenu" aria-label="More collection actions">⋯</button></div></div>
+  return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${S.ui.collTab === "cards" ? viewControl("mtg","collection")+selectionControl("mtg") : ""}<button class="icon" data-act="collMenu" aria-label="More collection actions">⋯</button></div></div>
   ${segmented("collTab", tab === "wishlist" ? "cards" : tab, [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"]])}
   ${tab === "binders" ? binderShelf(S.state.collection.map(entry => { const c=magicOwnedCard(entry,S.state.printings?.[entry.printingId]); return {entry,card:c,image:cardImage(c),game:"mtg",owned:true}; }),"mtg",S.state.settings.binders || []) : tab === "value" ? collectionValueView() : collectionCards(tab === "wishlist")}`;
 }
@@ -694,7 +694,6 @@ function collectionCards(wantedOnly = false) {
     return empty("Start with the cards in front of you", "Add one card, scan it, or import a ManaBox / Moxfield / CSV export. Nothing counts as owned until you add it.", `<button class="btn" data-act="addCard">Add a card</button><button class="btn ghost" data-act="importCollection">Import a list</button>`);
   const value = collectionValue(st.collection, S.catalog, st.printings, []);
   return `<p class="summary-line"><b>${sumQty(st.collection)}</b> copies · <b>${new Set(st.collection.map((e) => key(e.name))).size}</b> names · <b data-count="${Math.round(value.total)}" data-money="1">${usd(value.total, 0)}</b>${value.unpriced ? ` <span class="muted">(${value.unpriced} unpriced)</span>` : ""}${wanted.length ? ` · <b>${wanted.length}</b> wanted` : ""}</p>
-  <div class="searchbar want-add"><input id="wishName" placeholder="Add a card you want" data-enter="wishAdd" data-suggest="mtg" aria-label="Add a card to your wishlist"><button class="btn ghost" data-act="wishAdd">${actionIcon("heart")}<span>Want</span></button></div>
   <div class="coll-tools"><div class="collection-primary-tools">${collectionSortControls('mtg',S.ui.collSort,S.ui.collDirection)}<input type="search" value="${esc(S.ui.q.coll)}" placeholder="Search name, set, binder…" data-input="collSearch" aria-label="Search collection"></div><div class="filter-pills"><select data-change="collFilter" aria-label="Filter">${options([["all", "Owned + wanted"], ["owned", "Owned only"], ["wanted", "Wanted"], ["meta", "★ Meta & staples"], ["spare", "Not in a deck"], ["review", "Printing to review"], ["foil", "Foils"], ["unpriced", "Unpriced"]], S.ui.collFilter)}</select></div></div>
   <div id="collList">${collectionList()}</div>`;
 }

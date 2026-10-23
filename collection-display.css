@@ -27,3 +27,30 @@
  :root[data-grid-size="small"] #content.view-gallery :is(.card-grid,.display-list) {grid-template-columns:repeat(3,minmax(0,1fr));}
  :root[data-grid-size="medium"] #content.view-gallery :is(.card-grid,.display-list) {grid-template-columns:repeat(2,minmax(0,1fr));}
 }
+
+/* Compact view on phones: one neat card pill. The art spans the row; the name, printing line and a single control
+   line (price · condition, then quantity and Edit) sit beside it, so there is no empty band and no third line. */
+@media (max-width: 600px) {
+  body[data-view="collection"] #content.view-compact .display-list > .lot { grid-template-columns: 52px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 12px; row-gap: 6px; padding: 8px 10px; align-items: center; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot:has(> .batch-mark) { grid-template-columns: 30px 52px minmax(0, 1fr); }
+  body[data-view="collection"] #content.view-compact .display-list > .lot > .lot-art { grid-row: 1 / span 2; align-self: start; width: 52px; height: 73px; min-width: 0; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot > .lot-art .img-missing { font-size: 9px; line-height: 1.15; padding: 2px; overflow-wrap: anywhere; text-align: center; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot > .lot-info { align-self: end; gap: 1px; min-width: 0; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot > .lot-info .lot-name { font-size: 15px; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot > .lot-info .tag { padding: 1px 6px; font-size: 11px; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot > .lot-side { grid-column: -2; grid-row: 2; align-self: start; display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; width: 100%; min-width: 0; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot > .lot-side .lot-value { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot > .lot-side .stepper { margin-left: auto; }
+  body[data-view="collection"] #content.view-compact .display-list > .lot > .lot-side [data-act="editLot"] { min-height: 44px; padding-inline: 4px; }
+}
+
+/* Collection tools on phones: search across the top, then Sort, direction and filter on one even row. */
+@media (max-width: 600px) {
+  .coll-tools { display: grid; grid-template-columns: minmax(0, 1.12fr) 84px minmax(0, 1.08fr); gap: 8px 6px; align-items: center; margin-bottom: 10px; }
+  .coll-tools > .collection-primary-tools, .coll-tools .collection-sort-controls { display: contents; }
+  .coll-tools .collection-primary-tools > input[type="search"] { grid-column: 1 / -1; grid-row: 1; min-height: 44px; }
+  .coll-tools .collection-sort-label { grid-column: 1; grid-row: 2; font-size: 0; gap: 0; }
+  .coll-tools .collection-direction-label { grid-column: 2; grid-row: 2; }
+  .coll-tools > .filter-pills { grid-column: 3; grid-row: 2; display: block; min-width: 0; margin: 0; }
+  .coll-tools select { width: 100%; min-width: 0; height: 44px; min-height: 44px; border-radius: 999px; font-size: 13px; padding-left: 11px; white-space: nowrap; text-overflow: ellipsis; line-height: 1.2; font-size: 12px; letter-spacing: -.1px; }
+}

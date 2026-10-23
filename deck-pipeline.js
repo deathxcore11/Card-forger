@@ -19,14 +19,14 @@ export function createDeckPipeline(x) {
   // older, rotated printing), and only fall back to the plain lookup when no printing in the format matches.
   if(!card&&request.seed){
    const found=await src.search({q:request.seed,exactName:true,format:f.id,size:24}).catch(()=>({cards:[]}));
-   for(const c of (found.cards||[]).filter(c=>cardKey(c.name)===cardKey(request.seed))){const full=await src.get(c.id).catch(()=>null);if(compatible(full)){card=full;break;}}
+   for(const c of (found.cards||[]).filter(c=>cardKey(c.name)===cardKey(request.seed))){const full=await Promise.resolve().then(()=>src.get(c.id)).catch(()=>null);if(compatible(full)){card=full;break;}}
    if(!card)card=await src.byName?.(request.seed);
   }
   if(!card&&!request.seed){
    const pool=request.game==='ygo'?request.theme?(await src.search({archetype:request.theme,size:100})).cards:(await src.randomArchetype()).cards:(await src.search({category:'Pokemon',type:request.theme||'',format:f.id,size:100})).cards;
    const choices=(pool||[]).filter(c=>request.game!=='ygo'||c.category==='Monster'&&!c.extra);
    const start=Math.abs(request.randomSeed||0)%Math.max(1,choices.length);
-   for(let i=0;i<Math.min(12,choices.length);i++){const candidate=choices[(start+i)%choices.length];const full=await src.get(candidate.id).catch(()=>null);if(compatible(full)){card=full;break;}}
+   for(let i=0;i<Math.min(12,choices.length);i++){const candidate=choices[(start+i)%choices.length];const full=await Promise.resolve().then(()=>src.get(candidate.id)).catch(()=>null);if(compatible(full)){card=full;break;}}
   }
   if(card?.brief)card=await src.get(card.id);
   // Name the actual problem: no such card, a non-Pokémon seed, or a card not legal in the format.
