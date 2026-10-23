@@ -20,3 +20,12 @@ The old native transport policy omitted `/api/releases/current`, so update check
 6. Verify an in-place upgrade on a device: saved collection/decks and login survive; Pokémon Paradox Rift and a multi-word Yu-Gi-Oh! release show pack art on Home and in the opener; update checking reports the installed version correctly. Test portrait/landscape layout and set search, filters, sorts, and all views.
 
 The current workspace has the published APK and reviewed transforms, but not the production Gradle project or signing workflow. No replacement APK has been built, signed, or published here. Hosted browser checks and URL-policy tests do not substitute for the Android update test above.
+
+## Built artifact (0.4.1)
+
+`downloads/cardstashy-android-beta-0.4.1.apk`: com.cardstashy.app 0.4.1-beta, versionCode 6,
+25,896,363 bytes, SHA-256 `5bda66162fe5ceeef26af87bef92c3699cea816cdd039c2d4301649f59c2492e`,
+signed with the established certificate (E6:E4:01…3F:55), interface 3.92.1 from commit `d9bf1c2`.
+Built by the production com.cardstashy.app pipeline (the one that produced 0.4.0) with the
+repository's `native-service-policy.js` copied verbatim into the native runtime. Release gate:
+241 shared assets (including the native policy), 0 errors, `releaseApproved: true`.
