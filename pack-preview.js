@@ -215,6 +215,11 @@ export function packFinishes(game,picks){
   return {};
  });
 }
+// A pulled card's full record is loaded when it can shine (a shiny slot, rarity, or the featured hit) and its
+// list entry carries no variants to pick a holo or reverse holo from.
+export function packNeedsHydration(game,c,hit=false){return !c.variants?.length&&(hit||!!c.packSlot||packRarity(game,c).rank>=2);}
+// The featured hit's finish: its first real foil, or null when it has none (yet).
+export function packHitFinish(game,c){const f=finishChoices(game,c,{}).find(v=>v.status!=='unknown'&&v.effect!=='plain');return f?game==='mtg'?{finish:f.key}:game==='ptcg'?{priceFinish:f.key}:{}:null;}
 // featured: a card to pull as this pack's last card (today's pack always holds the Card of the Day).
 // The pulled card's market price for what came out of the pack (its finish or printing), or null.
 export function packPrice(game,c,pulled={}){
@@ -246,8 +251,10 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const cardArt=c=>game==='mtg'?cardImage(c,'normal'):c.imageLarge||c.image||'';
  const fallback=setArtworkSources(game,set,picks[0]),packArt=packArtUrl(game,set),sources=[packArt,...fallback].filter(Boolean);
  let revealed=new Set(),focus=0,ctxs=packFinishes(game,picks),disposed=false,busy=false;
- // The featured hit comes out in its foil when it has one.
- if(featured){const last=picks.length-1,f=finishChoices(game,featured,{}).find(v=>v.status!=='unknown'&&v.effect!=='plain');if(f)ctxs[last]=game==='mtg'?{finish:f.key}:game==='ptcg'?{priceFinish:f.key}:{};}
+ // The featured hit comes out in its foil when it has one (a Pokémon set list carries no variants, so its
+ // foil is picked again once the full card loads).
+ const featuredFinish=c=>packHitFinish(game,c);
+ if(featured){const f=featuredFinish(featured);if(f)ctxs[picks.length-1]=f;}
  // Face-down cards wear the game's own card back (same-origin from the worker); the emblem stays beneath if it can't load.
  const back=`<span class="pack-card-back" data-back="${esc(game)}">${brandStaticMark()}<img class="pack-back-img" src="/img/back/${esc(game)}.jpg" alt="" decoding="async" onerror="this.remove()"></span>`;
  const hand=()=>picks.map((c,i)=>{return `<button class="pack-card" data-pack="reveal" data-index="${i}" data-hold-card style="--i:${i}" aria-label="Card ${i+1}, face down" aria-pressed="false">${back}<span class="pack-card-front"><img data-pack-src="${esc(setImageUrl(cardArt(c)))}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true"></span></button>`;}).join('');
@@ -279,9 +286,9 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   meta.querySelector('b').textContent=open?c.name:'';meta.querySelector('.pack-rarity').innerHTML=open?rarityEmblem(game,rarity.label,{finish:packFinishLabel(game,ctxs[focus]||{},rarity.label)}):'';
  };
  // Pulled shiny slots load their full card in the background and pick up their holo before they are seen.
- let deal=0;const fill=()=>{if(!hydrate)return;const n=++deal,now=picks;now.forEach((c,i)=>{if((!c.packSlot&&packRarity(game,c).rank<2)||c.variants?.length||(featured&&c===featured))return;
+ let deal=0;const fill=()=>{if(!hydrate)return;const n=++deal,now=picks;now.forEach((c,i)=>{const hit=!!featured&&c===featured;if(!packNeedsHydration(game,c,hit))return;
   Promise.resolve().then(()=>hydrate(c)).then(full=>{if(disposed||n!==deal||!full||String(full.id)!==String(c.id))return;
-   const {setContext,...rest}=full;now[i]={...c,...rest,name:c.name,rarity:c.rarity||full.rarity,packSlot:c.packSlot};ctxs[i]=packFinishes(game,[now[i]])[0];if(revealed.has(i))setTier(dialog.querySelector(`.pack-card[data-index="${i}"]`),tierOf(i));if(focus===i&&revealed.has(i))show(i);}).catch(()=>{});});};
+   const {setContext,...rest}=full;now[i]={...c,...rest,name:c.name,rarity:c.rarity||full.rarity,packSlot:c.packSlot};ctxs[i]=(hit&&featuredFinish(now[i]))||packFinishes(game,[now[i]])[0];if(revealed.has(i))setTier(dialog.querySelector(`.pack-card[data-index="${i}"]`),tierOf(i));if(focus===i&&revealed.has(i))show(i);}).catch(()=>{});});};
  const reveal=i=>{if(!Number.isInteger(i)||!picks[i])return;if(!revealed.has(i)){revealed.add(i);const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');img.src=img.dataset.packSrc;b.classList.add('revealed');b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
    setTier(b,tierOf(i));status.textContent=`${revealed.size} of ${picks.length} revealed`;
    if(revealed.size===picks.length){dialog.classList.add('pack-done');if(picks.godPack)status.textContent='God pack! Every hit is an illustration rare.';for(const x of dialog.querySelectorAll('.pack-actions [disabled]'))x.disabled=false;}}

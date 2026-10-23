@@ -82,3 +82,12 @@ assert.match(PTCG_FOIL_FRAGMENT,/float a=smoothstep\(0\.,\.03,cov\);gl_FragColor
 // A // comment runs to the end of its line in GLSL: shader code must never sit after one (it would be silently skipped).
 {const {YGO_RARITY_FRAGMENT}=await import('./ygo-rarity-foil.js');for(const [name,src] of [['Pokémon',PTCG_FOIL_FRAGMENT],['Yu-Gi-Oh!',YGO_RARITY_FRAGMENT]])for(const line of src.split('\n')){const k=line.indexOf('//');if(k>=0)assert(!/;/.test(line.slice(k)),`${name} shader comment swallows code: ${line.slice(k,k+90)}`);}}
 console.log('PASS: Pokémon foil follows each era (WotC, Legendary Collection, e-Card, EX, DP-SWSH, SV) and variant (cosmos, Poké Ball, Master Ball, gold); holo windows keep the Pokémon solid; full arts by rarity keep text readable; every measured mask parses; art breaking out of the window stays ink on reverse holos.');
+// Illustration rares were so dimmed (partial strength, faint relief and sparkle) that a
+// pulled Special Illustration Rare looked unfoiled: they keep most of the foil's weight.
+{const {PTCG_FOIL_RECIPES:R}=await import('./ptcg-foil-recipes.js');
+ for(const [k,min] of [['ptcg-special-illustration',.9],['ptcg-illustration',.8]]){const r=R[k];assert(r.strength>=min&&r.relief>=.25&&r.sparkle>=.3,`${k} stays visibly foil`);}
+ assert(R['ptcg-special-illustration'].sparkle>R['ptcg-illustration'].sparkle,'Special Illustration Rares are the more textured, sparklier of the two');}
+// The brushwork pattern keeps one smooth rainbow direction: a grating that turned with every stroke drew coloured
+// contour lines over the art (N's Plan's hat and face).
+assert.match(PTCG_FOIL_FRAGMENT,/g=normalize\(mix\(vec2\(\.86,\.5\),across,\.18\)\)/,'brushwork foil leans only slightly with the strokes');
+assert.doesNotMatch(PTCG_FOIL_FRAGMENT,/g=normalize\(vec2\(-stroke\.y,stroke\.x\)/,'no grating that follows each stroke');
