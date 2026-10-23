@@ -20,7 +20,7 @@ try{
   assert((await image.getAttribute('src')).endsWith(story.art));
   for(const width of [320,768,1440]){
    await page.setViewportSize({width,height:1000});await region.scrollIntoViewIfNeeded();
-   await noOverflow(page,`${game} weekly news ${width}`);
+   await noOverflow(page,"#content",`${game} weekly news ${width}`);
    await region.screenshot({path:`test-results/news-edition-${game}-${width}.png`,animations:'disabled'});
    report.cases.push({game,width,source:story.url,art:story.art});
   }
