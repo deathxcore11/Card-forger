@@ -249,6 +249,19 @@ reference's rules mistakes. Keep the existing card popup mostly intact; the
 deck viewer is the redesign priority. Screenshots complement executable checks
 and never replace them.
 
+### Table material, coin flips and finishing quality
+
+The user's October 24 follow-up adds explicit reference-based acceptance for
+artwork-led deck selection, a finished textured table, fanned opening hands,
+card lift/inspect, readable zones, purposeful motion/sound and real engine-owned
+coin flips. The five-capture mapping, result/replay contract and screenshot plus
+interaction-recording gates are in [Play art and motion](4.0-play-art-and-motion.md).
+These are required design/validation work, not completed product features. The
+in-chat layout walkthrough is not final visual sign-off. Retain format-correct
+pregame selection and mulligans; do not copy a friendly redraw or equate a die
+contest with a coin flip. Both the engine gate and finishing-quality review must
+pass before enabling the released Play flow.
+
 ## Latest Home and pack composition
 
 Blend the header controls into one compact pill-like shell instead of a large

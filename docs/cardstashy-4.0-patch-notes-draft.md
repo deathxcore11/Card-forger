@@ -59,6 +59,17 @@ planned bullet below does not mean the feature is implemented or working today.
 - Opening hands, starting player, mulligans, costs, targets, responses, combat,
   triggers and terminal outcomes follow the authoritative rules engine.
 
+## A finished table and tactile presentation
+
+- Artwork-led deck selection, a warm textured playmat, fanned opening hands,
+  purposeful lighting/shadows, card lift and readable phase/zone/stack controls.
+- Real engine-owned coin flips with a clear animated reveal and text/log
+  result, including applicable calls/choices. Repeated input, animation skip
+  and save/resume must never reroll or duplicate the committed outcome.
+- Preserve exact card art/finish, manual interaction, reduced motion and mute.
+  Review actual interaction recordings as well as screenshots against the
+  supplied references. This is target work, not a claim that it is implemented.
+
 ## Readable cards and automatic game state
 
 - Track life, marked damage, counters, attachments, deaths, zone changes and
