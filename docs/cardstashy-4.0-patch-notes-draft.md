@@ -177,5 +177,9 @@ The recovered Random Deck repair remains included. Play/Draft controls remain
 disabled. The shared four-view implementation and its current validation are
 recorded in the [deck viewer review](4.0-deck-viewer-review/README.md), including
 the passing 312-command aggregate and focused browser runs; its full
-entrypoint matrix is still open. The [engine evaluation](4.0-engine-evaluation.md) has not passed an executable proof gate.
+entrypoint matrix is still open. An isolated Node/WASM spike completed six
+simple seeded games and one fresh-process Priority save/resume with identical
+remaining actions. It does not certify the supported pool, fair difficulties,
+browser offline recovery or full [engine proof gate](4.0-engine-evaluation.md),
+which remains open.
 No 4.0 production or APK release has occurred.

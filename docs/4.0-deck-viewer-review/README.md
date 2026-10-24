@@ -131,12 +131,19 @@ finish-surface loop; the sibling promo job for the same head passed. This is an
 unresolved hosted timing/lifecycle finding, not an all-green result or proof of
 its cause. It remains outside the validated deck-viewer scenarios.
 
+At the later documentation head `a43c141`, hosted CI completed with **69
+successful checks and one skipped production deployment**. That passing run does
+not identify the cause of the earlier promo timeout or scanner image-fetch
+failure, and does not add gameplay or physical-device evidence.
+
 ## Still required
 
 The release matrix remains open for a complete Random entrypoint, imported
 lists as a separate entrypoint, all game/source combinations, post-draft and
 Practice selection. Post-draft and Practice gameplay are not implemented.
-The first format/card pool, fair CPU, complete seeded games, cold offline
-save/restart/resume, history/opponent saving, private Casual and Draft remain
-unproved. Random speed/quality provider replays and physical-device latency
+The first release format/card pool, fair CPU, release-scope complete games,
+browser cold-offline save/restart/resume, history/opponent saving, private Casual
+and Draft remain unproved. A later isolated Node/WASM smoke test completed six
+simple games and one Priority restore; see the [engine evaluation](../4.0-engine-evaluation.md)
+for its narrow scope. Random speed/quality provider replays and physical-device latency
 remain separate work. Production and the published APK are unchanged.
