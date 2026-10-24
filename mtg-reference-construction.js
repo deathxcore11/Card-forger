@@ -17,6 +17,7 @@ const count=rows=>rows.reduce((n,r)=>n+r.qty,0);
 const bounded=(value,fallback,maximum)=>Number.isInteger(value)&&value>0?Math.min(value,maximum):fallback;
 const valueOf=(provider,name)=>typeof provider==='function'?provider(name):provider instanceof Map?provider.get(cardKey(name))??provider.get(name):provider?.[cardKey(name)]??provider?.[name];
 const mode=value=>['bo1','bo3'].includes(String(value).toLowerCase())?String(value).toLowerCase():'unspecified';
+const possibleFrontForm=(a,b)=>cardKey(a)===cardKey(b)||[a,b].some((name,i)=>{const parts=String(name).split(' // ');return parts.length===2&&parts.every(knownName)&&cardKey(parts[0])===cardKey(i?a:b);});
 const platform=value=>['arena','mtgo','paper'].includes(String(value).toLowerCase())?String(value).toLowerCase():'unspecified';
 function timestamp(value){
  if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}(?:T\d\d:\d\d(?::\d\d(?:\.\d{1,3})?)?(?:Z|[+-]\d\d:\d\d))?$/.test(value))return null;
@@ -63,14 +64,14 @@ function modeCoverage(origin,request,sideIncluded){
 }
 function differences(origin,deck){
  const before=new Map(),after=new Map();
- for(const [map,list] of [[before,{main:origin.rawMain,side:origin.rawSide}],[after,{main:deck.cards||deck.main||[],side:deck.side||[]}]])for(const [zone,rows] of Object.entries(list))for(const row of rows){const id=JSON.stringify([zone,cardKey(row.name)]),old=map.get(id);map.set(id,{zone,name:row.name,qty:(old?.qty||0)+row.qty});}
+ for(const [map,list] of [[before,canonicalReferenceList(origin,{main:origin.rawMain,side:origin.rawSide})],[after,canonicalReferenceList(origin,deck)]])for(const [zone,rows] of Object.entries(list))for(const row of rows){const id=JSON.stringify([zone,cardKey(row.name)]),old=map.get(id);map.set(id,{zone,name:row.name,qty:(old?.qty||0)+row.qty});}
  return [...new Set([...before.keys(),...after.keys()])].sort().map(id=>{const old=before.get(id),next=after.get(id);return {zone:(next||old).zone,name:(next||old).name,before:old?.qty||0,after:next?.qty||0,delta:(next?.qty||0)-(old?.qty||0)};}).filter(row=>row.delta);
 }
 // Recompute this after EVERY list edit. The original record belongs only to the
 // published source: an adaptation never inherits its placing or win/loss record.
 export function referenceAdaptation(origin,deck,request={}){
- const changes=differences(origin,deck),sameList=referenceListSignature(deck)===origin.originalListSignature,coverage=modeCoverage(origin,request,(deck.side||[]).length>0);
- return {kind:sameList?'exact-source-list':changes.every(row=>row.zone==='side'&&row.after===0)?'main-deck-only':'adapted-list',changes,originalListSignature:origin.originalListSignature,currentListSignature:referenceListSignature(deck),sameList,sourceResultAppliesToExactList:sameList&&!coverage.modeMismatch,retainedPackages:[],lostCapabilities:changes.length?['Original tournament-list performance evidence does not establish the adapted list’s performance.']:[],...coverage,testedForRequestedMode:sameList&&coverage.testedForRequestedMode,evidenceScope:!sameList?'adapted-source-reference':coverage.evidenceScope};
+ const canonicalOriginalListSignature=referenceListSignature(canonicalReferenceList(origin,{main:origin.rawMain,side:origin.rawSide})),currentListSignature=referenceListSignature(canonicalReferenceList(origin,deck)),changes=differences(origin,deck),sameList=currentListSignature===canonicalOriginalListSignature,coverage=modeCoverage(origin,request,(deck.side||[]).length>0);
+ return {kind:sameList?'exact-source-list':changes.every(row=>row.zone==='side'&&row.after===0)?'main-deck-only':'adapted-list',changes,originalListSignature:origin.originalListSignature,canonicalOriginalListSignature,currentListSignature,sameList,sourceResultAppliesToExactList:sameList&&!coverage.modeMismatch,retainedPackages:[],lostCapabilities:changes.length?['Original tournament-list performance evidence does not establish the adapted list’s performance.']:[],...coverage,testedForRequestedMode:sameList&&coverage.testedForRequestedMode,evidenceScope:!sameList?'adapted-source-reference':coverage.evidenceScope};
 }
 function diversity(candidates,limit){
  const pool=[...candidates],selected=[];
@@ -109,7 +110,7 @@ export function referenceCandidates(data,request={},options={}){
   if(count(side)>15)problems.push(issue('sideboard-limit','The source sideboard exceeds 15 cards.'));
   const includeSideboard=mode(request.matchMode)!=='bo1'&&options.includeSideboard!==false;
   const mainNames=new Set(main.map(row=>cardKey(row.name))),allNames=new Set([...main,...(includeSideboard?side:[])].map(row=>cardKey(row.name)));
-  for(const name of referenceRequiredAnchors(request))if(!mainNames.has(cardKey(name)))problems.push(issue('missing-required-anchor',`The source main deck lacks required card ${name}.`,{name}));
+  for(const name of referenceRequiredAnchors(request))if(!mainNames.has(cardKey(name))&&!main.some(row=>possibleFrontForm(row.name,name)))problems.push(issue('missing-required-anchor',`The source main deck lacks required card ${name}.`,{name}));
   for(const name of request.excluded_cards||[])if(allNames.has(cardKey(name)))problems.push(issue('excluded-card',`The source list contains excluded card ${name}.`,{name}));
   if(mode(request.matchMode)==='bo3'&&(!includeSideboard||!side.length))problems.push(issue('bo3-sideboard-unavailable','A BO3 request needs an included, validated and priced source sideboard; main-only is partial.'));
   if(problems.length){rejections.push(...problems.map(problem=>({...problem,key})));continue;}
@@ -131,6 +132,34 @@ function completeCard(card){
  if(faces!==undefined&&(!Array.isArray(faces)||!faces.length||faces.some(face=>!knownName(face?.name)||!text(face.type_line)||typeof face.oracle_text!=='string'||typeof face.mana_cost!=='string')))return false;
  return faces?.length?true:typeof card.oracle_text==='string'&&typeof card.mana_cost==='string';
 }
+// Front-name aliases are accepted only from complete, internally consistent
+// two-face transform/modal records. Split/adventure/back-face/fuzzy names are
+// deliberately outside this lane. A full-name exact match needs no alias.
+const uuid=value=>typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+function dfcIdentity(card){
+ if(!completeCard(card)||!['transform','modal_dfc'].includes(card.layout)||!uuid(card.id)||!uuid(card.oracle_id)||card.card_faces?.length!==2)return null;
+ const faces=card.card_faces,front=cardKey(faces[0].name),back=cardKey(faces[1].name),canonical=cardKey(card.name);
+ if(front===back||canonical!==cardKey(faces.map(face=>face.name).join(' // ')))return null;
+ // When supplied, provider identity links must corroborate the record rather
+ // than contradict it. A mismatched Oracle/printing is never an alias proof.
+ if(card.uri&&card.uri!==`https://api.scryfall.com/cards/${card.id}`)return null;
+ if(card.prints_search_uri){try{const query=new URL(card.prints_search_uri).searchParams.get('q');if(!query||!query.split(/\s+/).includes('oracleid:'+card.oracle_id))return null;}catch{return null;}}
+ return {front,canonical,canonicalName:card.name,oracleId:card.oracle_id,printingId:card.id};
+}
+function resolvedIdentity(sourceName,card){
+ if(!completeCard(card))return null;
+ const source=cardKey(sourceName),dfc=dfcIdentity(card);
+ if(source===cardKey(card.name))return {canonical:source,canonicalName:card.name,aliases:dfc?[dfc.front,source]:[source],oracleId:card.oracle_id??null,printingId:card.id??null,dfc,kind:'exact'};
+ return dfc&&source===dfc.front?{...dfc,aliases:[dfc.front,dfc.canonical],dfc,kind:'front-face'}:null;
+}
+function canonicalReferenceList(origin,deck){
+ const aliases=new Map(),conflicts=new Set(),sourceNames=new Set([...(origin.rawMain||[]),...(origin.rawSide||[])].map(row=>cardKey(row.name)));
+ // This is reproducible full-card evidence, not a user-provided name map. Saved
+ // evidence is re-resolved/replaced by validateReferenceCandidate before use.
+ for(const evidence of origin.resolvedIdentities||[]){const identity=resolvedIdentity(evidence?.sourceName,evidence?.card),key=cardKey(evidence?.sourceName);if(!sourceNames.has(key)||identity?.kind!=='front-face')continue;const previous=aliases.get(key);if(previous&&(previous.oracleId!==identity.oracleId||previous.canonical!==identity.canonical))conflicts.add(key);else aliases.set(key,identity);}
+ const convert=rows=>(rows||[]).map(row=>{const key=cardKey(row.name),identity=conflicts.has(key)?null:aliases.get(key);return {...row,name:identity?.canonicalName||row.name};});
+ return {main:convert(deck.cards||deck.main),side:convert(deck.side)};
+}
 /** Validate exact resolved rows with injected current metadata/quotes/inventory.
  * priceDeck and withinBudgetCap should be the existing construction functions.
  * inspectPlan is the existing exact-list plan/support boundary, not a text matcher.
@@ -147,12 +176,25 @@ export function validateReferenceCandidate(candidate,request={},options={}){
  if(count(parsed.filter(row=>row.zone==='main'))!==60)issues.push(issue('incomplete-main','The exact candidate does not contain 60 main-deck cards.'));
  if(count(parsed.filter(row=>row.zone==='side'))>15)issues.push(issue('sideboard-limit','The exact candidate exceeds 15 sideboard cards.'));
  if(mode(request.matchMode)==='bo3'&&!parsed.some(row=>row.zone==='side'))issues.push(issue('bo3-sideboard-unavailable','The exact BO3 candidate has no included sideboard.'));
+ const identities=parsed.map(row=>{const card=valueOf(metadata,row.name);return {row,card,identity:resolvedIdentity(row.name,card)};}),canonicalSeen=new Map(),oracleSeen=new Map(),printingSeen=new Map(),sourceSeen=new Map(),resolvedIdentities=[],originalNames=[...(origin.rawMain||[]),...(origin.rawSide||[])].map(row=>row.name);
+ for(const {row,card,identity} of identities){
+  if(!identity)continue;
+  const previous=canonicalSeen.get(identity.canonical),oracle=identity.oracleId,printing=identity.printingId,sourceKey=cardKey(row.name),priorSource=sourceSeen.get(sourceKey),savedProof=(origin.resolvedIdentities||[]).find(proof=>{const previous=resolvedIdentity(proof.sourceName,proof.card);return previous?.kind==='front-face'&&originalNames.some(name=>cardKey(name)===cardKey(proof.sourceName))&&(previous.canonical===identity.canonical||identity.aliases.includes(cardKey(proof.sourceName)));}),priorIdentity=savedProof&&resolvedIdentity(savedProof.sourceName,savedProof.card),currentSourceIdentity=savedProof&&resolvedIdentity(savedProof.sourceName,card);
+  if(priorSource&&(priorSource.canonical!==identity.canonical||priorSource.oracleId!==oracle||priorSource.printingId!==printing)||priorIdentity&&(currentSourceIdentity?.kind!=='front-face'||priorIdentity.canonical!==identity.canonical||priorIdentity.oracleId!==oracle))issues.push(issue('card-identity-conflict','A source name no longer resolves to the same verified card identity.',{name:row.name}));sourceSeen.set(sourceKey,identity);
+  if(previous&&((previous.identity.kind==='front-face'||identity.kind==='front-face')&&(!oracle||previous.identity.oracleId!==oracle||previous.identity.printingId!==printing)||oracle&&previous.identity.oracleId&&previous.identity.oracleId!==oracle)||oracle&&oracleSeen.has(oracle)&&oracleSeen.get(oracle)!==identity.canonical||printing&&printingSeen.has(printing)&&printingSeen.get(printing)!==JSON.stringify([identity.canonical,oracle]))issues.push(issue('card-identity-conflict','Resolved source names disagree on a canonical card, Oracle identity or printing identity.',{name:row.name}));
+  canonicalSeen.set(identity.canonical,{identity,card});if(oracle)oracleSeen.set(oracle,identity.canonical);if(printing)printingSeen.set(printing,JSON.stringify([identity.canonical,oracle]));
+  // A later exact-list recheck receives canonical delivered rows, not the raw
+  // publisher front name. Re-prove that original front from CURRENT full card
+  // metadata; otherwise aliases disappear or changed Oracle IDs slip through.
+  if(identity.dfc)for(const sourceName of originalNames)if(cardKey(sourceName)===identity.dfc.front&&!resolvedIdentities.some(proof=>cardKey(proof.sourceName)===cardKey(sourceName)))resolvedIdentities.push({sourceName,card:clone(card)});
+ }
+ const resolvedOrigin=freeze({...origin,resolvedIdentities}),canonicalRows=[];
  const counts=new Map(),required=new Set(referenceRequiredAnchors(request).map(cardKey)),excluded=new Set((request.excluded_cards||[]).map(cardKey)),colors=request.colors||[];
- for(const row of parsed){
-  const card=valueOf(metadata,row.name),key=cardKey(row.name);
-  if(!completeCard(card)||cardKey(card?.name)!==key){issues.push(issue('unresolved-card',`${row.name} lacks complete matching current card metadata.`,{name:row.name,zone:row.zone}));continue;}
+ for(const {row:sourceRow,card,identity} of identities){
+  if(!identity){canonicalRows.push(sourceRow);issues.push(issue('unresolved-card',`${sourceRow.name} lacks complete matching current card metadata.`,{name:sourceRow.name,zone:sourceRow.zone}));continue;}
+  const row={...sourceRow,name:identity.canonicalName},key=identity.canonical;canonicalRows.push(row);
   if(card.legalities.standard!=='legal')issues.push(issue('card-legality',`${row.name} is ${card.legalities.standard||'of unknown legality'} in current Standard.`,{name:row.name,legality:card.legalities.standard??'unknown'}));
-  if(excluded.has(key))issues.push(issue('excluded-card',`${row.name} was explicitly excluded.`,{name:row.name}));
+  if(identity.aliases.some(alias=>excluded.has(alias)))issues.push(issue('excluded-card',`${row.name} was explicitly excluded.`,{name:row.name}));
   if(!fitsTypeRestrictions(card,request))issues.push(issue('type-restriction',`${row.name} does not meet the requested creature-type restrictions.`,{name:row.name}));
   if(colors.length&&card.color_identity.some(color=>!colors.includes(color)))issues.push(issue('color-restriction',`${row.name} falls outside the requested colors.`,{name:row.name}));
   // This purchasing/collection lane defaults to physical play. Source platform
@@ -161,7 +203,7 @@ export function validateReferenceCandidate(candidate,request={},options={}){
   const requestedPlatform=platform(request.platform),playPlatform=requestedPlatform==='unspecified'?'paper':requestedPlatform;
   if(playPlatform==='paper'?!eligiblePrinting(card,row.name,{format:'standard'}):!Array.isArray(card.games)||!card.games.includes(playPlatform))issues.push(issue('platform-unverified',`${row.name} is not verified as an eligible ${playPlatform} printing.`,{name:row.name,platform:playPlatform}));
   if(/^A-/i.test(card.name)||card.rebalanced===true||(card.card_faces||[]).some(face=>/^A-/i.test(face.name)))issues.push(issue('rebalanced-standard','Rebalanced digital versions cannot establish current Standard card eligibility.',{name:row.name}));
-  if(row.zone==='main')required.delete(key);
+  if(row.zone==='main')for(const alias of identity.aliases)required.delete(alias);
   counts.set(key,{card,name:row.name,qty:(counts.get(key)?.qty||0)+row.qty});
   const supplied=valueOf(options.quotes,row.name),value=typeof supplied==='number'?supplied:supplied?.price,price=typeof value==='number'&&Number.isFinite(value)&&value>=0?value:null;
   const owned=valueOf(options.owned,row.name),available=Number.isInteger(owned)&&owned>=0?owned:0;
@@ -171,8 +213,8 @@ export function validateReferenceCandidate(candidate,request={},options={}){
  for(const name of required)issues.push(issue('missing-required-anchor',`Required main-deck card ${name} is missing.`,{name}));
  for(const {card,name,qty} of counts.values())if(qty>effectiveCopyLimit(card,STANDARD))issues.push(issue('copy-limit',`${name} exceeds its combined main-plus-side copy limit.`,{name,qty}));
  if(request.ownedOnly)for(const {name,qty} of counts.values()){const owned=valueOf(options.owned,name);if(!Number.isInteger(owned)||owned<qty)issues.push(issue('owned-inventory',`Not enough available owned copies of ${name} for main plus side.`,{name,required:qty,available:Number.isInteger(owned)&&owned>0?owned:0}));}
- const deck={name:candidate.name,format:'Standard',cards:parsed.filter(row=>row.zone==='main').map(({name,qty})=>({name,qty})),side:parsed.filter(row=>row.zone==='side').map(({name,qty})=>({name,qty})),commander:'',constructionBasis:'reference',referenceOrigin:origin,referencePrices:quotes,referenceQuoteEvidence:quoteEvidence,referenceRequestFingerprint:referenceRequestFingerprint(request)};
- deck.referenceAdaptation=referenceAdaptation(origin,deck,request);deck.adaptation=deck.referenceAdaptation;
+ const deck={name:candidate.name,format:'Standard',cards:aggregate(canonicalRows.filter(row=>row.zone==='main'),'main',issues).map(({name,qty})=>({name,qty})),side:aggregate(canonicalRows.filter(row=>row.zone==='side'),'side',issues).map(({name,qty})=>({name,qty})),commander:'',constructionBasis:'reference',referenceOrigin:resolvedOrigin,referencePrices:quotes,referenceQuoteEvidence:quoteEvidence,referenceRequestFingerprint:referenceRequestFingerprint(request)};
+ deck.referenceAdaptation=referenceAdaptation(resolvedOrigin,deck,request);deck.adaptation=deck.referenceAdaptation;
  const pricing=typeof options.priceDeck==='function'?options.priceDeck(rows,request.budgetBasis||'total'):null;
  const finiteBudget=typeof request.budget==='number'&&Number.isFinite(request.budget);
  if(finiteBudget&&(!pricing||pricing.estimate===null||!Number.isFinite(pricing.estimate)))issues.push(issue('unknown-price','The requested budget has unresolved card quotes; unknown prices are not zero.'));
@@ -207,8 +249,21 @@ export async function resolveReferenceCandidates(data,request={},options={}){
    check();let card=null;
    try{card=await options.resolve?.(name,true);}catch(error){check();if(error?.name==='AbortError')throw error;lookupIssues.push(issue('card-lookup-failed',`Could not resolve ${name}.`,{name}));}check();
    if(card)metadata.set(cardKey(name),card);
-   if(completeCard(card))try{check();const quote=await options.quote?.(name,card);check();quotes.set(cardKey(name),quote??null);}catch(error){check();if(error?.name==='AbortError')throw error;lookupIssues.push(issue('quote-lookup-failed',`Could not quote ${name}.`,{name}));}
   }));check();
+ }
+ const resolved=names.map(name=>{const card=metadata.get(cardKey(name));return {name,card,identity:resolvedIdentity(name,card)};}),byCanonical=new Map(),byOracle=new Map(),byPrinting=new Map(),conflicting=new Set();
+ for(const entry of resolved){const identity=entry.identity;if(!identity)continue;const previous=byCanonical.get(identity.canonical),oracle=identity.oracleId,printing=identity.printingId;
+  // Never share a quote across conflicting resolver results, even when the
+  // conflict is split across two separate reference candidates. Different
+  // selected printing IDs also need a new explicit printing/quote choice.
+  if(previous&&(previous.oracleId!==oracle||previous.printingId!==printing))conflicting.add(identity.canonical);
+  for(const [key,map] of [[oracle,byOracle],[printing,byPrinting]])if(key){const prior=map.get(key);if(prior&&prior.canonical!==identity.canonical){conflicting.add(prior.canonical);conflicting.add(identity.canonical);}map.set(key,identity);}
+  byCanonical.set(identity.canonical,identity);
+ }
+ for(const {name,identity} of resolved)if(identity&&conflicting.has(identity.canonical)){metadata.delete(cardKey(name));lookupIssues.push(issue('card-identity-conflict','Conflicting source aliases cannot share a canonical card quote.',{name}));}
+ const quoteCards=[...new Map(resolved.filter(entry=>entry.identity&&!conflicting.has(entry.identity.canonical)).map(entry=>[entry.identity.canonical,entry.card])).values()];
+ for(let at=0;at<quoteCards.length;at+=width){
+  check();await Promise.all(quoteCards.slice(at,at+width).map(async card=>{const name=card.name;try{check();const quote=await options.quote?.(name,card);check();quotes.set(cardKey(name),quote??null);}catch(error){check();if(error?.name==='AbortError')throw error;lookupIssues.push(issue('quote-lookup-failed',`Could not quote ${name}.`,{name}));}}));check();
  }
  const assessments=selected.candidates.map(candidate=>{check();return validateReferenceCandidate(candidate,request,{...options,metadata,quotes});});check();
  return {...selected,candidates:assessments.filter(result=>result.ok).map(result=>result.deck),decks:assessments.filter(result=>result.ok).map(result=>result.deck),assessments,rejections:[...selected.rejections,...lookupIssues,...assessments.flatMap(result=>result.issues.map(problem=>({...problem,key:result.deck?.referenceOrigin.key})))],constructionBasis:assessments.some(result=>result.ok)?'reference':'heuristic'};

@@ -27,11 +27,14 @@ export function intentText(c) {
     .replace(/\([^)]*\)/g, " ")
     .replace(/(?:activate|cast)[^.\n]*(?:as a sorcery|any time you could cast a sorcery)[^.\n]*\.?/gi, " ");
 }
+// Provider vocabulary is a fixed module snapshot; patterns do not depend on
+// mutable card metadata. Keep matching order and whitespace boundaries intact.
+const creatureTypePatterns=CREATURE_THEMES.map(type=>({type,pattern:new RegExp('(?:^|\\s)'+escapePattern(type)+'(?:$|\\s)')}));
 export function creatureTypes(c) {
   const lines = c?.card_faces?.length ? c.card_faces.map(f => f.type_line || "") : typeText(c).split(" // ");
   return [...new Set(lines.filter(t => /\b(?:Creature|Kindred|Tribal)\b/.test(t)).flatMap(t => {
     const suffix=(t.split('—')[1]||'').trim();
-    return CREATURE_THEMES.filter(type=>new RegExp('(?:^|\\s)'+escapePattern(type)+'(?:$|\\s)').test(suffix));
+    return creatureTypePatterns.filter(({pattern})=>pattern.test(suffix)).map(({type})=>type);
   }))];
 }
 function namedEffectText(c) {
