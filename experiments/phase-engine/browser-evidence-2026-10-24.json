@@ -1,0 +1,84 @@
+{
+  "upstream": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+  "sourceFiles": {
+    "worker-journal.mjs": "8591dbd60c2a3213c0730f23f2bd15cf8f048871e3070a69d117df588be30581",
+    "browser-authority.mjs": "cdc4129361e6f178a091a3274e83e712e6a3191ea75f7d642258bc2375c0e665",
+    "browser-client.mjs": "853f4b6607ef47104b95db6765f6c320114a7d1cb02f800ee5af1db66a7577ae",
+    "smoke-policy-worker.mjs": "b3ca7af308ecb588e96b0c5e388a74ccc69548f5b1907d60529e11c400517f66"
+  },
+  "cases": [
+    {
+      "seed": 12345,
+      "first": 0,
+      "actions": 384,
+      "turn": 22,
+      "winner": 1,
+      "traceSha256": "1c65efe508467e56300fb7d6d814a7d81c7d74836927fec3b4d26df271882572",
+      "milliseconds": 26548
+    },
+    {
+      "seed": 67890,
+      "first": 0,
+      "actions": 425,
+      "turn": 24,
+      "winner": 1,
+      "traceSha256": "91dcacf7d14de96d284322b70939bdb06fabd1a8152a592c150d164064b884fc",
+      "milliseconds": 20237
+    },
+    {
+      "seed": 24680,
+      "first": 0,
+      "actions": 922,
+      "turn": 56,
+      "winner": 1,
+      "traceSha256": "0eedc2b0264094af8faafa4f50cae8bd9b908fb317fba8c02960f73b3c358fcd",
+      "milliseconds": 51029
+    },
+    {
+      "seed": 12345,
+      "first": 1,
+      "actions": 399,
+      "turn": 23,
+      "winner": 1,
+      "traceSha256": "af5dfa42a387344453db5a5b31e2ed55668982492c7d20e10ba96e4216b0ed93",
+      "milliseconds": 27161
+    },
+    {
+      "seed": 67890,
+      "first": 1,
+      "actions": 410,
+      "turn": 23,
+      "winner": 1,
+      "traceSha256": "1223f804457f3e2aefad1454654cc10c847f45f4be2f1d8fa11d6f982b79dec4",
+      "milliseconds": 21339
+    },
+    {
+      "seed": 24680,
+      "first": 1,
+      "actions": 930,
+      "turn": 57,
+      "winner": 1,
+      "traceSha256": "3abe1d729ee84ea9121f8cf615d5573b5b76d3704944e3228a70c4f8356a1ae5",
+      "milliseconds": 48506
+    }
+  ],
+  "checks": [
+    "duplicate receipt",
+    "stale rejection",
+    "ID collision",
+    "concurrent revision rejection"
+  ],
+  "limits": "Forest/Bears smoke only; ungraded summary-only policy. Not game UI, general privacy/rules/card-pool certification, production offline package, device performance or full engine gate.",
+  "browser": "153.0.8010.0",
+  "coldOffline": {
+    "freshBrowserProcess": true,
+    "serverStopped": true,
+    "networkOffline": true,
+    "restoredRevision": 80,
+    "pending": "Priority",
+    "duplicateReceiptSurvived": true,
+    "exactTraceAndOutcome": true,
+    "milliseconds": 18780,
+    "newMatchCreated": true
+  }
+}

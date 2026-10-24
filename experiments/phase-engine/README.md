@@ -80,3 +80,11 @@ production CPU merely because this smoke test passed.
 The full engine gate remains open. See the
 [engine evaluation](../../docs/4.0-engine-evaluation.md) and
 [CPU proposal review](../../docs/4.0-cpu-proposal-review.md).
+
+## Separate browser-worker follow-up
+
+The optional [browser authority experiment](WORKER-PROOF.md) extends this Node
+baseline with real browser workers, atomic local checkpoints, duplicate/stale
+command rejection and a fresh-browser offline Priority-resume check. Its
+captured results have their own source hashes and limits; the full engine gate
+remains open.
