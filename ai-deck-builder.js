@@ -11,6 +11,7 @@ import { findCheapestPrinting } from './mtg-cheap.js';
 import {readLoopIntent,manaLoopCandidates,inspectManaLoop} from './mtg-combo-packages.js';
 import {tribalDiscoveryQueries} from './deck-strategy-plan.js';
 import {requestedMechanics,mechanicDiscoveryQueries,mechanicCardMatches} from './deck-mechanic-plan.js';
+import {commanderLandRequirements} from './mtg-land-requirements.js';
 const BASIC = { W:'Plains', U:'Island', B:'Swamp', R:'Mountain', G:'Forest', C:'Wastes' };
 const money = n => Math.round(n * 100) / 100;
 const quote = c => { const p = cardPrice(c); return Number.isFinite(p) && p >= 0 ? p : null; };
@@ -28,7 +29,7 @@ export async function prepareMtgDeck(args,x) {
   const choice = x.S?.state?.priceChoices?.[cardKey(c?.name)], value = choice ? choice.price : typeof x.priceOf === 'function' ? x.priceOf(c?.name) : cardPrice(c);
   return value !== null && value !== undefined && (typeof value !== 'string' || value.trim() !== '') && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : null;
  };
- const f=formatOf(args.format),budget=Number(args.budget)>0?Math.min(10000,Number(args.budget)):Infinity,basis=['purchase','owned'].includes(args.budget_basis)?args.budget_basis:'total',limit=basis==='owned'?0:budget;
+ const f=formatOf(args.format),budget=Number(args.budget)>0?Math.min(10000,Number(args.budget)):Infinity,basis=['purchase','owned'].includes(args.budget_basis)?args.budget_basis:'total',limit=basis==='owned'?0:budget,exclusive=args.budgetBoundary==='exclusive'&&budget!==Infinity;
  if(f.id==='limited')return {requiresChoice:true,note:'Limited needs the cards from your draft or sealed pool. Choose a constructed format or provide that pool.'};
  if(f.id==='paupercommander'&&!args.flow)return {requiresChoice:true,note:'This AI draft path does not yet verify Pauper Commander’s separate commander-rarity rule. Choose Commander, or use the existing Pauper Commander builder and review its commander eligibility check.'};
  const style=clean(args.style),seedName=clean(args.seed),leaderName=clean(args.commander),catalog={},warnings=[],goal=normalizeDeckGoal(args.goal,style);
@@ -124,7 +125,11 @@ export async function prepareMtgDeck(args,x) {
  const focusedQueries=[...tribalDiscoveryQueries(requestedTribes,{limit:3}),...mechanicDiscoveryQueries(requestedMechanics(style),{limit:3})];
  const planQueries=[...new Set([...focusedQueries,...themeQueries(seed,style),...(lead&&cardKey(lead.name)!==cardKey(seed.name)?themeQueries(lead):[])])];
  const queries=[...planQueries.map(query=>`${baseQ} -t:land ${query}`),`${baseQ} -t:land usd<=0.5`,`${baseQ} -t:land cmc<=3 (o:destroy or o:exile or o:counter)`,`${baseQ} -t:land (o:draw or o:search)`,`${baseQ} -t:land (o:"add {" or o:"mana of")`,`${baseQ} t:land -t:basic usd<=1`];
- await batches([...new Set(queries)],q=>search(q,{pages:planQueries.some(p=>q.endsWith(p))?2:1}));
+ // A commander that needs a land subtype (Deserts, Gates…) must see those
+ // lands and the cards that find them, not only generic land discovery.
+ const needQueries=commanderLandRequirements(lead||seed).flatMap(need=>{const t=/^[a-z-]+$/i.test(need.subtype)?need.subtype.toLowerCase():`"${need.subtype.toLowerCase()}"`;return [`${baseQ} t:land t:${t}`,`${baseQ} -t:land o:${t}`];});
+ queries.push(...needQueries);
+ await batches([...new Set(queries)],q=>search(q,{pages:planQueries.some(p=>q.endsWith(p))||needQueries.includes(q)?2:1}));
  // The same selector can work without the AI/provider on already loaded rules
  // records. This is a bounded cached pool, not a claim of a full offline catalog.
  if(!successfulSearches)for(const c of Object.values(x.S?.catalog||{}))if(c?.name&&c.type_line&&isLegal(c,f)&&fitsColors(c,colors)&&!excludedKeys.has(cardKey(c.name)))remember(c);
@@ -145,7 +150,7 @@ export async function prepareMtgDeck(args,x) {
  const options=({format:f.name,seeds:[seed],commander:lead,easy:args.easy===true,preferred:args.preferOwned===true?c=>own(c.name):()=>0,requestedStyle:style,goal,creatureTypesOnly:args.creatureTypesOnly,excludedSubtypes:args.excludedSubtypes,suggestedCards:suggested.filter(Boolean).map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
  const candidates=loopPackages.flatMap(pkg=>{
   const base=[...new Map([...required,...(pkg?pkg.cards.filter(name=>cardKey(name)!==cardKey(lead?.name)).map(name=>({name,qty:1})):[])].map(r=>[cardKey(r.name),r])).values()];
-  return (args.constructionBudgets||[limit]).flatMap(cap=>[false,...(args.flow?[true]:[])].map(completionFirst=>({...buildDeck({...options,base,budget:cap,completionFirst}),...loopIntent,requiredLoopPackage:pkg?.id||null,internalRequiredCards:pkg?[...pkg.cards]:[]})));
+  return (args.constructionBudgets||[exclusive?Math.max(0,money(limit-.01)):limit]).flatMap(cap=>[false,...(args.flow?[true]:[])].map(completionFirst=>({...buildDeck({...options,base,budget:cap,completionFirst}),...loopIntent,requiredLoopPackage:pkg?.id||null,internalRequiredCards:pkg?[...pkg.cards]:[]})));
  });
  const finish=draft=>{
  const candidateWarnings=[...warnings];
@@ -157,7 +162,7 @@ export async function prepareMtgDeck(args,x) {
  for(const r of draft.cards)if(excludedKeys.has(cardKey(r.name)))issues.push({kind:'excluded',text:`Excluded card ${r.name} was selected.`});
  for(const r of draft.cards)if(!fitsTypeRestrictions(catalog[cardKey(r.name)],args))issues.push({kind:'creature-type',text:`${r.name} does not satisfy the requested creature-type restriction or its card types are unverified.`});
  if(basis==='owned'&&pricing.ownedCopies<sumQty(draft.cards))issues.push({kind:'ownership',text:`${sumQty(draft.cards)-pricing.ownedCopies} copies are not available in your saved collection.`});
- const estimate=basis==='total'?pricing.totalEstimate:pricing.purchaseEstimate,withinBudget=estimate!==null&&estimate<=limit+1e-6;
+ const estimate=basis==='total'?pricing.totalEstimate:pricing.purchaseEstimate,withinBudget=estimate!==null&&(exclusive?estimate<limit-1e-9:estimate<=limit+1e-6);
  if(estimate===null)candidateWarnings.push('Some selected cards have no current quote. The budget is not verified.');
  else if(!withinBudget)candidateWarnings.push(`The ${basis==='total'?'whole-deck':'purchase'} estimate exceeds your budget. This is not an under-budget recommendation.`);
  if(goal !== 'strongest')candidateWarnings.push(goalDescription(goal)+' Goal fit is a judgment to review, not a verified power or fun rating.');
