@@ -568,7 +568,12 @@ try{
   if(x.kind==='complete'&&x.game==='ygo'){assert.match(r.text,/Target \$50\.00 · \$\d+\.\d\d below target|On target/);assert.doesNotMatch(r.text,/unpriced/);}
   // Tight targets: the complete list is shown with its real cost and an explicit large-deviation warning.
   if(x.kind==='constraint'){assert.match(r.text,/over target/);assert.match(r.text,/exceeds the allowed overage/);}
-  if(x.kind==='constraint'&&x.game==='ygo')assert.match(r.rows.find(row=>row.name===seedName).price,/\$1,000\.00/,'the expensive seed keeps its real price');
+  if(x.kind==='constraint'&&x.game==='ygo'){
+   const seedRow=r.rows.find(row=>row.name===seedName),unitQuote=x.cards[x.seedId].sets[0].quotes[0].market;
+   assert.equal(unitQuote,1000,'the fixture retains its exact expensive printing quote rather than the generic $1 fallback');
+   const expected=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(unitQuote*seedRow.qty);
+   assert.equal(seedRow.price,expected,'the expensive seed row shows its exact printing price times the displayed quantity');
+  }
   // Unknown exact quotes stay unknown, with or without a finite target; no fit is claimed.
   let finite=null;
   if(x.kind==='unknown'){

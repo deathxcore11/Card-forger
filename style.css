@@ -5060,6 +5060,9 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 
 /* A shared card-first builder, using the app's existing buttons, fields and glass. */
 .deck-flow,.deck-flow-result{max-width:720px;margin-inline:auto;min-width:0}
+/* A busy manual sheet needs in-flow content to size its dialog. Glass establishes
+   the containing block for fixed descendants, so a fixed-only sheet collapses. */
+.deck-flow[aria-busy="true"]>.build-overlay{position:relative;inset:auto}
 .deck-seed-picker{margin:12px 0}.deck-seed-picker summary{display:grid;justify-items:center;gap:8px;cursor:pointer;list-style:none}
 .deck-seed-art{display:block;width:min(64vw,200px);max-height:285px;object-fit:contain;border-radius:12px;filter:drop-shadow(0 8px 16px #0004)}
 .deck-seed-picker summary b{font-size:1.15rem;text-align:center}.deck-seed-picker summary small{color:var(--muted)}
