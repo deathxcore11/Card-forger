@@ -76,6 +76,18 @@ export function historyFixture(url){
  const current=CARDS[game]?.[0]?.id===cardId,archive=url.pathname.endsWith('/archive');
  return {game,cardId,finish,notice:'No invented dates or unavailable quotes in this fixture.',series:current&&!archive?[{source:'Deterministic matching USD source',currency:'USD',finish,points:[{date:'2026-10-14',value:2},{date:'2026-10-15',value:3},{date:'2026-10-16',value:4}]}]:[]};
 }
+// A viewed price chart can schedule this existing public maintenance request.
+// It is always intercepted. Only public IDs are admitted to its separate ledger;
+// synthetic catalogue IDs receive the same rejection as the real watch route.
+export function priceWatchFixtureRequest(base,url,method,body,{knownMtgIds=[],headers={}}={}){
+ if(method!=='POST'||url?.origin!==base||url.pathname!=='/api/prices/watch'||url.search||url.hash||url.username||url.password)return null;
+ if(!body||Array.isArray(body)||typeof body!=='object'||Object.keys(body).sort().join(',')!=='game,ids'||!['mtg','ygo'].includes(body.game)||!Array.isArray(body.ids)||!body.ids.length||body.ids.length>300)return null;
+ if(Object.entries(headers).some(([name,value])=>/^(?:authorization|proxy-authorization|cookie|apikey|x-api-key|x-auth-token)$/i.test(name)&&String(value)))return null;
+ const known=new Set(Array.isArray(knownMtgIds)?knownMtgIds:[]),providerId=id=>typeof id==='string'&&(body.game==='mtg'?/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id):/^[1-9][0-9]{0,9}$/.test(id));
+ if(body.ids.some(id=>!providerId(id)&&!(body.game==='mtg'&&typeof id==='string'&&/^[A-Za-z0-9_.:-]{1,80}$/.test(id)&&known.has(id))))return null;
+ const synthetic=body.ids.some(id=>!providerId(id));
+ return {classification:'public-shared-price-registration',game:body.game,ids:[...body.ids],synthetic,forwarded:false,status:synthetic?400:200,response:{error:synthetic?'bad_request':'not_configured'}};
+}
 export async function validateFixtures(){
  assert.equal(dual.oracle_text,undefined,'Transform wording is face-specific');assert.equal(dual.image_uris,undefined,'Transform artwork is face-specific');assert.equal(dual.card_faces.length,2);assert(dual.card_faces.every(face=>face.oracle_text&&face.image_uris.normal&&face.image_uris.art_crop));
  for(const game of GAMES){
@@ -85,6 +97,14 @@ export async function validateFixtures(){
  }
  assert.equal(CARDS.ptcg[0].variants.find(v=>v.key==='normal').productId,111);assert.equal(CARDS.ptcg[0].variants.find(v=>v.key==='holofoil').productId,222);assert.equal(CARDS.ygo[0].sets[0].price,20);assert.equal(CARDS.ygo[0].prices.usd,2);
  const m=metaFeed('ptcg');assert.equal(m.archetypes[0].cover.printing.name,'Dhelmise V');assert.equal(m.archetypes[0].cover.source.rank,17);assert.equal(m.archetypes[0].top8,0);assert.equal(m.archetypes[0].best,'');assert.equal(m.decks.length,0);assert.equal(m.archetypes[1].cover,null);
+ const watchBase='http://127.0.0.1:45003',watchUrl=new URL(watchBase+'/api/prices/watch'),publicWatch={game:'mtg',ids:['00000000-0000-4000-8000-000000000001']};
+ const productionWatch=priceWatchFixtureRequest(watchBase,watchUrl,'POST',publicWatch);assert.equal(productionWatch.classification,'public-shared-price-registration');assert.equal(productionWatch.forwarded,false);assert.deepEqual(productionWatch.response,{error:'not_configured'},'an intercepted public registration never claims a real shared-cache write');
+ assert.equal(priceWatchFixtureRequest(watchBase,watchUrl,'POST',{game:'ygo',ids:['89631139']}).status,200);
+ assert.equal(priceWatchFixtureRequest(watchBase,watchUrl,'POST',{game:'mtg',ids:['ask-kci']}),null,'unknown synthetic identifiers cannot bypass the deny-all mutation guard');
+ const syntheticWatch=priceWatchFixtureRequest(watchBase,watchUrl,'POST',{game:'mtg',ids:['ask-kci']},{knownMtgIds:['ask-kci']});assert.equal(syntheticWatch.forwarded,false);assert.equal(syntheticWatch.status,400);assert.deepEqual(syntheticWatch.response,{error:'bad_request'},'a known fixture card is auditable without pretending its made-up ID is a provider printing');
+ for(const body of [{...publicWatch,collection:[]},{...publicWatch,profile:'private'},{...publicWatch,token:'private'},{game:'ptcg',ids:['base1-1']},{game:'mtg',ids:[]},{game:'mtg',ids:Array(301).fill(publicWatch.ids[0])},{game:'mtg',ids:[null]},{game:'mtg',ids:['987.65']},{game:'ygo',ids:['1&token=private']}])assert.equal(priceWatchFixtureRequest(watchBase,watchUrl,'POST',body),null,'private fields, unsupported games and malformed IDs remain forbidden');
+ for(const [name,value] of [['authorization','Bearer private'],['cookie','session=private'],['apikey','private']])assert.equal(priceWatchFixtureRequest(watchBase,watchUrl,'POST',publicWatch,{headers:{[name]:value}}),null,'credential-bearing public-looking requests remain forbidden');
+ for(const [url,method] of [[new URL('https://external.invalid/api/prices/watch'),'POST'],[new URL(watchBase+'/api/prices/watch?account=private'),'POST'],[new URL(watchBase+'/api/prices/other'),'POST'],[watchUrl,'PUT'],[watchUrl,'GET']])assert.equal(priceWatchFixtureRequest(watchBase,url,method,publicWatch),null,'only the exact local public registration endpoint is classified');
  const manifest=JSON.parse(await readFile(resolve(ROOT,'rulebooks/manifest.json'),'utf8'));
  for(const g of GAMES){const info=manifest[g],raw=gunzipSync(await readFile(resolve(ROOT,info.file)));assert.equal(createHash('sha256').update(raw).digest('hex'),info.sha256);const pack=JSON.parse(raw);assert.equal(pack.game,g);assert.equal(pack.entries.length,info.count);if(g==='ptcg')assert(pack.entries.some(e=>e.id==='0-p10'&&e.page===10));}
  return 'Fixture workspace, exact printing/card IDs, normalized provider schemas, history boundaries, art provenance and all three bundled corpus hashes passed. No browser started.';
@@ -101,7 +121,7 @@ export function isAllowedRulesFixtureRequest(base,url,method,body,enabled=false)
 }
 export async function openApp(browser,base,{game='mtg',width=390,height=1000,reducedMotion='no-preference',hash='#collection',glass=true,rulesResponder=null,isMobile=false,hasTouch=true}={}){
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch,isMobile,reducedMotion,locale:'en-US',timezoneId:'UTC',serviceWorkers:'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
- const errors=[],writes=[],unexpected=[],requests=[],images=[],rulesRequests=[];let gate=null,failRulebook=false;
+ const errors=[],writes=[],unexpected=[],requests=[],images=[],rulesRequests=[],publicPriceWatchRequests=[];let gate=null,failRulebook=false;
  const artURLs=new Set([DHELMISE_COVER.imageLarge,...Object.values(CARDS).flatMap(cards=>cards.flatMap(c=>[...artworkSources(c,true),...artworkSources(c,false),c.art,c.artDirect,c.image_uris?.art_crop].filter(Boolean))).map(u=>new URL(u,base+'/').href)]);
  page.on('pageerror',e=>errors.push(e.message));
  await context.route('**/*',async route=>{
@@ -109,6 +129,12 @@ export async function openApp(browser,base,{game='mtg',width=390,height=1000,red
   if(req.method()==='OPTIONS')return route.fulfill({status:204,headers:{'access-control-allow-origin':'*','access-control-allow-methods':'GET','access-control-allow-headers':'apikey'},body:''});
   if(!['GET','HEAD'].includes(req.method())){
    let body;try{body=req.postDataJSON();}catch{}
+   if(url.origin===base&&url.pathname==='/api/prices/watch'){
+    let knownMtgIds=CARDS.mtg.map(card=>card.id);
+    try{const current=await page.evaluate(()=>Object.values(window.__uiTestState?.catalog||{}).map(card=>card?.id).filter(id=>typeof id==='string'));if(Array.isArray(current))knownMtgIds=knownMtgIds.concat(current);}catch{}
+    const call=priceWatchFixtureRequest(base,url,req.method(),body,{knownMtgIds,headers:await req.allHeaders()});
+    if(call){publicPriceWatchRequests.push({...call,body:structuredClone(body)});return route.fulfill({status:call.status,contentType:'application/json',body:JSON.stringify(call.response)});}
+   }
    if(isAllowedRulesFixtureRequest(base,url,req.method(),body,typeof rulesResponder==='function')){
     const call={body:structuredClone(body),settled:false};rulesRequests.push(call);
     if(gate?.match(url)){const g=gate;gate=null;g.started();await g.wait;}
@@ -161,8 +187,8 @@ export async function openApp(browser,base,{game='mtg',width=390,height=1000,red
  // Resolve imports outside polling. Every waitForFunction below is synchronous.
  await page.evaluate(async()=>{window.__uiTestState=(await import('/store.js')).S;window.__uiTestTcg=await import('/tcg.js');});
  await page.waitForFunction(g=>document.body.dataset.game===g&&window.__uiTestState.state.settings.game===g,game);
- const health=()=>{assert.deepEqual(errors,[],'No uncaught application error');assert.deepEqual(writes,[],'No payment, AI or other external network writes');assert.deepEqual(unexpected,[],'Every provider call mapped to a local deterministic fixture');};
- return {context,page,requests,images,rulesRequests,health,fixtures:f,
+ const health=()=>{assert.deepEqual(errors,[],'No uncaught application error');assert.deepEqual(writes,[],'No payment, AI, private-state or unrecognized network writes');assert(publicPriceWatchRequests.every(call=>call.forwarded===false),'Public price registration attempts are local fixtures only');assert.deepEqual(unexpected,[],'Every provider call mapped to a local deterministic fixture');};
+ return {context,page,requests,images,rulesRequests,publicPriceWatchRequests,health,fixtures:f,
   hold(match){let started,release;const seen=new Promise(r=>{started=r;}),wait=new Promise(r=>{release=r;});gate={match,started,wait};return {seen,release};},
   failRules(value=true){failRulebook=value;},
   async close(){health();await context.close();}

@@ -7,6 +7,15 @@ import { cardKey, validateDeck } from './core.js';
 import { refineCandidates, towardDeck } from './deck-optimizer.js';
 import { mtgPower } from './power.js';
 
+// A refinement pass treats candidate objects as immutable: towardDeck clones
+// each change and refineCandidates adds scored copies. Keep this cache inside
+// that pass; a later build must read its own card, price and ownership evidence.
+export function createBuildAssessmentCache(inspect,score,{revision=()=>null}={}){
+ const entries=new WeakMap();
+ const entry=deck=>{const version=revision(deck);let found=entries.get(deck);if(!found||found.revision!==version){found={assessment:inspect(deck),scored:false,revision:version};entries.set(deck,found);}return found;};
+ return {inspect:deck=>entry(deck).assessment,power:deck=>{const found=entry(deck);if(!found.scored){found.power=score(deck);found.scored=true;}return found.power;}};
+}
+
 export function createDeckPipeline(x) {
  const {T,S}=x;
  const formats={mtg:FORMATS.filter(f=>!['limited','oathbreaker'].includes(f.id)),ygo:T.SOURCES.ygo.formats,ptcg:T.SOURCES.ptcg.formats};
@@ -38,11 +47,11 @@ export function createDeckPipeline(x) {
   if(request.theme&&request.game==='ygo'&&card.archetype!==request.theme)throw Error(`${card.name} is not in the selected ${request.theme} archetype. Change the card or theme.`);
   return card;
  };
- const assess=(deck,request)=>{
+ const assess=(deck,request,{withPower=true}={})=>{
   if(request.game==='mtg'){
    const f=formatOf(deck),validation=validateDeck(deck,S.catalog,[],[]),issues=[...validation.issues,...(deck.unverifiedConstraints||[]).map(text=>({text:"Unverified requirement: "+text}))];
    const rows=deck.cards.map(r=>({name:r.name,id:cardKey(r.name),qty:r.qty,zone:'main',card:x.meta(r.name),price:deck.referencePrices?.[cardKey(r.name)]??x.priceOf(r.name),owned:x.inv(r.name)?.available??0}));
-   return {rows,power:mtgPower({...deck,id:'construction'}),check:{complete:rows.reduce((n,r)=>n+r.qty,0)===f.size,legal:issues.length===0,issues:[...new Set(issues.map(i=>i.text))]}};
+   return {rows,...(withPower?{power:mtgPower({...deck,id:'construction'})}:{}),check:{complete:rows.reduce((n,r)=>n+r.qty,0)===f.size,legal:issues.length===0,issues:[...new Set(issues.map(i=>i.text))]}};
   }
   const a=T.flowAssessment(request.game,deck),d=a.diagnostics;
   return {...a,check:{complete:d.complete&&!d.missingEnergy&&!d.missingRequiredSeeds.length,legal:d.legalChecked,
@@ -55,7 +64,12 @@ export function createDeckPipeline(x) {
    const built=await prepareMtgDeck({...request,flow:true,style:[request.theme,request.easy?'easy to play':'',request.style].filter(Boolean).join(' '),budget_basis:request.ownedOnly?'owned':request.budgetBasis,current:options.current},x);
    if(!built.candidates)return {error:built.choice==='infinite'?'The app cannot verify that every possible infinite combo is excluded. No deck was presented. Name specific cards to exclude, or revise that requirement.':built.note||'The card service could not complete this request.'};
    const candidates=built.candidates.map(c=>c.draft);if(request.previousDeck)candidates.unshift(structuredClone(request.previousDeck));
-   return refineCandidates(candidates,{evaluate:d=>assess(d,request).power,cost:d=>{const p=priceDeck(assess(d,request).rows,request.budgetBasis);return {cost:p.subtotal,unknown:p.unpriced};},accept:d=>{const a=assess(d,request);return a.check.legal&&!inspectDeckPlan(request,a.rows,d).issues.length;},neighbors:d=>candidates.flatMap(target=>towardDeck(d,target,{protectedKeys:new Set([request.seed,request.commander,...(request.required_cards||[]),...(d.internalRequiredCards||[])].filter(Boolean))})),rounds:2,maxNeighbors:12,status:options.onStatus});
+   const assessment=createBuildAssessmentCache(d=>assess(d,request,{withPower:false}),d=>mtgPower({...d,id:'construction'}),{
+    // Refinement yields to the screen. A provider refresh may replace or amend
+    // card records during that yield, so object identity alone is insufficient.
+    revision:d=>JSON.stringify(d.cards.map(r=>[r.name,r.qty,x.meta(r.name),x.inv(r.name)?.available??0,d.referencePrices?.[cardKey(r.name)]??x.priceOf(r.name)])),
+   });
+   return refineCandidates(candidates,{evaluate:d=>assessment.power(d),cost:d=>{const p=priceDeck(assessment.inspect(d).rows,request.budgetBasis);return {cost:p.subtotal,unknown:p.unpriced};},accept:d=>{const a=assessment.inspect(d);return a.check.legal&&!inspectDeckPlan(request,a.rows,d).issues.length;},neighbors:d=>candidates.flatMap(target=>towardDeck(d,target,{protectedKeys:new Set([request.seed,request.commander,...(request.required_cards||[]),...(d.internalRequiredCards||[])].filter(Boolean))})),rounds:2,maxNeighbors:12,status:options.onStatus});
   }
   const candidates=await x.tcgCtx.prepareDeck(request,options);if(request.previousDeck)candidates.unshift(structuredClone(request.previousDeck));
   if(request.game!=='ygo')return candidates;

@@ -118,7 +118,7 @@ export function mtgWikiPageContent(state={},at=Date.now()){
  if(state.view!=='article')return `<div data-wiki-page-content>${mtgWikiDailyMarkup(state.daily,at,game)}</div>`;
  const reference=readerReference(game,state.topic),article=state.response?.game===game||!state.response?.game?state.response:null;
  const renderedArticle=article?.status==='available'&&article.article?wikiArticleMarkup(article,{game}):'';
- const toolbar=`<div class="wiki-reader-toolbar"><button type="button" class="btn ghost small" data-act="mtgWikiHome">← Wiki home</button><button type="button" class="btn ghost small" data-act="mtgWikiAsk">Ask about this</button></div>`;
+ const toolbar=`<div class="wiki-reader-toolbar"><button type="button" class="btn ghost small" data-act="mtgWikiHome" aria-label="Wiki home">← Wiki home</button><button type="button" class="btn ghost small" data-act="mtgWikiAsk">Ask about this</button></div>`;
  const content=state.loading?`<section class="wiki-reader-empty" role="status" aria-live="polite"><p class="eyebrow">${esc(sourceInfo.name)}</p><h2>${esc(state.topic)}</h2><p>Opening article…</p></section>`:renderedArticle||`<section class="wiki-reader-empty"><p class="eyebrow">${esc(sourceInfo.name)}</p><h2>${esc(state.topic)}</h2><p role="status">${state.status==='not-found'?'No article found. Try another name or choose a suggested topic.':'This article couldn’t load. Try again or read it at the source.'}</p><div class="actions wrap"><button type="button" class="btn ghost small" data-act="mtgWikiRetry">Try again</button>${reference?link(reference.url,'Read on '+sourceInfo.name+' ↗','link',game):''}</div></section>`;
  return `<div data-wiki-page-content data-wiki-view="article" aria-busy="${!!state.loading}">${toolbar}${content}</div>`;
 }

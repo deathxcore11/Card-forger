@@ -5,6 +5,7 @@ import {S} from './store.js';
 import {cardSheet,settings,search,wikiPage} from './views.js';
 import {tcgCardSheet,tcgSearch} from './tcg.js';
 import {WIKI_SOURCES} from './wiki-sources.js';
+import {decorateGlyphs} from './icons.js';
 import {makeFixtures,CARDS} from './tests/detail-rules-fixtures.mjs';
 import {mtgWikiPanel,mtgWikiResults,mtgWikiCredit,safeMtgWikiUrl,createMtgWikiController,createMtgWikiPageController,mtgWikiPageMarkup,mtgWikiPageContent,localDailyMtgTopic,MTG_WIKI_DAILY_CACHE_KEY,wikiDailyCacheKey,safeGameWikiUrl} from './mtg-wiki-ui.js';
 const originalState=S.state,originalCatalog=S.catalog,fixtures=makeFixtures('mtg');S.state=fixtures.state;S.catalog=fixtures.catalog;
@@ -146,4 +147,11 @@ for(const refusal of ['superseded','inactive','scope','not-focused']){
  app.settle(refusal==='superseded'?false:true);await work;
  assert.deepEqual(app.events,[],refusal+' navigation must not restore focus or selection');assert.equal(app.document.activeElement,otherControl,refusal+' visit cannot steal focus from the current control');
 }
+// The app decorates a leading arrow into an aria-hidden icon after rendering.
+// The Home action must have one stable accessible name across that repaint.
+const homeAction=mtgWikiPageContent({game:'mtg',view:'article',topic:'Toolbar fixture',status:'unavailable'}).match(/<button\b[^>]*data-act="mtgWikiHome"[^>]*>[^<]*<\/button>/)?.[0];
+assert.match(homeAction,/aria-label="Wiki home"/);
+const textNode={data:'← Wiki home'},button={childNodes:[textNode],closest:selector=>selector.startsWith('script')?null:button,insertBefore:span=>button.childNodes.unshift(span)};textNode.parentElement=button;textNode.parentNode=button;let walked=false;
+decorateGlyphs({querySelectorAll:()=>[],ownerDocument:{createTreeWalker:()=>({nextNode:()=>walked?null:(walked=true,textNode)}),createElement:()=>({className:'',innerHTML:''})}});
+assert.equal(textNode.data,'Wiki home');assert.match(button.childNodes[0].innerHTML,/aria-hidden="true"/);assert.match(homeAction,/aria-label="Wiki home"/,'glyph decoration does not change the action’s accessible name');
 console.log('PASS: per-game Wiki home shows only the daily topic; explicit full-article search and internal navigation replace it; routing, Home reset, scoped abort, minimal fallback and isolated 24-hour daily storage preserve the unchanged short-reference contract.');
