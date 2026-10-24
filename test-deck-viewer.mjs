@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import {S,blank} from './store.js';
 import {deckPage,deckList,totalsFor} from './views.js';
-import {deckViewFor,deckViewControl} from './deck-viewer.js';
+import {deckViewFor,deckViewControl,deckCardCategory,deckCardAttrs} from './deck-viewer.js';
 import {registerWorkbench,modeFor,viewControl} from './workbench-ui.js';
 import {deckWorkspaceSignature} from './deck-experience.js';
 import {proven,provenSheetHtml} from './tcg.js';
+import {sharedDeckSheet} from './shared-deck-view.js';
 S.state=blank();
 const card={id:'shared',name:'Shared zone card',type_line:'Creature — Human',oracle_text:'',cmc:1,prices:{usd:'2'},image_uris:{normal:'https://example.com/exact-printing.jpg'},legalities:{standard:'legal'},finishes:['nonfoil']};
 S.catalog['shared zone card']=card;
@@ -21,6 +22,22 @@ assert.equal(totalsFor(deck).pricedGap,6,'shopping still includes both zones');
 proven.spec={g:'ygo',key:'source-zones',title:'Source zones',sub:'',evidence:'Synthetic zone fixture',lists:[],rows:[{key:'source-extra',name:'Extra source card',qty:2,zone:'extra',kind:'Extra',price:1,owned:0}]};
 proven.mode='original';proven.busy=false;proven.msg='';
 assert.match(provenSheetHtml(),/data-deck-name="Extra source card" data-deck-qty="2" data-deck-zone="extra"/,'source Extra Deck rows retain their explicit zone');
+// Stack classification follows loaded game metadata and the front face.
+for(const [card,category] of [
+ [{type_line:'Artifact Creature — Golem'},'Creatures'],
+ [{type_line:'Basic Land — Forest'},'Lands'],
+ [{type_line:'Instant // Land'},'Instants'],
+ [{type_line:'Enchantment Creature — Spirit'},'Creatures'],
+ [{category:'Pokemon',typeLine:'Grass · Basic'},'Pokémon'],
+ [{category:'Trainer',typeLine:'Item'},'Trainers'],
+ [{category:'Energy',typeLine:'Basic Energy'},'Energy'],
+ [{category:'Monster',typeLine:'Effect Monster'},'Monsters'],
+ [{category:'Spell',typeLine:'Spell Card'},'Spells'],
+ [{category:'Trap',typeLine:'Trap Card'},'Traps'],
+ [{name:'Mystery Creature Name'},'Unresolved']
+])assert.equal(deckCardCategory(card),category);
+assert.match(deckCardAttrs('Synthetic ramp',1,'main',{type_line:'Creature — Elf Druid',oracle_text:'{T}: Add {G}.'}),/data-deck-roles="Ramp"/);
+assert.match(sharedDeckSheet({sharedItem:{game:'ygo',key:'unloaded-shared',title:'Unknown shared card',cards:[{name:card.name,qty:1,zone:'main',image:'',referenceUSD:null}]}}),/data-deck-category="Unresolved"/,'unknown non-Magic shared cards cannot borrow same-name Magic metadata');
 const actions={},changes={},calls=[];let closes=0;
 globalThis.document={querySelector(){return null;},querySelectorAll(){return [];}};
 registerWorkbench({A:actions,C:changes,commit:async(fn,opts)=>{calls.push(opts);fn(S.state);},closeSheet:()=>closes++,getGame:()=> 'mtg'});

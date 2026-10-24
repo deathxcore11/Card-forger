@@ -55,7 +55,12 @@ try{
     await page.locator('#sheet .deck-viewer [data-act="card"]').first().click();await page.locator('#sheet .cs-card').waitFor();await page.locator('#sheet [data-act="sheetHistoryBack"]').click();await page.locator('#sheet .deck-viewer[data-deck-view="symbols"]').waitFor();
     assert.equal(await page.evaluate(()=>window.__uiTestState.ui.sheetCtx.key),'view-meta','Back retains the exact tournament source');
     assert.equal(await page.locator('#sheet [data-deck-card]').count(),sourceRows.length);
-    checks.push({source:'tournament',actualOpenAndCardBack:true,mainAndSide:true,fourViews:true});
+    await page.locator('#sheet .deck-view-switch [data-mode="stacks"]').click();await page.locator('#sheet .deck-viewer[data-deck-view="stacks"]').waitFor();
+    const stackedCard=page.locator('#sheet .deck-viewer [data-act="card"]').first();await stackedCard.hover({position:{x:12,y:12}});await stackedCard.click();await page.locator('#sheet .cs-card').waitFor();await page.locator('#sheet [data-act="sheetHistoryBack"]').click();await page.locator('#sheet .deck-viewer[data-deck-view="stacks"]').waitFor();
+    await page.locator('#sheet .deck-view-switch [data-mode="compact"]').click();await page.locator('#sheet .deck-viewer[data-deck-view="compact"]').waitFor();
+    assert.equal(await page.locator('#sheet [data-deck-list] > .deck-stack-group').count(),0,'Back-restored stacks unwrap when returning to Detailed list');
+    assert.deepEqual(await page.locator('#sheet [data-deck-card]').evaluateAll(ns=>ns.map(n=>({name:n.dataset.deckName,qty:n.dataset.deckQty,zone:n.dataset.deckZone}))),sourceRows.map(({name,qty,zone})=>({name,qty,zone})),'Back-restored groups retain exact source order');
+    checks.push({source:'tournament',actualOpenAndCardBack:true,mainAndSide:true,fourViews:true,stackBackRestoresOrder:true});
     // Renderer coverage for read-only shared snapshots and the older selection
     // proposal. It does not certify community networking or a game entry point.
     for(const kind of ['shared','idea']){
