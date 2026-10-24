@@ -1,0 +1,78 @@
+{
+  "retrievedAt": "2026-10-24T01:48:05.722779+00:00",
+  "note": "Unmodified Scryfall card snapshots. Tests separately override prices and use labeled synthetic fill cards to isolate request fidelity; these are not live-deck or competitive-strength evidence.",
+  "cards": [
+    {
+      "file": "krenko-mob-boss.json",
+      "url": "https://api.scryfall.com/cards/named?exact=Krenko%2C%20Mob%20Boss",
+      "id": "824b2d73-2151-4e5e-9f05-8f63e2bdcaa9",
+      "oracle_id": "68418069-f615-40ef-ae0d-764192acae00",
+      "name": "Krenko, Mob Boss",
+      "sha256": "e5622420d7329338c7cfa3e1ca431c6b6d9c31cbbf0240277f1d99f6bc25a354",
+      "response_sha256": "276a41e7490700144742a501e624d0de28e9aad8ef494ff193b3562bc3ebb9af"
+    },
+    {
+      "file": "zada-hedron-grinder.json",
+      "url": "https://api.scryfall.com/cards/named?exact=Zada%2C%20Hedron%20Grinder",
+      "id": "4520cdcc-a10f-4b39-9c6f-ba86f6aa2c87",
+      "oracle_id": "9f7d5e1c-bf5b-4ab9-bd6e-2627b4d22b36",
+      "name": "Zada, Hedron Grinder",
+      "sha256": "95dc97e381468bf17778987ae8b20e84a68e8236408cddc41821d644f1f49675",
+      "response_sha256": "7c8fba5d9c28692ff4cf8d90c52b2bb7a6c847411994e83f67e7b75ec746d7fd"
+    },
+    {
+      "file": "goblin-arsonist.json",
+      "url": "https://api.scryfall.com/cards/named?exact=Goblin%20Arsonist",
+      "id": "fa4bf664-3b92-4598-b905-2bc090958c8b",
+      "oracle_id": "c1177f22-a1cf-4da3-a68d-ff954e878403",
+      "name": "Goblin Arsonist",
+      "sha256": "b4152391eb870bfeb98b072a8eb6c3e3dc547abc0a05e8ee16b00fee7fe60ce6",
+      "response_sha256": "4166db39dceff7334508740025a63816236d6a36af518924d611036778ce5a2d"
+    },
+    {
+      "file": "fanatical-firebrand.json",
+      "url": "https://api.scryfall.com/cards/named?exact=Fanatical%20Firebrand",
+      "id": "d1296316-7781-4e98-95e6-7020648be6a5",
+      "oracle_id": "d36e11f1-6ab3-4273-8114-a8fbbe21c1c3",
+      "name": "Fanatical Firebrand",
+      "sha256": "cde6dd1b5c86b78d8bf1d8a9b2dca70006619d38917b6bdf10ba0b27d1243021",
+      "response_sha256": "1dae51faaaaeaef8a5840ca89d20d5e1c576d00fa74275b9ae14817394c8735c"
+    },
+    {
+      "file": "warmind-infantry.json",
+      "url": "https://api.scryfall.com/cards/named?exact=Warmind%20Infantry",
+      "id": "d8a5f801-9e55-4e14-85b0-5719521cd9d6",
+      "oracle_id": "9e32750a-8e5f-4d81-92a8-c3d4ea1477fd",
+      "name": "Warmind Infantry",
+      "sha256": "60390568c95434d4d11a2932b9f02c9c9d8dd1e724d111bcabd6d1b0cb7cbf3d",
+      "response_sha256": "e757a05468756f804bdbc33ca217864f2389e33d3341fd89b6238e4b75fa4586"
+    },
+    {
+      "file": "mistform-ultimus.json",
+      "url": "https://api.scryfall.com/cards/named?exact=Mistform%20Ultimus",
+      "id": "b74feed4-840b-4f10-9861-7a6885ce7907",
+      "oracle_id": "7bf0e628-06b5-4e12-a526-a2bce08844f2",
+      "name": "Mistform Ultimus",
+      "sha256": "9fb2137986d0c2efe68d7ee2146fd68d9cd20fe2d2d16f554890a08ad552106f",
+      "response_sha256": "9773b050f49fa9a74f56acc199d32ae1a930ea6ba72469692d83407f784c188c"
+    },
+    {
+      "file": "universal-automaton.json",
+      "url": "https://api.scryfall.com/cards/named?exact=Universal%20Automaton",
+      "id": "53c682e2-c90f-4f4b-9010-00b099e85518",
+      "oracle_id": "d50b1d2e-1825-432a-ab73-068fdc356f50",
+      "name": "Universal Automaton",
+      "sha256": "5856e45128cfdcfc8201d4e016e34b4448ba0fe7b35b8eb10b264cdabcd300fd",
+      "response_sha256": "a209c80e141c1de947bcb8a70205006a4e2c9251360d3b1d1819fe40c477fe23"
+    },
+    {
+      "file": "mountain.json",
+      "url": "https://api.scryfall.com/cards/named?exact=Mountain",
+      "id": "85177bd7-6c50-48da-b692-ae5fe7bd357c",
+      "oracle_id": "a3fb7228-e76b-4e96-a40e-20b5fed75685",
+      "name": "Mountain",
+      "sha256": "024866ff32611ad404527c9ddab4cf28e6de6b2d7783eecdb5526d9dc4224bdb",
+      "response_sha256": "42164f50c321bed93616d0b5ce4525e057d9edb2e7e3c4ba9c974d5d828a9284"
+    }
+  ]
+}

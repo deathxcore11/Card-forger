@@ -12,6 +12,7 @@ import {conditionFeedRoute} from './condition-feed-route.js';
 import {weeklyCurationRoute,scheduledWeeklyCuration} from './weekly-curation-route.js';
 import { aiReviewRoute } from './ai-review-route.js';
 import { aiAskRoute } from './ai-ask-route.js';
+import {mtgWikiReferenceRoute,wikiReferenceRoute} from './mtg-wiki-reference.js';
 import { scanIdentifyRoute } from './scan-identify-route.js';
 export { AiReviewLimits } from './ai-review-route.js';
 import {recentHistoryRoute} from './recent-history.js';
@@ -197,6 +198,8 @@ const handlers = {
   },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    if (url.pathname === '/api/reference/mtg-wiki') return mtgWikiReferenceRoute(request);
+    if (url.pathname === '/api/reference/wiki') return wikiReferenceRoute(request);
     if (url.pathname === '/api/daily-card') return dailyCardRoute(request, env);
     if (url.pathname === '/api/community' || url.pathname === '/api/meta/curation') return weeklyCurationRoute(request, url, env);
     if (url.pathname === "/api/ai/matchup") return aiMatchupRoute(request, env);

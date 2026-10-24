@@ -1,0 +1,24 @@
+{
+  "scope": "Minimal printed-type and mechanic excerpts for prerequisite tests, not full card identity/legality/price records. Synthetic cards are separately labeled in the test.",
+  "reviewedOn": "2026-10-23",
+  "sources": {
+    "Bloodthirst rules": "https://magic.wizards.com/en/news/feature/modern-masters-2015-edition-release-notes-2015-05-12",
+    "Drana, Liberator of Malakir": "https://magic.wizards.com/en/news/feature/battle-zendikar-release-notes-2015-09-23",
+    "Falkenrath Marauders": "https://gatherer.wizards.com/ISD/en-us/141/falkenrath-marauders",
+    "Stromkirk Noble": "https://gatherer.wizards.com/ISD/en-us/164/stromkirk-noble",
+    "Slith Firewalker": "https://gatherer.wizards.com/DD3_JVC/en-us/39/slith-firewalker",
+    "Bloodrage Vampire": "https://gatherer.wizards.com/M12/en-us/83/bloodrage-vampire",
+    "Vampire Outcasts": "https://gatherer.wizards.com/MM2/en-us/102/vampire-outcasts",
+    "M12 card gallery": "https://magic.wizards.com/en/news/card-image-gallery/card-image-gallery-2011-06-22"
+  },
+  "cards": [
+    {"name":"Drana, Liberator of Malakir","type_line":"Legendary Creature — Vampire Ally","mana_cost":"{1}{B}{B}","color_identity":["B"],"power":"2","toughness":"3","oracle_text":"Flying, first strike\nWhenever Drana, Liberator of Malakir deals combat damage to a player, put a +1/+1 counter on each attacking creature you control."},
+    {"name":"Falkenrath Marauders","type_line":"Creature — Vampire Warrior","mana_cost":"{3}{R}{R}","color_identity":["R"],"power":"2","toughness":"2","oracle_text":"Flying, haste\nWhenever Falkenrath Marauders deals combat damage to a player, put two +1/+1 counters on it."},
+    {"name":"Stromkirk Noble","type_line":"Creature — Vampire Noble","mana_cost":"{R}","color_identity":["R"],"power":"1","toughness":"1","oracle_text":"Stromkirk Noble can't be blocked by Humans.\nWhenever Stromkirk Noble deals combat damage to a player, put a +1/+1 counter on it."},
+    {"name":"Slith Firewalker","type_line":"Creature — Slith","mana_cost":"{R}{R}","color_identity":["R"],"power":"1","toughness":"1","oracle_text":"Haste\nWhenever Slith Firewalker deals combat damage to a player, put a +1/+1 counter on it."},
+    {"name":"Vampire Outcasts","type_line":"Creature — Vampire","mana_cost":"{2}{B}{B}","color_identity":["B"],"power":"2","toughness":"2","oracle_text":"Bloodthirst 2\nLifelink"},
+    {"name":"Bloodrage Vampire","type_line":"Creature — Vampire","mana_cost":"{2}{B}","color_identity":["B"],"power":"3","toughness":"1","oracle_text":"Bloodthirst 1"},
+    {"name":"Sign in Blood","type_line":"Sorcery","mana_cost":"{B}{B}","color_identity":["B"],"oracle_text":"Target player draws two cards and loses 2 life."},
+    {"name":"Taste of Blood","type_line":"Sorcery","mana_cost":"{B}","color_identity":["B"],"oracle_text":"Taste of Blood deals 1 damage to target player and you gain 1 life."}
+  ]
+}

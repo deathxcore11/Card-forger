@@ -1,9 +1,28 @@
 // Goals are preferences, not measured power or win-rate guarantees. Hard rules,
 // identity, ownership and quote coverage always remain the app's responsibility.
+import { MTG_VOCABULARY, tribePattern } from './mtg-vocabulary.js';
 export const DECK_GOALS = Object.freeze(['strongest','theme','fun','chaos','weak']);
 // Direct player requests must reach the existing builder, rather than letting
 // a model answer with an unexecuted deck or a generic refusal. How-to stays help.
-export const isDeckBuildRequest = value => /^\s*(?:(?:can|could|would|will)\s+you\s+)?(?:please\s+)?(?:build|make|create)(?:\s+me|\s+us)?\b[^.!?]*\bdeck\b/i.test(String(value||''));
+const tribalDeckStart = new RegExp('^(?:'+MTG_VOCABULARY['creature-types'].map(tribePattern).join('|')+')(?:[- ]only)?\\b','i');
+export function isDeckBuildRequest(value) {
+ const request=String(value||'').replace(/[’]/g,"'").trim().replace(/^(?:hey|hi|okay|ok)[,!]?\s+/i,'');
+ if(!/\bdeck(?:list)?\b/i.test(request))return false;
+ // Construction and learning/browsing are different actions. A passing mention
+ // of a deck must not turn an explanation, saved-deck visit or meta lookup into
+ // a newly generated list.
+ if(/^(?:how|why|what|when|where|explain|teach|compare|analy[sz]e|review|rate|open|show)\b/i.test(request))return false;
+ if(/\bmake\s+(?:my|this|that|the current)\b[^.!?]*\bdeck\s+(?:better|stronger|cheaper|easier)\b/i.test(request))return false;
+ const beforeDeck=request.match(/^([^.!?]*?)\bdeck(?:list)?\b/i)?.[1]||'';
+ if(/\b(?:advice|help|how|explain|understand|learn|upgrade|improve|review|analy[sz]e|rate|cuts?|remove|swap|export|import)\b/i.test(beforeDeck)&&! /\b(?:build|rebuild|make|create|generate|brew|assemble)\b/i.test(beforeDeck))return false;
+ if(/\b(?:recommend|suggest)\b[^.!?]*\b(?:upgrades?|changes?|cuts?|cards?|commanders?)\s+(?:for|to)\b/i.test(request))return false;
+ const action=/^(?:(?:can|could|would|will)\s+you\s+)?(?:please\s+)?(?:build|rebuild|make|create|generate|brew|assemble|give\s+(?:me|us)|recommend(?:\s+(?:me|us))?|suggest(?:\s+(?:me|us))?|do\s+(?:me\s+)?(?:an?\s+)?(?=[^.!?]*\bdeck\b))\b[^.!?]*\bdeck(?:list)?\b/i;
+ if(action.test(request))return true;
+ if(/^(?:i\s+(?:(?:would|'d)\s+)?(?:want|need|like)|i'd\s+like|can\s+i\s+(?:get|have))\b[^.!?]*\bdeck(?:list)?\b/i.test(request))return true;
+ // Short requests such as "only Goblins deck for red" have no imperative verb.
+ // Restrict this shortcut to recognizable deck preferences, not arbitrary prose.
+ return /^(?:only|mono[- ]?(?:white|blue|black|red|green|colou?rless)|white|blue|black|red|green|colou?rless)\b[^.!?]*\bdeck(?:list)?\b/i.test(request)||tribalDeckStart.test(request)&&/\bdeck(?:list)?\b[^.!?]*[.!?]?$/i.test(request);
+}
 const DESCRIPTIONS = Object.freeze({
  strongest:'Strongest practical draft within the requested constraints, not a guaranteed optimal deck.',
  theme:'Keep the requested theme ahead of generic upgrades while preserving legal deck construction.',

@@ -5095,4 +5095,24 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 
 /* Generated decks use the established Meta inspector, with one clear action row. */
 .deck-result-actions{display:flex;align-items:flex-start;gap:10px;margin:14px 0}.deck-result-actions>.btn,.deck-coach-action{flex:1;min-width:0}.deck-coach-action>.btn{width:100%;display:flex;justify-content:center;align-items:center;gap:7px}.deck-coach-action .stashy-logo{width:28px;height:28px;flex:none}.deck-coach-action small{display:block;font-size:10px;line-height:1.4;color:var(--muted);margin:5px 2px 0}.deck-budget-rebuild{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:end;padding:14px 0;border-block:1px solid var(--line)}.deck-budget-rebuild .field{margin:0}.deck-budget-rebuild>.btn{margin-bottom:0}.deck-budget-rebuild>[role=status]{grid-column:1/-1;margin:0}.deck-budget-rebuild>[role=status]:empty{display:none}.deck-result-checks>summary{cursor:pointer;min-height:44px;padding:12px 0}.deck-flow-result>.cs-hero{height:200px}.deck-flow-result>.cs-title{margin-top:-30px}.deck-flow-result .deck-flow-cards h3{font-size:.95rem}
+.header-wiki[hidden]{display:none!important}
+.wiki-page{--wiki-link:#86bbff;max-width:1100px;margin-inline:auto;min-width:0}
+.wiki-page a{color:var(--wiki-link);text-decoration:underline;text-underline-offset:3px}
+.wiki-page .wiki-search-form{position:relative;margin-block:16px}
+.wiki-page .home-search-wrap{max-width:none;margin:0}
+.wiki-suggestions{position:relative;padding:8px;margin-top:8px;border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--glass-hi);max-height:360px;overflow:auto}
+.wiki-suggestions[hidden]{display:none!important}
+.wiki-suggestions .mini-row{min-height:48px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;color:var(--text)}
+.wiki-suggestions [aria-selected=true]{outline:2px solid var(--gold);outline-offset:-2px;background:color-mix(in srgb,var(--gold) 12%,var(--surface))}
+.wiki-daily.home-hero{margin:20px 0;border-radius:22px;min-height:260px}
+.wiki-daily .hh-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%}
+.wiki-daily .hh-shade{position:absolute;inset:0;background:linear-gradient(90deg,#111722ed,#1117229c)}
+.wiki-daily .hh-body{position:relative;z-index:1;padding:28px;max-width:780px;color:#f5f7fc;pointer-events:auto}
+.wiki-daily .hh-body h2{font-size:clamp(24px,4vw,34px);line-height:1.15;margin:8px 0 12px}
+.wiki-daily .hh-body p{max-width:65ch;line-height:1.5}
+.wiki-daily .foot,.wiki-daily .eyebrow{color:#d9e1ef}
+.wiki-page blockquote{margin:12px 0;padding:12px 16px;border-left:3px solid var(--wiki-link);background:var(--surface-2);border-radius:0 12px 12px 0;overflow-wrap:anywhere}
+:root[data-theme=light] .wiki-page{--wiki-link:#165faf}
+:root[data-theme=light] .wiki-daily{--wiki-link:#96c5ff}
+@media(max-width:520px){.wiki-daily .hh-body{padding:20px}.wiki-page .page-head{align-items:flex-start}.wiki-suggestions .mini-row{flex-wrap:wrap;gap:3px 8px}}
 @media(max-width:420px){.deck-budget-rebuild{grid-template-columns:minmax(0,1fr)}.deck-budget-rebuild>.btn{width:100%}.deck-result-actions{gap:8px}.deck-coach-action small{font-size:10px}}

@@ -1,7 +1,7 @@
 // Game changes transfer semantic sections, never resource identities or provider filters.
 export const GAME_ROUTES = ['mtg', 'ygo', 'ptcg'];
 export const LEGACY_ROUTES = {catalog:'search',builder:'deck',discover:'decks/ideas',library:'decks/inspiration',wishlist:'collection/wishlist',compare:'search',playtest:'deck/active/playtest',guides:'deck/active/engine',sources:'settings'};
-const views = new Set(['community','home','search','collection','decks','deck','tdeck','sets','set','shared','scan','rules','settings']);
+const views = new Set(['community','home','search','collection','decks','deck','tdeck','sets','set','shared','scan','rules','settings','wiki']);
 export function routeSegments(hash = '#home') {
   const raw = String(hash).replace(/^.*?#/, '') || 'home';
   let parts;

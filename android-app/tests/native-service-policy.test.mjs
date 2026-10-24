@@ -52,3 +52,30 @@ test('policy is inactive: no fetch execution or global replacement', () => {
   plan('/api/daily-card');
   assert.equal(globalThis.fetch,before);
 });
+test('public Wiki topic POST uses the exact first-party route without account authority', async () => {
+  for(const [path,body] of [
+    ['/api/reference/mtg-wiki','{"title":"Jakub Šlemr"}'],
+    ['/api/reference/wiki','{"game":"ptcg","query":"Pokémon TCG"}'],
+    ['/api/reference/wiki','{"game":"ygo","daily":true}'],
+  ]){
+    const controller=new AbortController();
+    const input=new Request(NATIVE_ORIGIN+path,{method:'POST',headers:{'Content-Type':'application/json; charset=utf-8'},body,signal:controller.signal});
+    const result=plan(input,{credentials:'include',redirect:'follow'}),request=result.request;
+    assert.equal(result.route.ai,false);assert.equal(result.route.publicReference,true);assert.equal(result.route.authorizationAllowed,false);assert.deepEqual(result.route.methods,['POST']);
+    assert.equal(request.url,SERVICE_ORIGIN+path);assert.equal(request.method,'POST');
+    assert.equal(request.credentials,'omit');assert.equal(request.redirect,'error');assert.equal(request.referrerPolicy,'no-referrer');
+    assert.equal(request.headers.get('Authorization'),null);assert.equal(request.headers.get('Cookie'),null);assert.equal(request.headers.get('Origin'),null);
+    assert.equal(await request.text(),body);assert.equal(await input.text(),body,'Planning leaves the caller Request readable');
+    controller.abort();assert.equal(request.signal.aborted,true);
+  }
+});
+test('public reference admission does not broaden API routes, methods or credential headers', () => {
+  for(const path of ['/api/reference/mtg-wiki','/api/reference/wiki']){
+    for(const method of ['GET','HEAD','PUT','DELETE'])assert.throws(()=>plan(path,{method,headers:{'Content-Type':'application/json'}}),/Method/);
+    for(const headers of [{Authorization:'Bearer synthetic.profile'},{Cookie:'synthetic=session'},{apikey:'synthetic'},{'X-API-Key':'synthetic'}])assert.throws(()=>plan(path,{method:'POST',headers:{'Content-Type':'application/json',...headers},body:'{"game":"mtg","title":"Bloodlust"}'}));
+    assert.throws(()=>plan(path,{method:'POST',headers:{'Content-Type':'text/plain'},body:'Bloodlust'}),/JSON/);
+    assert.throws(()=>resolve(path+'?title=Bloodlust'));
+    assert.throws(()=>resolve(path+'/extra'));
+  }
+  for(const input of ['/api/reference/other','/api/reference/mtg%2Dwiki','/api/reference/%77iki','/api/reference/wiki-extra'])assert.throws(()=>resolve(input));
+});

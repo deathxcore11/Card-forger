@@ -86,9 +86,34 @@ export function tribalSupport(c, tribe) {
   if (/creatures you control (?:are every creature type|have changeling)|(?:equipped|enchanted) creature is every creature type/i.test(text)) return true;
   return tribeEvidence(c,tribe).length > 0;
 }
+// A creature-only request permits lands and noncreature support. Keep this
+// separate from a soft tribal theme and from requiring a particular commander.
+// Known vocabulary bounds the matched list; arbitrary card names are not types.
+const TYPE_TERM=CREATURE_THEMES.slice().sort((a,b)=>b.length-a.length).map(tribePattern).join('|');
+const TYPE_LIST='(?:'+TYPE_TERM+')(?:\\s*(?:,|and|or|/)\\s*(?:'+TYPE_TERM+'))*';
+export function readCreatureTypeRestrictions(value='') {
+  const text=String(value).replace(/[’‘]/g,"'").replace(/["“][^"”]*["”]/g,' '),only=[],excluded=[];
+  const negated=index=>/\b(?:(?:not|no|without|rather than|instead of|don't(?: want| use| make)?|do not(?: want| use| make)?)\s+(?:an?\s+)?|(?:remove|drop|relax|clear)\s+(?:(?:the|that|my)\s+)?)$/i.test(text.slice(Math.max(0,index-45),index));
+  const patterns=[
+    new RegExp('\\b(?:only|strictly)\\s+(?:(?:mono[- ]?)?(?:white|blue|black|red|green|colou?rless)\\s+)?('+TYPE_LIST+')\\b','gi'),
+    new RegExp('\\b('+TYPE_LIST+')[ -]only\\b','gi'),
+    new RegExp('\\ball creatures? (?:must be|are)\\s+('+TYPE_LIST+')\\b','gi'),
+    new RegExp('\\b(?:no|without|avoid|exclude)\\s+non[- ]('+TYPE_LIST+')\\b','gi'),
+  ];
+  for(const re of patterns)for(const match of text.matchAll(re)){
+    if(negated(match.index)||/^\s+tokens?\b|^\s+commanders?\b(?!\s+decks?\b)/i.test(text.slice(match.index+match[0].length)))continue;
+    for(const type of CREATURE_THEMES)if(new RegExp('(?:^|\\s|,|/)'+tribePattern(type)+'(?=$|\\s|,|/)','i').test(match[1]))only.push(type);
+  }
+  for(const match of text.matchAll(new RegExp('\\b(?:no|without|avoid|exclude)\\s+(?:any )?('+TYPE_LIST+')(?=\\s*(?:(?:creatures?|cards?)\\s*)?(?:$|[,.;!?])|\\s+(?:and|but|with)\\b)','gi')))for(const type of CREATURE_THEMES)if(new RegExp('(?:^|\\s|,|/)'+tribePattern(type)+'(?=$|\\s|,|/)','i').test(match[1]))excluded.push(type);
+  return {creatureTypesOnly:[...new Set(only)],excludedSubtypes:excluded};
+}
 export function fitsTypeRestrictions(c,{creatureTypesOnly=[],excludedSubtypes=[]}={}) {
-  const types=creatureTypes(c),creature=/\bCreature\b/.test(typeText(c)||(c?.card_faces||[]).map(f=>f.type_line||'').join(' // ')),
-    allTypes=creature&&/^(?:changeling\b|this (?:card|creature) is every creature type)/im.test(intentText(c));
+  if(!creatureTypesOnly.length&&!excludedSubtypes.length)return true;
+  const lines=c?.card_faces?.length?c.card_faces.map(f=>f.type_line||''):[typeText(c)],
+    known=lines.length&&lines.every(line=>line.trim());
+  if(!known)return false; // Unknown card types cannot satisfy a hard restriction.
+  const types=creatureTypes(c),creature=lines.some(line=>/\bCreature\b/.test(line)),
+    allTypes=creature&&/^(?:changeling\b|this (?:card|creature) is every creature type)/im.test(namedEffectText(c));
   return !excludedSubtypes.some(t=>allTypes||types.includes(t))&&(!creature||!creatureTypesOnly.length||allTypes||creatureTypesOnly.some(t=>types.includes(t)));
 }
 export function themeSupport(c, theme) {

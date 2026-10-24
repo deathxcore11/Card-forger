@@ -2,6 +2,7 @@
 // open the existing dated official packs; card-specific wording takes precedence.
 import {KEYWORD_REFERENCE,KEYWORD_SOURCE} from './mtg-keyword-reference.js';
 import {entryReference} from './rule-reference.js';
+import {MTG_CONCEPTS} from './mtg-wiki-knowledge.js';
 const rule=(label,definition,tip,id)=>({label,definition,tip,referenceId:id});
 export const EXTRA_RULES={
  mtg:Object.fromEntries(Object.entries(KEYWORD_REFERENCE).map(([key,r])=>[key,{...r,definition:r.definition.length>650?r.definition.slice(0,650).replace(/\s+\S*$/,'')+'…':r.definition,tip:`Excerpt from Comprehensive Rules (${KEYWORD_SOURCE.date}). Open the exact source for the full definition, conditions and exceptions.`,referenceId:r.entryId,excerpt:true}])),
@@ -22,3 +23,6 @@ export const EXTRA_RULES={
  }
 };
 export const extraRuleReference=(game,key)=>EXTRA_RULES[game]?.[key]?.referenceId?entryReference(game,EXTRA_RULES[game][key].referenceId,key):null;
+// Community terminology stays separate from the exact official-rule corpus.
+// In particular, Bloodlust is not an official keyword or a Bloodthirst alias.
+export const CONCEPT_RULES={mtg:Object.fromEntries(MTG_CONCEPTS.filter(c=>['informal-mechanic','deck-archetype','strategy-concept','creature-type'].includes(c.kind)&&!c.official).map(c=>[c.id,{label:c.label,definition:c.summary,tip:c.builderCoverage.summary,concept:c,sourceAuthority:'community-reference'}]))};

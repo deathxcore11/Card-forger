@@ -31,7 +31,7 @@ import { myPrice } from "./mtg-tcgprice.js";
 import { ask, askText } from "./dialog.js";
 import { buyOnTcgplayer, massLines } from "./buy.js";
 import {effectText,ruleText,ruleCardContext} from './rule-dex.js';
-import {editionPrice,rarityKey} from './ygo-prices.js';
+import {editionPrice,rarityKey,needsYgoPriceJoinRefresh} from './ygo-prices.js';
 import {buildOverlay} from './build-overlay.js';
 import { tierCardHtml } from './tier-card.js';
 import {bestBudgetDecks,purchaseCost,comparePower,swappedZones,sameCardLogic,budgetComparisonHtml,refineCandidates,towardDeck,spendUp,cardQuality,budgetNotes,variantsFrom,fillOpen,difficultyOf} from './deck-optimizer.js';
@@ -155,7 +155,7 @@ export function needsCardRefresh(g,c,printings=false){
  const time=Date.parse(c?.fetchedAt);
  return !c||c.brief||!Number.isFinite(time)||time>Date.now()+300000||Date.now()-time>=PRICE_TTL||
  (g==='ptcg'&&(c.variantSchema!==POKEMON_VARIANT_SCHEMA||c.priceFallbackSchema!==3))||
- (g==='ygo'&&(c.artSchema!==1||(printings&&c.printPriceSchema!==1)));
+ (g==='ygo'&&(c.artSchema!==1||(printings&&(c.printPriceSchema!==1||needsYgoPriceJoinRefresh(c)))));
 }
 // Full card with prices no older than a day.
 export async function ensureCard(g, id, force = false,printings=true) {
@@ -725,7 +725,7 @@ export function tcgSearch() {
       ...(U.sort !== defaultSearchSort(g) ? [["sort", `Sort: ${L(sorts, U.sort)}`]] : []),
     ],
     count = `${list.length.toLocaleString()} shown · ${loaded.length.toLocaleString()} loaded${Number.isFinite(U.total) ? ` · ${U.total.toLocaleString()} provider matches before local filters` : ""}`;
-  return `${U.discoveryNote?`<p class="note small" role="status">${esc(U.discoveryNote)}</p>`:""}<div class="page-head"><h1>Search cards</h1>${viewControl(g,"search")}<div class="search-tools"><button class="chip tool-chip" data-act="tCompareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">◈ Sets</button><button class="chip tool-chip" data-act="tRandomCard" aria-label="Random card">🎲 Random</button></div></div>
+  return `${U.discoveryNote?`<p class="note small" role="status">${esc(U.discoveryNote)}</p>`:""}<div class="page-head"><h1>Search cards</h1>${viewControl(g,"search")}<div class="search-tools"><button class="chip tool-chip" data-act="tCompareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">◈ Sets</button><button class="chip tool-chip" data-act="mtgWikiOpen" aria-label="Open Wiki">Wiki</button><button class="chip tool-chip" data-act="tRandomCard" aria-label="Random card">🎲 Random</button></div></div>
   <div class="searchbar search-query"><input type="search" data-suggest="${g}" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Card name or code (BLZD-EN010)" : "Card name or set + number (PAL 45)"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off"><button class="btn" data-act="tSearch">${U.busy ? "Search again" : "Search"}</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI">${brandMark("assistant-button-mark")}<span>Ask</span></button></div>
   ${chips.length ? `<div class="filter-chips" aria-label="Active filters">${chips.map(([k,l]) => `<button class="fchip" data-act="tChip" data-field="${esc(k)}" aria-label="Remove ${esc(l)}">${esc(l)} <span aria-hidden="true">×</span></button>`).join("")}<button class="link small" data-act="tClear">Clear all</button></div>` : ""}
   ${savedSearches(g).length ? `<div class="saved-searches"><span class="muted small">Saved:</span>${savedSearches(g).map((x,i) => `<span class="schip"><button data-act="tSaved" data-i="${i}">${esc(x.label)}</button><button data-act="tSavedDel" data-i="${i}" aria-label="Delete saved search ${esc(x.label)}">×</button></span>`).join("")}</div>` : ""}

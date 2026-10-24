@@ -2,6 +2,7 @@ import {cardDiscoverySpec} from './card-discovery.js';
 import {checkRelease,acknowledgeRelease,onReleaseChange,releaseDot,releaseState} from './release-status.js';
 import {createDeckPipeline} from './deck-pipeline.js';
 import {createDeckExperience} from './deck-experience.js';
+import {createMtgWikiPageController} from './mtg-wiki-ui.js';
 import { configureAiAuth, invalidateAiAuth } from './ai-auth.js';
 import {openPackPreview,ptcgSetRarities,trimPackArt} from './pack-preview.js';
 import {loadMtgBooster,mtgBoosterCards} from './mtg-boosters.js';
@@ -682,6 +683,8 @@ function toast(text, { undo = false } = {}) {
 }
 
 let binderDragCleanup = null, lastSheetStep = "";
+let wikiPageControllers={};
+const currentWikiPage=()=>wikiPageControllers[T.game()];
 const sheetTrail=new SheetHistory(), routeTrail=[];
 let restoringSheet=false,pendingRoute=null;
 function sheetSnapshot(){
@@ -901,7 +904,7 @@ const fileSafe = (s) => String(s).replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g,
    Routing
    ========================================================= */
 
-const VIEWS = ["community", "home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared", "tdeck", "rules"];
+const VIEWS = ["community", "home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared", "tdeck", "rules", "wiki"];
 
 function parseHash() {
   const segments = routeSegments(location.hash);
@@ -977,6 +980,7 @@ function currentRulesOrigin() {
 }
 function dismissRulesGuide() { closeRulesAsk(); dismissRuleHint(); rulesGuideOrigin = null; }
 function render() {
+  for(const [game,controller] of Object.entries(wikiPageControllers))if(S.ui.view!=="wiki"||T.game()!==game)controller.cancel();
   if(accountLocked){
     const content=$('#content'),failed=cloudInfo().status.state==='error';if(content)content.innerHTML=failed?'<section class="empty account-opening" role="alert"><h2>Your saved data is protected</h2><p>'+esc(cloudInfo().status.msg)+'</p><button class="btn" onclick="location.reload()">Retry opening account</button></section>':'<section class="empty account-opening" role="status"><h2>Opening your account…</h2><p>Your cards and profile will appear here.</p></section>';
     const avatar=document.querySelector('.topbar [data-act="menu"]');if(avatar)avatar.innerHTML=profileAvatar(null,{});
@@ -1004,8 +1008,9 @@ function render() {
   setTimeout(() => navigationCurrent(screen) && scanCtx.afterRender?.(), 0);
   warmEmblems();
   setTimeout(updateAmbient, 0);
-  for (const b of $$("[data-nav]")) b.classList.toggle("on", b.dataset.nav === (ui.view === "deck" ? "decks" : ui.view === "set" || ui.view === "sets" ? "search" : ui.view));
+  for (const b of $$("[data-nav]")) b.classList.toggle("on", b.dataset.nav === (ui.view === "deck" ? "decks" : ui.view === "set" || ui.view === "sets" || ui.view === "wiki" ? "search" : ui.view));
   document.querySelector(".header-sets")?.classList.toggle("on",["set","sets"].includes(ui.view));
+  const wikiLaunch=document.querySelector(".header-wiki");if(wikiLaunch){wikiLaunch.hidden=false;wikiLaunch.classList.toggle("on",ui.view==="wiki");}
   document.body.dataset.view = ui.view;
   const g = T.game();
   const content=$('#content'),previousDisclosureKey=content?.dataset?.disclosureKey;
@@ -1025,7 +1030,7 @@ function render() {
   $(".brand-home")?.setAttribute?.("aria-current",ui.view==="home"?"page":"false");
   content?.setAttribute?.("aria-labelledby", `game-tab-${g}`);
   const views = {
-    community:()=>community.page(), home: V.home, search: V.search, collection: V.collection, decks: V.decks,
+    community:()=>community.page(), home: V.home, search: V.search, wiki:()=>V.wikiPage(currentWikiPage()?.state), collection: V.collection, decks: V.decks,
     deck: V.deckPage, scan: () => scanView("mtg", "Magic"), settings: V.settings, sets: V.setsPage, set: V.setPage, shared: V.sharedPage,
   };
   // Yu-Gi-Oh! and Pokémon share their own screens; Magic keeps its full set.
@@ -1054,6 +1059,7 @@ function render() {
   content.dataset.disclosureKey=disclosureKey;
   restoreSearchFocus(content,searchFocus);
   placeGlobalSearch(g,ui.view);
+  if(ui.view==="wiki")currentWikiPage()?.mount();
   const guideKey={collection:"save",decks:"build",scan:"scan"}[ui.view];
   if(guideKey)content.insertAdjacentHTML?.("afterbegin",guidePrompt(guideKey));
   if(introPending)setTimeout(safeIntro,100);
@@ -1403,6 +1409,7 @@ for(const name of ['click','input','change'])document.addEventListener(name,e=>{
    ========================================================= */
 
 const A = {}; // click actions
+wikiPageControllers=Object.fromEntries(['mtg','ygo','ptcg'].map(game=>[game,createMtgWikiPageController({game,active:()=>S.ui.view==='wiki'&&T.game()===game,root:()=>$('#content'),scope:()=>{const captured=mutationScope();return()=>mutationCurrent(captured);}})]));
 const deckPipeline=createDeckPipeline({S,T,api,resolve,cacheCard,meta,priceOf,inv,tcgCtx});
 const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game:T.game,
  identity:()=>{const account=accountGeneration;return ()=>!accountLocked&&account===accountGeneration;},
@@ -3625,6 +3632,13 @@ A.ruleCards = async button => {
  }
 };
 
+A.wikiOpen=async(t={dataset:{}})=>{const game=t.dataset?.game||T.game(),topic=t.dataset?.topic||t.dataset?.wikiTopic||'',account=accountGeneration;if(!GAMES[game])return;if($('#sheet').open)closeSheet();closeAsk();if(T.game()!==game)await switchGame(game);if(account!==accountGeneration||accountLocked||T.game()!==game)return;currentWikiPage().prepare(topic);await go('#wiki');};
+A.mtgWikiOpen=A.wikiOpen;
+A.mtgWikiPick=t=>currentWikiPage().lookup(t.dataset.wikiTopic);
+A.mtgWikiRetry=()=>currentWikiPage().retry();
+A.mtgWikiDailyRetry=()=>currentWikiPage().daily(true);
+A.mtgWikiCancel=()=>currentWikiPage().cancelLookup();
+A.mtgWikiAsk=()=>{const text=$('#wikiQ')?.value.trim()||currentWikiPage().state.topic||'Explain this card game topic.';A.askOpen();const input=document.querySelector('.ask-dialog .ask-input');if(input){input.value=text;input.focus();}};
 A.cardTab = async (t) => {
   const commit=scopedCommit();
   const ctx = S.ui.sheetCtx;

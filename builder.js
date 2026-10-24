@@ -6,7 +6,7 @@ import { functionalIn } from "./deck-safety.js";
 // command-zone formats). Scores are transparent rules of thumb, not predictions.
 import { effectiveCopyLimit, cardKey, rulesText, typeText, isLand, isBasic, roles, aggregateCards, sumQty } from "./core.js";
 import { engineRoles } from "./insights.js";
-import { commanderTheme, creatureTypes, CREATURE_THEMES, tribalSupport, themeSupport } from "./planner.js";
+import { commanderTheme, creatureTypes, CREATURE_THEMES, tribalSupport, themeSupport, readCreatureTypeRestrictions, fitsTypeRestrictions } from "./planner.js";
 import { formatOf, canLead, legalityIn } from "./formats.js";
 import { splitBasics } from "./extras.js";
 import { goalCardPreference } from "./ai-deck-goal.js";
@@ -14,6 +14,9 @@ import { mtgResourceProfile, mtgEffectProfile, mtgSelfConflicts } from "./mtg-ef
 import { atLeastOne } from './deckaudit.js';
 import { requestedKeywords, tribePattern } from './mtg-vocabulary.js';
 import { mtgAbilityEvidence } from './mtg-effects.js';
+import { inspectTribalStrategy } from './deck-strategy-plan.js';
+import { inspectMechanicPlan, requestedMechanics, mechanicCardMatches, mechanicDiscoveryQueries } from './deck-mechanic-plan.js';
+import { readMtgConceptMentions } from './mtg-wiki-knowledge.js';
 
 const BASIC = { W: "Plains", U: "Island", B: "Swamp", R: "Mountain", G: "Forest", C: "Wastes" };
 const THEMES = ["Tokens", "Graveyard", "Spells", "Dragons", "Artifacts", "Lifegain", "Lifelink", "Landfall", "Counters"];
@@ -31,16 +34,18 @@ const THEME_TERMS = {Tokens:'(o:"creature token" or o:populate)',Graveyard:'o:gr
 const STYLE_ROLES = {token:"Tokens",graveyard:"Graveyard",reanimator:"Graveyard",spells:"Spells",spellslinger:"Spells",artifact:"Artifacts",lifegain:"Lifegain",lifelink:"Lifelink",landfall:"Landfall",counter:"Counters",proliferate:"Counters"};
 export function requestedIntent(style = "") {
   const positive=String(style).replace(/\b(?:no|without|avoid|don't use|do not use)\s+[^,.;]*(?=[,.;]|$)/gi,' '),
+    concepts=readMtgConceptMentions(positive).filter(c=>c.id==='bloodlust'),mechanics=requestedMechanics(positive),
+    thematic=concepts.flatMap(c=>c.aliases).sort((a,b)=>b.length-a.length).reduce((s,alias)=>s.replace(new RegExp('\\b'+alias.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','gi'),' '),positive),
     abilities=requestedKeywords(positive).filter(k=>!['Lifelink','Landfall','Proliferate'].includes(k)),
-    matchedTribes=CREATURE_THEMES.filter(t=>new RegExp('\\b'+tribePattern(t)+'\\b','i').test(positive)),
-    stripped=[...abilities,...matchedTribes].reduce((s,k)=>s.replace(new RegExp('\\b'+(matchedTribes.includes(k)?tribePattern(k):k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))+'\\b','gi'),' '),positive),
+    matchedTribes=CREATURE_THEMES.filter(t=>new RegExp('\\b'+tribePattern(t)+'\\b','i').test(thematic)),
+    stripped=[...abilities,...matchedTribes].reduce((s,k)=>s.replace(new RegExp('\\b'+(matchedTribes.includes(k)?tribePattern(k):k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))+'\\b','gi'),' '),thematic),
     words = stripped.toLowerCase().replace(/life[- ]gain/g,'lifegain').replace(/\+1\/\+1/g,"counter").match(/[\p{L}\p{N}]+/gu) || [],
-    noise = new Set("a an the and or with for of mono white blue black red green colorless deck decks good budget tribal kindred commander build around focused focus theme themed strongest best optimized optimal strong powerful competitive fun casual silly janky jank chaos chaotic weak bad easy easier to play simple simpler beginner friendly prefer preferably".split(" ")),
+    noise = new Set("a an the and or with for of in mono white blue black red green colorless deck decks good budget tribal kindred commander build around focused focus theme themed strongest best optimized optimal strong powerful competitive fun casual silly janky jank chaos chaotic weak bad easy easier to play simple simpler beginner friendly prefer preferably only strictly creature creatures card cards infinite unlimited unbounded mana loop loops combo combos".split(" ")),
     terms = [...new Set(words.filter(w => !noise.has(w)).map(w => ({elves:"elf",dwarves:"dwarf",spells:"spells"})[w] || (w.endsWith("s")?w.slice(0,-1):w)))].slice(0,6),
     tribes = matchedTribes,
     roles = [...new Set(terms.map(w => STYLE_ROLES[w]).filter(Boolean))],
     other = terms.filter(w => !STYLE_ROLES[w] && !tribes.some(t => t.toLowerCase() === w));
-  return {style:String(style).trim(),tribes,roles,abilities,other};
+  return {style:String(style).trim(),tribes,roles,abilities,mechanics,other};
 }
 const tribeQuery = t => {const v=/^[a-z]+$/i.test(t)?t.toLowerCase():`"${t.toLowerCase()}"`;return `(t:${v} or o:${v})`;};
 const roleQuery = roles => {const terms=[...new Set(roles.map(r=>THEME_TERMS[r]).filter(Boolean))];return terms.length===1?terms[0]:terms.length?'('+terms.join(' or ')+')':'';};
@@ -52,7 +57,7 @@ export function themeQueries(seed, style = "") {
     other = requested.other.length?'('+requested.other.map(w=>`t:"${w}" or o:"${w}"`).join(' or ')+')':'';
   // Separate requests keep a popular generic support pool from crowding actual
   // payoff subjects out of the provider's first page. No subtype-slot truncation.
-  return [...new Set([...requested.tribes.map(tribeQuery),...requested.abilities.map(k=>`keyword:"${k.toLowerCase()}"`),explicit,other,...tribes.map(tribeQuery),support].filter(Boolean))];
+  return [...new Set([...mechanicDiscoveryQueries(requested.mechanics,{limit:1}),...requested.tribes.map(tribeQuery),...requested.abilities.map(k=>`keyword:"${k.toLowerCase()}"`),explicit,other,...tribes.map(tribeQuery),support].filter(Boolean))];
 }
 export function themeQuery(seed, style = "") {
   const queries = themeQueries(seed,style);
@@ -63,13 +68,13 @@ function seedIntent(seeds, style = "") {
   return {tokenKinds:[...new Set(themes.flatMap(t=>t.tokenKinds))],tags:[...new Set([...requested.roles,...themes.flatMap(t=>t.roles.filter(r=>THEMES.includes(r)))])],subs:[...new Set([...requested.tribes,...themes.flatMap((t,i)=>t.tribes.length?t.tribes:t.roles.some(r=>THEMES.includes(r))?[]:creatureTypes(seeds[i]))])],requested};
 }
 function styleFit(c, requested) {
-  return requested.tribes.some(t=>tribalSupport(c,t)) || requested.abilities.some(k=>mtgAbilityEvidence(c,k).length) || themeSupport(c,{roles:requested.roles}).length > 0 || requested.other.some(w=>new RegExp('\\b'+w+'s?\\b','i').test(typeText(c)+' '+rulesText(c)));
+  return requested.tribes.some(t=>tribalSupport(c,t)) || requested.abilities.some(k=>mtgAbilityEvidence(c,k).length) || mechanicCardMatches(c,requested.mechanics) || themeSupport(c,{roles:requested.roles}).length > 0 || requested.other.some(w=>new RegExp('\\b'+w+'s?\\b','i').test(typeText(c)+' '+rulesText(c)));
 }
 
 // Minimum evidence checks, not a universal tribal quota or a power rating.
 // Access counts physical cards in the library; commanders are accessible only
 // from their zone and token output is never counted as cards drawn.
-export function inspectMtgTheme(rows,{style='',commander=''}={}) {
+export function inspectMtgTheme(rows,{style='',commander='',goal='strongest'}={}) {
   const main=rows.filter(r=>!['side','extra'].includes(r.zone)&&r.card&&r.qty>0),
     lead=main.find(r=>cardKey(r.name||r.card.name)===cardKey(commander))?.card,
     library=main.filter(r=>cardKey(r.name||r.card.name)!==cardKey(commander)),
@@ -96,8 +101,15 @@ export function inspectMtgTheme(rows,{style='',commander=''}={}) {
   }
   const unknown=requested.other;
   if(unknown.length)notes.push('Theme terms requiring review: '+unknown.join(', ')+'. Matching text does not verify a franchise or strategic plan.');
-  const status=issues.length?'insufficient':unknown.length?'unverified':groups.length?'supported':'not-requested';
-  return {status,groups,issues,notes,unverifiedTerms:unknown,method:'Two supporting library copies are a minimum sanity check, not proof of an effective strategy. Access excludes mulligans, tutors, casting costs and game simulation.'};
+  const strategy=inspectTribalStrategy(rows,{tribes,commander,goal}),mechanics=inspectMechanicPlan(rows,{abilities:[...new Set([...requested.abilities,...requested.mechanics])],commander,goal});
+  let status=issues.length?'insufficient':unknown.length?'unverified':groups.length?'supported':'not-requested';
+  // Keep complete drafts reviewable, but two incidental tribal cards cannot
+  // acquire a verified-theme claim from the old minimum sanity check.
+  if(status==='supported'&&requested.tribes.length&&strategy.status!=='supported')status=strategy.status==='unverified'?'unverified':'partial';
+  if(requested.mechanics.length&&!issues.length&&!unknown.length){if(status==='not-requested')status=mechanics.status;else if(mechanics.status!=='supported')status=mechanics.status==='unverified'?'unverified':'partial';}
+  if(requested.tribes.length&&strategy.status!=='supported')notes.push(...strategy.issues,...strategy.notes);
+  if(requested.mechanics.length)notes.push(...mechanics.issues,...mechanics.notes);
+  return {status,groups,issues,notes,strategy,mechanics,unverifiedTerms:unknown,method:'Two supporting library copies are only a minimum sanity check. Requested tribal and mapped mechanic plans also report their prerequisites, conditional connections and library access; partial coverage remains a reviewable draft, not verified strategy or competitive strength.'};
 }
 
 // Candidate heuristics, not optimization of the complete Power analysis.
@@ -137,16 +149,18 @@ export function scoreCard(c, seedTags, seedSubs, { free = 0, size = 60, tokenKin
  *       available(name) → free copies you own, price(card) → USD or null,
  *       budget (USD for cards you must buy), colors (optional override)
  */
-export function buildDeck({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, easy = false, preferred = () => 0, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [] }) {
+export function buildDeck({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, easy = false, preferred = () => 0, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [], creatureTypesOnly, excludedSubtypes }) {
   const f = formatOf(format);
   if (f.id === "limited") throw Error("Limited decks come from the cards you open — build those by hand.");
   if ((!Number.isFinite(budget) && budget!==Infinity) || budget < 0) throw Error("Enter a budget of $0 or more.");
   const size = f.size,
     lead = f.commander ? commander || seeds.find((s) => canLead(s, f)) : null;
   if (f.commander && !lead) throw Error(`${f.name} decks need a card that can lead them (${f.commander === "planeswalker" ? "a planeswalker" : "a legendary creature"}).`);
+  const parsedTypes=readCreatureTypeRestrictions(requestedStyle),restrictions={creatureTypesOnly:[...new Set(creatureTypesOnly===undefined?parsedTypes.creatureTypesOnly:creatureTypesOnly)],excludedSubtypes:[...new Set(excludedSubtypes===undefined?parsedTypes.excludedSubtypes:excludedSubtypes)]};
+  if(lead&&!fitsTypeRestrictions(lead,restrictions))throw Error(`${lead.name} does not satisfy the requested creature-type restriction. Choose another commander or revise that restriction.`);
   const excludedKeys=new Set(excludedCards.map(cardKey)),
     legalStatus = (c) => legalityIn(c, f),
-    isLegal = (c) => !excludedKeys.has(cardKey(c?.name)) && functionalIn(c,f) && (!f.legality || ["legal", "restricted"].includes(legalStatus(c))),
+    isLegal = (c) => !excludedKeys.has(cardKey(c?.name)) && fitsTypeRestrictions(c,restrictions) && functionalIn(c,f) && (!f.legality || ["legal", "restricted"].includes(legalStatus(c))),
     maxCopies = (c) => effectiveCopyLimit(c,f);
   // Colors: the leader's identity, else the seeds', else the base list's.
   let deckColors = colors || (lead ? ident(lead) : [...new Set([...seeds, ...base.map((b) => catalog[cardKey(b.name)])].flatMap(ident))]);
@@ -182,6 +196,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   // Keep everything already in the list.
   for (const b of aggregateCards(base)) {
     const c = catalog[cardKey(b.name)];
+    if(!fitsTypeRestrictions(c,restrictions))throw Error(`${b.name} does not satisfy the requested creature-type restriction or its card types are unverified.`);
     if(c && !isLegal(c))throw Error(`${b.name} is illegal or nonfunctional in ${f.name}. Replace it before completing the list.`);
     if(c && b.qty>maxCopies(c))throw Error(`${b.name} exceeds this format’s copy limit. Review your list first.`);
     put(c || { name: b.name }, b.qty, "Already in your list");
@@ -311,7 +326,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     open = Math.max(0, size - total);
   if(total>size)throw Error("Generated deck exceeds its target; no version was applied.");
   if(open && !completionFirst){
-    const economical=buildDeck({format,seeds,base,catalog,available,price,budget,colors,commander,completionFirst:true,easy,preferred,requestedStyle,goal,suggestedCards,excludedCards});
+    const economical=buildDeck({format,seeds,base,catalog,available,price,budget,colors,commander,completionFirst:true,easy,preferred,requestedStyle,goal,suggestedCards,excludedCards,...restrictions});
     const seedKept=seeds.every(seed=>isLand(seed)||economical.cards.some(r=>cardKey(r.name)===cardKey(seed.name)));
     if(seedKept && economical.open<open)return economical;
   }
@@ -320,7 +335,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   if (unknown) warnings.push(`${unknown} card${unknown > 1 ? "s have" : " has"} no current price.`);
   if(unknown)warnings.push("Purchase cost is unverified; unknown quotes are not free cards.");
   const owned=cards.reduce((a,r)=>a+Math.min(r.qty,stock(r.name)),0),knownSubtotal=Math.round(spent*1e6)/1e6,priceVerified=unknown===0;
-  return {format:f.name,requestedStyle,goal,colors:deckColors,commander:lead?.name||"",cards,cost:priceVerified?knownSubtotal:null,knownSubtotal,unknown,unpricedCopies:unknown,priceVerified,priceBasis:"purchase",unpricedPurchaseCopies:unknown,withinBudget:priceVerified&&knownSubtotal<=budget+1e-6,budget,total,size,open,owned,warnings,lands:landsIn()};
+  return {format:f.name,requestedStyle,goal,...restrictions,colors:deckColors,commander:lead?.name||"",cards,cost:priceVerified?knownSubtotal:null,knownSubtotal,unknown,unpricedCopies:unknown,priceVerified,priceBasis:"purchase",unpricedPurchaseCopies:unknown,withinBudget:priceVerified&&knownSubtotal<=budget+1e-6,budget,total,size,open,owned,warnings,lands:landsIn()};
 }
 
 

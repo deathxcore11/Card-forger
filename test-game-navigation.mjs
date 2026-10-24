@@ -7,6 +7,9 @@ import {mergeValueHistory} from './value-history.js';
 import {recordHomeDeckWork} from './home-deck-activity.js';
 import {makeAskTools} from './ai-tools.js';
 import {GAME_ROUTES,routeSegments,normalizeRoute,gameSwitchRoute,historyEntry,createNavigationQueue} from './game-navigation.js';
+assert.equal(normalizeRoute('#wiki'),'#wiki');
+assert.equal(gameSwitchRoute({hash:'#wiki'},'ygo').hash,'#wiki');
+assert.equal(gameSwitchRoute({hash:'#wiki'},'ptcg').hash,'#wiki');
 const rows=[['#home','#home'],['#search','#search'],['#collection','#collection/cards'],['#collection/cards','#collection/cards'],['#collection/binders','#collection/binders'],['#collection/value','#collection/value'],['#decks','#decks/mine'],['#decks/mine','#decks/mine'],['#decks/ideas','#decks/ideas'],['#decks/inspiration','#decks/inspiration'],['#deck/source-only/cards','#decks/mine'],['#tdeck/source-only/versions','#decks/mine'],['#sets','#sets'],['#set/source-only-release','#sets'],['#scan','#scan'],['#rules','#rules'],['#settings','#settings'],['#shared/private-token','#decks/inspiration']];
 for(const game of GAME_ROUTES)for(const target of GAME_ROUTES.filter(g=>g!==game))for(const [hash,expected] of rows){
  const mapped=gameSwitchRoute({game,hash},target);assert.equal(mapped.game,target);assert.equal(mapped.hash,expected);assert(!mapped.hash.includes('source-only'));assert(!mapped.hash.includes('private-token'));

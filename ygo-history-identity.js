@@ -1,4 +1,5 @@
 import {ygoSetId,resolveYgoSet} from './ygo.js';
+import {rarityKey} from './ygo-prices.js';
 
 // Source contracts: https://ygoprodeck.com/api-guide/ and
 // https://tickermint.cards/developers (per-printing USD histories). The pinned
@@ -15,7 +16,12 @@ const subtypeEditions=new Map([['1st edition','1st-edition'],['unlimited','unlim
 const rarityNames=['Common','Short Print','Rare','Super Rare','Ultra Rare','Secret Rare','Ultimate Rare','Ghost Rare','Gold Rare','Gold Secret Rare','Platinum Rare','Platinum Secret Rare','Prismatic Secret Rare','Starlight Rare',"Collector's Rare",'Quarter Century Secret Rare','Premium Gold Rare','10000 Secret Rare','Normal Parallel Rare','Super Parallel Rare','Ultra Parallel Rare','Secret Parallel Rare','Duel Terminal Normal Parallel Rare','Duel Terminal Rare Parallel Rare','Duel Terminal Super Parallel Rare','Duel Terminal Ultra Parallel Rare','Duel Terminal Secret Parallel Rare','Mosaic Rare','Shatterfoil Rare','Starfoil Rare','Holographic Rare','Extra Secret Rare'];
 const rarityNamesByKey=new Map(rarityNames.map(name=>[name.toLowerCase(),name.toLowerCase()]));
 for(const [abbr,name] of Object.entries({ScR:'Secret Rare',StR:'Starlight Rare',UR:'Ultra Rare',SR:'Super Rare',R:'Rare',C:'Common',QCR:'Quarter Century Secret Rare'}))rarityNamesByKey.set(abbr.toLowerCase(),name.toLowerCase());
-export const exactYgoRarityKey=value=>typeof value==='string'?rarityNamesByKey.get(value.trim().toLowerCase().replace(/\s+/g,' '))||'':'';
+export const exactYgoRarityKey=(value,printing={})=>{
+ const scoped=rarityKey(value,printing);
+ if(scoped==='prismaticcollectorsrare')return "prismatic collector's rare";
+ if(scoped==='prismaticultimaterare')return 'prismatic ultimate rare';
+ return typeof value==='string'?rarityNamesByKey.get(value.trim().toLowerCase().replace(/\s+/g,' '))||'':'';
+};
 const object=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
 function providerObject(value){
  if(!object(value)||Object.hasOwn(value,'error')||value.success===false||Object.hasOwn(value,'errors')&&(!Array.isArray(value.errors)||value.errors.length))throw Error('History provider returned an invalid or failed response');
@@ -69,7 +75,7 @@ export function parseYgoHistoryRelease(id){
 }
 export function canRequestExactYgoHistory(q){
  const release=parseYgoHistoryRelease(q?.releaseId);
- return !!(q?.game==='ygo'&&q.selectionVerified!==false&&typeof q.cardId==='string'&&/^\d{1,12}$/.test(q.cardId)&&q.finish==='reference'&&release&&/^[-A-Za-z0-9]{1,60}$/.test(q.edition||'')&&(q.edition===release.code||q.edition.startsWith(release.code+'-'))&&typeof q.rarity==='string'&&q.rarity.trim()===q.rarity&&!!exactYgoRarityKey(q.rarity)&&q.rarity.length<=100&&!/[\u0000-\u001f\u007f]/.test(q.rarity)&&editions.has(q.selectedEdition)&&q.currency==='USD');
+ return !!(q?.game==='ygo'&&q.selectionVerified!==false&&typeof q.cardId==='string'&&/^\d{1,12}$/.test(q.cardId)&&q.finish==='reference'&&release&&/^[-A-Za-z0-9]{1,60}$/.test(q.edition||'')&&(q.edition===release.code||q.edition.startsWith(release.code+'-'))&&typeof q.rarity==='string'&&q.rarity.trim()===q.rarity&&!!exactYgoRarityKey(q.rarity,{...release,code:q.edition})&&q.rarity.length<=100&&!/[\u0000-\u001f\u007f]/.test(q.rarity)&&editions.has(q.selectedEdition)&&q.currency==='USD');
 }
 export function exactYgoHistoryIdentity(q){
  return {historySchema:YGO_HISTORY_SCHEMA,game:q.game,cardId:q.cardId,finish:q.finish,releaseId:q.releaseId,edition:q.edition,rarity:q.rarity,selectedEdition:q.selectedEdition,currency:q.currency};
@@ -88,6 +94,8 @@ export function readExactYgoHistoryRequest(url){
 export function exactYgoHistoryCacheKey(url,q){
  const key=new URL(url.origin+url.pathname);
  key.search=new URLSearchParams({...q,id:q.cardId});
+ const release=parseYgoHistoryRelease(q.releaseId),rarity=exactYgoRarityKey(q.rarity,{name:release?.name,code:q.edition});
+ if(rarity==="prismatic collector's rare"||rarity==='prismatic ultimate rare')key.searchParams.set('printingJoin','ra01-v1');
  return new Request(key.href);
 }
 // The public feeds expose TCGplayer subtype labels. Only these explicit labels
@@ -116,7 +124,8 @@ export async function resolveExactYgoHistoryPrinting(card,q,get){
  // the same provider group name, the date cannot be proved and must stay unknown.
  const names=new Set(catalogue.filter(s=>groupName(s.set_name)===groupName(release.name)).map(ygoSetId).filter(Boolean));
  if(names.size!==1)throw unsupported('No unambiguous provider release name.');
- const versions=(card.card_sets||[]).filter(s=>typeof s.set_name==='string'&&text(s.set_name)===release.name&&s.set_code===q.edition&&!!exactYgoRarityKey(s.set_rarity)&&exactYgoRarityKey(s.set_rarity)===exactYgoRarityKey(q.rarity));
+ const printing={name:release.name,code:q.edition},requestedRarity=exactYgoRarityKey(q.rarity,printing);
+ const versions=(card.card_sets||[]).filter(s=>typeof s.set_name==='string'&&text(s.set_name)===release.name&&s.set_code===q.edition&&!!exactYgoRarityKey(s.set_rarity,printing)&&exactYgoRarityKey(s.set_rarity,printing)===requestedRarity);
  if(versions.length!==1)throw unsupported('No exact printing and rarity in this release.');
  return {set:versions[0],release};
 }
@@ -126,7 +135,7 @@ export function exactYgoHistoryGroup(groups,release){
  if(hits.length!==1)return null;providerId(hits[0].groupId);return hits[0];
 }
 export function exactYgoHistoryProduct(products,q,groupId){
- const rarity=exactYgoRarityKey(q.rarity);if(!rarity)return null;
+ const release=parseYgoHistoryRelease(q.releaseId),printing={name:release?.name,code:q.edition},rarity=exactYgoRarityKey(q.rarity,printing);if(!rarity)return null;
  const collisionKey=value=>typeof value==='string'?value.toLowerCase().replace(/[^a-z0-9]/g,''):'';
  const candidates=[];let collision=false;
  for(const product of products||[]){
@@ -135,7 +144,7 @@ export function exactYgoHistoryProduct(products,q,groupId){
   if(!near)continue;
   // Duplicate/conflicting identity fields cannot be resolved by last-write wins.
   if(numbers.length!==1||rarities.length!==1){collision=true;continue;}
-  const code=numbers[0].value,productRarity=exactYgoRarityKey(rarities[0].value);
+  const code=numbers[0].value,productRarity=exactYgoRarityKey(rarities[0].value,printing);
   if(!productRarity){collision=true;continue;}
   if(productRarity!==rarity)continue;
   // Punctuation removal is only a collision veto, never an equivalence rule.

@@ -5,11 +5,11 @@ import {referenceQuote} from './price-reference.js';
 const norm=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/[^a-z0-9]/g,'');
 const aliases={'2025 Mega-Pack Tin':'2025 Mega-Pack'};
 const pending=new Map(),sourcePending=new Map();
-const productNameMatches=(product,card,rarity)=>{
+const productNameMatches=(product,card,rarity,printing)=>{
  if(norm(product)===norm(card))return true;
  const m=String(product||'').match(/^(.*?)\s*\(([^()]+)\)$/);if(!m||norm(m[1])!==norm(card))return false;
  const suffix={CR:"Collector's Rare",QCR:'Quarter Century Secret Rare',UR:'Ultra Rare',SR:'Super Rare',StR:'Starlight Rare'}[m[2]]||m[2];
- return rarityKey(suffix)===rarityKey(rarity);
+ return !!rarityKey(suffix,printing)&&rarityKey(suffix,printing)===rarityKey(rarity,printing);
 };
 export async function ygoSetPriceRoute(url,ctx,fetchImpl=fetch){
  const name=url.searchParams.get('name')||'',code=url.searchParams.get('code')||'';
@@ -56,7 +56,7 @@ export function applyYgoSetPrices(card,release,body){
  const sets=(card.sets||[]).map(p=>{
   if(p.name!==release.name||p.releasePriceAmbiguous)return p;
   const known=ygoRarity(p.rarity);
-  const matches=body.products.filter(x=>x.code===p.code&&ygoRarity(x.rarity)&&(!known||rarityKey(x.rarity)===rarityKey(known))&&productNameMatches(x.name,card.name,known||x.rarity));
+  const matches=body.products.filter(x=>x.code===p.code&&rarityKey(x.rarity,p)&&(!known||rarityKey(x.rarity,p)===rarityKey(known,p))&&productNameMatches(x.name,card.name,known||x.rarity,p));
   if(matches.length!==1)return p;const row=matches[0];
   if(!Number.isSafeInteger(row.productId)||row.productId<1||!Array.isArray(row.quotes))return p;
   const quotes=row.quotes.filter(q=>['1st Edition','Unlimited','Limited'].includes(q.edition)&&referenceQuote(q));

@@ -63,3 +63,5 @@ android-app
 
 # Fixed public Pokémon tournament proxy runs only in the Worker.
 pokemon-meta-route.js
+
+mtg-wiki-reference.js

@@ -1,0 +1,35 @@
+{
+  "scope": "Small rules/type snapshots for deterministic package-evidence tests; no prices, competitive claims or complete-deck quality labels.",
+  "checkedOn": "2026-10-23",
+  "sources": {
+    "Krenko, Mob Boss": "https://magic.wizards.com/en/news/feature/ravnica-remastered-release-notes",
+    "Goblin Warchief": "https://magic.wizards.com/en/news/feature/dominaria-release-notes",
+    "Cordial Vampire": "https://magic.wizards.com/en/news/feature/modern-horizons-release-notes-2019-05-31"
+  },
+  "cards": [
+    {
+      "name": "Krenko, Mob Boss",
+      "type_line": "Legendary Creature — Goblin Warrior",
+      "oracle_text": "{T}: Create X 1/1 red Goblin creature tokens, where X is the number of Goblins you control.",
+      "mana_cost": "{2}{R}{R}",
+      "cmc": 4,
+      "color_identity": ["R"]
+    },
+    {
+      "name": "Goblin Warchief",
+      "type_line": "Creature — Goblin Warrior",
+      "oracle_text": "Goblin spells you cast cost {1} less to cast.\nGoblins you control have haste.",
+      "mana_cost": "{1}{R}{R}",
+      "cmc": 3,
+      "color_identity": ["R"]
+    },
+    {
+      "name": "Cordial Vampire",
+      "type_line": "Creature — Vampire",
+      "oracle_text": "Whenever Cordial Vampire or another creature dies, put a +1/+1 counter on each Vampire you control.",
+      "mana_cost": "{B}{B}",
+      "cmc": 2,
+      "color_identity": ["B"]
+    }
+  ]
+}

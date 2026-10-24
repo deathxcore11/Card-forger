@@ -17,7 +17,7 @@ assert.equal(r.status, 200); assert.equal(body.calls[0].name, 'meta_decks');
 assert.equal(sent.tool_choice, 'required'); assert.equal(sent.store, false);
 assert.deepEqual(sent.tools.map(t => t.name).sort(), TOOLS.map(t => t.name).sort());
 assert.ok(sent.tools.every(t => !/web|http|url|browse/i.test(t.name)), 'no web tools');
-assert.match(sent.instructions, /no internet/i); assert.match(sent.instructions, /Never invent cards/);
+assert.match(sent.instructions, /no general internet/i); assert.match(sent.instructions, /Never invent cards/);
 assert.ok(!JSON.stringify(body).includes('private-test-key'));
 // Round 2: the app's result goes back; the model answers. Unknown show kinds are dropped.
 r = await aiAskRoute(req({ game: 'mtg', items: [{ type: 'message', role: 'user', content: 'Most competitive Modern deck?' }, call, { type: 'function_call_output', call_id: 'c1', output: '{"decks":[]}' }] }), env, { fetcher: fetcher([fin]) });

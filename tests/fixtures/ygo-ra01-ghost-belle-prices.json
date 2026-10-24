@@ -1,0 +1,42 @@
+{
+  "provenance": {
+    "retrievalDate": "2026-10-24",
+    "scope": "Public provider identity fields and quote rows for one real card. Fields were selected; prices are captured references, not live seller offers or condition-specific values.",
+    "cardUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Ghost%20Belle%20%26%20Haunted%20Mansion",
+    "groupsUrl": "https://tcgcsv.com/tcgplayer/2/groups",
+    "productsUrl": "https://tcgcsv.com/tcgplayer/2/23233/products",
+    "pricesUrl": "https://tcgcsv.com/tcgplayer/2/23233/prices"
+  },
+  "card": {
+    "id": 73642296,
+    "name": "Ghost Belle & Haunted Mansion",
+    "card_sets": [
+      {"set_name":"25th Anniversary Rarity Collection","set_code":"RA01-EN011","set_rarity":"Collector's Rare","set_rarity_code":"(CR)","set_price":"0"},
+      {"set_name":"25th Anniversary Rarity Collection","set_code":"RA01-EN011","set_rarity":"Platinum Secret Rare","set_rarity_code":"(PS)","set_price":"0"},
+      {"set_name":"25th Anniversary Rarity Collection","set_code":"RA01-EN011","set_rarity":"Quarter Century Secret Rare","set_rarity_code":"","set_price":"0"},
+      {"set_name":"25th Anniversary Rarity Collection","set_code":"RA01-EN011","set_rarity":"Secret Rare","set_rarity_code":"(ScR)","set_price":"0"},
+      {"set_name":"25th Anniversary Rarity Collection","set_code":"RA01-EN011","set_rarity":"Super Rare","set_rarity_code":"(SR)","set_price":"0"},
+      {"set_name":"25th Anniversary Rarity Collection","set_code":"RA01-EN011","set_rarity":"Ultimate Rare","set_rarity_code":"(UtR)","set_price":"0"},
+      {"set_name":"25th Anniversary Rarity Collection","set_code":"RA01-EN011","set_rarity":"Ultra Rare","set_rarity_code":"(UR)","set_price":"0"}
+    ]
+  },
+  "group": {"groupId":23233,"name":"25th Anniversary Rarity Collection","abbreviation":"RA01","categoryId":2,"publishedOn":"2023-11-03T00:00:00"},
+  "products": [
+    {"productId":524874,"name":"Ghost Belle & Haunted Mansion","categoryId":2,"groupId":23233,"extendedData":[{"name":"Number","value":"RA01-EN011"},{"name":"Rarity","value":"Super Rare"}]},
+    {"productId":524875,"name":"Ghost Belle & Haunted Mansion (UR)","categoryId":2,"groupId":23233,"extendedData":[{"name":"Number","value":"RA01-EN011"},{"name":"Rarity","value":"Ultra Rare"}]},
+    {"productId":524876,"name":"Ghost Belle & Haunted Mansion (Secret Rare)","categoryId":2,"groupId":23233,"extendedData":[{"name":"Number","value":"RA01-EN011"},{"name":"Rarity","value":"Secret Rare"}]},
+    {"productId":524878,"name":"Ghost Belle & Haunted Mansion (Platinum Secret Rare)","categoryId":2,"groupId":23233,"extendedData":[{"name":"Number","value":"RA01-EN011"},{"name":"Rarity","value":"Platinum Secret Rare"}]},
+    {"productId":524879,"name":"Ghost Belle & Haunted Mansion (Quarter Century Secret Rare)","categoryId":2,"groupId":23233,"extendedData":[{"name":"Number","value":"RA01-EN011"},{"name":"Rarity","value":"Quarter Century Secret Rare"}]},
+    {"productId":524881,"name":"Ghost Belle & Haunted Mansion (PUR)","categoryId":2,"groupId":23233,"extendedData":[{"name":"Number","value":"RA01-EN011"},{"name":"Rarity","value":"Prismatic Ultimate Rare"}]},
+    {"productId":524883,"name":"Ghost Belle & Haunted Mansion (PCR)","categoryId":2,"groupId":23233,"extendedData":[{"name":"Number","value":"RA01-EN011"},{"name":"Rarity","value":"Prismatic Collector's Rare"}]}
+  ],
+  "prices": [
+    {"productId":524874,"lowPrice":0.89,"midPrice":1.2,"highPrice":12.53,"marketPrice":0.99,"directLowPrice":0.9,"subTypeName":"1st Edition"},
+    {"productId":524875,"lowPrice":0.55,"midPrice":1,"highPrice":29.73,"marketPrice":0.93,"directLowPrice":1.29,"subTypeName":"1st Edition"},
+    {"productId":524876,"lowPrice":2,"midPrice":4,"highPrice":95.74,"marketPrice":2.4,"directLowPrice":3.02,"subTypeName":"1st Edition"},
+    {"productId":524878,"lowPrice":5.12,"midPrice":9.62,"highPrice":102.22,"marketPrice":5.27,"directLowPrice":null,"subTypeName":"1st Edition"},
+    {"productId":524879,"lowPrice":18.75,"midPrice":24.99,"highPrice":647.74,"marketPrice":23.97,"directLowPrice":null,"subTypeName":"1st Edition"},
+    {"productId":524881,"lowPrice":3.12,"midPrice":4.59,"highPrice":95.74,"marketPrice":3.76,"directLowPrice":null,"subTypeName":"1st Edition"},
+    {"productId":524883,"lowPrice":3.86,"midPrice":6.16,"highPrice":95.74,"marketPrice":5.08,"directLowPrice":null,"subTypeName":"1st Edition"}
+  ]
+}

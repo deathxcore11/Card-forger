@@ -12,6 +12,9 @@ const READ = new Set([
   '/api/meta/mtg/coverage', '/api/meta/ygo/decks', '/api/meta/ygo/top',
 ]);
 const AI = new Set(['/api/ai/matchup', '/api/ai/deck-review', '/api/ai/ask', '/api/ai/identify-card']);
+// Public topic lookups use JSON POST without account authority. Keep these
+// separate from model-invoking AI and the GET-only service inventory.
+const PUBLIC_REFERENCE_POST = new Set(['/api/reference/mtg-wiki', '/api/reference/wiki']);
 const imagePath = path => /^\/img\/(?:pack|back)\/(?:mtg|ptcg|ygo)\.jpg$/.test(path)
   || /^\/img\/mtg-set\/[a-z0-9]{2,8}\.jpg$/i.test(path)
   || /^\/img\/ygo\/(?:s\/|a\/)?\d{1,12}\.jpg$/.test(path)
@@ -46,11 +49,12 @@ export function resolveServiceURL(input) {
   const pokemon = pathname.match(/^\/img\/ptcg\/(s|l)\/([A-Za-z0-9.!?_-]{1,80})\.jpg$/);
   const canonicalPath = pokemon ? `/img/ptcg/${pokemon[1]}/${encodeURIComponent(pokemon[2])}.jpg` : pathname;
   if (url.pathname !== canonicalPath) fail('Noncanonical service path');
-  const image = imagePath(pathname), ai = AI.has(pathname);
-  if (!(image || ai || READ.has(pathname) || ['/api/lens', '/api/prices/watch'].includes(pathname))) fail('Unknown service route');
+  const image = imagePath(pathname), ai = AI.has(pathname), publicReference = PUBLIC_REFERENCE_POST.has(pathname);
+  if (!(image || ai || publicReference || READ.has(pathname) || ['/api/lens', '/api/prices/watch'].includes(pathname))) fail('Unknown service route');
+  if (publicReference && url.search) fail('Public reference topics belong in the JSON body');
   for (const key of url.searchParams.keys()) if (/^(?:access_token|refresh_token|authorization|apikey|api_key|token)$/i.test(key)) fail('Credentials in query are forbidden');
   return Object.freeze({ kind: 'service', url: SERVICE_ORIGIN + url.pathname + url.search,
-    path: pathname, image, ai,
+    path: pathname, image, ai, publicReference,
     methods: Object.freeze(image || READ.has(pathname) ? ['GET'] : ai ? ['GET', 'POST'] : ['POST']),
     authorizationAllowed: ai || pathname === '/api/prices/conditions' });
 }
@@ -71,6 +75,7 @@ export function planServiceRequest(input, init = {}) {
   // The backend must independently validate the token; this is not authorization.
   if (route.ai && method === 'POST' && !authorization) fail('Sign in before using AI');
   if (method === 'POST' && route.ai && !/^application\/json(?:;|$)/i.test(headers.get('content-type') || '')) fail('AI requests require JSON');
+  if (route.publicReference && !/^application\/json(?:\s*;|$)/i.test(headers.get('content-type') || '')) fail('Public reference requests require JSON');
   if (route.path === '/api/lens' && !/^image\/(?:jpeg|png|webp)$/.test(headers.get('content-type') || '')) fail('Lens requests require an image');
   let base = input instanceof Request ? input.clone() : undefined;
   // Build from a clone so the caller's Request/body remains usable; platform

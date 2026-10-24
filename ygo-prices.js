@@ -2,15 +2,31 @@ import {ygoRarity} from './ygo-identity.js';
 import {referenceQuote} from './price-reference.js';
 // Exact Yu-Gi-Oh! set code + rarity + edition pricing from the daily TCGCSV feed.
 const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-export const rarityKey=s=>norm(ygoRarity(s));
+export const YGO_PRICE_JOIN_SCHEMA=3;
+const ra01Printing=printing=>/^RA01-[A-Z0-9]+$/.test(printing?.code||'')&&norm(printing?.name)==='25thanniversaryraritycollection';
+export const needsYgoPriceJoinRefresh=card=>card?.game==='ygo'&&card.priceJoinSchema!==YGO_PRICE_JOIN_SCHEMA&&(card.sets||[]).some(p=>ra01Printing(p)&&['cr','collectorsrare','pcr','prismaticcollectorsrare','ultimaterare','pur','prismaticultimaterare'].includes(norm(p.rarity)));
+// YGOPRODeck calls RA01's two premium printings CR/Ultimate Rare while
+// TCGplayer calls them PCR/PUR. This is a release-scoped provider join, not a
+// global rarity alias or a change to saved printing/foil identities.
+export const rarityKey=(s,printing={})=>{
+ const value=norm(s),ra01=ra01Printing(printing);
+ if(ra01){
+  if(['cr','collectorsrare','pcr','prismaticcollectorsrare'].includes(value))return 'prismaticcollectorsrare';
+  if(['ultimaterare','pur','prismaticultimaterare'].includes(value))return 'prismaticultimaterare';
+ }
+ return norm(ygoRarity(s));
+};
 export function ygoProductMatches(set,products){
  return products.filter(p=>{
   const fields=Object.fromEntries((p.extendedData || []).map(x=>[norm(x.name),x.value]));
-  return !!rarityKey(set.rarity) && norm(fields.number || fields.cardnumber)===norm(set.code) && rarityKey(fields.rarity)===rarityKey(set.rarity);
+  return !!rarityKey(set.rarity,set) && norm(fields.number || fields.cardnumber)===norm(set.code) && rarityKey(fields.rarity,set)===rarityKey(set.rarity,set);
  });
 }
 export function applyYgoPrices(card,body){
  if(body?.cardId!==card.id)return false;let changed=false;
+ // Stamp a completed attempt, including an honest mapping miss, so a missing
+ // provider quote cannot turn the one-time migration into a refresh loop.
+ if(!body.partial&&body.joinComplete===true&&body.joinSchema===YGO_PRICE_JOIN_SCHEMA)card.priceJoinSchema=YGO_PRICE_JOIN_SCHEMA;
  for(const s of card.sets || []){
   const matches=(body.printings || []).filter(x=>!!rarityKey(s.rarity) && x.code===s.code && rarityKey(x.rarity)===rarityKey(s.rarity));
   if(matches.length!==1)continue;const q=matches[0];
@@ -30,7 +46,7 @@ export async function ygoPriceRoute(url,ctx,fetchImpl=fetch){
  // isn't cached and the app asks again).
  let ops=0,partial=false;const errors=[],LIMIT=46;
  const cache=globalThis.caches?.default,op=()=>{if(++ops>LIMIT){partial=true;throw Error('Request budget used');}};
- op();const k=new Request(url.href.replace(/[?&]more=\d+/,'')+'&schema=2'),cached=await cache?.match(k);if(cached)return cached;
+ op();const k=new Request(url.href.replace(/[?&]more=\d+/,'')+'&schema=3'),cached=await cache?.match(k);if(cached)return cached;
  const fetchJson=async u=>{op();const r=await fetchImpl(u,{headers:{Accept:'application/json','User-Agent':'CardStashy/3.60 (cached exact printing prices; github.com/deathxcore11/Card-forger)'},signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error(`Price provider ${new URL(u).hostname} returned ${r.status}`);return r.json();};
  // One cached JSON per key, built by `make` on a miss.
  const stored=async(key,make)=>{const saved=memo.get(key);if(saved&&Date.now()-saved.at<21600000)return saved.data;memo.delete(key);const req=new Request('https://cardstashy.cache/ygo-v2/'+key);op();const old=await cache?.match(req);if(old){const d=await old.json();memo.set(key,{at:Date.now(),data:d});return d;}const d=await make();memo.set(key,{at:Date.now(),data:d});op();ctx?.waitUntil?.(cache?.put(req,Response.json(d,{headers:{'Cache-Control':'public,max-age=21600'}})));return d;};
@@ -38,7 +54,7 @@ export async function ygoPriceRoute(url,ctx,fetchImpl=fetch){
   const [data,groups]=await Promise.all([fetchJson('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+id),stored('groups',async()=>((await fetchJson('https://tcgcsv.com/tcgplayer/2/groups')).results||[]).map(g=>({groupId:g.groupId,name:g.name,abbreviation:g.abbreviation})))]),card=data.data?.[0];
   if(String(card?.id)!==id)throw Error('Card identity mismatch');
   const wantedCode=url.searchParams.get('printing'),wantedRarity=url.searchParams.get('rarity');
-  const sets=(card.card_sets||[]).map(s=>({code:s.set_code,rarity:s.set_rarity,name:s.set_name})).filter(s=>(!wantedCode||s.code===wantedCode)&&(!wantedRarity||rarityKey(s.rarity)===rarityKey(wantedRarity)));const printings=[];
+  const sets=(card.card_sets||[]).map(s=>({code:s.set_code,rarity:s.set_rarity,name:s.set_name})).filter(s=>(!wantedCode||s.code===wantedCode)&&(!wantedRarity||rarityKey(s.rarity,s)===rarityKey(wantedRarity,s)));const printings=[];
   // Each printing's TCGplayer set: the one group with the set's name, else the one whose code is
   // the printing's code prefix (LOB-EN001 → LOB; sneak peeks and tin packs are listed under their
   // parent's code). A product still has to carry the exact code and rarity.
@@ -56,7 +72,7 @@ export async function ygoPriceRoute(url,ctx,fetchImpl=fetch){
     }
    }catch(e){partial=true;if(errors.length<5)errors.push(String(e.message||e).slice(0,80));}
   }));
-  const response=Response.json({cardId:id,printings,partial,errors,source:'TCGplayer via TCGCSV',updatedAt:new Date().toISOString()},{headers:{'Cache-Control':partial?'no-store':'public,max-age=21600'}});
+  const response=Response.json({cardId:id,printings,partial,errors,joinSchema:YGO_PRICE_JOIN_SCHEMA,joinComplete:!partial&&!wantedCode&&!wantedRarity,source:'TCGplayer via TCGCSV',updatedAt:new Date().toISOString()},{headers:{'Cache-Control':partial?'no-store':'public,max-age=21600'}});
   if(!partial&&ops<LIMIT)ctx?.waitUntil?.(cache?.put(k,response.clone()));return response;
  }catch(e){return Response.json({error:'Exact printing prices temporarily unavailable',notice:e.message},{status:503});}
 }

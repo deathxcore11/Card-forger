@@ -29,7 +29,7 @@ function shell() {
 }
 function bubble(cls, html) { const b = document.createElement('div'); b.className = 'ask-msg ' + cls; b.innerHTML = html; state.log.append(b); state.log.scrollTop = state.log.scrollHeight; return b; }
 function emptyState() {
-  state.log.innerHTML = `<div class="ask-empty"><p class="ask-hello">What do you want to know about your ${esc(GAME_NAME[state.game])} cards?</p><p class="muted small">I can only use CardStashy: its cards, prices, sets, tournament decks, your collection and your decks. No web browsing.</p><div class="ask-examples">${(EXAMPLES[state.game] || EXAMPLES.mtg).map((q, i) => `<button type="button" style="--i:${i}" data-ask-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>`;
+  state.log.innerHTML = `<div class="ask-empty"><p class="ask-hello">What do you want to know about your ${esc(GAME_NAME[state.game])} cards?</p><p class="muted small">I can use CardStashy’s cards, prices, sets, tournament decks, your collection and your decks. I can also consult the selected game’s Wiki references.</p><div class="ask-examples">${(EXAMPLES[state.game] || EXAMPLES.mtg).map((q, i) => `<button type="button" style="--i:${i}" data-ask-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>`;
 }
 export function openAsk({ game = 'mtg', tools, show, prefill = '' } = {}) {
   closeAsk();
@@ -109,8 +109,11 @@ export async function ask(text, fetcher = fetch, choice = null) {
     const common={tools:session.tools,signal:session.controller.signal,current:()=>state===session,onBuildContext:context=>{if(state===session)session.buildContext=context;}};
     const result = choice?await resumeBuildChoice({...common,choice:choice.id,context:session.buildContext}):await runAskLoop({ ...common,game:session.game, items,buildContext:session.buildContext,fetcher, onCalls:calls=>{think.querySelector('.ask-step').textContent=say(calls)+'…';} });
     if (!result || state !== session) return;
-    question.classList.remove('pending'); session.pendingText=''; think.remove(); answer(result);
+    question.classList.remove('pending'); session.pendingText=''; think.remove(); const destination=answer(result);
     session.history=[...items.filter(x=>x.type==='message'),{type:'message',role:'assistant',content:result.text}].slice(-8);
+    // Finish this turn before detaching Ask. Closing a busy conversation cancels
+    // its pending builder, while a completed result has its own scoped lifetime.
+    if(destination&&state===session){session.busy=false;session.node.classList.remove('thinking');const show=session.show;closeAsk();await show?.(destination);}
   } catch (e) {
     if (state !== session) return;
     question.classList.remove('pending'); state.pendingText = ''; think.remove();
@@ -126,4 +129,7 @@ function answer(a) {
   const items = list.map((s, i) => state.tools?.preview?.(s, i, {compact:list.length===1&&s.kind==='card'}) || `<button class="ask-item" style="--i:${i}" data-ask-show='${esc(JSON.stringify(s))}'><b>${esc(s.label || s.ref)}</b><small>${esc({ card: 'Card', set: 'Set', meta: 'Meta deck', deck: 'Your deck' }[s.kind])} · ${esc(GAME_NAME[s.game])}</small></button>`).join('');
   const choices=(a.choices||[]).map(c=>`<button type="button" data-ask-choice="${esc(c.id)}" data-ask-turn="${state.turnId}">${esc(c.label)}</button>`).join('');
   bubble('ai', `<p class="ask-source ${cls}">${label}</p><p>${esc(a.text)}</p>${items ? `<div class="ask-items">${items}</div>` : ''}${choices?`<div class="ask-examples follow" aria-label="Deck choices">${choices}</div>`:''}${a.suggestions?.length ? `<div class="ask-examples follow">${a.suggestions.map((q, i) => `<button type="button" style="--i:${i}" data-ask-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}`);
+  // Only the app-owned pending result can request this handoff; model-authored
+  // answer fields cannot create a deck window or trigger an unexecuted list.
+  return extra?.openOnComplete?extra:null;
 }

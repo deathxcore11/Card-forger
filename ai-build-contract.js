@@ -1,22 +1,49 @@
 // The model proposes; this small deterministic contract keeps the player's hard
 // choices intact. It deliberately recognizes explicit syntax, not arbitrary prose.
-import { DECK_GOALS, inferDeckGoal, normalizeDeckGoal } from './ai-deck-goal.js';
+import { DECK_GOALS, inferDeckGoal, normalizeDeckGoal, isDeckBuildRequest } from './ai-deck-goal.js';
 import { FORMATS } from './formats.js';
 import { cardKey } from './core.js';
-import { CREATURE_THEMES } from './planner.js';
+import { CREATURE_THEMES, readCreatureTypeRestrictions } from './planner.js';
 import { tribePattern, keywordPattern, MTG_VOCABULARY } from './mtg-vocabulary.js';
+import {readLoopIntent} from './mtg-combo-packages.js';
+import {MTG_CONCEPTS,resolveMtgConcept,readMtgConceptMentions} from './mtg-wiki-knowledge.js';
+const LOOP_FIELDS=['requireLoop','loopOutput','unsupportedLoop','loopConflict','clearLoop'];
 const text = v => typeof v==='string'?v.trim():'';
 const same = (a,b) => cardKey(String(a||''))===cardKey(String(b||''));
 const names = rows => [...new Map((Array.isArray(rows)?rows:[]).map(text).filter(Boolean).map(n=>[cardKey(n),n])).values()];
 const COLORS={white:'W',blue:'U',black:'B',red:'R',green:'G',colorless:'C'};
-const THEMES=new RegExp('\\b(?:'+CREATURE_THEMES.map(tribePattern).join('|')+'|'+keywordPattern+'|artifacts?|tokens?|life[- ]?gain|landfall|graveyard|spellslinger|counters?)\\b','gi');
-const themeKey=s=>CREATURE_THEMES.find(t=>new RegExp('^'+tribePattern(t)+'$','i').test(s))?.toLowerCase()||MTG_VOCABULARY['keyword-abilities'].find(t=>t.toLowerCase()===s.toLowerCase())?.toLowerCase()||s.toLowerCase().replace(/life[- ]gain/,'lifegain').replace(/s$/,'');
+const pattern=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const modeledMechanics=MTG_CONCEPTS.filter(c=>c.builderCoverage.status==='modeled'),mechanicIds=new Set(modeledMechanics.map(c=>c.id));
+const mechanicAliases=modeledMechanics.flatMap(c=>c.aliases.map(alias=>({alias,id:c.id}))).sort((a,b)=>b.alias.length-a.alias.length);
+const mechanicTerms=[...new Set(mechanicAliases.map(c=>c.alias))].map(pattern).join('|'),mechanicPattern='\\b(?:'+mechanicTerms+')\\b';
+const removedMechanicPrefix=new RegExp('\\b(?:no|not|without|avoid|remove|drop|clear|stop|skip|don\'t(?: use| want| include)?|do not(?: use| want| include)?)\\s+(?:(?:an?|the|any|that)\\s+)?(?:(?:'+mechanicTerms+')(?:[- ](?:mechanics?|themes?|strategy))?\\s*(?:and|or|/|,)\\s*)*$','i');
+const informalAliases=modeledMechanics.filter(c=>c.kind==='informal-mechanic').flatMap(c=>c.aliases).sort((a,b)=>b.length-a.length).map(pattern);
+const withoutQuoted=(value,replace)=>String(value).split(/(["“][^"”]*["”])/g).map(part=>/^["“]/.test(part)?part:replace(part)).join('');
+const canonicalMechanics=value=>withoutQuoted(value,part=>part.replace(new RegExp(mechanicPattern,'gi'),alias=>resolveMtgConcept(alias)?.id||alias));
+function stripRemovedMechanics(value,removed=[]) {
+ const aliases=mechanicAliases.filter(c=>removed.includes(c.id)).map(c=>pattern(c.alias));
+ if(!aliases.length)return value;
+ const re=new RegExp('\\b(?:'+aliases.join('|')+')(?:[- ](?:style|mechanics?|themes?|strategy))?\\b','gi');
+ return withoutQuoted(value,part=>part.replace(re,' ')).replace(/\s+/g,' ').trim();
+}
+function mechanicChanges(value='') {
+ const unquoted=String(value).replace(/[’‘]/g,"'").replace(/["“][^"”]*["”]/g,match=>' '.repeat(match.length));
+ const removed=new Set();
+ for(const match of unquoted.matchAll(new RegExp(mechanicPattern,'gi'))){
+  const prefix=unquoted.slice(0,match.index).split(/[.!?;]|\bbut\b/i).at(-1);
+  if(removedMechanicPrefix.test(prefix))removed.add(resolveMtgConcept(match[0]).id);
+ }
+ const positive=readMtgConceptMentions(value).filter(c=>mechanicIds.has(c.id)&&!removed.has(c.id)).map(c=>c.id);
+ return {positive,removed:[...removed]};
+}
+const THEMES=new RegExp('\\b(?:'+informalAliases.join('|')+'|'+CREATURE_THEMES.map(tribePattern).join('|')+'|'+keywordPattern+'|artifacts?|tokens?|life[- ]?gain|landfall|graveyard|spellslinger|counters?)\\b','gi');
+const themeKey=s=>resolveMtgConcept(s)?.builderCoverage.status==='modeled'?resolveMtgConcept(s).id:CREATURE_THEMES.find(t=>new RegExp('^'+tribePattern(t)+'$','i').test(s))?.toLowerCase()||MTG_VOCABULARY['keyword-abilities'].find(t=>t.toLowerCase()===s.toLowerCase())?.toLowerCase()||s.toLowerCase().replace(/life[- ]gain/,'lifegain').replace(/s$/,'');
 const violations = (code,field,message) => ({code,field,message});
 // Only an entirely generic request authorizes automatic card selection. Unknown
 // words, quoted names and card directives keep exact-name handling intact.
-const GENERIC_BUILD_WORDS=new Set('can could would will you please build make create me us a an the deck decks using with that is its it s i want good easy to play fun casual beginner beginners friendly aggressive aggro mono white blue black red green colorless colourless standard modern pioneer commander edh magic mtg gathering themed theme tribal kindred for under below at most up dollars dollar bucks buck usd budget of total whole no spending cap limit unlimited affordable cheap and idk pick choose select random one be'.split(' '));
-const genericBuildLanguage=request=>!/["“”]/.test(request)&&(request.match(/[\p{L}]+/gu)||[]).every(w=>GENERIC_BUILD_WORDS.has(w.toLowerCase())||new RegExp('^(?:'+THEMES.source.replace(/\\b/g,'')+')$','i').test(w));
-const genericBuildRequest=request=>/\b(?:build|make|create)\b[^.!?]*\bdeck\b/i.test(request)&&/\b(?:white|blue|black|red|green|colou?rless)\b/i.test(request)&&genericBuildLanguage(request);
+const GENERIC_BUILD_WORDS=new Set('can could would will you please build make create recommend give me us a an the deck decks using with that is its it s i want need like good easy to play fun casual beginner beginners friendly aggressive aggro mono white blue black red green colorless colourless standard modern pioneer commander edh magic mtg gathering themed theme tribal kindred for under below at most up dollars dollar bucks buck usd budget of total whole no spending cap limit unlimited affordable cheap and idk pick choose select random one be only strictly creature creatures card cards'.split(' '));
+const genericBuildLanguage=request=>!/["“”]/.test(request)&&(canonicalMechanics(request).match(/[\p{L}]+/gu)||[]).every(w=>GENERIC_BUILD_WORDS.has(w.toLowerCase())||new RegExp('^(?:'+THEMES.source.replace(/\\b/g,'')+')$','i').test(w));
+const genericBuildRequest=request=>isDeckBuildRequest(request)&&/\b(?:white|blue|black|red|green|colou?rless)\b/i.test(request)&&genericBuildLanguage(request);
 
 export function applyUserBuildIntent(input,contract={}) {
  if(!input||typeof input!=='object'||Array.isArray(input))return input;
@@ -25,7 +52,9 @@ export function applyUserBuildIntent(input,contract={}) {
  // Copy trusted, retained player selections rather than paying the model to
  // repeat them. Budget ambiguity and missing-amount choices remain validation.
  for(const field of ['game','format','goal','seed','commander','budget','budget_basis','budgetMode'])if(contract[field]!==undefined)args[field]=contract[field];
+ for(const field of LOOP_FIELDS)if(Object.hasOwn(contract,field))args[field]=contract[field];
  if(contract.colors?.length)args.colors=[...contract.colors];
+ if(typeof args.style==='string'&&contract.removedMechanics?.length)args.style=stripRemovedMechanics(args.style,contract.removedMechanics);
  if(typeof args.style==='string'&&contract.themes?.length){const missing=contract.themes.filter(t=>!(args.style.match(THEMES)||[]).map(themeKey).includes(t));if(missing.length)args.style=[...missing,args.style].join(' ').slice(0,120);}
  const explicit=names([contract.seed,contract.commander,...(contract.required_cards||[])]);
  const bareTheme=n=>typeof n==='string'&&contract.themes?.includes(themeKey(n.trim()))&&!explicit.some(e=>same(e,n))&&!/["“”]/.test(contract.request||'');
@@ -43,7 +72,7 @@ export function readBuildContract(items=[],retained=null,options={}) {
  if(/^\s*(?:cancel|stop)(?: this| the)?(?: deck| build| request)?[.!]?\s*$/i.test(request))return {request,required_cards:[],excluded_cards:[],colors:[],themes:[],avoid_infinite:false,cancelled:true,provenance:{}};
  const fresh=/\b(?:new|another|different|fresh)\s+(?:(?:\w+[- ]?){0,3})deck\b|\bstart over\b/i.test(request);
  const follow=/^\s*(?:same|keep|instead|make (?:it|that)|change|also|and|with|without|now|but|yes|ok(?:ay)?|allow|remove|drop|exclude|include|use|don't|do not|no|cancel|stop)\b/i.test(request);
- const newBuild=/\b(?:build|make|create)\b[^.!?]*\bdeck\b/i.test(request)&&!/^\s*(?:build|make|create)\s+(?:it|that|the same)\b/i.test(request);
+ const newBuild=isDeckBuildRequest(request)&&!/^\s*(?:build|make|create)\s+(?:it|that|the same)\b/i.test(request);
  const continuation=!fresh&&(follow||!newBuild);
  const previous=continuation?(retained||(latestIndex>0?readBuildContract(items.slice(0,latestIndex),null,options):null)):null;
  const prior=previous?.cancelled?null:previous;
@@ -74,7 +103,7 @@ export function readBuildContract(items=[],retained=null,options={}) {
  // Spending amounts are caps unless the player explicitly permits flexibility.
  if(amounts.length)out.budgetMode=/\b(?:flexible (?:budget|target)|budget target|approximate budget|around \$|about \$)\b|\bcan go (?:a little )?over\b/i.test(request)?'target':'cap';
  if(/\b(?:strict|hard) (?:budget|cap)|\b(?:under|below|at most|no more than)\s*\$?\s*\d/i.test(request))out.budgetMode='cap';
- const uncapped=/\b(?:no (?:spending |budget )?(?:limit|cap)|without (?:a )?(?:budget |spending )?(?:limit|cap))\b/i.test(request)||/\bunlimited\b/i.test(request)&&(out.format!=='Unlimited'||unlimitedBudget);
+ const uncapped=/\b(?:no (?:spending |budget )?(?:limit|cap)|without (?:a )?(?:budget |spending )?(?:limit|cap))\b/i.test(request)||unlimitedBudget||/^\s*unlimited[.!]?\s*$/i.test(request)&&out.format!=='Unlimited';
  if(uncapped)out.budget=0;
  // A vague "budget deck" is a cost-conscious preference, not consent to an
  // invented $25 (or any other numeric) cap. Follow-ups can retain a prior cap.
@@ -88,12 +117,13 @@ export function readBuildContract(items=[],retained=null,options={}) {
  else if(/\b(?:total budget|whole[- ]deck|entire deck)\b/i.test(request))out.budget_basis='total';
  else if(out.budget!==undefined&&!out.budget_basis)out.budget_basis=prior?.budget_basis||'total';
  if(amounts.length&&out.budget===0&&out.budget_basis!=='owned'&&!uncapped)out.zeroBudget=true;
- const mono=request.match(/\bmono[- ]?(white|blue|black|red|green|colou?rless)\b/i);
+ const colorOnly=[...request.matchAll(/\b(?:only|strictly)\s+(white|blue|black|red|green|colou?rless)\b|\b(white|blue|black|red|green|colou?rless)[- ]only\b/gi)].find(m=>!/\b(?:not|don't want|don’t want|do not want)\s+$/i.test(request.slice(Math.max(0,m.index-25),m.index)));
+ const mono=request.match(/\bmono[- ]?(white|blue|black|red|green|colou?rless)\b/i)||(colorOnly?[colorOnly[0],colorOnly[1]||colorOnly[2]]:null);
  if(mono)out.colors=[COLORS[mono[1].toLowerCase().replace('colourless','colorless')]];
  else {
   const pair=request.match(/\b(white|blue|black|red|green)(?:\s*(?:and|\/|[-+])\s*(?:white|blue|black|red|green)){1,4}\b/i);
   if(pair)out.colors=[...new Set(pair[0].toLowerCase().match(/white|blue|black|red|green/g).map(c=>COLORS[c]))];
-  else {const single=request.match(/\b(white|blue|black|red|green|colou?rless)\s+(?:(?:Standard|Modern|Pioneer|Commander|Legacy|Vintage|Pauper)\s+)?(?:deck|commander deck)\b/i);if(single)out.colors=[COLORS[single[1].toLowerCase().replace('colourless','colorless')]];}
+  else {const single=request.match(/\b(white|blue|black|red|green|colou?rless)\s+(?:(?:Standard|Modern|Pioneer|Commander|Legacy|Vintage|Pauper)\s+)?(?:deck|commander deck)\b/i)||request.match(/\b(?:deck|decks)\b[^.!?;]{0,80}?\b(?:for|in)\s+(white|blue|black|red|green|colou?rless)\b/i);if(single)out.colors=[COLORS[single[1].toLowerCase().replace('colourless','colorless')]];}
  }
  for(const m of request.matchAll(/\b(?:must include|must have|include|keep|build around)\s+["“]([^"”]{1,120})["”]/gi))out.required_cards.push(m[1]);
  for(const m of request.matchAll(/\b(?:exclude|without|no|don't use|do not use|avoid)\s+["“]([^"”]{1,120})["”]/gi))out.excluded_cards.push(m[1]);
@@ -104,27 +134,51 @@ export function readBuildContract(items=[],retained=null,options={}) {
  // Preserve common explicit themes even if the proposed AI style drops them.
  const positive=request.replace(/["“][^"”]*["”]/g,'').replace(/\b(?:build around|around|include|must have|must use|featuring|led by|commander is)\s+([^,;.!]+?)(?=\s+(?:with|under|for|budget)\b|[,;.!]|$)/gi,(full,named)=>genericBuildLanguage(named)?full:' ').replace(/\b(?:no|without|avoid)\s+[^,.;]*(?=[,.;]|$)/gi,'');
  out.themes=[...new Set((positive.match(THEMES)||[]).map(themeKey))];
- const unquotedTypes=request.replace(/["“][^"”]*["”]/g,'');
- for(const type of CREATURE_THEMES){
-  const pattern=tribePattern(type);
-  if(new RegExp('\\b(?:only|strictly)\\s+'+pattern+'(?:[- ]only)?\\s+creatures?\\b|\\b'+pattern+'[- ]only\\s+creatures?\\b|\\ball creatures (?:must be|are)\\s+'+pattern+'\\b','i').test(unquotedTypes))out.creatureTypesOnly.push(type);
-  if(new RegExp('\\b(?:no|without|avoid)\\s+(?:any )?'+pattern+'(?=\\s*(?:(?:creatures?|cards?)\\s*)?(?:$|[,.;!?])|\\s+(?:and|but|with)\\b)','i').test(unquotedTypes))out.excludedSubtypes.push(type);
- }
+ const mechanicChange=mechanicChanges(request);
+ out.themes=[...new Set([...out.themes.filter(t=>!mechanicIds.has(t)),...mechanicChange.positive])];
+ const removedMechanics=new Set([...(prior?.removedMechanics||[]),...mechanicChange.removed]);
+ for(const id of mechanicChange.positive)removedMechanics.delete(id);
+ out.removedMechanics=[...removedMechanics];
+ Object.assign(out,readCreatureTypeRestrictions(request));
+ out.themes=[...new Set([...out.themes,...out.creatureTypesOnly.map(themeKey)])];
  out.required_cards=names(out.required_cards);out.excluded_cards=names(out.excluded_cards);
  const merged={...prior,...out,continuation:!!prior,provenance:{...prior?.provenance}};
  // Retain only user-authored constraints. Prior assistant prose and model
  // defaults are never parsed as requirements, including the combo boolean.
- for(const field of ['required_cards','excluded_cards','colors','themes','creatureTypesOnly','excludedSubtypes'])if(!out[field].length&&prior?.[field])merged[field]=[...prior[field]];
+ const negatedOnly=prior?.creatureTypesOnly?.some(type=>new RegExp('\\b(?:not|don[\u2019\']t want|do not want)\\s+(?:(?:an?|the)\\s+)?(?:only\\s+'+tribePattern(type)+'|'+tribePattern(type)+'[- ]only)\\b','i').test(request));
+ const anyCreatures=/\bany (?:creatures?|creature types?)\b|\b(?:remove|drop|clear)\s+all\s+creature(?:[- ]type)?\s+restrictions?\b/i.test(request),relaxTypes=anyCreatures||negatedOnly||/\b(?:remove|drop|relax|clear)\s+(?:(?:the|that|my)\s+)?(?:[\p{L} -]+[- ]only\s+(?:restriction|requirement)|creature[- ]type\s+(?:restriction|requirement)|type\s+(?:restriction|requirement))/iu.test(request);
+ for(const field of ['required_cards','excluded_cards','colors','themes','creatureTypesOnly','excludedSubtypes'])if(!out[field].length&&prior?.[field]&&!(field==='creatureTypesOnly'&&relaxTypes||field==='excludedSubtypes'&&anyCreatures))merged[field]=[...prior[field]];
+ // Adding or removing a mechanic revises that part of the retained request;
+ // it does not erase an independently requested tribe, budget or colors.
+ if(prior&&out.themes.length&&out.themes.every(t=>mechanicIds.has(t)))merged.themes=[...new Set([...(prior.themes||[]),...out.themes])];
+ merged.themes=merged.themes.filter(t=>!removedMechanics.has(t));
+ if(mechanicChange.positive.length||mechanicChange.removed.length)delete merged.style;
  merged.themes=merged.themes.filter(t=>!merged.excludedSubtypes.some(ex=>ex.toLowerCase()===t));
  for(const field of ['required_cards','excluded_cards'])merged[field]=names([...(prior?.[field]||[]),...out[field]]);
  if(/\b(?:remove|drop|clear) (?:all |the )?exclusions\b|\bno exclusions\b/i.test(request))merged.excluded_cards=[];
  for(const m of request.matchAll(/\b(?:allow|remove (?:the )?exclusion(?: for)?)\s+["“]([^"”]+)["”]/gi))merged.excluded_cards=merged.excluded_cards.filter(n=>!same(n,m[1]));
  if(/\b(?:any colors?|no colou?r restriction|remove (?:the )?colou?r restriction)\b/i.test(request))merged.colors=[];
+ // Permission to use a loop is not a requirement to build one. Removing a
+ // negative ban also must not erase a separately retained positive outcome.
+ const loopText=request.replace(/\b(?:(?:allow|permit)\s+(?:any\s+)?infinite(?:\s+(?:combos?|loops?))?|infinite\s+(?:combos?|loops?)\s+(?:are\s+)?(?:fine|ok(?:ay)?|allowed)|(?:remove|drop|relax)\s+(?:(?:the|that|my)\s+)?no[- ]infinite(?:[- ](?:combo|loop)s?)?(?:\s+(?:restriction|ban|rule))?)\b/gi,(full,offset)=>{
+  if(/\b(?:no|not|without|avoid|don't|don’t|do not)\b(?:\s+[a-z’'-]+){0,6}\s*$/i.test(request.slice(Math.max(0,offset-60),offset)))return full;
+  out.avoid_infinite=false;return ' ';
+ });
+ const loop=readLoopIntent(loopText);
+ if(loop.hasLoopNegation)out.avoid_infinite=loop.avoidInfinite===true||prior?.avoid_infinite===true;
  merged.avoid_infinite=out.avoid_infinite??prior?.avoid_infinite??false;
+ const explicitRelax=loop.clearLoop,loopSpecified=loop.requireLoop||loop.unsupportedLoop||loop.loopConflict||explicitRelax;
+ for(const field of LOOP_FIELDS)merged[field]=loopSpecified?loop[field]:prior?.[field]??(field==='loopConflict'||field==='clearLoop'?false:null);
+ if(explicitRelax){merged.requireLoop=null;merged.loopOutput=null;merged.unsupportedLoop=loop.unsupportedLoop??null;merged.loopConflict=false;merged.clearLoop=true;}
+ merged.loopConflict=loop.loopConflict===true||!!(merged.requireLoop&&merged.avoid_infinite);
  if(merged.budget!==undefined)delete merged.budgetUnspecified;
  if(out.budget!==undefined&&(amounts.length||uncapped)&&!out.ambiguousBudget){delete merged.ambiguousBudget;if(!out.zeroBudget)delete merged.zeroBudget;}
  if(merged.budget_basis==='owned')delete merged.zeroBudget;
  for(const field of ['game','format','goal','commander','budget','budget_basis','budgetMode','avoid_infinite','required_cards','excluded_cards','colors','themes','creatureTypesOnly','excludedSubtypes'])if(out[field]!==undefined&&(!Array.isArray(out[field])||out[field].length)&&!(field==='budget'&&!amounts.length&&!uncapped))merged.provenance[field]={source:'user',turn:latestIndex,text:request.slice(0,600)};
+ if(relaxTypes)merged.provenance.creatureTypesOnly={source:'user',turn:latestIndex,text:request.slice(0,600)};
+ if(anyCreatures)merged.provenance.excludedSubtypes={source:'user',turn:latestIndex,text:request.slice(0,600)};
+ if(loopSpecified)for(const field of LOOP_FIELDS)merged.provenance[field]={source:'user',turn:latestIndex,text:request.slice(0,600)};
+ if(mechanicChange.positive.length||mechanicChange.removed.length)merged.provenance.removedMechanics={source:'user',turn:latestIndex,text:request.slice(0,600)};
  return merged;
 }
 
@@ -164,6 +218,14 @@ export function validateBuildProposal(input,contract={}) {
  // A required schema boolean is not evidence of a player request. Normalize
  // unsolicited restrictions locally so one mistaken default cannot stop a build.
  if(Object.hasOwn(contract,'avoid_infinite'))args.avoid_infinite=contract.avoid_infinite===true;
+ for(const field of LOOP_FIELDS)if(Object.hasOwn(contract,field)){
+  if(Object.hasOwn(input,field)&&!same(input[field],contract[field]))errors.push(violations('changed_constraint',field,`Keep the requested ${field}.`));
+  args[field]=contract[field];
+ }
+ args.requireLoop=args.requireLoop??null;args.loopOutput=args.loopOutput??null;args.unsupportedLoop=args.unsupportedLoop??null;args.loopConflict=args.loopConflict===true||!!(args.requireLoop&&args.avoid_infinite);args.clearLoop=args.clearLoop===true;
+ if(args.requireLoop!==null&&args.requireLoop!=='infinite-mana')errors.push(violations('invalid_loop','requireLoop','Only a reviewed infinite-mana requirement is supported.'));
+ if(args.loopOutput!==null&&!['W','U','B','R','G','C','any-color'].includes(args.loopOutput))errors.push(violations('invalid_loop','loopOutput','Choose a known mana output.'));
+ if(args.unsupportedLoop!==null&&(typeof args.unsupportedLoop!=='string'||args.unsupportedLoop.length>1000))errors.push(violations('invalid_loop','unsupportedLoop','Use the app’s bounded loop clarification.'));
  for(const field of ['game','format','goal','commander','seed','budget','budget_basis','budgetMode','style'])if(contract[field]!==undefined&&!same(args[field],contract[field]))errors.push(violations('changed_constraint',field,`Keep the requested ${field}: ${contract[field]}.`));
  if(contract.avoid_infinite&&!args.avoid_infinite)errors.push(violations('changed_constraint','avoid_infinite','Keep the requested no-infinite-combos constraint.'));
  if(contract.colors?.length&&[...args.colors].sort().join('')!==[...contract.colors].sort().join(''))errors.push(violations('changed_constraint','colors',`Keep the requested colors: ${contract.colors.join(', ')}.`));
@@ -171,13 +233,14 @@ export function validateBuildProposal(input,contract={}) {
  for(const n of [...args.required_cards,args.seed,args.commander].filter(Boolean))if(args.excluded_cards.some(c=>same(c,n)))errors.push(violations('conflicting_cards','excluded_cards',`${n} cannot be both required and excluded.`));
  const styleThemes=(args.style.match(THEMES)||[]).map(themeKey);
  for(const theme of contract.themes||[])if(!styleThemes.includes(theme))errors.push(violations('changed_constraint','style',`Preserve the requested ${theme} theme in style.`));
+ for(const id of contract.removedMechanics||[])if(readMtgConceptMentions(args.style).some(c=>c.id===id))errors.push(violations('changed_constraint','style',`Do not restore the removed ${id} mechanic.`));
  return {ok:!errors.length,args,violations:errors,requiresChoice:!!(contract.zeroBudget||contract.ambiguousBudget||errors.some(e=>e.code==='unrequested_budget'))};
 }
 
 export function lockBuildContract(args,original={}) {
  // Once a valid proposal has been accepted, the only revision input is a small
  // list of candidate identities. It cannot buy success by relaxing constraints.
- return {...original,...Object.fromEntries(['game','format','goal','style','seed','commander','budget','budget_basis','budgetMode','avoid_infinite'].map(k=>[k,args[k]])),creatureTypesOnly:[...args.creatureTypesOnly],excludedSubtypes:[...args.excludedSubtypes],required_cards:[...args.required_cards],excluded_cards:[...args.excluded_cards],colors:[...args.colors]};
+ return {...original,...Object.fromEntries(['game','format','goal','style','seed','commander','budget','budget_basis','budgetMode','avoid_infinite',...LOOP_FIELDS].map(k=>[k,args[k]])),creatureTypesOnly:[...args.creatureTypesOnly],excludedSubtypes:[...args.excludedSubtypes],required_cards:[...args.required_cards],excluded_cards:[...args.excluded_cards],colors:[...args.colors]};
 }
 export function proposalFeedback(check,{terminal=false}={}) {
  const budgetChoice=check.violations.some(v=>v.code==='unrequested_budget');

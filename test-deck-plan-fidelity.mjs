@@ -63,7 +63,7 @@ const thin=[{card:lead,name:lead.name,qty:1},{card:cat,name:cat.name,qty:1},{car
 assert.equal(inspectMtgTheme(thin,{style:'Cats',commander:lead.name}).status,'insufficient');
 assert(inspectDeckPlan({game:'mtg',theme:'Cats'},thin,{commander:lead.name}).issues.some(i=>i.includes('Cat plan')));
 const supported=[...thin,{card:change,name:change.name,qty:1}],analysis=inspectMtgTheme(supported,{style:'Cats',commander:lead.name});
-assert.equal(analysis.status,'supported');assert.equal(analysis.groups[0].copies,2);assert(analysis.groups[0].access<.5);
+assert.equal(analysis.status,'partial','two incidental library Cats do not establish a verified tribal package');assert.equal(analysis.groups[0].copies,2);assert(analysis.groups[0].access<.5);assert.equal(analysis.strategy.status,'partial');assert.equal(analysis.issues.length,0,'partial package coverage keeps this complete draft reviewable rather than inventing a legality issue');
 assert.equal(inspectMtgTheme(thin,{style:'video game themed',commander:lead.name}).unverifiedTerms.includes('video'),true);
 const f={mtg:[{id:'modern',name:'Modern'}]},cap=normalizeDeckRequest({game:'mtg',format:'Modern',budget:100,goal:'strongest'},f);
 const candidate=(id,cost,owned=0,score=10)=>({deck:{id},check:{complete:true,legal:true},plan:{issues:[],notes:[],setupBurden:0,theme:{status:'supported'}},pricing:{estimate:cost,subtotal:cost??0,unpriced:cost===null?1:0,copies:60,ownedCopies:owned},power:{score}});
@@ -83,6 +83,6 @@ for(const offline of [false,true]){
  const catalog=Object.fromEntries(purePool.map(c=>[c.name.toLowerCase(),c]));
  const context={S:{catalog},meta:n=>catalog[n.toLowerCase()],resolve:async n=>catalog[n.toLowerCase()],cacheCard:c=>(catalog[c.name.toLowerCase()]=c),inv:()=>({available:0}),api:async()=>{if(offline)throw Error('Synthetic offline provider');return {data:purePool};}};
  const result=await prepareMtgDeck({style:'Angels with lifelink',format:'Commander',seed:pureLead.name,commander:pureLead.name,budget:100,creatureTypesOnly:['Angel']},context);
- assert(result.result.ready,JSON.stringify(result.result));assert.equal(result.draft.total,100);assert(!result.draft.cards.some(r=>r.name.includes('excluded Human')));assert(result.result.totalEstimate<=100);
+ assert.equal(result.result.ready,false,'pure creature types alone are not a verified strategic package');assert.equal(result.result.legalChecked,true);assert.equal(result.result.themeCheck.status,'partial');assert.equal(result.draft.total,100);assert(!result.draft.cards.some(r=>r.name.includes('excluded Human')));assert(result.result.totalEstimate<=100);
 }
 console.log('PASS: actual selector builds 100 cards within cap from a bounded online/offline fixture pool, enforces Angel-only creatures and retains noncreature land support without AI.');

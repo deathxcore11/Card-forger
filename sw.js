@@ -1,8 +1,10 @@
-const CACHE = "cardforge-shell-v305";
+const CACHE = "cardforge-shell-v306";
 const ASSETS = [
+  "./deck-mechanic-plan.js", "./mtg-wiki-knowledge.js", "./mtg-wiki-client.js", "./mtg-wiki-ui.js", "./wiki-sources.js", "./game-wiki-knowledge.js",
   "./community-edition.js", "./img/news/2026-10-19-magic-delay.webp", "./img/news/2026-10-22-pokemon-rules.webp", "./img/news/2026-10-19-ygo-list.webp",
   "./release-record.js", "./release-status.js",
   "./card-discovery.js", "./rule-extra.js", "./mtg-keyword-reference.js", "./mtg-vocabulary.js", "./deck-preferences.js", "./deck-construction.js", "./deck-pipeline.js", "./deck-experience.js", "./deck-seeds.js",
+  "./deck-strategy-plan.js", "./mtg-combo-packages.js",
   "./ai-auth.js",
   "./grid-settings.js", "./price-origin.js", "./collection-display.css",
   "./aura.js", "./aura.css",

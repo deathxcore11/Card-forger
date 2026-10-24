@@ -2,11 +2,19 @@
 // writes or inferred franchise identity. Every label states what is searched.
 import {esc} from './ui.js';
 import {MTG_VOCABULARY} from './mtg-vocabulary.js';
+import {resolveMtgConcept} from './mtg-wiki-knowledge.js';
+import {mechanicCardMatches} from './deck-mechanic-plan.js';
 const clean=v=>typeof v==='string'&&v.length<=120&&!/[\u0000-\u001f<>"\\]/.test(v)?v.trim():'';
 const quote=v=>'"'+v.toLowerCase()+'"';
 export function cardDiscoverySpec(game,kind,raw) {
  const value=clean(raw);if(!value||!['mtg','ygo','ptcg'].includes(game))return null;
  if(game==='mtg'){
+  if(kind==='concept'){
+   const concept=resolveMtgConcept(value);if(!concept)return null;
+   if(concept.id==='bloodlust')return {game,q:'t:creature o:"combat damage" (o:player or o:opponent) o:"+1/+1 counter"',filters:{},conceptId:concept.id,label:'Combat-damage counter-growth candidates; exact wording still needs checking'};
+   if(concept.id==='bloodthirst')return {game,q:'keyword:"bloodthirst"',filters:{},conceptId:concept.id,label:'Cards with the Bloodthirst keyword'};
+   return null;
+  }
   if(kind==='type')return {game,q:(MTG_VOCABULARY['creature-types'].includes(value)?[value]:value.split(/\s+/)).map(t=>'t:'+quote(t)).join(' '),filters:{},label:value+' cards'};
   if(kind==='keyword'){
    const intrinsic=MTG_VOCABULARY['keyword-abilities'].some(k=>k.toLowerCase()===value.toLowerCase());
@@ -31,6 +39,7 @@ export function discoverCardMarkup(game,card={}) {
    for(const subtype of (type.split('—')[1]||'').trim().match(/Time Lord|[^\s]+/g)||[])chips.push(discoveryButton(game,'type',subtype));
   }
   for(const ability of card.keywords||[])chips.push(discoveryButton(game,'keyword',ability));
+  for(const id of ['bloodlust','bloodthirst'])if(!(card.keywords||[]).some(k=>k.toLowerCase()===id)&&mechanicCardMatches(card,[id])){const concept=resolveMtgConcept(id);chips.push(discoveryButton(game,'concept',id,concept.label+' · mechanic match'));}
  }else if(game==='ygo'){
   for(const kind of ['archetype','race','attribute'])if(card[kind])chips.push(discoveryButton(game,kind,card[kind]));
   if(card.cardType)chips.push(discoveryButton(game,'type',card.cardType));

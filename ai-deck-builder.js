@@ -4,10 +4,13 @@ import { buildDeck, themeQuery, themeQueries, fitsColors, requestedIntent, inspe
 import { cardKey, cardPrice, sumQty, validateDeck } from './core.js';
 import { formatOf, canLead, legalityIn, verifyLeader } from './formats.js';
 import { normalizeDeckGoal, goalDescription } from './ai-deck-goal.js';
-import { commanderTheme, tribalSupport, themeSupport, fitsTypeRestrictions } from './planner.js';
+import { commanderTheme, tribeEvidence, tribalSupport, themeSupport, fitsTypeRestrictions, readCreatureTypeRestrictions, CREATURE_THEMES } from './planner.js';
 import { mtgAbilityEvidence } from './mtg-effects.js';
 import { functionalIn } from './deck-safety.js';
 import { findCheapestPrinting } from './mtg-cheap.js';
+import {readLoopIntent,manaLoopCandidates,inspectManaLoop} from './mtg-combo-packages.js';
+import {tribalDiscoveryQueries} from './deck-strategy-plan.js';
+import {requestedMechanics,mechanicDiscoveryQueries,mechanicCardMatches} from './deck-mechanic-plan.js';
 const BASIC = { W:'Plains', U:'Island', B:'Swamp', R:'Mountain', G:'Forest', C:'Wastes' };
 const money = n => Math.round(n * 100) / 100;
 const quote = c => { const p = cardPrice(c); return Number.isFinite(p) && p >= 0 ? p : null; };
@@ -29,6 +32,16 @@ export async function prepareMtgDeck(args,x) {
  if(f.id==='limited')return {requiresChoice:true,note:'Limited needs the cards from your draft or sealed pool. Choose a constructed format or provide that pool.'};
  if(f.id==='paupercommander'&&!args.flow)return {requiresChoice:true,note:'This AI draft path does not yet verify Pauper Commander’s separate commander-rarity rule. Choose Commander, or use the existing Pauper Commander builder and review its commander eligibility check.'};
  const style=clean(args.style),seedName=clean(args.seed),leaderName=clean(args.commander),catalog={},warnings=[],goal=normalizeDeckGoal(args.goal,style);
+ const parsedTypes=readCreatureTypeRestrictions(style);
+ for(const field of ['creatureTypesOnly','excludedSubtypes'])if(args[field]!==undefined&&(!Array.isArray(args[field])||args[field].length>8||args[field].some(type=>!CREATURE_THEMES.includes(type))))return {requiresChoice:true,note:'Choose at most eight known creature types for each type restriction.'};
+ args={...args,creatureTypesOnly:[...new Set(args.creatureTypesOnly===undefined?parsedTypes.creatureTypesOnly:args.creatureTypesOnly)],excludedSubtypes:[...new Set(args.excludedSubtypes===undefined?parsedTypes.excludedSubtypes:args.excludedSubtypes)]};
+ const parsedLoop=readLoopIntent(style);
+ for(const field of ['requireLoop','loopOutput','unsupportedLoop','loopConflict','clearLoop'])if(!Object.hasOwn(args,field))args[field]=parsedLoop[field];
+ const loopIntent={requireLoop:args.requireLoop??null,loopOutput:args.loopOutput??null,unsupportedLoop:args.unsupportedLoop??null,loopConflict:args.loopConflict===true,clearLoop:args.clearLoop===true};
+ if(loopIntent.unsupportedLoop)return {requiresChoice:true,choice:'loop',goal,note:loopIntent.unsupportedLoop};
+ if(loopIntent.loopConflict||loopIntent.requireLoop&&args.avoid_infinite)return {requiresChoice:true,choice:'loop',goal,note:'Infinite mana conflicts with your retained no-infinite-combos restriction. Choose which requirement to keep; neither was relaxed.'};
+ if(loopIntent.requireLoop&&args.game&&args.game!=='mtg')return {requiresChoice:true,choice:'loop',goal,note:'The reviewed repeatable-mana packages are for Magic only. This game needs its own exact-card interaction check.'};
+ let automaticLeader=false,leaderSupport=0,leaderCandidates=0;
  const unverifiedInfinite=args.avoid_infinite===true&&args.allowUnverifiedInfinite===true;
  if(args.avoid_infinite===true&&!unverifiedInfinite)return {requiresChoice:true,choice:'infinite',goal,note:'You asked for no infinite combos. CardStashy cannot verify every possible loop. You can review an explicitly unverified draft, revise the restriction, or name specific cards to exclude. An exclusion list alone cannot prove there are no infinite combos. Nothing was saved.'};
  if(unverifiedInfinite)warnings.push('Unverified restriction: you allowed this draft without checking every possible infinite combo. Specific card exclusions are enforced, but do not prove the absence of all loops.');
@@ -85,15 +98,31 @@ export async function prepareMtgDeck(args,x) {
   const intent=requestedIntent(discoveryStyle);
   const fallback=[...suggested,...(!successfulSearches?Object.values(x.S?.catalog||{}):[])].filter(c=>c&&intent.other.length===0&&intent.tribes.every(t=>tribalSupport(c,t))&&intent.roles.every(r=>themeSupport(c,{roles:[r]}).length>0)&&intent.abilities.every(k=>mtgAbilityEvidence(c,k).length));
   const candidates=[...choices,...fallback.filter(c=>!choices.some(found=>cardKey(found.name)===cardKey(c.name)))];
-  const usable=candidates.filter(c=>!excludedKeys.has(cardKey(c.name))&&fitsTypeRestrictions(c,args)&&(!requestedColors.length||fitsColors(c,allowedColors))&&requiredCards.every(r=>!f.commander||fitsColors(r,c.color_identity||[]))&&isLegal(c,f)&&(!f.commander||canLead(c,f)||f.id==='paupercommander')&&(!seed||!f.commander||fitsColors(seed,c.color_identity||[]))).filter(c=>basis==='owned'?available(x,c.name)>0:args.flow||limit===Infinity||quote(c)!==null&&quote(c)<=limit);
-  const chosen=usable[args.flow ? Math.abs(Number(args.randomSeed)||0)%Math.min(usable.length,24) : 0];
+  const loopRoutes=loopIntent.requireLoop?manaLoopCandidates({...args,...loopIntent},{excluded_cards:excludedNames}):null;
+  const leaderCost=c=>basis!=='total'&&available(x,c.name)>0?0:quote(c);
+  const usable=candidates.filter(c=>!excludedKeys.has(cardKey(c.name))&&fitsTypeRestrictions(c,args)&&(!requestedColors.length||fitsColors(c,allowedColors))&&requiredCards.every(r=>!f.commander||fitsColors(r,c.color_identity||[]))&&isLegal(c,f)&&(!f.commander||canLead(c,f)||f.id==='paupercommander')&&(!seed||!f.commander||fitsColors(seed,c.color_identity||[]))&&(!loopRoutes||!f.commander||loopRoutes.some(p=>p.colors.every(color=>(c.color_identity||[]).includes(color))))).filter(c=>basis==='owned'?available(x,c.name)>0:limit===Infinity||args.flow&&args.budgetMode==='target'||leaderCost(c)!==null&&leaderCost(c)<=limit);
+  // A requested plan needs an appropriate engine, not an arbitrary member of
+  // the first page. These are bounded, explained tie-breaks, not a power score.
+  const planFit=c=>intent.tribes.reduce((n,type)=>n+tribeEvidence(c,type).reduce((s,e)=>s+(e.kind==='payoff'?4:e.kind==='token'?2:1),0),0)+intent.roles.reduce((n,role)=>n+themeSupport(c,{roles:[role]}).length,0)+intent.abilities.reduce((n,ability)=>n+mtgAbilityEvidence(c,ability).length,0)+(mechanicCardMatches(c,intent.mechanics||[])?4:0);
+  if(goal==='strongest'||goal==='theme')usable.sort((a,b)=>planFit(b)-planFit(a)||(a.edhrec_rank||Infinity)-(b.edhrec_rank||Infinity)||a.name.localeCompare(b.name));
+  const chosen=usable[args.flow&&goal!=='strongest'&&goal!=='theme' ? Math.abs(Number(args.randomSeed)||0)%Math.min(usable.length,24) : 0];
   if(!chosen)return {requiresChoice:true,note:seed?`I found ${seed.name}, but no compatible priced commander in this search. Name a commander to use with it.`:warnings.some(w=>w.startsWith('Some card lookups'))?`The card search could not finish, so I cannot verify a ${f.name} build-around yet. Try again, or name a card to build around.`:`I could not find a verified ${f.name} build-around for that theme in this search. Name a card to build around.`,warnings:[...new Set(warnings)]};
-  if(f.commander){lead=chosen;if(f.id==='paupercommander'){lead.pdhCommander=true;remember(lead);}}else seed=chosen;
+  if(f.commander){lead=chosen;automaticLeader=true;leaderSupport=planFit(chosen);leaderCandidates=usable.length;if(f.id==='paupercommander'){lead.pdhCommander=true;remember(lead);}}else seed=chosen;
   if(!seed)seed=chosen;
  }
  if(lead&&requiredCards.some(c=>!fitsColors(c,lead.color_identity||[])))return {requiresChoice:true,note:'A required card is outside the selected commander’s color identity. Choose a compatible commander or change that requirement.'};
  const colors=(lead?.color_identity||(requestedColors.length?allowedColors:[...new Set([seed,...requiredCards].filter(Boolean).flatMap(c=>c.color_identity||[]))])),ci=colors.join('').toLowerCase()||'c',baseQ=`${fq} id<=${ci}`;
- const planQueries=[...new Set([...themeQueries(seed,style),...(lead&&cardKey(lead.name)!==cardKey(seed.name)?themeQueries(lead):[])])];
+ let loopPackages=[null];
+ if(loopIntent.requireLoop){
+  const possible=manaLoopCandidates({...args,...loopIntent},{excluded_cards:excludedNames}).filter(p=>p.colors.every(color=>colors.includes(color)));
+  const pieceNames=[...new Set(possible.flatMap(p=>p.cards))],resolved=await batches(pieceNames,resolve),pieces=new Map(pieceNames.map((name,i)=>[cardKey(name),resolved[i]]));
+  if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
+  loopPackages=possible.filter(p=>p.cards.every(name=>{const c=pieces.get(cardKey(name));return c&&!c.brief&&isLegal(c,f)&&functionalIn(c,f)&&fitsColors(c,colors)&&fitsTypeRestrictions(c,args)&&!excludedKeys.has(cardKey(c.name));})&&inspectManaLoop(p.cards.map(name=>({card:pieces.get(cardKey(name)),qty:1,zone:'main'})),{...args,...loopIntent}).status==='verified');
+  if(!loopPackages.length)return {requiresChoice:true,choice:'loop',goal,note:'No reviewed repeatable-mana package could be resolved within your format, commander colors, creature types, exclusions and requested mana output. Missing or incompatible pieces were not substituted. Revise a requirement or name an exact route for review.'};
+ }
+ const requestedTribes=[...new Set([...requestedIntent(style).tribes,...(args.creatureTypesOnly||[]),...(lead?commanderTheme(lead).tribes:[])])];
+ const focusedQueries=[...tribalDiscoveryQueries(requestedTribes,{limit:3}),...mechanicDiscoveryQueries(requestedMechanics(style),{limit:3})];
+ const planQueries=[...new Set([...focusedQueries,...themeQueries(seed,style),...(lead&&cardKey(lead.name)!==cardKey(seed.name)?themeQueries(lead):[])])];
  const queries=[...planQueries.map(query=>`${baseQ} -t:land ${query}`),`${baseQ} -t:land usd<=0.5`,`${baseQ} -t:land cmc<=3 (o:destroy or o:exile or o:counter)`,`${baseQ} -t:land (o:draw or o:search)`,`${baseQ} -t:land (o:"add {" or o:"mana of")`,`${baseQ} t:land -t:basic usd<=1`];
  await batches([...new Set(queries)],q=>search(q,{pages:planQueries.some(p=>q.endsWith(p))?2:1}));
  // The same selector can work without the AI/provider on already loaded rules
@@ -113,28 +142,36 @@ export async function prepareMtgDeck(args,x) {
  const own=n=>available(x,n),required=[...new Map([seed,...requiredCards].filter(c=>c&&cardKey(c.name)!==cardKey(lead?.name)).map(c=>[cardKey(c.name),{name:c.name,qty:1}])).values()];
  if(args.flow&&args.preferOwned!==false)for(const c of Object.values(x.S?.catalog||{}))if(c?.name&&available(x,c.name)>0&&!catalog[cardKey(c.name)]&&isLegal(c,f)&&fitsColors(c,colors))remember(c);
  const buildCatalog=Object.fromEntries(Object.entries(catalog).filter(([,c])=>!excludedKeys.has(cardKey(c.name))&&fitsTypeRestrictions(c,args)));
- const options=({format:f.name,seeds:[seed],commander:lead,easy:args.easy===true,preferred:args.preferOwned===true?c=>own(c.name):()=>0,requestedStyle:style,goal,suggestedCards:suggested.filter(Boolean).map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
- const candidates=(args.constructionBudgets||[limit]).flatMap(cap=>[false,...(args.flow?[true]:[])].map(completionFirst=>buildDeck({...options,budget:cap,completionFirst})));
+ const options=({format:f.name,seeds:[seed],commander:lead,easy:args.easy===true,preferred:args.preferOwned===true?c=>own(c.name):()=>0,requestedStyle:style,goal,creatureTypesOnly:args.creatureTypesOnly,excludedSubtypes:args.excludedSubtypes,suggestedCards:suggested.filter(Boolean).map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
+ const candidates=loopPackages.flatMap(pkg=>{
+  const base=[...new Map([...required,...(pkg?pkg.cards.filter(name=>cardKey(name)!==cardKey(lead?.name)).map(name=>({name,qty:1})):[])].map(r=>[cardKey(r.name),r])).values()];
+  return (args.constructionBudgets||[limit]).flatMap(cap=>[false,...(args.flow?[true]:[])].map(completionFirst=>({...buildDeck({...options,base,budget:cap,completionFirst}),...loopIntent,requiredLoopPackage:pkg?.id||null,internalRequiredCards:pkg?[...pkg.cards]:[]})));
+ });
  const finish=draft=>{
-
+ const candidateWarnings=[...warnings];
  const pricing=deckPriceCoverage(draft.cards,catalog,own,quote),validation=validateDeck(draft,catalog,[],[]),issues=[...validation.issues];
  if(f.id==='oathbreaker')issues.push({kind:'unverified',text:'Oathbreaker requires a signature spell. This draft path has not selected or checked that special command-zone requirement.'});
  for(const row of draft.cards){const c=catalog[cardKey(row.name)];if(c&&!Array.isArray(c.color_identity))issues.push({kind:'unverified',text:`${row.name}: color identity data is missing.`});}
  if(!draft.cards.some(r=>cardKey(r.name)===cardKey(seed.name)))issues.push({kind:'build-around',text:`Required build-around ${seed.name} is missing.`});
  for(const c of requiredCards)if(!draft.cards.some(r=>cardKey(r.name)===cardKey(c.name)))issues.push({kind:'required',text:`Required card ${c.name} is missing.`});
  for(const r of draft.cards)if(excludedKeys.has(cardKey(r.name)))issues.push({kind:'excluded',text:`Excluded card ${r.name} was selected.`});
+ for(const r of draft.cards)if(!fitsTypeRestrictions(catalog[cardKey(r.name)],args))issues.push({kind:'creature-type',text:`${r.name} does not satisfy the requested creature-type restriction or its card types are unverified.`});
  if(basis==='owned'&&pricing.ownedCopies<sumQty(draft.cards))issues.push({kind:'ownership',text:`${sumQty(draft.cards)-pricing.ownedCopies} copies are not available in your saved collection.`});
  const estimate=basis==='total'?pricing.totalEstimate:pricing.purchaseEstimate,withinBudget=estimate!==null&&estimate<=limit+1e-6;
- if(estimate===null)warnings.push('Some selected cards have no current quote. The budget is not verified.');
- else if(!withinBudget)warnings.push(`The ${basis==='total'?'whole-deck':'purchase'} estimate exceeds your budget. This is not an under-budget recommendation.`);
- if(goal !== 'strongest')warnings.push(goalDescription(goal)+' Goal fit is a judgment to review, not a verified power or fun rating.');
- const themeCheck=inspectMtgTheme(draft.cards.map(r=>({...r,card:catalog[cardKey(r.name)],zone:'main'})),{style,commander:lead?.name});
- warnings.push(...themeCheck.issues,...themeCheck.notes);
- const legalChecked=issues.length===0,complete=draft.total===f.size,ready=complete&&legalChecked&&withinBudget&&!unverifiedInfinite&&!themeCheck.issues.length&&themeCheck.status!=='unverified';
- const commanderReason=lead?(leaderName?'Your requested commander':cardKey(lead.name)===cardKey(seed.name)?'The requested build-around can lead this format':`Selected from legal theme candidates; its color identity can include ${seed.name}`):'';
+ if(estimate===null)candidateWarnings.push('Some selected cards have no current quote. The budget is not verified.');
+ else if(!withinBudget)candidateWarnings.push(`The ${basis==='total'?'whole-deck':'purchase'} estimate exceeds your budget. This is not an under-budget recommendation.`);
+ if(goal !== 'strongest')candidateWarnings.push(goalDescription(goal)+' Goal fit is a judgment to review, not a verified power or fun rating.');
+ const finalRows=draft.cards.map(r=>({...r,card:catalog[cardKey(r.name)],zone:'main'})),themeCheck=inspectMtgTheme(finalRows,{style,commander:lead?.name,goal}),comboCheck=inspectManaLoop(finalRows,args);
+ candidateWarnings.push(...themeCheck.issues,...themeCheck.notes,...comboCheck.issues);
+ if(comboCheck.status==='verified')candidateWarnings.push('A reviewed repeatable-mana sequence is present conditionally. Deployment, a useful outlet and a winning line are separate; this does not guarantee a win.');
+ for(const text of comboCheck.issues)issues.push({kind:'loop',text});
+ const legalChecked=issues.length===0,complete=draft.total===f.size,ready=complete&&legalChecked&&withinBudget&&!unverifiedInfinite&&!themeCheck.issues.length&&['supported','not-requested'].includes(themeCheck.status);
+ const rankedLeader=goal==='strongest'||goal==='theme';
+ const commanderReason=lead?(leaderName?'Your requested commander':automaticLeader?`Selected from ${leaderCandidates} verified theme candidates ${rankedLeader?'by recognized plan support, then provider popularity':'from the bounded compatible theme pool'}; this is not a measured power ranking or an optimality guarantee.`:cardKey(lead.name)===cardKey(seed.name)?'The requested build-around can lead this format':`Selected from legal theme candidates; its color identity can include ${seed.name}`):'';
  const note=`${unverifiedInfinite?'Unverified draft':ready?'Checked draft':'Partial draft'}: ${draft.total}/${f.size} cards${lead?`, led by ${lead.name}`:''}, including ${seed.name}. ${pricing.totalEstimate===null?'Whole-deck estimate incomplete':`Whole-deck estimate $${pricing.totalEstimate.toFixed(2)}`}; ${pricing.purchaseEstimate===null?'purchase estimate incomplete':`$${pricing.purchaseEstimate.toFixed(2)} to buy with available owned copies`}. ${unverifiedInfinite?'Infinite combos have not been verified. Review the warnings before using or saving this draft.':ready?'Review the exact list before saving.':'Review the warnings before using or saving it.'}`;
  const availableCopies=Object.fromEntries(draft.cards.map(r=>[cardKey(r.name),Math.min(r.qty,own(r.name))])),referencePrices=Object.fromEntries(draft.cards.map(r=>[cardKey(r.name),quote(catalog[cardKey(r.name)])]));
- return {draft:{...draft,...pricing,themeCheck,goal,goalDescription:goalDescription(goal),goalVerified:false,unverifiedConstraints:unverifiedInfinite?['infinite_combos']:[],requiredCards:requiredCards.map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),requestedColors,availableCopies,referencePrices,preparedAt:new Date().toISOString(),budget:limit,budgetBasis:basis,cost:pricing.purchaseEstimate,unknown:pricing.unpricedPurchaseCopies,owned:pricing.ownedCopies,buildAround:seed.name,commanderReason,legalChecked,complete,withinBudget,issues,warnings:[...new Set([...draft.warnings,...warnings,...issues.map(i=>i.text)])],note,preparedByAsk:true},result:{game:'mtg',requestedStyle:style,themeCheck,themeVerified:themeCheck.status==='supported',goal,goalDescription:goalDescription(goal),goalVerified:false,unverifiedConstraints:unverifiedInfinite?['infinite_combos']:[],requiredCards:requiredCards.map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),requestedColors,ready,partial:!ready,format:f.name,seed:seed.name,commander:lead?.name||'',commanderReason,total:draft.total,target:f.size,lands:draft.lands,legalChecked,withinBudget,budget:limit===Infinity?'no limit':limit,budgetBasis:basis,...pricing,note,warnings:[...new Set([...warnings,...issues.map(i=>i.text)])].slice(0,8)}};
+ const typeRestrictions={creatureTypesOnly:[...args.creatureTypesOnly],excludedSubtypes:[...args.excludedSubtypes]};
+ return {draft:{...draft,...pricing,...typeRestrictions,...loopIntent,comboCheck,themeCheck,goal,goalDescription:goalDescription(goal),goalVerified:false,unverifiedConstraints:unverifiedInfinite?['infinite_combos']:[],requiredCards:requiredCards.map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),requestedColors,availableCopies,referencePrices,preparedAt:new Date().toISOString(),budget:limit,budgetBasis:basis,cost:pricing.purchaseEstimate,unknown:pricing.unpricedPurchaseCopies,owned:pricing.ownedCopies,buildAround:seed.name,commanderReason,commanderSelection:automaticLeader?{candidates:leaderCandidates,recognizedSupport:leaderSupport,method:rankedLeader?'bounded-plan-support':'bounded-compatible-pool'}:null,legalChecked,complete,withinBudget,issues,warnings:[...new Set([...draft.warnings,...candidateWarnings,...issues.map(i=>i.text)])],note,preparedByAsk:true},result:{game:'mtg',requestedStyle:style,...typeRestrictions,...loopIntent,comboCheck,themeCheck,themeVerified:themeCheck.status==='supported',goal,goalDescription:goalDescription(goal),goalVerified:false,unverifiedConstraints:unverifiedInfinite?['infinite_combos']:[],requiredCards:requiredCards.map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),requestedColors,ready,partial:!ready,format:f.name,seed:seed.name,commander:lead?.name||'',commanderReason,total:draft.total,target:f.size,lands:draft.lands,legalChecked,withinBudget,budget:limit===Infinity?'no limit':limit,budgetBasis:basis,...pricing,note,warnings:[...new Set([...candidateWarnings,...issues.map(i=>i.text)])].slice(0,8)}};
  };
  return args.flow?{candidates:candidates.map(finish)}:finish(candidates[0]);
 }

@@ -3,7 +3,7 @@ import {readBuildContract,applyUserBuildIntent,validateBuildProposal,lockBuildCo
 import {isDeckBuildRequest} from './ai-deck-goal.js';
 // Shared, bounded orchestration. Repeated calls never spend another lookup and a
 // completed builder draft is returned immediately rather than repeatedly planned.
-const APP_TOOLS = new Set(['app_help','search_cards','card_details','my_collection','list_sets','set_cards','meta_decks','my_decks','build_deck']);
+const APP_TOOLS = new Set(['app_help','game_concepts','wiki_lookup','search_cards','card_details','my_collection','list_sets','set_cards','meta_decks','my_decks','build_deck']);
 export const ASK_LIMITS = Object.freeze({rounds:8,tools:12,parallel:3,buildProposals:2});
 const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
 export function boundedToolOutput(out) { const json=JSON.stringify(out)??'null';return json.length<=12000?json:JSON.stringify({error:'Result too large. Narrow the request to fewer cards or sets.'}); }
@@ -11,7 +11,7 @@ export function partialAnswer(records,reason='I reached the search limit.') {
  const build=[...records].reverse().find(r=>r.name==='build_deck');
  if(build){const r=build.out,preview=[...records].reverse().find(x=>x.name==='build_deck'&&x.out?.reviewAvailable)?.out;
   if(preview&&preview!==r){const fields=[...new Set((r.violations||[]).map(v=>v.field.replaceAll('_',' ')))];return {text:[preview.note,fields.length?'A suggested revision changed your '+fields.join(', ')+' and was discarded. The original draft is retained.':'Further refinement could not finish. The earlier draft is retained for review.','Tap '+(preview.actionLabel||'Review the deck draft')+' to inspect the cards and checks.'].filter(Boolean).join(' ').slice(0,1200),source:'app',show:[],choices:[],suggestions:[]};}
-  return {text:[r.userNote||r.note||r.error||'The deck draft could not be completed.',preview&&preview!==r?preview.note:'',preview&&!preview.inlineResult?'Tap '+(preview.actionLabel||'Review the deck draft')+' to inspect the cards and checks.':'',!r.terminal?reason:''].filter(Boolean).join(' ').slice(0,1200),source:'app',show:[],choices:buildChoices(r),suggestions:Array.isArray(r.suggestions)?r.suggestions.slice(0,3):[]};}
+  return {text:[r.userNote||r.note||r.error||'The deck draft could not be completed.',preview&&preview!==r?preview.note:'',preview&&!preview.inlineResult&&preview.resultPresentation!=='sheet'?'Tap '+(preview.actionLabel||'Review the deck draft')+' to inspect the cards and checks.':'',!r.terminal?reason:''].filter(Boolean).join(' ').slice(0,1200),source:'app',show:[],choices:buildChoices(r),suggestions:Array.isArray(r.suggestions)?r.suggestions.slice(0,3):[]};}
  const useful=records.flatMap(r=>(r.out?.card?[r.out.card]:r.out?.cards||[]).filter(c=>c?.name).map(card=>({card,game:r.out.game}))).slice(0,6);
  const errors=[...new Set(records.map(r=>r.out?.error).filter(Boolean))].slice(0,2);
  return {text:[reason,useful.length?'Here are the cards I could verify so far.':errors.join(' ')||'I could not verify enough app data for a complete answer.','Nothing was saved.'].join(' '),source:'app',show:useful.map(({card:c,game})=>({kind:'card',game:['mtg','ptcg','ygo'].includes(game)?game:'mtg',ref:c.ref||c.id||c.name,label:c.name})),suggestions:[]};
@@ -76,12 +76,12 @@ export async function runAskLoop({game,items,tools,fetcher=fetch,signal,current=
    if(!current()||signal?.aborted)return {call,out:{cancelled:true}};
    if(!APP_TOOLS.has(call?.name))return {call,out:{error:'That is not an allowed assistant tool.'}};
    let args,out,key;
-   try{args=JSON.parse(call.arguments||'{}');key=call.name+':'+JSON.stringify(canonical(args));}catch{return {call,out:{error:'The assistant sent invalid tool arguments.'}};}
+   try{args=JSON.parse(call.arguments||'{}');if(['game_concepts','wiki_lookup'].includes(call.name))args.game=contract.game||game;key=call.name+':'+JSON.stringify(canonical(args));}catch{return {call,out:{error:'The assistant sent invalid tool arguments.'}};}
    if(seen.has(key))return {call,out:await seen.get(key),repeated:true};
    if(seen.size>=ASK_LIMITS.tools)return {call,out:{error:'The search budget is exhausted. Finish with the verified results.'}};
    if(call.name==='build_deck'&&builds++)return {call,out:{error:'Prepare one deck at a time. Wait for the app’s validation before a correction.'}};
    progressed=true;
-   let handshake;
+   let handshake={signal,current,userRequest:userContract.request};
    if(call.name==='build_deck'){
     args.game??=game;
     if(!acceptedBuilds)args=applyUserBuildIntent(args,contract);
