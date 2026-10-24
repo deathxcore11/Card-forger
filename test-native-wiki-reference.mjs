@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import worker from './worker.js';
-import {readMtgWikiReference,readGameWikiReference,readGameWikiDaily} from './mtg-wiki-client.js';
+import {readMtgWikiReference,readGameWikiReference,readGameWikiDaily,readGameWikiArticle} from './mtg-wiki-client.js';
 import {createNativeFetch} from './android-app/runtime/native-transport.js';
 import {resolveServiceURL,planServiceRequest,NATIVE_ORIGIN,SERVICE_ORIGIN} from './native-service-policy.js';
 import {checkNativeBackendRequest,isNativeAdmitted} from './native-backend-contract.js';
@@ -123,5 +123,47 @@ try{
  assert.throws(()=>readGameWikiReference('other','Public Topic',{fetcher:gameTransport}),/supported/);
  assert.throws(()=>readGameWikiDaily('other',{fetcher:gameTransport}),/supported/);
  assert.equal(genericCalls,9,'Unsupported games, overlapping selectors, private fields, credentials and methods never reach a Wiki or account service');
- console.log('PASS: Legacy and per-game Wiki clients/native planner/backend admission/Worker integration; three isolated providers and title/query/daily requests, exact credentialless JSON POST, scoped CORS, upstream/cache isolation and rejected private inputs, auth/cookies, methods and unknown routes.');
+ // Explicit article reads travel through the same native route. A body larger
+ // than the short-reference response cap proves this path does not silently
+ // substitute an AI excerpt or impose a native proxy's smaller response limit.
+ const art={mtg:'https://files.mtg.wiki/Native_fixture.png',ptcg:'https://archives.bulbagarden.net/media/upload/Native_fixture.png',ygo:'https://static.wikia.nocookie.net/yugioh/images/Native_fixture.png'};
+ let articleQueries=0,articleParses=0;
+ globalThis.fetch=async(url,init)=>{
+  const target=new URL(url);assert.equal(target.origin,expectedProvider.origin);assert.equal(target.pathname,expectedProvider.api);
+  assert.equal(init.method,'GET');assert.equal(init.credentials,'omit');assert.equal(init.redirect,'manual');
+  assert.equal(new Headers(init.headers).get('Authorization'),null);assert.equal(new Headers(init.headers).get('Cookie'),null);
+  const title=expectedBody.title||expectedBody.query;
+  if(target.searchParams.get('action')==='query'){
+   assert(expectedBody.query,'Only typed article searches need a public query before parse');
+   assert.equal(target.searchParams.get('generator'),'search');assert.equal(target.searchParams.get('gsrnamespace'),'0');
+   assert.equal(target.searchParams.get('gsrsearch'),title+(expectedBody.game==='ptcg'?' TCG':''));articleQueries++;
+   return Response.json({batchcomplete:true,query:{pages:[{pageid:1250+articleQueries,ns:0,title,index:1}]}});
+  }
+  assert.equal(target.searchParams.get('action'),'parse');assert.equal(target.searchParams.get('page'),title);articleParses++;
+  const prose=expectedBody.game==='mtg'&&expectedBody.title?'fullarticle '.repeat(8000)+'Native end marker.':'Synthetic full article body with more than the old short quotation limit. Native reader content continues through the section, illustration, table, and topic link below. Native end marker.';
+  return Response.json({parse:{pageid:1500+articleParses,title,revid:31,text:`<div class="mw-parser-output"><p>${prose}</p><img src="${art[expectedBody.game]}" alt="Synthetic native Wiki art" width="300" height="400"><h2 id="Rules">Timing</h2><p>Read <a href="${expectedProvider.article}Native_Linked_Topic">the linked topic</a> in this game.</p><table><tr><th>Event</th><td>Combat damage</td></tr></table><script>neverExecuteNativeWiki()</script><img src="https://evil.invalid/image.png" alt="Unavailable art"></div>`}});
+ };
+ for(const game of ['mtg','ptcg','ygo']){
+  expectedProvider=providers[game];
+  for(const selection of [{title:'Native Full Article'},{query:'Native Article Query'}]){
+   expectedBody={game,mode:'article',...selection};
+   const result=await readGameWikiArticle(game,selection.title||selection.query,{query:!!selection.query,fetcher:gameTransport});
+   assert.equal(result.status,'available');assert.equal(result.mode,'article');assert.equal(result.game,game);
+   assert.equal(result.article.title,selection.title||selection.query);assert.equal(result.article.source.game,game);
+   assert.equal(new URL(result.article.source.url).origin,expectedProvider.origin);
+   assert(result.article.lead.some(block=>block.type==='paragraph'&&block.content.some(part=>part.text.includes('Native end marker.'))),'Full article prose reaches the real native client');
+   assert(result.article.sections.some(section=>section.title==='Timing'&&section.blocks.some(block=>block.type==='table')));
+   assert(result.article.sections.flatMap(section=>section.blocks).some(block=>block.content?.some(part=>part.type==='link'&&part.internal&&part.game===game&&part.title==='Native Linked Topic')));
+   assert.deepEqual(result.article.images.map(image=>image.src),[art[game]]);
+   assert.equal(result.article.html,undefined);assert(!JSON.stringify(result.article).includes('neverExecuteNativeWiki'));
+   if(game==='mtg'&&selection.title)assert(Buffer.byteLength(JSON.stringify(result.article))>65536,'The native article response is larger than the legacy excerpt cap');
+   assert.equal(isNativeAdmitted(lastRequest),false);
+   const count=articleQueries+articleParses;
+   const cached=await readGameWikiArticle(game,selection.title||selection.query,{query:!!selection.query,fetcher:gameTransport});
+   assert.equal(cached.cache.hit,true);assert.equal(cached.article.source.game,game);assert.equal(articleQueries+articleParses,count);
+  }
+ }
+ assert.equal(articleQueries,3);assert.equal(articleParses,6,'Each game and article selector reaches only its pinned Wiki provider');
+ assert.throws(()=>readGameWikiArticle('other','Public Topic',{fetcher:gameTransport}),/supported/);
+ console.log('PASS: Legacy and per-game Wiki clients/native planner/backend admission/Worker integration; three isolated providers and title/query/daily requests plus full article title/query reads, large structured article bodies, exact credentialless JSON POST, scoped CORS, upstream/cache isolation and rejected private inputs, auth/cookies, methods and unknown routes.');
 }finally{globalThis.fetch=oldFetch;}

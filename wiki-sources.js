@@ -12,3 +12,17 @@ export function isAllowedWikiUrl(game,value,{api=false}={}){
  const source=wikiSourceForGame(game);if(!source||typeof value!=='string')return false;
  try{const url=new URL(value);return url.protocol==='https:'&&!url.username&&!url.password&&(!url.port||url.port==='443')&&source.allowedHosts.includes(url.hostname)&&url.origin===source.origin&&(api?url.pathname===new URL(source.apiEndpoint).pathname:url.pathname.startsWith(source.articlePath));}catch{return false;}
 }
+// These are provider-specific raster-image locations, never arbitrary returned
+// hosts. The reader does not proxy or execute source HTML/SVG.
+export const WIKI_IMAGE_SOURCES=freeze({
+ mtg:[{host:'files.mtg.wiki',path:'/'},{host:'static.wikia.nocookie.net',path:'/mtgsalvation_gamepedia/images/'}],
+ ptcg:[{host:'archives.bulbagarden.net',path:'/media/upload/'}],
+ ygo:[{host:'static.wikia.nocookie.net',path:'/yugioh/images/'}]
+});
+export function isAllowedWikiImageUrl(game,value){
+ if(!wikiSourceForGame(game)||typeof value!=='string'||value.length>2048)return false;
+ try{
+  const url=new URL(value),path=decodeURIComponent(url.pathname);
+  return url.protocol==='https:'&&!url.username&&!url.password&&(!url.port||url.port==='443')&&!/[\u0000-\u001f\u007f]/.test(path)&&!/(?:^|[/.])svg(?:[/.]|$)/i.test(path)&&/\.(?:png|jpe?g|gif|webp|avif)(?:$|\/revision\/)/i.test(path)&&WIKI_IMAGE_SOURCES[game].some(rule=>url.hostname===rule.host&&path.startsWith(rule.path));
+ }catch{return false;}
+}

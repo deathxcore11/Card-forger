@@ -1434,7 +1434,7 @@ export function registerScanner(ctx) {
     q.inline?.close();q.inline=null;q.inlineStarted=true;q.aiRequest=null;q.aiBusy=false;q.pickerRequest=request;q.pickerOpening=true;render();
     try{
       await ctx.openPrintingPicker({game:G,candidate:c,captureId,captureRevision:revision,parentContext:S.ui.sheetCtx,isCurrent,
-        ...(ctx.inlinePrinting?{openInline:async config=>{if(!isCurrent())return;q.inline=createScannerBrowse(config,{current:()=>isCurrent()&&!q.saving,draw:()=>{if(isCurrent())drawReview();},preview:()=>{q.aiRequest=null;q.aiBusy=false;st.lookupRequest=null;st.lookup=false;q.i=-1;q.finish='';q.price=null;q.priceRequest=null;persistReview();}});await q.inline.load();}}:{}),
+        ...(ctx.inlinePrinting?{openInline:async config=>{if(!isCurrent())return;const [code='',rarity='']=String(c.print||'').split('|');q.inline=createScannerBrowse({...config,focus:{cardId:c.id,code,rarity}},{current:()=>isCurrent()&&!q.saving,draw:()=>{if(isCurrent())drawReview();},preview:()=>{q.aiRequest=null;q.aiBusy=false;st.lookupRequest=null;st.lookup=false;q.i=-1;q.finish='';q.price=null;q.priceRequest=null;persistReview();}});await q.inline.load();}}:{}),
         onSelect:result=>{
           if(!isCurrent()||!result?.candidate||result.candidate.game!==G||(!finishesFor(G,result.candidate).includes(result.finish)&&!(result.finish===''&&result.candidate.finishUnconfirmed===true)))return false;
           q.aiRequest=null;q.aiBusy=false;st.lookupRequest=null;st.lookup=false;

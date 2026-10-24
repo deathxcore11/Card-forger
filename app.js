@@ -916,6 +916,7 @@ function parseHash() {
     ui.collTab = a;
     if(T.isTcg()) { T.ui().coll.tab = a === "wishlist" ? "cards" : a; if(a === "wishlist")T.ui().coll.show="wanted"; }
   }
+  if (ui.view === "wiki") currentWikiPage()?.route(a,{query:b==="search"});
   if (ui.view === "shared" && a !== ui.shared.code) openShared(a);
   if (ui.view === "tdeck") { ui.tdeckId = a; if (b && ["cards","insights","matchups","upgrade","versions","playtest","rules"].includes(b)) (ui.tdeckTab ||= {})[T.game()+":"+a]=b; }
   if (ui.view === "set" && T.isTcg()) {
@@ -1017,7 +1018,7 @@ function render() {
   if(previousDisclosureKey)disclosureStates.set(previousDisclosureKey,captureDisclosures(content));
   if(disclosureStates.size>100)disclosureStates.delete(disclosureStates.keys().next().value);
   const disclosureKey=[g,ui.view,ui.deckId,ui.tdeckId,ui.set?.code,ui.tsetId,ui.collTab,ui.decksTab,ui.deckTab,...(ui.view === "collection" && g !== "mtg" ? [T.ui(g).coll.tab || "cards"] : [])].join(':');
-  const searchFocus=["home","search","collection"].includes(ui.view) && previousDisclosureKey === disclosureKey ? captureSearchFocus(content) : null;
+  const searchFocus=["home","search","collection","wiki"].includes(ui.view) && previousDisclosureKey === disclosureKey ? captureSearchFocus(content) : null;
   if (searchFocus?.key === "id:dbTerm") searchFocus.value = ui.db.term;
   if(content?.dataset)content.dataset.disclosureKey=disclosureKey;
   const priorSectionRail=previousDisclosureKey === disclosureKey ? readSectionTabRail(content) : null;
@@ -1375,7 +1376,7 @@ window.addEventListener("hashchange",applyHistory);
 const dialogOpenedAt=new WeakMap();let dialogTick=0;
 if(typeof MutationObserver!=='undefined'&&document.documentElement)new MutationObserver(records=>{for(const r of records)if(r.target.tagName==='DIALOG'&&r.target.open)dialogOpenedAt.set(r.target,++dialogTick);}).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['open']});
 const topDialog=()=>[...document.querySelectorAll('dialog[open]')].sort((a,b)=>(dialogOpenedAt.get(b)||0)-(dialogOpenedAt.get(a)||0))[0]||null;
-const parentRoute=hash=>/^#(?:t?set)\//.test(hash)?'#sets':/^#(?:t?deck)\//.test(hash)?'#decks':/^#collection\/./.test(hash)?'#collection':'#home';
+const parentRoute=hash=>/^#wiki\//.test(hash)?'#wiki':/^#(?:t?set)\//.test(hash)?'#sets':/^#(?:t?deck)\//.test(hash)?'#decks':/^#collection\/./.test(hash)?'#collection':'#home';
 let backBusy=0;
 function appBack(){
   // A second Back while the first is still settling (a fast double swipe) does nothing rather than skipping a level.
@@ -1409,7 +1410,7 @@ for(const name of ['click','input','change'])document.addEventListener(name,e=>{
    ========================================================= */
 
 const A = {}; // click actions
-wikiPageControllers=Object.fromEntries(['mtg','ygo','ptcg'].map(game=>[game,createMtgWikiPageController({game,active:()=>S.ui.view==='wiki'&&T.game()===game,root:()=>$('#content'),scope:()=>{const captured=mutationScope();return()=>mutationCurrent(captured);}})]));
+wikiPageControllers=Object.fromEntries(['mtg','ygo','ptcg'].map(game=>[game,createMtgWikiPageController({game,active:()=>S.ui.view==='wiki'&&T.game()===game,root:()=>$('#content'),scope:()=>{const captured=mutationScope();return()=>mutationCurrent(captured);},navigate:(topic,{query=false}={})=>go('#wiki'+(topic?'/'+encodeURIComponent(topic)+(query?'/search':''):''))})]));
 const deckPipeline=createDeckPipeline({S,T,api,resolve,cacheCard,meta,priceOf,inv,tcgCtx});
 const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game:T.game,
  identity:()=>{const account=accountGeneration;return ()=>!accountLocked&&account===accountGeneration;},
@@ -3632,9 +3633,10 @@ A.ruleCards = async button => {
  }
 };
 
-A.wikiOpen=async(t={dataset:{}})=>{const game=t.dataset?.game||T.game(),topic=t.dataset?.topic||t.dataset?.wikiTopic||'',account=accountGeneration;if(!GAMES[game])return;if($('#sheet').open)closeSheet();closeAsk();if(T.game()!==game)await switchGame(game);if(account!==accountGeneration||accountLocked||T.game()!==game)return;currentWikiPage().prepare(topic);await go('#wiki');};
+A.wikiOpen=async(t={dataset:{}})=>{const game=t.dataset?.game||T.game(),topic=t.dataset?.topic||t.dataset?.wikiTopic||'',account=accountGeneration;if(!GAMES[game])return;if($('#sheet').open)closeSheet();closeAsk();if(T.game()!==game)await switchGame(game);if(account!==accountGeneration||accountLocked||T.game()!==game)return;await go('#wiki'+(topic?'/'+encodeURIComponent(topic):''));};
 A.mtgWikiOpen=A.wikiOpen;
 A.mtgWikiPick=t=>currentWikiPage().lookup(t.dataset.wikiTopic);
+A.mtgWikiHome=()=>currentWikiPage().home();
 A.mtgWikiRetry=()=>currentWikiPage().retry();
 A.mtgWikiDailyRetry=()=>currentWikiPage().daily(true);
 A.mtgWikiCancel=()=>currentWikiPage().cancelLookup();

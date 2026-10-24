@@ -20,6 +20,16 @@ test('a start-up failure is shown instead of the static loading page', async () 
   assert.match(entry, /addEventListener\('error', startupFailed\); addEventListener\('unhandledrejection', startupFailed\);/);
   assert.ok(entry.indexOf("addEventListener('error'") < entry.indexOf("registerPlugin"), 'listeners are installed before the first native lookup');
 });
+test('the packaged Wiki reader retains its pinned image CSP after Android sync', async () => {
+  const html = await readFile(path.join(root, 'www/index.html'), 'utf8');
+  const policy = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1];
+  assert.ok(policy, 'The packaged page has its native CSP');
+  const images = policy.split(';').map(value => value.trim()).find(value => value.startsWith('img-src ')).split(/\s+/).slice(1);
+  for (const location of ['https://files.mtg.wiki', 'https://archives.bulbagarden.net/media/upload/', 'https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/', 'https://static.wikia.nocookie.net/yugioh/images/']) assert.ok(images.includes(location), location);
+  for (const broad of ['*', 'https:', 'https://static.wikia.nocookie.net', 'https://archives.bulbagarden.net']) assert.ok(!images.includes(broad), broad);
+  const synced = await readFile(path.join(root, 'android/app/src/main/assets/public/index.html'), 'utf8');
+  assert.equal(synced.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1], policy, 'The Android asset carries exactly the built reader policy');
+});
 // Card art from /img/ loads from https://cardstashy.com in the app, not the page's own origin.
 test('foil image matching uses the URL the app actually loads', async () => {
   const preview = await readFile(path.join(root, 'www/finish-preview.js'), 'utf8');

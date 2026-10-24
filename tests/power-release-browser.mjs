@@ -371,13 +371,13 @@ try{
  },complete.id);timings.push(cacheCheck);
  checks.push('Browser gameplay cache preserves object identity over 20 row-order-only reads; observed timing recorded without a hardware-dependent performance guarantee.');
  await openAsk(page);await page.locator('.ask-input').fill(question);await page.locator('.ask-send').click();
- await page.locator('.ask-dialog .deck-flow-result').waitFor();
- assert.equal(askCalls,1,'complete result ends after one proposal');const result=page.locator('.ask-dialog .deck-flow-result'),preview=await result.innerText();
- assert.match(preview,/60 main/);assert.match(preview,/Complete · structure checked/);assert.match(preview,/Reference estimate/);assert.doesNotMatch(preview,/Target \$25/);assert.equal(await page.locator('#sheet[open]').count(),0);
+ await page.locator('#sheet[open] .deck-flow-result').waitFor();
+ assert.equal(askCalls,1,'complete result ends after one proposal');const result=page.locator('#sheet[open] .deck-flow-result'),preview=await result.innerText();
+ assert.match(preview,/60 main/);assert.match(preview,/Complete · structure checked/);assert.match(preview,/Reference estimate/);assert.doesNotMatch(preview,/Target \$25/);assert.equal(await page.locator('#sheet[open]').count(),1,'Ask hands the completed deck to the existing independent deck sheet');assert.equal(await page.locator('.ask-dialog[open]').count(),0,'Ask closes before the deck sheet opens');assert.equal(await page.locator('#sheet').evaluate(n=>n.contains(document.activeElement)),true,'focus enters the completed deck sheet');
  const displayed=await result.locator('[data-act="flowCard"]').evaluateAll(ns=>ns.map(n=>({qty:Number(n.dataset.flowQty),name:n.dataset.flowName})));assert.equal(sumQty(displayed),60);
- for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.ask-dialog','Standard inline result '+width);await result.locator('[data-act="flowSave"]').scrollIntoViewIfNeeded();await capture(page,'goal-preview-'+width);}
- assert.equal(await inventorySnapshot(page),initial,'reviewing a built list never saves it');await page.locator('[data-ask-close]').click();
- checks.push('Actual Ask to shared complete 60-card inline result, real synthetic price estimate, four widths, no setup handoff or autosave.');
+ for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheet','Standard deck sheet '+width);await result.locator('[data-act="flowSave"]').scrollIntoViewIfNeeded();await capture(page,'goal-preview-'+width);}
+ assert.equal(await inventorySnapshot(page),initial,'reviewing a built list never saves it');await page.locator('#sheet [data-act="closeSheet"]').first().click();
+ checks.push('Actual Ask to shared independent complete 60-card deck sheet, real synthetic price estimate, four widths, focused handoff and no autosave.');
  await openAsk(page);await page.locator('[data-ask-new]').click();askHold={started:deferred(),release:deferred(),settled:deferred()};
  await page.locator('.ask-input').fill(question);await page.locator('.ask-send').click();await askHold.started.promise;
  await page.locator('[data-ask-close]').click();askHold.release.resolve();await askHold.settled.promise;askHold=null;await frames(page);

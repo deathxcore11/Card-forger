@@ -63,9 +63,10 @@ export function rankScanCandidates(g,cands,read={}){
  const ranked=cands.map(c=>{const e=signalEvidence(g,{...c.card,name:c.card?.name||c.name},read),codes=g==='ygo'?scanIdentifierEvidence(g,read).observations:[];if(codes.length&&c.print&&!codes.includes(c.print.split('|')[0]))e.conflicts.push('set code');return {c,e};});
  const supported=ranked.some(({e})=>e.exactMatch&&!e.conflicts.length);
  // Printings narrowed by a partly readable footer may disagree with a garbled
- // code ("FON" for FDN). Only footer conflicts are tolerated, only for an exact
- // title, and only as review: identifierConflict keeps them from verifying.
- const footerOnly=(c,e)=>c.footerNarrowed===true&&e.exactMatch&&!e.nameConflict&&!e.signalConflict&&e.conflicts.every(x=>x==='collector number'||x==='set / collector number');
+ // code ("FON" for FDN, "KIC0" for KICO). Only footer conflicts are tolerated,
+ // only for an exact title or when no title was read, and only as review:
+ // identifierConflict keeps them from verifying.
+ const footerOnly=(c,e)=>c.footerNarrowed===true&&(e.exactMatch||e.observations===0)&&!e.nameConflict&&!e.signalConflict&&e.conflicts.every(x=>x==='collector number'||x==='set / collector number'||x==='set code');
  return ranked.filter(({c,e})=>(!e.conflicts.length||footerOnly(c,e))&&(!supported||!e.nameConflict||e.exactMatch||c.identitySource==='artwork'))
  .sort((a,b)=>b.e.score-a.e.score).map(({c,e})=>{
   if(e.conflicts.length)return {...c,exact:false,identifierConflict:true,why:`${c.why} · printed code read differently`,signalMatches:e.agrees};
