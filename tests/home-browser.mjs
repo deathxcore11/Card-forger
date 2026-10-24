@@ -654,6 +654,8 @@ async function accessibleCarouselControls(page, label) {
   }
 }
 async function closeSheet(page) {
+  const cancel = page.locator('#sheet [data-act="flowCancelBuild"]');
+  if (await cancel.isVisible()) await cancel.click();
   const button = page.locator('#sheet [data-act="closeSheet"]').first();
   if (await button.isVisible()) await button.click();
   await page.waitForFunction(() => !document.querySelector('#sheet').open);

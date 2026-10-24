@@ -565,9 +565,9 @@ try{
   for(const row of r.rows)assert(row.qty<=(x.game==='ptcg'?(/^Basic .* Energy$/.test(row.name)?60:4):3),'copy limit for '+row.name);
   if(x.game==='ptcg'){const energy=r.rows.find(row=>row.name==='Basic Fire Energy');assert(energy?.qty>=8,'the Fire attacker is paid for by Fire Energy, not left without resources');}
   if(x.kind==='complete'&&x.game==='ptcg'){assert.doesNotMatch(r.price,/Target/);assert.match(r.price,/Reference estimate · whole deck/);}
-  if(x.kind==='complete'&&x.game==='ygo'){assert.match(r.price,/Target \$50\.00 · \$\d+\.\d\d below target|On target/);assert.doesNotMatch(r.text,/unpriced/);}
+  if(x.kind==='complete'&&x.game==='ygo'){assert.match(r.text,/Target \$50\.00 · \$\d+\.\d\d below target|On target/);assert.doesNotMatch(r.text,/unpriced/);}
   // Tight targets: the complete list is shown with its real cost and an explicit large-deviation warning.
-  if(x.kind==='constraint'){assert.match(r.price,/over target/);assert.match(r.text,/exceeds the allowed overage/);}
+  if(x.kind==='constraint'){assert.match(r.text,/over target/);assert.match(r.text,/exceeds the allowed overage/);}
   if(x.kind==='constraint'&&x.game==='ygo')assert.match(r.rows.find(row=>row.name===seedName).price,/\$1,000\.00/,'the expensive seed keeps its real price');
   // Unknown exact quotes stay unknown, with or without a finite target; no fit is claimed.
   let finite=null;

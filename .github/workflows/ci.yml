@@ -696,6 +696,11 @@ jobs:
           path: |
             test-results/ai-deck-build-*
             test-results/ai-request-recovery-*
+            test-results/deck-build-presentation-browser.json
+            test-results/deck-building-*
+            test-results/deck-built-*
+            test-results/ai-deck-building-*
+            test-results/deck-knowledge-*
   news-curation-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 20

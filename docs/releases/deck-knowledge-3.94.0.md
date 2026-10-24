@@ -1,6 +1,8 @@
-# Deck knowledge and card discovery — web 3.94.0 / Android 0.6.0
+# Deck knowledge and card discovery — website 3.94.0
 
-Baseline: PR #40 merge `0f5eaf83631928eff1b261986deb3202ed7f7022` (web 3.93.3 / Android 0.5.3). Work branch: `codex/deck-intent-and-synergy`. Foil renderers, masks, movement and materials are unchanged.
+Baseline: PR #40 merge `0f5eaf83631928eff1b261986deb3202ed7f7022` (web 3.93.3 / Android 0.5.3). Website feature source: `9444e606b1463c9e64059943b92558ba67752969`; release branch: `codex/deck-knowledge-web-release`. Foil renderers, masks, movement and materials are unchanged.
+
+This is a **website-only release** for online testing. The published Android 0.5.3 beta (versionCode 12) keeps its bundled 3.93.3 interface, exact signed APK, checksum, download metadata and native source manifests. No 0.6.0 APK is published or advertised. The current-release endpoint reports the new website and the retained Android version separately, so an installed 0.5.3 app receives release notes without a false APK update. See [website and Android release cadence](web-and-android-cadence.md).
 
 ## Result and scope
 
@@ -33,7 +35,9 @@ Request preservation, spending policy, recognized strategic support and card exp
 
 `tests/deck-build-presentation-browser.mjs` exercises the real builder with synthetic providers at 320, 390 and 1440 px, plus a real Ask-to-builder handoff with mocked model output: animated logo, reduced motion, cancellation/late response, automatic completion, shared card rows, blank-budget rejection, successful budget rebuild, failed-cap recovery, cancellation that preserves an earlier inline deck, and no automatic save.
 
-Final suite, hosted checks, signed bundle comparison and deployment verification are recorded separately when completed. Physical Android interaction is untested in this environment.
+The recovered feature candidate passed all 264 root test programs, the generated-deck presentation browser checks at 320, 390 and 1440 px, and six card-discovery browser cases (three games at 390 and 1440 px) before this scope change. These browser checks use synthetic providers. The web-only metadata changes receive a fresh root-suite run and regressions for unchanged native update detection, website update detection, release metadata and the retained APK identity. Final hosted checks and deployment verification are recorded separately when completed.
+
+The old signed APK is intentionally not claimed to match the new website. `scripts/verify-android-release.py` remains strict and applies when a future Android patch is actually built from its selected website commit. Physical Android interaction is untested in this environment.
 
 ## Remaining limitations
 
@@ -41,4 +45,4 @@ This release does not supply the complete offline card catalog, a universal rule
 
 ## Rollback
 
-The clean baseline is tagged locally `codex/deck-engine-rollback-3.93.3`. Revert this release’s merge commit through a normal reviewed PR to restore its source and release metadata/APK; do not reset or force-push the production branch. A previously released Android APK cannot update over a higher versionCode: an installable Android rollback must rebuild the prior source with a new, higher versionCode and the established signing key. Saved finishes, conditions, quantities and editions are not changed by this patch.
+The clean baseline is tagged locally `codex/deck-engine-rollback-3.93.3`. Revert this release’s merge commit through a normal reviewed PR to restore its website source and release metadata; the retained 0.5.3 APK is unchanged by this release. Do not reset or force-push the production branch. A previously released Android APK cannot update over a higher versionCode: an installable Android rollback must rebuild the prior source with a new, higher versionCode and the established signing key. Saved finishes, conditions, quantities and editions are not changed by this patch.

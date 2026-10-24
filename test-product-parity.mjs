@@ -25,6 +25,20 @@ for(const label of ['3.92.0 · Android app 0.4.0-beta','3.92.0 · Android 0.4.0-
  const runtime=runtimeVersions({native:{platform:'android'},appVersion:label});assert.equal(runtime.nativeVersion,'0.4.0-beta');assert.equal(runtime.interfaceVersion,'3.92.0');
  assert.equal(releaseState({store,runtime,release:{...RELEASE,android:{...RELEASE.android,versionName:'0.4.0-beta'}}}).update,false,'same installed APK must not claim an update');
 }
+// Website-only releases may advance the web interface while retaining the published APK.
+// Exercise both native metadata paths used by the already-installed 0.5.3 app.
+const webOnlyRelease={...RELEASE,id:'web-3.94.0-android-0.5.3',webVersion:'3.94.0',android:{...RELEASE.android,versionName:'0.5.3-beta',versionCode:12,interfaceVersion:'3.93.3'}};
+for(const native of [{platform:'android',versionName:'0.5.3-beta',versionCode:12},{platform:'android'}]){
+ const runtime=runtimeVersions({native,appVersion:'3.93.3 · Android app 0.5.3-beta'});
+ const state=releaseState({store,runtime,release:webOnlyRelease});
+ assert.equal(state.update,false,'a newer website is not an update to the unchanged installed APK');
+ assert.equal(state.unread,true,'website release notes remain readable in the current native app');
+ assert.equal(state.release.android.interfaceVersion,'3.93.3','the release identifies the actual bundled APK interface');
+}
+assert.equal(releaseState({store,release:webOnlyRelease,runtime:{native:true,nativeBuild:11,nativeVersion:'0.5.2-beta',interfaceVersion:'3.93.2'}}).update,true,'an older APK can still update to the published native version');
+assert.equal(releaseState({store,release:webOnlyRelease,runtime:{native:true,nativeBuild:13,nativeVersion:'0.6.0-beta',interfaceVersion:'3.94.0'}}).update,false,'a newer local APK must not be offered a downgrade');
+assert.equal(releaseState({store,release:webOnlyRelease,runtime:{native:false,interfaceVersion:'3.93.3'}}).update,true,'an older browser interface receives the website update');
+assert.equal(releaseState({store,release:webOnlyRelease,runtime:{native:false,interfaceVersion:'3.94.0'}}).update,false,'the current browser interface is up to date');
 assert.equal(runtimeVersions({native:{},appVersion:'3.92.0 · Android app unavailable'}).nativeVersion,null);
 assert.equal(runtimeVersions({native:{versionName:'0.5.0-beta',versionCode:6},appVersion:'3.92.0 · Android app 0.4.0-beta'}).nativeVersion,'0.5.0-beta','native metadata takes precedence');
 const nativeRuntime=globalThis.CARDSTASHY_NATIVE;globalThis.CARDSTASHY_NATIVE={platform:'android'};

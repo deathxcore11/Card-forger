@@ -23,6 +23,7 @@ HOSTS = ("https://cardstashy.com/", "https://cardforge2.deathxcore11.workers.dev
 KEY_ASSETS = ("index.html", "config.js", "sw.js")
 MODULES = (
     "deck-construction.js", "deck-pipeline.js", "deck-experience.js", "deck-preferences.js", "deck-seeds.js",
+    "card-discovery.js", "mtg-vocabulary.js", "mtg-keyword-reference.js", "rule-extra.js",
     "release-record.js", "release-status.js", "downloads/index.html", "downloads/download.js",
     "grid-settings.js", "price-origin.js", "collection-display.css",
     "aura.js", "aura.css",
