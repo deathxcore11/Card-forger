@@ -31,6 +31,8 @@ for(const url of ['data:image/png;base64,abc','javascript:alert(1)','http://file
 assert.equal(isAllowedWikiImageUrl('ygo','https://static.wikia.nocookie.net/pokemon/images/a.png'),false,'Shared CDN requires the correct wiki prefix');
 assert.equal(isAllowedWikiImageUrl('__proto__','https://files.mtg.wiki/a.png'),false);
 
+assert.equal(parse('<table class="infobox keyword"><tr><td>Facts</td></tr></table><p>Introduction.</p>').lead[0].infobox,true);
+assert.equal(parse('<table class="wikitable"><tr><td>Data</td></tr></table>').lead[0].infobox,undefined);
 const manyItems=parse('<ul>'+Array.from({length:301},(_,i)=>`<li>Item ${i}</li>`).join('')+'</ul>');assert.equal(manyItems.lead[0].items.length,300);assert.equal(manyItems.truncated,true);
 const manyRows=parse('<table>'+Array.from({length:L.tableRows+1},(_,i)=>`<tr><td>Row ${i}</td></tr>`).join('')+'</table>');assert.equal(manyRows.lead[0].rows.length,L.tableRows);assert.equal(manyRows.truncated,true);
 const manyCols=parse('<table><tr>'+Array.from({length:L.tableColumns+1},(_,i)=>`<td>Cell ${i}</td>`).join('')+'</tr></table>');assert.equal(manyCols.lead[0].rows[0].cells.length,L.tableColumns);assert.equal(manyCols.truncated,true);

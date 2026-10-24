@@ -688,8 +688,10 @@ jobs:
       - name: Test expanded rules, typed discovery and source-card Back
         run: node tests/deck-knowledge-browser.mjs
       - name: Test homepage defaults, unsupported requirements and missing-data failures
+        if: ${{ !cancelled() }}
         run: node tests/ai-request-recovery-browser.mjs
       - name: Test all-game Wiki home, article replacement and shared Ask
+        if: ${{ !cancelled() }}
         run: node tests/wiki-reader-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()

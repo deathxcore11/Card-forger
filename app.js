@@ -3637,6 +3637,7 @@ A.wikiOpen=async(t={dataset:{}})=>{const game=t.dataset?.game||T.game(),topic=t.
 A.mtgWikiOpen=A.wikiOpen;
 A.mtgWikiPick=t=>currentWikiPage().lookup(t.dataset.wikiTopic);
 A.mtgWikiHome=()=>currentWikiPage().home();
+A.wikiCards=async t=>{const q=t.dataset.wikiQuery,account=accountGeneration;if(T.game()!=='mtg'||typeof q!=='string'||!q.trim()||q.length>300||/[\u0000-\u001f\u007f]/.test(q))return;S.ui.db.term=q;S.ui.db.filters={};dbInvalidate();const opened=await go('#search');if(opened&&account===accountGeneration&&!accountLocked&&T.game()==='mtg'&&S.ui.view==='search')return A.dbSearch();};
 A.mtgWikiRetry=()=>currentWikiPage().retry();
 A.mtgWikiDailyRetry=()=>currentWikiPage().daily(true);
 A.mtgWikiCancel=()=>currentWikiPage().cancelLookup();

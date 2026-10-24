@@ -63,6 +63,16 @@ assert.doesNotMatch(navigation,/href="#|data-wiki-topic="(?:Combat growth|File:|
 assert.match(navigation,/target="_blank" rel="noopener noreferrer">File description/);
 assert.match(navigation,/reference\?value=1&amp;other=2/);
 
+// Card references share the existing card window and card Search rather than
+// sending readers to a separate catalogue UI.
+const cardLinks=fixture();cardLinks.article.lead=[{type:'paragraph',content:[
+ {type:'link',text:'Exact card',href:'https://scryfall.com/search?q=%21%22Spirit+Link%22&utm_source=wiki'},
+ {type:'link',text:'Matching cards',href:'https://scryfall.com/search?q=kw%3Alifelink'},
+ {type:'link',text:'Unrelated source',href:'https://scryfall.com.evil.invalid/search?q=kw%3Alifelink'}
+]}];const cardNavigation=wikiArticleMarkup(cardLinks);
+assert.match(cardNavigation,/data-act="card" data-name="Spirit Link" data-read-only="true"/);
+assert.match(cardNavigation,/data-act="wikiCards" data-wiki-query="kw:lifelink"/);
+assert.match(cardNavigation,/href="https:\/\/scryfall.com.evil.invalid/);
 // Source content is inert even when a caller bypasses the server parser.
 const malicious=fixture();malicious.article.lead=[{type:'paragraph',content:[
  T('<script>alert(1)</script><img src=x onerror=steal()>'),
@@ -96,6 +106,20 @@ assert.match(rendered,/word89/);assert.match(rendered,/\{G\}/);assert.match(rend
 assert.match(rendered,/data-wiki-topic="Slith"/);assert.match(rendered,/data-wiki-anchor="wiki-wiki-section-rules"/);
 assert.match(rendered,/<li>Alpha<\/li>/);assert.match(rendered,/<caption>Types<\/caption>/);assert.match(rendered,/alt="Article art"/);
 assert.doesNotMatch(rendered,/DO NOT RUN|Article shortened|href="#/);
+
+// A leading source infobox is metadata, so the definition can start beside the
+// art before that table clears the float. Ordinary article order is preserved.
+const factsTable={type:'table',infobox:true,caption:'Leading quick facts',rows:[{cells:[{header:true,content:[T('Fact')]},{content:[T('Metadata value')]}]}]};
+const infobox=fixture();infobox.article.lead=[factsTable,{type:'image',imageId:'art-1'},P('Definition before metadata.'),P('Later article paragraph.'),{...factsTable,infobox:false,caption:'Later article table'}];
+const infoboxOriginal=copy(infobox.article.lead),definitionFirst=wikiArticleMarkup(infobox);
+assert.ok(definitionFirst.indexOf('Definition before metadata.')<definitionFirst.indexOf('<caption>Leading quick facts</caption>'));
+assert.ok(definitionFirst.indexOf('<caption>Leading quick facts</caption>')<definitionFirst.indexOf('Later article paragraph.'));
+assert.ok(definitionFirst.indexOf('Later article paragraph.')<definitionFirst.indexOf('<caption>Later article table</caption>'));
+assert.match(definitionFirst,/Metadata value/);assert.equal((definitionFirst.match(/data-wiki-article-image/g)||[]).length,1);assert.deepEqual(infobox.article.lead,infoboxOriginal,'reader ordering does not modify the retrieved source AST');
+const ordinary=fixture();ordinary.article.lead=[{...factsTable,infobox:false,caption:'Ordinary source table'},P('Definition after ordinary table.')];
+const ordinaryOrder=wikiArticleMarkup(ordinary);assert.ok(ordinaryOrder.indexOf('<caption>Ordinary source table</caption>')<ordinaryOrder.indexOf('Definition after ordinary table.'),'a real article table is not moved past source prose');
+const listFirst=fixture();listFirst.article.lead=[factsTable,{type:'list',ordered:false,items:[[T('Source list before definition')]]},P('Definition after source list.')];
+const listOrder=wikiArticleMarkup(listFirst);assert.ok(listOrder.indexOf('<caption>Leading quick facts</caption>')<listOrder.indexOf('Source list before definition'));assert.ok(listOrder.indexOf('Source list before definition')<listOrder.indexOf('Definition after source list.'),'a leading article list prevents metadata-only reordering');
 
 const shortened=fixture();shortened.article.truncated=true;
 assert.match(wikiArticleMarkup(shortened),/Article shortened · <a[^>]*>Read full source<\/a>/);

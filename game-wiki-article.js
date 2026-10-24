@@ -26,6 +26,9 @@ function providerTopic(game,value){
   return '';
  }catch{return '';}
 }
+function magicCardQuery(value){
+ try{const url=new URL(value);if(url.origin!=='https://scryfall.com'||url.pathname!=='/search')return null;const query=url.searchParams.get('q')||'';return query.trim()&&query.length<=300&&!CONTROL.test(query)?query:null;}catch{return null;}
+}
 function sourceMatches(game,source,title){
  return source&&typeof source==='object'&&(!source.game||source.game===game)&&isAllowedWikiUrl(game,source.url)&&key(providerTopic(game,source.url))===key(title)&&(!source.title||key(source.title)===key(title));
 }
@@ -73,6 +76,8 @@ export function wikiArticleMarkup(response,{game='mtg'}={}){
   if(typeof part.href==='string'&&part.href.startsWith('#')){
    const id=fragments.get(fragmentKey(part.href));return id?`<button type="button" class="wiki-article-link" data-wiki-anchor="${esc(id)}">${esc(label)}</button>`:esc(label);
   }
+  const cardQuery=game==='mtg'&&href?magicCardQuery(href):null;
+  if(cardQuery){const exact=cardQuery.match(/^!"([^"<>]{1,180})"(?:\s+set:[a-z0-9]{2,8})?$/i);return exact?`<button type="button" class="wiki-article-link" data-act="card" data-name="${esc(exact[1])}" data-read-only="true">${esc(label)}</button>`:`<button type="button" class="wiki-article-link" data-act="wikiCards" data-wiki-query="${esc(cardQuery)}">${esc(label)}</button>`;}
   return href?external(href,label):esc(label);
  }).join('');
  const images=new Map(),seenImages=new Set();
@@ -112,7 +117,13 @@ export function wikiArticleMarkup(response,{game='mtg'}={}){
  };
  const blocks=value=>bounded(value,LIMITS.blocks).map(block).join('');
  const firstImage=images.keys().next().value,leadArt=firstImage?figure(firstImage):'';
- const lead=blocks(article.lead),body=sections.map(section=>{
+ // Source infoboxes often precede the definition. Let the introduction start
+ // beside the article art before any full-width metadata table clears its float.
+ // Move only this metadata prefix; ordinary article tables/lists keep their order.
+ const leadBlocks=bounded(article.lead,LIMITS.blocks),definition=leadBlocks.findIndex(value=>value?.type==='paragraph'&&Array.isArray(value.content)&&value.content.some(part=>['text','link','image'].includes(part?.type)&&typeof(part.type==='image'?part.alt||part.text:part.text)==='string'&&(part.type==='image'?part.alt||part.text:part.text).trim()));
+ const metadataPrefix=definition>0&&leadBlocks.slice(0,definition).every(value=>value?.type==='image'||value?.type==='table'&&value.infobox===true);
+ const orderedLead=metadataPrefix?[leadBlocks[definition],...leadBlocks.slice(0,definition),...leadBlocks.slice(definition+1)]:leadBlocks;
+ const lead=blocks(orderedLead),body=sections.map(section=>{
   const heading=text(section.title,1000),content=blocks(section.blocks),level=Number.isSafeInteger(section.level)&&section.level>=2&&section.level<=6?section.level:2;
   return heading||content?`<section class="wiki-article-section" id="${esc(section.id)}" tabindex="-1">${heading?`<h${level}>${esc(heading)}</h${level}>`:''}${content}</section>`:'';
  }).join('');

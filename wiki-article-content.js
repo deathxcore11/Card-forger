@@ -114,7 +114,7 @@ export function parseWikiArticleContent(html,{game,title,source}={}){
   }
   if(node.tag==='table'){
    const rows=[];let caption='';const visit=n=>{if(typeof n==='string')return;if(n!==node&&n.tag==='table')return;if(n.tag==='caption'){const label=clean(plain(n));caption=label.slice(0,1000);if(label.length>1000)state.truncated=true;}if(n.tag==='tr'){if(rows.length>=WIKI_ARTICLE_LIMITS.tableRows){state.truncated=true;return;}const raw=n.children.filter(c=>typeof c!=='string'&&['td','th'].includes(c.tag));if(raw.length>WIKI_ARTICLE_LIMITS.tableColumns)state.truncated=true;const cells=raw.slice(0,WIKI_ARTICLE_LIMITS.tableColumns).map(c=>({header:c.tag==='th',content:inlines(c.children,state),colspan:Math.max(1,Math.min(20,Number(c.attrs.colspan)||1)),rowspan:Math.max(1,Math.min(20,Number(c.attrs.rowspan)||1))}));if(cells.some(c=>hasContent(c.content)))rows.push({cells});}for(const child of n.children)visit(child);};visit(node);
-   if(rows.length)emit({type:'table',...(caption?{caption}:{}),rows});imagesUnder(node);return;
+   if(rows.length)emit({type:'table',...(/(?:^|\s)infobox(?:[\s_-]|$)/i.test(node.attrs.class||'')?{infobox:true}:{}),...(caption?{caption}:{}),rows});imagesUnder(node);return;
   }
   if(node.tag==='img'){imagesUnder(node);return;}
   for(const child of node.children)walk(child);
