@@ -3,7 +3,7 @@ import {rankScanCandidates,nameDistance,collectorKey,scanIdentifierEvidence} fro
 import {readRecord,writeRecord} from './storage.js';
 import {scanLookupNames,scanNameKey,scanCardNameKey,ptcgIdentifierKey} from './scan.js';
 import {pokemonIdentityNames,pokemonPrintedIdentifier} from './pokemon-identity.js';
-import {footerHints,catalogueReleases,narrowPrintings,printingFacts} from './scan-collector.js';
+import {footerHints,catalogueReleases,narrowPrintings,printingFacts,ygoCodeVariants} from './scan-collector.js';
 const states=new Map(),loads=new Map();let manifestPromise;
 const key=g=>'cardstashy-scan-catalog-v1-'+g;
 export function compileCatalog(pack){
@@ -51,8 +51,24 @@ export function lookupCatalog(pack,read){
   indexes=indexes.filter(compatible);
   if(read.setId)indexes=indexes.filter(i=>pack.rows[i][2]===read.setId);
  }
- if(g==='ygo'){for(const c of observations)indexes.push(...(pack.codes.get(c)||[]));}
- const exact=!fuzzy&&!identifierConflict&&!identifierUncertain&&indexes.length>0&&new Set(indexes.map(i=>JSON.stringify(g==='ygo'?pack.rows[i].slice(0,5):[pack.rows[i][0]]))).size===1;
+ let repaired=false;
+ if(g==='ygo'){
+  for(const c of observations)indexes.push(...(pack.codes.get(c)||[]));
+  // A read code that does not exist ("KIC0-EN046") may be an OCR swap of one
+  // that does. Then the printed passcode, which names the card itself, finds
+  // its printings. Both stay review-only; a conflicting passcode still rejects.
+  if(!indexes.length&&observations.length){
+   for(const c of observations)for(const v of ygoCodeVariants(c))indexes.push(...(pack.codes.get(v)||[]));
+   repaired=indexes.length>0;
+  }
+  if(!indexes.length){
+   const {passcodes=[]}=scanIdentifierEvidence(g,read);
+   for(const p of passcodes)indexes.push(...(pack.ids.get(p)||[]));
+   repaired=indexes.length>0;
+  }
+  if(repaired&&bestName&&!fuzzy){const named=indexes.filter(i=>pack.names.get(bestName)?.includes(i));if(named.length)indexes=named;}
+ }
+ const exact=!repaired&&!fuzzy&&!identifierConflict&&!identifierUncertain&&indexes.length>0&&new Set(indexes.map(i=>JSON.stringify(g==='ygo'?pack.rows[i].slice(0,5):[pack.rows[i][0]]))).size===1;
  // The name is read but the footer is only partly readable: a number with no
  // set marker, or a set code with no number. Use what was read to narrow this
  // name's printings (Mountain #275 → 15 of 796). Narrowing never verifies.
@@ -66,7 +82,8 @@ export function lookupCatalog(pack,read){
  const why=narrowed?`Name and ${narrowed.by} match · ${narrowed.to} of ${narrowed.from} printings · check printing`:null;
  // A garbled code beside a readable one ("FON" for FDN, "© 2024" read as 224)
  // contradicts every printing; narrowed printings stay for review, never exact.
- const cands=rankScanCandidates(g,[...new Set(indexes)].map(i=>({...catalogCandidate(pack,i,exact),...(why?{why,narrowed,footerNarrowed:true}:{})})),read).slice(0,3);
+ const repairWhy=repaired?'Printed code read unclearly · closest real code or passcode · check printing':null;
+ const cands=rankScanCandidates(g,[...new Set(indexes)].map(i=>({...catalogCandidate(pack,i,exact),...(why?{why,narrowed,footerNarrowed:true}:repairWhy?{why:repairWhy,footerNarrowed:true}:{})})),read).slice(0,3);
  return {cands,tried:names,local:true,fuzzy,...(narrowed?{narrowed}:{})};
 }
 

@@ -198,9 +198,10 @@ try{
    await popup.getByRole('button',{name:'More copies',exact:true}).click();await popup.getByRole('button',{name:'More copies',exact:true}).click();
    let finish=selected.finish;
    if(!finish){
-    await popup.locator('[data-change="scanConfirmFinish"] option:not([value=""])').first().waitFor({state:'attached'});
-    finish=await popup.locator('[data-change="scanConfirmFinish"] option').evaluateAll(opts=>opts.find(x=>x.value)?.value);
-    assert(finish);await popup.locator('[data-change="scanConfirmFinish"]').selectOption(finish);
+    const chip=popup.locator('[data-act="scanFinishChip"]').first();await chip.waitFor();
+    finish=await chip.getAttribute('data-value');
+    assert(finish);await chip.click();
+    assert.equal(await chip.getAttribute('aria-checked'),'true','The tapped finish chip is selected');
    }
    await popup.locator('.scan-review-more summary').click();
    await popup.getByRole('button',{name:'Lightly Played',exact:true}).click();

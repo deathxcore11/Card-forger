@@ -63,10 +63,9 @@ export function createScannerLookup({requestMagic,sources,candById,match,local=r
   const pack=await local(game,{number});if(!isCurrent())return [];
   const releases=pack?catalogueReleases(pack):null,q=collectorQuery(game,number,{releases});
   if(!q)throw Error(lookupHelp(game));
-  // A Yu-Gi-Oh! number without its set prefix is ambiguous even within one
-  // product ("38" ends two LEHD codes), so it is rejected, never narrowed.
-  // A prefix ("LEHD", "LEHD 38") narrows a named card, never the whole game.
-  if(game==='ygo'&&!q.code&&(!q.prefix||!name))throw Error(lookupHelp(game));
+  // A partial Yu-Gi-Oh! code ("46", "EN046", "LEHD") is ambiguous on its own,
+  // so it only narrows a named card, for review; it never searches the game.
+  if(game==='ygo'&&!q.code&&!name)throw Error(lookupHelp(game));
   if(!name&&collectorQueryEmpty(q))throw Error(lookupHelp(game));
   if(!name&&!q.code&&!q.numbers.length)throw Error('Add the card name, or a number with the set.');
   const spec={...query,name,number,query:q};
@@ -83,8 +82,15 @@ export function createScannerLookup({requestMagic,sources,candById,match,local=r
    total=result.items.length;narrowed={from:pool.length,to:total,by:result.by,partial:result.partial};
    found=result.items.slice(0,LIMIT).map(i=>catalogCandidate(pack,i,false));
   }
-  const remote=!found.length;
-  if(remote){
+  // Cards already on screen are context: the typed code narrows their printings
+  // first, before any provider search ("38" for the Coral Dragon being reviewed).
+  if(!found.length&&Array.isArray(query.context)&&name){
+   const key=nameKey(name);
+   found=query.context.filter(c=>c&&nameKey(c.name||c.card?.name).includes(key));
+  }
+  // Local catalogue rows were narrowed above; context and provider results are narrowed below.
+  const narrowLater=!found.length||found.some(c=>query.context?.includes(c));
+  if(!found.length){
    const set=q.sets.length===1?q.sets[0]:'',num=q.numbers[0]?.number||'';
    if(game==='mtg'&&set&&num&&q.numbers.length===1){const card=await requestMagic(`/cards/${encodeURIComponent(set)}/${encodeURIComponent(num)}`).catch(()=>null);if(card?.id)found=[{id:card.id,name:card.name,card}];}
    if(game==='mtg'&&!found.length){
@@ -105,8 +111,11 @@ export function createScannerLookup({requestMagic,sources,candById,match,local=r
   }));
   if(!isCurrent())return [];
   let cands=out.filter(Boolean);
+  // A Yu-Gi-Oh! name search returns the card, not its printings. Expand it to one
+  // candidate per printed code so "46" or "LEHD" can narrow it, still for review.
+  if(narrowLater&&game==='ygo'&&!collectorQueryEmpty(q))cands=cands.flatMap(c=>c.print?[c]:(c.card?.sets||[]).filter(x=>x?.code).map(x=>({...c,print:`${x.code}|${x.rarity||''}`,releaseName:x.name||c.releaseName||'',setReleaseId:'',setReleaseUnverified:true})));
   // Remote results are filtered here; local ones were already narrowed above.
-  if(remote){const result=narrowTyped(game,cands,q,c=>printingFacts(game,c));cands=result.items;total=cands.length;narrowed={from:out.filter(Boolean).length,to:total,by:result.by,partial:result.partial};}
+  if(narrowLater){const result=narrowTyped(game,cands,q,c=>printingFacts(game,c));cands=result.items;total=cands.length;narrowed={from:out.filter(Boolean).length,to:total,by:result.by,partial:result.partial};}
   if(narrowed&&!collectorQueryEmpty(q)&&cands.length){
    const what=narrowed.partial?`Only ${narrowed.by} matched`:`${number.toUpperCase()} matches`;
    const why=`${what} · ${total} of ${narrowed.from} printing${narrowed.from===1?'':'s'}${total>cands.length?` · showing ${cands.length}`:''} · check printing`;

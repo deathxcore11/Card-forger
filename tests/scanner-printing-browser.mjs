@@ -1,4 +1,4 @@
-import {openCapturedCard} from './scanner-review-controls.mjs';
+import {openCapturedCard,openReviewFix} from './scanner-review-controls.mjs';
 // HOSTED ONLY. Real app scanner review -> existing printing picker -> review.
 // Every queued card, camera pixel, catalogue response and screenshot is synthetic.
 // This checks UI/lifecycle/identity, not OCR or physical-camera recognition.
@@ -41,7 +41,7 @@ function assertYgoCodeGuards(rows){
   }
   for(const row of suffixes){assert.equal(row.parts,null);assert.deepEqual(row.evidence.observations,[]);}
 }
-const matrix=['All three games use an inline printing carousel, set/number/rarity filters and branded AI help without switching the global game','Inline selection leaves capture/original/quantity/condition/language/location unchanged','Exact selected card/release/variant/edition remains review-only, not fabricated OCR evidence','320/390/768px inline art and controls fit without overflow','Late AI response cannot mutate another capture','Live synthetic camera returns without duplicate capture or collection write','Production manual full-code UI lookup resolves LEHD-ENB38 to Coral Dragon without replacing the lookup adapter','Corrected LOB-EN0O1 and suffix-only 38/B38 retain raw evidence and remain review-only; suffix manual lookup is rejected'];
+const matrix=['All three games use an inline printing carousel, set/number/rarity filters and branded AI help without switching the global game','Inline selection leaves capture/original/quantity/condition/language/location unchanged','Exact selected card/release/variant/edition remains review-only, not fabricated OCR evidence','320/390/768px inline art and controls fit without overflow','Late AI response cannot mutate another capture','Live synthetic camera returns without duplicate capture or collection write','Production manual full-code UI lookup resolves LEHD-ENB38 to Coral Dragon without replacing the lookup adapter','Corrected LOB-EN0O1 and suffix-only 38/B38 retain raw evidence and remain review-only; with the name, a suffix manual lookup narrows to that card for review only'];
 console.log(await validateSearchFixtures());
 assertYgoCodeGuards(await ygoCodeGuardSnapshot(YGO_CODE_FIXTURE));
 if(process.argv.includes('--validate-fixtures')){
@@ -139,6 +139,7 @@ async function readyInline(page){
 }
 async function reviewScenario(app,game){
   const {page}=app,initial=await seed(app,game),beforeState=await inventorySnapshot(page);await readyInline(page);
+  assert.equal(await page.locator('#scanMatchNumber').count(),0,'Search waits behind Not right?');await openReviewFix(page);
   assert.equal(await page.locator('#scanMatchNumber').count(),1);
   assert.equal(await page.getByRole('button',{name:'Identify with AI',exact:true}).count(),1);
   for(const width of [320,390,768]){
@@ -158,8 +159,6 @@ async function reviewScenario(app,game){
   const details=groups.find(r=>r.key===row.key);
   await select(page,'[data-change="scanBrowseFilter"][data-field="number"]',details.number+(details.total?'/'+details.total:''));
   if(details.rarity)await select(page,'[data-change="scanBrowseFilter"][data-field="rarity"]',details.rarity);
-  const variant=page.locator('.scan-inline-printings .printing-slide.is-current [data-change="scanBrowseVariant"]');
-  if(await variant.count())await select(page,'.scan-inline-printings .printing-slide.is-current [data-change="scanBrowseVariant"]',row.key);
   await page.locator(`.scan-inline-printings [data-act="scanBrowseChoose"][data-key=${JSON.stringify(row.key)}]`).click();await frame(page);
   const after=await queue(page),chosen=after[0].cands[0];
   assert.deepEqual(metadata(after[0]),metadata(initial[0]));assert.deepEqual(after[1],initial[1]);
@@ -170,7 +169,7 @@ async function reviewScenario(app,game){
   await capture(page,`synthetic-search-scanner-${game}-selected-inline`);
   // An unreadable photo is friendly and leaves the existing catalogue selection intact.
   await page.route('**/api/ai/identify-card',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({game,readable:false,name:'',number:'',set:''})}));
-  await page.getByRole('button',{name:'Identify with AI',exact:true}).click();
+  await openReviewFix(page);await page.getByRole('button',{name:'Identify with AI',exact:true}).click();
   await page.locator('.scan-ai-message').filter({hasText:'clearer photo'}).waitFor();
   assert.equal((await queue(page))[0].cands[0].id,row.cardId);assert.equal(await inventorySnapshot(page),beforeState);
   await act(page,'scanDismiss').click();await page.waitForFunction(()=>!window.__uiTestState.ui.scan.confirm);
@@ -181,7 +180,7 @@ async function lateCancelledScenario(app){
  const {page}=app;await seed(app,'mtg');await readyInline(page);
  let release,seen;const started=new Promise(r=>seen=r),gate=new Promise(r=>release=r);
  await page.route('**/api/ai/identify-card',async route=>{seen();await gate;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({game:'mtg',readable:true,name:'Fixture',number:'123',set:'one'})}).catch(()=>{});});
- await page.getByRole('button',{name:'Identify with AI',exact:true}).click();await bounded(started,'Held AI photo read');
+ await openReviewFix(page);await page.getByRole('button',{name:'Identify with AI',exact:true}).click();await bounded(started,'Held AI photo read');
  await act(page,'scanDismiss').click();await openCapturedCard(page,'synthetic-capture-B');await readyInline(page);
  const before=await queue(page);release();await frame(page);
  assert.deepEqual(await queue(page),before);assert.equal(await page.evaluate(()=>window.__uiTestState.ui.scan.confirm.batchId),'synthetic-capture-B');assert.equal(await page.locator('#sheet[open]').count(),0);
@@ -212,7 +211,7 @@ async function ygoManualFullCodeScenario(app){
     const allowed=req.method()==='GET'&&url.searchParams.toString()==='setcode=LEHD-ENB38';
     try{await route.fulfill({status:allowed?200:451,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(allowed?{id:42566602,set_code:'LEHD-ENB38',set_rarity:'Ultra Rare'}:{error:'Unmapped code blocked; no provider call forwarded.'})});}finally{record.settled=true;}
   });
-  await page.locator('#scanMatchName').fill('Coral Dragon');await page.locator('#scanMatchNumber').fill('LEHD-ENB38');
+  await openReviewFix(page);await page.locator('#scanMatchName').fill('Coral Dragon');await page.locator('#scanMatchNumber').fill('LEHD-ENB38');
   await page.locator('.scan-confirm [data-act="scanFind"]').click();
   await page.waitForFunction(()=>{const s=window.__uiTestState.ui.scan;return !s.lookup&&(s.confirm?.error||s.cands?.some(c=>c.id==='42566602'));});
   const state=await page.evaluate(()=>({error:window.__uiTestState.ui.scan.confirm.error,cands:window.__uiTestState.ui.scan.cands,finish:window.__uiTestState.ui.scan.confirm.finish}));
@@ -226,10 +225,14 @@ async function ygoManualFullCodeScenario(app){
   assert.equal(after[0].status,'review');assert.equal(after[0].printingVerified,false);assert.equal(after[0].finish,'');assert.equal(after[0].cands[0].print,'LEHD-ENB38|Ultra Rare');
   assert(await act(page,'scanConfirm').isDisabled(),'Manual lookup cannot auto-enable saving without printing/edition review');
   await capture(page,'synthetic-search-scanner-ygo-manual-full-code');
+  // With the name, part of the code narrows that card's printings for review.
+  // It never reaches the exact-code endpoint, verifies or enables saving.
   for(const suffix of ['38','B38']){
-    const previous=await queue(page);await page.locator('#scanMatchNumber').fill(suffix);await page.locator('.scan-confirm [data-act="scanFind"]').click();
-    await page.locator('.scan-confirm-error').filter({hasText:'Enter the full bottom code'}).waitFor();
-    assert.deepEqual(await queue(page),previous,`${suffix} cannot mutate or verify the queued capture`);assert(await act(page,'scanConfirm').isDisabled());
+    await openReviewFix(page);await page.locator('#scanMatchName').fill('Coral Dragon');await page.locator('#scanMatchNumber').fill(suffix);await page.locator('.scan-confirm [data-act="scanFind"]').click();
+    await page.waitForFunction(()=>{const s=window.__uiTestState.ui.scan;return !s.lookup&&(s.confirm?.error||s.cands?.length);});
+    const narrowed=await page.evaluate(()=>({error:window.__uiTestState.ui.scan.confirm.error,cands:window.__uiTestState.ui.scan.cands}));
+    assert.equal(narrowed.error,'',suffix);assert(narrowed.cands.length&&narrowed.cands.every(c=>c.name==='Coral Dragon'&&/B38\|/.test(c.print)&&!c.exact&&!c.printingConfirmed),`${suffix} narrows to Coral Dragon's B38 printing for review`);
+    const row=(await queue(page))[0];assert.equal(row.printingVerified,false);assert.equal(row.status,'review');assert(await act(page,'scanConfirm').isDisabled());
   }
   assert.equal(codeRequests.length,1,'Suffix-only attempts never reach the exact-code provider endpoint');
   assert.equal(await inventorySnapshot(page),before);assert.equal(await page.evaluate(()=>window.__uiTestState.state.settings.game),'mtg');

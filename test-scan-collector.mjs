@@ -78,8 +78,32 @@ await assert.rejects(lookup('mtg',{name:'Mountain',number:'zz9 qq'}),/any order/
 await assert.rejects(lookup('mtg',{number:'neo'}),/card name/);
 console.log(`PASS: number/set descriptors in any order; Mountain ${mountains.length} → #275 ${byNumber.to} / NEO ${bySet.to} / set+number 1; Pokémon fraction/number/set/151; Yu-Gi-Oh! prefix+number; partial footers narrow but never verify.`);
 
-// Yu-Gi-Oh!: a number without its set prefix is rejected, never narrowed.
+// Yu-Gi-Oh!: with a name, any part of the code narrows its printings for review:
+// 46, EN046, LEHD 38. B38 keeps its subset letter. Without a name, only full codes.
 const ygoLookup=createScannerLookup({local:async()=>ygo,candById:async()=>null,sources:{},match:async()=>({cands:[]})});
-for(const t of ['38','B38'])await assert.rejects(ygoLookup('ygo',{name:'Coral Dragon',number:t}),/Enter the full bottom code/,t);
-assert((await ygoLookup('ygo',{name:'Coral Dragon',number:'LEHD 38'})).every(c=>c.print.startsWith('LEHD-')));
-console.log('PASS: Yu-Gi-Oh! numbers need their set prefix.');
+for(const t of ['46','046','EN046','46 KICO','KICO 46'])assert.deepEqual((await ygoLookup('ygo',{name:'Constellar Ptolemy M7',number:t})).map(c=>c.print),['KICO-EN046|Rare'],t);
+assert.deepEqual((await ygoLookup('ygo',{name:'M7',number:'46'})).map(c=>c.print),['KICO-EN046|Rare'],'part of the name is enough');
+assert((await ygoLookup('ygo',{name:'Coral Dragon',number:'B38'})).every(c=>/ENB38\|/.test(c.print)));
+assert((await ygoLookup('ygo',{name:'Coral Dragon',number:'LEHD 38'})).every(c=>c.print.startsWith('LEHD-')&&!c.exact));
+for(const t of ['38','B38','EN046'])await assert.rejects(ygoLookup('ygo',{number:t}),/Enter the full bottom code/,t);
+console.log('PASS: Yu-Gi-Oh! partial codes narrow a named card for review; alone they need the full code.');
+
+// Yu-Gi-Oh! OCR swaps (KICO-EN046 read as KICO-ENO46, KIC0-EN046, K1CO-EN046) and
+// the printed passcode find the real printing for review, never as exact.
+for(const code of ['KICO-ENO46','KIC0-EN046\n38495396','K1CO-EN046']){
+ const r=lookupCatalog(ygo,{name:'',code});
+ assert.equal(r.cands[0]?.print,'KICO-EN046|Rare',code);assert(r.cands.every(c=>!c.exact),code);
+}
+assert(lookupCatalog(ygo,{name:'',code:'KICO-EN046'}).cands[0].exact,'a clean code read stays exact');
+assert.equal(lookupCatalog(ygo,{name:'',code:'KIC0-EN046\n12345678'}).cands.length,0,'a conflicting passcode still rejects');
+
+// The printing browser opens on the identified printing, not the first release.
+import {createScannerBrowse,scanBrowseGroups} from './scanner-review.js';
+{
+ const base={oracle_id:'o',name:'Fixture',finishes:['nonfoil'],image_uris:{normal:'https://example.test/a.jpg'}};
+ const a={...base,id:'a',set:'one',set_name:'First',collector_number:'1'},b={...base,id:'b',set:'two',set_name:'Second',collector_number:'2'};
+ const browse=createScannerBrowse({game:'mtg',card:a,focus:{cardId:'b'},loadPage:async()=>({cards:[a,b],nextCursor:null}),onSelect:()=>true},{current:()=>true,draw(){}});
+ await browse.load();
+ assert(scanBrowseGroups(browse).find(g=>g.key===browse.activeGroup).versions.some(r=>r.cardId==='b'),'starts on the matched printing');
+}
+console.log('PASS: Yu-Gi-Oh! code OCR swaps and passcode fallback stay review-only; the printing browser opens on the identified printing.');

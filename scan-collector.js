@@ -38,8 +38,10 @@ export function collectorQuery(game,value,{releases=null}={}){
   const code=parseYgoSetCode(raw.replace(/\s+/g,''));if(code){query.code=code;return query;}
   // "LOB 001", "001 LOB", "LOB": a release prefix and/or a card number.
   for(const token of words(raw).split(/[^a-z0-9]+/).filter(Boolean)){
-   if(/^\d{1,3}$/.test(token))query.numbers.push({number:token.padStart(3,'0'),total:''});
-   else if(/^[a-z0-9]{2,5}$/.test(token)&&/[a-z]/.test(token)&&!query.prefix&&(!releases||releases.codes.has(token)))query.prefix=token;
+   // A card number may carry its region and a subset letter: 46, 046, EN046, B38, ENB38.
+   const number=token.match(/^(?:[a-z]{2})?([a-z]?\d{1,3})$/);
+   if(!query.prefix&&/^[a-z0-9]{2,5}$/.test(token)&&/[a-z]/.test(token)&&(releases?releases.codes.has(token):!number))query.prefix=token;
+   else if(number)query.numbers.push({number:number[1].replace(/\d+$/,d=>d.padStart(3,'0')),total:''});
    else if(LANGS.has(token))continue;
    else return null;
   }
@@ -81,20 +83,26 @@ export function collectorQuery(game,value,{releases=null}={}){
 }
 export const collectorQueryEmpty=q=>!q||(!q.numbers.length&&!q.sets.length&&!q.prefix&&!q.code);
 
+// LOB-EN005 → set lob, number 005; LEHD-ENB38 → number b38 (subset letter kept).
+const ygoFacts=code=>{const [set='',right='']=code.split('-');return {set:set.toLowerCase(),number:right.toLowerCase().replace(/^[a-z]{2}(?=[a-z]?\d)/,''),total:'',code:code.toUpperCase()};};
 /** Identity fields of a candidate or catalogue row, normalized across games. */
 export function printingFacts(game,c){
  if(Array.isArray(c)){
   if(game==='mtg')return {set:String(c[2]||'').toLowerCase(),number:c[3],total:''};
   if(game==='ptcg')return {set:String(c[2]||'').toLowerCase(),number:c[3],total:c[4]??''};
-  const code=String(c[2]||'');return {set:code.split('-')[0].toLowerCase(),number:(code.match(/(\d+)$/)||[])[1]||'',total:'',code:code.toUpperCase()};
+  return ygoFacts(String(c[2]||''));
  }
  const card=c?.card||c||{};
  if(game==='mtg')return {set:String(card.set||'').toLowerCase(),number:card.collector_number,total:''};
  if(game==='ptcg')return {set:String(card.set?.id||'').toLowerCase(),number:card.set?.number,total:card.set?.total??''};
- const code=String(c?.print||'').split('|')[0];
- return {set:code.split('-')[0].toLowerCase(),number:(code.match(/(\d+)$/)||[])[1]||'',total:'',code:code.toUpperCase()};
+ return ygoFacts(String(c?.print||'').split('|')[0]);
 }
-const sameNumber=(game,a,b)=>game==='ygo'?String(Number(a))===String(Number(b)):collectorKey(a)===collectorKey(b);
+// Yu-Gi-Oh!: "46" matches 046 and B46; "B38" only matches B38.
+const sameNumber=(game,a,b)=>{
+ if(game!=='ygo')return collectorKey(a)===collectorKey(b);
+ const x=String(a||'').toLowerCase(),y=String(b||'').toLowerCase(),digits=v=>String(Number((v.match(/\d+$/)||[])[0]));
+ return /^[a-z]/.test(y)?x.replace(/^([a-z])0*/,'$1')===y.replace(/^([a-z])0*/,'$1'):digits(x)===digits(y);
+};
 /** Does a printing satisfy every part of the descriptor that was given? */
 export function collectorMatches(game,facts,q){
  if(collectorQueryEmpty(q))return true;
@@ -168,4 +176,27 @@ export function narrowPrintings(game,items,q,facts=item=>printingFacts(game,item
   if(kept.length)return {items:kept,from,to:kept.length,by};
  }
  return {items,from,to:from,by:''};
+}
+
+/**
+ * Yu-Gi-Oh! codes as OCR commonly misreads them: KIC0-EN046, K1CO-EN046,
+ * KICO-ENO46. The literal reading stays the evidence; these spellings are
+ * only tried against a catalogue when the literal code does not exist.
+ */
+export function ygoCodeVariants(code){
+ const m=String(code||'').toUpperCase().match(/^([A-Z0-9]{2,4})-([A-Z]{0,2})([A-Z0-9]{2,4})$/);
+ if(!m)return [];
+ const swap={'0':'O','O':'0','1':'I','I':'1','L':'1','5':'S','S':'5','8':'B','B':'8'};
+ const spell=(part,allowed)=>{
+  let out=[''];
+  for(const ch of part){const alt=allowed.test(ch)?swap[ch]:null;out=out.flatMap(p=>alt?[p+ch,p+alt]:[p+ch]);if(out.length>64)return [part];}
+  return out;
+ };
+ // Prefix letters and digits trade both ways; the trailing card number only
+ // becomes digits (O→0, I/L→1). The region (EN) is kept as read.
+ const prefixes=spell(m[1],/[0O1I58SB]/),numbers=spell(m[3],/[OIL]/).filter(n=>/^\d+$/.test(n)||n===m[3]);
+ const out=new Set();
+ for(const p of prefixes)for(const n of numbers)out.add(`${p}-${m[2]}${n}`);
+ out.delete(String(code).toUpperCase());
+ return [...out];
 }

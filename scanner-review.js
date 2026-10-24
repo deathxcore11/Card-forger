@@ -8,12 +8,13 @@ import {brandMark} from './brand.js';
 
 export const scanHelp = "I couldn’t quite make that out. Try a clearer photo, or enter the card name and bottom number.";
 const filters=()=>({set:'',number:'',rarity:'',sort:'best'});
+const versionLabel=v=>[v.finishName,v.edition&&({'1st-edition':'1st Edition',unlimited:'Unlimited',limited:'Limited'}[v.edition]||v.edition)].filter(Boolean).join(' · ')||'This version';
 export const scanBrowseGroups=s=>printingGroups(filterPrintingRows(s.rows,s.filters));
-export function scannerLookupHTML(q,{busy=false,photo=false}={}) {
+export function scannerLookupHTML(q,{busy=false,photo=false,aiButton=true}={}) {
  const disabled=q.saving||busy||q.aiBusy;
- return `<div class="scan-lookup"><label class="field" for="scanMatchName">Wrong card? Search its name<input id="scanMatchName" type="search" maxlength="160" value="${esc(q.nameDraft||'')}" data-input="scanNameDraft" data-enter="scanFind" placeholder="Card name" autocomplete="off" ${disabled?'disabled':''}></label>
- <div class="scan-lookup-row"><label class="field" for="scanMatchNumber">Bottom number / set code<input id="scanMatchNumber" type="search" maxlength="40" value="${esc(q.numberDraft||'')}" data-input="scanNumberDraft" data-enter="scanFind" placeholder="${q.game==='ygo'?'LOB-001 or LOB 001':q.game==='mtg'?'275, NEO or 275 NEO':'56/111 or sv03.5'}" aria-describedby="scanMatchNumberHint" autocomplete="off" ${disabled?'disabled':''}></label><button class="btn ghost" data-act="scanFind" ${disabled?'disabled':''}>${busy?'Finding…':'Find card'}</button></div><p class="tiny muted" id="scanMatchNumberHint">Number, set or both, in any order. Part of it is enough to narrow the printings.</p>
- <button class="btn ghost scan-ai-help" data-act="scanIdentifyAI" ${disabled||!photo?'disabled':''}>${brandMark(q.aiBusy?'brand-loading':'brand-idle')}<span>${q.aiBusy?'Reading your photo…':'Identify with AI'}</span></button><small class="muted">${photo?'Sends this photo to AI when tapped. You confirm the match.':'Take a photo to let AI help identify it.'}</small>
+ return `<div class="scan-lookup"><label class="field" for="scanMatchName">Card name<input id="scanMatchName" type="search" maxlength="160" value="${esc(q.nameDraft||'')}" data-input="scanNameDraft" data-enter="scanFind" placeholder="Card name" autocomplete="off" ${disabled?'disabled':''}></label>
+ <div class="scan-lookup-row"><label class="field" for="scanMatchNumber">Code or number<input id="scanMatchNumber" type="search" maxlength="40" value="${esc(q.numberDraft||'')}" data-input="scanNumberDraft" data-enter="scanFind" placeholder="${q.game==='ygo'?'KICO-EN046, EN046 or 46':q.game==='mtg'?'275, NEO or 275 NEO':'56/111 or sv03.5'}" aria-describedby="scanMatchNumberHint" autocomplete="off" ${disabled?'disabled':''}></label><button class="btn ghost" data-act="scanFind" ${disabled?'disabled':''}>${busy?'Finding…':'Find card'}</button></div><p class="tiny muted" id="scanMatchNumberHint">Any part works, in any order. The name you typed or scanned narrows it.</p>
+ ${aiButton?`<button class="btn ghost scan-ai-help" data-act="scanIdentifyAI" ${disabled||!photo?'disabled':''}>${brandMark(q.aiBusy?'brand-loading':'brand-idle')}<span>${q.aiBusy?'Reading your photo…':'Identify with AI'}</span></button><small class="muted">${photo?'Sends this photo to AI when tapped. You confirm the match.':'Take a photo to let AI help identify it.'}</small>`:q.aiBusy?`<p class="scan-ai-message" role="status">AI is taking a closer look…</p>`:''}
  ${q.aiMessage?`<p class="scan-ai-message" role="status">${esc(q.aiMessage)}</p>`:''}</div>`;
 }
 export function scannerCandidateCarousel(st) {
@@ -26,8 +27,8 @@ export function scannerBrowseHTML(s) {
  return `<div class="scan-inline-printings" data-game="${s.game}"><div class="printing-carousel" role="region" aria-roledescription="carousel" aria-label="Matching printings" aria-busy="${s.busy}" tabindex="0">${groups.map((g,i)=>{
   const r=g.row,selected=g.versions.find(v=>v.key===s.versions[g.key])||(g.versions.length===1?r:null);
   return `<article class="printing-slide${i===index?' is-current':''}" data-group="${esc(g.key)}" role="group" aria-roledescription="slide" aria-label="${i+1} of ${groups.length}: ${esc(r.setName)}" ${i===index?'':'inert'}><div class="printing-slide-art">${r.image?`<img src="${esc(r.image)}" alt="${esc(r.name)} — ${esc(r.setName)}" draggable="false" loading="${i<3?'eager':'lazy'}">`:'<span>Artwork unavailable</span>'}</div><div class="printing-slide-copy"><strong>${esc(r.name)}</strong><b>${esc(r.setName)}</b><span>${esc([r.number&&'#'+r.number+(r.total?'/'+r.total:''),r.rarity].filter(Boolean).join(' · '))}</span>
-  ${g.versions.length>1?`<label class="field">Finish / edition<select data-change="scanBrowseVariant" data-group="${esc(g.key)}" aria-label="Finish for ${esc(r.setName)}">${options([['','Choose finish / edition'],...g.versions.map(v=>[v.key,[v.finishName,v.edition&&({'1st-edition':'1st Edition',unlimited:'Unlimited',limited:'Limited'}[v.edition]||v.edition)].filter(Boolean).join(' · ')])],selected?.key||'')}</select></label>`:`<small>${esc(r.finishName||r.edition||'Choose edition below after selecting')}</small>`}
-  ${selected?.warning?`<small>${esc(selected.warning)}</small>`:''}<button class="btn ghost" data-act="scanBrowseChoose" data-key="${esc(selected?.key||'')}" data-card-id="${esc(r.cardId)}" ${selected?.selectable?'':'disabled'}>${s.selectedKey===selected?.key?'Selected ✓':'Use this printing'}</button></div></article>`;
+  ${g.versions.length>1?`<div class="scan-chips" role="radiogroup" aria-label="Finish or edition for ${esc(r.setName)}">${g.versions.map(v=>`<button class="scan-chip" role="radio" aria-checked="${s.selectedKey===v.key}" data-act="scanBrowseChoose" data-key="${esc(v.key)}" data-card-id="${esc(r.cardId)}" ${v.selectable?'':'disabled'}>${esc(versionLabel(v))}</button>`).join('')}</div>${g.versions.some(v=>v.warning)?`<small>${esc(g.versions.find(v=>v.warning).warning)}</small>`:''}`
+   :`${selected?.warning?`<small>${esc(selected.warning)}</small>`:''}<button class="btn${s.selectedKey===selected?.key?' is-selected':''}" data-act="scanBrowseChoose" data-key="${esc(selected?.key||'')}" data-card-id="${esc(r.cardId)}" ${selected?.selectable?'':'disabled'}>${s.selectedKey===selected?.key?'This is my card ✓':'This is my card'}</button>`}</div></article>`;
  }).join('')}</div>${groups.length?`<div class="printing-carousel-nav"><button class="icon" data-act="scanBrowseStep" data-d="-1" aria-label="Previous printing" ${index===0?'disabled':''}>←</button><output data-printing-position>${index+1} / ${groups.length}</output><button class="icon" data-act="scanBrowseStep" data-d="1" aria-label="Next printing" ${index===groups.length-1?'disabled':''}>→</button></div>`:`<p class="scan-browse-status" role="status">${s.busy?'Finding printings…':'No matching printings. Clear a filter or search another name or number.'}</p>`}<p class="foot scan-browse-status" role="status">${s.busy?'Loading printings…':`${groups.length} matching printings${s.nextCursor!==null?' · more available':''}`}${s.error?' · '+esc(s.error):''}</p>${s.error?'<button class="link" data-act="scanBrowseRetry">Retry printing lookup</button>':''}${s.nextCursor!==null?`<button class="link" data-act="scanBrowseMore" ${s.busy?'disabled':''}>Load more printings</button>`:''}</div>`;
 }
 export function scannerBrowseFilters(s) {
@@ -40,6 +41,14 @@ export function createScannerBrowse(config,{current,draw,preview}={}) {
  const active=()=>!s.abort.signal.aborted&&current();
  const invalidate=()=>{s.selectedKey='';preview?.();};
  const rebuild=()=>{s.rows=printingRows(s.game,s.cards,{source:s.card,catalogue:s.catalogue,projectCard:s.projectCard});};
+ // Open on the printing the scan or typed code identified (KICO-EN046), not the
+ // first release in the list. Only the starting slide changes; nothing is chosen.
+ const focus=()=>{
+  const f=s.focus;if(!f||s.focused)return;
+  const hit=r=>s.game==='ygo'?!!f.code&&String(r.number).toUpperCase()===f.code.toUpperCase()&&(!f.rarity||r.rarity===f.rarity):!!f.cardId&&String(r.cardId)===String(f.cardId);
+  const group=scanBrowseGroups(s).find(g=>g.versions.some(hit));
+  if(group){s.activeGroup=group.key;s.focused=true;}
+ };
  s.load=async()=>{
   if(!active()||s.busy||s.loaded&&s.nextCursor===null)return;
   const cursor=s.loaded?s.nextCursor:null;s.busy=true;s.error='';draw();
@@ -47,7 +56,7 @@ export function createScannerBrowse(config,{current,draw,preview}={}) {
    const page=await s.loadPage({cursor,signal:s.abort.signal});if(!active())return;
    if(!Array.isArray(page?.cards))throw Error('Could not read these printings.');
    s.cards=[...new Map([...s.cards,...page.cards].map(c=>[String(c.id),c])).values()];
-   if(page.catalogue)s.catalogue=page.catalogue;s.loaded=true;s.nextCursor=page.nextCursor??null;rebuild();
+   if(page.catalogue)s.catalogue=page.catalogue;s.loaded=true;s.nextCursor=page.nextCursor??null;rebuild();focus();
    s.visited.add(JSON.stringify(cursor));if(s.nextCursor!==null&&s.visited.has(JSON.stringify(s.nextCursor))){s.nextCursor=null;throw Error('The source repeated a page. Try the lookup again.');}
   }catch(e){if(active())s.error=e.message||'Printing lookup unavailable.';}
   finally{if(active()){s.busy=false;draw();}}
