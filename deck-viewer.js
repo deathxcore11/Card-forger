@@ -70,6 +70,7 @@ function stackList(list){
   for(let start=0;start<rows.length;start+=6){
    const pile=list.ownerDocument.createElement('div'),batch=rows.slice(start,start+6);pile.className='deck-stack-pile';pile.style.setProperty('--deck-stack-size',String(batch.length));
    batch.forEach((card,index)=>{
+    if(card.matches('button')&&!card.hasAttribute('aria-label'))card.setAttribute('aria-label',`${card.dataset.deckQty}× ${card.dataset.deckName}`);
     card.style.setProperty('--deck-stack-index',String(index+1));
     const roles=(card.dataset.deckRoles||'').split(',').filter(Boolean);
     if(roles.length&&!card.querySelector('.deck-stack-roles')){const badge=list.ownerDocument.createElement('span');badge.className='deck-stack-roles';badge.textContent=roles.join(' · ');badge.setAttribute('aria-label','Roles: '+roles.join(', '));card.append(badge);}

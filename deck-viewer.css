@@ -58,6 +58,9 @@
 .deck-viewer[data-deck-view="stacks"]:has(> details.group) > .deck-view-toolbar,
 .deck-viewer[data-deck-view="stacks"]:has(> details.group) > .deck-stack-summary { flex-basis:100%; }
 .deck-viewer[data-deck-view="stacks"] > details.group { flex:0 1 var(--deck-stack-basis,190px); min-width:min(174px,100%); max-width:100%; margin:0; }
+.deck-viewer[data-deck-view="stacks"] details.group > summary { min-width:0; flex-wrap:wrap; gap:5px; white-space:normal; }
+.deck-viewer[data-deck-view="stacks"] details.group > summary > span:first-child { min-width:0; overflow-wrap:anywhere; }
+.deck-viewer[data-deck-view="stacks"] details.group > summary > span.muted { display:none; }
 .deck-viewer[data-deck-view="stacks"] .deck-stack-heading { display:flex; align-items:center; gap:9px; margin:0 0 12px; font-size:15px; font-weight:750; }
 .deck-viewer[data-deck-view="stacks"] .deck-stack-heading[hidden] { display:none; }
 .deck-viewer[data-deck-view="stacks"] .deck-stack-count { display:inline-grid; place-items:center; min-width:26px; padding:2px 7px; border-radius:8px; background:var(--surface-2); color:var(--muted); font-size:12px; }

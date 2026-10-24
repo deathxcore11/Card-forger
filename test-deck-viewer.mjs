@@ -5,6 +5,7 @@ import {deckViewFor,deckViewControl,deckCardCategory,deckCardAttrs} from './deck
 import {registerWorkbench,modeFor,viewControl} from './workbench-ui.js';
 import {deckWorkspaceSignature} from './deck-experience.js';
 import {proven,provenSheetHtml} from './tcg.js';
+import {sharedDeckSheet} from './shared-deck-view.js';
 S.state=blank();
 const card={id:'shared',name:'Shared zone card',type_line:'Creature — Human',oracle_text:'',cmc:1,prices:{usd:'2'},image_uris:{normal:'https://example.com/exact-printing.jpg'},legalities:{standard:'legal'},finishes:['nonfoil']};
 S.catalog['shared zone card']=card;
@@ -36,6 +37,7 @@ for(const [card,category] of [
  [{name:'Mystery Creature Name'},'Unresolved']
 ])assert.equal(deckCardCategory(card),category);
 assert.match(deckCardAttrs('Synthetic ramp',1,'main',{type_line:'Creature — Elf Druid',oracle_text:'{T}: Add {G}.'}),/data-deck-roles="Ramp"/);
+assert.match(sharedDeckSheet({sharedItem:{game:'ygo',key:'unloaded-shared',title:'Unknown shared card',cards:[{name:card.name,qty:1,zone:'main',image:'',referenceUSD:null}]}}),/data-deck-category="Unresolved"/,'unknown non-Magic shared cards cannot borrow same-name Magic metadata');
 const actions={},changes={},calls=[];let closes=0;
 globalThis.document={querySelector(){return null;},querySelectorAll(){return [];}};
 registerWorkbench({A:actions,C:changes,commit:async(fn,opts)=>{calls.push(opts);fn(S.state);},closeSheet:()=>closes++,getGame:()=> 'mtg'});
