@@ -1229,7 +1229,7 @@ function mtgSideboard(d) {
     status = !need ? "all owned ✓" : `${need} to get${cost ? " · " + usd(cost, 0) : ""}${unpriced ? ` · ${unpriced} unpriced` : ""}`;
   return `<details class="group side-group" open><summary><span>Sideboard <em>${n}</em>${n > 15 ? ` <span class="warn-text small">· over 15</span>` : ""}</span><span class="muted small">${status}</span></summary>
     <p class="small muted">Swapped in between games. Not counted in the ${esc(String(formatOf(d).size))}-card deck${n > 15 ? "; tournament sideboards are at most 15 cards" : ""}.</p>
-    <div class="list compact" data-deck-list>${rows.sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).map((r) => `<button class="mini-row art-row" ${deckCardAttrs(r.name,r.qty,"side")} data-act="card" data-name="${esc(r.name)}">${img(cardImage(r.c), r.name, "mini-art")}<span class="ellip">${r.qty}× ${esc(r.name)}</span><span class="small ${r.own >= r.qty ? "ok-text" : "warn-text"}">${r.own >= r.qty ? "✓ Owned" : `Need ${r.qty - r.own}`}</span></button>`).join("")}</div></details>`;
+    <div class="list compact" data-deck-list>${rows.sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).map((r) => `<button class="mini-row art-row" ${deckCardAttrs(r.name,r.qty,"side",r.c)} data-act="card" data-name="${esc(r.name)}">${img(cardImage(r.c), r.name, "mini-art")}<span class="ellip">${r.qty}× ${esc(r.name)}</span><span class="small ${r.own >= r.qty ? "ok-text" : "warn-text"}">${r.own >= r.qty ? "✓ Owned" : `Need ${r.qty - r.own}`}</span></button>`).join("")}</div></details>`;
 }
 
 export function deckList(d = currentDeck(), opts = {}) {
@@ -1299,7 +1299,7 @@ function deckRow(r, d, opts = {}) {
   const c = meta(r.name),
     ok = r.missing === 0,
     t = tierOf("mtg", c?.rarity, r.price ?? c?.prices?.usd ?? c?.prices?.usd_foil);
-  return `<div class="lot deck-row ${readOnly || ok ? "" : "short"}" ${deckCardAttrs(r.name,r.qty,opts.zone||"main")} data-tier="${t.key}" style="${tierStyle(t)}">
+  return `<div class="lot deck-row ${readOnly || ok ? "" : "short"}" ${deckCardAttrs(r.name,r.qty,opts.zone||"main",c,r.category==="Commander"?"Commander":"")} data-tier="${t.key}" style="${tierStyle(t)}">
     <button class="lot-art" ${finishAttrs('mtg',c,{})} data-act="${esc(action)}" data-name="${esc(r.name)}"${deckAttr}>${img(cardImage(c), r.name)}${c ? tileChrome("mtg", c) : ""}<span class="art-price">${usd(r.price)}</span></button>
     <div class="lot-info"><button class="lot-name" data-act="${esc(action)}" data-name="${esc(r.name)}"${deckAttr}>${esc(r.name)} ${setBadge(c)}</button>
       <span class="lot-sub">${manaCost(c) || (c ? "" : '<span class="tag warn">Unresolved</span>')}${legalTag(c, d)}</span>
@@ -1857,7 +1857,7 @@ export function ideaSheet(idea, deck, open, sel) {
     .map(
       ([cat, list]) => `<details class="group" open><summary><span>${esc(cat)} <em>${sumQty(list)}</em></span><span class="muted small">${usd(list.reduce((a, r) => a + (r.price ?? 0) * r.qty, 0))}</span></summary><div class="list compact deck-compact-list" data-deck-list>${list
         .sort((a, b) => (meta(a.name)?.cmc ?? 99) - (meta(b.name)?.cmc ?? 99) || a.name.localeCompare(b.name))
-        .map((r) => `<div class="pick-row deck-compact-row ${r.missing ? "short" : ""}" ${deckCardAttrs(r.name,r.qty)}><input type="checkbox" data-change="ideaPick" data-name="${esc(r.name)}" ${sel.has(r.name) ? "checked" : ""} aria-label="Select ${esc(r.name)}"><button class="pick-main" data-act="card" data-name="${esc(r.name)}">${img(cardImage(meta(r.name)), r.name, "deck-compact-art")}<span class="deck-compact-copy"><b>${r.qty > 1 ? r.qty + "× " : ""}${esc(r.name)}</b>${referencePrintingPills(meta(r.name))}<small class="${r.missing ? "warn-text" : "ok-text"}">${r.missing ? "Need " + r.missing : "Owned"}</small></span></button><span class="pick-side">${manaCost(meta(r.name))}<b>${usd(r.price)}</b></span></div>`)
+        .map((r) => `<div class="pick-row deck-compact-row ${r.missing ? "short" : ""}" ${deckCardAttrs(r.name,r.qty,"main",meta(r.name))}><input type="checkbox" data-change="ideaPick" data-name="${esc(r.name)}" ${sel.has(r.name) ? "checked" : ""} aria-label="Select ${esc(r.name)}"><button class="pick-main" data-act="card" data-name="${esc(r.name)}">${img(cardImage(meta(r.name)), r.name, "deck-compact-art")}<span class="deck-compact-copy"><b>${r.qty > 1 ? r.qty + "× " : ""}${esc(r.name)}</b>${referencePrintingPills(meta(r.name))}<small class="${r.missing ? "warn-text" : "ok-text"}">${r.missing ? "Need " + r.missing : "Owned"}</small></span></button><span class="pick-side">${manaCost(meta(r.name))}<b>${usd(r.price)}</b></span></div>`)
         .join("")}</div></details>`,
     )
     .join(""))}

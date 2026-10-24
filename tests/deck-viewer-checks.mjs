@@ -16,8 +16,9 @@ export async function checkDeckViews(page,{root,controls=root,label='deck',scree
  for(const mode of ['compact','stacks','gallery','symbols']){
   await group.locator(`[data-mode="${mode}"]`).click();
   await page.waitForFunction(({root,mode})=>document.querySelector(root)?.dataset.deckView===mode,{root,mode});
-  assert.deepEqual(await snapshot(),before,label+' '+mode+' preserves exact ordered cards, zones, actions, images and selections');
-  assert(await viewer.evaluate(n=>[...n.querySelectorAll('[data-deck-card]')].every((a,i)=>a===window.__deckViewNodes[i])),label+' '+mode+' keeps the original nodes');
+  const canonical=rows=>[...rows].sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  assert.deepEqual(mode==='stacks'?canonical(await snapshot()):await snapshot(),mode==='stacks'?canonical(before):before,label+' '+mode+' preserves exact cards, zones, actions, images and selections; other views restore source order');
+  assert(await viewer.evaluate((n,mode)=>{const current=[...n.querySelectorAll('[data-deck-card]')];return current.length===window.__deckViewNodes.length&&current.every((a,i)=>mode==='stacks'?window.__deckViewNodes.includes(a):a===window.__deckViewNodes[i]);},mode),label+' '+mode+' keeps the original nodes');
   assert.equal(await group.locator('[aria-checked="true"]').getAttribute('data-mode'),mode);
   const eligibility=await viewer.evaluate(async n=>{const {finishEligible}=await import('/finish-preview.js');return [...n.querySelectorAll('[data-finish-surface="large"]')].map(finishEligible);});
   assert(eligibility.every(value=>value===['gallery','stacks'].includes(mode)),label+' reuses the established finish renderer only on full-size art');
@@ -27,14 +28,14 @@ export async function checkDeckViews(page,{root,controls=root,label='deck',scree
   if(mode==='symbols')assert(layout.art.every(a=>!a.visible),label+' names view hides card images');
   if(['gallery','stacks'].includes(mode))for(const art of layout.art.filter(a=>a.visible)){assert(art.width>50&&Math.abs(art.width/art.height-63/88)<.06,label+' '+mode+' retains full portrait card art '+JSON.stringify(art));}
   if(mode==='stacks'){
-   assert(layout.lists.every(a=>a.overflow==='auto'),label+' stacks clip and scroll within their group');
+   assert(layout.lists.every(a=>a.scroll<=a.client+2),label+' stack categories fit their container without horizontal scrolling');
    const stack=await viewer.locator('[data-deck-list]').first().evaluate(list=>{
-    const rows=[...list.querySelectorAll(':scope > [data-deck-card]')];
+    const rows=[...list.querySelectorAll('[data-deck-card]')];
     const last=rows.at(-1),button=last?.matches('button')?last:last?.querySelector('button');button?.focus();
-    const box=list.getBoundingClientRect(),card=last?.getBoundingClientRect(),first=rows[0]?.getBoundingClientRect(),second=rows[1]?.getBoundingClientRect();
-    return {count:rows.length,overlap:second?Math.abs(second.top-first.top)<first.height:true,focused:!!button&&document.activeElement===button,raised:last&&getComputedStyle(last).zIndex,reachable:card&&card.left>=box.left-.5&&card.right<=box.right+.5};
+    const box=list.getBoundingClientRect(),card=last?.getBoundingClientRect();
+    return {count:rows.length,focused:!!button&&document.activeElement===button,raised:last&&getComputedStyle(last).zIndex,reachable:card&&card.left>=box.left-.5&&card.right<=box.right+.5};
    });
-   assert(stack.overlap&&stack.focused&&stack.raised==='4'&&stack.reachable,label+' keyboard reaches and raises cards inside overlapping stacks: '+JSON.stringify(stack));
+   assert(stack.focused&&stack.raised==='4'&&stack.reachable,label+' keyboard reaches and raises cards inside fitting categorized stacks: '+JSON.stringify(stack));
   }
   if(screenshots){await viewer.evaluate(n=>{const body=n.closest('#sheetBody');if(body)body.scrollTop+=n.getBoundingClientRect().top-body.getBoundingClientRect().top-16;else scrollTo(0,Math.max(0,n.getBoundingClientRect().top+scrollY-100));});await page.screenshot({path:`test-results/deck-view-${label}-${mode}.png`,fullPage:false,animations:'disabled'});}
  }
