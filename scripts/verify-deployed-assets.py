@@ -42,7 +42,7 @@ MODULES = (
     "profile-art.js", "pokemon-identity.js", "pokemon-corrections.js", "collection-stack.js", "ygo-set-prices.js", "cloud.js",
     "printing-picker.js", "printing-picker.css", "catalog-tools.js", "scanner-printing.js",
     "ygo.js", "set-list-ui.js", "sets-ui.css", "emblems.js", "ai-tools.js", "sheet-history.js",
-    "app.js", "core.js", "scancam.js", "scan-batch.js", "scan-signals.js", "scan.js", "scan-catalog.js",
+    "app.js", "core.js", "scancam.js", "scan-batch.js", "scan-signals.js", "scan.js", "scan-catalog.js", "scan-collector.js",
     "scan-vision.js", "scansession.js", "tcg.js", "ptcg.js", "ui.js",
     "views.js", "confidence.js", "mtg-tcgprice.js", "style.css",
     "home-search.js", "app-info.js", "tabletop.js", "settings-dialog.js", "tour.js",

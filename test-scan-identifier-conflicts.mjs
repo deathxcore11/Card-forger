@@ -70,7 +70,10 @@ for (const read of [
   {name:'Lightning Bolt',code:'U 08086\nMSC EN\nU 08087\nMSC EN'},
   {name:'Lightning Bolt',code:'U 08086\nMSC EN',full:'U 08087\nMSC EN'}
 ]) {
-  assert.equal(lookupCatalog(pack,read).cands.length,0,'all observations wrong must reject, not fall back to unrelated same-name printings');
+  // Every reading is wrong, but the set marker is legible: the name's MSC printing
+  // is offered for review only, flagged as conflicting, never exact or verified.
+  assertReview(read,[correctId]);
+  assert(lookupCatalog(pack,read).cands.every(c=>c.identifierConflict===true&&c.card.set==='msc'),'only the set that was read, never unrelated same-name printings');
   assert.deepEqual(signalEvidence('mtg',correct.card,read).conflicts,['set / collector number']);
 }
 for (const read of [
@@ -109,7 +112,13 @@ for (const [code,id,tuple] of [
   assert.equal(result.cands[0].exact,true);
   assert.equal(textVerifiedMatch('mtg',result.cands[0],read),true);
 }
-assert.equal(lookupCatalog(variants,{name:'Example Card',code:'R 123\nXYZ EN'}).cands.length,0,'a known name cannot be replaced by an unrelated code match');
+{
+  // The code belongs to a different card. The name's own #123 may be offered for
+  // review (number read, set contradicted), never the other card and never exact.
+  const read={name:'Example Card',code:'R 123\nXYZ EN'},result=lookupCatalog(variants,read);
+  assert(!ids(result).includes('different-name'),'a known name cannot be replaced by an unrelated code match');
+  assert(result.cands.every(c=>!c.exact&&c.identifierConflict===true&&!textVerifiedMatch('mtg',{...c,exact:true},read)));
+}
 const alphaConflict={name:'Example Card',code:'R 00123a\nABC EN\nR 123\nABC EN'};
 assert.deepEqual(ids(lookupCatalog(variants,alphaConflict)),['numeric','suffix']);
 assert(lookupCatalog(variants,alphaConflict).cands.every(c=>!c.exact&&!textVerifiedMatch('mtg',{...c,exact:true},alphaConflict)));

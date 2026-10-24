@@ -216,6 +216,7 @@ const ASSETS = [
   "./scancam.js",
   "./scan-batch.js",
   "./scan-catalog.js",
+  "./scan-collector.js",
   "./rules.js",
   "./catalog.json",
   "./manifest.webmanifest",

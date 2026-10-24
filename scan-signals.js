@@ -62,8 +62,13 @@ export function signalEvidence(g,card,read={}){
 export function rankScanCandidates(g,cands,read={}){
  const ranked=cands.map(c=>{const e=signalEvidence(g,{...c.card,name:c.card?.name||c.name},read),codes=g==='ygo'?scanIdentifierEvidence(g,read).observations:[];if(codes.length&&c.print&&!codes.includes(c.print.split('|')[0]))e.conflicts.push('set code');return {c,e};});
  const supported=ranked.some(({e})=>e.exactMatch&&!e.conflicts.length);
- return ranked.filter(({c,e})=>!e.conflicts.length&&(!supported||!e.nameConflict||e.exactMatch||c.identitySource==='artwork'))
+ // Printings narrowed by a partly readable footer may disagree with a garbled
+ // code ("FON" for FDN). Only footer conflicts are tolerated, only for an exact
+ // title, and only as review: identifierConflict keeps them from verifying.
+ const footerOnly=(c,e)=>c.footerNarrowed===true&&e.exactMatch&&!e.nameConflict&&!e.signalConflict&&e.conflicts.every(x=>x==='collector number'||x==='set / collector number');
+ return ranked.filter(({c,e})=>(!e.conflicts.length||footerOnly(c,e))&&(!supported||!e.nameConflict||e.exactMatch||c.identitySource==='artwork'))
  .sort((a,b)=>b.e.score-a.e.score).map(({c,e})=>{
+  if(e.conflicts.length)return {...c,exact:false,identifierConflict:true,why:`${c.why} · printed code read differently`,signalMatches:e.agrees};
   const identityConflict=e.nameConflict||c.identityConflict===true,conflict=e.identifierConflict||e.identifierUncertain||identityConflict||e.signalConflict;
   return {...c,exact:conflict?false:c.exact,...(e.identifierConflict?{identifierConflict:true}:{}),...(e.identifierUncertain?{identifierUncertain:true}:{}),...(e.signalConflict?{signalConflict:true}:{}),...(identityConflict?{identityConflict:true}:{}),why:e.signalConflict?'Conflicting printed stats · check card identity':e.identifierConflict?'Conflicting printed identifiers · check printing'+(identityConflict?' and card identity':''):e.identifierUncertain?'Uncertain printed characters · check the full code':identityConflict?'Conflicting title evidence · check card identity':e.agrees.length?`${e.agrees.join(' + ')} agree · ${c.exact?'check finish and edition':'check printing'}`:c.why,signalMatches:e.agrees};
  });
