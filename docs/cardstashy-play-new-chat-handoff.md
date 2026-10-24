@@ -411,6 +411,19 @@ or manual fallback is implied.
    merge into production, turn on public Play, or release an APK from this new
    chat without a separate explicit release instruction.**
 
+## Reference translation checkpoint — October 24, 2026
+
+The supplied REA inspection toolkit, a direct guest Moxgate walkthrough and
+official Arena interaction notes are recorded in
+[reference observations](play-reference-observations.md) and
+[CPU reference translation](play-cpu-reference-translation.md). The latter has
+18 synthetic contract tests covering information permission, proposal validation,
+response windows and finite resource accounting; it does not establish an
+integrated fair CPU or playing strength. Read
+[scheduled development progress](play-scheduled-progress.md) for the latest
+completed checkpoint and unfinished authoritative ninjutsu correction.
+
 The local CPU design is plausible and the narrow runtime spike is useful
 progress. The supported game, fair difficulties, full offline recovery and
 finished Play interface remain development work.
+
