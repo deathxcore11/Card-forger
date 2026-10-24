@@ -3,6 +3,7 @@ import {rankScanCandidates,nameDistance,collectorKey,scanIdentifierEvidence} fro
 import {readRecord,writeRecord} from './storage.js';
 import {scanLookupNames,scanNameKey,scanCardNameKey,ptcgIdentifierKey} from './scan.js';
 import {pokemonIdentityNames,pokemonPrintedIdentifier} from './pokemon-identity.js';
+import {footerHints,catalogueReleases,narrowPrintings,printingFacts} from './scan-collector.js';
 const states=new Map(),loads=new Map();let manifestPromise;
 const key=g=>'cardstashy-scan-catalog-v1-'+g;
 export function compileCatalog(pack){
@@ -52,9 +53,21 @@ export function lookupCatalog(pack,read){
  }
  if(g==='ygo'){for(const c of observations)indexes.push(...(pack.codes.get(c)||[]));}
  const exact=!fuzzy&&!identifierConflict&&!identifierUncertain&&indexes.length>0&&new Set(indexes.map(i=>JSON.stringify(g==='ygo'?pack.rows[i].slice(0,5):[pack.rows[i][0]]))).size===1;
- if(!indexes.length&&bestName)indexes.push(...pack.names.get(bestName));
- const cands=rankScanCandidates(g,[...new Set(indexes)].map(i=>catalogCandidate(pack,i,exact)),read).slice(0,3);
- return {cands,tried:names,local:true,fuzzy};
+ // The name is read but the footer is only partly readable: a number with no
+ // set marker, or a set code with no number. Use what was read to narrow this
+ // name's printings (Mountain #275 → 15 of 796). Narrowing never verifies.
+ let narrowed=null;
+ if(!indexes.length&&bestName){
+  const named=pack.names.get(bestName),hints=footerHints(g,read.code,{releases:catalogueReleases(pack)});
+  const result=narrowPrintings(g,named,hints,i=>printingFacts(g,pack.rows[i]));
+  indexes.push(...result.items);
+  if(result.by&&result.to<result.from)narrowed={from:result.from,to:result.to,by:result.by};
+ }
+ const why=narrowed?`Name and ${narrowed.by} match · ${narrowed.to} of ${narrowed.from} printings · check printing`:null;
+ // A garbled code beside a readable one ("FON" for FDN, "© 2024" read as 224)
+ // contradicts every printing; narrowed printings stay for review, never exact.
+ const cands=rankScanCandidates(g,[...new Set(indexes)].map(i=>({...catalogCandidate(pack,i,exact),...(why?{why,narrowed,footerNarrowed:true}:{})})),read).slice(0,3);
+ return {cands,tried:names,local:true,fuzzy,...(narrowed?{narrowed}:{})};
 }
 
 export const catalogState=g=>states.get(g)||{status:'idle'};

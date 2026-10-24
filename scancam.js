@@ -865,6 +865,16 @@ export function registerScanner(ctx) {
       const detail=await stage('ocrFooterRetry',async()=>recog(await getWorker(lang,progress),regionCanvas(card,footer,3),6,budget));
       read.code=joinReads(read.code,detail);
       r=await lookup();
+      // Magic footers, and Pokémon full-art footers, are light text on a dark
+      // border. When the name is read but no identifier is, read the whole bottom
+      // strip inverted: modern Magic prints the number bottom-left, 2003–2014
+      // frames bottom-right after the copyright. A number alone still narrows.
+      if(G!=='ygo'&&!hasIdentifier()&&scanLookupNames(G,read).length&&!r.cands.some(c=>textVerifiedMatch(G,c,read))){
+        const corner=G==='mtg'?[0,.9,1,.09]:[0,.88,1,.12];
+        const inverted=await stage('ocrFooterInverted',async()=>recog(await getWorker(lang,progress),regionCanvas(card,corner,4,true),6,budget));
+        read.code=joinReads(read.code,inverted);
+        r=await lookup();
+      }
     }
     if(!r.cands.some(c=>textVerifiedMatch(G,c,read))){
       read.full=read.full||await stage('ocrFull',()=>readFull(card,lang,progress,budget));

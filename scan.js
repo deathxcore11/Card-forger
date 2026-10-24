@@ -246,6 +246,15 @@ export function mtgIdentifierEvidence(...texts) {
   const add = (set, number) => {
     const pair = { set: set.toLowerCase(), number: number.replace(/^0+(?=\d)/, '').toLowerCase() };
     observations.set(pair.set + ':' + pair.number, pair);
+    // The footer font turns "11" into "n" and 0/1 into o/l/I ("0114" → "ON4",
+    // "011/274" → "on/274"). Keep the reading as printed and add its digit form
+    // beside it, marked uncertain: it can narrow printings, never confirm one.
+    const digits = pair.number.replace(/n/g, '11').replace(/o/g, '0').replace(/[li|]/g, '1');
+    if (digits !== pair.number && /[onli|]/.test(pair.number) && /^\d+$/.test(digits) && /\d/.test(pair.number)) {
+      const repaired = { set: pair.set, number: digits.replace(/^0+(?=\d)/, '') };
+      observations.set(repaired.set + ':' + repaired.number, repaired);
+      identifierUncertain = true;
+    }
   };
   for (const text of texts) {
     let pending = [], copyrightBridge = false,partialAfterSet=false;
