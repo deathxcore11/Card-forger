@@ -1,0 +1,222 @@
+{
+  "schema_version": 1,
+  "project": "CardStashy desktop Play",
+  "prepared_utc_date": "2026-10-24",
+  "repository": "deathxcore11/Card-forger",
+  "repository_visibility": "private",
+  "play_branch": "codex/cardstashy-play-engine-20261024",
+  "branch_creation_status_at_authoring": "The primary agent will create this branch after committing this handoff; verify remote ref before use.",
+  "snapshot_base_commit": "997cfcb38a6d9e802ea575b8868f7736c5685a08",
+  "handoff_document": "docs/cardstashy-play-new-chat-handoff.md",
+  "scope": "A separate chat continues future desktop Play. Current chat ships website-only 3.95.4 Home/decks/bugfixes without Play/Draft controls; no APK or gameplay deployment.",
+  "retrieval_instructions": [
+    "A new chat does not inherit the original conversation, runtime sessions, local paths or attached images.",
+    "Use authorized GitHub access for this private repository; read the handoff and all authoritative documents before changes.",
+    "Read the available ChatGPT Library skill and retrieve the exact library_file_id for each image. Do not assume a scratch path survives.",
+    "If a file cannot be retrieved, ask for reattachment of that exact named reference; never invent an image, identifier or reviewed content.",
+    "These are visual and interaction references, not licensed product assets, reusable competitor code, or proof of correct rules.",
+    "Do not publish uploaded screenshots, browser chrome or personal data as app assets."
+  ],
+  "authoritative_documents": [
+    "docs/cardstashy-play-new-chat-handoff.md",
+    "docs/cardstashy-4.0-desktop-release-plan.md",
+    "docs/4.0-play-art-and-motion.md",
+    "docs/4.0-engine-evaluation.md",
+    "docs/4.0-cpu-proposal-review.md",
+    "experiments/phase-engine/README.md",
+    "experiments/phase-engine/phase-smoke.mjs",
+    "experiments/phase-engine/evidence-2026-10-24.json",
+    "docs/cardstashy-4.0-patch-notes-draft.md",
+    "docs/4.0-home-review/README.md",
+    "docs/4.0-deck-viewer-review/README.md",
+    "docs/3954-recovery-validation.md",
+    "docs/audits/ai-deck-synergy-audit.md",
+    "docs/deck-builder-request-and-result-contract.md"
+  ],
+  "images": [
+    {
+      "uploaded_name": "image(20261024-215807).png",
+      "library_file_id": "libfile_763142cf17f481918a7d8a07889f11bf",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_763142cf17f481918a7d8a07889f11bf&account_id=personal",
+      "original_local_path": "/workspace/scratch/73ad2ed2de87/upload/image(20261024-215807).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 2522721,
+      "sha256": "55e770a31307a3d2e54f391c3123f6674c3d2025885a0a106594730b2125cac1",
+      "reference_notes": "Artwork-led deck shelf, selected deck glow, right preview and table seats. Reuse CardStashy identity and all four deck views.",
+      "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    },
+    {
+      "uploaded_name": "image(20261024-215833).png",
+      "library_file_id": "libfile_395d90770f688191a274094bcf048aa3",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_395d90770f688191a274094bcf048aa3&account_id=personal",
+      "original_local_path": "/workspace/scratch/73ad2ed2de87/upload/image(20261024-215833).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 2397461,
+      "sha256": "3bc23c7e543887512b02fe3eea2aab402e867d879a57286eb4b6930eac4250de",
+      "reference_notes": "Fanned opening hand over matchup artwork. Correct keep, mulligan and bottom choices; no copied friendly redraw exception.",
+      "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    },
+    {
+      "uploaded_name": "image(20261024-215843).png",
+      "library_file_id": "libfile_ebdcd66c24348191a818c8d9f6a42a3a",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_ebdcd66c24348191a818c8d9f6a42a3a&account_id=personal",
+      "original_local_path": "/workspace/scratch/73ad2ed2de87/upload/image(20261024-215843).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 1636719,
+      "sha256": "e02ecac2029403b2e3da001a73fdc18fe4aa25e1b5b0a93aaf6f09449c5d8e3c",
+      "reference_notes": "Optional contextual onboarding and explicit priority/turn controls. Mandatory engine choices retain ownership.",
+      "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    },
+    {
+      "uploaded_name": "image(20261024-215854).png",
+      "library_file_id": "libfile_629ea62a2404819181957a48c1729aa5",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_629ea62a2404819181957a48c1729aa5&account_id=personal",
+      "original_local_path": "/workspace/scratch/73ad2ed2de87/upload/image(20261024-215854).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 3200738,
+      "sha256": "c4f3eb4566f3320829537713d9f9f519febf065fb2173cab96345473bd718234",
+      "reference_notes": "Warm textured playmat, spacious battlefield, anchored zones, phases and game log.",
+      "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    },
+    {
+      "uploaded_name": "image(20261024-215904).png",
+      "library_file_id": "libfile_7986cdbc2f4c8191b65f6daec0fa3789",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_7986cdbc2f4c8191b65f6daec0fa3789&account_id=personal",
+      "original_local_path": "/workspace/scratch/73ad2ed2de87/upload/image(20261024-215904).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 3318438,
+      "sha256": "15d0c34671d9d466de03d41ae1107952f6bbc85bcc90e13a35a6a27249dd74e9",
+      "reference_notes": "Hover lift and readable large card face. Temporary preview complements persistent selection.",
+      "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    },
+    {
+      "uploaded_name": "image(20261024-220524).png",
+      "library_file_id": "libfile_bd4ddbc37a948191aa3d73267d9ebe8e",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_bd4ddbc37a948191aa3d73267d9ebe8e&account_id=personal",
+      "original_local_path": "/workspace/scratch/73ad2ed2de87/upload/image(20261024-220524).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 1426448,
+      "sha256": "45f71a286d9f0e72fd9b0796cb897c341269360e73907bb84f4f74aaff1b29fd",
+      "reference_notes": "Deck-builder entry/empty state. Reuse existing builder/import/saved-list paths.",
+      "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    },
+    {
+      "uploaded_name": "image(20261024-220533).png",
+      "library_file_id": "libfile_59ef48bea68881919992e65be5d24c0c",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_59ef48bea68881919992e65be5d24c0c&account_id=personal",
+      "original_local_path": "/workspace/scratch/73ad2ed2de87/upload/image(20261024-220533).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 1316314,
+      "sha256": "1a3051d7b76efa84e1d9288640023d2feed0f2ff33b6d7e110f3bee345d9327d",
+      "reference_notes": "Artwork-led versus transition with frozen player/opponent lists, names and format; skip/reduced motion.",
+      "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    },
+    {
+      "uploaded_name": "image(20261024-220539).png",
+      "library_file_id": "libfile_15e5e02d5aa48191a2e38a917db579e7",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_15e5e02d5aa48191a2e38a917db579e7&account_id=personal",
+      "original_local_path": "/workspace/scratch/73ad2ed2de87/upload/image(20261024-220539).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 300164,
+      "sha256": "4871216119ccb65403f9dcdb0c6353b21a2db1bfb200908b64b09343c7db3fb3",
+      "reference_notes": "Pregame coin result and Play/Draw choices. Correct authoritative format-specific procedure, not an assumed universal first-draw rule.",
+      "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    },
+    {
+      "uploaded_name": "image(20261024-220601).png",
+      "library_file_id": "libfile_9c144309e51881918b28aa040cf87cfc",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_9c144309e51881918b28aa040cf87cfc&account_id=personal",
+      "original_local_path": "/workspace/scratch/73ad2ed2de87/upload/image(20261024-220601).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 2698477,
+      "sha256": "71e8646772702a2cbf1f59d39d1c81664ef59122bc13e26e8f38d04e9b508d66",
+      "reference_notes": "Existing CardStashy deck tiles: artwork, rounded glass, color/format identity and familiar actions are the Play-selection base.",
+      "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    },
+    {
+      "uploaded_name": "image(20261024-220608).png",
+      "library_file_id": "libfile_1b9066ca6c788191bda08f8397c0bd7b",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_1b9066ca6c788191bda08f8397c0bd7b&account_id=personal",
+      "original_local_path": "/workspace/scratch/73ad2ed2de87/upload/image(20261024-220608).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 732627,
+      "sha256": "12c9b8a7b7472bff9530d658deed7cd799305d8a4d3dfdda64ce6ed06d18bf64",
+      "reference_notes": "Opening-hand lift/inspection without obscuring keep/mulligan or committing a card.",
+      "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    },
+    {
+      "uploaded_name": "image(20261024-220659).png",
+      "library_file_id": "libfile_4c061477c19881919c45efd78a7198e3",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_4c061477c19881919c45efd78a7198e3&account_id=personal",
+      "original_local_path": "/workspace/scratch/73ad2ed2de87/upload/image(20261024-220659).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 1352585,
+      "sha256": "639df7f346652be4a6b086964fde4b5ed4b2c59ca6b772c27ca3ec4da5604a13",
+      "reference_notes": "User annotation moves obstructing large preview into unused right rail. Persistent selected-card inspection belongs there.",
+      "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    },
+    {
+      "uploaded_name": "image(20261024-220805).png",
+      "library_file_id": "libfile_1836ec242fe081919108c4dc56b3bbc0",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_1836ec242fe081919108c4dc56b3bbc0&account_id=personal",
+      "original_local_path": "/workspace/scratch/73ad2ed2de87/upload/image(20261024-220805).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 1568554,
+      "sha256": "6da4058f46b65431a712a888e83e9c6a8a7bc884e207c1717c8e408dc5b1c049",
+      "reference_notes": "In-progress payment prompt: outstanding cost, mana/resources, cancellation and Auto remain understandable.",
+      "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    },
+    {
+      "uploaded_name": "image(20261024-220819).png",
+      "library_file_id": "libfile_03cf7c131dc881918822d2c9ce8cc86e",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_03cf7c131dc881918822d2c9ce8cc86e&account_id=personal",
+      "original_local_path": "/workspace/scratch/73ad2ed2de87/upload/image(20261024-220819).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 38235,
+      "sha256": "7c07648229d6fd927d37756879f10f34de6caed9f72417fdf62774c99dbb9141",
+      "reference_notes": "Close-up Cancel/Auto controls, distinct from phase advance and inspection; cancellation restores only uncommitted play.",
+      "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    }
+  ],
+  "original_engineering_handoff_files": {
+    "status": "Original PDF/ZIP/TXT were referenced earlier, but authoritative filenames and Library IDs are not available to this handoff. Their contents were not re-reviewed for this handoff.",
+    "library_file_ids": null,
+    "filenames": null,
+    "recovery": "Search the user-provided current attachments/Library by an actual filename when known; otherwise request the originals again. Do not invent identifiers, reconstruct claimed contents, or let an older native-first blueprint override the current desktop decision."
+  },
+  "other_screenshots": {
+    "status": "Repository/privacy/branch screenshots are operational context, not Play art references; no extra Library identifiers are asserted here.",
+    "coin_reference": "image(20261024-220539).png is included above."
+  },
+  "public_reference_urls": [
+    "https://www.moxgate.com/solo",
+    "https://www.moxgate.com/faq/",
+    "https://www.moxgate.com/developer/",
+    "https://github.com/phase-rs/phase/tree/71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "https://eprints.whiterose.ac.uk/id/eprint/75050/",
+    "https://eprints.whiterose.ac.uk/id/eprint/75048/",
+    "https://www.cs.du.edu/~sturtevant/papers/sturtevant2002comparison.html",
+    "https://html.spec.whatwg.org/dev/workers.html",
+    "https://magic.wizards.com/en/news/announcements/teenage-mutant-ninja-turtles-commander-decklist",
+    "https://magic.wizards.com/en/news/announcements/star-trek-commander-decklists",
+    "https://mtgjson.com/api/v5/DeckList.json"
+  ],
+  "engine_provenance": {
+    "candidate": "phase-rs/phase",
+    "commit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "version": "0.117.0",
+    "upstream_workflow_run": 40129115223,
+    "artifact_id": 12574954346,
+    "artifact_name": "wasm",
+    "zip_sha256": "47485d739b924120d9a795cc6b522ddd10c91ede91fdb3c5e997cd6d888eb7b0",
+    "wasm_bytes": 40060780,
+    "wasm_sha256": "6057521d851bb8544eaeea467f741b90cd2941aa5ba2fddb17e1bcc3d9933f8f",
+    "js_sha256": "47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd3476cfb70131de6287c9",
+    "fixture_sha256": "ee062b8ad351e067723b79fc8462aaea19202ef9756d35b2101334eb3e350107",
+    "default_cpu_approved": false,
+    "product_runtime_adopted": false,
+    "engine_release_gate_passed": false,
+    "source_builds": "Two local source builds were OOM-killed at the 8 GiB container limit; execution used a separately verified upstream artifact.",
+    "artifact_expiration": "Upstream artifact links can expire. No signed download URL is preserved as durable evidence; never silently substitute a different build."
+  }
+}
