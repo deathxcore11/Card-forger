@@ -11,7 +11,6 @@ import {loadMtgBooster,mtgBoosterCards} from './mtg-boosters.js';
 // Booster pack photos trim to the pack itself wherever they appear.
 document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]'))trimPackArt(e.target);},true);
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
-import {syncDesktopPlayEntries} from './desktop-play.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -1072,7 +1071,6 @@ function render() {
   content.dataset.disclosureKey=disclosureKey;
   restoreSearchFocus(content,searchFocus);
   placeGlobalSearch(g,ui.view);
-  syncDesktopPlayEntries(g);
   if(ui.view==="wiki")currentWikiPage()?.mount();
   const guideKey={collection:"save",decks:"build",scan:"scan"}[ui.view];
   if(guideKey)content.insertAdjacentHTML?.("afterbegin",guidePrompt(guideKey));
@@ -3577,7 +3575,6 @@ function paintHomeToday(g) {
     if (!navigationCurrent(screen) || !el.isConnected || el.dataset.dailyId + "|" + el.dataset.dailyDate !== key || !d?.set) return;
     el.querySelector(".today-set").innerHTML = todaySetMarkup(g, d.set, { rarity: d.rarity });
     el.querySelector(".today-pack-slot").innerHTML = todayPackMarkup(g, d.set);
-    syncDesktopPlayEntries(g);
   }).catch(() => { delete el.dataset.painted; });
 }
 // Opening today's pack goes to the Set of the Day and opens its pack with the Card of the Day as the hit.

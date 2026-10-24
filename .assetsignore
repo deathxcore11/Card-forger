@@ -66,3 +66,12 @@ pokemon-meta-route.js
 
 mtg-wiki-reference.js
 wiki-article-content.js
+
+# Internal planning, diagnostics and server-only matchup code are never static assets.
+docs
+experiments
+ai-matchup-route.js
+*.map
+
+# Future game admission is not loaded by the website-only release.
+desktop-play.js

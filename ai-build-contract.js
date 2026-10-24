@@ -45,6 +45,41 @@ const GENERIC_BUILD_WORDS=new Set('can could would will you please build make cr
 const genericBuildLanguage=request=>!/["“”]/.test(request)&&(canonicalMechanics(request).match(/[\p{L}]+/gu)||[]).every(w=>GENERIC_BUILD_WORDS.has(w.toLowerCase())||new RegExp('^(?:'+THEMES.source.replace(/\\b/g,'')+')$','i').test(w));
 const genericBuildRequest=request=>isDeckBuildRequest(request)&&/\b(?:white|blue|black|red|green|colou?rless)\b/i.test(request)&&genericBuildLanguage(request);
 
+// A pasted reference guide is not a request for every subtype/keyword that
+// happens to describe its suggested cards or alternative commanders. Recognize
+// only a conservative Markdown guide shape; unfamiliar/ambiguous prose keeps
+// the ordinary path. Scope themes, not the original request or exact hard
+// constraints, to the introductory plan and clearly user-directed additions.
+function guideThemeRequest(request) {
+ const lines=request.split(/\r?\n/),heading=line=>line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$/);
+ const headings=lines.map(heading).filter(Boolean);
+ const referenceHeading=/^(?:choose (?:your|a|the) commander|commander (?:options|choices|candidates)|(?:core )?(?:deck )?blueprint|(?:deckbuilding|deck building|strategy) guide|featured options|(?:recommended|suggested|example) (?:cards|commanders|decklists|decks))\b/i;
+ const examples=lines.filter(line=>/^\s*[-*+]\s+\*\*[^*\n]{2,120}\*\*(?:\s*[:(—-]|\s*&|\s*$)/.test(line));
+ if(headings.length<2||examples.length<3||!headings.some(h=>referenceHeading.test(h[1].replace(/\*\*/g,''))))return request;
+ const requirements=/^(?:(?:my|our|user|build|deck|hard|explicit|additional|extra)\s+){0,2}(?:requirements?|constraints?|preferences?|request)(?:\s*(?:&|and)\s*(?:requirements?|constraints?|preferences?))?(?:\s*[:—-].*)?$/i;
+ const firstHeading=lines.findIndex(line=>heading(line)),title=headings[0][1].replace(/\*\*/g,'');
+ // A leading guide title and its introductory paragraph are still the plan.
+ // Only skip that first heading boundary, never a reference or requirements
+ // section; later body headings do not gain theme authority this way.
+ const leadingTitle=lines.slice(0,firstHeading).every(line=>!line.trim())&&!referenceHeading.test(title)&&!requirements.test(title);
+ const bodyStart=leadingTitle?lines.findIndex((line,i)=>i>firstHeading&&heading(line)):firstHeading;
+ const selected=lines.slice(0,bodyStart);
+ const directed=/^(?:(?:please\s+)?(?:build|make|create)\b|(?:i|we)\s+(?:want|need|require|prefer|would like|don't want|do not want)\b|(?:must|only|strictly)\b|use\s+only\b|(?:no|without|avoid|exclude|don't use|do not use)\b)/i;
+ let constraintLevel=null;
+ for(const line of lines.slice(bodyStart)){
+  const h=heading(line);
+  if(h){
+   const level=line.match(/^\s*(#+)/)[1].length;
+   if(constraintLevel!==null&&level<=constraintLevel)constraintLevel=null;
+   if(requirements.test(h[1].replace(/\*\*/g,'')))constraintLevel=level;
+   continue;
+  }
+  const plain=line.replace(/^\s*[-*+]\s+(?:\[[ xX]\]\s*)?/,'').replace(/\*\*/g,'').replace(/[’‘]/g,"'").trim();
+  if(constraintLevel!==null||directed.test(plain))selected.push(line);
+ }
+ return selected.join('\n');
+}
+
 export function applyUserBuildIntent(input,contract={}) {
  if(!input||typeof input!=='object'||Array.isArray(input))return input;
  const args={budgetMode:'cap',matchMode:'unspecified',creatureTypesOnly:[],excludedSubtypes:[],...input};
@@ -135,10 +170,12 @@ export function readBuildContract(items=[],retained=null,options={}) {
  const comboText=request.replace(/["“][^"”]*["”]/g,'');
  if(/\b(?:no|without|avoid|don't (?:use|include|want|allow|permit)|do not (?:use|include|want|allow|permit))\s+(?:(?:any|all)\s+)?infinite(?:[ -](?:combos?|loops?))?\b/i.test(comboText))out.avoid_infinite=true;
  else if(/\b(?:(?:allow|permit)\s+infinite(?: combos?| loops?)?|infinite (?:combos?|loops?) (?:are )?(?:fine|ok(?:ay)?|allowed)|(?:remove|drop|relax)\s+(?:the |that )?(?:no[ -])?infinite(?:[ -](?:combo|loop)s?)?(?: restriction)?)\b/i.test(comboText)&&! /\b(?:don't|do not|not)\s+allow\b/i.test(comboText))out.avoid_infinite=false;
- // Preserve common explicit themes even if the proposed AI style drops them.
- const positive=request.replace(/["“][^"”]*["”]/g,'').replace(/\b(?:build around|around|include|must have|must use|featuring|led by|commander is)\s+([^,;.!]+?)(?=\s+(?:with|under|for|budget)\b|[,;.!]|$)/gi,(full,named)=>genericBuildLanguage(named)?full:' ').replace(/\b(?:no|without|avoid)\s+[^,.;]*(?=[,.;]|$)/gi,'');
+ // Preserve explicit themes, while keeping a recognized guide's named
+ // examples and alternative packages from becoming mandatory AND themes.
+ const themeRequest=guideThemeRequest(request);
+ const positive=themeRequest.replace(/["“][^"”]*["”]/g,'').replace(/\b(?:build around|around|include|must have|must use|featuring|led by|commander is)\s+([^,;.!]+?)(?=\s+(?:with|under|for|budget)\b|[,;.!]|$)/gi,(full,named)=>genericBuildLanguage(named)?full:' ').replace(/\b(?:no|without|avoid)\s+[^,.;]*(?=[,.;]|$)/gi,'');
  out.themes=[...new Set((positive.match(THEMES)||[]).map(themeKey))];
- const mechanicChange=mechanicChanges(request);
+ const mechanicChange=mechanicChanges(themeRequest);
  out.themes=[...new Set([...out.themes.filter(t=>!mechanicIds.has(t)),...mechanicChange.positive])];
  const removedMechanics=new Set([...(prior?.removedMechanics||[]),...mechanicChange.removed]);
  for(const id of mechanicChange.positive)removedMechanics.delete(id);

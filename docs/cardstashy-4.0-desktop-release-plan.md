@@ -54,6 +54,21 @@ tablets, foldables in both postures, desktop-site requests, resized windows,
 missing capabilities and unknown signals. Record the exact tested browser and
 runtime versions before adding them to the support manifest.
 
+## Approved interim website release — October 24
+
+The user explicitly approved publishing the current Home/deck-building/bug-fix
+foundation **without Play**, while game development continues separately. Ship
+this interim website as **3.95.4**, not as completed 4.0. Remove Home/header Play
+and Draft entries rather than advertise an unfinished game. Preserve collectible
+packs, existing tools and the published APK. Website release checks and live
+asset verification still apply.
+
+Play is on hold in this release chat. Its handoff and dedicated
+`codex/cardstashy-play-engine-20261024` branch let a separate chat continue the
+game against the requirements below, without deploying or editing the website
+release branch. This interim shipment does not waive any full-4.0 engine,
+fairness, rules, offline, Draft, friend-session or visual-quality gate.
+
 ## What 4.0 must ship
 
 The current release target includes all three named modes: rules-enforced

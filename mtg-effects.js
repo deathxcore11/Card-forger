@@ -52,8 +52,14 @@ export function mtgAbilityEvidence(c,ability) {
   for(const [index,face] of facesOf(c).entries())for(const raw of String(face.oracle_text||'').split('\n')){
     const line=withoutReminder(raw),t=lower(line);if(!word.test(line))continue;
     const native=new RegExp('^(?:[a-z -]+, )*'+escaped+'(?=$|[\\s,{.—])','i').test(line),
-      grant=/(?:creatures? you control|this creature|this card|equipped creature|enchanted creature|target creature)[^.]*\b(?:has|have|gain|gains)\b/i.test(line)&&!/(?:opponent|loses?|without|can't have|can't gain)/.test(t);
-    if(native||grant)out.push({ability,face:face.name||c?.name,evidence:line,status:'conditional',requirements:[...requirementsFor(line,face,index,c),...(grant?['Requires an eligible recipient of the granted ability']:[]),'Keyword capability alone does not establish an executable synergy']});
+      // Commander ninjutsu is a variant of the requested base mechanic, not
+      // evidence that regular ninjutsu can activate from the command zone.
+      commanderNinjutsu=lower(ability)==='ninjutsu'&&/^Commander ninjutsu(?=$|[\s{])/i.test(line),
+      // Satoru grants an activated ability to cards in the controller's hand.
+      // Keep that scope explicit; this is not a battlefield-native keyword.
+      handGrant=lower(ability)==='ninjutsu'&&/^(?:Each creature card|Creature cards) in your hand (?:has|have|gain|gains)\b/i.test(line)&&!/(?:opponent|loses?|without|can't have|can't gain)/.test(t),
+      grant=handGrant||/(?:creatures? you control|this creature|this card|equipped creature|enchanted creature|target creature)[^.]*\b(?:has|have|gain|gains)\b/i.test(line)&&!/(?:opponent|loses?|without|can't have|can't gain)/.test(t);
+    if(native||commanderNinjutsu||grant)out.push({ability,face:face.name||c?.name,evidence:line,status:'conditional',...(commanderNinjutsu?{variant:'Commander ninjutsu'}:{}),...(handGrant?{recipientZone:'hand'}:{}),requirements:[...requirementsFor(line,face,index,c),...(handGrant?['Requires the grant to be active and an eligible creature card in your hand']:grant?['Requires an eligible recipient of the granted ability']:[]),...(lower(ability)==='ninjutsu'?['Requires the stated ninjutsu cost and an unblocked attacking creature you control']:[]),'Keyword capability alone does not establish an executable synergy']});
   }
   return out;
 }

@@ -194,3 +194,10 @@ remaining actions. It does not certify the supported pool, fair difficulties,
 browser offline recovery or full [engine proof gate](4.0-engine-evaluation.md),
 which remains open.
 No 4.0 production or APK release has occurred.
+
+## Approved interim shipment
+
+The Home/deck-building/fix foundation is being prepared as a website-only
+3.95.4 release without Play or Draft entry buttons. Game development continues
+on the dedicated Play branch through the new-chat handoff. This document remains
+a future 4.0 target, not the release notes for the interim website shipment.

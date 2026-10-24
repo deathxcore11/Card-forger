@@ -42,7 +42,6 @@ body[data-view="home"] .home-intro #homeHero :is(h1,.hh-body>.eyebrow) {
 .home-intro .today-set-name { color:#fff; text-shadow:0 1px 8px #000b; }
 .home-intro .today-pack-slot { align-self:center; }
 .today-pack-actions { display:grid; justify-items:center; gap:10px; }
-.today-draft { min-height:36px; max-width:100px; padding:5px 10px; border-radius:20px; font-size:11px; }
 #content .home-intro .home-value-overview { margin:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
 body[data-view="home"] .home-intro .home-value {
   margin:0 0 16px; padding:8px 4px 16px; border:0; border-bottom:1px solid #ffffff24;

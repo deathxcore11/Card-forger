@@ -63,7 +63,12 @@ export async function prepareMtgDeck(args,x) {
    const params=new URLSearchParams({q:q+' prefer:usd-low',unique:'cards',order:f.commander?'edhrec':'cmc',...(page>1?{page:String(page)}:{})});
    const r=await x.api('/cards/search?'+params);if(!active())break;successfulSearches++;
    found.push(...(r?.data||[]).slice(0,175).map(remember));if(!r?.has_more)break;
-  }catch{warnings.push('Some card lookups were unavailable; this draft is limited to resolved and cached card data.');break;}
+  }catch(error){
+   // Scryfall represents a valid search with no matches as 404. That is not
+   // evidence of a transport outage, and verified cached candidates can help.
+   if(error?.status===404)break;
+   warnings.push('Some card lookups were unavailable; this draft is limited to resolved and cached card data.');break;
+  }
   return [...new Map(found.map(c=>[cardKey(c.name),c])).values()];
  };
  let seed=seedName?await resolve(seedName):null,lead=leaderName?await resolve(leaderName):null;
@@ -106,6 +111,9 @@ export async function prepareMtgDeck(args,x) {
  if(f.commander&&seed&&canLead(seed,f)&&!lead)lead=seed;
  if(f.commander&&lead){await verifyLeader(lead,f,x.api);if(!canLead(lead,f)||!isLegal(lead,f))return {requiresChoice:true,note:`${lead.name} cannot be used as a verified ${f.name} commander. Choose another commander.`};}
  if(f.commander&&seed&&lead&&!fitsColors(seed,lead.color_identity||[]))return {requiresChoice:true,note:`${seed.name} is outside ${lead.name}'s color identity. Choose a commander that can include it.`};
+ // A verified requested commander is already a valid build-around. An empty
+ // separate seed must not restart discovery and replace that explicit leader.
+ if(f.commander&&lead&&!seed)seed=lead;
  const colorWords={white:'w',blue:'u',black:'b',red:'r',green:'g'},cs=Object.keys(colorWords).filter(k=>new RegExp('\\b'+k+'\\b','i').test(style)).map(k=>colorWords[k]).join('');
  // Subjective playstyle words are preferences, not literal card-text filters.
  // Exact seed names and actual theme/mechanic words still use their own paths.
@@ -114,11 +122,15 @@ export async function prepareMtgDeck(args,x) {
  if(!seed||f.commander&&!lead){
   const leadQuery=f.commander?(f.id==='paupercommander'?'is:paupercommander':f.commander==='planeswalker'?'t:planeswalker':'is:commander'):'-t:land';
   const neededColors=[...new Set([seed,...requiredCards].filter(Boolean).flatMap(c=>c.color_identity || []))],identity=requestedColors.length?`id=${allowedColors.join('').toLowerCase()||'c'}`:cs?`id=${cs}`:neededColors.length?`id>=${neededColors.join('').toLowerCase()}`:'';
-  const choices=await search(`${fq} ${leadQuery} ${identity} ${theme}`,{pages:2});
+  const intent=requestedIntent(discoveryStyle),ninjutsu=intent.abilities.some(k=>k.toLowerCase()==='ninjutsu');
+  const leaderTheme=ninjutsu?theme.replaceAll('keyword:"ninjutsu"','(keyword:"ninjutsu" or keyword:"commander ninjutsu" or o:"ninjutsu")'):theme;
+  const found=await search(`${fq} ${leadQuery} ${identity} ${leaderTheme}`,{pages:2});
+  // Oracle discovery includes grants and variant keywords, so retain only
+  // positive capability evidence rather than removal/targeting mentions.
+  const choices=ninjutsu?found.filter(c=>mtgAbilityEvidence(c,'Ninjutsu').length):found;
   // Keep already-resolved suggestions available if the catalogue search misses
   // or fails. They must demonstrably fit the same requested theme and checks.
-  const intent=requestedIntent(discoveryStyle);
-  const fallback=[...suggested,...(!successfulSearches?Object.values(x.S?.catalog||{}):[])].filter(c=>c&&intent.other.length===0&&intent.tribes.every(t=>tribalSupport(c,t))&&intent.roles.every(r=>themeSupport(c,{roles:[r]}).length>0)&&intent.abilities.every(k=>mtgAbilityEvidence(c,k).length));
+  const fallback=[...suggested,...(!choices.length?Object.values(x.S?.catalog||{}):[])].filter(c=>c&&intent.other.length===0&&intent.tribes.every(t=>tribalSupport(c,t))&&intent.roles.every(r=>themeSupport(c,{roles:[r]}).length>0)&&intent.abilities.every(k=>mtgAbilityEvidence(c,k).length));
   const candidates=[...choices,...fallback.filter(c=>!choices.some(found=>cardKey(found.name)===cardKey(c.name)))];
   const loopRoutes=loopIntent.requireLoop?manaLoopCandidates({...args,...loopIntent},{excluded_cards:excludedNames}):null;
   const leaderCost=c=>basis!=='total'&&available(x,c.name)>0?0:quote(c);
