@@ -28,6 +28,7 @@
 <link rel="stylesheet" href="printing-picker.css">
 <link rel="stylesheet" href="game-tabs.css">
 <link rel="stylesheet" href="brand-motion.css">
+<link rel="stylesheet" href="home-overview.css">
 <title>CardStashy</title>
 </head>
 <body data-view="home">
@@ -42,7 +43,9 @@
       <button data-act="go" data-to="#collection" data-nav="collection">Collection</button>
       <button data-act="go" data-to="#decks" data-nav="decks">Decks</button>
       <button data-act="go" data-to="#scan" data-nav="scan">Scan</button>
+      <button id="headerPlay" data-desktop-play-entry="practice" hidden disabled aria-describedby="headerPlayStatus">Play</button>
     </nav>
+    <span id="headerPlayStatus" class="home-sr-only">Desktop Play is coming in 4.0.</span>
     <button class="icon" data-act="menu" aria-label="Settings">⚙</button>
   </header>
   <main id="content" role="tabpanel" aria-labelledby="game-tab-mtg"><p class="muted center pad">Loading your cards…</p></main>
@@ -63,7 +66,6 @@
 <link rel="modulepreload" href="adapt.js">
 <link rel="modulepreload" href="ai-ask-loop.js">
 <link rel="modulepreload" href="ai-ask.js">
-<link rel="modulepreload" href="ask-navigation.js">
 <link rel="modulepreload" href="ai-auth.js">
 <link rel="modulepreload" href="ai-build-contract.js">
 <link rel="modulepreload" href="ai-deck-builder.js">
@@ -77,6 +79,7 @@
 <link rel="modulepreload" href="android-beta.js">
 <link rel="modulepreload" href="app-info.js">
 <link rel="modulepreload" href="artwork.js">
+<link rel="modulepreload" href="ask-navigation.js">
 <link rel="modulepreload" href="aura.js">
 <link rel="modulepreload" href="auth-form.js">
 <link rel="modulepreload" href="auto-browse.js">
@@ -123,6 +126,7 @@
 <link rel="modulepreload" href="deck-strategy-plan.js">
 <link rel="modulepreload" href="deckaudit.js">
 <link rel="modulepreload" href="deckpower.js">
+<link rel="modulepreload" href="desktop-play.js">
 <link rel="modulepreload" href="dialog.js">
 <link rel="modulepreload" href="emblems.js">
 <link rel="modulepreload" href="engine-map.js">
@@ -162,21 +166,21 @@
 <link rel="modulepreload" href="meta-curation.js">
 <link rel="modulepreload" href="meta.js">
 <link rel="modulepreload" href="mobile-tilt.js">
+<link rel="modulepreload" href="mtg-ability-endpoints.js">
 <link rel="modulepreload" href="mtg-boosters.js">
 <link rel="modulepreload" href="mtg-cheap.js">
 <link rel="modulepreload" href="mtg-combo-packages.js">
 <link rel="modulepreload" href="mtg-commander-conditions.js">
-<link rel="modulepreload" href="mtg-primary-inputs.js">
-<link rel="modulepreload" href="mtg-ability-endpoints.js">
-<link rel="modulepreload" href="mtg-final-support.js">
-<link rel="modulepreload" href="mtg-reference-construction.js">
 <link rel="modulepreload" href="mtg-effects.js">
+<link rel="modulepreload" href="mtg-final-support.js">
 <link rel="modulepreload" href="mtg-foil-analysis.js">
 <link rel="modulepreload" href="mtg-foil-recipes.js">
 <link rel="modulepreload" href="mtg-foil.js">
 <link rel="modulepreload" href="mtg-keyword-reference.js">
 <link rel="modulepreload" href="mtg-land-requirements.js">
 <link rel="modulepreload" href="mtg-mana-sources.js">
+<link rel="modulepreload" href="mtg-primary-inputs.js">
+<link rel="modulepreload" href="mtg-reference-construction.js">
 <link rel="modulepreload" href="mtg-route-coverage.js">
 <link rel="modulepreload" href="mtg-tags.js">
 <link rel="modulepreload" href="mtg-tcgprice.js">

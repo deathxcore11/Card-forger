@@ -21,7 +21,7 @@ import {homeSearchMarkup} from './home-search.js';
 import {applyYgoSetPrices,ygoSetReference} from './ygo-set-prices.js';
 import {YGO_EDITION_NAMES,ygoPricePreview,ygoPurchaseReference,ygoPurchaseChecklist} from './ygo-price-selection.js';
 import {buyContext,compactPriceSummary,detailTabs,detailPanel,presentationQuote,quoteForContext,sellerModels} from "./pricing-presentation.js";
-import { homeValue, homeEdition, homeMetaCarousel, homeValueCoverage, homeMetaSnapshot, homeResume } from "./home-ui.js";
+import { homeValue, homeEdition, homeMetaCarousel, homeValueCoverage, homeMetaSnapshot, homeDeckShelf } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {referenceQuote,referenceLabel} from './price-reference.js';
 import {brandMark} from './brand.js';
@@ -495,12 +495,11 @@ export function homeHero(g) {
   const h=heroFor(g),G=GAMES[g];
   return `<section class="home-hero home-art-header ${g} ${h?.art?'has-art':'no-art'}" id="homeHero" data-game="${g}" data-daily-date="${h?.date||''}" data-daily-id="${esc(h?.id||'')}">${h?.art&&g==='ptcg'?pokemonArtCrop({game:g,id:h.id},'hh-art',h.art,{loading:'eager'}):h?.art?`<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" data-art-sources="${esc(JSON.stringify([...new Set([h.art,h.artDirect].filter(Boolean))]))}" data-art-index="0">`:''}<div class="hh-shade"></div><div class="hh-body"><p class="eyebrow">${esc(G.name)}</p><h1>Your cards. Your next adventure.</h1><div id="homeSearchDock">${homeSearchMarkup(g)}</div></div></section>`;
 }
-// Home "Today": the showcase below the collection value. The Card of the Day's art is its backdrop; the
-// one daily action names the card, and its set (with the real booster pack) paints in beside it.
+// The daily card uses the header's one continuous artwork surface. Its own
+// printing/set and existing collectible pack action remain independent controls.
 export function homeToday(g) {
   const h=heroFor(g);if(!h)return '';
-  const art=/^img\//.test(h.art||'')?'/'+h.art:h.art||'';
-  return `<section class="home-today" id="homeToday" data-game="${g}" data-daily-date="${h.date}" data-daily-id="${esc(h.id)}"><span class="today-bg" aria-hidden="true">${art?`<img src="${esc(art)}" alt="" referrerpolicy="no-referrer" decoding="async">`:''}</span><span class="today-pack-slot"></span><div class="today-text"><button class="hh-credit" data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}" aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b><span class="hh-daily-arrow" aria-hidden="true">↗</span></button><div class="today-set" aria-live="polite"></div></div></section>`;
+  return `<section class="home-today" id="homeToday" data-game="${g}" data-daily-date="${h.date}" data-daily-id="${esc(h.id)}"><span class="today-pack-slot"></span><div class="today-text"><button class="hh-credit" data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}" aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b><span class="hh-daily-arrow" aria-hidden="true">↗</span></button><div class="today-set" aria-live="polite"></div></div></section>`;
 }
 // Cache only the server's shared selection. The old per-device v1 cache is
 // deliberately ignored so everyone moves to the same midnight schedule.
@@ -622,9 +621,9 @@ function tcgStartPath(g) {
 
 export function tcgHome() {
   const g = game(), v = collectionValue(g), st = gs(g);
-  return `${homeHero(g)}<div class="home-overview home-value-overview">${homeValue({ game: g, ...v, decks: st.decks.length, history: readTcgValueHistory(g) })}</div>${homeToday(g)}
-  ${homeResume(g, deck => formatOf(g, deck.format).name)}
-  ${quickTiles(g)}
+  return `<section class="home-intro" data-home-overview="${g}">${homeHero(g)}<div class="home-intro-content">${homeToday(g)}<div class="home-overview home-value-overview">${homeValue({ game: g, ...v, decks: st.decks.length, history: readTcgValueHistory(g) })}</div>
+  ${homeDeckShelf(g, deck => {const cover=cardOf(g,deck.zones?.main?.[0]?.cardId);return {format:formatOf(g,deck.format).name,artHTML:cover?(g==='ptcg'?pokemonArtCrop(cover,'home-personal-pokemon'):g==='ygo'?ygoCropArt(cover):imgTag(cover)):''};})}
+  </div></section>${quickTiles(g)}
   ${homeEdition(g)}`;
 }
 

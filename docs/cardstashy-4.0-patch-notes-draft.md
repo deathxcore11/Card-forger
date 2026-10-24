@@ -144,3 +144,14 @@ rollback record. Remove or explicitly defer any bullet not actually shipped.
 
 Current implementation and acceptance details live in
 [the 4.0 release plan](cardstashy-4.0-desktop-release-plan.md).
+
+## Current development checkpoint
+
+The Home composition and compact desktop header are implemented on the 4.0
+development branch. The 311-command aggregate and both relevant browser suites
+passed with controlled fixtures; see the [Home review and before/after
+captures](4.0-home-review/README.md) for scope, commands and recorded failures.
+The recovered Random Deck repair remains included. Play/Draft controls remain
+disabled, the four-view deck redesign is unfinished, and the [engine
+evaluation](4.0-engine-evaluation.md) has not passed an executable proof gate.
+No 4.0 production or APK release has occurred.

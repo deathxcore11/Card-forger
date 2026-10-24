@@ -19,7 +19,7 @@ import {detailOwnedGroups} from './quick-quantity.js';
 import {profileAvatar,profilePhotoControl} from './profile-art.js';
 import {infoPanel} from './app-info.js';
 import {buyContext,compactPriceSummary,selectedFinish,detailTabs,detailPanel} from "./pricing-presentation.js";
-import { homeValue, homeEdition, homeResume } from "./home-ui.js";
+import { homeValue, homeEdition, homeDeckShelf } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {brandMark,brandStaticMark} from './brand.js';
 import {conditionBadge,conditionValue} from './condition-value.js';
@@ -105,10 +105,10 @@ const coverOf = (d) =>
 
 export function home() {
   const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);
-  return `${homeHero("mtg")}<div class="home-overview home-value-overview">${homeValue({ game: "mtg", ...value, decks: st.decks.length, history: st.valueHistory, valueRoute: "#collection/value" })}</div>${homeToday("mtg")}
+  return `<section class="home-intro" data-home-overview="mtg">${homeHero("mtg")}<div class="home-intro-content">${homeToday("mtg")}<div class="home-overview home-value-overview">${homeValue({ game: "mtg", ...value, decks: st.decks.length, history: st.valueHistory, valueRoute: "#collection/value" })}</div>
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
-  ${homeResume("mtg", deck => formatOf(deck).name)}
-  ${quickTiles("mtg")}
+  ${homeDeckShelf("mtg", deck => ({ format: formatOf(deck).name, artHTML: coverOf(deck) ? img(coverOf(deck), '') : '' }))}
+  </div></section>${quickTiles("mtg")}
   ${homeEdition("mtg")}`;
 }
 

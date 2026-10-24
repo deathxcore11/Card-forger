@@ -7,7 +7,7 @@ import {ASK_BUILD_CARDS,ASK_BUILD_ARGS,KCI,SAI} from './ai-deck-build-fixtures.m
 import {cardKey} from '../core.js';
 const cards=ASK_BUILD_CARDS.map(c=>({...c,image_uris:Object.fromEntries(Object.entries(c.image_uris).map(([k,v])=>[k,v.replace('detail-fixtures.invalid','search-fixtures.invalid')]))})),sai=cards.find(c=>c.name===SAI.name);
 const {chromium}=await import(process.env.CARDSTASHY_PLAYWRIGHT_MODULE||'playwright');
-const server=await startServer(),browser=await chromium.launch({headless:true,...(process.env.CARDSTASHY_CHROMIUM_PATH?{executablePath:process.env.CARDSTASHY_CHROMIUM_PATH,args:['--no-sandbox','--disable-dev-shm-usage','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']}:{} )}),checks=[];
+const server=await startServer(),browser=await chromium.launch({headless:true,...(process.env.CARDSTASHY_CHROMIUM_PATH?{executablePath:process.env.CARDSTASHY_CHROMIUM_PATH,args:['--no-sandbox','--disable-dev-shm-usage',...(process.env.CARDSTASHY_CHROMIUM_DISABLE_GPU==='1'?['--disable-gpu']:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'])]}:{} )}),checks=[];
 await mkdir('test-results',{recursive:true});
 async function visibleProgress(overlay,label){
  const parts=await overlay.evaluate(async root=>Promise.all([

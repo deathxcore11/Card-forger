@@ -11,6 +11,7 @@ import {loadMtgBooster,mtgBoosterCards} from './mtg-boosters.js';
 // Booster pack photos trim to the pack itself wherever they appear.
 document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]'))trimPackArt(e.target);},true);
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
+import {syncDesktopPlayEntries} from './desktop-play.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -1069,6 +1070,7 @@ function render() {
   content.dataset.disclosureKey=disclosureKey;
   restoreSearchFocus(content,searchFocus);
   placeGlobalSearch(g,ui.view);
+  syncDesktopPlayEntries(g);
   if(ui.view==="wiki")currentWikiPage()?.mount();
   const guideKey={collection:"save",decks:"build",scan:"scan"}[ui.view];
   if(guideKey)content.insertAdjacentHTML?.("afterbegin",guidePrompt(guideKey));
@@ -3551,13 +3553,13 @@ function heroArt(g) {
 }
 const HERO_RETRY_MS = [15_000, 60_000, 330_000];
 let heroRetries = 0, heroRetryTimer = null;
-// Home "Today": the Card of the Day showcase below the value. A new day swaps the card in place (the
+// Home "Today": the Card of the Day above the value, sharing the header art. A new day swaps the card in place (the
 // focused daily button keeps its node), then its set and real booster pack paint in.
 function paintHomeToday(g) {
   if (S.ui.view !== "home" || T.game() !== g) return;
   const h = T.heroFor(g);let el = $("#homeToday");
   if (!h) return el?.remove();
-  if (!el) { const at = $("#content .home-value-overview");if (!at) return;at.insertAdjacentHTML("afterend", T.homeToday(g));el = $("#homeToday"); }
+  if (!el) { const at = $("#content .home-value-overview");if (!at) return;at.insertAdjacentHTML("beforebegin", T.homeToday(g));el = $("#homeToday"); }
   if (el.dataset.game !== g || el.dataset.dailyId !== h.id || el.dataset.dailyDate !== h.date) {
     const tpl = document.createElement("template");tpl.innerHTML = T.homeToday(g);const next = tpl.content.firstElementChild, old = el.querySelector(".hh-credit"), fresh = next.querySelector(".hh-credit");
     for (const attr of [...old.attributes]) old.removeAttribute(attr.name);
@@ -3572,6 +3574,7 @@ function paintHomeToday(g) {
     if (!navigationCurrent(screen) || !el.isConnected || el.dataset.dailyId + "|" + el.dataset.dailyDate !== key || !d?.set) return;
     el.querySelector(".today-set").innerHTML = todaySetMarkup(g, d.set, { rarity: d.rarity });
     el.querySelector(".today-pack-slot").innerHTML = todayPackMarkup(g, d.set);
+    syncDesktopPlayEntries(g);
   }).catch(() => { delete el.dataset.painted; });
 }
 // Opening today's pack goes to the Set of the Day and opens its pack with the Card of the Day as the hit.
