@@ -35,6 +35,7 @@ desktop candidates. No match or Draft can be started.
 | `node tests/deck-build-presentation-browser.mjs` with explicit local browser settings | PASS, exit 0; 320/390/1440 px × solid/glass, animated progress, reduced motion, cancel/late response, automatic completed deck, budget/error recovery, no autosave, and the separate AI build/return/cancel flow |
 | Before/after captures | PASS, 390/768/1440 px, matching synthetic data; final Light-mode capture reviewed separately |
 | `git diff --check` | PASS |
+| `python3 -m unittest discover -s tests -p 'test_verify_deployed_assets.py' -v` after inventory repair | PASS, all 10 tests; no production requests |
 
 The local browser used runtime Playwright 1.62.1 and Chromium 153.0.8010.0.
 The browser suites used isolated synthetic provider/account data, not live
@@ -67,6 +68,13 @@ The full interaction runs preceded the last Light-only contrast adjustment;
 the final Light capture exercised that adjustment. No application JavaScript
 changed after those passing runs. The screenshots and source in this commit
 are the final Home checkpoint.
+
+The first hosted `deployment-verifier` run for UI commit `23284e8` failed:
+the new `home-overview.css` was absent from its fixed public-asset inventory.
+The follow-up registers both that stylesheet and `desktop-play.js` without
+loosening URL restrictions or exact-byte checks. All ten verifier tests then
+passed locally. Hosted results for the follow-up revision are separate evidence;
+a local pass does not relabel the original failed job.
 
 ## Scope still open
 
