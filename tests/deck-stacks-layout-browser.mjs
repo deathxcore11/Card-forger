@@ -38,6 +38,11 @@ async function exercise(page,{root,label,game,readOnly=false}){
  await viewer.evaluate(n=>{window.__stackOriginalNodes=[...n.querySelectorAll('[data-deck-card]')];});
  for(const width of widths){
   await page.setViewportSize({width,height:1100});
+  await page.waitForLoadState('networkidle');
+  await changeView(page,root,'compact');
+  // Provider/bootstrap refreshes may replace rows between viewport scenarios.
+  // Within each scenario the view switch must retain the current exact nodes.
+  await viewer.evaluate(n=>{window.__stackOriginalNodes=[...n.querySelectorAll('[data-deck-card]')];});
   await changeView(page,root,'stacks');
   const after=await snapshot();assert.deepEqual(fingerprint(after),fingerprint(before),label+' stacks retain exact cards, zones, quantities, actions and selected state');
   assert(await viewer.evaluate(n=>{const rows=[...n.querySelectorAll('[data-deck-card]')];return rows.length===window.__stackOriginalNodes.length&&rows.every(row=>window.__stackOriginalNodes.includes(row));}),label+' keeps every original card node');
