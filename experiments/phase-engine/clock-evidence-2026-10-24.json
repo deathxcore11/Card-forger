@@ -1,0 +1,47 @@
+{
+  "provenance": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "glue": "47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd3476cfb70131de6287c9",
+    "wasm": "6057521d851bb8544eaeea467f741b90cd2941aa5ba2fddb17e1bcc3d9933f8f",
+    "integrationFixtureGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "fixtureCardCount": 6137,
+    "loadedNames": [
+      "Head Games",
+      "Ninja of the Deep Hours",
+      "Moon-Circuit Hacker",
+      "Ornithopter",
+      "Island",
+      "Plains",
+      "Swamp",
+      "Mountain",
+      "Forest",
+      "Raise the Alarm",
+      "Krenko, Mob Boss",
+      "Parallel Lives",
+      "Doubling Season",
+      "Sprout Swarm",
+      "Basalt Monolith",
+      "Power Artifact",
+      "Lightning Bolt",
+      "Counterspell"
+    ],
+    "subsetSha256": "11a9285c0eea7fbc26126f37dd4629989947cef6e1f45f6916aea394c3468a56",
+    "subsetBytes": 156007
+  },
+  "setupSha256": "9b580bd5a56ab465a17ee49961a9e309db05df96ce0dd72923cf160a2ad3a9cb",
+  "sourceFiles": {
+    "priority-clock-engine.mjs": "4cb64d3f292b1bb9347f761a48e65ef4c6423292ac3f7d9c141d7da42f026bce",
+    "priority-clock.mjs": "4c939bf6d616ecf582228918bd73094c43b998e0168996961429c8e964707602",
+    "mechanics-inputs.mjs": "2bce60acf68a5262057e664a2b7db84b382ff0b4c2b40f70d88d46252643d29a",
+    "mechanics-fixtures.mjs": "41376f6253f4fe6c5cc15cda917111e6f4bbb8c74886d5f5d7c566f37ef494e4"
+  },
+  "defaultResponseSeconds": 30,
+  "restoredDeadlineAt": 31000,
+  "earlyReadNoMutation": true,
+  "wrongActorRejected": true,
+  "acceptedPasses": 1,
+  "duplicateRejected": true,
+  "nextActor": 1,
+  "networkCalls": 0,
+  "limits": "Engine-backed response timer contract only; no displayed countdown, live scheduler, atomic journal clock persistence, trusted multiplayer time or complete mandatory-choice/anti-stall policy."
+}

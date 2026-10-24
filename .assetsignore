@@ -66,3 +66,7 @@ pokemon-meta-route.js
 
 mtg-wiki-reference.js
 wiki-article-content.js
+
+# Private development evidence and optional engine research are not site assets.
+docs
+experiments

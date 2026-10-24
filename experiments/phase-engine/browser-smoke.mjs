@@ -14,7 +14,7 @@ const inputs=[['engine_wasm.js','47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd347
 const routes=new Map();
 for(const [file,hash]of inputs){const bytes=await readFile(join(pkg,file));assert.equal(sha(bytes),hash);routes.set('/runtime/'+file,bytes);}
 const cards=await readFile(join(source,'crates/engine/tests/fixtures/runtime_card_export_fixture.json'));assert.equal(sha(cards),'ee062b8ad351e067723b79fc8462aaea19202ef9756d35b2101334eb3e350107');routes.set('/runtime/cards.json',cards);
-const dir=new URL('./',import.meta.url),files=['worker-journal.mjs','browser-authority.mjs','browser-client.mjs','smoke-policy-worker.mjs'];
+const dir=new URL('./',import.meta.url),files=['worker-journal.mjs','browser-authority.mjs','browser-client.mjs','smoke-policy-worker.mjs','seat-surface.mjs'];
 for(const file of files)routes.set('/'+file,await readFile(new URL(file,dir)));
 routes.set('/',Buffer.from(`<!doctype html><meta charset="utf-8"><title>CardStashy engine diagnostic</title><p>Research harness. No playable interface.</p><script type="module">import {connect} from './browser-client.mjs';window.connect=connect;window.loaded=true;</script>`));
 const cache='phase-research-'+sha(Buffer.concat([...routes.values()]));
@@ -54,6 +54,30 @@ try{
   assert.equal(sha(JSON.stringify(record.history)),expected.acceptedTraceSha256);assert.equal(status.revision,expected.actions);assert.equal(status.turn,expected.turn);assert.equal(status.terminal.winner,expected.terminal.data.winner);
   const row={seed,first,actions:status.revision,turn:status.turn,winner:status.terminal.winner,traceSha256:sha(JSON.stringify(record.history)),milliseconds:Math.round(performance.now()-start)};report.cases.push(row);console.log(JSON.stringify(row));
  }
+ // Test the human command route with explicit offered choices. This scripted
+ // driver acts as the human; no UI usability or playing strength follows.
+ const human=await page.evaluate(async()=>{
+  client.close();window.client=connect('human-route',{mode:'human'});
+  let status=await client.request('create',{seed:12345,first:0});let counts={};
+  const noChoice=await client.request('step',{revision:0,id:'missing-human-choice'}).then(()=>null,e=>e.message);
+  if(noChoice!=='CHOICE_REQUIRED')throw Error('Human turn was automated');
+  let lastHumanToken=null;
+  while(!status.terminal&&status.revision<20000){
+   const choices=status.surface.choices;let selected=null;
+   if(choices.length){
+    // Deterministic test driver; inspect-only requests must not move the game.
+    const read=await client.request('status');if(read.revision!==status.revision)throw Error('Read changed revision');
+    const weights={MulliganDecision:1000,PlayLand:900,CastSpell:800,DeclareAttackers:500,DeclareBlockers:400,PassPriority:0};
+    selected=[...choices].sort((a,b)=>(weights[b.kind]||0)-(weights[a.kind]||0)||(a.label==='Keep hand'?-1:b.label==='Keep hand'?1:0)||b.label.length-a.label.length)[0];
+    lastHumanToken=selected.token;counts[selected.kind]=(counts[selected.kind]||0)+1;
+   }else if(status.surface.unavailableReason)throw Error(status.surface.unavailableReason);
+   status=await client.request('step',{revision:status.revision,id:'human-'+status.revision,...(selected?{choice:selected.token}:{})});
+  }
+  if(!status.terminal)throw Error('Human-route action ceiling');
+  return {actions:status.revision,turn:status.turn,terminal:status.terminal,choices:counts,noChoice,onlySeat:status.surface.seat};
+ });
+ assert.equal(human.onlySeat,0);for(const type of ['MulliganDecision','PlayLand','CastSpell','DeclareAttackers','PassPriority'])assert(human.choices[type]>0,type);
+ report.humanRoute=human;console.log(JSON.stringify({humanRoute:human}));
  // Finish acknowledged writes, stop all workers/browser processes, then remove
  // the origin server and networking before navigating a fresh browser process.
  await context.close();context=null;await new Promise(r=>server.close(r));const servedBeforeCold=requests;

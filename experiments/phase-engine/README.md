@@ -88,3 +88,8 @@ baseline with real browser workers, atomic local checkpoints, duplicate/stale
 command rejection and a fresh-browser offline Priority-resume check. Its
 captured results have their own source hashes and limits; the full engine gate
 remains open.
+
+The next [human command and mechanic checkpoint](HUMAN-ROUTE-PROOF.md) adds a
+seat-bound diagnostic input path, engine-backed card/response scenarios, and a
+response-timer contract. It preserves an actual ninjutsu response failure as an
+adoption blocker. Read its explicit limits before using any of these pieces.

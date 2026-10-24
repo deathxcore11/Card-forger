@@ -2,18 +2,28 @@
 export class Fault extends Error { constructor(code) { super(code); this.code=code; } }
 export const fail = code => { throw new Fault(code); };
 export function packet(m) {
- if(!m||typeof m!=='object'||Array.isArray(m)||Object.keys(m).some(k=>!['v','epoch','id','op','revision','seed','first'].includes(k)))fail('BAD_REQUEST');
+ if(!m||typeof m!=='object'||Array.isArray(m)||Object.keys(m).some(k=>!['v','epoch','id','op','revision','seed','first','choice'].includes(k)))fail('BAD_REQUEST');
  if(typeof m.id!=='string'||typeof m.epoch!=='string'||m.v!==1||!['create','resume','status','step'].includes(m.op)||!/^[-\w]{1,80}$/.test(m.id||'')||!/^[-\w]{1,80}$/.test(m.epoch||''))fail('BAD_REQUEST');
  if(m.op==='create'&&(!Number.isInteger(m.seed)||m.seed<0||m.seed>0xffffffff||![0,1].includes(m.first)))fail('BAD_REQUEST');
  if(m.op==='step'&&(!Number.isSafeInteger(m.revision)||m.revision<0))fail('BAD_REQUEST');
+ if(Object.hasOwn(m,'choice')&&(m.op!=='step'||typeof m.choice!=='string'||m.choice.length<1||m.choice.length>160||/[\u0000-\u001f\u007f]/.test(m.choice)))fail('BAD_REQUEST');
  return m;
+}
+const recordObject=o=>o!==null&&typeof o==='object'&&!Array.isArray(o);
+function validSave(s) {
+ if(!recordObject(s)||!Number.isSafeInteger(s.revision)||s.revision<0||s.revision>20000||
+  !Number.isInteger(s.policyRng)||s.policyRng<0||s.policyRng>0xffffffff||
+  !Number.isInteger(s.seed)||s.seed<0||s.seed>0xffffffff||![0,1].includes(s.first)||
+  typeof s.engine!=='string'||!s.engine.length||!Array.isArray(s.history)||s.history.length!==s.revision||!recordObject(s.receipts))return false;
+ if(!s.history.every(h=>recordObject(h)&&Number.isSafeInteger(h.actor)&&h.actor>=0&&recordObject(h.action)&&typeof h.action.type==='string'))return false;
+ return Object.entries(s.receipts).every(([id,r])=>/^[-\w]{1,80}$/.test(id)&&recordObject(r)&&typeof r.fingerprint==='string'&&recordObject(r.response)&&Number.isSafeInteger(r.response.revision)&&r.response.revision>0&&r.response.revision<=s.revision);
 }
 // Durable receipts and engine state are one atomic record. Unknown engine errors
 // never cross the boundary. Serialization prevents overlapping WASM mutations.
 export function createJournal({engine,storage,choose,version,epoch}) {
  let current=null,queue=Promise.resolve(),poisoned=false;
- const fingerprint=m=>JSON.stringify([m.op,m.revision??null,m.seed??null,m.first??null]);
- const summary=()=>({revision:current.revision,...engine.summary()});
+ const fingerprint=m=>{const parts=[m.op,m.revision??null,m.seed??null,m.first??null];if(m.choice!==undefined)parts.push(m.choice);return JSON.stringify(parts);};
+ const summary=()=>({...engine.summary(current.revision),revision:current.revision});
  async function execute(raw) {
   const m=packet(raw);if(m.epoch!==epoch)fail('STALE_SESSION');
   if(poisoned)fail('RECOVERY_REQUIRED');
@@ -23,12 +33,16 @@ export function createJournal({engine,storage,choose,version,epoch}) {
    if(m.op==='resume') {
     if(!saved)fail('NO_SAVE');
     if(saved.version!==version||saved.schema!==1)fail('INCOMPATIBLE_SAVE');
-    engine.restore(saved.engine);current=saved;return summary();
+    if(!validSave(saved))fail('CORRUPT_SAVE');
+    try{engine.restore(saved.engine);current=saved;return summary();}
+    catch(error){poisoned=true;throw error;}
    }
    if(saved)fail('ALREADY_EXISTS');
-   engine.start(m.seed,m.first);
-   const next={schema:1,version,seed:m.seed,first:m.first,revision:0,policyRng:0x63d34a91,history:[],receipts:{},engine:engine.save()};
-   await storage.write(next,null);current=next;return summary();
+   try{
+    engine.start(m.seed,m.first);
+    const next={schema:1,version,seed:m.seed,first:m.first,revision:0,policyRng:0x63d34a91,history:[],receipts:{},engine:engine.save()};
+    await storage.write(next,null);current=next;return summary();
+   }catch(error){poisoned=true;throw error;}
   }
   if(!current)fail('NOT_OPEN');
   if(m.op==='status')return summary();
@@ -36,20 +50,20 @@ export function createJournal({engine,storage,choose,version,epoch}) {
   if(prior){if(prior.fingerprint!==fp)fail('ID_COLLISION');return structuredClone(prior.response);}
   if(m.revision!==current.revision)fail('STALE_REVISION');
   if(current.revision>=20000)fail('ACTION_LIMIT');
-  if(engine.summary().terminal)fail('GAME_OVER');
+  if(engine.summary(current.revision).terminal)fail('GAME_OVER');
   const legal=engine.legal();
   if(!legal.actions?.length)fail('NO_LEGAL_ACTOR');
   // The decision worker sees summaries, never an engine save, events, object
   // handles, unknown card identities or ordered libraries.
-  const proposal=await choose(legal.actions,current.policyRng);
-  if(!Number.isInteger(proposal.index)||proposal.index<0||proposal.index>=legal.actions.length||!Number.isInteger(proposal.rng)||proposal.rng<0||proposal.rng>0xffffffff)fail('BAD_PROPOSAL');
+  const proposal=await choose(legal.actions,current.policyRng,{choice:m.choice,revision:current.revision,actor:legal.actor});
+  if(!recordObject(proposal)||!Number.isInteger(proposal.index)||proposal.index<0||proposal.index>=legal.actions.length||!Number.isInteger(proposal.rng)||proposal.rng<0||proposal.rng>0xffffffff)fail('BAD_PROPOSAL');
   const action=legal.actions[proposal.index],now=engine.legal();
   if(now.actor!==legal.actor||!now.actions.some(a=>JSON.stringify(a)===JSON.stringify(action)))fail('STALE_ACTION');
   try {
    engine.apply(legal.actor,action);
    const next={...current,revision:current.revision+1,policyRng:proposal.rng,
     history:[...current.history,{actor:legal.actor,action}],engine:engine.save(),receipts:{...current.receipts}};
-   const response={revision:next.revision,...engine.summary()};
+   const response={...engine.summary(next.revision),revision:next.revision};
    Object.defineProperty(next.receipts,m.id,{value:{fingerprint:fp,response},enumerable:true,writable:true,configurable:true});
    // Compare-and-write prevents a second tab/worker overwriting this match.
    await storage.write(next,current.revision);

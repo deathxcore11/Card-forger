@@ -1,0 +1,294 @@
+{
+  "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+  "provenance": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "glue": "47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd3476cfb70131de6287c9",
+    "wasm": "6057521d851bb8544eaeea467f741b90cd2941aa5ba2fddb17e1bcc3d9933f8f",
+    "integrationFixtureGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "fixtureCardCount": 6137,
+    "loadedNames": [
+      "Head Games",
+      "Ninja of the Deep Hours",
+      "Moon-Circuit Hacker",
+      "Ornithopter",
+      "Island",
+      "Plains",
+      "Swamp",
+      "Mountain",
+      "Forest",
+      "Raise the Alarm",
+      "Krenko, Mob Boss",
+      "Parallel Lives",
+      "Doubling Season",
+      "Sprout Swarm",
+      "Basalt Monolith",
+      "Power Artifact",
+      "Lightning Bolt",
+      "Counterspell"
+    ],
+    "subsetSha256": "11a9285c0eea7fbc26126f37dd4629989947cef6e1f45f6916aea394c3468a56",
+    "subsetBytes": 156007
+  },
+  "runtime": "v24.22.1",
+  "setup": "Engineered persisted-state positions using unchanged upstream card definitions. Setup movements are not claimed legal gameplay histories.",
+  "cases": [
+    {
+      "name": "Head Games: correct opponent, legal noncandidate search, privacy window and fresh-process restore",
+      "passed": true,
+      "milliseconds": 6400,
+      "setupSha256": "6eff979ef9e08b65d052f816faa7691a0ac828c75e099e309ac9d241f5753b51",
+      "beforeSearch": {
+        "acceptedActions": 4,
+        "acceptedTraceSha256": "27fb5ac0052cb3bfbacb0cec25a90af5237d53f82a475bd011f6cb7f7671e7e5",
+        "events": {
+          "StackPushed": 1,
+          "BecomesTarget": 1,
+          "PermanentTapped": 5,
+          "AbilityActivated": 5,
+          "ManaAdded": 5,
+          "ManaAbilityProduced": 5,
+          "TappedForMana": 5,
+          "ZoneChanged": 3,
+          "CrimeCommitted": 1,
+          "SpellCast": 1,
+          "ManaExpended": 1,
+          "PriorityPassed": 1,
+          "EffectResolved": 2,
+          "PlayerPerformedAction": 1,
+          "HiddenSearchViewed": 1
+        }
+      },
+      "search": {
+        "acceptedActions": 1,
+        "acceptedTraceSha256": "89af5d06581c48b2cece76de2293010e1883aca6e3ba6804ac3ac8c62ac12b41",
+        "events": {
+          "ZoneChanged": 3,
+          "EffectResolved": 3,
+          "PlayerPerformedAction": 1,
+          "StackResolved": 1
+        }
+      },
+      "noncandidateChoiceAccepted": true,
+      "correctLibraryShuffledOnly": true,
+      "temporarySearchFacePermission": true,
+      "freshProcessExactResult": true
+    },
+    {
+      "name": "Raise the Alarm: two Soldiers",
+      "passed": true,
+      "milliseconds": 271,
+      "setupSha256": "464cc51cdc5bf0cd1eca90684c15fc44f0f0b107b46b7e6841c0ddde3a2d7ad2",
+      "acceptedActions": 3,
+      "acceptedTraceSha256": "067fa2e62a7393cc9aeec9d858f5b40f2cdf83aa39927256d44a9fc666deb6da",
+      "events": {
+        "StackPushed": 1,
+        "PermanentTapped": 2,
+        "AbilityActivated": 2,
+        "ManaAdded": 2,
+        "ManaAbilityProduced": 2,
+        "TappedForMana": 2,
+        "ZoneChanged": 4,
+        "SpellCast": 1,
+        "ManaExpended": 1,
+        "PriorityPassed": 1,
+        "TokenCreated": 2,
+        "EffectResolved": 1,
+        "StackResolved": 1
+      },
+      "tokenCount": 2,
+      "distinctInstances": true,
+      "exactCharacteristics": true
+    },
+    {
+      "name": "Raise the Alarm: Parallel Lives creates four",
+      "passed": true,
+      "milliseconds": 186,
+      "setupSha256": "2c710fd32b111e25c9da9de2f7d20b8721165e3284a3acca9756c7d2f75e5130",
+      "acceptedActions": 3,
+      "acceptedTraceSha256": "067fa2e62a7393cc9aeec9d858f5b40f2cdf83aa39927256d44a9fc666deb6da",
+      "events": {
+        "StackPushed": 1,
+        "PermanentTapped": 2,
+        "AbilityActivated": 2,
+        "ManaAdded": 2,
+        "ManaAbilityProduced": 2,
+        "TappedForMana": 2,
+        "ZoneChanged": 6,
+        "SpellCast": 1,
+        "ManaExpended": 1,
+        "PriorityPassed": 1,
+        "ReplacementApplied": 1,
+        "TokenCreated": 4,
+        "EffectResolved": 1,
+        "StackResolved": 1
+      },
+      "tokenCount": 4,
+      "distinctInstances": true,
+      "exactCharacteristics": true
+    },
+    {
+      "name": "Lightning Bolt positive control resolves for three damage",
+      "passed": true,
+      "milliseconds": 505,
+      "setupSha256": "fae785963938a85e671af33ce7362fbfcfe2c804f2be7740d129b142148c7f28",
+      "acceptedActions": 6,
+      "acceptedTraceSha256": "ec72f9d7295adb3b2fe46fbb14a61a528cc6be19efd02a3bad246713a0972022",
+      "events": {
+        "StackPushed": 1,
+        "BecomesTarget": 1,
+        "PermanentTapped": 1,
+        "AbilityActivated": 1,
+        "ManaAdded": 1,
+        "ManaAbilityProduced": 1,
+        "TappedForMana": 1,
+        "ZoneChanged": 2,
+        "CrimeCommitted": 1,
+        "SpellCast": 1,
+        "ManaExpended": 1,
+        "PriorityPassed": 1,
+        "LifeChanged": 1,
+        "DamageDealt": 1,
+        "EffectResolved": 1,
+        "StackResolved": 1
+      },
+      "targetedOpponent": 1,
+      "responseActor": 1,
+      "counterResponse": false,
+      "finalLife": [
+        20,
+        17
+      ],
+      "realManaSourcesPaid": true
+    },
+    {
+      "name": "Lightning Bolt answered by Counterspell through real opponent priority",
+      "passed": true,
+      "milliseconds": 337,
+      "setupSha256": "cc9671ec857d38e3f4fda85a6f27dbc7f82f74f780c1f37d1be88f958b6cb271",
+      "acceptedActions": 8,
+      "acceptedTraceSha256": "add28585e5eaba4ad58dd11815de4f4f78637c4bc35294be3e4c00291888b353",
+      "events": {
+        "StackPushed": 2,
+        "BecomesTarget": 2,
+        "PermanentTapped": 3,
+        "AbilityActivated": 3,
+        "ManaAdded": 3,
+        "ManaAbilityProduced": 3,
+        "TappedForMana": 3,
+        "ZoneChanged": 4,
+        "CrimeCommitted": 2,
+        "SpellCast": 2,
+        "ManaExpended": 2,
+        "PriorityPassed": 2,
+        "SpellCountered": 1,
+        "EffectResolved": 1,
+        "StackResolved": 1
+      },
+      "targetedOpponent": 1,
+      "responseActor": 1,
+      "counterResponse": true,
+      "finalLife": [
+        20,
+        20
+      ],
+      "realManaSourcesPaid": true
+    },
+    {
+      "name": "Ninja of the Deep Hours: combat timing, actual mana, return cost and attacking entry",
+      "passed": false,
+      "milliseconds": 355,
+      "error": "Error: Ninjutsu must put its activated ability on the stack and permit responses before the Ninja enters.\n    at file:///workspace/scratch/04b6689e06e8/cardstashy/experiments/phase-engine/mechanics-smoke.mjs:73:182\n    at run (file:///workspace/scratch/04b6689e06e8/cardstashy/experiments/phase-engine/mechanics-smoke.mjs:22:85)\n    at file:///workspace/scratch/04b6689e06e8/cardstashy/experiments/phase-engine/mechanics-smoke.mjs:66:8",
+      "observed": {
+        "setupSha256": "2114ac17e42568e287f472d95d37556c2825a054059006b4a4855f39d96ffadb",
+        "afterActivation": {
+          "returnedCreatureZone": "Hand",
+          "ninjaZone": "Battlefield",
+          "stackEntries": 0,
+          "pending": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "manaSourcesTapped": true,
+          "opponentLife": 20
+        },
+        "acceptedActions": 10,
+        "acceptedTraceSha256": "7923cce9e2b4b8f635f7b4ea37a7ac7fe4bb6402d7c69decc943eac3e98020b5",
+        "events": {
+          "PriorityPassed": 3,
+          "PhaseChanged": 3,
+          "PermanentTapped": 3,
+          "AttackersDeclared": 1,
+          "BlockersDeclared": 1,
+          "AbilityActivated": 2,
+          "ManaAdded": 2,
+          "ManaAbilityProduced": 2,
+          "TappedForMana": 2,
+          "ZoneChanged": 2,
+          "NinjutsuActivated": 1
+        },
+        "activationAction": {
+          "actor": 0,
+          "action": {
+            "type": "ActivateNinjutsu",
+            "data": {
+              "ninjutsu_object_id": 6,
+              "creature_to_return": 5
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        "activationEvents": [
+          "PermanentTapped",
+          "AbilityActivated",
+          "ManaAdded",
+          "ManaAbilityProduced",
+          "TappedForMana",
+          "PermanentTapped",
+          "AbilityActivated",
+          "ManaAdded",
+          "ManaAbilityProduced",
+          "TappedForMana",
+          "ZoneChanged",
+          "ZoneChanged",
+          "NinjutsuActivated"
+        ]
+      }
+    },
+    {
+      "name": "Basalt Monolith plus Power Artifact: three finite repeatable net-mana cycles",
+      "passed": true,
+      "milliseconds": 328,
+      "setupSha256": "8a2da5faaaf1a8e4560588d408a55c0f4e1c2edc9ff168987eae8f55f6f4d7e4",
+      "acceptedActions": 12,
+      "acceptedTraceSha256": "1c90a42c6567b512c3e9616400583c4aca33e788564202f6ca0a0366431003cc",
+      "events": {
+        "PermanentTapped": 3,
+        "AbilityActivated": 6,
+        "ManaAdded": 9,
+        "ManaAbilityProduced": 3,
+        "TappedForMana": 3,
+        "StackPushed": 3,
+        "PriorityPassed": 3,
+        "PermanentUntapped": 3,
+        "EffectResolved": 3,
+        "StackResolved": 3
+      },
+      "manaAfterEachCycle": [
+        2,
+        4,
+        6
+      ],
+      "finiteRepetitionOnly": true
+    }
+  ],
+  "limits": "Selected actual-WASM scenarios only. No broad card/mechanic certification, browser UI, contextual CPU, multiplayer or production package claim. Candidate actions are nonexhaustive; authoritative submit acceptance is reported separately.",
+  "networkCalls": 0,
+  "sourceFiles": {
+    "mechanics-inputs.mjs": "2bce60acf68a5262057e664a2b7db84b382ff0b4c2b40f70d88d46252643d29a",
+    "mechanics-fixtures.mjs": "41376f6253f4fe6c5cc15cda917111e6f4bbb8c74886d5f5d7c566f37ef494e4",
+    "mechanics-smoke.mjs": "b851653f79fdefa5c299fed65ae414380f77ab284a95c7631c94e1033d95d1af"
+  }
+}

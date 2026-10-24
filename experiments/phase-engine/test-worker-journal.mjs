@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createJournal} from './worker-journal.mjs';
+import {createJournal,fail} from './worker-journal.mjs';
 import {describeChoices,chooseSmoke} from './smoke-policy-worker.mjs';
 function fixture(){
  let state=0,durable=null,applyCount=0,failWrite=false,failApply=false;
@@ -21,3 +21,42 @@ test('out-of-range policy proposals never apply or leak state',async()=>{const f
 test('policy packet omits object IDs and hidden payloads; seeded choices repeat',()=>{const a=[{type:'PlayLand',data:{id:1,hidden:'Forest'}},{type:'CastSpell',data:{id:2,hidden:'Bears'}}];const b=[{type:'PlayLand',data:{id:500,hidden:'Other'}},{type:'CastSpell',data:{id:999,hidden:'Secret'}}];assert.deepEqual(describeChoices(a),describeChoices(b));assert.deepEqual(chooseSmoke(describeChoices(a),123),chooseSmoke(describeChoices(b),123));assert(!JSON.stringify(describeChoices(a)).includes('Forest'));});
 test('__proto__ receipt persists as data and replays exactly once',async()=>{const f=fixture(),h=f.make();await h(msg('create','c'));const first=await h(msg('step','__proto__'));assert(first.ok);assert(Object.hasOwn(f.durable.receipts,'__proto__'));assert.deepEqual(await h(msg('step','__proto__')),first);assert.equal(f.count,1);});
 test('incompatible saved version is refused',async()=>{const f=fixture(),h=f.make();await h(msg('create','c'));f.durable.version='future';assert.equal((await f.make('two')(msg('resume','r',0,'two'))).error,'INCOMPATIBLE_SAVE');assert.equal(f.count,0);});
+
+test('human choice context is revision-bound and part of durable request identity',async()=>{
+ const f=fixture(),seen=[],h=f.make('one',async(actions,rng,context)=>{seen.push(context);return {index:0,rng};});
+ await h(msg('create','c'));const command={...msg('step','human'),choice:'r0-choice0'};
+ const accepted=await h(command);assert(accepted.ok);assert.deepEqual(seen,[{choice:'r0-choice0',revision:0,actor:0}]);
+ assert.deepEqual(await h(command),accepted);assert.equal(f.count,1);
+ assert.equal((await h({...command,choice:'r0-choice1'})).error,'ID_COLLISION');assert.equal(f.count,1);
+ const resumed=f.make('two');await resumed(msg('resume','r',0,'two'));
+ assert.deepEqual((await resumed({...command,epoch:'two'})).result,accepted.result);assert.equal(f.count,1);
+});
+test('chooser rejection leaves engine, RNG and accepted trace unchanged',async()=>{
+ const f=fixture(),h=f.make('one',async(actions,rng,context)=>{if(context.choice!=='valid')fail('BAD_CHOICE');return {index:0,rng};});
+ await h(msg('create','c'));const before=structuredClone(f.durable);
+ assert.equal((await h({...msg('step','invalid'),choice:'invalid'})).error,'BAD_CHOICE');
+ assert.deepEqual(f.durable,before);assert.equal(f.count,0);
+ assert((await h({...msg('step','valid'),choice:'valid'})).ok);assert.equal(f.count,1);
+});
+test('choice is a bounded step-only string',async()=>{
+ const f=fixture(),h=f.make();await h(msg('create','c'));
+ for(const m of [{...msg('status','a'),choice:'x'}, {...msg('step','b'),choice:null}, {...msg('step','c'),choice:''}, {...msg('step','d'),choice:'x'.repeat(161)}, {...msg('step','e'),choice:'bad\nchoice'}])assert.equal((await h(m)).error,'BAD_REQUEST');
+ assert.equal(f.count,0);
+});
+test('malformed saves reject before restoration or another move',async()=>{
+ for(const mutate of [s=>s.revision=-1,s=>s.revision=1,s=>s.policyRng=-1,s=>s.policyRng=NaN,s=>s.receipts=[],s=>s.engine=null]){
+  const f=fixture(),h=f.make();await h(msg('create','c'));mutate(f.durable);
+  assert.equal((await f.make('two')(msg('resume','r',0,'two'))).error,'CORRUPT_SAVE');assert.equal(f.count,0);
+ }
+});
+test('failed initial persistence requires a new authority before retrying',async()=>{
+ const f=fixture(),h=f.make();f.failWrite=true;assert.equal((await h(msg('create','c'))).error,'RECOVERY_REQUIRED');
+ f.failWrite=false;assert.equal((await h(msg('create','again'))).error,'RECOVERY_REQUIRED');assert.equal(f.durable,null);
+ assert((await f.make('two')(msg('create','fresh',0,'two'))).ok);
+});
+test('summary receives the accepted revision and cannot override it',async()=>{
+ let state=0,durable=null;const revisions=[];
+ const h=createJournal({version:'test-v1',epoch:'one',choose:async()=>({index:0,rng:1}),storage:{read:async()=>durable,write:async s=>{durable=s;}},engine:{start(){},restore(){},save:()=>'{"state":0}',legal:()=>({actor:0,actions:[{type:'PassPriority'}]}),apply(){state++;},summary(revision){revisions.push(revision);return {revision:999,turn:state,terminal:null};}}});
+ assert.equal((await h(msg('create','c'))).result.revision,0);
+ assert.equal((await h(msg('step','a'))).result.revision,1);assert(revisions.includes(0));assert(revisions.includes(1));
+});

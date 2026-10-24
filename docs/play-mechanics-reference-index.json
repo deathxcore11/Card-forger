@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-24",
+  "images": [
+    {
+      "uploaded_name": "image(3).png",
+      "library_file_id": "libfile_1128da888f3c8191a661bb18ddbd4a41",
+      "sha256": "135bf502f4175d4c793979496ec3b4b3a97f67565d0fedb1e24f7cd6330b944e",
+      "bytes": 707338,
+      "notes": "Head Games app popup; exact card text and complex choice requirement.",
+      "inspection": "Inspected by root in this Play chat; reference only, not a product asset."
+    },
+    {
+      "uploaded_name": "image(7).png",
+      "library_file_id": "libfile_e32fbfcb20448191a691e3997b4273b8",
+      "sha256": "1d7cbc44e6a0825a0f1e3bb858eadc90d71d89645a4e2d6674269ec6c0506691",
+      "bytes": 518937,
+      "notes": "Chief of the Wilds: conditional Wolf-entry growth and triggered-ability amplification.",
+      "inspection": "Inspected by root in this Play chat; reference only, not a product asset."
+    },
+    {
+      "uploaded_name": "image(8).png",
+      "library_file_id": "libfile_0353a214c66c819186d594c11107f650",
+      "sha256": "1bc60ed0e939779b344b59d0781b0f07a3d413afbb1ff0896a267a079a2d7cce",
+      "bytes": 506396,
+      "notes": "Voja: attack-driven Elf counters / Wolf draws; contextual comparison and Commander color identity.",
+      "inspection": "Inspected by root in this Play chat; reference only, not a product asset."
+    }
+  ],
+  "scope": "Supplement to original 13-image Play index. Reuse exact Library IDs for retrieval; do not publish screenshots as assets."
+}

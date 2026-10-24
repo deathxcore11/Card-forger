@@ -1,5 +1,6 @@
 import {createJournal,fail} from './worker-journal.mjs';
 import {describeChoices} from './smoke-policy-worker.mjs';
+import {createSeatController} from './seat-surface.mjs';
 const PIN='71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234';
 export const VERSION=PIN+':browser-smoke-v1';
 const hashes={
@@ -23,7 +24,7 @@ async function openStore(match) {
   })
  };
 }
-async function boot(epoch,match) {
+async function boot(epoch,match,mode) {
  const [js,wasm,cards]=await Promise.all(Object.keys(hashes).map(checked));
  const url=URL.createObjectURL(new Blob([js],{type:'text/javascript'}));
  let engine;try{engine=await import(url);}finally{URL.revokeObjectURL(url);}
@@ -31,7 +32,7 @@ async function boot(epoch,match) {
  if(engine.load_card_database(new TextDecoder().decode(cards))!==3)fail('FIXTURE_MISMATCH');
  const format=engine.getFormatRegistry().find(f=>f.format==='Modern').default_config;
  const policy=new Worker(new URL('./smoke-policy-worker.mjs',import.meta.url),{type:'module'});let seq=0;
- const choose=(actions,rng)=>new Promise((resolve,reject)=>{
+ const smokeChoose=(actions,rng)=>new Promise((resolve,reject)=>{
   const id=++seq,timer=setTimeout(()=>{cleanup();policy.terminate();reject(Error('POLICY_TIMEOUT'));},5000);
   const cleanup=()=>{clearTimeout(timer);policy.removeEventListener('message',onMessage);policy.removeEventListener('error',onError);};
   const onMessage=({data})=>{if(data?.id!==id)return;cleanup();data.error?reject(Error('POLICY_FAILED')):resolve(data);};
@@ -39,23 +40,29 @@ async function boot(epoch,match) {
   policy.addEventListener('message',onMessage);policy.addEventListener('error',onError);
   policy.postMessage({id,choices:describeChoices(actions),rng});
  });
+ const controller=mode==='human'?createSeatController({engine,seat:0,epoch}):null;
+ const choose=(actions,rng,context)=>{
+  if(controller&&context.actor===0)return controller.select(actions,rng,context);
+  if(context.choice!==undefined)fail('WRONG_SEAT');
+  return smokeChoose(actions,rng);
+ };
  const adapter={
   start(seed,first){const result=engine.initialize_game({player:{main_deck:[...Array(56).fill('Forest'),...Array(4).fill('Grizzly Bears')]},opponent:{main_deck:[...Array(57).fill('Forest'),...Array(3).fill('Grizzly Bears')]}},seed,format,null,2,first);if(!Array.isArray(result.events))fail('INITIALIZE_FAILED');},
   save:()=>engine.export_game_state_json(),restore:s=>engine.restore_game_state(s),
-  summary(){const s=engine.get_filtered_game_state(0).state;return {turn:s.turn_number,waiting:s.waiting_for?.type||null,terminal:s.waiting_for?.type==='GameOver'?{winner:s.waiting_for.data?.winner??null}:null};},
+  summary(revision){const s=engine.get_filtered_game_state(0).state;return {turn:s.turn_number,waiting:s.waiting_for?.type||null,terminal:s.waiting_for?.type==='GameOver'?{winner:s.waiting_for.data?.winner??null}:null,...(controller?{surface:controller.read(revision)}:{})};},
   legal(){for(const actor of [0,1]){const {actions}=engine.get_legal_actions_for_viewer_js(actor);if(actions.length)return {actor,actions};}return {actor:null,actions:[]};},
   apply(actor,action){const r=engine.submit_action(actor,action);if(!['applied','Applied'].includes(r.status))fail('ENGINE_REJECTED');}
  };
- return createJournal({engine:adapter,storage:await openStore(match),choose,version:VERSION,epoch});
+ return createJournal({engine:adapter,storage:await openStore(match),choose,version:mode==='human'?VERSION+':human-seat-v1':VERSION,epoch});
 }
 // One match per worker. The main thread receives only bounded diagnostic status;
 // no authority save, raw legal action, library order, hand or event is posted.
 let opening=null,boundEpoch=null;
 globalThis.onmessage=async({data})=>{
  if(!opening){
-  const {epoch,match}=data||{};
-  if(data?.op!=='bind'||!/^[-\w]{1,80}$/.test(epoch||'')||!/^[-\w]{1,80}$/.test(match||'')){postMessage({v:1,epoch:null,id:null,ok:false,error:'BIND_REQUIRED'});return;}
-  boundEpoch=epoch;opening=boot(epoch,match);
+  const {epoch,match,mode='auto'}=data||{};
+  if(!data||Object.keys(data).some(k=>!['v','epoch','id','op','match','mode'].includes(k))||!['auto','human'].includes(mode)||data?.op!=='bind'||!/^[-\w]{1,80}$/.test(epoch||'')||!/^[-\w]{1,80}$/.test(match||'')){postMessage({v:1,epoch:null,id:null,ok:false,error:'BIND_REQUIRED'});return;}
+  boundEpoch=epoch;opening=boot(epoch,match,mode);
   try{await opening;postMessage({v:1,epoch,id:'bind',ok:true});}
   catch{postMessage({v:1,epoch,id:'bind',ok:false,error:'BOOT_FAILED'});}return;
  }
