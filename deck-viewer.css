@@ -62,8 +62,11 @@
 .deck-viewer[data-deck-view="stacks"] .deck-stack-heading[hidden] { display:none; }
 .deck-viewer[data-deck-view="stacks"] .deck-stack-count { display:inline-grid; place-items:center; min-width:26px; padding:2px 7px; border-radius:8px; background:var(--surface-2); color:var(--muted); font-size:12px; }
 .deck-viewer[data-deck-view="stacks"] .deck-stack-columns { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(168px,100%),1fr)); align-items:start; gap:20px 16px; }
-.deck-viewer[data-deck-view="stacks"] .deck-stack-pile { display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:repeat(calc(var(--deck-stack-size) - 1),38px) auto; align-items:start; min-width:0; }
-.deck-viewer[data-deck-view="stacks"] [data-deck-card] { grid-column:1; grid-row:var(--deck-stack-index); width:100%; height:auto; gap:0; align-self:start; border:0; border-radius:5% / 3.5%; background:none; box-shadow:0 7px 16px -10px #000b; isolation:isolate; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-pile { --deck-stack-step:38px; display:flex; flex-direction:column; align-items:stretch; min-width:0; }
+.deck-viewer[data-deck-view="stacks"] [data-deck-card] { flex:0 0 auto; width:100%; height:auto; aspect-ratio:63/88; min-height:0; gap:0; margin:0; align-self:stretch; border:0; border-radius:5% / 3.5%; background:none; box-shadow:0 7px 16px -10px #000b; isolation:isolate; content-visibility:visible; contain-intrinsic-size:none; }
+/* Natural flex height includes the final full portrait, even for one card and
+   offscreen piles. The overlap is card height minus the exposed title strip. */
+.deck-viewer[data-deck-view="stacks"] .deck-stack-pile > [data-deck-card] + [data-deck-card] { margin-top:calc(var(--deck-stack-step) - 139.68254%); }
 .deck-viewer[data-deck-view="stacks"] [data-deck-card]:hover { z-index:3; }
 .deck-viewer[data-deck-view="stacks"] [data-deck-card]:focus-within { z-index:4; }
 .deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-art { margin:0; padding:0; }
@@ -95,7 +98,7 @@
  .deck-viewer[data-deck-view="stacks"] [data-deck-list],
  .deck-viewer[data-deck-view="stacks"] #deckList { column-gap:10px; }
  .deck-viewer[data-deck-view="stacks"] .deck-stack-columns { grid-template-columns:repeat(auto-fill,minmax(min(128px,100%),1fr)); gap:18px 10px; }
- .deck-viewer[data-deck-view="stacks"] .deck-stack-pile { grid-template-rows:repeat(calc(var(--deck-stack-size) - 1),32px) auto; }
+ .deck-viewer[data-deck-view="stacks"] .deck-stack-pile { --deck-stack-step:32px; }
  .deck-viewer[data-deck-view="stacks"] .lot-side .stepper button { min-width:27px; }
 }
 
