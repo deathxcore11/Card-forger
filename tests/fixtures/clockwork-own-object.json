@@ -1,0 +1,44 @@
+{
+  "provenance": "Scryfall exact-name read-only public record, 2026-10-24",
+  "card": {
+    "name": "Clockwork Percussionist",
+    "oracle_id": "3b74c8ac-9c19-45b0-935f-8630b8da4543",
+    "type_line": "Artifact Creature \u2014 Monkey Toy",
+    "oracle_text": "Haste\nWhen this creature dies, exile the top card of your library. You may play it until the end of your next turn.",
+    "mana_cost": "{R}",
+    "cmc": 1.0,
+    "colors": [
+      "R"
+    ],
+    "color_identity": [
+      "R"
+    ],
+    "legalities": {
+      "standard": "legal",
+      "future": "legal",
+      "historic": "legal",
+      "timeless": "legal",
+      "gladiator": "legal",
+      "pioneer": "legal",
+      "modern": "legal",
+      "legacy": "legal",
+      "pauper": "legal",
+      "vintage": "legal",
+      "penny": "not_legal",
+      "commander": "legal",
+      "oathbreaker": "legal",
+      "standardbrawl": "legal",
+      "brawl": "legal",
+      "competitivebrawl": "legal",
+      "alchemy": "legal",
+      "paupercommander": "legal",
+      "duel": "legal",
+      "oldschool": "not_legal",
+      "premodern": "not_legal",
+      "predh": "not_legal",
+      "tlr": "legal"
+    },
+    "set": "dsk",
+    "collector_number": "130"
+  }
+}

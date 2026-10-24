@@ -25,7 +25,7 @@ const signatures={
  'forsaken monument':c=>artifact(c)&&hasLine(c,/^whenever you tap a permanent for \{c\}, add an additional \{c\}\.$/),
  'rings of brighthearth':c=>artifact(c)&&hasLine(c,/^whenever you activate an ability, if it isn't a mana ability, you may pay \{2\}\. if you do, copy that ability\.(?: you may choose new targets for the copy\.)?$/),
  'devoted druid':c=>creature(c)&&hasLine(c,/^\{t\}: add \{g\}\.$/)&&hasLine(c,/^put a -1\/-1 counter on (?:devoted druid|this creature): untap (?:devoted druid|this creature)\.$/),
- 'vizier of remedies':c=>creature(c)&&hasLine(c,/^if one or more -1\/-1 counters would be put on a creature you control, that many minus one -1\/-1 counters are put on it instead\.$/)
+ 'vizier of remedies':c=>creature(c)&&hasLine(c,/^if one or more -1\/-1 counters would be put on a creature you control, that many (?:minus one -1\/-1 counters|-1\/-1 counters minus one) are put on it instead\.$/)
 };
 const commonLimitations=[
  'Choose a finite number of repetitions. The mana must be used before the current step or phase ends unless another effect lets you keep it.',

@@ -158,7 +158,11 @@ export function mtgPower(d) {
         sims: hands.sims,
         simulationLibrary: hands.simulationLibrary,
         roles: hands.roles,
-        goldfish: mtgGoldfish((d.cards || []).map((r) => ({ qty: r.qty, c: S.catalog[cardKey(r.name)] })).filter((r) => r.c && !inCommandZone(d,r.c.name)), { size: formatOf(d).size, commander: S.catalog[cardKey(d.commander)] || null }),
+        // Constructed diagnostics already executed these same seeded trials.
+        // With a resolved commander, the inferred plan does not affect the
+        // simulation. Preserve the legacy call when aggregation could reorder
+        // split duplicate rows, or when commander metadata is unavailable.
+        goldfish: S.catalog[cardKey(d.commander)] && new Set((d.cards || []).map(r=>cardKey(r.name))).size === (d.cards || []).length ? hands.goldfish : mtgGoldfish((d.cards || []).map((r) => ({ qty: r.qty, c: S.catalog[cardKey(r.name)] })).filter((r) => r.c && !inCommandZone(d,r.c.name)), { size: formatOf(d).size, commander: S.catalog[cardKey(d.commander)] || null }),
         profile: [["Lands", p.counts.Lands], ["Effective ramp", p.criteria?.resources.effectiveRamp ?? p.counts.Ramp], ["Effective draw", p.criteria?.resources.draw.effective ?? p.counts.Draw], ["Plan-linked copies", p.criteria?.plan.supportedCopies ?? "—"], ["Avg cost", p.avg?.toFixed(2) ?? "—"]],
       };
     } else {

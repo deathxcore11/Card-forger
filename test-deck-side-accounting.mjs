@@ -1,0 +1,28 @@
+// Synthetic fixtures exercise the real shared assessment and price/plan gates.
+import assert from 'node:assert/strict';
+import {createDeckPipeline} from './deck-pipeline.js';
+import {priceDeck,inspectDeckPlan,normalizeDeckRequest} from './deck-construction.js';
+import {cardKey} from './core.js';
+import {FORMATS} from './formats.js';
+const make=(name,type='Artifact',extra={})=>({name,type_line:type,oracle_text:'',cmc:0,mana_cost:'{0}',color_identity:[],legalities:{standard:'legal'},...extra});
+const plains=make('Plains','Basic Land — Plains',{oracle_text:'{T}: Add {W}.',produced_mana:['W']}),card=make('Shared fixture'),other=make('Side fixture'),human=make('Side Human','Creature — Human');
+const catalog=Object.fromEntries([plains,card,other,human].map(c=>[cardKey(c.name),c]));
+const pipeline=createDeckPipeline({S:{catalog},T:{SOURCES:{ygo:{formats:[]},ptcg:{formats:[]}}},meta:n=>catalog[cardKey(n)],priceOf:n=>n==='Side fixture'?5:1,inv:n=>({available:n==='Shared fixture'?3:0})});
+const request={game:'mtg',budgetBasis:'purchase',format:'Standard'};
+const deck={format:'Standard',cards:[{name:'Plains',qty:58},{name:'Shared fixture',qty:2}],side:[{name:'Shared fixture',qty:2},{name:'Side fixture',qty:1}]};
+const a=pipeline.assess(deck,request,{withPower:false});
+assert(a.check.complete);assert(a.check.legal,JSON.stringify(a.check));assert.equal(a.rows.reduce((n,r)=>n+r.qty,0),63);
+const p=priceDeck(a.rows,'purchase');assert.equal(p.ownedCopies,3);assert.equal(p.purchaseEstimate,64,'58 lands + 1 missing shared copy + $5 side card; owned copies not duplicated by zone');
+const unknown=structuredClone(deck);unknown.side.push({name:'Unknown',qty:1});assert(!pipeline.assess(unknown,request,{withPower:false}).check.legal);assert.equal(priceDeck(pipeline.assess(unknown,request,{withPower:false}).rows.map(r=>r.name==='Unknown'?{...r,price:null}:r)).estimate,null);
+const over=structuredClone(deck);over.side[0].qty=3;assert(!pipeline.assess(over,request,{withPower:false}).check.legal,'Copy limits span main and side');
+const wide={...deck,side:[{name:'Plains',qty:16}]};assert(pipeline.assess(wide,request,{withPower:false}).check.issues.some(s=>s.includes('15-card')));
+const plan=inspectDeckPlan({...request,seedCard:other,excluded_cards:['Side fixture']},a.rows,deck);assert(plan.issues.some(s=>s.includes('build-around')));assert(plan.issues.some(s=>s.includes('Excluded card')));
+const restricted=inspectDeckPlan({...request,excludedSubtypes:['Human']},[...a.rows,{name:human.name,qty:1,zone:'side',card:human}],deck);assert.equal(restricted.typeRestrictions.status,'fail');
+assert.equal(normalizeDeckRequest({game:'mtg',format:'Standard'}, {mtg:FORMATS}).matchMode,'unspecified');assert.equal(normalizeDeckRequest({game:'mtg',format:'Standard',matchMode:'bo3'}, {mtg:FORMATS}).matchMode,'bo3');
+console.log('PASS: main-only completeness and anchors, whole-list pricing/cap evidence, shared ownership, side copy/size/exclusion gates and explicit match mode.');
+const {deckResultMarkup,createDeckExperience}=await import('./deck-experience.js');
+const result={ok:true,request:{...request,formatName:'Standard',budget:null,matchMode:'bo3'},deck,rows:a.rows,pricing:p,plan:{issues:[],notes:[],finalSupport:{status:'unverified'},engine:{links:[],unsupported:[],conflicts:[]}},compared:1,delta:null,requestSatisfied:false};
+const markup=deckResultMarkup(result,'sides');assert.match(markup,/Sideboard/);assert.match(markup,/Side fixture/);assert.match(markup,/Reviewable draft/);
+let exported;const actions={},experience=createDeckExperience({A:actions,pipeline:{formats:{mtg:FORMATS}},scope:()=>()=>true,identity:()=>()=>true,onInput(){},game:()=> 'mtg',export:text=>exported=text});
+const id=experience.register(result,()=>true);actions.flowExport({dataset:{result:id}});assert.match(exported,/\n\nSideboard\n/);assert.match(exported,/1 Side fixture/);assert.doesNotMatch(exported,/\[side\]/);
+console.log('PASS: real result rendering includes Magic sideboard and actual export action emits the standard Sideboard section; unverified strategy is labeled a reviewable draft.');

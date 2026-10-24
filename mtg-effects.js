@@ -273,6 +273,8 @@ export function mtgSelfConflicts(cards=[]) {
   for(const blocker of rows){
     const t=text(blocker),enter=/creatures entering(?: the battlefield)?(?: or dying)? don't cause abilities[^.]*trigger/.test(t),
       life=/\b(?:players|you) can't gain life\b/.test(t),pay=/players can't pay life/.test(t);
+    // No recognized restriction means no pair can emit a conflict.
+    if(!enter&&!life&&!pay)continue;
     for(const provider of rows){
       const p=text(provider),effects=mtgEffectProfile(provider).provides;
       if(enter&&/(?:when|whenever) [^\n,.]*\benters?\b/.test(p)&&(/\bcreature\b/i.test(provider.type_line||'')||/\bcreature[^\n,.]*\benters?\b/.test(p)))

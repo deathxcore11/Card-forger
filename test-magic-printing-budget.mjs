@@ -21,6 +21,7 @@ const card=(name,price,more={})=>({id:name+'-id',oracle_id:name+'-oracle',name,t
 const mountain=(id,price,more={})=>card('Mountain',price,{id,type_line:'Basic Land — Mountain',cmc:0,mana_cost:'',produced_mana:['R'],...more});
 const expensive=mountain('art-expensive','25',{full_art:true,image_uris:{normal:'fixture-art'}}),cheap=mountain('legal-cheap','.05',{set:'low',set_name:'Low set',collector_number:'22'}),illegal=mountain('illegal-cheap','.001',{legalities:{commander:'banned',standard:'not_legal'}});
 const candidates=[expensive,illegal,mountain('gold','.001',{border_color:'gold'}),mountain('digital','.001',{games:['arena']}),mountain('wrong-oracle','.001',{oracle_id:'another-card'}),mountain('no-quote',null),cheap];
+for(const layout of ['art_series','token','double_faced_token','emblem','planar','scheme','vanguard'])assert.equal(lowestEligiblePrinting([mountain('nonplayable','.001',{layout}),cheap],'Mountain',{reference:expensive,format:'standard'}).id,cheap.id,'Optimistic legality cannot make '+layout+' a playable printing');
 let checks=0;
 const result=await findCheapestPrinting('Mountain',{api:async()=>{checks++;return{data:candidates,has_more:true};},reference:expensive,format:'standard',basicOnly:true});
 assert.equal(result.card.id,cheap.id,'numeric known price beats art and provider order');assert.equal(checks,1);assert.equal(result.coverage.hasMore,true);assert.equal(result.coverage.marketComplete,false);assert.equal(cheapestKnown('mountain').usd,.05);

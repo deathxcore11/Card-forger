@@ -22,7 +22,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 HOSTS = ("https://cardstashy.com/", "https://cardforge2.deathxcore11.workers.dev/")
 KEY_ASSETS = ("index.html", "config.js", "sw.js")
 MODULES = (
-    "deck-mechanic-plan.js", "mtg-land-requirements.js", "mtg-commander-conditions.js", "mtg-mana-sources.js", "mtg-wiki-knowledge.js", "mtg-wiki-client.js", "mtg-wiki-ui.js", "wiki-sources.js", "game-wiki-knowledge.js", "game-wiki-article.js", "wiki-card-handoff.js", "wiki-deck-handoff.js",
+    "deck-mechanic-plan.js", "mtg-land-requirements.js", "mtg-commander-conditions.js", "mtg-primary-inputs.js", "mtg-ability-endpoints.js", "mtg-final-support.js", "mtg-reference-construction.js", "mtg-mana-sources.js", "mtg-wiki-knowledge.js", "mtg-wiki-client.js", "mtg-wiki-ui.js", "wiki-sources.js", "game-wiki-knowledge.js", "game-wiki-article.js", "wiki-card-handoff.js", "wiki-deck-handoff.js",
     "deck-construction.js", "deck-pipeline.js", "deck-experience.js", "deck-preferences.js", "deck-seeds.js",
     "deck-strategy-plan.js", "mtg-combo-packages.js",
     "card-discovery.js", "mtg-vocabulary.js", "mtg-keyword-reference.js", "rule-extra.js",
@@ -57,7 +57,7 @@ MODULES = (
     # Keep the full first-party entry-page dependency inventory covered. The
     # offline regression checks modulepreloads, scripts and stylesheets against
     # this fixed allowlist; it never follows arbitrary URLs from page content.
-    "adapt.js", "ai-ask.js", "ai-ui.js", "auth-form.js", "auto-browse.js", "build-overlay.js", "buy.js", "card-actions.js",
+    "adapt.js", "ai-ask.js", "ask-navigation.js", "ai-ui.js", "auth-form.js", "auto-browse.js", "build-overlay.js", "buy.js", "card-actions.js",
     "collection-locations.js", "collection-sort.js", "daily-clock.js", "deck-flow.js", "deck-safety.js", "deckaudit.js",
     "dialog.js", "extras.js", "facts.js", "feedback-layer.js", "format-upgrades.js", "games.js", "glass-select.js", "guide.js",
     "icons.js", "importance.js", "install.js", "android-beta.js", "matchup.js", "matchups-ui.js", "mtg-cheap.js", "mtg-boosters.js", "data/mtg-boosters/index.json", "mtg-route-coverage.js", "mtg-tags.js",

@@ -1,0 +1,52 @@
+{
+  "provenance": "Frozen public provider snapshot from budget audit, 2026-10-24; no runtime provider call in regression.",
+  "card": {
+    "name": "Tishana's Tidebinder",
+    "oracle_id": "2993dc7d-723d-4a9b-94bd-4bb02a9f7243",
+    "type_line": "Creature \u2014 Merfolk Wizard",
+    "oracle_text": "Flash\nWhen this creature enters, counter up to one target activated or triggered ability. If an ability of an artifact, creature, or planeswalker is countered this way, that permanent loses all abilities for as long as this creature remains on the battlefield. (Mana abilities can't be targeted.)",
+    "mana_cost": "{2}{U}",
+    "cmc": 3,
+    "colors": [
+      "U"
+    ],
+    "color_identity": [
+      "U"
+    ],
+    "legalities": {
+      "standard": "legal",
+      "future": "legal",
+      "historic": "legal",
+      "timeless": "legal",
+      "gladiator": "legal",
+      "pioneer": "legal",
+      "modern": "legal",
+      "legacy": "legal",
+      "pauper": "not_legal",
+      "vintage": "legal",
+      "penny": "not_legal",
+      "commander": "legal",
+      "oathbreaker": "legal",
+      "standardbrawl": "legal",
+      "brawl": "legal",
+      "competitivebrawl": "legal",
+      "alchemy": "not_legal",
+      "paupercommander": "not_legal",
+      "duel": "legal",
+      "oldschool": "not_legal",
+      "premodern": "not_legal",
+      "predh": "not_legal",
+      "tlr": "legal"
+    },
+    "set": "lci",
+    "collector_number": "335",
+    "prices": {
+      "usd": "1.97",
+      "usd_foil": "3.23",
+      "usd_etched": null,
+      "eur": "3.43",
+      "eur_foil": "5.19",
+      "tix": "0.36"
+    }
+  }
+}

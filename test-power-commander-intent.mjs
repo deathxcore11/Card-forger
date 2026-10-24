@@ -43,7 +43,8 @@ assert.doesNotMatch(themeQuery(dion),/t:human|t:noble|t:dragon|t:instant|t:sorce
 assert.match(themeQuery(dion),/proliferate/);
 assert.deepEqual(requestedIntent('a mono white Knights tribal deck with counters').tribes,['Knight']);
 assert(themeQueries(glass,'Knights').includes('(t:knight or o:knight)'),'explicit style survives unrelated seed');
-assert(themeQueries(glass,'Knights').some(q=>q.includes('artifact')),'seed support retained separately');
+assert(!themeQueries(glass,'Knights').some(q=>q.includes('artifact')),'own artifact type is not an inferred artifact engine');
+assert(themeQueries(glass,'Artifacts').some(q=>q.includes('artifact')),'explicit artifact request retained independently of seed identity');
 const context=({pool=cards,overrides={}}={})=>{
  const catalog=Object.fromEntries(cards.map(c=>[cardKey(c.name),structuredClone({...c,prices:{usd:'.25'},...overrides[cardKey(c.name)]})]));
  const queries=[];let running=0,maxRunning=0;

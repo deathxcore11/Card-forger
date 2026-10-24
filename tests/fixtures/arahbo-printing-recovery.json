@@ -1,0 +1,433 @@
+{
+  "retrievedAt": "2026-10-24T15:53:41Z",
+  "source": "Scryfall public API; bounded named and one-print-page responses",
+  "responses": [
+    {
+      "url": "https://api.scryfall.com/cards/named?exact=Arahbo%2C+Roar+of+the+World",
+      "status": 200,
+      "data": {
+        "object": "card",
+        "id": "81dc3d00-97cd-4549-b5a4-15a1e08767f5",
+        "oracle_id": "66944a11-40a1-4f3a-9f83-52324e0edfef",
+        "multiverse_ids": [
+          433276
+        ],
+        "mtgo_id": 73842,
+        "tcgplayer_id": 139784,
+        "cardmarket_id": 300282,
+        "name": "Arahbo, Roar of the World",
+        "lang": "en",
+        "released_at": "2017-08-25",
+        "uri": "https://api.scryfall.com/cards/81dc3d00-97cd-4549-b5a4-15a1e08767f5",
+        "scryfall_uri": "https://scryfall.com/card/c17/35/arahbo-roar-of-the-world?utm_source=api",
+        "layout": "normal",
+        "highres_image": true,
+        "image_status": "highres_scan",
+        "image_updated_at": "2026-07-13T09:45:39Z",
+        "image_uris": {
+          "small": "https://cards.scryfall.io/small/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.jpg?1783935939",
+          "normal": "https://cards.scryfall.io/normal/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.jpg?1783935939",
+          "large": "https://cards.scryfall.io/large/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.jpg?1783935939",
+          "png": "https://cards.scryfall.io/png/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.png?1783935939",
+          "art_crop": "https://cards.scryfall.io/art_crop/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.jpg?1783935939",
+          "border_crop": "https://cards.scryfall.io/border_crop/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.jpg?1783935939",
+          "thumb": "https://cards.scryfall.io/thumb/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.webp?1783935939",
+          "grid": "https://cards.scryfall.io/grid/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.webp?1783935939",
+          "display": "https://cards.scryfall.io/display/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.webp?1783935939",
+          "art": "https://cards.scryfall.io/art/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.webp?1783935939",
+          "crop": "https://cards.scryfall.io/crop/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.webp?1783935939",
+          "jpeg": "https://cards.scryfall.io/normal/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.jpg?1783935939"
+        },
+        "mana_cost": "{3}{G}{W}",
+        "cmc": 5.0,
+        "type_line": "Legendary Creature \u2014 Cat Avatar",
+        "oracle_text": "Eminence \u2014 At the beginning of combat on your turn, if Arahbo is in the command zone or on the battlefield, another target Cat you control gets +3/+3 until end of turn.\nWhenever another Cat you control attacks, you may pay {1}{G}{W}. If you do, it gains trample and gets +X/+X until end of turn, where X is its power.",
+        "power": "5",
+        "toughness": "5",
+        "colors": [
+          "G",
+          "W"
+        ],
+        "color_identity": [
+          "G",
+          "W"
+        ],
+        "keywords": [
+          "Eminence"
+        ],
+        "legalities": {
+          "standard": "not_legal",
+          "future": "not_legal",
+          "historic": "not_legal",
+          "timeless": "not_legal",
+          "gladiator": "not_legal",
+          "pioneer": "not_legal",
+          "modern": "not_legal",
+          "legacy": "legal",
+          "pauper": "not_legal",
+          "vintage": "legal",
+          "penny": "not_legal",
+          "commander": "legal",
+          "oathbreaker": "legal",
+          "standardbrawl": "not_legal",
+          "brawl": "not_legal",
+          "competitivebrawl": "not_legal",
+          "alchemy": "not_legal",
+          "paupercommander": "not_legal",
+          "duel": "restricted",
+          "oldschool": "not_legal",
+          "premodern": "not_legal",
+          "predh": "not_legal",
+          "tlr": "not_legal"
+        },
+        "games": [
+          "paper",
+          "mtgo"
+        ],
+        "reserved": false,
+        "game_changer": false,
+        "foil": true,
+        "nonfoil": false,
+        "finishes": [
+          "foil"
+        ],
+        "oversized": false,
+        "promo": false,
+        "reprint": false,
+        "variation": false,
+        "set_id": "5caec427-0c78-4c37-b4ec-30f7e0ba9abf",
+        "set": "c17",
+        "set_name": "Commander 2017",
+        "set_type": "commander",
+        "set_uri": "https://api.scryfall.com/sets/5caec427-0c78-4c37-b4ec-30f7e0ba9abf",
+        "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Ac17&unique=prints",
+        "scryfall_set_uri": "https://scryfall.com/sets/c17?utm_source=api",
+        "rulings_uri": "https://api.scryfall.com/cards/81dc3d00-97cd-4549-b5a4-15a1e08767f5/rulings",
+        "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A66944a11-40a1-4f3a-9f83-52324e0edfef&unique=prints",
+        "collector_number": "35",
+        "digital": false,
+        "rarity": "mythic",
+        "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+        "artist": "Jesper Ejsing",
+        "artist_ids": [
+          "a5f8354a-8b51-4e59-96b2-0e3aeae4fa1d"
+        ],
+        "illustration_id": "2346f3c3-0268-4100-9341-dfe95d22d9c6",
+        "border_color": "black",
+        "frame": "2015",
+        "security_stamp": "oval",
+        "full_art": false,
+        "textless": false,
+        "booster": false,
+        "story_spotlight": false,
+        "edhrec_rank": 7959,
+        "prices": {
+          "usd": null,
+          "usd_foil": "29.85",
+          "usd_etched": null,
+          "eur": null,
+          "eur_foil": "22.99",
+          "tix": "2.00"
+        },
+        "related_uris": {
+          "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=433276&printed=false",
+          "tcgplayer_infinite_articles": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Farticles&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Farticles%3FproductLineName%3Dmagic%26q%3DArahbo%252C%2BRoar%2Bof%2Bthe%2BWorld",
+          "tcgplayer_infinite_decks": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Fdecks&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fdecks%3FproductLineName%3Dmagic%26q%3DArahbo%252C%2BRoar%2Bof%2Bthe%2BWorld",
+          "edhrec": "https://edhrec.com/route/?cc=Arahbo%2C+Roar+of+the+World"
+        },
+        "purchase_uris": {
+          "tcgplayer": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F139784%3Fpage%3D1",
+          "cardmarket": "https://www.cardmarket.com/en/Magic/Products?idProduct=300282&referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+          "cardhoarder": "https://www.cardhoarder.com/cards/73842?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+        }
+      }
+    },
+    {
+      "url": "https://api.scryfall.com/cards/search?q=%21%22Arahbo%2C+Roar+of+the+World%22+game%3Apaper+unique%3Aprints+usd%3E%3D0+-border%3Agold+-border%3Asilver+-is%3Aoversized+-set_type%3Amemorabilia+legal%3Acommander&order=usd&dir=asc",
+      "status": 200,
+      "data": {
+        "object": "list",
+        "total_cards": 2,
+        "has_more": false,
+        "data": [
+          {
+            "object": "card",
+            "id": "81dc3d00-97cd-4549-b5a4-15a1e08767f5",
+            "oracle_id": "66944a11-40a1-4f3a-9f83-52324e0edfef",
+            "multiverse_ids": [
+              433276
+            ],
+            "mtgo_id": 73842,
+            "tcgplayer_id": 139784,
+            "cardmarket_id": 300282,
+            "name": "Arahbo, Roar of the World",
+            "lang": "en",
+            "released_at": "2017-08-25",
+            "uri": "https://api.scryfall.com/cards/81dc3d00-97cd-4549-b5a4-15a1e08767f5",
+            "scryfall_uri": "https://scryfall.com/card/c17/35/arahbo-roar-of-the-world?utm_source=api",
+            "layout": "normal",
+            "highres_image": true,
+            "image_status": "highres_scan",
+            "image_updated_at": "2026-07-13T09:45:39Z",
+            "image_uris": {
+              "small": "https://cards.scryfall.io/small/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.jpg?1783935939",
+              "normal": "https://cards.scryfall.io/normal/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.jpg?1783935939",
+              "large": "https://cards.scryfall.io/large/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.jpg?1783935939",
+              "png": "https://cards.scryfall.io/png/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.png?1783935939",
+              "art_crop": "https://cards.scryfall.io/art_crop/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.jpg?1783935939",
+              "border_crop": "https://cards.scryfall.io/border_crop/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.jpg?1783935939",
+              "thumb": "https://cards.scryfall.io/thumb/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.webp?1783935939",
+              "grid": "https://cards.scryfall.io/grid/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.webp?1783935939",
+              "display": "https://cards.scryfall.io/display/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.webp?1783935939",
+              "art": "https://cards.scryfall.io/art/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.webp?1783935939",
+              "crop": "https://cards.scryfall.io/crop/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.webp?1783935939",
+              "jpeg": "https://cards.scryfall.io/normal/front/8/1/81dc3d00-97cd-4549-b5a4-15a1e08767f5.jpg?1783935939"
+            },
+            "mana_cost": "{3}{G}{W}",
+            "cmc": 5.0,
+            "type_line": "Legendary Creature \u2014 Cat Avatar",
+            "oracle_text": "Eminence \u2014 At the beginning of combat on your turn, if Arahbo is in the command zone or on the battlefield, another target Cat you control gets +3/+3 until end of turn.\nWhenever another Cat you control attacks, you may pay {1}{G}{W}. If you do, it gains trample and gets +X/+X until end of turn, where X is its power.",
+            "power": "5",
+            "toughness": "5",
+            "colors": [
+              "G",
+              "W"
+            ],
+            "color_identity": [
+              "G",
+              "W"
+            ],
+            "keywords": [
+              "Eminence"
+            ],
+            "legalities": {
+              "standard": "not_legal",
+              "future": "not_legal",
+              "historic": "not_legal",
+              "timeless": "not_legal",
+              "gladiator": "not_legal",
+              "pioneer": "not_legal",
+              "modern": "not_legal",
+              "legacy": "legal",
+              "pauper": "not_legal",
+              "vintage": "legal",
+              "penny": "not_legal",
+              "commander": "legal",
+              "oathbreaker": "legal",
+              "standardbrawl": "not_legal",
+              "brawl": "not_legal",
+              "competitivebrawl": "not_legal",
+              "alchemy": "not_legal",
+              "paupercommander": "not_legal",
+              "duel": "restricted",
+              "oldschool": "not_legal",
+              "premodern": "not_legal",
+              "predh": "not_legal",
+              "tlr": "not_legal"
+            },
+            "games": [
+              "paper",
+              "mtgo"
+            ],
+            "reserved": false,
+            "game_changer": false,
+            "foil": true,
+            "nonfoil": false,
+            "finishes": [
+              "foil"
+            ],
+            "oversized": false,
+            "promo": false,
+            "reprint": false,
+            "variation": false,
+            "set_id": "5caec427-0c78-4c37-b4ec-30f7e0ba9abf",
+            "set": "c17",
+            "set_name": "Commander 2017",
+            "set_type": "commander",
+            "set_uri": "https://api.scryfall.com/sets/5caec427-0c78-4c37-b4ec-30f7e0ba9abf",
+            "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Ac17&unique=prints",
+            "scryfall_set_uri": "https://scryfall.com/sets/c17?utm_source=api",
+            "rulings_uri": "https://api.scryfall.com/cards/81dc3d00-97cd-4549-b5a4-15a1e08767f5/rulings",
+            "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A66944a11-40a1-4f3a-9f83-52324e0edfef&unique=prints",
+            "collector_number": "35",
+            "digital": false,
+            "rarity": "mythic",
+            "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+            "artist": "Jesper Ejsing",
+            "artist_ids": [
+              "a5f8354a-8b51-4e59-96b2-0e3aeae4fa1d"
+            ],
+            "illustration_id": "2346f3c3-0268-4100-9341-dfe95d22d9c6",
+            "border_color": "black",
+            "frame": "2015",
+            "security_stamp": "oval",
+            "full_art": false,
+            "textless": false,
+            "booster": false,
+            "story_spotlight": false,
+            "edhrec_rank": 7961,
+            "prices": {
+              "usd": null,
+              "usd_foil": "30.48",
+              "usd_etched": null,
+              "eur": null,
+              "eur_foil": "22.51",
+              "tix": "2.00"
+            },
+            "related_uris": {
+              "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=433276&printed=false",
+              "tcgplayer_infinite_articles": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Farticles&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Farticles%3FproductLineName%3Dmagic%26q%3DArahbo%252C%2BRoar%2Bof%2Bthe%2BWorld",
+              "tcgplayer_infinite_decks": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Fdecks&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fdecks%3FproductLineName%3Dmagic%26q%3DArahbo%252C%2BRoar%2Bof%2Bthe%2BWorld",
+              "edhrec": "https://edhrec.com/route/?cc=Arahbo%2C+Roar+of+the+World"
+            },
+            "purchase_uris": {
+              "tcgplayer": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F139784%3Fpage%3D1",
+              "cardmarket": "https://www.cardmarket.com/en/Magic/Products?idProduct=300282&referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+              "cardhoarder": "https://www.cardhoarder.com/cards/73842?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+            }
+          },
+          {
+            "object": "card",
+            "id": "eda28572-654e-4d43-b88c-cf8c8b0f5eb5",
+            "oracle_id": "66944a11-40a1-4f3a-9f83-52324e0edfef",
+            "multiverse_ids": [
+              479388
+            ],
+            "mtgo_id": 79094,
+            "tcgplayer_id": 205260,
+            "cardmarket_id": 426436,
+            "name": "Arahbo, Roar of the World",
+            "lang": "en",
+            "released_at": "2019-12-09",
+            "uri": "https://api.scryfall.com/cards/eda28572-654e-4d43-b88c-cf8c8b0f5eb5",
+            "scryfall_uri": "https://scryfall.com/card/sld/25/arahbo-roar-of-the-world?utm_source=api",
+            "layout": "normal",
+            "highres_image": true,
+            "image_status": "highres_scan",
+            "image_updated_at": "2026-07-13T08:33:39Z",
+            "image_uris": {
+              "small": "https://cards.scryfall.io/small/front/e/d/eda28572-654e-4d43-b88c-cf8c8b0f5eb5.jpg?1783931619",
+              "normal": "https://cards.scryfall.io/normal/front/e/d/eda28572-654e-4d43-b88c-cf8c8b0f5eb5.jpg?1783931619",
+              "large": "https://cards.scryfall.io/large/front/e/d/eda28572-654e-4d43-b88c-cf8c8b0f5eb5.jpg?1783931619",
+              "png": "https://cards.scryfall.io/png/front/e/d/eda28572-654e-4d43-b88c-cf8c8b0f5eb5.png?1783931619",
+              "art_crop": "https://cards.scryfall.io/art_crop/front/e/d/eda28572-654e-4d43-b88c-cf8c8b0f5eb5.jpg?1783931619",
+              "border_crop": "https://cards.scryfall.io/border_crop/front/e/d/eda28572-654e-4d43-b88c-cf8c8b0f5eb5.jpg?1783931619",
+              "thumb": "https://cards.scryfall.io/thumb/front/e/d/eda28572-654e-4d43-b88c-cf8c8b0f5eb5.webp?1783931619",
+              "grid": "https://cards.scryfall.io/grid/front/e/d/eda28572-654e-4d43-b88c-cf8c8b0f5eb5.webp?1783931619",
+              "display": "https://cards.scryfall.io/display/front/e/d/eda28572-654e-4d43-b88c-cf8c8b0f5eb5.webp?1783931619",
+              "art": "https://cards.scryfall.io/art/front/e/d/eda28572-654e-4d43-b88c-cf8c8b0f5eb5.webp?1783931619",
+              "crop": "https://cards.scryfall.io/crop/front/e/d/eda28572-654e-4d43-b88c-cf8c8b0f5eb5.webp?1783931619",
+              "jpeg": "https://cards.scryfall.io/normal/front/e/d/eda28572-654e-4d43-b88c-cf8c8b0f5eb5.jpg?1783931619"
+            },
+            "mana_cost": "{3}{G}{W}",
+            "cmc": 5.0,
+            "type_line": "Legendary Creature \u2014 Cat Avatar",
+            "oracle_text": "Eminence \u2014 At the beginning of combat on your turn, if Arahbo is in the command zone or on the battlefield, another target Cat you control gets +3/+3 until end of turn.\nWhenever another Cat you control attacks, you may pay {1}{G}{W}. If you do, it gains trample and gets +X/+X until end of turn, where X is its power.",
+            "power": "5",
+            "toughness": "5",
+            "colors": [
+              "G",
+              "W"
+            ],
+            "color_identity": [
+              "G",
+              "W"
+            ],
+            "keywords": [
+              "Eminence"
+            ],
+            "legalities": {
+              "standard": "not_legal",
+              "future": "not_legal",
+              "historic": "not_legal",
+              "timeless": "not_legal",
+              "gladiator": "not_legal",
+              "pioneer": "not_legal",
+              "modern": "not_legal",
+              "legacy": "legal",
+              "pauper": "not_legal",
+              "vintage": "legal",
+              "penny": "not_legal",
+              "commander": "legal",
+              "oathbreaker": "legal",
+              "standardbrawl": "not_legal",
+              "brawl": "not_legal",
+              "competitivebrawl": "not_legal",
+              "alchemy": "not_legal",
+              "paupercommander": "not_legal",
+              "duel": "restricted",
+              "oldschool": "not_legal",
+              "premodern": "not_legal",
+              "predh": "not_legal",
+              "tlr": "not_legal"
+            },
+            "games": [
+              "paper",
+              "mtgo"
+            ],
+            "reserved": false,
+            "game_changer": false,
+            "foil": true,
+            "nonfoil": false,
+            "finishes": [
+              "foil"
+            ],
+            "oversized": false,
+            "promo": false,
+            "reprint": true,
+            "variation": false,
+            "set_id": "4d92a8a7-ccb0-437d-abdc-9d70fc5ed672",
+            "set": "sld",
+            "set_name": "Secret Lair Drop",
+            "set_type": "box",
+            "set_uri": "https://api.scryfall.com/sets/4d92a8a7-ccb0-437d-abdc-9d70fc5ed672",
+            "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Asld&unique=prints",
+            "scryfall_set_uri": "https://scryfall.com/sets/sld?utm_source=api",
+            "rulings_uri": "https://api.scryfall.com/cards/eda28572-654e-4d43-b88c-cf8c8b0f5eb5/rulings",
+            "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A66944a11-40a1-4f3a-9f83-52324e0edfef&unique=prints",
+            "collector_number": "25",
+            "digital": false,
+            "rarity": "mythic",
+            "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+            "artist": "Erica Williams",
+            "artist_ids": [
+              "2b9833af-9b4b-44f3-abf1-3e604ad0e752"
+            ],
+            "illustration_id": "fd175300-a861-4443-be5e-ea9038f91809",
+            "border_color": "black",
+            "frame": "2015",
+            "frame_effects": [
+              "legendary"
+            ],
+            "security_stamp": "oval",
+            "full_art": false,
+            "textless": false,
+            "booster": false,
+            "story_spotlight": false,
+            "edhrec_rank": 7961,
+            "prices": {
+              "usd": null,
+              "usd_foil": "67.50",
+              "usd_etched": null,
+              "eur": null,
+              "eur_foil": "95.65",
+              "tix": "0.40"
+            },
+            "related_uris": {
+              "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=479388&printed=false",
+              "tcgplayer_infinite_articles": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Farticles&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Farticles%3FproductLineName%3Dmagic%26q%3DArahbo%252C%2BRoar%2Bof%2Bthe%2BWorld",
+              "tcgplayer_infinite_decks": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Fdecks&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fdecks%3FproductLineName%3Dmagic%26q%3DArahbo%252C%2BRoar%2Bof%2Bthe%2BWorld",
+              "edhrec": "https://edhrec.com/route/?cc=Arahbo%2C+Roar+of+the+World"
+            },
+            "purchase_uris": {
+              "tcgplayer": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F205260%3Fpage%3D1",
+              "cardmarket": "https://www.cardmarket.com/en/Magic/Products?idProduct=426436&referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+              "cardhoarder": "https://www.cardhoarder.com/cards/79094?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "note": "Named response and one-page print search retained separately; their cached quotes may differ. Both returned printings advertise foil only, so nonfoil recovery remains unavailable."
+}

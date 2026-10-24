@@ -1,3 +1,4 @@
+import {inspectAbilityEndpoints} from './mtg-ability-endpoints.js';
 // Inferred rules-text links and exact unsearched opening-hand probabilities.
 // A dependency graph is evidence to inspect, never a full rules engine or a win-rate forecast.
 import {tagsFor,TAG_LABEL} from './pairing.js';
@@ -15,16 +16,20 @@ export function engineMap(game,rows,{draws=game==='ygo'?5:7,commanders=[]}={}){
   if(old){old.qty+=qty;old.libraryQty+=inLibrary(r)?qty:0;old.commandQty+=inCommand(r)?qty:0;}
   else named.set(name,{...r,qty,libraryQty:inLibrary(r)?qty:0,commandQty:inCommand(r)?qty:0,tags:tagsFor(game,r.c)});
  }
+ const endpointEvidence=game==='mtg'?inspectAbilityEndpoints(main.map(r=>({...r,card:r.c})),{commanders}):null;
  const cards=[...named.values()],links=[],unsupported=[],conflicts=game==='mtg'?mtgSelfConflicts(cards.map(r=>r.c)):[];let unmet=0;
  for(const payoff of cards){
   for(const need of payoff.tags.needs){
-   const providers=cards.filter(p=>p.c.name!==payoff.c.name&&p.tags.provides.has(need)).map(p=>({p,detail:game==='mtg'?mtgLinkEvidence(need,p.tags,payoff.tags):{status:'inferred',evidence:[],requirements:[]}}));
+   const mapped=endpointEvidence?.groups.filter(g=>nameKey(g.sourceName)===nameKey(payoff.c.name)&&need==='sub:'+g.endpointType)||[],eligible=mapped.length?new Set(mapped.flatMap(g=>g.cards.map(c=>nameKey(c.name)))):null;
+   if(mapped.length&&!eligible.size){unsupported.push({card:payoff.c.name,need,status:mapped.some(g=>g.status==='unverified')?'unverified':'unsupported',reason:'Mapped optional ability has no verified structural endpoint; other card utility is retained.'});unmet++;continue;}
+   const providers=cards.filter(p=>p.c.name!==payoff.c.name&&(eligible?eligible.has(nameKey(p.c.name)):p.tags.provides.has(need))).map(p=>({p,detail:mapped.length?{status:'conditional',evidence:mapped.map(g=>g.source.evidence),requirements:mapped.flatMap(g=>g.limitations)}:game==='mtg'?mtgLinkEvidence(need,p.tags,payoff.tags):{status:'inferred',evidence:[],requirements:[]}}));
    for(const {p,detail} of providers.filter(p=>p.detail.status==='unsupported'))unsupported.push({payoff:payoff.c.name,provider:p.c.name,need,...detail});
    const compatible=providers.filter(p=>p.detail.status!=='unsupported').map(({p,detail})=>{
     const blocked=conflicts.filter(c=>c.provider===p.c.name&&(c.kind==='creature-enter-trigger'&&detail.evidence.some(e=>/\benters?\b/i.test(e))||c.kind==='life-gain'&&need==='lifegain'||c.kind==='life-payment'&&detail.evidence.some(e=>/pay \d+ life/i.test(e))));
     return {p,detail:blocked.length?{...detail,status:'conditional',requirements:[...detail.requirements,...blocked.map(c=>c.reason)]}:detail};
    }).sort((a,b)=>a.p.c.name.localeCompare(b.p.c.name));
    if(!compatible.length){unmet++;continue;}
+   if(mapped.length)for(const item of compatible)item.detail={...item.detail,status:'conditional',requirements:[...(item.detail.requirements||[]),...mapped.flatMap(g=>g.limitations)]};
    const k=compatible.reduce((n,{p})=>n+p.libraryQty,0),n=Math.min(draws,N),a=payoff.libraryQty,commandSupport=compatible.some(({p})=>p.commandQty>0);
    // The commander is accessible, not in hand or already on the battlefield. These
    // probabilities describe card access only, never mana/timing/playability.
@@ -38,7 +43,7 @@ export function engineMap(game,rows,{draws=game==='ygo'?5:7,commanders=[]}={}){
   }
   for(const effect of payoff.tags.effects?.unsupported||[])unsupported.push({card:payoff.c.name,...effect});
  }
- return {library:N,draws:Math.min(draws,N),commanders:cards.filter(c=>c.commandQty).map(c=>c.c.name).sort(),unknown:library.filter(r=>!r.c).reduce((n,r)=>n+(Number(r.qty)||0),0),unmappedNeeds:unmet,unsupported,conflicts,links:links.sort((a,b)=>(b.openingBoth ?? b.openingAccess ?? 0)-(a.openingBoth ?? a.openingAccess ?? 0)||a.payoff.localeCompare(b.payoff)||a.need.localeCompare(b.need)).slice(0,12)};
+ return {abilityEndpoints:endpointEvidence,library:N,draws:Math.min(draws,N),commanders:cards.filter(c=>c.commandQty).map(c=>c.c.name).sort(),unknown:library.filter(r=>!r.c).reduce((n,r)=>n+(Number(r.qty)||0),0),unmappedNeeds:unmet,unsupported,conflicts,links:links.sort((a,b)=>(b.openingBoth ?? b.openingAccess ?? 0)-(a.openingBoth ?? a.openingAccess ?? 0)||a.payoff.localeCompare(b.payoff)||a.need.localeCompare(b.need)).slice(0,12)};
 }
 export function engineMapPanel(m){
  if(!m?.links.length&&!m?.conflicts?.length)return '';

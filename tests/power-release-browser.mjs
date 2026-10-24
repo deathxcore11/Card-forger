@@ -230,7 +230,7 @@ async function reachableIdeaActions(page,label){
  }
 }
 async function gotoDeck(page,id){await page.evaluate(id=>{location.hash='#deck/'+id+'/engine';},id);await page.locator('.score-panel.power').waitFor();await page.waitForFunction(id=>window.__uiTestState.ui.deckId===id,id);}
-async function openAsk(page){await page.evaluate(()=>{location.hash='#search';});await page.locator('[data-act="askOpen"]').first().click();await page.locator('.ask-dialog[open]').waitFor();}
+async function openAsk(page){if(await page.locator('.ask-dialog[open]').count())return;await page.evaluate(()=>{location.hash='#search';});await page.locator('[data-act="askOpen"]').first().click();await page.locator('.ask-dialog[open]').waitFor();}
 async function installBuilderSaveAudit(page){
  await page.evaluate(()=>{
   const pick=s=>({collection:s.collection,decks:s.decks,printings:s.printings,wishlist:s.wishlist,tcg:s.tcg,myPrices:s.myPrices,priceChoices:s.priceChoices});

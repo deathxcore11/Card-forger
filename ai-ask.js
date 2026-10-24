@@ -31,11 +31,11 @@ function bubble(cls, html) { const b = document.createElement('div'); b.classNam
 function emptyState() {
   state.log.innerHTML = `<div class="ask-empty"><p class="ask-hello">What do you want to know about your ${esc(GAME_NAME[state.game])} cards?</p><p class="muted small">I can use CardStashy’s cards, prices, sets, tournament decks, your collection and your decks. I can also consult the selected game’s Wiki references.</p><div class="ask-examples">${(EXAMPLES[state.game] || EXAMPLES.mtg).map((q, i) => `<button type="button" style="--i:${i}" data-ask-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>`;
 }
-export function openAsk({ game = 'mtg', tools, show, prefill = '' } = {}) {
+export function openAsk({ game = 'mtg', tools, show, onClose, onRestart, prefill = '' } = {}) {
   closeAsk();
   const saved = conversations.get(game), node = saved?.node || shell();
   document.body.append(node);
-  state = { ...saved, controller: new AbortController(), node, game, tools, show, log: node.querySelector('.ask-log'), input: node.querySelector('.ask-input'), history: saved?.history || [], busy: false, rec: null };
+  state = { ...saved, controller: new AbortController(), node, game, tools, show, onClose, onRestart, log: node.querySelector('.ask-log'), input: node.querySelector('.ask-input'), history: saved?.history || [], busy: false, rec: null };
   conversations.set(game, state);
   if (!saved) emptyState();
   if (!saved) {
@@ -46,17 +46,17 @@ export function openAsk({ game = 'mtg', tools, show, prefill = '' } = {}) {
     const choice=e.target.closest('[data-ask-choice]');if(choice){if(Number(choice.dataset.askTurn)!==state.turnId||state.busy)return;return ask(choice.textContent,fetch,{id:choice.dataset.askChoice});}
     const q = e.target.closest('[data-ask-q]'); if (q) return ask(q.dataset.askQ);
     if (e.target.closest('[data-ask-mic]')) return listen();
-    const item = e.target.closest('[data-ask-show]'); if (item) { const s = JSON.parse(item.dataset.askShow); const open = state.show; closeAsk(); return open?.(s); }
+    const item = e.target.closest('[data-ask-show]'); if (item) { const s = JSON.parse(item.dataset.askShow); const open = state.show; closeAsk({handoff:true}); return open?.(s); }
   });
   node.querySelector('.ask-bar').addEventListener('submit', (e) => { e.preventDefault(); ask(state.input.value); });
   }
   node.showModal ? node.showModal() : node.setAttribute('open', '');
   if (saved) state.log.scrollTop = saved.scrollTop ?? state.log.scrollHeight;
   const opened = state;
-  if (prefill) ask(prefill); else setTimeout(() => { if (state === opened) opened.input.focus(); }, 250);
+  if (prefill) ask(prefill); else if(!saved) setTimeout(() => { if (state === opened) opened.input.focus({preventScroll:true}); }, 250);
   return node;
 }
-export function closeAsk() {
+export function closeAsk({handoff=false}={}) {
   if (!state) return;
   const closed = state; state = null;
   closed.scrollTop = closed.log.scrollTop;
@@ -69,13 +69,14 @@ export function closeAsk() {
   closed.busy = false; closed.node.classList.remove('thinking', 'listening');
   try { closed.rec?.abort(); } catch {}
   closed.node.close?.(); closed.node.remove();
+  if(!handoff)closed.onClose?.();
 }
 // Session memory only: refresh or New chat starts over; each game has its own place.
 export function restartAsk() {
   if (!state) return;
-  const { game, tools, show } = state;
-  closeAsk(); conversations.delete(game); tools?.reset?.({forgetBuild:true});
-  return openAsk({ game, tools, show });
+  const { game, tools, show, onClose, onRestart } = state;
+  closeAsk({handoff:true}); conversations.delete(game); tools?.reset?.({forgetBuild:true});
+  return onRestart?onRestart():openAsk({ game, tools, show, onClose, onRestart });
 }
 export function clearAskConversations() { closeAsk(); conversations.clear(); }
 // Voice: the phone's own speech recognition; words appear as they're heard, then it asks.
@@ -113,7 +114,7 @@ export async function ask(text, fetcher = fetch, choice = null) {
     session.history=[...items.filter(x=>x.type==='message'),{type:'message',role:'assistant',content:result.text}].slice(-8);
     // Finish this turn before detaching Ask. Closing a busy conversation cancels
     // its pending builder, while a completed result has its own scoped lifetime.
-    if(destination&&state===session){session.busy=false;session.node.classList.remove('thinking');const show=session.show;closeAsk();await show?.(destination);}
+    if(destination&&state===session){session.busy=false;session.node.classList.remove('thinking');const show=session.show;closeAsk({handoff:true});await show?.(destination);}
   } catch (e) {
     if (state !== session) return;
     question.classList.remove('pending'); state.pendingText = ''; think.remove();
