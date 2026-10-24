@@ -58,7 +58,7 @@ const g02=inspectLandRequirements(r02,{commander:HZ});
 assert.equal(g02.status,'supported');assert.equal(g02.groups[0].sources.copies,10);assert(g02.groups[0].access>=.6);
 assert.equal(g02.groups[0].recursion.status,'partial','no way to put a Desert in the graveyard: replay is not credited');
 assert.match(g02.notes[0],/optional route is partial/);
-assert.match(g02.groups[0].summary,/^10 Deserts, 0 ways to find them, 0 ways to put them in your graveyard\. \d+% chance to see at least one in the first 11 of 99 library cards/);
+assert.match(g02.groups[0].summary,/^10 Deserts, 0 ways to find them, 0 ways to put them in your graveyard\. \d+% chance to draw a Desert; \d+% chance to draw a potential enabler/);
 // Below the declared minimum stays insufficient even with a couple of Deserts.
 assert.equal(inspectLandRequirements(swapBasics(observed,noSetup.slice(0,3)),{commander:HZ}).status,'insufficient');
 

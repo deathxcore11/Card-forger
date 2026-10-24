@@ -1,0 +1,290 @@
+{
+  "retrievedAt": "2026-10-24",
+  "source": "Scryfall /cards/named exact, HTTPS",
+  "cards": [
+    {
+      "object": "card",
+      "id": "bc1f42a2-fe11-45da-9552-069803b4068a",
+      "oracle_id": "5d27c63e-d1ef-48af-b51d-01ebc6daeac9",
+      "multiverse_ids": [
+        622781
+      ],
+      "mtgo_id": 115445,
+      "tcgplayer_id": 504569,
+      "cardmarket_id": 722537,
+      "name": "Mikaeus, the Unhallowed",
+      "lang": "en",
+      "released_at": "2023-08-04",
+      "uri": "https://api.scryfall.com/cards/bc1f42a2-fe11-45da-9552-069803b4068a",
+      "scryfall_uri": "https://scryfall.com/card/cmm/173/mikaeus-the-unhallowed?utm_source=api",
+      "layout": "normal",
+      "highres_image": true,
+      "image_status": "highres_scan",
+      "image_updated_at": "2026-07-13T04:07:50Z",
+      "image_uris": {
+        "small": "https://cards.scryfall.io/small/front/b/c/bc1f42a2-fe11-45da-9552-069803b4068a.jpg?1783915670",
+        "normal": "https://cards.scryfall.io/normal/front/b/c/bc1f42a2-fe11-45da-9552-069803b4068a.jpg?1783915670",
+        "large": "https://cards.scryfall.io/large/front/b/c/bc1f42a2-fe11-45da-9552-069803b4068a.jpg?1783915670",
+        "png": "https://cards.scryfall.io/png/front/b/c/bc1f42a2-fe11-45da-9552-069803b4068a.png?1783915670",
+        "art_crop": "https://cards.scryfall.io/art_crop/front/b/c/bc1f42a2-fe11-45da-9552-069803b4068a.jpg?1783915670",
+        "border_crop": "https://cards.scryfall.io/border_crop/front/b/c/bc1f42a2-fe11-45da-9552-069803b4068a.jpg?1783915670",
+        "thumb": "https://cards.scryfall.io/thumb/front/b/c/bc1f42a2-fe11-45da-9552-069803b4068a.webp?1783915670",
+        "grid": "https://cards.scryfall.io/grid/front/b/c/bc1f42a2-fe11-45da-9552-069803b4068a.webp?1783915670",
+        "display": "https://cards.scryfall.io/display/front/b/c/bc1f42a2-fe11-45da-9552-069803b4068a.webp?1783915670",
+        "art": "https://cards.scryfall.io/art/front/b/c/bc1f42a2-fe11-45da-9552-069803b4068a.webp?1783915670",
+        "crop": "https://cards.scryfall.io/crop/front/b/c/bc1f42a2-fe11-45da-9552-069803b4068a.webp?1783915670",
+        "jpeg": "https://cards.scryfall.io/normal/front/b/c/bc1f42a2-fe11-45da-9552-069803b4068a.jpg?1783915670"
+      },
+      "mana_cost": "{3}{B}{B}{B}",
+      "cmc": 6.0,
+      "type_line": "Legendary Creature \u2014 Zombie Cleric",
+      "oracle_text": "Intimidate (This creature can't be blocked except by artifact creatures and/or creatures that share a color with it.)\nWhenever a Human deals damage to you, destroy it.\nOther non-Human creatures you control get +1/+1 and have undying. (When a creature with undying dies, if it had no +1/+1 counters on it, return it to the battlefield under its owner's control with a +1/+1 counter on it.)",
+      "power": "5",
+      "toughness": "5",
+      "colors": [
+        "B"
+      ],
+      "color_identity": [
+        "B"
+      ],
+      "keywords": [
+        "Intimidate"
+      ],
+      "legalities": {
+        "standard": "not_legal",
+        "future": "not_legal",
+        "historic": "not_legal",
+        "timeless": "not_legal",
+        "gladiator": "not_legal",
+        "pioneer": "not_legal",
+        "modern": "legal",
+        "legacy": "legal",
+        "pauper": "not_legal",
+        "vintage": "legal",
+        "penny": "legal",
+        "commander": "legal",
+        "oathbreaker": "legal",
+        "standardbrawl": "not_legal",
+        "brawl": "not_legal",
+        "competitivebrawl": "not_legal",
+        "alchemy": "not_legal",
+        "paupercommander": "not_legal",
+        "duel": "legal",
+        "oldschool": "not_legal",
+        "premodern": "not_legal",
+        "predh": "not_legal",
+        "tlr": "not_legal"
+      },
+      "games": [
+        "paper",
+        "mtgo"
+      ],
+      "reserved": false,
+      "game_changer": false,
+      "foil": true,
+      "nonfoil": true,
+      "finishes": [
+        "nonfoil",
+        "foil"
+      ],
+      "oversized": false,
+      "promo": false,
+      "reprint": true,
+      "variation": false,
+      "set_id": "cd05036f-2698-43e6-a48e-5c8d82f0a551",
+      "set": "cmm",
+      "set_name": "Commander Masters",
+      "set_type": "masters",
+      "set_uri": "https://api.scryfall.com/sets/cd05036f-2698-43e6-a48e-5c8d82f0a551",
+      "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Acmm&unique=prints",
+      "scryfall_set_uri": "https://scryfall.com/sets/cmm?utm_source=api",
+      "rulings_uri": "https://api.scryfall.com/cards/bc1f42a2-fe11-45da-9552-069803b4068a/rulings",
+      "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A5d27c63e-d1ef-48af-b51d-01ebc6daeac9&unique=prints",
+      "collector_number": "173",
+      "digital": false,
+      "rarity": "mythic",
+      "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+      "artist": "Chris Rahn",
+      "artist_ids": [
+        "7742047e-0f80-4c0f-a530-d07460165e86"
+      ],
+      "illustration_id": "c0f59074-7c2e-4bac-b481-b576602b56be",
+      "border_color": "black",
+      "frame": "2015",
+      "frame_effects": [
+        "legendary"
+      ],
+      "security_stamp": "oval",
+      "full_art": false,
+      "textless": false,
+      "booster": true,
+      "story_spotlight": false,
+      "edhrec_rank": 1326,
+      "penny_rank": 7801,
+      "prices": {
+        "usd": "21.98",
+        "usd_foil": "31.65",
+        "usd_etched": null,
+        "eur": "23.69",
+        "eur_foil": "28.59",
+        "tix": "0.25"
+      },
+      "related_uris": {
+        "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=622781&printed=false",
+        "tcgplayer_infinite_articles": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Farticles&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Farticles%3FproductLineName%3Dmagic%26q%3DMikaeus%252C%2Bthe%2BUnhallowed",
+        "tcgplayer_infinite_decks": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Fdecks&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fdecks%3FproductLineName%3Dmagic%26q%3DMikaeus%252C%2Bthe%2BUnhallowed",
+        "edhrec": "https://edhrec.com/route/?cc=Mikaeus%2C+the+Unhallowed"
+      },
+      "purchase_uris": {
+        "tcgplayer": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F504569%3Fpage%3D1",
+        "cardmarket": "https://www.cardmarket.com/en/Magic/Products?idProduct=722537&referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+        "cardhoarder": "https://www.cardhoarder.com/cards/115445?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+      }
+    },
+    {
+      "object": "card",
+      "id": "3e4a042c-f2a6-45e7-9444-acd1ca838b87",
+      "oracle_id": "e294d9d2-df91-4410-85d3-8ffb13fb2285",
+      "multiverse_ids": [],
+      "resource_id": "B96C4DBAE2C538E1D2C5F3EF80057ADFE96033447979F11C05AC38605692CE6D",
+      "mtgo_id": 144534,
+      "arena_id": 97302,
+      "tcgplayer_id": 649360,
+      "cardmarket_id": 857411,
+      "name": "Master Piandao",
+      "lang": "en",
+      "released_at": "2025-11-21",
+      "uri": "https://api.scryfall.com/cards/3e4a042c-f2a6-45e7-9444-acd1ca838b87",
+      "scryfall_uri": "https://scryfall.com/card/tla/28/master-piandao?utm_source=api",
+      "layout": "normal",
+      "highres_image": true,
+      "image_status": "highres_scan",
+      "image_updated_at": "2026-07-13T01:09:57Z",
+      "image_uris": {
+        "small": "https://cards.scryfall.io/small/front/3/e/3e4a042c-f2a6-45e7-9444-acd1ca838b87.jpg?1783904997",
+        "normal": "https://cards.scryfall.io/normal/front/3/e/3e4a042c-f2a6-45e7-9444-acd1ca838b87.jpg?1783904997",
+        "large": "https://cards.scryfall.io/large/front/3/e/3e4a042c-f2a6-45e7-9444-acd1ca838b87.jpg?1783904997",
+        "png": "https://cards.scryfall.io/png/front/3/e/3e4a042c-f2a6-45e7-9444-acd1ca838b87.png?1783904997",
+        "art_crop": "https://cards.scryfall.io/art_crop/front/3/e/3e4a042c-f2a6-45e7-9444-acd1ca838b87.jpg?1783904997",
+        "border_crop": "https://cards.scryfall.io/border_crop/front/3/e/3e4a042c-f2a6-45e7-9444-acd1ca838b87.jpg?1783904997",
+        "thumb": "https://cards.scryfall.io/thumb/front/3/e/3e4a042c-f2a6-45e7-9444-acd1ca838b87.webp?1783904997",
+        "grid": "https://cards.scryfall.io/grid/front/3/e/3e4a042c-f2a6-45e7-9444-acd1ca838b87.webp?1783904997",
+        "display": "https://cards.scryfall.io/display/front/3/e/3e4a042c-f2a6-45e7-9444-acd1ca838b87.webp?1783904997",
+        "art": "https://cards.scryfall.io/art/front/3/e/3e4a042c-f2a6-45e7-9444-acd1ca838b87.webp?1783904997",
+        "crop": "https://cards.scryfall.io/crop/front/3/e/3e4a042c-f2a6-45e7-9444-acd1ca838b87.webp?1783904997",
+        "jpeg": "https://cards.scryfall.io/normal/front/3/e/3e4a042c-f2a6-45e7-9444-acd1ca838b87.jpg?1783904997"
+      },
+      "mana_cost": "{4}{W}",
+      "cmc": 5.0,
+      "type_line": "Legendary Creature \u2014 Human Warrior Ally",
+      "oracle_text": "First strike\nWhenever Master Piandao attacks, look at the top four cards of your library. You may reveal an Ally, Equipment, or Lesson card from among them and put it into your hand. Put the rest on the bottom of your library in a random order.",
+      "power": "4",
+      "toughness": "4",
+      "colors": [
+        "W"
+      ],
+      "color_identity": [
+        "W"
+      ],
+      "keywords": [
+        "First strike"
+      ],
+      "legalities": {
+        "standard": "legal",
+        "future": "legal",
+        "historic": "legal",
+        "timeless": "legal",
+        "gladiator": "legal",
+        "pioneer": "legal",
+        "modern": "legal",
+        "legacy": "legal",
+        "pauper": "not_legal",
+        "vintage": "legal",
+        "penny": "not_legal",
+        "commander": "legal",
+        "oathbreaker": "legal",
+        "standardbrawl": "legal",
+        "brawl": "legal",
+        "competitivebrawl": "legal",
+        "alchemy": "legal",
+        "paupercommander": "not_legal",
+        "duel": "legal",
+        "oldschool": "not_legal",
+        "premodern": "not_legal",
+        "predh": "not_legal",
+        "tlr": "not_legal"
+      },
+      "games": [
+        "paper",
+        "arena",
+        "mtgo"
+      ],
+      "reserved": false,
+      "game_changer": false,
+      "foil": true,
+      "nonfoil": true,
+      "finishes": [
+        "nonfoil",
+        "foil"
+      ],
+      "oversized": false,
+      "promo": false,
+      "reprint": false,
+      "variation": false,
+      "set_id": "118f7e64-5caa-4cb7-99a8-184f4d3a7422",
+      "set": "tla",
+      "set_name": "Avatar: The Last Airbender",
+      "set_type": "expansion",
+      "set_uri": "https://api.scryfall.com/sets/118f7e64-5caa-4cb7-99a8-184f4d3a7422",
+      "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Atla&unique=prints",
+      "scryfall_set_uri": "https://scryfall.com/sets/tla?utm_source=api",
+      "rulings_uri": "https://api.scryfall.com/cards/3e4a042c-f2a6-45e7-9444-acd1ca838b87/rulings",
+      "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Ae294d9d2-df91-4410-85d3-8ffb13fb2285&unique=prints",
+      "collector_number": "28",
+      "digital": false,
+      "rarity": "uncommon",
+      "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+      "artist": "Brian Yuen",
+      "artist_ids": [
+        "25ac6960-1226-4597-86b5-78840ace2c33"
+      ],
+      "illustration_id": "82c124cd-7aa2-41d9-ab2f-3c89802ce768",
+      "border_color": "black",
+      "frame": "2015",
+      "frame_effects": [
+        "legendary"
+      ],
+      "full_art": false,
+      "textless": false,
+      "booster": true,
+      "story_spotlight": false,
+      "promo_types": [
+        "universesbeyond"
+      ],
+      "edhrec_rank": 8921,
+      "preview": {
+        "source": "IGN",
+        "source_uri": "https://www.ign.com/articles/avatar-the-last-airbender-magic-the-gathering-beginner-box-card-reveal-spoilers",
+        "previewed_at": "2025-08-14"
+      },
+      "prices": {
+        "usd": "0.19",
+        "usd_foil": "0.27",
+        "usd_etched": null,
+        "eur": "0.10",
+        "eur_foil": "0.21",
+        "tix": "0.03"
+      },
+      "related_uris": {
+        "tcgplayer_infinite_articles": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Farticles&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Farticles%3FproductLineName%3Dmagic%26q%3DMaster%2BPiandao",
+        "tcgplayer_infinite_decks": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Fdecks&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fdecks%3FproductLineName%3Dmagic%26q%3DMaster%2BPiandao",
+        "edhrec": "https://edhrec.com/route/?cc=Master+Piandao"
+      },
+      "purchase_uris": {
+        "tcgplayer": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F649360%3Fpage%3D1",
+        "cardmarket": "https://www.cardmarket.com/en/Magic/Products?idProduct=857411&referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+        "cardhoarder": "https://www.cardhoarder.com/cards/144534?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+      }
+    }
+  ]
+}

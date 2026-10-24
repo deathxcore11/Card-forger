@@ -1,3 +1,5 @@
+import {commanderCardConditions, inspectCommanderCardConditions} from './mtg-commander-conditions.js';
+import {mtgManaSourceProfile} from './mtg-mana-sources.js';
 import {setupBurden} from './deck-preferences.js';
 import { functionalIn } from "./deck-safety.js";
 // Format-aware deck generator: builds a full, legal deck around one or more
@@ -34,7 +36,7 @@ export const fitsColors = (c, colors) => ident(c).every((x) => colors.includes(x
 const THEME_TERMS = {Tokens:'(o:"creature token" or o:populate)',Graveyard:'o:graveyard',Spells:'(t:instant or t:sorcery or o:"instant or sorcery")',Dragons:'t:dragon',Artifacts:'(t:artifact or o:artifact)',Lifegain:'(keyword:lifelink or (o:gain o:life))',Lifelink:'(keyword:lifelink or o:lifelink)',Landfall:'o:landfall',Counters:'(o:"+1/+1 counter" or o:proliferate)'};
 const STYLE_ROLES = {token:"Tokens",graveyard:"Graveyard",reanimator:"Graveyard",spells:"Spells",spellslinger:"Spells",artifact:"Artifacts",lifegain:"Lifegain",lifelink:"Lifelink",landfall:"Landfall",counter:"Counters",proliferate:"Counters"};
 export function requestedIntent(style = "") {
-  const positive=String(style).replace(/\b(?:no|without|avoid|don't use|do not use)\s+[^,.;]*(?=[,.;]|$)/gi,' '),
+  const positive=String(style).replace(/[‐‑‒–—]/g,'-').replace(/\b(?:no|without|avoid|don't use|do not use)\s+[^,.;]*(?=[,.;]|$)/gi,' ').replace(new RegExp('\\bnon[- ](?:'+CREATURE_THEMES.map(tribePattern).join('|')+')s?\\b','gi'),' '),
     concepts=readMtgConceptMentions(positive).filter(c=>c.id==='bloodlust'),mechanics=requestedMechanics(positive),
     thematic=concepts.flatMap(c=>c.aliases).sort((a,b)=>b.length-a.length).reduce((s,alias)=>s.replace(new RegExp('\\b'+alias.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','gi'),' '),positive),
     abilities=requestedKeywords(positive).filter(k=>!['Lifelink','Landfall','Proliferate'].includes(k)),
@@ -116,15 +118,19 @@ export function inspectMtgTheme(rows,{style='',commander='',goal='strongest'}={}
   const prerequisites=inspectLandRequirements(rows,{commander});
   for(const g of prerequisites.groups)groups.unshift({label:g.label,source:'commander',copies:g.copies,library:g.library,seen:g.seen,access:g.access,cards:g.sources.cards,summary:g.summary,status:g.status});
   issues.unshift(...prerequisites.issues);notes.push(...prerequisites.notes);
+  const cardConditions=inspectCommanderCardConditions(rows,{commander,atLeastOne});
+  groups.unshift(...cardConditions.groups);issues.push(...cardConditions.issues);notes.push(...cardConditions.notes);
+  if(cardConditions.status==='partial')partial.push('Commander card eligibility');
   const strategy=inspectTribalStrategy(rows,{tribes,commander,goal}),mechanics=inspectMechanicPlan(rows,{abilities:[...new Set([...requested.abilities,...requested.mechanics])],commander,goal});
   let status=issues.length?'insufficient':unknown.length?'unverified':partial.length?'partial':groups.length?'supported':'not-requested';
+  if(cardConditions.status==='unverified'&&!issues.length)status='unverified';
   // Keep complete drafts reviewable, but two incidental tribal cards cannot
   // acquire a verified-theme claim from the old minimum sanity check.
   if(status==='supported'&&requested.tribes.length&&strategy.status!=='supported')status=strategy.status==='unverified'?'unverified':'partial';
   if(requested.mechanics.length&&!issues.length&&!unknown.length){if(status==='not-requested')status=mechanics.status;else if(mechanics.status!=='supported')status=mechanics.status==='unverified'?'unverified':'partial';}
   if(requested.tribes.length&&strategy.status!=='supported')notes.push(...strategy.issues,...strategy.notes);
   if(requested.mechanics.length)notes.push(...mechanics.issues,...mechanics.notes);
-  return {status,groups,issues,notes,strategy,mechanics,prerequisites,unverifiedTerms:unknown,method:(prerequisites.method?prerequisites.method+' ':'')+'Theme support needs at least 6% of the library (minimum 2 cards) and 60% access in the first 11 cards; that is a density check, not proof of a working engine. Requested tribal and mapped mechanic plans also report their prerequisites, conditional connections and library access; partial coverage remains a reviewable draft, not verified strategy or competitive strength.'};
+  return {status,groups,issues,notes,strategy,mechanics,prerequisites,cardConditions,unverifiedTerms:unknown,method:(prerequisites.method?prerequisites.method+' ':'')+'Theme support needs at least 6% of the library (minimum 2 cards) and 60% access in the first 11 cards; that is a density check, not proof of a working engine. Requested tribal and mapped mechanic plans also report their prerequisites, conditional connections and library access; partial coverage remains a reviewable draft, not verified strategy or competitive strength.'};
 }
 
 // Candidate heuristics, not optimization of the complete Power analysis.
@@ -235,7 +241,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   // capped so the reserved package still leaves a castable mana base.
   const landNeeds=commanderLandRequirements(lead||seeds[0]),needPolicy=size>=100?LAND_REQUIREMENT_POLICY.commander:LAND_REQUIREMENT_POLICY.constructed;
   for(const need of landNeeds){
-    const makes=c=>(c.produced_mana||[]).filter(m=>deckColors.includes(m)).length,tapped=c=>/enters tapped/i.test(rulesText(c))?1:0;
+    const makes=c=>mtgManaSourceProfile(c,{commanderIdentity:lead?.color_identity}).colors.filter(m=>deckColors.includes(m)).length,tapped=c=>/enters tapped/i.test(rulesText(c))?1:0;
     const choices=[...new Map(Object.values(catalog).filter(c=>c?.name&&isLand(c)&&!isBasic(c)&&isLegal(c)&&fitsColors(c,deckColors)&&hasLandSubtype(c,need.subtype)).map(c=>[cardKey(c.name),c])).values()]
       .sort((a,b)=>makes(b)-makes(a)||tapped(a)-tapped(b)||stock(b.name)-stock(a.name)||(a.edhrec_rank||1e9)-(b.edhrec_rank||1e9)||a.name.localeCompare(b.name));
     const colorlessCap=Math.floor(landTarget*LAND_REQUIREMENT_POLICY.colorlessShare);let placed=0,colorless=0;
@@ -247,11 +253,12 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     }
     if(placed<needPolicy.minimum)warnings.push(`Only ${placed} ${need.subtype} lands could be added from the loaded, legal and affordable cards; ${lead?.name||seeds[0]?.name} needs ${need.subtype}s.`);
   }
+  const cardConditions=commanderCardConditions(lead||seeds[0]),conditionBoost=c=>cardConditions.some(condition=>condition.matches(c))?8:0;
   const needBoost=c=>landNeeds.reduce((n,need)=>n+landSubtypeRoles(c,need.subtype).reduce((s,r)=>s+({fetch:8,grant:8,tutor:5,setup:3,payoff:4}[r.kind]||0),0),0);
 
   const pool = [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && isLegal(c) && fitsColors(c, deckColors)).map((c) => [cardKey(c.name), c])).values()],
     supports=c=>seedSubs.some(t=>tribalSupport(c,t))||themeSupport(c,{roles:seedTags,tokenKinds:intent.tokenKinds}).length>0,
-    scored = pool.map((c) => ({ c, plan:supports(c), s: -(easy?setupBurden('mtg',c)*3:0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds:intent.tokenKinds, goal }) + goalCardPreference(c,goal,{suggested:suggestedCards.some(name=>cardKey(name)===cardKey(c.name))}) + (styleFit(c,intent.requested)?(goal === "theme"?16:8):0) - (mtgSelfConflicts([...seeds,...(lead?[lead]:[]),c]).length?24:0) + needBoost(c) }));
+    scored = pool.map((c) => ({ c, plan:supports(c), s: -(easy?setupBurden('mtg',c)*3:0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds:intent.tokenKinds, goal }) + goalCardPreference(c,goal,{suggested:suggestedCards.some(name=>cardKey(name)===cardKey(c.name))}) + (styleFit(c,intent.requested)?(goal === "theme"?16:8):0) - (mtgSelfConflicts([...seeds,...(lead?[lead]:[]),c]).length?24:0) + needBoost(c) + conditionBoost(c) }));
   // Seeds go in first at full copies, then everything else by score.
   for (const s of seeds) {
     const hit = scored.find((x) => cardKey(x.c.name) === cardKey(s.name));
@@ -324,7 +331,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   }
 
   // Mana: owned (or affordable) dual lands that fit, then basics split by color symbols.
-  const landPool = [...new Map(Object.values(catalog).filter((c) => c?.name && isLand(c) && !isBasic(c) && isLegal(c) && fitsColors(c, deckColors) && (c.produced_mana || []).filter((m) => deckColors.includes(m)).length >= Math.min(2, deckColors.length)).map((c) => [cardKey(c.name), c])).values()]
+  const landPool = [...new Map(Object.values(catalog).filter((c) => c?.name && isLand(c) && !isBasic(c) && isLegal(c) && fitsColors(c, deckColors) && mtgManaSourceProfile(c,{commanderIdentity:lead?.color_identity}).colors.filter((m) => deckColors.includes(m)).length >= Math.min(2, deckColors.length)).map((c) => [cardKey(c.name), c])).values()]
     .sort((a, b) => available(b.name) - available(a.name) || (a.edhrec_rank || 1e9) - (b.edhrec_rank || 1e9));
   const dualCap = deckColors.length > 1 ? Math.round(landTarget * 0.4) : 0;
   for (const c of landPool) {

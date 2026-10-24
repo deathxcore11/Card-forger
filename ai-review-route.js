@@ -1,3 +1,4 @@
+import { FORMATS } from './formats.js';
 import { isNativeAdmitted } from './native-backend-contract.js';
 import {cleanCriteria, coachHandProfile} from './coach-evidence.js';
 export {cleanCriteria} from './coach-evidence.js';
@@ -9,10 +10,13 @@ const fail = (message, status = 400) => Object.assign(new Error(message), { stat
 const MAX_BYTES = 240000;
 const str = (v, max) => typeof v === 'string' ? v.slice(0, max) : '';
 const norm = s => s.replace(/\s+/g, ' ').trim();
+// Catalog evidence is input data, not a model assertion or an independent live
+// provider refresh. Keep it separate from truncated display/details strings.
+const cleanLegalities = value => Object.fromEntries(Object.entries(value && typeof value === 'object' && !Array.isArray(value) ? value : {}).filter(([key, status]) => FORMATS.some(f => f.legality === key) && ['legal', 'restricted', 'banned', 'not_legal'].includes(status)));
 const cleanCard = (c, ids, zones) => {
   if (!c || typeof c.id !== 'string' || !c.id || c.id.length > 160 || ids.has(c.id) || typeof c.name !== 'string' || !c.name.trim() || !Number.isInteger(c.qty) || c.qty < 1 || c.qty > 100 || !zones.includes(c.zone)) throw fail('The deck contains invalid card entries.');
   ids.add(c.id);
-  return { id: c.id, name: str(c.name, 180), qty: c.qty, zone: c.zone, type: str(c.type, 240), text: str(c.text, 6000), details: str(c.details, 2500), known: c.known === true, ...(c.zone === 'owned' && typeof c.helps === 'string' && c.helps ? { helps: str(c.helps, 160) } : {}), ...(c.zone !== 'owned' && typeof c.power === 'string' && c.power ? { power: str(c.power, 160) } : {}) };
+  return { id: c.id, name: str(c.name, 180), qty: c.qty, zone: c.zone, type: str(c.type, 240), text: str(c.text, 6000), details: str(c.details, 2500), known: c.known === true, legalities: cleanLegalities(c.legalities), ...(c.zone === 'owned' && typeof c.helps === 'string' && c.helps ? { helps: str(c.helps, 160) } : {}), ...(c.zone !== 'owned' && typeof c.power === 'string' && c.power ? { power: str(c.power, 160) } : {}) };
 };
 export function cleanDeck(raw) {
   if (!raw || !['mtg', 'ygo', 'ptcg'].includes(raw.game) || !Array.isArray(raw.cards) || !raw.cards.length || raw.cards.length > 150) throw fail('Choose a deck with 1–150 distinct card entries.');
@@ -77,7 +81,7 @@ pressure.scenarios: up to 4 disruptions this deck is likely to face (its command
 improve: up to 4 swaps addressing the most important supported deficit; use Power's priority areas as a starting point. Candidate helps labels only identify heuristic score changes, not proof that a swap improves the plan. Preserve meaningful enablers and payoffs even when replacing them with generic role cards would raise a raw count. area = the power key the swap improves; cut = a deck card id (never the commander); add = a candidates id, or empty when no owned card fits (then role says exactly what to look for). gain, loss, lost (interactions that disappear) and test (how to check it in the app). Keep the deck's plan and its signature cards. Never name cards that are not in cards or candidates, anywhere, including prose.
 tests: up to 3 checks the player can run in the app (sample hands, goldfish, matchups) that would confirm or refute your main advice.
 Cite cards by their id (c0, o3) in every id field; write prose with card names, never ids. Keep it short: each text field under 250 characters, firstTurns under 350.
-Evidence: each scenario, beyond note and swap cites at least one supplied card (deck or candidate) with an exact short quote from its text or details. Do not invent card text, rules, legality, prices, win rates or results. Respect the game's rules: `;
+Evidence: each scenario, beyond note and swap cites at least one supplied card (deck or candidate) with an exact short quote from its text or details. Use the supplied exact card text and legality metadata ahead of model memory; similar names are not interchangeable. Missing legality or unmapped mechanics are unknown, not evidence of legality or a working engine. Preserve negated types, controller restrictions, costs and alternative eligible types; a shared word is not proof of a working interaction. Do not invent card text, rules, legality, prices, win rates or results. Respect the game's rules: `;
 export const instructionsFor = (game, format = '') => instructions + RULES[game] + (game === 'ygo' ? ' Selected hand profile: ' + coachHandProfile(game, format).note : '');
 const cardIndex = deck => new Map([...deck.cards, ...deck.candidates].map(c => [c.id, c]));
 // Quotes match loosely: curly quotes, dashes, case, trailing periods and "…" gaps don't matter,
@@ -211,6 +215,16 @@ export function validateReview(raw, deck) {
     if (!inDeck(x?.cut)) return drop('swap cuts a card not in the deck');
     if (commander.has(x.cut)) return drop('swap cuts the commander');
     if (x.add && !owned.has(x.add)) return drop('swap adds a card you don\'t own');
+    // Re-scoring in the UI is optional; never depend on that hook to suppress a
+    // banned or unverified constructed addition. Older payloads fail closed.
+    if (deck.game === 'mtg' && x.add) {
+      const format = FORMATS.find(f => [f.id, f.name.toLowerCase()].includes(String(deck.format || '').toLowerCase())), candidate = idx.get(x.add);
+      if (!format || format.legality && (!candidate?.known || !['legal', 'restricted'].includes(candidate.legalities?.[format.legality]))) return drop('swap addition is not confirmed legal by supplied card metadata for this format');
+      if (format.legality && candidate.legalities?.[format.legality] === 'restricted') {
+        const remaining = deck.cards.filter(c => c.id !== x.cut && c.name.toLowerCase() === candidate.name.toLowerCase()).reduce((n,c) => n+c.qty,0) + (idx.get(x.cut).name.toLowerCase() === candidate.name.toLowerCase() ? Math.max(0,idx.get(x.cut).qty-1) : 0);
+        if (remaining >= 1) return drop('swap would exceed the supplied restricted-card limit');
+      }
+    }
     const sw = [idx.get(x.cut), idx.get(x.add)].filter(Boolean); for (const k of ['gain', 'loss', 'lost']) x[k] = factCheck(x[k], sw);
     const evidence=checkEvidence(x.evidence,idx,why);
     if(deck.game==='ptcg'&&!matchupCutIsExplained(idx.get(x.cut),x,evidence))return drop('one-copy matchup attacker cut lacks printed-effect and Prize/Energy trade analysis');

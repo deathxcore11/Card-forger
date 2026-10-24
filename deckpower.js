@@ -1,3 +1,4 @@
+import {mtgManaSourceProfile} from './mtg-mana-sources.js';
 import {pokemonRole} from './pokemon-role.js';
 // Deck Power: a game- and format-aware rating for all three games.
 // Each game is judged by how competitive decks in THAT game and format are built:
@@ -243,15 +244,12 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   const pips = {}, src = {};
   // Hybrid and Phyrexian symbols ({G/U}, {R/P}) can be paid other ways, so they don't demand a color.
   for (const r of spells) for (const m of (r.c.mana_cost || r.c.card_faces?.[0]?.mana_cost || "").match(/\{[^}]+\}/g) || []) if (!m.includes("/")) for (const col of "WUBRG") if (m.includes(col)) pips[col] = (pips[col] || 0) + r.qty;
-  // Mana rocks, dorks and filters (Chromatic Star, Llanowar Elves) are color sources too.
-  for (const r of spells) {
-    const tx = text(r.c);
-    const listed = (r.c.produced_mana || []).filter((x) => "WUBRG".includes(x));
-    if (!listed.length && !role(r.c, "ramp") && !/add one mana of any color|add \{[wubrg]\}/.test(tx)) continue;
-    const cols = listed.length ? listed.join("") : /any color/.test(tx) ? "WUBRG" : [...new Set((tx.match(/add [^.]*/)?.[0] || "").match(/\{([wubrg])\}/g) || [])].map((x) => x[1].toUpperCase()).join("");
-    for (const col of cols) src[col] = (src[col] || 0) + r.qty * 0.5;
-  }
-  for (const r of lands) for (const m of r.c.produced_mana || (isBasicC(r.c) ? [{ Plains: "W", Island: "U", Swamp: "B", Mountain: "R", Forest: "G" }[r.c.name]] : [])) if (m) src[m] = (src[m] || 0) + r.qty;
+  // Potential production metadata is not free fixing. Retain the existing
+  // half-weight for developed tap permanents, not rituals or paid filters.
+  const manaProfiles=known.filter(r=>isLandC(r.c)||(r.c.produced_mana||[]).length||/(?:\badd\s+\{|\badd\b[^.\n]*\bmana\b)/.test(text(r.c))).map(r=>({name:r.name,qty:r.qty,land:isLandC(r.c),...mtgManaSourceProfile(r.c,{commanderIdentity:catalog[key(deck.commander||'')]?.color_identity})}));
+  for(const source of manaProfiles)for(const col of source.colors)if('WUBRG'.includes(col))src[col]=(src[col]||0)+source.qty*(source.land?1:.5);
+  const conditionalMana=manaProfiles.filter(s=>s.conditional.length||s.unknown),unverifiedColor=col=>conditionalMana.some(s=>s.unknown||s.conditional.some(e=>!e.colors.length||e.colors.includes(col))),
+    sourceNote='Counts verified free tap/intrinsic outputs; nonland tap sources count half after deployment. Rituals, paid filters and other conditional routes are not independent color sources. Their setup and timing are not simulated.';
   // How much of the deck needs each color: share of spell copies with that color in their cost.
   const needers = {};
   for (const r of spells) for (const col of new Set(((r.c.mana_cost || r.c.card_faces?.[0]?.mana_cost || "").match(/\{[^}/]+\}/g) || []).join("").replace(/[^WUBRG]/g, ""))) needers[col] = (needers[col] || 0) + r.qty;
@@ -273,13 +271,13 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   if (boundedConstructed && quantifiedCreatures) parts.push({...part("Impact", "Creature impact evidence", Math.round(threatQ * 100) + "%", "body + usable effects", threatQ, 12, "Bounded body-rate and recognized ability evidence; text length is not quality, and unknown mechanics are not a verdict."),
     cards:creatureRows.map(r => ({name:r.name, qty:r.qty, ...cardProfile(r.c).threat, requirements:cardProfile(r.c).requirements})),
     why:`Recognized body/effect evidence averages ${Math.round(threatQ * 100)}%. ${qty(creatureRows.filter(r => cardProfile(r.c).requirements.some(x => x.status === "unsupported")))} creature copies have an absent recognized ability prerequisite; other abilities remain useful. Conditional token production, paid alternatives and setup are not free simultaneous output.`});
-  // Lands with no listed colors (fetches, utility lands) count as half a source of every color.
-  const flexLands = qty(lands.filter((r) => !isBasicC(r.c) && !(r.c.produced_mana || []).length)),
-    starved = colors.filter((k) => share(k) >= 0.25 && (src[k] || 0) + flexLands / 2 < 1),
+  // Unresolved routes are uncertainty, not half a fabricated source of every color
+  // and not proof that a color is impossible.
+  const starved = colors.filter((k) => !unverifiedColor(k) && share(k) >= 0.25 && (src[k] || 0) < 1),
     need = (k) => Math.round((share(k) >= 0.4 ? 14 : share(k) >= 0.15 ? 9 : 5) * scale),
     // A color only one or two cards ask for is a light splash (a 1-of Krang in a blue deck), not a
     // mana base that's broken: it doesn't trigger the "far short" cap.
-    thin = colors.filter((k) => (needers[k] || 0) > 2 && (src[k] || 0) + flexLands / 2 < need(k) / 2);
+    thin = colors.filter((k) => !unverifiedColor(k) && (needers[k] || 0) > 2 && (src[k] || 0) < need(k) / 2);
   const caps = [
     starved.length ? { key: "Colors", max: 35, label: "Can't cast its spells", why: `The spells need ${starved.map((k) => ({ W: "white", U: "blue", B: "black", R: "red", G: "green" })[k]).join(" and ")} mana and no land makes it. Most games this deck does nothing.` } : null,
     !starved.length && thin.length ? { key: "Colors", max: 62, label: "Color sources far short", why: `Fewer than half the ${thin.map((k) => ({ W: "white", U: "blue", B: "black", R: "red", G: "green" })[k]).join("/")} sources the spells need: many hands can't cast what they draw.` } : null,
@@ -340,7 +338,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     why: `${value} cards generate extra value (draw, enters-the-battlefield removal or tokens, planeswalkers). Midrange with no synergy needs about ${Math.round(10 * scale)} to grind the opponent out.` });
   caps.push(offN / Math.max(1, nSpell) > 0.3 ? { key: "Plan", max: 62, label: "No clear plan", why: `${offN} of ${nSpell} spells pull against the ${plan.toLowerCase()} plan. A deck that tries to do two things does neither well.` } : null);
   caps.push(lin && lin.enablers < lin.target * 0.7 ? { key: "Critical", max: 66, label: "Below critical mass", why: `Built around ${lin.unit} with only ${lin.enablers} of them: the ${lin.payoffs} payoffs do little most games.` } : null);
-  if (colors.length > 0) parts.push(part("Colors", "Color sources", colors.map((k) => `${k} ${Math.round(src[k] || 0)}`).join(" · "), "enough per color", colorRatio, 8, "Main colors want about 14 sources in 60 cards, splashes about 9."));
+  if (colors.length > 0) parts.push(part("Colors", "Color sources", colors.map((k) => `${k} ${Math.round(src[k] || 0)}`).join(" · "), "enough per color", colorRatio, 8, "Main colors want about 14 sources in 60 cards, splashes about 9. "+sourceNote));
   if (theme) parts.push(part("Synergy", "Synergy · " + theme, themeCount, Math.round(10 * scale), themeCount / (10 * scale), 8, `Cards that feed the ${theme.toLowerCase()} plan.`));
   // Shuffled games of this list: keepable 7s, land drops, an early play, interaction in hand.
   const tagOf = (r) => {
@@ -379,7 +377,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     Interaction: `${hardInteraction} answer copies and ${tempoInteraction} temporary-interaction copies (${interaction} effective units). ${plan} uses a rough target of ${Math.round(T.inter * scale)}; tap and airbend buy time but do not permanently remove a threat.`,
     Threats: `${threats} ${plan === "Control" ? "win conditions" : "threats"}${threatQ < 0.95 ? ` (creatures counted by quality: ${Math.round(threatQ * 100)}% of a fair rate)` : ""}${burn ? `, with ${burn} burn spells counted as half a threat each` : ""}; about ${Math.round(T.threats * scale)} keeps pressure on after removal.`,
     Flow: `${flow} supported draw/selection copies, about ${effectiveFlow.toFixed(1)} effective units after mapped costs and conditions. Cycling/channel require discarding the card and paying their own cost, not its creature casting cost; absent mandatory sacrifice fodder is excluded.`,
-    Colors: `Color sources: ${colors.map((k) => `${k} ${Math.round(src[k] || 0)}`).join(", ")}. A main color wants about 14 sources in 60 and a splash about 9.`,
+    Colors: `Color sources: ${colors.map((k) => `${k} ${Math.round(src[k] || 0)}`).join(", ")}. A main color wants about 14 sources in 60 and a splash about 9. ${sourceNote}`,
     Synergy: `${themeCount} cards feed the ${theme?.toLowerCase()} plan; about ${Math.round(10 * scale)} makes it reliable.`,
   };
   for (const x of parts) {
@@ -394,6 +392,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     caps: capped.caps,
     parts,
     goldfish: gold,
+    manaSources:{status:conditionalMana.length?'partial':'bounded',colors:src,conditional:conditionalMana,note:sourceNote},
     simulationLibrary: qty(simulationRows),
     sims: [
       { label: "Keepable opening 7", p: Sx("keep"), target: 0.85, note: `${lo}–${hi} lands` },

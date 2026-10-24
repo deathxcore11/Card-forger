@@ -95,7 +95,7 @@ async function assertMana(page,f){
  if(f.kind==='optional'){assert.match(text,/blue mana or 2 life/);assert.match(text,/black mana or two mana of any type/);assert.match(text,/optional color is not forced/);}
  if(f.kind==='missing')assert.match(text,/Synthetic incomplete casting data: casting-cost data is missing or unsupported/);
  if(f.kind==='faces')assert.match(text,/Synthetic dawn \/\/ Synthetic tide: alternative spell costs \{W\} or \{U\}\{U\}/);
- if(f.kind==='source-gap')assert.match(text,/Synthetic unlisted source: no mana production is listed in the cached source data; it is not counted in the colored-source comparison/);
+ if(f.kind==='source-gap')assert.match(text,/Synthetic unlisted source: no mana production is listed in the cached source data or no unconditional ability is verified; it is not counted in the colored-source comparison/);
  const details=panel.locator('details');assert.equal(await details.count(),1);assert.equal(await details.getAttribute('open'),null);
  await details.locator('summary').click();assert.notEqual(await details.getAttribute('open'),null);
  const counted=await details.locator('ul').innerText();

@@ -10,7 +10,8 @@ import { atLeastOne } from './deckaudit.js';
 export const LAND_SUBTYPES = Object.freeze(['Cave','Cloud','Desert','Gate','Lair','Locus','Mine','Planet','Power-Plant','Sphere','Tower','Town',"Urza's"]);
 // Declared construction targets, not universal deck rules. Access is the chance
 // to see at least one enabler in the first `seen` library cards (opening seven
-// plus four draws, no mulligan); tutors, extra draws and sequencing are excluded.
+// plus four draws, no mulligan). Finder cards count as potential enablers;
+// paying for/resolving their searches, extra draws and sequencing are excluded.
 export const LAND_REQUIREMENT_POLICY = Object.freeze({
  seen:11,
  commander:Object.freeze({target:12,minimum:8,accessTarget:.6}),
@@ -31,6 +32,11 @@ function ownText(c) {
   text = text.replace(new RegExp(esc(name),'gi'),'this card');
  return text;
 }
+// Sacrificing in a trigger condition is an event the card needs, not one it causes.
+const sacrificeEffect = clause => clause.replace(/^\s*(?:when|whenever|if)\b[^,]*,\s*/i,'');
+// A sacrifice cost followed by clearing your graveyard is not replay setup.
+// The card may still be useful graveyard interaction; only this role is withheld.
+const keepsGraveyard = clause => !/\bexile (?:all graveyards|all (?:cards|lands|land cards) from (?:all|your|each player's) graveyards?)\b/i.test(clause);
 const clauses = c => ownText(c).split(/[.\n]/).map(s=>s.trim()).filter(Boolean);
 const typeLines = c => c?.card_faces?.length ? c.card_faces.map(f=>f.type_line||'') : [typeText(c)];
 export function hasLandSubtype(c, subtype) {
@@ -65,7 +71,7 @@ export function landSubtypeRoles(c, subtype) {
  if (hasLandSubtype(c,subtype)) {
   out.push({kind:'source',text:`${typeLines(c).find(l=>/\bLand\b/.test(l))}`});
   // A subtype land that can leave for your graveyard sets up graveyard replay.
-  const self = (c.keywords||[]).includes('Cycling') ? 'Cycling' : clauses(c).find(t=>/\bsacrifice this (?:card|land)\b/i.test(t));
+  const self = (c.keywords||[]).includes('Cycling') ? 'Cycling' : clauses(c).find(t=>keepsGraveyard(t)&&/\bsacrifice this (?:card|land)\b/i.test(sacrificeEffect(t)));
   if (self) out.push({kind:'setup',text:self});
  }
  for (const clause of clauses(c)) {
@@ -78,7 +84,7 @@ export function landSubtypeRoles(c, subtype) {
    if (specific || generic) out.push({kind:/onto the battlefield/i.test(clause)?'fetch':'tutor',text:clause,generic:!specific,conditional:/\bif\b/i.test(clause)});
    continue;
   }
-  if (new RegExp('\\b[Ss]acrifice (?:a|an|another) (?:'+esc(subtype)+'|land)\\b').test(clause)) {out.push({kind:'setup',text:clause});continue;}
+  if (keepsGraveyard(clause) && new RegExp('\\b[Ss]acrifice (?:a|an|another) (?:'+esc(subtype)+'|land)\\b').test(sacrificeEffect(clause))) {out.push({kind:'setup',text:clause});continue;}
   if (!land && named) out.push({kind:'payoff',text:clause});
  }
  return out;
@@ -113,7 +119,7 @@ export function inspectLandRequirements(rows, { commander = '' } = {}) {
    copies:enablerCopies,sources:{copies:sourceCopies,cards:cards(sources)},grants:{copies:grantCopies,cards:cards(grants)},finders:{copies:finderCopies,cards:sourceCopies?cards(finders):[]},
    setup:{copies:setupCopies,cards:sourceCopies?cards(setup):[]},payoffs:{copies:copies(payoffs),cards:cards(payoffs)},
    recursion:recursion?{status:recursionOK?'supported':'partial'}:null,policy:{...policy,setupMinimum:LAND_REQUIREMENT_POLICY.setupMinimum},
-   summary:`${sourceCopies} ${name}, ${finderCopies} ${finderCopies===1?'way':'ways'} to find them${grantCopies?`, ${grantCopies} that make lands ${name}`:''}${recursion?`, ${setupCopies} ${setupCopies===1?'way':'ways'} to put them in your graveyard`:''}. ${Math.round(access*100)}% chance to see at least one in the first ${seen} of ${N} library cards (no mulligan; extra draws and tutors not counted).`});
+   summary:`${sourceCopies} ${name}, ${finderCopies} ${finderCopies===1?'way':'ways'} to find them${grantCopies?`, ${grantCopies} that make lands ${name}`:''}${recursion?`, ${setupCopies} ${setupCopies===1?'way':'ways'} to put them in your graveyard`:''}. ${Math.round(landAccess*100)}% chance to draw a ${req.subtype}; ${Math.round(access*100)}% chance to draw a potential enabler (including finder/grant cards) in the first ${seen} of ${N} library cards. No mulligans or extra draws modeled; drawing a finder is not proof of paying for or resolving it.`});
   if (status !== 'supported') issues.push(`${req.commander} needs ${name}: ${req.roles.map(r=>r.text).join('; ')}. This list has ${sourceCopies} ${name} and ${finderCopies} ways to find them (target at least ${policy.minimum} with ${Math.round(policy.accessTarget*100)}% access${req.primary==='graveyard'?` and ${LAND_REQUIREMENT_POLICY.setupMinimum} ways to put them in your graveyard`:''}). Generic land, landfall and recursion cards do not count.`);
   else if (recursion && !recursionOK) notes.push(`${label}: replaying ${name} from your graveyard has ${setupCopies} way${setupCopies===1?'':'s'} to put one there. That optional route is partial; the ${req.subtype} entering plan is established.`);
  }

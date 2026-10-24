@@ -39,7 +39,7 @@ function cardDetails(game, c) {
   return game === 'mtg' ? JSON.stringify({ mana: c.mana_cost, mv: c.cmc, identity: c.color_identity, power: c.power, toughness: c.toughness, produces: c.produced_mana, faces: c.card_faces?.map(x => ({ name: x.name, type: x.type_line, mana: x.mana_cost, text: x.oracle_text })) })
     : JSON.stringify(game === 'ptcg' ? { category:c.category, prize:c.prize, tacticalRole:pokemonRole(c), stage: c.stage, evolvesFrom: c.evolveFrom, hp: c.hp, types: c.types, abilities: c.abilities, attacks: c.attacks, weaknesses: c.weaknesses, retreat: c.retreat, regulationMark: c.regulationMark } : { attribute: c.attribute, race: c.race, level: c.level, atk: c.atk, def: c.def, link: c.link, archetype: c.archetype });
 }
-const cardEntry = (game, id, name, qty, zone, c) => ({ id, name: c?.name || name, qty, zone, type: typeOf(c), text: plain(c?.oracle_text || c?.text || c?.desc || ''), details: cardDetails(game, c), known: !!c && !c.brief });
+const cardEntry = (game, id, name, qty, zone, c) => ({ id, name: c?.name || name, qty, zone, type: typeOf(c), text: plain(c?.oracle_text || c?.text || c?.desc || ''), details: cardDetails(game, c), known: !!c && !c.brief, ...(game === 'mtg' ? { legalities: c?.legalities || {} } : {}) });
 
 // The card's real cost or role, from card data (never from the AI).
 export function costOf(game, c) {

@@ -70,7 +70,7 @@ const two = cleanDeck({ ...payload, cards: [card, { ...card, id: 'c1', name: 'Ot
 const mixed = validateReview({ ...review, pilot: { hand: null, lines: [{ ...review.pilot.lines[0], steps: [{ turn: 1, cardId: 'c0', kind: 'play', action: 'Cast Other Engine', quote: '' }, review.pilot.lines[0].steps[1]] }] } }, two);
 assert.equal(mixed.pilot.lines.length, 0);
 // Swaps: cut from the deck (never the commander), add only from owned candidates.
-const withOwned = cleanDeck({ ...payload, cards: [card, { ...card, id: 'c1', name: 'Leader', zone: 'commander', qty: 1 }], candidates: [{ id: 'o0', name: 'Owned Bauble', type: 'Artifact', text: 'Draw a card.', details: '', known: true }] });
+const withOwned = cleanDeck({ ...payload, cards: [card, { ...card, id: 'c1', name: 'Leader', zone: 'commander', qty: 1 }], candidates: [{ id: 'o0', name: 'Owned Bauble', legalities: { modern: 'legal' }, type: 'Artifact', text: 'Draw a card.', details: '', known: true }] });
 const swap = { cut: 'c0', add: 'o0', role: 'Fodder', gain: 'More fodder', loss: 'Less draw', lost: 'None', test: 'Goldfish', evidence: [{ cardId: 'o0', quote: 'Draw a card.' }] };
 const sw = validateReview({ ...review, improve: [swap, { ...swap, add: 'Black Lotus' }, { ...swap, cut: 'c1' }, { ...swap, add: '' }] }, withOwned);
 assert.deepEqual(sw.improve.map(x => [x.cutName, x.addName]), [['Test Engine', 'Owned Bauble'], ['Test Engine', '']], 'unowned adds and commander cuts are dropped');
@@ -182,11 +182,11 @@ assert.equal(fpay.hand.length, 7); assert.ok(!fpay.hand.includes('c0'), 'the com
 assert.deepEqual(reviewPayload('mtg', fdeck, flook, fp).hand, fpay.hand, 'same list, same hand');
 // Owned swap candidates are sent; the app re-scores a swap it receives.
 let rescored = 0;
-const hooks = { candidates: () => [{ name: 'Owned Legend', type_line: 'Legendary Creature', oracle_text: 'Haste', cmc: 2 }], rescore: (out, add) => { rescored++; assert.equal(add.name, 'Owned Legend'); return { before: 70, after: 74, beforeIssues: [], issues: [] }; } };
+const hooks = { candidates: () => [{ name: 'Owned Legend', legalities: { commander: 'legal' }, type_line: 'Legendary Creature', oracle_text: 'Haste', cmc: 2 }], rescore: (out, add) => { rescored++; assert.equal(add.name, 'Owned Legend'); return { before: 70, after: 74, beforeIssues: [], issues: [] }; } };
 aiReviewPanel('mtg', fdeck, flook, fp, hooks);
 let sent;
 await runAiReview('mtg:f', () => {}, async (u, init) => { sent = JSON.parse(init.body); return Response.json({ ...review, improve: [{ ...swap, cut: 'c3', cutName: 'Legend 2', add: 'o0', addName: 'Owned Legend' }], omitted: 0 }); });
-assert.equal(sent.candidates[0].name, 'Owned Legend'); assert.equal(sent.candidates[0].id, 'o0');
+assert.deepEqual(sent.candidates[0].legalities, { commander: 'legal' }); assert.equal(sent.candidates[0].name, 'Owned Legend'); assert.equal(sent.candidates[0].id, 'o0');
 const { showAiReview: _s } = await import('./ai-review.js');
 const html = aiReviewPanel('mtg', fdeck, flook, fp, hooks);
 assert.match(html, /1 swap\b/);

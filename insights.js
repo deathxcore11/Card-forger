@@ -21,6 +21,8 @@ import {
 import { commanderTheme, tribalSupport, themeSupport } from "./planner.js";
 import { mtgTagged, mtgTagsReady } from "./mtg-tags.js";
 import { mtgResourceProfile } from "./mtg-effects.js";
+import { mtgManaSourceProfile } from './mtg-mana-sources.js';
+import { commanderCardConditions } from './mtg-commander-conditions.js';
 import { commanderCriteria } from "./commander-criteria.js";
 
 const lower = (c) => rulesText(c).toLowerCase();
@@ -44,6 +46,7 @@ const DRAW = [
   /look at the top .*put (?:one|two|that card|it) into your hand/,
 ];
 const REMOVAL = [
+  /deals? \d+ damage to each creature (?:blocking|blocked by)\b/,
   /(?:destroy|exile) target (?:creature|artifact|enchantment|planeswalker|battle|permanent|nonland permanent|nonland|attacking|blocking|tapped|creature or|artifact or|noncreature)/,
   /counter target (?:spell|creature spell|noncreature spell|activated|triggered)/,
   /deals? (?:\d+|x|that much) damage to (?:any target|target creature|target planeswalker|target attacking|another target)/,
@@ -55,7 +58,7 @@ const REMOVAL = [
 const WIPE = [
   /(?:destroy|exile) (?:all|each) (?:other )?(?:creatures|nonland permanents|artifacts|enchantments|permanents|nontoken|creature|non-?\w+ creatures|attacking)/,
   /all (?:other )?creatures get -\d+\/-\d+/,
-  /deals? \d+ damage to each (?:creature|other creature|opponent and each creature)/,
+  /deals? \d+ damage to each (?:creature|other creature|opponent and each creature)\b(?! (?:blocking|blocked by)\b)/,
   /return all (?:nonland permanents|creatures|other creatures)/,
   /each player sacrifices (?:all|half)/,
 ];
@@ -106,6 +109,12 @@ export function rampKind(c) {
 
 export function synergyTest(commander) {
   if (!commander) return null;
+  const cardConditions = commanderCardConditions(commander);
+  if (cardConditions.length) return {
+    label:cardConditions.map(c=>c.label).join(' / '),
+    test:c=>!!c&&!isLand(c)&&cardKey(c.name)!==cardKey(commander.name)&&cardConditions.some(condition=>condition.matches(c)),
+    conditions:cardConditions.map(({label,evidence,limitation})=>({label,evidence,limitation})),
+  };
   if(/tap a nonland permanent for mana/i.test(rulesText(commander))) return {
     label:'Nonland mana engine',
     test:c=>!!c&&!isLand(c)&&cardKey(c.name)!==cardKey(commander.name)&&(/(?:add \{|add (?:one|two|three|an amount)|untap (?:target|this)|activated abilities)/i.test(rulesText(c)) || /non-human creature/i.test(rulesText(c)))
@@ -304,15 +313,12 @@ export function engineProfile(deck, catalog) {
     }
     if (isLand(c)) {
       counts.Lands += row.qty;
-      const produced = new Set((Array.isArray(c.produced_mana) ? c.produced_mana : []).filter(k => k in sources));
-      // Basic land subtypes intrinsically supply their color, including snow
-      // basics and older/partial records with an empty produced_mana array.
-      if (isBasic(c))
-        for (const [land, color] of Object.entries({ Plains: "W", Island: "U", Swamp: "B", Mountain: "R", Forest: "G" }))
-          if (new RegExp("\\b" + land + "\\b").test(typeText(c) + " " + c.name)) produced.add(color);
-      if (!isBasic(c) && (!Array.isArray(c.produced_mana) || !c.produced_mana.length))
-        manaSourceNotes.push(`${c.name}: no mana production is listed in the cached source data; it is not counted in the colored-source comparison.`);
-      for (const color of produced) sources[color] += row.qty;
+      const source = mtgManaSourceProfile(c,{commanderIdentity:commander?.color_identity});
+      if (source.unknown)
+        manaSourceNotes.push(`${c.name}: no mana production is listed in the cached source data or no unconditional ability is verified; it is not counted in the colored-source comparison.`);
+      for (const route of source.conditional)
+        manaSourceNotes.push(`${c.name}: ${route.reason} ${route.evidence} This route is not counted as unconditional fixing.`);
+      for (const color of source.colors) if (color in sources) sources[color] += row.qty;
       if (c.layout === "modal_dfc" && c.card_faces?.slice(1).some(f => !/\bLand\b/.test(f.type_line || "")))
         manaEntries.push({ card: c, qty: row.qty });
       continue;
