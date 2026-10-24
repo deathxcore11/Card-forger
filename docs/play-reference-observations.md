@@ -78,6 +78,42 @@ a CardStashy product asset.
 | After target confirmation, Pay Mana offered Auto/Cancel and described cancellation as refunding everything; Auto tapped one Mountain. The stack then showed that the opponent could respond. | Preview legal payment, retain explicit confirmation/cancel controls and animate accepted taps. Do not promise general undo after committed information or rules consequences. | Verify actual mana sources/restrictions, pending-cost ownership, cancellation semantics, and a real engine response window after accepted casting. |
 | A later state showed Bolt in our graveyard, the log naming Golgari Gardens as target and reporting three damage/life lost; opponent life was 17 and ours 20. The CPU then drew an unnamed card and played a second Swamp; the displayed turn advanced from 2 to 4. | Make accepted resolution, zones, life totals and viewer-safe logs agree. Render phase progression from accepted engine events. | No CPU response spell was observed, so this does not test counterspell/removal responses or prove an optimal pass. Independent rules assertions and an exact accepted-action trace are still required. |
 
+### Linked discard and alternate-cost cast
+
+In the same guest match, a second Mountain brought the displayed available mana
+to two. Faithless Looting was selected and paid with one Mountain. Its resolution
+drew Fireblast and a Mountain, then opened a required two-card discard choice.
+The prompt grouped three Mountains behind quantity controls while displaying
+Fiery Temper separately. Selecting Fiery Temper and one Mountain enabled the
+two-of-two confirmation.
+
+After confirmation, Fiery Temper appeared in exile and a madness trigger appeared
+on the stack. A separate Yes/No prompt offered playing it. Accepting led to
+target selection, then a one-mana payment prompt. Auto paid the remaining
+Mountain. The later log recorded the Fiery Temper cast and three damage;
+opponent life changed from 17 to 14, our life stayed 20, Fiery Temper reached
+our graveyard, and the displayed stack emptied. No opposing response spell was
+observed. The final view also highlighted Fireblast while available mana was
+zero; that visible affordance alone does not certify its legal-action coverage.
+
+This is a useful authored CPU/interaction scenario: reserve the required mana
+when evaluating a discard-to-madness sequence, distinguish the discard event,
+trigger and actual cast, and preserve every mandatory choice and real response
+window. Grouped duplicate cards must still select exact engine instances.
+Optional casting and declining it need separate legal continuations; cancelling
+an unfinished cast must not undo an already committed discard. This remains
+a reference scenario, not a completed CardStashy madness regression or proof
+of the rival CPU's decision quality.
+
+Current card text for Faithless Looting, Fiery Temper and Fireblast was checked
+through Scryfall's named-card API on October 24. Fireblast's alternate payment
+sacrifices two Mountains: zero mana is not zero strategic cost. A future CPU
+fixture should compare an exact lethal line against an early nonlethal line
+that sacrifices its development, without turning that example into an
+unconditional strategy rule.
+
+![Moxgate guest reference after the madness sequence](../experiments/phase-engine/reference-moxgate-madness-20261024.jpg)
+
 This observation did not establish a 30-second expiry or a complete timer policy.
 CardStashy requires a visible **30-second response window** with authority-owned,
 persisted timing and explicit behavior on expiry. The isolated clock contract

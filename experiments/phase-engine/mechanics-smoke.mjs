@@ -16,9 +16,9 @@ function headResult(selected){
  return {signature:signature(e),receipt:t.receipt(),selectionWasGenerated:t.trace[0].generatedCandidate};
 }
 if(process.argv[2]==='--resume-head'){
- const saved=JSON.parse(await readFile(process.argv[3],'utf8'));e.restore_game_state(saved.engine);const result=headResult(saved.selected);assert.equal(networkCalls(),0);console.log(JSON.stringify({...result,networkCalls:0}));
+ const saved=JSON.parse(await readFile(process.argv[3],'utf8'));e.restore_game_state(saved.engine);const result=headResult(saved.selected);assert.equal(networkCalls(),0);console.log(JSON.stringify({...result,provenance,networkCalls:0}));
 }else{
- const report={upstreamCommit:PIN,provenance,runtime:process.version,setup:'Engineered persisted-state positions using unchanged upstream card definitions. Setup movements are not claimed legal gameplay histories.',cases:[],limits:'Selected actual-WASM scenarios only. No broad card/mechanic certification, browser UI, contextual CPU, multiplayer or production package claim. Candidate actions are nonexhaustive; authoritative submit acceptance is reported separately.'};
+ const report={upstreamCommit:PIN,runtimeOrigin:provenance.runtimeOrigin,sourceCommit:provenance.sourceCommit,buildIdentity:provenance.buildIdentity,provenance,runtime:process.version,setup:'Engineered persisted-state positions using unchanged upstream card definitions. Setup movements are not claimed legal gameplay histories.',cases:[],limits:'Selected actual-WASM scenarios only. No broad card/mechanic certification, browser UI, contextual CPU, multiplayer or production package claim. Candidate actions are nonexhaustive; authoritative submit acceptance is reported separately.'};
  async function run(name,body){const start=performance.now();try{const result=await body();report.cases.push({name,passed:true,milliseconds:Math.round(performance.now()-start),...result});console.log(name+': PASS');}catch(error){report.cases.push({name,passed:false,milliseconds:Math.round(performance.now()-start),error:String(error?.stack||error),...(error?.observed?{observed:error.observed}:{})});console.log(name+': FAIL '+String(error));}}
  await run('Head Games: correct opponent, legal noncandidate search, privacy window and fresh-process restore',async()=>{
   const f=prepare(e,deck('Swamp','Head Games','Head Games','Head Games','Head Games'),deck('Forest','Ornithopter','Ornithopter','Ornithopter','Ornithopter'));
@@ -34,7 +34,7 @@ if(process.argv[2]==='--resume-head'){
   const original=headResult(selected);assert.equal(original.selectionWasGenerated,false);
   assert.deepEqual(state(e).players[0].library,ownLibrary);assert(originalHand.every(id=>state(e).players[1].library.includes(id)));assert.equal(state(e).objects[spell].zone,'Graveyard');
   for(const id of selected){assert.equal(e.get_filtered_game_state(0).state.objects[id].name,'Hidden Card');assert.notEqual(e.get_filtered_game_state(1).state.objects[id].name,'Hidden Card');}
-  const child=spawnSync(process.execPath,[import.meta.filename,'--resume-head',path],{encoding:'utf8',maxBuffer:5*1024*1024});assert.equal(child.status,0,child.stderr||child.stdout);const resumed=JSON.parse(child.stdout.trim());assert.deepEqual(resumed.signature,original.signature);assert.equal(resumed.networkCalls,0);
+  const child=spawnSync(process.execPath,[import.meta.filename,'--resume-head',path],{encoding:'utf8',env:{...process.env},maxBuffer:5*1024*1024});assert.equal(child.status,0,child.stderr||child.stdout);const resumed=JSON.parse(child.stdout.trim());assert.deepEqual(resumed.provenance,provenance,'fresh child restore must use the same exact source/build receipt and runtime bytes');assert.deepEqual(resumed.signature,original.signature);assert.equal(resumed.networkCalls,0);
   return {setupSha256,beforeSearch:t.receipt(),search:original.receipt,noncandidateChoiceAccepted:true,correctLibraryShuffledOnly:true,temporarySearchFacePermission:true,freshProcessExactResult:true};
  });
  for(const doubling of [false,true])await run('Raise the Alarm: '+(doubling?'Parallel Lives creates four':'two Soldiers'),()=>{

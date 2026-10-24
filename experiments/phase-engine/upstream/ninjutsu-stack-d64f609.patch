@@ -1,0 +1,1547 @@
+diff --git a/crates/engine/src/game/casting.rs b/crates/engine/src/game/casting.rs
+index 64dbc231a6178919138b736d9c3a611ac48678b7..98d482d19ceb7452aa3e206fc00b6546ed6d861e 100644
+--- a/crates/engine/src/game/casting.rs
++++ b/crates/engine/src/game/casting.rs
+@@ -29647,9 +29647,9 @@ pub(crate) fn require_activation_record(
+ /// ability on the stack performs once the entry is pushed — the per-turn
+ /// activation record, the priority-window activation guard, the
+ /// `AbilityActivated` event (CR 606.2 classifies loyalty vs. normal), and the
+-/// CR 702.142b boast event. The single authority for the three placements: the
+-/// direct push, [`casting_costs::push_activated_ability_to_stack`]'s entry, and
+-/// the loyalty tail — three explicit call sites. Steps whose position differs
++/// CR 702.142b boast event. The shared placement authority for the
++/// direct push, [`casting_costs::push_activated_ability_to_stack`]'s entry,
++/// loyalty tail and typed ninjutsu announcement. Steps whose position differs
+ /// per site (crime commitment, the CR 606.3 loyalty record, trigger collection)
+ /// stay at their sites.
+ ///
+@@ -29680,11 +29680,19 @@ pub(crate) fn record_activated_ability_placed(
+             .stack
+             .back()
+             .is_some_and(|entry| entry.id == placed_entry
+-                && matches!(
++                && (matches!(
+                     &entry.kind,
+                     StackEntryKind::ActivatedAbility { source_id: placed, ability }
+                         if *placed == source_id && ability.ability_index == Some(ability_index)
+-                )),
++                ) || matches!(
++                    &entry.kind,
++                    StackEntryKind::KeywordAction {
++                        action: crate::types::ability::KeywordAction::Ninjutsu { source, .. },
++                    } if source.reference.object_id == source_id
++                        && activation_ability_definition(state, source_id, ability_index)
++                            .as_ref()
++                            .is_some_and(super::keywords::is_ninjutsu_family_marker_ability)
++                ))),
+         "record_activated_ability_placed must name the entry its caller just pushed"
+     );
+     // CR 606.1 + CR 602.2 + CR 602.1a: the kind, announcement zone and
+diff --git a/crates/engine/src/game/derived_views.rs b/crates/engine/src/game/derived_views.rs
+index 35f8710f1f2386cc1628c4a160871e3fe6e1abb2..3896e32cfdb2313c80a6ae620e882868f4984917 100644
+--- a/crates/engine/src/game/derived_views.rs
++++ b/crates/engine/src/game/derived_views.rs
+@@ -26,8 +26,8 @@ use crate::game::stack::{
+     stack_revealed_card_names, StackDisplayGroup,
+ };
+ use crate::types::ability::{
+-    ContinuousModification, Duration, GameRestriction, KeywordAction, ProhibitedActivity,
+-    RestrictionExpiry, RestrictionPlayerScope, TargetFilter, TargetRef,
++    ContinuousModification, Duration, GameRestriction, KeywordAction, NinjutsuVariant,
++    ProhibitedActivity, RestrictionExpiry, RestrictionPlayerScope, TargetFilter, TargetRef,
+ };
+ use crate::types::attribution::EffectRef;
+ use crate::types::card::TokenImageRef;
+@@ -2792,6 +2792,10 @@ fn stack_source_name(state: &GameState, entry: &StackEntry) -> String {
+ 
+ fn keyword_action_label(action: &KeywordAction) -> String {
+     match action {
++        KeywordAction::Ninjutsu { variant, .. } => match variant {
++            NinjutsuVariant::Ninjutsu => "Ninjutsu".to_string(),
++            NinjutsuVariant::CommanderNinjutsu => "Commander ninjutsu".to_string(),
++        },
+         KeywordAction::Equip { .. } => "Equip".to_string(),
+         KeywordAction::Crew { .. } => "Crew".to_string(),
+         KeywordAction::Saddle { .. } => "Saddle".to_string(),
+@@ -2836,6 +2840,9 @@ fn stack_entry_targets(state: &GameState, entry: &StackEntry) -> Vec<StackTarget
+ 
+ fn keyword_action_targets(action: &KeywordAction) -> Vec<TargetRef> {
+     match action {
++        // CR 702.49a + CR 702.49c + CR 702.49d: Returning an attacker is a cost; its combat destination
++        // is not a target of the ninjutsu ability.
++        KeywordAction::Ninjutsu { .. } => Vec::new(),
+         KeywordAction::Equip {
+             target_creature_id, ..
+         } => vec![TargetRef::Object(*target_creature_id)],
+diff --git a/crates/engine/src/game/effects/copy_spell.rs b/crates/engine/src/game/effects/copy_spell.rs
+index a26f15fd14fdd80077f7788e7bbe51879e695ea7..ece703181ebcb93d0795546dedaeb229fb25b6a1 100644
+--- a/crates/engine/src/game/effects/copy_spell.rs
++++ b/crates/engine/src/game/effects/copy_spell.rs
+@@ -217,7 +217,8 @@ pub fn resolve(
+ 
+     // CR 707.10 / CR 707.10b: spell copies source themselves; ability copies
+     // have the same source as the original ability.
+-    let copy_source_id = stack_entry_source_id_for_copy(&copy_kind, copy_id);
++    let copy_source_id =
++        stack_entry_source_id_for_copy(&copy_kind, copy_id, top_entry.entry.source_id);
+     let copy_entry = StackEntry {
+         id: copy_id,
+         source_id: copy_source_id,
+@@ -1072,11 +1073,14 @@ fn rewrite_copy_spell_object_targets(
+     }
+ }
+ 
+-fn stack_entry_source_id_for_copy(kind: &StackEntryKind, copy_id: ObjectId) -> ObjectId {
++fn stack_entry_source_id_for_copy(
++    kind: &StackEntryKind,
++    copy_id: ObjectId,
++    original_source_id: ObjectId,
++) -> ObjectId {
+     match kind {
+-        StackEntryKind::Spell { .. }
+-        | StackEntryKind::KeywordAction { .. }
+-        | StackEntryKind::CombatDamage { .. } => copy_id,
++        StackEntryKind::Spell { .. } | StackEntryKind::CombatDamage { .. } => copy_id,
++        StackEntryKind::KeywordAction { .. } => original_source_id,
+         StackEntryKind::ActivatedAbility { source_id, .. }
+         | StackEntryKind::TriggeredAbility { source_id, .. } => *source_id,
+     }
+diff --git a/crates/engine/src/game/engine.rs b/crates/engine/src/game/engine.rs
+index 06bacb47b3d1385c05ca57a2b1ae7cb688850536..88072d3af4740c3131db19d570a36b91103bad31 100644
+--- a/crates/engine/src/game/engine.rs
++++ b/crates/engine/src/game/engine.rs
+@@ -19257,7 +19257,7 @@ fn handle_crew_activation(
+ /// priority. Called by the *_announcement handlers after costs have been paid
+ /// and targets selected. The payload is resolved via `stack::resolve_top`
+ /// once all players pass priority.
+-fn push_keyword_action(
++pub(crate) fn push_keyword_action(
+     state: &mut GameState,
+     player: PlayerId,
+     source_id: ObjectId,
+@@ -19266,6 +19266,11 @@ fn push_keyword_action(
+ ) -> WaitingFor {
+     let entry_id = ObjectId(state.next_object_id);
+     state.next_object_id += 1;
++    // CR 702.49b: reveal the exact hand/command occurrence until this ability
++    // leaves the stack. The existing lease also survives a resolution pause.
++    if let KeywordAction::Ninjutsu { source, .. } = &action {
++        state.grant_stack_bound_reveal(entry_id, &[source.reference.object_id]);
++    }
+     super::stack::push_to_stack(
+         state,
+         StackEntry {
+diff --git a/crates/engine/src/game/engine_resolution_choices.rs b/crates/engine/src/game/engine_resolution_choices.rs
+index 34b1ed706291a4714383fc518821dcf5e95604bd..f6cebd603a91f3aa0c9ac797495e940c65b3dc55 100644
+--- a/crates/engine/src/game/engine_resolution_choices.rs
++++ b/crates/engine/src/game/engine_resolution_choices.rs
+@@ -10347,16 +10347,15 @@ pub(crate) fn run_batch_completion(
+             crate::game::zone_pipeline::BatchMoveResult::Done
+         }
+         // CR 702.49 + CR 616.1: the ninja's parked battlefield entry resolved —
+-        // run the deferred post-entry ninjutsu work (cast-variant tag,
+-        // CR 702.49c combat placement, CR 702.49a trigger event) exactly once.
+-        // No priority/continuation drain: ninjutsu is a keyword activation
+-        // whose surrounding action pipeline owns priority.
++        // run its cast-variant tag and CR 702.49c combat placement exactly once.
++        // The surrounding stack-resolution continuation owns priority.
+         BatchCompletion::NinjutsuPlacement {
+             player,
+             ninjutsu_obj_id,
+             cast_variant,
+             defending_player,
+             attack_target,
++            attack_target_identity,
+         } => {
+             crate::game::keywords::finish_ninjutsu_entry(
+                 state,
+@@ -10365,6 +10364,7 @@ pub(crate) fn run_batch_completion(
+                 cast_variant,
+                 defending_player,
+                 attack_target,
++                attack_target_identity,
+                 events,
+             );
+             crate::game::zone_pipeline::BatchMoveResult::Done
+diff --git a/crates/engine/src/game/keywords.rs b/crates/engine/src/game/keywords.rs
+index ef4a53e1240b00f443868b4d92dd40ec540bb34b..1be05e295103806cb0289bd5b32544508892316f 100644
+--- a/crates/engine/src/game/keywords.rs
++++ b/crates/engine/src/game/keywords.rs
+@@ -6,11 +6,12 @@ use crate::game::game_object::GameObject;
+ use crate::game::zone_pipeline::{self, ZoneMoveRequest};
+ use crate::parser::oracle_util::parse_subtype;
+ use crate::types::ability::{
+-    AbilityCost, AbilityDefinition, CastVariantPaid, Effect, NinjutsuVariant, RuntimeHandler,
++    AbilityCost, AbilityDefinition, CastVariantPaid, Effect, KeywordAction, NinjutsuVariant,
++    RuntimeHandler,
+ };
+ use crate::types::events::GameEvent;
+ use crate::types::game_state::{GameState, WaitingFor};
+-use crate::types::identifiers::{CardId, ObjectId};
++use crate::types::identifiers::{CardId, ObjectId, ObjectIdentityBinding, ObjectIncarnationRef};
+ use crate::types::keywords::{
+     BestowCost, BlitzCost, EmbalmCost, EmergeCost, EternalizeCost, EvokeCost, FlashbackCost,
+     GiftKind, Keyword, KeywordKind, ProtectionColorSet, ProtectionTarget,
+@@ -922,14 +923,11 @@ pub fn is_ninjutsu_family_marker_ability(ability: &AbilityDefinition) -> bool {
+         .is_some_and(|cost| matches!(cost, AbilityCost::NinjutsuFamily { .. }))
+ }
+ 
+-/// CR 702.49a-c: Resolve Ninjutsu-family activation.
++/// CR 702.49a-d + CR 602.2: Announce a Ninjutsu-family activation.
+ ///
+-/// Validates the activation, returns the specified creature to its owner's hand,
+-/// and puts the Ninjutsu creature onto the battlefield tapped and attacking the
+-/// same player/planeswalker as the returned creature.
+-///
+-/// CR 702.49c: The creature is never "declared as an attacker" so it
+-/// does not fire "whenever ~ attacks" triggers.
++/// Pay mana and return the unblocked attacker as costs, then put the typed
++/// ability on the stack. The revealed card remains in its source zone until
++/// resolution, giving other players priority to respond.
+ pub fn activate_ninjutsu(
+     state: &mut GameState,
+     player: PlayerId,
+@@ -953,6 +951,10 @@ pub fn activate_ninjutsu(
+     }
+     let variant = ninjutsu_family_variant(ninjutsu_obj)
+         .ok_or("Card does not have a Ninjutsu-family keyword")?;
++    let source = ObjectIdentityBinding::new(
++        ObjectIncarnationRef::from_object(ninjutsu_obj),
++        ninjutsu_obj.zone,
++    );
+     if ninjutsu_obj.zone == Zone::Command && !matches!(variant, NinjutsuVariant::CommanderNinjutsu)
+     {
+         return Err("Only commander ninjutsu can be activated from the command zone".to_string());
+@@ -997,6 +999,10 @@ pub fn activate_ninjutsu(
+             (attacker_info.defending_player, attacker_info.attack_target)
+         }
+     };
++    // CR 400.7 + CR 702.49c: preserve the attack's selected permanent
++    // occurrence, which may already have left before activation. A fresh
++    // object lookup could bind a different planeswalker or battle.
++    let attack_target_identity = combat.attacked_permanents.get(&creature_to_return).copied();
+ 
+     // Validate: creature controlled by player and still on the battlefield.
+     // CR 506.4 + CR 702.49a: A creature that died or left combat before the
+@@ -1012,6 +1018,24 @@ pub fn activate_ninjutsu(
+         return Err("Attacker is no longer on the battlefield".to_string());
+     }
+ 
++    let (ability_index, definition) = super::casting::activated_ability_definitions(state, ninjutsu_obj_id)
++        .into_iter()
++        .find(|(_, definition)| {
++            is_ninjutsu_family_marker_ability(definition)
++                && matches!(definition.cost.as_ref(), Some(AbilityCost::NinjutsuFamily { variant: declared, .. }) if *declared == variant)
++        })
++        .ok_or("Ninjutsu-family card has no synthesized activation definition")?;
++    // CR 602.2 + CR 601.2c: bind the ordinary activation journal and event
++    // facts before paying any cost, using the real synthesized ability slot.
++    let activation_record = super::casting::capture_activation_record_from(
++        state,
++        player,
++        ninjutsu_obj_id,
++        Some(&definition),
++        &[],
++    )
++    .ok_or("Ninjutsu-family source disappeared before announcement")?;
++
+     // CR 601.2f: Apply ability cost reduction from statics like Silver-Fur Master
+     // CR 601.2f: All ninjutsu-family variants share the "ninjutsu" keyword for cost reduction.
+     let effective_cost = apply_ability_cost_reduction(state, player, "ninjutsu", mana_cost);
+@@ -1077,7 +1101,77 @@ pub fn activate_ninjutsu(
+         combat.blocker_assignments.remove(&creature_to_return);
+     }
+ 
+-    // 2. Move Ninjutsu-family card from hand/command zone to battlefield.
++    state.waiting_for = super::engine::push_keyword_action(
++        state,
++        player,
++        ninjutsu_obj_id,
++        KeywordAction::Ninjutsu {
++            source,
++            variant,
++            defending_player,
++            attack_target,
++            attack_target_identity,
++        },
++        events,
++    );
++    let placed_entry = state
++        .stack
++        .back()
++        .expect("keyword action was just pushed")
++        .id;
++    super::casting::record_activated_ability_placed(
++        state,
++        player,
++        ninjutsu_obj_id,
++        ability_index,
++        placed_entry,
++        activation_record,
++        events,
++    );
++    // CR 602.2: activation happened when costs were paid and the ability was
++    // announced; countering it or replacing its later entry cannot undo it.
++    events.push(GameEvent::NinjutsuActivated {
++        player_id: player,
++        source_id: ninjutsu_obj_id,
++    });
++    Ok(())
++}
++
++/// CR 702.49a-d + CR 400.7: resolve the paid ability against its original
++/// card occurrence. Costs are never paid again, even when entry does nothing.
++#[allow(clippy::too_many_arguments)]
++pub(crate) fn resolve_ninjutsu(
++    state: &mut GameState,
++    player: PlayerId,
++    source: ObjectIdentityBinding,
++    variant: NinjutsuVariant,
++    defending_player: PlayerId,
++    attack_target: AttackTarget,
++    attack_target_identity: Option<ObjectIncarnationRef>,
++    events: &mut Vec<GameEvent>,
++) {
++    let ninjutsu_obj_id = source.reference.object_id;
++    if !source.reference.is_current(state)
++        || !state
++            .objects
++            .get(&ninjutsu_obj_id)
++            .is_some_and(|object| object.zone == source.expected_zone)
++    {
++        return;
++    }
++    // CR 109.5 + CR 702.49a/d + CR 707.10b: ordinary ninjutsu says "from
++    // your hand"; commander ninjutsu's effect has no such controller-bound
++    // zone restriction. A copied ability retains its source and uses its own
++    // controller for "your" and for entry control.
++    if matches!(variant, NinjutsuVariant::Ninjutsu)
++        && !state.players[player.0 as usize]
++            .hand
++            .contains(&ninjutsu_obj_id)
++    {
++        return;
++    }
++
++    // Move the original Ninjutsu-family card onto the battlefield.
+     //
+     // CR 614.1c: route the entry through the zone-change pipeline so the
+     // delivery tail applies enters-with-counters statics ("creatures you
+@@ -1095,7 +1189,7 @@ pub fn activate_ninjutsu(
+     // see replacement.rs `CommuteClass::EnterTapped`/`EnterUntapped`) (see
+     // `paused_ninjutsu_entry_resumes_with_combat_placement_and_tag`). On the
+     // pause, the post-entry ninjutsu work (cast-variant tag + CR 702.49c combat
+-    // placement + CR 702.49a trigger event) is deferred onto a
++    // placement) is deferred onto a
+     // `BatchCompletion::NinjutsuPlacement` so the replacement-choice resume
+     // runs it exactly once after the entry delivers — the old bail skipped it,
+     // leaving the resumed ninja untagged and non-attacking.
+@@ -1105,6 +1199,7 @@ pub fn activate_ninjutsu(
+         cast_variant: variant.into(),
+         defending_player,
+         attack_target,
++        attack_target_identity,
+     };
+     match super::zone_pipeline::move_object(
+         state,
+@@ -1112,7 +1207,9 @@ pub fn activate_ninjutsu(
+             ninjutsu_obj_id,
+             Zone::Battlefield,
+             ninjutsu_obj_id,
+-        ),
++        )
++        .under_control_of(player)
++        .tapped(),
+         events,
+     ) {
+         super::zone_pipeline::ZoneMoveResult::Done => {
+@@ -1122,13 +1219,13 @@ pub fn activate_ninjutsu(
+             // `NeedsChoice` arms below.
+             if ninjutsu_entry_paused_on_mid_entry_choice(state) {
+                 super::zone_pipeline::defer_completion_on_pause(state, ninjutsu_placement);
+-                return Ok(());
++                return;
+             }
+         }
+         super::zone_pipeline::ZoneMoveResult::NeedsChoice(_)
+         | super::zone_pipeline::ZoneMoveResult::NeedsAuraAttachmentChoice => {
+             super::zone_pipeline::defer_completion_on_pause(state, ninjutsu_placement);
+-            return Ok(());
++            return;
+         }
+     }
+ 
+@@ -1139,10 +1236,9 @@ pub fn activate_ninjutsu(
+         variant.into(),
+         defending_player,
+         attack_target,
++        attack_target_identity,
+         events,
+     );
+-
+-    Ok(())
+ }
+ 
+ /// CR 614.12a + CR 707.9: True when the ninja's battlefield entry paused on an
+@@ -1163,14 +1259,16 @@ fn ninjutsu_entry_paused_on_mid_entry_choice(state: &GameState) -> bool {
+ /// once after the ninja's battlefield entry delivers — inline on the
+ /// synchronous path, or from `BatchCompletion::NinjutsuPlacement` when the
+ /// entry parked on a CR 616.1 replacement-ordering choice and resumed.
++#[allow(clippy::too_many_arguments)]
+ pub(crate) fn finish_ninjutsu_entry(
+     state: &mut GameState,
+-    player: PlayerId,
++    _player: PlayerId,
+     ninjutsu_obj_id: ObjectId,
+     cast_variant: CastVariantPaid,
+-    defending_player: PlayerId,
++    _defending_player: PlayerId,
+     attack_target: AttackTarget,
+-    events: &mut Vec<GameEvent>,
++    attack_target_identity: Option<ObjectIncarnationRef>,
++    _events: &mut Vec<GameEvent>,
+ ) {
+     // Arrival gate (twin of `finish_attraction_open`'s CR 701.51c gate): the
+     // cast-variant tag and the CR 702.49c combat placement are battlefield
+@@ -1186,34 +1284,48 @@ pub(crate) fn finish_ninjutsu_entry(
+         .is_some_and(|obj| obj.zone == Zone::Battlefield)
+     {
+         // CR 702.49: Track which alt-cost variant was paid this turn on the
+-        // cast-variant-paid tag (placement + tapped + summoning sickness is
+-        // delegated to the shared helper).
++        // cast-variant-paid tag after the zone-entry pipeline delivered it.
+         if let Some(obj) = state.objects.get_mut(&ninjutsu_obj_id) {
+             obj.cast_variant_paid = Some((cast_variant, state.turn_number));
+         }
+-
+-        // CR 702.49c: Place onto combat.attackers alongside the returned creature's
+-        // defender WITHOUT firing AttackersDeclared (no "whenever ~ attacks" triggers).
+-        super::combat::place_attacking_alongside(
+-            state,
+-            ninjutsu_obj_id,
+-            defending_player,
+-            attack_target,
+-            events,
+-        );
++        crate::game::layers::mark_layers_full(state);
++        crate::game::layers::flush_layers(state);
++
++        // CR 506.3a-c/f + CR 508.4a: an entry can still succeed when its
++        // original defender disappeared or the copy's controller is not an
++        // attacking player, but that permanent is not an attacker. Entry tap
++        // state was already applied before replacements; do not re-tap here.
++        let destination_is_current = match attack_target {
++            AttackTarget::Player(_) => true,
++            AttackTarget::Planeswalker(id) | AttackTarget::Battle(id) => attack_target_identity
++                .is_some_and(|identity| identity.object_id == id && identity.is_current(state)),
++        };
++        let current_defender = state.objects.get(&ninjutsu_obj_id).and_then(|obj| {
++            if !destination_is_current
++                || !obj
++                    .card_types
++                    .core_types
++                    .contains(&crate::types::card_type::CoreType::Creature)
++                || obj
++                    .card_types
++                    .core_types
++                    .contains(&crate::types::card_type::CoreType::Battle)
++            {
++                return None;
++            }
++            super::combat::entry_attack_target_defender(state, obj.controller, attack_target)
++        });
++        if let Some(defending_player) = current_defender {
++            // CR 702.49c: no AttackersDeclared event is emitted for this entry.
++            super::combat::enter_attacking_at_target(
++                state,
++                ninjutsu_obj_id,
++                defending_player,
++                attack_target,
++            );
++        }
+     }
+ 
+-    // CR 702.49a: Emit event for "whenever you activate a ninjutsu ability"
+-    // triggers. Deliberately OUTSIDE the arrival gate, unlike the Attraction
+-    // twin's `AttractionOpened`: CR 701.51c explicitly suppresses the "opens an
+-    // Attraction" trigger when the entry is prevented/replaced, but ninjutsu's
+-    // activation event occurred when the ability was activated (cost paid,
+-    // attacker returned) — a redirected entry does not un-activate it.
+-    events.push(GameEvent::NinjutsuActivated {
+-        player_id: player,
+-        source_id: ninjutsu_obj_id,
+-    });
+-
+     crate::game::layers::mark_layers_full(state);
+ }
+ 
+@@ -2506,6 +2618,22 @@ mod tests {
+                 shards: vec![ManaCostShard::Blue],
+             }));
+             obj.base_keywords = obj.keywords.clone();
++            Arc::make_mut(&mut obj.abilities).push(
++                AbilityDefinition::new(
++                    AbilityKind::Activated,
++                    Effect::RuntimeHandled {
++                        handler: RuntimeHandler::NinjutsuFamily,
++                    },
++                )
++                .cost(AbilityCost::NinjutsuFamily {
++                    variant: NinjutsuVariant::Ninjutsu,
++                    mana_cost: ManaCost::Cost {
++                        generic: 1,
++                        shards: vec![ManaCostShard::Blue],
++                    },
++                }),
++            );
++            obj.base_abilities = obj.abilities.clone();
+         }
+ 
+         // Add mana for ninjutsu activation cost ({1}{U})
+@@ -2606,6 +2734,14 @@ mod tests {
+         let mut events = Vec::new();
+         activate_ninjutsu(&mut state, PlayerId(0), ninja_id, attacker_id, &mut events)
+             .expect("activation should succeed");
++        assert_eq!(state.objects[&ninja_id].zone, Zone::Hand);
++        assert_eq!(state.stack.len(), 1);
++        crate::game::stack::resolve_top(&mut state, &mut events);
++        assert!(
++            state.resolving_stack_entry.is_some(),
++            "paused entry retains its resolution owner"
++        );
++        state = serde_json::from_slice(&serde_json::to_vec(&state).unwrap()).unwrap();
+ 
+         // CR 616.1: the colliding tap/untap (opposite-direction) writes parked
+         // the ninja's entry.
+@@ -2627,6 +2763,10 @@ mod tests {
+ 
+         apply_as_current(&mut state, GameAction::ChooseReplacement { index: 0 })
+             .expect("resume replacement choice");
++        assert!(
++            state.resolving_stack_entry.is_none(),
++            "completed entry releases its resolution owner"
++        );
+ 
+         let ninja = &state.objects[&ninja_id];
+         assert_eq!(
+@@ -2712,6 +2852,12 @@ mod tests {
+         )
+         .expect("ninjutsu activation should succeed");
+ 
++        crate::game::stack::resolve_top(&mut state, &mut Vec::new());
++        assert!(
++            state.resolving_stack_entry.is_some(),
++            "copy choice retains the resolving ability"
++        );
++
+         assert!(
+             !state
+                 .combat
+@@ -2846,6 +2992,7 @@ mod tests {
+ 
+         activate_ninjutsu(&mut state, PlayerId(0), ninja_id, attacker_id, &mut events)
+             .expect("activation should succeed");
++        crate::game::stack::resolve_top(&mut state, &mut events);
+ 
+         // Ninjutsu creature should be on battlefield, tapped, attacking
+         let ninja = state.objects.get(&ninja_id).unwrap();
+@@ -2876,6 +3023,49 @@ mod tests {
+         );
+     }
+ 
++    #[test]
++    fn ninjutsu_attacking_placement_preserves_an_enter_untapped_replacement() {
++        use crate::types::ability::{ReplacementDefinition, TapStateChange, TargetFilter};
++        use crate::types::replacements::ReplacementEvent;
++
++        let (mut state, attacker_id, ninja_id) = setup_ninjutsu_scenario();
++        let replacement_source = create_object(
++            &mut state,
++            CardId(10),
++            PlayerId(0),
++            "Archelos, Lagoon Mystic".to_string(),
++            Zone::Battlefield,
++        );
++        let source = state.objects.get_mut(&replacement_source).unwrap();
++        source.replacement_definitions = vec![ReplacementDefinition::new(ReplacementEvent::Moved)
++            .execute(AbilityDefinition::new(
++                AbilityKind::Spell,
++                Effect::SetTapState {
++                    target: TargetFilter::SelfRef,
++                    scope: crate::types::ability::EffectScope::Single,
++                    state: TapStateChange::Untap,
++                },
++            ))
++            .destination_zone(Zone::Battlefield)]
++        .into();
++        let mut events = Vec::new();
++        activate_ninjutsu(&mut state, PlayerId(0), ninja_id, attacker_id, &mut events)
++            .expect("pay and announce ninjutsu");
++        crate::game::stack::resolve_top(&mut state, &mut events);
++        assert_eq!(state.objects[&ninja_id].zone, Zone::Battlefield);
++        assert!(
++            !state.objects[&ninja_id].tapped,
++            "attacking placement cannot overwrite the replacement result"
++        );
++        assert!(state
++            .combat
++            .as_ref()
++            .unwrap()
++            .attackers
++            .iter()
++            .any(|a| a.object_id == ninja_id));
++    }
++
+     #[test]
+     fn ninjutsu_creature_does_not_fire_attack_triggers() {
+         let (mut state, attacker_id, ninja_id) = setup_ninjutsu_scenario();
+@@ -2883,6 +3073,7 @@ mod tests {
+ 
+         activate_ninjutsu(&mut state, PlayerId(0), ninja_id, attacker_id, &mut events)
+             .expect("activation should succeed");
++        crate::game::stack::resolve_top(&mut state, &mut events);
+ 
+         // CR 702.49c: No AttackersDeclared event should be emitted for the Ninjutsu creature
+         let has_attackers_declared = events
+diff --git a/crates/engine/src/game/stack.rs b/crates/engine/src/game/stack.rs
+index b4e1b9a4819d9b17d82fe1cf6b8a3bb2c58659b7..d3becbea5b3072d52ce4812355c7fa90a738b69a 100644
+--- a/crates/engine/src/game/stack.rs
++++ b/crates/engine/src/game/stack.rs
+@@ -766,15 +766,18 @@ fn record_departed_stack_entry(state: &mut GameState, entry: &StackEntry) {
+         // CR 113.1c + CR 113.7a: an activated ability on the stack is an object that
+         // exists independently of its source; its whole last-known state is its entry,
+         // kept under the id its activation event names (CR 602.2a).
+-        StackEntryKind::ActivatedAbility { .. } => {
++        StackEntryKind::ActivatedAbility { .. }
++        | StackEntryKind::KeywordAction {
++            action: KeywordAction::Ninjutsu { .. },
++        } => {
+             state
+                 .departed_activated_abilities
+                 .insert(entry.id, entry.clone());
+         }
+         // No trigger event names these as "that spell or ability": a spell-cast event
+-        // names a spell, an activation event names an activated ability's entry, a
+-        // keyword-action entry is named by no activation event, and combat damage is
+-        // not an ability.
++        // names a spell, and activation events name the activated entries above.
++        // Other keyword actions do not yet publish an activation event; combat
++        // damage is not an ability.
+         StackEntryKind::TriggeredAbility { .. }
+         | StackEntryKind::KeywordAction { .. }
+         | StackEntryKind::CombatDamage { .. } => {}
+@@ -2345,21 +2348,26 @@ pub fn resolve_top(state: &mut GameState, events: &mut Vec<GameEvent>) -> u32 {
+     begin_resolving_stack_entry(state, entry.clone(), trigger_firing)
+         .expect("the carrier slot was checked empty before popping");
+ 
+-    // CR 113.3b: Activated keyword abilities (Equip / Crew / Saddle / Station)
++    // CR 113.3b: Activated keyword abilities
+     // resolve via their typed payload — they have no ResolvedAbility/targets
+-    // to validate and no zone-change routing (the source stays where it is).
++    // to validate. Their dedicated resolver owns any zone-entry continuation.
+     // Returning early keeps the keyword-action branch out of the targeting /
+     // fizzle / permanent-spell pipeline below.
+     if let StackEntryKind::KeywordAction { action } = entry.kind {
+-        resolve_keyword_action(state, action, events);
++        resolve_keyword_action(state, entry.controller, action, events);
+         events.push(GameEvent::StackResolved {
+             object_id: entry.id,
+         });
+-        finish_resolving_stack_entry(
+-            state,
+-            super::lifecycle::DelayedTerminalDisposition::Resolved,
+-        );
+-        state.resolution_source_relatch = None;
++        if super::triggers::resolution_completion_can_settle(state)
++            && state.active_spell_resolution().is_none()
++            && state.pending_resolution_completion.is_none()
++        {
++            finish_resolving_stack_entry(
++                state,
++                super::lifecycle::DelayedTerminalDisposition::Resolved,
++            );
++            state.resolution_source_relatch = None;
++        }
+         return 1;
+     }
+ 
+@@ -3850,10 +3858,27 @@ pub fn resolve_top(state: &mut GameState, events: &mut Vec<GameEvent>) -> u32 {
+ /// the `KeywordAction` payload (e.g. `Station::snapshot_power`).
+ fn resolve_keyword_action(
+     state: &mut GameState,
++    controller: PlayerId,
+     action: KeywordAction,
+     events: &mut Vec<GameEvent>,
+ ) {
+     match action {
++        KeywordAction::Ninjutsu {
++            source,
++            variant,
++            defending_player,
++            attack_target,
++            attack_target_identity,
++        } => super::keywords::resolve_ninjutsu(
++            state,
++            controller,
++            source,
++            variant,
++            defending_player,
++            attack_target,
++            attack_target_identity,
++            events,
++        ),
+         // CR 702.6a: Attach source Equipment to target creature. If either
+         // object has left the battlefield by resolution, the effect does nothing
+         // (CR 608.2b — illegal-target check on resolution).
+diff --git a/crates/engine/src/types/ability.rs b/crates/engine/src/types/ability.rs
+index c2e5046664eb59ec6cc7be8db415c37789c5fd3e..bfa31328985c528fa9f68c06886b39ee20be3254 100644
+--- a/crates/engine/src/types/ability.rs
++++ b/crates/engine/src/types/ability.rs
+@@ -18,7 +18,8 @@ use super::game_state::{
+     TargetSelectionConstraint, TriggerSourceContext,
+ };
+ use super::identifiers::{
+-    CardId, ExtraPhaseId, ObjectId, ObjectIncarnationRef, TrackedSetId, LEGACY_INCARNATION,
++    CardId, ExtraPhaseId, ObjectId, ObjectIdentityBinding, ObjectIncarnationRef, TrackedSetId,
++    LEGACY_INCARNATION,
+ };
+ use super::keywords::{Keyword, KeywordKind};
+ use super::mana::{
+@@ -14530,9 +14531,8 @@ fn legacy_is_during_upkeep_phases() -> Vec<Phase> {
+ 
+ /// CR 702.49: Ninjutsu-family keyword variants that share the "activate to swap
+ /// a creature in combat" pattern. This enum is the *activation-family dispatch*
+-/// layer — it is used only by `activate_ninjutsu` and its supporting helpers
+-/// (`ninjutsu_timing_ok`, `returnable_creatures_for_variant`, etc.) to pick
+-/// the correct activation behavior. Sneak (CR 702.190a) and Web-slinging
++/// layer — its announcement, stack payload, resolution and legality helpers
++/// use it to pick the correct behavior. Sneak (CR 702.190a) and Web-slinging
+ /// (CR 702.188a) are NOT activated abilities and therefore do not appear here;
+ /// see `CastVariantPaid` for the trigger-tag layer that does include them.
+ #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+@@ -36377,6 +36377,16 @@ pub enum TargetRef {
+ #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+ #[serde(tag = "type", content = "data")]
+ pub enum KeywordAction {
++    /// CR 702.49a-d + CR 400.7: the paid activation retains the exact card in
++    /// hand or command and the returned attacker's combat destination.
++    Ninjutsu {
++        source: ObjectIdentityBinding,
++        variant: NinjutsuVariant,
++        defending_player: PlayerId,
++        attack_target: crate::game::combat::AttackTarget,
++        #[serde(default)]
++        attack_target_identity: Option<ObjectIncarnationRef>,
++    },
+     /// CR 702.6a: attach source equipment to target creature.
+     Equip {
+         equipment_id: ObjectId,
+diff --git a/crates/engine/src/types/events.rs b/crates/engine/src/types/events.rs
+index 34674778a5d2d80a7c8abd4502a0f2a686833e27..c41ba1434daa349e6de1a5de3f4912e2396a3bd6 100644
+--- a/crates/engine/src/types/events.rs
++++ b/crates/engine/src/types/events.rs
+@@ -1995,9 +1995,8 @@ pub enum GameEvent {
+         player: PlayerId,
+         card_name: String,
+     },
+-    /// CR 702.49a: A ninjutsu-family ability was activated (ninjutsu, commander ninjutsu, sneak).
+-    /// This is a special action, not an activated ability on the stack, so it does not fire
+-    /// AbilityActivated. Enables "whenever you activate a ninjutsu ability" triggers.
++    /// CR 702.49a/d: A ninjutsu or commander ninjutsu ability was activated.
++    /// Emitted alongside `AbilityActivated` for ninjutsu-specific observers.
+     NinjutsuActivated {
+         player_id: PlayerId,
+         source_id: ObjectId,
+diff --git a/crates/engine/src/types/game_state.rs b/crates/engine/src/types/game_state.rs
+index 5d70a4d32e1e7eaeef4cf937fdc304a31e17f4b6..c2f92b342658194e533acf9f53a23d64d41a5277 100644
+--- a/crates/engine/src/types/game_state.rs
++++ b/crates/engine/src/types/game_state.rs
+@@ -7188,20 +7188,16 @@ pub enum BatchCompletion {
+         returned_ids: Vec<ObjectId>,
+     },
+     /// CR 702.49 + CR 616.1: A ninja entering via ninjutsu paused on a
+-    /// battlefield-entry replacement-ordering choice (two co-played external
+-    /// enter-tapped effects — Authority of the Consuls + Imposing Sovereign
+-    /// class collide on the entry's tap field). The post-entry ninjutsu work —
+-    /// the CR 702.49 cast-variant provenance tag, the CR 702.49c
+-    /// tapped-and-attacking combat placement (no `AttackersDeclared`), and the
+-    /// CR 702.49a `NinjutsuActivated` trigger event — cannot run before the
+-    /// entry delivers; defer it onto the parked batch tail so the drain runs
+-    /// it exactly once after the entry resolves.
++    /// battlefield-entry choice. Defer its cast-variant provenance and combat
++    /// placement until that entry finishes. Activation has already happened.
+     NinjutsuPlacement {
+         player: PlayerId,
+         ninjutsu_obj_id: ObjectId,
+         cast_variant: CastVariantPaid,
+         defending_player: PlayerId,
+         attack_target: AttackTarget,
++        #[serde(default)]
++        attack_target_identity: Option<ObjectIncarnationRef>,
+     },
+     /// CR 701.51 + CR 616.1: An Attraction being opened paused on a
+     /// battlefield-entry replacement-ordering choice (Kismet / Frozen Aether
+diff --git a/crates/engine/tests/integration/cr733_resolved_combat_membership.rs b/crates/engine/tests/integration/cr733_resolved_combat_membership.rs
+index 69fc89d46e89a0e2c64f3e0967b0d0cd91703ca9..3d617a164275a9939fb0da7fa3723c81397fb7c0 100644
+--- a/crates/engine/tests/integration/cr733_resolved_combat_membership.rs
++++ b/crates/engine/tests/integration/cr733_resolved_combat_membership.rs
+@@ -266,7 +266,7 @@ fn enters_attacking_journals_and_replays_its_recorded_defender() {
+ const NINJA_ORACLE: &str = "Ninjutsu {1}{U} ({1}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nWhenever this creature deals combat damage to a player, you may draw a card.";
+ 
+ /// Produce the permanent Attack command through the real activation action,
+-/// sharing `place_attacking_alongside` / `push_attacker_and_journal` with entry.
++/// sharing the journaled entry-attacking authority with other battlefield entry.
+ fn permanent_ninjutsu_attack(battle: bool) -> (GameRunner, ObjectId, ObjectId, usize) {
+     let mut scenario = GameScenario::new();
+     scenario.at_phase(Phase::PreCombatMain);
+@@ -355,6 +355,8 @@ fn permanent_ninjutsu_attack(battle: bool) -> (GameRunner, ObjectId, ObjectId, u
+         })
+         .expect("activate the printed Ninjutsu ability through apply");
+     assert_eq!(runner.state().objects[&returned].zone, Zone::Hand);
++    assert_eq!(runner.state().objects[&ninja].zone, Zone::Hand);
++    runner.pass_both_players();
+     assert_eq!(runner.state().objects[&ninja].zone, Zone::Battlefield);
+     assert!(runner.state().objects[&ninja].tapped);
+     assert_eq!(
+diff --git a/crates/engine/tests/integration/kaito_integration.rs b/crates/engine/tests/integration/kaito_integration.rs
+index 209e35652fd3f957c4e107c15d183292fe1b1010..8998c671ea2106e032d2350ea7cbfb5635922487 100644
+--- a/crates/engine/tests/integration/kaito_integration.rs
++++ b/crates/engine/tests/integration/kaito_integration.rs
+@@ -214,7 +214,7 @@ fn kaito_ninjutsu_activation() {
+ 
+     // Add Kaito to P0's hand
+     let kaito_id = scenario
+-        .add_creature_to_hand(P0, "Kaito, Bane of Nightmares", 0, 0)
++        .add_creature_to_hand_from_oracle(P0, "Kaito, Bane of Nightmares", 0, 0, KAITO_ORACLE)
+         .id();
+ 
+     let mut runner = scenario.build();
+@@ -227,17 +227,11 @@ fn kaito_ninjutsu_activation() {
+         obj.card_types.core_types.push(CoreType::Planeswalker);
+         obj.base_card_types = obj.card_types.clone();
+         obj.loyalty = Some(4);
++        obj.base_loyalty = Some(4);
+         obj.power = None;
+         obj.toughness = None;
+         obj.base_power = None;
+         obj.base_toughness = None;
+-
+-        let ninjutsu_cost = ManaCost::Cost {
+-            shards: vec![ManaCostShard::Blue, ManaCostShard::Black],
+-            generic: 1,
+-        };
+-        obj.keywords.push(Keyword::Ninjutsu(ninjutsu_cost.clone()));
+-        obj.base_keywords.push(Keyword::Ninjutsu(ninjutsu_cost));
+     }
+ 
+     // Set up combat state with the attacker as unblocked
+@@ -263,6 +257,10 @@ fn kaito_ninjutsu_activation() {
+     });
+     assert!(result.is_ok(), "Ninjutsu activation should succeed");
+ 
++    assert_eq!(runner.state().objects[&kaito_id].zone, Zone::Hand);
++    assert_eq!(runner.state().stack.len(), 1);
++    runner.pass_both_players();
++
+     let state = runner.state();
+ 
+     // Attacker should be back in hand
+diff --git a/crates/engine/tests/integration/main.rs b/crates/engine/tests/integration/main.rs
+index d335f6f8bf45326e02ad801593e397225df7fcc5..3dbacf89cafeb67b74b043a4f17841895410c5cd 100644
+--- a/crates/engine/tests/integration/main.rs
++++ b/crates/engine/tests/integration/main.rs
+@@ -1264,6 +1264,7 @@ mod nether_spirit_only_creature_card_intervening_if;
+ mod nettling_imp_continuity_target;
+ mod niko_light_of_hope;
+ mod ninjutsu_cluster;
++mod ninjutsu_stack;
+ mod nissa_ascended_animist_loyalty_token_6012;
+ mod nix_counter_no_mana_spent;
+ mod no_witnesses_most_creatures_investigate;
+diff --git a/crates/engine/tests/integration/ninjutsu_stack.rs b/crates/engine/tests/integration/ninjutsu_stack.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..040a9fb3f71e8951025d61d3b9b040c86a361b93
+--- /dev/null
++++ b/crates/engine/tests/integration/ninjutsu_stack.rs
+@@ -0,0 +1,668 @@
++//! Paid ninjutsu announcements use the real stack and survive saved-state restore.
++
++use engine::game::combat::{AttackTarget, AttackerInfo, CombatState};
++use engine::game::derived_views::derive_filtered_views;
++use engine::game::scenario::{GameRunner, GameScenario, P0, P1};
++use engine::game::visibility::filter_state_for_viewer;
++use engine::game::zones::move_to_zone;
++use engine::types::ability::{KeywordAction, NinjutsuVariant};
++use engine::types::actions::GameAction;
++use engine::types::events::{ActivatedAbilityKind, BoundActivationCost, GameEvent};
++use engine::types::game_state::{GameState, PriorityPassingMode, StackEntryKind, WaitingFor};
++use engine::types::identifiers::{ObjectId, ObjectIncarnationRef};
++use engine::types::mana::{ManaCost, ManaCostShard, ManaType, ManaUnit};
++use engine::types::phase::Phase;
++use engine::types::zones::Zone;
++
++// Verbatim MTGJSON Oracle text, also used by the existing card regressions.
++const NINJA: &str = "Ninjutsu {1}{U} ({1}{U}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)\nWhenever this creature deals combat damage to a player, you may draw a card.";
++const YURIKO: &str = "Commander ninjutsu {U}{B} ({U}{B}, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand or the command zone tapped and attacking.)\nWhenever a Ninja you control deals combat damage to a player, reveal the top card of your library and put that card into your hand. Each opponent loses life equal to that card's mana value.";
++const STIFLE: &str =
++    "Counter target activated or triggered ability. (Mana abilities can't be targeted.)";
++const FAVOR: &str = "Spree (Choose one or more additional costs.)\n+ {1} — Copy target instant spell, sorcery spell, activated ability, or triggered ability. You may choose new targets for the copy.\n+ {1} — Change the target of target spell or ability with a single target.";
++const RINGS: &str = "Whenever you activate an ability, if it isn't a mana ability, you may pay {2}. If you do, copy that ability. You may choose new targets for the copy.";
++
++struct Fixture {
++    runner: GameRunner,
++    attacker: ObjectId,
++    ninja: ObjectId,
++    stifle: ObjectId,
++    favor: ObjectId,
++    defender: ObjectId,
++    rings: Option<ObjectId>,
++}
++
++fn setup(variant: NinjutsuVariant, command: bool) -> Fixture {
++    setup_with_rings(variant, command, false)
++}
++
++fn setup_with_rings(variant: NinjutsuVariant, command: bool, include_rings: bool) -> Fixture {
++    let mut scenario = GameScenario::new();
++    scenario.at_phase(Phase::DeclareBlockers);
++    let attacker = scenario.add_creature(P0, "Grizzly Bears", 2, 2).id();
++    let (name, oracle, power, toughness) = match variant {
++        NinjutsuVariant::Ninjutsu => ("Ninja of the Deep Hours", NINJA, 2, 2),
++        NinjutsuVariant::CommanderNinjutsu => ("Yuriko, the Tiger's Shadow", YURIKO, 1, 3),
++    };
++    let ninja = scenario
++        .add_creature_to_hand_from_oracle(P0, name, power, toughness, oracle)
++        .id();
++    let stifle = scenario
++        .add_spell_to_hand_from_oracle(P1, "Stifle", true, STIFLE)
++        .with_mana_cost(ManaCost::Cost {
++            shards: vec![ManaCostShard::Blue],
++            generic: 0,
++        })
++        .id();
++    let favor = scenario
++        .add_spell_to_hand_from_oracle(P1, "Return the Favor", true, FAVOR)
++        .with_mana_cost(ManaCost::Cost {
++            shards: vec![ManaCostShard::Red, ManaCostShard::Red],
++            generic: 0,
++        })
++        .id();
++    let defender = scenario
++        .add_planeswalker_from_oracle(P1, "Combat recipient", "Test", 8, "")
++        .id();
++    let rings = include_rings.then(|| {
++        scenario
++            .add_artifact_from_oracle(P0, "Rings of Brighthearth", RINGS)
++            .id()
++    });
++    let mut runner = scenario.build();
++    if command {
++        move_to_zone(runner.state_mut(), ninja, Zone::Command, &mut vec![]);
++    }
++    let state = runner.state_mut();
++    if matches!(variant, NinjutsuVariant::CommanderNinjutsu) {
++        state.objects.get_mut(&ninja).unwrap().is_commander = true;
++    }
++    let mut attack = AttackerInfo::attacking_player(attacker, P1);
++    attack.attack_target = AttackTarget::Planeswalker(defender);
++    let mut combat = CombatState {
++        attackers: vec![attack],
++        ..Default::default()
++    };
++    combat.attacked_permanents.insert(
++        attacker,
++        ObjectIncarnationRef::from_object(&state.objects[&defender]),
++    );
++    state.combat = Some(combat);
++    state.waiting_for = WaitingFor::Priority { player: P0 };
++    state.priority_player = P0;
++    for player in [P0, P1] {
++        state
++            .priority_passing_modes
++            .insert(player, PriorityPassingMode::FullControl);
++    }
++    for color in [
++        ManaType::Blue,
++        match variant {
++            NinjutsuVariant::Ninjutsu => ManaType::Colorless,
++            NinjutsuVariant::CommanderNinjutsu => ManaType::Black,
++        },
++    ] {
++        let _ = state.add_mana_to_pool(P0, ManaUnit::new(color, attacker, false, vec![]));
++    }
++    for color in [ManaType::Blue, ManaType::Red, ManaType::Red, ManaType::Red] {
++        let _ = state.add_mana_to_pool(P1, ManaUnit::new(color, defender, false, vec![]));
++    }
++    Fixture {
++        runner,
++        attacker,
++        ninja,
++        stifle,
++        favor,
++        defender,
++        rings,
++    }
++}
++
++fn announce(fixture: &mut Fixture) -> ObjectId {
++    let result = fixture
++        .runner
++        .act(GameAction::ActivateNinjutsu {
++            ninjutsu_object_id: fixture.ninja,
++            creature_to_return: fixture.attacker,
++        })
++        .expect("announce the printed ninjutsu ability");
++    assert_eq!(
++        fixture.runner.state().objects[&fixture.attacker].zone,
++        Zone::Hand
++    );
++    assert_eq!(fixture.runner.state().players[0].mana_pool.total(), 0);
++    assert_eq!(
++        fixture.runner.state().stack.len(),
++        1,
++        "paid ability must await responses"
++    );
++    let entry = fixture.runner.state().stack.back().unwrap();
++    assert!(matches!(
++        entry.kind,
++        StackEntryKind::KeywordAction {
++            action: KeywordAction::Ninjutsu { .. }
++        }
++    ));
++    assert_eq!(result.events.iter().filter(|event| matches!(event,
++        GameEvent::AbilityActivated {
++            player_id: P0,
++            source_id,
++            kind: ActivatedAbilityKind::Normal,
++            stack_entry: Some(activated_entry),
++            activation_cost: BoundActivationCost::Cost(cost),
++            ..
++        } if *source_id == fixture.ninja && *activated_entry == entry.id
++            && matches!(cost.as_ref(), engine::types::ability::AbilityCost::NinjutsuFamily { .. })
++    )).count(), 1, "ordinary activation observers receive the exact paid stack entry");
++    assert!(fixture
++        .runner
++        .state()
++        .holds_stack_bound_reveal(fixture.ninja));
++    assert_eq!(result.events.iter().filter(|event| matches!(event, GameEvent::NinjutsuActivated { source_id, .. } if *source_id == fixture.ninja)).count(), 1, "activation event belongs to announcement");
++    entry.id
++}
++
++#[test]
++fn rings_observes_ninjutsu_and_copies_its_countered_activation() {
++    let mut fixture = setup_with_rings(NinjutsuVariant::Ninjutsu, false, true);
++    for _ in 0..2 {
++        let _ = fixture.runner.state_mut().add_mana_to_pool(
++            P0,
++            ManaUnit::new(ManaType::Colorless, fixture.attacker, false, vec![]),
++        );
++    }
++    fixture
++        .runner
++        .act(GameAction::ActivateNinjutsu {
++            ninjutsu_object_id: fixture.ninja,
++            creature_to_return: fixture.attacker,
++        })
++        .expect("pay and announce ninjutsu while Rings can copy it");
++    assert_eq!(
++        fixture.runner.state().objects[&fixture.ninja].zone,
++        Zone::Hand
++    );
++    assert_eq!(
++        fixture.runner.state().objects[&fixture.attacker].zone,
++        Zone::Hand
++    );
++    assert_eq!(
++        fixture.runner.state().stack.len(),
++        2,
++        "Rings trigger is above the unresolved ninjutsu ability"
++    );
++    assert_eq!(
++        fixture.runner.state().stack.back().unwrap().source_id,
++        fixture.rings.unwrap()
++    );
++    assert!(matches!(
++        fixture.runner.state().stack.back().unwrap().kind,
++        StackEntryKind::TriggeredAbility { .. }
++    ));
++    let original = fixture.runner.state().stack.front().unwrap().id;
++    fixture
++        .runner
++        .act(GameAction::PassPriority)
++        .expect("opponent may respond before Rings resolves");
++    drop(
++        fixture
++            .runner
++            .cast(fixture.stifle)
++            .target_object(original)
++            .commit(),
++    );
++    fixture.runner.pass_both_players();
++    assert_eq!(fixture.runner.state().stack.len(), 1);
++    assert!(
++        fixture
++            .runner
++            .state()
++            .departed_activated_abilities
++            .contains_key(&original),
++        "the exact countered activation remains available to its trigger"
++    );
++    fixture.runner.pass_both_players();
++    assert!(matches!(
++        fixture.runner.state().waiting_for,
++        WaitingFor::OptionalEffectChoice { .. }
++    ));
++    let copied = fixture
++        .runner
++        .act(GameAction::DecideOptionalEffect { accept: true })
++        .expect("pay Rings' optional two mana");
++    assert!(
++        !copied
++            .events
++            .iter()
++            .any(|event| matches!(event, GameEvent::AbilityActivated { .. })),
++        "copying an activated ability does not activate it again"
++    );
++    if matches!(
++        fixture.runner.state().waiting_for,
++        WaitingFor::CopyRetarget { .. }
++    ) {
++        fixture
++            .runner
++            .act(GameAction::KeepAllCopyTargets)
++            .expect("ninjutsu has no targets to change");
++    }
++    assert_eq!(
++        fixture.runner.state().stack.len(),
++        1,
++        "Rings copies the departed ability, without substituting another stack object"
++    );
++    let copy = fixture.runner.state().stack.back().unwrap();
++    assert_eq!(copy.source_id, fixture.ninja);
++    assert_ne!(copy.id, original);
++    assert!(matches!(
++        copy.kind,
++        StackEntryKind::KeywordAction {
++            action: KeywordAction::Ninjutsu { .. }
++        }
++    ));
++    fixture.runner.pass_both_players();
++    assert_eq!(
++        fixture.runner.state().objects[&fixture.ninja].zone,
++        Zone::Battlefield
++    );
++    assert!(fixture.runner.state().objects[&fixture.ninja].tapped);
++}
++
++#[test]
++fn ninjutsu_has_a_paid_response_window_and_resumes_from_saved_state() {
++    for (variant, command, origin) in [
++        (NinjutsuVariant::Ninjutsu, false, Zone::Hand),
++        (NinjutsuVariant::CommanderNinjutsu, true, Zone::Command),
++    ] {
++        let mut fixture = setup(variant, command);
++        let ability = announce(&mut fixture);
++        let expected_label = match variant {
++            NinjutsuVariant::Ninjutsu => "Ninjutsu",
++            NinjutsuVariant::CommanderNinjutsu => "Commander ninjutsu",
++        };
++        for viewer in [P0, P1] {
++            let state = fixture.runner.state();
++            let filtered = filter_state_for_viewer(state, viewer);
++            let views = derive_filtered_views(state, &filtered, Some(viewer));
++            let details = views
++                .stack_entry_details
++                .get(&ability)
++                .expect("paid ninjutsu is visible on the stack to both players");
++            assert_eq!(details.kind_label, expected_label);
++            assert!(
++                details.targets.is_empty(),
++                "neither the returned creature nor its planeswalker defender is a target"
++            );
++        }
++        assert_eq!(fixture.runner.state().objects[&fixture.ninja].zone, origin);
++        fixture
++            .runner
++            .act(GameAction::PassPriority)
++            .expect("activator passes");
++        assert_eq!(
++            fixture.runner.state().waiting_for,
++            WaitingFor::Priority { player: P1 }
++        );
++        let encoded = serde_json::to_vec(fixture.runner.state()).expect("save pending ability");
++        let restored: GameState =
++            serde_json::from_slice(&encoded).expect("restore pending ability");
++        assert_eq!(restored.stack, fixture.runner.state().stack);
++        assert!(restored.holds_stack_bound_reveal(fixture.ninja));
++        let mut restored = GameRunner::from_state(restored);
++        for runner in [&mut fixture.runner, &mut restored] {
++            let result = runner
++                .act(GameAction::PassPriority)
++                .expect("defender passes; ability resolves");
++            assert!(
++                !result
++                    .events
++                    .iter()
++                    .any(|event| matches!(event, GameEvent::NinjutsuActivated { .. })),
++                "resolution must not activate again"
++            );
++            let ninja = &runner.state().objects[&fixture.ninja];
++            assert_eq!(ninja.zone, Zone::Battlefield);
++            assert!(ninja.tapped);
++            assert!(!runner.state().holds_stack_bound_reveal(fixture.ninja));
++            let attacker = runner
++                .state()
++                .combat
++                .as_ref()
++                .unwrap()
++                .attackers
++                .iter()
++                .find(|a| a.object_id == fixture.ninja)
++                .expect("resolved ninja is attacking");
++            assert_eq!(
++                attacker.attack_target,
++                AttackTarget::Planeswalker(fixture.defender)
++            );
++            assert_eq!(attacker.defending_player, P1);
++            assert!(runner.state().stack.is_empty());
++            assert!(runner.state().resolving_stack_entry.is_none());
++        }
++    }
++}
++
++#[test]
++fn opponent_can_stifle_ninjutsu_without_refunding_paid_costs() {
++    let mut fixture = setup(NinjutsuVariant::Ninjutsu, false);
++    let ability = announce(&mut fixture);
++    fixture
++        .runner
++        .act(GameAction::PassPriority)
++        .expect("give defender priority");
++    drop(
++        fixture
++            .runner
++            .cast(fixture.stifle)
++            .target_object(ability)
++            .commit(),
++    );
++    assert_eq!(
++        fixture.runner.state().stack.len(),
++        2,
++        "real Stifle response sits above ninjutsu"
++    );
++    fixture.runner.pass_both_players();
++    assert!(fixture.runner.state().stack.is_empty());
++    assert_eq!(
++        fixture.runner.state().objects[&fixture.ninja].zone,
++        Zone::Hand
++    );
++    assert_eq!(
++        fixture.runner.state().objects[&fixture.attacker].zone,
++        Zone::Hand
++    );
++    assert_eq!(fixture.runner.state().players[0].mana_pool.total(), 0);
++    assert_eq!(
++        fixture.runner.state().objects[&fixture.stifle].zone,
++        Zone::Graveyard
++    );
++    assert!(!fixture
++        .runner
++        .state()
++        .holds_stack_bound_reveal(fixture.ninja));
++}
++
++#[test]
++fn ninjutsu_does_not_follow_a_source_that_left_and_returned_to_hand() {
++    let mut fixture = setup(NinjutsuVariant::Ninjutsu, false);
++    announce(&mut fixture);
++    let original =
++        ObjectIncarnationRef::from_object(&fixture.runner.state().objects[&fixture.ninja]);
++    move_to_zone(
++        fixture.runner.state_mut(),
++        fixture.ninja,
++        Zone::Exile,
++        &mut vec![],
++    );
++    move_to_zone(
++        fixture.runner.state_mut(),
++        fixture.ninja,
++        Zone::Hand,
++        &mut vec![],
++    );
++    assert!(
++        !original.is_current(fixture.runner.state()),
++        "reach guard: same storage id, new object"
++    );
++    fixture.runner.pass_both_players();
++    assert_eq!(
++        fixture.runner.state().objects[&fixture.ninja].zone,
++        Zone::Hand
++    );
++    assert!(fixture.runner.state().stack.is_empty());
++    assert_eq!(
++        fixture.runner.state().objects[&fixture.attacker].zone,
++        Zone::Hand
++    );
++}
++
++#[test]
++fn ninjutsu_enters_tapped_without_attacking_when_original_defender_left() {
++    let mut fixture = setup(NinjutsuVariant::Ninjutsu, false);
++    announce(&mut fixture);
++    move_to_zone(
++        fixture.runner.state_mut(),
++        fixture.defender,
++        Zone::Graveyard,
++        &mut vec![],
++    );
++    fixture.runner.pass_both_players();
++    let ninja = &fixture.runner.state().objects[&fixture.ninja];
++    assert_eq!(ninja.zone, Zone::Battlefield);
++    assert!(ninja.tapped);
++    assert!(!fixture
++        .runner
++        .state()
++        .combat
++        .as_ref()
++        .unwrap()
++        .attackers
++        .iter()
++        .any(|a| a.object_id == fixture.ninja));
++}
++
++#[test]
++fn ninjutsu_does_not_attack_a_new_incarnation_of_the_original_defender() {
++    for defender_left_before_activation in [false, true] {
++        let mut fixture = setup(NinjutsuVariant::Ninjutsu, false);
++        let original =
++            ObjectIncarnationRef::from_object(&fixture.runner.state().objects[&fixture.defender]);
++        if !defender_left_before_activation {
++            announce(&mut fixture);
++        }
++        move_to_zone(
++            fixture.runner.state_mut(),
++            fixture.defender,
++            Zone::Graveyard,
++            &mut vec![],
++        );
++        move_to_zone(
++            fixture.runner.state_mut(),
++            fixture.defender,
++            Zone::Battlefield,
++            &mut vec![],
++        );
++        assert!(!original.is_current(fixture.runner.state()));
++        if defender_left_before_activation {
++            announce(&mut fixture);
++        }
++        fixture.runner.pass_both_players();
++        let ninja = &fixture.runner.state().objects[&fixture.ninja];
++        assert_eq!(ninja.zone, Zone::Battlefield);
++        assert!(ninja.tapped);
++        assert!(!fixture
++            .runner
++            .state()
++            .combat
++            .as_ref()
++            .unwrap()
++            .attackers
++            .iter()
++            .any(|a| a.object_id == fixture.ninja));
++    }
++}
++
++#[test]
++fn legacy_ninjutsu_without_permanent_defender_pin_enters_nonattacking() {
++    let mut fixture = setup(NinjutsuVariant::Ninjutsu, false);
++    announce(&mut fixture);
++    let StackEntryKind::KeywordAction { action } =
++        &mut fixture.runner.state_mut().stack.back_mut().unwrap().kind
++    else {
++        panic!("announcement must produce a keyword action");
++    };
++    let mut encoded = serde_json::to_value(&*action).unwrap();
++    encoded["data"]
++        .as_object_mut()
++        .unwrap()
++        .remove("attack_target_identity");
++    *action = serde_json::from_value(encoded).expect("legacy absent pin remains loadable");
++    fixture.runner.pass_both_players();
++    assert_eq!(
++        fixture.runner.state().objects[&fixture.ninja].zone,
++        Zone::Battlefield
++    );
++    assert!(!fixture
++        .runner
++        .state()
++        .combat
++        .as_ref()
++        .unwrap()
++        .attackers
++        .iter()
++        .any(|a| a.object_id == fixture.ninja));
++}
++
++#[test]
++fn copied_ninjutsu_uses_copy_controller_and_keeps_original_source() {
++    for variant in [
++        NinjutsuVariant::Ninjutsu,
++        NinjutsuVariant::CommanderNinjutsu,
++    ] {
++        let mut fixture = setup(variant, false);
++        let original = announce(&mut fixture);
++        fixture
++            .runner
++            .act(GameAction::PassPriority)
++            .expect("give copying opponent priority");
++        drop(
++            fixture
++                .runner
++                .cast(fixture.favor)
++                .modes(&[0])
++                .target_object(original)
++                .commit(),
++        );
++        fixture.runner.pass_both_players();
++        assert_eq!(
++            fixture.runner.state().stack.len(),
++            2,
++            "copy plus original remain"
++        );
++        let copy = fixture.runner.state().stack.back().unwrap();
++        assert_eq!(copy.controller, P1);
++        assert_eq!(
++            copy.source_id, fixture.ninja,
++            "ability copy keeps the original source"
++        );
++        assert_ne!(copy.id, original);
++        fixture.runner.pass_both_players();
++        match variant {
++            NinjutsuVariant::Ninjutsu => {
++                assert_eq!(
++                    fixture.runner.state().objects[&fixture.ninja].zone,
++                    Zone::Hand,
++                    "copy controller cannot take a card from another player's hand"
++                );
++                assert!(
++                    fixture
++                        .runner
++                        .state()
++                        .holds_stack_bound_reveal(fixture.ninja),
++                    "original ability still holds its reveal lease"
++                );
++                fixture.runner.pass_both_players();
++                assert_eq!(
++                    fixture.runner.state().objects[&fixture.ninja].controller,
++                    P0
++                );
++                assert_eq!(
++                    fixture.runner.state().objects[&fixture.ninja].zone,
++                    Zone::Battlefield
++                );
++            }
++            NinjutsuVariant::CommanderNinjutsu => {
++                let ninja = &fixture.runner.state().objects[&fixture.ninja];
++                assert_eq!(ninja.zone, Zone::Battlefield);
++                assert_eq!(
++                    ninja.controller, P1,
++                    "commander ninjutsu copy puts the source under the copy controller"
++                );
++                assert!(ninja.tapped);
++                assert!(
++                    !fixture
++                        .runner
++                        .state()
++                        .combat
++                        .as_ref()
++                        .unwrap()
++                        .attackers
++                        .iter()
++                        .any(|a| a.object_id == fixture.ninja),
++                    "a nonattacking player's creature cannot enter attacking"
++                );
++                fixture.runner.pass_both_players();
++                assert_eq!(
++                    fixture.runner.state().objects[&fixture.ninja].controller,
++                    P1,
++                    "original cannot move the departed source occurrence again"
++                );
++            }
++        }
++    }
++}
++
++#[test]
++fn copied_ninjutsu_does_not_extend_original_announcement_reveal() {
++    let mut fixture = setup(NinjutsuVariant::Ninjutsu, false);
++    let original = announce(&mut fixture);
++    fixture
++        .runner
++        .act(GameAction::PassPriority)
++        .expect("give opponent priority");
++    drop(
++        fixture
++            .runner
++            .cast(fixture.favor)
++            .modes(&[0])
++            .target_object(original)
++            .commit(),
++    );
++    fixture.runner.pass_both_players();
++    assert_eq!(fixture.runner.state().stack.len(), 2);
++    fixture
++        .runner
++        .act(GameAction::PassPriority)
++        .expect("give opponent another response");
++    drop(
++        fixture
++            .runner
++            .cast(fixture.stifle)
++            .target_object(original)
++            .commit(),
++    );
++    fixture.runner.pass_both_players();
++    assert_eq!(
++        fixture.runner.state().stack.len(),
++        1,
++        "only the copied ability survives Stifle"
++    );
++    assert_ne!(fixture.runner.state().stack.back().unwrap().id, original);
++    assert!(
++        !fixture
++            .runner
++            .state()
++            .holds_stack_bound_reveal(fixture.ninja),
++        "countering the activated ability ends its reveal; its copy was not activated"
++    );
++    fixture.runner.pass_both_players();
++    assert_eq!(
++        fixture.runner.state().objects[&fixture.ninja].zone,
++        Zone::Hand
++    );
++    assert!(!fixture
++        .runner
++        .state()
++        .holds_stack_bound_reveal(fixture.ninja));
++    assert!(
++        !fixture
++            .runner
++            .state()
++            .public_revealed_cards
++            .contains(&fixture.ninja),
++        "stack reveal never becomes an until-zone-change reveal"
++    );
++}
+diff --git a/protocol/changes/7b22704f-42e2-4699-842c-4de55f3eb6d1.json b/protocol/changes/7b22704f-42e2-4699-842c-4de55f3eb6d1.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..87fe7df42067f4dd98087816c8a2682e898fc002
+--- /dev/null
++++ b/protocol/changes/7b22704f-42e2-4699-842c-4de55f3eb6d1.json
+@@ -0,0 +1,7 @@
++{
++  "surfaces": [
++    "full",
++    "wire"
++  ],
++  "reason": "Ninjutsu uses a persisted activated-ability stack entry with exact source and defender occurrences"
++}
