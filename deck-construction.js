@@ -1,3 +1,4 @@
+import {mtgManaSourceProfile} from './mtg-mana-sources.js';
 import {setupBurden} from './deck-preferences.js';
 // Shared request/result boundary for manual construction and conversational AI.
 // Builders remain responsible for card selection; this layer never fabricates cards.
@@ -87,7 +88,7 @@ export function pokemonPlanAttackers(request,rows,deck={}) {
 export function inspectDeckPlan(request,rows,deck={}) {
  const parsedTypes=request.game==='mtg'?readCreatureTypeRestrictions(request.theme||request.style||''):{creatureTypesOnly:[],excludedSubtypes:[]};
  request={...request,creatureTypesOnly:[...new Set(request.creatureTypesOnly===undefined?parsedTypes.creatureTypesOnly:request.creatureTypesOnly)],excludedSubtypes:[...new Set(request.excludedSubtypes===undefined?parsedTypes.excludedSubtypes:request.excludedSubtypes)]};
- const main=rows.filter(r=>r.zone!=='extra'&&r.zone!=='side'),cards=main.map(r=>r.card).filter(Boolean),issues=[],notes=[];let attackers=[];
+ const main=rows.filter(r=>r.zone!=='extra'&&r.zone!=='side'),cards=main.map(r=>r.card).filter(Boolean),issues=[],notes=[];let attackers=[],manaCoverage=null;
  const names=new Set(cards.map(c=>key(c.name))),text=c=>String(c?.text||c?.oracle_text||'');
  const restrictionRequested=request.game==='mtg'&&(request.creatureTypesOnly?.length||request.excludedSubtypes?.length),restrictionFailures=restrictionRequested?main.filter(r=>!fitsTypeRestrictions(r.card,request)):[];
  if(rows.some(r=>!Number.isInteger(r.qty)||r.qty<=0))issues.push('A card quantity is invalid.');
@@ -153,9 +154,13 @@ export function inspectDeckPlan(request,rows,deck={}) {
   for(const row of restrictionFailures)issues.push(`${row.name||row.card?.name||'A selected card'} does not satisfy the requested creature-type restriction or its card types are unverified.`);
   const lands=main.filter(r=>/\bLand\b/.test(r.card?.type_line||''));
   if(lands.reduce((s,r)=>s+r.qty,0)<Math.floor(main.reduce((s,r)=>s+r.qty,0)*.25))issues.push('The deck has too few lands for the supported construction plan.');
-  const produces=new Set(lands.flatMap(r=>r.card?.produced_mana||r.card?.color_identity||[]));
+  const sources=lands.map(r=>({name:r.name||r.card?.name,...mtgManaSourceProfile(r.card,{commanderIdentity:cards.find(c=>key(c.name)===key(deck.commander))?.color_identity})})),produces=new Set(sources.flatMap(s=>s.colors)),conditional=new Set(sources.flatMap(s=>s.conditional.flatMap(e=>e.colors)));
+  manaCoverage={status:'supported',unconditional:[...produces],conditional:[...conditional],sources:sources.filter(s=>s.conditional.length||s.unknown)};
   const needed=new Set(cards.filter(c=>! /\bLand\b/.test(c.type_line||'')).flatMap(c=>c.colors||[]));
-  for(const color of needed)if(!produces.has(color))issues.push(`No confirmed land source for ${color} mana.`);
+  for(const color of needed)if(!produces.has(color)){
+   if(conditional.has(color)||sources.some(s=>s.unknown||s.conditional.some(e=>!e.colors.length))){if(manaCoverage.status!=='insufficient')manaCoverage.status='unverified';notes.push(`${color} mana relies on conditional or unverified land abilities. Input mana, eligible creatures, spending restrictions and simultaneous payment are not established by color coverage.`);}
+   else {manaCoverage.status='insufficient';issues.push(`No confirmed land source for ${color} mana.`);}
+  }
  }
  if(request.seedCards?.some(c=>!rows.some(r=>r.qty>0&&r.zone!=='side'&&key(r.card?.name)===key(c.name))))issues.push('A required build-around card is missing from its playable deck section.');
  if(request.seedCard&&!rows.some(r=>r.qty>0&&key(r.card?.name)===key(request.seedCard.name)))issues.push(`The required build-around ${request.seedCard.name} is missing.`);
@@ -172,7 +177,7 @@ export function inspectDeckPlan(request,rows,deck={}) {
  // Preference measures setup burden, not text length or a fake skill rating.
  const setup=main.reduce((sum,r)=>sum+setupBurden(request.game,r.card)*r.qty,0);
  const typeRestrictions={status:restrictionRequested?(restrictionFailures.length?'fail':'pass'):'not-requested',creatureTypesOnly:[...(request.creatureTypesOnly||[])],excludedSubtypes:[...(request.excludedSubtypes||[])],includesCommander:true,noncreatureSupportAllowed:true,conflicts:restrictionFailures.map(r=>r.name||r.card?.name||'Unresolved card')};
- return {attackers,issues:[...new Set(issues)],notes:[...new Set([...notes,...(deck.repairNotes||[])])],engine,theme,strategy:theme?.strategy||null,mechanics:theme?.mechanics||null,combo,typeRestrictions,risks,setupBurden:setup};
+ return {attackers,manaCoverage,issues:[...new Set(issues)],notes:[...new Set([...notes,...(deck.repairNotes||[])])],engine,theme,strategy:theme?.strategy||null,mechanics:theme?.mechanics||null,combo,typeRestrictions,risks,setupBurden:setup};
 }
 export function chooseDeck(candidates,request) {
  const valid=candidates.filter(c=>c.check.complete&&c.check.legal&&!c.plan.issues.length&&(!request.ownedOnly||c.pricing.ownedCopies===c.pricing.copies)&&
@@ -190,8 +195,8 @@ export function chooseDeck(candidates,request) {
  }
  const delta=request.budget!==null&&winner.pricing.estimate!==null?cents(winner.pricing.estimate-request.budget):null;
  const budgetVerified=winner.pricing.estimate!==null&&(request.budget===null||(request.budgetBoundary==='exclusive'?delta<0:delta<=0)),themeVerified=winner.plan.theme?.status==='supported';
- const themeOK=!winner.plan.theme||['supported','not-requested'].includes(winner.plan.theme.status),requestSatisfied=(request.budget===null||budgetVerified)&&themeOK&&(!request.requireLoop||winner.plan.combo?.status==='verified')&&!request.unsupportedLoop&&!request.loopConflict;
- return {ok:true,...winner,request,budgetVerified,themeVerified,requestSatisfied,validation:{complete:true,legal:true,budget:request.budget===null?'not-requested':budgetVerified?'pass':winner.pricing.estimate===null?'unverified':'fail',theme:winner.plan.theme?.status||'unverified',combo:winner.plan.combo?.status||'not-requested',creatureTypes:winner.plan.typeRestrictions?.status||'not-requested',prerequisites:winner.plan.theme?.prerequisites?.status||'not-applicable',competitive:'unverified',request:requestFingerprint(request)},budgetStatus:budgetClass(winner)===3?'outside-target':winner.pricing.estimate===null?'unverified':delta>0?'over-target':'within-target',delta,
+ const themeOK=!winner.plan.theme||['supported','not-requested'].includes(winner.plan.theme.status),requestSatisfied=(request.budget===null||budgetVerified)&&themeOK&&winner.plan.manaCoverage?.status!=='unverified'&&(!request.requireLoop||winner.plan.combo?.status==='verified')&&!request.unsupportedLoop&&!request.loopConflict;
+ return {ok:true,...winner,request,budgetVerified,themeVerified,requestSatisfied,validation:{complete:true,legal:true,budget:request.budget===null?'not-requested':budgetVerified?'pass':winner.pricing.estimate===null?'unverified':'fail',theme:winner.plan.theme?.status||'unverified',combo:winner.plan.combo?.status||'not-requested',creatureTypes:winner.plan.typeRestrictions?.status||'not-requested',prerequisites:winner.plan.theme?.prerequisites?.status||'not-applicable',mana:winner.plan.manaCoverage?.status||'not-applicable',competitive:'unverified',request:requestFingerprint(request)},budgetStatus:budgetClass(winner)===3?'outside-target':winner.pricing.estimate===null?'unverified':delta>0?'over-target':'within-target',delta,
   compared:candidates.length,summary:`${request.seedCard?.name||winner.deck.buildAround||request.seed||'Your deck'} · ${request.formatName}`};
 }
 export async function constructDeck(input,adapter,options={}) {

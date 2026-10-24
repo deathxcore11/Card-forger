@@ -47,7 +47,10 @@ export function tribeEvidence(c, tribe) {
   const subject = new RegExp("\\b" + t + "s?(?: (?:creature|permanent|spell|card)s?)? (?:you control|you cast|in your graveyard|enter|dies|die|spells? you cast)", "i");
   const trigger = new RegExp("(?:whenever|when) (?:another |one or more |a |an |other )?(?:[A-Z][a-z]+ or )?" + t + "s?\\b[^.\\n]*(?:you control|enters|dies|attacks)", "i");
   const token = new RegExp("(?:you )?create[^.\\n]*\\b" + t + "\\b[^.\\n]*creature tokens?", "i");
-  for (const clause of text.split(/[.\n]/)) {
+  for (const rawClause of text.split(/[.\n]/)) {
+    // A word boundary also matches Human inside non-Human. Remove only the
+    // negated subtype mention, preserving independent positive clauses.
+    const clause=rawClause.replace(new RegExp("\\bnon[- ]"+t+"s?\\b", "gi"), "excluded-type");
     if (/opponent|its controller|their controller|each player|target player/i.test(clause)) continue;
     if (subject.test(clause) || trigger.test(clause)) out.push({kind:"payoff", text:clause.trim()});
     else if (token.test(clause)) out.push({kind:"token", text:clause.trim()});
@@ -98,7 +101,7 @@ export function tribalSupport(c, tribe) {
 const TYPE_TERM=CREATURE_THEMES.slice().sort((a,b)=>b.length-a.length).map(tribePattern).join('|');
 const TYPE_LIST='(?:'+TYPE_TERM+')(?:\\s*(?:,|and|or|/)\\s*(?:'+TYPE_TERM+'))*';
 export function readCreatureTypeRestrictions(value='') {
-  const text=String(value).replace(/[’‘]/g,"'").replace(/["“][^"”]*["”]/g,' '),only=[],excluded=[];
+  const text=String(value).replace(/[‐‑‒–—]/g,'-').replace(/[’‘]/g,"'").replace(/["“][^"”]*["”]/g,' '),only=[],excluded=[];
   const negated=index=>/\b(?:(?:not|no|without|rather than|instead of|don't(?: want| use| make)?|do not(?: want| use| make)?)\s+(?:an?\s+)?|(?:remove|drop|relax|clear)\s+(?:(?:the|that|my)\s+)?)$/i.test(text.slice(Math.max(0,index-45),index));
   const patterns=[
     new RegExp('\\b(?:only|strictly)\\s+(?:(?:mono[- ]?)?(?:white|blue|black|red|green|colou?rless)\\s+)?('+TYPE_LIST+')\\b','gi'),
@@ -109,6 +112,11 @@ export function readCreatureTypeRestrictions(value='') {
   for(const re of patterns)for(const match of text.matchAll(re)){
     if(negated(match.index)||/^\s+tokens?\b|^\s+commanders?\b(?!\s+decks?\b)/i.test(text.slice(match.index+match[0].length)))continue;
     for(const type of CREATURE_THEMES)if(new RegExp('(?:^|\\s|,|/)'+tribePattern(type)+'(?=$|\\s|,|/)','i').test(match[1]))only.push(type);
+  }
+  // Explicit non-type-only composition is an exclusion, not a positive tribe.
+  for(const match of text.matchAll(new RegExp('\\b(?:only|strictly|all creatures? (?:must be|are))\\s+non[- ]('+TYPE_TERM+')(?:\\s+creatures?)?\\b','gi'))){
+    if(negated(match.index)||/^\s+tokens?\b|^\s+commanders?\b(?!\s+decks?\b)/i.test(text.slice(match.index+match[0].length)))continue;
+    for(const type of CREATURE_THEMES)if(new RegExp('^'+tribePattern(type)+'$','i').test(match[1]))excluded.push(type);
   }
   for(const match of text.matchAll(new RegExp('\\b(?:no|without|avoid|exclude)\\s+(?:any )?('+TYPE_LIST+')(?=\\s*(?:(?:creatures?|cards?)\\s*)?(?:$|[,.;!?])|\\s+(?:and|but|with)\\b)','gi')))for(const type of CREATURE_THEMES)if(new RegExp('(?:^|\\s|,|/)'+tribePattern(type)+'(?=$|\\s|,|/)','i').test(match[1]))excluded.push(type);
   return {creatureTypesOnly:[...new Set(only)],excludedSubtypes:excluded};

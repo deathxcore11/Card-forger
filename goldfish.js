@@ -2,6 +2,7 @@
 // printed effects. These do not implement every card or full game rules and
 // cannot establish real winning turns, matchup strength or win probabilities.
 import { rng } from "./deckaudit.js";
+import { mtgManaSourceProfile } from "./mtg-mana-sources.js";
 
 const lc = (s) => String(s || "").toLowerCase();
 const shuffle = (a, r) => {
@@ -107,14 +108,13 @@ export const mtgAuraTargetStatus=(c,permanents=[])=>auraTargetStatus(mtgAuraTarg
 // rows: [{ qty, c }] with Scryfall card objects. opts: { size, commander (card), plan }
 export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrange", runs = 1000, seed = 11 } = {}) {
   const boundedConstructed = !commander && size < 99;
-  const basics={Plains:"W",Island:"U",Swamp:"B",Mountain:"R",Forest:"G",Wastes:"C"};
-  const basicColors=[...new Set(rows.filter(r=>/^Basic/.test(r.c?.type_line || "")).flatMap(r=>Object.entries(basics).filter(([n])=>String(r.c.type_line).includes(n)).map(([,color])=>color)))];
   const model = (c) => {
     const type = String(c.type_line || ""),
       text = lc(c.oracle_text || (c.card_faces || []).map((f) => f.oracle_text).join("\n")),
       land = /\bLand\b/.test(type.split(" // ")[0]),
       creature = /Creature/.test(type),
-      pw = parseInt(c.power, 10);
+      pw = parseInt(c.power, 10),
+      manaSource = mtgManaSourceProfile(c,{commanderIdentity:commander?.color_identity});
     return {
       name: c.name,
       card:c,
@@ -123,11 +123,8 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
       permanent:/\b(?:Artifact|Creature|Enchantment|Land|Planeswalker|Battle)\b/.test(type.split(" // ")[0]),
       cmc: Number(c.cmc) || 0,
       pips: [...String(c.mana_cost || c.card_faces?.[0]?.mana_cost || "").matchAll(/\{([WUBRGC])\}/g)].map(m=>m[1]),
-      colors: c.produced_mana?.length ? c.produced_mana : /add [^.]*mana of any (?:one )?colou?r/.test(text) ? [..."WUBRG"] : [...new Set([
-        ...Object.entries(basics).filter(([n])=>land&&type.includes(n)).map(([,v])=>v),
-        ...[...text.matchAll(/add ((?:\{[wubrgc]\})+)/g)].flatMap(m=>[...m[1].matchAll(/\{([wubrgc])\}/g)].map(x=>x[1].toUpperCase())),
-        ...(land&&/search your library for[^.]*basic land/.test(text)?basicColors:[]),
-      ])],
+      manaSource,
+      colors: manaSource.colors,
       land,
       creature,
       legendary: /\bLegendary\b/.test(type),
@@ -152,6 +149,8 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
     samples = [];
   if (deck.length < 20) return null;
   const hasTop = deck.some((c) => c.cmc >= 5), hasAura=deck.some(c=>c.aura.aura),
+    unmodeledMana=[...new Map(deck.filter(c=>c.land||c.dork||c.rock).filter(c=>c.manaSource.conditional.length||c.manaSource.unknown).map(c=>[c.name,{name:c.name,...c.manaSource}])).values()],
+    manaLimits=unmodeledMana.length?["Only verified unconditional tap/intrinsic mana outputs enter this simplified pool. Filter input costs, required creatures, chosen-type spending restrictions, fetches and other state-dependent mana routes are not executed; their useful conditional outputs may be underestimated.", "Entry-tapped timing, multiple mana per source and full mana-ability sequencing are not simulated."]:[],
     auraLimits=["Aura casts require a modeled host matching supported printed permanent-type/controller restrictions. Unknown qualifiers or host protection are not assumed legal.","No opposing permanents are present in this solitaire model. Aura attachment effects, granted target restrictions, created hosts and full state-based actions remain unmodeled."];
   for(const c of deck)if(c.aura.status==="unmodeled")unmodeledAuras.set(c.name,{name:c.name,reason:c.aura.reason});
   for (let run = 0; run < runs; run++) {
@@ -174,7 +173,7 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
       const li = hand.findIndex((c) => c.land);
       if (li >= 0) {
         lands++;
-        landMana.push(hand[li].colors);
+        if (hand[li].colors.length) landMana.push(hand[li].colors);
         permanents.push({card:hand[li].card,controller:"self"});
         did.push(hand.splice(li, 1)[0].name);
       }
@@ -206,11 +205,11 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
         // Do not invent later legal targets after an Aura changes a host's
         // targetability/type in ways this bounded model does not execute.
         if(c.changesAuraTargeting&&auraTarget?.targetIndex!=null)permanents[auraTarget.targetIndex].targetingUnmodeled=true;
-        if (c.rock) { extra++; mana++; extraMana.push(c.colors);pool.push(c.colors); }
-        if (c.dork) { nextExtra++;nextMana.push(c.colors); }
+        if (c.rock && c.colors.length) { extra++; mana++; extraMana.push(c.colors);pool.push(c.colors); }
+        if (c.dork && c.colors.length) { nextExtra++;nextMana.push(c.colors); }
         if (c.rampLand) {
           const li2 = lib.findIndex((x) => x.land);
-          if (li2 >= 0) { const land=lib.splice(li2,1)[0];lands++;landMana.push(land.colors);permanents.push({card:land.card,controller:"self"}); }
+          if (li2 >= 0) { const land=lib.splice(li2,1)[0];lands++;if (land.colors.length) landMana.push(land.colors);permanents.push({card:land.card,controller:"self"}); }
         }
         for (let k = 0; k < c.draw && lib.length; k++) hand.push(lib.shift());
         if (c.creature || c.walker) {
@@ -263,10 +262,11 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
   return {
     game: "mtg",
     runs,
-    ...(hasAura?{auraCasting:{status:unmodeledAuras.size?"partial":"bounded",unmodeled:[...unmodeledAuras.values()],limitations:auraLimits},...(!boundedConstructed?{limitations:auraLimits}:{})}:{}),
-    ...(boundedConstructed ? {limitations:["Simplified printed-power combat and recognized direct damage against no blockers, not a measured win rate.", "Does not execute cycling/channel, activated abilities, conditional token production, copy triggers, combat support, or full attack restrictions.", "Same-name legendary bodies do not stack; recast ETBs still resolve. Other state-based rules are not fully simulated.",...(hasAura?auraLimits:[])], modeledDraw:rows.filter(r => r.c && !/\bLand\b/.test(r.c.type_line || "")).map(r => ({name:r.c.name, qty:r.qty, castDraw:mtgCastDraw(r.c)}))} : {}),
+    ...(unmodeledMana.length?{manaSources:{status:'partial',excluded:unmodeledMana,limitations:manaLimits},limitations:manaLimits}:{}),
+    ...(hasAura?{auraCasting:{status:unmodeledAuras.size?"partial":"bounded",unmodeled:[...unmodeledAuras.values()],limitations:auraLimits},...(!boundedConstructed?{limitations:[...manaLimits,...auraLimits]}:{})}:{}),
+    ...(boundedConstructed ? {limitations:[...manaLimits,"Simplified printed-power combat and recognized direct damage against no blockers, not a measured win rate.", "Does not execute cycling/channel, activated abilities, conditional token production, copy triggers, combat support, or full attack restrictions.", "Same-name legendary bodies do not stack; recast ETBs still resolve. Other state-based rules are not fully simulated.",...(hasAura?auraLimits:[])], modeledDraw:rows.filter(r => r.c && !/\bLand\b/.test(r.c.type_line || "")).map(r => ({name:r.c.name, qty:r.qty, castDraw:mtgCastDraw(r.c)}))} : {}),
     headline: cmdr
-      ? `Commander lands on turn ${median(cmdrTurn) ?? "—"} in a typical game; ${Math.round(avg(dmg6))} damage to one opponent by turn 6.`
+      ? (unmodeledMana.length ? `With conditional mana routes omitted, modeled commander turn is ${median(cmdrTurn) ?? "unresolved"}; full commander timing is not evaluated.` : `Commander lands on turn ${median(cmdrTurn) ?? "—"} in a typical game; ${Math.round(avg(dmg6))} damage to one opponent by turn 6.`)
       : boundedConstructed ? (killT ? `Among simplified damage-model trials reaching 20 damage, the median is turn ${killT}; this is not a forecast of a real winning turn.` : "The simplified damage model does not reach 20 damage by turn 10 in these trials. Unmodeled abilities and routes are not evaluated here.") : killT
         ? `A typical goldfish kill is turn ${killT}${target ? ` (a ${String(plan).split(" ")[0].toLowerCase()} deck wants turn ${target} or sooner)` : ""}.`
         : "Most games don't deal 20 damage by turn 10: this list wins slowly, through something other than combat.",
