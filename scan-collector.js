@@ -169,3 +169,26 @@ export function narrowPrintings(game,items,q,facts=item=>printingFacts(game,item
  }
  return {items,from,to:from,by:''};
 }
+
+/**
+ * Yu-Gi-Oh! codes as OCR commonly misreads them: KIC0-EN046, K1CO-EN046,
+ * KICO-ENO46. The literal reading stays the evidence; these spellings are
+ * only tried against a catalogue when the literal code does not exist.
+ */
+export function ygoCodeVariants(code){
+ const m=String(code||'').toUpperCase().match(/^([A-Z0-9]{2,4})-([A-Z]{0,2})([A-Z0-9]{2,4})$/);
+ if(!m)return [];
+ const swap={'0':'O','O':'0','1':'I','I':'1','L':'1','5':'S','S':'5','8':'B','B':'8'};
+ const spell=(part,allowed)=>{
+  let out=[''];
+  for(const ch of part){const alt=allowed.test(ch)?swap[ch]:null;out=out.flatMap(p=>alt?[p+ch,p+alt]:[p+ch]);if(out.length>64)return [part];}
+  return out;
+ };
+ // Prefix letters and digits trade both ways; the trailing card number only
+ // becomes digits (O→0, I/L→1). The region (EN) is kept as read.
+ const prefixes=spell(m[1],/[0O1I58SB]/),numbers=spell(m[3],/[OIL]/).filter(n=>/^\d+$/.test(n)||n===m[3]);
+ const out=new Set();
+ for(const p of prefixes)for(const n of numbers)out.add(`${p}-${m[2]}${n}`);
+ out.delete(String(code).toUpperCase());
+ return [...out];
+}

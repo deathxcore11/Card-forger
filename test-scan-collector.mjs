@@ -83,3 +83,23 @@ const ygoLookup=createScannerLookup({local:async()=>ygo,candById:async()=>null,s
 for(const t of ['38','B38'])await assert.rejects(ygoLookup('ygo',{name:'Coral Dragon',number:t}),/Enter the full bottom code/,t);
 assert((await ygoLookup('ygo',{name:'Coral Dragon',number:'LEHD 38'})).every(c=>c.print.startsWith('LEHD-')));
 console.log('PASS: Yu-Gi-Oh! numbers need their set prefix.');
+
+// Yu-Gi-Oh! OCR swaps (KICO-EN046 read as KICO-ENO46, KIC0-EN046, K1CO-EN046) and
+// the printed passcode find the real printing for review, never as exact.
+for(const code of ['KICO-ENO46','KIC0-EN046\n38495396','K1CO-EN046']){
+ const r=lookupCatalog(ygo,{name:'',code});
+ assert.equal(r.cands[0]?.print,'KICO-EN046|Rare',code);assert(r.cands.every(c=>!c.exact),code);
+}
+assert(lookupCatalog(ygo,{name:'',code:'KICO-EN046'}).cands[0].exact,'a clean code read stays exact');
+assert.equal(lookupCatalog(ygo,{name:'',code:'KIC0-EN046\n12345678'}).cands.length,0,'a conflicting passcode still rejects');
+
+// The printing browser opens on the identified printing, not the first release.
+import {createScannerBrowse,scanBrowseGroups} from './scanner-review.js';
+{
+ const base={oracle_id:'o',name:'Fixture',finishes:['nonfoil'],image_uris:{normal:'https://example.test/a.jpg'}};
+ const a={...base,id:'a',set:'one',set_name:'First',collector_number:'1'},b={...base,id:'b',set:'two',set_name:'Second',collector_number:'2'};
+ const browse=createScannerBrowse({game:'mtg',card:a,focus:{cardId:'b'},loadPage:async()=>({cards:[a,b],nextCursor:null}),onSelect:()=>true},{current:()=>true,draw(){}});
+ await browse.load();
+ assert(scanBrowseGroups(browse).find(g=>g.key===browse.activeGroup).versions.some(r=>r.cardId==='b'),'starts on the matched printing');
+}
+console.log('PASS: Yu-Gi-Oh! code OCR swaps and passcode fallback stay review-only; the printing browser opens on the identified printing.');

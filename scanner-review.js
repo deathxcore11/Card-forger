@@ -40,6 +40,14 @@ export function createScannerBrowse(config,{current,draw,preview}={}) {
  const active=()=>!s.abort.signal.aborted&&current();
  const invalidate=()=>{s.selectedKey='';preview?.();};
  const rebuild=()=>{s.rows=printingRows(s.game,s.cards,{source:s.card,catalogue:s.catalogue,projectCard:s.projectCard});};
+ // Open on the printing the scan or typed code identified (KICO-EN046), not the
+ // first release in the list. Only the starting slide changes; nothing is chosen.
+ const focus=()=>{
+  const f=s.focus;if(!f||s.focused)return;
+  const hit=r=>s.game==='ygo'?!!f.code&&String(r.number).toUpperCase()===f.code.toUpperCase()&&(!f.rarity||r.rarity===f.rarity):!!f.cardId&&String(r.cardId)===String(f.cardId);
+  const group=scanBrowseGroups(s).find(g=>g.versions.some(hit));
+  if(group){s.activeGroup=group.key;s.focused=true;}
+ };
  s.load=async()=>{
   if(!active()||s.busy||s.loaded&&s.nextCursor===null)return;
   const cursor=s.loaded?s.nextCursor:null;s.busy=true;s.error='';draw();
@@ -47,7 +55,7 @@ export function createScannerBrowse(config,{current,draw,preview}={}) {
    const page=await s.loadPage({cursor,signal:s.abort.signal});if(!active())return;
    if(!Array.isArray(page?.cards))throw Error('Could not read these printings.');
    s.cards=[...new Map([...s.cards,...page.cards].map(c=>[String(c.id),c])).values()];
-   if(page.catalogue)s.catalogue=page.catalogue;s.loaded=true;s.nextCursor=page.nextCursor??null;rebuild();
+   if(page.catalogue)s.catalogue=page.catalogue;s.loaded=true;s.nextCursor=page.nextCursor??null;rebuild();focus();
    s.visited.add(JSON.stringify(cursor));if(s.nextCursor!==null&&s.visited.has(JSON.stringify(s.nextCursor))){s.nextCursor=null;throw Error('The source repeated a page. Try the lookup again.');}
   }catch(e){if(active())s.error=e.message||'Printing lookup unavailable.';}
   finally{if(active()){s.busy=false;draw();}}
