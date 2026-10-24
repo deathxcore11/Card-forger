@@ -13,17 +13,13 @@ import {
   deckStats,
   aggregateCards,
 } from "./core.js";
+import { MTG_VOCABULARY, tribePattern } from './mtg-vocabulary.js';
+import { mtgEffectProfile } from './mtg-effects.js';
 // Theme inference uses effect clauses, not timing restrictions or card names.
 // It is deliberately narrower than the general-purpose raw role tags.
-export const CREATURE_THEMES = [
-  "Angel", "Dragon", "Goblin", "Zombie", "Elf", "Vampire", "Dinosaur",
-  "Merfolk", "Sliver", "Wizard", "Human", "Spirit", "Knight", "Soldier",
-  "Cat", "Dog", "Demon", "Faerie", "Bird", "Squirrel", "Saproling",
-  "Warrior", "Rogue", "Cleric", "Shaman", "Artificer", "Noble", "Drake",
-  "Pirate", "Dwarf", "Giant", "Elemental", "Beast", "Eldrazi", "Rat",
-  "Fungus", "Treefolk", "Horror", "Insect", "Scarecrow",
-];
+export const CREATURE_THEMES = MTG_VOCABULARY['creature-types'];
 const escapePattern = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const themeMemo=new WeakMap();
 export function intentText(c) {
   return rulesText(c)
     .replace(/\([^)]*\)/g, " ")
@@ -31,7 +27,10 @@ export function intentText(c) {
 }
 export function creatureTypes(c) {
   const lines = c?.card_faces?.length ? c.card_faces.map(f => f.type_line || "") : typeText(c).split(" // ");
-  return [...new Set(lines.filter(t => /\b(?:Creature|Kindred|Tribal)\b/.test(t)).flatMap(t => (t.split("—")[1] || "").trim().split(/\s+/).filter(t => t && t !== "Saga")))];
+  return [...new Set(lines.filter(t => /\b(?:Creature|Kindred|Tribal)\b/.test(t)).flatMap(t => {
+    const suffix=(t.split('—')[1]||'').trim();
+    return CREATURE_THEMES.filter(type=>new RegExp('(?:^|\\s)'+escapePattern(type)+'(?:$|\\s)').test(suffix));
+  }))];
 }
 function namedEffectText(c) {
   let text = intentText(c);
@@ -42,9 +41,9 @@ function namedEffectText(c) {
 // A type's appearance in a name, protection clause or removal target is not a
 // tribal payoff. Return evidence for supported subjects and owned token makers.
 export function tribeEvidence(c, tribe) {
-  const t = escapePattern(tribe), text = namedEffectText(c), out = [];
+  const t = tribePattern(tribe), text = namedEffectText(c), out = [];
   const subject = new RegExp("\\b" + t + "s?(?: (?:creature|permanent|spell|card)s?)? (?:you control|you cast|in your graveyard|enter|dies|die|spells? you cast)", "i");
-  const trigger = new RegExp("(?:whenever|when) (?:another |one or more |a |an |other )?" + t + "s?\\b[^.\\n]*(?:you control|enters|dies|attacks)", "i");
+  const trigger = new RegExp("(?:whenever|when) (?:another |one or more |a |an |other )?(?:[A-Z][a-z]+ or )?" + t + "s?\\b[^.\\n]*(?:you control|enters|dies|attacks)", "i");
   const token = new RegExp("(?:you )?create[^.\\n]*\\b" + t + "\\b[^.\\n]*creature tokens?", "i");
   for (const clause of text.split(/[.\n]/)) {
     if (/opponent|its controller|their controller|each player|target player/i.test(clause)) continue;
@@ -55,8 +54,10 @@ export function tribeEvidence(c, tribe) {
   return out;
 }
 export function commanderTheme(c) {
+  const signature=rulesText(c)+'|'+typeText(c),cached=c&&themeMemo.get(c);
+  if(cached?.signature===signature)return cached.value;
   const text = intentText(c),
-    candidates = [...new Set([...CREATURE_THEMES, ...creatureTypes(c)])],
+    candidates = [...new Set([...CREATURE_THEMES, ...creatureTypes(c)])].filter(t=>new RegExp('\\b'+tribePattern(t)+'\\b','i').test(text)),
     evidence = candidates.map(tribe => ({tribe,evidence:tribeEvidence(c,tribe)})).filter(x => x.evidence.length)
       .sort((a,b) => b.evidence.reduce((n,e)=>n+(e.kind === "payoff"?3:1),0)-a.evidence.reduce((n,e)=>n+(e.kind === "payoff"?3:1),0) || a.tribe.localeCompare(b.tribe)),
     tribes = evidence.filter(x => x.evidence.some(e => e.kind !== "token")).map(x => x.tribe),
@@ -65,13 +66,16 @@ export function commanderTheme(c) {
   if (!/graveyard|dies|\bmill\b|(?:when|whenever)[^.]*sacrific/i.test(text)) {
     const index=inferred.indexOf("Graveyard"); if(index>=0) inferred.splice(index,1);
   }
+  if(inferred.includes("Lifegain")&&!themeSupport(c,{roles:["Lifegain"]}).length)inferred.splice(inferred.indexOf("Lifegain"),1);
   if (tribes.includes("Dragon")) inferred.push("Dragons");
   if (/\+1\/\+1 counters?|proliferate|put[^.]*counter on each/i.test(text)) inferred.push("Counters");
   const tokenKinds = [
     ...(/create[^.\n]*creature tokens?|populate|creature tokens? you control/i.test(text)?["creature"]:[]),
     ...["Treasure","Clue","Food","Blood","Map","Powerstone","Gold"].filter(t=>new RegExp("\\b"+t+" tokens?","i").test(text)).map(t=>t.toLowerCase()),
   ];
-  return {tribe:tribes[0] || null, tribes, roles:[...new Set(inferred)], tokenKinds, evidence};
+  const value={tribe:tribes[0] || null, tribes, roles:[...new Set(inferred)], tokenKinds, evidence};
+  if(c&&typeof c==='object')themeMemo.set(c,{signature,value});
+  return value;
 }
 // Direct tribal participation is distinct from a separate useful support plan.
 export function tribalSupport(c, tribe) {
@@ -81,6 +85,11 @@ export function tribalSupport(c, tribe) {
   if (creature && (creatureTypes(c).some(t => t.toLowerCase() === tribe.toLowerCase()) || /\bchangeling\b|(?:is|are) every creature type/i.test(text))) return true;
   if (/creatures you control (?:are every creature type|have changeling)|(?:equipped|enchanted) creature is every creature type/i.test(text)) return true;
   return tribeEvidence(c,tribe).length > 0;
+}
+export function fitsTypeRestrictions(c,{creatureTypesOnly=[],excludedSubtypes=[]}={}) {
+  const types=creatureTypes(c),creature=/\bCreature\b/.test(typeText(c)||(c?.card_faces||[]).map(f=>f.type_line||'').join(' // ')),
+    allTypes=creature&&/^(?:changeling\b|this (?:card|creature) is every creature type)/im.test(intentText(c));
+  return !excludedSubtypes.some(t=>allTypes||types.includes(t))&&(!creature||!creatureTypesOnly.length||allTypes||creatureTypesOnly.some(t=>types.includes(t)));
 }
 export function themeSupport(c, theme) {
   if (!c || isLand(c)) return [];
@@ -97,10 +106,12 @@ export function themeSupport(c, theme) {
     Graveyard:/graveyard|dies|mill|sacrifice/i,
     Spells:/instant|sorcery|magecraft|prowess/i,
     Artifacts:/artifact/i,
-    Lifegain:/gain .*life|lifelink|whenever you gain life/i,
     Landfall:/landfall|land enters|lands? you control/i,
     Dragons:/dragon/i,
   };
+  const effects=mtgEffectProfile(c);
+  if(theme.roles.includes('Lifegain')&&[...effects.provides,...effects.needs].some(e=>e.tag==='lifegain'))out.push('Lifegain support');
+  if(theme.roles.includes('Lifelink')&&effects.provides.some(e=>e.tag==='lifelink'))out.push('Lifelink support');
   for (const role of theme.roles) if (tests[role]?.test(text+" "+types)) out.push(role+" support");
   return out;
 }

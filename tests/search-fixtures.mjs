@@ -18,7 +18,7 @@ export const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 export const RESULTS=resolve(ROOT,'test-results');
 export const GAMES=['mtg','ptcg','ygo'], WIDTHS=[320,390,768,1440];
 export const NOW=Date.parse('2026-10-17T12:00:00.000Z'), ISO=new Date(NOW).toISOString();
-export const ART_EVIDENCE='SYNTHETIC SEARCH FIXTURE. All card and symbol images are intercepted with labeled SVG artwork. This suite verifies identity, navigation and layout, not real illustrations, live prices or provider availability. PNG evidence is captured only by the approved hosted CI job. All displayed lots and prices are synthetic fixture data, not a real collection.';
+export const ART_EVIDENCE='SYNTHETIC SEARCH FIXTURE. All card and symbol images are intercepted with labeled SVG artwork. This suite verifies identity, navigation and layout, not real illustrations, live prices or provider availability. PNG evidence is captured in explicitly enabled local or hosted synthetic browser QA. All displayed lots and prices are synthetic fixture data, not a real collection.';
 const IMAGE='https://search-fixtures.invalid';
 const SVG='<svg xmlns="http://www.w3.org/2000/svg" width="630" height="880"><rect width="630" height="880" fill="#18354c"/><circle cx="315" cy="330" r="180" fill="#997c49"/><text x="20" y="64" fill="white" font-size="26">SYNTHETIC SEARCH FIXTURE</text><text x="20" y="835" fill="white" font-size="25">NOT REAL CARD ART</text></svg>';
 // The production overlay contributes only these eight exact identities. Keep
@@ -144,13 +144,13 @@ export async function validateSearchFixtures(){
 }
 const MIME={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json','.gz':'application/gzip'};
 export async function startServer(){
- assert.equal(process.env.GITHUB_ACTIONS,'true','Fixture HTTP server is hosted-CI only');
+ assert(process.env.GITHUB_ACTIONS==='true'||process.env.CARDSTASHY_LOCAL_BROWSER==='1','Use hosted CI or explicitly enabled local synthetic browser QA.');
  const server=createServer(async(req,res)=>{try{const path=decodeURIComponent(new URL(req.url,'http://local').pathname),file=resolve(ROOT,'.'+(path==='/'?'/index.html':path));if(!file.startsWith(ROOT+'/')||!['GET','HEAD'].includes(req.method))throw Error('Denied');let body=await readFile(file);if(path==='/config.js')body=Buffer.from(body.toString().replace(/key:\s*"[^"]*"/,'key: ""'));res.setHeader('Content-Type',MIME[extname(file)]||'application/octet-stream');res.end(body);}catch{res.writeHead(404);res.end('Synthetic fixture: not found');}});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));return {base:`http://127.0.0.1:${server.address().port}`,close:()=>new Promise(r=>server.close(r))};
 }
 const historyEndpoint=new URL('/functions/v1/market-history',SUPABASE.url);
-export async function openSearchApp(browser,base,{game='mtg',width=390,height=1000,hasTouch=true,pendingDetails=false,evidenceLabel=game,sandboxPreviews=false,accountFixture=null,prepareFixtures=null,providerOverride=null,reducedMotion='reduce'}={}){
- assert.equal(process.env.GITHUB_ACTIONS,'true','Browser fixture execution is hosted-CI only');assert.match(base,/^http:\/\/127\.0\.0\.1:\d+$/);
+export async function openSearchApp(browser,base,{game='mtg',width=390,height=1000,hasTouch=true,pendingDetails=false,evidenceLabel=game,sandboxPreviews=false,accountFixture=null,prepareFixtures=null,providerOverride=null,reducedMotion='reduce',glass=false}={}){
+ assert(process.env.GITHUB_ACTIONS==='true'||process.env.CARDSTASHY_LOCAL_BROWSER==='1','Use hosted CI or explicitly enabled local synthetic browser QA.');assert.match(base,/^http:\/\/127\.0\.0\.1:\d+$/);
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch,reducedMotion,locale:'en-US',timezoneId:'UTC',serviceWorkers:sandboxPreviews?'allow':'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
  const errors=[],writes=[],unexpected=[],requests=[],gates=[],rules=[],fixtures=makeSearchFixtures(game,{pendingDetails});
  // Optional synthetic setup runs before boot and before durable-write baselines.
@@ -197,7 +197,7 @@ export async function openSearchApp(browser,base,{game='mtg',width=390,height=10
   const fixture=providerFixture(url);if(fixture!==undefined)return fulfill(fixture);
   unexpected.push(`${req.method()} ${url.href}`);return fulfill({error:'Unmapped request blocked; no external request forwarded.'},451);
  });
- await page.addInitScript(({storage,now})=>{if(window!==window.top)return;const NativeDate=Date,offset=now-NativeDate.now();globalThis.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[NativeDate.now()+offset]));}static now(){return NativeDate.now()+offset;}};Math.random=()=>0;for(const[k,v]of Object.entries(storage))localStorage.setItem(k,JSON.stringify(v));localStorage.setItem('cardstashy-tour-v1','done');localStorage.setItem('cardstashy-glass','off');},{storage:fixtures.storage,now:NOW});
+ await page.addInitScript(({storage,now,glass})=>{if(window!==window.top)return;const NativeDate=Date,offset=now-NativeDate.now();globalThis.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[NativeDate.now()+offset]));}static now(){return NativeDate.now()+offset;}};Math.random=()=>0;for(const[k,v]of Object.entries(storage))localStorage.setItem(k,JSON.stringify(v));localStorage.setItem('cardstashy-tour-v1','done');if(glass)localStorage.removeItem('cardstashy-glass');else localStorage.setItem('cardstashy-glass','off');},{storage:fixtures.storage,now:NOW,glass});
  if(accountFixture)await page.addInitScript(fixture=>{if(!localStorage.getItem('qa-account-seeded')){localStorage.setItem('qa-account-seeded','1');for(const[k,v]of Object.entries(fixture.storage||{}))localStorage.setItem(k,JSON.stringify(v));localStorage.setItem('qa-account-model',JSON.stringify(fixture));}},accountFixture);
  await page.goto(base+'/#search');await page.locator('#app.ready').waitFor();await page.evaluate(async()=>{window.__uiTestState=(await import('/store.js')).S;window.__uiTestTcg=await import('/tcg.js');});await page.waitForFunction(g=>document.body.dataset.game===g&&(window.__uiTestState.state.settings.game||'mtg')===g,game);
  // Observe durable writes as well as final in-memory snapshots. Cache writes and

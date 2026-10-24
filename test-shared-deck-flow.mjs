@@ -17,7 +17,7 @@ for(const c of pool)S.catalog[cardKey(c.name)]=c;
 let calls=0;
 const context={S,T,tcgCtx:{},meta:name=>S.catalog[cardKey(name)],resolve:async name=>S.catalog[cardKey(name)],cacheCard:c=>S.catalog[cardKey(c.name)]=c,inv:()=>({available:0}),priceOf:name=>cardPrice(S.catalog[cardKey(name)]),api:async path=>{calls++;const q=new URL(path,'https://fixture.invalid').searchParams.get('q');return {data:q?.includes('is:commander')?[leader]:pool};}};
 const pipeline=createDeckPipeline(context);
-const request={game:'mtg',format:'Commander',seed:anchor.name,commander:leader.name,budget:'10',theme:'Artifacts',preferOwned:false};
+const request={game:'mtg',format:'Commander',seed:anchor.name,commander:leader.name,budget:'10',budgetMode:'target',theme:'Artifacts',preferOwned:false};
 let result=await pipeline.build(request);
 assert(result.ok,JSON.stringify(result));assert.equal(result.rows.reduce((n,r)=>n+r.qty,0),100);assert(result.rows.some(r=>r.name===anchor.name));assert(pipeline.recheck(result));assert(result.delta>0);assert.equal(result.budgetStatus,'outside-target');assert.equal(S.state.decks.length,0);assert(calls<15,'card retrieval is bounded, not one call per deck slot');
 const markup=deckResultMarkup(result,'fixture');assert.match(markup,/Save deck/);assert.match(markup,/exceeds the allowed overage/);assert.doesNotMatch(markup,/Save draft|Hard to play|Buy .*TCG/);
@@ -52,3 +52,15 @@ const unsafeId=experience.register(result,scope());changeAccountOnSave=true;
 await assert.rejects(actions.flowSave({dataset:{result:unsafeId}}),/account changed while saving/);
 assert.throws(()=>actions.flowExport({dataset:{result:unsafeId}}),/account or collection changed/);
 console.log('PASS: Save → Export stays usable; account changes before or during Save remain blocked.');
+
+// Every game and inline/manual result uses the same existing deck design.
+for(const game of ['mtg','ygo','ptcg']){
+ const html=deckResultMarkup({...result,request:{...result.request,game}},'presentation');
+ assert.match(html,/class="cs-hero compact/);assert.match(html,/class="cs-title"/);
+ assert.match(html,/list compact deck-compact-list/);assert.match(html,/mini-row art-row deck-compact-row/);
+ assert.doesNotMatch(html,/deck-flow-row|Tournament-backed/);assert.match(html,/data-flow-budget[^>]*value=""/);assert.match(html,/Rebuild with budget/);
+ const busy=deckSetupMarkup({request:{...request,game},busy:true,status:'Checking the selected cards…'},pipeline.formats);
+ assert.match(busy,/Your deck is being built/);assert.match(busy,/brand-loading/);assert.match(busy,/flowCancelBuild/);
+ assert.doesNotMatch(busy,/data-flow-field/,'in-progress setup exposes cancellation, not editable stale inputs');
+}
+console.log('PASS: shared generated-deck presentation and branded progress for all three games.');

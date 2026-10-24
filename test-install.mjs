@@ -47,6 +47,15 @@ console.log('PASS: real Install action opens desktop help when the native prompt
   const { ANDROID_APPS } = await import("./worker.js");
   const { createHash } = await import("node:crypto");
   const file = "." + ANDROID_BETA.href, apk = fs.readFileSync(file), meta = JSON.parse(fs.readFileSync(file.replace(/\.apk$/, ".json"), "utf8"));
+  for (const key of ["package", "versionName", "versionCode", "bytes", "sha256"]) assert.equal(ANDROID_BETA[key], meta[key], `published APK ${key} matches its verification manifest`);
+  // The downloads directory is publicly served: unadvertised future APKs or manifests
+  // must not turn a website-only release into an accidental native publication.
+  const publishedVersion = ANDROID_BETA.versionName.match(/^(\d+)\.(\d+)\.(\d+)/).slice(1).map(Number);
+  const compareVersion = version => version.reduce((delta, part, i) => delta || part - publishedVersion[i], 0);
+  for (const name of fs.readdirSync("downloads")) {
+    const version = name.match(/^cardstashy-android-beta-(\d+)\.(\d+)\.(\d+)\.(?:apk(?:\.sha256)?|json)$/);
+    if (version) assert.ok(compareVersion(version.slice(1).map(Number)) <= 0, `${name} must not publish a native candidate newer than the advertised APK`);
+  }
   assert.equal(apk.length, ANDROID_BETA.bytes); assert.ok(apk.length < 25 * 1048576, "Cloudflare serves files up to 25 MiB");
   const sha = createHash("sha256").update(apk).digest("hex");
   assert.equal(sha, ANDROID_BETA.sha256); assert.equal(meta.sha256, sha); assert.equal(meta.bytes, apk.length);

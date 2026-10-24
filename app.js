@@ -1,3 +1,4 @@
+import {cardDiscoverySpec} from './card-discovery.js';
 import {checkRelease,acknowledgeRelease,onReleaseChange,releaseDot,releaseState} from './release-status.js';
 import {createDeckPipeline} from './deck-pipeline.js';
 import {createDeckExperience} from './deck-experience.js';
@@ -56,7 +57,7 @@ import { routeSegments, normalizeRoute, gameSwitchRoute, historyEntry, createNav
 import { useMyPrices, myPriceKey, ensureTcgPrices } from "./mtg-tcgprice.js";
 import { buyOnTcgplayer, massLines, copyPlain } from "./buy.js";
 import {applySwapsToCards} from './insights.js';
-import {showRuleHint,dismissRuleHint,attachRuleHover} from './rule-dex.js';
+import {ruleCardContext,showRuleHint,dismissRuleHint,attachRuleHover} from './rule-dex.js';
 import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck,spendUp,cardQuality} from './deck-optimizer.js';
 import { playRate } from './importance.js';
 import { budgetNotes, variantsFrom, difficultyOf } from './deck-optimizer.js';
@@ -3604,6 +3605,26 @@ A.rulesList = async (t) => {
 
 /* ---------- card page tabs ---------- */
 A.ruleHint = showRuleHint;
+A.ruleCards = async button => {
+ const {game,discoveryKind,discoveryValue}=button.dataset,spec=cardDiscoverySpec(game,discoveryKind,discoveryValue);
+ if(!spec||T.game()!==game)return toast('Reopen this card in its game before searching.');
+ const source=sheetSnapshot();dismissRuleHint();closeSheet(false);
+ if(source){routeTrail.push(source);if(routeTrail.length>12)routeTrail.shift();}
+ if(game==='mtg'){
+  S.ui.db.term=spec.q;S.ui.db.filters={};dbInvalidate();await go('#search');
+  if(T.game()===game)return A.dbSearch();
+ }else{
+  T.invalidateTcgSearch(game,true);const U=T.ui(game).search;
+  Object.assign(U,{q:'',f:spec.filters,own:'',maxPrice:'',sort:game==='ygo'?'name':'new',discoveryNote:''});
+  if(spec.loadedAbility||spec.loadedText){
+   const key=(spec.loadedAbility||spec.loadedText).toLocaleLowerCase();
+   const cards=Object.values(T.cache[game]).filter(c=>!c.brief&&(spec.loadedAbility?c.abilities?.some(a=>a.name?.toLocaleLowerCase()===key):ruleCardContext(game,c).text.toLocaleLowerCase().includes(key)));
+   Object.assign(U,{results:cards,ran:true,total:cards.length,more:false,busy:false,error:'',discoveryNote:`${spec.label}. Loaded card data only; this is not a complete catalogue search. Shared text or an Ability name does not prove the same effect or a working combo.`});
+  }
+  await go('#search');if(T.game()===game&&!spec.loadedAbility&&!spec.loadedText)return A.tSearch();
+ }
+};
+
 A.cardTab = async (t) => {
   const commit=scopedCommit();
   const ctx = S.ui.sheetCtx;

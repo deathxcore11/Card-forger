@@ -1,0 +1,88 @@
+// Real provider snapshots plus explicitly synthetic prices/fillers. No AI,
+// account writes, live prices or claims of competitive strength.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {readBuildContract,applyUserBuildIntent,validateBuildProposal,lockBuildContract} from './ai-build-contract.js';
+import {requestedIntent,inspectMtgTheme,scoreCard,buildDeck,themeQueries} from './builder.js';
+import {tribalSupport,commanderTheme,creatureTypes,themeSupport,fitsTypeRestrictions} from './planner.js';
+import {mtgTags} from './pairing.js';
+import {mtgSelfConflicts,mtgAbilityEvidence} from './mtg-effects.js';
+import {engineMap,engineMapPanel} from './engine-map.js';
+import {normalizeDeckRequest,chooseDeck,inspectDeckPlan} from './deck-construction.js';
+import {prepareMtgDeck} from './ai-deck-builder.js';
+import {slim} from './store.js';
+import {MTG_VOCABULARY} from './mtg-vocabulary.js';
+const load=n=>JSON.parse(fs.readFileSync(new URL('./tests/fixtures/ai-synergy-audit/'+n+'.json',import.meta.url)));
+const u=content=>({type:'message',role:'user',content});
+const args={game:'mtg',format:'Commander',style:'artifacts',budget:100,budget_basis:'total',goal:'strongest',colors:['W'],required_cards:[],excluded_cards:[],candidate_cards:[],avoid_infinite:false};
+for(const theme of ['Cats','Angels and Lifelink','Ninjas and prowess','Squirrels with flying','Wolves','Mice','Time Lords']){
+ const contract=readBuildContract([u('Build a mono-white Commander deck under $100 with '+theme)]),fixed=applyUserBuildIntent(args,contract);
+ assert(contract.themes.length,theme);assert(validateBuildProposal(fixed,contract).ok,JSON.stringify(fixed));
+ assert(!validateBuildProposal({...fixed,style:'artifacts'},contract).ok,theme+' cannot disappear');
+ assert.equal(contract.budget,100);assert.equal(contract.budgetMode,'cap');
+}
+assert.deepEqual(requestedIntent('Angels with lifelink').roles,['Lifelink']);
+assert.deepEqual(requestedIntent('Ninjas and prowess').tribes,['Ninja']);assert.deepEqual(requestedIntent('Ninjas and prowess').abilities,['Prowess']);
+assert.deepEqual(requestedIntent('no Angels').tribes,[]);
+const purity=readBuildContract([u('Build a mono-white Commander deck with only Angel creatures under $100')]);assert.deepEqual(purity.creatureTypesOnly,['Angel']);
+assert(!fitsTypeRestrictions(load('soul-warden'),purity));assert(fitsTypeRestrictions(load('serra-angel'),purity));assert(fitsTypeRestrictions(load('changeling-outcast'),purity));
+const negative=readBuildContract([u('Build a Commander Angels deck under $100'),u('Without Angels.')]);assert.deepEqual(negative.excludedSubtypes,['Angel']);assert(!negative.themes.includes('angel'));
+assert(!fitsTypeRestrictions(load('serra-angel'),negative));
+assert.deepEqual(readBuildContract([u('Build a Commander deck around Doctor Doom with lifelink')]).themes,['lifelink'],'words in an unquoted named build-around are not new subtype restrictions');
+assert.deepEqual(readBuildContract([u('Build a white Modern deck under $100')]).colors,['W']);
+const locked=lockBuildContract(validateBuildProposal(applyUserBuildIntent(args,readBuildContract([u('Build a mono-white Commander deck under $100')]))).args);
+assert.equal(validateBuildProposal({...locked,budgetMode:'target'},locked).args.budgetMode,'cap','revision cannot relax a cap');
+assert.equal(readBuildContract([u('Build a Commander deck for a flexible budget of $100')]).budgetMode,'target');
+assert(MTG_VOCABULARY['creature-types'].length>300);assert(MTG_VOCABULARY['keyword-abilities'].length>200);
+console.log('PASS: provider vocabulary, plural/multiword subtypes and ability requests survive the actual AI contract; explicit caps cannot be relaxed.');
+const valk=load('righteous-valkyrie'),taint=load('tainted-remedy'),change=load('changeling-outcast');
+assert(mtgTags(valk).provides.has('lifegain'));assert(mtgTags(valk).needs.has('sub:Angel'));assert(mtgTags(valk).needs.has('sub:Cleric'));
+assert.deepEqual(themeSupport(taint,{roles:['Lifegain']}),[]);assert.equal(scoreCard(taint,['Lifegain'],[],{})-scoreCard(taint,[],[],{}),0);
+assert(mtgTags(change).provides.has('sub:Cat'));assert(tribalSupport(change,'Cat'));
+assert.deepEqual(creatureTypes({type_line:'Creature — Time Lord Doctor'}),['Doctor','Time Lord']);
+const synthetic=(name,text,type='Creature — Human')=>({name,oracle_text:text,type_line:type,cmc:2,color_identity:['W'],colors:['W'],mana_cost:'{1}{W}',prices:{usd:'.10'},legalities:{commander:'legal',modern:'legal'}});
+assert.equal(mtgAbilityEvidence(synthetic('Mention only','Destroy target creature with flying.'),'Flying').length,0);
+assert(mtgAbilityEvidence(synthetic('Native','Flying, vigilance'),'Flying').length);
+assert(mtgAbilityEvidence(synthetic('Granted','Creatures you control have flying.'),'Flying').length);
+assert.equal(mtgAbilityEvidence(synthetic('Opponent','Creatures your opponents control have flying.'),'Flying').length,0);
+assert(!mtgTags(synthetic('Opponent life','Target opponent gains 5 life.')).provides.has('lifegain'));
+assert(!mtgTags(synthetic('Replacement only','If you would gain life, you gain twice that much life instead.')).provides.has('lifegain'));
+console.log('PASS: life-gain direction and variable output, tribal alternatives, changeling, multiword types and positive keyword capabilities share evidence.');
+const soul=load('soul-warden'),pride=load('ajanis-pridemate'),hush=load('hushbringer'),orb=load('torpor-orb');
+const rows=[soul,pride,hush,orb].map(card=>({card,c:card,name:card.name,qty:1,zone:'main'}));
+assert(mtgSelfConflicts(rows.map(r=>r.card)).some(c=>c.blocker===orb.name&&c.provider===soul.name));
+const map=engineMap('mtg',rows),link=map.links.find(l=>l.payoff===pride.name&&l.tag==='lifegain');
+assert.match(link.providers.find(p=>p.name===soul.name).requirements.join(' '),/Torpor Orb/);assert.match(engineMapPanel(map),/suppresses creature-entering/);
+assert(!engineMap('mtg',rows.slice(0,2)).conflicts.length);
+const angel=synthetic('Payment blocker',"Players can't pay life or sacrifice creatures to cast spells or activate abilities.",'Creature — Angel'),laser=synthetic('Paid damage','Pay 50 life: This artifact deals 50 damage to any target.','Artifact');
+assert(mtgSelfConflicts([angel,laser]).some(c=>c.kind==='life-payment'));
+console.log('PASS: exact-card trigger blockers appear on affected links; removing blockers removes warnings; life-payment restrictions are distinct.');
+const basic=synthetic('Plains','{T}: Add {W}.','Basic Land — Plains');basic.produced_mana=['W'];basic.cmc=0;basic.colors=[];
+const lead=load('arahbo-roar-of-the-world'),cat=load('leonin-vanguard');
+const thin=[{card:lead,name:lead.name,qty:1},{card:cat,name:cat.name,qty:1},{card:basic,name:'Plains',qty:38},...Array.from({length:60},(_,i)=>({card:synthetic('Unrelated '+i,'Draw a card.','Artifact'),name:'Unrelated '+i,qty:1}))];
+assert.equal(inspectMtgTheme(thin,{style:'Cats',commander:lead.name}).status,'insufficient');
+assert(inspectDeckPlan({game:'mtg',theme:'Cats'},thin,{commander:lead.name}).issues.some(i=>i.includes('Cat plan')));
+const supported=[...thin,{card:change,name:change.name,qty:1}],analysis=inspectMtgTheme(supported,{style:'Cats',commander:lead.name});
+assert.equal(analysis.status,'supported');assert.equal(analysis.groups[0].copies,2);assert(analysis.groups[0].access<.5);
+assert.equal(inspectMtgTheme(thin,{style:'video game themed',commander:lead.name}).unverifiedTerms.includes('video'),true);
+const f={mtg:[{id:'modern',name:'Modern'}]},cap=normalizeDeckRequest({game:'mtg',format:'Modern',budget:100,goal:'strongest'},f);
+const candidate=(id,cost,owned=0,score=10)=>({deck:{id},check:{complete:true,legal:true},plan:{issues:[],notes:[],setupBurden:0,theme:{status:'supported'}},pricing:{estimate:cost,subtotal:cost??0,unpriced:cost===null?1:0,copies:60,ownedCopies:owned},power:{score}});
+assert.deepEqual(cap.constructionBudgets,[100]);assert.equal(cap.allowance,0);assert.equal(cap.preferOwned,false);
+assert(!chooseDeck([candidate('expensive',101)],cap).ok);assert(!chooseDeck([candidate('unpriced',null)],cap).ok);
+assert(chooseDeck([candidate('exact',100)],cap).requestSatisfied);
+const flexible=normalizeDeckRequest({...cap,budgetMode:'target'},f),over=chooseDeck([candidate('over',110)],flexible);
+assert(over.ok);assert(!over.requestSatisfied);assert.equal(over.validation.budget,'fail');
+assert.equal(chooseDeck([candidate('stronger',90,0,90),candidate('owned',90,60,20)],cap).deck.id,'stronger');
+const copied=slim({...valk,flavor_name:'Printing alias',all_parts:[{component:'combo_piece',name:'Related real record',id:'fixture'}]});assert.equal(copied.flavor_name,'Printing alias');assert.equal(copied.all_parts.length,1);
+console.log('PASS: thin tribal pools fail the final plan check, access is measured without pretending strength; cap/target, unknown quotes and strongest-vs-owned remain distinct.');
+// End-to-end selection, including a genuinely offline operation over a bounded
+// loaded pool. Synthetic records isolate the constraint; they are not a real deck.
+const pureLead=synthetic('Synthetic purity leader','Flying, lifelink','Legendary Creature — Angel');
+const purePool=[pureLead,basic,...Array.from({length:70},(_,i)=>synthetic('Synthetic pure Angel '+i,'Flying, lifelink','Creature — Angel')),...Array.from({length:20},(_,i)=>synthetic('Synthetic excluded Human '+i,'Draw a card.','Creature — Human'))];
+for(const offline of [false,true]){
+ const catalog=Object.fromEntries(purePool.map(c=>[c.name.toLowerCase(),c]));
+ const context={S:{catalog},meta:n=>catalog[n.toLowerCase()],resolve:async n=>catalog[n.toLowerCase()],cacheCard:c=>(catalog[c.name.toLowerCase()]=c),inv:()=>({available:0}),api:async()=>{if(offline)throw Error('Synthetic offline provider');return {data:purePool};}};
+ const result=await prepareMtgDeck({style:'Angels with lifelink',format:'Commander',seed:pureLead.name,commander:pureLead.name,budget:100,creatureTypesOnly:['Angel']},context);
+ assert(result.result.ready,JSON.stringify(result.result));assert.equal(result.draft.total,100);assert(!result.draft.cards.some(r=>r.name.includes('excluded Human')));assert(result.result.totalEstimate<=100);
+}
+console.log('PASS: actual selector builds 100 cards within cap from a bounded online/offline fixture pool, enforces Angel-only creatures and retains noncreature land support without AI.');

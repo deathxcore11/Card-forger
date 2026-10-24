@@ -92,7 +92,7 @@ export const priceOf = (name, finish = "nonfoil") => {
 
 // Drop heavy Scryfall fields so the cache stays small on phones.
 const KEEP = ["conditionQuotes","pdhCommander","pdhCommanderCheckedAt",
-  "id", "oracle_id", "name", "lang", "cmc", "mana_cost", "type_line", "oracle_text",
+  "id", "oracle_id", "name", "flavor_name", "all_parts", "lang", "cmc", "mana_cost", "type_line", "oracle_text",
   "colors", "color_identity", "produced_mana", "keywords", "power", "toughness",
   "loyalty", "legalities", "prices", "set", "set_name", "collector_number", "rarity",
   "edhrec_rank", "scryfall_uri", "finishes", "layout", "checkedAt",
@@ -112,6 +112,8 @@ export function slim(c) {
   if (Array.isArray(c.card_faces))
     out.card_faces = c.card_faces.map((f) => ({
       name: f.name,
+      oracle_id: f.oracle_id,
+      flavor_name: f.flavor_name,
       mana_cost: f.mana_cost,
       type_line: f.type_line,
       oracle_text: f.oracle_text,

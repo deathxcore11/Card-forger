@@ -219,7 +219,7 @@ function verify(entry) {
 
 /* ---------- Launcher and dialog ---------- */
 
-export function aiReviewPanel(game, deck, lookup, p, hooks = {}) {
+export function aiReviewPanel(game, deck, lookup, p, hooks = {}, {compact = false} = {}) {
   const payload = reviewPayload(game, deck, lookup, p), signature = JSON.stringify(payload), key = game + ':' + deck.id;
   let entry = entries.get(key);
   if (!entry || entry.signature !== signature) {
@@ -228,6 +228,7 @@ export function aiReviewPanel(game, deck, lookup, p, hooks = {}) {
     if (activeDialog?.key === key) { activeDialog.stale = true; updateDialog(); }
   } else entry.hooks = hooks;
   const result = entry.result, ready = result ? `${plural(result.pilot?.lines?.length || 0, 'line')} · ${plural(result.pressure?.scenarios?.length || 0, 'stress test')} · ${plural(result.improve?.length || 0, 'swap')}` : '';
+  if(compact)return `<div class="deck-coach-action"><button class="btn ghost" data-act="aiDeckReview" data-ai="${esc(key)}" aria-label="AI review of this deck">${brandMark('brand-idle')}<span>${entry.busy?'View AI progress':result?'Open AI review':'AI review'}</span></button><small>Optional · sends card text and owned swap candidates to OpenAI.</small></div>`;
   return `<section class="panel ai-review ai-review-launch" aria-label="AI deck coach"><div class="ai-launch-top"><span class="ai-sigil" aria-hidden="true">${brandMark("brand-idle")}</span><div><p class="eyebrow">AI coach · all three games</p><h3>Pilot, pressure-test and improve this deck</h3></div><span class="chip">AI</span></div><p class="small muted">Possible lines from your own cards, recovery plans and owned swaps. Basic card, quote and turn checks catch some mistakes; they do not verify the full advice or a winning route.</p><div class="ai-launch-actions"><button class="btn small" data-act="aiDeckReview" data-ai="${esc(key)}">${entry.busy ? 'View coaching progress' : result ? 'Open coaching' : 'Coach this deck'} <span aria-hidden="true">↗</span></button><span class="small muted">${entry.busy ? 'Coaching in progress' : result ? ready : 'Optional · your score stays unchanged'}</span></div><p class="foot">Tapping it sends this deck's card text, the app's checks and the names and text of up to 25 cards you own to OpenAI. Your account details and prices stay out of the request.</p><div role="status" aria-live="polite">${entry.error ? `<p class="warn-text small">${esc(entry.error)}</p>` : ''}</div></section>`;
 }
 
@@ -333,7 +334,7 @@ export function closeAiReview() {
   if (!activeDialog) return;
   const { node, key } = activeDialog; activeDialog = null;
   node.close?.(); node.remove();
-  [...document.querySelectorAll('[data-act="aiDeckReview"]')].find(b => b.dataset.ai === key)?.focus({ preventScroll: true });
+  [...document.querySelectorAll('[data-act="aiDeckReview"], [data-act="flowCoach"]')].find(b => b.dataset.ai === key)?.focus({ preventScroll: true });
 }
 export function showAiReview(key, render, fetcher = fetch) {
   const entry = entries.get(key); if (!entry) return;

@@ -1,3 +1,4 @@
+import {discoverCardMarkup} from './card-discovery.js';
 import {versionsMarkup,releaseDot} from './release-status.js';
 import {setAtmosphere,packButton} from './set-experience.js';
 import {motionTiltOn} from './mobile-tilt.js';
@@ -349,7 +350,7 @@ export function cardSheet(c, ctx = {}) {
     src = MTG_SOURCES.find((x) => x[0] === (ctx.source || "tcgplayer")) || MTG_SOURCES[0];
   ensureTcgPrices([shown]);
   const priceFinish = selectedFinish("mtg", shown, ctx.priceFinish);
-  const readableText = `<div class="cs-readable">
+  const readableText = `<div class="cs-readable">${discoverCardMarkup('mtg',shown)}
   ${faces
     .map(
       (f, n) => `<section class="cd-text effect-card mtg" data-rule-card-context="${esc(JSON.stringify(ruleCardContext('mtg',shown)))}">

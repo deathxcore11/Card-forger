@@ -91,6 +91,6 @@ export function createDeckPipeline(x) {
  return {formats,resolveSeed,assess,trialSwap,improve,themes:game=>game==='ygo'?T.SOURCES.ygo.archetypeNames():Promise.resolve([]),build:(input,options)=>constructDeck(input,adapter,options),recheck(result){
   if(!result?.ok)return false;const a=assess(result.deck,result.request),plan=inspectDeckPlan(result.request,a.rows,result.deck);
   const pricing=priceDeck(a.rows,result.request.budgetBasis);
-  return a.check.complete&&a.check.legal&&!plan.issues.length&&(!result.request.ownedOnly||pricing.ownedCopies===pricing.copies);
+  return a.check.complete&&a.check.legal&&!plan.issues.length&&(!result.request.ownedOnly||pricing.ownedCopies===pricing.copies)&&(result.request.budgetMode!=='cap'||result.request.budget===null||pricing.estimate!==null&&pricing.estimate<=result.request.budget+1e-6);
  }};
 }

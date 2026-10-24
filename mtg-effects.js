@@ -44,6 +44,20 @@ const outputOf = (text) => {
 };
 const variableCondition = (t) => /\b(for each|equal to|that much|x mana|number of|of that color|in any combination)\b/.test(t);
 
+// Recognize printed/granted keywords without treating a removal/protection
+// target mentioning a keyword as a source of that ability. This establishes
+// capability, not that its costs or strategic dependencies are satisfied.
+export function mtgAbilityEvidence(c,ability) {
+  const escaped=String(ability).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),word=new RegExp('\\b'+escaped+'(?=$|\\W)','i'),out=[];
+  for(const [index,face] of facesOf(c).entries())for(const raw of String(face.oracle_text||'').split('\n')){
+    const line=withoutReminder(raw),t=lower(line);if(!word.test(line))continue;
+    const native=new RegExp('^(?:[a-z -]+, )*'+escaped+'(?=$|[\\s,{.—])','i').test(line),
+      grant=/(?:creatures? you control|this creature|this card|equipped creature|enchanted creature|target creature)[^.]*\b(?:has|have|gain|gains)\b/i.test(line)&&!/(?:opponent|loses?|without|can't have|can't gain)/.test(t);
+    if(native||grant)out.push({ability,face:face.name||c?.name,evidence:line,status:'conditional',requirements:[...requirementsFor(line,face,index,c),...(grant?['Requires an eligible recipient of the granted ability']:[]),'Keyword capability alone does not establish an executable synergy']});
+  }
+  return out;
+}
+
 /** Net acceleration is distinct from filtering. Effects preserve costs and limits;
  * conditional acceleration is possible capability, not a guaranteed mana amount. */
 export function mtgResourceProfile(c) {
@@ -153,6 +167,16 @@ export function mtgEffectProfile(c) {
     for (const raw of text.split('\n')) {
       const line = withoutReminder(raw), t = lower(line);
       if (!line) continue;
+      // Life gain has a recipient and an event. Opponent replacement effects,
+      // costs and reminder text do not provide our life-gain events.
+      if (/\byou (?:may )?gain (?:\d+|x|that much|life equal to)[^.]*\blife\b|\byou (?:may )?gain life equal to\b/.test(t))
+        add(provides,'lifegain',line,{status:'conditional',requirements:['Requires resolving the printed life-gain effect']});
+      if (/\blifelink\b/.test(t) && !/(?:loses?|lose|without|doesn.t have|can.t (?:have|gain))[^.]*\blifelink\b/.test(t)) {
+        const native=/^(?:[a-z -]+, )*lifelink(?:, [a-z -]+)*[.]?$/.test(t);
+        const ownGrant=/(?:creatures? you control|this creature|this card|equipped creature|enchanted creature|target creature)[^.]*\b(?:has|have|gains?|gain)\b[^.]*\blifelink\b/.test(t) && !/opponent[^.]*\blifelink\b/.test(t);
+        if(native||ownGrant)for(const tag of ['lifelink','lifegain'])add(provides,tag,line,{status:'conditional',requirements:[native?'Requires dealing damage with this source':'Requires an eligible creature receiving lifelink and dealing damage']});
+      }
+      if (/\bwhenever you gain life\b|\bif you gained (?:\d+ or more )?life\b/.test(t))add(needs,'lifegain',line,{status:'conditional'});
       if (/\bpopulate\b/.test(t)) {
         const extra = {status:'conditional', requirements:['Requires an existing creature token you control']};
         for (const tag of ['token','creature_token','fodder']) add(provides,tag,line,extra);
@@ -239,4 +263,23 @@ export function mtgLinkEvidence(need, providerTags, payoffTags) {
   }
   const conditional = (providers.length && providers.every(e=>e.status==='conditional')) || consumers.some(e=>e.status==='conditional');
   return {status:conditional?'conditional':providers.length && consumers.length?'supported':'inferred', evidence:unique([...providers,...consumers].map(e=>e.evidence)), requirements:unique([...providers,...consumers].flatMap(e=>e.requirements || []))};
+}
+
+// Coexistence warnings, not blanket bans: sequencing/removing a blocker can
+// restore the route. Only these printed restrictions are modeled here.
+export function mtgSelfConflicts(cards=[]) {
+  const rows=[...new Map(cards.filter(Boolean).map(c=>[c.name,c])).values()],out=[];
+  const text=c=>facesOf(c).map(f=>withoutReminder(f.oracle_text)).join('\n').toLowerCase().replace(/[’‘]/g,"'");
+  for(const blocker of rows){
+    const t=text(blocker),enter=/creatures entering(?: the battlefield)?(?: or dying)? don't cause abilities[^.]*trigger/.test(t),
+      life=/\b(?:players|you) can't gain life\b/.test(t),pay=/players can't pay life/.test(t);
+    for(const provider of rows){
+      const p=text(provider),effects=mtgEffectProfile(provider).provides;
+      if(enter&&/(?:when|whenever) [^\n,.]*\benters?\b/.test(p)&&(/\bcreature\b/i.test(provider.type_line||'')||/\bcreature[^\n,.]*\benters?\b/.test(p)))
+        out.push({blocker:blocker.name,provider:provider.name,kind:'creature-enter-trigger',status:'conditional',reason:`${blocker.name} suppresses creature-entering triggers while present; ${provider.name}'s affected route needs sequencing or removal of the blocker.`});
+      if(life&&effects.some(e=>e.tag==='lifegain'))out.push({blocker:blocker.name,provider:provider.name,kind:'life-gain',status:'conditional',reason:`${blocker.name} prevents your life gain while present.`});
+      if(pay&&/(?:pay \d+ life[^:]*:|^[^:\n]*\bpay \d+ life\b[^:\n]*:)/m.test(p))out.push({blocker:blocker.name,provider:provider.name,kind:'life-payment',status:'conditional',reason:`${blocker.name} prevents paying life to activate ${provider.name}'s affected ability while present.`});
+    }
+  }
+  return out;
 }

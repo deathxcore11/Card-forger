@@ -236,6 +236,7 @@ export function normalizeYgo(c) {
     name: c.name,
     category,
     typeLine: c.humanReadableCardType || type,
+    cardType: c.type || "",
     text: c.pend_desc ? `[Pendulum] ${c.pend_desc}\n\n${c.monster_desc || c.desc}` : c.desc || "",
     stats,
     extra: EXTRA.has(c.frameType),

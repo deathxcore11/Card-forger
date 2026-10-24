@@ -278,10 +278,11 @@ async function readableBuildSeed(page,x,label){
 // One generated result as shown: rows, per-zone counts, checks and cost lines.
 async function flowResult(page){
  return page.evaluate(()=>{const r=document.querySelector('#sheetBody .deck-flow-result');if(!r)return {ok:false,alert:document.querySelector('#sheetBody [role="alert"]')?.textContent.trim()||''};
-  const rows=[...r.querySelectorAll('.deck-flow-row')].map(n=>({qty:Number(n.querySelector('.deck-flow-qty').textContent.replace(/\D/g,'')),name:n.querySelector('span:not(.deck-flow-qty):not(.deck-flow-art-placeholder)').textContent.trim(),price:n.lastElementChild.textContent.trim()}));
+  const rows=[...r.querySelectorAll('[data-act="flowCard"]')].map(n=>({qty:Number(n.dataset.flowQty),name:n.dataset.flowName,price:n.lastElementChild.textContent.trim()}));
   return {ok:true,text:r.innerText,rows,total:rows.reduce((n,x)=>n+x.qty,0),price:r.querySelector('.deck-result-price')?.innerText||''};});
 }
 async function generate(page,budget){
+ await page.locator('.deck-flow .settings-disclosure summary').click();await page.locator('[data-flow-field="budgetMode"]').selectOption('target');await page.locator('.deck-flow .settings-disclosure summary').click();
  await page.locator('[data-flow-field="budget"]').fill(budget===null?'':String(budget));await page.locator('[data-act="flowGenerate"]').click();
  await page.waitForFunction(()=>document.querySelector('#sheetBody .deck-flow-result')||document.querySelector('#sheetBody [role="alert"]'),null,{timeout:60000});
  return flowResult(page);
@@ -372,8 +373,8 @@ try{
  await openAsk(page);await page.locator('.ask-input').fill(question);await page.locator('.ask-send').click();
  await page.locator('.ask-dialog .deck-flow-result').waitFor();
  assert.equal(askCalls,1,'complete result ends after one proposal');const result=page.locator('.ask-dialog .deck-flow-result'),preview=await result.innerText();
- assert.match(preview,/60 main/);assert.match(preview,/Complete · app checks passed/);assert.match(preview,/Reference estimate/);assert.doesNotMatch(preview,/Target \$25/);assert.equal(await page.locator('#sheet[open]').count(),0);
- const displayed=await result.locator('.deck-flow-row').evaluateAll(ns=>ns.map(n=>({qty:Number(n.querySelector('.deck-flow-qty').textContent.replace('×','')),name:n.querySelector('span:not(.deck-flow-qty):not(.deck-flow-art-placeholder)').textContent.trim()})));assert.equal(sumQty(displayed),60);
+ assert.match(preview,/60 main/);assert.match(preview,/Complete · structure checked/);assert.match(preview,/Reference estimate/);assert.doesNotMatch(preview,/Target \$25/);assert.equal(await page.locator('#sheet[open]').count(),0);
+ const displayed=await result.locator('[data-act="flowCard"]').evaluateAll(ns=>ns.map(n=>({qty:Number(n.dataset.flowQty),name:n.dataset.flowName})));assert.equal(sumQty(displayed),60);
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.ask-dialog','Standard inline result '+width);await result.locator('[data-act="flowSave"]').scrollIntoViewIfNeeded();await capture(page,'goal-preview-'+width);}
  assert.equal(await inventorySnapshot(page),initial,'reviewing a built list never saves it');await page.locator('[data-ask-close]').click();
  checks.push('Actual Ask to shared complete 60-card inline result, real synthetic price estimate, four widths, no setup handoff or autosave.');
@@ -559,15 +560,20 @@ try{
   assert.equal(await inventorySnapshot(bp),before,'generating never saves or changes ownership');assert.deepEqual(await bp.evaluate(()=>window.__fixtureSensitiveWrites),[]);
   // Every probe has a complete, checked candidate in its pool: the result must be that whole list.
   assert(r.ok,'a complete candidate exists, so the result is the list, not an error: '+r.alert);
-  assert.equal(r.total,size,'the full deck, not a partial draft');assert.match(r.text,/Complete · app checks passed/);
+  assert.equal(r.total,size,'the full deck, not a partial draft');assert.match(r.text,/Complete · structure checked/);
   assert(r.rows.find(row=>row.name===seedName)?.qty>=1,'the requested build-around is in the result');
   for(const row of r.rows)assert(row.qty<=(x.game==='ptcg'?(/^Basic .* Energy$/.test(row.name)?60:4):3),'copy limit for '+row.name);
   if(x.game==='ptcg'){const energy=r.rows.find(row=>row.name==='Basic Fire Energy');assert(energy?.qty>=8,'the Fire attacker is paid for by Fire Energy, not left without resources');}
   if(x.kind==='complete'&&x.game==='ptcg'){assert.doesNotMatch(r.price,/Target/);assert.match(r.price,/Reference estimate · whole deck/);}
-  if(x.kind==='complete'&&x.game==='ygo'){assert.match(r.price,/Target \$50\.00 · \$\d+\.\d\d below target|On target/);assert.doesNotMatch(r.text,/unpriced/);}
+  if(x.kind==='complete'&&x.game==='ygo'){assert.match(r.text,/Target \$50\.00 · \$\d+\.\d\d below target|On target/);assert.doesNotMatch(r.text,/unpriced/);}
   // Tight targets: the complete list is shown with its real cost and an explicit large-deviation warning.
-  if(x.kind==='constraint'){assert.match(r.price,/over target/);assert.match(r.text,/exceeds the allowed overage/);}
-  if(x.kind==='constraint'&&x.game==='ygo')assert.match(r.rows.find(row=>row.name===seedName).price,/\$1,000\.00/,'the expensive seed keeps its real price');
+  if(x.kind==='constraint'){assert.match(r.text,/over target/);assert.match(r.text,/exceeds the allowed overage/);}
+  if(x.kind==='constraint'&&x.game==='ygo'){
+   const seedRow=r.rows.find(row=>row.name===seedName),unitQuote=x.cards[x.seedId].sets[0].quotes[0].market;
+   assert.equal(unitQuote,1000,'the fixture retains its exact expensive printing quote rather than the generic $1 fallback');
+   const expected=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(unitQuote*seedRow.qty);
+   assert.equal(seedRow.price,expected,'the expensive seed row shows its exact printing price times the displayed quantity');
+  }
   // Unknown exact quotes stay unknown, with or without a finite target; no fit is claimed.
   let finite=null;
   if(x.kind==='unknown'){

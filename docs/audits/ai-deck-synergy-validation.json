@@ -1,0 +1,30 @@
+{
+  "baseline": "5b98a8981f9b97e7e0c4fbc02847b0cc3f248876",
+  "liveModelTested": false,
+  "files": [
+    {
+      "log": "goals",
+      "output": "PASS: strongest/theme/fun/chaos/weak are distinct preferences; actual randomness differs from generic each-player effects, without a fabricated power rating.\nPASS: explicit user constraints cannot be relaxed by a revision, malformed bounded fields are rejected, per-card prices are not deck caps, and $0 is never silently treated as unlimited.\nPASS: one proposal correction gets exact field feedback; changing a budget to pass is blocked; model success text cannot override the app’s checked verdict.\nPASS: actual tool and actual builder perform at most two proposals, batch/cache unchanged reads, retain unknown prices as unverified, repair a 95-card draft to a checked 100-card draft with five verified suggestions, expose one exact preview, and never save.\nPASS: Standard builder targets exactly 60 despite the legal 60-card minimum; an omitted cap stays unlimited, and hostile size/candidate/budget/color/exclusion proposals cannot replace the player’s constraints.\nPASS: deck allocation edits block old preview actions; collection changes during async generation discard the stale result, including changes during the provider wait.\nPASS: actual route offers the bounded goal/constraint/candidate contract, distinguishes preferences from verified data, and retains nonstored provider requests.\n"
+    },
+    {
+      "log": "build",
+      "output": "PASS: one bounded build operation yields a real checked 100-card Commander draft, KCI in the 99, legal separate commander, 36 priced lands, singleton/color/banned filters and exact full-budget accounting.\nPASS: total vs available-owned purchase estimates are distinct; unknown basic quotes, insufficient pool/budget, unowned-only requests, invalid commander, off-color and banned seeds fail honestly.\nPASS: unchanged calls are deduplicated, read batches use bounded concurrency, terminal/last-turn recovery stays within unchanged 8-round / 12-tool caps.\nPASS: mocked end-to-end Ask route/tool/draft trajectory stops after one provider call, exposes the exact checked preview action, never saves, and forces answer-only on finalization.\nPASS: cancelled preparation cannot attach a late draft.\nPASS: explicit cross-game opening preserves the draft, account changes block old drafts, and late cancelled Pokémon setup never installs an action.\nPASS: exact TCG seed and budget-basis handoffs are honest; unsupported special command-zone requirements cannot receive a checked-legal label.\nPASS: existing full-list renderer preserves card, Save and Copy actions, shows actual budget/legality/ownership, and cannot silently rebuild or save.\nPASS: tier More menu is constrained to the action row; closed actions expose no layout targets. Hosted coverage still checks open-menu geometry and actions.\nPASS: a response whose JSON arrives after Close/New never starts an old tool.\nPASS: client execution independently allowlists app-data tools, not internal navigation, reset, prototype or arbitrary actions.\nPASS: partial mixed-game results retain each card’s own game and exact reference.\n"
+    },
+    {
+      "log": "shared",
+      "output": "PASS: shared real construction/validation/Power gate, complete inline AI list, tight-target attempt, explicit overage, unknown quotes, owned allocation, incomplete Ghoti refusal and stale cancellation.\nPASS: Save → Export stays usable; account changes before or during Save remain blocked.\n"
+    },
+    {
+      "log": "intent-correct",
+      "output": "PASS: exact Dion clauses distinguish Knight support, creature tokens, counters, opponents’ tokens, timing text and back-face type; Talrand spells theme survives.\nPASS: AI and normal builder share dedicated payoff queries; explicit style survives seeded builds and real retrieval produces the otherwise-missing Knight.\nPASS: exact required/excluded/color constraints, unknown quotes, bounded suggestions and subjective goal metadata remain honest and enforced.\n"
+    },
+    {
+      "log": "effects",
+      "output": "PASS: exact-card effect constraints, token controller/type/prerequisites, self-return vs target blink, net mana/filtering and conditional resources, command-zone opening access, deterministic graph.\n"
+    },
+    {
+      "log": "matchups",
+      "output": "PASS: explicit current matchup analysis, duplicate/cancel guards, account/workspace/navigation/deck/opponent/mode staleness, no deck mutations, source/color/format checks and bounded opponent resolution.\n"
+    }
+  ]
+}

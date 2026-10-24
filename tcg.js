@@ -1,3 +1,4 @@
+import {discoverCardMarkup} from './card-discovery.js';
 import {setAtmosphere,packButton} from './set-experience.js';
 import {setYgoReleaseLookup} from './ygo-foil-recipes.js';
 import {normalizeSeeds} from './deck-seeds.js';
@@ -662,7 +663,7 @@ export function normalizeTcgSearch(g, U) {
   const normalized = (g === "ygo" ? normalizeYgoSearch : normalizePtcgSearch)({ ...U.f, sort: U.sort });
   U.sort = normalized.sort || defaultSearchSort(g);
   delete normalized.sort;
-  const allowed = g === "ygo" ? ["type", "attribute", "race", "level", "format", "set", "setName", "archetype"] : ["category", "type", "rarity", "stage", "hp", "format", "set", "setName"];
+  const allowed = g === "ygo" ? ["type", "attribute", "race", "level", "format", "set", "setName", "archetype", "text"] : ["category", "type", "rarity", "stage", "hp", "format", "set", "setName"];
   U.f = Object.fromEntries(Object.entries(normalized).filter(([key, value]) => allowed.includes(key) && typeof value === "string" && value));
   const choices = g === "ygo" ? {type:YGO_TYPES, attribute:YGO_ATTRIBUTES} : {category:["Pokemon", "Trainer", "Energy"], type:PTCG_TYPES, stage:PTCG_STAGES.map(([key]) => key), rarity:PTCG_RARITIES};
   for (const [key, values] of Object.entries(choices)) if (U.f[key] && !values.includes(U.f[key])) delete U.f[key];
@@ -724,7 +725,7 @@ export function tcgSearch() {
       ...(U.sort !== defaultSearchSort(g) ? [["sort", `Sort: ${L(sorts, U.sort)}`]] : []),
     ],
     count = `${list.length.toLocaleString()} shown · ${loaded.length.toLocaleString()} loaded${Number.isFinite(U.total) ? ` · ${U.total.toLocaleString()} provider matches before local filters` : ""}`;
-  return `<div class="page-head"><h1>Search cards</h1>${viewControl(g,"search")}<div class="search-tools"><button class="chip tool-chip" data-act="tCompareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">◈ Sets</button><button class="chip tool-chip" data-act="tRandomCard" aria-label="Random card">🎲 Random</button></div></div>
+  return `${U.discoveryNote?`<p class="note small" role="status">${esc(U.discoveryNote)}</p>`:""}<div class="page-head"><h1>Search cards</h1>${viewControl(g,"search")}<div class="search-tools"><button class="chip tool-chip" data-act="tCompareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">◈ Sets</button><button class="chip tool-chip" data-act="tRandomCard" aria-label="Random card">🎲 Random</button></div></div>
   <div class="searchbar search-query"><input type="search" data-suggest="${g}" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Card name or code (BLZD-EN010)" : "Card name or set + number (PAL 45)"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off"><button class="btn" data-act="tSearch">${U.busy ? "Search again" : "Search"}</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI">${brandMark("assistant-button-mark")}<span>Ask</span></button></div>
   ${chips.length ? `<div class="filter-chips" aria-label="Active filters">${chips.map(([k,l]) => `<button class="fchip" data-act="tChip" data-field="${esc(k)}" aria-label="Remove ${esc(l)}">${esc(l)} <span aria-hidden="true">×</span></button>`).join("")}<button class="link small" data-act="tClear">Clear all</button></div>` : ""}
   ${savedSearches(g).length ? `<div class="saved-searches"><span class="muted small">Saved:</span>${savedSearches(g).map((x,i) => `<span class="schip"><button data-act="tSaved" data-i="${i}">${esc(x.label)}</button><button data-act="tSavedDel" data-i="${i}" aria-label="Delete saved search ${esc(x.label)}">×</button></span>`).join("")}</div>` : ""}
@@ -785,7 +786,7 @@ export function tcgCardSheet(c, sctx = {}) {
     heroSrc = g === "ygo" ? c.art || c.imageLarge : artworkSources(c,true)[0],
     heroFallback = g === "ygo" ? c.artDirect || "" : "";
   const ownedLots = c.setContext ? gs(g).collection.filter(e => e === savedUnverifiedLot || ownedInSet(g,c,{id:c.setContext.releaseId},[e],g==='ygo'?currentYgoCatalogue():ui(g).sets.list)>0) : gs(g).collection;
-  const readableText = `<div class="cs-readable">
+  const readableText = `<div class="cs-readable">${discoverCardMarkup(g,c)}
   ${g === "ptcg" && !c.brief ? `<div data-rule-card-context="${esc(JSON.stringify(ruleCardContext(g,c)))}">${pokemonText(c)}</div>` : c.text ? `<section class="cd-text effect-card ygo" data-rule-card-context="${esc(JSON.stringify(ruleCardContext(g,c)))}"><p class="eyebrow effect-label">${c.frame==='normal'?'Lore · Flavour text':'Chaincraft · Card effect'}</p>${c.frame==='normal'?`<blockquote class="flavor">${esc(c.text)}</blockquote>`:`<div class="oracle">${effectText(g,c.text)}</div>`}${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}</section>` : ""}
   <div class="card-rules-entry"><button type="button" class="chip" data-act="learnGame" data-game="${g}">Interactive rules · how to play →</button></div>
   </div>`;
@@ -2173,6 +2174,7 @@ export function registerTcg(c) {
     if (!append) {
       normalizeTcgSearch(G, U);
       const previous = retry ? U.submitted : null;
+      U.discoveryNote="";
       invalidateTcgSearch(G, true);
       U.submitted = previous || Object.freeze({ q: U.q.trim(), f: Object.freeze({ ...U.f }), sort: priceSearchSort(U.sort) ? defaultSearchSort(G) : U.sort });
     }

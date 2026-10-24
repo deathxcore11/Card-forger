@@ -1,0 +1,113 @@
+{
+  "retrieval": "Scryfall cards/named exact lookup, retained unmodified response bytes",
+  "cards": [
+    {
+      "file": "ajanis-pridemate.json",
+      "name": "Ajani's Pridemate",
+      "id": "222c1a68-e34c-4103-b1be-17d4ceaef6ce",
+      "oracle_id": "95e94dea-5ac0-4d6f-adec-ca147aee861f",
+      "source": "https://api.scryfall.com/cards/222c1a68-e34c-4103-b1be-17d4ceaef6ce",
+      "sha256": "fa6c7164bc76c66d232802cfddd092b55eeeed05a85d23698d8eed0a8d372fcc",
+      "scope": "Retained Scryfall API record. Current price/format fields are not a tournament-performance benchmark."
+    },
+    {
+      "file": "arahbo-roar-of-the-world.json",
+      "name": "Arahbo, Roar of the World",
+      "id": "81dc3d00-97cd-4549-b5a4-15a1e08767f5",
+      "oracle_id": "66944a11-40a1-4f3a-9f83-52324e0edfef",
+      "source": "https://api.scryfall.com/cards/81dc3d00-97cd-4549-b5a4-15a1e08767f5",
+      "sha256": "f81d88c6fada2f29a1aa2dfe88f2a1326ed139f052b6848377d1b3e9fd43866e",
+      "scope": "Retained Scryfall API record. Current price/format fields are not a tournament-performance benchmark."
+    },
+    {
+      "file": "changeling-outcast.json",
+      "name": "Changeling Outcast",
+      "id": "ab499df5-ed76-43ad-81b3-70afd0487ccd",
+      "oracle_id": "a61ef0cc-1da9-49f9-b0dc-01cf9f6205be",
+      "source": "https://api.scryfall.com/cards/ab499df5-ed76-43ad-81b3-70afd0487ccd",
+      "sha256": "78402db9fba187a375c7027936039d87716501df32854c0b5f4052770a819ced",
+      "scope": "Retained Scryfall API record. Current price/format fields are not a tournament-performance benchmark."
+    },
+    {
+      "file": "hushbringer.json",
+      "name": "Hushbringer",
+      "id": "663b3e6f-1099-4de8-a0a7-6f1919c38010",
+      "oracle_id": "3d21f710-6bbc-41ae-a8e5-02debe3e02bd",
+      "source": "https://api.scryfall.com/cards/663b3e6f-1099-4de8-a0a7-6f1919c38010",
+      "sha256": "cd9eb953b1f6b46544d7863670a357cebeac58c0eb85ed28d28f553f6fd2f0c5",
+      "scope": "Retained Scryfall API record. Current price/format fields are not a tournament-performance benchmark."
+    },
+    {
+      "file": "leonin-vanguard.json",
+      "name": "Leonin Vanguard",
+      "id": "724738ad-6a9b-4ef6-b637-558645cd8151",
+      "oracle_id": "de1e1352-adb2-4ac1-bb2a-ee654d5c727d",
+      "source": "https://api.scryfall.com/cards/724738ad-6a9b-4ef6-b637-558645cd8151",
+      "sha256": "eedf3fcb3cbfd4f5b85c7e86d11ab8ba2a1955ffedc3e55cb67db9d218b611a4",
+      "scope": "Retained Scryfall API record. Current price/format fields are not a tournament-performance benchmark."
+    },
+    {
+      "file": "pride-sovereign.json",
+      "name": "Pride Sovereign",
+      "id": "dd3d32b7-672f-4ceb-a1c9-17daefd2cb0c",
+      "oracle_id": "a131c32d-2b4f-4ee4-aab2-ab05ab010978",
+      "source": "https://api.scryfall.com/cards/dd3d32b7-672f-4ceb-a1c9-17daefd2cb0c",
+      "sha256": "cc9391f65e1cd0348fc44026bcf29973c7a4a72948ff86719a1923c73aee9b06",
+      "scope": "Retained Scryfall API record. Current price/format fields are not a tournament-performance benchmark."
+    },
+    {
+      "file": "resplendent-angel.json",
+      "name": "Resplendent Angel",
+      "id": "59adbd35-9959-4a0f-babf-46ea3c15f018",
+      "oracle_id": "2ac93092-1a57-4cf7-8f03-1dca86d5c476",
+      "source": "https://api.scryfall.com/cards/59adbd35-9959-4a0f-babf-46ea3c15f018",
+      "sha256": "c66abfd7e2eaa800fdb96624efb4350cb4ac4a17b1b59d482156a20a71eaaced",
+      "scope": "Retained Scryfall API record. Current price/format fields are not a tournament-performance benchmark."
+    },
+    {
+      "file": "righteous-valkyrie.json",
+      "name": "Righteous Valkyrie",
+      "id": "02fb5f9f-8750-4eb5-a03a-6dacc60e0b90",
+      "oracle_id": "891d2690-7144-4f87-b6ef-96f2469780a9",
+      "source": "https://api.scryfall.com/cards/02fb5f9f-8750-4eb5-a03a-6dacc60e0b90",
+      "sha256": "d4f31b2da96ac4a673d07ac68d530533956295dd04bf2cdcffa36396a23c08f8",
+      "scope": "Retained Scryfall API record. Current price/format fields are not a tournament-performance benchmark."
+    },
+    {
+      "file": "serra-angel.json",
+      "name": "Serra Angel",
+      "id": "b8c5e74c-96e7-4a1f-93b7-14d776fe4b2d",
+      "oracle_id": "4b7ac066-e5c7-43e6-9e7e-2739b24a905d",
+      "source": "https://api.scryfall.com/cards/b8c5e74c-96e7-4a1f-93b7-14d776fe4b2d",
+      "sha256": "902fd906be503d27056d3f29ca0b229e33d7e36c0521dae019daf3fc005a878f",
+      "scope": "Retained Scryfall API record. Current price/format fields are not a tournament-performance benchmark."
+    },
+    {
+      "file": "soul-warden.json",
+      "name": "Soul Warden",
+      "id": "d96266b3-a7cb-40ce-a328-ac13719fe5f0",
+      "oracle_id": "f3fad295-1af2-4ecc-8546-b121ad6be27b",
+      "source": "https://api.scryfall.com/cards/d96266b3-a7cb-40ce-a328-ac13719fe5f0",
+      "sha256": "63240b3143046461bfa91c91b705475513fb98151019ba320cf6badc48427a78",
+      "scope": "Retained Scryfall API record. Current price/format fields are not a tournament-performance benchmark."
+    },
+    {
+      "file": "tainted-remedy.json",
+      "name": "Tainted Remedy",
+      "id": "cbb8edd0-4573-4b52-a3ea-83ed19dbf58d",
+      "oracle_id": "51b114cd-c174-4d74-a854-07c68b41fc9d",
+      "source": "https://api.scryfall.com/cards/cbb8edd0-4573-4b52-a3ea-83ed19dbf58d",
+      "sha256": "e2a87a77c5df0863e1fba068dd8b7a0c604e71b40fc638abdf73d42b3171057b",
+      "scope": "Retained Scryfall API record. Current price/format fields are not a tournament-performance benchmark."
+    },
+    {
+      "file": "torpor-orb.json",
+      "name": "Torpor Orb",
+      "id": "dbf02a38-d10d-463e-ab99-e7fd848a1bd3",
+      "oracle_id": "97326cad-b13c-4e52-82ce-850a39e5ff08",
+      "source": "https://api.scryfall.com/cards/dbf02a38-d10d-463e-ab99-e7fd848a1bd3",
+      "sha256": "e18df528d8269d55677e5f1cf2c2533e95536b1eb549421c12049577a5bb4e56",
+      "scope": "Retained Scryfall API record. Current price/format fields are not a tournament-performance benchmark."
+    }
+  ]
+}

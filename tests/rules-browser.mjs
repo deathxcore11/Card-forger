@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import {GAMES,WIDTHS,validateFixtures,startServer,openApp,navigate,noOverflow,capture,saveReport} from './detail-rules-fixtures.mjs';
 import {LESSONS,TURN_STEPS,RULE_CHECKS,CORE_RULES} from '../rule-lessons.js';
-import {RULE_DEX} from '../rule-dex.js';
+import {RULE_DEX,ruleTerms} from '../rule-dex.js';
 import {lessonReference,sourceDestination,RULE_SOURCES} from '../rule-reference.js';
 
 console.log(await validateFixtures());
@@ -45,7 +45,8 @@ async function basicRules(app,game){
  assert.equal(await root.locator('[data-learn-step]').count(),TURN_STEPS[game].length);assert.equal(TURN_STEPS[game].length,6);
  assert.equal(await root.locator('[data-learn-topic]').count(),LESSONS[game].length);assert.equal(LESSONS[game].length,8);
  assert.equal(await root.locator('[data-rule-check]').count(),RULE_CHECKS[game].length);assert.equal(RULE_CHECKS[game].length,4);
- assert.equal(await root.locator('[data-learn-keyword]').count(),Object.keys(RULE_DEX[game]).length,'All existing keyword definitions retained');
+ assert.equal(await root.locator('[data-learn-keyword]').count(),Object.keys(ruleTerms(game)).length,'All expanded keyword definitions available');
+ for(const key of Object.keys(RULE_DEX[game]))assert.equal(await root.locator(`[data-learn-keyword][data-rule="${key}"]`).count(),1,'Original keyword retained: '+key);
  await root.locator('[data-learn-start]').click();
  const steps=root.locator('[data-learn-step]');await steps.nth(3).click();assert.equal(await steps.nth(3).getAttribute('aria-pressed'),'true');assert.match(await root.locator('.learn-turn-body').innerText(),/Step 4 of 6/i);await root.getByRole('button',{name:'Previous step',exact:true}).click();assert.match(await root.locator('.learn-turn-body').innerText(),/Step 3 of 6/i);
  const topic=root.locator('[data-learn-search]');await reveal(topic);await topic.fill(game==='mtg'?'Commander':game==='ptcg'?'Checkup':'Chain');assert(await root.locator('[data-learn-topic]:visible').count()>0);assert(await root.locator('[data-learn-topic]:visible').count()<8);await topic.fill('zzzznotatopic');assert(await root.locator('[data-learn-empty]').isVisible());await topic.fill('');
