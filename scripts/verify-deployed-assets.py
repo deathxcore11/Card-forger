@@ -22,7 +22,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 HOSTS = ("https://cardstashy.com/", "https://cardforge2.deathxcore11.workers.dev/")
 KEY_ASSETS = ("index.html", "config.js", "sw.js")
 MODULES = (
-    "deck-mechanic-plan.js", "mtg-land-requirements.js", "mtg-wiki-knowledge.js", "mtg-wiki-client.js", "mtg-wiki-ui.js", "wiki-sources.js", "game-wiki-knowledge.js", "game-wiki-article.js", "wiki-card-handoff.js", "wiki-deck-handoff.js",
+    "deck-mechanic-plan.js", "mtg-land-requirements.js", "mtg-commander-conditions.js", "mtg-mana-sources.js", "mtg-wiki-knowledge.js", "mtg-wiki-client.js", "mtg-wiki-ui.js", "wiki-sources.js", "game-wiki-knowledge.js", "game-wiki-article.js", "wiki-card-handoff.js", "wiki-deck-handoff.js",
     "deck-construction.js", "deck-pipeline.js", "deck-experience.js", "deck-preferences.js", "deck-seeds.js",
     "deck-strategy-plan.js", "mtg-combo-packages.js",
     "card-discovery.js", "mtg-vocabulary.js", "mtg-keyword-reference.js", "rule-extra.js",
