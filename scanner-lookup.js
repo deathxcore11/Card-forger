@@ -46,7 +46,7 @@ export function scannerLookupMatches(game,c,{name='',number='',set='',strictName
  const selected=set||p.set;if(selected&&(game==='mtg'?card.set:game==='ptcg'?card.set?.id:c.setReleaseId)!==selected)return false;
  return true;
 }
-const lookupHelp=game=>game==='ygo'?'Enter the bottom code, like LOB-EN001, or a set and number like LOB 001.':game==='mtg'?'Enter a number and/or set code in any order, like 275, NEO, 275 NEO or NEO 275.':'Enter the bottom number, like 56/111, and/or the set, like sv03.5 or Fusion Strike.';
+const lookupHelp=game=>game==='ygo'?'Enter the full bottom code, like LOB-EN001, or its set and number, like LOB 001.':game==='mtg'?'Enter a number and/or set code in any order, like 275, NEO, 275 NEO or NEO 275.':'Enter the bottom number, like 56/111, and/or the set, like sv03.5 or Fusion Strike.';
 const LIMIT=24;
 // Every part typed must match. When nothing does, try the number alone, then
 // the set alone, and say which part was used so a typo is visible, not hidden.
@@ -63,8 +63,10 @@ export function createScannerLookup({requestMagic,sources,candById,match,local=r
   const pack=await local(game,{number});if(!isCurrent())return [];
   const releases=pack?catalogueReleases(pack):null,q=collectorQuery(game,number,{releases});
   if(!q)throw Error(lookupHelp(game));
-  // A partial Yu-Gi-Oh! code ("38", "LOB") narrows a named card, never the whole game.
-  if(game==='ygo'&&!name&&!q.code)throw Error('Enter the full bottom code, like LOB-001.');
+  // A Yu-Gi-Oh! number without its set prefix is ambiguous even within one
+  // product ("38" ends two LEHD codes), so it is rejected, never narrowed.
+  // A prefix ("LEHD", "LEHD 38") narrows a named card, never the whole game.
+  if(game==='ygo'&&!q.code&&(!q.prefix||!name))throw Error(lookupHelp(game));
   if(!name&&collectorQueryEmpty(q))throw Error(lookupHelp(game));
   if(!name&&!q.code&&!q.numbers.length)throw Error('Add the card name, or a number with the set.');
   const spec={...query,name,number,query:q};

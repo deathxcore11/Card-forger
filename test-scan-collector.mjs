@@ -77,3 +77,9 @@ assert(setLookup.length&&setLookup.every(c=>c.card.set==='neo'));
 await assert.rejects(lookup('mtg',{name:'Mountain',number:'zz9 qq'}),/any order/);
 await assert.rejects(lookup('mtg',{number:'neo'}),/card name/);
 console.log(`PASS: number/set descriptors in any order; Mountain ${mountains.length} → #275 ${byNumber.to} / NEO ${bySet.to} / set+number 1; Pokémon fraction/number/set/151; Yu-Gi-Oh! prefix+number; partial footers narrow but never verify.`);
+
+// Yu-Gi-Oh!: a number without its set prefix is rejected, never narrowed.
+const ygoLookup=createScannerLookup({local:async()=>ygo,candById:async()=>null,sources:{},match:async()=>({cands:[]})});
+for(const t of ['38','B38'])await assert.rejects(ygoLookup('ygo',{name:'Coral Dragon',number:t}),/Enter the full bottom code/,t);
+assert((await ygoLookup('ygo',{name:'Coral Dragon',number:'LEHD 38'})).every(c=>c.print.startsWith('LEHD-')));
+console.log('PASS: Yu-Gi-Oh! numbers need their set prefix.');
