@@ -124,6 +124,13 @@ reloading. No application code, timeout, persistence assertion or final expected
 mode changes. The full local saved/source suite then passed all 17 scenario
 records again. Hosted follow-up remains separate evidence.
 
+At `8f0cbe2`, both hosted AI/deck-viewer jobs passed. Overall: 68 successes,
+one skipped production deployment and one `pokemon-promos-browser` failure.
+That job timed out in `settleDetail` while opening an owned promo during its
+finish-surface loop; the sibling promo job for the same head passed. This is an
+unresolved hosted timing/lifecycle finding, not an all-green result or proof of
+its cause. It remains outside the validated deck-viewer scenarios.
+
 ## Still required
 
 The release matrix remains open for a complete Random entrypoint, imported

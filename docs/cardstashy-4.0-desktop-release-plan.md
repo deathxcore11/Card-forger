@@ -409,6 +409,11 @@ development requirements; implementation and validation are still pending.
 
 ### Contextual CPU behavior and Arena-style interaction
 
+The [local CPU proposal review](4.0-cpu-proposal-review.md) evaluates the user's
+heuristic/difficulty design against the source and primary research. It retains
+local scoring and engine authority, corrects the zero-lag/metadata assumptions,
+and records uncertainty, multiplayer, latency and deterministic-replay gates.
+
 The CPU consumes a permitted observation, engine-legal actions, independent
 mechanic facts and a separately versioned deck playbook. The builder's strategy
 analysis can propose priorities; it is not executable rules or independent
