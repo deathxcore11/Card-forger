@@ -31,7 +31,11 @@ try{
     assert.match(await page.locator('.hero-stats').innerText(),/10\/60/);
     await page.locator('[data-input="deckSearch"]').fill(cs[0].name);await page.locator('.deck-view-switch [data-mode="stacks"]').click();
     const filtered=await page.locator('#deckList [data-deck-card]').count();assert.equal(filtered,1);
-    await page.locator('.deck-view-switch [data-mode="symbols"]').click();assert.equal(await page.locator('#deckList [data-deck-card]').count(),filtered);
+    await page.locator('.deck-view-switch [data-mode="symbols"]').click();
+    // The view is painted after the durable preference write completes. A
+    // forced reload immediately after click can abort that pending write.
+    await page.waitForFunction(()=>document.querySelector('#content .deck-viewer')?.dataset.deckView==='symbols'&&window.__uiTestState.state.settings.displayModes?.mtg?.deck==='symbols');
+    assert.equal(await page.locator('#deckList [data-deck-card]').count(),filtered);
     await page.reload();await page.locator('#app.ready').waitFor();await page.evaluate(async()=>{window.__uiTestState=(await import('/store.js')).S;});await page.waitForFunction(()=>document.querySelector('#content .deck-viewer')?.dataset.deckView==='symbols');
     checks.push({source:'saved',game,persistedAfterReload:true,filterSurvivesViewSwitch:true});
    }

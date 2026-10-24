@@ -116,6 +116,14 @@ stopped on an HTTP 503 fetching its public TCGdex reference image
 The AI recovery and remaining jobs passed. This is not an all-green CI claim;
 hosted results for this new checkpoint are separate evidence.
 
+Hosted follow-up `ab6f4f4` passed the original AI deck suite, then caught a race
+in the new reload test: it forced a reload immediately after clicking Names,
+before the async preference transaction had necessarily finished. The check
+now waits for the post-save painted mode and committed preference before
+reloading. No application code, timeout, persistence assertion or final expected
+mode changes. The full local saved/source suite then passed all 17 scenario
+records again. Hosted follow-up remains separate evidence.
+
 ## Still required
 
 The release matrix remains open for a complete Random entrypoint, imported
