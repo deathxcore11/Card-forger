@@ -182,8 +182,9 @@ findings visible even if the release only supports a bounded pool.
 
 ## Shared deck viewer acceptance matrix
 
-Every cell below is required and currently **NOT RUN for the new four-view
-implementation**. Source existence is not a pass.
+Every cell below remains a release requirement. Partial local validation of the
+new four-view implementation is recorded in the [deck viewer review](4.0-deck-viewer-review/README.md).
+Source existence or a renderer-only check does not close an entrypoint.
 
 | Entry point | Detailed list | Overlapping stacks | Full-art grid | Names only |
 | --- | --- | --- | --- | --- |
@@ -277,7 +278,7 @@ state contracts.
 | Saved Pokemon/Yu-Gi-Oh! deck | `tcg.js` (`deckCardsTab`) | Keep game-specific zones, identities, selected printings and edit permissions while sharing presentation |
 | Generated/AI result | `deck-experience.js` (`deckResultMarkup`, `createDeckExperience`) | Retain scoped receipt, explicit save, budget rebuild and warnings; use the same four presentations |
 | Shared/Wiki source deck | `shared-deck-view.js` | Retain source attribution, zone boundaries and independent-copy behavior; share the viewer without granting edit access |
-| Current layout controls | `workbench-ui.js` | Existing gallery/compact/symbols settings are not yet the specified four-layout deck viewer; preserve unrelated collection controls |
+| Current layout controls | `workbench-ui.js` | Four deck presentations now share the saved deck preference; unrelated collection/search controls retain three modes |
 | Card popup and effects | `views.js`, `tcg.js`, finish modules | Reuse with minimal polish; do not replace or flatten the finish system |
 | Home | `home-search.js`, `home-today.js`, `views.js`, `tcg.js` | One compact blended header; artwork with value, daily card/packs and a few personal decks; Community Meta decks; one News block; collectible packs retain existing behavior |
 | Glossary | Existing local terms, Oracle/card references and inline help | Add contextual discoverability around inspection; do not invent a disconnected dictionary or model-authored rules |
@@ -296,6 +297,97 @@ first viewer/lobby design pass. Further reference requests should identify a
 specific missing interaction such as targeting, stack responses or payment.
 
 ## Gameplay requirements retained from the handoff
+
+### Desktop Play library and precon context
+
+The user's October 24 clarification adds an explicit library requirement:
+bring together preconstructed decks across known sets/products, existing meta
+lists, the user's built/saved/imported lists and random opponents. "Pre-context"
+is interpreted as both source decklists and the CPU's versioned knowledge of
+their plans. This is a requirement, not a claim that a Play library is built.
+Desktop/PC comes first. Mobile translation follows a proven desktop experience;
+Yu-Gi-Oh! character decks and themed battles remain future examples.
+
+- Browse by set/product, source and format with actual artwork, readable names,
+  commander(s), card/zone counts and a concise strategy preview. Reuse the four
+  deck views for both player and opponent previews, preserving the return path.
+- Precons, Meta, My decks and Random are clear choices within one cohesive
+  library. Do not make the user hunt across unrelated builders to start a match.
+  Existing collection tools and explicit Save ownership behavior remain separate.
+- Ingest the complete known product index with provenance, fetched/list versions,
+  release/preview state and verified deck contents. Not every set has a precon;
+  do not manufacture a product or list to fill a set tile. Missing source data
+  is a recoverable library state, never an invented complete deck.
+- Commander and 60-card construction are distinct choices. "60-card" describes
+  size, not a substitute for Standard/Modern/other actual format rules. Preserve
+  main, command zone, extra deck where applicable, and sideboard. Preserve all
+  declared commanders and validate supported partner/selection rules; a parser's
+  single commander label is not sufficient evidence for a multi-commander deck.
+- Library presence, release/format legality, engine card coverage and tested CPU
+  play are separate facts. Enable a match only for a complete exact list whose
+  format, player count and mechanics are supported. Give a clear reason when a
+  browsable deck cannot start; there is no silent manual-rules fallback.
+- CPU playbooks reference the exact normalized list and rules/card-data version:
+  mulligan plan, mana development, setup/payoffs, attack/block priorities,
+  responses/protection, tutors, closing lines and conditional combo resources.
+  Recompute/invalidate on list changes. Builder hints propose priorities;
+  they do not execute card rules or prove piloting strength.
+- Easy/Medium/Hard use versioned planning budgets and policies under the same
+  rules and information privileges. Opponent selection can be explicit or
+  random within eligible format/card pools. Freeze the selected opponent and
+  random seed/list version before the game; refreshes cannot swap its cards.
+  History and the save-opponent action retain that actual list.
+
+Current source audit: `loadPrecons` reads MTGJSON's product index; the empty-query
+`preconList` and ten-at-a-time `finderPrecons` favor Commander products. The
+MTGJSON parser exposes only the first commander as its label, flags multiple
+commanders, and excludes sideboard cards. These are known integration gaps for
+the Play library, not complete coverage of all sets or 60-card decks. An
+attempt to download the current index in this environment returned HTTP 403;
+live index completeness has not been verified.
+
+Requested product checks, as of October 24, 2026:
+
+| Example | Verified primary-source state | Required follow-through |
+| --- | --- | --- |
+| Teenage Mutant Ninja Turtles | Wizards publishes Turtle Power!, a 100-card Commander list with Partner—Character select choices | Resolve the exact list, preserve commander choices, prove the new mechanics and CPU play; not currently certified playable |
+| Star Trek | Wizards names Federation Fleet, Landing Party, Klingon Fury and We Are the Borg for November 13; its October 20 decklist page still marks each full list as awaiting reveal | Keep announcement/preview status distinct; ingest actual complete lists when supplied, then validate all cards and format before enabling Play |
+
+Sources: [Turtle Power! decklist](https://magic.wizards.com/en/news/announcements/teenage-mutant-ninja-turtles-commander-decklist),
+[Star Trek Commander decklists](https://magic.wizards.com/en/news/announcements/star-trek-commander-decklists),
+and the existing application's [MTGJSON product index](https://mtgjson.com/api/v5/DeckList.json).
+
+The existing firm engine proof gate still precedes an integrated Play menu or
+board. This library coverage and CPU-context work can be audited independently;
+it does not make a disabled entry point a working game.
+
+#### Approved Play interaction choices — October 24
+
+The user approved these additions after the library discussion. They are
+development requirements; implementation and validation are still pending.
+
+- **Quick Practice:** remember the last valid player deck, format and difficulty.
+  Show the selected opponent before starting. Revalidate both exact lists and
+  engine compatibility on entry; remembered choices never bypass the gate.
+- **Opponent shelf:** Precons, Meta, Random and My decks share artwork-led
+  selection, a concise grounded "how it wins" preview and the four-view deck
+  inspector. Either side can use an eligible personal deck. Retain the selected
+  deck/source and Back context rather than sending users across unrelated tools.
+- **Independent help controls:** CPU difficulty and player assistance are
+  separate settings. Legal-action highlights and payment previews can remain on
+  against Hard. Easy enforces the same rules; it does not gain hidden information
+  or permit illegal beginner actions. Persist assistance with the match record.
+- **Useful post-match return:** open the player's deck at Matchups → Practice
+  history with Rematch, Save opponent deck and up to three meaningful moments
+  from the actual match. Ground explanations in engine events and information
+  available to the player at the time. Do not invent choices, hidden knowledge,
+  winning alternatives or a coach's claimed certainty about an unknown hand.
+- **Reproducible matches:** freeze exact deck snapshots, engine/card/CPU versions,
+  seat/format settings, all relevant random streams and the accepted action log.
+  A shuffle seed alone does not reproduce an unseeded CPU. Replay must reproduce
+  the actual match and pending choices, giving bug reports a concrete trace.
+
+### Engine and match behavior
 
 - Engine-owned legal actions, current-revision validation, stack, priority,
   targeting, costs, combat, triggers and terminal outcomes for supported cards.

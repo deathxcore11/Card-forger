@@ -84,7 +84,10 @@ and otherwise uses its visible New chat control. It does not force clicks,
 change app dialog behavior or remove card/build/privacy assertions. The complete
 recovery browser suite passed locally at 320/390/768/1440 px with both card-row
 themes and the two sparse-provider cases. The test now supports explicit local
-fixture execution and a custom Chromium executable. Hosted follow-up is pending.
+fixture execution and a custom Chromium executable. Hosted follow-up `349d873`
+passed the AI recovery job. Its overall result was 68 success, one skipped
+production deployment and one scanner-adversarial failure caused by an HTTP 503
+from the public TCGdex reference-image source, before browser assertions.
 
 ## Scope still open
 
@@ -93,8 +96,8 @@ and passed its focused and aggregate regressions. This checkpoint does not
 close the real-provider R01 replay, frozen 26-case benchmark, end-to-end device
 latency, crew balance, theme density or win-condition quality findings.
 
-The four-view shared deck redesign and its complete entrypoint matrix remain
-open. The [engine evaluation](../4.0-engine-evaluation.md) is source inspection,
+The shared four-view implementation now has a separate [development review](../4.0-deck-viewer-review/README.md);
+its complete entrypoint matrix remains open. The [engine evaluation](../4.0-engine-evaluation.md) is source inspection,
 not a passed runtime proof. Supported format/card pool, complete CPU games,
 offline restart/resume, private Casual and Draft remain release blockers.
 Production and the published APK have not been changed.

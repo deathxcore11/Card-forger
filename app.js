@@ -1,7 +1,7 @@
 import {cardDiscoverySpec} from './card-discovery.js';
 import {checkRelease,acknowledgeRelease,onReleaseChange,releaseDot,releaseState} from './release-status.js';
 import {createDeckPipeline} from './deck-pipeline.js';
-import {createDeckExperience} from './deck-experience.js';
+import {createDeckExperience,deckWorkspaceSignature} from './deck-experience.js';
 import {createMtgWikiPageController} from './mtg-wiki-ui.js';
 import {createWikiDeckHandoff} from './wiki-deck-handoff.js';
 import {createWikiCardHandoff,parseWikiCardLink} from './wiki-card-handoff.js';
@@ -77,6 +77,7 @@ import { createScannerLookup } from "./scanner-lookup.js";
 import {SheetHistory,BROWSE_TYPES,sheetKey} from "./sheet-history.js";
 import {handleArtworkError} from "./artwork.js";
 import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,rememberDetailViewport,restoreDetailViewport,detailTabKey,createDetailJump,conditionBuyLink} from "./pricing-presentation.js";
+import {syncDeckViewers} from './deck-viewer.js';
 import {modeFor,registerWorkbench,quoteModel,recordQuote} from "./workbench-ui.js";
 import { locationPicker, rememberLocation, chooseLocation } from "./collection-locations.js";
 import { captureAuthFields, restoreAuthFields, authFeedback, togglePassword } from "./auth-form.js";
@@ -746,6 +747,7 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   S.ui.sheetCtx = ctx;
   $("#sheetBody").detailMountGeneration = ($("#sheetBody").detailMountGeneration || 0) + 1;
   $("#sheetBody").innerHTML = html;
+  syncDeckViewers();
   $("#sheetBody").dataset.detailIdentity = detailContextIdentity(ctx);
   if (lastSheetStep && lastSheetStep !== stepKey) {
     $("#sheetBody").classList.remove("sheet-step");
@@ -1081,6 +1083,7 @@ function render() {
   for(const {id,value} of profileFields){const field=$("#"+id);if(field)field.value=value;}
   const displayArea=["deck","tdeck"].includes(ui.view)?"deck":ui.view === "search"?"search":ui.view === "set"?"set":ui.view === "collection" && (g === "mtg" ? ui.collTab === "wishlist" : T.ui(g).coll.tab === "wishlist")?"wishlist":ui.view === "collection" && (g === "mtg" ? ui.collTab === "cards" : !T.ui(g).coll.tab || T.ui(g).coll.tab === "cards")?"collection":null;
   $("#content").className=displayArea ? "view-"+modeFor(g,displayArea) : "";
+  syncDeckViewers();
   if (comparison.active && comparison.game !== g) { comparison.cancel(); updateCompareTray(); }
   // A new page (not a refresh of the same one) glides in; totals count up.
   const pageKey = [g, ui.view, ui.collTab, ui.decksTab, ui.deckTab, g === "mtg" ? "" : T.ui(g).coll.tab, g === "mtg" ? "" : ui.tdeckTab?.[g+":"+ui.tdeckId]].join(":");
@@ -1436,7 +1439,7 @@ const deckPipeline=createDeckPipeline({S,T,api,resolve,cacheCard,meta,priceOf,in
 const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game:T.game,
  identity:()=>{const account=accountGeneration;return ()=>!accountLocked&&account===accountGeneration;},
  coachHooks:(result,deck)=>result.request.game==='mtg'?V.mtgCoachHooks(deck,result.power):T.tcgCoachHooks(result.request.game,deck,T.SOURCES[result.request.game].formats.find(f=>f.id===result.request.format),result.power),
- scope:()=>{const scope=mutationScope(),state=S.state,stamp=JSON.stringify([state.collection,state.decks,state.tcg]);return ()=>mutationCurrent(scope)&&S.state===state&&JSON.stringify([state.collection,state.decks,state.tcg])===stamp;},
+ scope:()=>{const scope=mutationScope(),stamp=deckWorkspaceSignature(S.state);return ()=>mutationCurrent(scope)&&deckWorkspaceSignature(S.state)===stamp;},
  root:()=>$('#sheetBody'),isOpen:()=>$('#sheet').open&&S.ui.sheetCtx?.type==='deck-flow',
  paint:html=>{$('#sheetBody').innerHTML=html;wireSheetBack();},open:(html,request)=>openSheet(html,{type:'deck-flow',request}),
  onInput:fn=>document.addEventListener('input',e=>{if(e.target.matches('[data-flow-field]'))fn(e);}),
@@ -4918,14 +4921,17 @@ A.deckRemove = async (t) => {
 I.deckSearch = (t) => {
   S.ui.q.deck = t.value;
   $("#deckList").innerHTML = V.deckList();
+  syncDeckViewers();
 };
 C.deckFilter = (t) => {
   S.ui.deckFilter = t.value;
   $("#deckList").innerHTML = V.deckList();
+  syncDeckViewers();
 };
 C.deckSort = (t) => {
   S.ui.deckSort = t.value;
   $("#deckList").innerHTML = V.deckList();
+  syncDeckViewers();
 };
 A.deckGrid = () => {
   S.ui.deckGrid = !S.ui.deckGrid;
@@ -5522,7 +5528,7 @@ A.mtgProven = (t) => {
     },
     cardAttrs: (r) => `data-act="card" data-name="${esc(r.name)}"`,
     printingFor: (r) => meta(r.name),
-    imageFor: (r) => meta(r.name)?.image_uris?.small || meta(r.name)?.card_faces?.[0]?.image_uris?.small || "",
+    imageFor: (r) => cardImage(meta(r.name)),
     heroFor: (rows) => {
       if (d.art) return d.art;
       const c = meta((rows.find((r) => r.kind === "commander") || rows.find((r) => r.kind === "creature") || rows.find((r) => r.kind !== "land") || rows[0])?.name);

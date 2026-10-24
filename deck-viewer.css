@@ -1,0 +1,84 @@
+/* Deck presentations share the original rows and card actions. These rules do
+   not apply to collection cards, card popups or their lighting materials. */
+.deck-viewer { min-width:0; }
+.deck-view-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin:16px 0 12px; }
+.deck-view-toolbar .view-switch { margin-left:auto; }
+.deck-view-switch button { min-height:38px; }
+.deck-view-switch button:focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
+.deck-viewer [data-deck-list] { min-width:0; }
+.deck-viewer [data-deck-card] { position:relative; min-width:0; }
+.deck-viewer [data-deck-card] :is(.lot-name,.deck-compact-copy,.ellip) { min-width:0; }
+.deck-viewer [data-deck-card]:focus-visible,
+.deck-viewer [data-deck-card]:has(:focus-visible) { outline:2px solid var(--gold); outline-offset:3px; }
+
+/* Detailed list: full portrait thumbnails alongside readable information. */
+.deck-viewer[data-deck-view="compact"] [data-deck-list] { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row { display:grid; grid-template-columns:58px minmax(0,1fr) auto; gap:10px; padding:8px; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-art { width:58px; height:81px; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-art > img { display:block; object-fit:contain; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-info { display:grid; width:auto; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-sub { display:flex; flex-wrap:wrap; white-space:normal; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-name { font-size:14px; white-space:normal; overflow-wrap:anywhere; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-side { display:grid; width:auto; padding:0; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .stepper { transform:none; }
+.deck-viewer[data-deck-view="compact"] .mini-row > :is(.row-thumb,.mini-art,.img-missing) { width:60px; height:84px; object-fit:contain; flex:0 0 60px; border-radius:6px; }
+.deck-viewer[data-deck-view="compact"] .mini-row > .ellip { white-space:normal; overflow-wrap:anywhere; }
+
+/* Art grid: retain exact images, quantities, edits and selection controls. */
+.deck-viewer[data-deck-view="gallery"] [data-deck-list] { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:20px 14px; background:none; border:0; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) [data-deck-card] { display:flex; flex-direction:column; align-items:stretch; gap:8px; padding:0; text-align:left; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .lot-art { display:block; width:100%; height:auto; aspect-ratio:63/88; flex:none; border-radius:5% / 3.5%; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .lot-art > :is(img,.img-missing) { display:block; width:100%; height:100%; object-fit:contain; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .lot-info { display:grid; width:100%; padding:0 3px; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .lot-name { display:block; width:100%; font-size:13px; text-overflow:ellipsis; white-space:nowrap; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .lot-sub { display:none; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .lot-side { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; width:100%; gap:6px; padding:0 3px 5px; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .stepper { transform:none; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .mini-row > :is(.row-thumb,.mini-art,.img-missing) { display:block; width:100%; height:auto; aspect-ratio:63/88; object-fit:contain; border-radius:5% / 3.5%; flex:none; background:var(--surface-2); }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .mini-row > :is(.ellip,.deck-compact-copy,.small) { display:block; max-width:none; padding:0 6px; white-space:normal; overflow-wrap:anywhere; text-align:left; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .mini-row > .small { padding-bottom:8px; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .deck-compact-copy > b { font-size:13px; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .pick-main { display:flex; flex-direction:column; align-items:stretch; gap:8px; width:100%; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .pick-main > .deck-compact-art { display:block; width:100%; height:auto; aspect-ratio:63/88; object-fit:contain; flex:none; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .pick-main > .deck-compact-copy { padding:0 6px; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .pick-row > input { position:absolute; top:8px; left:8px; z-index:2; width:22px; height:22px; accent-color:var(--gold); }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .pick-row > .pick-side { display:flex; justify-content:space-between; max-width:none; padding:0 6px 8px; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) [data-deck-card]::after { content:attr(data-deck-qty) '×'; position:absolute; top:7px; right:7px; z-index:2; padding:3px 7px; border:1px solid #ffffff60; border-radius:7px; background:#141820e8; color:#fff; font-size:12px; font-weight:800; line-height:1.4; pointer-events:none; }
+
+/* Stacks scroll inside each group. DOM order and tab order remain identical;
+   raising the focused card exposes its original controls above the overlap. */
+.deck-viewer[data-deck-view="stacks"] [data-deck-list] { --deck-stack-height:380px; display:grid; grid-auto-flow:column; grid-template-columns:none; grid-auto-columns:190px; grid-template-rows:repeat(var(--deck-stack-rows,1),44px); align-items:start; gap:0 18px; padding:8px 8px calc(var(--deck-stack-height) - 44px + 12px); overflow:auto hidden; overscroll-behavior-inline:contain; scrollbar-width:thin; border:0; background:none; }
+.deck-viewer[data-deck-view="stacks"] [data-deck-card] { width:190px; height:var(--deck-stack-height); align-self:start; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); box-shadow:0 7px 16px -10px #000b; }
+.deck-viewer[data-deck-view="stacks"] [data-deck-card]:hover { z-index:3; }
+.deck-viewer[data-deck-view="stacks"] [data-deck-card]:focus-within { z-index:4; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .own { display:none; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-side { margin-top:auto; }
+.deck-viewer[data-deck-view="stacks"] .deck-compact-copy > :not(b),
+.deck-viewer[data-deck-view="stacks"] .pick-main .deck-compact-copy > :not(b) { display:none; }
+.deck-viewer[data-deck-view="stacks"] .deck-compact-copy > b { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+
+/* Names only keeps editing controls and selected checks; it hides art and
+   secondary metadata rather than generating another, divergent card list. */
+.deck-viewer[data-deck-view="symbols"] [data-deck-list] { display:grid; grid-template-columns:minmax(0,1fr); gap:4px; }
+.deck-viewer[data-deck-view="symbols"] [data-deck-card] { min-height:44px; padding:10px; }
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row .lot-art,
+.deck-viewer[data-deck-view="symbols"] :is(.row-thumb,.mini-art,.deck-compact-art,.img-missing),
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row :is(.lot-sub,.own,.set-badge),
+.deck-viewer[data-deck-view="symbols"] .deck-compact-copy > :not(b),
+.deck-viewer[data-deck-view="symbols"] .mini-row > .small,
+.deck-viewer[data-deck-view="symbols"] .pick-side { display:none; }
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row .lot-info { display:block; }
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row .lot-name { display:block; width:100%; white-space:normal; overflow-wrap:anywhere; }
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row .lot-side { display:grid; width:auto; padding:0; }
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row .stepper { transform:none; }
+.deck-viewer[data-deck-view="symbols"] .mini-row > .ellip { white-space:normal; overflow-wrap:anywhere; }
+.deck-viewer[data-deck-view="symbols"] .pick-main { min-width:0; }
+.deck-viewer[data-deck-view="symbols"] .deck-compact-copy > b { font-size:14px; }
+@media(max-width:480px) {
+ .deck-viewer[data-deck-view="gallery"] [data-deck-list] { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 10px; }
+ .deck-viewer[data-deck-view="compact"] .lot.deck-row { grid-template-columns:48px minmax(0,1fr) auto; gap:7px; padding:6px; }
+ .deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-art { width:48px; height:67px; }
+ .deck-viewer[data-deck-view="compact"] .mini-row > :is(.row-thumb,.mini-art,.img-missing) { width:48px; height:67px; flex-basis:48px; }
+ .deck-viewer[data-deck-view="gallery"] .lot.deck-row .lot-side { flex-direction:column; align-items:flex-end; }
+}

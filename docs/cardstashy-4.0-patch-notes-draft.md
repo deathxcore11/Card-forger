@@ -133,6 +133,28 @@ planned bullet below does not mean the feature is implemented or working today.
   rewards remain separate from owned cards.
 - Ranked, public matchmaking and APK gameplay are separate future decisions.
 
+## Planned desktop opponent library
+
+- Bring precons across known sets/products, existing meta decks, your own
+  built/saved/imported decks and random opponents into one coherent Play library.
+  Show artwork, format, commanders, exact zones and a readable deck-plan preview.
+- Preserve actual Commander and 60-card format rules and multi-commander choices.
+  A set announcement or card catalogue does not establish a complete playable
+  precon. Source lists, engine coverage and CPU piloting have separate checks.
+- Give each supported exact deck a versioned CPU playbook. Easy/Medium/Hard
+  change planning, and random selection freezes the actual eligible opponent
+  list for the match and later history/save action.
+- TMNT and Star Trek are explicit coverage targets, subject to verified source
+  contents and engine validation. The current product-source findings and
+  integration gaps are recorded in the release plan. This library is not built
+  or certified playable yet.
+- Approved interaction targets: Quick Practice remembers valid choices; one
+  opponent shelf offers Precons/Meta/Random/My decks; assistance remains separate
+  from CPU difficulty; completed games return to Practice history with rematch,
+  opponent saving and grounded key moments; frozen versions, random streams and
+  action logs support reproducible matches. These targets still need execution
+  and validation before appearing in final release notes.
+
 ## Required before replacing this draft with final release notes
 
 Freeze the supported constructed format/card pool and first Draft product.
@@ -152,6 +174,8 @@ development branch. The 311-command aggregate and both relevant browser suites
 passed with controlled fixtures; see the [Home review and before/after
 captures](4.0-home-review/README.md) for scope, commands and recorded failures.
 The recovered Random Deck repair remains included. Play/Draft controls remain
-disabled, the four-view deck redesign is unfinished, and the [engine
-evaluation](4.0-engine-evaluation.md) has not passed an executable proof gate.
+disabled. The shared four-view implementation and its current validation are
+recorded in the [deck viewer review](4.0-deck-viewer-review/README.md), including
+the passing 312-command aggregate and focused browser runs; its full
+entrypoint matrix is still open. The [engine evaluation](4.0-engine-evaluation.md) has not passed an executable proof gate.
 No 4.0 production or APK release has occurred.

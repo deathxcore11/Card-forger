@@ -1,0 +1,95 @@
+{
+  "baselineCommit": "349d873a8aea81d893864ea73b7bc1f9af48e12f",
+  "afterSource": "This checkpoint commit",
+  "format": "JPEG review copies of original Playwright PNGs; no layout edits",
+  "captures": [
+    {
+      "file": "before-390.jpg",
+      "source": "deck-view-before-390.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "53f90c83cde3b32670569386bd7e7238cc2464d58683d47b7346c7215f7eee51",
+      "syntheticArtwork": true
+    },
+    {
+      "file": "before-1440.jpg",
+      "source": "deck-view-before-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "a2ffafd89a1e1e4ba0aafaa07dc41a197887f2f4fe0916abf012b2e52b5a6367",
+      "syntheticArtwork": true
+    },
+    {
+      "file": "after-list-390.jpg",
+      "source": "deck-view-saved-mtg-390-compact.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "85ed5bd3b1fc9db0d361b417c3c319d6099db5b50acadbce6f25168a3f0bac90",
+      "syntheticArtwork": true
+    },
+    {
+      "file": "after-list-1440.jpg",
+      "source": "deck-view-saved-mtg-1440-compact.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "baa33df12c86ffeb1386e894505ec5f87d08fc7b057d58adbf1c975ab1dbe1de",
+      "syntheticArtwork": true
+    },
+    {
+      "file": "after-stacks-390.jpg",
+      "source": "deck-view-saved-mtg-390-stacks.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "2b81254608b79f32b870305b3a0109a8d97c796829fcdc6107bed9589e2ed3f5",
+      "syntheticArtwork": true
+    },
+    {
+      "file": "after-stacks-1440.jpg",
+      "source": "deck-view-saved-mtg-1440-stacks.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "3f19a256ba71bb65806042d29832df19e7e72d3f67be94fbd514678dff6d20b7",
+      "syntheticArtwork": true
+    },
+    {
+      "file": "after-grid-1440.jpg",
+      "source": "deck-view-saved-mtg-1440-gallery.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "5c22164c8b0093a7ac1192d1ed06d3c904e683c9200259a959079ab5c08da6d0",
+      "syntheticArtwork": true
+    },
+    {
+      "file": "after-names-1440.jpg",
+      "source": "deck-view-saved-mtg-1440-symbols.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "aba57755961babe545aa90b407b63bd134e954f18852b1a45da567aba2cf3d50",
+      "syntheticArtwork": true
+    },
+    {
+      "file": "after-light-grid-390.jpg",
+      "source": "deck-view-saved-mtg-light-390-gallery.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "fab03212f126d777eb6bd9cdf5cc65cda6eb6578f44785122c141cca9eb50842",
+      "syntheticArtwork": true
+    },
+    {
+      "file": "after-source-grid-390.jpg",
+      "source": "deck-view-tournament-390-gallery.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "077988504f31adc198c96afb80a5793e4be10083c917f182fdd6a5542d0cf5e7",
+      "syntheticArtwork": true
+    },
+    {
+      "file": "after-selection-grid-390.jpg",
+      "source": "deck-view-idea-390-gallery.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "014db44a38df59155d7a7847fcd91089a04d1474ff74f781288f4b381ac1d7bb",
+      "syntheticArtwork": true
+    }
+  ]
+}

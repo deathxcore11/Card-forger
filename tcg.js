@@ -45,6 +45,7 @@ import { rankByName } from "./catalog-tools.js";
 import {setRowContent,knownSetCount,setYearSections,setCardFields,setCardFacets,setFinishLabel,setVariantKey,filterSortSetCards,setProgressMarkup} from './set-list-ui.js';
 import {artworkHTML,artworkSources,pokemonArtCrop,pokemonDeckCover} from "./artwork.js";
 import { tierOf, tierAttrs, tierStyle, tierGem, ygoRarityFlair } from "./tier.js";
+import {deckViewer,deckCardAttrs} from './deck-viewer.js';
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview,quoteWarning,ygoPreviewSelectors} from "./workbench-ui.js";
 import { locationPicker, rememberLocation } from "./collection-locations.js";
 import { zoneCountLabel } from "./deck-safety.js";
@@ -1297,14 +1298,14 @@ export function provenSheetHtml() {
       const u = spec.imageFor?.(r);
       return u ? `<img class="row-thumb" src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'row-thumb img-missing'}))">` : `<span class="row-thumb img-missing" aria-hidden="true"></span>`;
     },
-    row = (r, extra = "") =>
-      `<button class="mini-row art-row deck-compact-row" ${spec.cardAttrs ? spec.cardAttrs(r) : ""}>${thumb(r)}<span class="deck-compact-copy"><b>${r.qty}× ${esc(r.name)}</b>${referencePrintingPills(spec.printingFor?.(r))}${r.swappedIn ? ` <span class="tag">swap</span>` : ""}${M.engine.has(r.key) && mode !== "draft" ? ` <span class="tag ok">engine</span>` : ""}${rowEmblem(spec.g, { name: r.name, id: r.key })}</span><span class="small ${r.matchPending?"warn-text":r.assumedOwned?"muted":r.owned >= r.qty ? "ok-text" : "muted"}">${r.matchPending ? "Printing not matched" : r.assumedOwned ? "Basic Energy · assumed" : extra || (r.owned >= r.qty ? "✓ owned" : r.owned ? `${r.owned}/${r.qty} · ${r.price != null ? usd((r.qty - r.owned) * r.price) : "Price unavailable"}` : r.price != null ? usd(r.qty * r.price) : "Price unavailable")}</span></button>`;
+    row = (r, extra = "", zone = r.zone || "main") =>
+      `<button class="mini-row art-row deck-compact-row" ${deckCardAttrs(r.name,r.qty,zone)} ${spec.cardAttrs ? spec.cardAttrs(r) : ""}>${thumb(r)}<span class="deck-compact-copy"><b>${r.qty}× ${esc(r.name)}</b>${referencePrintingPills(spec.printingFor?.(r))}${r.swappedIn ? ` <span class="tag">swap</span>` : ""}${M.engine.has(r.key) && mode !== "draft" ? ` <span class="tag ok">engine</span>` : ""}${rowEmblem(spec.g, { name: r.name, id: r.key })}</span><span class="small ${r.matchPending?"warn-text":r.assumedOwned?"muted":r.owned >= r.qty ? "ok-text" : "muted"}">${r.matchPending ? "Printing not matched" : r.assumedOwned ? "Basic Energy · assumed" : extra || (r.owned >= r.qty ? "✓ owned" : r.owned ? `${r.owned}/${r.qty} · ${r.price != null ? usd((r.qty - r.owned) * r.price) : "Price unavailable"}` : r.price != null ? usd(r.qty * r.price) : "Price unavailable")}</span></button>`;
   let body = "";
   if (mode === "original") {
-    body = `<div class="list compact deck-compact-list">${spec.rows.map((r) => row(r)).join("")}</div>`;
+    body = `<div class="list compact deck-compact-list" data-deck-list>${spec.rows.map((r) => row(r)).join("")}</div>`;
   } else if (mode === "budget" && incomplete) {
     proven.last = null;
-    body = `<div class="note warn"><b>Price check incomplete</b><p>${incomplete} missing cop${incomplete === 1 ? "y has" : "ies have"} no price${sideUnpriced ? " across the main deck and sideboard" : ""}. Retry prices before choosing a budget; the known subtotal is not the complete purchase cost.</p></div><div class="list compact deck-compact-list">${spec.rows.map((r) => row(r)).join("")}</div>`;
+    body = `<div class="note warn"><b>Price check incomplete</b><p>${incomplete} missing cop${incomplete === 1 ? "y has" : "ies have"} no price${sideUnpriced ? " across the main deck and sideboard" : ""}. Retry prices before choosing a budget; the known subtotal is not the complete purchase cost.</p></div><div class="list compact deck-compact-list" data-deck-list>${spec.rows.map((r) => row(r)).join("")}</div>`;
   } else if (mode === "budget") {
     const a = adaptList({ rows: spec.rows, pool: M.pool, engine: M.engine, budget, similarCount: M.similar.length });
     proven.last = { ...a, budget };
@@ -1325,18 +1326,18 @@ export function provenSheetHtml() {
       })()}
       ${a.swaps.length ? `<p class="list-head">Changes</p><ul class="swaps">${a.swaps.map((s) => `<li><span class="bad-text">−${s.qty} ${esc(s.out)}</span> ${s.in ? `→ <span class="ok-text">+${s.qty} ${esc(s.in)}</span>` : "→ <b>open slot</b>"} <small class="muted">saves ${usd(s.saved, 0)} · ${esc(s.why)}</small></li>`).join("")}</ul>` : ""}
       ${M.engine.size ? `<p class="small muted">Kept the engine: ${esc(spec.rows.filter((r) => M.engine.has(r.key)).map((r) => r.name).slice(0, 8).join(", "))}${M.engine.size > 8 ? "…" : ""}</p>` : ""}
-      <p class="list-head">Adapted list</p><div class="list compact deck-compact-list">${a.rows.map((r) => row(r)).join("")}</div>`;
+      <p class="list-head">Adapted list</p><div class="list compact deck-compact-list" data-deck-list>${a.rows.map((r) => row(r)).join("")}</div>`;
   } else {
     const d = ownedDraft(spec.rows);
     body = `<div class="note ${d.open ? "warn" : ""}"><b>${d.open ? `Draft — ${d.open} slot${d.open === 1 ? "" : "s"} open` : side.some(r => r.qty > (r.owned || 0)) ? "Main deck ready — sideboard still needs cards" : spec.rows.some(r=>r.assumedOwned) ? "Ready — all card slots covered" : "Ready — you own every card"}</b>${d.open ? ` · you own ${total - d.open} of ${total}` : ""}</div>
-      ${d.rows.length ? `<p class="list-head">${spec.rows.some(r=>r.assumedOwned)?"Cards covered":"Cards you own"} <span class="muted">${total - d.open}</span></p><div class="list compact deck-compact-list">${d.rows.map((r) => row(r, "✓ owned")).join("")}</div>` : `<p class="muted small">You don’t own any cards from this list yet.</p>`}
-      ${d.open ? `<p class="list-head">To finish · cheapest first <span class="muted">${usd(d.cost, 0)}${d.unpriced ? ` known subtotal · ${d.unpriced} unpriced · Incomplete total` : ""}</span></p><div class="list compact deck-compact-list">${d.missing.map((r) => row({ ...r, owned: 0 })).join("")}</div>` : ""}`;
+      ${d.rows.length ? `<p class="list-head">${spec.rows.some(r=>r.assumedOwned)?"Cards covered":"Cards you own"} <span class="muted">${total - d.open}</span></p><div class="list compact deck-compact-list" data-deck-list>${d.rows.map((r) => row(r, "✓ owned")).join("")}</div>` : `<p class="muted small">You don’t own any cards from this list yet.</p>`}
+      ${d.open ? `<p class="list-head">To finish · cheapest first <span class="muted">${usd(d.cost, 0)}${d.unpriced ? ` known subtotal · ${d.unpriced} unpriced · Incomplete total` : ""}</span></p><div class="list compact deck-compact-list" data-deck-list>${d.missing.map((r) => row({ ...r, owned: 0 })).join("")}</div>` : ""}`;
   }
   // Magic tournament lists keep their sideboard: shown in every mode and saved with every version.
   if (side.length) {
     const sn = side.reduce((a, r) => a + r.qty, 0),
       sc = costToFinish(side);
-    body += `<details class="group side-group" ${mode === "original" ? "open" : ""}><summary><span>Sideboard <em>${sn}</em></span><span class="muted small">${usd(sc, 0)} ${sideUnpriced ? `known subtotal · ${sideUnpriced} unpriced · Incomplete total` : "to finish"}</span></summary><p class="small muted">Saved with ${mode === "original" ? "the deck" : "every version"} as the tournament player ran it. Swap these in between games.</p><div class="list compact deck-compact-list">${side.map((r) => row(r)).join("")}</div></details>`;
+    body += `<details class="group side-group" ${mode === "original" ? "open" : ""}><summary><span>Sideboard <em>${sn}</em></span><span class="muted small">${usd(sc, 0)} ${sideUnpriced ? `known subtotal · ${sideUnpriced} unpriced · Incomplete total` : "to finish"}</span></summary><p class="small muted">Saved with ${mode === "original" ? "the deck" : "every version"} as the tournament player ran it. Swap these in between games.</p><div class="list compact deck-compact-list" data-deck-list>${side.map((r) => row(r,"","side")).join("")}</div></details>`;
   }
   const hero = spec.heroFor?.(spec.rows);
   return `<div class="sheet-head overlay"><span></span><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
@@ -1349,7 +1350,7 @@ export function provenSheetHtml() {
   ${proven.busy ? buildOverlay(proven.msg, { title: "Fitting the tournament deck", note: "Matching the winning list to your cards and budget, card by card. This can take up to a minute." }) : proven.msg ? `<p class="small warn-text" role="status">${esc(proven.msg)}</p>` : ""}
   ${saveError?`<p class="note warn" role="alert">${esc(saveError)}</p>`:""}
   ${!proven.busy && spec.load && (proven.msg || incomplete || saveError) ? `<div class="actions"><button class="btn small" data-act="provenRetry">${spec.rows.some(r=>r.matchPending)?"Retry card matching":"Retry prices"}</button></div>` : ""}
-  ${body}
+  ${deckViewer(spec.g,body)}
   <div class="actions wrap sheet-actions"><button class="btn" data-act="provenSave" ${saving || mode === "budget" && incomplete ? "disabled" : ""}>${saving?"Saving…":mode === "original" ? "Save original list" : mode === "budget" ? "Save adaptation" : "Save draft"}</button>${spec.sourceUrl ? `<a class="btn ghost" href="${esc(safeHref(spec.sourceUrl))}" target="_blank" rel="noopener noreferrer">${esc(spec.sourceLabel || "Source")} ↗</a>` : ""}${spec.extraActions || ""}</div>
   ${spec.attribution ? `<p class="foot">${spec.attribution}</p>` : ""}`;
 }
@@ -1433,23 +1434,23 @@ function deckCardsTab(g, d, f, s, issues) {
   ${f.note ? `<p class="small muted">${esc(f.note)}</p>` : ""}
   ${tcgDeckEmblems(g, d)}
   <div id="tIssuesPanel">${issues.length ? `<details class="panel issues-panel"><summary>Rules review · ${esc(deckCheckLabel(issues))}</summary><ul class="issues">${issues.map((i) => `<li>${esc(i.text)}</li>`).join("")}</ul></details>` : ""}</div>
-  ${zones
+  ${deckViewer(g,zones
     .map(([z, label, rule]) => {
       const rows = s.rows.filter((x) => x.zone === z);
       return `<div class="section-head"><h2>${label} <span class="muted small">${zoneCount(z)} · ${rule}</span></h2></div>${
         rows.length
-          ? `<div class="list display-list">${rows
+          ? `<div class="list display-list" data-deck-list>${rows
               .sort((a, b) => (a.c?.category || "").localeCompare(b.c?.category || "") || String(a.r.name||a.c?.name||a.r.cardId||"").localeCompare(String(b.r.name||b.c?.name||b.r.cardId||"")))
               .map(({ r, c, need, purchaseReference }) => {
                 const lim = c ? SOURCES[g].limit(c, f) : 3;
                 const t = tcgTier(c), actionRow = g === "ygo" && r.ygoPurchaseSelection ? `data-row-index="${(d.zones[z]||[]).findIndex(x=>x.cardId===r.cardId&&x.ygoPurchaseSelection===r.ygoPurchaseSelection)}" data-purchase-identity="${esc(JSON.stringify(r.ygoPurchaseSelection))}"` : "";
-                return `<div class="lot deck-row ${need ? "short" : ""}" data-tier="${t.key}" style="${tierStyle(t)}"><button class="lot-art" ${finishAttrs(g,c,g==='ptcg'?{priceFinish:r.ptcgPurchaseSelection?.variant||''}:ygoDeckFinishContext(g,c,r.ygoPurchaseSelection))}  data-act="tCard" ${purchaseRowAttrs(g,r)} data-id="${esc(r.cardId)}" data-deck="${esc(d.id)}" aria-label="Open ${esc(r.name)}">${imgTag(c)}${tileBadges(c)}<span class="art-price">${usd(g === "ygo" ? purchaseReference?.value : referenceEntryPrice(c,r.ptcgPurchaseSelection||{}))}</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" ${purchaseRowAttrs(g,r)} data-id="${esc(r.cardId)}" data-deck="${esc(d.id)}">${esc(r.name)}</button><span class="lot-sub">${rowBadges(c)}${purchaseRowNote(g,purchaseReference)}${lim === 0 ? ' <span class="tag bad">Forbidden</span>' : lim === 1 && g === "ygo" ? ' <span class="tag warn">Limited</span>' : lim === 2 ? ' <span class="tag warn">Semi-Limited</span>' : ""}${c && SOURCES[g].legality(c, f) === "not_legal" ? ' <span class="tag bad">Not legal</span>' : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : "Owned"}</span></div><div class="lot-side"><span class="stepper"><button data-act="tDeckQty" ${actionRow} data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}" data-delta="-1" aria-label="One fewer">−</button><b>${r.qty}</b><button data-act="tDeckQty" ${actionRow} data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}" data-delta="1" aria-label="One more">＋</button></span>${g === "ygo" ? `<button class="link small" data-act="tDeckMove" ${actionRow} data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}">${z === "side" ? "→ deck" : "→ side"}</button>` : ""}</div></div>`;
+                return `<div class="lot deck-row ${need ? "short" : ""}" ${deckCardAttrs(r.name,r.qty,z)} data-tier="${t.key}" style="${tierStyle(t)}"><button class="lot-art" ${finishAttrs(g,c,g==='ptcg'?{priceFinish:r.ptcgPurchaseSelection?.variant||''}:ygoDeckFinishContext(g,c,r.ygoPurchaseSelection))}  data-act="tCard" ${purchaseRowAttrs(g,r)} data-id="${esc(r.cardId)}" data-deck="${esc(d.id)}" aria-label="Open ${esc(r.name)}">${imgTag(c)}${tileBadges(c)}<span class="art-price">${usd(g === "ygo" ? purchaseReference?.value : referenceEntryPrice(c,r.ptcgPurchaseSelection||{}))}</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" ${purchaseRowAttrs(g,r)} data-id="${esc(r.cardId)}" data-deck="${esc(d.id)}">${esc(r.name)}</button><span class="lot-sub">${rowBadges(c)}${purchaseRowNote(g,purchaseReference)}${lim === 0 ? ' <span class="tag bad">Forbidden</span>' : lim === 1 && g === "ygo" ? ' <span class="tag warn">Limited</span>' : lim === 2 ? ' <span class="tag warn">Semi-Limited</span>' : ""}${c && SOURCES[g].legality(c, f) === "not_legal" ? ' <span class="tag bad">Not legal</span>' : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : "Owned"}</span></div><div class="lot-side"><span class="stepper"><button data-act="tDeckQty" ${actionRow} data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}" data-delta="-1" aria-label="One fewer">−</button><b>${r.qty}</b><button data-act="tDeckQty" ${actionRow} data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}" data-delta="1" aria-label="One more">＋</button></span>${g === "ygo" ? `<button class="link small" data-act="tDeckMove" ${actionRow} data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}">${z === "side" ? "→ deck" : "→ side"}</button>` : ""}</div></div>`;
               })
               .join("")}</div>`
           : `<p class="muted small">Empty.</p>`
       }`;
     })
-    .join("")}
+    .join(""),{controls:false})}
   <section class="panel">${s.total ? `<div class="row between"><span>${s.total - s.owned} cards to get</span><b>${usd(s.buy)}${s.unknown ? ` + ${s.unknown} unpriced` : ""}</b></div>` : ""}
   <div class="actions wrap">${g === "ptcg" && s.total > s.owned ? `<button class="btn small" data-act="tDeckCheapest" data-id="${esc(d.id)}" title="Same cards, cheapest legal printings">Cheapest printings</button>` : ""}${s.total > s.owned ? `<button class="btn ghost small" data-act="tDeckCopyMissing" data-id="${esc(d.id)}">${actionIcon("bag")}<span>Buy on TCGplayer</span></button>` : ""}<button class="btn ghost small" data-act="tDeckExport" data-id="${esc(d.id)}">↓ Export ${SOURCES[g].exportExt === "ydk" ? ".ydk" : "list"}</button><button class="btn ghost small" data-act="tDeckRefresh" data-id="${esc(d.id)}">⟳ Refresh prices</button></div>
   <p class="foot">Owned counts every copy in your ${esc(GAMES[g].short)} collection${g === "ptcg" ? " (Pokémon by exact card; Trainers and Energy by name)" : ""}. Prices are daily market estimates.</p></section>`;
