@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "version": "3.93.3",
-  "commit": "311b9a0c7ae2e465c6da98f307ccb6cc2008e2f9",
-  "tree": "41484dcedaef347b7cfe08318859bf0568bbe302",
+  "version": "3.95.1",
+  "commit": "ab3ddb22fef02c86afb23f4a9ad38a8b51abfeee",
+  "tree": "5be29eac568c817c51e6183dee0ea6aff4e61c1a",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
     {
       "path": ".assetsignore",
-      "bytes": 1068,
-      "sha256": "faf31228d27d863485ea558abc98b036a5f9185acaba36af422706216d48c52b"
+      "bytes": 1115,
+      "sha256": "5ed90a38a0a87d36a805b087dbc39e24202f7d5457d7531fde477030f757901e"
     },
     {
       "path": "account-scope.js",
@@ -28,13 +28,13 @@
     },
     {
       "path": "ai-ask-loop.js",
-      "bytes": 12854,
-      "sha256": "9129533099b9b7a20c93828d9ff1c56ff52206440df69648a2021bd5e88cf8d0"
+      "bytes": 13057,
+      "sha256": "4c973928b415c5c2be1327c4342a0fe07e6b7e57a4874df99492638ecfb74a5a"
     },
     {
       "path": "ai-ask.js",
-      "bytes": 10678,
-      "sha256": "d3c22e279a0e366b652ce1abb0c56e48788004186a91dc1fe9e70b40e1db2d0f"
+      "bytes": 11257,
+      "sha256": "1f66627dc4bf0e10ea7b55c16b280b47ee904ee5f74ca2652e092616930d3a0d"
     },
     {
       "path": "ai-auth.js",
@@ -43,18 +43,18 @@
     },
     {
       "path": "ai-build-contract.js",
-      "bytes": 19250,
-      "sha256": "78b9ad214b090e218817cced35d24e4d9944aeb2e9452f336de69db80b3d402e"
+      "bytes": 29610,
+      "sha256": "20eb0f7a1c3fdc1cf1aa4a69999ba477169bfbc037278c4f27a24bf7945f480a"
     },
     {
       "path": "ai-deck-builder.js",
-      "bytes": 18592,
-      "sha256": "ff7b1fb6db136d83a533c2e1d8139e4b473ad77fdc2bcdaaabf70558cd935784"
+      "bytes": 26602,
+      "sha256": "d8a520c84cab3a1bc85200bb49911fdec3563646dadfb49c34de0e821e13c396"
     },
     {
       "path": "ai-deck-goal.js",
-      "bytes": 3410,
-      "sha256": "9214d7450d6a53988325d458b3df17034198aec768b0e6fd0838d64a88d128b3"
+      "bytes": 5354,
+      "sha256": "3ae7953f5581f93f7713f2499428859f0a655ded3c799298080589a9ceec67ff"
     },
     {
       "path": "ai-matchup-core.js",
@@ -63,8 +63,8 @@
     },
     {
       "path": "ai-review.js",
-      "bytes": 53165,
-      "sha256": "fd7a6598f8b6cbe8dc702fabad1eaace83d00392b6126cbe44a60aa9550c2d93"
+      "bytes": 53577,
+      "sha256": "bfd7f4f629659ac65d81ef32916dbfbe62c8691dded6fceeef11adde85c77e8f"
     },
     {
       "path": "ai-rules-panel.js",
@@ -78,8 +78,8 @@
     },
     {
       "path": "ai-tools.js",
-      "bytes": 43231,
-      "sha256": "39fe6e73caf3b9eeacbeb9717f72b3f455885df79d9869f1c9aa7e66ae8e8d51"
+      "bytes": 48375,
+      "sha256": "0f2dbc294f1222a44898050cba813dcb681822ed778da3928e113b4931ce202c"
     },
     {
       "path": "ai-ui.js",
@@ -98,8 +98,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 398655,
-      "sha256": "90649b6da79f4cb49a531ff7d8e14524195a4487b028c4437981b1f90367c1ce"
+      "bytes": 404597,
+      "sha256": "d0c6cd2146c04555f276373f2736f72bdb633a40eb439dfdf8c406905031f018"
     },
     {
       "path": "artwork.js",
@@ -193,13 +193,13 @@
     },
     {
       "path": "build-overlay.js",
-      "bytes": 858,
-      "sha256": "a9786cc7959da8ab6e3c8c33ea829ecbd39bfdb7e58d4abfc4ee85bfe2d76aea"
+      "bytes": 975,
+      "sha256": "c21f70bf7b27a0e6471e6a3c6ceb0385d20c68e426ee4a56cf52aa0157d55f28"
     },
     {
       "path": "builder.js",
-      "bytes": 21983,
-      "sha256": "da36b25ef35412264ff313511b173cc4125ba833db766833e5da038c93561511"
+      "bytes": 29104,
+      "sha256": "5ce9f293cd781f184c9f1306290df7506617ee0251d58774a6cfa0116f692c4d"
     },
     {
       "path": "buy.js",
@@ -215,6 +215,11 @@
       "path": "card-detail-extras.js",
       "bytes": 3764,
       "sha256": "61ff71ba3ab072df69035065348500fcd165ba3b3e4ebea0f96251b99cbc8791"
+    },
+    {
+      "path": "card-discovery.js",
+      "bytes": 4284,
+      "sha256": "f080f785107944b1b30a4468388c0571a434ad98fddf1fa5b59767fcf1fc523d"
     },
     {
       "path": "catalog-tools.js",
@@ -329,7 +334,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "0fa37e50e371e0f2826becc1ba0bf5e7f55883a78394293e4e391da98333ef4a"
+      "sha256": "489e51323bca913bd236991d11f9c43d3328f08779c49ed109b672b8fd8ea29e"
     },
     {
       "path": "core.js",
@@ -1228,18 +1233,23 @@
     },
     {
       "path": "deck-construction.js",
-      "bytes": 14475,
-      "sha256": "8865eac70dbb817adf1b544c09951cea4fae0b59c7de0179b1873cb8ed1c6376"
+      "bytes": 20598,
+      "sha256": "d01dbce133aa3210a1e56377cdbc3498b33f254cd0b5b54b8674034c08b6d87c"
     },
     {
       "path": "deck-experience.js",
-      "bytes": 17760,
-      "sha256": "f5ac625177bb30d3c47a71d31a9c88c1895a7f6e3a2e502fe2c1a2b8ac98609d"
+      "bytes": 37638,
+      "sha256": "7e6c40ddac499fd9dcc8e647335867ac9ec5fd72c5070cb774b06a00ff24f09f"
     },
     {
       "path": "deck-flow.js",
       "bytes": 6138,
       "sha256": "7b82d8b51a5c8fcf696f059e447259cacc7bd0b3d02ca0ea9589e61400abe61d"
+    },
+    {
+      "path": "deck-mechanic-plan.js",
+      "bytes": 24520,
+      "sha256": "1d1fac0775c9a3ed5ff3b4c308917f967b4f23d6764b2662f47c8c92c5a1b052"
     },
     {
       "path": "deck-optimizer.js",
@@ -1248,8 +1258,8 @@
     },
     {
       "path": "deck-pipeline.js",
-      "bytes": 9176,
-      "sha256": "b858641e9976e3f6e30b578411ce287bc717422beb72ec059f7f8e6ebff56ac1"
+      "bytes": 10657,
+      "sha256": "28147069203741705ccee2e3a2ebc7227c39553d4a67f6d00897789d1963076f"
     },
     {
       "path": "deck-preferences.js",
@@ -1267,14 +1277,19 @@
       "sha256": "744b69c6c943d65d3242ddc74edeb58b7af5b38d3924b6846612dfd4dc830948"
     },
     {
+      "path": "deck-strategy-plan.js",
+      "bytes": 10942,
+      "sha256": "899f2ff377b57627a782ef9a94b9894c0f1181128a16b4a0f63cb64a1f0620c1"
+    },
+    {
       "path": "deckaudit.js",
       "bytes": 3502,
       "sha256": "895dc335495ad977b653d2c906735225ae3ed5308df29572454977fb166c81ab"
     },
     {
       "path": "deckpower.js",
-      "bytes": 116520,
-      "sha256": "0d51113b2e7cddc27b7e523981705ee1893201488d2cd5f6a480c40dfc9083c4"
+      "bytes": 116551,
+      "sha256": "107c0a87cc943ac219823ed83d8fe584b8068a3baf1faf62a965ca5500a78b40"
     },
     {
       "path": "dialog.js",
@@ -1288,8 +1303,8 @@
     },
     {
       "path": "engine-map.js",
-      "bytes": 5694,
-      "sha256": "b79fda584976097b1d727414a6fe615e86c293874dd54a961671e535f3c0b4f5"
+      "bytes": 6321,
+      "sha256": "775aab78e394e17017b405e3104693ea381d7bc24f6373bdcbbe7ad6d5295158"
     },
     {
       "path": "extras.js",
@@ -1348,8 +1363,8 @@
     },
     {
       "path": "game-navigation.js",
-      "bytes": 5330,
-      "sha256": "4083958f756b6d49f260b6f5db6cae912b9cfc3cf456f2cb87873bf91497b6d0"
+      "bytes": 5337,
+      "sha256": "a63c899c8f18b371bb56f9624e90d03bba9a11b06454a4ce69e617539daab4ca"
     },
     {
       "path": "game-tab-mtg.jpg",
@@ -1370,6 +1385,16 @@
       "path": "game-tabs.css",
       "bytes": 3304,
       "sha256": "b77ca5dea45d0e841705b32e1338be508d2dce3dc05483f32049a7ff790c0278"
+    },
+    {
+      "path": "game-wiki-article.js",
+      "bytes": 12993,
+      "sha256": "fec95ea49d327f110448db0fc43533bc9b4265fb6910158ba1d80895ee896dca"
+    },
+    {
+      "path": "game-wiki-knowledge.js",
+      "bytes": 10784,
+      "sha256": "69aed5f6152e8c765dd15d883e5f0b5d9e90b6755541e3c82c18b94ad089ead8"
     },
     {
       "path": "games.js",
@@ -1473,8 +1498,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 15972,
-      "sha256": "f2423d47d2bd39a2a81cc318f4eb2018eef12b4720319a4c7c620370b0f987ec"
+      "bytes": 16949,
+      "sha256": "5c0ae3802d8821c4fbc6cfdfac91de95a563c94577229b1810654dd17c1d272a"
     },
     {
       "path": "insights.js",
@@ -1552,9 +1577,14 @@
       "sha256": "cd3eb4d7bd5a5430b9c00ba58f2e9e4890554bfeafa23e8ebb7419282028fb92"
     },
     {
+      "path": "mtg-combo-packages.js",
+      "bytes": 16544,
+      "sha256": "c1e548779b55ec1e68bf6ac7032e71aef4e1f5c57aa20ff8da99330367706173"
+    },
+    {
       "path": "mtg-effects.js",
-      "bytes": 23077,
-      "sha256": "494c1a43ca769b633ba853ede0b77185528361836bf39ac8fa872759737a2442"
+      "bytes": 27235,
+      "sha256": "526866ac2b326a35ef06f3b7bae22e1ea17253bc16d71fc0e7e4d42d4385d5ac"
     },
     {
       "path": "mtg-foil-analysis.js",
@@ -1577,6 +1607,11 @@
       "sha256": "3df5647c9b0ab28aef675d3ad4c4fbc494a01854511b003cdc1e8ea9d9c97414"
     },
     {
+      "path": "mtg-keyword-reference.js",
+      "bytes": 137642,
+      "sha256": "280e8c999f7ca455660e028d3f3bace07b8d4592fe9b8d11524cdfee4b531fbc"
+    },
+    {
       "path": "mtg-route-coverage.js",
       "bytes": 7796,
       "sha256": "eb7d43cf24b723bcec522de09937deb5ed251abd021e93bd5a710941d082aeda"
@@ -1597,9 +1632,34 @@
       "sha256": "dc0511eb7edbb414867602cf8e8f173de90890137524904dff525588e2ae5e94"
     },
     {
+      "path": "mtg-vocabulary.js",
+      "bytes": 13135,
+      "sha256": "19bb3a653f0e1869ea77b88c40559ec878b610618bc82a4c68f858dec77ba29e"
+    },
+    {
+      "path": "mtg-wiki-client.js",
+      "bytes": 2993,
+      "sha256": "02098bf72b9fcdb6792251ecd649aff263fac58ed312f9502313810e05d42e91"
+    },
+    {
+      "path": "mtg-wiki-knowledge.js",
+      "bytes": 14600,
+      "sha256": "ae613ef23136e2dfcbc34e5692bd4197f69acf09be859bc72675cfcfa6b2b720"
+    },
+    {
+      "path": "mtg-wiki-reference.js",
+      "bytes": 24348,
+      "sha256": "955fea63245ce7e2b14ca4a34ee06c849f11624baed28e375f53f96c38580bd2"
+    },
+    {
+      "path": "mtg-wiki-ui.js",
+      "bytes": 27854,
+      "sha256": "bc1a2080ffbb108984338701c0791af2d565063c5d4fd6c15ae394940fd3fe2c"
+    },
+    {
       "path": "native-service-policy.js",
-      "bytes": 6325,
-      "sha256": "357407d4ef4748421eaed1a01793df33515caf76c7d617eec759caac15eedf2d"
+      "bytes": 6901,
+      "sha256": "22f9b80e5e3f4c8faa54d22a476cf0f9556b68f9aceb732b42717b410f4a92e5"
     },
     {
       "path": "pack-preview.js",
@@ -1608,13 +1668,13 @@
     },
     {
       "path": "package.json",
-      "bytes": 8939,
-      "sha256": "bd726f153572af18cc731ca21a00d582783f4d8ae66b488c719691aa59586a2e"
+      "bytes": 9848,
+      "sha256": "7e29a40e19cc654cda67f0fea5b28d3f1f33565614fe6d4e80e1bcbf904f699e"
     },
     {
       "path": "pairing.js",
-      "bytes": 22487,
-      "sha256": "c7d1fa62c4e2cb1ae0e2cc571268d0d9dba417fcb15b7599eac0e3f54c1df2a7"
+      "bytes": 22769,
+      "sha256": "14b5b47abf526644d6e32e14101929fa1437e4cdb748c4dfe0e65b26e8f8bec4"
     },
     {
       "path": "password-auth.js",
@@ -1623,8 +1683,8 @@
     },
     {
       "path": "planner.js",
-      "bytes": 18369,
-      "sha256": "01c55d007efb5618377f7a2d75f48ca02b4820c35e3be6f5772ce9a63fd6dd38"
+      "bytes": 21590,
+      "sha256": "32ec0cace6db1f9469a0aa9dcdf5f1cf330707d19c06142bbbad02bb6b190b20"
     },
     {
       "path": "pokemon-anniversary-masks.js",
@@ -1768,8 +1828,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1073,
-      "sha256": "cb0be9b4ae9fd09153f2c49586513cd9058e5abdb020250131ae631f7971f3bc"
+      "bytes": 3235,
+      "sha256": "b6ae28dbdbaafea2a66b8463415e66d33d5f15b6c5b5df97be47132ac5144fc7"
     },
     {
       "path": "release-status.js",
@@ -1783,8 +1843,13 @@
     },
     {
       "path": "rule-dex.js",
-      "bytes": 24407,
-      "sha256": "4d6a51dbc7b2a3cbb15faa4404ce1aed77ab789c762212d04c1480c2eb94f9e9"
+      "bytes": 26822,
+      "sha256": "c78deb62af0f7740e04360323500c7cc1f05ca2df891497c7c3c0dff44bf6cc5"
+    },
+    {
+      "path": "rule-extra.js",
+      "bytes": 3806,
+      "sha256": "2e74d3f9db240866d0fc9c0433113be91af8703785b40c14f8ac15a63caaa66a"
     },
     {
       "path": "rule-hover.js",
@@ -1793,8 +1858,8 @@
     },
     {
       "path": "rule-learning.js",
-      "bytes": 22548,
-      "sha256": "a7ffaf6bbf8c428e855cf144a5ad158c7c8ba3cbc0252c571e8cf2497dc438a7"
+      "bytes": 22803,
+      "sha256": "01eab9291fdfabd8b235a21a497ae9bd5f463bf336b304cc1d82eb25c214a644"
     },
     {
       "path": "rule-lessons.js",
@@ -1838,13 +1903,18 @@
     },
     {
       "path": "scan-catalog.js",
-      "bytes": 9209,
-      "sha256": "395f8957a86faf021750330084611d89f0700b2c28d72c9917892bb2b3e2589c"
+      "bytes": 11151,
+      "sha256": "274ab177f78b371a31e8516d420d82c2f1b24c7b4a748dbf54edf286f0904985"
+    },
+    {
+      "path": "scan-collector.js",
+      "bytes": 11093,
+      "sha256": "d38c4fffbba1450abb11cacf67ec01c039989e28e8a91e22506e92339020f458"
     },
     {
       "path": "scan-signals.js",
-      "bytes": 10140,
-      "sha256": "fe987219e5441be46ebb9902d27944356a8ad7f31cb84f6923ee17080130d4dd"
+      "bytes": 10803,
+      "sha256": "b9765a12a56dc0a0ee0b1a886520cf6fd2b9f19b83eeb8f6e294b55e8f393ef3"
     },
     {
       "path": "scan-vision.js",
@@ -1853,8 +1923,8 @@
     },
     {
       "path": "scan.js",
-      "bytes": 24262,
-      "sha256": "f3ac6294c2d0f3fce8cd10089626d8848f11c242382bd3b09082915aa36257cd"
+      "bytes": 24910,
+      "sha256": "2d1ab54b7bd16b123913eafbb9c0a4f8aeba8792728be5eab19ae447dee9cc8a"
     },
     {
       "path": "scanart.js",
@@ -1863,8 +1933,8 @@
     },
     {
       "path": "scancam.js",
-      "bytes": 146315,
-      "sha256": "51557da0a1e73286c8d18d7a96123d53c319a01dd0d113b98a6fff4c37b7b107"
+      "bytes": 148895,
+      "sha256": "3f70bf0a5e739ac29c05191c4add6043a0a0e5929f75e4902864ba53e99da7d8"
     },
     {
       "path": "scanidx/TCGDEX-LICENSE.txt",
@@ -1938,8 +2008,8 @@
     },
     {
       "path": "scanner-lookup.js",
-      "bytes": 6121,
-      "sha256": "1cd8221b62febb729dcce799b91d282362dbcf010ba16a1c7931b07dec3e34b0"
+      "bytes": 9938,
+      "sha256": "5339316ba00433866de1949d83e4235cae05838003f907bb764e2f4bf90da1bf"
     },
     {
       "path": "scanner-printing.js",
@@ -1948,8 +2018,8 @@
     },
     {
       "path": "scanner-review.js",
-      "bytes": 9808,
-      "sha256": "019ee91210f25399881bbe50ecec574aa9cd36af1fc46a2ef9d794270ee764ad"
+      "bytes": 10835,
+      "sha256": "64e08efec228cdeeb711b6d32fe018a72a203eb9fb2949505f1a5ebfafb4f84d"
     },
     {
       "path": "scansession.js",
@@ -2018,8 +2088,8 @@
     },
     {
       "path": "shared-deck-view.js",
-      "bytes": 2145,
-      "sha256": "d4566664022eda9482cd0d0dc7c678d3af97c459a7fb9bb5b315fd871ec0028a"
+      "bytes": 2817,
+      "sha256": "617ddc6296eb854cbeb317c2b3c82ee579a7ecf9db1b4f35174c43f370f0ea9f"
     },
     {
       "path": "shared-history.js",
@@ -2043,8 +2113,8 @@
     },
     {
       "path": "store.js",
-      "bytes": 5574,
-      "sha256": "f3e151ea2b18a26fc0561723cdcd0368ec75be28224d1045a1a4e90be6d7f01e"
+      "bytes": 5666,
+      "sha256": "47598d7e7d6080f41ade8ba8142742aa2d4eb7e02b1b0b3bf72e7e443d4dc66b"
     },
     {
       "path": "strategy-risk.js",
@@ -2058,8 +2128,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 528029,
-      "sha256": "0eee1f2b033985d25694d879e6d55d8accdf6934639fb6a7ea5244be6b34b2d5"
+      "bytes": 538583,
+      "sha256": "50de2a60a497ed4a3760d112676558e5a7ac22fb738d40512a6b5d08d99c58e5"
     },
     {
       "path": "suggest.js",
@@ -2068,8 +2138,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 10374,
-      "sha256": "fd5040e5bcbd0f9d1e889284aa6f7e6c6c02f3e62d7f5f1d70d1103da7d2856b"
+      "bytes": 10777,
+      "sha256": "799407d00b992a1c417bb1d97fe7d351bb81c5d30eae6fce8c64a7673c681e8e"
     },
     {
       "path": "sync-merge.js",
@@ -2088,8 +2158,8 @@
     },
     {
       "path": "tcg.js",
-      "bytes": 364276,
-      "sha256": "8692643f4b57b3679cd7c118556fb19fcb1d7ea4b869b4d5604f52583175987c"
+      "bytes": 364625,
+      "sha256": "1f0b6a11b98c50121a3425572ac555480b85849012772af0d699969305d39aac"
     },
     {
       "path": "tcgbuild.js",
@@ -3703,8 +3773,28 @@
     },
     {
       "path": "views.js",
-      "bytes": 190874,
-      "sha256": "be14b65919e4fa98b0fe15cba35fd2ff7245e17cd95f3c4e6982f35c31017a46"
+      "bytes": 191313,
+      "sha256": "a26d0a0f95b64b9622e7e3935578bd5b05ca623bffb6ae7642102ade9331f4ef"
+    },
+    {
+      "path": "wiki-article-content.js",
+      "bytes": 17458,
+      "sha256": "b54b190ef676a2e1c86317535205cf3ea295a4fd5c95707bc3e61e48ea8b3594"
+    },
+    {
+      "path": "wiki-card-handoff.js",
+      "bytes": 2723,
+      "sha256": "187a840f71db78e115028b050c98a979db5df226fa897199293f1529f2ba0f99"
+    },
+    {
+      "path": "wiki-deck-handoff.js",
+      "bytes": 7992,
+      "sha256": "e3f942608d627f2844c8da9af94824caf0c69496300ac0c258745d84f94ab768"
+    },
+    {
+      "path": "wiki-sources.js",
+      "bytes": 4797,
+      "sha256": "0ae32de0afa5e4a0d949b48c792dfd6df5c04714cc2d03c57a2afd7ea2f70e43"
     },
     {
       "path": "workbench-ui.js",
@@ -3728,8 +3818,8 @@
     },
     {
       "path": "ygo-history-identity.js",
-      "bytes": 11113,
-      "sha256": "fade0236136c1d4d7f56c259dff4ac253cbf1145d7f4ebfd211238cff3289532"
+      "bytes": 11866,
+      "sha256": "9e44330ef05f9aa135f1218c88fdb18b98b0d5d08fa3d62fc019e8bf5816e7b8"
     },
     {
       "path": "ygo-identity.js",
@@ -3748,8 +3838,8 @@
     },
     {
       "path": "ygo-prices.js",
-      "bytes": 6579,
-      "sha256": "e47525c176a15a42a1cbf9eaf46bd03be8f5563c57fc83007201bb6b3b654132"
+      "bytes": 7932,
+      "sha256": "6dfd620cdc4b873919f181cad0d1d42a682d9d214029678044c097d5e8f62ab7"
     },
     {
       "path": "ygo-rarity-foil.js",
@@ -3758,13 +3848,13 @@
     },
     {
       "path": "ygo-set-prices.js",
-      "bytes": 7207,
-      "sha256": "57f238f70c50edf33afcc266c6e38621bb83aca15894cb4e36d32fd57462e328"
+      "bytes": 7272,
+      "sha256": "821515bf8e8ea2d869755966c1af588f66d60e8842e1d16cc8458f19b126a60d"
     },
     {
       "path": "ygo.js",
-      "bytes": 35144,
-      "sha256": "b42324cae78909b3a3086c242c2c64b27b8965d20e0ec1499291fd5498c4aeb7"
+      "bytes": 35172,
+      "sha256": "b54959bc32d57a7e12e034bb6f8df387d3cbff566645e1178dc3e2c193ce4192"
     },
     {
       "path": "zoom.js",
