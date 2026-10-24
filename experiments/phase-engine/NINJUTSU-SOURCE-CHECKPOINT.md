@@ -1,13 +1,19 @@
-# Ninjutsu source correction — candidate, not verified runtime
+# Ninjutsu source correction — blocked candidate, not verified runtime
 
-The [source patch](upstream/ninjutsu-stack-d64f609.patch) applies to Phase
+**Open:** no corrected browser package exists. The earlier WASM build was
+OOM-killed. The current source candidate also corrects the subsequently found
+Satoru granted-keyword regression and has passed independent code review.
+Native regression compilation is running; execution results remain pending.
+Do not adopt the candidate or remove the original runtime failure assertions.
+
+The [source patch](upstream/ninjutsu-stack-a49b8aa.patch) applies to Phase
 `71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234` (0.117.0). It is a local research
 correction, not an upstream release or an adopted CardStashy engine.
 
-- Local candidate commit: `d64f609e05ce221bfd6c7bd7f551df5f1a8102f5`.
-- Source tree: `5512f3e589a6cd0edbfd74ffd844e8ae0240112f`.
-- Patch SHA-256: `17af3fd47421aae69db55e83b9d46095d7d7ca91bfaf1915dfb40cece2f83b49`.
-- Fifteen changed paths: fourteen Rust source/test files and one supported
+- Local candidate commit: `a49b8aa7a1fedb9743a2fd1f77b8c39e258ef6db`.
+- Source tree: `60fc8715ad91f5c91b81f8a8335e238c623ec957`.
+- Patch SHA-256: `b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d`.
+- Sixteen changed paths: fifteen Rust source/test files and one supported
   append-only game protocol record. Full protocol 178; wire protocol 160.
 - Preserve [Phase's MIT license](upstream/PHASE-LICENSE-MIT) and
   [source notice](upstream/PHASE-NOTICE). No engine binary or card-data bundle
@@ -24,12 +30,22 @@ a new announcement reveal. The canonical activation event/journal allows
 ordinary activation observers to see ninjutsu and to copy the exact activated
 ability after it is countered.
 
-Nine new integration tests are authored for response priority, saved pending
+Ten new integration tests are authored for response priority, saved pending
 abilities, Stifle without refunded costs, source/defender leave-and-return,
 legacy missing defender pins, actual copied abilities/reveal lifetime and
 Rings of Brighthearth. Existing Kaito, combat and paused-entry tests now
 explicitly resolve the stacked ability. An entry replacement test ensures
 combat placement preserves the replacement's untapped result.
+
+Satoru Umezawa's legitimate hand-keyword grant now shares the printed marker
+builder, with runtime definitions appended identically to canonical enumeration
+and indexed lookup. Existing marker occurrences retain their slots. Costs and
+placement facts are bound before payment so returning Satoru as the cost does
+not invalidate the announced activation. The new real-fixture regression
+includes an actual Bolt response before Bears enters. A supplemental unit test
+covers printed markers, distinct granted costs, index equality and expiry.
+The printed builder logic/order is retained by extraction; full parser-output
+projection has not run and no regenerated card bundle is claimed.
 
 This is a description of the candidate implementation and intended tests,
 not a claim those Rust behavioral assertions have passed.
@@ -55,6 +71,14 @@ not a claim those Rust behavioral assertions have passed.
   pending-completion payloads.
 - Native behavioral tests and corrected-WASM mechanics: **pending**.
 
+The updated mechanics harness selects twenty unchanged records from the same
+6,137-record pinned fixture. Its fresh run against the original upstream
+artifact has six passing cases and two intentionally preserved failures:
+printed and Satoru-granted ninjutsu enter immediately without a stack entry.
+The Satoru failure positively records that the grant was offered and accepted,
+the four lands were paid and Satoru returned; it is not an unsupported-card
+failure. See [baseline runtime evidence](mechanics-evidence-2026-10-24-reference20.json).
+
 The original runtime's missing-stack ninjutsu assertion remains intact. Only
 an actually rebuilt, newly identified runtime passing that regression can
 close the runtime blocker.
@@ -78,7 +102,12 @@ errors. It completed borrow checking with a reported 6,010 MB RSS and did not
 increase the cgroup OOM-kill count. This does not establish LLVM code-generation
 feasibility. The corrected candidate is now rebuilding in the same clean
 separate completion worktree and target directory, with a twenty-minute bound.
-Its outcome is pending. Never relabel the original upstream artifact as this
+The corrected `d64f609` attempt was killed by signal 9 after monomorphization
+and metadata generation; the cgroup OOM-kill count increased from two to four.
+Compiler reporting reached 7,751 MB RSS. No corrected WASM package was produced.
+Further unchanged LLVM attempts are not justified under the same 8 GiB ceiling.
+Native Cranelift remains a separate regression route after the granted-keyword
+correction. Never relabel the original upstream artifact as this
 build. If compilation succeeds, run wasm-bindgen 0.2.121 to a new package,
 record the exact executable hashes, and exercise the mechanics suite using
 the explicit receipt option below.
@@ -122,7 +151,8 @@ The installed nightly native Cranelift backend is available as a separate
 fallback. Eight missing development dependency archives were acquired from
 official static.crates.io at their locked versions and verified against
 `Cargo.lock`; offline metadata-only graphs for the integration and library-test
-targets now pass. No native compilation or behavioral run has happened yet.
+targets now pass. Native compilation is running on clean source `a49b8aa`;
+no behavioral result is available yet.
 
 Run sequentially after the WASM build exits, with a separate target directory,
 one Cargo job, no incremental state, opt/debug/LTO off and 256 codegen units:
@@ -138,6 +168,7 @@ cargo test --locked --offline -p phase-engine
   --lib 'game::keywords::tests::' -- --test-threads=1
 ```
 
-The selectors cover nine integration and 48 keyword unit tests. Filtering
+The selectors cover ten integration and 48 keyword unit tests. The additional
+casting index test is a separate library-test selection. Filtering
 execution does not shrink the compiled harness. A twenty-minute timeout is
 inconclusive, and native success does not certify the WASM artifact.

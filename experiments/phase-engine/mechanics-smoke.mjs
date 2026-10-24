@@ -79,6 +79,30 @@ if(process.argv[2]==='--resume-head'){
   resumed.passUntil(s=>s.players[1].life<20);assert.equal(state(e).players[1].life,18,'subsequent unblocked combat damage is two');assert.equal(state(e).players[0].life,20);
   return {setupSha256,...t.receipt(),correctCostAndDefender:true,lifeAtEntry:20,opponentLifeAfterDamage:18,pendingAbilityRestoreExact:true,resumedThroughDamage:resumed.receipt()};
  });
+ await run('Satoru Umezawa: granted ninjutsu survives returning its grant source as cost',()=>{
+  const f=prepare(e,deck('Forest','Island','Swamp','Satoru Umezawa','Grizzly Bears'),deck('Forest'));
+  const lands=[...f.move('Forest',0,'Battlefield',2),...f.move('Island',0,'Battlefield'),...f.move('Swamp',0,'Battlefield')],
+   [satoru]=f.move('Satoru Umezawa',0,'Battlefield'),[bears]=f.move('Grizzly Bears',0,'Hand');
+  const setupSha256=f.restore(),t=tracker(e);
+  for(const actor of [0,1])t.submit(actor,{type:'SetPriorityPassingMode',data:{mode:'FullControl'}},{requireCandidate:false});
+  t.passUntil(s=>s.waiting_for.type==='DeclareAttackers');t.take('DeclareAttackers',a=>a.data.attacks.length===1&&a.data.attacks[0][0]===satoru);
+  t.passUntil(s=>s.phase==='DeclareBlockers'&&candidates(e).some(l=>l.actor===0&&l.actions.some(a=>a.type==='ActivateNinjutsu'&&a.data.ninjutsu_object_id===bears&&a.data.creature_to_return===satoru)));
+  const granted=state(e).objects[bears].keywords.find(k=>k&&typeof k==='object'&&k.Ninjutsu);
+  assert(granted,'Satoru grants ninjutsu to the unchanged Grizzly Bears card');assert.equal(granted.Ninjutsu.generic,2);assert.deepEqual(granted.Ninjutsu.shards,['Blue','Black']);
+  assert(!(state(e).objects[bears].base_keywords||[]).some(k=>k&&typeof k==='object'&&k.Ninjutsu),'Bears has no printed ninjutsu');
+  assert.equal(state(e).waiting_for.data.player,0);const activation=t.take('ActivateNinjutsu',a=>a.data.ninjutsu_object_id===bears&&a.data.creature_to_return===satoru);
+  assert.equal(state(e).objects[satoru].zone,'Hand','returning the grant source is the activation cost');assert(lands.every(id=>state(e).objects[id].tapped),'four real lands pay the granted 2UB cost');assert.equal(state(e).players[0].mana_pool.mana.length,0);
+  if(state(e).stack.length===0){const error=new Error('Granted ninjutsu must use the stack and permit responses after returning its grant source.');error.observed={setupSha256,grantWasOffered:true,afterActivation:{returnedGrantSourceZone:state(e).objects[satoru].zone,creatureZone:state(e).objects[bears].zone,creatureKeywords:state(e).objects[bears].keywords,stackEntries:state(e).stack.length,pending:state(e).waiting_for,manaSourcesTapped:lands.every(id=>state(e).objects[id].tapped),opponentLife:state(e).players[1].life},...t.receipt(),activationAction:t.trace.at(-1),activationEvents:(activation.result?.events||[]).map(x=>x.type)};throw error;}
+  assert.equal(state(e).objects[bears].zone,'Hand','Bears stays in hand while its granted ability is pending');
+  assert(!state(e).objects[bears].keywords.some(k=>k&&typeof k==='object'&&k.Ninjutsu),'returning Satoru removes the current grant without removing the paid stack ability');
+  const events=activation.result?.events||[],generic=events.filter(x=>x.type==='AbilityActivated'&&x.data.source_id===bears),specific=events.filter(x=>x.type==='NinjutsuActivated'&&x.data.source_id===bears);
+  assert.equal(generic.length,1,'one generic activation event belongs to Bears');assert.equal(generic[0].data.player_id,0);assert.equal(generic[0].data.kind,'Normal');assert.equal(specific.length,1,'one ninjutsu-specific activation event belongs to Bears');assert.equal(specific[0].data.player_id,0);
+  const pending=snapshot(e);t.take('PassPriority');assert.equal(state(e).waiting_for.type,'Priority');assert.equal(state(e).waiting_for.data.player,1,'opponent can respond to the granted ability');assert.equal(state(e).objects[bears].zone,'Hand');
+  t.passUntil(s=>s.objects[bears].zone==='Battlefield');const entry=signature(e),attacking=state(e).combat.attackers.find(a=>a.object_id===bears);
+  assert.equal(state(e).objects[bears].tapped,true);assert(attacking,'Bears enters as an actual attacking instance');assert.equal(attacking.defending_player,1);assert.deepEqual(attacking.attack_target,{type:'Player',data:1});assert.equal(state(e).players[1].life,20,'entry does not prematurely deal combat damage');assert.equal(state(e).objects[satoru].zone,'Hand');
+  e.restore_game_state(pending);const resumed=tracker(e);resumed.passUntil(s=>s.objects[bears].zone==='Battlefield');assert.deepEqual(signature(e),entry,'lost-grant pending ability restores to the same attacking entry');resumed.passUntil(s=>s.players[1].life<20);assert.deepEqual(state(e).players.map(p=>p.life),[20,18],'the granted-ninjutsu Bears deals its actual two combat damage');
+  return {setupSha256,...t.receipt(),grantWasOffered:true,grantLostWhilePending:true,real2UBPayment:true,genericAndSpecificActivationEvents:true,opponentResponseWindow:true,pendingAbilityRestoreExact:true,opponentLifeAfterDamage:18,resumedThroughDamage:resumed.receipt()};
+ });
  await run('Basalt Monolith plus Power Artifact: three finite repeatable net-mana cycles',()=>{
   const f=prepare(e,deck('Island','Basalt Monolith','Power Artifact'),deck('Forest'));const[monolith]=f.move('Basalt Monolith',0,'Battlefield'),[aura]=f.move('Power Artifact',0,'Battlefield');f.s.objects[monolith].attachments=[aura];f.s.objects[aura].attached_to={type:'Object',data:monolith};const setupSha256=f.restore(),t=tracker(e),counts=[];
   for(let cycle=0;cycle<3;cycle++){

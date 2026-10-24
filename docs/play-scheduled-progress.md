@@ -57,6 +57,29 @@ without an OOM kill. A bounded two-file correction now supplies ninjutsu labels
 and an untargeted stack display; its immutable review is clean. The corrected
 source is `d64f609e05ce221bfd6c7bd7f551df5f1a8102f5`; its rebuild is in progress.
 
+The corrected build subsequently exhausted the 8 GiB ceiling and was killed;
+there is no new WASM artifact. Do not repeat the unchanged LLVM attempt.
+An additional source audit found a real granted-ninjutsu regression: Satoru
+Umezawa's materialized hand keyword lacks a printed marker, and the new marker
+guard rejected it. A focused correction now shares the existing marker builder,
+adds consistent runtime-granted indices and preserves announcement facts after
+paying a cost that removes Satoru. Native Cranelift regression prerequisites are
+ready, but no behavioral native test has run yet.
+
+The granted-keyword correction is now committed at
+`a49b8aa7a1fedb9743a2fd1f77b8c39e258ef6db` and independently reviewed clean.
+The current patch includes ten production-path integration regressions plus a
+canonical-index unit test; neither successful compilation nor execution is
+claimed yet. A bounded native Cranelift integration build is running from the
+clean committed completion worktree. Do not run competing Rust builds.
+
+The original browser runtime was rerun using twenty unchanged fixture records.
+It still passes six cases and now preserves two explicit missing-stack failures:
+printed ninjutsu and Satoru-granted ninjutsu. The latter positively proves that
+the grant is offered/accepted and pays its real four mana/return cost. Its failure
+is missing opponent response, not unsupported card data. The exact report is
+`experiments/phase-engine/mechanics-evidence-2026-10-24-reference20.json`.
+
 The mechanics loader now has an explicit local-build receipt option. Original
 input hashes remain the default, and the preserved failure assertion is intact.
 No new runtime receipt exists yet. The original inputs still verify; malformed

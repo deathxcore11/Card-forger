@@ -1,8 +1,212 @@
+diff --git a/crates/engine/src/database/synthesis.rs b/crates/engine/src/database/synthesis.rs
+index daf57e44fd84848956a7a57b668f45da9f8c8691..a1aacbae25f22fa07778a1fe0fd314108c781830 100644
+--- a/crates/engine/src/database/synthesis.rs
++++ b/crates/engine/src/database/synthesis.rs
+@@ -813,29 +813,33 @@ pub fn synthesize_ninjutsu_family(face: &mut CardFace) {
+     let abilities: Vec<AbilityDefinition> = face
+         .keywords
+         .iter()
+-        .filter_map(|kw| {
+-            let (variant, cost) = match kw {
+-                Keyword::Ninjutsu(c) => (NinjutsuVariant::Ninjutsu, c),
+-                Keyword::CommanderNinjutsu(c) => (NinjutsuVariant::CommanderNinjutsu, c),
+-                _ => return None,
+-            };
+-            Some(
+-                AbilityDefinition::new(
+-                    AbilityKind::Activated,
+-                    Effect::RuntimeHandled {
+-                        handler: RuntimeHandler::NinjutsuFamily,
+-                    },
+-                )
+-                .cost(AbilityCost::NinjutsuFamily {
+-                    variant,
+-                    mana_cost: cost.clone(),
+-                }),
+-            )
+-        })
++        .filter_map(ninjutsu_ability_for_keyword)
+         .collect();
+     face.abilities.extend(abilities);
+ }
+ 
++/// CR 702.49a/d: build the same activation marker for printed and granted
++/// ninjutsu-family keywords, preserving each variant's own mana cost.
++pub fn ninjutsu_ability_for_keyword(keyword: &Keyword) -> Option<AbilityDefinition> {
++    let (variant, cost) = match keyword {
++        Keyword::Ninjutsu(cost) => (NinjutsuVariant::Ninjutsu, cost),
++        Keyword::CommanderNinjutsu(cost) => (NinjutsuVariant::CommanderNinjutsu, cost),
++        _ => return None,
++    };
++    Some(
++        AbilityDefinition::new(
++            AbilityKind::Activated,
++            Effect::RuntimeHandled {
++                handler: RuntimeHandler::NinjutsuFamily,
++            },
++        )
++        .cost(AbilityCost::NinjutsuFamily {
++            variant,
++            mana_cost: cost.clone(),
++        }),
++    )
++}
++
+ // Warp is handled at runtime via Keyword::Warp(ManaCost):
+ // - `prepare_spell_cast` overrides the mana cost when cast from hand
+ // - `stack.rs::resolve_top` creates a delayed exile trigger on resolution
 diff --git a/crates/engine/src/game/casting.rs b/crates/engine/src/game/casting.rs
-index 64dbc231a6178919138b736d9c3a611ac48678b7..98d482d19ceb7452aa3e206fc00b6546ed6d861e 100644
+index 64dbc231a6178919138b736d9c3a611ac48678b7..f8e1f2d315667b814e8d219e3fa12f001cb80cca 100644
 --- a/crates/engine/src/game/casting.rs
 +++ b/crates/engine/src/game/casting.rs
-@@ -29647,9 +29647,9 @@ pub(crate) fn require_activation_record(
+@@ -510,6 +510,41 @@ fn runtime_granted_equip_abilities(
+         .collect()
+ }
+ 
++/// CR 702.49a/d + CR 613.1f: hand-zone keyword grants install keywords,
++/// so synthesize their activation markers live. Subtract existing markers by
++/// variant and cost, one occurrence at a time, to preserve printed slots.
++fn runtime_granted_ninjutsu_abilities(
++    state: &GameState,
++    source_id: ObjectId,
++) -> Vec<AbilityDefinition> {
++    let Some(obj) = state.objects.get(&source_id) else {
++        return Vec::new();
++    };
++    if !matches!(obj.zone, Zone::Hand | Zone::Command) {
++        return Vec::new();
++    }
++    let mut unconsumed_printed: Vec<&AbilityCost> = obj
++        .abilities
++        .iter()
++        .filter_map(|ability| ability.cost.as_ref())
++        .filter(|cost| matches!(cost, AbilityCost::NinjutsuFamily { .. }))
++        .collect();
++    obj.keywords
++        .iter()
++        .filter_map(crate::database::synthesis::ninjutsu_ability_for_keyword)
++        .filter(|ability| {
++            if let Some(index) = unconsumed_printed
++                .iter()
++                .position(|cost| Some(*cost) == ability.cost.as_ref())
++            {
++                unconsumed_printed.remove(index);
++                return false;
++            }
++            true
++        })
++        .collect()
++}
++
+ /// CR 604.1 (seam 4: activated-ability-on-grant): synthesize graveyard activated
+ /// abilities (Encore, Scavenge) for keywords granted to a graveyard card by a
+ /// static. The `AddKeyword` layer seam installs only the keyword + triggers, so a
+@@ -631,6 +666,9 @@ pub fn activated_ability_definitions(
+             // LAST — the identical append order is REQUIRED in
+             // `activation_ability_definition` so `ability_index` stays consistent.
+             .chain(runtime_granted_equip_abilities(state, source_id))
++            // CR 702.49a/d: append granted ninjutsu LAST in both lookups so
++            // all existing runtime ability indices remain stable.
++            .chain(runtime_granted_ninjutsu_abilities(state, source_id))
+             .enumerate()
+             .map(|(offset, ability)| (printed_len + offset, ability)),
+     );
+@@ -650,7 +688,7 @@ pub(crate) fn activation_ability_definition(
+         // Must match the append order in `activated_ability_definitions`: printed
+         // abilities first, then runtime-granted cycling, then runtime-granted
+         // graveyard activated (Encore/Scavenge), then runtime-granted
+-        // plot-from-library (Fblthp), then equip.
++        // plot-from-library (Fblthp), then equip, then ninjutsu.
+         // Identical order is REQUIRED for `ability_index` consistency.
+         runtime_granted_cycling_abilities(state, source_id)
+             .into_iter()
+@@ -661,6 +699,7 @@ pub(crate) fn activation_ability_definition(
+                 state, source_id,
+             ))
+             .chain(runtime_granted_equip_abilities(state, source_id))
++            .chain(runtime_granted_ninjutsu_abilities(state, source_id))
+             .nth(offset)?
+     };
+     if let Some(ref cost) = ability.cost {
+@@ -676,6 +715,77 @@ pub(crate) fn activation_ability_definition(
+     Some(ability)
+ }
+ 
++#[cfg(test)]
++mod ninjutsu_definition_tests {
++    use super::{activated_ability_definitions, activation_ability_definition};
++    use crate::game::layers::{flush_layers, mark_layers_full};
++    use crate::game::scenario::{GameScenario, P0};
++    use crate::game::scenario_db::GameScenarioDbExt;
++    use crate::game::zones::move_to_zone;
++    use crate::types::ability::{AbilityCost, NinjutsuVariant};
++    use crate::types::mana::{ManaCost, ManaCostShard};
++    use crate::types::zones::Zone;
++
++    #[test]
++    fn granted_ninjutsu_indices_match_lookup_without_duplicating_printed_markers() {
++        let db = crate::test_support::shared_card_db();
++        let mut scenario = GameScenario::new();
++        let satoru = scenario.add_real_card(P0, "Satoru Umezawa", Zone::Battlefield, db);
++        let cards = [
++            "Grizzly Bears",
++            "Ninja of the Deep Hours",
++            "Yuriko, the Tiger's Shadow",
++        ]
++        .map(|name| scenario.add_real_card(P0, name, Zone::Hand, db));
++        let mut runner = scenario.build();
++        mark_layers_full(runner.state_mut());
++        flush_layers(runner.state_mut());
++        let granted_cost = AbilityCost::NinjutsuFamily {
++            variant: NinjutsuVariant::Ninjutsu,
++            mana_cost: ManaCost::Cost {
++                shards: vec![ManaCostShard::Blue, ManaCostShard::Black],
++                generic: 2,
++            },
++        };
++        for card in cards {
++            let printed = &runner.state().objects[&card].abilities;
++            let definitions = activated_ability_definitions(runner.state(), card);
++            assert_eq!(definitions.len(), printed.len() + 1);
++            for (index, definition) in &definitions {
++                assert_eq!(
++                    activation_ability_definition(runner.state(), card, *index).as_ref(),
++                    Some(definition),
++                    "enumeration and indexed lookup must bind the same variant and cost"
++                );
++                if *index < printed.len() {
++                    assert_eq!(definition, &printed[*index]);
++                }
++            }
++            assert_eq!(definitions.last().unwrap().0, printed.len());
++            assert_eq!(
++                definitions.last().unwrap().1.cost.as_ref(),
++                Some(&granted_cost)
++            );
++        }
++
++        move_to_zone(runner.state_mut(), satoru, Zone::Hand, &mut vec![]);
++        mark_layers_full(runner.state_mut());
++        flush_layers(runner.state_mut());
++        for card in cards {
++            let definitions = activated_ability_definitions(runner.state(), card);
++            let printed = &runner.state().objects[&card].abilities;
++            assert_eq!(definitions.len(), printed.len(), "the grant has expired");
++            for (index, definition) in definitions {
++                assert_eq!(definition, printed[index]);
++                assert_eq!(
++                    activation_ability_definition(runner.state(), card, index),
++                    Some(definition)
++                );
++            }
++        }
++    }
++}
++
+ pub(crate) fn variable_speed_payment_range(cost: &AbilityCost, max_speed: u8) -> Option<(u8, u8)> {
+     match cost {
+         AbilityCost::PaySpeed {
+@@ -29647,9 +29757,9 @@ pub(crate) fn require_activation_record(
  /// ability on the stack performs once the entry is pushed — the per-turn
  /// activation record, the priority-window activation guard, the
  /// `AbilityActivated` event (CR 606.2 classifies loyalty vs. normal), and the
@@ -15,7 +219,7 @@ index 64dbc231a6178919138b736d9c3a611ac48678b7..98d482d19ceb7452aa3e206fc00b6546
  /// per site (crime commitment, the CR 606.3 loyalty record, trigger collection)
  /// stay at their sites.
  ///
-@@ -29680,11 +29680,19 @@ pub(crate) fn record_activated_ability_placed(
+@@ -29680,13 +29790,29 @@ pub(crate) fn record_activated_ability_placed(
              .stack
              .back()
              .is_some_and(|entry| entry.id == placed_entry
@@ -28,15 +232,25 @@ index 64dbc231a6178919138b736d9c3a611ac48678b7..98d482d19ceb7452aa3e206fc00b6546
 +                ) || matches!(
 +                    &entry.kind,
 +                    StackEntryKind::KeywordAction {
-+                        action: crate::types::ability::KeywordAction::Ninjutsu { source, .. },
++                        action: crate::types::ability::KeywordAction::Ninjutsu { source, variant, .. },
 +                    } if source.reference.object_id == source_id
-+                        && activation_ability_definition(state, source_id, ability_index)
-+                            .as_ref()
-+                            .is_some_and(super::keywords::is_ninjutsu_family_marker_ability)
++                        && record.source == source_id
++                        && record.activator == player
++                        && record.source_zone == source.expected_zone
++                        && matches!(
++                            &record.activation_cost,
++                            BoundActivationCost::Cost(cost)
++                                if matches!(cost.as_ref(), AbilityCost::NinjutsuFamily { variant: announced, .. }
++                                    if announced == variant)
++                        )
 +                ))),
          "record_activated_ability_placed must name the entry its caller just pushed"
      );
++    // CR 113.7a + CR 602.2: a grant may disappear when its source is returned
++    // as a ninjutsu cost; the assertion above uses the announcement's bound facts.
      // CR 606.1 + CR 602.2 + CR 602.1a: the kind, announcement zone and
+     // activation cost are the facts bound when the ability was announced —
+     // never re-read from the source after its costs were paid (a cost may have
 diff --git a/crates/engine/src/game/derived_views.rs b/crates/engine/src/game/derived_views.rs
 index 35f8710f1f2386cc1628c4a160871e3fe6e1abb2..3896e32cfdb2313c80a6ae620e882868f4984917 100644
 --- a/crates/engine/src/game/derived_views.rs
@@ -164,7 +378,7 @@ index 34b1ed706291a4714383fc518821dcf5e95604bd..f6cebd603a91f3aa0c9ac797495e940c
              );
              crate::game::zone_pipeline::BatchMoveResult::Done
 diff --git a/crates/engine/src/game/keywords.rs b/crates/engine/src/game/keywords.rs
-index ef4a53e1240b00f443868b4d92dd40ec540bb34b..1be05e295103806cb0289bd5b32544508892316f 100644
+index ef4a53e1240b00f443868b4d92dd40ec540bb34b..69a1c6b1f1d79b30ceca0e2bf83b5818b2a5f6bc 100644
 --- a/crates/engine/src/game/keywords.rs
 +++ b/crates/engine/src/game/keywords.rs
 @@ -6,11 +6,12 @@ use crate::game::game_object::GameObject;
@@ -231,7 +445,7 @@ index ef4a53e1240b00f443868b4d92dd40ec540bb34b..1be05e295103806cb0289bd5b3254450
 +        .into_iter()
 +        .find(|(_, definition)| {
 +            is_ninjutsu_family_marker_ability(definition)
-+                && matches!(definition.cost.as_ref(), Some(AbilityCost::NinjutsuFamily { variant: declared, .. }) if *declared == variant)
++                && matches!(definition.cost.as_ref(), Some(AbilityCost::NinjutsuFamily { variant: declared, mana_cost: declared_cost }) if *declared == variant && declared_cost == &mana_cost)
 +        })
 +        .ok_or("Ninjutsu-family card has no synthesized activation definition")?;
 +    // CR 602.2 + CR 601.2c: bind the ordinary activation journal and event
@@ -860,22 +1074,24 @@ index d335f6f8bf45326e02ad801593e397225df7fcc5..3dbacf89cafeb67b74b043a4f1784189
  mod no_witnesses_most_creatures_investigate;
 diff --git a/crates/engine/tests/integration/ninjutsu_stack.rs b/crates/engine/tests/integration/ninjutsu_stack.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..040a9fb3f71e8951025d61d3b9b040c86a361b93
+index 0000000000000000000000000000000000000000..4e168c2e5f2e862984cca2e285d5de1f10072758
 --- /dev/null
 +++ b/crates/engine/tests/integration/ninjutsu_stack.rs
-@@ -0,0 +1,668 @@
+@@ -0,0 +1,816 @@
 +//! Paid ninjutsu announcements use the real stack and survive saved-state restore.
 +
 +use engine::game::combat::{AttackTarget, AttackerInfo, CombatState};
 +use engine::game::derived_views::derive_filtered_views;
 +use engine::game::scenario::{GameRunner, GameScenario, P0, P1};
++use engine::game::scenario_db::GameScenarioDbExt;
 +use engine::game::visibility::filter_state_for_viewer;
 +use engine::game::zones::move_to_zone;
-+use engine::types::ability::{KeywordAction, NinjutsuVariant};
++use engine::types::ability::{AbilityCost, KeywordAction, NinjutsuVariant};
 +use engine::types::actions::GameAction;
 +use engine::types::events::{ActivatedAbilityKind, BoundActivationCost, GameEvent};
 +use engine::types::game_state::{GameState, PriorityPassingMode, StackEntryKind, WaitingFor};
 +use engine::types::identifiers::{ObjectId, ObjectIncarnationRef};
++use engine::types::keywords::Keyword;
 +use engine::types::mana::{ManaCost, ManaCostShard, ManaType, ManaUnit};
 +use engine::types::phase::Phase;
 +use engine::types::zones::Zone;
@@ -1026,6 +1242,152 @@ index 0000000000000000000000000000000000000000..040a9fb3f71e8951025d61d3b9b040c8
 +        .holds_stack_bound_reveal(fixture.ninja));
 +    assert_eq!(result.events.iter().filter(|event| matches!(event, GameEvent::NinjutsuActivated { source_id, .. } if *source_id == fixture.ninja)).count(), 1, "activation event belongs to announcement");
 +    entry.id
++}
++
++#[test]
++fn satoru_granted_ninjutsu_survives_returning_its_grant_source_as_cost() {
++    let db = crate::support::shared_card_db().expect("tracked production card fixture");
++    // The production fixture carries Satoru's complete, verbatim MTGJSON text,
++    // including "Each creature card in your hand has ninjutsu {2}{U}{B}."
++    let mut scenario = GameScenario::new();
++    scenario.at_phase(Phase::DeclareBlockers);
++    let satoru = scenario.add_real_card(P0, "Satoru Umezawa", Zone::Battlefield, db);
++    let bears = scenario.add_real_card(P0, "Grizzly Bears", Zone::Hand, db);
++    let response = scenario.add_real_card(P1, "Lightning Bolt", Zone::Hand, db);
++    let mut runner = scenario.build();
++    let granted_mana = ManaCost::Cost {
++        shards: vec![ManaCostShard::Blue, ManaCostShard::Black],
++        generic: 2,
++    };
++    let granted_cost = AbilityCost::NinjutsuFamily {
++        variant: NinjutsuVariant::Ninjutsu,
++        mana_cost: granted_mana.clone(),
++    };
++    let state = runner.state_mut();
++    state.combat = Some(CombatState {
++        attackers: vec![AttackerInfo::attacking_player(satoru, P1)],
++        ..Default::default()
++    });
++    state.waiting_for = WaitingFor::Priority { player: P0 };
++    state.priority_player = P0;
++    for player in [P0, P1] {
++        state
++            .priority_passing_modes
++            .insert(player, PriorityPassingMode::FullControl);
++    }
++    for color in [
++        ManaType::Blue,
++        ManaType::Black,
++        ManaType::Colorless,
++        ManaType::Colorless,
++    ] {
++        let _ = state.add_mana_to_pool(P0, ManaUnit::new(color, satoru, false, vec![]));
++    }
++    let _ = state.add_mana_to_pool(P1, ManaUnit::new(ManaType::Red, response, false, vec![]));
++    engine::game::layers::mark_layers_full(state);
++    engine::game::layers::flush_layers(state);
++    assert!(
++        state.objects[&bears].base_keywords.is_empty(),
++        "Bears has no printed ninjutsu"
++    );
++    assert!(state.objects[&bears]
++        .keywords
++        .contains(&Keyword::Ninjutsu(granted_mana)));
++    let definitions = engine::game::casting::activated_ability_definitions(state, bears);
++    assert_eq!(
++        definitions.len(),
++        1,
++        "Satoru's grant has an activation definition"
++    );
++    let (ability_index, definition) = &definitions[0];
++    assert_eq!(definition.cost.as_ref(), Some(&granted_cost));
++    assert!(
++        engine::ai_support::legal_actions(state)
++            .iter()
++            .any(|action| matches!(action,
++                GameAction::ActivateNinjutsu { ninjutsu_object_id, creature_to_return }
++                    if *ninjutsu_object_id == bears && *creature_to_return == satoru
++            )),
++        "the real granted activation must be offered"
++    );
++
++    let result = runner
++        .act(GameAction::ActivateNinjutsu {
++            ninjutsu_object_id: bears,
++            creature_to_return: satoru,
++        })
++        .expect("pay for the granted ninjutsu ability, returning Satoru");
++    let state = runner.state();
++    assert_eq!(state.objects[&satoru].zone, Zone::Hand);
++    assert_eq!(state.objects[&bears].zone, Zone::Hand);
++    assert_eq!(state.players[0].mana_pool.total(), 0);
++    assert!(
++        state.objects[&bears].keywords.is_empty(),
++        "returning Satoru removes the grant"
++    );
++    assert!(engine::game::casting::activated_ability_definitions(state, bears).is_empty());
++    assert!(state.pending_activations.contains(&(bears, *ability_index)));
++    assert_eq!(
++        state.stack.len(),
++        1,
++        "the paid ability survives its lost grant"
++    );
++    let ability = state.stack.back().unwrap().id;
++    assert!(matches!(&state.stack.back().unwrap().kind,
++        StackEntryKind::KeywordAction { action: KeywordAction::Ninjutsu { source, variant: NinjutsuVariant::Ninjutsu, .. } }
++            if source.reference.object_id == bears && source.expected_zone == Zone::Hand
++    ));
++    assert_eq!(result.events.iter().filter(|event| matches!(event,
++        GameEvent::AbilityActivated { player_id: P0, source_id, kind: ActivatedAbilityKind::Normal,
++            stack_entry: Some(entry), activation_cost: BoundActivationCost::Cost(cost), .. }
++            if *source_id == bears && *entry == ability && cost.as_ref() == &granted_cost
++    )).count(), 1, "the generic activation event retains the original granted cost");
++    assert_eq!(
++        result
++            .events
++            .iter()
++            .filter(|event| matches!(event,
++                GameEvent::NinjutsuActivated { source_id, .. } if *source_id == bears
++            ))
++            .count(),
++        1
++    );
++    assert!(state.holds_stack_bound_reveal(bears));
++
++    runner
++        .act(GameAction::PassPriority)
++        .expect("allow an opponent response");
++    assert_eq!(
++        runner.state().waiting_for,
++        WaitingFor::Priority { player: P1 }
++    );
++    drop(runner.cast(response).target_player(P0).commit());
++    assert_eq!(
++        runner.state().stack.len(),
++        2,
++        "the response is above ninjutsu"
++    );
++    runner.pass_both_players();
++    assert_eq!(runner.state().players[0].life, 17);
++    assert_eq!(runner.state().stack.back().unwrap().id, ability);
++    runner.pass_both_players();
++    let state = runner.state();
++    assert_eq!(state.objects[&bears].zone, Zone::Battlefield);
++    assert!(state.objects[&bears].tapped);
++    let attacker = state
++        .combat
++        .as_ref()
++        .unwrap()
++        .attackers
++        .iter()
++        .find(|attacker| attacker.object_id == bears)
++        .expect("Bears enters attacking");
++    assert_eq!(attacker.attack_target, AttackTarget::Player(P1));
++    assert_eq!(attacker.defending_player, P1);
++    assert!(!state.holds_stack_bound_reveal(bears));
++    assert!(state.stack.is_empty());
++    assert!(state.resolving_stack_entry.is_none());
++    assert!(matches!(state.waiting_for, WaitingFor::Priority { .. }));
 +}
 +
 +#[test]

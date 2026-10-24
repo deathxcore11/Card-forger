@@ -12,7 +12,7 @@ export const INPUT_HASHES={
  glue:'47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd3476cfb70131de6287c9',
  wasm:'6057521d851bb8544eaeea467f741b90cd2941aa5ba2fddb17e1bcc3d9933f8f',
  integrationFixtureGzip:'0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9'};
-export const CARD_NAMES=['Head Games','Ninja of the Deep Hours','Moon-Circuit Hacker','Ornithopter','Island','Plains','Swamp','Mountain','Forest','Raise the Alarm','Krenko, Mob Boss','Parallel Lives','Doubling Season','Sprout Swarm','Basalt Monolith','Power Artifact','Lightning Bolt','Counterspell'];
+export const CARD_NAMES=['Head Games','Ninja of the Deep Hours','Moon-Circuit Hacker','Ornithopter','Island','Plains','Swamp','Mountain','Forest','Raise the Alarm','Krenko, Mob Boss','Parallel Lives','Doubling Season','Sprout Swarm','Basalt Monolith','Power Artifact','Lightning Bolt','Counterspell','Satoru Umezawa','Grizzly Bears'];
 export const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const RECEIPT_SCHEMA_VERSION=1;
 const FIXTURE_PATH='crates/engine/tests/fixtures/integration_cards.json.gz';
