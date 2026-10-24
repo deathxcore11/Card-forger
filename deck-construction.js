@@ -19,25 +19,43 @@ export function normalizeDeckRequest(input={},formats={}) {
  const raw=input.budget,target=raw===undefined||raw===null||raw===''||raw===Infinity?null:Number(raw);
  if(target!==null&&(!Number.isFinite(target)||target<0||target>100000))throw Error('Enter a budget between $0 and $100,000, or leave it blank.');
  const budgetBasis=input.budgetBasis||input.budget_basis||'total',ownedOnly=input.ownedOnly===true||budgetBasis==='owned';
- const budgetMode=input.budgetMode==='target'?'target':'cap';
+ const budgetMode=input.budgetMode==='target'?'target':'cap',budgetBoundary=budgetMode==='cap'&&input.budgetBoundary==='exclusive'?'exclusive':'inclusive';
+ // Constraints read from the theme text stay derived: Edit choices re-reads
+ // them from the current theme, while explicit selections are kept as given.
+ const sources=input.constraintSources||{},given=field=>Object.hasOwn(input,field)&&input[field]!==undefined&&sources[field]!=='theme',constraintSources={};
  const parsedLoop=readLoopIntent(input.theme??input.style??''),loopIntent={};
- for(const field of ['requireLoop','loopOutput','unsupportedLoop','loopConflict','clearLoop'])loopIntent[field]=Object.hasOwn(input,field)?input[field]:parsedLoop[field];
+ for(const field of ['requireLoop','loopOutput','unsupportedLoop','loopConflict','clearLoop']){loopIntent[field]=given(field)?input[field]:parsedLoop[field];constraintSources[field]=given(field)?'explicit':'theme';}
  if(loopIntent.requireLoop!==null&&loopIntent.requireLoop!==undefined&&loopIntent.requireLoop!=='infinite-mana')throw Error('Choose a supported repeatable-mana requirement.');
  if(loopIntent.loopOutput&&!['W','U','B','R','G','C','any-color'].includes(loopIntent.loopOutput))throw Error('Choose a known requested mana output.');
  if(game!=='mtg'&&(loopIntent.requireLoop||loopIntent.unsupportedLoop||loopIntent.loopConflict))loopIntent.unsupportedLoop='The reviewed repeatable-mana packages apply to Magic only. This game needs its own exact-card interaction check.';
- const avoidInfinite=input.avoid_infinite??(parsedLoop.hasLoopNegation&&parsedLoop.avoidInfinite===true);
+ const avoidInfinite=given('avoid_infinite')?input.avoid_infinite:(parsedLoop.hasLoopNegation&&parsedLoop.avoidInfinite===true);constraintSources.avoid_infinite=given('avoid_infinite')?'explicit':'theme';
  loopIntent.loopConflict=loopIntent.loopConflict===true||!!(loopIntent.requireLoop&&avoidInfinite);
  const parsedTypes=game==='mtg'?readCreatureTypeRestrictions(input.theme??input.style??''):{creatureTypesOnly:[],excludedSubtypes:[]},typeRestrictions={};
  for(const field of ['creatureTypesOnly','excludedSubtypes']){
-  if(input[field]!==undefined&&(!Array.isArray(input[field])||input[field].some(type=>!CREATURE_THEMES.includes(type))))throw Error('Choose known creature types for the type restriction.');
-  typeRestrictions[field]=[...new Set(input[field]===undefined?parsedTypes[field]:input[field])];
+  if(given(field)&&(!Array.isArray(input[field])||input[field].some(type=>!CREATURE_THEMES.includes(type))))throw Error('Choose known creature types for the type restriction.');
+  typeRestrictions[field]=[...new Set(given(field)?input[field]:parsedTypes[field])];constraintSources[field]=given(field)?'explicit':'theme';
  }
  const allowance=target===null||budgetMode==='cap'?0:cents(Math.min(target*DECK_POLICY.overagePercent/100,DECK_POLICY.overageMaximum));
- return {...input,...typeRestrictions,...loopIntent,avoid_infinite:avoidInfinite===true,game,format:game==='mtg'?selected.name:selected.id,formatName:selected.name,
+ return {...input,...typeRestrictions,...loopIntent,constraintSources,avoid_infinite:avoidInfinite===true,game,format:game==='mtg'?selected.name:selected.id,formatName:selected.name,
   theme:String(input.theme??input.style??'').trim(),budget:target,budgetBasis:budgetBasis==='purchase'||budgetBasis==='owned'?'purchase':'total',
   ownedOnly,budgetMode,preferOwned:input.preferOwned??input.goal!=='strongest',easy:input.easy===true||/easy to play|beginner|simple/i.test(input.style||''),
   randomSeed:Number.isFinite(input.randomSeed)?input.randomSeed:Math.floor(Math.random()*0x7fffffff),
-  allowance,constructionBudgets:ownedOnly?[0]:target===null?[Infinity]:budgetMode==='cap'?[target]:[...new Set([target,target+allowance,Infinity])]};
+  // An exclusive cap ("under $20") builds toward one cent below it.
+  allowance,budgetBoundary,constructionBudgets:ownedOnly?[0]:target===null?[Infinity]:budgetMode==='cap'?[budgetBoundary==='exclusive'?Math.max(0,cents(target-.01)):target]:[...new Set([target,target+allowance,Infinity])]};
+}
+// One cap test for every entry point. Unknown prices never pass a cap.
+export function withinBudgetCap(estimate,request) {
+ if(request.budgetMode!=='cap'||request.budget===null)return true;
+ if(estimate===null||!Number.isFinite(estimate))return false;
+ return request.budgetBoundary==='exclusive'?estimate<request.budget-1e-9:estimate<=request.budget+1e-6;
+}
+// Stable fingerprint of the constraints a result was validated against, so a
+// report can be matched to its request. Not a security hash.
+export function requestFingerprint(request) {
+ const fields=['game','format','theme','seed','commander','budget','budgetMode','budgetBoundary','budgetBasis','ownedOnly','creatureTypesOnly','excludedSubtypes','required_cards','excluded_cards','colors','requireLoop','loopOutput','avoid_infinite','randomSeed'];
+ const text=JSON.stringify(fields.map(k=>[k,request?.[k]??null]));let h=2166136261;
+ for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619);}
+ return (h>>>0).toString(16).padStart(8,'0');
 }
 export function priceDeck(rows,basis='total') {
  const grouped=new Map();
@@ -159,7 +177,7 @@ export function inspectDeckPlan(request,rows,deck={}) {
 export function chooseDeck(candidates,request) {
  const valid=candidates.filter(c=>c.check.complete&&c.check.legal&&!c.plan.issues.length&&(!request.ownedOnly||c.pricing.ownedCopies===c.pricing.copies)&&
   (!request.requireLoop||c.plan.combo?.status==='verified')&&!request.unsupportedLoop&&!request.loopConflict&&
-  (request.budgetMode!=='cap'||request.budget===null||c.pricing.estimate!==null&&c.pricing.estimate<=request.budget+1e-6));
+  withinBudgetCap(c.pricing.estimate,request));
  const budgetClass=c=>request.budget===null?0:c.pricing.estimate===null?2:c.pricing.estimate<=request.budget?0:c.pricing.estimate<=request.budget+request.allowance+1e-6?1:3;
  const strategyClass=c=>({supported:0,'not-requested':0,partial:1,unverified:2,insufficient:3}[c.plan.theme?.status]??0);
  valid.sort((a,b)=>budgetClass(a)-budgetClass(b)||strategyClass(a)-strategyClass(b)||(request.easy?a.plan.setupBurden-b.plan.setupBurden:0)||(budgetClass(a)===3?a.pricing.estimate-b.pricing.estimate:0)||(request.preferOwned?b.pricing.ownedCopies/b.pricing.copies-a.pricing.ownedCopies/a.pricing.copies:0)||comparePower(b.power,a.power)||a.pricing.unpriced-b.pricing.unpriced||a.pricing.subtotal-b.pricing.subtotal);
@@ -167,13 +185,13 @@ export function chooseDeck(candidates,request) {
  if(!winner){
   const nearest=[...candidates].sort((a,b)=>Number(b.check.complete)-Number(a.check.complete)||a.plan.issues.length-b.plan.issues.length)[0];
   const loopPieces=new Set((nearest?.deck.internalRequiredCards||[]).map(key)),unknownLoopPrice=request.requireLoop&&request.budgetMode==='cap'&&request.budget!==null&&nearest?.rows?.some(r=>loopPieces.has(key(r.name))&&!(request.budgetBasis==='purchase'&&r.owned>=r.qty)&&!(typeof r.price==='number'&&Number.isFinite(r.price)&&r.price>=0));
-  const priceIssue=unknownLoopPrice?'The required repeatable-mana package has unverified prices. It cannot pass your spending cap; unknown quotes were not treated as free cards.':request.budgetMode==='cap'&&request.budget!==null&&nearest?.check.complete&&nearest?.check.legal&&!nearest?.plan.issues.length?`No complete candidate has a verified ${request.budgetBasis==='purchase'?'purchase':'whole-deck'} estimate within your $${request.budget.toFixed(2)} cap. Unknown prices and over-budget lists cannot pass this cap.`:null;
+  const priceIssue=unknownLoopPrice?'The required repeatable-mana package has unverified prices. It cannot pass your spending cap; unknown quotes were not treated as free cards.':request.budgetMode==='cap'&&request.budget!==null&&nearest?.check.complete&&nearest?.check.legal&&!nearest?.plan.issues.length?`No complete candidate has a verified ${request.budgetBasis==='purchase'?'purchase':'whole-deck'} estimate ${request.budgetBoundary==='exclusive'?'under':'within'} your $${request.budget.toFixed(2)} cap. Unknown prices and over-budget lists cannot pass this cap.`:null;
   return {ok:false,request,code:request.ownedOnly?'owned-inventory':priceIssue?'budget-cap':'construction',message:request.ownedOnly?'Your available owned cards could not form a complete, checked deck for this request.':(reason=>reason?`Couldn’t build a complete, checked deck: ${reason}`:'The loaded card pool could not produce a complete, checked deck. Try another build-around or retry card loading.')(priceIssue||nearest?.check.issues?.[0]||nearest?.plan.issues?.[0]),details:[...(priceIssue?[priceIssue]:[]),...(nearest?.check.issues||[]),...(nearest?.plan.issues||[])].slice(0,6)};
  }
  const delta=request.budget!==null&&winner.pricing.estimate!==null?cents(winner.pricing.estimate-request.budget):null;
- const budgetVerified=winner.pricing.estimate!==null&&(request.budget===null||delta<=0),themeVerified=winner.plan.theme?.status==='supported';
+ const budgetVerified=winner.pricing.estimate!==null&&(request.budget===null||(request.budgetBoundary==='exclusive'?delta<0:delta<=0)),themeVerified=winner.plan.theme?.status==='supported';
  const themeOK=!winner.plan.theme||['supported','not-requested'].includes(winner.plan.theme.status),requestSatisfied=(request.budget===null||budgetVerified)&&themeOK&&(!request.requireLoop||winner.plan.combo?.status==='verified')&&!request.unsupportedLoop&&!request.loopConflict;
- return {ok:true,...winner,request,budgetVerified,themeVerified,requestSatisfied,validation:{complete:true,legal:true,budget:request.budget===null?'not-requested':budgetVerified?'pass':winner.pricing.estimate===null?'unverified':'fail',theme:winner.plan.theme?.status||'unverified',combo:winner.plan.combo?.status||'not-requested',creatureTypes:winner.plan.typeRestrictions?.status||'not-requested',competitive:'unverified'},budgetStatus:budgetClass(winner)===3?'outside-target':winner.pricing.estimate===null?'unverified':delta>0?'over-target':'within-target',delta,
+ return {ok:true,...winner,request,budgetVerified,themeVerified,requestSatisfied,validation:{complete:true,legal:true,budget:request.budget===null?'not-requested':budgetVerified?'pass':winner.pricing.estimate===null?'unverified':'fail',theme:winner.plan.theme?.status||'unverified',combo:winner.plan.combo?.status||'not-requested',creatureTypes:winner.plan.typeRestrictions?.status||'not-requested',prerequisites:winner.plan.theme?.prerequisites?.status||'not-applicable',competitive:'unverified',request:requestFingerprint(request)},budgetStatus:budgetClass(winner)===3?'outside-target':winner.pricing.estimate===null?'unverified':delta>0?'over-target':'within-target',delta,
   compared:candidates.length,summary:`${request.seedCard?.name||winner.deck.buildAround||request.seed||'Your deck'} · ${request.formatName}`};
 }
 export async function constructDeck(input,adapter,options={}) {

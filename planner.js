@@ -15,11 +15,13 @@ import {
 } from "./core.js";
 import { MTG_VOCABULARY, tribePattern } from './mtg-vocabulary.js';
 import { mtgEffectProfile } from './mtg-effects.js';
+import { LAND_SUBTYPES } from './mtg-land-requirements.js';
 // Theme inference uses effect clauses, not timing restrictions or card names.
 // It is deliberately narrower than the general-purpose raw role tags.
 export const CREATURE_THEMES = MTG_VOCABULARY['creature-types'];
 const escapePattern = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const themeMemo=new WeakMap();
+const LAND_SUBTYPE_WORD=new RegExp('\\b(?:'+LAND_SUBTYPES.map(escapePattern).join('|')+')s?\\b');
 export function intentText(c) {
   return rulesText(c)
     .replace(/\([^)]*\)/g, " ")
@@ -34,7 +36,7 @@ export function creatureTypes(c) {
 }
 function namedEffectText(c) {
   let text = intentText(c);
-  const names = [c?.name, ...(c?.card_faces || []).map(f => f.name)].filter(Boolean).flatMap(n => n.split(" // "));
+  const names = [c?.name, ...(c?.card_faces || []).map(f => f.name)].filter(Boolean).flatMap(n => n.split(" // ")).flatMap(n => [n, n.split(",")[0].trim()]).filter(Boolean);
   for (const name of names.sort((a,b) => b.length-a.length)) text = text.replace(new RegExp(escapePattern(name), "gi"), "this card");
   return text;
 }
@@ -63,10 +65,14 @@ export function commanderTheme(c) {
     tribes = evidence.filter(x => x.evidence.some(e => e.kind !== "token")).map(x => x.tribe),
     inferred = roles({...c, oracle_text:text}).filter(r => !["Creature","Utility","Interaction","Dragons"].includes(r));
   // Paying a sacrifice cost alone does not establish a graveyard payoff.
-  if (!/graveyard|dies|\bmill\b|(?:when|whenever)[^.]*sacrific/i.test(text)) {
+  // "A Desert enters" or "Desert lands from your graveyard" is a land-subtype
+  // prerequisite (mtg-land-requirements.js), not a generic landfall or graveyard plan.
+  const generic=namedEffectText(c).split(/[.\n]/).filter(clause=>!LAND_SUBTYPE_WORD.test(clause)).join(".");
+  if (!/graveyard|dies|\bmill\b|(?:when|whenever)[^.]*sacrific/i.test(generic)) {
     const index=inferred.indexOf("Graveyard"); if(index>=0) inferred.splice(index,1);
   }
   if(inferred.includes("Lifegain")&&!themeSupport(c,{roles:["Lifegain"]}).length)inferred.splice(inferred.indexOf("Lifegain"),1);
+  if(inferred.includes("Landfall")&&!/landfall|land .*enters|lands? .*graveyard/i.test(generic))inferred.splice(inferred.indexOf("Landfall"),1);
   if (tribes.includes("Dragon")) inferred.push("Dragons");
   if (/\+1\/\+1 counters?|proliferate|put[^.]*counter on each/i.test(text)) inferred.push("Counters");
   const tokenKinds = [
