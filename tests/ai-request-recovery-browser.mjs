@@ -22,8 +22,8 @@ const baseArgs={game:'mtg',style:'mono-red goblins',format:'Commander',seed:'',c
 const prepared=await prepareMtgDeck({...baseArgs,avoid_infinite:false},{meta:n=>catalog[cardKey(n)],resolve:async n=>catalog[cardKey(n)],inv:()=>({available:0}),api:async p=>({data:new URL(p,'https://fixture.invalid').searchParams.get('q').includes('is:commander')?[leader]:cards})});
 assert.equal(prepared.result.ready,true);assert.equal(prepared.result.total,100);assert.equal(prepared.result.themeVerified,true);assert.equal(prepared.result.themeCheck.strategy.status,'supported');const tribe=prepared.result.themeCheck.strategy.groups.find(g=>g.tribe==='Goblin');assert(tribe.connectionCount>0&&tribe.payoffs.libraryCopies+tribe.payoffs.commanderCopies>0&&tribe.producers.libraryCopies+tribe.producers.commanderCopies>0,'the completed fixture has actual Goblin production and distinct provider/payoff connections');assert.equal(prepared.result.themeCheck.strategy.competitive,'unverified','recognizing a synthetic package does not establish competitive performance');assert(cards.every(c=>!/artifact|thopter/i.test(c.oracle_text)),'red Goblin probes retain no artifact-engine Oracle text');assert.equal(homeIntent("make me a mono red deck it's easy"),'ask');
 if(process.argv.includes('--validate-fixtures')){console.log('PASS: synthetic red Goblin catalogue produces exactly 100 checked cards with known quotes under $50; homepage make/create deck intent reaches Ask. No model or browser started.');process.exit(0);}
-assert.equal(process.env.GITHUB_ACTIONS,'true','Hosted-only UI checks; --validate-fixtures is safe locally.');
-const {chromium}=await import('playwright'),server=await startServer(),browser=await chromium.launch(),checks=[];
+assert(process.env.GITHUB_ACTIONS==='true'||process.argv.includes('--local'),'Use hosted CI or explicit --local for the isolated fixture browser; --validate-fixtures needs no browser.');
+const {chromium}=await import(process.env.CARDSTASHY_PLAYWRIGHT_MODULE||'playwright'),server=await startServer(),browser=await chromium.launch({...(process.env.CARDSTASHY_CHROMIUM_PATH?{executablePath:process.env.CARDSTASHY_CHROMIUM_PATH,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']}:{} )}),checks=[];
 const protectedState=page=>page.evaluate(()=>JSON.stringify([window.__uiTestState.state.collection,window.__uiTestState.state.decks,window.__uiTestState.state.tcg]));
 async function setup(app){let calls=0;const payloads=[];
  await app.context.route('**/api/ai/ask',route=>{
@@ -79,7 +79,9 @@ try{
   // Lone card answers reuse the row shell and open the existing card sheet in both themes.
   for(const theme of ['dark','light']){
    await page.evaluate(async theme=>(await import('/settings-theme.js')).applyTheme(theme),theme);
-   await page.locator('[data-act="homeAsk"]').click();await newChat(page);await submit(page,'Show one fixture card');
+   // Closing a deck can already restore Ask. Use its New chat control when
+   // open; never click a Home control behind the active modal.
+   await newChat(page);assert.equal(await page.locator('.ask-dialog[open]').count(),1);await submit(page,'Show one fixture card');
    const row=page.locator('.ask-dialog .ask-card-row');await row.waitFor();assert.equal(await row.count(),1);
    const geometry=await row.evaluate(n=>{const r=n.getBoundingClientRect(),art=n.querySelector('.ask-card-thumb').getBoundingClientRect(),style=getComputedStyle(n);return {height:r.height,artHeight:art.height,artWidth:art.width,background:style.backgroundColor,color:style.color,overflow:n.scrollWidth>n.clientWidth+1};});
    assert(geometry.height<180&&geometry.artHeight<=90&&geometry.artHeight>geometry.artWidth&&!geometry.overflow,JSON.stringify({theme,width,geometry}));

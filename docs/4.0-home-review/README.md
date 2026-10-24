@@ -76,6 +76,16 @@ loosening URL restrictions or exact-byte checks. All ten verifier tests then
 passed locally. Hosted results for the follow-up revision are separate evidence;
 a local pass does not relabel the original failed job.
 
+The later hosted AI browser job reached `ai-request-recovery-browser.mjs` and
+timed out clicking the Home AI button behind an already-open Ask modal. Its
+renderer-only fixtures had restored the conversation before the theme loop.
+The repair uses the existing `newChat` helper, which opens Ask only when closed
+and otherwise uses its visible New chat control. It does not force clicks,
+change app dialog behavior or remove card/build/privacy assertions. The complete
+recovery browser suite passed locally at 320/390/768/1440 px with both card-row
+themes and the two sparse-provider cases. The test now supports explicit local
+fixture execution and a custom Chromium executable. Hosted follow-up is pending.
+
 ## Scope still open
 
 The recovered Random Deck parser optimization remains in the branch ancestry
