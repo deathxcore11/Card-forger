@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v310";
+const CACHE = "cardforge-shell-v311";
 const ASSETS = [
   "./deck-mechanic-plan.js", "./mtg-wiki-knowledge.js", "./mtg-wiki-client.js", "./mtg-wiki-ui.js", "./wiki-sources.js", "./game-wiki-knowledge.js", "./game-wiki-article.js", "./wiki-card-handoff.js", "./wiki-deck-handoff.js",
   "./community-edition.js", "./img/news/2026-10-19-magic-delay.webp", "./img/news/2026-10-22-pokemon-rules.webp", "./img/news/2026-10-19-ygo-list.webp",
