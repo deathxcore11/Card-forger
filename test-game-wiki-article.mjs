@@ -67,10 +67,12 @@ assert.match(navigation,/reference\?value=1&amp;other=2/);
 // sending readers to a separate catalogue UI.
 const cardLinks=fixture();cardLinks.article.lead=[{type:'paragraph',content:[
  {type:'link',text:'Exact card',href:'https://scryfall.com/search?q=%21%22Spirit+Link%22&utm_source=wiki'},
+ {type:'link',text:'Boros Guildmages',href:'https://scryfall.com/card/rvr/168/boros-guildmage?utm_source=wiki'},
  {type:'link',text:'Matching cards',href:'https://scryfall.com/search?q=kw%3Alifelink'},
  {type:'link',text:'Unrelated source',href:'https://scryfall.com.evil.invalid/search?q=kw%3Alifelink'}
 ]}];const cardNavigation=wikiArticleMarkup(cardLinks);
 assert.match(cardNavigation,/data-act="card" data-name="Spirit Link" data-read-only="true"/);
+assert.match(cardNavigation,/data-act="wikiCard" data-card-set="rvr" data-card-number="168" data-card-lang="en"/);
 assert.match(cardNavigation,/data-act="wikiCards" data-wiki-query="kw:lifelink"/);
 assert.match(cardNavigation,/href="https:\/\/scryfall.com.evil.invalid/);
 // Source content is inert even when a caller bypasses the server parser.

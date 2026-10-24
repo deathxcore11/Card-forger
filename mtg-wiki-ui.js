@@ -155,7 +155,15 @@ export function createMtgWikiPageController({active=()=>false,root,scope=()=>()=
   }catch{if(!live())return null;Object.assign(state,{loading:false,status:'unavailable',response:{game,status:'unavailable'}});paintContent();return state.response;}
   finally{if(articleAbort===abort){articleAbort=null;if(state.loading){state.loading=false;state.status='idle';paintContent();}}}
  };
- const open=(topic,options={})=>navigate?navigate(clean(topic),options):lookup(topic,options);
+ const open=async(topic,options={})=>{
+  if(!navigate)return lookup(topic,options);
+  const field=root?.()?.querySelector?.('#wikiQ'),document=field?.ownerDocument||globalThis.document,restore=!!field&&document?.activeElement===field,selection=restore?{start:field.selectionStart,end:field.selectionEnd,direction:field.selectionDirection}:null,valid=scope();
+  const moved=await navigate(clean(topic),options);
+  // The app makes the page inert while installing a route, so focus must be
+  // restored after navigation settles rather than during the render itself.
+  if(moved!==false&&restore&&active()&&valid?.()!==false){const next=root?.()?.querySelector?.('#wikiQ');next?.focus?.({preventScroll:true});if(Number.isInteger(selection.start))try{next?.setSelectionRange?.(selection.start,selection.end,selection.direction);}catch{}}
+  return moved;
+ };
  const suggest=query=>{
   clearTimeout(timer);suggestionAbort?.abort();suggestionAbort=null;const revision=++suggestionRevision,q=clean(query);state.query=query;state.suggestionIndex=-1;state.suggestions=q?localSuggestions(q,game):[];state.suggestionsOpen=!!q;state.suggestionStatus='';paintSuggestions();if(q)pauseDaily();
   if(q.length<3)return;

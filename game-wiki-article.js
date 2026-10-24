@@ -1,4 +1,6 @@
 import {esc} from './ui.js';
+import {parseWikiCardLink} from './wiki-card-handoff.js';
+import {readWikiSourceDeck} from './wiki-deck-handoff.js';
 import {wikiSourceForGame,isAllowedWikiUrl,isAllowedWikiImageUrl} from './wiki-sources.js';
 
 // The article reader receives semantic data, never source HTML. These limits are
@@ -25,9 +27,6 @@ function providerTopic(game,value){
   if(/^\/(?:w\/)?index\.php$/.test(url.pathname))return topic((url.searchParams.get('title')||'').replace(/_/g,' '));
   return '';
  }catch{return '';}
-}
-function magicCardQuery(value){
- try{const url=new URL(value);if(url.origin!=='https://scryfall.com'||url.pathname!=='/search')return null;const query=url.searchParams.get('q')||'';return query.trim()&&query.length<=300&&!CONTROL.test(query)?query:null;}catch{return null;}
 }
 function sourceMatches(game,source,title){
  return source&&typeof source==='object'&&(!source.game||source.game===game)&&isAllowedWikiUrl(game,source.url)&&key(providerTopic(game,source.url))===key(title)&&(!source.title||key(source.title)===key(title));
@@ -76,8 +75,10 @@ export function wikiArticleMarkup(response,{game='mtg'}={}){
   if(typeof part.href==='string'&&part.href.startsWith('#')){
    const id=fragments.get(fragmentKey(part.href));return id?`<button type="button" class="wiki-article-link" data-wiki-anchor="${esc(id)}">${esc(label)}</button>`:esc(label);
   }
-  const cardQuery=game==='mtg'&&href?magicCardQuery(href):null;
-  if(cardQuery){const exact=cardQuery.match(/^!"([^"<>]{1,180})"(?:\s+set:[a-z0-9]{2,8})?$/i);return exact?`<button type="button" class="wiki-article-link" data-act="card" data-name="${esc(exact[1])}" data-read-only="true">${esc(label)}</button>`:`<button type="button" class="wiki-article-link" data-act="wikiCards" data-wiki-query="${esc(cardQuery)}">${esc(label)}</button>`;}
+  const cardLink=parseWikiCardLink(href,game);
+  if(cardLink?.kind==='printing')return `<button type="button" class="wiki-article-link" data-act="wikiCard" data-card-set="${esc(cardLink.set)}" data-card-number="${esc(cardLink.number)}" data-card-lang="${esc(cardLink.lang)}">${esc(label)}</button>`;
+  if(cardLink?.kind==='card')return `<button type="button" class="wiki-article-link" data-act="card" data-name="${esc(cardLink.name)}" data-read-only="true">${esc(label)}</button>`;
+  if(cardLink?.kind==='search')return `<button type="button" class="wiki-article-link" data-act="wikiCards" data-wiki-query="${esc(cardLink.query)}">${esc(label)}</button>`;
   return href?external(href,label):esc(label);
  }).join('');
  const images=new Map(),seenImages=new Set();
@@ -104,6 +105,10 @@ export function wikiArticleMarkup(response,{game='mtg'}={}){
    const tag=value.ordered===true?'ol':'ul';return `<${tag}>${items.map(item=>`<li>${item}</li>`).join('')}</${tag}>`;
   }
   if(value.type==='image')return figure(value.imageId);
+  if(value.type==='deck'){
+   const index=Array.isArray(article.decks)?article.decks.findIndex(deck=>deck.id===value.deckId):-1;
+   try{const deck=readWikiSourceDeck(response,index,{game});return `<p><button type="button" class="btn ghost small" data-act="wikiDeck" data-wiki-deck="${index}">Open ${esc(deck.title)}</button></p>`;}catch{return '';}
+  }
   if(value.type==='table'){
    const rows=bounded(value.rows,LIMITS.rows).map(row=>{
     const cells=bounded(row?.cells,LIMITS.cells).map(cell=>{

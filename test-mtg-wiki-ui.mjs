@@ -123,4 +123,27 @@ drafting.field.value=draft;drafting.handlers.input({target:drafting.field});asse
 finishDraft();await draftWork;
 assert.deepEqual(draftRequests,[{game:'mtg',mode:'article',query:submitted}]);assert.equal(drafting.controller.state.topic,canonical,'the completed request still selects its canonical article');assert.equal(drafting.controller.state.loading,false);assert.equal(drafting.field.value,draft,'a late response cannot replace newer input');assert.equal(drafting.controller.state.query,draft,'state preserves the same editable draft');assert.equal(drafting.controller.state.suggestionsOpen,true);assert.match(articleOnly(drafting.controller.state),/<h1>Alpha canonical draft article<\/h1>/);drafting.leave();
 const canonicalOnly=pageHarness(async()=>Response.json(articlePacket('mtg','Untouched canonical reader title')));await canonicalOnly.controller.lookup('Untouched submitted reader title');assert.equal(canonicalOnly.controller.state.topic,'Untouched canonical reader title');assert.equal(canonicalOnly.controller.state.query,'Untouched canonical reader title');assert.equal(canonicalOnly.field.value,'Untouched canonical reader title','an untouched field still follows the canonical loaded title');canonicalOnly.leave();
+
+// Route installation makes #content inert and replaces its focused input. The
+// controller must capture before that blur, then restore on the new live field
+// only after navigation settles; an abandoned visit must never reclaim focus.
+function routedFocusHarness({focused=true}={}){
+ let isActive=true,valid=true,inert=false,finish;const events=[],requests=[],document={activeElement:null};
+ const field=()=>({ownerDocument:document,value:'Focus route fixture',selectionStart:2,selectionEnd:8,selectionDirection:'backward',setAttribute(){},removeAttribute(){},focus(options){assert.equal(inert,false,'focus cannot be restored while the navigation surface is inert');events.push({type:'focus',field:this,options});document.activeElement=this;},setSelectionRange(start,end,direction){events.push({type:'selection',field:this,start,end,direction});}});
+ const original=field();let current=original;if(focused)document.activeElement=original;
+ const controller=createMtgWikiPageController({active:()=>isActive,scope:()=>()=>valid,root:()=>({querySelector:selector=>selector==='#wikiQ'?current:null}),storage:null,fetcher:()=>{throw Error('Route focus restoration must not fetch an article directly');},navigate:(topic,options)=>{
+  requests.push({topic,options});inert=true;document.activeElement=null;current=field();return new Promise(resolve=>{finish=moved=>{inert=false;resolve(moved);};});
+ }});
+ return {controller,document,events,requests,original,get current(){return current;},settle:moved=>finish(moved),invalidate:()=>valid=false,leave:()=>isActive=false};
+}
+const focusedRoute=routedFocusHarness(),focusWork=focusedRoute.controller.lookup('Focus route fixture',{query:true});
+assert.deepEqual(focusedRoute.requests,[{topic:'Focus route fixture',options:{query:true}}]);assert.equal(focusedRoute.document.activeElement,null,'route installation blurred the old query');assert.deepEqual(focusedRoute.events,[],'focus is not attempted before deferred navigation settles');
+focusedRoute.settle(true);assert.equal(await focusWork,true);assert.equal(focusedRoute.document.activeElement,focusedRoute.current);assert.notEqual(focusedRoute.current,focusedRoute.original);assert.deepEqual(focusedRoute.events,[{type:'focus',field:focusedRoute.current,options:{preventScroll:true}},{type:'selection',field:focusedRoute.current,start:2,end:8,direction:'backward'}],'the replacement query regains focus and selection after inert clears');
+for(const refusal of ['superseded','inactive','scope','not-focused']){
+ const app=routedFocusHarness({focused:refusal!=='not-focused'}),work=app.controller.lookup('Abandoned focus route fixture');
+ if(refusal==='inactive')app.leave();if(refusal==='scope')app.invalidate();
+ const otherControl={id:'newer-control'};app.document.activeElement=otherControl;assert.deepEqual(app.events,[]);
+ app.settle(refusal==='superseded'?false:true);await work;
+ assert.deepEqual(app.events,[],refusal+' navigation must not restore focus or selection');assert.equal(app.document.activeElement,otherControl,refusal+' visit cannot steal focus from the current control');
+}
 console.log('PASS: per-game Wiki home shows only the daily topic; explicit full-article search and internal navigation replace it; routing, Home reset, scoped abort, minimal fallback and isolated 24-hour daily storage preserve the unchanged short-reference contract.');

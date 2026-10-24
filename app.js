@@ -3,6 +3,8 @@ import {checkRelease,acknowledgeRelease,onReleaseChange,releaseDot,releaseState}
 import {createDeckPipeline} from './deck-pipeline.js';
 import {createDeckExperience} from './deck-experience.js';
 import {createMtgWikiPageController} from './mtg-wiki-ui.js';
+import {createWikiDeckHandoff} from './wiki-deck-handoff.js';
+import {createWikiCardHandoff,parseWikiCardLink} from './wiki-card-handoff.js';
 import { configureAiAuth, invalidateAiAuth } from './ai-auth.js';
 import {openPackPreview,ptcgSetRarities,trimPackArt} from './pack-preview.js';
 import {loadMtgBooster,mtgBoosterCards} from './mtg-boosters.js';
@@ -1411,6 +1413,12 @@ for(const name of ['click','input','change'])document.addEventListener(name,e=>{
 
 const A = {}; // click actions
 wikiPageControllers=Object.fromEntries(['mtg','ygo','ptcg'].map(game=>[game,createMtgWikiPageController({game,active:()=>S.ui.view==='wiki'&&T.game()===game,root:()=>$('#content'),scope:()=>{const captured=mutationScope();return()=>mutationCurrent(captured);},navigate:(topic,{query=false}={})=>go('#wiki'+(topic?'/'+encodeURIComponent(topic)+(query?'/search':''):''))})]));
+const wikiCardHandoff=createWikiCardHandoff({lookup:path=>api(path),openCard:printing=>A.card({dataset:{name:printing.name,readOnly:'true'},printing}),scope:()=>{const captured=mutationScope(),screen=navigationStamp();return()=>mutationCurrent(captured)&&navigationCurrent(screen)&&T.game()==='mtg';},notify:toast});
+createWikiDeckHandoff({A,article:()=>currentWikiPage()?.state.response,game:T.game,scope:()=>{const captured=mutationScope(),screen=navigationStamp();return()=>mutationCurrent(captured)&&navigationCurrent(screen);},lookup:(_game,name)=>meta(name),hydrate:(names,status)=>resolveNames(names,status),openProven:spec=>tcgCtx.openProven(spec),notify:toast,
+ exportText:text=>download('CardStashy-wiki-deck.txt',text,'text/plain'),
+ card:(game,row,current)=>{if(!current())return null;const target=parseWikiCardLink(row.cardUrl,game);if(target?.kind==='printing')return wikiCardHandoff.open(target);if(row.set&&row.number)return toast('The linked printing could not be matched.');return A.card({dataset:{name:row.name,readOnly:'true'}});},
+ importDeck:snapshot=>{deckImportSheet({text:snapshot.text,name:snapshot.title,format:snapshot.format||'60-card casual',commander:snapshot.commander,destination:'new',url:snapshot.source.url,kind:'Community deck',description:`Source decklist from ${snapshot.source.name}: ${snapshot.source.title}.`});if(!snapshot.format){const field=$('#dImpFormat'),choice=document.createElement('option'),preview=$('#dImpPreviewBtn');choice.value='';choice.textContent='Choose a format';choice.disabled=true;choice.selected=true;field.prepend(choice);field.value='';preview.disabled=true;$('#dImpCommanderRow').style.display='none';field.addEventListener('change',()=>{preview.disabled=!field.value;});}}
+});
 const deckPipeline=createDeckPipeline({S,T,api,resolve,cacheCard,meta,priceOf,inv,tcgCtx});
 const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game:T.game,
  identity:()=>{const account=accountGeneration;return ()=>!accountLocked&&account===accountGeneration;},
@@ -3635,6 +3643,7 @@ A.ruleCards = async button => {
 
 A.wikiOpen=async(t={dataset:{}})=>{const game=t.dataset?.game||T.game(),topic=t.dataset?.topic||t.dataset?.wikiTopic||'',account=accountGeneration;if(!GAMES[game])return;if($('#sheet').open)closeSheet();closeAsk();if(T.game()!==game)await switchGame(game);if(account!==accountGeneration||accountLocked||T.game()!==game)return;await go('#wiki'+(topic?'/'+encodeURIComponent(topic):''));};
 A.mtgWikiOpen=A.wikiOpen;
+A.wikiCard=async t=>{const done=busy(t,'Opening card…');try{return await wikiCardHandoff.open({set:t.dataset.cardSet,number:t.dataset.cardNumber,lang:t.dataset.cardLang});}finally{done();}};
 A.mtgWikiPick=t=>currentWikiPage().lookup(t.dataset.wikiTopic);
 A.mtgWikiHome=()=>currentWikiPage().home();
 A.wikiCards=async t=>{const q=t.dataset.wikiQuery,account=accountGeneration;if(T.game()!=='mtg'||typeof q!=='string'||!q.trim()||q.length>300||/[\u0000-\u001f\u007f]/.test(q))return;S.ui.db.term=q;S.ui.db.filters={};dbInvalidate();const opened=await go('#search');if(opened&&account===accountGeneration&&!accountLocked&&T.game()==='mtg'&&S.ui.view==='search')return A.dbSearch();};
@@ -6032,6 +6041,7 @@ const scanCtx = {
   candOf: async (g, p, why, exact) => (g === "mtg" ? (p.card ? mtgScanCand(p.card, why, exact) : null) : tcgCtx.scanCandById?.(g, p.id, why, exact) ?? null),
   details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };
+scanCtx.aiAccount=()=>!!cloudInfo().user;
 scanCtx.lookupCandidates=createScannerLookup({requestMagic:api,sources:T.SOURCES,candById:scanCtx.candById,match:scanCtx.match});
 registerScanner(scanCtx);
 

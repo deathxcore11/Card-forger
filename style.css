@@ -5160,3 +5160,24 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 @media(max-width:680px){.wiki-article{padding:22px;border-radius:20px}.wiki-article>header{margin-bottom:22px;padding-bottom:18px}.wiki-article-figure{float:none;width:fit-content;max-width:min(100%,320px);margin:20px auto 24px}.wiki-article-body{font-size:16px;line-height:1.72}.wiki-article-body h2{margin-top:1.5em}.wiki-article-table :is(th,td){padding:10px 12px}}
 @media(max-width:420px){.wiki-reader-toolbar{gap:8px}.wiki-reader-toolbar .btn{flex:1;min-width:0;padding-inline:10px;white-space:normal}.wiki-article{padding:18px;border-radius:18px}.wiki-article h1{font-size:28px}.wiki-article-figure{padding:7px}.wiki-source-credit{font-size:12px}}
 @media(max-width:420px){.deck-budget-rebuild{grid-template-columns:minmax(0,1fr)}.deck-budget-rebuild>.btn{width:100%}.deck-result-actions{gap:8px}.deck-coach-action small{font-size:10px}}
+
+/* Scan review, 3.94.2: one decision per step under the card. Version and
+   edition are chips on the slide or right below it; search, AI and filters
+   wait behind "Not right?". */
+.scan-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:4px 0}
+.scan-chip{min-height:44px;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s,transform .1s}
+.scan-chip:active{transform:scale(.97)}
+.scan-chip[aria-checked="true"],.scan-chip.is-static{background:var(--brand-action,var(--accent));border-color:transparent;color:var(--brand-action-ink,#111)}
+.scan-chip:disabled{opacity:.45;cursor:not-allowed}
+.scan-chip.is-static{cursor:default}
+.scan-finish{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;margin:14px 0 6px;padding:10px 12px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
+.scan-finish .scan-chips{justify-content:flex-start;margin:0}
+.scan-finish-label{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.scan-step-hint{margin:12px 0 4px;text-align:center;font-size:13px;color:var(--muted)}
+.scan-confirm .printing-slide-copy .btn.is-selected{background:var(--brand-action,var(--accent));color:var(--brand-action-ink,#111)}
+.scan-fix{margin:14px 0 4px;border-top:1px solid var(--line);padding-top:10px}
+.scan-fix-toggle{width:100%;min-height:44px;border:0;background:none;color:var(--muted);font:inherit;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.scan-fix-toggle::after{content:"▾";transition:transform .15s}
+.scan-fix.is-open .scan-fix-toggle::after{transform:rotate(180deg)}
+.scan-fix .scan-lookup{margin:6px 0 10px;padding-top:0;border-top:0}
+@media (max-width:420px){.scan-finish{grid-template-columns:minmax(0,1fr) auto}.scan-finish-label{grid-column:1/-1}.scan-finish .scan-chips{grid-column:1}}
