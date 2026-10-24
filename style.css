@@ -5096,3 +5096,24 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 /* Generated decks use the established Meta inspector, with one clear action row. */
 .deck-result-actions{display:flex;align-items:flex-start;gap:10px;margin:14px 0}.deck-result-actions>.btn,.deck-coach-action{flex:1;min-width:0}.deck-coach-action>.btn{width:100%;display:flex;justify-content:center;align-items:center;gap:7px}.deck-coach-action .stashy-logo{width:28px;height:28px;flex:none}.deck-coach-action small{display:block;font-size:10px;line-height:1.4;color:var(--muted);margin:5px 2px 0}.deck-budget-rebuild{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:end;padding:14px 0;border-block:1px solid var(--line)}.deck-budget-rebuild .field{margin:0}.deck-budget-rebuild>.btn{margin-bottom:0}.deck-budget-rebuild>[role=status]{grid-column:1/-1;margin:0}.deck-budget-rebuild>[role=status]:empty{display:none}.deck-result-checks>summary{cursor:pointer;min-height:44px;padding:12px 0}.deck-flow-result>.cs-hero{height:200px}.deck-flow-result>.cs-title{margin-top:-30px}.deck-flow-result .deck-flow-cards h3{font-size:.95rem}
 @media(max-width:420px){.deck-budget-rebuild{grid-template-columns:minmax(0,1fr)}.deck-budget-rebuild>.btn{width:100%}.deck-result-actions{gap:8px}.deck-coach-action small{font-size:10px}}
+
+/* Scan review, 3.94.2: one decision per step under the card. Version and
+   edition are chips on the slide or right below it; search, AI and filters
+   wait behind "Not right?". */
+.scan-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:4px 0}
+.scan-chip{min-height:44px;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s,transform .1s}
+.scan-chip:active{transform:scale(.97)}
+.scan-chip[aria-checked="true"],.scan-chip.is-static{background:var(--brand-action,var(--accent));border-color:transparent;color:var(--brand-action-ink,#111)}
+.scan-chip:disabled{opacity:.45;cursor:not-allowed}
+.scan-chip.is-static{cursor:default}
+.scan-finish{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;margin:14px 0 6px;padding:10px 12px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
+.scan-finish .scan-chips{justify-content:flex-start;margin:0}
+.scan-finish-label{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.scan-step-hint{margin:12px 0 4px;text-align:center;font-size:13px;color:var(--muted)}
+.scan-confirm .printing-slide-copy .btn.is-selected{background:var(--brand-action,var(--accent));color:var(--brand-action-ink,#111)}
+.scan-fix{margin:14px 0 4px;border-top:1px solid var(--line);padding-top:10px}
+.scan-fix-toggle{width:100%;min-height:44px;border:0;background:none;color:var(--muted);font:inherit;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.scan-fix-toggle::after{content:"▾";transition:transform .15s}
+.scan-fix.is-open .scan-fix-toggle::after{transform:rotate(180deg)}
+.scan-fix .scan-lookup{margin:6px 0 10px;padding-top:0;border-top:0}
+@media (max-width:420px){.scan-finish{grid-template-columns:minmax(0,1fr) auto}.scan-finish-label{grid-column:1/-1}.scan-finish .scan-chips{grid-column:1}}

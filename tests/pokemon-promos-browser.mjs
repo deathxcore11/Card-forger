@@ -218,8 +218,8 @@ try{
   const rows=await page.evaluate(id=>window.__uiTestState.ui.scan.confirm.inline.rows.filter(r=>r.cardId===id).map(r=>({key:r.key,variant:r.variantKey,productId:r.productId,selectable:r.selectable})),card.id);
   const expected=card.variants.filter(v=>!v.aliasOf).map(v=>v.key).sort();assert.deepEqual(rows.map(r=>r.variant).sort(),expected,'Scanner shows one row per physical version');assert.equal(new Set(rows.map(r=>r.key)).size,rows.length);assert(rows.every(r=>r.selectable));
   const actual=await page.evaluate(async card=>(await import('/scan-batch.js')).actualFinishes('ptcg',{card}),card);assert.deepEqual(actual.sort(),expected);
-  const variantSelect=page.locator('.scan-inline-printings .printing-slide.is-current [data-change="scanBrowseVariant"]');assert.equal(await variantSelect.count(),1,'Actual scanner presents the multiple physical variants');
-  const optionKeys=await variantSelect.locator('option').evaluateAll(nodes=>nodes.map(n=>n.value).filter(Boolean));assert.deepEqual(optionKeys.sort(),rows.map(r=>r.key).sort(),'Actual scanner DOM contains no alias-only extra choice');
+  const variantChips=page.locator('.scan-inline-printings .printing-slide.is-current .scan-chips [data-act="scanBrowseChoose"]');assert.equal(await variantChips.count(),rows.length,'Actual scanner presents each physical variant as a chip');
+  const optionKeys=await variantChips.evaluateAll(nodes=>nodes.map(n=>n.dataset.key).filter(Boolean));assert.deepEqual(optionKeys.sort(),rows.map(r=>r.key).sort(),'Actual scanner DOM contains no alias-only extra choice');
   await chooseInlinePrinting(page,card.id,expected.at(-1));assert.equal(await page.evaluate(()=>window.__uiTestState.ui.scan.confirm.finish),expected.at(-1),'Actual scanner selection keeps the chosen exact finish');
   await noOverflow(page,'.scan-confirm',card.id+' scanner choices',true);await shot(page,`${promoFile(card.id)}-scanner-390`);await assertNoInventoryChange(page,baseline,'Scanner preview '+card.id);
   report.checks.push({id:card.id,phase:'actual-scanner-unique-choices',rows,inventoryUnchanged:true});
