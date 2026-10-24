@@ -338,7 +338,7 @@ for (const outcome of ['success','direct-entry','close','native-close','newer-in
   app.cleanup();
 }
 assert.match(appSource,/if \(S.ui.sheetCtx !== ctx \|\| !dlg.open\) T.cancelProvenBuild\(\);/);
-assert.match(appSource,/function closeSheet\(rememberRoute=true\) \{\n  T.cancelProvenBuild\(\);/);
+assert.match(appSource,/function closeSheet\(rememberRoute=true\) \{\n  if\(askNavigation\?\.closeInternal\(\)\)return;\n  askNavigation\?\.discard\(\);\n  T.cancelProvenBuild\(\);/);
 assert.match(appSource,/if \(\$\("#sheet"\).open\) return;\n  T.cancelProvenBuild\(\);/,'queued old close event cannot retire the newer inspector');
 assert.match(tcgSource,/const meta = B.metaSnapshot\?\.game === G \? B.metaSnapshot.data : await metaFor\(G\)/,'builder consumes selected snapshot; ordinary direct builders still use current Meta');
 

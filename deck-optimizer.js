@@ -100,19 +100,28 @@ const breathe = async () => {
   const now = globalThis.performance?.now?.() ?? Date.now();
   if (now - lastBreath > 40) { await new Promise((r) => setTimeout(r, 0)); lastBreath = globalThis.performance?.now?.() ?? Date.now(); }
 };
-export async function refineCandidates(candidates,{neighbors,evaluate,cost,accept=()=>true,rounds=2,maxNeighbors=12,status=()=>{}}){
- const found=[...candidates];let frontier=[...candidates];
+export async function refineCandidates(candidates,{neighbors,evaluate,cost,accept=()=>true,rounds=2,maxNeighbors=12,status=()=>{},current=()=>true}){
+ const checkCurrent=()=>{if(current?.()===false)throw new DOMException('Build replaced','AbortError');};
+ checkCurrent();const found=[...candidates];let frontier=[...candidates];
  for(let round=0;round<rounds;round++){
   const next=[];
   for(const [i,deck] of frontier.entries()){
-   const before=evaluate(deck),options=neighbors(deck).filter(accept).slice(0,maxNeighbors);
+   checkCurrent();const before=evaluate(deck),options=[];
+   // Preserve the first N accepted neighbors, including unknown-price entries.
+   // Later neighbors could never be evaluated by filter(...).slice(0,N), so
+   // avoid inspecting them once this exact same admission window is filled.
+   if(maxNeighbors>0)for(const candidate of neighbors(deck)){
+    checkCurrent();if(accept(candidate))options.push(candidate);
+    if(options.length>=maxNeighbors)break;
+    await breathe();checkCurrent();
+   }
    let best=null;
-   for(const d of options){await breathe();const quote=cost(d);if(quote.unknown)continue;const after=evaluate(d);if(comparePower(after,before)<=0)continue;
+   for(const d of options){await breathe();checkCurrent();const quote=cost(d);if(quote.unknown)continue;const after=evaluate(d);if(comparePower(after,before)<=0)continue;
     const improved={...d,...quote,assessment:after,power:after.score};found.push(improved);if(!best || comparePower(after,best.assessment)>0)best=improved;
    }
    if(best)next.push(best);
    status(`Testing engine upgrades · pass ${round+1}/${rounds} · list ${i+1}/${frontier.length}`);
-   await new Promise(resolve=>setTimeout(resolve,0));
+   await new Promise(resolve=>setTimeout(resolve,0));checkCurrent();
   }
   frontier=next;if(!frontier.length)break;
  }

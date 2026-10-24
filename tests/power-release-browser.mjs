@@ -230,7 +230,7 @@ async function reachableIdeaActions(page,label){
  }
 }
 async function gotoDeck(page,id){await page.evaluate(id=>{location.hash='#deck/'+id+'/engine';},id);await page.locator('.score-panel.power').waitFor();await page.waitForFunction(id=>window.__uiTestState.ui.deckId===id,id);}
-async function openAsk(page){await page.evaluate(()=>{location.hash='#search';});await page.locator('[data-act="askOpen"]').first().click();await page.locator('.ask-dialog[open]').waitFor();}
+async function openAsk(page){if(await page.locator('.ask-dialog[open]').count())return;await page.evaluate(()=>{location.hash='#search';});await page.locator('[data-act="askOpen"]').first().click();await page.locator('.ask-dialog[open]').waitFor();}
 async function installBuilderSaveAudit(page){
  await page.evaluate(()=>{
   const pick=s=>({collection:s.collection,decks:s.decks,printings:s.printings,wishlist:s.wishlist,tcg:s.tcg,myPrices:s.myPrices,priceChoices:s.priceChoices});
@@ -373,7 +373,7 @@ try{
  await openAsk(page);await page.locator('.ask-input').fill(question);await page.locator('.ask-send').click();
  await page.locator('#sheet[open] .deck-flow-result').waitFor();
  assert.equal(askCalls,1,'complete result ends after one proposal');const result=page.locator('#sheet[open] .deck-flow-result'),preview=await result.innerText();
- assert.match(preview,/60 main/);assert.match(preview,/Complete · structure checked/);assert.match(preview,/Reference estimate/);assert.doesNotMatch(preview,/Target \$25/);assert.equal(await page.locator('#sheet[open]').count(),1,'Ask hands the completed deck to the existing independent deck sheet');assert.equal(await page.locator('.ask-dialog[open]').count(),0,'Ask closes before the deck sheet opens');assert.equal(await page.locator('#sheet').evaluate(n=>n.contains(document.activeElement)),true,'focus enters the completed deck sheet');
+ assert.match(preview,/60 main/);assert.match(preview,/Reviewable draft · complete list · structure checked/);assert.match(preview,/Some request checks remain unmet or unverified/);assert.doesNotMatch(preview,/Generated deck · Complete · structure checked/);assert.match(preview,/Reference estimate/);assert.doesNotMatch(preview,/Target \$25/);assert.equal(await page.locator('#sheet[open]').count(),1,'Ask hands the completed deck to the existing independent deck sheet');assert.equal(await page.locator('.ask-dialog[open]').count(),0,'Ask closes before the deck sheet opens');assert.equal(await page.locator('#sheet').evaluate(n=>n.contains(document.activeElement)),true,'focus enters the completed deck sheet');
  const displayed=await result.locator('[data-act="flowCard"]').evaluateAll(ns=>ns.map(n=>({qty:Number(n.dataset.flowQty),name:n.dataset.flowName})));assert.equal(sumQty(displayed),60);
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheet','Standard deck sheet '+width);await result.locator('[data-act="flowSave"]').scrollIntoViewIfNeeded();await capture(page,'goal-preview-'+width);}
  assert.equal(await inventorySnapshot(page),initial,'reviewing a built list never saves it');await page.locator('#sheet [data-act="closeSheet"]').first().click();
@@ -560,7 +560,7 @@ try{
   assert.equal(await inventorySnapshot(bp),before,'generating never saves or changes ownership');assert.deepEqual(await bp.evaluate(()=>window.__fixtureSensitiveWrites),[]);
   // Every probe has a complete, checked candidate in its pool: the result must be that whole list.
   assert(r.ok,'a complete candidate exists, so the result is the list, not an error: '+r.alert);
-  assert.equal(r.total,size,'the full deck, not a partial draft');assert.match(r.text,/Complete · structure checked/);
+  assert.equal(r.total,size,'the full deck, not a partial draft');assert.match(r.text,/Generated deck · Complete · structure checked/);assert.doesNotMatch(r.text,/Reviewable draft/,'supported non-Magic builder control retains the complete-result label');
   assert(r.rows.find(row=>row.name===seedName)?.qty>=1,'the requested build-around is in the result');
   for(const row of r.rows)assert(row.qty<=(x.game==='ptcg'?(/^Basic .* Energy$/.test(row.name)?60:4):3),'copy limit for '+row.name);
   if(x.game==='ptcg'){const energy=r.rows.find(row=>row.name==='Basic Fire Energy');assert(energy?.qty>=8,'the Fire attacker is paid for by Fire Energy, not left without resources');}

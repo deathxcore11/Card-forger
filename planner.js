@@ -27,11 +27,14 @@ export function intentText(c) {
     .replace(/\([^)]*\)/g, " ")
     .replace(/(?:activate|cast)[^.\n]*(?:as a sorcery|any time you could cast a sorcery)[^.\n]*\.?/gi, " ");
 }
+// Provider vocabulary is a fixed module snapshot; patterns do not depend on
+// mutable card metadata. Keep matching order and whitespace boundaries intact.
+const creatureTypePatterns=CREATURE_THEMES.map(type=>({type,pattern:new RegExp('(?:^|\\s)'+escapePattern(type)+'(?:$|\\s)')}));
 export function creatureTypes(c) {
   const lines = c?.card_faces?.length ? c.card_faces.map(f => f.type_line || "") : typeText(c).split(" // ");
   return [...new Set(lines.filter(t => /\b(?:Creature|Kindred|Tribal)\b/.test(t)).flatMap(t => {
     const suffix=(t.split('—')[1]||'').trim();
-    return CREATURE_THEMES.filter(type=>new RegExp('(?:^|\\s)'+escapePattern(type)+'(?:$|\\s)').test(suffix));
+    return creatureTypePatterns.filter(({pattern})=>pattern.test(suffix)).map(({type})=>type);
   }))];
 }
 function namedEffectText(c) {
@@ -39,6 +42,36 @@ function namedEffectText(c) {
   const names = [c?.name, ...(c?.card_faces || []).map(f => f.name)].filter(Boolean).flatMap(n => n.split(" // ")).flatMap(n => [n, n.split(",")[0].trim()]).filter(Boolean);
   for (const name of names.sort((a,b) => b.length-a.length)) text = text.replace(new RegExp(escapePattern(name), "gi"), "this card");
   return text;
+}
+// Bounded evidence for participating in an own-object plan. A noun mentioned
+// only as an answer's target is not an engine input. This is not an Oracle
+// parser: unsupported clauses retain unknown coverage, never positive credit.
+export function objectThemeEvidence(c, kind) {
+  if (!['artifact','enchantment'].includes(kind)) return {status:'unknown',evidence:[]};
+  const text=namedEffectText(c), noun=kind+'s?', object=noun+'(?: or (?:artifact|enchantment|creature|land|permanent))?', evidence=[];
+  if(new RegExp('\\b'+kind+'\\b','i').test(typeText(c)))evidence.push({kind:'card',text:typeText(c)});
+  const own=[
+    new RegExp('\\b'+noun+' you control (?:get|have|gain|are|enter)\\b','i'),
+    new RegExp('\\b'+noun+' spells? you cast (?:cost|have|gain)\\b','i'),
+    new RegExp('(?:when|whenever|for each|number of|among)[^,;:]*\\b'+noun+'[^,;:]*\\byou control\\b','i'),
+    new RegExp('\\b(?:return|copy|untap|tap) target '+object+'(?: spell)? you control\\b','i'),
+    new RegExp('\\byou (?:cast|sacrifice|tap|untap) (?:an? |another |one or more |two |three |\\d+ )?(?:untapped |other |nontoken )?'+noun+'\\b','i'),
+    new RegExp('\\b'+noun+'[^,;:]*enters?[^,;:]*under your control\\b','i'),
+    new RegExp('\\bsearch your library for[^.]*\\b'+noun+'(?: cards?)?\\b','i'),
+    new RegExp('\\b(?:return|cast|play)[^,;:]*\\b'+object+' cards?[^,;:]*from your graveyard\\b','i'),
+    new RegExp('\\bsacrifice (?:an? |another |one or more |two |three |\\d+ )?'+noun+'\\s*:','i'),
+    new RegExp('\\b(?:tap|untap) (?:an? |another |one or more |two |three |\\d+ )?(?:untapped )?'+noun+' you control\\s*:','i'),
+    new RegExp('\\bas an additional cost[^.]*\\bsacrifice (?:an? |another )?'+noun+'\\b','i'),
+  ];
+  for(const clause of text.split(/[.\n]/)){
+    if(!new RegExp('\\b'+noun+'\\b','i').test(clause))continue;
+    // Match an owned subject/cost independently of the later effect: a
+    // sacrifice outlet can still be useful when its payoff removes a target.
+    if(own.some(re=>re.test(clause)))evidence.push({kind:'own-object',text:clause.trim()});
+    else if(new RegExp('\\b(?:you )?create\\b[^.]*\\b'+noun+'\\b[^.]*\\btokens?\\b','i').test(clause)&&!/(?:opponent|its controller|their controller|each player|target player)[^.]*\bcreate|under (?:an? opponent|their|its controller)'?s? control/i.test(clause))evidence.push({kind:'create',text:clause.trim()});
+  }
+  if(new RegExp('\\bexile (?:one |two |three |\\d+ )?target (?:'+object+'|'+noun+'(?:,? (?:and/or |and |or )?(?:artifacts?|creatures?|enchantments?|lands?|permanents?))*) you control(?:[^.]*\\.[^.]*|,? then )return (?:it|that card|those cards) to the battlefield','i').test(text))evidence.push({kind:'own-return',text:'Owned-object exile and return'});
+  return {status:evidence.length?'supported':new RegExp('\\b'+noun+'\\b','i').test(text)?'unknown':'not-mentioned',evidence};
 }
 // A type's appearance in a name, protection clause or removal target is not a
 // tribal payoff. Return evidence for supported subjects and owned token makers.
@@ -70,12 +103,15 @@ export function commanderTheme(c) {
   // Paying a sacrifice cost alone does not establish a graveyard payoff.
   // "A Desert enters" or "Desert lands from your graveyard" is a land-subtype
   // prerequisite (mtg-land-requirements.js), not a generic landfall or graveyard plan.
-  const generic=namedEffectText(c).split(/[.\n]/).filter(clause=>!LAND_SUBTYPE_WORD.test(clause)).join(".");
+  // A self-death value trigger alone does not request a whole graveyard shell;
+  // explicit recursion/mill and other-creature death payoffs remain evidence.
+  const generic=namedEffectText(c).split(/[.\n]/).filter(clause=>!LAND_SUBTYPE_WORD.test(clause)&&(!/\bwhen(?:ever)? (?:this card|this creature|this permanent) dies\b/i.test(clause)||/\bgraveyard\b|\bmill\b/i.test(clause))).join(".");
   if (!/graveyard|dies|\bmill\b|(?:when|whenever)[^.]*sacrific/i.test(generic)) {
     const index=inferred.indexOf("Graveyard"); if(index>=0) inferred.splice(index,1);
   }
   if(inferred.includes("Lifegain")&&!themeSupport(c,{roles:["Lifegain"]}).length)inferred.splice(inferred.indexOf("Lifegain"),1);
   if(inferred.includes("Landfall")&&!/landfall|land .*enters|lands? .*graveyard/i.test(generic))inferred.splice(inferred.indexOf("Landfall"),1);
+  if(inferred.includes('Artifacts')&&!objectThemeEvidence(c,'artifact').evidence.some(e=>e.kind!=='card'))inferred.splice(inferred.indexOf('Artifacts'),1);
   if (tribes.includes("Dragon")) inferred.push("Dragons");
   if (/\+1\/\+1 counters?|proliferate|put[^.]*counter on each/i.test(text)) inferred.push("Counters");
   const tokenKinds = [
@@ -144,11 +180,11 @@ export function themeSupport(c, theme) {
   const tests = {
     Graveyard:/graveyard|dies|mill|sacrifice/i,
     Spells:/instant|sorcery|magecraft|prowess/i,
-    Artifacts:/artifact/i,
     Landfall:/landfall|land enters|lands? you control/i,
     Dragons:/dragon/i,
   };
   const effects=mtgEffectProfile(c);
+  if(theme.roles.includes('Artifacts')&&objectThemeEvidence(c,'artifact').evidence.length)out.push('Artifacts support');
   if(theme.roles.includes('Lifegain')&&[...effects.provides,...effects.needs].some(e=>e.tag==='lifegain'))out.push('Lifegain support');
   if(theme.roles.includes('Lifelink')&&effects.provides.some(e=>e.tag==='lifelink'))out.push('Lifelink support');
   for (const role of theme.roles) if (tests[role]?.test(text+" "+types)) out.push(role+" support");

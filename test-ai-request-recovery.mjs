@@ -51,6 +51,58 @@ const zombieDraft=await prepareMtgDeck(zombieArgs,outage);assert.equal(zombieDra
 const expensiveZombie={...zombieLeader,prices:{usd:'100'}},cheapZombie={...zombieLeader,id:'cheaper-zombie-print',prices:{usd:'5'}};
 const pricedZombie=await prepareMtgDeck({...zombieArgs,budget:50},{...outage,meta:n=>n===zombieLeader.name?expensiveZombie:null,resolve:async n=>n===zombieLeader.name?expensiveZombie:null,api:async()=>({data:[cheapZombie]})});assert.equal(pricedZombie.result.commander,zombieLeader.name,'verified affordable search printing must win over expensive same-name suggestion');assert.equal(pricedZombie.draft.referencePrices[cardKey(zombieLeader.name)],5);
 const unavailableZombie=await prepareMtgDeck({...zombieArgs,candidate_cards:[]},outage);assert.match(unavailableZombie.note,/card search could not finish/);
+
+// Real Oracle mechanics, synthetic identity/prices. The official release notes
+// distinguish Yuriko's Commander variant and Satoru's hand-only grant:
+// https://magic.wizards.com/en/news/feature/final-fantasy-release-notes
+// https://magic.wizards.com/en/news/feature/kamigawa-neon-dynasty-release-notes-2022-02-09
+const ninjaLeaders=[
+ {...structuredClone(SAI),id:'ninja-yuriko',oracle_id:'ninja-yuriko',name:"Yuriko, the Tiger's Shadow",type_line:'Legendary Creature — Human Ninja',mana_cost:'{1}{U}{B}',color_identity:['U','B'],colors:['U','B'],keywords:['Commander ninjutsu'],oracle_text:'Commander ninjutsu {U}{B}'},
+ {...structuredClone(SAI),id:'ninja-satoru',oracle_id:'ninja-satoru',name:'Satoru Umezawa',type_line:'Legendary Creature — Human Ninja',mana_cost:'{1}{U}{B}',color_identity:['U','B'],colors:['U','B'],keywords:['Ninjutsu'],oracle_text:'Each creature card in your hand has ninjutsu {2}{U}{B}.'},
+];
+const ninjaArgs={...args,format:'Commander',style:'ninjutsu',budget:0,seed:'',commander:'',colors:['U','B'],candidate_cards:[]};
+function ninjaContext(cards=[],{status=404,searchCards=null}={}){
+ const catalog=Object.fromEntries(cards.map(c=>[cardKey(c.name),c])),queries=[];
+ const x={S:{state:{collection:[],decks:[]},catalog,ui:{}},T:{game:()=> 'mtg'},meta:n=>catalog[cardKey(n)],resolve:async n=>catalog[cardKey(n)],inv:()=>({owned:0,available:0}),api:async path=>{const q=new URL(path,'https://fixture.invalid').searchParams.get('q')||'';queries.push(q);if(searchCards!==null)return {data:searchCards};throw Object.assign(Error(status===404?'No matches':'Synthetic service outage'),{status});}};
+ return {x,queries};
+}
+for(const leader of ninjaLeaders){
+ for(const status of [404,503]){
+  const ctx=ninjaContext([leader],{status}),r=await prepareMtgDeck({...ninjaArgs,candidate_cards:[leader.name]},ctx.x);
+  assert.equal(r.result.commander,leader.name);assert.equal(r.result.ready,false,'one verified leader is not a complete Ninjas deck');
+  assert.equal(r.result.budget,'no limit');assert.equal(r.result.format,'Commander');
+  assert.match(ctx.queries[0],/keyword:"ninjutsu" or keyword:"commander ninjutsu" or o:"ninjutsu"/);
+  assert.equal(r.result.warnings.some(w=>w.startsWith('Some card lookups')),status===503,'valid no-results and actual outage remain distinct');
+  assert.equal(ctx.x.S.state.decks.length,0);assert.equal(ctx.x.S.state.collection.length,0);
+ }
+ const cached=ninjaContext([leader],{searchCards:[]}),cachedDraft=await prepareMtgDeck(ninjaArgs,cached.x);
+ assert.equal(cachedDraft.result.commander,leader.name,'an empty successful search can use verified same-theme cached cards');
+ const named=ninjaContext([leader],{status:503}),namedDraft=await prepareMtgDeck({...ninjaArgs,commander:leader.name},named.x);
+ assert.equal(namedDraft.result.commander,leader.name);assert.equal(namedDraft.result.seed,leader.name);
+ assert.equal(named.queries.some(q=>q.includes('is:commander')),false,'a named verified commander must not restart automatic leader selection');
+}
+const noNinjas=ninjaContext(),noMatch=await prepareMtgDeck(ninjaArgs,noNinjas.x);
+assert.match(noMatch.note,/could not find a verified/);assert.doesNotMatch(noMatch.note,/card search could not finish/);
+const offlineNinjas=ninjaContext([],{status:503}),noService=await prepareMtgDeck(ninjaArgs,offlineNinjas.x);
+assert.match(noService.note,/card search could not finish/);
+const misleadingNinja={...ninjaLeaders[0],id:'unrelated-mention',name:'Ninjutsu target fixture',oracle_text:'Destroy target creature with ninjutsu.'};
+const irrelevant=ninjaContext([],{searchCards:[misleadingNinja]}),rejected=await prepareMtgDeck(ninjaArgs,irrelevant.x);
+assert.equal(rejected.requiresChoice,true);assert.equal(rejected.result,undefined,'oracle mention alone cannot become a ninjutsu commander');
+const thopter={...structuredClone(SAI),id:'fixture-thopter',name:'Ornithopter',type_line:'Artifact Creature — Thopter',mana_cost:'{0}',cmc:0,color_identity:[],colors:[],oracle_text:'Flying',keywords:['Flying']};
+const pairing=ninjaContext([ninjaLeaders[0],thopter],{status:503}),paired=await prepareMtgDeck({...ninjaArgs,seed:thopter.name,commander:ninjaLeaders[0].name},pairing.x);
+assert.equal(paired.result.seed,thopter.name);assert.equal(paired.result.commander,ninjaLeaders[0].name);
+const notCommander=await prepareMtgDeck({...ninjaArgs,format:'Modern',commander:ninjaLeaders[0].name},pairing.x);
+assert.equal(notCommander.requiresChoice,true);assert.match(notCommander.note,/does not use a commander slot/);
+// The actual budget continuation retains this theme/format and uses the same
+// app tool without another provider call or inventing a complete list.
+let ninjaChoice=null,ninjaProviderCalls=0;const continuationCtx=ninjaContext([ninjaLeaders[0]],{status:503}),ninjaTools=makeAskTools(continuationCtx.x);
+const ninjaBudget=await runAskLoop({game:'mtg',items:[u('Build an affordable blue/black Ninjutsu Commander deck')],onBuildContext:v=>{ninjaChoice=v;},tools:ninjaTools,fetcher:async()=>{ninjaProviderCalls++;return Response.json({calls:[call({...ninjaArgs,candidate_cards:[ninjaLeaders[0].name]})]});}});
+assert(ninjaBudget.choices.some(c=>c.id==='budget:0'));assert.match(ninjaBudget.text,/What spending limit/);
+const ninjaResume=await resumeBuildChoice({choice:'budget:0',context:ninjaChoice,onBuildContext:v=>{ninjaChoice=v;},tools:ninjaTools});
+assert.equal(ninjaProviderCalls,1);assert.equal(ninjaChoice.args.budget,0);assert.equal(ninjaChoice.args.format,'Commander');assert.match(ninjaChoice.args.style,/ninjutsu/i);
+assert.match(ninjaResume.text,/Yuriko/);assert.doesNotMatch(ninjaResume.text,/cannot verify a Commander build-around/);
+assert.equal(continuationCtx.x.S.state.decks.length,0);assert.equal(continuationCtx.x.S.state.collection.length,0);
+console.log('PASS: ninjutsu variants/hand grants recover exact legal leaders; no-match/outage differ; explicit commander/seed, unlimited budget, app continuation and no-autosave are retained without claiming deck completeness.');
 console.log('PASS: actual AI seed discovery searches current format/color legality without literal subjective adjectives; real Goblin mechanics remain in the search.');
 
 for(const prompt of ['can you make a red deck using a goblin Commander','Build me a mono-red deck for $50',"make me a mono red deck it's easy"]){

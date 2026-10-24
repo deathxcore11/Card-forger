@@ -6,6 +6,7 @@ import {loadMagicPrintingPage,mergeMagicCards} from './catalog-tools.js';
 import {createPrintingPicker} from './printing-picker.js';
 import {S as store,blank} from './store.js';
 import {cardSheet} from './views.js';
+import {syncDeckViewers} from './deck-viewer.js';
 const source=fs.readFileSync('app.js','utf8');
 const card=(id,extra={})=>({id,name:'Same Magic Name',oracle_id:'oracle-a',set:'fdn',set_name:'Foundations',collector_number:id,released_at:'2024-11-15',finishes:['nonfoil','foil'],prices:{usd:null,usd_foil:null},full:true,games:['paper'],...extra});
 let requested=[];
@@ -71,7 +72,7 @@ const events=new Map(),closeEvents=[],classes=new Set();let returnedFocus=0,aban
 const opener={isConnected:true,focus(){returnedFocus++;}};
 const dialog={open:false,dataset:{},showModal(){this.open=true;},close(){this.open=false;closeEvents.push(()=>events.get('close')?.());},addEventListener:(type,fn)=>events.set(type,fn)};
 const sheetBody={dataset:{},innerHTML:'',scrollTop:0,offsetWidth:0,classList:{add(){},remove(){}},querySelector:()=>null,querySelectorAll:()=>[],contains:()=>false,addEventListener(){}};
-const life={S:{ui:{sheetCtx:null}},A:{},T:{game:()=> 'ptcg',cancelProvenBuild:()=>{retiredBuilds++;}},$:id=>id==='#sheet'?dialog:sheetBody,document:{activeElement:opener,documentElement:{classList:{add:x=>classes.add(x),remove:x=>classes.delete(x)}},querySelector:()=>null},window:{scrollY:0},location:{hash:'#decks'},BROWSE_TYPES,SheetHistory,sheetKey,captureDetailState,restoreDetailState,sheetTrail:new SheetHistory(),restoringSheet:false,pendingRoute:null,binderDragCleanup:()=>cleanupCount++,lastSheetStep:'',sheetReturn:null,sheetScrollWired:false,detailContextIdentity:()=>'',dismissRuleHint(){},dismissRulesGuide(){},sheetScrolled(){},refreshConditionPrice(){},wireSheetBack(){},attachBinderDrag(){},printingPicker:{abandon(){abandons++;}}};
+const life={syncDeckViewers,askNavigation:null,S:{ui:{sheetCtx:null}},A:{},T:{game:()=> 'ptcg',cancelProvenBuild:()=>{retiredBuilds++;}},$:id=>id==='#sheet'?dialog:sheetBody,document:{activeElement:opener,documentElement:{classList:{add:x=>classes.add(x),remove:x=>classes.delete(x)}},querySelector:()=>null},window:{scrollY:0},location:{hash:'#decks'},BROWSE_TYPES,SheetHistory,sheetKey,captureDetailState,restoreDetailState,sheetTrail:new SheetHistory(),restoringSheet:false,pendingRoute:null,binderDragCleanup:()=>cleanupCount++,lastSheetStep:'',sheetReturn:null,sheetScrollWired:false,detailContextIdentity:()=>'',dismissRuleHint(){},dismissRulesGuide(){},sheetScrolled(){},refreshConditionPrice(){},wireSheetBack(){},attachBinderDrag(){},printingPicker:{abandon(){abandons++;}}};
 vm.createContext(life);
 const segment=(from,to)=>source.slice(source.indexOf(from),source.indexOf(to,source.indexOf(from)));
 vm.runInContext(segment('function sheetSnapshot(){','\nfunction restoreSheet(')+'\n'+segment('function openSheet(','\n// Emblems')+'\n'+segment('function closeSheet(','\nfunction refreshSheet()')+'\n'+segment('function restoreSheetHistory()','\nconst printingPicker')+'\n'+segment('$("#sheet").addEventListener("close",','\nconst busy ='),life);

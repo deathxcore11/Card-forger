@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {chooseDeck} from './deck-construction.js';
+const request={game:'mtg',format:'Standard',formatName:'Standard',goal:'strongest',budget:50,budgetMode:'cap',budgetBasis:'total',budgetBoundary:'inclusive',allowance:0,preferOwned:false,theme:''};
+const candidate=(name,score,reference=false)=>({deck:{name,constructionBasis:reference?'reference':'heuristic',referenceQualifiedForBuild:reference,referenceAdaptation:reference?{sameList:true,modeMismatch:false}:null},rows:[],power:{score,readiness:{provisional:false}},check:{complete:true,legal:true,issues:[]},plan:{issues:[],notes:[],theme:{status:'not-requested'},finalSupport:{status:'supported-conditional',requestSatisfied:true},setupBurden:0},pricing:{estimate:10,subtotal:10,copies:60,ownedCopies:0,unpriced:0}});
+const ref=candidate('Qualified exact source',10,true),high=candidate('High heuristic',100000);
+assert.equal(chooseDeck([high,ref],request).deck.name,ref.deck.name,'Eligible exact current source is a prior, not beaten by arbitrary high heuristic on equal support');
+for(const change of [d=>d.deck.referenceAdaptation.sameList=false,d=>d.deck.referenceQualifiedForBuild=false,d=>d.deck.referenceAdaptation.modeMismatch=true,d=>d.plan.issues.push('Known closure failure'),d=>d.pricing.estimate=100]){const altered=structuredClone(ref);change(altered);assert.equal(chooseDeck([high,altered],request).deck.name,high.deck.name);}
+for(const preferences of [{easy:true},{theme:'Artifacts'},{goal:'fun'}])assert.equal(chooseDeck([high,ref],{...request,...preferences}).deck.name,high.deck.name,'Source prior cannot override custom intent');
+const owned=structuredClone(high);owned.pricing.ownedCopies=60;assert.equal(chooseDeck([owned,ref],{...request,preferOwned:true}).deck.name,owned.deck.name);
+const unknownRef=structuredClone(ref),unknownHigh=structuredClone(high);for(const d of [unknownRef,unknownHigh])d.plan.finalSupport={status:'unverified',requestSatisfied:false};const unknown=chooseDeck([unknownHigh,unknownRef],request);assert.equal(unknown.deck.name,ref.deck.name);assert.equal(unknown.requestSatisfied,false,'Source prior does not certify an unknown closing plan');
+console.log('PASS: exact qualified reference prior respects support, caps, mode, adaptation, explicit preferences and ownership; unknown source plans remain unverified.');

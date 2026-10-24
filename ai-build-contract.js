@@ -45,13 +45,48 @@ const GENERIC_BUILD_WORDS=new Set('can could would will you please build make cr
 const genericBuildLanguage=request=>!/["“”]/.test(request)&&(canonicalMechanics(request).match(/[\p{L}]+/gu)||[]).every(w=>GENERIC_BUILD_WORDS.has(w.toLowerCase())||new RegExp('^(?:'+THEMES.source.replace(/\\b/g,'')+')$','i').test(w));
 const genericBuildRequest=request=>isDeckBuildRequest(request)&&/\b(?:white|blue|black|red|green|colou?rless)\b/i.test(request)&&genericBuildLanguage(request);
 
+// A pasted reference guide is not a request for every subtype/keyword that
+// happens to describe its suggested cards or alternative commanders. Recognize
+// only a conservative Markdown guide shape; unfamiliar/ambiguous prose keeps
+// the ordinary path. Scope themes, not the original request or exact hard
+// constraints, to the introductory plan and clearly user-directed additions.
+function guideThemeRequest(request) {
+ const lines=request.split(/\r?\n/),heading=line=>line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$/);
+ const headings=lines.map(heading).filter(Boolean);
+ const referenceHeading=/^(?:choose (?:your|a|the) commander|commander (?:options|choices|candidates)|(?:core )?(?:deck )?blueprint|(?:deckbuilding|deck building|strategy) guide|featured options|(?:recommended|suggested|example) (?:cards|commanders|decklists|decks))\b/i;
+ const examples=lines.filter(line=>/^\s*[-*+]\s+\*\*[^*\n]{2,120}\*\*(?:\s*[:(—-]|\s*&|\s*$)/.test(line));
+ if(headings.length<2||examples.length<3||!headings.some(h=>referenceHeading.test(h[1].replace(/\*\*/g,''))))return request;
+ const requirements=/^(?:(?:my|our|user|build|deck|hard|explicit|additional|extra)\s+){0,2}(?:requirements?|constraints?|preferences?|request)(?:\s*(?:&|and)\s*(?:requirements?|constraints?|preferences?))?(?:\s*[:—-].*)?$/i;
+ const firstHeading=lines.findIndex(line=>heading(line)),title=headings[0][1].replace(/\*\*/g,'');
+ // A leading guide title and its introductory paragraph are still the plan.
+ // Only skip that first heading boundary, never a reference or requirements
+ // section; later body headings do not gain theme authority this way.
+ const leadingTitle=lines.slice(0,firstHeading).every(line=>!line.trim())&&!referenceHeading.test(title)&&!requirements.test(title);
+ const bodyStart=leadingTitle?lines.findIndex((line,i)=>i>firstHeading&&heading(line)):firstHeading;
+ const selected=lines.slice(0,bodyStart);
+ const directed=/^(?:(?:please\s+)?(?:build|make|create)\b|(?:i|we)\s+(?:want|need|require|prefer|would like|don't want|do not want)\b|(?:must|only|strictly)\b|use\s+only\b|(?:no|without|avoid|exclude|don't use|do not use)\b)/i;
+ let constraintLevel=null;
+ for(const line of lines.slice(bodyStart)){
+  const h=heading(line);
+  if(h){
+   const level=line.match(/^\s*(#+)/)[1].length;
+   if(constraintLevel!==null&&level<=constraintLevel)constraintLevel=null;
+   if(requirements.test(h[1].replace(/\*\*/g,'')))constraintLevel=level;
+   continue;
+  }
+  const plain=line.replace(/^\s*[-*+]\s+(?:\[[ xX]\]\s*)?/,'').replace(/\*\*/g,'').replace(/[’‘]/g,"'").trim();
+  if(constraintLevel!==null||directed.test(plain))selected.push(line);
+ }
+ return selected.join('\n');
+}
+
 export function applyUserBuildIntent(input,contract={}) {
  if(!input||typeof input!=='object'||Array.isArray(input))return input;
- const args={budgetMode:'cap',creatureTypesOnly:[],excludedSubtypes:[],...input};
+ const args={budgetMode:'cap',matchMode:'unspecified',creatureTypesOnly:[],excludedSubtypes:[],...input};
  for(const field of ['creatureTypesOnly','excludedSubtypes'])if(contract[field])args[field]=[...contract[field]];
  // Copy trusted, retained player selections rather than paying the model to
  // repeat them. Budget ambiguity and missing-amount choices remain validation.
- for(const field of ['game','format','goal','seed','commander','budget','budget_basis','budgetMode','budgetBoundary'])if(contract[field]!==undefined)args[field]=contract[field];
+ for(const field of ['game','format','matchMode','goal','seed','commander','budget','budget_basis','budgetMode','budgetBoundary'])if(contract[field]!==undefined)args[field]=contract[field];
  for(const field of LOOP_FIELDS)if(Object.hasOwn(contract,field))args[field]=contract[field];
  if(contract.colors?.length)args.colors=[...contract.colors];
  if(typeof args.style==='string'&&contract.removedMechanics?.length)args.style=stripRemovedMechanics(args.style,contract.removedMechanics);
@@ -88,6 +123,8 @@ export function readBuildContract(items=[],retained=null,options={}) {
  const unlimitedBudget=/\b(?:unlimited\s+(?:budget|spending)|(?:budget|spending)(?:\s+(?:is|of))?\s*[:=]?\s*unlimited)\b/i.test(request);
  const formats=(options.formats?.[out.game||prior?.game||options.game]||FORMATS).filter(f=>f.name!=='Unlimited'||!unlimitedBudget).filter(f=>{const re=new RegExp('\\b'+f.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?=$|\\W)','gi');return [...unquoted.matchAll(re)].some(m=>! /\b(?:not|without|rather than)(?: an?)?\s*$/i.test(unquoted.slice(Math.max(0,m.index-24),m.index)));}).sort((a,b)=>b.name.length-a.name.length);
  if(formats.length)out.format=formats[0].name;else if(/\b(?:edh|cedh)\b/i.test(request))out.format='Commander';
+ const modes=[...unquoted.matchAll(/\b(?:bo[ -]?([13])|best[ -]of[ -](one|three|1|3))\b/gi)].filter(m=>!/\b(?:not|without|rather than)\s*$/i.test(unquoted.slice(Math.max(0,m.index-24),m.index)));
+ if(modes.length){const m=modes.at(-1);out.matchMode=['1','one'].includes((m[1]||m[2]).toLowerCase())?'bo1':'bo3';}
  // Only unambiguous whole-deck/purchase amounts are a contract. A per-card cap
  // must not accidentally become the entire deck budget.
  const moneyNumber='(?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d{1,2})?';
@@ -133,10 +170,12 @@ export function readBuildContract(items=[],retained=null,options={}) {
  const comboText=request.replace(/["“][^"”]*["”]/g,'');
  if(/\b(?:no|without|avoid|don't (?:use|include|want|allow|permit)|do not (?:use|include|want|allow|permit))\s+(?:(?:any|all)\s+)?infinite(?:[ -](?:combos?|loops?))?\b/i.test(comboText))out.avoid_infinite=true;
  else if(/\b(?:(?:allow|permit)\s+infinite(?: combos?| loops?)?|infinite (?:combos?|loops?) (?:are )?(?:fine|ok(?:ay)?|allowed)|(?:remove|drop|relax)\s+(?:the |that )?(?:no[ -])?infinite(?:[ -](?:combo|loop)s?)?(?: restriction)?)\b/i.test(comboText)&&! /\b(?:don't|do not|not)\s+allow\b/i.test(comboText))out.avoid_infinite=false;
- // Preserve common explicit themes even if the proposed AI style drops them.
- const positive=request.replace(/["“][^"”]*["”]/g,'').replace(/\b(?:build around|around|include|must have|must use|featuring|led by|commander is)\s+([^,;.!]+?)(?=\s+(?:with|under|for|budget)\b|[,;.!]|$)/gi,(full,named)=>genericBuildLanguage(named)?full:' ').replace(/\b(?:no|without|avoid)\s+[^,.;]*(?=[,.;]|$)/gi,'');
+ // Preserve explicit themes, while keeping a recognized guide's named
+ // examples and alternative packages from becoming mandatory AND themes.
+ const themeRequest=guideThemeRequest(request);
+ const positive=themeRequest.replace(/["“][^"”]*["”]/g,'').replace(/\b(?:build around|around|include|must have|must use|featuring|led by|commander is)\s+([^,;.!]+?)(?=\s+(?:with|under|for|budget)\b|[,;.!]|$)/gi,(full,named)=>genericBuildLanguage(named)?full:' ').replace(/\b(?:no|without|avoid)\s+[^,.;]*(?=[,.;]|$)/gi,'');
  out.themes=[...new Set((positive.match(THEMES)||[]).map(themeKey))];
- const mechanicChange=mechanicChanges(request);
+ const mechanicChange=mechanicChanges(themeRequest);
  out.themes=[...new Set([...out.themes.filter(t=>!mechanicIds.has(t)),...mechanicChange.positive])];
  const removedMechanics=new Set([...(prior?.removedMechanics||[]),...mechanicChange.removed]);
  for(const id of mechanicChange.positive)removedMechanics.delete(id);
@@ -176,7 +215,7 @@ export function readBuildContract(items=[],retained=null,options={}) {
  if(merged.budget!==undefined)delete merged.budgetUnspecified;
  if(out.budget!==undefined&&(amounts.length||uncapped)&&!out.ambiguousBudget){delete merged.ambiguousBudget;if(!out.zeroBudget)delete merged.zeroBudget;}
  if(merged.budget_basis==='owned')delete merged.zeroBudget;
- for(const field of ['game','format','goal','commander','budget','budget_basis','budgetMode','budgetBoundary','avoid_infinite','required_cards','excluded_cards','colors','themes','creatureTypesOnly','excludedSubtypes'])if(out[field]!==undefined&&(!Array.isArray(out[field])||out[field].length)&&!(field==='budget'&&!amounts.length&&!uncapped))merged.provenance[field]={source:'user',turn:latestIndex,text:request.slice(0,600)};
+ for(const field of ['game','format','matchMode','goal','commander','budget','budget_basis','budgetMode','budgetBoundary','avoid_infinite','required_cards','excluded_cards','colors','themes','creatureTypesOnly','excludedSubtypes'])if(out[field]!==undefined&&(!Array.isArray(out[field])||out[field].length)&&!(field==='budget'&&!amounts.length&&!uncapped))merged.provenance[field]={source:'user',turn:latestIndex,text:request.slice(0,600)};
  if(relaxTypes)merged.provenance.creatureTypesOnly={source:'user',turn:latestIndex,text:request.slice(0,600)};
  if(anyCreatures)merged.provenance.excludedSubtypes={source:'user',turn:latestIndex,text:request.slice(0,600)};
  if(loopSpecified)for(const field of LOOP_FIELDS)merged.provenance[field]={source:'user',turn:latestIndex,text:request.slice(0,600)};
@@ -206,6 +245,7 @@ export function validateBuildProposal(input,contract={}) {
   args[field]=text(args[field]);
  }
  if(args.budget!==undefined&&(typeof args.budget!=='number'||!Number.isFinite(args.budget)||args.budget<0||args.budget>10000))errors.push(violations('invalid_budget','budget','Use a budget from 0 to 10000 USD. Zero means unlimited unless the budget basis is owned-only.'));
+ args.matchMode=args.matchMode??'unspecified';if(!['unspecified','bo1','bo3'].includes(args.matchMode))errors.push(violations('invalid_match_mode','matchMode','Use unspecified, bo1, or bo3; do not infer a match mode.'));
  args.budget=args.budget??0;args.budget_basis=args.budget_basis||'total';
  if(!['total','purchase','owned'].includes(args.budget_basis))errors.push(violations('invalid_basis','budget_basis','Use total, purchase, or owned as the budget basis.'));
  if(args.goal!==undefined&&!DECK_GOALS.includes(args.goal))errors.push(violations('invalid_goal','goal','Choose strongest, theme, fun, chaos, or weak.'));
@@ -230,7 +270,7 @@ export function validateBuildProposal(input,contract={}) {
  if(args.requireLoop!==null&&args.requireLoop!=='infinite-mana')errors.push(violations('invalid_loop','requireLoop','Only a reviewed infinite-mana requirement is supported.'));
  if(args.loopOutput!==null&&!['W','U','B','R','G','C','any-color'].includes(args.loopOutput))errors.push(violations('invalid_loop','loopOutput','Choose a known mana output.'));
  if(args.unsupportedLoop!==null&&(typeof args.unsupportedLoop!=='string'||args.unsupportedLoop.length>1000))errors.push(violations('invalid_loop','unsupportedLoop','Use the app’s bounded loop clarification.'));
- for(const field of ['game','format','goal','commander','seed','budget','budget_basis','budgetMode','style'])if(contract[field]!==undefined&&!same(args[field],contract[field]))errors.push(violations('changed_constraint',field,`Keep the requested ${field}: ${contract[field]}.`));
+ for(const field of ['game','format','matchMode','goal','commander','seed','budget','budget_basis','budgetMode','style'])if(contract[field]!==undefined&&!same(args[field],contract[field]))errors.push(violations('changed_constraint',field,`Keep the requested ${field}: ${contract[field]}.`));
  if(contract.avoid_infinite&&!args.avoid_infinite)errors.push(violations('changed_constraint','avoid_infinite','Keep the requested no-infinite-combos constraint.'));
  if(contract.colors?.length&&[...args.colors].sort().join('')!==[...contract.colors].sort().join(''))errors.push(violations('changed_constraint','colors',`Keep the requested colors: ${contract.colors.join(', ')}.`));
  for(const field of ['required_cards','excluded_cards'])for(const n of contract[field]||[])if(!(field==='required_cards'&&[args.seed,args.commander].some(c=>same(c,n)))&&!args[field].some(c=>same(c,n)))errors.push(violations('changed_constraint',field,`Keep ${n} in ${field}.`));
@@ -244,7 +284,7 @@ export function validateBuildProposal(input,contract={}) {
 export function lockBuildContract(args,original={}) {
  // Once a valid proposal has been accepted, the only revision input is a small
  // list of candidate identities. It cannot buy success by relaxing constraints.
- return {...original,...Object.fromEntries(['game','format','goal','style','seed','commander','budget','budget_basis','budgetMode','budgetBoundary','avoid_infinite',...LOOP_FIELDS].map(k=>[k,args[k]])),creatureTypesOnly:[...args.creatureTypesOnly],excludedSubtypes:[...args.excludedSubtypes],required_cards:[...args.required_cards],excluded_cards:[...args.excluded_cards],colors:[...args.colors]};
+ return {...original,...Object.fromEntries(['game','format','matchMode','goal','style','seed','commander','budget','budget_basis','budgetMode','budgetBoundary','avoid_infinite',...LOOP_FIELDS].map(k=>[k,args[k]])),creatureTypesOnly:[...args.creatureTypesOnly],excludedSubtypes:[...args.excludedSubtypes],required_cards:[...args.required_cards],excluded_cards:[...args.excluded_cards],colors:[...args.colors]};
 }
 export function proposalFeedback(check,{terminal=false}={}) {
  const budgetChoice=check.violations.some(v=>v.code==='unrequested_budget');

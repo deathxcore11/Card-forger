@@ -31,6 +31,15 @@ export function commanderCardConditions(commander){
  }
  return out;
 }
+// A density tally does not establish a conditional trigger's board state or
+// sequence. Expose unmapped requirements without declaring the deck illegal.
+export function commanderEngineCoverage(commander,{hasPlan=false}={}){
+ if(!commander)return {status:'not-applicable',requirements:[],notes:[]};
+ const text=rulesText(commander),requirements=text.split(/[.\n]/).map(s=>s.trim()).filter(s=>/\b(?:when|whenever)\b[^.]*\bif\b/i.test(s));
+ if(requirements.length)return {status:'unverified',requirements,notes:requirements.map(s=>'Unverified commander trigger requirement: '+s+'. Card-type or keyword density does not prove its timing, board state, or sequence.')};
+ if(!hasPlan)return {status:'unverified',requirements:[],notes:['The commander has no mapped build-around plan in this check. Its utility may still be useful; this is unverified strategy coverage, not an illegal deck or proof of no synergy.']};
+ return {status:'partial',requirements:[],notes:['Only the listed commander support conditions are checked; this is not complete engine or win-condition validation.']};
+}
 export function inspectCommanderCardConditions(rows,{commander='',atLeastOne}={}){
  const main=rows.filter(r=>!['side','extra'].includes(r.zone)&&r.qty>0),lead=main.find(r=>cardKey(r.name||r.card?.name)===cardKey(commander))?.card,
   library=main.filter(r=>cardKey(r.name||r.card?.name)!==cardKey(commander)),N=quantity(library),groups=[],notes=[],issues=[];

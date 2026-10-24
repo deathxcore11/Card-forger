@@ -1,13 +1,13 @@
 // One bounded app-data operation, not one AI call per card. Recommendations stay
 // unsaved until the player reviews the exact list and uses the normal save action.
-import { buildDeck, themeQuery, themeQueries, fitsColors, requestedIntent, inspectMtgTheme } from './builder.js';
+import { buildDeck, themeQuery, themeQueries, fitsColors, requestedIntent, inspectMtgTheme, scoreCard } from './builder.js';
 import { cardKey, cardPrice, sumQty, validateDeck } from './core.js';
 import { formatOf, canLead, legalityIn, verifyLeader } from './formats.js';
 import { normalizeDeckGoal, goalDescription } from './ai-deck-goal.js';
 import { commanderTheme, tribeEvidence, tribalSupport, themeSupport, fitsTypeRestrictions, readCreatureTypeRestrictions, CREATURE_THEMES } from './planner.js';
 import { mtgAbilityEvidence } from './mtg-effects.js';
 import { functionalIn } from './deck-safety.js';
-import { findCheapestPrinting } from './mtg-cheap.js';
+import { findCheapestPrinting, eligiblePrinting } from './mtg-cheap.js';
 import {readLoopIntent,manaLoopCandidates,inspectManaLoop} from './mtg-combo-packages.js';
 import {tribalDiscoveryQueries} from './deck-strategy-plan.js';
 import {requestedMechanics,mechanicDiscoveryQueries,mechanicCardMatches} from './deck-mechanic-plan.js';
@@ -25,8 +25,9 @@ export function deckPriceCoverage(cards,catalog,owned=()=>0,price=quote) {
  return {totalEstimate:unknown?null:money(total),pricedSubtotal:money(total),unpricedCopies:unknown,purchaseEstimate:purchaseUnknown?null:money(purchase),pricedPurchaseSubtotal:money(purchase),unpricedPurchaseCopies:purchaseUnknown,ownedCopies,priceBasis:'Available app USD reference quotes, including basic lands and selected printings; lower-price checks cover bounded Scryfall results, not the whole market. Excludes tax and shipping; not a checkout quote.'};
 }
 export async function prepareMtgDeck(args,x) {
+ const referencePriceSelections={},referenceCards={};
  const quote = c => {
-  const choice = x.S?.state?.priceChoices?.[cardKey(c?.name)], value = choice ? choice.price : typeof x.priceOf === 'function' ? x.priceOf(c?.name) : cardPrice(c);
+  const selected=referencePriceSelections[cardKey(c?.name)],choice = x.S?.state?.priceChoices?.[cardKey(c?.name)], value = choice ? choice.price : selected&&selected.printingId===c?.id&&selected.oracleId===c?.oracle_id&&c?.finishes?.includes(selected.finish)?selected.price: typeof x.priceOf === 'function' ? x.priceOf(c?.name) : cardPrice(c);
   return value !== null && value !== undefined && (typeof value !== 'string' || value.trim() !== '') && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : null;
  };
  const f=formatOf(args.format),budget=Number(args.budget)>0?Math.min(10000,Number(args.budget)):Infinity,basis=['purchase','owned'].includes(args.budget_basis)?args.budget_basis:'total',limit=basis==='owned'?0:budget,exclusive=args.budgetBoundary==='exclusive'&&budget!==Infinity;
@@ -53,7 +54,7 @@ export async function prepareMtgDeck(args,x) {
  const requiredNames=[...new Set((args.required_cards || []).map(clean))],excludedNames=[...new Set((args.excluded_cards || []).map(clean))];
  if(!f.commander&&leaderName)return {requiresChoice:true,note:`${f.name} does not use a commander slot. Choose Commander, or use that card as the build-around instead.`};
  const active=()=>args.current?.()!==false;
- const remember=c=>{if(c?.name){catalog[cardKey(c.name)]=c;x.cacheCard?.(c);}return c;};
+ const remember=input=>{const c=referenceCards[cardKey(input?.name)]||input;if(c?.name){catalog[cardKey(c.name)]=c;x.cacheCard?.(c);}return c;};
  const resolve=async name=>{if(!active())return null;try{return remember(x.meta?.(name)||await x.resolve(name,true));}catch{return null;}};
  let successfulSearches=0;
  const search=async(q,{pages=1}={})=>{
@@ -62,11 +63,36 @@ export async function prepareMtgDeck(args,x) {
    const params=new URLSearchParams({q:q+' prefer:usd-low',unique:'cards',order:f.commander?'edhrec':'cmc',...(page>1?{page:String(page)}:{})});
    const r=await x.api('/cards/search?'+params);if(!active())break;successfulSearches++;
    found.push(...(r?.data||[]).slice(0,175).map(remember));if(!r?.has_more)break;
-  }catch{warnings.push('Some card lookups were unavailable; this draft is limited to resolved and cached card data.');break;}
+  }catch(error){
+   // Scryfall represents a valid search with no matches as 404. That is not
+   // evidence of a transport outage, and verified cached candidates can help.
+   if(error?.status===404)break;
+   warnings.push('Some card lookups were unavailable; this draft is limited to resolved and cached card data.');break;
+  }
   return [...new Map(found.map(c=>[cardKey(c.name),c])).values()];
  };
  let seed=seedName?await resolve(seedName):null,lead=leaderName?await resolve(leaderName):null;
  if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
+ // Name-based build-arounds may have an unpriced default printing. Check one
+ // existing bounded paper-print page before treating that as no priced card.
+ // Explicit quote/printing choices and owned-only builds are never substituted.
+ if(basis!=='owned'&&!args.ownedOnly){
+  for(const original of [...new Map([seed,lead].filter(Boolean).map(c=>[cardKey(c.name),c])).values()]){
+   const locked=x.S?.state?.priceChoices?.[cardKey(original.name)]||args.printingId||args.seedPrintingId||args.commanderPrintingId||args.printingLocked||args.finish||args.language||args.printingLanguage||args.seedFinish||args.commanderFinish||args.lockedPrintings?.[cardKey(original.name)];
+   if(locked||!original.oracle_id||quote(original)!==null)continue;
+   try{const found=await findCheapestPrinting(original.name,{api:x.api,reference:original,format:f.legality});
+    if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
+    let selected=found.card,finish='nonfoil';
+    if(!selected&&original.finishes?.length===1&&original.finishes[0]==='foil'){
+     selected=(found.checkedPrintings||[]).filter(c=>eligiblePrinting(c,original.name,{reference:original,format:f.legality})&&c.finishes?.length===1&&c.finishes[0]==='foil'&&typeof c.prices?.usd_foil==='string'&&c.prices.usd_foil.trim()&&Number.isFinite(Number(c.prices.usd_foil))&&Number(c.prices.usd_foil)>=0).sort((a,b)=>Number(a.prices.usd_foil)-Number(b.prices.usd_foil)||a.id.localeCompare(b.id))[0];finish='foil';
+    }
+    if(selected?.id&&selected.oracle_id===original.oracle_id){
+     referencePriceSelections[cardKey(original.name)]={printingId:selected.id,oracleId:selected.oracle_id,finish,price:Number(selected.prices[finish==='foil'?'usd_foil':'usd']),quoteField:finish==='foil'?'usd_foil':'usd',provider:'Scryfall',retrievedAt:new Date().toISOString(),set:selected.set,collectorNumber:selected.collector_number,coverage:found.coverage};
+     referenceCards[cardKey(original.name)]=selected;remember(selected);if(seed&&cardKey(seed.name)===cardKey(original.name))seed=selected;if(lead&&cardKey(lead.name)===cardKey(original.name))lead=selected;warnings.push('Used a verified '+(finish==='foil'?'foil-only':'nonfoil')+' paper printing for '+original.name+' after its default estimate had no quote; this one-page check is not a market-wide lowest-price claim.');
+    }
+   }catch{if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};warnings.push('Could not recover a verified priced paper printing for '+original.name+'; its price remains unverified.');}
+  }
+ }
  const requiredCards=await batches(requiredNames,resolve),excludedCards=await batches(excludedNames,resolve);
  const suggested=await batches((args.candidate_cards || []).map(clean),resolve);
  if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
@@ -85,6 +111,9 @@ export async function prepareMtgDeck(args,x) {
  if(f.commander&&seed&&canLead(seed,f)&&!lead)lead=seed;
  if(f.commander&&lead){await verifyLeader(lead,f,x.api);if(!canLead(lead,f)||!isLegal(lead,f))return {requiresChoice:true,note:`${lead.name} cannot be used as a verified ${f.name} commander. Choose another commander.`};}
  if(f.commander&&seed&&lead&&!fitsColors(seed,lead.color_identity||[]))return {requiresChoice:true,note:`${seed.name} is outside ${lead.name}'s color identity. Choose a commander that can include it.`};
+ // A verified requested commander is already a valid build-around. An empty
+ // separate seed must not restart discovery and replace that explicit leader.
+ if(f.commander&&lead&&!seed)seed=lead;
  const colorWords={white:'w',blue:'u',black:'b',red:'r',green:'g'},cs=Object.keys(colorWords).filter(k=>new RegExp('\\b'+k+'\\b','i').test(style)).map(k=>colorWords[k]).join('');
  // Subjective playstyle words are preferences, not literal card-text filters.
  // Exact seed names and actual theme/mechanic words still use their own paths.
@@ -93,11 +122,15 @@ export async function prepareMtgDeck(args,x) {
  if(!seed||f.commander&&!lead){
   const leadQuery=f.commander?(f.id==='paupercommander'?'is:paupercommander':f.commander==='planeswalker'?'t:planeswalker':'is:commander'):'-t:land';
   const neededColors=[...new Set([seed,...requiredCards].filter(Boolean).flatMap(c=>c.color_identity || []))],identity=requestedColors.length?`id=${allowedColors.join('').toLowerCase()||'c'}`:cs?`id=${cs}`:neededColors.length?`id>=${neededColors.join('').toLowerCase()}`:'';
-  const choices=await search(`${fq} ${leadQuery} ${identity} ${theme}`,{pages:2});
+  const intent=requestedIntent(discoveryStyle),ninjutsu=intent.abilities.some(k=>k.toLowerCase()==='ninjutsu');
+  const leaderTheme=ninjutsu?theme.replaceAll('keyword:"ninjutsu"','(keyword:"ninjutsu" or keyword:"commander ninjutsu" or o:"ninjutsu")'):theme;
+  const found=await search(`${fq} ${leadQuery} ${identity} ${leaderTheme}`,{pages:2});
+  // Oracle discovery includes grants and variant keywords, so retain only
+  // positive capability evidence rather than removal/targeting mentions.
+  const choices=ninjutsu?found.filter(c=>mtgAbilityEvidence(c,'Ninjutsu').length):found;
   // Keep already-resolved suggestions available if the catalogue search misses
   // or fails. They must demonstrably fit the same requested theme and checks.
-  const intent=requestedIntent(discoveryStyle);
-  const fallback=[...suggested,...(!successfulSearches?Object.values(x.S?.catalog||{}):[])].filter(c=>c&&intent.other.length===0&&intent.tribes.every(t=>tribalSupport(c,t))&&intent.roles.every(r=>themeSupport(c,{roles:[r]}).length>0)&&intent.abilities.every(k=>mtgAbilityEvidence(c,k).length));
+  const fallback=[...suggested,...(!choices.length?Object.values(x.S?.catalog||{}):[])].filter(c=>c&&intent.other.length===0&&intent.tribes.every(t=>tribalSupport(c,t))&&intent.roles.every(r=>themeSupport(c,{roles:[r]}).length>0)&&intent.abilities.every(k=>mtgAbilityEvidence(c,k).length));
   const candidates=[...choices,...fallback.filter(c=>!choices.some(found=>cardKey(found.name)===cardKey(c.name)))];
   const loopRoutes=loopIntent.requireLoop?manaLoopCandidates({...args,...loopIntent},{excluded_cards:excludedNames}):null;
   const leaderCost=c=>basis!=='total'&&available(x,c.name)>0?0:quote(c);
@@ -105,7 +138,7 @@ export async function prepareMtgDeck(args,x) {
   // A requested plan needs an appropriate engine, not an arbitrary member of
   // the first page. These are bounded, explained tie-breaks, not a power score.
   const planFit=c=>intent.tribes.reduce((n,type)=>n+tribeEvidence(c,type).reduce((s,e)=>s+(e.kind==='payoff'?4:e.kind==='token'?2:1),0),0)+intent.roles.reduce((n,role)=>n+themeSupport(c,{roles:[role]}).length,0)+intent.abilities.reduce((n,ability)=>n+mtgAbilityEvidence(c,ability).length,0)+(mechanicCardMatches(c,intent.mechanics||[])?4:0);
-  if(goal==='strongest'||goal==='theme')usable.sort((a,b)=>planFit(b)-planFit(a)||(a.edhrec_rank||Infinity)-(b.edhrec_rank||Infinity)||a.name.localeCompare(b.name));
+  if(goal==='strongest'||goal==='theme')usable.sort((a,b)=>planFit(b)-planFit(a)||(f.commander?(a.edhrec_rank||Infinity)-(b.edhrec_rank||Infinity):0)||a.name.localeCompare(b.name));
   const chosen=usable[args.flow&&goal!=='strongest'&&goal!=='theme' ? Math.abs(Number(args.randomSeed)||0)%Math.min(usable.length,24) : 0];
   if(!chosen)return {requiresChoice:true,note:seed?`I found ${seed.name}, but no compatible priced commander in this search. Name a commander to use with it.`:warnings.some(w=>w.startsWith('Some card lookups'))?`The card search could not finish, so I cannot verify a ${f.name} build-around yet. Try again, or name a card to build around.`:`I could not find a verified ${f.name} build-around for that theme in this search. Name a card to build around.`,warnings:[...new Set(warnings)]};
   if(f.commander){lead=chosen;automaticLeader=true;leaderSupport=planFit(chosen);leaderCandidates=usable.length;if(f.id==='paupercommander'){lead.pdhCommander=true;remember(lead);}}else seed=chosen;
@@ -124,12 +157,18 @@ export async function prepareMtgDeck(args,x) {
  const requestedTribes=[...new Set([...requestedIntent(style).tribes,...(args.creatureTypesOnly||[]),...(lead?commanderTheme(lead).tribes:[])])];
  const focusedQueries=[...tribalDiscoveryQueries(requestedTribes,{limit:3}),...mechanicDiscoveryQueries(requestedMechanics(style),{limit:3})];
  const planQueries=[...new Set([...focusedQueries,...themeQueries(seed,style),...(lead&&cardKey(lead.name)!==cardKey(seed.name)?themeQueries(lead):[])])];
+ // Two bounded discovery lanes complement—not replace—the affordable pool.
+ // The six-mana window is a retrieval heuristic, not a legality restriction.
+ // Standard retains mana-value ordering; Commander popularity is not used as
+ // a Standard quality prior. Actual card/deck evaluators decide acceptance.
+ const alternativeQueries=[`${baseQ} -t:land (t:creature or t:planeswalker) cmc<=6 (o:draw or o:enters or o:whenever or keyword:haste or keyword:flying)`,`${baseQ} t:land -t:basic`];
+ const alternativeCards=[];
  const queries=[...planQueries.map(query=>`${baseQ} -t:land ${query}`),`${baseQ} -t:land usd<=0.5`,`${baseQ} -t:land cmc<=3 (o:destroy or o:exile or o:counter)`,`${baseQ} -t:land (o:draw or o:search)`,`${baseQ} -t:land (o:"add {" or o:"mana of")`,`${baseQ} t:land -t:basic usd<=1`];
  // A commander that needs a land subtype (Deserts, Gates…) must see those
  // lands and the cards that find them, not only generic land discovery.
  const needQueries=commanderLandRequirements(lead||seed).flatMap(need=>{const t=/^[a-z-]+$/i.test(need.subtype)?need.subtype.toLowerCase():`"${need.subtype.toLowerCase()}"`;return [`${baseQ} t:land t:${t}`,`${baseQ} -t:land o:${t}`];});
- queries.push(...needQueries);
- await batches([...new Set(queries)],q=>search(q,{pages:planQueries.some(p=>q.endsWith(p))||needQueries.includes(q)?2:1}));
+ queries.push(...needQueries,...alternativeQueries);
+ await batches([...new Set(queries)],async q=>{const found=await search(q,{pages:planQueries.some(p=>q.endsWith(p))||needQueries.includes(q)?2:1});if(alternativeQueries.includes(q))alternativeCards.push(...found);return found;});
  // The same selector can work without the AI/provider on already loaded rules
  // records. This is a bounded cached pool, not a claim of a full offline catalog.
  if(!successfulSearches)for(const c of Object.values(x.S?.catalog||{}))if(c?.name&&c.type_line&&isLegal(c,f)&&fitsColors(c,colors)&&!excludedKeys.has(cardKey(c.name)))remember(c);
@@ -148,10 +187,24 @@ export async function prepareMtgDeck(args,x) {
  if(args.flow&&args.preferOwned!==false)for(const c of Object.values(x.S?.catalog||{}))if(c?.name&&available(x,c.name)>0&&!catalog[cardKey(c.name)]&&isLegal(c,f)&&fitsColors(c,colors))remember(c);
  const buildCatalog=Object.fromEntries(Object.entries(catalog).filter(([,c])=>!excludedKeys.has(cardKey(c.name))&&fitsTypeRestrictions(c,args)));
  const options=({format:f.name,seeds:[seed],commander:lead,easy:args.easy===true,preferred:args.preferOwned===true?c=>own(c.name):()=>0,requestedStyle:style,goal,creatureTypesOnly:args.creatureTypesOnly,excludedSubtypes:args.excludedSubtypes,suggestedCards:suggested.filter(Boolean).map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
+ const alternativeDrafts=[];
  const candidates=loopPackages.flatMap(pkg=>{
   const base=[...new Map([...required,...(pkg?pkg.cards.filter(name=>cardKey(name)!==cardKey(lead?.name)).map(name=>({name,qty:1})):[])].map(r=>[cardKey(r.name),r])).values()];
-  return (args.constructionBudgets||[exclusive?Math.max(0,money(limit-.01)):limit]).flatMap(cap=>[false,...(args.flow?[true]:[])].map(completionFirst=>({...buildDeck({...options,base,budget:cap,completionFirst}),...loopIntent,requiredLoopPackage:pkg?.id||null,internalRequiredCards:pkg?[...pkg.cards]:[]})));
+  return (args.constructionBudgets||[exclusive?Math.max(0,money(limit-.01)):limit]).flatMap(cap=>{
+   const decorate=draft=>({...draft,...loopIntent,requiredLoopPackage:pkg?.id||null,internalRequiredCards:pkg?[...pkg.cards]:[]});
+   const primary=buildDeck({...options,base,budget:cap}),drafts=[decorate(primary),...(args.flow?[decorate(buildDeck({...options,base,budget:cap,completionFirst:true}))]:[])];
+   if(args.flow&&active()&&alternativeDrafts.length<2){
+    const present=new Set(primary.cards.map(r=>cardKey(r.name))),intent=requestedIntent(style),themes=[seed,lead].filter(Boolean).map(commanderTheme),tags=[...new Set([...intent.roles,...themes.flatMap(t=>t.roles)])],tribes=[...new Set([...intent.tribes,...themes.flatMap(t=>t.tribes)])];
+    const alternatives=[...new Map(alternativeCards.filter(c=>c&&buildCatalog[cardKey(c.name)]&&isLegal(c,f)&&functionalIn(c,f)&&fitsColors(c,colors)&&!present.has(cardKey(c.name))&&(basis==='owned'?own(c.name)>0:cap===Infinity||basis!=='total'&&own(c.name)>0||quote(c)!==null&&quote(c)<=cap)&&!/\bLand\b/.test(c.type_line||'')).map(c=>[cardKey(c.name),c])).values()].sort((a,b)=>scoreCard(b,tags,tribes,{size:f.size,goal})-scoreCard(a,tags,tribes,{size:f.size,goal})||a.name.localeCompare(b.name)).slice(0,2);
+    // A discovery anchor creates an alternative, not a user-required card. It
+    // is never persisted as an instruction and can lose to the original list.
+    for(const c of alternatives.slice(0,2-alternativeDrafts.length))alternativeDrafts.push(decorate(buildDeck({...options,base:[...base,{name:c.name,qty:1}],budget:cap})));
+   }
+   return drafts;
+  });
  });
+ // Keep every original cap/package candidate ahead of the at-most-two scouts.
+ candidates.push(...alternativeDrafts);
  const finish=draft=>{
  const candidateWarnings=[...warnings];
  const pricing=deckPriceCoverage(draft.cards,catalog,own,quote),validation=validateDeck(draft,catalog,[],[]),issues=[...validation.issues];
@@ -166,7 +219,7 @@ export async function prepareMtgDeck(args,x) {
  if(estimate===null)candidateWarnings.push('Some selected cards have no current quote. The budget is not verified.');
  else if(!withinBudget)candidateWarnings.push(`The ${basis==='total'?'whole-deck':'purchase'} estimate exceeds your budget. This is not an under-budget recommendation.`);
  if(goal !== 'strongest')candidateWarnings.push(goalDescription(goal)+' Goal fit is a judgment to review, not a verified power or fun rating.');
- const finalRows=draft.cards.map(r=>({...r,card:catalog[cardKey(r.name)],zone:'main'})),themeCheck=inspectMtgTheme(finalRows,{style,commander:lead?.name,goal}),comboCheck=inspectManaLoop(finalRows,args);
+ const finalRows=draft.cards.map(r=>({...r,card:catalog[cardKey(r.name)],zone:'main'})),themeCheck=inspectMtgTheme(finalRows,{style,commander:lead?.name,seed:seed?.name,goal}),comboCheck=inspectManaLoop(finalRows,args);
  candidateWarnings.push(...themeCheck.issues,...themeCheck.notes,...comboCheck.issues);
  if(comboCheck.status==='verified')candidateWarnings.push('A reviewed repeatable-mana sequence is present conditionally. Deployment, a useful outlet and a winning line are separate; this does not guarantee a win.');
  for(const text of comboCheck.issues)issues.push({kind:'loop',text});
@@ -176,7 +229,7 @@ export async function prepareMtgDeck(args,x) {
  const note=`${unverifiedInfinite?'Unverified draft':ready?'Checked draft':'Partial draft'}: ${draft.total}/${f.size} cards${lead?`, led by ${lead.name}`:''}, including ${seed.name}. ${pricing.totalEstimate===null?'Whole-deck estimate incomplete':`Whole-deck estimate $${pricing.totalEstimate.toFixed(2)}`}; ${pricing.purchaseEstimate===null?'purchase estimate incomplete':`$${pricing.purchaseEstimate.toFixed(2)} to buy with available owned copies`}. ${unverifiedInfinite?'Infinite combos have not been verified. Review the warnings before using or saving this draft.':ready?'Review the exact list before saving.':'Review the warnings before using or saving it.'}`;
  const availableCopies=Object.fromEntries(draft.cards.map(r=>[cardKey(r.name),Math.min(r.qty,own(r.name))])),referencePrices=Object.fromEntries(draft.cards.map(r=>[cardKey(r.name),quote(catalog[cardKey(r.name)])]));
  const typeRestrictions={creatureTypesOnly:[...args.creatureTypesOnly],excludedSubtypes:[...args.excludedSubtypes]};
- return {draft:{...draft,...pricing,...typeRestrictions,...loopIntent,comboCheck,themeCheck,goal,goalDescription:goalDescription(goal),goalVerified:false,unverifiedConstraints:unverifiedInfinite?['infinite_combos']:[],requiredCards:requiredCards.map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),requestedColors,availableCopies,referencePrices,preparedAt:new Date().toISOString(),budget:limit,budgetBasis:basis,cost:pricing.purchaseEstimate,unknown:pricing.unpricedPurchaseCopies,owned:pricing.ownedCopies,buildAround:seed.name,commanderReason,commanderSelection:automaticLeader?{candidates:leaderCandidates,recognizedSupport:leaderSupport,method:rankedLeader?'bounded-plan-support':'bounded-compatible-pool'}:null,legalChecked,complete,withinBudget,issues,warnings:[...new Set([...draft.warnings,...candidateWarnings,...issues.map(i=>i.text)])],note,preparedByAsk:true},result:{game:'mtg',requestedStyle:style,...typeRestrictions,...loopIntent,comboCheck,themeCheck,themeVerified:themeCheck.status==='supported',goal,goalDescription:goalDescription(goal),goalVerified:false,unverifiedConstraints:unverifiedInfinite?['infinite_combos']:[],requiredCards:requiredCards.map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),requestedColors,ready,partial:!ready,format:f.name,seed:seed.name,commander:lead?.name||'',commanderReason,total:draft.total,target:f.size,lands:draft.lands,legalChecked,withinBudget,budget:limit===Infinity?'no limit':limit,budgetBasis:basis,...pricing,note,warnings:[...new Set([...candidateWarnings,...issues.map(i=>i.text)])].slice(0,8)}};
+ return {draft:{...draft,...pricing,...typeRestrictions,...loopIntent,comboCheck,themeCheck,goal,goalDescription:goalDescription(goal),goalVerified:false,unverifiedConstraints:unverifiedInfinite?['infinite_combos']:[],requiredCards:requiredCards.map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),requestedColors,availableCopies,referencePrices,referencePriceSelections:structuredClone(referencePriceSelections),preparedAt:new Date().toISOString(),budget:limit,budgetBasis:basis,cost:pricing.purchaseEstimate,unknown:pricing.unpricedPurchaseCopies,owned:pricing.ownedCopies,buildAround:seed.name,commanderReason,commanderSelection:automaticLeader?{candidates:leaderCandidates,recognizedSupport:leaderSupport,method:rankedLeader?'bounded-plan-support':'bounded-compatible-pool'}:null,legalChecked,complete,withinBudget,issues,warnings:[...new Set([...draft.warnings,...candidateWarnings,...issues.map(i=>i.text)])],note,preparedByAsk:true},result:{game:'mtg',requestedStyle:style,...typeRestrictions,...loopIntent,comboCheck,themeCheck,themeVerified:themeCheck.status==='supported',goal,goalDescription:goalDescription(goal),goalVerified:false,unverifiedConstraints:unverifiedInfinite?['infinite_combos']:[],requiredCards:requiredCards.map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),requestedColors,ready,partial:!ready,format:f.name,seed:seed.name,commander:lead?.name||'',commanderReason,total:draft.total,target:f.size,lands:draft.lands,legalChecked,withinBudget,budget:limit===Infinity?'no limit':limit,budgetBasis:basis,...pricing,note,warnings:[...new Set([...candidateWarnings,...issues.map(i=>i.text)])].slice(0,8)}};
  };
  return args.flow?{candidates:candidates.map(finish)}:finish(candidates[0]);
 }

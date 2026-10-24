@@ -37,5 +37,5 @@ export function todaySetMarkup(g,set,{rarity=''}={}){
 export function todayPackMarkup(g,set){
  const from=set?.pack||set,pack=from&&packEligible(g,from)?packArtUrl(g,from):'';
  if(!from||!packEligible(g,from))return '';
- return `<button class="today-pack" data-act="homeTodayPack" data-game="${g}" aria-label="Open today’s ${esc(from.name)} pack">${pack?`<img data-pack-art src="${esc(safeHref(pack))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('pack-art-unavailable')">`:''}<span class="today-pack-fallback ${pack?'':'shown'}" aria-hidden="true"><b>${esc(from.name)}</b><span>Open pack</span></span></button>`;
+ return `<span class="today-pack-actions"><button class="today-pack" data-act="homeTodayPack" data-game="${g}" aria-label="Open today’s ${esc(from.name)} pack">${pack?`<img data-pack-art src="${esc(safeHref(pack))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('pack-art-unavailable')">`:''}<span class="today-pack-fallback ${pack?'':'shown'}" aria-hidden="true"><b>${esc(from.name)}</b><span>Open pack</span></span></button></span>`;
 }

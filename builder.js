@@ -1,4 +1,6 @@
-import {commanderCardConditions, inspectCommanderCardConditions} from './mtg-commander-conditions.js';
+import {abilityEndpointRequirements,endpointCandidateMatches,inspectAbilityEndpoints} from './mtg-ability-endpoints.js';
+import {primaryInputRequirements,primaryInputQueries,inspectPrimaryInputs} from './mtg-primary-inputs.js';
+import {commanderCardConditions, inspectCommanderCardConditions, commanderEngineCoverage} from './mtg-commander-conditions.js';
 import {mtgManaSourceProfile} from './mtg-mana-sources.js';
 import {setupBurden} from './deck-preferences.js';
 import { functionalIn } from "./deck-safety.js";
@@ -22,6 +24,7 @@ import { readMtgConceptMentions } from './mtg-wiki-knowledge.js';
 import { commanderLandRequirements, landSubtypeRoles, hasLandSubtype, inspectLandRequirements, LAND_REQUIREMENT_POLICY } from './mtg-land-requirements.js';
 
 const BASIC = { W: "Plains", U: "Island", B: "Swamp", R: "Mountain", G: "Forest", C: "Wastes" };
+const BASIC_KEYS = new Set(Object.values(BASIC).map(cardKey));
 const THEMES = ["Tokens", "Graveyard", "Spells", "Dragons", "Artifacts", "Lifegain", "Lifelink", "Landfall", "Counters"];
 const TIERS = [0, 10, 25, 50, 100, Infinity];
 export const BUDGET_TIERS = TIERS;
@@ -54,13 +57,13 @@ const tribeQuery = t => {const v=/^[a-z]+$/i.test(t)?t.toLowerCase():`"${t.toLow
 const roleQuery = roles => {const terms=[...new Set(roles.map(r=>THEME_TERMS[r]).filter(Boolean))];return terms.length===1?terms[0]:terms.length?'('+terms.join(' or ')+')':'';};
 export function themeQueries(seed, style = "") {
   const theme = commanderTheme(seed), requested = requestedIntent(style),
-    tribes = [...new Set([...requested.tribes,...(theme.tribes.length?theme.tribes:theme.roles.some(r=>THEMES.includes(r))?[]:creatureTypes(seed))])],
+    tribes = [...new Set([...requested.tribes,...theme.tribes])],
     explicit = roleQuery(requested.roles),
     support = roleQuery(theme.roles.filter(r=>THEMES.includes(r))),
     other = requested.other.length?'('+requested.other.map(w=>`t:"${w}" or o:"${w}"`).join(' or ')+')':'';
   // Separate requests keep a popular generic support pool from crowding actual
   // payoff subjects out of the provider's first page. No subtype-slot truncation.
-  return [...new Set([...mechanicDiscoveryQueries(requested.mechanics,{limit:1}),...requested.tribes.map(tribeQuery),...requested.abilities.map(k=>`keyword:"${k.toLowerCase()}"`),explicit,other,...tribes.map(tribeQuery),support].filter(Boolean))];
+  return [...new Set([...mechanicDiscoveryQueries(requested.mechanics,{limit:1}),...requested.tribes.map(tribeQuery),...requested.abilities.map(k=>`keyword:"${k.toLowerCase()}"`),...primaryInputQueries(seed),...abilityEndpointRequirements(seed).filter(r=>r.recognized).map(r=>r.query),explicit,other,...tribes.map(tribeQuery),support].filter(Boolean))];
 }
 export function themeQuery(seed, style = "") {
   const queries = themeQueries(seed,style);
@@ -68,7 +71,7 @@ export function themeQuery(seed, style = "") {
 }
 function seedIntent(seeds, style = "") {
   const requested=requestedIntent(style), themes=seeds.map(commanderTheme);
-  return {tokenKinds:[...new Set(themes.flatMap(t=>t.tokenKinds))],tags:[...new Set([...requested.roles,...themes.flatMap(t=>t.roles.filter(r=>THEMES.includes(r)))])],subs:[...new Set([...requested.tribes,...themes.flatMap((t,i)=>t.tribes.length?t.tribes:t.roles.some(r=>THEMES.includes(r))?[]:creatureTypes(seeds[i]))])],requested};
+  return {tokenKinds:[...new Set(themes.flatMap(t=>t.tokenKinds))],tags:[...new Set([...requested.roles,...themes.flatMap(t=>t.roles.filter(r=>THEMES.includes(r)))])],subs:[...new Set([...requested.tribes,...themes.flatMap(t=>t.tribes)])],requested};
 }
 function styleFit(c, requested) {
   return requested.tribes.some(t=>tribalSupport(c,t)) || requested.abilities.some(k=>mtgAbilityEvidence(c,k).length) || mechanicCardMatches(c,requested.mechanics) || themeSupport(c,{roles:requested.roles}).length > 0 || requested.other.some(w=>new RegExp('\\b'+w+'s?\\b','i').test(typeText(c)+' '+rulesText(c)));
@@ -82,7 +85,7 @@ const themeMinimum=N=>Math.max(THEME_POLICY.minimumCopies,Math.ceil(N*THEME_POLI
 // Minimum evidence checks, not a universal tribal quota or a power rating.
 // Access counts physical cards in the library; commanders are accessible only
 // from their zone and token output is never counted as cards drawn.
-export function inspectMtgTheme(rows,{style='',commander='',goal='strongest'}={}) {
+export function inspectMtgTheme(rows,{style='',commander='',seed='',goal='strongest'}={}) {
   const main=rows.filter(r=>!['side','extra'].includes(r.zone)&&r.card&&r.qty>0),
     lead=main.find(r=>cardKey(r.name||r.card.name)===cardKey(commander))?.card,
     library=main.filter(r=>cardKey(r.name||r.card.name)!==cardKey(commander)),
@@ -128,9 +131,16 @@ export function inspectMtgTheme(rows,{style='',commander='',goal='strongest'}={}
   // acquire a verified-theme claim from the old minimum sanity check.
   if(status==='supported'&&requested.tribes.length&&strategy.status!=='supported')status=strategy.status==='unverified'?'unverified':'partial';
   if(requested.mechanics.length&&!issues.length&&!unknown.length){if(status==='not-requested')status=mechanics.status;else if(mechanics.status!=='supported')status=mechanics.status==='unverified'?'unverified':'partial';}
+  const primaryInputs=inspectPrimaryInputs(rows,{commander,seed});
+  notes.push(...primaryInputs.notes);
+  if(primaryInputs.status==='missing'&&!issues.length)status='insufficient';
+  else if(['conditional','unverified'].includes(primaryInputs.status)&&!issues.length&&status==='supported')status='partial';
+  const engineCoverage=commanderEngineCoverage(lead,{hasPlan:inferred.tribes.length>0||inferred.roles.some(r=>THEMES.includes(r))||cardConditions.groups.length>0||prerequisites.groups.length>0});
+  notes.push(...engineCoverage.notes);
+  if(engineCoverage.status==='unverified'&&!issues.length&&primaryInputs.status!=='missing')status='unverified';
   if(requested.tribes.length&&strategy.status!=='supported')notes.push(...strategy.issues,...strategy.notes);
   if(requested.mechanics.length)notes.push(...mechanics.issues,...mechanics.notes);
-  return {status,groups,issues,notes,strategy,mechanics,prerequisites,cardConditions,unverifiedTerms:unknown,method:(prerequisites.method?prerequisites.method+' ':'')+'Theme support needs at least 6% of the library (minimum 2 cards) and 60% access in the first 11 cards; that is a density check, not proof of a working engine. Requested tribal and mapped mechanic plans also report their prerequisites, conditional connections and library access; partial coverage remains a reviewable draft, not verified strategy or competitive strength.'};
+  return {status,groups,issues,notes,strategy,mechanics,prerequisites,cardConditions,engineCoverage,primaryInputs,unverifiedTerms:unknown,method:(prerequisites.method?prerequisites.method+' ':'')+'Theme support needs at least 6% of the library (minimum 2 cards) and 60% access in the first 11 cards; that is a density check, not proof of a working engine. Requested tribal and mapped mechanic plans also report their prerequisites, conditional connections and library access; partial coverage remains a reviewable draft, not verified strategy or competitive strength.'};
 }
 
 // Candidate heuristics, not optimization of the complete Power analysis.
@@ -181,7 +191,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   if(lead&&!fitsTypeRestrictions(lead,restrictions))throw Error(`${lead.name} does not satisfy the requested creature-type restriction. Choose another commander or revise that restriction.`);
   const excludedKeys=new Set(excludedCards.map(cardKey)),
     legalStatus = (c) => legalityIn(c, f),
-    isLegal = (c) => !excludedKeys.has(cardKey(c?.name)) && fitsTypeRestrictions(c,restrictions) && functionalIn(c,f) && (!f.legality || ["legal", "restricted"].includes(legalStatus(c))),
+    isLegal = (c) => (!BASIC_KEYS.has(cardKey(c?.name)) || isBasic(c)&&isLand(c)) && !excludedKeys.has(cardKey(c?.name)) && fitsTypeRestrictions(c,restrictions) && functionalIn(c,f) && (!f.legality || ["legal", "restricted"].includes(legalStatus(c))),
     maxCopies = (c) => effectiveCopyLimit(c,f);
   // Colors: the leader's identity, else the seeds', else the base list's.
   let deckColors = colors || (lead ? ident(lead) : [...new Set([...seeds, ...base.map((b) => catalog[cardKey(b.name)])].flatMap(ident))]);
@@ -243,7 +253,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   for(const need of landNeeds){
     const makes=c=>mtgManaSourceProfile(c,{commanderIdentity:lead?.color_identity}).colors.filter(m=>deckColors.includes(m)).length,tapped=c=>/enters tapped/i.test(rulesText(c))?1:0;
     const choices=[...new Map(Object.values(catalog).filter(c=>c?.name&&isLand(c)&&!isBasic(c)&&isLegal(c)&&fitsColors(c,deckColors)&&hasLandSubtype(c,need.subtype)).map(c=>[cardKey(c.name),c])).values()]
-      .sort((a,b)=>makes(b)-makes(a)||tapped(a)-tapped(b)||stock(b.name)-stock(a.name)||(a.edhrec_rank||1e9)-(b.edhrec_rank||1e9)||a.name.localeCompare(b.name));
+      .sort((a,b)=>makes(b)-makes(a)||tapped(a)-tapped(b)||stock(b.name)-stock(a.name)||(f.commander?(a.edhrec_rank||1e9)-(b.edhrec_rank||1e9):0)||a.name.localeCompare(b.name));
     const colorlessCap=Math.floor(landTarget*LAND_REQUIREMENT_POLICY.colorlessShare);let placed=0,colorless=0;
     for(const c of choices){
       if(placed>=needPolicy.target||landsIn()>=landTarget)break;
@@ -253,7 +263,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     }
     if(placed<needPolicy.minimum)warnings.push(`Only ${placed} ${need.subtype} lands could be added from the loaded, legal and affordable cards; ${lead?.name||seeds[0]?.name} needs ${need.subtype}s.`);
   }
-  const cardConditions=commanderCardConditions(lead||seeds[0]),conditionBoost=c=>cardConditions.some(condition=>condition.matches(c))?8:0;
+  const cardConditions=commanderCardConditions(lead||seeds[0]),primaryNeeds=primaryInputRequirements(lead||seeds[0]),conditionBoost=c=>(cardConditions.some(condition=>condition.matches(c))?8:0)+primaryNeeds.reduce((n,need)=>n+(need.match(c)?8*need.priority(c):0),0);
   const needBoost=c=>landNeeds.reduce((n,need)=>n+landSubtypeRoles(c,need.subtype).reduce((s,r)=>s+({fetch:8,grant:8,tutor:5,setup:3,payoff:4}[r.kind]||0),0),0);
 
   const pool = [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && isLegal(c) && fitsColors(c, deckColors)).map((c) => [cardKey(c.name), c])).values()],
@@ -270,6 +280,52 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     fillerPrice = cheapPrices.length ? Math.max(0.02, cheapPrices.reduce((a, b) => a + b, 0) / cheapPrices.length) : 0.25,
     nonland = () => count() - landsIn(),
     heavy = () => [...rows.values()].filter((r) => (Number(catalog[cardKey(r.name)]?.cmc) || 0) >= 5 && !isLand(catalog[cardKey(r.name)])).reduce((a, r) => a + r.qty, 0);
+  // Required build-arounds are not optional scoring bonuses. Reserve their
+  // first legal copy before any heuristic input/endpoint package can spend it.
+  for(const seed of seeds){
+    const c=pool.find(c=>cardKey(c.name)===cardKey(seed.name));
+    if(c&&!qtyOf(c)&&nonland()<spellTarget&&canAfford(costFor(c,0,1)))put(c,1,'Your build-around card');
+  }
+  // Reserve the existing declared theme-density target for actual primary
+  // inputs before cheap generic filler. This is a construction heuristic, not
+  // a universal rules minimum or a claim that a trigger can already execute.
+  for(const need of primaryNeeds){
+    const target=themeMinimum(size-(lead?1:0));
+    const existing=()=>[...rows.values()].filter(r=>cardKey(r.name)!==cardKey(lead?.name)&&need.match(catalog[cardKey(r.name)])).reduce((n,r)=>n+r.qty,0);
+    const inputs=scored.filter(x=>need.match(x.c)).sort((a,b)=>need.priority(b.c)-need.priority(a.c)||b.s-a.s||a.c.name.localeCompare(b.c.name));
+    for(const {c} of inputs){
+      if(existing()>=target||nonland()>=spellTarget)break;
+      const n=Math.min(maxCopies(c)-qtyOf(c),target-existing(),spellTarget-nonland());
+      for(let k=n;k>=1;k--){
+        const pendingSeeds=seeds.filter(seed=>!qtyOf(seed)&&cardKey(seed.name)!==cardKey(c.name)),seedReserve=pendingSeeds.reduce((sum,seed)=>sum+costFor(seed,0,1),0),fillerReserve=Math.max(0,spellTarget-nonland()-k-pendingSeeds.length)*fillerPrice;
+        if(canAfford(costFor(c,qtyOf(c),qtyOf(c)+k),seedReserve+fillerReserve)){put(c,k,'Primary input: '+need.label);break;}
+      }
+    }
+    if(!existing())warnings.push('No eligible affordable '+need.label+' was available; the primary engine remains unverified rather than inferred from generic keyword counts.');
+  }
+  // Optional anchor branches receive a minimal actual endpoint (or Aura pair),
+  // never a blanket subtype quota. Keep filler and mana money; absent support
+  // removes branch credit, not the card body or the rest of the deck.
+  for(const source of [...seeds,...(lead?[lead]:[])])for(const need of abilityEndpointRequirements(source).filter(r=>r.recognized)){
+    const current=()=>inspectAbilityEndpoints([...rows.values()].map(r=>({...r,card:catalog[cardKey(r.name)]})),{commander:lead?.name}).groups.find(g=>cardKey(g.sourceName)===cardKey(source.name)&&g.kind===need.kind);
+    if(current()?.status==='conditional')continue;
+    const options=[],endpointPool=scored.filter(x=>new RegExp('\\b'+need.endpointType+'\\b','i').test((x.c.card_faces?.[0]||x.c).type_line||''));
+    for(const item of endpointPool){
+      const c=item.c;if(cardKey(c.name)===cardKey(lead?.name))continue;
+      if(need.kind==='cast-aura-library-chain'){
+        for(const trigger of endpointPool)if(endpointCandidateMatches(need,c,{source,trigger:trigger.c}).status==='eligible')options.push([trigger.c,c]);
+      }else if(endpointCandidateMatches(need,c,{source}).status==='eligible')options.push([c]);
+    }
+    options.sort((a,b)=>a.reduce((n,c)=>n+(qtyOf(c)?0:costFor(c,0,1)),0)-b.reduce((n,c)=>n+(qtyOf(c)?0:costFor(c,0,1)),0)||a.map(c=>c.name).join().localeCompare(b.map(c=>c.name).join()));
+    for(const option of options){
+      const additions=option.filter(c=>!qtyOf(c));if(nonland()+additions.length>spellTarget)continue;
+      const pendingSeeds=seeds.filter(seed=>!qtyOf(seed)&&!additions.some(c=>cardKey(c.name)===cardKey(seed.name))),seedReserve=pendingSeeds.reduce((sum,seed)=>sum+costFor(seed,0,1),0);
+      const cost=additions.reduce((n,c)=>n+costFor(c,0,1),0),reserve=seedReserve+Math.max(0,spellTarget-nonland()-additions.length-pendingSeeds.length)*fillerPrice;
+      if(!canAfford(cost,reserve))continue;
+      for(const c of additions)put(c,1,'Optional endpoint: '+need.label);
+      break;
+    }
+  }
   const remaining=[...scored];
   if(completionFirst){
     // Keep each requested build-around, then buy the cheapest next legal copy.
@@ -332,7 +388,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
 
   // Mana: owned (or affordable) dual lands that fit, then basics split by color symbols.
   const landPool = [...new Map(Object.values(catalog).filter((c) => c?.name && isLand(c) && !isBasic(c) && isLegal(c) && fitsColors(c, deckColors) && mtgManaSourceProfile(c,{commanderIdentity:lead?.color_identity}).colors.filter((m) => deckColors.includes(m)).length >= Math.min(2, deckColors.length)).map((c) => [cardKey(c.name), c])).values()]
-    .sort((a, b) => available(b.name) - available(a.name) || (a.edhrec_rank || 1e9) - (b.edhrec_rank || 1e9));
+    .sort((a, b) => available(b.name) - available(a.name) || (f.commander ? (a.edhrec_rank || 1e9) - (b.edhrec_rank || 1e9) : 0) || a.name.localeCompare(b.name));
   const dualCap = deckColors.length > 1 ? Math.round(landTarget * 0.4) : 0;
   for (const c of landPool) {
     const duals = landsIn() - [...rows.values()].filter((r) => isBasic(catalog[cardKey(r.name)])).reduce((a, r) => a + r.qty, 0);

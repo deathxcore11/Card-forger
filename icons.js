@@ -89,6 +89,7 @@ const ACTION = {
   // Card views: gallery (cards in a grid), compact (thumbnail + text rows), symbols (list).
   viewGallery: svg(`<rect x="3.5" y="3.5" width="7.5" height="10.5" rx="1.3"/><rect x="13" y="3.5" width="7.5" height="10.5" rx="1.3"/><path d="M3.5 17.5h7.5M13 17.5h7.5M3.5 20.5h5M13 20.5h5" stroke-opacity=".6"/>`),
   viewCompact: svg(`<rect x="3.5" y="4" width="5" height="7" rx="1"/><rect x="3.5" y="13" width="5" height="7" rx="1"/><path d="M11 6h9.5M11 9h6M11 15h9.5M11 18h6" />`),
+  viewStacks: svg(`<path d="M4 7V4.5A1.5 1.5 0 0 1 5.5 3h10M6.5 10V7.5A1.5 1.5 0 0 1 8 6h10"/><rect x="9" y="9" width="11" height="12" rx="1.5"/><path d="M12 12h5"/>`),
   viewSymbols: svg(`<circle cx="5" cy="6" r="1.4"/><circle cx="5" cy="12" r="1.4"/><circle cx="5" cy="18" r="1.4"/><path d="M9 6h11.5M9 12h11.5M9 18h11.5"/>`),
   select: svg(`<rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.6"/><path d="m5.4 7.4 1.5 1.5 2.6-2.8"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.6"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.6"/><path d="m5.4 16.9 1.5 1.5 2.6-2.8"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.6"/>`),
   // Scanner guide states.

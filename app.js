@@ -1,7 +1,7 @@
 import {cardDiscoverySpec} from './card-discovery.js';
 import {checkRelease,acknowledgeRelease,onReleaseChange,releaseDot,releaseState} from './release-status.js';
 import {createDeckPipeline} from './deck-pipeline.js';
-import {createDeckExperience} from './deck-experience.js';
+import {createDeckExperience,deckWorkspaceSignature} from './deck-experience.js';
 import {createMtgWikiPageController} from './mtg-wiki-ui.js';
 import {createWikiDeckHandoff} from './wiki-deck-handoff.js';
 import {createWikiCardHandoff,parseWikiCardLink} from './wiki-card-handoff.js';
@@ -50,6 +50,7 @@ import {syncDataLoading} from './data-loading.js';
 import {ownedCardLots,quickQuantity,adjustOwnedLot} from './quick-quantity.js';
 import {conditionName,conditionValue,conditionPriceHtml,conditionManualPlaceholder,attachConditionInfo} from './condition-value.js';
 import { showAiReview, clearAiReviews } from './ai-review.js';
+import {createAskNavigation,captureSheetForm,restoreSheetForm} from './ask-navigation.js';
 import { openAsk, closeAsk, clearAskConversations } from './ai-ask.js';
 import { isDeckBuildRequest } from './ai-deck-goal.js';
 import { openRulesAsk, closeRulesAsk, clearRulesConversations } from './ai-rules.js';
@@ -75,6 +76,7 @@ import { createScannerLookup } from "./scanner-lookup.js";
 import {SheetHistory,BROWSE_TYPES,sheetKey} from "./sheet-history.js";
 import {handleArtworkError} from "./artwork.js";
 import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,rememberDetailViewport,restoreDetailViewport,detailTabKey,createDetailJump,conditionBuyLink} from "./pricing-presentation.js";
+import {syncDeckViewers} from './deck-viewer.js';
 import {modeFor,registerWorkbench,quoteModel,recordQuote} from "./workbench-ui.js";
 import { locationPicker, rememberLocation, chooseLocation } from "./collection-locations.js";
 import { captureAuthFields, restoreAuthFields, authFeedback, togglePassword } from "./auth-form.js";
@@ -703,6 +705,8 @@ function restoreSheet(snapshot){
 }
 function wireSheetBack(){
  const head=$("#sheetBody")?.querySelector?.(".sheet-head");if(!head)return;
+ let aiBack=head.querySelector('[data-act="askReturn"]');
+ if(askNavigation?.atSheet&&!sheetTrail.length){if(!aiBack){aiBack=document.createElement("button");aiBack.className="btn ghost small";aiBack.dataset.act="askReturn";aiBack.textContent="← Back to AI";head.prepend(aiBack);}}else aiBack?.remove();
  let button=head.querySelector('[data-history-back]');
  if(!sheetTrail.length){if(button){if(button.dataset.originalAct){button.dataset.act=button.dataset.originalAct;button.setAttribute("aria-label",button.dataset.originalLabel||"Back");delete button.dataset.historyBack;delete button.dataset.originalAct;delete button.dataset.originalLabel;}else button.remove();}return;}
  if(!button){button=head.querySelector('[data-act="buyBack"],[data-act="marketBack"],[data-act="sheetBack"]');if(button){button.dataset.originalAct=button.dataset.act;button.dataset.originalLabel=button.getAttribute("aria-label")||"Back";}else{button=document.createElement("button");button.className="icon";button.innerHTML=ICON.back;head.prepend(button);}button.dataset.act="sheetHistoryBack";button.dataset.historyBack="1";button.setAttribute("aria-label","Back to previous card or deck");}
@@ -726,6 +730,7 @@ function contextTcgCard(game, id, ctx = S.ui.sheetCtx) {
 }
 const detailContextIdentity=ctx=>detailIdentity(ctx,ctx?.type==="card"?ctx.print||meta(ctx.name):null);
 function openSheet(html, ctx = null, scrollTop = 0) {
+  askNavigation?.beforeSheet();
   dismissRuleHint();
   if (S.ui.sheetCtx !== ctx || $("#sheetBody")?.dataset?.detailIdentity !== detailContextIdentity(ctx)) dismissRulesGuide();
   const dlg = $("#sheet");
@@ -741,6 +746,7 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   S.ui.sheetCtx = ctx;
   $("#sheetBody").detailMountGeneration = ($("#sheetBody").detailMountGeneration || 0) + 1;
   $("#sheetBody").innerHTML = html;
+  syncDeckViewers();
   $("#sheetBody").dataset.detailIdentity = detailContextIdentity(ctx);
   if (lastSheetStep && lastSheetStep !== stepKey) {
     $("#sheetBody").classList.remove("sheet-step");
@@ -762,6 +768,7 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   $("#sheetBody").scrollTop = scrollTop;
   sheetScrolled();
   refreshConditionPrice();
+  askNavigation?.sheetOpened();
   wireSheetBack();
   if (detailState) { restoreDetailState($("#sheetBody"),detailState); sheetScrolled(); }
   if (!sheetScrollWired) {
@@ -816,6 +823,8 @@ function sheetScrolled() {
   if(indicator&&selected){indicator.style.left=selected.offsetLeft+'px';indicator.style.width=selected.offsetWidth+'px';indicator.style.top=selected.offsetTop+'px';indicator.style.height=selected.offsetHeight+'px';rail.dataset.indicatorReady='true';}
 }
 function closeSheet(rememberRoute=true) {
+  if(askNavigation?.closeInternal())return;
+  askNavigation?.discard();
   T.cancelProvenBuild();
   if (['matchup','matchup-import'].includes(S.ui.sheetCtx?.type) || sheetTrail.items?.some(item=>item.ctx?.type==='matchup')) aiMatchups.cancel();
   if (S.ui.sheetCtx?.type === "printing-picker") printingPicker.abandon();
@@ -1072,6 +1081,7 @@ function render() {
   for(const {id,value} of profileFields){const field=$("#"+id);if(field)field.value=value;}
   const displayArea=["deck","tdeck"].includes(ui.view)?"deck":ui.view === "search"?"search":ui.view === "set"?"set":ui.view === "collection" && (g === "mtg" ? ui.collTab === "wishlist" : T.ui(g).coll.tab === "wishlist")?"wishlist":ui.view === "collection" && (g === "mtg" ? ui.collTab === "cards" : !T.ui(g).coll.tab || T.ui(g).coll.tab === "cards")?"collection":null;
   $("#content").className=displayArea ? "view-"+modeFor(g,displayArea) : "";
+  syncDeckViewers();
   if (comparison.active && comparison.game !== g) { comparison.cancel(); updateCompareTray(); }
   // A new page (not a refresh of the same one) glides in; totals count up.
   const pageKey = [g, ui.view, ui.collTab, ui.decksTab, ui.deckTab, g === "mtg" ? "" : T.ui(g).coll.tab, g === "mtg" ? "" : ui.tdeckTab?.[g+":"+ui.tdeckId]].join(":");
@@ -1201,6 +1211,7 @@ function restoreScroll(top) {
   step();
 }
 // Public hashes stay compatible; entry metadata is the source of truth for the game.
+let askNavigation=null;
 let activeEntry = null, entrySequence = 0, navigationPending = false, navigationInstalling = false, suspendedGame = null, navigationReady = false, workspaceVisitRevision = 0;
 const entryOrigins = new Map();
 let rollbackHistoryId=null;
@@ -1331,6 +1342,7 @@ function restoreActiveHistory(intent) {
 }
 function navigate(intent) {
   if(!navigationReady)return Promise.resolve(false);
+  if((askNavigation?.active||askNavigation?.busy)&&!["pop","boot"].includes(intent.mode))return askNavigation.leave(true).then(()=>navigate(intent));
   const current=activeEntry || {game:T.game(),route:normalizeRoute(location.hash)};
   intent.hash=normalizeRoute(intent.hash);
   if(!navigation.busy && current.game===intent.game && current.route===intent.hash && !["pop","boot"].includes(intent.mode)) {render();return Promise.resolve(false);}
@@ -1356,6 +1368,7 @@ function switchGame(game) {
   return navigate({...target,mode:game===source?'replace':'push'});
 }
 function applyHistory() {
+  if(askNavigation?.historyChanged())return;
   if(settingsPopup.historyChanged())return;
   if(!navigationReady)return;
   const hash=normalizeRoute(location.hash), known=historyEntry(history.state,hash);
@@ -1383,9 +1396,10 @@ let backBusy=0;
 function appBack(){
   // A second Back while the first is still settling (a fast double swipe) does nothing rather than skipping a level.
   if(Date.now()-backBusy<250)return true;backBusy=Date.now();
+  if(askNavigation?.busy)return true;
   const top=topDialog();
   if(top){
-    if(top.id==='sheet'){if(sheetTrail.length||S.ui.sheetCtx?.type==='printing-picker')A.sheetHistoryBack();else closeSheet();return true;}
+    if(top.id==='sheet'){if(S.ui.sheetCtx?.type!=='printing-picker'&&askNavigation?.back())return true;if(sheetTrail.length||S.ui.sheetCtx?.type==='printing-picker')A.sheetHistoryBack();else closeSheet();return true;}
     // Each dialog keeps its own Escape handling (the pack disposes itself, settings restore history…).
     const cancel=new Event('cancel',{cancelable:true});if(top.dispatchEvent(cancel)&&top.open)top.close();return true;
   }
@@ -1423,9 +1437,9 @@ const deckPipeline=createDeckPipeline({S,T,api,resolve,cacheCard,meta,priceOf,in
 const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game:T.game,
  identity:()=>{const account=accountGeneration;return ()=>!accountLocked&&account===accountGeneration;},
  coachHooks:(result,deck)=>result.request.game==='mtg'?V.mtgCoachHooks(deck,result.power):T.tcgCoachHooks(result.request.game,deck,T.SOURCES[result.request.game].formats.find(f=>f.id===result.request.format),result.power),
- scope:()=>{const scope=mutationScope(),state=S.state,stamp=JSON.stringify([state.collection,state.decks,state.tcg]);return ()=>mutationCurrent(scope)&&S.state===state&&JSON.stringify([state.collection,state.decks,state.tcg])===stamp;},
+ scope:()=>{const scope=mutationScope(),stamp=deckWorkspaceSignature(S.state);return ()=>mutationCurrent(scope)&&deckWorkspaceSignature(S.state)===stamp;},
  root:()=>$('#sheetBody'),isOpen:()=>$('#sheet').open&&S.ui.sheetCtx?.type==='deck-flow',
- paint:html=>{$('#sheetBody').innerHTML=html;},open:(html,request)=>openSheet(html,{type:'deck-flow',request}),
+ paint:html=>{$('#sheetBody').innerHTML=html;wireSheetBack();},open:(html,request)=>openSheet(html,{type:'deck-flow',request}),
  onInput:fn=>document.addEventListener('input',e=>{if(e.target.matches('[data-flow-field]'))fn(e);}),
  random:async request=>{if(request.game!=='mtg')return deckPipeline.resolveSeed(request);const f=formatOf(request.format),theme=String(request.theme||'').replace(/[^\p{L}\p{N} '-]/gu,'').slice(0,80);return cacheCard(await api('/cards/random?'+new URLSearchParams({q:`${f.legality?'f:'+f.legality:'game:paper'} -t:land ${f.commander?'is:commander':''} ${theme?`(t:"${theme}" or o:"${theme}")`:''}`})));},
  save:async(result,current)=>{const write=scopedCommit(),r=result.request,id=uid(),name=(r.seedCard?.name||result.deck.buildAround||'My deck')+' · '+r.formatName;
@@ -2027,6 +2041,7 @@ $("#sheet").addEventListener("click", (e) => {
 });
 $("#sheet").addEventListener("cancel", (e) => {
   if (S.ui.sheetCtx?.type === "printing-picker") { e.preventDefault(); printingPicker.cancel(); }
+  else if(askNavigation?.atSheet){e.preventDefault();askNavigation.backToAsk();}
 });
 $("#sheet").addEventListener("close", () => {
   // close() queues its event. A selection can already have opened the next sheet
@@ -2065,11 +2080,12 @@ const busy = (btn, text) => {
 /* ---------- navigation ---------- */
 
 A.go = (t) => {
-  closeSheet();
+  if(!askNavigation?.active&&!askNavigation?.busy)closeSheet();
   go(t.dataset.to);
 };
-A.closeSheet = () => S.ui.sheetCtx?.type === "printing-picker" ? printingPicker.cancel() : closeSheet(false);
-A.sheetHistoryBack = () => S.ui.sheetCtx?.type === "printing-picker" ? printingPicker.cancel() : restoreSheetHistory();
+A.closeSheet = () => S.ui.sheetCtx?.type === "printing-picker" ? printingPicker.cancel() : askNavigation?.backToAsk() || closeSheet(false);
+A.sheetHistoryBack = () => S.ui.sheetCtx?.type === "printing-picker" ? printingPicker.cancel() : askNavigation?.back() || restoreSheetHistory();
+A.askReturn = () => askNavigation?.backToAsk();
 A.routeHistoryBack=()=>{const saved=routeTrail.pop();if(!saved || saved.game!==T.game())return;closeSheet(false);go(saved.route);setTimeout(()=>{if(location.hash!==saved.route)return;restoreSheet(saved);window.scrollTo(0,saved.pageScroll);},0);};
 document.addEventListener?.("error",handleArtworkError,true);
 // Refresh after the exact image (or its fallback) loads, without another render.
@@ -2653,6 +2669,12 @@ A.infoGo=t=>{const topic=INFO_TOPICS.find(x=>x.id===t.dataset.id);if(!topic)retu
 document.addEventListener('input',e=>{if(e.target.id!=='infoQuery')return;const matches=new Set(findInfo(e.target.value).map(t=>t.id)),root=e.target.closest('.info-centre');root.querySelectorAll('[data-info-topic]').forEach(n=>n.hidden=!matches.has(n.dataset.infoTopic));root.querySelector('#infoCount').textContent=matches.size+' topics';root.querySelector('.info-empty').hidden=matches.size>0;});
 // Ask AI: the in-app assistant. Its tools are the app's own functions, run here on the device.
 let askTools = null;
+askNavigation=createAskNavigation({sheetKey,
+ beforeLeaveSheet:()=>{if($('#sheetBody .build-overlay'))A.flowCancelBuild?.();},
+ captureSheet:()=>{const snapshot=$('#sheet').open?sheetSnapshot():null;return snapshot?{...snapshot,trail:[...sheetTrail.items],form:captureSheetForm($('#sheetBody'))}:null;},
+ restoreSheet:snapshot=>{sheetTrail.items=[...snapshot.trail];restoreSheet(snapshot);restoreSheetForm($('#sheetBody'),snapshot.form);},
+ closeSheet:()=>{closeSheet(false);sheetReturn=null;},closeAsk
+});
 A.askRules = (button) => {
   const scope = button?.closest?.('[data-learning-root]');
   const game = button?.dataset?.game || scope?.dataset?.game || T.game();
@@ -2681,7 +2703,11 @@ A.askOpen = (options={}) => {
       if (!current?.() || T.game() !== g) return toast("Your account or workspace changed. Ask again in the current workspace.");
       return A.tBuild({dataset:{id,format},initialBudget:budget>0?budget:"",buildCurrent:current});
     } });
-  openAsk({ game: T.game(), prefill:typeof options.query==='string'?options.query:'', tools: askTools, show: (s) => safely(askTools.open(s)) });
+  const game=T.game(),account=accountGeneration,workspace=workspaceVisitRevision,route=location.hash;
+  const current=()=>!accountLocked&&account===accountGeneration&&workspace===workspaceVisitRevision&&game===T.game()&&route===location.hash;
+  const show=s=>s.kind==='build'&&s.game===game?safely(askNavigation.handoff(()=>askTools.open(s))):safely(askNavigation.leave(true).then(()=>askTools.open(s)));
+  let prefill=typeof options.query==='string'?options.query:'';
+  askNavigation.open({current,show:()=>{openAsk({game,prefill,tools:askTools,show,onClose:()=>askNavigation.rootClosed(),onRestart:()=>askNavigation.restart()});prefill='';}});
 };
 A.buildFrom = async t => {
  const scope=mutationScope(),c=meta(t.dataset.name)||await resolve(t.dataset.name,true);if(!mutationCurrent(scope))return;
@@ -3528,13 +3554,13 @@ function heroArt(g) {
 }
 const HERO_RETRY_MS = [15_000, 60_000, 330_000];
 let heroRetries = 0, heroRetryTimer = null;
-// Home "Today": the Card of the Day showcase below the value. A new day swaps the card in place (the
+// Home "Today": the Card of the Day above the value, sharing the header art. A new day swaps the card in place (the
 // focused daily button keeps its node), then its set and real booster pack paint in.
 function paintHomeToday(g) {
   if (S.ui.view !== "home" || T.game() !== g) return;
   const h = T.heroFor(g);let el = $("#homeToday");
   if (!h) return el?.remove();
-  if (!el) { const at = $("#content .home-value-overview");if (!at) return;at.insertAdjacentHTML("afterend", T.homeToday(g));el = $("#homeToday"); }
+  if (!el) { const at = $("#content .home-value-overview");if (!at) return;at.insertAdjacentHTML("beforebegin", T.homeToday(g));el = $("#homeToday"); }
   if (el.dataset.game !== g || el.dataset.dailyId !== h.id || el.dataset.dailyDate !== h.date) {
     const tpl = document.createElement("template");tpl.innerHTML = T.homeToday(g);const next = tpl.content.firstElementChild, old = el.querySelector(".hh-credit"), fresh = next.querySelector(".hh-credit");
     for (const attr of [...old.attributes]) old.removeAttribute(attr.name);
@@ -4892,14 +4918,17 @@ A.deckRemove = async (t) => {
 I.deckSearch = (t) => {
   S.ui.q.deck = t.value;
   $("#deckList").innerHTML = V.deckList();
+  syncDeckViewers();
 };
 C.deckFilter = (t) => {
   S.ui.deckFilter = t.value;
   $("#deckList").innerHTML = V.deckList();
+  syncDeckViewers();
 };
 C.deckSort = (t) => {
   S.ui.deckSort = t.value;
   $("#deckList").innerHTML = V.deckList();
+  syncDeckViewers();
 };
 A.deckGrid = () => {
   S.ui.deckGrid = !S.ui.deckGrid;
@@ -5496,7 +5525,7 @@ A.mtgProven = (t) => {
     },
     cardAttrs: (r) => `data-act="card" data-name="${esc(r.name)}"`,
     printingFor: (r) => meta(r.name),
-    imageFor: (r) => meta(r.name)?.image_uris?.small || meta(r.name)?.card_faces?.[0]?.image_uris?.small || "",
+    imageFor: (r) => cardImage(meta(r.name)),
     heroFor: (rows) => {
       if (d.art) return d.art;
       const c = meta((rows.find((r) => r.kind === "commander") || rows.find((r) => r.kind === "creature") || rows.find((r) => r.kind !== "land") || rows[0])?.name);

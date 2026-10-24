@@ -104,6 +104,24 @@ export function homeResume(game, formatName = deck => deck.format) {
   return `<section class="home-resume" data-home-resume="${game}" data-resume-deck="${esc(deck.id)}" aria-label="Resume your last-worked deck"><div><p class="eyebrow">Last worked on</p><h2>${esc(deck.name)}</h2><p>${esc(formatName(deck) || GAMES[game].short)} · ${count} ${game === 'ygo' ? 'main-deck cards' : 'cards'} · Edited <time datetime="${esc(at)}">${esc(displayDate(at))}</time></p></div><button type="button" class="home-resume-open" data-act="go" data-to="${esc(route)}" aria-label="Resume ${esc(deck.name)}">Resume <span aria-hidden="true">↗</span></button></section>`;
 }
 
+// A few real personal decks, without running Power, construction or provider
+// lookups to paint Home. Keep the existing honest recent-work/resume contract.
+export function homeDeckShelf(game, describe = deck => ({ format: deck.format })) {
+  const decks = (game === 'mtg' ? S.state : S.state.tcg?.[game])?.decks || [];
+  const resume = homeResume(game, deck => describe(deck).format);
+  const selectedId = lastWorkedDeck(S.state, game)?.deck.id || pickedDecks.get(game);
+  const selected = decks.find(deck => deck.id === selectedId);
+  const art = deck => describe(deck).artHTML || '';
+  const lead = selected ? `<div class="home-personal-deck home-personal-resume" data-home-personal-deck="${esc(selected.id)}"><span class="home-personal-art" aria-hidden="true">${art(selected)}</span>${resume}</div>` : resume;
+  const others = decks.filter(deck => deck.id !== selectedId).slice(0, 2).map(deck => {
+    const info = describe(deck), rows = game === 'mtg' ? deck.cards : deck.zones?.main;
+    const count = (rows || []).reduce((n, row) => n + (Number(row.qty) || 0), 0);
+    const route = `#${game === 'mtg' ? 'deck' : 'tdeck'}/${encodeURIComponent(deck.id)}/cards`;
+    return `<button type="button" class="home-personal-deck" data-home-personal-deck="${esc(deck.id)}" data-act="go" data-to="${esc(route)}"><span class="home-personal-art" aria-hidden="true">${art(deck)}</span><span class="home-personal-copy"><b>${esc(deck.name || 'Untitled deck')}</b><small>${esc(info.format || GAMES[game].short)} · ${count} ${game === 'ygo' ? 'main-deck cards' : 'cards'}</small><span>Open deck ↗</span></span></button>`;
+  }).join('');
+  return `<section class="home-saved-decks" data-home-decks="${game}" aria-label="Your saved decks"><div class="home-shelf-heading"><h2>Your decks</h2><button class="link small" data-act="go" data-to="#decks">All decks ↗</button></div><div class="home-personal-grid">${lead}${others}</div></section>`;
+}
+
 export function displayDate(value) {
   const date = value && new Date(value);
   return date && Number.isFinite(date.getTime()) ? date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', ...(/^\d{4}-\d{2}-\d{2}$/.test(String(value)) ? { timeZone: 'UTC' } : {}) }) : '';

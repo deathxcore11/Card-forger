@@ -1,3 +1,4 @@
+import {deckViewer,deckCardAttrs} from './deck-viewer.js';
 import {discoverCardMarkup} from './card-discovery.js';
 import {versionsMarkup,releaseDot} from './release-status.js';
 import {mtgWikiPageMarkup,mtgWikiCredit} from './mtg-wiki-ui.js';
@@ -19,7 +20,7 @@ import {detailOwnedGroups} from './quick-quantity.js';
 import {profileAvatar,profilePhotoControl} from './profile-art.js';
 import {infoPanel} from './app-info.js';
 import {buyContext,compactPriceSummary,selectedFinish,detailTabs,detailPanel} from "./pricing-presentation.js";
-import { homeValue, homeEdition, homeResume } from "./home-ui.js";
+import { homeValue, homeEdition, homeDeckShelf } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {brandMark,brandStaticMark} from './brand.js';
 import {conditionBadge,conditionValue} from './condition-value.js';
@@ -105,10 +106,10 @@ const coverOf = (d) =>
 
 export function home() {
   const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);
-  return `${homeHero("mtg")}<div class="home-overview home-value-overview">${homeValue({ game: "mtg", ...value, decks: st.decks.length, history: st.valueHistory, valueRoute: "#collection/value" })}</div>${homeToday("mtg")}
+  return `<section class="home-intro" data-home-overview="mtg">${homeHero("mtg")}<div class="home-intro-content">${homeToday("mtg")}<div class="home-overview home-value-overview">${homeValue({ game: "mtg", ...value, decks: st.decks.length, history: st.valueHistory, valueRoute: "#collection/value" })}</div>
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
-  ${homeResume("mtg", deck => formatOf(deck).name)}
-  ${quickTiles("mtg")}
+  ${homeDeckShelf("mtg", deck => ({ format: formatOf(deck).name, artHTML: coverOf(deck) ? img(coverOf(deck), '') : '' }))}
+  </div></section>${quickTiles("mtg")}
   ${homeEdition("mtg")}`;
 }
 
@@ -1079,6 +1080,7 @@ export function deckPage() {
   const d = currentDeck();
   if (!d) return empty("Deck not found", "It may have been deleted.", `<button class="btn" data-act="go" data-to="#decks">Back to decks</button>`);
   const t = totalsFor(d),
+    mainCopies = sumQty(d.cards), sideCopies = sumQty(d.side || []),
     p = engineProfile(d, S.catalog),
     v = deckValue(d.cards, S.catalog, S.state.priceChoices),
     fm = formatOf(d),
@@ -1092,14 +1094,14 @@ export function deckPage() {
       <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "No commander yet") + " · " : ""}<button class="chip dark fmt-chip" data-act="deckMenu" title="${esc(sizeLabel(fm))}${fm.note ? " · " + esc(fm.note) : ""}">${esc(fm.name)}</button>${d.locked ? ' · <span class="chip dark">Assembled</span>' : ""}</p>
       ${reviewBadge(d)}
       <div class="hero-stats">
-        <span><b class="${(fm.exact ? t.copies === target : t.copies >= target) ? "" : "warn-text"}">${t.copies}/${target}</b>cards</span>
+        <span><b class="${(fm.exact ? mainCopies === target : mainCopies >= target) ? "" : "warn-text"}">${mainCopies}/${target}</b>cards${sideCopies ? ` · ${sideCopies} sideboard` : ''}</span>
         <span><b>${t.copies ? Math.round((t.covered / t.copies) * 100) : 0}%</b>owned</span>
-        <span><b>${usd(t.pricedGap, 0)}${t.unpriced ? "+" : ""}</b>${t.copies < target ? "for listed cards" : "to finish"}${t.unpriced ? " · some unpriced" : ""}</span>
+        <span><b>${usd(t.pricedGap, 0)}${t.unpriced ? "+" : ""}</b>${mainCopies < target ? "for listed cards" : "to finish"}${t.unpriced ? " · some unpriced" : ""}</span>
         <button data-act="deckTab" data-id="engine"><b>${shownPower(mtgPower(d)) ?? "—"}</b>${shownPower(mtgPower(d)) == null ? "power unavailable" : "power"}</button>
       </div>
     </div>
   </section>
-  ${t.copies < target ? `<div class="note warn">Incomplete draft: ${target - t.copies} slots remain. Power is unavailable. The listed-card price does not include empty slots.${(d.buildDiagnostics?.warnings || []).slice(0, 2).map(w => `<p class="small">${esc(w)}</p>`).join("")}</div>` : ""}
+  ${mainCopies < target ? `<div class="note warn">Incomplete draft: ${target - mainCopies} slots remain. Power is unavailable. The listed-card price does not include empty slots.${(d.buildDiagnostics?.warnings || []).slice(0, 2).map(w => `<p class="small">${esc(w)}</p>`).join("")}</div>` : ""}
   <nav class="tabs" role="tablist">${tabs.map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${l}</button>`).join("")}</nav>
   ${fm.commander && !canLead(meta(d.commander), fm) && tab !== "upgrade" ? `<button class="note warn block-note" data-act="deckTab" data-id="upgrade">⚠ No ${fm.commander === "planeswalker" ? "Oathbreaker" : "commander"} set — tap to choose one so colors and synergy are checked.</button>` : ""}
   <div class="deck-body" data-tab="${tab}">${{ rules: ()=>interactiveRules("mtg", {format:d.format}), cards: deckCards, engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: deckPlaytest, shop: deckShop }[tab](d, t)}</div>`;
@@ -1164,14 +1166,13 @@ function mtgDeckEmblems(d) {
 }
 
 function deckCards(d, t) {
-  const target = formatOf(d).size;
+  const target = formatOf(d).size, mainCopies = sumQty(d.cards);
   return `${viewControl("mtg","deck")}<div class="add-row"><input id="deckAddName" placeholder="Add a card by name" data-enter="deckAdd" aria-label="Card name to add" autocomplete="off"><button class="btn" data-act="deckAdd">Add</button></div>
-  <div class="cover-line"><span><b>${t.covered}</b>/${t.copies} owned${t.missing ? ` · <b>${t.missing}</b> missing · <b>${usd(t.pricedGap)}</b>${t.unpriced ? "+" : ""} ${t.copies < target ? "for listed cards" : "to finish"}` : " · listed cards owned ✓"}</span>${t.copies < target ? (d.format === "Commander" ? `<button class="link" data-act="deckTab" data-id="upgrade">Fill ${target - t.copies} slots →</button>` : `<button class="link" data-act="formatSearch">Find ${esc(formatOf(d).name)} cards →</button>`) : ""}</div>
+  <div class="cover-line"><span><b>${t.covered}</b>/${t.copies} owned${t.missing ? ` · <b>${t.missing}</b> missing · <b>${usd(t.pricedGap)}</b>${t.unpriced ? "+" : ""} ${mainCopies < target ? "for listed cards" : "to finish"}` : " · listed cards owned ✓"}</span>${mainCopies < target ? (d.format === "Commander" ? `<button class="link" data-act="deckTab" data-id="upgrade">Fill ${target - mainCopies} slots →</button>` : `<button class="link" data-act="formatSearch">Find ${esc(formatOf(d).name)} cards →</button>`) : ""}</div>
   ${bar(t.copies ? t.covered / t.copies : 0)}
   <div class="toolbar"><input type="search" value="${esc(S.ui.q.deck)}" placeholder="Search this deck" data-input="deckSearch" aria-label="Search deck"><select data-change="deckFilter" aria-label="Show">${options([["all", "All"], ["missing", "Missing"], ["owned", "Owned"], ["unresolved", "Unresolved"]], S.ui.deckFilter)}</select><select data-change="deckSort" aria-label="Group by">${options([["type", "By type"], ["mv", "By mana value"], ["role", "By role"], ["price", "By price"]], S.ui.deckSort)}</select></div>
   ${mtgDeckEmblems(d)}
-  <div id="deckList">${deckList(d)}</div>
-  ${mtgSideboard(d)}
+  ${deckViewer("mtg",`<div id="deckList">${deckList(d)}</div>${mtgSideboard(d)}`,{controls:false})}
   ${t.missing ? `<div class="sticky-bar"><span><b>${t.missing}</b> to get · ${usd(t.pricedGap, 0)}</span><span><button class="btn ghost small" data-act="deckTab" data-id="shop">Shop</button><button class="btn small" data-act="acquire">I got cards</button></span></div>` : ""}`;
 }
 
@@ -1228,7 +1229,7 @@ function mtgSideboard(d) {
     status = !need ? "all owned ✓" : `${need} to get${cost ? " · " + usd(cost, 0) : ""}${unpriced ? ` · ${unpriced} unpriced` : ""}`;
   return `<details class="group side-group" open><summary><span>Sideboard <em>${n}</em>${n > 15 ? ` <span class="warn-text small">· over 15</span>` : ""}</span><span class="muted small">${status}</span></summary>
     <p class="small muted">Swapped in between games. Not counted in the ${esc(String(formatOf(d).size))}-card deck${n > 15 ? "; tournament sideboards are at most 15 cards" : ""}.</p>
-    <div class="list compact">${rows.sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).map((r) => `<button class="mini-row art-row" data-act="card" data-name="${esc(r.name)}">${img(art(r.c), r.name, "mini-art")}<span class="ellip">${r.qty}× ${esc(r.name)}</span><span class="small ${r.own >= r.qty ? "ok-text" : "warn-text"}">${r.own >= r.qty ? "✓ Owned" : `Need ${r.qty - r.own}`}</span></button>`).join("")}</div></details>`;
+    <div class="list compact" data-deck-list>${rows.sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).map((r) => `<button class="mini-row art-row" ${deckCardAttrs(r.name,r.qty,"side")} data-act="card" data-name="${esc(r.name)}">${img(cardImage(r.c), r.name, "mini-art")}<span class="ellip">${r.qty}× ${esc(r.name)}</span><span class="small ${r.own >= r.qty ? "ok-text" : "warn-text"}">${r.own >= r.qty ? "✓ Owned" : `Need ${r.qty - r.own}`}</span></button>`).join("")}</div></details>`;
 }
 
 export function deckList(d = currentDeck(), opts = {}) {
@@ -1242,7 +1243,9 @@ export function deckList(d = currentDeck(), opts = {}) {
     d = {...d, cards, commander: d.commander || leaders[0] || ''};
   }
   const q = unfiltered ? '' : S.ui.q.deck.toLowerCase();
-  let rows = rowsFor(readOnly ? {...d, side: []} : d).map(r => readOnly && leaders.some(n => key(n) === key(r.name)) ? {...r, category: 'Commander'} : r).filter(
+  // Shopping aggregates both zones, but editable main-deck rows must show the
+  // main quantity. The sideboard is rendered separately below the main list.
+  let rows = rowsFor({...d, side: []}).map(r => readOnly && leaders.some(n => key(n) === key(r.name)) ? {...r, category: 'Commander'} : r).filter(
     (r) =>
       (!q || r.name.toLowerCase().includes(q)) &&
       (unfiltered || S.ui.deckFilter === "all" ||
@@ -1277,11 +1280,11 @@ export function deckList(d = currentDeck(), opts = {}) {
     .filter(([, list]) => list.length)
     .map(([g, list]) => {
       const val = list.reduce((a, r) => a + (r.price ?? 0) * r.qty, 0);
-      return `<details class="group" open><summary><span>${esc(g)} <em>${sumQty(list)}</em></span><span class="muted small">${usd(val)}</span></summary><div class="list display-list">${list.map((r) => deckRow(r,d,opts)).join("")}</div></details>`;
+      return `<details class="group" open><summary><span>${esc(g)} <em>${sumQty(list)}</em></span><span class="muted small">${usd(val)}</span></summary><div class="list display-list" data-deck-list>${list.map((r) => deckRow(r,d,opts)).join("")}</div></details>`;
     })
     .join("");
   const sideRows = readOnly && d.side?.length ? rowsFor({...d, cards: d.side, side: [], commander: '', commanders: []}) : [];
-  const sideHtml = sideRows.length ? `<details class="group side-group" open><summary><span>Sideboard <em>${sumQty(sideRows)}</em></span></summary><div class="list display-list">${sideRows.map(r => deckRow(r,d,opts)).join('')}</div></details>` : '';
+  const sideHtml = sideRows.length ? `<details class="group side-group" open><summary><span>Sideboard <em>${sumQty(sideRows)}</em></span></summary><div class="list display-list" data-deck-list>${sideRows.map(r => deckRow(r,d,{...opts,zone:'side'})).join('')}</div></details>` : '';
   return html + sideHtml || `<p class="muted center pad">No cards match.</p>`;
 }
 
@@ -1296,7 +1299,7 @@ function deckRow(r, d, opts = {}) {
   const c = meta(r.name),
     ok = r.missing === 0,
     t = tierOf("mtg", c?.rarity, r.price ?? c?.prices?.usd ?? c?.prices?.usd_foil);
-  return `<div class="lot deck-row ${readOnly || ok ? "" : "short"}" data-tier="${t.key}" style="${tierStyle(t)}">
+  return `<div class="lot deck-row ${readOnly || ok ? "" : "short"}" ${deckCardAttrs(r.name,r.qty,opts.zone||"main")} data-tier="${t.key}" style="${tierStyle(t)}">
     <button class="lot-art" ${finishAttrs('mtg',c,{})} data-act="${esc(action)}" data-name="${esc(r.name)}"${deckAttr}>${img(cardImage(c), r.name)}${c ? tileChrome("mtg", c) : ""}<span class="art-price">${usd(r.price)}</span></button>
     <div class="lot-info"><button class="lot-name" data-act="${esc(action)}" data-name="${esc(r.name)}"${deckAttr}>${esc(r.name)} ${setBadge(c)}</button>
       <span class="lot-sub">${manaCost(c) || (c ? "" : '<span class="tag warn">Unresolved</span>')}${legalTag(c, d)}</span>
@@ -1849,15 +1852,15 @@ export function ideaSheet(idea, deck, open, sel) {
   <p class="foot">Prices cover only the cards currently listed, not empty slots. A complete Commander deck needs 100 cards including its lands and commander. Shipping and tax are separate.</p>
   ${open.busy ? buildOverlay(open.msg, { title: "Building this deck", note: "Finding legal cards and priced or owned lands within your budget, then checking whether all 100 slots can be filled. This can take up to a minute.", id: "ideaMsg" }) : `<p class="muted small" id="ideaMsg" role="status">${esc(open.msg || (open.budget ? "" : "Owned-only starters can be incomplete. Choose a purchase budget or No purchase cap to attempt completion; missing data still needs to be resolved."))}</p>`}
   <div class="row between sel-bar"><span class="small" id="ideaSelCount">${sel.size ? sel.size + " selected" : "Tick cards to act on them"}</span><span class="row"><button class="link small" data-act="ideaSelect" data-mode="missing">Missing</button><button class="link small" data-act="ideaSelect" data-mode="all">All</button><button class="link small" data-act="ideaSelect" data-mode="none">None</button></span></div>
-  ${[...byCat]
+  ${deckViewer("mtg",[...byCat]
     .filter(([, l]) => l.length)
     .map(
-      ([cat, list]) => `<details class="group" open><summary><span>${esc(cat)} <em>${sumQty(list)}</em></span><span class="muted small">${usd(list.reduce((a, r) => a + (r.price ?? 0) * r.qty, 0))}</span></summary><div class="list compact deck-compact-list">${list
+      ([cat, list]) => `<details class="group" open><summary><span>${esc(cat)} <em>${sumQty(list)}</em></span><span class="muted small">${usd(list.reduce((a, r) => a + (r.price ?? 0) * r.qty, 0))}</span></summary><div class="list compact deck-compact-list" data-deck-list>${list
         .sort((a, b) => (meta(a.name)?.cmc ?? 99) - (meta(b.name)?.cmc ?? 99) || a.name.localeCompare(b.name))
-        .map((r) => `<div class="pick-row deck-compact-row ${r.missing ? "short" : ""}"><input type="checkbox" data-change="ideaPick" data-name="${esc(r.name)}" ${sel.has(r.name) ? "checked" : ""} aria-label="Select ${esc(r.name)}"><button class="pick-main" data-act="card" data-name="${esc(r.name)}">${img(cardImage(meta(r.name)), r.name, "deck-compact-art")}<span class="deck-compact-copy"><b>${r.qty > 1 ? r.qty + "× " : ""}${esc(r.name)}</b>${referencePrintingPills(meta(r.name))}<small class="${r.missing ? "warn-text" : "ok-text"}">${r.missing ? "Need " + r.missing : "Owned"}</small></span></button><span class="pick-side">${manaCost(meta(r.name))}<b>${usd(r.price)}</b></span></div>`)
+        .map((r) => `<div class="pick-row deck-compact-row ${r.missing ? "short" : ""}" ${deckCardAttrs(r.name,r.qty)}><input type="checkbox" data-change="ideaPick" data-name="${esc(r.name)}" ${sel.has(r.name) ? "checked" : ""} aria-label="Select ${esc(r.name)}"><button class="pick-main" data-act="card" data-name="${esc(r.name)}">${img(cardImage(meta(r.name)), r.name, "deck-compact-art")}<span class="deck-compact-copy"><b>${r.qty > 1 ? r.qty + "× " : ""}${esc(r.name)}</b>${referencePrintingPills(meta(r.name))}<small class="${r.missing ? "warn-text" : "ok-text"}">${r.missing ? "Need " + r.missing : "Owned"}</small></span></button><span class="pick-side">${manaCost(meta(r.name))}<b>${usd(r.price)}</b></span></div>`)
         .join("")}</div></details>`,
     )
-    .join("")}
+    .join(""))}
   ${S.state.decks.length ? `<div class="inline-pick"><select id="ideaDeckPick" aria-label="Deck">${options(S.state.decks.map((x) => [x.id, x.name]), S.state.activeDeck)}</select><button class="btn ghost" data-act="ideaToDeck">Add ticked to deck</button></div>` : ""}
   <p class="foot">Nothing changes until you tap a button. Buy sends only the cards you don't own to TCGplayer.</p>
   <div class="idea-actions">

@@ -10,14 +10,15 @@ import {PROMO_IDS,COSMOS_IDS,STAMPED_IDS,GM_KEY,PROMO_EVIDENCE,loadPromoFixtures
 
 const data=await loadPromoFixtures();console.log(validatePromoFixtures(data));
 if(process.argv.includes('--validate-fixtures'))process.exit(0);
-assert.equal(process.env.GITHUB_ACTIONS,'true','Promo UI QA is hosted-only. Locally use --validate-fixtures; do not start a browser/server.');
-const {chromium}=await import('playwright');
+const local=process.argv.includes('--local');
+assert(process.env.GITHUB_ACTIONS==='true'||local&&process.env.CARDSTASHY_LOCAL_BROWSER==='1','Use hosted CI or --local with CARDSTASHY_LOCAL_BROWSER=1; --validate-fixtures starts no browser/server.');
+const {chromium}=await import(process.env.CARDSTASHY_PLAYWRIGHT_MODULE||'playwright');
 const report={evidence:PROMO_EVIDENCE,checks:[],artRequests:[],providerRequests:[],unavailableArt:[],physicalPhoneVerified:false};
 const inventorySnapshot=page=>page.evaluate(()=>{const s=window.__uiTestState.state;return JSON.stringify({collection:s.collection,printings:s.printings,decks:s.decks,wishlist:s.wishlist,myPrices:s.myPrices,priceChoices:s.priceChoices,valueHistory:s.valueHistory,tcg:s.tcg});});
 const frames=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
 const shot=(page,name)=>page.screenshot({path:resolve(RESULTS,'pokemon-promos-'+name+'.png'),animations:'disabled',fullPage:false});
 const rowId=id=>'promo-owned-'+id;
-let server,browser,app,error,scannerTrace=false;
+let server,browser,app,error,browserTrace=false;
 // Scanner diagnostics are observational only: no handler invocation, state
 // mutation, forced click, animation suppression, or additional provider request.
 async function scannerDiagnostic(page,phase){
@@ -92,7 +93,7 @@ async function cardChoices(page,id){
  report.checks.push({id,phase:'finish-versions-prices-add-choices',keys:expected,inventoryUnchanged:true});
 }
 try{
- server=await startServer();browser=await chromium.launch();app=await openApp(browser,server.base,{game:'ptcg',width:390,isMobile:true});const {page}=app;
+ server=await startServer();browser=await chromium.launch({headless:true,...(process.env.CARDSTASHY_CHROMIUM_PATH?{executablePath:process.env.CARDSTASHY_CHROMIUM_PATH,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']}:{} )});app=await openApp(browser,server.base,{game:'ptcg',width:390,isMobile:true});const {page}=app;
  const rawById=new Map(data.raw.map(c=>[c.id,c]));
  // Exact public records are fulfilled locally. Every other route retains the
  // base harness's deny-all-external-write/unmapped-request guard.
@@ -139,6 +140,10 @@ try{
   window.__promoCards=cards;dispatchEvent(new Event('cardstashy-rerender'));
  },{raw:data.raw,ids:PROMO_IDS,cosmos:COSMOS_IDS,stamped:STAMPED_IDS,gm:GM_KEY});
  await page.locator(`#content .lot-art[data-entry="${rowId('swshp-SWSH032')}"]`).waitFor();await frames(page);
+ // Record the initial detail/Versions/Prices/Add/Close path as well as scanner
+ // interactions. The earlier CI artifact had only a final Add screenshot when
+ // closeSheet timed out, without the input trace needed to identify its cause.
+ await mkdir(RESULTS,{recursive:true});await app.context.tracing.start({screenshots:true,snapshots:true,sources:true});browserTrace=true;
  const baseline=await inventorySnapshot(page);
  for(const id of PROMO_IDS)await cardChoices(page,id);
  await assertNoInventoryChange(page,baseline,'All 17 card choice checks');
@@ -200,7 +205,6 @@ try{
  for(const id of ['swshp-SWSH074','swshp-SWSH251']){await openOwned(page,id);const state=await selected(page);assert.equal(state.model.status,'approximate');assert.match(state.model.reason,/approximate/);if(id==='swshp-SWSH251')assert.deepEqual(state.model.layers.map(l=>l.mask),['card']);await closeSheet(page);report.checks.push({id,phase:'approximate-control',state});}
  // Real scanner pile/inline printing UI, without camera, OCR, or Save.
  const scannerCards=data.cards.filter(c=>STAMPED_IDS.includes(c.id)||['swshp-SWSH013','swshp-SWSH220','swsh3-161'].includes(c.id));
- await mkdir(RESULTS,{recursive:true});await app.context.tracing.start({screenshots:true,snapshots:true,sources:true});scannerTrace=true;
  await observeScanner(page);await scannerDiagnostic(page,'before-seed');
  await seedReviews(page,'ptcg',{cards:scannerCards,condition:'Near Mint',selectedFinish:''});
  await scannerDiagnostic(page,'after-seed-navigation');
@@ -228,7 +232,7 @@ try{
  await assertNoInventoryChange(page,baseline,'Complete promo suite');app.health();
  // Fresh isolated other-game instances prove the bounded Pokémon repair has
  // not changed ordinary Magic/YGO detail finish selection or owned payloads.
- if(scannerTrace){await app.context.tracing.stop({path:resolve(RESULTS,'pokemon-promos-scanner-trace.zip')});scannerTrace=false;}
+ if(browserTrace){await app.context.tracing.stop({path:resolve(RESULTS,'pokemon-promos-browser-trace.zip')});browserTrace=false;}
  await app.context.close();app=null;
  for(const game of ['mtg','ygo']){
   const other=await openApp(browser,server.base,{game,width:390,isMobile:true});try{
@@ -239,4 +243,4 @@ try{
  }
  report.status='passed';console.log('PASS: exact promo art/detail/zoom, seven bounded Cosmos masks, partial Trainer reverse, all17 choice matrices, saved aliases, null quote isolation and no inventory mutation.');
 }catch(caught){error=caught;report.status='failed';report.error=String(caught.stack||caught);if(app){await scannerDiagnostic(app.page,'failure').catch(()=>{});await shot(app.page,'failure').catch(()=>{});}throw caught;}
-finally{if(scannerTrace&&app){await app.context.tracing.stop({path:resolve(RESULTS,'pokemon-promos-scanner-trace.zip')}).catch(()=>{});scannerTrace=false;}await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,'pokemon-promos-browser.json'),JSON.stringify(report,null,2));if(app)await app.context.close();await browser?.close();await server?.close();}
+finally{if(browserTrace&&app){await app.context.tracing.stop({path:resolve(RESULTS,'pokemon-promos-browser-trace.zip')}).catch(()=>{});browserTrace=false;}await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,'pokemon-promos-browser.json'),JSON.stringify(report,null,2));if(app)await app.context.close();await browser?.close();await server?.close();}

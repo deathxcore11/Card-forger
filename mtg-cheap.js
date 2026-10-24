@@ -21,6 +21,7 @@ export const cheapestQuery = (name) => `!"${String(name).split(" // ")[0].replac
 export function eligiblePrinting(c, name, { reference = null, format = "", basicOnly = false } = {}) {
   return !!c && cardKey(c.name) === cardKey(name) && (!reference?.oracle_id || c.oracle_id === reference.oracle_id) &&
     Array.isArray(c.games) && c.games.includes("paper") && c.digital !== true && c.oversized !== true &&
+    !["art_series", "token", "double_faced_token", "emblem", "planar", "scheme", "vanguard"].includes(c.layout) &&
     !["gold", "silver"].includes(c.border_color) && c.set_type !== "memorabilia" && c.acorn !== true && c.security_stamp !== "acorn" &&
     (!basicOnly || /^Basic\b/.test(c.type_line || "")) && legal(c, format);
 }
@@ -39,7 +40,7 @@ export async function findCheapestPrinting(name, { api, key = cardKey, reference
     ...(card ? { id: card.id, oracle_id: card.oracle_id, set: card.set, setName: card.set_name, cn: card.collector_number, legalities: card.legalities } : {}) };
   load()[key(name)] = quote;
   save();
-  return { card, quote, coverage };
+  return { card, quote, coverage, checkedPrintings:checked };
 }
 // names: card names; api: the app's rate-limited Scryfall fetch; key: the app's card key.
 export async function refreshCheapest(names, { api, key = cardKey, progress = () => {}, limit = 60, format = "", reference = () => null } = {}) {

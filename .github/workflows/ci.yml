@@ -683,6 +683,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Test shared AI deck sheets, exact cards, export and explicit save
         run: node tests/ai-deck-build-browser.mjs
+      - name: Test four deck views across games, sizes, filters and persisted preferences
+        run: node tests/deck-viewer-browser.mjs
       - name: Test build progress, cancellation and shared generated-deck design
         run: node tests/deck-build-presentation-browser.mjs
       - name: Test expanded rules, typed discovery and source-card Back
@@ -701,6 +703,8 @@ jobs:
             test-results/ai-deck-build-*
             test-results/ai-request-recovery-*
             test-results/deck-build-presentation-browser.json
+            test-results/deck-viewer-browser.json
+            test-results/deck-view-*
             test-results/deck-building-*
             test-results/deck-built-*
             test-results/ai-deck-building-*

@@ -1,3 +1,6 @@
+import {cardKey,commandZoneKeys} from './core.js';
+import {formatOf} from './formats.js';
+import {inspectFinalSupport} from './mtg-final-support.js';
 import {mtgManaSourceProfile} from './mtg-mana-sources.js';
 import {setupBurden} from './deck-preferences.js';
 // Shared request/result boundary for manual construction and conversational AI.
@@ -20,6 +23,7 @@ export function normalizeDeckRequest(input={},formats={}) {
  const raw=input.budget,target=raw===undefined||raw===null||raw===''||raw===Infinity?null:Number(raw);
  if(target!==null&&(!Number.isFinite(target)||target<0||target>100000))throw Error('Enter a budget between $0 and $100,000, or leave it blank.');
  const budgetBasis=input.budgetBasis||input.budget_basis||'total',ownedOnly=input.ownedOnly===true||budgetBasis==='owned';
+ if(input.colors!==undefined&&(!Array.isArray(input.colors)||input.colors.some(c=>!['W','U','B','R','G','C'].includes(c))||input.colors.includes('C')&&input.colors.length>1))throw Error('Choose known color identity letters, or C alone for colorless.');
  const budgetMode=input.budgetMode==='target'?'target':'cap',budgetBoundary=budgetMode==='cap'&&input.budgetBoundary==='exclusive'?'exclusive':'inclusive';
  // Constraints read from the theme text stay derived: Edit choices re-reads
  // them from the current theme, while explicit selections are kept as given.
@@ -36,8 +40,9 @@ export function normalizeDeckRequest(input={},formats={}) {
   if(given(field)&&(!Array.isArray(input[field])||input[field].some(type=>!CREATURE_THEMES.includes(type))))throw Error('Choose known creature types for the type restriction.');
   typeRestrictions[field]=[...new Set(given(field)?input[field]:parsedTypes[field])];constraintSources[field]=given(field)?'explicit':'theme';
  }
+ const matchMode=['bo1','bo3'].includes(input.matchMode)?input.matchMode:'unspecified';
  const allowance=target===null||budgetMode==='cap'?0:cents(Math.min(target*DECK_POLICY.overagePercent/100,DECK_POLICY.overageMaximum));
- return {...input,...typeRestrictions,...loopIntent,constraintSources,avoid_infinite:avoidInfinite===true,game,format:game==='mtg'?selected.name:selected.id,formatName:selected.name,
+ return {...input,...typeRestrictions,...loopIntent,constraintSources,matchMode,avoid_infinite:avoidInfinite===true,game,format:game==='mtg'?selected.name:selected.id,formatName:selected.name,
   theme:String(input.theme??input.style??'').trim(),budget:target,budgetBasis:budgetBasis==='purchase'||budgetBasis==='owned'?'purchase':'total',
   ownedOnly,budgetMode,preferOwned:input.preferOwned??input.goal!=='strongest',easy:input.easy===true||/easy to play|beginner|simple/i.test(input.style||''),
   randomSeed:Number.isFinite(input.randomSeed)?input.randomSeed:Math.floor(Math.random()*0x7fffffff),
@@ -53,7 +58,7 @@ export function withinBudgetCap(estimate,request) {
 // Stable fingerprint of the constraints a result was validated against, so a
 // report can be matched to its request. Not a security hash.
 export function requestFingerprint(request) {
- const fields=['game','format','theme','seed','commander','budget','budgetMode','budgetBoundary','budgetBasis','ownedOnly','creatureTypesOnly','excludedSubtypes','required_cards','excluded_cards','colors','requireLoop','loopOutput','avoid_infinite','randomSeed'];
+ const fields=['game','format','matchMode','theme','seed','commander','budget','budgetMode','budgetBoundary','budgetBasis','ownedOnly','creatureTypesOnly','excludedSubtypes','required_cards','excluded_cards','colors','requireLoop','loopOutput','avoid_infinite','randomSeed'];
  const text=JSON.stringify(fields.map(k=>[k,request?.[k]??null]));let h=2166136261;
  for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619);}
  return (h>>>0).toString(16).padStart(8,'0');
@@ -85,12 +90,20 @@ export function pokemonPlanAttackers(request,rows,deck={}) {
  return [...new Map(relevant.filter(c=>!relevant.some(other=>key(other.evolveFrom)===key(c.name))).map(c=>[c.id,c])).values()];
 }
 // These checks reject known broken dependencies. They are not a rules simulator.
-export function inspectDeckPlan(request,rows,deck={}) {
+export function inspectDeckPlan(request,rows,deck={},{includeFinalSupport=true}={}) {
  const parsedTypes=request.game==='mtg'?readCreatureTypeRestrictions(request.theme||request.style||''):{creatureTypesOnly:[],excludedSubtypes:[]};
  request={...request,creatureTypesOnly:[...new Set(request.creatureTypesOnly===undefined?parsedTypes.creatureTypesOnly:request.creatureTypesOnly)],excludedSubtypes:[...new Set(request.excludedSubtypes===undefined?parsedTypes.excludedSubtypes:request.excludedSubtypes)]};
  const main=rows.filter(r=>r.zone!=='extra'&&r.zone!=='side'),cards=main.map(r=>r.card).filter(Boolean),issues=[],notes=[];let attackers=[],manaCoverage=null;
  const names=new Set(cards.map(c=>key(c.name))),text=c=>String(c?.text||c?.oracle_text||'');
- const restrictionRequested=request.game==='mtg'&&(request.creatureTypesOnly?.length||request.excludedSubtypes?.length),restrictionFailures=restrictionRequested?main.filter(r=>!fitsTypeRestrictions(r.card,request)):[];
+ const restrictionRequested=request.game==='mtg'&&(request.creatureTypesOnly?.length||request.excludedSubtypes?.length),restrictionFailures=restrictionRequested?rows.filter(r=>!fitsTypeRestrictions(r.card,request)):[];
+ if(request.game==='mtg'&&request.commander&&!commandZoneKeys(deck).has(cardKey(request.commander)))issues.push(`The requested commander ${request.commander} is not selected in the command zone.`);
+ if(request.game==='mtg'&&request.format&&deck.format&&formatOf(deck).id!==formatOf(request.format).id)issues.push(`The selected deck format does not match the requested ${request.format} format.`);
+ const colorRequested=request.game==='mtg'&&request.colors?.length,allowedColors=(request.colors||[]).filter(c=>c!=='C');
+ if(colorRequested)for(const row of rows){
+  const identity=row.card?.color_identity;
+  if(!Array.isArray(identity))issues.push(`${row.name||row.card?.name||'Unresolved card'}: color identity is unverified for the requested colors.`);
+  else if(identity.some(c=>!allowedColors.includes(c)))issues.push(`${row.name||row.card?.name}: outside the requested color identity (${request.colors.join(', ')}).`);
+ }
  if(rows.some(r=>!Number.isInteger(r.qty)||r.qty<=0))issues.push('A card quantity is invalid.');
  if(rows.some(r=>!r.card||r.card.brief))issues.push('Some selected cards have incomplete rules data.');
  if(request.game==='ptcg'){
@@ -163,21 +176,42 @@ export function inspectDeckPlan(request,rows,deck={}) {
   }
  }
  if(request.seedCards?.some(c=>!rows.some(r=>r.qty>0&&r.zone!=='side'&&key(r.card?.name)===key(c.name))))issues.push('A required build-around card is missing from its playable deck section.');
- if(request.seedCard&&!rows.some(r=>r.qty>0&&key(r.card?.name)===key(request.seedCard.name)))issues.push(`The required build-around ${request.seedCard.name} is missing.`);
- for(const name of request.required_cards||[])if(!names.has(key(name))&&!rows.some(r=>key(r.card?.name)===key(name)))issues.push(`Required card ${name} is missing.`);
+ if(request.seedOrigin!=='automatic'&&request.seedCard&&!main.some(r=>r.qty>0&&key(r.card?.name)===key(request.seedCard.name)))issues.push(`The required build-around ${request.seedCard.name} is missing.`);
+ for(const name of request.required_cards||[])if(!names.has(key(name))&&(request.game==='mtg'||!rows.some(r=>key(r.card?.name)===key(name))))issues.push(`Required card ${name} is missing.`);
  for(const name of request.excluded_cards||[])if(rows.some(r=>key(r.card?.name)===key(name)))issues.push(`Excluded card ${name} was selected.`);
- const analysisRows=rows.map(r=>({...r,c:r.card}));
+ const analysisRows=main.map(r=>({...r,c:r.card}));
  const engine=engineMap(request.game,analysisRows,{commanders:deck.commander?[deck.commander]:[]});
- const theme=request.game==='mtg'?inspectMtgTheme(rows,{style:request.theme||request.style,commander:deck.commander,goal:request.goal}):null;
+ const theme=request.game==='mtg'?inspectMtgTheme(main,{style:request.theme||request.style,commander:deck.commander,seed:request.seed||deck.buildAround,goal:request.goal}):null;
  if(theme){issues.push(...theme.issues);notes.push(...theme.notes);}
- const combo=request.game==='mtg'?inspectManaLoop(rows,request):{status:request.unsupportedLoop?'unverified':'not-requested',issues:request.unsupportedLoop?[request.unsupportedLoop]:[],packages:[]};
+ const abilityEndpoints=engine.abilityEndpoints||null;if(abilityEndpoints)notes.push(...abilityEndpoints.notes);
+ const combo=request.game==='mtg'?inspectManaLoop(main,request):{status:request.unsupportedLoop?'unverified':'not-requested',issues:request.unsupportedLoop?[request.unsupportedLoop]:[],packages:[]};
  issues.push(...combo.issues);
  for(const conflict of engine.conflicts||[])notes.push(conflict.reason);
  const risks=strategicRisk(request.game,analysisRows);
  // Preference measures setup burden, not text length or a fake skill rating.
  const setup=main.reduce((sum,r)=>sum+setupBurden(request.game,r.card)*r.qty,0);
+ const finalSupport=includeFinalSupport&&request.game==='mtg'?inspectFinalSupport(request,rows,deck):null;if(finalSupport){issues.push(...finalSupport.issues);notes.push(...finalSupport.notes);}
  const typeRestrictions={status:restrictionRequested?(restrictionFailures.length?'fail':'pass'):'not-requested',creatureTypesOnly:[...(request.creatureTypesOnly||[])],excludedSubtypes:[...(request.excludedSubtypes||[])],includesCommander:true,noncreatureSupportAllowed:true,conflicts:restrictionFailures.map(r=>r.name||r.card?.name||'Unresolved card')};
- return {attackers,manaCoverage,issues:[...new Set(issues)],notes:[...new Set([...notes,...(deck.repairNotes||[])])],engine,theme,strategy:theme?.strategy||null,mechanics:theme?.mechanics||null,combo,typeRestrictions,risks,setupBurden:setup};
+ return {attackers,manaCoverage,abilityEndpoints,finalSupport,issues:[...new Set(issues)],notes:[...new Set([...notes,...(deck.repairNotes||[]),...(deck.constructionNotes||[])])],engine,theme,strategy:theme?.strategy||null,mechanics:theme?.mechanics||null,combo,typeRestrictions,risks,setupBurden:setup};
+}
+// Magic list identity ignores printing, row order and split duplicate rows. Other
+// games retain card IDs because same-name cards can have different game text.
+export function normalizedDeckList(deck={},game='mtg') {
+ const rows=deck.cards?[...deck.cards.map(r=>({...r,zone:r.zone||'main'})),...(deck.side||[]).map(r=>({...r,zone:'side'}))]:Object.entries(deck.zones||{}).flatMap(([zone,rows])=>rows.map(r=>({...r,zone}))),counts=new Map();
+ for(const r of rows){const qty=Number(r.qty);if(!Number.isFinite(qty)||qty<=0)continue;const zone=r.zone||'main',name=key(game==='mtg'?r.name:r.cardId||r.id||r.name),id=JSON.stringify([zone,name]);const old=counts.get(id);counts.set(id,{zone,name,displayName:r.name||r.cardId||r.id,qty:qty+(old?.qty||0)});}
+ return [...counts.values()].sort((a,b)=>a.zone.localeCompare(b.zone)||a.name.localeCompare(b.name));
+}
+export function deckListSignature(deck,game='mtg') {
+ return JSON.stringify([key(deck?.commander),(deck?.commanders||[]).map(c=>key(c?.name||c)).sort(),normalizedDeckList(deck,game).map(({zone,name,qty})=>[zone,name,qty])]);
+}
+export function rebuildComparison(result,candidates,request) {
+ if(!request.previousDeck||!result.ok)return null;
+ const oldList=normalizedDeckList(request.previousDeck,request.game),newList=normalizedDeckList(result.deck,request.game),oldSignature=deckListSignature(request.previousDeck,request.game),newSignature=deckListSignature(result.deck,request.game),sameList=oldSignature===newSignature,commanderChanged=key(request.previousDeck.commander)!==key(result.deck.commander);
+ const oldMap=new Map(oldList.map(r=>[JSON.stringify([r.zone,r.name]),r])),newMap=new Map(newList.map(r=>[JSON.stringify([r.zone,r.name]),r]));
+ const changes=[...new Set([...oldMap.keys(),...newMap.keys()])].map(id=>{const before=oldMap.get(id),after=newMap.get(id);return {name:after?.displayName||before.displayName,zone:after?.zone||before.zone,before:before?.qty||0,after:after?.qty||0,delta:(after?.qty||0)-(before?.qty||0)};}).filter(r=>r.delta);
+ const prior=candidates.find(c=>deckListSignature(c.deck,request.game)===oldSignature),oldEstimate=Object.hasOwn(request,'previousEstimate')?request.previousEstimate:prior?.pricing.estimate??null,newEstimate=result.pricing.estimate;
+ const knownQuality=Number.isFinite(result.power?.score)&&result.power?.strategic?.score!==null&&!result.power?.readiness?.provisional;
+ return {oldBudget:Object.hasOwn(request,'previousBudget')?request.previousBudget:request.previousDeck.budget??null,newBudget:request.budget,budgetMode:request.budgetMode,basis:request.budgetBasis,oldSignature,newSignature,sameList,commanderChanged,previousCommander:request.previousDeck.commander||null,newCommander:result.deck.commander||null,changes,addedCopies:changes.reduce((n,r)=>n+Math.max(0,r.delta),0),removedCopies:changes.reduce((n,r)=>n+Math.max(0,-r.delta),0),oldEstimate,newEstimate,priceDelta:Number.isFinite(oldEstimate)&&Number.isFinite(newEstimate)?cents(newEstimate-oldEstimate):null,evaluatedDistinctLists:new Set(candidates.map(c=>deckListSignature(c.deck,request.game))).size,qualityStatus:knownQuality?'heuristic':'unverified',reason:sameList?(knownQuality?'No different eligible list ranked ahead in this bounded search of the loaded candidates.':'This bounded search returned the same list; quality evidence is incomplete, so improvement is unverified.'):changes.length?'The selected quantities changed after checking the new budget and loaded alternatives.':'The commander changed; the card quantities are unchanged.',limitation:'A larger cap does not require more spending. This is not an exhaustive search or an optimality guarantee.'};
 }
 export function chooseDeck(candidates,request) {
  const valid=candidates.filter(c=>c.check.complete&&c.check.legal&&!c.plan.issues.length&&(!request.ownedOnly||c.pricing.ownedCopies===c.pricing.copies)&&
@@ -185,7 +219,9 @@ export function chooseDeck(candidates,request) {
   withinBudgetCap(c.pricing.estimate,request));
  const budgetClass=c=>request.budget===null?0:c.pricing.estimate===null?2:c.pricing.estimate<=request.budget?0:c.pricing.estimate<=request.budget+request.allowance+1e-6?1:3;
  const strategyClass=c=>({supported:0,'not-requested':0,partial:1,unverified:2,insufficient:3}[c.plan.theme?.status]??0);
- valid.sort((a,b)=>budgetClass(a)-budgetClass(b)||strategyClass(a)-strategyClass(b)||(request.easy?a.plan.setupBurden-b.plan.setupBurden:0)||(budgetClass(a)===3?a.pricing.estimate-b.pricing.estimate:0)||(request.preferOwned?b.pricing.ownedCopies/b.pricing.copies-a.pricing.ownedCopies/a.pricing.copies:0)||comparePower(b.power,a.power)||a.pricing.unpriced-b.pricing.unpriced||a.pricing.subtotal-b.pricing.subtotal);
+ const referencePrior=c=>request.game==='mtg'&&request.format==='Standard'&&(!request.goal||request.goal==='strongest')&&!request.easy&&!String(request.theme||request.style||'').trim()&&c.deck.referenceQualifiedForBuild===true&&c.deck.constructionBasis==='reference'&&c.deck.referenceAdaptation?.sameList&&!c.deck.referenceAdaptation.modeMismatch?1:0;
+ const supportClass=c=>c.plan.finalSupport?.status==='unverified'?1:c.plan.finalSupport?.status==='known-incomplete'?2:0;
+ valid.sort((a,b)=>budgetClass(a)-budgetClass(b)||strategyClass(a)-strategyClass(b)||supportClass(a)-supportClass(b)||(request.easy?a.plan.setupBurden-b.plan.setupBurden:0)||(budgetClass(a)===3?a.pricing.estimate-b.pricing.estimate:0)||(request.preferOwned?b.pricing.ownedCopies/b.pricing.copies-a.pricing.ownedCopies/a.pricing.copies:0)||referencePrior(b)-referencePrior(a)||comparePower(b.power,a.power)||a.pricing.unpriced-b.pricing.unpriced||a.pricing.subtotal-b.pricing.subtotal);
  const winner=valid[0];
  if(!winner){
   const nearest=[...candidates].sort((a,b)=>Number(b.check.complete)-Number(a.check.complete)||a.plan.issues.length-b.plan.issues.length)[0];
@@ -195,8 +231,8 @@ export function chooseDeck(candidates,request) {
  }
  const delta=request.budget!==null&&winner.pricing.estimate!==null?cents(winner.pricing.estimate-request.budget):null;
  const budgetVerified=winner.pricing.estimate!==null&&(request.budget===null||(request.budgetBoundary==='exclusive'?delta<0:delta<=0)),themeVerified=winner.plan.theme?.status==='supported';
- const themeOK=!winner.plan.theme||['supported','not-requested'].includes(winner.plan.theme.status),requestSatisfied=(request.budget===null||budgetVerified)&&themeOK&&winner.plan.manaCoverage?.status!=='unverified'&&(!request.requireLoop||winner.plan.combo?.status==='verified')&&!request.unsupportedLoop&&!request.loopConflict;
- return {ok:true,...winner,request,budgetVerified,themeVerified,requestSatisfied,validation:{complete:true,legal:true,budget:request.budget===null?'not-requested':budgetVerified?'pass':winner.pricing.estimate===null?'unverified':'fail',theme:winner.plan.theme?.status||'unverified',combo:winner.plan.combo?.status||'not-requested',creatureTypes:winner.plan.typeRestrictions?.status||'not-requested',prerequisites:winner.plan.theme?.prerequisites?.status||'not-applicable',mana:winner.plan.manaCoverage?.status||'not-applicable',competitive:'unverified',request:requestFingerprint(request)},budgetStatus:budgetClass(winner)===3?'outside-target':winner.pricing.estimate===null?'unverified':delta>0?'over-target':'within-target',delta,
+ const themeOK=!winner.plan.theme||['supported','not-requested'].includes(winner.plan.theme.status),requestSatisfied=(request.budget===null||budgetVerified)&&themeOK&&winner.plan.finalSupport?.requestSatisfied!==false&&winner.plan.manaCoverage?.status!=='unverified'&&(!request.requireLoop||winner.plan.combo?.status==='verified')&&!request.unsupportedLoop&&!request.loopConflict;
+ return {ok:true,...winner,request,budgetVerified,themeVerified,requestSatisfied,validation:{complete:true,legal:true,budget:request.budget===null?'not-requested':budgetVerified?'pass':winner.pricing.estimate===null?'unverified':'fail',theme:winner.plan.theme?.status||'unverified',combo:winner.plan.combo?.status||'not-requested',creatureTypes:winner.plan.typeRestrictions?.status||'not-requested',prerequisites:winner.plan.theme?.prerequisites?.status||'not-applicable',mana:winner.plan.manaCoverage?.status||'not-applicable',priceCoverage:winner.pricing.estimate===null?'unverified':'pass',finalSupport:winner.plan.finalSupport?.status||'unverified',matchMode:request.matchMode||'unspecified',competitive:'unverified',request:requestFingerprint(request)},budgetStatus:budgetClass(winner)===3?'outside-target':winner.pricing.estimate===null?'unverified':delta>0?'over-target':'within-target',delta,
   compared:candidates.length,summary:`${request.seedCard?.name||winner.deck.buildAround||request.seed||'Your deck'} · ${request.formatName}`};
 }
 export async function constructDeck(input,adapter,options={}) {
@@ -208,10 +244,12 @@ export async function constructDeck(input,adapter,options={}) {
  if(raw.error)return {ok:false,request,code:'requirements',message:raw.error};
  const found=[],seen=new Set();
  for(const deck of raw.slice(0,DECK_POLICY.maxCandidates)){
-  check();const signature=JSON.stringify([deck.commander,deck.cards||deck.zones]);if(seen.has(signature))continue;seen.add(signature);
+  check();const signature=JSON.stringify([deckListSignature(deck,request.game),deck.referencePrices||null,deck.referencePriceSelections||null,deck.referenceOrigin?.key||null,deck.referenceQualifiedForBuild===true,deck.referenceAdaptation?.kind||null,deck.unverifiedConstraints||[],deck.internalRequiredCards||[]]);if(seen.has(signature))continue;seen.add(signature);
   const assessed=await adapter.assess(deck,request);check();
   found.push({...assessed,deck,pricing:priceDeck(assessed.rows,request.budgetBasis),plan:inspectDeckPlan(request,assessed.rows,deck)});
  }
  options.onStatus?.('Checking the final list and price coverage…');
- return chooseDeck(found,request);
+ const result=chooseDeck(found,request);
+ if(result.ok){result.compared=new Set(found.map(c=>deckListSignature(c.deck,request.game))).size;result.rebuild=rebuildComparison(result,found,request);}
+ return result;
 }

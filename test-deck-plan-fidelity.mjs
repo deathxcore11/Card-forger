@@ -45,6 +45,15 @@ assert.equal(mtgAbilityEvidence(synthetic('Mention only','Destroy target creatur
 assert(mtgAbilityEvidence(synthetic('Native','Flying, vigilance'),'Flying').length);
 assert(mtgAbilityEvidence(synthetic('Granted','Creatures you control have flying.'),'Flying').length);
 assert.equal(mtgAbilityEvidence(synthetic('Opponent','Creatures your opponents control have flying.'),'Flying').length,0);
+const ninjaVariant=mtgAbilityEvidence(synthetic('Commander variant','Commander ninjutsu {U}{B}'),'Ninjutsu');
+assert.equal(ninjaVariant.length,1);assert.equal(ninjaVariant[0].variant,'Commander ninjutsu');
+assert.match(ninjaVariant[0].requirements.join(' '),/unblocked attacking creature/);
+assert.equal(mtgAbilityEvidence(synthetic('Ordinary Ninja','Ninjutsu {1}{U}'),'Commander ninjutsu').length,0,'base mechanic does not acquire command-zone activation');
+const ninjaHandGrant=mtgAbilityEvidence(synthetic('Hand grant','Each creature card in your hand has ninjutsu {2}{U}{B}.'),'Ninjutsu');
+assert.equal(ninjaHandGrant.length,1);assert.equal(ninjaHandGrant[0].recipientZone,'hand');
+assert.match(ninjaHandGrant[0].requirements.join(' '),/grant to be active.*creature card in your hand/);
+for(const text of ['Destroy target creature with ninjutsu.','Each creature card in an opponent’s hand has ninjutsu {2}{U}{B}.','Name a card named "Each creature card in your hand has ninjutsu".','Whenever you activate a ninjutsu ability, draw a card.'])assert.equal(mtgAbilityEvidence(synthetic('Mention only',text),'Ninjutsu').length,0,text);
+assert.equal(mtgAbilityEvidence(synthetic('Hand flying','Each creature card in your hand has flying.'),'Flying').length,0,'bounded hand-activated support must not invent battlefield-native keywords');
 assert(!mtgTags(synthetic('Opponent life','Target opponent gains 5 life.')).provides.has('lifegain'));
 assert(!mtgTags(synthetic('Replacement only','If you would gain life, you gain twice that much life instead.')).provides.has('lifegain'));
 console.log('PASS: life-gain direction and variable output, tribal alternatives, changeling, multiword types and positive keyword capabilities share evidence.');

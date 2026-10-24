@@ -1,0 +1,291 @@
+{
+  "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+  "wasmSha256": "6057521d851bb8544eaeea467f741b90cd2941aa5ba2fddb17e1bcc3d9933f8f",
+  "glueSha256": "47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd3476cfb70131de6287c9",
+  "fixtureSha256": "ee062b8ad351e067723b79fc8462aaea19202ef9756d35b2101334eb3e350107",
+  "runtime": "v24.22.1",
+  "initialRedactionChecks": [
+    {
+      "seat": 0,
+      "hiddenObjects": 113,
+      "hiddenNamesAndCardIdsRedacted": true,
+      "rngSeedAndPositionZero": true,
+      "orderedLibraryObjectIdsRetained": true
+    },
+    {
+      "seat": 1,
+      "hiddenObjects": 113,
+      "hiddenNamesAndCardIdsRedacted": true,
+      "rngSeedAndPositionZero": true,
+      "orderedLibraryObjectIdsRetained": true
+    }
+  ],
+  "policy": "ungraded legal-action smoke policy v0; no production CPU certification",
+  "fixture": "3 exported records; two land-heavy Modern lists",
+  "cases": [
+    {
+      "seed": 12345,
+      "first": 0,
+      "acceptedTraceSha256": "1c65efe508467e56300fb7d6d814a7d81c7d74836927fec3b4d26df271882572",
+      "actions": 384,
+      "turn": 22,
+      "terminal": {
+        "data": {
+          "winner": 1
+        },
+        "type": "GameOver"
+      },
+      "events": {
+        "PhaseChanged": 229,
+        "PriorityPassed": 174,
+        "ZoneChanged": 113,
+        "LandPlayed": 22,
+        "AttackersDeclared": 22,
+        "TurnStarted": 21,
+        "CardDrawn": 21,
+        "PlayerPerformedAction": 21,
+        "StackPushed": 4,
+        "PermanentTapped": 20,
+        "AbilityActivated": 8,
+        "ManaAdded": 8,
+        "ManaAbilityProduced": 8,
+        "TappedForMana": 8,
+        "SpellCast": 4,
+        "ManaExpended": 4,
+        "StackResolved": 4,
+        "PermanentUntapped": 17,
+        "BlockersDeclared": 7,
+        "DamageDealt": 13,
+        "CreatureDestroyed": 2,
+        "LifeChanged": 11,
+        "CombatDamageDealtToPlayer": 6,
+        "PlayerLost": 1,
+        "PlayerEliminated": 1,
+        "GameOver": 1
+      },
+      "milliseconds": 4753,
+      "coldProcessRestore": {
+        "acceptedAtSave": 80,
+        "pending": {
+          "data": {
+            "player": 1
+          },
+          "type": "Priority"
+        },
+        "identicalSuffix": true,
+        "identicalOutcome": true,
+        "networkCalls": 0
+      }
+    },
+    {
+      "seed": 67890,
+      "first": 0,
+      "acceptedTraceSha256": "91dcacf7d14de96d284322b70939bdb06fabd1a8152a592c150d164064b884fc",
+      "actions": 425,
+      "turn": 24,
+      "terminal": {
+        "data": {
+          "winner": 1
+        },
+        "type": "GameOver"
+      },
+      "events": {
+        "PhaseChanged": 255,
+        "PriorityPassed": 194,
+        "ZoneChanged": 109,
+        "LandPlayed": 24,
+        "AttackersDeclared": 24,
+        "TurnStarted": 23,
+        "CardDrawn": 23,
+        "PlayerPerformedAction": 23,
+        "StackPushed": 1,
+        "PermanentTapped": 12,
+        "AbilityActivated": 2,
+        "ManaAdded": 2,
+        "ManaAbilityProduced": 2,
+        "TappedForMana": 2,
+        "SpellCast": 1,
+        "ManaExpended": 1,
+        "StackResolved": 1,
+        "PermanentUntapped": 11,
+        "BlockersDeclared": 10,
+        "LifeChanged": 10,
+        "DamageDealt": 10,
+        "CombatDamageDealtToPlayer": 10,
+        "PlayerLost": 1,
+        "PlayerEliminated": 1,
+        "GameOver": 1
+      },
+      "milliseconds": 3858
+    },
+    {
+      "seed": 24680,
+      "first": 0,
+      "acceptedTraceSha256": "0eedc2b0264094af8faafa4f50cae8bd9b908fb317fba8c02960f73b3c358fcd",
+      "actions": 922,
+      "turn": 56,
+      "terminal": {
+        "data": {
+          "winner": 1
+        },
+        "type": "GameOver"
+      },
+      "events": {
+        "PhaseChanged": 577,
+        "PriorityPassed": 424,
+        "ZoneChanged": 181,
+        "LandPlayed": 56,
+        "AttackersDeclared": 56,
+        "TurnStarted": 55,
+        "CardDrawn": 55,
+        "PlayerPerformedAction": 55,
+        "StackPushed": 4,
+        "PermanentTapped": 20,
+        "AbilityActivated": 8,
+        "ManaAdded": 8,
+        "ManaAbilityProduced": 8,
+        "TappedForMana": 8,
+        "SpellCast": 4,
+        "ManaExpended": 4,
+        "StackResolved": 4,
+        "PermanentUntapped": 17,
+        "BlockersDeclared": 11,
+        "LifeChanged": 11,
+        "DamageDealt": 13,
+        "CombatDamageDealtToPlayer": 10,
+        "CreatureDestroyed": 2,
+        "PlayerLost": 1,
+        "PlayerEliminated": 1,
+        "GameOver": 1
+      },
+      "milliseconds": 12103
+    },
+    {
+      "seed": 12345,
+      "first": 1,
+      "acceptedTraceSha256": "af5dfa42a387344453db5a5b31e2ed55668982492c7d20e10ba96e4216b0ed93",
+      "actions": 399,
+      "turn": 23,
+      "terminal": {
+        "data": {
+          "winner": 1
+        },
+        "type": "GameOver"
+      },
+      "events": {
+        "PhaseChanged": 239,
+        "PriorityPassed": 181,
+        "ZoneChanged": 115,
+        "LandPlayed": 23,
+        "AttackersDeclared": 23,
+        "TurnStarted": 22,
+        "CardDrawn": 22,
+        "PlayerPerformedAction": 22,
+        "StackPushed": 4,
+        "PermanentTapped": 20,
+        "AbilityActivated": 8,
+        "ManaAdded": 8,
+        "ManaAbilityProduced": 8,
+        "TappedForMana": 8,
+        "SpellCast": 4,
+        "ManaExpended": 4,
+        "StackResolved": 4,
+        "PermanentUntapped": 17,
+        "BlockersDeclared": 7,
+        "DamageDealt": 13,
+        "CreatureDestroyed": 2,
+        "LifeChanged": 11,
+        "CombatDamageDealtToPlayer": 6,
+        "PlayerLost": 1,
+        "PlayerEliminated": 1,
+        "GameOver": 1
+      },
+      "milliseconds": 4944
+    },
+    {
+      "seed": 67890,
+      "first": 1,
+      "acceptedTraceSha256": "1223f804457f3e2aefad1454654cc10c847f45f4be2f1d8fa11d6f982b79dec4",
+      "actions": 410,
+      "turn": 23,
+      "terminal": {
+        "data": {
+          "winner": 1
+        },
+        "type": "GameOver"
+      },
+      "events": {
+        "PhaseChanged": 245,
+        "PriorityPassed": 187,
+        "ZoneChanged": 107,
+        "LandPlayed": 23,
+        "AttackersDeclared": 23,
+        "TurnStarted": 22,
+        "CardDrawn": 22,
+        "PlayerPerformedAction": 22,
+        "StackPushed": 1,
+        "PermanentTapped": 12,
+        "AbilityActivated": 2,
+        "ManaAdded": 2,
+        "ManaAbilityProduced": 2,
+        "TappedForMana": 2,
+        "SpellCast": 1,
+        "ManaExpended": 1,
+        "StackResolved": 1,
+        "PermanentUntapped": 11,
+        "BlockersDeclared": 10,
+        "LifeChanged": 10,
+        "DamageDealt": 10,
+        "CombatDamageDealtToPlayer": 10,
+        "PlayerLost": 1,
+        "PlayerEliminated": 1,
+        "GameOver": 1
+      },
+      "milliseconds": 4663
+    },
+    {
+      "seed": 24680,
+      "first": 1,
+      "acceptedTraceSha256": "3abe1d729ee84ea9121f8cf615d5573b5b76d3704944e3228a70c4f8356a1ae5",
+      "actions": 930,
+      "turn": 57,
+      "terminal": {
+        "data": {
+          "winner": 1
+        },
+        "type": "GameOver"
+      },
+      "events": {
+        "PhaseChanged": 585,
+        "PriorityPassed": 428,
+        "ZoneChanged": 183,
+        "LandPlayed": 57,
+        "AttackersDeclared": 57,
+        "TurnStarted": 56,
+        "CardDrawn": 56,
+        "PlayerPerformedAction": 56,
+        "StackPushed": 4,
+        "PermanentTapped": 19,
+        "AbilityActivated": 8,
+        "ManaAdded": 8,
+        "ManaAbilityProduced": 8,
+        "TappedForMana": 8,
+        "SpellCast": 4,
+        "ManaExpended": 4,
+        "StackResolved": 4,
+        "PermanentUntapped": 16,
+        "BlockersDeclared": 10,
+        "LifeChanged": 10,
+        "DamageDealt": 12,
+        "CombatDamageDealtToPlayer": 9,
+        "CreatureDestroyed": 2,
+        "PlayerLost": 1,
+        "PlayerEliminated": 1,
+        "GameOver": 1
+      },
+      "milliseconds": 12506
+    }
+  ],
+  "networkCalls": 0,
+  "limits": "Node/WASM and a fetch-failure guard only. Unequal land-heavy lists, no seat/deck strength benchmark; no browser cold-offline/device latency, isolated policy worker, full privacy/tactics audit, complete supported pool or 4.0 readiness proof."
+}
