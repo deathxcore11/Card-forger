@@ -17,6 +17,7 @@ import {createPlaySetup} from './play-setup.js';
 import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
+import {createPlayerMat} from './play-player-mat.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -1471,8 +1472,9 @@ C.chooseLocation = t => chooseLocation(t);
 const I = {}; // input handlers
 // Branch beta setup uses the real account workspace and shared deck renderers.
 // It does not start a manual/cosmetic game or adopt the candidate rules engine.
+const readPlayAccount=()=>{const a=cloudInfo();return {user:a.user?{id:a.user.id}:null,profile:a.profile,art:{avatar:a.art?.avatar||S.state.settings.cardAvatar||null},switching:a.switching,locked:accountLocked,accountGeneration};};
 const playSetup = createPlaySetup({
-  readAccount:()=>{const a=cloudInfo();return {user:a.user?{id:a.user.id}:null,profile:a.profile,art:{avatar:a.art?.avatar||S.state.settings.cardAvatar||null},switching:a.switching,locked:accountLocked,accountGeneration};},
+  readAccount:readPlayAccount,
   readDecks:()=>S.state.decks,
   parseImport:text=>parsePlayDeckImport(text,{parseDeckImport}),
   resolveNames:async names=>{const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;await resolveNames(names,()=>{},false,current);return {failed:current()?names.filter(name=>!meta(name)):[]};}
@@ -1482,6 +1484,22 @@ const practiceOpponentBuilder=createPracticeOpponentBuilder({pipeline:deckPipeli
  onSelect:deck=>playSetup.chooseOpponent(deck),onChange:()=>refreshPlayMenu()});
 A.playRandomOpponent=async()=>{const state=playSetup.snapshot();if(!state.profile.signedIn||state.match.mode!=='cpu')return;const root=document.querySelector('.play-menu'),targetBracket=root?.querySelector('[data-opponent-bracket]')?.value||null,deckStyle=root?.querySelector('[data-opponent-style]')?.value||'classic';await practiceOpponentBuilder.build({format:state.match.format,targetBracket,deckStyle});};
 A.playCancelOpponentBuild=()=>practiceOpponentBuilder.cancel();
+// Product activation stays gated until the real-deck/pregame/difficulty gates
+// pass. The account/table lifecycle below is testable independently of activation.
+const PLAY_MATCH_RELEASE_READY=false;
+let playerMatHost=null,playerMatRoot=null;
+function closePlayerMat(){playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;}
+A.playStartCandidate=async()=>{
+ if(!PLAY_MATCH_RELEASE_READY)return toast('Practice integration is still being verified.');
+ if(playerMatHost||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
+ const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
+ if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
+ playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
+ playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),lookup:(name,wanted)=>{const exact=wanted?S.state.printings?.[wanted]:null;return exact||meta(name);},onClose:closePlayerMat});
+ // Actual pregame choice is still a release gate; this internal candidate keeps
+ // that explicit rather than presenting a fake coin/die animation.
+ try{await playerMatHost.start({seed:crypto.getRandomValues(new Uint32Array(1))[0],first:0});}catch(e){toast(e.message);}
+};
 function playDeckPreview(deck) {
   if(!deck||!Array.isArray(deck.cards)||!Array.isArray(deck.side||[])||(deck.format!==undefined&&typeof deck.format!=='string')||[...deck.cards,...(deck.side||[])].some(row=>!row||typeof row.name!=='string'||!Number.isSafeInteger(row.qty)||row.qty<1))return '<p class="note warn">This deck needs review in Decks before its cards can be displayed.</p>';
   return deckViewer('mtg',V.deckList(deck,{readOnly:true,unfiltered:true,preserveExactList:true,cardAction:'playInspectCard'}));
@@ -6476,7 +6494,7 @@ async function boot() {
     accountChanged: () => {
       invalidateAiAuth();clearAiReviews();
       dismissConditionInfo();aiMatchups.reset();resetMatchups();matchupImport=null;
-      accountLocked=true;valueHistoryReady=false;accountGeneration++;workspaceVisitRevision++;lastUndo=null;
+      accountLocked=true;valueHistoryReady=false;accountGeneration++;workspaceVisitRevision++;lastUndo=null;closePlayerMat();
       community.reset();deckBoxTransitions.reset();clearConditionAttempts();conditionScheduler=createConditionRefreshScheduler();
       clearAskConversations();clearRulesConversations();rulesGuideOrigin=null;
       scanCtx.accountChanged?.();profilePicker.close(true);headerPicker.close(true);
@@ -6559,7 +6577,7 @@ async function boot() {
   window.addEventListener('storage',async event=>{
     if(event.key!=='cardstashy-workspace-changed'||accountLocked)return;
     if(!await accountWorkspaces.current()){
-      accountLocked=true;accountGeneration++;invalidateAiAuth();clearAiReviews();pauseLocalConflict();
+      accountLocked=true;accountGeneration++;closePlayerMat();invalidateAiAuth();clearAiReviews();pauseLocalConflict();
       for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
       render();
     }

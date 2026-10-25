@@ -81,7 +81,7 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
    actor=valid.actor;action=valid.action;
   }else if(m.op==='act'){
    if(typeof engine.act!=='function'||engine.humanSeat!==0)fail('HUMAN_ROUTE_UNAVAILABLE');
-   actor=0;action={type:'HumanCast',data:humanCommand(m.command)};
+   actor=0;const command=humanCommand(m.command);action={type:command.kind==='concede'?'HumanConcede':'HumanCast',data:command};
   }else if(m.op==='respond'){
    if(typeof engine.respond!=='function'||engine.humanSeat!==0)fail('HUMAN_ROUTE_UNAVAILABLE');
    actor=engine.humanSeat;action={type:'InteractionSubmission',data:interactionSubmission(m.submission)};

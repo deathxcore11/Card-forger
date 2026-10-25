@@ -26,7 +26,7 @@ async function boot(data){
    present:view=>presentInstances(view,presentation)});
   handler=createJournal({engine:adapter,storage:record.storage,choose,version:VERSION+':'+RUNTIME_IDENTITY.wasmSha256+':'+digest,epoch,timing:{matchId:data.match,humanActor:0}});
  }
- return {handler,binding:{admission,cpuAvailable,format:input.format,difficulty:input.difficulty,profile:input.profile,deckName:input.decks.player.name,opponentName:input.decks.opponent.name,snapshotDigest:digest,runtimeIdentity:input.runtimeIdentity}};
+ return {handler,binding:{admission,cpuAvailable,format:input.format,difficulty:input.difficulty,profile:input.profile,deckName:input.decks.player.name,opponentName:input.decks.opponent.name,snapshotDigest:digest,runtimeIdentity:input.runtimeIdentity,deckContexts:{player:input.decks.player.practiceContext||null,opponent:input.decks.opponent.practiceContext||null}}};
 }
 globalThis.onmessage=async({data})=>{
  if(!opening){

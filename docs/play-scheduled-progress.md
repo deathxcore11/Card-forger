@@ -837,3 +837,167 @@ Original failing and corrected passing ninjutsu evidence remains unchanged.
 Next: repeat numeric entry in the actual account table, then finish the remaining
 human schemas/pregame and real eligible Standard/Commander complete-match gates.
 The owner-approved functional beta release gate remains unmet; nothing published.
+
+
+## October 25, 2026 — shared deck context, player-mat host and rendering work
+
+Started from verified remote 2c3b70e8228fdddd9cc0025fb023b81c7f1acacd; the recursive
+tree still contains no AGENTS.md. Owner reiterated that the combined release must
+retain the other chat's bracket, Power, badges/emblems, wiki and builder changes,
+and approved continued work. The ZIP integration remains intact.
+
+Added play-deck-context.js using the existing mtgPower/shownPower and bracketEstimate
+functions. Exact main/side/commander lists and declared bracket/style/goal produce
+a context key. The captured Power, bracket floor, requested target, uncertainty,
+dated membership/guidance and rules version stay with the frozen deck. Standard
+gets no Commander bracket. Unknowns stay unknown. Explicit Any overrides older
+builder intent. These facts do not authorize gameplay or certify CPU strength.
+
+Added play-player-mat.js, the application's host around the actual Practice
+coordinator, rules worker and table. Existing app account/setup readers and exact
+artwork lookup are wired into an internal Play action; account changes retire it.
+The host uses the same captured art, shared finish renderer, rarity emblems,
+frozen Game Changer badges, ruleText/ruleCardContext and wiki links. Exact card
+context reaches the existing Rule Dex dialog. Emblems stay above foil layers.
+A collapsible right-rail panel preserves both decks' Power and Commander bracket
+context without crowding the mat. No second scorer, builder or wiki was created.
+
+Added explicit Exit confirmation through a bounded seat-zero Concede command.
+Cancel sends nothing. Confirm uses the real engine, durable journal and atomic
+result store; duplicate receipt recovery cannot create another loss. The result
+records whether its terminal reason was concession or ordinary engine terminal.
+Crashes, ceilings and failed persistence still do not invent losses.
+
+Executed against the delivered provenance-verified runtime (no rebuild):
+- 142 focused Phase Node guards pass, zero failed/skipped/cancelled.
+- 49 setup/menu/opponent/art/context Node guards pass. The integrated ZIP's
+  foundation test and 243-module preload/offline-inventory checks also pass.
+- Real application-host browser probe starts the Standard control from simulated
+  account/catalog inputs, keeps frozen artwork and Power/wiki metadata, preserves
+  an open context disclosure after Keep, verifies Cancel leaves the whole record
+  unchanged, and verifies rapid duplicate confirmation produces one real engine
+  concession, one loss and one history action. Cold browser/offline restart
+  restores exactly the same terminal record and contexts with zero requests.
+- The same host initializes the Commander control at 40/40 life. It displays the
+  requested Bracket 3 as unverified while retaining unknown table fit and the
+  incomplete dated evidence. No automatic Bracket 2 or fabricated certainty.
+- Complete clickable configured Standard control again reaches GameOver at turn
+  22: 187 human commands, 386 accepted actions, winner seat 1; cold-offline
+  bottoming and terminal recovery preserve the record. This remains the
+  land-heavy Plains/Lions control, not a viable real account deck.
+- Existing Chishiro scan/finish and sourced Menace help pass at desktop/tablet
+  widths. Opening/closing help and the keyboard context menu send no commands.
+  Rarity emblem stacking, exact selected-card context and hidden-image guards pass.
+
+Rendering: the host coalesces received updates with requestAnimationFrame. Twenty
+inspection updates produced one host paint and no engine move in the browser
+probe. Live busy checks and stale-choice handling prevent old controls from
+submitting during that short paint delay. Card nodes, decoded images and selected
+Oracle/inspection artwork now survive unchanged revisions; derived power/damage/
+counter text updates separately. A hidden-card transition clears art, emblems
+and stale private text. Cache listeners retain instance IDs, not old projections.
+
+Recorded 60-sample synthetic 44-card render/forced-layout timings alongside exact
+source hashes. Measurements varied under concurrent browser verification; do not
+advertise a production speedup, FPS guarantee or physical-device result. The
+latest art fixture measured approximately 8.2 ms median, 18.3 ms p95 and 29.1 ms
+worst for synchronous rendering/layout, excluding worker/network/GPU completion.
+This still leaves room for rendering work; copied card art alone is not an
+optimized match. Geometry passes 1280x720 through 3440x1440 and compact landscape
+reflow on the recorded synthetic sources. Reports pin the exact bytes tested.
+
+The first host browser run caught a real title-variable shadowing error in the
+table header; renamed the footer variable before successful reruns. Isolated
+command working-directory/path mistakes were corrected and are not passes.
+The current handoff does not claim the full repository release matrix was rerun.
+The complete-control receipt predates the final defensive hidden-text branch;
+that branch is covered by the explicit art/cache privacy probe.
+
+Owner supplied the existing Scry/Rule Dex screenshot 1792900666166.jpeg, SHA-256
+72db868ff7b7e308dca7e177b446c4ccc8a6a4c3becde1cf06783ab93c5cf97c.
+It confirms reuse of current keyword help, source links and selected-card context.
+The raw browser screenshot is not committed.
+
+Added the 21 real browser/worker modules and table stylesheet to the branch's
+offline asset inventory. Runtime binary assets remain owned by their immutable
+hash-checked loader cache, avoiding a second shell-cache copy. The host's cold
+proof uses a scoped test service worker; the actual app SW/CSP/served-asset and
+full signed-in route still need acceptance. See play-apk-handoff.md for the
+requested later native handoff; no APK or signing work occurred here.
+
+Release remains gated: PLAY_MATCH_RELEASE_READY is false and the public start
+button remains disabled. The internal host/concession/control proofs are not
+a full owner-ready Standard/Commander beta. The existing policy is still Medium
+research tactics; Hard/Easy are not silently aliased. Next: complete actual
+owner-route/pregame, viable eligible real deck versions and remaining human
+choices/drag/placement, CPU coverage/difficulties, history/return/opponent copy,
+and production offline/CSP checks. Tokens/combos/ninjutsu/Head Games remain required
+scope. Friends follows stable CPU; Draft is deferred. Use the existing release
+approval after actual gates pass; do not ask again for routine release permission.
+
+All work stays on the private Play branch. No production merge/deployment, public
+activation, schema migration, subscription/budget increase, new paid engine build
+or external message. Original failing evidence and corrected passing assertions
+are preserved. Exact new receipts: experiments/phase-engine/player-mat-proof-2026-10-25/.
+
+### Token/stat display and concurrent numeric integration
+
+Kept the newer remote numeric-choice commit 5b9989ca8f4b632b06bf2178ba3f363f1c5bee5b.
+Its complete recursive tree also contains no AGENTS.md. Combined its explicit
+number projection/session/table changes with this host, concession and cached
+card rendering; retained its original proof. Numeric confirmation returns the
+command promise and uses the live busy guard to prevent duplicate submissions.
+All 150 combined focused Phase Node guards passed, zero failures/skips/cancelled.
+The 243-module preload inventory still passes. No rebuild or paid job launched.
+
+The authorized seat projection now carries finite engine base/current stats,
+token/emblem identity and exact token image references when present. Hidden
+objects retain none of these details. The shared card view displays current
+power/toughness separately, green above baseline and red below it, plus base
+stats, named counters and marked damage. It does not add counters a second time,
+subtract damage from toughness or infer a missing baseline. Token identities
+stay distinct; no independent UI token generator or guessed token foil/art.
+
+Executed stats-engine-proof.mjs on the exact corrected delivered runtime:
+Raise the Alarm produced two distinct 1/1 Soldiers; Parallel Lives produced four;
+Giant Growth changed a 2/2 to 5/5 with no counter and expired at cleanup;
+Travel Preparations produced a persistent +1/+1 counter and 3/3; Afflict changed
+2/2 to 1/1 without inventing a negative counter and expired at cleanup. All five
+passed, zero network requests. These are engineered legal-card positions with
+accepted actions, not random real-deck matches. Disfigure was absent from the
+pinned fixture; the driver refused that input before testing, then used the
+available Afflict definition. No binary/definition substitution or source edit.
+
+The shared table numeric browser probe passes blank initial input, invalid
+range/fraction rejection, focus/text retention on a timer-only update, explicit
+zero and rapid duplicate confirmation producing one transport command. This
+uses a simulated schema/transport. The separate actual-runtime number proof
+was repeated on the combined journal/command bytes and passed its X=2/manual
+payment, rejection, restore and idempotency checks with zero network calls.
+Neither proves full Walking Ballista resolution or all numeric cost families.
+
+Current token/stat art fixture, privacy/cache checks and six viewport geometry
+cases pass. The final pre-numeric layout run measured 14.5 ms median, 20.1 ms p95,
+26.7 ms worst synchronous render/layout, excluding worker/network/GPU. These
+different concurrent-run timings are not a production performance comparison.
+Reviewed the existing scan/finish, readable stat chips and bounded inspector
+visually. Most crowded-board cards remain deliberately text-only test fixtures.
+The complete control-game receipt predates these display/numeric changes; each
+receipt pins its own tested source hashes. Do not claim the final byte set has
+completed a real signed-in, eligible deck match.
+
+Dice/coin outcome presentation remains required, not implemented by these tests.
+Source observation: the engine distinguishes DieRolled (including ignored rolls),
+CoinFlipped player/won, replacement choices and starting-player d20 contests.
+The UI must consume a durable authorized outcome stream; a `won` boolean must
+not be relabeled as heads/tails, and cosmetic randomness must not decide rules.
+Persist/restore/timeout and actual-card browser checks are still needed there.
+Tokens/counters have this narrow verified coverage; combos/ninjutsu/Head Games
+and broad supported-card gameplay still require their recorded acceptance gates.
+PLAY_MATCH_RELEASE_READY stays false. No production publication occurred.
+
+The actual application-host browser probe was repeated after numeric integration:
+passed frozen Standard/Commander context, 40-life Commander initialization,
+one-paint inspection coalescing, cancellation, single explicit engine concession
+under duplicate click, and cold offline terminal recovery with zero requests.
+Its simulated account/catalog/control-deck and concession limits still apply.

@@ -1,0 +1,269 @@
+{
+  "passed": true,
+  "provenance": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "runtimeOrigin": "local-research-build",
+    "buildIdentity": "cardstashy-ci-40153568000-1-ninjutsu-a49b8aa",
+    "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "sourceDiffSha256": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+    "buildReceiptSha256": "9c9e378fd2247f0a860f8f0cf4f2086464d2bf181af24ce7c02bd61161e69af2",
+    "glue": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "wasm": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "integrationFixtureGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "fixtureCardCount": 6137,
+    "loadedNames": [
+      "Forest",
+      "Swamp",
+      "Plains",
+      "Grizzly Bears",
+      "Giant Growth",
+      "Travel Preparations",
+      "Afflict",
+      "Raise the Alarm",
+      "Parallel Lives"
+    ],
+    "subsetSha256": "99372c47ecc972405987dafe3129994d93c4d4bd3f23ac3a994493dc40638b20",
+    "subsetBytes": 83357
+  },
+  "cases": [
+    {
+      "name": "two distinct 1/1 tokens",
+      "passed": true,
+      "instances": [
+        121,
+        122
+      ],
+      "receipt": {
+        "acceptedActions": 3,
+        "acceptedTraceSha256": "067fa2e62a7393cc9aeec9d858f5b40f2cdf83aa39927256d44a9fc666deb6da",
+        "events": {
+          "StackPushed": 1,
+          "PermanentTapped": 2,
+          "AbilityActivated": 2,
+          "ManaAdded": 2,
+          "ManaAbilityProduced": 2,
+          "TappedForMana": 2,
+          "ZoneChanged": 4,
+          "SpellCast": 1,
+          "ManaExpended": 1,
+          "PriorityPassed": 1,
+          "TokenCreated": 2,
+          "EffectResolved": 1,
+          "StackResolved": 1
+        }
+      }
+    },
+    {
+      "name": "four distinct doubled 1/1 tokens",
+      "passed": true,
+      "instances": [
+        121,
+        122,
+        123,
+        124
+      ],
+      "receipt": {
+        "acceptedActions": 3,
+        "acceptedTraceSha256": "067fa2e62a7393cc9aeec9d858f5b40f2cdf83aa39927256d44a9fc666deb6da",
+        "events": {
+          "StackPushed": 1,
+          "PermanentTapped": 2,
+          "AbilityActivated": 2,
+          "ManaAdded": 2,
+          "ManaAbilityProduced": 2,
+          "TappedForMana": 2,
+          "ZoneChanged": 6,
+          "SpellCast": 1,
+          "ManaExpended": 1,
+          "PriorityPassed": 1,
+          "ReplacementApplied": 1,
+          "TokenCreated": 4,
+          "EffectResolved": 1,
+          "StackResolved": 1
+        }
+      }
+    },
+    {
+      "name": "temporary +3/+3 is green, creates no counters and expires at cleanup",
+      "passed": true,
+      "buff": {
+        "power": 5,
+        "toughness": 5,
+        "basePower": 2,
+        "baseToughness": 2,
+        "powerTone": "increased",
+        "toughnessTone": "increased",
+        "token": false,
+        "emblem": false,
+        "tapped": false,
+        "damage": 0,
+        "counters": []
+      },
+      "restored": {
+        "power": 2,
+        "toughness": 2,
+        "basePower": 2,
+        "baseToughness": 2,
+        "powerTone": "neutral",
+        "toughnessTone": "neutral",
+        "token": false,
+        "emblem": false,
+        "tapped": false,
+        "damage": 0,
+        "counters": []
+      },
+      "receipt": {
+        "acceptedActions": 14,
+        "acceptedTraceSha256": "d028ce2b6f08348ebba6bb18256f06b48e7d620c85b0784fd9dbbc393d3854b4",
+        "events": {
+          "StackPushed": 1,
+          "BecomesTarget": 1,
+          "PermanentTapped": 1,
+          "AbilityActivated": 1,
+          "ManaAdded": 1,
+          "ManaAbilityProduced": 1,
+          "TappedForMana": 1,
+          "ZoneChanged": 2,
+          "SpellCast": 1,
+          "ManaExpended": 1,
+          "PriorityPassed": 6,
+          "EffectResolved": 1,
+          "StackResolved": 1,
+          "PhaseChanged": 8,
+          "AttackersDeclared": 1,
+          "TurnStarted": 1,
+          "PowerToughnessChanged": 1
+        }
+      }
+    },
+    {
+      "name": "a +1/+1 counter survives cleanup and stays separate from temporary effects",
+      "passed": true,
+      "counter": {
+        "power": 3,
+        "toughness": 3,
+        "basePower": 2,
+        "baseToughness": 2,
+        "powerTone": "increased",
+        "toughnessTone": "increased",
+        "token": false,
+        "emblem": false,
+        "tapped": false,
+        "damage": 0,
+        "counters": [
+          {
+            "name": "P1P1",
+            "label": "+1/+1",
+            "count": 1,
+            "tone": "increased"
+          }
+        ]
+      },
+      "restored": {
+        "power": 3,
+        "toughness": 3,
+        "basePower": 2,
+        "baseToughness": 2,
+        "powerTone": "increased",
+        "toughnessTone": "increased",
+        "token": false,
+        "emblem": false,
+        "tapped": false,
+        "damage": 0,
+        "counters": [
+          {
+            "name": "P1P1",
+            "label": "+1/+1",
+            "count": 1,
+            "tone": "increased"
+          }
+        ]
+      },
+      "receipt": {
+        "acceptedActions": 15,
+        "acceptedTraceSha256": "f804986f263fc740024fc740989c33c692769640bfd6dbf715f2ea11a154949f",
+        "events": {
+          "StackPushed": 1,
+          "BecomesTarget": 1,
+          "PermanentTapped": 2,
+          "AbilityActivated": 2,
+          "ManaAdded": 2,
+          "ManaAbilityProduced": 2,
+          "TappedForMana": 2,
+          "ZoneChanged": 2,
+          "SpellCast": 1,
+          "ManaExpended": 1,
+          "PriorityPassed": 6,
+          "CounterAdded": 1,
+          "EffectResolved": 1,
+          "StackResolved": 1,
+          "PhaseChanged": 8,
+          "AttackersDeclared": 1,
+          "TurnStarted": 1
+        }
+      }
+    },
+    {
+      "name": "temporary negative effect is red without inventing -1/-1 counters",
+      "passed": true,
+      "reduced": {
+        "power": 1,
+        "toughness": 1,
+        "basePower": 2,
+        "baseToughness": 2,
+        "powerTone": "decreased",
+        "toughnessTone": "decreased",
+        "token": false,
+        "emblem": false,
+        "tapped": false,
+        "damage": 0,
+        "counters": []
+      },
+      "restored": {
+        "power": 2,
+        "toughness": 2,
+        "basePower": 2,
+        "baseToughness": 2,
+        "powerTone": "neutral",
+        "toughnessTone": "neutral",
+        "token": false,
+        "emblem": false,
+        "tapped": false,
+        "damage": 0,
+        "counters": []
+      },
+      "receipt": {
+        "acceptedActions": 14,
+        "acceptedTraceSha256": "d028ce2b6f08348ebba6bb18256f06b48e7d620c85b0784fd9dbbc393d3854b4",
+        "events": {
+          "StackPushed": 1,
+          "BecomesTarget": 1,
+          "PermanentTapped": 3,
+          "AbilityActivated": 3,
+          "ManaAdded": 3,
+          "ManaAbilityProduced": 3,
+          "TappedForMana": 3,
+          "ZoneChanged": 3,
+          "SpellCast": 1,
+          "ManaExpended": 1,
+          "PriorityPassed": 6,
+          "EffectResolved": 2,
+          "CardDrawn": 1,
+          "PlayerPerformedAction": 1,
+          "StackResolved": 1,
+          "PhaseChanged": 8,
+          "AttackersDeclared": 1,
+          "TurnStarted": 1,
+          "PowerToughnessChanged": 1
+        }
+      }
+    }
+  ],
+  "networkCalls": 0,
+  "files": {
+    "projection": "70176fb74d5eff9d023a406587aeb433e25fbda30dfd25dea836d0e0b4fb4f94",
+    "display": "9d2df7ff86d2f96e97481451b7cdb3eb500d447430f4f9862ba76c49ca7bb46f"
+  },
+  "limits": "Engineered legal-card positions followed by actual accepted actions. Token/counter/pump projection cases only; no all-token, all-counter, dice/coin, CPU strength or owner-app certification."
+}

@@ -23,6 +23,10 @@ export function projectSeat(envelope,seat) {
   if(known){
    card.name=scalar(o.name);card.oracleId=scalar(o.printed_ref?.oracle_id);card.face=scalar(o.printed_ref?.face_name);
    card.power=Number.isFinite(o.power)?o.power:null;card.toughness=Number.isFinite(o.toughness)?o.toughness:null;
+   card.basePower=Number.isFinite(o.base_power)?o.base_power:null;card.baseToughness=Number.isFinite(o.base_toughness)?o.base_toughness:null;
+   card.isToken=o.is_token===true;card.isEmblem=o.is_emblem===true;
+   card.displaySource=['Card','Token'].includes(o.display_source)?o.display_source:null;
+   const token=o.token_image_ref;card.tokenImageRef=token&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token.scryfall_id||'')?{scryfallId:token.scryfall_id,faceName:scalar(token.face_name),presetId:scalar(token.preset_id)}:null;
    card.damage=Number.isFinite(o.damage_marked)?o.damage_marked:0;
    card.counters=Object.fromEntries(Object.entries(o.counters||{}).filter(([k,v])=>k.length<=80&&Number.isFinite(v)));
    card.types=list(o.card_types?.core_types).filter(t=>scalar(t));

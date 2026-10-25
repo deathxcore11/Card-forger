@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "checks": [
+    "blank initial value and explicit confirmation",
+    "range and integer validation without submission",
+    "clock-only update preserves input node, text and focus",
+    "explicit zero submitted once under rapid duplicate click",
+    "accepted revision removes stale numeric prompt"
+  ],
+  "browser": "153.0.8010.0",
+  "sourceSha256": {
+    "/match-table.mjs": "b3f09c1f59139f91550b5b62903ead3f5f356084d508f46b31c6052d86222550",
+    "/match-table.css": "05bc76c7fd2b7f4d23327789868f179931a064aee70af3cb59f760fe50244fba",
+    "/card-stats.mjs": "9d2df7ff86d2f96e97481451b7cdb3eb500d447430f4f9862ba76c49ca7bb46f",
+    "/match-session.mjs": "0c0fc8e7d40fac79644e7e02d0085cf0c43cfa37e712591cf76d75dd84197673",
+    "/priority-scheduler.mjs": "d82af4727976497dc1f5cab3948ca1ee394c35865d5e544916a381bc3f839bfa",
+    "/": "33eeda516ea72b0b2fc6950aa507cfb9fcdba48628082b9cce31b5cc8a122cdc"
+  },
+  "limits": "Actual shared table/session with simulated schema/transport. Not an engine action, signed-in account route or complete match; see separate corrected-runtime number proof."
+}

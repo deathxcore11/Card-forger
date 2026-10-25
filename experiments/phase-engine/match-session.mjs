@@ -68,6 +68,7 @@ export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.rand
   },
   inspect(id){if(!status?.surface.cards.some(c=>c.id===id&&c.known))return false;selected=id;publish();return true;},
   cast(instanceId,payment='auto'){return command('act',{command:{kind:'cast',instanceId,payment}});},
+  concede(){return command('act',{command:{kind:'concede'}});},
   choose(token){if(!status?.surface.choices.some(c=>c.token===token))throw Error('STALE_CHOICE');return command('step',{choice:token});},
   select(interactionId,choiceId){
    const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);

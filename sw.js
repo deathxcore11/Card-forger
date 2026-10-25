@@ -1,6 +1,7 @@
 const CACHE = "cardforge-shell-v316-play-setup-1";
 const ASSETS = [
-  "./play-card-surface.js", "./play-opponent-build.js", "./play-setup.js", "./play-deck-import.js", "./play-menu.js", "./play-menu.css",
+  "./play-player-mat.js", "./play-deck-context.js", "./play-card-surface.js",
+  "./experiments/phase-engine/card-stats.mjs", "./experiments/phase-engine/human-command.mjs", "./experiments/phase-engine/interaction-surface.mjs", "./experiments/phase-engine/match-authority.mjs", "./experiments/phase-engine/match-input.mjs", "./experiments/phase-engine/match-session.mjs", "./experiments/phase-engine/match-table.mjs", "./experiments/phase-engine/practice-authority.mjs", "./experiments/phase-engine/practice-client.mjs", "./experiments/phase-engine/practice-coverage.mjs", "./experiments/phase-engine/practice-flow.mjs", "./experiments/phase-engine/practice-presentation.mjs", "./experiments/phase-engine/practice-record.mjs", "./experiments/phase-engine/priority-clock.mjs", "./experiments/phase-engine/priority-scheduler.mjs", "./experiments/phase-engine/protocol-fault.mjs", "./experiments/phase-engine/runtime-assets.mjs", "./experiments/phase-engine/seat-surface.mjs", "./experiments/phase-engine/visible-cpu-policy.mjs", "./experiments/phase-engine/visible-policy-worker.mjs", "./experiments/phase-engine/worker-journal.mjs", "./experiments/phase-engine/match-table.css", "./play-opponent-build.js", "./play-setup.js", "./play-deck-import.js", "./play-menu.js", "./play-menu.css",
   "./home-overview.css",
   "./deck-viewer.js",
   "./deck-viewer.css",
@@ -274,6 +275,8 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET" || url.origin !== self.location.origin) return;
   // API responses (including connection status) must not enter the offline shell cache.
   if (url.pathname.startsWith("/api/")) return;
+  // The verified runtime loader owns its immutable, hash-checked asset cache.
+  if (url.pathname.startsWith("/experiments/phase-engine/runtime/")) return;
   // App downloads go straight to the network (a navigation would otherwise be saved as the start page).
   if (url.pathname.startsWith("/downloads/")) return;
   // Tour videos stream with range requests, which the shell cache cannot store.

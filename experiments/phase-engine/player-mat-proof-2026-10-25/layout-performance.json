@@ -1,0 +1,279 @@
+{
+  "passed": true,
+  "timing": {
+    "samples": [
+      9.100000001490116,
+      14.599999994039536,
+      12,
+      14,
+      14.5,
+      14.700000002980232,
+      17.799999997019768,
+      14.5,
+      14.299999997019768,
+      15.5,
+      22.69999999552965,
+      16.200000002980232,
+      17.5,
+      14.100000001490116,
+      14.700000002980232,
+      13.200000002980232,
+      15.200000002980232,
+      17.399999998509884,
+      13.899999998509884,
+      20.100000001490116,
+      14.800000004470348,
+      13,
+      15.399999998509884,
+      17.600000001490116,
+      16.200000002980232,
+      13.100000001490116,
+      9.900000005960464,
+      16.799999997019768,
+      17.100000001490116,
+      15.699999995529652,
+      14.299999997019768,
+      14.399999998509884,
+      26.700000002980232,
+      13.700000002980232,
+      15.600000001490116,
+      15.100000001490116,
+      14.800000004470348,
+      14.399999998509884,
+      15.5,
+      14.200000002980232,
+      15.700000002980232,
+      15.100000001490116,
+      15.300000004470348,
+      15.199999995529652,
+      18.600000001490116,
+      8.300000004470348,
+      9,
+      7.799999997019768,
+      8.900000005960464,
+      9.899999998509884,
+      9.299999997019768,
+      11.199999995529652,
+      7.899999998509884,
+      7.300000004470348,
+      7.5,
+      8.899999998509884,
+      7,
+      8,
+      9.300000004470348,
+      8.399999998509884
+    ],
+    "p50": 14.5,
+    "p95": 20.100000001490116,
+    "worst": 26.700000002980232,
+    "scope": "Warm synthetic 44-card render plus forced layout; excludes worker time, network, GPU completion and physical-device performance."
+  },
+  "cases": [
+    {
+      "width": 1280,
+      "height": 720,
+      "overflow": false,
+      "rail": {
+        "width": 281.59375,
+        "x": 990.40625,
+        "right": 1272,
+        "bottom": 603.25,
+        "height": 546.5
+      },
+      "mat": {
+        "width": 968.40625,
+        "x": 8,
+        "right": 976.40625,
+        "bottom": 603.25,
+        "height": 546.5
+      },
+      "controls": {
+        "width": 1264,
+        "x": 8,
+        "right": 1272,
+        "bottom": 712,
+        "height": 101.75
+      },
+      "button": {
+        "width": 120.09375,
+        "x": 27,
+        "right": 147.09375,
+        "bottom": 699,
+        "height": 44
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "overflow": false,
+      "rail": {
+        "width": 420,
+        "x": 1486,
+        "right": 1906,
+        "bottom": 952.25,
+        "height": 884.5
+      },
+      "mat": {
+        "width": 1458,
+        "x": 14,
+        "right": 1472,
+        "bottom": 952.25,
+        "height": 884.5
+      },
+      "controls": {
+        "width": 1892,
+        "x": 14,
+        "right": 1906,
+        "bottom": 1066,
+        "height": 101.75
+      },
+      "button": {
+        "width": 120.09375,
+        "x": 33,
+        "right": 153.09375,
+        "bottom": 1053,
+        "height": 44
+      }
+    },
+    {
+      "width": 2560,
+      "height": 1080,
+      "overflow": false,
+      "rail": {
+        "width": 420,
+        "x": 2126,
+        "right": 2546,
+        "bottom": 952.25,
+        "height": 884.5
+      },
+      "mat": {
+        "width": 2098,
+        "x": 14,
+        "right": 2112,
+        "bottom": 952.25,
+        "height": 884.5
+      },
+      "controls": {
+        "width": 2532,
+        "x": 14,
+        "right": 2546,
+        "bottom": 1066,
+        "height": 101.75
+      },
+      "button": {
+        "width": 120.09375,
+        "x": 33,
+        "right": 153.09375,
+        "bottom": 1053,
+        "height": 44
+      }
+    },
+    {
+      "width": 3440,
+      "height": 1440,
+      "overflow": false,
+      "rail": {
+        "width": 420,
+        "x": 3006,
+        "right": 3426,
+        "bottom": 1312.25,
+        "height": 1244.5
+      },
+      "mat": {
+        "width": 2978,
+        "x": 14,
+        "right": 2992,
+        "bottom": 1312.25,
+        "height": 1244.5
+      },
+      "controls": {
+        "width": 3412,
+        "x": 14,
+        "right": 3426,
+        "bottom": 1426,
+        "height": 101.75
+      },
+      "button": {
+        "width": 120.09375,
+        "x": 33,
+        "right": 153.09375,
+        "bottom": 1413,
+        "height": 44
+      }
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "overflow": false,
+      "rail": {
+        "width": 280,
+        "x": 730,
+        "right": 1010,
+        "bottom": 640.25,
+        "height": 572.5
+      },
+      "mat": {
+        "width": 702,
+        "x": 14,
+        "right": 716,
+        "bottom": 640.25,
+        "height": 572.5
+      },
+      "controls": {
+        "width": 996,
+        "x": 14,
+        "right": 1010,
+        "bottom": 754,
+        "height": 101.75
+      },
+      "button": {
+        "width": 120.09375,
+        "x": 33,
+        "right": 153.09375,
+        "bottom": 741,
+        "height": 44
+      }
+    },
+    {
+      "width": 900,
+      "height": 650,
+      "overflow": false,
+      "rail": {
+        "width": 270,
+        "x": 622,
+        "right": 892,
+        "bottom": 533.25,
+        "height": 476.5
+      },
+      "mat": {
+        "width": 600,
+        "x": 8,
+        "right": 608,
+        "bottom": 533.25,
+        "height": 476.5
+      },
+      "controls": {
+        "width": 884,
+        "x": 8,
+        "right": 892,
+        "bottom": 642,
+        "height": 101.75
+      },
+      "button": {
+        "width": 120.09375,
+        "x": 27,
+        "right": 147.09375,
+        "bottom": 629,
+        "height": 44
+      }
+    }
+  ],
+  "browser": "153.0.8010.0",
+  "sourceSha256": {
+    "/match-table.mjs": "839e82d2b5b7804ed9652f98d367a54d6890c8793bb4ae8c3e35332a02b10038",
+    "/match-table.css": "05bc76c7fd2b7f4d23327789868f179931a064aee70af3cb59f760fe50244fba",
+    "/card-stats.mjs": "9d2df7ff86d2f96e97481451b7cdb3eb500d447430f4f9862ba76c49ca7bb46f",
+    "/": "926001ef6519e1d940f1d724f10cbf9f92573fa1600149609dce326338186315"
+  },
+  "limits": "Synthetic crowded-board and long-rules layout fixture. No rules, card art/finish, physical tablet/foldable, real account, touch dragging or full match certification."
+}
