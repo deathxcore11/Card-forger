@@ -15,7 +15,7 @@ This branch adds diagnostics and evidence only. It changes no production module,
 
 The catalog reviewer passes the Arkenstone composite name when supplied the actual card's name/face/oracle/legalities metadata. The owner's lookup response was not captured, so the separate `unknown in Standard` provider/identity failure is still unproven. The included reproduction uses a minimal fixture and cannot establish the provider's current response.
 
-132 relevant local source files matched the remote tree during review; the other chat's concurrent local `.assetsignore` differed. Remote packaging was treated separately. The attempted public Play browser entry failed with `net::ERR_FAILED`; subsequent observation was blocked by browser URL policy. No bypass was attempted. The actually mounted live battlefield remains **NOT TESTED** by this audit; do not infer a cache cause or deployed renderer from source review alone.
+132 relevant local source files matched the release contents. Final checking used e4e938b's actual Git tree (`5c5d951f36dcb4509abd797136bbae8a4c71b9e0`) and its `.assetsignore`, rather than a stale tree recorded in the earlier hotfix receipt. The attempted public Play browser entry failed with `net::ERR_FAILED`; subsequent observation was blocked by browser URL policy. No bypass was attempted. The actually mounted live battlefield remains **NOT TESTED** by this audit; do not infer a cache cause or deployed renderer from source review alone.
 
 ## Reproduce
 
