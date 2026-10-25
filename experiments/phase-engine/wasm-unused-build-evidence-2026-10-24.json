@@ -1,0 +1,42 @@
+{
+  "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+  "sourceCommit": "a49b8aa7a1fedb9743a2fd1f77b8c39e258ef6db",
+  "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+  "sourceClean": true,
+  "toolchain": "nightly-2026-04-19",
+  "command": "cargo build --locked --offline --package engine-wasm --target wasm32-unknown-unknown --profile wasm-dev",
+  "engineOnlyWrapperFlag": "-Zhint-mostly-unused=yes",
+  "rustflags": "-C link-arg=-z -C link-arg=stack-size=16777216 -Zno-parallel-backend -Zmir-opt-level=0 -Zfewer-names=yes -Zthreads=1 -Ztime-passes=yes",
+  "profile": {
+    "optLevel": 0,
+    "debug": 0,
+    "codegenUnits": 256,
+    "lto": false,
+    "jobs": 1,
+    "incremental": false
+  },
+  "memoryLimitBytes": 8589934592,
+  "timeoutSeconds": 1200,
+  "exitCode": 101,
+  "termination": "rustc SIGKILL; cgroup oom_kill increased from 4 to 5",
+  "oomKillsBefore": 4,
+  "oomKillsAfter": 5,
+  "wasmArtifactProduced": false,
+  "buildReceiptProduced": false,
+  "logSha256": "f6ed3596ea3dc9037dfba32476ef9d1e39a52022f6ff2917a4f558c3bc7bab35",
+  "lastCompilerPhases": [
+    "time:   0.001; rss: 2647MB -> 2642MB (   -5MB)\temit_ast_lowering_delayed_lints",
+    "time:   6.456; rss: 2642MB -> 2083MB ( -560MB)\tcoherence_checking",
+    "time:  86.292; rss: 2642MB -> 3273MB ( +630MB)\ttype_check_crate",
+    "time: 106.189; rss: 3273MB -> 6004MB (+2732MB)\tMIR_borrow_checking",
+    "time:   1.775; rss: 6014MB -> 6014MB (   +0MB)\tmodule_lints",
+    "time:   1.776; rss: 6014MB -> 6014MB (   +0MB)\tlint_checking",
+    "time:   1.989; rss: 6014MB -> 6015MB (   +0MB)\tprivacy_checking_modules",
+    "time:   5.201; rss: 6004MB -> 6015MB (  +10MB)\tmisc_checking_3",
+    "time:   0.017; rss: 6369MB -> 6369MB (   +0MB)\tmonomorphization_collector_root_collections",
+    "time:  26.623; rss: 6369MB -> 7280MB ( +911MB)\tmonomorphization_collector_graph_walk",
+    "time:   8.979; rss: 7301MB -> 7503MB ( +202MB)\tpartition_and_assert_distinct_symbols",
+    "time:  44.869; rss: 6015MB -> 7285MB (+1270MB)\tgenerate_crate_metadata"
+  ],
+  "noPaidRunnerInvoked": true
+}

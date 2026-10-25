@@ -75,3 +75,12 @@ controls for the supported interaction schemas, payment/target/cancel, full
 pregame, fair bounded CPU, board/countdown and result recovery. Preserve the
 Standard/Commander, CPU-first and later Friends/Draft priorities. Nothing is
 published, enabled in production, merged to the website branch or built as APK.
+
+Build completion: the mostly-unused attempt exited 101 after rustc SIGKILL.
+The cgroup OOM-kill count increased from 4 to 5. No WASM or receipt was produced.
+The hint reduced some compiler work but did not fit the 8 GiB limit. Exact
+options, final compiler phases, source identity and full-log digest are in
+`experiments/phase-engine/wasm-unused-build-evidence-2026-10-24.json`.
+Do not repeat this unchanged command. The build lock is released; no Rust build
+from this attempt remains active. The prepared higher-memory GitHub job has not
+been started and still requires explicit approval for possible Actions charges.

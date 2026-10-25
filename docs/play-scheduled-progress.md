@@ -302,3 +302,23 @@ Next: corrected WASM + both preserved ninjutsu regressions, then actual controls
 payments/targets/cancel, pregame, CPU, board/countdown and result recovery. New
 interaction history is an input trace, not yet portable raw-action replay.
 Production, website-release branch, APK and schemas are unchanged.
+
+### Local build completion
+
+The mostly-unused compiler experiment finished with exit 101 / rustc SIGKILL.
+Cgroup `oom_kill` increased from 4 to 5. No engine_wasm.wasm or build receipt
+was produced. Corrected source stayed clean. The build lock is released and
+this attempt is no longer running. Exact flags, source/tree identity, final
+compiler phases and full-log hash are preserved in
+`experiments/phase-engine/wasm-unused-build-evidence-2026-10-24.json`.
+Do not repeat this unchanged build. Both original ninjutsu failures remain open.
+
+Reviewed the prepared higher-memory job before requesting permission. Its
+hardcoded 69-test expectation was stale after the scheduler and human work;
+updated it to all 86 current guards and explicit zero skipped/cancelled tests.
+Executed the same TAP guard invocation locally: 86 pass, zero fail/skip/cancel;
+CI script syntax passes. The optional workflow itself was **not run**.
+Its existing 45-minute job, 40-minute script deadline, private artifact limits,
+exact-source patch checks and eight real mechanics assertions remain intact.
+The higher-memory run still needs explicit approval for potential Actions
+charges; no approval marker commit has been created.
