@@ -1,0 +1,1600 @@
+{
+  "schema": 1,
+  "task": "RULES-004",
+  "taskBase": "ed3175347bc86b346205f3cba102a73bd3494c6c",
+  "integrationInspected": "d81a0a14f3f34cf64fc0156abf495fab590263b6",
+  "provenance": {
+    "appBaseCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+    "runtimeSourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "rulesSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "loadedNames": [
+      "Forest",
+      "Island",
+      "Mountain",
+      "Plains",
+      "Sol Ring",
+      "Scavenging Ooze",
+      "Grizzly Bears",
+      "Ornithopter",
+      "Lightning Bolt",
+      "Force of Will",
+      "Think Twice",
+      "Unearth",
+      "Light Up the Stage",
+      "Manifest Dread"
+    ],
+    "subsetSha256": "6a2a2f540e0315531b97fd3cba87fcf0e7eff12e9ca722f6704a46d28df574a1"
+  },
+  "startedAt": "2026-10-25T17:31:22.652Z",
+  "environment": {
+    "node": "v24.22.1",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "cases": [
+    {
+      "id": "empty-priority",
+      "status": "PASS",
+      "expected": "An engineered empty hand/board priority window offers a legal pass; the two flag values are recorded without interpreting either as a completeness certificate.",
+      "actual": {
+        "before": {
+          "label": "empty priority",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": true,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-3541d3bc238df89e.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-3541d3bc238df89e.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority"
+          ]
+        },
+        "passAccepted": true,
+        "scope": "only this exact empty position"
+      },
+      "observations": [
+        {
+          "label": "empty priority",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": true,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-3541d3bc238df89e.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-3541d3bc238df89e.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority"
+          ]
+        }
+      ],
+      "evidence": "empty-priority.json"
+    },
+    {
+      "id": "mana-only-sol-ring",
+      "status": "PASS",
+      "expected": "Empty-hand Sol Ring activation is offered and executes despite a pass-only flat list.",
+      "actual": {
+        "before": {
+          "label": "mana only",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority"
+          ],
+          "groupedTypes": [
+            "ActivateAbility"
+          ],
+          "topAutoPass": true,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-5c456f807ff49c4a.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-5c456f807ff49c4a.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "activateAbility"
+          ]
+        },
+        "accepted": true,
+        "sessionRequiredReason": "mana-window"
+      },
+      "observations": [
+        {
+          "label": "mana only",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority"
+          ],
+          "groupedTypes": [
+            "ActivateAbility"
+          ],
+          "topAutoPass": true,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-5c456f807ff49c4a.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-5c456f807ff49c4a.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "activateAbility"
+          ]
+        },
+        {
+          "label": "action offer activateAbility",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority"
+          ],
+          "groupedTypes": [
+            "ActivateAbility"
+          ],
+          "topAutoPass": true,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-5c456f807ff49c4a.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-5c456f807ff49c4a.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "activateAbility"
+          ]
+        }
+      ],
+      "evidence": "mana-only-sol-ring.json"
+    },
+    {
+      "id": "empty-hand-ooze",
+      "status": "PASS",
+      "expected": "Opponent-turn graveyard-targeted activation executes with an empty hand.",
+      "actual": {
+        "before": {
+          "label": "empty hand nonmana",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "ActivateAbility"
+          ],
+          "groupedTypes": [
+            "TapLandForMana",
+            "ActivateAbility"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-10a0cc884905115f.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-10a0cc884905115f.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "activateAbility",
+            "tapLandForMana"
+          ]
+        },
+        "accepted": true,
+        "soleTargetSelectedAutomatically": true
+      },
+      "observations": [
+        {
+          "label": "empty hand nonmana",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "ActivateAbility"
+          ],
+          "groupedTypes": [
+            "TapLandForMana",
+            "ActivateAbility"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-10a0cc884905115f.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-10a0cc884905115f.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "activateAbility",
+            "tapLandForMana"
+          ]
+        },
+        {
+          "label": "action offer activateAbility",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "ActivateAbility"
+          ],
+          "groupedTypes": [
+            "TapLandForMana",
+            "ActivateAbility"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-10a0cc884905115f.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-10a0cc884905115f.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "activateAbility",
+            "tapLandForMana"
+          ]
+        }
+      ],
+      "evidence": "empty-hand-ooze.json"
+    },
+    {
+      "id": "zero-cost-main",
+      "status": "PASS",
+      "expected": "With no mana sources, zero-cost Ornithopter is offered and resolves in the controller main phase.",
+      "actual": {
+        "before": {
+          "label": "zero cost",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "CastSpell"
+          ],
+          "groupedTypes": [
+            "CastSpell"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-cbeb927d8ea54748.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-cbeb927d8ea54748.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "castSpell"
+          ]
+        },
+        "accepted": true
+      },
+      "observations": [
+        {
+          "label": "zero cost",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "CastSpell"
+          ],
+          "groupedTypes": [
+            "CastSpell"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-cbeb927d8ea54748.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-cbeb927d8ea54748.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "castSpell"
+          ]
+        }
+      ],
+      "evidence": "zero-cost-main.json"
+    },
+    {
+      "id": "zero-cost-opponent-turn",
+      "status": "PASS",
+      "expected": "Zero cost alone does not let an ordinary creature be cast during the opponent turn.",
+      "actual": {
+        "before": {
+          "label": "zero cost wrong timing",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": true,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-1cf8468dcd5e7154.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-1cf8468dcd5e7154.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority"
+          ]
+        },
+        "castOffered": false,
+        "scope": "one negative timing fixture"
+      },
+      "observations": [
+        {
+          "label": "zero cost wrong timing",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": true,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-1cf8468dcd5e7154.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-1cf8468dcd5e7154.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority"
+          ]
+        }
+      ],
+      "evidence": "zero-cost-opponent-turn.json"
+    },
+    {
+      "id": "unpayable-instant",
+      "status": "PASS",
+      "expected": "An instant in hand with no available mana has no offered automatic cast.",
+      "actual": {
+        "before": {
+          "label": "unpayable instant",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": true,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-9f8c1322fdcc35c7.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-9f8c1322fdcc35c7.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority"
+          ]
+        },
+        "castOffered": false,
+        "scope": "one negative affordability fixture"
+      },
+      "observations": [
+        {
+          "label": "unpayable instant",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": true,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-9f8c1322fdcc35c7.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-9f8c1322fdcc35c7.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority"
+          ]
+        }
+      ],
+      "evidence": "unpayable-instant.json"
+    },
+    {
+      "id": "own-spell-response",
+      "status": "PASS",
+      "expected": "The top-level auto-pass recommendation can be true while an instant response to the controller own spell is available and executable; mandatory targeting remains separate.",
+      "actual": {
+        "before": {
+          "label": "own spell with legal response",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "CastSpell"
+          ],
+          "groupedTypes": [
+            "TapLandForMana",
+            "CastSpell"
+          ],
+          "topAutoPass": true,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-ba6b4121c0f6cc4f.0.2",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-ba6b4121c0f6cc4f.0.2.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "castSpell",
+            "tapLandForMana"
+          ]
+        },
+        "mandatory": {
+          "label": "targeting after cast",
+          "actor": 0,
+          "authoritativeDecision": "TargetSelection",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "ChooseTarget",
+            "CancelCast"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "sequence"
+          },
+          "availability": {
+            "type": "inputRequired"
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": []
+        },
+        "responseAccepted": true
+      },
+      "observations": [
+        {
+          "label": "own spell with legal response",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "CastSpell"
+          ],
+          "groupedTypes": [
+            "TapLandForMana",
+            "CastSpell"
+          ],
+          "topAutoPass": true,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-ba6b4121c0f6cc4f.0.2",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-ba6b4121c0f6cc4f.0.2.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "castSpell",
+            "tapLandForMana"
+          ]
+        },
+        {
+          "label": "targeting after cast",
+          "actor": 0,
+          "authoritativeDecision": "TargetSelection",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "ChooseTarget",
+            "CancelCast"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "sequence"
+          },
+          "availability": {
+            "type": "inputRequired"
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": []
+        },
+        {
+          "label": "mandatory target",
+          "actor": 0,
+          "authoritativeDecision": "TargetSelection",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "ChooseTarget",
+            "CancelCast"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "sequence"
+          },
+          "availability": {
+            "type": "inputRequired"
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": []
+        }
+      ],
+      "evidence": "own-spell-response.json"
+    },
+    {
+      "id": "flashback-graveyard",
+      "status": "PASS",
+      "expected": "An empty-hand Think Twice in the graveyard can be cast on the opponent turn for its flashback cost, draws one card and goes to exile.",
+      "actual": {
+        "before": {
+          "label": "graveyard cast",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "CastSpell"
+          ],
+          "groupedTypes": [
+            "TapLandForMana",
+            "CastSpell"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-3dbdaada40bc5614.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-3dbdaada40bc5614.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "castSpell",
+            "tapLandForMana"
+          ]
+        },
+        "accepted": true
+      },
+      "observations": [
+        {
+          "label": "graveyard cast",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "CastSpell"
+          ],
+          "groupedTypes": [
+            "TapLandForMana",
+            "CastSpell"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-3dbdaada40bc5614.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-3dbdaada40bc5614.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "castSpell",
+            "tapLandForMana"
+          ]
+        }
+      ],
+      "evidence": "flashback-graveyard.json"
+    },
+    {
+      "id": "cycling-hand",
+      "status": "PASS",
+      "expected": "Unearth cycling is available during the opponent turn with two generic mana, discards itself and draws a card.",
+      "actual": {
+        "before": {
+          "label": "hand cycling",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "ActivateAbility"
+          ],
+          "groupedTypes": [
+            "TapLandForMana",
+            "ActivateAbility"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-ba2b594cdf577daf.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-ba2b594cdf577daf.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "activateAbility",
+            "tapLandForMana"
+          ]
+        },
+        "accepted": true,
+        "actionType": "ActivateAbility"
+      },
+      "observations": [
+        {
+          "label": "hand cycling",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "ActivateAbility"
+          ],
+          "groupedTypes": [
+            "TapLandForMana",
+            "ActivateAbility"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-ba2b594cdf577daf.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-ba2b594cdf577daf.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "activateAbility",
+            "tapLandForMana"
+          ]
+        },
+        {
+          "label": "action offer activateAbility",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "ActivateAbility"
+          ],
+          "groupedTypes": [
+            "TapLandForMana",
+            "ActivateAbility"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-ba2b594cdf577daf.0.1",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-ba2b594cdf577daf.0.1.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "activateAbility",
+            "tapLandForMana"
+          ]
+        }
+      ],
+      "evidence": "cycling-hand.json"
+    },
+    {
+      "id": "alternate-force-of-will",
+      "status": "PASS",
+      "expected": "Force of Will is available without mana when an opposing spell and a blue card to exile exist; elected alternate costs and countering complete.",
+      "actual": {
+        "before": {
+          "label": "alternate cost response",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "CastSpell"
+          ],
+          "groupedTypes": [
+            "CastSpell"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-4e20e67142d3d18a.0.3",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-4e20e67142d3d18a.0.3.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "castSpell"
+          ]
+        },
+        "accepted": true
+      },
+      "observations": [
+        {
+          "label": "alternate cost response",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "CastSpell"
+          ],
+          "groupedTypes": [
+            "CastSpell"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-4e20e67142d3d18a.0.3",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-4e20e67142d3d18a.0.3.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "castSpell"
+          ]
+        },
+        {
+          "label": "alternate cost pending",
+          "actor": 0,
+          "authoritativeDecision": "OptionalCostChoice",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "CancelCast",
+            "DecideOptionalCost"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-4e20e67142d3d18a.0.4",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-4e20e67142d3d18a.0.4.c1"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "cancelCast",
+            "decideOptionalCost"
+          ]
+        },
+        {
+          "label": "alternate cost pending",
+          "actor": 0,
+          "authoritativeDecision": "PayCost",
+          "activeSeat": 1,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "SelectCards",
+            "CancelCast"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "select"
+          },
+          "availability": {
+            "type": "inputRequired"
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": []
+        }
+      ],
+      "evidence": "alternate-force-of-will.json"
+    },
+    {
+      "id": "exile-play-permission",
+      "status": "PASS",
+      "expected": "Light Up the Stage establishes an actual exile-play permission; the exiled zero-cost creature remains castable after all mana was spent.",
+      "actual": {
+        "before": {
+          "label": "exile cast after paid effect",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "PlayLand",
+            "CastSpell"
+          ],
+          "groupedTypes": [
+            "PlayLand",
+            "CastSpell"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-39bd3c8d68b1a2ba.0.4",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-39bd3c8d68b1a2ba.0.4.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "playLand",
+            "castSpell"
+          ]
+        },
+        "accepted": true
+      },
+      "observations": [
+        {
+          "label": "exile cast after paid effect",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "PlayLand",
+            "CastSpell"
+          ],
+          "groupedTypes": [
+            "PlayLand",
+            "CastSpell"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-39bd3c8d68b1a2ba.0.4",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-39bd3c8d68b1a2ba.0.4.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "playLand",
+            "castSpell"
+          ]
+        }
+      ],
+      "evidence": "exile-play-permission.json"
+    },
+    {
+      "id": "manifest-choice-and-special-action",
+      "status": "PASS",
+      "expected": "Manifest selection is mandatory; after selection a manifested creature can turn up as a special action without casting or a response window.",
+      "actual": {
+        "mandatory": {
+          "label": "manifest required choice",
+          "actor": 0,
+          "authoritativeDecision": "ManifestDreadChoice",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "SelectCards"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-dac1faccfc3c78d4.0.4",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-dac1faccfc3c78d4.0.4.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "selectCards"
+          ]
+        },
+        "before": {
+          "label": "manifest turn up",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "TurnFaceUp"
+          ],
+          "groupedTypes": [
+            "TapLandForMana",
+            "TurnFaceUp"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-dac1faccfc3c78d4.0.5",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-dac1faccfc3c78d4.0.5.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "tapLandForMana",
+            "turnFaceUp"
+          ]
+        },
+        "turnUpAccepted": true
+      },
+      "observations": [
+        {
+          "label": "manifest required choice",
+          "actor": 0,
+          "authoritativeDecision": "ManifestDreadChoice",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "SelectCards"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-dac1faccfc3c78d4.0.4",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-dac1faccfc3c78d4.0.4.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "selectCards"
+          ]
+        },
+        {
+          "label": "mandatory target",
+          "actor": 0,
+          "authoritativeDecision": "ManifestDreadChoice",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "SelectCards"
+          ],
+          "groupedTypes": [],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-dac1faccfc3c78d4.0.4",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-dac1faccfc3c78d4.0.4.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "selectCards"
+          ]
+        },
+        {
+          "label": "manifest turn up",
+          "actor": 0,
+          "authoritativeDecision": "Priority",
+          "activeSeat": 0,
+          "prioritySeat": 0,
+          "flatTypes": [
+            "PassPriority",
+            "TurnFaceUp"
+          ],
+          "groupedTypes": [
+            "TapLandForMana",
+            "TurnFaceUp"
+          ],
+          "topAutoPass": false,
+          "nestedAutoPass": false,
+          "waitingForKind": {
+            "simultaneous": null,
+            "terminal": false,
+            "code": "choose"
+          },
+          "availability": {
+            "type": "progressAvailable",
+            "data": {
+              "witness": {
+                "interactionId": "wasm-dac1faccfc3c78d4.0.5",
+                "response": {
+                  "type": "choose",
+                  "data": {
+                    "choiceId": "wasm-dac1faccfc3c78d4.0.5.c0"
+                  }
+                }
+              }
+            }
+          },
+          "interactionCanSubmit": true,
+          "interactionActionCodes": [
+            "passPriority",
+            "tapLandForMana",
+            "turnFaceUp"
+          ]
+        }
+      ],
+      "evidence": "manifest-choice-and-special-action.json"
+    }
+  ],
+  "generalPriorityCompleteness": "NOT TESTED",
+  "sessionImplementation": "NOT TESTED",
+  "limits": [
+    "Engineered starts followed by accepted engine commands, not normal complete games.",
+    "Positive action witnesses and bounded negatives do not prove exhaustive priority enumeration.",
+    "Neither auto-pass flag is a completeness field.",
+    "No session/UI/CPU policy change, coverage promotion, runtime build, deployment or recovery support."
+  ],
+  "partial": false,
+  "counts": {
+    "PASS": 12,
+    "FAIL": 0,
+    "NOT TESTED": 0,
+    "UNSUPPORTED": 0
+  },
+  "sourceSha256": {
+    "priority-capability-audit.mjs": "8d87c765e968b44d87157c016d517032a07783217e504a1196336bd797f03dab",
+    "acceptance-inputs.mjs": "ff29722ad1efe200130bf031880073d8d7b87ecda7d7e9718753f02a39697405",
+    "mechanics-fixtures.mjs": "41376f6253f4fe6c5cc15cda917111e6f4bbb8c74886d5f5d7c566f37ef494e4",
+    "interaction-surface.mjs": "bffbb62bd6a20d00e4265758496f5b8eb7042396c5c6e9a77c1d0fcea88c4eb0",
+    "runtime-assets.mjs": "b210246c9d60e051927b47669cedb59ec7c5920bfca80e6cbc64b2f89e1b668e"
+  },
+  "finishedAt": "2026-10-25T17:31:52.253Z",
+  "acceptedCommands": 39,
+  "sourceInspection": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "runtimeSourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "shippedPatchSha256": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+    "files": [
+      {
+        "path": "crates/engine/src/ai_support/mod.rs",
+        "gitBlobSha": "897e0113ec550af3ae96da6626722244871c1f70",
+        "sha256": "ba484cd446a1ebe87b7dc5f61cb366cd37d90e0f47165e2f010c6f4fd8cdeda2",
+        "bytes": 344270,
+        "unchangedByShippedPatch": true
+      },
+      {
+        "path": "crates/engine/src/ai_support/candidates.rs",
+        "gitBlobSha": "2170bb44625e104c97344ec48651fb5ad17ec765",
+        "sha256": "18d8a8e8247549b5d2e217ceb5f1720d3f897f8a267acf4a5b42ecfcbf2e0ea5",
+        "bytes": 408604,
+        "unchangedByShippedPatch": true
+      },
+      {
+        "path": "crates/engine/src/game/interaction.rs",
+        "gitBlobSha": "0c6e859da142ba5a24969295db279c25d302f626",
+        "sha256": "34fefe5db0878977aa9effc0c7ea800fc41781a095774f4d9d318c29f8558a75",
+        "bytes": 519870,
+        "unchangedByShippedPatch": true
+      },
+      {
+        "path": "crates/engine/src/types/interaction.rs",
+        "gitBlobSha": "4aa2d2419f88ad303e09bb4874770482d53a2649",
+        "sha256": "fb5ea4b0decd11f872db5293c07d7bdd4521e88c1a02b2777b5d4089da806e58",
+        "bytes": 54710,
+        "unchangedByShippedPatch": true
+      },
+      {
+        "path": "crates/engine-wasm/src/lib.rs",
+        "gitBlobSha": "1fc1d0f665be70b535fa3f72df09ef1603f5765c",
+        "sha256": "aa798d0116e02ca8b1b018a59b7beffe13905836c9b70d8574692d4d2eb8a890",
+        "bytes": 349323,
+        "unchangedByShippedPatch": true
+      }
+    ],
+    "status": "PASS",
+    "scope": "Source-file identity and described semantics; no compilation or universal action-enumeration proof."
+  },
+  "fullEvidence": {
+    "path": "docs/evidence/rules-004-priority-capability-full.json.xz",
+    "format": "xz-compressed UTF-8 JSON",
+    "compressedBytes": 77700,
+    "compressedSha256": "c34ab82bbbd90328fb3cb388871453ef772cf1b9f20f5d07f7ffbb1a4c98e7e4",
+    "decodedBytes": 10572994,
+    "decodedSha256": "3c669bc3f506e62091e1150b37363012c6c6115aef2eb66f5f3b637a076dc9a0",
+    "roundTrip": "PASS"
+  },
+  "harnessCorrections": [
+    "Cycling is an ActivateAbility offer.",
+    "The engine selects the sole Ooze target automatically.",
+    "The +1/+1 counter serialization key is P1P1.",
+    "Force of Will needs optional-cost election before the blue-card payment."
+  ],
+  "remainingProductStatus": {
+    "generalPriorityCompleteness": "NOT TESTED",
+    "integratedSessionSmartPass": "NOT TESTED",
+    "cpuPolicyCompletion": "NOT TESTED",
+    "browserUi": "NOT TESTED",
+    "savedStateRecovery": "UNSUPPORTED",
+    "deckCoveragePromotion": "NONE",
+    "engineRejectionFix": "NOT BUILT / NOT VALIDATED"
+  },
+  "validation": {
+    "runtimeBytesAndCompiledRecords": "PASS",
+    "all39SubmittedCommandsAccepted": "PASS",
+    "startingStateHashes": "PASS",
+    "runnerDependencyHashes": "PASS",
+    "sourceBlobIdentity": "PASS",
+    "archiveRoundTrip": "PASS"
+  }
+}
