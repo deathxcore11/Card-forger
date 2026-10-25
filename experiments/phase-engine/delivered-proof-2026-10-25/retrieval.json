@@ -1,0 +1,21 @@
+{
+  "artifactId": 12584327345,
+  "runId": 40153568000,
+  "zipSha256": "edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b",
+  "libraryFileId": "libfile_d318ce26c60481919a7063890c856e89",
+  "libraryFilename": "CardStashy-Play-Verified-Runtime-40153568000.zip",
+  "localGuardCount": 116,
+  "runtimeBytes": 338226914,
+  "gzipBytes": 38019108,
+  "checks": [
+    "exact source commit object reconstructed and clean checkout verified",
+    "pinned base/diff/tree/card fixture match receipt",
+    "exact JS/WASM file hashes verified",
+    "eight preserved mechanics pass",
+    "three Stifle/fresh-process response cases pass",
+    "manual cast/target/payment/cancel through journal passes",
+    "complete visible table and cold-offline bottom/terminal recovery pass",
+    "visible manual Bolt flow passes",
+    "real 30-second response and CPU reply pass"
+  ]
+}

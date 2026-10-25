@@ -1,0 +1,41 @@
+{
+  "result": {
+    "ok": true,
+    "formats": [
+      "Standard",
+      "Pioneer",
+      "Modern",
+      "Premodern",
+      "Legacy",
+      "Vintage",
+      "Historic",
+      "Timeless",
+      "Pauper",
+      "Freeform",
+      "Commander",
+      "DuelCommander",
+      "PauperCommander",
+      "TinyLeaders",
+      "Oathbreaker",
+      "Brawl",
+      "HistoricBrawl",
+      "CommanderDraft",
+      "FreeformCommander",
+      "FreeForAll",
+      "TwoHeadedGiant",
+      "Archenemy",
+      "Planechase",
+      "Limited",
+      "Momir",
+      "Dandan"
+    ],
+    "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "milliseconds": 4759.900000002235
+  },
+  "browser": "153.0.8010.0",
+  "compressedBytes": 37986854,
+  "chunkCount": 3,
+  "sourceSha256": "6f5cb8e8cd6e4002d30afb8bbc3fc17da0e0f6cf794c2fd8e6eaf5ba867f7a2c",
+  "harnessSha256": "8bb46b358f4a39588bae2def88241be85853126bc13dd7737a7fcc47657c5bf8",
+  "limits": "Runtime loader/identity/startup only, local origin, no card database, production CSP, real network performance or match support claim."
+}

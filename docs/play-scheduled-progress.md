@@ -606,3 +606,79 @@ eligible saved/imported deck matches, exact art/finish binding, complete pregame
 payment/combat schemas, difficulty calibration and Practice history remain open.
 No production publication, website-release change, APK, migration or external
 message. No additional paid attempt is authorized by this pause.
+
+## October 24, 2026 — corrected runtime delivered and locally verified
+
+Owner clarified that useful parallel implementation should continue, and then
+explicitly approved finishing project fixes and publishing functional Practice /
+Quick Play for live owner testing. Release approval is now provided once the
+actual end-to-end gates pass. The requested morning completion is a goal, not an
+unsupported promise. The brief pause was reversed; hourly continuation is enabled.
+The separate Power/bracket/builder work remains offline and follows Play.
+
+Run 40153568000 / job 121049996121 finished SUCCESS. Retrieved artifact
+12584327345, verified ZIP SHA-256
+edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b,
+extracted only expected pkg files and verified JS/WASM against the receipt.
+Reconstructed source commit 5169f7fe03f93a6afe36fec767c3cda10120dcdd from its
+exact commit object; clean worktree, pinned base, source tree and binary-diff /
+fixture hashes all validate. Both CI builds produced the same JS/WASM hashes.
+No assertion was removed, weakened, replaced or bypassed.
+
+Actually executed locally on the delivered bytes:
+- all eight original mechanics assertions PASS, including printed and Satoru
+  ninjutsu, Head Games recovery, token counts, Bolt/Counterspell and finite mana;
+- all three Stifle cases PASS, with fresh-process exact response-suffix recovery,
+  paid costs retained, no improper damage and zero network calls;
+- human cast/ordered targets/manual mana/cancellation driver PASS;
+- complete visible table PASS: 187 human button commands, 386 total accepted
+  commands, turn 22, winner seat 1; offline bottoming and final-record recovery;
+- visible Bolt/manual payment/cancel flow PASS at revision 14;
+- real visible 30-second timeout PASS, including near-expiry warning, one human
+  pass, one legal CPU response, next human decision and unchanged life.
+
+Exact outcomes/source hashes: experiments/phase-engine/delivered-proof-2026-10-25/.
+These remain Modern fixture / small-card controls tests, not the account-deck
+Standard/Commander beta, calibrated CPU or all-card certification. Main route,
+exact art/finish binding, eligible real lists, remaining schemas, proper pregame,
+Practice history and end-to-end production verification still need work.
+
+Preserved the entire downloaded ZIP durably as
+CardStashy-Play-Verified-Runtime-40153568000.zip, Library
+libfile_d318ce26c60481919a7063890c856e89. GitHub artifact expires after one day;
+retrieve this archive if scratch is lost. Do not pay for another identical build.
+It contains the receipt, source patch/commit object, licenses and runtime, not
+executable card data. The pinned card fixture remains independently hash-bound.
+
+Prepared one small artifact-only staging job, no Rust compilation or deployment.
+It verifies the existing archive, preserves exact decompressed code, creates
+three <=16 MiB compressed runtime chunks and a pinned checked card-data asset,
+then appends only those assets to the guarded Play head. Cloudflare documents a
+25 MiB individual static-asset limit; source:
+https://developers.cloudflare.com/workers/platform/limits/ . Local package
+round-trip is exact: 37,986,854 compressed WASM bytes, three chunks, plus
+3,536,582 bytes of pinned card rules (6,137 records; metadata is not support proof).
+An initial local path-construction typo was caught and fixed before triggering.
+The script is inert outside its exact approved private-branch Actions event.
+
+The new chunk/decompression/hash loader passes its real browser-worker startup
+probe (Chromium 153, local origin about 4.76 seconds), with exact final WASM hash
+and Standard/Commander registry presence. This is not a production CSP, real
+network speed or card-support claim. All 118 focused Node guards pass, zero
+fail/skip/cancel. Runtime asset files remain outside service-worker precache and
+public Play adoption until actual app integration. No new subscriptions, budget
+increases, APK, migrations, production merge or public feature activation.
+
+Next: complete/verify the artifact-only staging job, then wire the real account
+setup into a configurable authoritative worker using the staged runtime and
+source card database. Replace research hardcoded decks with frozen player/CPU
+snapshots and strict construction/support checks. Use shared profile/art/finish
+components. Complete one real eligible Standard/Commander match, history/recovery
+and served-asset verification before using the owner's release approval.
+
+Owner further clarified that the other chat will integrate its older-deck /
+bracket/badge/builder improvements after this Play release, to improve future
+CPU strategy and synergy. Keep that handoff clean and do not make the Play
+release wait for those separate improvements. A basic beta CPU still needs its
+own legal/fair/recoverable match path; do not represent future strategic work
+as already implemented Hard difficulty.

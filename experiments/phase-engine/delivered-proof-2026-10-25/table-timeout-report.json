@@ -1,0 +1,63 @@
+{
+  "provenance": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "runtimeOrigin": "local-research-build",
+    "buildIdentity": "cardstashy-ci-40153568000-1-ninjutsu-a49b8aa",
+    "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "sourceDiffSha256": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+    "buildReceiptSha256": "9c9e378fd2247f0a860f8f0cf4f2086464d2bf181af24ce7c02bd61161e69af2",
+    "glue": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "wasm": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "integrationFixtureGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "fixtureCardCount": 6137,
+    "loadedNames": [
+      "Forest",
+      "Grizzly Bears",
+      "Lightning Bolt"
+    ],
+    "subsetSha256": "72c599bfff55e80976ed05b624eeded3435ab698be32db2bc4ee2359391d1a42",
+    "subsetBytes": 28121
+  },
+  "files": {
+    "/human-command.mjs": "57d08876ce33962e61428632271ad070198e7f59f39c1c8c23256006aa950d5b",
+    "/visible-cpu-policy.mjs": "6fde41a268b1874b2e2817266a8a61a76f2fe63c53efcedcf80f5917ab095fd2",
+    "/visible-policy-worker.mjs": "0c8c5dd513c461c135cf2ee38df77f0fe935ff2f08a8f4be6932af703bdef233",
+    "/table-client.mjs": "13107d3f56ae0c0d56697083c09b5b27a7ed3a3df5a31a1e6cfb802a8841d19f",
+    "/table-authority.mjs": "39fefae5cd4535c9259e7d8df457ebfac591ba5d269fecf3d2d4f67d423f6eb1",
+    "/worker-journal.mjs": "b35889c31eb55d58652fa6cb53f86d53b94ed87a3340ffbd955cce0d1026493e",
+    "/protocol-fault.mjs": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+    "/priority-clock.mjs": "4c939bf6d616ecf582228918bd73094c43b998e0168996961429c8e964707602",
+    "/priority-scheduler.mjs": "d82af4727976497dc1f5cab3948ca1ee394c35865d5e544916a381bc3f839bfa",
+    "/seat-surface.mjs": "2ca66c1e8a49cd40f84c1f8af1e3468a9c3dbeb448f8624a516af991c48571d6",
+    "/interaction-surface.mjs": "74be3366770216e09c3fafeaa7209f6929ed916841d85cef5786816c17654492",
+    "/smoke-policy-worker.mjs": "b3ca7af308ecb588e96b0c5e388a74ccc69548f5b1907d60529e11c400517f66",
+    "/match-session.mjs": "93d5b9d417cdb42ea07d68ee2d9ef087cb26423a50d2f0a8b97323f27196e3ec",
+    "/match-table.mjs": "97751b512b1acfd7c53eaff1100ae838eb8a6d4e4247c7c04accd713dbb979af",
+    "/match-table.css": "3a7a37f6837c8556e8450bb6c7f14d82fea6fe5fae3f22505a7cf2e2cdfd1215",
+    "/runtime/engine_wasm.js": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "/runtime/engine_wasm_bg.wasm": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "/runtime/cards.json": "72c599bfff55e80976ed05b624eeded3435ab698be32db2bc4ee2359391d1a42",
+    "/runtime-config.mjs": "5e44894922ae2555454cae334afe504f436476d35ecd8b38e0b3e5c1a174d096",
+    "/": "2181a73ed6e181de2b2bf5675b8a9cef04b987a748dcd125560207d9ea860645",
+    "/sw.js": "41deee25237d2ce8bd6335a61c23fc730942371d9511eeb314fc57022911e4cb"
+  },
+  "checks": [
+    "visible near-expiry warning before mutation",
+    "real 30-second human timeout",
+    "one accepted human pass plus legal CPU response",
+    "next human decision with unchanged life"
+  ],
+  "limits": "Local research table with unequal Forest/Bears Modern fixtures, no actual account, real card art/finish, calibrated CPU, Standard/Commander admission or all-mechanic controls. Not an owner-ready app preview.",
+  "browser": "153.0.8010.0",
+  "result": {
+    "beforeRevision": 2,
+    "afterRevision": 4,
+    "defaultWindowMs": 30000,
+    "nearExpiryWarning": true,
+    "oneHumanTimeoutPass": true,
+    "oneCpuResponse": true,
+    "nextHumanDecision": true
+  },
+  "harnessSha256": "7b75f536579e56354562e6bbfb3ef5688797861290090e66084f6bc116e23bc9"
+}

@@ -1,3 +1,39 @@
+# Current owner authorization and runtime status — October 24 late evening
+
+This update supersedes older release/paid-build status statements below. Owner
+explicitly approved finishing Practice/Quick Play and releasing a verified working
+beta, intending to test it live. No further release approval is required once
+the actual end-to-end account/deck/match gates pass. Preserve unrelated current
+release work; never merge the old whole Play branch over it. CPU first,
+Standard/Commander only initially; Friends next, Draft deferred.
+
+The corrected runtime is delivered and preserved. Run 40153568000 / artifact
+12584327345 passed. Archive CardStashy-Play-Verified-Runtime-40153568000.zip is
+Library libfile_d318ce26c60481919a7063890c856e89, ZIP SHA-256
+edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b.
+The exact source commit object is in that archive; source commit
+5169f7fe03f93a6afe36fec767c3cda10120dcdd and tree
+60fc8715ad91f5c91b81f8a8335e238c623ec957 reconstruct from the existing pinned
+source + reviewed patch. Receipt binds JS/WASM and unchanged card fixture.
+
+Local delivered-byte mechanics 8/8, Stifle/fresh-process restore 3/3, manual
+casting, a complete visible fixture game with cold-offline recovery, and actual
+30-second visible expiry all pass. See experiments/phase-engine/delivered-proof-2026-10-25.
+Original-runtime ninjutsu failures remain valid historical evidence; assertions
+were retained. Do not repeat a Rust build or say the corrected runtime is missing.
+
+This is still a research table, not the completed account-facing Play flow.
+Read the latest scheduled-progress entry for runtime asset staging and the actual
+remaining integration. The current local focused guard count is 118. Existing
+account/deck setup is implemented, but its Start buttons remain disabled until
+actual eligible account-list matches and the remaining product gates pass.
+
+The other Power/bracket/builder patch is being prepared offline, per the owner's
+new brief/screenshot. Keep Play first and integrate finalized shared contracts
+only after inspecting the current code, without duplicating that separate work.
+
+---
+
 # CardStashy Play: handoff for a separate development chat
 
 Prepared October 24, 2026. This document lets a **new chat** continue the game
@@ -466,3 +502,4 @@ See [Play setup checkpoint](play-setup-checkpoint.md) for implemented setup,
 exact checks and outstanding printing-resolution/gameplay gates. The desktop
 setup route is available on this development branch, but the CPU match button
 stays disabled. This is not the requested playable beta or permission to publish.
+

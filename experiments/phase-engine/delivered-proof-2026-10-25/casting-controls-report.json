@@ -1,0 +1,57 @@
+{
+  "provenance": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "runtimeOrigin": "local-research-build",
+    "buildIdentity": "cardstashy-ci-40153568000-1-ninjutsu-a49b8aa",
+    "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "sourceDiffSha256": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+    "buildReceiptSha256": "9c9e378fd2247f0a860f8f0cf4f2086464d2bf181af24ce7c02bd61161e69af2",
+    "glue": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "wasm": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "integrationFixtureGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "fixtureCardCount": 6137,
+    "loadedNames": [
+      "Head Games",
+      "Ninja of the Deep Hours",
+      "Moon-Circuit Hacker",
+      "Ornithopter",
+      "Island",
+      "Plains",
+      "Swamp",
+      "Mountain",
+      "Forest",
+      "Raise the Alarm",
+      "Krenko, Mob Boss",
+      "Parallel Lives",
+      "Doubling Season",
+      "Sprout Swarm",
+      "Basalt Monolith",
+      "Power Artifact",
+      "Lightning Bolt",
+      "Counterspell",
+      "Satoru Umezawa",
+      "Grizzly Bears"
+    ],
+    "subsetSha256": "01d3b29609c9eccd3230d3a9e1892fa83a24b9590d5254cb37cf4cf5b7c1bce8",
+    "subsetBytes": 162288
+  },
+  "sourceFiles": {
+    "casting-controls-engine.mjs": "36921a1997b84410c56f50200ec9784b202c62a31611cdd12bd87b985e109590",
+    "human-command.mjs": "57d08876ce33962e61428632271ad070198e7f59f39c1c8c23256006aa950d5b",
+    "worker-journal.mjs": "b35889c31eb55d58652fa6cb53f86d53b94ed87a3340ffbd955cce0d1026493e",
+    "interaction-surface.mjs": "74be3366770216e09c3fafeaa7209f6929ed916841d85cef5786816c17654492"
+  },
+  "checks": [
+    "cast without guessed targets or suggestion membership",
+    "ordered authoritative opponent target selection",
+    "restored prompt rejects stale target capability",
+    "explicit cancellation before payment preserves card and land",
+    "explicit mana-source choice and payment",
+    "real stack and priority before resolution",
+    "Bolt damages chosen opponent for three"
+  ],
+  "acceptedJournalCommands": 7,
+  "networkCalls": 0,
+  "limits": "One engineered Lightning Bolt manual-payment/cancel case. Not general targets, X, additional costs, all payment types or finished match UI."
+}

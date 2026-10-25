@@ -1,0 +1,179 @@
+{
+  "provenance": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "runtimeOrigin": "local-research-build",
+    "buildIdentity": "cardstashy-ci-40153568000-1-ninjutsu-a49b8aa",
+    "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "sourceDiffSha256": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+    "buildReceiptSha256": "9c9e378fd2247f0a860f8f0cf4f2086464d2bf181af24ce7c02bd61161e69af2",
+    "glue": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "wasm": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "integrationFixtureGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "fixtureCardCount": 6137,
+    "loadedNames": [
+      "Head Games",
+      "Ninja of the Deep Hours",
+      "Moon-Circuit Hacker",
+      "Ornithopter",
+      "Island",
+      "Plains",
+      "Swamp",
+      "Mountain",
+      "Forest",
+      "Raise the Alarm",
+      "Krenko, Mob Boss",
+      "Parallel Lives",
+      "Doubling Season",
+      "Sprout Swarm",
+      "Basalt Monolith",
+      "Power Artifact",
+      "Lightning Bolt",
+      "Counterspell",
+      "Satoru Umezawa",
+      "Grizzly Bears",
+      "Stifle"
+    ],
+    "subsetSha256": "21dd3921672ab05b9057555fa98dee2616a0f4603cedf4b6bf3a550f328a29e7",
+    "subsetBytes": 164435
+  },
+  "runtime": "v24.22.1",
+  "setup": "Engineered persisted-state positions with 21 unchanged records from the hash-verified integration fixture. Subsequent actions are validated by the actual runtime.",
+  "cases": [
+    {
+      "name": "Positive control: Stifle counters Basalt Monolith untap",
+      "passed": true,
+      "setupSha256": "982c5b78258b426a82505a21dfbadf54398ab37d3a8d8935b92428d7750b9a6e",
+      "beforeResponse": {
+        "acceptedActions": 5,
+        "acceptedTraceSha256": "a661878d4bc0f857d2d696ff519156af7135fdaa5a793c1d153604ee06e04ee4",
+        "events": {
+          "PermanentTapped": 4,
+          "AbilityActivated": 5,
+          "ManaAdded": 4,
+          "ManaAbilityProduced": 4,
+          "TappedForMana": 4,
+          "StackPushed": 2,
+          "PriorityPassed": 1,
+          "BecomesTarget": 1,
+          "ZoneChanged": 1,
+          "CrimeCommitted": 1,
+          "SpellCast": 1,
+          "ManaExpended": 1
+        }
+      },
+      "afterResponse": {
+        "acceptedActions": 2,
+        "acceptedTraceSha256": "1b81c5c5d782af718f71307d7d25ec8667e3367dd5fd20257d70f52a03ba1e1d",
+        "events": {
+          "PriorityPassed": 1,
+          "SpellCountered": 1,
+          "EffectResolved": 1,
+          "ZoneChanged": 1,
+          "StackResolved": 1
+        }
+      },
+      "finalSignatureSha256": "e3cc9ee02874f4e54c5399638d7bdc44a5a691248653220934dc2c7fdfedf32b",
+      "freshProcessResponseRestoreExact": true
+    },
+    {
+      "name": "Stifle counters printed ninjutsu after paid return",
+      "passed": true,
+      "milliseconds": 7714,
+      "setupSha256": "f9ab0bfa5814550f79e77650333daf684b69257b107347ab4f54651f023b30a4",
+      "beforeResponse": {
+        "acceptedActions": 12,
+        "acceptedTraceSha256": "2f4d2b6d0619d00e865a50e0b8d27ae7cf95e2b893a0e036d1185f434b6cebab",
+        "events": {
+          "PriorityPassed": 4,
+          "PhaseChanged": 3,
+          "PermanentTapped": 4,
+          "AttackersDeclared": 1,
+          "BlockersDeclared": 1,
+          "AbilityActivated": 4,
+          "ManaAdded": 3,
+          "ManaAbilityProduced": 3,
+          "TappedForMana": 3,
+          "ZoneChanged": 2,
+          "StackPushed": 2,
+          "NinjutsuActivated": 1,
+          "BecomesTarget": 1,
+          "CrimeCommitted": 1,
+          "SpellCast": 1,
+          "ManaExpended": 1
+        }
+      },
+      "afterResponse": {
+        "acceptedActions": 8,
+        "acceptedTraceSha256": "be3303f723aae849a560427346298b75ff577e6d314f65fb51f5fac3e663afe7",
+        "events": {
+          "PriorityPassed": 4,
+          "SpellCountered": 1,
+          "EffectResolved": 1,
+          "ZoneChanged": 1,
+          "StackResolved": 1,
+          "PhaseChanged": 3
+        }
+      },
+      "finalSignatureSha256": "d49bc9314ba7fa85fd88e4a99e6c46e2b35da67a7964b61f3e81449c02ac5004",
+      "targetedStackAbility": true,
+      "costsRetained": true,
+      "noEntryOrCombatDamage": true,
+      "revealRetired": true,
+      "freshProcessResponseRestoreExact": true
+    },
+    {
+      "name": "Stifle counters Satoru-granted ninjutsu after returning Satoru",
+      "passed": true,
+      "milliseconds": 11427,
+      "setupSha256": "afc4c0b9d0d650bae4c05715a5f380e724890bed42dfc4f96c88d45f712db52d",
+      "beforeResponse": {
+        "acceptedActions": 12,
+        "acceptedTraceSha256": "3dc454c7e76ab4d3580d72acc7c99c762c8c23c0700ab3be4b0fc62ae33b3487",
+        "events": {
+          "PriorityPassed": 4,
+          "PhaseChanged": 3,
+          "PermanentTapped": 6,
+          "AttackersDeclared": 1,
+          "BlockersDeclared": 1,
+          "AbilityActivated": 6,
+          "ManaAdded": 5,
+          "ManaAbilityProduced": 5,
+          "TappedForMana": 5,
+          "ZoneChanged": 2,
+          "StackPushed": 2,
+          "NinjutsuActivated": 1,
+          "BecomesTarget": 1,
+          "CrimeCommitted": 1,
+          "SpellCast": 1,
+          "ManaExpended": 1
+        }
+      },
+      "afterResponse": {
+        "acceptedActions": 8,
+        "acceptedTraceSha256": "be3303f723aae849a560427346298b75ff577e6d314f65fb51f5fac3e663afe7",
+        "events": {
+          "PriorityPassed": 4,
+          "SpellCountered": 1,
+          "EffectResolved": 1,
+          "ZoneChanged": 1,
+          "StackResolved": 1,
+          "PhaseChanged": 3
+        }
+      },
+      "finalSignatureSha256": "8831cf9b7add16acdcf6cb830e42685e1ecff6555524250b42f839f29e4b8819",
+      "targetedStackAbility": true,
+      "costsRetained": true,
+      "noEntryOrCombatDamage": true,
+      "revealRetired": true,
+      "freshProcessResponseRestoreExact": true
+    }
+  ],
+  "limits": "One ordinary-ability response control and selected printed/granted ninjutsu responses. Fresh Node process recovery, not browser offline or journal idempotency. No UI, engine adoption, CPU or all-card claim.",
+  "networkCalls": 0,
+  "sourceFiles": {
+    "mechanics-inputs.mjs": "66461978fed003c3931601beb8d752dcbadabc424df7e899ce789156e4a21874",
+    "mechanics-fixtures.mjs": "41376f6253f4fe6c5cc15cda917111e6f4bbb8c74886d5f5d7c566f37ef494e4",
+    "ninjutsu-response-engine.mjs": "7c8f8f4fcf34134ad36e3113b1cc1a25fd4e3c04994db46a768f4750ee208914"
+  }
+}

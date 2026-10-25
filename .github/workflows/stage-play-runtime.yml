@@ -1,0 +1,28 @@
+name: Stage verified Play runtime
+on:
+  push:
+    branches: [codex/cardstashy-play-engine-20261024]
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: stage-play-runtime-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  stage:
+    if: >-
+      github.repository == 'deathxcore11/Card-forger' &&
+      github.event.repository.private == true &&
+      github.event.head_commit.message == 'APPROVED: stage verified CardStashy runtime'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: true
+          fetch-depth: 1
+      - name: Verify, split and commit the existing runtime to the Play branch only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/stage-play-runtime.py --approved-stage
