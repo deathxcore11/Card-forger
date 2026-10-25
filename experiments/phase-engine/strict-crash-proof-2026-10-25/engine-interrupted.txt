@@ -1,0 +1,33 @@
+Opening configured candidate
+Browser launched
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Opened configured candidate
+Initial controls {"decision":"MulliganDecision","choices":[{"token":"13d7d0d2-486f-4747-bf5a-981e5cbe1445:0:0","label":"Keep hand","kind":"MulliganDecision","sourceId":null},{"token":"13d7d0d2-486f-4747-bf5a-981e5cbe1445:0:2","label":"Take a mulligan","kind":"MulliganDecision","sourceId":null}],"busy":false,"error":null}
+Opening concurrent worker
+Concurrent worker resumed
+Mulligan accepted
+Pending bottom choice
+Browser launched
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Cold browser resumed
+Human commands 50 revision 103
+Human commands 100 revision 206
+Human commands 150 revision 309
+Terminal {"matchId":"configured-standard","revision":386,"winner":1,"reason":"engine-terminal","finishedAt":1792918968578,"snapshotDigest":"bca789ac3910720ff53dd71d371c3a674ec93021d57e9af561a9ba58eb014f76","format":"Standard","difficulty":"Medium","humanCommands":187,"humanCasts":1,"turn":22}
+Browser launched
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}

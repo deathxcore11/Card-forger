@@ -1,6 +1,6 @@
-const CACHE = "cardforge-shell-v316-play-setup-1";
+const CACHE = "cardforge-shell-v317-play-pregame-1";
 const ASSETS = [
-  "./play-player-mat.js", "./play-deck-context.js", "./play-card-surface.js",
+  "./play-pregame.js", "./play-player-mat.js", "./play-deck-context.js", "./play-card-surface.js",
   "./experiments/phase-engine/card-placement.mjs", "./experiments/phase-engine/card-stats.mjs", "./experiments/phase-engine/random-outcomes.mjs", "./experiments/phase-engine/human-command.mjs", "./experiments/phase-engine/interaction-surface.mjs", "./experiments/phase-engine/match-authority.mjs", "./experiments/phase-engine/match-input.mjs", "./experiments/phase-engine/match-session.mjs", "./experiments/phase-engine/match-table.mjs", "./experiments/phase-engine/practice-authority.mjs", "./experiments/phase-engine/practice-client.mjs", "./experiments/phase-engine/practice-coverage.mjs", "./experiments/phase-engine/practice-flow.mjs", "./experiments/phase-engine/practice-presentation.mjs", "./experiments/phase-engine/practice-record.mjs", "./experiments/phase-engine/priority-clock.mjs", "./experiments/phase-engine/priority-scheduler.mjs", "./experiments/phase-engine/protocol-fault.mjs", "./experiments/phase-engine/runtime-assets.mjs", "./experiments/phase-engine/seat-surface.mjs", "./experiments/phase-engine/visible-cpu-policy.mjs", "./experiments/phase-engine/visible-policy-worker.mjs", "./experiments/phase-engine/worker-journal.mjs", "./experiments/phase-engine/match-table.css", "./play-opponent-build.js", "./play-setup.js", "./play-deck-import.js", "./play-menu.js", "./play-menu.css",
   "./home-overview.css",
   "./deck-viewer.js",
@@ -346,3 +346,4 @@ self.addEventListener("fetch", (e) => {
     }),
   );
 });
+

@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "tests": 209,
+  "composition": {
+    "phase": 183,
+    "setup": 23,
+    "pregame": 3
+  },
+  "failures": 0,
+  "skips": 0,
+  "cancelled": 0,
+  "files": {
+    "app.js": "32a8c3da910aff9d721a535e7df4ead3134773c2ab0dc87b026ed560f637aa5f",
+    "sw.js": "eec1dff293d0001726e84c36ec830856c4730704189a3cdac6851628119b4291",
+    "play-pregame.js": "0999990c2573f81ddca76ce8b0fd470da15d7dd81751a29f2507fbaed8cc2110",
+    "play-menu.css": "7070ce8f9fa6e0393de8b7e8862fe4cfaf3a52016f4b28dc2188226d6c897b8c",
+    "test-play-pregame.mjs": "e38c36b708f4f3de1e831d4e3c8eeb33c763c83552b3594cd4bbf3541b9e93c5",
+    "experiments/phase-engine/persistent-browser-process.mjs": "34766fc48e0ee4f79cb888fdde6a04b96b7acfc3f6cee816468e1f951aac3ebe",
+    "experiments/phase-engine/practice-crash-storage-browser.mjs": "ab7f1ac210dd7d48f666b9bbba4e11c5c94b75aa81acb40850a8a21e2050848a",
+    "experiments/phase-engine/practice-crash-engine-browser.mjs": "0f6116386159243a12a036c4e1dfd6065445dc33d027a5b849a7880d57c5602e",
+    "experiments/phase-engine/practice-record-metrics-browser.mjs": "b70dfc8d3169665f5c0cc8bcc543715cf4c778656f579388344ae737f71fb286",
+    "experiments/phase-engine/practice-pregame-browser.mjs": "d0e0f427d3ca4a1c5162b8476748faa9c04580240373149d9911ebe8ee91ed03"
+  },
+  "fullEngineCrashSuitePassed": false,
+  "observedRecoveredRevision": 76,
+  "expectedRevision": 386,
+  "releaseReady": false,
+  "limits": "Focused Node and explicit browser/storage checks only. Full actual-engine post-OOM recovery remains failed/incomplete; real signed-in supported-deck and difficulty gates remain open."
+}

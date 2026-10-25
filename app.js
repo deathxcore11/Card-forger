@@ -18,6 +18,7 @@ import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {createPlayerMat} from './play-player-mat.js';
+import {mountPracticePregame} from './play-pregame.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -1487,18 +1488,19 @@ A.playCancelOpponentBuild=()=>practiceOpponentBuilder.cancel();
 // Product activation stays gated until the real-deck/pregame/difficulty gates
 // pass. The account/table lifecycle below is testable independently of activation.
 const PLAY_MATCH_RELEASE_READY=false;
-let playerMatHost=null,playerMatRoot=null;
-function closePlayerMat(){playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;}
+let playerMatHost=null,playerMatRoot=null,practicePregame=null;
+function closePlayerMat(){practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;}
 A.playStartCandidate=async()=>{
  if(!PLAY_MATCH_RELEASE_READY)return toast('Practice integration is still being verified.');
- if(playerMatHost||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
+ if(playerMatHost||practicePregame||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
  const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
  if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
- playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),lookup:(name,wanted)=>{const exact=wanted?S.state.printings?.[wanted]:null;return exact||meta(name);},onClose:closePlayerMat});
- // Actual pregame choice is still a release gate; this internal candidate keeps
- // that explicit rather than presenting a fake coin/die animation.
- try{await playerMatHost.start({seed:crypto.getRandomValues(new Uint32Array(1))[0],first:0});}catch(e){toast(e.message);}
+ practicePregame=mountPracticePregame({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),onCancel:closePlayerMat,onConfirm:async options=>{
+  practicePregame?.destroy();practicePregame=null;
+  playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),lookup:(name,wanted)=>{const exact=wanted?S.state.printings?.[wanted]:null;return exact||meta(name);},onClose:closePlayerMat});
+  try{await playerMatHost.start(options);}catch(e){toast(e.message);}
+ }});
 };
 function playDeckPreview(deck) {
   if(!deck||!Array.isArray(deck.cards)||!Array.isArray(deck.side||[])||(deck.format!==undefined&&typeof deck.format!=='string')||[...deck.cards,...(deck.side||[])].some(row=>!row||typeof row.name!=='string'||!Number.isSafeInteger(row.qty)||row.qty<1))return '<p class="note warn">This deck needs review in Decks before its cards can be displayed.</p>';
@@ -6617,3 +6619,4 @@ A.checkRelease=async()=>{await checkRelease();settingsPopup.refresh();};
 document.addEventListener('toggle',e=>{if(e.target.matches?.('details[data-release-item]')&&e.target.open){acknowledgeRelease(e.target.dataset.releaseItem);e.target.querySelectorAll('.release-dot').forEach(n=>n.remove());}},true);
 onReleaseChange(()=>{refreshProfileAvatar();document.querySelectorAll('.release-dot,[data-release-unread]').forEach(n=>{if(!releaseState().unread)n.remove();});});
 void checkRelease();
+

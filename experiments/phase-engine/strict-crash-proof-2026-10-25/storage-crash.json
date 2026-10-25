@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "browser": "153.0.8010.0",
+  "cases": [
+    {
+      "revision": 12,
+      "recordSha256": "7f0b2aa3b485b0dd24a63ddac25e01712e7a502b7f4a810a1b65d65cb8542ef8",
+      "bytes": 560604,
+      "crashes": 2,
+      "journalSha256": "308b7bf2a2ec807cbfe590bbb2fc80191518e635eaf6941247ba447c1e094866"
+    },
+    {
+      "revision": 152,
+      "recordSha256": "76539c7c0bd3ce300d0540c1214f6d012c82a9aad4cc2297c8df3dab510a3003",
+      "bytes": 961304,
+      "crashes": 2,
+      "journalSha256": "7f0c9c642465ac237d9ccf89ff88afcf75a060da0208895d6ee3f7e9309fd3c4"
+    },
+    {
+      "revision": 386,
+      "recordSha256": "f10d8c9a805a83db97320db4a25a6239ce4fafde29c038d6c6351842c12fb064",
+      "bytes": 1631725,
+      "crashes": 2,
+      "journalSha256": "19a8eeaf11eac2c20b1c73d6285a74908adc035725efdd7e051d8f85c055ec22"
+    }
+  ],
+  "files": {
+    "/practice-record.mjs": "6efbcf338262625b8aa2304676435a321f2509d84cbb9f79e85eb4865ca0ae12",
+    "/match-input.mjs": "11ab10b1ad37dc15d87af08fbe0dd9c9311ca7084533216d2f8860f6a711bf10",
+    "/runtime-assets.mjs": "40b266a4a3bb9806a386d49ea497e81fcfa2dd506e64b1e8e9082c1651489254",
+    "/": "36757f065324e23e27e5fd15ecd6b29c4aa7af9f651aa686477afa3882987d5a",
+    "/sw.js": "38363b843151fc10ff301e60e15740db01f852d4f946dc27d478e4e98b6ac1a8"
+  },
+  "harnessSha256": "ab7f1ac210dd7d48f666b9bbba4e11c5c94b75aa81acb40850a8a21e2050848a",
+  "limits": "Actual strict-durability account storage with simulated journals and explicit isolated process-group SIGKILL. Six offline restarts after acknowledged writes. Does not execute engine gameplay, reproduce an OOM, establish power-loss durability or certify every browser/device."
+}

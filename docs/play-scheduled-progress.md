@@ -1393,3 +1393,88 @@ release authorization applies once actual gates pass; public readiness stays fal
 No production/APK/schema change, paid build, subscription/budget increase or
 external message occurred. All partial and failing outcomes are preserved beside
 the scoped successful tests in sequence-proof-2026-10-25/.
+
+
+## October 25, 2026 — forced-process storage checks and explicit pregame
+
+Owner requested continuation. Began from verified a77a2856fb03aeb4aecf187a9126f0d06eb8174a;
+complete recursive tree contains no AGENTS.md. Current modules were compared
+with that tree before editing. Three local exploratory probes were excluded.
+No changes to upstream engine source, executable runtime or card definitions.
+
+Added play-pregame.js and connected it to the existing gated account candidate
+handler. The player explicitly chooses You, CPU or Choose randomly before a
+match starts. Shuffle seed and starting seat use independent cryptographic
+random values; the exact seed/first values pass to the existing flow and engine
+journal. There is no fake coin face, pre-confirmation match creation or reroll
+on duplicate confirmation. Cancel/Escape starts nothing. Changed accounts,
+account generations and selected decks refuse start. Account lifecycle cleanup
+also destroys the pending pregame. The existing release flag stays FALSE;
+this does not enable the public Play button or claim complete pregame rules.
+The engine still governs opening hands, mulligans and format-specific turns.
+
+The prompt uses the existing panel/buttons and current base/style/menu CSS;
+Return to setup is secondary. Corrected a box-sizing overflow caught by the
+first geometry run. Final Chromium checks pass keyboard confirmation, duplicate
+click protection, stale selection/account rejection, cancellation and destroyed
+controls, plus 1280x720, 1920x1080, 3440x1440 and 1024x768. Inspected the 1280
+screenshot with actual base/menu styles. No screenshot is a user deliverable.
+Added the module to the shell inventory and bumped its cache version. App and
+service-worker syntax checks pass. Product activation remains disabled.
+
+Final focused Node run: 209 tests, zero failures/skips/cancellations. This count
+is 183 Phase guards + 23 setup checks + 3 pregame checks, not 209 new engine
+mechanics. A broader unmodified menu-test attempt lacked store.js/views.js in
+the isolated copy and did not execute; it is not counted as passing. The setup
+test's missing pure import module was restored from the pinned remote before
+the final successful 209-test run. No assertion was weakened or removed.
+
+Storage isolation: practice-crash-storage-browser.mjs uses actual strict record
+transactions and simulated journal payloads. At acknowledged revisions 12, 152
+and 386 it immediately SIGKILLs its owned isolated Chromium process group,
+reopens offline, checks the exact pre-write journal hash, then kills/reopens
+again and compares the whole record, timestamps and result. All six restarts
+pass, including terminal receipt/result, frozen finish and account separation.
+This is stronger than a page reload but does NOT certify an engine restore,
+OOM survival or power-loss persistence. The helper owns only its explicitly
+spawned test process group and never attaches to user browser sessions.
+
+Actual-engine repeat: practice-crash-engine-browser.mjs uses the unchanged
+configured list/controls with isolated owned Chromium processes, SIGKILL at
+pending bottoming and at terminal, and the current strict record module.
+Pending-bottoming offline recovery, source immutability and concurrent CAS
+checks pass. The game reaches genuine GameOver: revision 386, winner seat 1,
+turn 22, 187 human commands and one human cast. During terminal cold recovery
+the outer process exits 137; shared cgroup oom_kill increases from 8 to 9.
+The terminal restart, Commander/illegal-list/account-change tail is incomplete,
+not a passing complete-match suite or an engine loss.
+
+A subsequent READ-ONLY metrics probe against this exact profile (not a new game)
+finds journal revision/history/receipts 76, no terminal result, versus acknowledged
+terminal 386. It exits 1 and preserves the discrepancy. Engine string is 296250
+characters; summed receipt JSON is 370465 characters at that recovered revision.
+These metrics do not prove what caused the rollback or describe the missing
+terminal record's size. Strict writes alone have NOT resolved the observed
+post-OOM recovery failure. Do not reconstruct a final save from the partial
+receipt, remove that assertion or generalize the six storage-only successes.
+The original a77a2856 failure (152 vs 386) remains unchanged as historical evidence.
+
+The archive, glue and compressed rules hashes were rechecked against the
+recorded delivery. The actual loader verifies decompressed WASM/rules hashes.
+No binary substitution, new Rust build or paid workflow was used.
+
+Reports, source hashes, raw partial/failing outcomes and helpers are under
+experiments/phase-engine/strict-crash-proof-2026-10-25/. Independent verification
+in another active local workspace was detected after this failed engine run;
+left it untouched, wrote a local coordination handoff and launched no further
+large engine test. Guard the branch update and preserve any concurrent work.
+
+Next: resolve repeated full-runtime recovery memory failure AND the acknowledged
+revision discrepancy; distinguish test-environment persistence effects from a
+product storage/engine bug with explicit read-only evidence and repeatable
+process ownership. Do not call crash recovery fixed from strict-mode reporting
+alone. Continue the actual signed-in Standard/Commander real-deck flow, remaining
+human decisions/mandatory timeout policy and calibrated difficulty gates once
+recovery is trustworthy. Existing release approval applies after actual gates,
+not to this fixture-only candidate. No production, APK, schema/migration,
+subscription/budget increase, paid build or external message occurred.
