@@ -89,3 +89,35 @@ by new artifact hashing and actual mechanics/restore execution.
 The guest reference notes also include a completed Faithless Looting → madness
 → Fiery Temper sequence and a labeled Moxgate capture. This is reference-site
 evidence, not a CardStashy board or completed madness implementation.
+
+## October 24, 2026 — atomic priority deadline research slice
+
+Verified the remote head at `70d1902c1add1dc7499b6e927c8af2c5eb7b482e`.
+Worked in a separate local copy, leaving unfinished CI/build-preparation files
+and upstream Rust work untouched. No production or APK changes.
+
+Added an isolated priority-pass authority that stores the engine snapshot,
+30-second deadline and command receipt in one compare-and-write record.
+Nine new tests cover expiry/click races, duplicate replay, cold authority
+reconstruction, competing writers and persistence/acknowledgement failures.
+The full focused Node suite executed: 69 passed, zero failed/skipped.
+
+An actual original-WASM check also passed: hash-verified inputs, engineered
+position, reconstructed authority at the retained deadline, one real accepted
+priority pass and durable receipt, next actor seat one, unchanged 20/20 life,
+zero runtime fetches. Its storage adapter is in memory, and reconstruction is
+within one process. This is not browser IndexedDB/cold-offline certification.
+See [timed journal proof](play-timed-journal-proof.md) for evidence and next steps.
+
+The preexisting native build log now shows ten ninjutsu integration tests
+passed on source a49b8aa. This run inspected that completed log rather than
+rerunning Rust. No corrected WASM was available or claimed, and both original
+runtime ninjutsu failures remain intact. The optional paid CI preparation was
+not committed or executed in this slice.
+
+Next: obtain the corrected browser runtime without new paid commitments,
+verify its exact provenance and run both preserved ninjutsu regressions. Then
+connect/test the timed authority through the real worker/storage boundary;
+add scheduler/countdown and complete explicit mandatory-choice policy. The
+new authority is not mounted in the application. Full engine, UI, CPU,
+Casual/Draft and reviewable-Practice gates remain open.
