@@ -17,6 +17,7 @@ import * as V from '/views.js';
 import {deckViewer,syncDeckViewers} from '/deck-viewer.js';
 import {profileAvatar} from '/profile-art.js';
 import {createPlaySetup} from '/play-setup.js';
+import {createPracticeOpponentBuilder} from '/play-opponent-build.js';
 import {parsePlayDeckImport} from '/play-deck-import.js';
 import {parseDeckImport} from '/deck-flow.js';
 import {playMenuMarkup} from '/play-menu.js';
@@ -28,15 +29,17 @@ const decks={a:[{id:'same',name:'Saved exact list',format:'Commander',cards:[{na
 decks.a.push({id:'standard',name:'Standard practice list',format:'Standard',cards:[{name:'Island',qty:60}],side:[]},...Array.from({length:23},(_,i)=>({...decks.a[0],id:'fixture-'+i,name:'Practice collection '+(i+1)})));
 const playSetup=createPlaySetup({readAccount:()=>account,readDecks:owner=>decks[owner],parseImport:text=>parsePlayDeckImport(text,{parseDeckImport}),resolveNames:async names=>({failed:names.filter(n=>!['Island','Ninja of the Deep Hours','Satoru Umezawa'].includes(n))})});
 const renderDeck=d=>d?deckViewer('mtg',V.deckList(d,{readOnly:true,unfiltered:true,preserveExactList:true,cardAction:'playInspectCard'})):'';
-function render(){const s=playSetup.snapshot();document.querySelector('#content').innerHTML=playMenuMarkup(s,{avatarMarkup:profileAvatar(null,{display_name:s.profile.displayName,username:s.profile.username}),deckTiles:new Map(decks[account.user?.id]?.map(d=>[d.id,V.deckTile(d,false,{playSelection:s.selectedSource==='saved'&&s.selected?.id===d.id})])||[]),deckPreview:renderDeck(s.selected),importPreview:renderDeck(s.reviewDeck),selectedArt:V.deckArtwork(s.selected)});syncDeckViewers();}
+function render(){const s=playSetup.snapshot();s.opponentBuild=practiceOpponentBuilder.snapshot();document.querySelector('#content').innerHTML=playMenuMarkup(s,{avatarMarkup:profileAvatar(null,{display_name:s.profile.displayName,username:s.profile.username}),deckTiles:new Map(decks[account.user?.id]?.map(d=>[d.id,V.deckTile(d,false,{playSelection:s.selectedSource==='saved'&&s.selected?.id===d.id})])||[]),deckPreview:renderDeck(s.inspectedSeat==='opponent'?s.opponent:s.selected),importPreview:renderDeck(s.reviewDeck),selectedArt:V.deckArtwork(s.inspectedSeat==='opponent'?s.opponent:s.selected)});syncDeckViewers();}
 const T={game:()=>'mtg'};
+const cloudInfo=()=>account;let accountGeneration=1,accountLocked=false;const deckPipeline={build:async request=>({ok:true,request,deck:{...structuredClone(decks.a[0]),format:request.format,name:'Random CPU reviewed list'}}),recheck:()=>true};const randomBuildSeed=async()=>({name:'Satoru Umezawa'});
 ${refreshSource}
 const A={card:()=>{}},I={},C={};
+${source.slice(source.indexOf('const practiceOpponentBuilder='),source.indexOf('function playDeckPreview(deck)'))}
 ${handlers}
 document.addEventListener('input',e=>I[e.target.dataset.input]?.(e.target));
 document.addEventListener('change',e=>C[e.target.dataset.change]?.(e.target));
 document.addEventListener('click',async e=>{const t=e.target.closest('[data-act]');if(!t||t.disabled)return;await A[t.dataset.act]?.(t);if(t.dataset.act==='deckView'){S.state.settings.displayModes.mtg.deck=t.dataset.mode;syncDeckViewers();}});
-window.fixture={snapshot:()=>playSetup.snapshot(),switchAccount:()=>{account={user:{id:'b'},profile:{display_name:'B Player',username:'b-player'},accountGeneration:2};refreshPlayMenu();},eligibility:()=>syncDesktopPlayEntries('mtg')};refreshPlayMenu();
+window.fixture={snapshot:()=>playSetup.snapshot(),switchAccount:()=>{accountGeneration++;account={user:{id:'b'},profile:{display_name:'B Player',username:'b-player'},accountGeneration:2};refreshPlayMenu();},eligibility:()=>syncDesktopPlayEntries('mtg')};refreshPlayMenu();
 `;
 const css=[...shell.matchAll(/<link rel="stylesheet" href="([^\"]+)"/g)].map(m=>m[1]).filter(x=>!x.startsWith('http'));
 const html='<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">'+css.map(p=>'<link rel="stylesheet" href="/'+p+'">').join('')+'</head><body class="glass" data-game="mtg" data-view="play"><div id="app" class="ready"><header style="height:76px;padding:20px 32px;font-weight:800">CardStashy</header><main id="content"></main></div><script type="module" src="/fixture.js"></script></body></html>';
@@ -77,14 +80,15 @@ try{
   await page.getByRole('button',{name:'Select Saved exact list',exact:true}).click();await page.locator('#playDeckSearch').fill('');
   await page.evaluate(()=>document.getElementById('playImportDisclosure').open=false);
   await page.locator('[data-act="deckView"][data-mode="stacks"]').click();
+  await page.locator('.play-opponent-review>summary').click();await page.getByRole('button',{name:'Random opponent deck',exact:true}).click();await page.waitForFunction(()=>fixture.snapshot().opponent?.name==='Random CPU reviewed list');assert.equal(await page.evaluate(()=>fixture.snapshot().selected.name),'Saved exact list');
   const layouts=[];
-  for(const [width,height] of [[1280,800],[1440,900],[1920,1080],[2560,1440]]){
+  for(const [width,height] of [[1280,720],[1440,900],[1920,1080],[2560,1080],[3440,1440],[1024,768]]){
    await page.setViewportSize({width,height});
    const geometry=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};};return {shelf:rect('.play-library'),inspector:rect('.play-inspector'),footer:rect('.play-match-bar'),content:rect('#content'),overflow:document.documentElement.scrollWidth>innerWidth};});
-   assert(!geometry.overflow);assert(geometry.inspector.x>=geometry.shelf.right);assert(geometry.content.width>=width*.94);assert(geometry.footer.bottom<=height+2);assert(geometry.shelf.width>geometry.inspector.width);
+   assert(!geometry.overflow);assert(geometry.inspector.x>=geometry.shelf.right);assert(geometry.content.width>=width*.94);assert(geometry.footer.bottom<=height+2,JSON.stringify({width,height,...geometry}));assert(geometry.shelf.width>geometry.inspector.width);assert(geometry.inspector.width<=522,'bounded inspector width');
    const fixed=await page.locator('.play-inspector').boundingBox();await page.locator('.play-library-scroll').evaluate(e=>e.scrollTop=e.scrollHeight);assert.deepEqual(await page.locator('.play-inspector').boundingBox(),fixed);await page.locator('.play-library-scroll').evaluate(e=>e.scrollTop=0);
    layouts.push({width,height,...geometry});
-   if(width===1920)await page.screenshot({path:join(out,theme+'-desktop.png'),fullPage:true});
+   if(width===1920||width===3440)await page.screenshot({path:join(out,theme+'-'+width+'-desktop.png'),fullPage:true});
   }
   // Desktop window narrowing / zoom must reflow rather than clip controls.
   await page.setViewportSize({width:900,height:650});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.getByRole('radio',{name:'Friends',exact:true}).check();assert(await page.getByRole('button',{name:'Play with friends',exact:true}).isVisible());

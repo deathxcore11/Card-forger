@@ -5181,3 +5181,13 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .scan-fix.is-open .scan-fix-toggle::after{transform:rotate(180deg)}
 .scan-fix .scan-lookup{margin:6px 0 10px;padding-top:0;border-top:0}
 @media (max-width:420px){.scan-finish{grid-template-columns:minmax(0,1fr) auto}.scan-finish-label{grid-column:1/-1}.scan-finish .scan-chips{grid-column:1}}
+
+/* Shared deck evidence and contextual rebuild */
+.ask-opponent{padding:10px 18px;border-bottom:1px solid var(--line);max-height:38%;overflow:auto;flex-shrink:0}
+.ask-opponent summary{cursor:pointer;font-weight:600}
+.ask-opponent textarea{display:block;box-sizing:border-box;width:100%;margin:10px 0;padding:10px;background:var(--panel,#171923);color:inherit;border:1px solid var(--line);border-radius:10px;font:inherit;resize:vertical}
+.ask-opponent button{min-height:40px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit;cursor:pointer}
+.ask-opponent [role="status"]{font-size:.85rem;overflow-wrap:anywhere}
+.bracket-panel h3{margin:4px 0;font-size:1.1rem}
+.bracket-explanation summary{cursor:pointer;min-height:32px;padding-block:6px}
+.bracket-explanation details{padding:8px 0;border-top:1px solid var(--line)}

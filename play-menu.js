@@ -6,8 +6,8 @@ const count = rows => Array.isArray(rows) && rows.every(row => Number.isSafeInte
 function notices(items, title) {
   return items?.length ? `<details class="note warn"><summary>${esc(title)} (${items.length})</summary><ul>${items.map(item => `<li>${esc(message(item))}</li>`).join('')}</ul></details>` : '';
 }
-export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(), deckPreview = '', importPreview = '', selectedArt = ''} = {}) {
-  const p = state.profile || {}, draft = state.draft || {}, selected = state.selected;
+export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(), deckPreview = '', importPreview = '', selectedArt = '', opponentPreview = ''} = {}) {
+  const p = state.profile || {}, draft = state.draft || {}, selected = state.inspectedSeat==='opponent'?state.opponent:state.selected;
   const match = state.match || {format:'Commander',mode:'cpu',difficulty:'Medium'}, query = state.browse?.query || '';
   const signedIn = p.signedIn === true, importReady = ['review','ready'].includes(state.importStatus);
   const decks = (state.decks || []).filter(d => d.format === match.format);
@@ -38,10 +38,11 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
         </div>
       </section>
       <aside class="panel play-inspector" aria-labelledby="playInspectorTitle">
-        <div class="play-inspector-head"><div class="page-head"><h2 id="playInspectorTitle">Your deck</h2>${selected ? '<button class="btn ghost small" data-act="playClearSelection">Clear</button>' : ''}</div>
+        <div class="play-inspector-head"><div class="play-inspector-tabs" role="group" aria-label="Inspect seat">${[['player','Your deck'],['opponent','CPU deck']].map(([seat,label])=>`<button class="btn ghost small" data-act="playInspectSeat" data-play-seat="${seat}" aria-pressed="${(state.inspectedSeat||'player')===seat}">${label}</button>`).join('')}</div><div class="page-head"><h2 id="playInspectorTitle">${state.inspectedSeat==='opponent'?'CPU deck':'Your deck'}</h2>${selected&&state.inspectedSeat!=='opponent' ? '<button class="btn ghost small" data-act="playClearSelection">Clear</button>' : ''}</div>
           ${selected ? `<div class="play-selected-cover">${selectedArt}<div class="play-selected-copy"><p class="eyebrow">Selected deck</p><h3 id="playSelectedTitle" tabindex="-1">${esc(selected.name)}</h3><p class="small">${esc(selected.format)} · ${count(selected.cards)} cards${selected.side?.length ? ` · ${count(selected.side)} sideboard` : ''}</p></div></div>` : '<p class="muted">Select a deck to see its artwork and full card list here.</p>'}
         </div>
-        <div class="play-inspector-scroll" data-play-scroll="inspector" tabindex="0" role="region" aria-label="Selected deck cards">${selected ? `${deckPreview}<p class="small muted">Deck eligibility will be checked before a match.</p>` : '<div class="play-selection-empty"><span aria-hidden="true">◇</span><p>Choose your next game plan.</p><p class="small muted">Browse on the left. Inspect your deck here.</p></div>'}</div>
+        <div class="play-inspector-scroll" data-play-scroll="inspector" tabindex="0" role="region" aria-label="Selected deck cards">${match.mode==='cpu'&&signedIn?`<details class="play-opponent-review" ${state.opponentBuild?.busy||state.opponent?'open':''}><summary>CPU opponent · ${esc(state.opponent?.name||'Choose a deck')}</summary><p class="small muted">Build a new opponent with the shared deck builder, then inspect its list. Gameplay eligibility is checked separately.</p><details><summary>Build preferences</summary>${match.format==='Commander'?'<label>Aim for bracket<select data-opponent-bracket><option value="">Any bracket</option>'+[1,2,3,4,5].map(n=>'<option'+(String(state.opponentBuild?.request?.targetBracket)===String(n)?' selected':'')+'>'+n+'</option>').join('')+'</select></label>':''}<label>Deck style<select data-opponent-style><option value="classic">Classic strategy</option><option value="infinite-mana" ${state.opponentBuild?.request?.deckStyle==='infinite-mana'?'selected':''}>Infinite mana engine</option></select></label></details><button class="btn ghost" data-act="playRandomOpponent" ${state.opponentBuild?.busy?'disabled':''}>Random opponent deck</button>${state.opponentBuild?.busy?'<button class="btn ghost" data-act="playCancelOpponentBuild">Cancel build</button>':''}<p class="small muted" role="status">${esc(state.opponentBuild?.error||state.opponentBuild?.status||'')}</p></details>`:''}
+        ${selected ? `${deckPreview}<p class="small muted">Deck eligibility will be checked before a match.</p>` : '<div class="play-selection-empty"><span aria-hidden="true">◇</span><p>Choose your next game plan.</p><p class="small muted">Browse on the left. Inspect your deck here.</p></div>'}</div>
       </aside>
     </div>
     <footer class="panel play-match-bar" aria-label="Match setup">

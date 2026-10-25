@@ -292,7 +292,8 @@ function improveTab(r, v, entry) {
   }).join('');
   const tests = r.tests?.length ? `<article class="air-card air-tests" style="--i:6"><span class="air-label">Prove it in the app</span><ol>${r.tests.map(t => `<li>${esc(t)}</li>`).join('')}</ol></article>` : '';
   const hidden = (r.improve || []).length - shown.length;
-  return sw + tests + (hidden ? `<p class="foot">${hidden} suggested swap${hidden === 1 ? ' was' : 's were'} left out because Power's deck check found the card isn't legal here.</p>` : '') || '<p class="air-empty">No swap held up to the app\'s checks.</p>';
+  const rebuild=entry.hooks.rebuild?'<button class="btn" data-ai-rebuild>Rebuild with AI</button>':'';
+  return rebuild + sw + tests + (hidden ? `<p class="foot">${hidden} suggested swap${hidden === 1 ? ' was' : 's were'} left out because Power's deck check found the card isn't legal here.</p>` : '') || '<p class="air-empty">No swap held up to the app\'s checks.</p>';
 }
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 function tabBody(entry, v = verify(entry)) {
@@ -345,6 +346,7 @@ export function showAiReview(key, render, fetcher = fetch) {
   document.body.append(node); activeDialog = { key, entry, node, stale: false };
   node.addEventListener('cancel', e => { e.preventDefault(); closeAiReview(); });
   node.addEventListener('click', e => {
+    if(e.target.closest?.('[data-ai-rebuild]')){const launch=entry.hooks.rebuild;closeAiReview();launch?.();return;}
     const tab = e.target.closest?.('[data-ai-tab]');
     if (tab) {
       // Swap only the tab's content, so the decision card doesn't replay; bring the tabs to the top.

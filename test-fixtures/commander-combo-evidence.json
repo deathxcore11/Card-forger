@@ -1,0 +1,119 @@
+{
+  "source": "https://backend.commanderspellbook.com/estimate-bracket",
+  "retrievedAt": "2026-10-25",
+  "combos": [
+    {
+      "relevant": true,
+      "borderlineRelevant": true,
+      "arguablyTwoCard": true,
+      "definitelyTwoCard": false,
+      "speed": 5,
+      "massLandDenial": false,
+      "extraTurn": false,
+      "lock": false,
+      "skipTurns": false,
+      "controlAllOpponents": false,
+      "controlSomeOpponents": false,
+      "combo": {
+        "id": "1988-5641",
+        "status": "OK",
+        "uses": [
+          {
+            "card": {
+              "name": "Basking Broodscale",
+              "oracleId": "a7c69802-99c4-4778-934e-cc09ba58c267"
+            },
+            "zoneLocations": [
+              "B"
+            ],
+            "battlefieldCardState": "",
+            "exileCardState": "",
+            "libraryCardState": "",
+            "graveyardCardState": "",
+            "mustBeCommander": false,
+            "quantity": 1,
+            "usedFace": null
+          },
+          {
+            "card": {
+              "name": "Blade of the Bloodchief",
+              "oracleId": "8985e545-07c3-45f9-9058-fe3c1f50de04"
+            },
+            "zoneLocations": [
+              "B"
+            ],
+            "battlefieldCardState": "",
+            "exileCardState": "",
+            "libraryCardState": "",
+            "graveyardCardState": "",
+            "mustBeCommander": false,
+            "quantity": 1,
+            "usedFace": null
+          }
+        ],
+        "requires": [],
+        "produces": [
+          {
+            "feature": {
+              "id": 2244,
+              "name": "Infinite +1/+1 counters on a creature",
+              "uncountable": true,
+              "status": "C"
+            },
+            "quantity": 1
+          },
+          {
+            "feature": {
+              "id": 11,
+              "name": "Infinite colorless mana",
+              "uncountable": true,
+              "status": "S"
+            },
+            "quantity": 1
+          },
+          {
+            "feature": {
+              "id": 7,
+              "name": "Infinite death triggers",
+              "uncountable": true,
+              "status": "H"
+            },
+            "quantity": 1
+          },
+          {
+            "feature": {
+              "id": 4,
+              "name": "Infinite creature ETB",
+              "uncountable": true,
+              "status": "H"
+            },
+            "quantity": 1
+          },
+          {
+            "feature": {
+              "id": 3,
+              "name": "Infinite creature LTB",
+              "uncountable": true,
+              "status": "H"
+            },
+            "quantity": 1
+          },
+          {
+            "feature": {
+              "id": 6,
+              "name": "Infinite creature sacrifice triggers",
+              "uncountable": true,
+              "status": "H"
+            },
+            "quantity": 1
+          }
+        ],
+        "manaNeeded": "",
+        "easyPrerequisites": "",
+        "notablePrerequisites": "You have a way to put a +1/+1 counter on Basking Broodscale.\nBlade of the Bloodchief attached to Basking Broodscale.",
+        "description": "Put a +1/+1 counter on Basking Broodscale.\nBasking Broodscale triggers, creating a 0/1 Eldrazi Spawn creature token.\nActivate the Eldrazi Spawn by sacrificing it, adding {C}.\nWhen the Eldrazi Spawn dies, Blade of the Bloodchief triggers, putting a +1/+1 counter on Basking Broodscale.\nRepeat from step 2.",
+        "bracketTag": "S"
+      }
+    }
+  ]
+}

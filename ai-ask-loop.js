@@ -3,7 +3,7 @@ import {readBuildContract,applyUserBuildIntent,validateBuildProposal,lockBuildCo
 import {isDeckBuildRequest} from './ai-deck-goal.js';
 // Shared, bounded orchestration. Repeated calls never spend another lookup and a
 // completed builder draft is returned immediately rather than repeatedly planned.
-const APP_TOOLS = new Set(['app_help','game_concepts','wiki_lookup','search_cards','card_details','my_collection','list_sets','set_cards','meta_decks','my_decks','build_deck']);
+const APP_TOOLS = new Set(['deck_context','app_help','game_concepts','wiki_lookup','search_cards','card_details','my_collection','list_sets','set_cards','meta_decks','my_decks','build_deck']);
 export const ASK_LIMITS = Object.freeze({rounds:8,tools:12,parallel:3,buildProposals:2});
 const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
 export function boundedToolOutput(out) { const json=JSON.stringify(out)??'null';return json.length<=12000?json:JSON.stringify({error:'Result too large. Narrow the request to fewer cards or sets.'}); }
@@ -53,7 +53,7 @@ export async function runAskLoop({game,items,tools,fetcher=fetch,signal,current=
  const seen=new Map(),records=[],userCurrent=current,requestScope=tools?.captureRequestScope?.();
  current=()=>userCurrent()&&requestScope?.(game)!==false;
  const interrupted=()=>{if(!userCurrent()||signal?.aborted)return null;tools?.cancel?.();return {text:'Your account, decks, or collection changed while I was preparing the answer. Ask again using the current data. Nothing was saved.',source:'app',show:[],suggestions:[]};};
- let contract=readBuildContract(items,buildContext?.contract,{game,formats:tools?.buildFormats?.()}),buildAttempts=0,acceptedBuilds=0;
+ let contract=readBuildContract(items,buildContext?.contract||tools?.contextContract?.(),{game,formats:tools?.buildFormats?.(),contextBound:!!tools?.contextContract?.()}),buildAttempts=0,acceptedBuilds=0;
  if(!contract.game){contract.game=game;contract.provenance.game={source:'game-tab',value:game};}
  const userContract=structuredClone(contract);
  if(contract.cancelled){tools?.cancel?.();onBuildContext(null);return {text:'Build cancelled. Nothing was saved.',source:'app',show:[],suggestions:[]};}

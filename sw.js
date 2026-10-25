@@ -1,6 +1,6 @@
 const CACHE = "cardforge-shell-v316-play-setup-1";
 const ASSETS = [
-  "./play-setup.js", "./play-deck-import.js", "./play-menu.js", "./play-menu.css",
+  "./play-card-surface.js", "./play-opponent-build.js", "./play-setup.js", "./play-deck-import.js", "./play-menu.js", "./play-menu.css",
   "./home-overview.css",
   "./deck-viewer.js",
   "./deck-viewer.css",
@@ -193,6 +193,12 @@ const ASSETS = [
   "./matchup.js",
   "./matchups-ui.js",
   "./storage.js",
+  "./commander-combos.js",
+  "./commander-evidence.js",
+  "./game-changers.js",
+  "./deck-matchup-plan.js",
+  "./mtg-target-evidence.js",
+  "./deck-rebuild-context.js",
   "./extras.js",
   "./share.js",
   "./cloud.js",

@@ -26,7 +26,8 @@ for (const f of field.slice(0, 4)) {
 // A precon-level pile: creatures and Sol Ring, bracket 2.
 const pile = Object.values(cat).filter((c) => /Creature/.test(c.type_line || "") && !/Legendary/.test(c.type_line)).slice(0, 59).map((c) => ({ name: c.name, qty: 1 })).concat([{ name: "Sol Ring", qty: 1 }, { name: "Forest", qty: 40 }]);
 const pp = prof(pile);
-assert.equal(pp.speed.bracket, 2);
+assert.equal(pp.speed.bracket, null, "a creature pile does not certify Bracket 2");
+assert.equal(podSpeed({cards:pile},cat).independentEvidence,false);
 assert.ok(simulatePod(pp, field).win < 0.1, "a precon-level deck is far behind a cEDH table");
 console.log("PASS: Commander pods — tournament decks win about 25% of pods, a precon-level deck far less, seats even.");
 

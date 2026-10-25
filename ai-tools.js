@@ -1,3 +1,6 @@
+import {createRebuildContext} from './deck-rebuild-context.js';
+import {parseDeckImport} from './deck-flow.js';
+import {matchupImportNotice} from './ai-matchup-core.js';
 import {findInfo,INFO_TOPICS} from './app-info.js';
 import {FORMATS} from './formats.js';
 import {prepareMtgDeck} from './ai-deck-builder.js';
@@ -42,7 +45,7 @@ export function completionSummary(rows,owned,unit){
 export function makeAskTools(x) {
   const { S, T } = x;
   const wikiTopics=new Set(),publicMagicTerms=new Set(['creature-types','keyword-abilities','keyword-actions','ability-words'].flatMap(k=>MTG_VOCABULARY[k]||[]).map(k=>k.toLowerCase()));
-  let lastSharedBuild=null;
+  let lastSharedBuild=null,deckContext=null;
   const metaTargets = new Map();
   const visuals = new Map(), exactCards = new Map(), exactAliases = new Map();
   let exactCardSequence = 0;
@@ -122,6 +125,7 @@ export function makeAskTools(x) {
   const metaKey = (format) => { const f = String(format || S.ui.mtgMeta?.format || 'Modern'); return 'mtg:' + (/commander|edh|cedh/i.test(f) ? 'EDH' : x.MTG_META_FORMATS.find(([k]) => k.toLowerCase() === f.toLowerCase())?.[0] || 'Modern'); };
 
   const tools = {
+    async deck_context(){try{return deckContext?deckContext.read():{available:false,note:'Open coaching from a deck to bind its context.'};}catch(error){return {available:false,error:error.message};}},
     async game_concepts({game,query}) {
       const g=g0(game);
       return {game:g,concepts:searchGameConcepts(g,clip(query,180),{limit:5}),source:wikiSourceForGame(g),note:'Local original explanations and attributed reading links. A definition is not proof of a legal interaction or a working deck; builder coverage is explicit. Pokémon video-game and Yu-Gi-Oh! anime mechanics are not card-game rulings.'};
@@ -243,7 +247,9 @@ export function makeAskTools(x) {
       return { game: g, decks: T.gs(g).decks.slice(0, 15).map((d) => ({ id: d.id, name: d.name, format: d.format, cards: (d.zones?.main || []).reduce((s, r) => s + r.qty, 0), power: T.deckPowerScore?.(g, d) ?? null })) };
     },
     async build_deck(input, handshake={}) {
-      const checked=validateBuildProposal(input);
+      const inherited=deckContext?.current()?deckContext.request():null;
+      const merged=inherited?{...input,targetBracket:input.targetBracket===undefined?inherited.targetBracket??null:input.targetBracket,deckStyle:input.deckStyle||inherited.deckStyle||'classic',loopSource:inherited.loopSource||null,budgetMode:inherited.budgetMode||'cap',budgetBasis:input.budget_basis==='owned'?'purchase':input.budget_basis||inherited.budgetBasis||'total',ownedOnly:inherited.ownedOnly===true,preferOwned:inherited.preferOwned!==false}:input;
+      const checked=validateBuildProposal(merged);
       if(!checked.ok)return proposalFeedback(checked,{terminal:true});
       const { game, style, budget, format, seed, commander, budget_basis,goal,required_cards,excluded_cards,colors,avoid_infinite,candidate_cards }=checked.args;
       const g = g0(game), want = clip(style, 120), $ = budget;
@@ -255,8 +261,8 @@ export function makeAskTools(x) {
       const selected=formats.find(f=>[f.id,f.name].some(n=>n.toLowerCase()===String(format||'').toLowerCase()));
       if(!selected)return {game:g,requiresChoice:true,formats:formats.map(f=>({id:f.id,name:f.name})),note:'Choose a format before preparing a deck. No deck has been changed.'};
       if(x.deckExperience){
-        const previous=lastSharedBuild?.current()&&/^\s*(?:keep|same|make (?:it|that)|adjust|change|closer|cheaper|easier|simpler)/i.test(handshake.userRequest||'')&&lastSharedBuild.result.request.game===g&&lastSharedBuild.result.request.format===selected.id?lastSharedBuild.result:null;
-        const result=await x.deckExperience.build({...checked.args,previousDeck:previous?.deck,seed:seed||previous?.request.seed,seedCard:seed&&seed!==previous?.request.seed?null:previous?.request.seedCard,game:g,format:selected.id,budget:budget===0?null:budget,theme:previous&&/^(?:easy|easier|simple|simpler|beginner|cheaper|closer|easy to play)(?: deck)?$/i.test(want.trim())?previous.request.theme:g==='mtg'?want:g==='ptcg'?(['Grass','Fire','Water','Lightning','Psychic','Fighting','Darkness','Metal','Dragon','Colorless'].find(t=>new RegExp('\\b'+t+'\\b','i').test(want))||''):(!seed&&!vagueDeckStyle(want)?want:''),easy:/easy|easier|beginner|simple|simpler/i.test(style||'')},{current:preparingCurrent,showProgress:true,signal:handshake.signal});
+        const previous=deckContext?.current()?{deck:deckContext.deck(),request:deckContext.request()}:lastSharedBuild?.current()&&/^\s*(?:keep|same|make (?:it|that)|adjust|change|closer|cheaper|easier|simpler)/i.test(handshake.userRequest||'')&&lastSharedBuild.result.request.game===g&&lastSharedBuild.result.request.format===selected.id?lastSharedBuild.result:null;
+        const result=await x.deckExperience.build({...checked.args,matchupContext:deckContext?.matchup(),previousDeck:previous?.deck,seed:seed||previous?.request.seed,seedCard:seed&&seed!==previous?.request.seed?null:previous?.request.seedCard,game:g,format:selected.id,budget:budget===0?null:budget,theme:previous&&/^(?:easy|easier|simple|simpler|beginner|cheaper|closer|easy to play)(?: deck)?$/i.test(want.trim())?previous.request.theme:g==='mtg'?want:g==='ptcg'?(['Grass','Fire','Water','Lightning','Psychic','Fighting','Darkness','Metal','Dragon','Colorless'].find(t=>new RegExp('\\b'+t+'\\b','i').test(want))||''):(!seed&&!vagueDeckStyle(want)?want:''),easy:/easy|easier|beginner|simple|simpler/i.test(style||'')},{current:preparingCurrent,showProgress:true,signal:handshake.signal});
         if(!preparingCurrent())return {cancelled:true,terminal:true,note:'This request or workspace changed. Nothing was saved.'};
         if(!result.ok)return {game:g,terminal:true,ready:false,complete:false,requestSatisfied:false,note:result.message,issues:result.details||[]};
         lastSharedBuild={result,current:scopeCurrent};
@@ -340,13 +346,28 @@ export function makeAskTools(x) {
   };
   // Snapshot request ownership before a provider wait, not only when its reply
   // eventually starts a tool. Cross-game actions keep their own version ticket.
+  tools.contextKey=()=>deckContext?.key||'';
+  tools.contextContract=()=>deckContext?.current()?deckContext.contract():null;
+  tools.setDeckContext=(result,current=()=>true)=>{buildEpoch++;lastSharedBuild=null;deckContext=result?createRebuildContext(result,{current,lookup:x.meta}):null;};
+  tools.setOpponent=async raw=>{
+   if(!deckContext?.current())throw Error('Open AI coaching from your deck first.');
+   if(typeof raw!=='string'||raw.length>40000)throw Error('Paste a deck list of at most 40,000 characters.');
+   const parsed=parseDeckImport(raw);if(!parsed.cards?.length)throw Error('No recognizable card entries were found.');
+   const before=deckContext,version=before.revision(),request=before.request();
+   for(const name of [...new Set([...(parsed.cards||[]),...(parsed.side||[])].map(r=>r.name))])if(!x.meta(name)){const c=await x.resolve(name,true);if(c)x.cacheCard?.(c);if(deckContext!==before||!before.current())throw Error('Opponent import cancelled: source changed.');}
+   if(deckContext!==before||!before.current()||version!==before.revision())throw Error('This opponent import was replaced.');
+   const missing=[...(parsed.cards||[]),...(parsed.side||[])].filter(r=>!x.meta(r.name));
+   if(missing.length)throw Error('Unresolved opponent cards: '+missing.slice(0,5).map(r=>r.name).join(', '));
+   const opponent={...parsed,name:'Imported opponent',format:request.format,provenance:{kind:'import'}};
+   before.setOpponent(opponent);return {copies:parsed.cards.reduce((n,r)=>n+r.qty,0),notice:matchupImportNotice(parsed,request.format),note:'Opponent matched as an imported list. Format legality and gameplay remain to be checked.'};
+  };
   tools.captureRequestScope = () => {
-    const identity=x.captureAskScope?.()||(()=>true),versions=new Map(GAMES.map(g=>[g,stateVersion(g)]));
-    return g=>identity()&&stateVersion(g)===versions.get(g);
+    const identity=x.captureAskScope?.()||(()=>true),versions=new Map(GAMES.map(g=>[g,stateVersion(g)])),source=deckContext,revision=source?.revision();
+    return g=>identity()&&stateVersion(g)===versions.get(g)&&source===deckContext&&source?.revision()===revision&&(!source||source.current());
   };
   // A builder prepared during this question appears as one more tappable item.
   tools.reset = ({forgetBuild=false}={}) => { if(forgetBuild)lastSharedBuild=null; buildEpoch++; x.pending = null; suggestions = []; exactAliases.clear(); buildReads.clear(); buildReadVersion=null; bestBuild=null; };
-  tools.defaultBuildFormat=x.deckExperience?g=>({mtg:'Standard',ygo:'tcg',ptcg:'standard'}[g]):undefined;
+  tools.defaultBuildFormat=x.deckExperience?g=>deckContext?.current()?deckContext.request().format:({mtg:'Standard',ygo:'tcg',ptcg:'standard'}[g]):undefined;
   tools.buildFormats=()=>Object.fromEntries(GAMES.map(g=>[g,(g==='mtg'?FORMATS:T.SOURCES?.[g]?.formats||[]).map(f=>({id:f.id,name:f.name}))]));
   tools.cancel = () => { buildEpoch++; x.pending = null; buildReads.clear(); buildReadVersion=null; bestBuild=null; };
   tools.suggestedItems = () => suggestions;

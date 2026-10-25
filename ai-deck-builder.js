@@ -1,3 +1,4 @@
+import {opponentDiscoveryQueries} from './deck-matchup-plan.js';
 // One bounded app-data operation, not one AI call per card. Recommendations stay
 // unsaved until the player reviews the exact list and uses the normal save action.
 import { buildDeck, themeQuery, themeQueries, fitsColors, requestedIntent, inspectMtgTheme, scoreCard } from './builder.js';
@@ -133,7 +134,7 @@ export async function prepareMtgDeck(args,x) {
   if(!seed)seed=chosen;
  }
  if(lead&&requiredCards.some(c=>!fitsColors(c,lead.color_identity||[])))return {requiresChoice:true,note:'A required card is outside the selected commander’s color identity. Choose a compatible commander or change that requirement.'};
- const colors=(lead?.color_identity||(requestedColors.length?allowedColors:[...new Set([seed,...requiredCards].filter(Boolean).flatMap(c=>c.color_identity||[]))])),ci=colors.join('').toLowerCase()||'c',baseQ=`${fq} id<=${ci}`;
+ const colors=(lead?.color_identity||(requestedColors.length?allowedColors:[...new Set([seed,...requiredCards].filter(Boolean).flatMap(c=>c.color_identity||[]))])),ci=colors.join('').toLowerCase()||'c',baseQ=`${fq} id<=${ci}${args.targetBracket&&args.targetBracket<=2?' -is:gamechanger':''}`;
  let loopPackages=[null];
  if(loopIntent.requireLoop){
   const possible=manaLoopCandidates({...args,...loopIntent},{excluded_cards:excludedNames}).filter(p=>p.colors.every(color=>colors.includes(color)));
@@ -143,7 +144,7 @@ export async function prepareMtgDeck(args,x) {
   if(!loopPackages.length)return {requiresChoice:true,choice:'loop',goal,note:'No reviewed repeatable-mana package could be resolved within your format, commander colors, creature types, exclusions and requested mana output. Missing or incompatible pieces were not substituted. Revise a requirement or name an exact route for review.'};
  }
  const requestedTribes=[...new Set([...requestedIntent(style).tribes,...(args.creatureTypesOnly||[]),...(lead?commanderTheme(lead).tribes:[])])];
- const focusedQueries=[...tribalDiscoveryQueries(requestedTribes,{limit:3}),...mechanicDiscoveryQueries(requestedMechanics(style),{limit:3})];
+ const focusedQueries=[...opponentDiscoveryQueries(args.matchupContext),...tribalDiscoveryQueries(requestedTribes,{limit:3}),...mechanicDiscoveryQueries(requestedMechanics(style),{limit:3})];
  const planQueries=[...new Set([...focusedQueries,...themeQueries(seed,style),...(lead&&cardKey(lead.name)!==cardKey(seed.name)?themeQueries(lead):[])])];
  // Two bounded discovery lanes complement—not replace—the affordable pool.
  // The six-mana window is a retrieval heuristic, not a legality restriction.
@@ -174,7 +175,7 @@ export async function prepareMtgDeck(args,x) {
  const own=n=>available(x,n),required=[...new Map([seed,...requiredCards].filter(c=>c&&cardKey(c.name)!==cardKey(lead?.name)).map(c=>[cardKey(c.name),{name:c.name,qty:1}])).values()];
  if(args.flow&&args.preferOwned!==false)for(const c of Object.values(x.S?.catalog||{}))if(c?.name&&available(x,c.name)>0&&!catalog[cardKey(c.name)]&&isLegal(c,f)&&fitsColors(c,colors))remember(c);
  const buildCatalog=Object.fromEntries(Object.entries(catalog).filter(([,c])=>!excludedKeys.has(cardKey(c.name))&&fitsTypeRestrictions(c,args)));
- const options=({format:f.name,seeds:[seed],commander:lead,easy:args.easy===true,preferred:args.preferOwned===true?c=>own(c.name):()=>0,requestedStyle:style,goal,creatureTypesOnly:args.creatureTypesOnly,excludedSubtypes:args.excludedSubtypes,suggestedCards:suggested.filter(Boolean).map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
+ const options=({format:f.name,targetBracket:args.targetBracket,matchupContext:args.matchupContext,seeds:[seed],commander:lead,easy:args.easy===true,preferred:args.preferOwned===true?c=>own(c.name):()=>0,requestedStyle:style,goal,creatureTypesOnly:args.creatureTypesOnly,excludedSubtypes:args.excludedSubtypes,suggestedCards:suggested.filter(Boolean).map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
  const alternativeDrafts=[];
  const candidates=loopPackages.flatMap(pkg=>{
   const base=[...new Map([...required,...(pkg?pkg.cards.filter(name=>cardKey(name)!==cardKey(lead?.name)).map(name=>({name,qty:1})):[])].map(r=>[cardKey(r.name),r])).values()];

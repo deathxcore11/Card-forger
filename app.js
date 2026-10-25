@@ -1,3 +1,4 @@
+import {lookupCommanderCombos} from './commander-combos.js';
 import {cardDiscoverySpec} from './card-discovery.js';
 import {checkRelease,acknowledgeRelease,onReleaseChange,releaseDot,releaseState} from './release-status.js';
 import {createDeckPipeline} from './deck-pipeline.js';
@@ -15,6 +16,7 @@ import {syncDesktopPlayEntries} from './desktop-play.js';
 import {createPlaySetup} from './play-setup.js';
 import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
+import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -1443,14 +1445,16 @@ createWikiDeckHandoff({A,article:()=>currentWikiPage()?.state.response,game:T.ga
  importDeck:snapshot=>{deckImportSheet({text:snapshot.text,name:snapshot.title,format:snapshot.format||'60-card casual',commander:snapshot.commander,destination:'new',url:snapshot.source.url,kind:'Community deck',description:`Source decklist from ${snapshot.source.name}: ${snapshot.source.title}.`});if(!snapshot.format){const field=$('#dImpFormat'),choice=document.createElement('option'),preview=$('#dImpPreviewBtn');choice.value='';choice.textContent='Choose a format';choice.disabled=true;choice.selected=true;field.prepend(choice);field.value='';preview.disabled=true;$('#dImpCommanderRow').style.display='none';field.addEventListener('change',()=>{preview.disabled=!field.value;});}}
 });
 const deckPipeline=createDeckPipeline({S,T,api,resolve,cacheCard,meta,priceOf,inv,tcgCtx});
+const randomBuildSeed=async request=>{if(request.game!=='mtg')return deckPipeline.resolveSeed(request);const f=formatOf(request.format),theme=String(request.theme||'').replace(/[^\p{L}\p{N} '-]/gu,'').slice(0,80);return cacheCard(await api('/cards/random?'+new URLSearchParams({q:`${f.legality?'f:'+f.legality:'game:paper'} -t:land ${f.commander?'is:commander':''} ${theme?`(t:"${theme}" or o:"${theme}")`:''}`})));};
 const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game:T.game,
+ rebuild:(result,current)=>A.askOpen({deckContext:result,deckCurrent:current,query:'Help me choose a direction for this list. Suggest three useful options.'}),
  identity:()=>{const account=accountGeneration;return ()=>!accountLocked&&account===accountGeneration;},
  coachHooks:(result,deck)=>result.request.game==='mtg'?V.mtgCoachHooks(deck,result.power):T.tcgCoachHooks(result.request.game,deck,T.SOURCES[result.request.game].formats.find(f=>f.id===result.request.format),result.power),
  scope:()=>{const scope=mutationScope(),stamp=deckWorkspaceSignature(S.state);return ()=>mutationCurrent(scope)&&deckWorkspaceSignature(S.state)===stamp;},
  root:()=>$('#sheetBody'),isOpen:()=>$('#sheet').open&&S.ui.sheetCtx?.type==='deck-flow',
  paint:html=>{$('#sheetBody').innerHTML=html;wireSheetBack();},open:(html,request)=>openSheet(html,{type:'deck-flow',request}),
  onInput:fn=>document.addEventListener('input',e=>{if(e.target.matches('[data-flow-field]'))fn(e);}),
- random:async request=>{if(request.game!=='mtg')return deckPipeline.resolveSeed(request);const f=formatOf(request.format),theme=String(request.theme||'').replace(/[^\p{L}\p{N} '-]/gu,'').slice(0,80);return cacheCard(await api('/cards/random?'+new URLSearchParams({q:`${f.legality?'f:'+f.legality:'game:paper'} -t:land ${f.commander?'is:commander':''} ${theme?`(t:"${theme}" or o:"${theme}")`:''}`})));},
+ random:randomBuildSeed,
  save:async(result,current)=>{const write=scopedCommit(),r=result.request,id=uid(),name=(r.seedCard?.name||result.deck.buildAround||'My deck')+' · '+r.formatName;
   if(!current())throw Error('Your workspace changed. Rebuild this deck.');
   const d=r.game==='mtg'?withSnapshot({...structuredClone(result.deck),id,name,budget:r.budget,versions:[]},'Generated'):{...structuredClone(result.deck),id,name,format:r.format,createdAt:new Date().toISOString()};
@@ -1473,6 +1477,11 @@ const playSetup = createPlaySetup({
   parseImport:text=>parsePlayDeckImport(text,{parseDeckImport}),
   resolveNames:async names=>{const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;await resolveNames(names,()=>{},false,current);return {failed:current()?names.filter(name=>!meta(name)):[]};}
 });
+const practiceOpponentBuilder=createPracticeOpponentBuilder({pipeline:deckPipeline,pickSeed:randomBuildSeed,
+ readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked,playSetup.snapshot().match.format],
+ onSelect:deck=>playSetup.chooseOpponent(deck),onChange:()=>refreshPlayMenu()});
+A.playRandomOpponent=async()=>{const state=playSetup.snapshot();if(!state.profile.signedIn||state.match.mode!=='cpu')return;const root=document.querySelector('.play-menu'),targetBracket=root?.querySelector('[data-opponent-bracket]')?.value||null,deckStyle=root?.querySelector('[data-opponent-style]')?.value||'classic';await practiceOpponentBuilder.build({format:state.match.format,targetBracket,deckStyle});};
+A.playCancelOpponentBuild=()=>practiceOpponentBuilder.cancel();
 function playDeckPreview(deck) {
   if(!deck||!Array.isArray(deck.cards)||!Array.isArray(deck.side||[])||(deck.format!==undefined&&typeof deck.format!=='string')||[...deck.cards,...(deck.side||[])].some(row=>!row||typeof row.name!=='string'||!Number.isSafeInteger(row.qty)||row.qty<1))return '<p class="note warn">This deck needs review in Decks before its cards can be displayed.</p>';
   return deckViewer('mtg',V.deckList(deck,{readOnly:true,unfiltered:true,preserveExactList:true,cardAction:'playInspectCard'}));
@@ -1480,9 +1489,10 @@ function playDeckPreview(deck) {
 function renderPlayPage() {
   if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>CPU practice is being developed for Magic.</p></section>';
   if(!syncDesktopPlayEntries('mtg').eligible)return '<section class="empty"><h1>Play</h1><p>The Play beta is available on desktop. Your saved decks remain available in Decks.</p></section>';
-  const state=playSetup.snapshot(),p=state.profile,tiles=new Map();
+  const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();
   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:state.selectedSource==='saved'&&state.selected?.id===deck.id}));}
-  return playMenuMarkup(state,{avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(state.selected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(state.selected)});
+  const inspected=state.inspectedSeat==='opponent'?state.opponent:state.selected;
+  return playMenuMarkup(state,{avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected)});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
@@ -1492,6 +1502,7 @@ const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const disclosure=document.getElementById('playImportDisclosure');if(disclosure&&importOpen!==undefined)disclosure.open=importOpen;
 }};
 A.playSelectDeck=t=>{playSetup.selectDeck(t.dataset.playDeck);refreshPlayMenu();document.getElementById('playSelectedTitle')?.focus({preventScroll:true});};
+A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu();};
 A.playClearSelection=()=>{playSetup.clearSelection();refreshPlayMenu();};
 A.playConfigure=t=>{playSetup.configure({[t.dataset.playOption]:t.dataset.playValue});refreshPlayMenu();document.querySelector(`[data-act="playConfigure"][aria-pressed="true"]`)?.focus({preventScroll:true});};
 C.playMatchOption=t=>{const key=t.dataset.playOption,value=t.value;playSetup.configure({[key]:value});refreshPlayMenu();document.querySelector(`[data-play-option="${key}"]${key==='mode'?':checked':''}`)?.focus({preventScroll:true});};
@@ -2757,6 +2768,7 @@ A.askOpen = (options={}) => {
       if (!current?.() || T.game() !== g) return toast("Your account or workspace changed. Ask again in the current workspace.");
       return A.tBuild({dataset:{id,format},initialBudget:budget>0?budget:"",buildCurrent:current});
     } });
+  askTools.setDeckContext?.(options.deckContext||null,options.deckCurrent||(()=>true));
   const game=T.game(),account=accountGeneration,workspace=workspaceVisitRevision,route=location.hash;
   const current=()=>!accountLocked&&account===accountGeneration&&workspace===workspaceVisitRevision&&game===T.game()&&route===location.hash;
   const show=s=>s.kind==='build'&&s.game===game?safely(askNavigation.handoff(()=>askTools.open(s))):safely(askNavigation.leave(true).then(()=>askTools.open(s)));
@@ -4877,6 +4889,11 @@ C.setGlass = (t) => {
 // Tap a card image: full-screen, high-resolution, zoomable.
 A.zoomCard = (t) => openZoom(zoomCardOptions(t));
 // Card sheet Meta tab: fetch tournament results, then redraw the open sheet.
+A.bracketCombos = async (t) => {
+ const d=S.state.decks.find(d=>d.id===t.dataset.deck);if(!d||d.format!=='Commander')return;
+ t.disabled=true;t.textContent='Checking known combinations…';
+ try{await lookupCommanderCombos(structuredClone(d),S.catalog);render();}catch(e){toast(e.message||'Combination lookup is unavailable.');t.disabled=false;t.textContent='Check known combinations';}
+};
 A.deckMetaLoad = (t) => {
   const p = loadMetaData(t.dataset.key).catch(() => toast("Couldn’t load tournament results right now."));
   render();

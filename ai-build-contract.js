@@ -1,3 +1,4 @@
+import {normalizeCommanderTarget} from './commander-evidence.js';
 // The model proposes; this small deterministic contract keeps the player's hard
 // choices intact. It deliberately recognizes explicit syntax, not arbitrary prose.
 import { DECK_GOALS, inferDeckGoal, normalizeDeckGoal, isDeckBuildRequest } from './ai-deck-goal.js';
@@ -47,11 +48,11 @@ const genericBuildRequest=request=>isDeckBuildRequest(request)&&/\b(?:white|blue
 
 export function applyUserBuildIntent(input,contract={}) {
  if(!input||typeof input!=='object'||Array.isArray(input))return input;
- const args={budgetMode:'cap',matchMode:'unspecified',creatureTypesOnly:[],excludedSubtypes:[],...input};
+ const args={budgetMode:'cap',matchMode:'unspecified',targetBracket:null,deckStyle:'classic',creatureTypesOnly:[],excludedSubtypes:[],...input};
  for(const field of ['creatureTypesOnly','excludedSubtypes'])if(contract[field])args[field]=[...contract[field]];
  // Copy trusted, retained player selections rather than paying the model to
  // repeat them. Budget ambiguity and missing-amount choices remain validation.
- for(const field of ['game','format','matchMode','goal','seed','commander','budget','budget_basis','budgetMode','budgetBoundary'])if(contract[field]!==undefined)args[field]=contract[field];
+ for(const field of ['game','format','matchMode','goal','seed','commander','budget','budget_basis','budgetMode','budgetBoundary','targetBracket','deckStyle'])if(contract[field]!==undefined)args[field]=contract[field];
  for(const field of LOOP_FIELDS)if(Object.hasOwn(contract,field))args[field]=contract[field];
  if(contract.colors?.length)args.colors=[...contract.colors];
  if(typeof args.style==='string'&&contract.removedMechanics?.length)args.style=stripRemovedMechanics(args.style,contract.removedMechanics);
@@ -73,10 +74,12 @@ export function readBuildContract(items=[],retained=null,options={}) {
  const fresh=/\b(?:new|another|different|fresh)\s+(?:(?:\w+[- ]?){0,3})deck\b|\bstart over\b/i.test(request);
  const follow=/^\s*(?:same|keep|instead|make (?:it|that)|change|also|and|with|without|now|but|yes|ok(?:ay)?|allow|remove|drop|exclude|include|use|don't|do not|no|cancel|stop)\b/i.test(request);
  const newBuild=isDeckBuildRequest(request)&&!/^\s*(?:build|make|create)\s+(?:it|that|the same)\b/i.test(request);
- const continuation=!fresh&&(follow||!newBuild);
+ const continuation=!fresh&&(follow||!newBuild||options.contextBound===true);
  const previous=continuation?(retained||(latestIndex>0?readBuildContract(items.slice(0,latestIndex),null,options):null)):null;
  const prior=previous?.cancelled?null:previous;
  const out={request:request.slice(0,600),required_cards:[],excluded_cards:[],colors:[],themes:[],creatureTypesOnly:[],excludedSubtypes:[]};
+ const bracket=request.match(/\bbracket\s*([1-5])\b/i);if(bracket)out.targetBracket=Number(bracket[1]);else if(/\b(?:any bracket|no bracket target|clear bracket)\b/i.test(request))out.targetBracket=null;
+ if(/\b(?:classic|infinite[- ]mana engine)\b/i.test(request))out.deckStyle=/\bclassic\b/i.test(request)?'classic':'infinite-mana';
  if(genericBuildRequest(request))out.autoSelectSeed=true;
  else if(newBuild||prior?.autoSelectSeed&&!genericBuildLanguage(request)||/["“”]|\b(?:build around|include|must have|must use|stars|featuring|led by)\b/i.test(request))out.autoSelectSeed=false;
  if(/\b(?:affordable|cheap|budget[- ]friendly|low[- ]cost|inexpensive|budget deck|doesn['’]t cost (?:that|too) much)\b/i.test(request))out.costConscious=true;
@@ -189,6 +192,9 @@ export function readBuildContract(items=[],retained=null,options={}) {
 export function validateBuildProposal(input,contract={}) {
  if(!input||typeof input!=='object'||Array.isArray(input))return {ok:false,args:{},violations:[violations('arguments','request','Send a complete deck request object.')]};
  const args={...input},errors=[];
+ try{args.targetBracket=normalizeCommanderTarget(args.targetBracket);}catch(e){errors.push(violations('invalid_bracket','targetBracket',e.message));}
+ args.deckStyle=args.deckStyle||'classic';if(!['classic','infinite-mana'].includes(args.deckStyle))errors.push(violations('invalid_deck_style','deckStyle','Choose Classic or Infinite engine.'));
+ if(args.targetBracket!==null&&args.targetBracket!==undefined&&!(args.game==='mtg'&&/^Commander$/i.test(args.format||'')))errors.push(violations('invalid_bracket_format','targetBracket','Official brackets apply to Commander.'));
  for(const field of ['creatureTypesOnly','excludedSubtypes']){
   if(args[field]!==undefined&&(!Array.isArray(args[field])||args[field].length>8||args[field].some(t=>!CREATURE_THEMES.includes(t))))errors.push(violations('invalid_types',field,'Use at most eight exact creature subtypes.'));
   args[field]=Array.isArray(args[field])?args[field]:[];
@@ -233,7 +239,7 @@ export function validateBuildProposal(input,contract={}) {
  if(args.requireLoop!==null&&args.requireLoop!=='infinite-mana')errors.push(violations('invalid_loop','requireLoop','Only a reviewed infinite-mana requirement is supported.'));
  if(args.loopOutput!==null&&!['W','U','B','R','G','C','any-color'].includes(args.loopOutput))errors.push(violations('invalid_loop','loopOutput','Choose a known mana output.'));
  if(args.unsupportedLoop!==null&&(typeof args.unsupportedLoop!=='string'||args.unsupportedLoop.length>1000))errors.push(violations('invalid_loop','unsupportedLoop','Use the app’s bounded loop clarification.'));
- for(const field of ['game','format','matchMode','goal','commander','seed','budget','budget_basis','budgetMode','style'])if(contract[field]!==undefined&&!same(args[field],contract[field]))errors.push(violations('changed_constraint',field,`Keep the requested ${field}: ${contract[field]}.`));
+ for(const field of ['game','format','matchMode','goal','commander','seed','budget','budget_basis','budgetMode','style','targetBracket','deckStyle'])if(contract[field]!==undefined&&!same(args[field],contract[field]))errors.push(violations('changed_constraint',field,`Keep the requested ${field}: ${contract[field]}.`));
  if(contract.avoid_infinite&&!args.avoid_infinite)errors.push(violations('changed_constraint','avoid_infinite','Keep the requested no-infinite-combos constraint.'));
  if(contract.colors?.length&&[...args.colors].sort().join('')!==[...contract.colors].sort().join(''))errors.push(violations('changed_constraint','colors',`Keep the requested colors: ${contract.colors.join(', ')}.`));
  for(const field of ['required_cards','excluded_cards'])for(const n of contract[field]||[])if(!(field==='required_cards'&&[args.seed,args.commander].some(c=>same(c,n)))&&!args[field].some(c=>same(c,n)))errors.push(violations('changed_constraint',field,`Keep ${n} in ${field}.`));
@@ -247,7 +253,7 @@ export function validateBuildProposal(input,contract={}) {
 export function lockBuildContract(args,original={}) {
  // Once a valid proposal has been accepted, the only revision input is a small
  // list of candidate identities. It cannot buy success by relaxing constraints.
- return {...original,...Object.fromEntries(['game','format','matchMode','goal','style','seed','commander','budget','budget_basis','budgetMode','budgetBoundary','avoid_infinite',...LOOP_FIELDS].map(k=>[k,args[k]])),creatureTypesOnly:[...args.creatureTypesOnly],excludedSubtypes:[...args.excludedSubtypes],required_cards:[...args.required_cards],excluded_cards:[...args.excluded_cards],colors:[...args.colors]};
+ return {...original,...Object.fromEntries(['game','format','matchMode','goal','style','seed','commander','budget','budget_basis','budgetMode','budgetBoundary','targetBracket','deckStyle','avoid_infinite',...LOOP_FIELDS].map(k=>[k,args[k]])),creatureTypesOnly:[...args.creatureTypesOnly],excludedSubtypes:[...args.excludedSubtypes],required_cards:[...args.required_cards],excluded_cards:[...args.excluded_cards],colors:[...args.colors]};
 }
 export function proposalFeedback(check,{terminal=false}={}) {
  const budgetChoice=check.violations.some(v=>v.code==='unrequested_budget');

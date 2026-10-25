@@ -1,0 +1,207 @@
+[
+  {
+    "test": "test-deck-engine-foundation.mjs",
+    "exit": 0,
+    "seconds": 0.58
+  },
+  {
+    "test": "test-extras.mjs",
+    "exit": 0,
+    "seconds": 0.21
+  },
+  {
+    "test": "test-pods.mjs",
+    "exit": 0,
+    "seconds": 0.13
+  },
+  {
+    "test": "test-primary-inputs.mjs",
+    "exit": 0,
+    "seconds": 0.4
+  },
+  {
+    "test": "test-commander-strategy.mjs",
+    "exit": 0,
+    "seconds": 3.96
+  },
+  {
+    "test": "test-commander-criteria.mjs",
+    "exit": 0,
+    "seconds": 2.31
+  },
+  {
+    "test": "test-ai-goal-handshake.mjs",
+    "exit": 0,
+    "seconds": 1.39
+  },
+  {
+    "test": "test-ai-deck-build.mjs",
+    "exit": 0,
+    "seconds": 1.69
+  },
+  {
+    "test": "test-ai-coach-hooks.mjs",
+    "exit": 0,
+    "seconds": 0.27
+  },
+  {
+    "test": "test-ai-ask.mjs",
+    "exit": 0,
+    "seconds": 0.11
+  },
+  {
+    "test": "test-loop-build-integration.mjs",
+    "exit": 0,
+    "seconds": 7.88
+  },
+  {
+    "test": "test-deck-request-boundaries.mjs",
+    "exit": 0,
+    "seconds": 0.77
+  },
+  {
+    "test": "test-builder.mjs",
+    "exit": 0,
+    "seconds": 0.38
+  },
+  {
+    "test": "test-shared-deck-flow.mjs",
+    "exit": 0,
+    "seconds": 9.39
+  },
+  {
+    "test": "test-budget-rules.mjs",
+    "exit": 0,
+    "seconds": 0.63
+  },
+  {
+    "test": "test-budget-rebuild-comparison.mjs",
+    "exit": 0,
+    "seconds": 4.62
+  },
+  {
+    "test": "test-deck-build-routing.mjs",
+    "exit": 0,
+    "seconds": 0.37
+  },
+  {
+    "test": "test-deck-plan-fidelity.mjs",
+    "exit": 0,
+    "seconds": 0.98
+  },
+  {
+    "test": "test-ai-request-recovery.mjs",
+    "exit": 0,
+    "seconds": 1.18
+  },
+  {
+    "test": "test-ai-deck-handoffs.mjs",
+    "exit": 0,
+    "seconds": 0.56
+  },
+  {
+    "test": "test-ai-matchup-core.mjs",
+    "exit": 0,
+    "seconds": 0.11
+  },
+  {
+    "test": "test-ai-matchup-route.mjs",
+    "exit": 0,
+    "seconds": 0.12
+  },
+  {
+    "test": "test-mtg-combo-packages.mjs",
+    "exit": 0,
+    "seconds": 0.14
+  },
+  {
+    "test": "test-deck-strategy-plan.mjs",
+    "exit": 0,
+    "seconds": 0.33
+  },
+  {
+    "test": "test-ability-endpoints.mjs",
+    "exit": 0,
+    "seconds": 0.42
+  },
+  {
+    "test": "test-commander-land-requirements.mjs",
+    "exit": 0,
+    "seconds": 2.58
+  },
+  {
+    "test": "test-native-backend-integration.mjs",
+    "exit": 0,
+    "seconds": 0.24
+  },
+  {
+    "test": "test-android-auth-callback.mjs",
+    "exit": 0,
+    "seconds": 0.29
+  },
+  {
+    "test": "test-preload.mjs",
+    "exit": 0,
+    "seconds": 0.12
+  },
+  {
+    "test": "test-power-context-guards.mjs",
+    "exit": 0,
+    "seconds": 0.24
+  },
+  {
+    "test": "test-coach-power-contract.mjs",
+    "exit": 0,
+    "seconds": 0.78
+  },
+  {
+    "test": "test-ai-review-ui.mjs",
+    "exit": 0,
+    "seconds": 0.22
+  },
+  {
+    "test": "test-ai-review-legality.mjs",
+    "exit": 0,
+    "seconds": 0.13
+  },
+  {
+    "test": "test-commander-card-conditions.mjs",
+    "exit": 0,
+    "seconds": 0.67
+  },
+  {
+    "test": "test-creature-only-build.mjs",
+    "exit": 0,
+    "seconds": 3.72
+  },
+  {
+    "test": "test-own-object-theme.mjs",
+    "exit": 0,
+    "seconds": 0.27
+  },
+  {
+    "test": "test-mtg-final-support.mjs",
+    "exit": 0,
+    "seconds": 0.76
+  },
+  {
+    "test": "test-format-land-ranking.mjs",
+    "exit": 0,
+    "seconds": 0.48
+  },
+  {
+    "test": "test-power.mjs",
+    "exit": 0,
+    "seconds": 0.59
+  },
+  {
+    "test": "test-adversarial.mjs",
+    "exit": 0,
+    "seconds": 1.36
+  },
+  {
+    "test": "test-server-safety-ai.mjs",
+    "exit": 0,
+    "seconds": 0.15
+  }
+]

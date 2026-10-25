@@ -18,7 +18,7 @@ export function engineDeckFromSnapshot(snapshot,format){
  for(const card of commanders){const index=main.findIndex(n=>n.toLocaleLowerCase('en-US')===card.toLocaleLowerCase('en-US'));if(index<0)throw Error('COMMANDER_NOT_IN_SNAPSHOT');main.splice(index,1);}
  return {main_deck:main,sideboard:side,commander:commanders};
 }
-export function prepareMatchInput({player,opponent,format,difficulty,profile,runtimeIdentity}={}){
+export function prepareMatchInput({player,opponent,format,difficulty,profile={},runtimeIdentity}={}){
  if(!['Easy','Medium','Hard'].includes(difficulty)||typeof runtimeIdentity!=='string'||!runtimeIdentity.length)throw Error('INVALID_MATCH_OPTIONS');
  const playerDeck=engineDeckFromSnapshot(player,format),opponentDeck=engineDeckFromSnapshot(opponent,format);
  // Preserve complete source rows/printing/finish metadata as a frozen snapshot;

@@ -1,3 +1,5 @@
+import {cachedCommanderCombos} from './commander-combos.js';
+import {cardBracketEvidence,assessCommanderBracket,BRACKET_NAMES} from './commander-evidence.js';
 // Deck extras: Commander bracket estimate, mana base helper, proxy sheet and
 // life tracker state. Pure functions over the card catalog; no network calls.
 import { cardKey, rulesText, typeText, isLand, isBasic, aggregateCards, validateDeck } from "./core.js";
@@ -6,25 +8,6 @@ import { commanderTheme } from "./planner.js";
 import { formatOf } from "./formats.js";
 
 /* ---------- Commander bracket estimate ---------- */
-
-// Fallback for cards cached before Scryfall added the `game_changer` flag.
-// When a card carries the flag, the flag wins.
-const GAME_CHANGERS = new Set(
-  [
-    "Ad Nauseam", "Ancient Tomb", "Aura Shards", "Bolas's Citadel", "Braids, Cabal Minion",
-    "Chrome Mox", "Coalition Victory", "Consecrated Sphinx", "Crop Rotation", "Cyclonic Rift",
-    "Demonic Tutor", "Drannith Magistrate", "Enlightened Tutor", "Expropriate", "Field of the Dead",
-    "Fierce Guardianship", "Food Chain", "Force of Will", "Gaea's Cradle", "Gamble",
-    "Gifts Ungiven", "Glacial Chasm", "Grand Arbiter Augustin IV", "Grim Monolith", "Humility",
-    "Imperial Seal", "Intuition", "Jeska's Will", "Jin-Gitaxias, Core Augur", "Lion's Eye Diamond",
-    "Mana Vault", "Mishra's Workshop", "Mox Diamond", "Mystical Tutor", "Narset, Parter of Veils",
-    "Natural Order", "Necropotence", "Notion Thief", "Opposition Agent", "Orcish Bowmasters",
-    "Panoptic Mirror", "Rhystic Study", "Seedborn Muse", "Serra's Sanctum", "Smothering Tithe",
-    "Survival of the Fittest", "Sway of the Stars", "Teferi's Protection", "Tergrid, God of Fright",
-    "Thassa's Oracle", "The One Ring", "The Tabernacle at Pendrell Vale", "Underworld Breach",
-    "Vampiric Tutor", "Vorinclex, Voice of Hunger", "Worldly Tutor",
-  ].map(cardKey),
-);
 
 const FAST_MANA = new Set(
   [
@@ -37,7 +20,7 @@ const FAST_MANA = new Set(
 const text = (c) => rulesText(c).replace(/\s+/g, " ");
 
 export const isGameChanger = (c) =>
-  !!c && (typeof c.game_changer === "boolean" ? c.game_changer : GAME_CHANGERS.has(cardKey(c.name)));
+  cardBracketEvidence(c).gameChanger === true;
 
 // "Search your library for a card / creature card / instant card…", but not for lands.
 export function isTutor(c) {
@@ -47,81 +30,26 @@ export function isTutor(c) {
   return false;
 }
 
-export const isExtraTurn = (c) => !!c && /takes? an extra turn/i.test(text(c));
-
-export function isMassLandDenial(c) {
-  if (!c) return false;
-  const t = text(c);
-  return (
-    /(?:destroy|exile) all [^.]*\blands\b/i.test(t) ||
-    /sacrifices? (?:all|each) [^.]*\blands?\b/i.test(t) ||
-    /\blands? (?:don't|do not) untap/i.test(t) ||
-    /\b(?:lands|permanents) [^.]*don't untap during/i.test(t)
-  );
-}
+export const isExtraTurn = c => cardBracketEvidence(c).extraTurn === true;
+export const isMassLandDenial = c => cardBracketEvidence(c).massLandDenial === true;
 
 export const isFastMana = (c) => !!c && FAST_MANA.has(cardKey(c.name));
 
-export const BRACKETS = {
-  1: { name: "Exhibition", text: "Theme first, winning second. Decided by intent, so CardStashy never assigns it on its own." },
-  2: { name: "Core", text: "About a modern precon: no Game Changers, no mass land denial, no chained extra turns, few tutors." },
-  3: { name: "Upgraded", text: "Stronger than a precon: up to three Game Changers, no mass land denial, extra turns not chained." },
-  4: { name: "Optimized", text: "Anything legal: more than three Game Changers, mass land denial or lots of extra turns." },
-  5: { name: "cEDH", text: "Built for the tournament metagame. A list alone can’t show this; talk with your pod." },
-};
-
-// Lowest bracket the list fits by the published card rules. Two-card combos and
-// intent can't be read from card text, so this is a floor, not a verdict.
-export function bracketEstimate(deck, catalog) {
-  const found = { gameChangers: [], tutors: [], extraTurns: [], landDenial: [], fastMana: [] };
-  let unknown = 0;
-  for (const row of aggregateCards(deck.cards)) {
-    const c = catalog[cardKey(row.name)];
-    if (!c) {
-      unknown += row.qty;
-      continue;
-    }
-    if (isGameChanger(c)) found.gameChangers.push(c.name);
-    if (isTutor(c)) found.tutors.push(c.name);
-    if (isExtraTurn(c)) found.extraTurns.push(c.name);
-    if (isMassLandDenial(c)) found.landDenial.push(c.name);
-    if (isFastMana(c)) found.fastMana.push(c.name);
-  }
-  const gc = found.gameChangers.length,
-    reasons = [];
-  let bracket = 2;
-  if (gc > 3) reasons.push(`${gc} Game Changers (more than 3)`);
-  if (found.landDenial.length) reasons.push("mass land denial");
-  if (found.extraTurns.length >= 3) reasons.push(`${found.extraTurns.length} extra-turn cards`);
-  if (reasons.length) bracket = 4;
-  else {
-    if (gc) reasons.push(`${gc} Game Changer${gc > 1 ? "s" : ""}`);
-    if (found.tutors.length >= 4) reasons.push(`${found.tutors.length} tutors`);
-    if (found.extraTurns.length >= 2) reasons.push(`${found.extraTurns.length} extra-turn cards`);
-    if (reasons.length) bracket = 3;
-  }
-  // What would move the deck one bracket down.
-  const lower = [];
-  if (bracket === 4) {
-    if (gc > 3) lower.push(`cut ${gc - 3} Game Changer${gc - 3 > 1 ? "s" : ""}`);
-    if (found.landDenial.length) lower.push("cut mass land denial");
-    if (found.extraTurns.length >= 3) lower.push(`keep extra turns to ${Math.min(2, found.extraTurns.length - 1)}`);
-  } else if (bracket === 3) {
-    if (gc) lower.push(`cut ${gc} Game Changer${gc > 1 ? "s" : ""}`);
-    if (found.tutors.length >= 4) lower.push(`trim tutors to 3`);
-    if (found.extraTurns.length >= 2) lower.push("keep one extra-turn card");
-  }
-  return { bracket, ...BRACKETS[bracket], reasons, lower, found, unknown };
+export const BRACKETS = Object.fromEntries(Object.entries(BRACKET_NAMES).map(([id,name])=>[id,{name,text:'An optional table-experience guideline; discuss intent and unusual strategies.'}]));
+export function bracketEstimate(deck,catalog){
+ const estimate=assessCommanderBracket(deck,catalog,{combos:cachedCommanderCombos(deck)});
+ for(const row of aggregateCards(deck.cards||[])){
+  const c=catalog[cardKey(row.name)];if(isTutor(c))estimate.found.tutors.push(c.name);if(isFastMana(c))estimate.found.fastMana.push(c.name);
+ }
+ return estimate;
 }
 
-// When a Commander deck usually ends a game, for pod simulations. The bracket (from the published
-// card rules) sets the pace a table expects (precon-level games run to about turn 10, optimized
-// decks end around turn 6); fast mana and tutors bring it earlier. A list can't show politics or
-// combos it doesn't tutor for, so this is an estimate the UI labels as one.
+// Legacy synthetic pod pacing. Never independent evidence for this same bracket,
+// actual game-ending turn, table fit or a measured matchup win rate.
 export function podSpeed(deck, catalog) {
   const b = bracketEstimate(deck, catalog), fm = b.found.fastMana.length, tu = b.found.tutors.length;
   const base = { 2: 10, 3: 8.5, 4: 6.5 }[b.bracket] ?? 10;
-  return { turn: Math.max(3.5, base - Math.min(2.5, fm * 0.3) - Math.min(1.5, tu * 0.15)), bracket: b.bracket, fastMana: fm, tutors: tu };
+  return { turn: Math.max(3.5, base - Math.min(2.5, fm * 0.3) - Math.min(1.5, tu * 0.15)), bracket: b.bracket, synthetic: true, independentEvidence: false, fastMana: fm, tutors: tu };
 }
 
 /* ---------- Mana base helper ---------- */

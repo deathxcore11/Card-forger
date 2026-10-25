@@ -1,3 +1,6 @@
+import {inspectMatchupPlan} from './deck-matchup-plan.js';
+import {inspectTutorTargets} from './mtg-target-evidence.js';
+import {assessCommanderBracket,normalizeCommanderTarget} from './commander-evidence.js';
 import {cardKey,commandZoneKeys} from './core.js';
 import {formatOf} from './formats.js';
 import {inspectFinalSupport} from './mtg-final-support.js';
@@ -41,8 +44,13 @@ export function normalizeDeckRequest(input={},formats={}) {
   typeRestrictions[field]=[...new Set(given(field)?input[field]:parsedTypes[field])];constraintSources[field]=given(field)?'explicit':'theme';
  }
  const matchMode=['bo1','bo3'].includes(input.matchMode)?input.matchMode:'unspecified';
+ const targetBracket=normalizeCommanderTarget(input.targetBracket);
+ if(targetBracket!==null&&!(game==='mtg'&&selected.name==='Commander'))throw Error('Commander brackets apply only to Commander decks.');
+ if(input.deckStyle==='classic'&&input.loopSource==='deck-style'){loopIntent.requireLoop=null;loopIntent.loopOutput=null;}
+ const deckStyle=input.deckStyle||'classic';if(!['classic','infinite-mana'].includes(deckStyle))throw Error('Choose Classic or Infinite engine.');
+ if(deckStyle==='infinite-mana'){if(game!=='mtg')throw Error('Repeatable-mana packages apply to Magic.');loopIntent.requireLoop='infinite-mana';constraintSources.requireLoop='explicit';loopIntent.loopConflict=avoidInfinite===true;}
  const allowance=target===null||budgetMode==='cap'?0:cents(Math.min(target*DECK_POLICY.overagePercent/100,DECK_POLICY.overageMaximum));
- return {...input,...typeRestrictions,...loopIntent,constraintSources,matchMode,avoid_infinite:avoidInfinite===true,game,format:game==='mtg'?selected.name:selected.id,formatName:selected.name,
+ return {...input,...typeRestrictions,...loopIntent,constraintSources,matchMode,targetBracket,deckStyle,loopSource:deckStyle==='infinite-mana'?'deck-style':input.loopSource==='deck-style'?null:input.loopSource,avoid_infinite:avoidInfinite===true,game,format:game==='mtg'?selected.name:selected.id,formatName:selected.name,
   theme:String(input.theme??input.style??'').trim(),budget:target,budgetBasis:budgetBasis==='purchase'||budgetBasis==='owned'?'purchase':'total',
   ownedOnly,budgetMode,preferOwned:input.preferOwned??input.goal!=='strongest',easy:input.easy===true||/easy to play|beginner|simple/i.test(input.style||''),
   randomSeed:Number.isFinite(input.randomSeed)?input.randomSeed:Math.floor(Math.random()*0x7fffffff),
@@ -58,7 +66,7 @@ export function withinBudgetCap(estimate,request) {
 // Stable fingerprint of the constraints a result was validated against, so a
 // report can be matched to its request. Not a security hash.
 export function requestFingerprint(request) {
- const fields=['game','format','matchMode','theme','seed','commander','budget','budgetMode','budgetBoundary','budgetBasis','ownedOnly','creatureTypesOnly','excludedSubtypes','required_cards','excluded_cards','colors','requireLoop','loopOutput','avoid_infinite','randomSeed'];
+ const fields=['game','format','matchMode','targetBracket','deckStyle','theme','seed','commander','budget','budgetMode','budgetBoundary','budgetBasis','ownedOnly','creatureTypesOnly','excludedSubtypes','required_cards','excluded_cards','colors','requireLoop','loopOutput','avoid_infinite','matchupContext','randomSeed'];
  const text=JSON.stringify(fields.map(k=>[k,request?.[k]??null]));let h=2166136261;
  for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619);}
  return (h>>>0).toString(16).padStart(8,'0');
@@ -179,10 +187,12 @@ export function inspectDeckPlan(request,rows,deck={},{includeFinalSupport=true}=
  if(request.seedOrigin!=='automatic'&&request.seedCard&&!main.some(r=>r.qty>0&&key(r.card?.name)===key(request.seedCard.name)))issues.push(`The required build-around ${request.seedCard.name} is missing.`);
  for(const name of request.required_cards||[])if(!names.has(key(name))&&(request.game==='mtg'||!rows.some(r=>key(r.card?.name)===key(name))))issues.push(`Required card ${name} is missing.`);
  for(const name of request.excluded_cards||[])if(rows.some(r=>key(r.card?.name)===key(name)))issues.push(`Excluded card ${name} was selected.`);
+ const matchup=request.game==='mtg'?inspectMatchupPlan(main,request.matchupContext):null;if(matchup){notes.push(matchup.note);for(const a of matchup.answers)notes.push(`${a.name}: conditional answer coverage for ${a.kinds.join(', ')} in ${matchup.opponent}.`);}
+ const targets=request.game==='mtg'?inspectTutorTargets(main):null;if(targets){issues.push(...targets.issues);notes.push(...targets.notes);}
  const analysisRows=main.map(r=>({...r,c:r.card}));
  const engine=engineMap(request.game,analysisRows,{commanders:deck.commander?[deck.commander]:[]});
  const theme=request.game==='mtg'?inspectMtgTheme(main,{style:request.theme||request.style,commander:deck.commander,seed:request.seed||deck.buildAround,goal:request.goal}):null;
- if(theme){issues.push(...theme.issues);notes.push(...theme.notes);}
+ if(theme){issues.push(...theme.issues);notes.push(...theme.notes);for(const g of theme.primaryInputs?.groups||[])if(g.defining&&g.status==='missing')issues.push('Missing defining input: '+g.label);}
  const abilityEndpoints=engine.abilityEndpoints||null;if(abilityEndpoints)notes.push(...abilityEndpoints.notes);
  const combo=request.game==='mtg'?inspectManaLoop(main,request):{status:request.unsupportedLoop?'unverified':'not-requested',issues:request.unsupportedLoop?[request.unsupportedLoop]:[],packages:[]};
  issues.push(...combo.issues);
@@ -191,8 +201,10 @@ export function inspectDeckPlan(request,rows,deck={},{includeFinalSupport=true}=
  // Preference measures setup burden, not text length or a fake skill rating.
  const setup=main.reduce((sum,r)=>sum+setupBurden(request.game,r.card)*r.qty,0);
  const finalSupport=includeFinalSupport&&request.game==='mtg'?inspectFinalSupport(request,rows,deck):null;if(finalSupport){issues.push(...finalSupport.issues);notes.push(...finalSupport.notes);}
+ const bracket=request.game==='mtg'&&formatOf(request.format||deck.format).commander?assessCommanderBracket(deck,Object.fromEntries(main.filter(r=>r.card).map(r=>[cardKey(r.name),r.card])),{targetBracket:request.targetBracket,combos:deck.comboEvidence}):null;
+ if(bracket?.targetStatus==='conflict')issues.push('Detected card or strategy restrictions conflict with the requested Commander bracket.');
  const typeRestrictions={status:restrictionRequested?(restrictionFailures.length?'fail':'pass'):'not-requested',creatureTypesOnly:[...(request.creatureTypesOnly||[])],excludedSubtypes:[...(request.excludedSubtypes||[])],includesCommander:true,noncreatureSupportAllowed:true,conflicts:restrictionFailures.map(r=>r.name||r.card?.name||'Unresolved card')};
- return {attackers,manaCoverage,abilityEndpoints,finalSupport,issues:[...new Set(issues)],notes:[...new Set([...notes,...(deck.repairNotes||[]),...(deck.constructionNotes||[])])],engine,theme,strategy:theme?.strategy||null,mechanics:theme?.mechanics||null,combo,typeRestrictions,risks,setupBurden:setup};
+ return {attackers,manaCoverage,abilityEndpoints,finalSupport,bracket,targets,matchup,issues:[...new Set(issues)],notes:[...new Set([...notes,...(deck.repairNotes||[]),...(deck.constructionNotes||[])])],engine,theme,strategy:theme?.strategy||null,mechanics:theme?.mechanics||null,combo,typeRestrictions,risks,setupBurden:setup};
 }
 // Magic list identity ignores printing, row order and split duplicate rows. Other
 // games retain card IDs because same-name cards can have different game text.
@@ -214,14 +226,17 @@ export function rebuildComparison(result,candidates,request) {
  return {oldBudget:Object.hasOwn(request,'previousBudget')?request.previousBudget:request.previousDeck.budget??null,newBudget:request.budget,budgetMode:request.budgetMode,basis:request.budgetBasis,oldSignature,newSignature,sameList,commanderChanged,previousCommander:request.previousDeck.commander||null,newCommander:result.deck.commander||null,changes,addedCopies:changes.reduce((n,r)=>n+Math.max(0,r.delta),0),removedCopies:changes.reduce((n,r)=>n+Math.max(0,-r.delta),0),oldEstimate,newEstimate,priceDelta:Number.isFinite(oldEstimate)&&Number.isFinite(newEstimate)?cents(newEstimate-oldEstimate):null,evaluatedDistinctLists:new Set(candidates.map(c=>deckListSignature(c.deck,request.game))).size,qualityStatus:knownQuality?'heuristic':'unverified',reason:sameList?(knownQuality?'No different eligible list ranked ahead in this bounded search of the loaded candidates.':'This bounded search returned the same list; quality evidence is incomplete, so improvement is unverified.'):changes.length?'The selected quantities changed after checking the new budget and loaded alternatives.':'The commander changed; the card quantities are unchanged.',limitation:'A larger cap does not require more spending. This is not an exhaustive search or an optimality guarantee.'};
 }
 export function chooseDeck(candidates,request) {
- const valid=candidates.filter(c=>c.check.complete&&c.check.legal&&!c.plan.issues.length&&(!request.ownedOnly||c.pricing.ownedCopies===c.pricing.copies)&&
+ const commander=request.game==='mtg'&&!!formatOf(request.format).commander;
+ candidates=candidates.map(c=>commander?{...c,deck:{...c.deck,targetBracket:request.targetBracket??null,deckStyle:request.deckStyle||'classic'},bracket:assessCommanderBracket(c.deck,Object.fromEntries((c.rows||[]).filter(r=>r.card).map(r=>[cardKey(r.name),r.card])),{targetBracket:request.targetBracket,combos:c.deck.comboEvidence})}:c);
+
+ const valid=candidates.filter(c=>c.bracket?.targetStatus!=='conflict'&&c.check.complete&&c.check.legal&&!c.plan.issues.length&&(!request.ownedOnly||c.pricing.ownedCopies===c.pricing.copies)&&
   (!request.requireLoop||c.plan.combo?.status==='verified')&&!request.unsupportedLoop&&!request.loopConflict&&
   withinBudgetCap(c.pricing.estimate,request));
  const budgetClass=c=>request.budget===null?0:c.pricing.estimate===null?2:c.pricing.estimate<=request.budget?0:c.pricing.estimate<=request.budget+request.allowance+1e-6?1:3;
  const strategyClass=c=>({supported:0,'not-requested':0,partial:1,unverified:2,insufficient:3}[c.plan.theme?.status]??0);
  const referencePrior=c=>request.game==='mtg'&&request.format==='Standard'&&(!request.goal||request.goal==='strongest')&&!request.easy&&!String(request.theme||request.style||'').trim()&&c.deck.referenceQualifiedForBuild===true&&c.deck.constructionBasis==='reference'&&c.deck.referenceAdaptation?.sameList&&!c.deck.referenceAdaptation.modeMismatch?1:0;
  const supportClass=c=>c.plan.finalSupport?.status==='unverified'?1:c.plan.finalSupport?.status==='known-incomplete'?2:0;
- valid.sort((a,b)=>budgetClass(a)-budgetClass(b)||strategyClass(a)-strategyClass(b)||supportClass(a)-supportClass(b)||(request.easy?a.plan.setupBurden-b.plan.setupBurden:0)||(budgetClass(a)===3?a.pricing.estimate-b.pricing.estimate:0)||(request.preferOwned?b.pricing.ownedCopies/b.pricing.copies-a.pricing.ownedCopies/a.pricing.copies:0)||referencePrior(b)-referencePrior(a)||comparePower(b.power,a.power)||a.pricing.unpriced-b.pricing.unpriced||a.pricing.subtotal-b.pricing.subtotal);
+ valid.sort((a,b)=>budgetClass(a)-budgetClass(b)||strategyClass(a)-strategyClass(b)||supportClass(a)-supportClass(b)||(a.plan.targets?.missingCount||0)-(b.plan.targets?.missingCount||0)||(request.easy?a.plan.setupBurden-b.plan.setupBurden:0)||(budgetClass(a)===3?a.pricing.estimate-b.pricing.estimate:0)||(request.preferOwned?b.pricing.ownedCopies/b.pricing.copies-a.pricing.ownedCopies/a.pricing.copies:0)||referencePrior(b)-referencePrior(a)||comparePower(b.power,a.power)||a.pricing.unpriced-b.pricing.unpriced||a.pricing.subtotal-b.pricing.subtotal);
  const winner=valid[0];
  if(!winner){
   const nearest=[...candidates].sort((a,b)=>Number(b.check.complete)-Number(a.check.complete)||a.plan.issues.length-b.plan.issues.length)[0];
@@ -231,8 +246,8 @@ export function chooseDeck(candidates,request) {
  }
  const delta=request.budget!==null&&winner.pricing.estimate!==null?cents(winner.pricing.estimate-request.budget):null;
  const budgetVerified=winner.pricing.estimate!==null&&(request.budget===null||(request.budgetBoundary==='exclusive'?delta<0:delta<=0)),themeVerified=winner.plan.theme?.status==='supported';
- const themeOK=!winner.plan.theme||['supported','not-requested'].includes(winner.plan.theme.status),requestSatisfied=(request.budget===null||budgetVerified)&&themeOK&&winner.plan.finalSupport?.requestSatisfied!==false&&winner.plan.manaCoverage?.status!=='unverified'&&(!request.requireLoop||winner.plan.combo?.status==='verified')&&!request.unsupportedLoop&&!request.loopConflict;
- return {ok:true,...winner,request,budgetVerified,themeVerified,requestSatisfied,validation:{complete:true,legal:true,budget:request.budget===null?'not-requested':budgetVerified?'pass':winner.pricing.estimate===null?'unverified':'fail',theme:winner.plan.theme?.status||'unverified',combo:winner.plan.combo?.status||'not-requested',creatureTypes:winner.plan.typeRestrictions?.status||'not-requested',prerequisites:winner.plan.theme?.prerequisites?.status||'not-applicable',mana:winner.plan.manaCoverage?.status||'not-applicable',priceCoverage:winner.pricing.estimate===null?'unverified':'pass',finalSupport:winner.plan.finalSupport?.status||'unverified',matchMode:request.matchMode||'unspecified',competitive:'unverified',request:requestFingerprint(request)},budgetStatus:budgetClass(winner)===3?'outside-target':winner.pricing.estimate===null?'unverified':delta>0?'over-target':'within-target',delta,
+ const themeOK=!winner.plan.theme||['supported','not-requested'].includes(winner.plan.theme.status),requestSatisfied=(request.budget===null||budgetVerified)&&themeOK&&winner.plan.finalSupport?.requestSatisfied!==false&&winner.plan.manaCoverage?.status!=='unverified'&&(!request.requireLoop||winner.plan.combo?.status==='verified')&&!request.unsupportedLoop&&!request.loopConflict&&(!request.targetBracket||winner.bracket?.targetStatus==='supported');
+ return {ok:true,...winner,request,budgetVerified,themeVerified,requestSatisfied,validation:{complete:true,legal:true,budget:request.budget===null?'not-requested':budgetVerified?'pass':winner.pricing.estimate===null?'unverified':'fail',theme:winner.plan.theme?.status||'unverified',combo:winner.plan.combo?.status||'not-requested',creatureTypes:winner.plan.typeRestrictions?.status||'not-requested',prerequisites:winner.plan.theme?.prerequisites?.status||'not-applicable',mana:winner.plan.manaCoverage?.status||'not-applicable',priceCoverage:winner.pricing.estimate===null?'unverified':'pass',finalSupport:winner.plan.finalSupport?.status||'unverified',matchMode:request.matchMode||'unspecified',competitive:'unverified',bracket:winner.bracket?.targetStatus||'not-requested',request:requestFingerprint(request)},budgetStatus:budgetClass(winner)===3?'outside-target':winner.pricing.estimate===null?'unverified':delta>0?'over-target':'within-target',delta,
   compared:candidates.length,summary:`${request.seedCard?.name||winner.deck.buildAround||request.seed||'Your deck'} · ${request.formatName}`};
 }
 export async function constructDeck(input,adapter,options={}) {

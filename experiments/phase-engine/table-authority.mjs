@@ -1,9 +1,6 @@
 // Private local table proof; configuration generated only after host provenance verification.
-import {submitHumanCommand} from './human-command.mjs';
 import {createJournal,fail} from './worker-journal.mjs';
-import {projectInteraction} from './interaction-surface.mjs';
-import {cpuPacket} from './visible-cpu-policy.mjs';
-import {projectSeat,createSeatController} from './seat-surface.mjs';
+import {createMatchAuthority} from './match-authority.mjs';
 import {RUNTIME} from './runtime-config.mjs';
 export const VERSION=RUNTIME.version;
 const hashes=RUNTIME.hashes;
@@ -30,38 +27,9 @@ async function boot(epoch,match,mode) {
  let engine;try{engine=await import(url);}finally{URL.revokeObjectURL(url);}
  await engine.default({module_or_path:wasm});
  if(engine.load_card_database(new TextDecoder().decode(cards))!==RUNTIME.cardCount)fail('FIXTURE_MISMATCH');
- const format=engine.getFormatRegistry().find(f=>f.format==='Modern').default_config;
- const policy=new Worker(new URL('./visible-policy-worker.mjs',import.meta.url),{type:'module'});let seq=0;
- const smokeChoose=(actions,rng,actor)=>new Promise((resolve,reject)=>{
-  const id=++seq,timer=setTimeout(()=>{cleanup();policy.terminate();reject(Error('POLICY_TIMEOUT'));},5000);
-  const cleanup=()=>{clearTimeout(timer);policy.removeEventListener('message',onMessage);policy.removeEventListener('error',onError);};
-  const onMessage=({data})=>{if(data?.id!==id)return;cleanup();data.error?reject(Error('POLICY_FAILED')):resolve(data);};
-  const onError=()=>{cleanup();reject(Error('POLICY_FAILED'));};
-  policy.addEventListener('message',onMessage);policy.addEventListener('error',onError);
-  policy.postMessage({id,packet:cpuPacket(projectSeat(engine.get_filtered_game_state(actor),actor),actions),rng});
- });
- const controller=mode.startsWith('human')?createSeatController({engine,seat:0,epoch}):null;
- const choose=(actions,rng,context)=>{
-  if(controller&&context.actor===0)return controller.select(actions,rng,context);
-  if(context.choice!==undefined)fail('WRONG_SEAT');
-  return smokeChoose(actions,rng,context.actor);
- };
- const adapter={
-  clockContext(revision){
-   const w=engine.get_filtered_game_state(0).state.waiting_for;
-   const interaction=engine.get_viewer_snapshot_js(0).viewerInteraction;
-   const actor=w?.type==='Priority'?w.data.player:interaction?.canSubmit&&interaction.authorizedSubmitters?.includes(0)?0:1;
-   return {actor,kind:w?.type||'Unavailable',decisionId:`decision-${revision}`};
-  },
-  humanSeat:controller?0:null,
-  act:controller?command=>submitHumanCommand(engine,command):undefined,
-  respond:controller?submission=>{const r=engine.submit_interaction_js(0,submission);if(['applied','Applied'].includes(r.status))return true;if(['rejected','Rejected'].includes(r.status))return false;fail('ENGINE_FAILED');}:undefined,
-  start(seed,first){const result=engine.initialize_game(RUNTIME.decks||{player:{main_deck:[...Array(56).fill('Forest'),...Array(4).fill('Grizzly Bears')]},opponent:{main_deck:[...Array(57).fill('Forest'),...Array(3).fill('Grizzly Bears')]}},seed,format,null,2,first);if(!Array.isArray(result.events))fail('INITIALIZE_FAILED');},
-  save:()=>engine.export_game_state_json(),restore:s=>engine.restore_game_state(s),
-  summary(revision){const s=engine.get_filtered_game_state(0).state;return {turn:s.turn_number,waiting:s.waiting_for?.type||null,terminal:s.waiting_for?.type==='GameOver'?{winner:s.waiting_for.data?.winner??null}:null,...(controller?{surface:{...controller.read(revision),awaitingHuman:engine.get_viewer_snapshot_js(0).viewerInteraction.authorizedSubmitters?.includes(0)===true,interaction:projectInteraction(engine.get_viewer_snapshot_js(0).viewerInteraction,0)}}:{})};},
-  legal(){for(const actor of [0,1]){const {actions}=engine.get_legal_actions_for_viewer_js(actor);if(actions.length)return {actor,actions};}return {actor:null,actions:[]};},
-  apply(actor,action){const r=engine.submit_action(actor,action);if(!['applied','Applied'].includes(r.status))fail('ENGINE_REJECTED');}
- };
+ const format=engine.getFormatRegistry().find(f=>f.format===(RUNTIME.format||'Modern')).default_config;
+ const {adapter,choose}=createMatchAuthority({engine,epoch,mode,format,decks:RUNTIME.decks||{player:{main_deck:[...Array(56).fill('Forest'),...Array(4).fill('Grizzly Bears')]},opponent:{main_deck:[...Array(57).fill('Forest'),...Array(3).fill('Grizzly Bears')]}}});
+ const controller=mode.startsWith('human');
  return createJournal({engine:adapter,storage:await openStore(match),choose,version:controller?VERSION+':human-seat-v3'+(mode==='human-timed'?':clock-v1':''):VERSION,epoch,...(mode==='human-timed'?{timing:{matchId:match,humanActor:0}}:{})});
 }
 // One match per worker. The main thread receives only bounded diagnostic status;

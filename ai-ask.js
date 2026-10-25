@@ -7,7 +7,7 @@ import { aiOrb } from './ai-ui.js';
 import { runAskLoop, resumeBuildChoice } from './ai-ask-loop.js';
 export { boundedToolOutput } from './ai-ask-loop.js';
 
-const STEP = { search_cards: 'Searching cards', card_details: 'Reading the card', my_collection: 'Checking your collection', list_sets: 'Looking through sets', set_cards: 'Pricing the set', meta_decks: 'Checking tournament results', my_decks: 'Opening your decks', build_deck: 'Building and checking your deck', answer: 'Writing the answer' };
+const STEP = { search_cards: 'Searching cards', card_details: 'Reading the card', my_collection: 'Checking your collection', list_sets: 'Looking through sets', set_cards: 'Pricing the set', meta_decks: 'Checking tournament results', my_decks: 'Opening your decks', deck_context: 'Reading the selected deck', build_deck: 'Building and checking your deck', answer: 'Writing the answer' };
 const EXAMPLES = {
   mtg: ['What\'s the most competitive Modern deck right now?', 'What\'s my most valuable card?', 'Build me a mono-red deck for $50', 'What\'s the newest Magic set?'],
   ygo: ['What\'s the best deck in the meta right now?', 'Do I have cards for a strong deck?', 'What does Ash Blossom do?', 'Most valuable card I own?'],
@@ -24,7 +24,7 @@ function shell() {
   const node = document.createElement('dialog');
   node.className = 'ask-dialog ai-companion';
   node.setAttribute('aria-labelledby', 'ask-title');
-  node.innerHTML = `<div class="ask-shell"><header class="ask-head">${aiOrb()}<div><p class="eyebrow">In-app assistant</p><h2 id="ask-title">Ask CardStashy</h2></div><button class="ask-new" type="button" data-ask-new aria-label="New chat" title="New chat">＋<span>New</span></button><button class="icon" data-ask-close aria-label="Close Ask AI">✕</button></header><div class="ask-log" aria-live="polite"></div><form class="ask-bar"><button type="button" class="ask-mic" data-ask-mic aria-label="Speak your question" ${Speech ? '' : 'hidden'}><span class="ask-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12h-2Z" fill="currentColor"/></svg></button><input class="ask-input" name="q" autocomplete="off" maxlength="300" placeholder="Ask about cards, prices, sets, decks…" aria-label="Your question"><button class="ask-send" aria-label="Ask">↑</button></form></div>`;
+  node.innerHTML = `<div class="ask-shell"><header class="ask-head">${aiOrb()}<div><p class="eyebrow">In-app assistant</p><h2 id="ask-title">Ask CardStashy</h2></div><button class="ask-new" type="button" data-ask-new aria-label="New chat" title="New chat">＋<span>New</span></button><button class="icon" data-ask-close aria-label="Close Ask AI">✕</button></header><details class="ask-opponent" hidden><summary>Add opponent deck</summary><textarea aria-label="Opponent deck list" data-ask-opponent-text rows="5" maxlength="40000" placeholder="Paste the opponent deck list"></textarea><button type="button" data-ask-opponent>Match opponent</button><p role="status" data-opponent-status></p></details><div class="ask-log" aria-live="polite"></div><form class="ask-bar"><button type="button" class="ask-mic" data-ask-mic aria-label="Speak your question" ${Speech ? '' : 'hidden'}><span class="ask-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12h-2Z" fill="currentColor"/></svg></button><input class="ask-input" name="q" autocomplete="off" maxlength="300" placeholder="Ask about cards, prices, sets, decks…" aria-label="Your question"><button class="ask-send" aria-label="Ask">↑</button></form></div>`;
   return node;
 }
 function bubble(cls, html) { const b = document.createElement('div'); b.className = 'ask-msg ' + cls; b.innerHTML = html; state.log.append(b); state.log.scrollTop = state.log.scrollHeight; return b; }
@@ -33,16 +33,19 @@ function emptyState() {
 }
 export function openAsk({ game = 'mtg', tools, show, onClose, onRestart, prefill = '' } = {}) {
   closeAsk();
-  const saved = conversations.get(game), node = saved?.node || shell();
+  const previous=conversations.get(game),contextKey=tools?.contextKey?.()||'',saved=previous?.contextKey===contextKey?previous:null,node=saved?.node||shell();
   document.body.append(node);
-  state = { ...saved, controller: new AbortController(), node, game, tools, show, onClose, onRestart, log: node.querySelector('.ask-log'), input: node.querySelector('.ask-input'), history: saved?.history || [], busy: false, rec: null };
+  state = { ...saved, controller: new AbortController(), node, game, contextKey, tools, show, onClose, onRestart, log: node.querySelector('.ask-log'), input: node.querySelector('.ask-input'), history: saved?.history || [], busy: false, rec: null };
   conversations.set(game, state);
+  const opponentBox=node.querySelector('.ask-opponent');if(opponentBox)opponentBox.hidden=!contextKey;
   if (!saved) emptyState();
   if (!saved) {
   node.addEventListener('cancel', (e) => { e.preventDefault(); closeAsk(); });
   node.addEventListener('click', (e) => {
     if (e.target === node || e.target.closest('[data-ask-close]')) return closeAsk();
     if (e.target.closest('[data-ask-new]')) return restartAsk();
+    const imported=e.target.closest('[data-ask-opponent]');if(imported){const captured=state,status=node.querySelector('[data-opponent-status]');if(captured.busy){status.textContent='Wait for this answer before changing the opponent.';return;}imported.disabled=true;status.textContent='Matching card names…';Promise.resolve().then(()=>captured.tools.setOpponent(node.querySelector('[data-ask-opponent-text]').value)).then(result=>{if(state===captured){status.textContent=result.copies+' cards matched. '+result.note;captured.history=[];captured.buildContext=null;}}).catch(error=>{if(state===captured)status.textContent=error.message;}).finally(()=>{imported.disabled=false;});return;}
+
     const choice=e.target.closest('[data-ask-choice]');if(choice){if(Number(choice.dataset.askTurn)!==state.turnId||state.busy)return;return ask(choice.textContent,fetch,{id:choice.dataset.askChoice});}
     const q = e.target.closest('[data-ask-q]'); if (q) return ask(q.dataset.askQ);
     if (e.target.closest('[data-ask-mic]')) return listen();

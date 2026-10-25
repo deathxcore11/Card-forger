@@ -1,0 +1,59 @@
+[
+  {
+    "name": "Niambi, Faithful Healer",
+    "oracle_id": "0c107664-a9fc-4684-8a1b-fa750401a6dd",
+    "oracle_text": "When Niambi enters, you may search your library and/or graveyard for a card named Teferi, Timebender, reveal it, and put it into your hand. If you search your library this way, shuffle.",
+    "type_line": "Legendary Creature \u2014 Human Cleric",
+    "cmc": 3,
+    "mana_cost": "{1}{W}{U}",
+    "keywords": []
+  },
+  {
+    "name": "Farseek",
+    "oracle_id": "495e52e6-4c2b-4574-9474-eadbdcc8b4ac",
+    "oracle_text": "Search your library for a Plains, Island, Swamp, or Mountain card, put it onto the battlefield tapped, then shuffle.",
+    "type_line": "Sorcery",
+    "cmc": 2,
+    "mana_cost": "{1}{G}",
+    "keywords": []
+  },
+  {
+    "name": "Stoneforge Mystic",
+    "oracle_id": "358789f9-7d87-411d-919e-d597da665cbd",
+    "oracle_text": "When this creature enters, you may search your library for an Equipment card, reveal it, put it into your hand, then shuffle.\n{1}{W}, {T}: You may put an Equipment card from your hand onto the battlefield.",
+    "type_line": "Creature \u2014 Kor Artificer",
+    "cmc": 2,
+    "mana_cost": "{1}{W}",
+    "keywords": []
+  },
+  {
+    "name": "Goblin Matron",
+    "oracle_id": "145737a7-c597-4dec-b752-207c2d0501e3",
+    "oracle_text": "When this creature enters, you may search your library for a Goblin card, reveal that card, put it into your hand, then shuffle.",
+    "type_line": "Creature \u2014 Goblin",
+    "cmc": 3,
+    "mana_cost": "{2}{R}",
+    "keywords": []
+  },
+  {
+    "name": "The Face of Boe",
+    "oracle_id": "acef7666-53b1-43c5-8107-236bea22a8b3",
+    "oracle_text": "{T}: You may cast a spell with suspend from your hand. If you do, pay its suspend cost rather than its mana cost. Activate only as a sorcery.",
+    "type_line": "Legendary Creature \u2014 Alien Advisor",
+    "cmc": 4,
+    "mana_cost": "{1}{U}{R}{W}",
+    "keywords": []
+  },
+  {
+    "name": "Ian Chesterton",
+    "oracle_id": "32c9ce8c-a19d-49e4-bc6d-c7182fa00b51",
+    "oracle_text": "Science Teacher \u2014 Each Saga spell you cast has replicate. The replicate cost is equal to its mana cost. (When you cast that Saga, copy it for each time you paid its replicate cost. Copies of Saga spells become tokens.)\nDoctor's companion (You can have two commanders if the other is the Doctor.)",
+    "type_line": "Legendary Creature \u2014 Human Scientist",
+    "cmc": 3,
+    "mana_cost": "{2}{W}",
+    "keywords": [
+      "Science Teacher",
+      "Doctor's companion"
+    ]
+  }
+]

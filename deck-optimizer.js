@@ -8,54 +8,25 @@ export function purchaseCost(rows,{key=r=>r.cardId || r.name,owned=()=>0,price=(
   if(!missing)continue;if(p==null||typeof p==='string'&&!p.trim()||!Number.isFinite(Number(p))||Number(p)<0)unknown+=missing;else cost+=missing*Number(p);
  }return {cost,unknown};
 }
+// A unary ranking key defines transitive evidence classes. Unknown strategic
+// evidence stays unscored; it cannot create pairwise ties resolved by cheapness.
+export function powerRankingKey(p={}){
+ const criteria=p.criteria||{},goal=p.goal||criteria.goal||'strongest',ready=!p.readiness?.provisional;
+ const strategic=!!p.strategic,known=strategic?Number.isFinite(p.strategic.score):Number.isFinite(p.score);
+ const support=!strategic&&criteria.plan?.status==='supported';
+ const routes=new Set((criteria.plan?.routes||[]).filter(r=>r.status!=='unsupported').map(r=>r.kind)).size;
+ const value=known?(p.from==='meta'?p.score:strategic?(Number.isFinite(p.strategic.rankingValue)?p.strategic.rankingValue:p.strategic.score):p.score):null;
+ return {scope:JSON.stringify([goal,goal==='theme'?criteria.requestedStyle||'':'']),subjective:['fun','chaos','weak'].includes(goal),known,
+  values:[Number(ready),ready?0:-((p.readiness?.unknown||0)+(p.readiness?.issues?.length||0)),Number(ready&&p.from==='meta'),known?(strategic?2:1):0,Number(support),support?routes:0,support?(criteria.plan.supportedCopies||0):0,Number.isFinite(value)?value:0,known&&!strategic?(p.heuristic??0):0,-(p.engine?.unmappedNeeds||0)]};
+}
 export function comparePower(a,b){
- const valid=p=>!p?.readiness?.provisional;
- if(valid(a)!==valid(b))return valid(a)?1:-1;
- const goalA=a?.goal||a?.criteria?.goal||'strongest',goalB=b?.goal||b?.criteria?.goal||'strongest';
- if(goalA!==goalB || ['fun','chaos','weak'].includes(goalA))return 0;
- // Theme is an admissibility constraint, not a reward per filler creature. A
- // strength upgrade may vary density, but cannot erase the only recognized route
- // serving the requested theme. Unmapped subjective themes need user review.
- if(goalA==='theme'){
-  const ap=a?.criteria?.plan,bp=b?.criteria?.plan;
-  if(!ap||!bp||a?.criteria?.requestedStyle!==b?.criteria?.requestedStyle)return 0;
-  const ar=new Set((ap.routes||[]).filter(r=>r.status!=='unsupported').map(r=>r.kind)),br=new Set((bp.routes||[]).filter(r=>r.status!=='unsupported').map(r=>r.kind));
-  if(!ar.size&&!br.size)return 0;
-  if(!ar.size||!br.size)return ar.size?1:-1;
-  if(![...ar].some(r=>br.has(r)))return 0;
- }
-
- // A high generic role score cannot displace a complete, closely matched placing engine.
- if(valid(a) && (a?.from==='meta')!==(b?.from==='meta'))return a?.from==='meta'?1:-1;
- const unresolved=p=>(p?.readiness?.unknown || 0)+(p?.readiness?.issues?.length || 0);
- if(!valid(a)&&unresolved(a)!==unresolved(b))return unresolved(b)-unresolved(a);
- // Commander role saturation is not proof of a supported plan. Preserve known
- // support before optimizing a structural subscore; subjective goals must not be
- // silently turned into strongest-deck searches. No arbitrary tribal/ramp caps.
- const ac=a?.criteria,bc=b?.criteria;
- if(ac&&bc&&!a?.strategic&&!b?.strategic){
-  const goal=a?.goal||ac.goal||'strongest',other=b?.goal||bc.goal||'strongest';
-  if(goal!==other)return 0;
-  if(['fun','chaos','weak'].includes(goal))return 0;
-  const known=p=>p.plan?.status==='supported',support=p=>p.plan?.supportedCopies||0;
-  if(known(ac)!==known(bc))return known(ac)?1:-1;
-  if(known(ac)&&known(bc)){
-   const routeSet=p=>new Set((p.plan?.routes||[]).filter(r=>r.status!=='unsupported').map(r=>r.kind));
-   const ar=routeSet(ac),br=routeSet(bc),lost=[...br].filter(r=>!ar.has(r)),gained=[...ar].filter(r=>!br.has(r));
-   if(lost.length&&!gained.length)return -1;if(gained.length&&!lost.length)return 1;
-   if(goal==='theme'&&support(ac)!==support(bc))return support(ac)-support(bc);
-   // A proposed replacement cannot call itself an improvement solely by trading
-   // away demonstrated support to fill more generic role checkboxes.
-   if(support(ac)<support(bc)&&(a.score||0)>(b.score||0))return -1;
-   if(support(bc)<support(ac)&&(b.score||0)>(a.score||0))return 1;
-  }
- }
- if((a?.strategic?.score===null)||(b?.strategic?.score===null))return 0;
- const value=p=>p?.strategic&&p.from!=='meta'?p.strategic.rankingValue??p.score:p?.score;
- const delta=(value(a)||0)-(value(b)||0);if(delta)return delta;
- if(a?.strategic||b?.strategic)return 0;
- const engine=(a?.heuristic ?? a?.score ?? 0)-(b?.heuristic ?? b?.score ?? 0);if(engine)return engine;
- return (b?.engine?.unmappedNeeds || 0)-(a?.engine?.unmappedNeeds || 0);
+ const x=powerRankingKey(a),y=powerRankingKey(b);
+ // Callers should compare the same objective. Scope is ordered deterministically
+// if a mixed set leaks through, rather than creating a non-transitive tie.
+ if(x.scope!==y.scope)return x.scope<y.scope?-1:1;
+ if(x.subjective)return x.values[0]-y.values[0];
+ for(let i=0;i<x.values.length;i++)if(x.values[i]!==y.values[i])return x.values[i]-y.values[i];
+ return 0;
 }
 export function bestBudgetDecks(candidates,budgets,{evaluate,cost,accept=()=>true}={}){
  const evaluated=candidates.filter(accept).map(d=>({...d,...cost(d),assessment:evaluate(d)}));

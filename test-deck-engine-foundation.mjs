@@ -1,0 +1,105 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {cardBracketEvidence,assessCommanderBracket,cardBracketBadges} from './commander-evidence.js';
+import {normalizeComboResponse,lookupCommanderCombos,isCheckedComboEvidence} from './commander-combos.js';
+import {GAME_CHANGER_SNAPSHOT} from './game-changers.js';
+import {inspectTutorTargets} from './mtg-target-evidence.js';
+import {inspectPrimaryInputs,primaryInputRequirements} from './mtg-primary-inputs.js';
+import {normalizeDeckRequest,requestFingerprint} from './deck-construction.js';
+import {FORMATS} from './formats.js';
+import {comparePower} from './deck-optimizer.js';
+import {createRebuildContext} from './deck-rebuild-context.js';
+import {readBuildContract,applyUserBuildIntent,validateBuildProposal} from './ai-build-contract.js';
+import {makeAskTools} from './ai-tools.js';
+import {opponentProfile,matchupAnswerKinds,inspectMatchupPlan,opponentDiscoveryQueries} from './deck-matchup-plan.js';
+import {playSurfacePolicy,createPlaySurfaceGuard} from './play-surface-policy.js';
+const card=(name,type_line='Sorcery',oracle_text='',more={})=>({name,type_line,oracle_text,...more});
+const cat=(...cs)=>Object.fromEntries(cs.map(c=>[c.name.toLowerCase(),c]));
+const deck=names=>({format:'Commander',commander:names[0],cards:names.map(name=>({name,qty:1}))});
+const row=(c,qty=1,zone='main')=>({name:c.name,qty,zone,card:c});
+const snapshot=GAME_CHANGER_SNAPSHOT.cards;
+assert.equal(new Set(snapshot.map(c=>c.oracleId)).size,snapshot.length);
+for(const name of ['Farewell','Biorhythm'])assert.ok(snapshot.some(c=>c.name===name));
+assert.ok(!snapshot.some(c=>c.name==='Expropriate'));
+assert.equal(cardBracketEvidence(card('Farewell','Sorcery','',{game_changer:false})).gameChanger,true);
+assert.equal(cardBracketEvidence(card('Fixture flag','Sorcery','',{game_changer:true})).gameChanger,false);
+const identity=snapshot.find(c=>c.name==='Rhystic Study');
+assert.equal(cardBracketEvidence(card('Different display','Enchantment','',{oracle_id:identity.oracleId})).gameChanger,true);
+assert.equal(cardBracketEvidence(card('Rhystic Study','Enchantment','',{oracle_id:'different-identity'})).gameChanger,false);
+assert.ok(cardBracketBadges(card('Farewell')).some(b=>b.kind==='game-changer'));
+const leader=card('Leader','Legendary Creature');
+assert.equal(assessCommanderBracket(deck(['Leader']),cat(leader)).bracket,null);
+assert.equal(assessCommanderBracket(deck(['Leader','Unknown']),cat(leader)).status,'incomplete');
+const study=card('Rhystic Study','Enchantment');
+const b=assessCommanderBracket(deck(['Leader','Rhystic Study']),cat(leader,study),{targetBracket:2});
+assert.equal(b.restrictionFloor,3);assert.equal(b.targetStatus,'conflict');assert.deepEqual(b.lower,[]);
+assert.equal(assessCommanderBracket({cards:[],commander:study.name},cat(study)).restrictionFloor,3,'commanders count even when supplied separately');
+assert.equal(cardBracketEvidence(card('Recovery','Sorcery','Return all land cards from your graveyard to your hand.')).massLandDenial,false);
+assert.equal(cardBracketEvidence(card('Armageddon','Sorcery','Destroy all lands.')).massLandDenial,true);
+assert.equal(assessCommanderBracket(deck(['Leader','Time Warp']),cat(leader,card('Time Warp','Sorcery','Target player takes an extra turn after this one.')),{targetBracket:1}).targetStatus,'conflict');
+assert.equal(assessCommanderBracket(deck(['Leader']),cat(leader),{combos:{status:'checked',included:[{extraTurn:true}]}}).restrictionFloor,1,'serialized deck data cannot forge checked provider evidence');
+
+const response=JSON.parse(fs.readFileSync('test-fixtures/commander-combo-evidence.json'));
+const pair=response.combos[0].combo.uses.map(u=>card(u.card.name,'Artifact','',{oracle_id:u.card.oracleId}));
+const pairDeck=deck(['Leader',...pair.map(c=>c.name)]),combo=normalizeComboResponse(response,pairDeck,cat(leader,...pair));
+assert.equal(combo.included.length,1);assert.match(combo.included[0].prerequisites,/attached/);assert.match(combo.included[0].prerequisites,/counter/);
+assert.ok(combo.included[0].results.some(r=>/mana/i.test(r)));assert.ok(!combo.included[0].results.some(r=>/win the game/i.test(r)));
+assert.ok(isCheckedComboEvidence(combo,pairDeck));assert.ok(!isCheckedComboEvidence(structuredClone(combo),pairDeck));
+assert.equal(normalizeComboResponse(response,deck(['Leader',pair[0].name]),cat(...pair)).included.length,0);
+const wrong=structuredClone(response);wrong.combos[0].combo.uses[0].quantity=2;
+assert.equal(normalizeComboResponse(wrong,pairDeck,cat(...pair)).included.length,0);
+const must=structuredClone(response);must.combos[0].combo.uses[0].mustBeCommander=true;
+assert.equal(normalizeComboResponse(must,pairDeck,cat(...pair)).included.length,0);
+let calls=0;const fetcher=async(url,init)=>{calls++;assert.match(url,/estimate-bracket$/);const body=JSON.parse(init.body);assert.equal(body.commanders[0].card,'Leader');assert.equal(body.main.length,2);return Response.json(response);};
+await Promise.all([lookupCommanderCombos(pairDeck,cat(...pair),{fetcher}),lookupCommanderCombos(pairDeck,cat(...pair),{fetcher})]);assert.equal(calls,1);
+await lookupCommanderCombos(pairDeck,cat(...pair),{fetcher});assert.equal(calls,1);
+console.log('PASS: dated Oracle membership, separate bracket floors, unknowns, exact combo quantities/commander prerequisites, non-winning mana loops, bounded deduplicated provider lookup.');
+
+const audit=JSON.parse(fs.readFileSync('test-fixtures/audit-engine-regressions.json')),find=n=>audit.find(c=>c.name.startsWith(n));
+const forest=card('Forest','Basic Land — Forest'),plains=card('Plains','Basic Land — Plains');
+let t=inspectTutorTargets([row(find('Farseek')),row(forest,40)]);assert.equal(t.groups[0].status,'missing');assert.equal(t.issues.length,1);
+assert.equal(inspectTutorTargets([row(find('Farseek')),row(plains)]).groups[0].status,'conditional');
+for(const n of ['Stoneforge','Goblin Matron']){t=inspectTutorTargets([row(find(n)),row(forest,40)]);assert.equal(t.groups[0].status,'missing');assert.equal(t.issues.length,0,'keep independent creature utility');}
+assert.equal(inspectTutorTargets([row(find('Goblin Matron'),2),row(forest)]).groups[0].status,'conditional','another actual copy can be searched');
+assert.equal(inspectTutorTargets([row(find('Farseek')),{name:'Unknown',qty:1}]).groups[0].status,'unverified');
+for(const [name,input] of [['Niambi',card('Teferi, Timebender','Legendary Planeswalker — Teferi')],['The Face',card('Rift Bolt','Sorcery','Suspend 1—{R}',{keywords:['Suspend']})],['Ian',card('A Saga','Enchantment — Saga')]]){
+ const source=find(name);assert.ok(primaryInputRequirements(source).some(r=>r.defining));
+ const rows=[row(source),row(forest,40)];assert.equal(inspectPrimaryInputs(rows,{commander:source.name}).groups[0].status,'missing');
+ assert.equal(inspectPrimaryInputs([...rows,row(input)],{commander:source.name}).groups[0].status,'conditional');
+}
+console.log('PASS: six captured audit regressions, optional creature roles, unknown targets, named-card/Saga/Suspend inputs and positive controls.');
+
+const formats={mtg:FORMATS};
+const normalized=normalizeDeckRequest({game:'mtg',format:'Commander',targetBracket:3,deckStyle:'infinite-mana',budget:null},formats);
+assert.equal(normalized.requireLoop,'infinite-mana');assert.equal(normalized.budget,null);
+assert.equal(normalizeDeckRequest({...normalized,deckStyle:'classic'},formats).requireLoop,null);
+assert.throws(()=>normalizeDeckRequest({game:'mtg',format:'Standard',targetBracket:3},formats));
+assert.throws(()=>normalizeDeckRequest({game:'mtg',format:'Commander',targetBracket:6},formats));
+assert.notEqual(requestFingerprint(normalized),requestFingerprint({...normalized,targetBracket:4}));
+const assessments=[0,10,60].map(n=>({score:90,strategic:{score:n},goal:'strongest'})).concat([{score:99,strategic:{score:null},goal:'strongest'},{score:12,goal:'strongest'},{score:100,goal:'strongest',readiness:{provisional:true}}]);
+for(const a of assessments)for(const b of assessments){assert.equal(Math.sign(comparePower(a,b)),-Math.sign(comparePower(b,a))||0);for(const c of assessments)if(comparePower(a,b)>0&&comparePower(b,c)>0)assert.ok(comparePower(a,c)>0);}
+console.log('PASS: request/style transitions and transitive ranking across known, unknown, strategic, heuristic and incomplete evidence.');
+
+let current=true;const result={deck:deck(['Leader','Forest']),request:{game:'mtg',format:'Commander',budget:null,budgetMode:'cap',targetBracket:3,deckStyle:'classic',colors:['G']},pricing:{estimate:6.27}};
+const ctx=createRebuildContext(result,{current:()=>current,lookup:n=>cat(leader,forest)[n.toLowerCase()]});
+const retained=ctx.contract();assert.equal(retained.budget,0,'displayed $6.27 estimate must not become a spending cap');
+const contract=readBuildContract([{type:'message',role:'user',content:'Build it with a strong green theme'}],retained,{game:'mtg',contextBound:true});
+assert.equal(contract.format,'Commander');assert.equal(contract.targetBracket,3);
+const changed=readBuildContract([{type:'message',role:'user',content:'Make it bracket 4'}],retained,{game:'mtg',contextBound:true});assert.equal(changed.targetBracket,4);
+const args=applyUserBuildIntent({game:'mtg',style:'green',budget:20,format:'Standard',seed:'',commander:'',budget_basis:'total',goal:'strongest',required_cards:[],excluded_cards:[],colors:[],avoid_infinite:false,candidate_cards:[]},contract);
+assert.equal(args.budget,0);assert.equal(args.targetBracket,3);assert.equal(args.format,'Commander');assert.ok(validateBuildProposal(args,contract).ok);
+let captured;const state={collection:[],decks:[]};const tools=makeAskTools({S:{state,catalog:cat(leader,forest)},T:{game:()=> 'mtg',gs:()=>state,SOURCES:{}},meta:n=>cat(leader,forest)[n.toLowerCase()],deckExperience:{build:async request=>{captured=request;return {ok:false,message:'Captured for test'};}}});
+tools.setDeckContext(result,()=>current);await tools.build_deck(args);assert.deepEqual(captured.previousDeck.cards,result.deck.cards);assert.equal(captured.budget,null);assert.equal(captured.targetBracket,3);
+ctx.setOpponent({name:'Opponent',format:'Commander',cards:[{name:'Forest',qty:1}]});assert.equal(ctx.read().opponent.cards[0][1],'Forest');assert.equal(ctx.deck().cards.length,2,'opponent never replaces source');
+const largeNames=Array.from({length:100},(_,i)=>({name:'Actualistic card name '+i,qty:1}));const large=createRebuildContext({...result,deck:{...result.deck,cards:largeNames}},{lookup:()=>leader});large.setOpponent({cards:largeNames});assert.equal(large.read().opponent.cards.length,100,'two full Commander lists fit without truncating');
+const copy=ctx.deck();copy.cards=[];assert.equal(ctx.deck().cards.length,2);current=false;assert.throws(()=>ctx.read(),/changed/);
+const reanimate=card('Opponent engine','Sorcery','Return target creature card from your graveyard to the battlefield.');
+const profile=opponentProfile({name:'Reanimator',cards:[{name:reanimate.name,qty:4}]},()=>reanimate),hate=card('Graveyard answer','Artifact','Exile all cards from all graveyards.');
+assert.ok(matchupAnswerKinds(hate,profile).includes('graveyard'));assert.deepEqual(matchupAnswerKinds(card('Own graveyard','Artifact','Exile target card from your graveyard.'),profile),[]);assert.ok(opponentDiscoveryQueries(profile).length<=2);const creatures={signals:{graveyard:[],artifacts:[],enchantments:[],creatures:['Creature']}};assert.deepEqual(matchupAnswerKinds(card('Own removal','Instant','Destroy target creature you control.'),creatures),[]);assert.deepEqual(matchupAnswerKinds(card('Reanimate','Sorcery','Return target creature card from your graveyard to the battlefield.'),creatures),[]);assert.equal(inspectMatchupPlan([row(hate)],profile).status,'unverified');
+console.log('PASS: exact selected-deck rebuild, explicit bracket changes, uncapped estimate, inherited hard choices, opponent isolation and conditional answer coverage.');
+
+const inner={platform:'android',deviceClass:'foldable',foldState:'unfolded',width:900,height:700};
+assert.ok(playSurfacePolicy(inner).allowed);assert.ok(!playSurfacePolicy({...inner,foldState:'folded'}).allowed);assert.ok(!playSurfacePolicy({...inner,deviceClass:'phone'}).allowed);assert.ok(!playSurfacePolicy({...inner,deviceClass:'unknown'}).allowed);assert.ok(!playSurfacePolicy({...inner,width:700,height:900}).allowed);
+let pauses=0,resumes=0;const guard=createPlaySurfaceGuard({pause:()=>pauses++,resume:()=>resumes++});
+guard.update(inner,{active:true});for(let i=0;i<3;i++)guard.update({...inner,foldState:'folded'},{active:true});assert.equal(pauses,1);guard.update(inner,{active:true});assert.equal(resumes,1);
+console.log('PASS: tablet/inner-screen landscape policy, compact/unknown refusal and idempotent pause/resume integration seam. Engine wiring remains pending the mega patch.');

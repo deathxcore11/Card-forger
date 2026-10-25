@@ -157,8 +157,9 @@ console.log('PASS: actual Pokémon/YGO adapter formats drive buttons, revision g
 for(const prompt of ['can you make a red deck using a goblin Commander','Build me a mono-red deck for $50',"make me a fun Yu-Gi-Oh deck that doesn't cost that much is good for beginners",'make me a deck that stars Charizard ex']){
  assert.equal(isDeckBuildRequest(prompt),true);let payload;
  const origin='https://fixture.invalid',response=await aiAskRoute(new Request(origin+'/api/ai/ask',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({game:'mtg',items:[u(prompt)]})}),{OPENAI_API_KEY:'mock-only',AI_LIMITS_ENABLED:'false'},{fetcher:async(_,init)=>{payload=JSON.parse(init.body);return Response.json({output:[call(args)]});}});
- assert.equal(response.status,200);assert.equal(payload.tool_choice,'required');assert.deepEqual(payload.tools.map(t=>t.name).sort(),['build_deck','game_concepts','wiki_lookup']);assert.equal(payload.parallel_tool_calls,false);assert.match(payload.instructions,/avoid_infinite true only/);
+ assert.equal(response.status,200);assert.equal(payload.tool_choice,'required');assert.deepEqual(payload.tools.map(t=>t.name).sort(),['build_deck','deck_context','game_concepts','wiki_lookup']);assert.equal(payload.parallel_tool_calls,false);assert.match(payload.instructions,/avoid_infinite true only/);
 }
 assert.equal(isDeckBuildRequest('How do I build a deck?'),false);assert.equal(isDeckBuildRequest("What's the newest Magic set?"),false);
 const fabricated=await runAskLoop({game:'mtg',items:[u('Build a red Commander deck')],tools:{},fetcher:async()=>Response.json({answer:{text:'Your complete deck is ready and already saved!',source:'app'}})});assert.match(fabricated.text,/No deck was prepared/);assert.doesNotMatch(fabricated.text,/already saved/);
 console.log('PASS: actual Worker route requests the existing builder for direct deck requests; how-to/informational prompts remain separate, and an unexecuted model success cannot become a built-deck claim.');
+

@@ -1,3 +1,5 @@
+import {cachedCommanderCombos} from './commander-combos.js';
+import {cardBracketBadges} from './commander-evidence.js';
 import {deckViewer,deckCardAttrs} from './deck-viewer.js';
 import {discoverCardMarkup} from './card-discovery.js';
 import {versionsMarkup,releaseDot} from './release-status.js';
@@ -375,7 +377,7 @@ export function cardSheet(c, ctx = {}) {
         ${inDecks.length ? `<p class="small own-line">In ${inDecks.map((d) => esc(d.name)).join(", ")}</p>` : ""}
         ${deck ? deckLegalLine(c, deck) : ""}
     ${row ? `<div class="panel tight"><div class="row between"><b>In ${esc(deck.name)}</b><span class="stepper"><button data-act="deckQty" data-name="${esc(name)}" data-delta="-1" aria-label="One fewer">−</button><b>${row.qty}</b><button data-act="deckQty" data-name="${esc(name)}" data-delta="1" aria-label="One more">＋</button></span></div>${key(name) !== key(deck.commander) ? `<button class="link danger small" data-act="deckRemove" data-name="${esc(name)}">Remove from deck</button>` : ""}</div>` : ""}
-    <div class="cs-secondary"><div class="chips">${roles.map((r) => `<span class="chip role-${r.toLowerCase()}">${r}</span>`).join("")}${c.edhrec_rank ? `<span class="chip">EDHREC #${Number(c.edhrec_rank).toLocaleString()}</span>` : ""}${c.reserved ? `<span class="chip">Reserved List</span>` : ""}${c.game_changer ? `<span class="chip warn">Game Changer</span>` : ""}</div>
+    <div class="cs-secondary"><div class="chips">${roles.map((r) => `<span class="chip role-${r.toLowerCase()}">${r}</span>`).join("")}${c.edhrec_rank ? `<span class="chip">EDHREC #${Number(c.edhrec_rank).toLocaleString()}</span>` : ""}${c.reserved ? `<span class="chip">Reserved List</span>` : ""}${cardBracketBadges(c).map(b=>`<span class="chip warn" title="${esc(b.detail)}">${esc(b.label)}</span>`).join('')}</div>
     ${factBox(overviewFacts(c, prints), c.oracle_id || name)}
     <div class="links research"><span class="muted small">Research</span>
       <a href="${esc(safeHref(c.scryfall_uri || "https://scryfall.com/search?q=" + encodeURIComponent(name)))}" target="_blank" rel="noopener">Scryfall ↗</a>
@@ -1026,7 +1028,7 @@ export function sharedPage() {
     <div class="hero-body"><div class="row between"><button class="icon light" data-act="go" data-to="#home" aria-label="Home">←</button><span class="chip dark">Shared deck</span></div>
       <h1>${esc(d.name)}</h1>
       <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "") + " · " : ""}<span class="chip dark">${esc(fm.name)}</span>${d.author ? ` · by <b>${esc(d.author)}</b>` : ""}</p>
-      <div class="hero-stats"><span><b class="${(fm.exact ? sumQty(d.cards) === target : sumQty(d.cards) >= target) ? "" : "warn-text"}">${sumQty(d.cards)}/${target}</b>cards</span><span><b>${shownPower(mtgPower(d)) ?? "—"}</b>${shownPower(mtgPower(d)) == null ? "power unavailable" : "power"}</span>${br ? `<span><b>${br.bracket}</b>bracket est.</span>` : ""}<span><b>${d.budget !== null ? usd(d.budget, 0) : "—"}</b>budget</span></div>
+      <div class="hero-stats"><span><b class="${(fm.exact ? sumQty(d.cards) === target : sumQty(d.cards) >= target) ? "" : "warn-text"}">${sumQty(d.cards)}/${target}</b>cards</span><span><b>${shownPower(mtgPower(d)) ?? "—"}</b>${shownPower(mtgPower(d)) == null ? "power unavailable" : "power"}</span>${br ? `<span><b>${br.bracket ?? "—"}</b>bracket est.</span>` : ""}<span><b>${d.budget !== null ? usd(d.budget, 0) : "—"}</b>budget</span></div>
     </div></section>
   <div class="actions wrap share-actions"><button class="btn" data-act="sharedBuild">Make my version</button><button class="btn ghost" data-act="sharedSave">Save to Inspiration</button><button class="btn ghost" data-act="sharedCopy">Copy list</button></div>
   ${d.about ? `<section class="panel"><h3>About this deck</h3><p class="about">${esc(d.about)}</p><p class="foot">Written by ${esc(d.author || "the person who shared it")}.</p></section>` : ""}
@@ -1039,7 +1041,7 @@ export function sharedPage() {
       <li>Lands <b>${lands}</b> · ramp <b>${p.counts.Ramp}</b> · draw <b>${p.counts.Draw}</b> · removal <b>${p.counts.Removal}</b> · average mana value <b>${p.avg === null ? "—" : p.avg.toFixed(2)}</b></li>
       ${odds !== null ? `<li>${pct(odds)} of opening hands have 3+ lands</li>` : ""}
       ${g ? `<li>Test games: ${pct(g.landsBy4)} hit 4 lands by turn 4${g.commander ? ` · commander on curve ${pct(g.commander.onCurve ?? 0)}` : ""}</li>` : ""}
-      ${br ? `<li>Bracket estimate <b>${br.bracket} · ${esc(br.name)}</b>${br.reasons.length ? ` (${esc(br.reasons.join(", "))})` : ""}</li>` : ""}
+      ${br ? `<li>Bracket estimate <b>${br.bracket ?? "—"} · ${esc(br.name)}</b>${br.reasons.length ? ` (${esc(br.reasons.join(", "))})` : ""}</li>` : ""}
     </ul><p class="foot">Calculated by CardStashy from the list and card text — simulations and estimates, not win rates.</p></section>
   <section class="panel"><h3>Full list</h3>${order
     .filter((t) => groups[t])
@@ -1379,9 +1381,9 @@ function deckEngine(d) {
     srcTotal = Object.values(p.sources).reduce((a, b) => a + b, 0),
     colors = Object.keys(p.pips).filter((k) => p.pips[k] > 0 || p.sources[k] > 0);
   const pw = mtgPower(d);
-  return `${aiReviewPanel("mtg", d, meta, pw, mtgCoachHooks(d, pw))}${powerPanel(pw, { loadAct: pw.metaKey ? `data-act="deckMetaLoad" data-key="${esc(pw.metaKey)}"` : "", findAct: (x) => `data-act="findRole" data-role="${esc(x.fix)}"`, cardAct: (x) => `data-act="card" data-name="${esc(x.name)}"` })}
+  return `${d.format === "Commander" ? bracketPanel(d) : ""}${aiReviewPanel("mtg", d, meta, pw, mtgCoachHooks(d, pw))}${powerPanel(pw, { loadAct: pw.metaKey ? `data-act="deckMetaLoad" data-key="${esc(pw.metaKey)}"` : "", findAct: (x) => `data-act="findRole" data-role="${esc(x.fix)}"`, cardAct: (x) => `data-act="card" data-name="${esc(x.name)}"` })}
   ${p.unknown ? `<div class="note warn">${p.unknown} cards have no card data yet, so they aren’t counted. <button class="link" data-act="refreshDeck">Load card data</button></div>` : ""}
-  ${d.format === "Commander" ? bracketPanel(d) : ""}  <section class="panel"><div class="row between"><h3>Mana curve</h3><span class="muted small">avg ${p.avg === null ? "—" : p.avg.toFixed(2)} · ${p.counts.Lands} lands</span></div>${curveChart(p.curve)}</section>
+  <section class="panel"><div class="row between"><h3>Mana curve</h3><span class="muted small">avg ${p.avg === null ? "—" : p.avg.toFixed(2)} · ${p.counts.Lands} lands</span></div>${curveChart(p.curve)}</section>
   ${
     colors.length
       ? `<section class="panel"><h3>Color balance</h3><p class="muted small">Estimated colored payment share vs. land-source share. Hybrid symbols are counted once, not as both colors. See Mana base for payment choices and limits.${p.mana.complete ? "" : " Some alternative costs are omitted; no basic split is recommended."}</p>${colors
@@ -1398,20 +1400,12 @@ function deckEngine(d) {
 const nameLinks = (names, d) =>
   names.map((n) => `<button class="link" data-act="card" data-name="${esc(n)}" data-deck="${esc(d.id)}">${esc(n)}</button>`).join(", ");
 
-function bracketPanel(d) {
-  const b = bracketEstimate(d, S.catalog),
-    f = b.found,
-    line = (label, list, hint = "") =>
-      list.length ? `<p class="small"><b>${label} (${list.length}):</b> ${nameLinks([...new Set(list)], d)}${hint ? ` <span class="muted">${hint}</span>` : ""}</p>` : "";
-  return `<section class="panel bracket-panel"><div class="bracket-head"><span class="bracket-num b${b.bracket}" aria-hidden="true">${b.bracket}</span><div><p class="eyebrow">Commander bracket estimate</p><h2>Bracket ${b.bracket} · ${esc(b.name)}</h2><p class="muted small">${esc(b.text)}</p></div></div>
-  <div class="bracket-scale" role="img" aria-label="Bracket ${b.bracket} of 5">${[1, 2, 3, 4, 5].map((n) => `<span class="${n === b.bracket ? "on" : n < b.bracket ? "past" : ""}">${n}</span>`).join("")}</div>
-  <p class="small">${b.reasons.length ? "Why: " + esc(b.reasons.join(" · ")) + "." : "No Game Changers, mass land denial or stacked tutors and extra turns found."}${b.lower.length ? ` To reach bracket ${b.bracket - 1}: ${esc(b.lower.join(", "))}.` : ""}</p>
-  ${b.unknown ? `<p class="small warn-text">${b.unknown} cards have no card data yet and weren’t checked.</p>` : ""}
-  <details><summary class="small"><b>What CardStashy counted</b></summary>
-    ${line("Game Changers", f.gameChangers)}${line("Tutors", f.tutors)}${line("Extra turns", f.extraTurns)}${line("Mass land denial", f.landDenial)}${line("Fast mana", f.fastMana, "(not a bracket rule, but it speeds a deck up)")}
-    ${Object.values(f).every((l) => !l.length) ? '<p class="muted small">Nothing flagged.</p>' : ""}
-  </details>
-  <p class="foot">A floor from card text, not a verdict. Two-card infinite combos and how you play the deck also count, so use this to start your Rule 0 talk.</p></section>`;
+export function bracketPanel(d) {
+ const b=bracketEstimate(d,S.catalog),f=b.found,combos=cachedCommanderCombos(d);
+ const comboMarkup=combos?`<p class="foot">Commander Spellbook · checked ${esc(combos.retrievedAt)}. ${esc(combos.coverage)}</p>${combos.included.map(c=>`<details><summary>${nameLinks(c.cards.map(x=>x.name),d)}</summary><p class="small">${esc(c.prerequisites||'Review the listed zones, mana and steps.')}</p><p class="small">Mana: ${esc(c.manaNeeded||'See prerequisites')}</p>${c.cards.map(x=>`<p class="foot">${esc(x.name)} · zones ${esc(x.zones.join(', '))}${x.mustBeCommander?' · must be commander':''} ${esc(x.state)}</p>`).join('')}<p class="small">${esc(c.steps)}</p><p class="small">Results: ${esc(c.results.join('; '))}</p><a href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">Source and prerequisites</a></details>`).join('')||'No indexed combinations returned.'}`:`<p class="foot">This optional check sends this deck list to Commander Spellbook.</p><button class="btn ghost small" data-act="bracketCombos" data-deck="${esc(d.id)}">Check known combinations</button>`;
+ const row=(label,list)=>list.length?`<p class="small"><b>${label}:</b> ${nameLinks([...new Set(list)],d)}</p>`:'';
+ const title=b.bracket?`At least Bracket ${b.bracket} · ${b.name}`:'Commander table fit needs review';
+ return `<section class="panel bracket-panel"><p class="eyebrow">Commander bracket estimate</p><h3>${esc(title)}</h3><p class="small muted">${esc(b.status)}${b.targetBracket?` · aiming for ${b.targetBracket}`:''}</p><details class="bracket-explanation"><summary>Why and which cards</summary><p>${esc(b.text)}</p>${b.reasons.map(r=>`<p class="small">${esc(r)}</p>`).join('')}${row('Game Changers',f.gameChangers)}${row('Extra-turn cards',f.extraTurns)}${row('Mass land denial',f.landDenial)}${row('Tutors (consistency, not an official bracket restriction)',f.tutors)}${row('Fast mana (functional role)',f.fastMana)}${comboMarkup}${b.uncertainties.map(r=>`<p class="foot">${esc(r)}</p>`).join('')}<p class="foot">Guidance ${esc(b.guidanceDate)} · Game Changers ${esc(b.listDate)} · ${esc(b.membershipVersion)}</p></details></section>`;
 }
 
 export function manaBasePanel(d, p) {

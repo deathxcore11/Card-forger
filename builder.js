@@ -1,3 +1,6 @@
+import {inspectTutorTargets} from './mtg-target-evidence.js';
+import {matchupCardBoost} from './deck-matchup-plan.js';
+import {cardBracketEvidence,assessCommanderBracket,normalizeCommanderTarget} from './commander-evidence.js';
 import {abilityEndpointRequirements,endpointCandidateMatches,inspectAbilityEndpoints} from './mtg-ability-endpoints.js';
 import {primaryInputRequirements,primaryInputQueries,inspectPrimaryInputs} from './mtg-primary-inputs.js';
 import {commanderCardConditions, inspectCommanderCardConditions, commanderEngineCoverage} from './mtg-commander-conditions.js';
@@ -180,8 +183,9 @@ export function scoreCard(c, seedTags, seedSubs, { free = 0, size = 60, tokenKin
  *       available(name) → free copies you own, price(card) → USD or null,
  *       budget (USD for cards you must buy), colors (optional override)
  */
-export function buildDeck({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, easy = false, preferred = () => 0, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [], creatureTypesOnly, excludedSubtypes }) {
+export function buildDeck({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, targetBracket = null, matchupContext = null, easy = false, preferred = () => 0, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [], creatureTypesOnly, excludedSubtypes }) {
   const f = formatOf(format);
+  targetBracket=f.commander?normalizeCommanderTarget(targetBracket):null;
   if (f.id === "limited") throw Error("Limited decks come from the cards you open — build those by hand.");
   if ((!Number.isFinite(budget) && budget!==Infinity) || budget < 0) throw Error("Enter a budget of $0 or more.");
   const size = f.size,
@@ -189,9 +193,10 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   if (f.commander && !lead) throw Error(`${f.name} decks need a card that can lead them (${f.commander === "planeswalker" ? "a planeswalker" : "a legendary creature"}).`);
   const parsedTypes=readCreatureTypeRestrictions(requestedStyle),restrictions={creatureTypesOnly:[...new Set(creatureTypesOnly===undefined?parsedTypes.creatureTypesOnly:creatureTypesOnly)],excludedSubtypes:[...new Set(excludedSubtypes===undefined?parsedTypes.excludedSubtypes:excludedSubtypes)]};
   if(lead&&!fitsTypeRestrictions(lead,restrictions))throw Error(`${lead.name} does not satisfy the requested creature-type restriction. Choose another commander or revise that restriction.`);
+  const bracketAllows=c=>{if(targetBracket===null||targetBracket>=4)return true;const e=cardBracketEvidence(c);if(e.massLandDenial||targetBracket<=2&&e.gameChanger||targetBracket===1&&e.extraTurn)return false;if(targetBracket===3&&e.gameChanger&&!rows.has(cardKey(c.name))&&[...rows.values()].filter(r=>cardBracketEvidence(catalog[cardKey(r.name)]).gameChanger).length>=3)return false;return true;};
   const excludedKeys=new Set(excludedCards.map(cardKey)),
     legalStatus = (c) => legalityIn(c, f),
-    isLegal = (c) => (!BASIC_KEYS.has(cardKey(c?.name)) || isBasic(c)&&isLand(c)) && !excludedKeys.has(cardKey(c?.name)) && fitsTypeRestrictions(c,restrictions) && functionalIn(c,f) && (!f.legality || ["legal", "restricted"].includes(legalStatus(c))),
+    isLegal = (c) => (!BASIC_KEYS.has(cardKey(c?.name)) || isBasic(c)&&isLand(c)) && !excludedKeys.has(cardKey(c?.name)) && fitsTypeRestrictions(c,restrictions) && functionalIn(c,f) && bracketAllows(c) && (!f.legality || ["legal", "restricted"].includes(legalStatus(c))),
     maxCopies = (c) => effectiveCopyLimit(c,f);
   // Colors: the leader's identity, else the seeds', else the base list's.
   let deckColors = colors || (lead ? ident(lead) : [...new Set([...seeds, ...base.map((b) => catalog[cardKey(b.name)])].flatMap(ident))]);
@@ -214,6 +219,9 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
       return buy ? (p === null ? Infinity : buy * p) : 0;
     },
     put = (c, n, why) => {
+      if(!bracketAllows(c)){warnings.push(`${c.name} was not added: selected bracket restrictions.`);return false;}
+      if(targetBracket===3&&cardBracketEvidence(c).gameChanger&&!qtyOf(c)&&[...rows.values()].filter(r=>cardBracketEvidence(catalog[cardKey(r.name)]).gameChanger).length>=3)return;
+
       const have=qtyOf(c),buy=Math.max(0,n-Math.max(0,stock(c.name)-have)),p=unitCost(c);
       if(buy && p===null)unknown+=buy;else if(buy)spent+=buy*p;
       const r = rows.get(cardKey(c.name));
@@ -266,9 +274,11 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   const cardConditions=commanderCardConditions(lead||seeds[0]),primaryNeeds=primaryInputRequirements(lead||seeds[0]),conditionBoost=c=>(cardConditions.some(condition=>condition.matches(c))?8:0)+primaryNeeds.reduce((n,need)=>n+(need.match(c)?8*need.priority(c):0),0);
   const needBoost=c=>landNeeds.reduce((n,need)=>n+landSubtypeRoles(c,need.subtype).reduce((s,r)=>s+({fetch:8,grant:8,tutor:5,setup:3,payoff:4}[r.kind]||0),0),0);
 
-  const pool = [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && isLegal(c) && fitsColors(c, deckColors)).map((c) => [cardKey(c.name), c])).values()],
+  const targetPool=Object.values(catalog).filter(c=>c?.name&&isLegal(c)&&fitsColors(c,deckColors)).map(c=>({name:c.name,qty:1,zone:'main',card:c}));
+  const deadSearch=new Set(inspectTutorTargets(targetPool).groups.filter(g=>g.status==='missing'&&!g.independentUtility).map(g=>cardKey(g.source)));
+  const pool = [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && !deadSearch.has(cardKey(c.name)) && isLegal(c) && fitsColors(c, deckColors)).map((c) => [cardKey(c.name), c])).values()],
     supports=c=>seedSubs.some(t=>tribalSupport(c,t))||themeSupport(c,{roles:seedTags,tokenKinds:intent.tokenKinds}).length>0,
-    scored = pool.map((c) => ({ c, plan:supports(c), s: -(easy?setupBurden('mtg',c)*3:0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds:intent.tokenKinds, goal }) + goalCardPreference(c,goal,{suggested:suggestedCards.some(name=>cardKey(name)===cardKey(c.name))}) + (styleFit(c,intent.requested)?(goal === "theme"?16:8):0) - (mtgSelfConflicts([...seeds,...(lead?[lead]:[]),c]).length?24:0) + needBoost(c) + conditionBoost(c) }));
+    scored = pool.map((c) => ({ c, plan:supports(c), s: matchupCardBoost(c,matchupContext) - (easy?setupBurden('mtg',c)*3:0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds:intent.tokenKinds, goal }) + goalCardPreference(c,goal,{suggested:suggestedCards.some(name=>cardKey(name)===cardKey(c.name))}) + (styleFit(c,intent.requested)?(goal === "theme"?16:8):0) - (mtgSelfConflicts([...seeds,...(lead?[lead]:[]),c]).length?24:0) + needBoost(c) + conditionBoost(c) }));
   // Seeds go in first at full copies, then everything else by score.
   for (const s of seeds) {
     const hit = scored.find((x) => cardKey(x.c.name) === cardKey(s.name));
@@ -290,7 +300,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   // inputs before cheap generic filler. This is a construction heuristic, not
   // a universal rules minimum or a claim that a trigger can already execute.
   for(const need of primaryNeeds){
-    const target=themeMinimum(size-(lead?1:0));
+    const target=need.singleton?1:themeMinimum(size-(lead?1:0));
     const existing=()=>[...rows.values()].filter(r=>cardKey(r.name)!==cardKey(lead?.name)&&need.match(catalog[cardKey(r.name)])).reduce((n,r)=>n+r.qty,0);
     const inputs=scored.filter(x=>need.match(x.c)).sort((a,b)=>need.priority(b.c)-need.priority(a.c)||b.s-a.s||a.c.name.localeCompare(b.c.name));
     for(const {c} of inputs){
@@ -333,7 +343,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     for(const seed of seeds){const c=pool.find(c=>cardKey(c.name)===cardKey(seed.name));if(!c||qtyOf(c)||nonland()>=spellTarget)continue;
       const extra=costFor(c,0,1);if(canAfford(extra)){put(c,1,'Your build-around card');}}
     while(nonland()<spellTarget){
-      const choices=scored.filter(x=>qtyOf(x.c)<maxCopies(x.c)).map(x=>({...x,extra:costFor(x.c,qtyOf(x.c),qtyOf(x.c)+1)})).filter(x=>canAfford(x.extra)).sort((a,b)=>a.extra-b.extra||b.s-a.s);
+      const choices=scored.filter(x=>bracketAllows(x.c)&&qtyOf(x.c)<maxCopies(x.c)).map(x=>({...x,extra:costFor(x.c,qtyOf(x.c),qtyOf(x.c)+1)})).filter(x=>canAfford(x.extra)).sort((a,b)=>a.extra-b.extra||b.s-a.s);
       const next=choices[0];if(!next)break;put(next.c,1,stock(next.c.name)>qtyOf(next.c)?'you own it':next.extra===Infinity?'Unpriced candidate; cost unverified':'Budget completion');
     }
     remaining.length=0;
@@ -345,6 +355,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     const adaptive=x=>x.s+(x.plan&&supportCopies<Math.ceil(spellTarget*.35)?6:0)+engineRoles(x.c).reduce((n,r)=>n+(targets[r]===undefined?0:(counts.get(r)||0)<targets[r]?3*(r === "Ramp"?candidateRampWeight(x.c):1):-3),0);
     remaining.sort((a,b)=>adaptive(b)-adaptive(a)||a.c.name.localeCompare(b.c.name));
     const {c}=remaining.shift();
+    if(!bracketAllows(c))continue;
     const left = spellTarget - nonland();
     if (left <= 0) break;
     const have = qtyOf(c);
@@ -372,6 +383,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
       .filter((x) => x.unit !== null || budget===Infinity)
       .sort((a, b) => (a.unit??Infinity) - (b.unit??Infinity) || b.s - a.s);
     for (const { c } of byPrice) {
+      if(!bracketAllows(c))continue;
       const left = spellTarget - nonland();
       if (left <= 0) break;
       const have = qtyOf(c),
@@ -423,7 +435,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     open = Math.max(0, size - total);
   if(total>size)throw Error("Generated deck exceeds its target; no version was applied.");
   if(open && !completionFirst){
-    const economical=buildDeck({format,seeds,base,catalog,available,price,budget,colors,commander,completionFirst:true,easy,preferred,requestedStyle,goal,suggestedCards,excludedCards,...restrictions});
+    const economical=buildDeck({format,seeds,base,catalog,available,price,budget,colors,commander,completionFirst:true,easy,preferred,requestedStyle,goal,suggestedCards,excludedCards,targetBracket,matchupContext,...restrictions});
     const seedKept=seeds.every(seed=>isLand(seed)||economical.cards.some(r=>cardKey(r.name)===cardKey(seed.name)));
     if(seedKept && economical.open<open)return economical;
   }

@@ -1,0 +1,210 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "width": 1280,
+      "height": 720,
+      "overflow": false,
+      "rail": {
+        "width": 281.59375,
+        "x": 990.40625,
+        "right": 1272,
+        "bottom": 603.25,
+        "height": 546.5
+      },
+      "mat": {
+        "width": 968.40625,
+        "x": 8,
+        "right": 976.40625,
+        "bottom": 603.25,
+        "height": 546.5
+      },
+      "controls": {
+        "width": 1264,
+        "x": 8,
+        "right": 1272,
+        "bottom": 712,
+        "height": 101.75
+      },
+      "button": {
+        "width": 120.09375,
+        "x": 27,
+        "right": 147.09375,
+        "bottom": 699,
+        "height": 44
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "overflow": false,
+      "rail": {
+        "width": 420,
+        "x": 1486,
+        "right": 1906,
+        "bottom": 952.25,
+        "height": 884.5
+      },
+      "mat": {
+        "width": 1458,
+        "x": 14,
+        "right": 1472,
+        "bottom": 952.25,
+        "height": 884.5
+      },
+      "controls": {
+        "width": 1892,
+        "x": 14,
+        "right": 1906,
+        "bottom": 1066,
+        "height": 101.75
+      },
+      "button": {
+        "width": 120.09375,
+        "x": 33,
+        "right": 153.09375,
+        "bottom": 1053,
+        "height": 44
+      }
+    },
+    {
+      "width": 2560,
+      "height": 1080,
+      "overflow": false,
+      "rail": {
+        "width": 420,
+        "x": 2126,
+        "right": 2546,
+        "bottom": 952.25,
+        "height": 884.5
+      },
+      "mat": {
+        "width": 2098,
+        "x": 14,
+        "right": 2112,
+        "bottom": 952.25,
+        "height": 884.5
+      },
+      "controls": {
+        "width": 2532,
+        "x": 14,
+        "right": 2546,
+        "bottom": 1066,
+        "height": 101.75
+      },
+      "button": {
+        "width": 120.09375,
+        "x": 33,
+        "right": 153.09375,
+        "bottom": 1053,
+        "height": 44
+      }
+    },
+    {
+      "width": 3440,
+      "height": 1440,
+      "overflow": false,
+      "rail": {
+        "width": 420,
+        "x": 3006,
+        "right": 3426,
+        "bottom": 1312.25,
+        "height": 1244.5
+      },
+      "mat": {
+        "width": 2978,
+        "x": 14,
+        "right": 2992,
+        "bottom": 1312.25,
+        "height": 1244.5
+      },
+      "controls": {
+        "width": 3412,
+        "x": 14,
+        "right": 3426,
+        "bottom": 1426,
+        "height": 101.75
+      },
+      "button": {
+        "width": 120.09375,
+        "x": 33,
+        "right": 153.09375,
+        "bottom": 1413,
+        "height": 44
+      }
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "overflow": false,
+      "rail": {
+        "width": 280,
+        "x": 730,
+        "right": 1010,
+        "bottom": 640.25,
+        "height": 572.5
+      },
+      "mat": {
+        "width": 702,
+        "x": 14,
+        "right": 716,
+        "bottom": 640.25,
+        "height": 572.5
+      },
+      "controls": {
+        "width": 996,
+        "x": 14,
+        "right": 1010,
+        "bottom": 754,
+        "height": 101.75
+      },
+      "button": {
+        "width": 120.09375,
+        "x": 33,
+        "right": 153.09375,
+        "bottom": 741,
+        "height": 44
+      }
+    },
+    {
+      "width": 900,
+      "height": 650,
+      "overflow": false,
+      "rail": {
+        "width": 270,
+        "x": 622,
+        "right": 892,
+        "bottom": 533.25,
+        "height": 476.5
+      },
+      "mat": {
+        "width": 600,
+        "x": 8,
+        "right": 608,
+        "bottom": 533.25,
+        "height": 476.5
+      },
+      "controls": {
+        "width": 884,
+        "x": 8,
+        "right": 892,
+        "bottom": 642,
+        "height": 101.75
+      },
+      "button": {
+        "width": 120.09375,
+        "x": 27,
+        "right": 147.09375,
+        "bottom": 629,
+        "height": 44
+      }
+    }
+  ],
+  "browser": "153.0.8010.0",
+  "sourceSha256": {
+    "/match-table.mjs": "fa930b7910fa3717276ccd22cfd918dc33c10c9e7b713b06ae6948f1ad99e574",
+    "/match-table.css": "e2563f2fcfd372e48e4935b1961889ce884180ce410be6aa5a6e83f80c1d9d1f",
+    "/": "2426e741a2c00a075dfd532a9efba550a6608f68ca23e91f0b31ecc7c661be9f"
+  },
+  "limits": "Synthetic crowded-board and long-rules layout fixture. No rules, card art/finish, physical tablet/foldable, real account, touch dragging or full match certification."
+}

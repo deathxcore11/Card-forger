@@ -48,7 +48,7 @@ for(const prompt of requests){
  }});
  assert.equal(result.status,200);
  assert.equal(payload.tool_choice,'required',prompt);
- assert.deepEqual(payload.tools.map(t=>t.name).sort(),['build_deck','game_concepts','wiki_lookup'],prompt);
+ assert.deepEqual(payload.tools.map(t=>t.name).sort(),['build_deck','deck_context','game_concepts','wiki_lookup'],prompt);
  assert(!payload.tools.some(t=>t.name==='answer'),'a new deck request cannot finish as unexecuted prose');
  assert.equal(payload.parallel_tool_calls,false);
  const response=await result.json();

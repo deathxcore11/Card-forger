@@ -694,3 +694,105 @@ required gzip SHA-256/card count. Archive/source/code integrity checks remain
 unchanged. Local full package round-trip with the pinned rules file passed;
 script syntax passes. Retry uses a new exact approval commit because the script
 bytes changed; do not rerun the unchanged failed job.
+
+
+## October 24, 2026 — configured matches, account bridge and combined builder patch
+
+Continued from verified remote dd98a04d04f016baa8e97a482a73ccce9206be8c;
+recursive instruction census contains no AGENTS.md. Owner now explicitly asked
+to integrate the uploaded offline deck-engine patch into this Play patch before
+website release, with the other chat handling APK afterward. This supersedes
+the earlier instruction to hold those builder changes until Play is live.
+Owner also emphasized 16:9, ultrawide and future tablet/foldable scalability.
+
+Added account-local immutable match records, printing/finish sidecars, shared
+rules adapter, configurable Practice worker/client and account/setup coordinator.
+Original deck source rows, commander/sideboard lists and profile are hash-bound.
+IndexedDB compare-and-write prevents concurrent overwrites; terminal history is
+written atomically with its accepted journal. Resuming uses stored inputs,
+never a regenerated opponent. Account generation changes retire old workers and
+clear projections. None of this writes inventory, auth schema or collection data.
+
+Executed on the delivered exact corrected runtime and full pinned rules data:
+- 140 focused Node guards pass, zero failed/skipped/cancelled.
+- Configured Standard control reaches actual GameOver: 187 human commands,
+  386 accepted actions, turn 22, winner seat 1. The deck is deliberately land-heavy
+  Plains/Savannah Lions, not a viable or competitive Standard deck.
+- Cold browser/offline recovery at bottoming and GameOver preserves exact journal,
+  receipts, printing/finish rows and final timestamp/result. Zero offline requests.
+- Concurrent worker write rejects rather than overwriting; illegal Standard /
+  copy-limit list rejects. Commander initialization gives 40/40 life and two
+  command zones retaining declared Satoru printings. No full Commander match claim.
+- Account/setup coordinator runs with the real worker, accepts one keep command,
+  retires on simulated account change and resumes the original digest/revision.
+- Visible activated-ability controls pass with delivered bytes: Basalt mana taps
+  immediately; untap uses a real stack/response and resolves after passes.
+Exact reports: experiments/phase-engine/account-proof-2026-10-25/.
+Original failing-runtime evidence and corrected ninjutsu assertions are unchanged.
+
+Verified every payload hash and patch hash in CardStashy-Offline-Deck-Engine-Patch.zip,
+Library libfile_45eb800c31208191b44668a6201284d1. Applied its diff to exact current
+Play source, preserving existing Play edits, rather than replacing whole files
+from an old site. APK_GUIDE.txt was excluded; no native release work was performed.
+All 41 supplied focused test files pass against the combined source. First isolated
+runs missed existing gzip fixtures/home preload dependencies; restored only
+Git-blob-verified current fixtures/source and reran failures successfully.
+This is a focused integration check, not the full repository release matrix.
+
+Connected Random opponent deck to the same shared pipeline and random-seed helper
+as the app builder. It carries format, Commander bracket target and Classic /
+Infinite-mana intent; rechecks construction before choosing a list, preserves
+request provenance, rejects silent constraint changes, ignores cancelled/stale
+account results and creates no owned cards. CPU and player lists stay distinct.
+Both use one right inspector with Your deck / CPU deck switches and shared deck
+views. Seven opponent-builder/selection guards and 34 existing setup/menu guards pass.
+Browser tests use the actual handlers/renderers with a stub builder and account;
+no live random-generation quality, paid AI call or real-auth match is claimed.
+
+Setup browser checks pass in both themes at 1280x720, 1440x900, 1920x1080,
+2560x1080, 3440x1440 and 1024x768, plus 900x650 reflow. Inspector is capped at
+520px and the footer remains in view in those landscape setup cases. A caught
+short-window/footer overflow was fixed by extending the bounded layout down to
+900px and removing its unnecessary minimum page height. A separate synthetic
+44-card table/long-rules fixture passes all six widths: 240–420px inspector,
+no horizontal overflow, visible footer, keyboard context-menu recovery and
+44px controls. Visual screenshots were inspected locally. Geometry evidence is
+not physical-device, touch-dragging or final real-art certification.
+
+Release gates remain UNMET. The main app still has setup only and its match
+start stays disabled. Practice coordinator is not yet mounted into that route.
+The new candidate only admits the existing Medium research policy; Easy/Hard
+are not calibrated and must not be silently aliased. Current named-card coverage
+is execution evidence, not all-card or complete CPU support. Required next work:
+mount actual setup-to-table lifecycle with shared exact artwork/finish, resolve
+printings, support/pilot viable eligible real deck versions, finish pregame /
+mandatory-choice policies and human decisions, results/history/concession and
+full account-to-match acceptance. Do not turn on a fixture-only public button.
+Friends follows CPU; Draft is deferred. Preserve the broad complex-card scope.
+
+Owner approval permits releasing a verified functional candidate without asking
+again. It does not convert these narrow fixtures into that candidate. No website
+release merge, production publication, APK, schema change, new subscription,
+budget increase, repeat paid engine build or external message occurred here.
+Keep the current runtime archive/receipt and original regression evidence.
+Use guarded branch updates; never merge the whole old Play branch over release.
+
+
+### Existing artwork reuse and owner mat clarification
+
+Owner explicitly directed the work back to a complete player mat using existing
+app art, familiar legal placement, auto/manual mana and app styling. APK posture
+and native work belong to the other builder; leave notes, do not build Android.
+Added play-card-surface.js to capture the existing exact selected/catalog
+printing and supported finish into a frozen row, reuse magicArtworkSources,
+finishAttrs/attachFinishPreview and shared artwork-error fallback. Wrong
+printings are not substituted; unknown/private instances never gain images.
+The table now accepts those shared decorator/lifecycle hooks for card and
+inspector art. Three art guards, the existing finish-preview regression and
+241-module preload/offline inventory checks pass. A real-browser presentation
+probe shows the repository's existing Chishiro scan on the table and inspector
+with shared finish metadata at 1920x1080 and 1024x768; hidden-instance art stays
+absent. This uses a scan fixture, not a real-account gameplay proof. The main
+app route still needs to mount the coordinator/table and pass these hooks and
+captured rows; drag/highlight and complete card-choice integration remain open.
+No new artwork system, generated replacement art, paid AI generation or APK.

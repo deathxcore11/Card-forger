@@ -17,16 +17,17 @@ assert.ok(!isMassLandDenial(card("Cyclonic Rift", "Instant", "Return target nonl
 
 // Bracket floors.
 const cmd = card("Leader", "Legendary Creature", "");
-const gc = (n) => card("GC " + n, "Sorcery", "", { game_changer: true });
-assert.equal(bracketEstimate(deck(["Leader"]), cat(cmd)).bracket, 2);
-assert.equal(bracketEstimate(deck(["Leader", "GC 1"]), cat(cmd, gc(1))).bracket, 3);
+const gcNames=["Rhystic Study","Demonic Tutor","Vampiric Tutor","Smothering Tithe"];
+const gc = n => card(gcNames[n-1], "Enchantment", "");
+assert.equal(bracketEstimate(deck(["Leader"]), cat(cmd)).bracket, null);
+assert.equal(bracketEstimate(deck(["Leader", gcNames[0]]), cat(cmd, gc(1))).bracket, 3);
 const four = [1, 2, 3, 4].map(gc);
 const b4 = bracketEstimate(deck(["Leader", ...four.map((c) => c.name)]), cat(cmd, ...four));
 assert.equal(b4.bracket, 4);
-assert.match(b4.lower.join(), /cut 1 Game Changer/);
+assert.deepEqual(b4.lower, [], "removing a flagged card never guarantees lower table fit");
 assert.equal(bracketEstimate(deck(["Leader", "Armageddon"]), cat(cmd, card("Armageddon", "Sorcery", "Destroy all lands."))).bracket, 4);
-// The explicit flag beats the fallback list.
-assert.equal(bracketEstimate(deck(["Leader", "Sol Ring"]), cat(cmd, card("Sol Ring", "Artifact", "{T}: Add {C}{C}.", { game_changer: false }))).bracket, 2);
+// A cached printing flag cannot certify table fit.
+assert.equal(bracketEstimate(deck(["Leader", "Sol Ring"]), cat(cmd, card("Sol Ring", "Artifact", "{T}: Add {C}{C}.", { game_changer: false }))).bracket, null);
 assert.equal(bracketEstimate(deck(["Leader", "Rhystic Study"]), cat(cmd, card("Rhystic Study", "Enchantment", ""))).bracket, 3);
 
 // Tapped lands.
