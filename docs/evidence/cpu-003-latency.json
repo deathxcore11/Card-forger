@@ -1,0 +1,1418 @@
+{
+  "task": "CPU-003-LATENCY-A",
+  "base": "142e21de8071a38a52fd5d6444ed47c33a2d05c7",
+  "runtime": "a86578b23adcd26c",
+  "host": {
+    "node": "v24.22.1",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "cases": [
+    {
+      "id": "ghalta-survival",
+      "attackers": 1,
+      "blockers": 1,
+      "card": "Ghalta, Primal Hunger",
+      "life": 12,
+      "samples": [
+        {
+          "repeat": 0,
+          "inactiveLegalMs": 14.018180000000939,
+          "activeLegalMs": 9.73345800000061,
+          "filteredStateMs": 25.127019000001383,
+          "expandedCandidatesMs": 38.439189000000624,
+          "observationMs": 3.831583999999566,
+          "baseCandidates": 2,
+          "candidates": 2,
+          "added": 0,
+          "examined": 2,
+          "truncated": false,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 23.46650799999952,
+              "maxMs": 13.81217099999958
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 62.61529100000007,
+              "maxMs": 37.55650500000047
+            }
+          }
+        },
+        {
+          "repeat": 1,
+          "inactiveLegalMs": 6.54398300000139,
+          "activeLegalMs": 13.078975000000355,
+          "filteredStateMs": 25.566686000000118,
+          "expandedCandidatesMs": 26.025637000000643,
+          "observationMs": 0.26360699999895587,
+          "baseCandidates": 2,
+          "candidates": 2,
+          "added": 0,
+          "examined": 2,
+          "truncated": false,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 19.57363300000179,
+              "maxMs": 13.054127000001245
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 51.33782599999904,
+              "maxMs": 25.793132999999216
+            }
+          }
+        },
+        {
+          "repeat": 2,
+          "inactiveLegalMs": 7.549790999999459,
+          "activeLegalMs": 10.691649000000325,
+          "filteredStateMs": 22.772784000000684,
+          "expandedCandidatesMs": 25.191687999998976,
+          "observationMs": 0.3223359999992681,
+          "baseCandidates": 2,
+          "candidates": 2,
+          "added": 0,
+          "examined": 2,
+          "truncated": false,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 18.162238000000798,
+              "maxMs": 10.657764999999927
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 47.585705999999846,
+              "maxMs": 24.829829000000245
+            }
+          }
+        }
+      ],
+      "profiles": [
+        {
+          "difficulty": "Easy",
+          "samples": [
+            {
+              "ms": 2.4186200000003737,
+              "index": 1,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 1.8697769999998854,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 0.1776609999997163,
+              "index": 1,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 0.17043199999898206,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 0.05552200000056473,
+              "index": 1,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 0.05170899999939138,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        },
+        {
+          "difficulty": "Medium",
+          "samples": [
+            {
+              "ms": 0.06953799999973853,
+              "index": 1,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 0.06619499999942491,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 0.16992000000027474,
+              "index": 1,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 0.16584399999919697,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 0.04465399999935471,
+              "index": 1,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 0.03985800000009476,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        },
+        {
+          "difficulty": "Hard",
+          "samples": [
+            {
+              "ms": 0.03403799999978219,
+              "index": 1,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 0.0298560000010184,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 0.02996799999891664,
+              "index": 1,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 0.026068999999552034,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 0.03771000000051572,
+              "index": 1,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 0.033143000000563916,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        }
+      ],
+      "blockCards": [
+        "Ghalta, Primal Hunger"
+      ],
+      "setupSha256": "662bf75d3a09248066eed854975c76127e096c1707a822a5a3981d3d86896f88",
+      "decisionSha256": "990e960570f7dea1afff5ee458c36e2b0ed778b481d7f154ed5eeb9b5e4c1cd9",
+      "authority": {
+        "totalMs": 202.71298399999978,
+        "initialLegalMs": 49.48250999999982,
+        "chooseMs": 48.59590200000093,
+        "freshLegalMs": 45.00023599999986,
+        "applyMs": 7.7352890000001935,
+        "engineCalls": {
+          "get_legal_actions_for_viewer_js": {
+            "count": 5,
+            "totalMs": 54.421386999998504,
+            "maxMs": 17.12225799999942
+          },
+          "get_filtered_game_state": {
+            "count": 3,
+            "totalMs": 81.64639699999861,
+            "maxMs": 32.48034899999948
+          },
+          "submit_action": {
+            "count": 1,
+            "totalMs": 7.456121999999596,
+            "maxMs": 7.456121999999596
+          }
+        },
+        "action": {
+          "type": "DeclareBlockers",
+          "data": {
+            "assignments": [
+              [
+                99,
+                5
+              ]
+            ]
+          }
+        },
+        "accepted": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "four-by-four",
+      "attackers": 4,
+      "blockers": 4,
+      "card": "Bear Cub",
+      "life": 20,
+      "samples": [
+        {
+          "repeat": 0,
+          "inactiveLegalMs": 13.609608000000662,
+          "activeLegalMs": 14.191076999999495,
+          "filteredStateMs": 27.243343000000095,
+          "expandedCandidatesMs": 1571.9762370000008,
+          "observationMs": 4.130553000000873,
+          "baseCandidates": 17,
+          "candidates": 131,
+          "added": 114,
+          "examined": 128,
+          "truncated": true,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 27.764612000000852,
+              "maxMs": 14.172915000001012
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 54.475750999999946,
+              "maxMs": 27.252363999999943
+            },
+            "preview_action_js": {
+              "count": 114,
+              "totalMs": 1535.1707070000084,
+              "maxMs": 93.88896399999976
+            }
+          }
+        },
+        {
+          "repeat": 1,
+          "inactiveLegalMs": 8.483091000000059,
+          "activeLegalMs": 12.15987899999891,
+          "filteredStateMs": 24.37864300000001,
+          "expandedCandidatesMs": 1263.1709010000013,
+          "observationMs": 2.9583270000002813,
+          "baseCandidates": 17,
+          "candidates": 131,
+          "added": 114,
+          "examined": 128,
+          "truncated": true,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 20.603966000000582,
+              "maxMs": 12.142099000000599
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 51.52708700000039,
+              "maxMs": 27.195504000001165
+            },
+            "preview_action_js": {
+              "count": 114,
+              "totalMs": 1228.1215300000022,
+              "maxMs": 101.11352199999965
+            }
+          }
+        },
+        {
+          "repeat": 2,
+          "inactiveLegalMs": 10.006085999999414,
+          "activeLegalMs": 12.40621800000008,
+          "filteredStateMs": 21.903973999998925,
+          "expandedCandidatesMs": 1192.065743000001,
+          "observationMs": 2.262079000000085,
+          "baseCandidates": 17,
+          "candidates": 131,
+          "added": 114,
+          "examined": 128,
+          "truncated": true,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 22.37101900000016,
+              "maxMs": 12.386598000000959
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 39.466928000001644,
+              "maxMs": 21.885173000000577
+            },
+            "preview_action_js": {
+              "count": 114,
+              "totalMs": 1165.679397999993,
+              "maxMs": 51.190543999999136
+            }
+          }
+        }
+      ],
+      "profiles": [
+        {
+          "difficulty": "Easy",
+          "samples": [
+            {
+              "ms": 15.016199999998207,
+              "index": 45,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 14.831897000000026,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 10.982670000001235,
+              "index": 45,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 10.967800000000352,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 7.225328999998965,
+              "index": 45,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 7.209011999999348,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        },
+        {
+          "difficulty": "Medium",
+          "samples": [
+            {
+              "ms": 5.53113299999859,
+              "index": 45,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 5.519802000000709,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 7.426539000000048,
+              "index": 45,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 7.414068000000043,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 2.392130999998699,
+              "index": 45,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 2.380750000000262,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        },
+        {
+          "difficulty": "Hard",
+          "samples": [
+            {
+              "ms": 7.536290000000008,
+              "index": 45,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 7.526230000001306,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 5.722569999999905,
+              "index": 45,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 5.710591999999451,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 11.883373999999094,
+              "index": 45,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 11.872997999998915,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        }
+      ],
+      "blockCards": [
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub"
+      ],
+      "setupSha256": "a3ed980c4693f8fdc475e061c83d8c40e1ff564fd410f8e3b0fc94c0a7be17dc",
+      "decisionSha256": "656bbe7231cbe2f9aad1280c31c56dd62d09f1befdf9bef998dcb2ba43af1536",
+      "authority": {
+        "totalMs": 2434.770154,
+        "initialLegalMs": 1228.649613999998,
+        "chooseMs": 69.95367799999804,
+        "freshLegalMs": 1081.8340329999992,
+        "applyMs": 5.400467999999819,
+        "engineCalls": {
+          "get_legal_actions_for_viewer_js": {
+            "count": 5,
+            "totalMs": 60.77550999999585,
+            "maxMs": 16.874393999998574
+          },
+          "get_filtered_game_state": {
+            "count": 3,
+            "totalMs": 87.9108759999981,
+            "maxMs": 36.42128899999807
+          },
+          "preview_action_js": {
+            "count": 228,
+            "totalMs": 2190.3183649999955,
+            "maxMs": 45.2800610000013
+          },
+          "submit_action": {
+            "count": 1,
+            "totalMs": 5.354683000001387,
+            "maxMs": 5.354683000001387
+          }
+        },
+        "action": {
+          "type": "DeclareBlockers",
+          "data": {
+            "assignments": [
+              [
+                76,
+                5
+              ],
+              [
+                99,
+                6
+              ],
+              [
+                115,
+                19
+              ]
+            ]
+          }
+        },
+        "accepted": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "three-by-eight",
+      "attackers": 3,
+      "blockers": 8,
+      "card": "Bear Cub",
+      "life": 20,
+      "samples": [
+        {
+          "repeat": 0,
+          "inactiveLegalMs": 10.053891999999905,
+          "activeLegalMs": 14.724334999998973,
+          "filteredStateMs": 19.10117999999784,
+          "expandedCandidatesMs": 1050.9532949999993,
+          "observationMs": 0.792725999999675,
+          "baseCandidates": 25,
+          "candidates": 142,
+          "added": 117,
+          "examined": 128,
+          "truncated": true,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 24.63143499999933,
+              "maxMs": 14.669684000000416
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 41.074837000000116,
+              "maxMs": 21.987224000000424
+            },
+            "preview_action_js": {
+              "count": 117,
+              "totalMs": 1025.666966999961,
+              "maxMs": 17.78539599999931
+            }
+          }
+        },
+        {
+          "repeat": 1,
+          "inactiveLegalMs": 11.549610000001849,
+          "activeLegalMs": 25.25522600000113,
+          "filteredStateMs": 22.776217999999062,
+          "expandedCandidatesMs": 1111.5574400000005,
+          "observationMs": 3.507923999997729,
+          "baseCandidates": 25,
+          "candidates": 142,
+          "added": 117,
+          "examined": 128,
+          "truncated": true,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 36.772807000001194,
+              "maxMs": 25.238814000000275
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 39.89205900000161,
+              "maxMs": 22.75893300000098
+            },
+            "preview_action_js": {
+              "count": 117,
+              "totalMs": 1088.7471830000213,
+              "maxMs": 57.487466999999015
+            }
+          }
+        },
+        {
+          "repeat": 2,
+          "inactiveLegalMs": 12.854598000001715,
+          "activeLegalMs": 23.063007000000653,
+          "filteredStateMs": 22.64979999999923,
+          "expandedCandidatesMs": 1032.775103,
+          "observationMs": 0.43963000000076136,
+          "baseCandidates": 25,
+          "candidates": 142,
+          "added": 117,
+          "examined": 128,
+          "truncated": true,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 35.69765400000324,
+              "maxMs": 23.01086800000121
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 41.62967299999946,
+              "maxMs": 22.625037000001612
+            },
+            "preview_action_js": {
+              "count": 117,
+              "totalMs": 1009.9768920000097,
+              "maxMs": 13.850669999999809
+            }
+          }
+        }
+      ],
+      "profiles": [
+        {
+          "difficulty": "Easy",
+          "samples": [
+            {
+              "ms": 2.2491719999998168,
+              "index": 89,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 2.221733000002132,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 2.869072999998025,
+              "index": 89,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 2.8544380000021192,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 3.0059389999987616,
+              "index": 89,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 2.9929680000022927,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        },
+        {
+          "difficulty": "Medium",
+          "samples": [
+            {
+              "ms": 1.9892749999999069,
+              "index": 89,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 1.9794929999989108,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 3.824749999999767,
+              "index": 89,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 3.813672000000224,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 2.594944000000396,
+              "index": 89,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 2.5856240000030084,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        },
+        {
+          "difficulty": "Hard",
+          "samples": [
+            {
+              "ms": 3.0574450000021898,
+              "index": 89,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 3.0491780000011204,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 5.33628900000258,
+              "index": 89,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 5.325865000002523,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 13.271060999999463,
+              "index": 89,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 13.243404000000737,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        }
+      ],
+      "blockCards": [
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear"
+      ],
+      "setupSha256": "7a704a988ff440286c2aeb2adb4b8e64e33fc36d9e8c431a5f801d051166b6aa",
+      "decisionSha256": "698a472602126b23e6c94d9bfd559c42ccefbe6438e75207ab5031b332518d3b",
+      "authority": {
+        "totalMs": 2191.2289939999973,
+        "initialLegalMs": 1057.4995940000008,
+        "chooseMs": 62.782976000002236,
+        "freshLegalMs": 1022.7795389999992,
+        "applyMs": 5.652856000000611,
+        "engineCalls": {
+          "get_legal_actions_for_viewer_js": {
+            "count": 5,
+            "totalMs": 80.02602399999523,
+            "maxMs": 21.443219999997382
+          },
+          "get_filtered_game_state": {
+            "count": 3,
+            "totalMs": 67.08532299999933,
+            "maxMs": 28.494378999999753
+          },
+          "preview_action_js": {
+            "count": 234,
+            "totalMs": 1961.4593010000062,
+            "maxMs": 17.867151000002195
+          },
+          "submit_action": {
+            "count": 1,
+            "totalMs": 5.611602999997558,
+            "maxMs": 5.611602999997558
+          }
+        },
+        "action": {
+          "type": "DeclareBlockers",
+          "data": {
+            "assignments": [
+              [
+                99,
+                5
+              ],
+              [
+                111,
+                6
+              ],
+              [
+                115,
+                28
+              ]
+            ]
+          }
+        },
+        "accepted": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "four-by-twelve",
+      "attackers": 4,
+      "blockers": 12,
+      "card": "Bear Cub",
+      "life": 20,
+      "samples": [
+        {
+          "repeat": 0,
+          "inactiveLegalMs": 25.90939199999775,
+          "activeLegalMs": 24.80149000000165,
+          "filteredStateMs": 19.39296199999808,
+          "expandedCandidatesMs": 1005.1575529999973,
+          "observationMs": 0.9265650000015739,
+          "baseCandidates": 49,
+          "candidates": 163,
+          "added": 114,
+          "examined": 128,
+          "truncated": true,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 50.65260500000295,
+              "maxMs": 25.878795000000537
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 36.20878900000389,
+              "maxMs": 19.36810500000138
+            },
+            "preview_action_js": {
+              "count": 114,
+              "totalMs": 985.4576029999771,
+              "maxMs": 20.860969000001205
+            }
+          }
+        },
+        {
+          "repeat": 1,
+          "inactiveLegalMs": 11.582548999998835,
+          "activeLegalMs": 23.41497900000104,
+          "filteredStateMs": 18.974351999997452,
+          "expandedCandidatesMs": 951.794249999999,
+          "observationMs": 0.7747139999992214,
+          "baseCandidates": 49,
+          "candidates": 163,
+          "added": 114,
+          "examined": 128,
+          "truncated": true,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 34.96270700000241,
+              "maxMs": 23.4003100000009
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 36.63306000000375,
+              "maxMs": 18.95821100000103
+            },
+            "preview_action_js": {
+              "count": 114,
+              "totalMs": 930.995983000008,
+              "maxMs": 17.543955999997706
+            }
+          }
+        },
+        {
+          "repeat": 2,
+          "inactiveLegalMs": 12.151468000000023,
+          "activeLegalMs": 22.957955999998376,
+          "filteredStateMs": 21.30137100000138,
+          "expandedCandidatesMs": 939.154093000001,
+          "observationMs": 0.40133699999933015,
+          "baseCandidates": 49,
+          "candidates": 163,
+          "added": 114,
+          "examined": 128,
+          "truncated": true,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 35.07425200000216,
+              "maxMs": 22.94257800000196
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 41.08481699999902,
+              "maxMs": 21.288431000000855
+            },
+            "preview_action_js": {
+              "count": 114,
+              "totalMs": 917.189670999971,
+              "maxMs": 12.440531000000192
+            }
+          }
+        }
+      ],
+      "profiles": [
+        {
+          "difficulty": "Easy",
+          "samples": [
+            {
+              "ms": 3.791579000000638,
+              "index": 77,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 3.7620779999997467,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 2.692456000000675,
+              "index": 77,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 2.6790729999993346,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 3.1690589999998338,
+              "index": 77,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 3.1589270000004035,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        },
+        {
+          "difficulty": "Medium",
+          "samples": [
+            {
+              "ms": 3.6447269999989658,
+              "index": 77,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 3.634471000001213,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 4.267074000003049,
+              "index": 77,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 4.2554459999992105,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 9.089022000000114,
+              "index": 77,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 9.075326999998651,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        },
+        {
+          "difficulty": "Hard",
+          "samples": [
+            {
+              "ms": 3.0369150000005902,
+              "index": 77,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 3.005176999999094,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 2.2403550000017276,
+              "index": 77,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 2.224586000000272,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 3.123308000001998,
+              "index": 77,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 2.665270999998029,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        }
+      ],
+      "blockCards": [
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Scarecrow Guide",
+        "Scarecrow Guide",
+        "Scarecrow Guide",
+        "Scarecrow Guide"
+      ],
+      "setupSha256": "1f9655463563884f0da2404d751fcf110da7f8497333135ed26568e0f934d9dc",
+      "decisionSha256": "d588e16a49a91ad64aad18c4a51998910d3e97b19042009295f88001d54cb39f",
+      "authority": {
+        "totalMs": 2072.3566570000003,
+        "initialLegalMs": 933.8208429999977,
+        "chooseMs": 59.508326999999554,
+        "freshLegalMs": 1029.5176729999985,
+        "applyMs": 7.382182000001194,
+        "engineCalls": {
+          "get_legal_actions_for_viewer_js": {
+            "count": 5,
+            "totalMs": 110.751900999996,
+            "maxMs": 28.667383999996673
+          },
+          "get_filtered_game_state": {
+            "count": 3,
+            "totalMs": 70.20711899999878,
+            "maxMs": 29.468933000000106
+          },
+          "preview_action_js": {
+            "count": 228,
+            "totalMs": 1822.373690000004,
+            "maxMs": 19.441204999999172
+          },
+          "submit_action": {
+            "count": 1,
+            "totalMs": 7.341657999997551,
+            "maxMs": 7.341657999997551
+          }
+        },
+        "action": {
+          "type": "DeclareBlockers",
+          "data": {
+            "assignments": [
+              [
+                111,
+                5
+              ],
+              [
+                115,
+                6
+              ],
+              [
+                119,
+                19
+              ]
+            ]
+          }
+        },
+        "accepted": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "four-by-twenty",
+      "attackers": 4,
+      "blockers": 20,
+      "card": "Bear Cub",
+      "life": 20,
+      "samples": [
+        {
+          "repeat": 0,
+          "inactiveLegalMs": 36.65849899999739,
+          "activeLegalMs": 61.74399099999937,
+          "filteredStateMs": 28.950365000000602,
+          "expandedCandidatesMs": 20.336021999999502,
+          "observationMs": 0.5014080000000831,
+          "baseCandidates": 81,
+          "candidates": 81,
+          "added": 0,
+          "examined": 0,
+          "truncated": true,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 98.36609400000452,
+              "maxMs": 61.723752000001696
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 49.04304200000115,
+              "maxMs": 28.931563999998616
+            }
+          }
+        },
+        {
+          "repeat": 1,
+          "inactiveLegalMs": 30.674974000001384,
+          "activeLegalMs": 49.04162200000064,
+          "filteredStateMs": 23.616071999997075,
+          "expandedCandidatesMs": 21.440262000000075,
+          "observationMs": 0.7993050000004587,
+          "baseCandidates": 81,
+          "candidates": 81,
+          "added": 0,
+          "examined": 0,
+          "truncated": true,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 79.67848200000299,
+              "maxMs": 49.02490200000102
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 44.919834000000264,
+              "maxMs": 23.59733700000288
+            }
+          }
+        },
+        {
+          "repeat": 2,
+          "inactiveLegalMs": 22.233346000000893,
+          "activeLegalMs": 45.7017479999995,
+          "filteredStateMs": 26.846118999997998,
+          "expandedCandidatesMs": 22.282685000001948,
+          "observationMs": 0.3160380000008445,
+          "baseCandidates": 81,
+          "candidates": 81,
+          "added": 0,
+          "examined": 0,
+          "truncated": true,
+          "engineCalls": {
+            "get_legal_actions_for_viewer_js": {
+              "count": 2,
+              "totalMs": 67.90180600000167,
+              "maxMs": 45.686320000000705
+            },
+            "get_filtered_game_state": {
+              "count": 2,
+              "totalMs": 49.00168299999859,
+              "maxMs": 26.827730000000884
+            }
+          }
+        }
+      ],
+      "profiles": [
+        {
+          "difficulty": "Easy",
+          "samples": [
+            {
+              "ms": 2.8660369999997783,
+              "index": 13,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 2.8318680000011227,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 1.9208500000022468,
+              "index": 13,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 1.9068480000023555,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 1.2361390000005485,
+              "index": 13,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 1.226570000002539,
+                "budgetExhausted": false,
+                "difficulty": "Easy",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        },
+        {
+          "difficulty": "Medium",
+          "samples": [
+            {
+              "ms": 1.3813550000013493,
+              "index": 13,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 1.3751069999998435,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 1.3623760000009497,
+              "index": 13,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 1.3541879999975208,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 1.0540399999990768,
+              "index": 13,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 1.046794999998383,
+                "budgetExhausted": false,
+                "difficulty": "Medium",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        },
+        {
+          "difficulty": "Hard",
+          "samples": [
+            {
+              "ms": 1.205167000000074,
+              "index": 13,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 1.1994770000019344,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 1.67912399999841,
+              "index": 13,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 1.6720539999987523,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            },
+            {
+              "ms": 1.190643000001728,
+              "index": 13,
+              "rng": 777,
+              "metrics": {
+                "nodes": 0,
+                "elapsedMs": 1.1828979999991134,
+                "budgetExhausted": false,
+                "difficulty": "Hard",
+                "configuration": "cpu-config-v1"
+              }
+            }
+          ]
+        }
+      ],
+      "blockCards": [
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Scarecrow Guide",
+        "Scarecrow Guide",
+        "Scarecrow Guide",
+        "Scarecrow Guide",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Llanowar Elves",
+        "Llanowar Elves",
+        "Llanowar Elves",
+        "Llanowar Elves"
+      ],
+      "setupSha256": "48eec619e774eadef542fdbf1db8824047db3a18eafb91ea431ca7841ea81c1a",
+      "decisionSha256": "39081aeb938596bb5763b8dedc13e5e269508b0569e614059d6e0df5dbfc31be",
+      "authority": {
+        "totalMs": 414.14187700000184,
+        "initialLegalMs": 85.09173500000179,
+        "chooseMs": 143.19080899999972,
+        "freshLegalMs": 107.51726399999825,
+        "applyMs": 29.229699999996228,
+        "engineCalls": {
+          "get_legal_actions_for_viewer_js": {
+            "count": 5,
+            "totalMs": 202.65813300000082,
+            "maxMs": 53.80764899999849
+          },
+          "get_filtered_game_state": {
+            "count": 3,
+            "totalMs": 66.10747799999808,
+            "maxMs": 23.408455999997386
+          },
+          "submit_action": {
+            "count": 1,
+            "totalMs": 28.770023000004585,
+            "maxMs": 28.770023000004585
+          }
+        },
+        "action": {
+          "type": "DeclareBlockers",
+          "data": {
+            "assignments": [
+              [
+                83,
+                5
+              ]
+            ]
+          }
+        },
+        "accepted": true
+      },
+      "status": "PASS"
+    }
+  ],
+  "limits": [
+    "Engineered creature positions, not token equivalence tests or complete matches.",
+    "Three stage samples and one warmed production-authority decision per case; no population latency guarantee.",
+    "Single Node process; excludes browser rendering, actual match worker transport, storage, timers and full journal overhead.",
+    "Full authority sample includes initial legal collection, production policy-worker choice, fresh legal revalidation and accepted submit; no stage caches.",
+    "Total authority wall time includes fixture assertions/export; individual stages isolate production calls.",
+    "No changes to production code. Recovery remains unsupported; signed-in path not tested."
+  ],
+  "workerColdChooseMs": 48.980649999999514,
+  "counts": {
+    "PASS": 5,
+    "FAIL": 0
+  },
+  "sources": {
+    "cpu-latency-engine.mjs": "ee276074b10b75d04fa2fd48ad77d7d9c85b1611ecb89b2ae611441f62011cb1",
+    "cpu-legal-candidates.mjs": "0fb5f513a024be6f91ccd45c3860b1ba526635c78c399a6d5bd0d5ea0d04bc7e",
+    "cpu-public-observation.mjs": "2b609f5547ffe58d2a3252c40ca3e7a5bfc266700be3da4eb95f736c3a629ade",
+    "cpu-hand-observation.mjs": "601144c3beea2d095620c27de2e27958b305bf59471da3ee8e7a49e057a25efd",
+    "cpu-combat-evaluation.mjs": "85c366be13c77ebb05f3107d44761153b7f23685ee299a2355d79e90a5ac399e",
+    "cpu-public-policy.mjs": "a4050ff5a84c2ba82acf6c63535a54947fbc7aa4d7fa1b39e6eff77db9c322bb",
+    "cpu-tactical-planning.mjs": "f392763bc560ebac56a8b6bd5957654ec8503fc072cc3daf94e97e483184b3a9",
+    "cpu-difficulty-config.mjs": "0c2998a0a13848e959d9428d8e792933edb81fc130d3d67e48ace51fb04d404b",
+    "match-authority.mjs": "4e3a1e26796a9417ce9d04454dbb2ecae5ea1a5aebec863dabb67abef5b58970",
+    "cpu-public-worker.mjs": "8a5c4c16aa20b5addcade8a9de1d6aefda58aadd09fd9eab4a68ce0da83e243d",
+    "cpu-node-worker.mjs": "5ad81eae4b2173771faba50cab4f51231374bb41de3f01e7806d6579d7ca92b0",
+    "cpu-test-runtime.mjs": "cb61a6e28ba5e119ea62ccf1f4b520e9360291648303e7f56ee62bb9be28e927"
+  }
+}
