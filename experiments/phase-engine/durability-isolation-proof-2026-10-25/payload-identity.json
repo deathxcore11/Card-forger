@@ -1,0 +1,8 @@
+{
+  "sha256": "5bb4ab405a79e224183b751835295bbefaeadf8d53f7a99c22ec8174908da1a9",
+  "bytes": 1975063,
+  "exportedRevision": 216,
+  "sourceProfile": "test-results/recovery-checkpoints-final/profile-1792923030124",
+  "sourceOrigin": "http://127.0.0.1:46115",
+  "limits": "Read-only exported actual control-match record after previous failing harness had resumed and advanced its saved 214 to 216. Not a reconstruction of the missing 301 checkpoint; simulated account and printing identifiers."
+}

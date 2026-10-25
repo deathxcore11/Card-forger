@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "expectedRevision": 301,
+  "actualRevision": 301,
+  "expectedSha256": "7a65b11903d1c31973316622be4d5ca89849aa9a97716148c9e2a7ff51918595",
+  "actualSha256": "7a65b11903d1c31973316622be4d5ca89849aa9a97716148c9e2a7ff51918595",
+  "limits": "Read-only cold storage inspection before loading engine after prior CDP startup failure. No save reconstruction or engine restore."
+}

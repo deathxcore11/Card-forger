@@ -1,0 +1,37 @@
+{
+  "payloadSha256": "5bb4ab405a79e224183b751835295bbefaeadf8d53f7a99c22ec8174908da1a9",
+  "payloadBytes": 1975063,
+  "files": {
+    "/practice-record.mjs": "997e43c3ab1cc431bb64eeb8d633916f400e463c8b13d09a47464f3989bc2313",
+    "/match-input.mjs": "11ab10b1ad37dc15d87af08fbe0dd9c9311ca7084533216d2f8860f6a711bf10",
+    "/runtime-assets.mjs": "40b266a4a3bb9806a386d49ea497e81fcfa2dd506e64b1e8e9082c1651489254",
+    "/job.mjs": "687ed904451e8e9721b0e83780979426e071cd9dbb0fbbc2850bf974dadfe349",
+    "/worker.mjs": "4d20fbb3f99ab48d9da000e907face06a6f9fb825119fe87176b955889008252",
+    "/": "3d3e92513c23a0eae11c5705606ffd76ee6d9b313271b6a8eabfff5f16a8f8bd"
+  },
+  "cases": [
+    {
+      "mode": "worker-long",
+      "readError": null,
+      "expectedRevision": 399,
+      "actualRevision": 399,
+      "expectedSha256": "3cd76b9bd4a97879513636a07d2e25c00d5b7b1607c0f4175455b990e13bcb70",
+      "actualSha256": "3cd76b9bd4a97879513636a07d2e25c00d5b7b1607c0f4175455b990e13bcb70",
+      "passed": true,
+      "elapsedMs": 37664
+    },
+    {
+      "mode": "worker-rotate",
+      "readError": null,
+      "expectedRevision": 399,
+      "actualRevision": 368,
+      "expectedSha256": "e4e6b1e85eada1905ec7d68c32e2ff9d27a213c16d1030fb39f3a9b2865175f7",
+      "actualSha256": "9225706dc8e840b7e28deab432c7a587d1e7558cb070730fe0a3672a07763a2a",
+      "passed": false,
+      "elapsedMs": 53169
+    }
+  ],
+  "limits": "Exact exported real-game record payload with synthetic repeated revisions. No engine execution, strategic choice, whole-match recovery or power-loss guarantee.",
+  "passed": false,
+  "harnessSha256": "2a96332632c437c4bd903a441e3f218a5faa96c73372c429c6d25acbd590f666"
+}

@@ -35,16 +35,20 @@ const transaction=(db,mode,run)=>new Promise((resolve,reject)=>{
 });
 export async function openPracticeDatabase(factory=indexedDB){return new Promise((resolve,reject)=>{const q=factory.open('cardstashy-practice-v1',1);q.onupgradeneeded=()=>q.result.createObjectStore('matches').createIndex('owner','ownerId');q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(Error('MATCH_STORE_UNAVAILABLE'));});}
 export async function openPracticeRecord({ownerId,matchId,input,db,now=()=>Date.now()}={}){
- const key=practiceKey(ownerId,matchId),database=db||await openPracticeDatabase();
- const stored=await transaction(database,'readonly',(s,done)=>{const q=s.get(key);q.onsuccess=()=>done(q.result);});
+ const key=practiceKey(ownerId,matchId);let closed=false;
+ // Match handles retain snapshots, not an idle database connection across
+ // runtime loading or every turn. Each owned transaction closes before its
+ // acknowledgement reaches the journal; injected databases remain caller-owned.
+ const transact=async(mode,run)=>{if(closed)throw Error('MATCH_STORE_CLOSED');const database=db||await openPracticeDatabase();try{return await transaction(database,mode,run);}finally{if(!db)database.close();}};
+ const stored=await transact('readonly',(s,done)=>{const q=s.get(key);q.onsuccess=()=>done(q.result);});
  let frozen=input===undefined?stored?.input:validatePracticeInput(input);
  if(!frozen)throw Error('MATCH_SNAPSHOT_REQUIRED');frozen=validatePracticeInput(frozen);const digest=await snapshotDigest(frozen);
  if(stored&&(stored.schema!==1||stored.ownerId!==ownerId||stored.matchId!==matchId||stored.snapshotDigest!==digest||await snapshotDigest(stored.input)!==digest))throw Error('MATCH_SNAPSHOT_MISMATCH');
  let presentation=structuredClone(stored?.presentation||{});
  const validateRecord=r=>{if(r&&(r.schema!==1||r.ownerId!==ownerId||r.matchId!==matchId||r.snapshotDigest!==digest))throw Error('MATCH_SNAPSHOT_MISMATCH');return r;};
  const storage={
-  read:async()=>{const r=await transaction(database,'readonly',(s,done)=>{const q=s.get(key);q.onsuccess=()=>done(q.result);});return validateRecord(r)?.journal;},
-  write:(journal,expected)=>transaction(database,'readwrite',(s,done,abort)=>{
+  read:async()=>{const r=await transact('readonly',(s,done)=>{const q=s.get(key);q.onsuccess=()=>done(q.result);});return validateRecord(r)?.journal;},
+  write:(journal,expected)=>transact('readwrite',(s,done,abort)=>{
    const q=s.get(key);q.onsuccess=()=>{try{
     const prior=validateRecord(q.result);if((prior?.journal?.revision??null)!==expected)throw Error('WRITE_CONFLICT');
     let result=prior?.result??null;
@@ -61,7 +65,7 @@ export async function openPracticeRecord({ownerId,matchId,input,db,now=()=>Date.
  };
  return {input:structuredClone(frozen),digest,storage,
   getPresentation:()=>structuredClone(presentation),setPresentation:value=>{if(stored)throw Error('ALREADY_EXISTS');canonical(value);presentation=structuredClone(value);},
-  close:()=>{if(!db)database.close();}};
+  close:()=>{closed=true;}};
 }
 // UI callers receive summaries and explicit copy snapshots, never authority saves.
 export async function listPracticeMatches(ownerId,{db}={}){

@@ -1,0 +1,62 @@
+Opening configured candidate
+Browser launched {"profile":"/workspace/scratch/7779ccf725c5/test-results/durability-engine/profile-1792926588263","origin":"http://127.0.0.1:33829","offline":false,"resume":false}
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Opened configured candidate
+Initial controls {"decision":"MulliganDecision","choices":[{"token":"db0b4f0f-5c75-4370-b573-b5de34f91778:0:0","label":"Keep hand","kind":"MulliganDecision","sourceId":null},{"token":"db0b4f0f-5c75-4370-b573-b5de34f91778:0:2","label":"Take a mulligan","kind":"MulliganDecision","sourceId":null}],"busy":false,"error":null}
+Opening concurrent worker
+Concurrent worker resumed
+Mulligan accepted
+Pending bottom choice
+Browser launched {"profile":"/workspace/scratch/7779ccf725c5/test-results/durability-engine/profile-1792926588263","origin":"http://127.0.0.1:33829","offline":true,"resume":true}
+BEFORE ENGINE RESTORE {"revision":2,"result":null,"recordSha256":"92081feae8c1f94a25daabcf7b4c2b7408ecc81a80b2f780395ae0458532a472","bytes":459488}
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Cold browser resumed
+CHECKPOINT {"revision":101,"bytes":899889,"recordSha256":"7e80ffad180b09a5342ab61227646e40df855f95a2defd2e6c9c9202a94ffc4c"}
+Browser launched {"profile":"/workspace/scratch/7779ccf725c5/test-results/durability-engine/profile-1792926588263","origin":"http://127.0.0.1:33829","offline":true,"resume":true}
+BEFORE ENGINE RESTORE {"revision":101,"result":null,"recordSha256":"7e80ffad180b09a5342ab61227646e40df855f95a2defd2e6c9c9202a94ffc4c","bytes":899889}
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Human commands 50 revision 103
+CHECKPOINT {"revision":200,"bytes":1801586,"recordSha256":"61f82a6e94868cd07eeb91a20406011a2e3fc3b684fd74ebe89f560816bded74"}
+Browser launched {"profile":"/workspace/scratch/7779ccf725c5/test-results/durability-engine/profile-1792926588263","origin":"http://127.0.0.1:33829","offline":true,"resume":true}
+BEFORE ENGINE RESTORE {"revision":200,"result":null,"recordSha256":"61f82a6e94868cd07eeb91a20406011a2e3fc3b684fd74ebe89f560816bded74","bytes":1801586}
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Human commands 100 revision 206
+CHECKPOINT {"revision":301,"bytes":3057063,"recordSha256":"7a65b11903d1c31973316622be4d5ca89849aa9a97716148c9e2a7ff51918595"}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+browserType.connectOverCDP: connect ECONNREFUSED 127.0.0.1:45975
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://127.0.0.1:45975[22m
+
+    at startTestBrowser (/workspace/scratch/7779ccf725c5/durability-slice/experiments/phase-engine/persistent-browser-process.mjs:11:148)
+    at async open (/workspace/scratch/7779ccf725c5/durability-slice/experiments/phase-engine/practice-crash-checkpoints-browser.mjs:24:76)
+    at async file:///workspace/scratch/7779ccf725c5/durability-slice/experiments/phase-engine/practice-crash-checkpoints-browser.mjs:43:499 {
+  log: [
+    '  - <ws preparing> retrieving websocket url from http://127.0.0.1:45975'
+  ],
+  name: 'Error'
+}
+
+Node.js v24.22.1

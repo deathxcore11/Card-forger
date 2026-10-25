@@ -1,0 +1,25 @@
+{
+  "payloadSha256": "5bb4ab405a79e224183b751835295bbefaeadf8d53f7a99c22ec8174908da1a9",
+  "payloadBytes": 1975063,
+  "files": {
+    "/practice-record.mjs": "6efbcf338262625b8aa2304676435a321f2509d84cbb9f79e85eb4865ca0ae12",
+    "/match-input.mjs": "11ab10b1ad37dc15d87af08fbe0dd9c9311ca7084533216d2f8860f6a711bf10",
+    "/runtime-assets.mjs": "40b266a4a3bb9806a386d49ea497e81fcfa2dd506e64b1e8e9082c1651489254",
+    "/job.mjs": "687ed904451e8e9721b0e83780979426e071cd9dbb0fbbc2850bf974dadfe349",
+    "/worker.mjs": "4d20fbb3f99ab48d9da000e907face06a6f9fb825119fe87176b955889008252",
+    "/": "3d3e92513c23a0eae11c5705606ffd76ee6d9b313271b6a8eabfff5f16a8f8bd"
+  },
+  "cases": [
+    {
+      "mode": "window-long",
+      "expectedRevision": 399,
+      "actualRevision": 399,
+      "expectedSha256": "b0639fb66bb658c36bede7105e43a9224f45b82327ae9c6b7f70f22cf65a3f68",
+      "actualSha256": "b0639fb66bb658c36bede7105e43a9224f45b82327ae9c6b7f70f22cf65a3f68",
+      "passed": true,
+      "elapsedMs": 32966
+    }
+  ],
+  "limits": "Exact exported real-game record payload with synthetic repeated revisions. No engine execution, strategic choice, whole-match recovery or power-loss guarantee.",
+  "harnessSha256": "422e3eebcd6f05f5375c370cec966ab88b978251b421952a63df796c7be7c151"
+}

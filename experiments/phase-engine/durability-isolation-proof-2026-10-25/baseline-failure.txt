@@ -1,0 +1,12 @@
+{"mode":"window-long","expectedRevision":399,"actualRevision":399,"expectedSha256":"b0639fb66bb658c36bede7105e43a9224f45b82327ae9c6b7f70f22cf65a3f68","actualSha256":"b0639fb66bb658c36bede7105e43a9224f45b82327ae9c6b7f70f22cf65a3f68","passed":true,"elapsedMs":32966}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+page.evaluate: NotReadableError: Data lost due to missing file. Affected record should be considered irrecoverable
+    at get (/workspace/scratch/7779ccf725c5/durability-slice/experiments/phase-engine/practice-real-payload-crash-browser.mjs:9:16)
+    at /workspace/scratch/7779ccf725c5/durability-slice/experiments/phase-engine/practice-real-payload-crash-browser.mjs:10:1016 {
+  log: []
+}
+
+Node.js v24.22.1

@@ -1,0 +1,70 @@
+{
+  "files": {
+    "/practice-authority.mjs": "25b06cd59ee662c5a74083d633dc98d682fd42056abf65589b3b51635c286754",
+    "/practice-client.mjs": "a9b92ff713d2f04bc9a18dcd3bdd6656118f7c345daa759faf2492693bf37755",
+    "/practice-record.mjs": "997e43c3ab1cc431bb64eeb8d633916f400e463c8b13d09a47464f3989bc2313",
+    "/practice-presentation.mjs": "52c94571744aa406292e6819cb268191bf7b55470fe501a84a1f3c0b444052ba",
+    "/practice-coverage.mjs": "e391d8e863e3d14727800d3cf400eb10a33274330a34d9ad2abafb5c27fc4b0e",
+    "/runtime-assets.mjs": "40b266a4a3bb9806a386d49ea497e81fcfa2dd506e64b1e8e9082c1651489254",
+    "/match-input.mjs": "11ab10b1ad37dc15d87af08fbe0dd9c9311ca7084533216d2f8860f6a711bf10",
+    "/match-authority.mjs": "8860d2e65a20b502a516d1cc90f9d8db8c645ddc9f1664eea879f14aea85df45",
+    "/human-command.mjs": "9b7e62b4271d35337f75fa07b5f4486e4678b1e1dafef5464d262e7e8053aa2b",
+    "/visible-cpu-policy.mjs": "6fde41a268b1874b2e2817266a8a61a76f2fe63c53efcedcf80f5917ab095fd2",
+    "/visible-policy-worker.mjs": "0c8c5dd513c461c135cf2ee38df77f0fe935ff2f08a8f4be6932af703bdef233",
+    "/worker-journal.mjs": "5e31fe7dad15f5a59e58ad21e8c305d104c67b7277cb3d6041809556c1cd93f6",
+    "/protocol-fault.mjs": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+    "/priority-clock.mjs": "4c939bf6d616ecf582228918bd73094c43b998e0168996961429c8e964707602",
+    "/priority-scheduler.mjs": "d82af4727976497dc1f5cab3948ca1ee394c35865d5e544916a381bc3f839bfa",
+    "/seat-surface.mjs": "70176fb74d5eff9d023a406587aeb433e25fbda30dfd25dea836d0e0b4fb4f94",
+    "/interaction-surface.mjs": "1c11bc585304bea499575daca025c17abe50689060ee1c454daca6a0ecc44cbc",
+    "/match-session.mjs": "4554146e7edd364420a5a6ea9242e58543dd4d712c6fc717f87b866f88a7598f",
+    "/card-placement.mjs": "e84ae49658ec58cbaa21488c6a73162a8e370f280425cfc2778ae394f28f3259",
+    "/match-table.mjs": "ee18e3e5953fe2c30cb1373a325471054b11e05b0257d4a6d3f55d478ccfa6d0",
+    "/match-table.css": "dc7bd442b9aead4b7ddc0364468c45fcefeda2d18eb5205b998de9fafc922ac3",
+    "/card-stats.mjs": "9d2df7ff86d2f96e97481451b7cdb3eb500d447430f4f9862ba76c49ca7bb46f",
+    "/random-outcomes.mjs": "1aa212c485c766caf1d80403f2413c22bb17194cbbfa54979a699a38ea2d12d0",
+    "/runtime/a86578b23adcd26c/manifest.json": "86f0bab388d622f856bf4a83921f9ce1878eb377b3abfe74126ecf3b5ccc7513",
+    "/runtime/a86578b23adcd26c/engine_wasm.js": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "/runtime/a86578b23adcd26c/card-rules.bin": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "/runtime/a86578b23adcd26c/wasm.part-00.bin": "f267974f9b6582f47fd2e4cbb7cea0917d6b595f1827933b6c2709af099e158f",
+    "/runtime/a86578b23adcd26c/wasm.part-01.bin": "535e0be33fff841d62f101d5fa0268151dd59f7608d784211ae8f0a790842f73",
+    "/runtime/a86578b23adcd26c/wasm.part-02.bin": "4880cc2e849a8dda9527ce5ea0b8ed6ced0fccade4da588e079b8297b55928e7",
+    "/": "74c32540f814e0351b395ad9bcdc9b07059bc7cb3c1d3c7064fedb3afa7e532f",
+    "/inspect": "123f355ec41b5778f78b74ee39fbd4f24398af5f1c8fa34c3589e38c85a9ce66",
+    "/sw.js": "555ffbfc2ee911e1bad9beb7bd81190a601c789a262b74193bdcfc3e3bf12179"
+  },
+  "checks": [
+    "Standard configuration, 20 life and exact saved lists",
+    "120 original instance printings assigned including distinct foil rows",
+    "account-scoped history and explicit opponent-copy snapshot",
+    "concurrent worker CAS rejects overwrite and preserves accepted journal",
+    "editing source input does not alter frozen match",
+    "SIGKILL browser-process-group offline resume preserves pending bottoming and entire record",
+    "explicit bottom confirmation"
+  ],
+  "coldReads": [
+    {
+      "revision": 2,
+      "result": null,
+      "recordSha256": "92081feae8c1f94a25daabcf7b4c2b7408ecc81a80b2f780395ae0458532a472",
+      "bytes": 459488
+    },
+    {
+      "revision": 101,
+      "result": null,
+      "recordSha256": "7e80ffad180b09a5342ab61227646e40df855f95a2defd2e6c9c9202a94ffc4c",
+      "bytes": 899889
+    },
+    {
+      "revision": 200,
+      "result": null,
+      "recordSha256": "61f82a6e94868cd07eeb91a20406011a2e3fc3b684fd74ebe89f560816bded74",
+      "bytes": 1801586
+    }
+  ],
+  "limits": "Private configured integration candidate, simulated account identities/source rows, land-heavy Standard control and Commander initialization only. No real account auth, real printing artwork, viable deck quality, current-legality certification, general supported pools, calibrated difficulties, production app mount or live-readiness claim.",
+  "browser": "153.0.8010.0",
+  "passed": false,
+  "error": "browserType.connectOverCDP: connect ECONNREFUSED 127.0.0.1:45975\nCall log:\n\u001b[2m  - <ws preparing> retrieving websocket url from http://127.0.0.1:45975\u001b[22m\n\n    at startTestBrowser (/workspace/scratch/7779ccf725c5/durability-slice/experiments/phase-engine/persistent-browser-process.mjs:11:148)\n    at async open (/workspace/scratch/7779ccf725c5/durability-slice/experiments/phase-engine/practice-crash-checkpoints-browser.mjs:24:76)\n    at async file:///workspace/scratch/7779ccf725c5/durability-slice/experiments/phase-engine/practice-crash-checkpoints-browser.mjs:43:499",
+  "harnessSha256": "0195aef56d56bdf41c31d9213322b96beaaf6b72fcbc0fea986d9e23c2495b28"
+}

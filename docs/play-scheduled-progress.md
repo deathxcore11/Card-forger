@@ -1643,3 +1643,86 @@ choices/mandatory-timeout policy, calibrated Easy/Medium/Hard and signed-in
 owner flow still require gates. Existing release approval applies only after
 those pass. No production, APK, schema/migration, subscription/budget increase
 or external message changes occurred.
+
+## October 25, 2026 — real-payload worker failure and bounded connection lifetime
+
+Started from freshly verified remote f5186f5a028e1adbc2fc97860ee0d5f565bfc344.
+Recursive remote tree is complete and contains no AGENTS.md. Existing local Phase
+modules match remote blob identities. Required handoff/engine/human-route/mechanics/
+timer/CPU-context and linked core release/art/CPU requirements were read. No
+concurrent engine test was running at the start; mutations remain isolated here.
+
+Implemented owned record connection lifetime per transaction, closing on complete
+or abort, plus closed-handle rejection; injected databases stay caller-owned.
+This avoids holding a connection across runtime loading and abandoning it on
+failed validation. The whole-record schema, strict transaction request, CAS,
+receipts, frozen input and terminal result rules are unchanged. It is NOT a
+verified crash-recovery fix. All 187 Phase module tests pass serially, zero
+failures/skips/cancellations. The new meaningful lifecycle test checks success,
+abort and retired-handle behavior. No measured speedup or durability guarantee.
+
+Read-only export of the old actual-game profile, without engine loading and with
+service-worker bypass, found revision 216 (old failing harness had resumed 214).
+The 1,975,063-byte record was exported locally; its SHA-256 is preserved, not a repaired
+or reconstructed revision 301. Using that payload with synthetic repeated revision
+numbers, unchanged original storage passed window-long at 399 but worker-long
+failed cold read with NotReadableError: missing file/data irrecoverable. No WASM
+was loaded in this storage-only test. Baseline stopped there; no third-case pass.
+
+Candidate storage passed worker-long at 399, then FAILED worker-rotate: acknowledged
+399, recovered 368, different whole-record hashes. Thus neither connection lifetime
+nor engine execution is established as the root cause. Preserve this failure; do
+not call closing databases a recovery solution. The local captured input supports this smaller reproduction without another paid
+build; it is not uploaded. This is not a
+valid reconstructed gameplay journal; it deliberately isolates storage bytes.
+
+The real-engine checkpoint harness now exports acknowledged records before killing
+the browser and checks the cold digest BEFORE engine loading, failing fast without
+advancing an already discrepant save. Runtime package was regenerated locally from
+retained delivered bytes, verifying WASM a86578b2...3bfee, glue 7317b542...149cc and
+rules 0dbc4d30...2b9 against the existing receipt. No build or binary substitution.
+Original ninjutsu failures and corrected assertions remain unchanged.
+
+That real-engine candidate preserved exact pending bottoming and checkpoints 101
+and 200 across SIGKILL/offline restore. It acknowledged 301, then the next browser
+attachment failed ECONNREFUSED before inspecting storage. The test is incomplete,
+not a rollback or complete-match pass. Added bounded retry for that specific
+DevTools startup race in persistent-browser-process.mjs; a port file can precede
+listener readiness. No second browser, gameplay retry or assertion removal.
+A subsequent independent read-only cold inspection found exact revision 301 and
+whole-record hash 7a65b11903d1c31973316622be4d5ca89849aa9a97716148c9e2a7ff51918595.
+That inspection is not engine recovery. Its exact acknowledged record was retained locally.
+The cgroup OOM kill counter remained 10 during these tests.
+
+Evidence: experiments/phase-engine/durability-isolation-proof-2026-10-25/.
+The exact initial failing payload harness is retained separately from its updated
+per-case reporting version. Historical evidence is unchanged. Public Play stays
+gated; no release readiness follows from any control or storage test.
+
+Continuation after the helper race: practice-crash-continue-browser.mjs resumed
+that exact revision 301 and reached engine terminal 386, turn 22, seat 1 winner,
+40 additional human commands. Exact 4,658,063-byte terminal record survived SIGKILL,
+was compared before engine loading, then restored with matching result/receipts/
+timestamp and hash 54864267d84b355f2894d0144c14513799d6803d1d7da13b6572e14add87bb8d.
+Account retirement, Commander initialization and illegal-list assertions passed.
+The continuation suite still FAILS its final zero-network assertion: seven server
+requests were counted despite the offline context. Request paths were not captured
+in this driver, so their origin is unresolved; do not report zero network or a full
+suite pass. No OOM counter increase. This limited terminal success does not cancel
+the separate candidate worker rollback 399 -> 368 or certify reliable recovery.
+Original incomplete and continuation failure reports both remain intact.
+
+Next: use the retained exact payload to implement/test a storage representation
+that survives repeated worker kills, investigate the seven unexpected requests
+with per-path request logging, then repeat complete games. Do not rerun the same
+connection-lifetime hypothesis as a fix. Account-facing real eligible Standard/
+Commander matches, remaining decisions/mandatory timeout policy and calibrated
+Easy/Medium/Hard still gate release. Public readiness stays false. No production,
+APK, server schema/migrations, subscriptions, budget increase or paid build changed.
+
+Automatic review rejected the raw compressed saved-match blob uploads as sensitive
+private-data egress. No raw records were uploaded; the commit includes source,
+hashes and scoped reports only. Local raw exports are excluded and may be pruned.
+Future exact-payload reproduction requires those explicit local inputs or a newly
+recorded test run, not an invented replacement. Remaining useful code/report work
+was completed without asking for additional access or payment.

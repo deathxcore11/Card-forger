@@ -8,7 +8,12 @@ export async function startTestBrowser({profile,offline=false}={}){
  async function kill(){if(!exited){try{process.kill(-child.pid,'SIGKILL');}catch(e){if(e.code!=='ESRCH')throw e;}}return exit;}
  try{
   let port;const deadline=Date.now()+20000;while(!port){if(exited)throw Error('TEST_BROWSER_EXITED: '+stderr);if(Date.now()>deadline)throw Error('TEST_BROWSER_BOOT_TIMEOUT: '+stderr);try{port=Number((await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0]);}catch{}if(!port)await new Promise(r=>setTimeout(r,25));}
-  const {chromium}=await import(pathToFileURL(join(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES,'playwright/index.mjs'))),browser=await chromium.connectOverCDP('http://127.0.0.1:'+port),context=browser.contexts()[0];await context.setOffline(offline);
+  const {chromium}=await import(pathToFileURL(join(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES,'playwright/index.mjs')));let browser;
+  // DevToolsActivePort can appear before its HTTP listener accepts connections.
+  // Retry only that transient refusal within the original startup deadline;
+  // never launch a second process or retry gameplay commands.
+  while(!browser){try{browser=await chromium.connectOverCDP('http://127.0.0.1:'+port,{timeout:Math.max(1,deadline-Date.now())});}catch(e){if(exited||Date.now()>=deadline||!String(e.message).includes('ECONNREFUSED'))throw e;await new Promise(r=>setTimeout(r,25));}}
+  const context=browser.contexts()[0];await context.setOffline(offline);
   return {browser,context,kill,pid:child.pid};
  }catch(error){await kill();throw error;}
 }

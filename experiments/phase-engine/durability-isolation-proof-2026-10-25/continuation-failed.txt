@@ -1,0 +1,35 @@
+Browser launched {"profile":"/workspace/scratch/7779ccf725c5/test-results/durability-engine/profile-1792926588263","origin":"http://127.0.0.1:33829","offline":true,"resume":true}
+BEFORE ENGINE RESTORE {"revision":301,"result":null,"recordSha256":"7a65b11903d1c31973316622be4d5ca89849aa9a97716148c9e2a7ff51918595","bytes":3057063}
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Terminal {"matchId":"configured-standard","revision":386,"winner":1,"reason":"engine-terminal","finishedAt":1792927034221,"snapshotDigest":"bca789ac3910720ff53dd71d371c3a674ec93021d57e9af561a9ba58eb014f76","format":"Standard","difficulty":"Medium","continuedFrom":301,"continuationHumanCommands":40,"continuationHumanCasts":0,"turn":22}
+Browser launched {"profile":"/workspace/scratch/7779ccf725c5/test-results/durability-engine/profile-1792926588263","origin":"http://127.0.0.1:33829","offline":true,"resume":true}
+BEFORE ENGINE RESTORE {"revision":386,"result":{"matchId":"configured-standard","revision":386,"winner":1,"reason":"engine-terminal","finishedAt":1792927034221,"snapshotDigest":"bca789ac3910720ff53dd71d371c3a674ec93021d57e9af561a9ba58eb014f76","format":"Standard","difficulty":"Medium"},"recordSha256":"54864267d84b355f2894d0144c14513799d6803d1d7da13b6572e14add87bb8d","bytes":4658063}
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+7 !== 0
+
+    at file:///workspace/scratch/7779ccf725c5/durability-slice/experiments/phase-engine/practice-crash-continue-browser.mjs:50:81 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 7,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.1

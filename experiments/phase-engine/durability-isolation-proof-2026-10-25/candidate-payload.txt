@@ -1,0 +1,2 @@
+{"mode":"worker-long","readError":null,"expectedRevision":399,"actualRevision":399,"expectedSha256":"3cd76b9bd4a97879513636a07d2e25c00d5b7b1607c0f4175455b990e13bcb70","actualSha256":"3cd76b9bd4a97879513636a07d2e25c00d5b7b1607c0f4175455b990e13bcb70","passed":true,"elapsedMs":37664}
+{"mode":"worker-rotate","readError":null,"expectedRevision":399,"actualRevision":368,"expectedSha256":"e4e6b1e85eada1905ec7d68c32e2ff9d27a213c16d1030fb39f3a9b2865175f7","actualSha256":"9225706dc8e840b7e28deab432c7a587d1e7558cb070730fe0a3672a07763a2a","passed":false,"elapsedMs":53169}
