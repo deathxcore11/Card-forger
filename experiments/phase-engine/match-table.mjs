@@ -1,4 +1,5 @@
 // DOM presentation for a private, engine-backed research match. No card rules.
+import {bindCardPlacement,placementIntent} from './card-placement.mjs';
 import {validInteractionText} from './interaction-surface.mjs';
 import {cardStatView} from './card-stats.mjs';
 import {randomOutcomeText} from './random-outcomes.mjs';
@@ -10,6 +11,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
  function updateClock(clock){const out=root.querySelector('[aria-label="Response time"]');if(out){out.textContent=clock?.remainingSeconds!==null&&clock?.remainingSeconds!==undefined?`${clock.remainingSeconds}s to respond`:clock?.needsChoice?'Your choice is required':'';out.className=clock?.warning?'play-match-warning':'';}}
  function element(tag,text,cls){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;}
  function button(text,action,{disabled=false,key,pressed,blockWhileBusy=false}={}){const b=element('button',text);b.type='button';b.disabled=disabled;if(key)b.dataset.focusKey=key;if(pressed!==undefined)b.setAttribute('aria-pressed',String(pressed));const failed=e=>{if(['MATCH_NOT_READY','STALE_CHOICE','CHOICE_INCOMPLETE'].includes(e.message)){render(session.snapshot());return;}queueMicrotask(()=>{throw e;});};b.addEventListener('click',()=>{if(blockWhileBusy&&session.snapshot().busy)return;try{const result=action();if(result?.catch)result.catch(failed);}catch(e){failed(e);}});return b;}
+ const placement=bindCardPlacement(root,{session,onError:e=>queueMicrotask(()=>{throw e;})});
  const creatureState=c=>[c.tapped?'Tapped':'',c.power!==null&&c.power!==undefined?`${c.power}/${c.toughness}`:'',c.damage?`${c.damage} damage`:'',...Object.entries(c.counters||{}).map(([k,v])=>`${v} ${k}`)].filter(Boolean).join(' · ');
  const identity=c=>JSON.stringify([c.known,c.name,c.face,c.isToken,c.displaySource,c.tokenImageRef,c.printing||null]);
  function renderStats(c){const box=element('span',undefined,'play-match-state'),v=cardStatView(c);if(!v)return box;
@@ -33,13 +35,14 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
   cached.node.setAttribute('aria-pressed',String(id===selected));const text=JSON.stringify(cardStatView(c));if(cached.statKey!==text){cached.state.replaceChildren(renderStats(c));cached.statKey=text;}return cached.node;
  }
  function render(snapshot){
+  placement.reconcile();
   const {status,selected,pending,busy,error,clock}=snapshot;
   const renderKey=JSON.stringify([status?.revision,status?.surface,status?.outcomes,selected,pending,busy,error,menu,exitOpen,advancedOpen]);
   if(renderKey===lastRenderKey){updateClock(clock);return;}lastRenderKey=renderKey;
   const focused=root.contains(document.activeElement)?document.activeElement.dataset.focusKey:null;
   const disclosures=[...root.querySelectorAll('details[data-keep-open]')].map(n=>[n.dataset.keepOpen,n.open]);
   const scrolls=[...root.querySelectorAll('[data-keep-scroll]')].map(n=>[n.dataset.keepScroll,n.scrollTop]);
-  root.replaceChildren();root.className='play-match-table';
+  placement.cancel();root.replaceChildren();root.className='play-match-table';
   if(!status){root.append(element('p',error?'Match recovery is required.':'Opening match…'));return;}
   const view=status.surface,cardById=new Map(view.cards.map(c=>[c.id,c]));
   if(status.revision!==lastRevision){log.push(`Turn ${view.turn} · ${labels[view.decision.kind]||view.decision.kind}`);lastRevision=status.revision;}
@@ -48,15 +51,15 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
   const main=element('div',undefined,'play-match-main'),table=element('div',undefined,'play-match-mat'),rail=element('aside',undefined,'play-match-inspector');
   table.dataset.keepScroll='table';rail.dataset.keepScroll='inspector';
   const usedCardIds=new Set();
-  const card=c=>cardNode(c,selected,usedCardIds);
-  function zone(title,cards){const section=element('section',undefined,'play-match-zone');section.append(element('h2',title));const row=element('div',undefined,'play-match-card-row');for(const c of cards)row.append(card(c));if(!cards.length)row.append(element('p','Empty','muted'));section.append(row);return section;}
+  const card=c=>{const node=cardNode(c,selected,usedCardIds);const intent=placementIntent(snapshot,c.id);node.dataset.placementAvailable=String(!!intent);if(intent)node.setAttribute('aria-description',intent.zone==='battlefield'?'Drag to your battlefield, or use the Play button.':'Drag to the stack, or use the Cast button.');else node.removeAttribute('aria-description');return node;};
+  function zone(title,cards){const section=element('section',undefined,'play-match-zone');if(title==='Your battlefield')section.dataset.placementZone='battlefield';section.append(element('h2',title));const row=element('div',undefined,'play-match-card-row');for(const c of cards)row.append(card(c));if(!cards.length)row.append(element('p','Empty','muted'));section.append(row);return section;}
   const opponent=view.players.find(p=>p.seat!==view.seat),you=view.players.find(p=>p.seat===view.seat);
   table.append(element('div',`CPU · ${opponent.life} life · ${opponent.handCount} cards · ${opponent.libraryCount} in library`,'play-match-seat'));
   table.append(zone('CPU battlefield',view.cards.filter(c=>c.zone==='Battlefield'&&c.controller!==view.seat)));
   table.append(zone('Your battlefield',view.cards.filter(c=>c.zone==='Battlefield'&&c.controller===view.seat)));
   table.append(element('div',`${profile.displayName}${profile.username?' · @'+profile.username:''} · ${you.life} life · ${you.libraryCount} in library`,'play-match-seat'));
   table.append(zone('Your hand',view.hand.map(id=>cardById.get(id)).filter(Boolean)));
-  const stack=element('section');stack.append(element('h2',`Stack · ${view.stack.length}`));for(const entry of view.stack)stack.append(element('p',cardById.get(entry.source)?.name||'Ability or spell'));rail.append(stack);
+  const stack=element('section');stack.dataset.placementZone='stack';stack.append(element('h2',`Stack · ${view.stack.length}`));for(const entry of view.stack)stack.append(element('p',cardById.get(entry.source)?.name||'Ability or spell'));rail.append(stack);
   const matchContext=renderMatchContext();if(matchContext)rail.append(matchContext);
   const history=element('details');history.dataset.keepOpen='game-progress';history.append(element('summary','Game progress'));const entries=element('ol');for(const row of log.slice(-20))entries.append(element('li',row));history.append(entries);rail.append(history);
   if(status.outcomes?.length){const results=element('section',undefined,'play-match-random-results');results.setAttribute('aria-label','Recent rules results');results.append(element('strong','Recent rolls & flips'));const list=element('ol');for(const row of status.outcomes)list.append(element('li',randomOutcomeText(row,view.seat),row.outcome.kind==='ignored-die'?'play-match-ignored-roll':''));results.append(list);rail.append(results);}
@@ -115,5 +118,5 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
  }
  const keydown=e=>{if(e.key==='Escape'&&menu!==null){e.preventDefault();menu=null;render(session.snapshot());root.querySelector(`[data-instance="${session.snapshot().selected}"]`)?.focus();}};
  root.addEventListener('keydown',keydown);
- return {render,destroy(){disposeEffects();cardNodes.clear();inspectorContent=null;root.removeEventListener('keydown',keydown);root.replaceChildren();}};
+ return {render,destroy(){placement.destroy();disposeEffects();cardNodes.clear();inspectorContent=null;root.removeEventListener('keydown',keydown);root.replaceChildren();}};
 }

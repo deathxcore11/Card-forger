@@ -1111,3 +1111,63 @@ actual host and complete-match gates. Final Node checks and browser-script synta
 pass. Public release remains disabled; viable real Standard/Commander matches,
 remaining schemas/pregame/difficulty and account-route acceptance are unfinished.
 No production, APK, schema, paid build, new subscription or external message.
+
+
+## October 25, 2026 — browser restored and initial card-placement gestures
+
+Verified remote 028e15b6f1bf3c7a9d29c2458b4f62d92957636b and the complete
+recursive instruction tree (no AGENTS.md). Isolated modules match remote Git
+blob hashes. No overlapping source workspace was modified.
+
+The zero-byte /tmp/chromium was unusable. A normal Playwright installation
+attempt received invalid empty archives; a separate HEAD request reported an
+HTML response rather than ZIP, with ample free storage. Located a functioning
+Chromium 153.0.8010.0 under verification-inputs/browser, checked --version and
+used CARDSTASHY_CHROMIUM_PATH. Browser size/hash and executed checks are saved in
+placement-proof-2026-10-25/browser-restored.json. Nothing needs buying or signing.
+Browser binaries remain test dependencies outside the repository/product.
+
+Added pointer placement over existing epoch/revision-bound offered choices.
+A visible own hand card with exactly one offered PlayLand/CastSpell can be
+picked up; its offered battlefield/stack destination glows. A visual clone
+follows the pointer; only an accepted engine projection moves the real card.
+Drop submits the same choice token as the existing button. Different targets,
+faces/cost choices or missing offers retain the explicit controls instead of
+choosing a default. This does not make AI candidates exhaustive human legality.
+No new engine actions, payment assumptions, rules shortcuts or card admission.
+
+Clicks still inspect. Escape, wrong destination, pointer cancellation, lost
+priority, busy/error/terminal transitions, stale tokens/revisions and full
+rerenders cancel the gesture without a move. Timer-only paints retain it.
+Keyboard buttons stay available; eligible cards get destination descriptions.
+Listeners and visual clones retire with the table. The new module is in the
+existing shell offline inventory; browser harnesses serve its shared import.
+
+Executed on final source bytes:
+- all 164 focused Node guards pass, zero failures/skips/cancellations;
+- real Chromium pointer test passes click-only inspection, offered destination
+  glow, Escape/wrong-drop cancellation, retained drag on timer paint and one
+  command per land/spell drop using the shared table/session (simulated transport);
+- actual delivered-runtime Forest/Bears driver verifies land placement through
+  the offered command, stale-token rejection without mutation, cast cancellation,
+  real automatic payment plus stack/priority, and recovered duplicate receipt;
+- numeric and text browser checks pass, including explicit confirmation, byte/
+  integer validation, timer input/focus retention and duplicate-click suppression;
+- synthetic 44-card geometry passes all six recorded desktop/landscape widths;
+  inspected the 1920 screenshot. Timing is diagnostic, not a performance claim.
+
+The engine driver rechecks the exact recorded runtime archive, receipt, JS/WASM
+and pinned rules hashes. Source provenance is its verified historical archive
+receipt, not a freshly reconstructed Git source checkout. No binary substitution,
+Rust build or regression assertion change. Exact hashes/outcomes and scoped
+limits: experiments/phase-engine/placement-proof-2026-10-25/.
+
+Limits remain: initial placement applies only to currently offered unambiguous
+moves, including the narrow Bears cast surface. This is not all-card dragging,
+physical touch-device certification, a full owner-route game or another complete
+match receipt. Actual eligible Standard/Commander match acceptance, remaining
+human schemas/pregame, fair calibrated Easy/Medium/Hard and final account route
+remain required. Public readiness stays false. No live release, APK, schema,
+subscription, budget increase, paid engine build or external message occurred.
+Next: carry authoritative announcement/target/payment/combat affordances across
+supported real deck versions and finish the complete owner-facing match gate.

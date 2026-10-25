@@ -1,0 +1,13 @@
+{
+  "browserVersion": "153.0.8010.0",
+  "executableBytes": 209022176,
+  "executableSha256": "53a15d6c3a3d27dfb54c4ba60278b1683136f70cf1e67e989da7dfbd3d451ef0",
+  "checks": [
+    "--version succeeds",
+    "shared text, numeric and placement browser checks pass",
+    "six-width layout check passes"
+  ],
+  "previousExecutableBytes": 0,
+  "downloadObservation": "Playwright CDN install returned an invalid empty archive. A separate HEAD request reported text/html, content-length 195. Reused a functioning local executable instead.",
+  "limits": "Testing dependency only; no browser or engine runtime is added to product assets."
+}

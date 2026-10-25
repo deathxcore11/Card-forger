@@ -1,0 +1,29 @@
+{
+  "provenance": {
+    "archiveSha": "edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b",
+    "wasm": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "glue": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "rulesGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "subsetSha": "54c6939d150a3b5902d1e7d5200996d154cd2df928999ee59483835baab2028e",
+    "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "sourceVerification": "Archive-bound historical receipt; source Git checkout not reverified in this run"
+  },
+  "checks": [
+    "wrong destination leaves real engine unchanged",
+    "land drop uses offered token and enters battlefield",
+    "stale token rejected without mutation",
+    "spell drag cancellation sends nothing",
+    "offered creature cast uses real mana payment and stack priority",
+    "accepted receipt survives recovery without duplicate cast"
+  ],
+  "revision": 2,
+  "networkCalls": 0,
+  "sourceSha256": {
+    "placement-controls-engine.mjs": "5c191b7323adc09de3ed43dd260d6f381970e420b1246ee5a7630ff94e67479a",
+    "card-placement.mjs": "e84ae49658ec58cbaa21488c6a73162a8e370f280425cfc2778ae394f28f3259",
+    "worker-journal.mjs": "568b1cdeb91e62c42ddd41157876c98378223922dce2dc1b34d81903a4a3c984",
+    "seat-surface.mjs": "70176fb74d5eff9d023a406587aeb433e25fbda30dfd25dea836d0e0b4fb4f94"
+  },
+  "limits": "Engineered Forest/Bears placement and journal checks, paired with a separate real-browser simulated-transport pointer test. Not all-card dragging, physical touch or real account match certification."
+}

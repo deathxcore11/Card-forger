@@ -7,7 +7,7 @@ import {join,resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 const routes=new Map();
-for(const file of ['interaction-surface.mjs','protocol-fault.mjs','match-table.mjs','match-table.css','card-stats.mjs','random-outcomes.mjs','protocol-fault.mjs','match-session.mjs','priority-scheduler.mjs'])routes.set('/'+file,await readFile(new URL(file,import.meta.url)));
+for(const file of ['interaction-surface.mjs','protocol-fault.mjs','card-placement.mjs','match-table.mjs','match-table.css','card-stats.mjs','random-outcomes.mjs','protocol-fault.mjs','match-session.mjs','priority-scheduler.mjs'])routes.set('/'+file,await readFile(new URL(file,import.meta.url)));
 routes.set('/',Buffer.from(`<!doctype html><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="match-table.css"><main id="table"></main><script type="module">
 import {mountMatchTable} from './match-table.mjs';import {createMatchSession} from './match-session.mjs';
 const surface={seat:0,turn:1,phase:'PreCombatMain',decision:{kind:'ChooseXValue'},players:[{seat:0,life:20},{seat:1,life:20}],cards:[],hand:[],stack:[],choices:[],canAct:false,awaitingHuman:true,interaction:{canSubmit:true,opportunities:[{interactionId:'numeric-x',type:'number',min:0,max:5,choices:[]}]}};
