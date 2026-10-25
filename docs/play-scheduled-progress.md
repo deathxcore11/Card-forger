@@ -526,3 +526,38 @@ approval has been consumed. Recovering a deliverable corrected runtime requires
 a separately authorized build with this packaging correction. Independent
 controls/board integration work can continue; do not repeat the original OOM
 builds or describe the uploaded evidence archive as containing a runtime.
+
+## October 24, 2026 — visible human/CPU research table and approved rebuild
+
+Verified head 3684bebbe18ceb0c8d0f22909719e78eb57ab613 and recursive instruction
+tree (no AGENTS.md). Owner said to deliver the runtime and controls now, approving
+the packaging-corrected build after the earlier explicit billing explanation.
+Created approval commit b6502b5df93af729c0ce2d3006a0b3d304c5b273 with a guarded
+ref update. Run 40153568000 / job 121049996121 is active; no additional attempt.
+
+Implemented an isolated visible table, controller, explicit selection/confirmation,
+inspection/context menu, bounded worker CPU fixture policy, saved/import snapshot
+bridge and separate construction/support admission. Final local Node result:
+110 pass, zero fail/skip/cancel. Real browser with original pinned WASM: 187
+human button commands and 386 accepted total commands reach GameOver at turn
+22. Cold-offline bottoming and terminal recovery pass without a duplicate move
+or changed final record. A separate visible 30-second expiry check passes:
+warning, one human priority pass, one CPU response, next human choice, unchanged
+life. The countdown reads fresh authority time and preserves menu/inspector DOM.
+
+Actual engine admission accepts a 60-Forest Standard construction control and
+rejects 60 Grizzly Bears for both Standard legality and copy limits. This is
+not realistic Standard gameplay, all-card support or CPU strength evidence.
+The table uses the old three-card Forest/Bears Modern diagnostic fixture and
+text cards, not the user's account decks/art. Both original ninjutsu regressions
+remain untouched and blocking on the old runtime. No product readiness claim.
+
+Exact outcomes/source hashes, corrected test-harness failures and next steps:
+[visible table checkpoint](play-visible-table-checkpoint.md). Runtime/data remain
+external. App-route mounting, shared exact printing/finish rendering, broader
+human target/payment/cancel schemas, proper pregame, admitted real deck versions,
+calibrated difficulties and Practice history remain required. Standard/Commander
+CPU first, then Friends; Draft stays deferred. Nothing published, deployed,
+merged into production, migrated or added to an APK. Continue with active build
+delivery/provenance and preserved ninjutsu/Stifle tests before another engine run.
+

@@ -72,7 +72,7 @@ export function createSeatController({engine,seat,epoch}) {
   const choices=[],seen=new Set(),registry=new Map();
   if(view.decision.supported)for(const [index,action]of list(legal.actions).entries()){
    const text=label(action,view),key=JSON.stringify(action);if(!text||seen.has(key))continue;seen.add(key);
-   const token=`${epoch}:${revision}:${index}`;choices.push({token,label:text,kind:action.type});registry.set(token,{index,key});
+   const token=`${epoch}:${revision}:${index}`;choices.push({token,label:text,kind:action.type,sourceId:view.cards.some(c=>c.id===action.data?.object_id&&c.known)?action.data.object_id:null});registry.set(token,{index,key});
   }
   offered={revision,registry};return {...view,choices,canAct:choices.length>0,
    unavailableReason:legal.actions?.length&&!choices.length?'DECISION_NOT_IMPLEMENTED':null};
@@ -85,3 +85,4 @@ export function createSeatController({engine,seat,epoch}) {
  }
  return {read,select};
 }
+

@@ -1,0 +1,70 @@
+{
+  "provenance": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "runtimeOrigin": "original-upstream-artifact",
+    "buildIdentity": "upstream-run-40129115223-artifact-12574954346",
+    "sourceCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "sourceTree": "3b2a30411991062847d46c2aebd8cee5df2fb4db",
+    "sourceDiffSha256": null,
+    "buildReceiptSha256": null,
+    "glue": "47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd3476cfb70131de6287c9",
+    "wasm": "6057521d851bb8544eaeea467f741b90cd2941aa5ba2fddb17e1bcc3d9933f8f",
+    "integrationFixtureGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "fixtureCardCount": 6137,
+    "loadedNames": [
+      "Forest",
+      "Grizzly Bears",
+      "Lightning Bolt"
+    ],
+    "subsetSha256": "72c599bfff55e80976ed05b624eeded3435ab698be32db2bc4ee2359391d1a42",
+    "subsetBytes": 28121
+  },
+  "files": {
+    "/visible-cpu-policy.mjs": "6fde41a268b1874b2e2817266a8a61a76f2fe63c53efcedcf80f5917ab095fd2",
+    "/visible-policy-worker.mjs": "0c8c5dd513c461c135cf2ee38df77f0fe935ff2f08a8f4be6932af703bdef233",
+    "/table-client.mjs": "8a409a19a80bf8e7bac599a6457ca1d1f6644fdc34a113be33a040c987924a40",
+    "/table-authority.mjs": "c0d1abdafbe94590a0ad10cb9095fc142707e284ceb56ad4703af2b32290867a",
+    "/worker-journal.mjs": "4012d7989793a36ad2cefb2ed15e2a626db95b6b84c0c0be107f1eabf5a85fe5",
+    "/protocol-fault.mjs": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+    "/priority-clock.mjs": "4c939bf6d616ecf582228918bd73094c43b998e0168996961429c8e964707602",
+    "/priority-scheduler.mjs": "d82af4727976497dc1f5cab3948ca1ee394c35865d5e544916a381bc3f839bfa",
+    "/seat-surface.mjs": "2ca66c1e8a49cd40f84c1f8af1e3468a9c3dbeb448f8624a516af991c48571d6",
+    "/interaction-surface.mjs": "a077d3a2936e02cca9f7a17ea825d40ca4bc62f34a2ee6c6db2ee145c941f195",
+    "/smoke-policy-worker.mjs": "b3ca7af308ecb588e96b0c5e388a74ccc69548f5b1907d60529e11c400517f66",
+    "/match-session.mjs": "e66efefa332fbd7bd962555a44d4886f00c09157c5a2b0ee483dfbef28731110",
+    "/match-table.mjs": "e54403f6ef6d59196359ddd028a8cbdcb77d9981576204565ab0613e977ca712",
+    "/match-table.css": "3a7a37f6837c8556e8450bb6c7f14d82fea6fe5fae3f22505a7cf2e2cdfd1215",
+    "/runtime/engine_wasm.js": "47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd3476cfb70131de6287c9",
+    "/runtime/engine_wasm_bg.wasm": "6057521d851bb8544eaeea467f741b90cd2941aa5ba2fddb17e1bcc3d9933f8f",
+    "/runtime/cards.json": "72c599bfff55e80976ed05b624eeded3435ab698be32db2bc4ee2359391d1a42",
+    "/runtime-config.mjs": "e02be628d12ce9e5ef04dd82e0cffae0bb595fd816cca964e61e8ab4b5070b47",
+    "/": "2181a73ed6e181de2b2bf5675b8a9cef04b987a748dcd125560207d9ea860645",
+    "/sw.js": "bd00bfd92d156decc6c71f924b8d64c1f35e238d27f1767e7cf3a1f3927a528d"
+  },
+  "checks": [
+    "visible countdown reads fresh authority time without a game mutation",
+    "visible keep/mulligan/bottom selection",
+    "inspect/context menu/Escape leave revision unchanged",
+    "footer and inspector at three desktop widths",
+    "offline cold-browser resume during bottoming",
+    "clear local selection preserves prompt",
+    "explicit confirmation moves one card",
+    "complete game using visible human buttons and bounded CPU command path",
+    "cold-offline terminal recovery preserves saved history and receipts without another command"
+  ],
+  "limits": "Local research table with unequal Forest/Bears Modern fixtures, no actual account, real card art/finish, calibrated CPU, Standard/Commander admission or all-mechanic controls. Not an owner-ready app preview.",
+  "browser": "153.0.8010.0",
+  "terminal": {
+    "winner": 1
+  },
+  "finalRevision": 386,
+  "finalTurn": 22,
+  "acceptedHuman": 187,
+  "terminalRecord": {
+    "sha256": "64c419dab6ebcbf46a4c4234e71ac5a19aac9c0639c36f57cae8b8285d86d05d",
+    "revision": 386,
+    "history": 386,
+    "receipts": 386
+  },
+  "harnessSha256": "720ddc4e00c251a65a705b701b002927c019c1611d2700ecc1ded5692f57faff"
+}
