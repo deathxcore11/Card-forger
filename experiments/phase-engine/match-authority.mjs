@@ -4,9 +4,12 @@ import {fail} from './protocol-fault.mjs';
 import {projectInteraction} from './interaction-surface.mjs';
 import {makeCpuObservation} from './cpu-public-observation.mjs';
 import {cpuLegalCandidates} from './cpu-legal-candidates.mjs';
+import {createCpuPlaybook} from './cpu-playbook.mjs';
+import {cpuProfile} from './cpu-difficulty-config.mjs';
 import {projectSeat,createSeatController} from './seat-surface.mjs';
 import {projectRandomEvents} from './random-outcomes.mjs';
-export function createMatchAuthority({engine,epoch,mode='human-timed',decks,format,onStart=()=>{},present=view=>view,policyWorker}={}){
+export function createMatchAuthority({engine,epoch,mode='human-timed',decks,format,difficulty='Medium',cpuPlaybookProposals=[],onStart=()=>{},present=view=>view,policyWorker}={}){
+ cpuProfile(difficulty);const playbooks=[createCpuPlaybook(decks?.player,cpuPlaybookProposals[0]),createCpuPlaybook(decks?.opponent,cpuPlaybookProposals[1])];
  const policy=policyWorker||new Worker(new URL('./cpu-public-worker.mjs',import.meta.url),{type:'module'});let seq=0;
  const cpuChoose=(actions,rng,actor)=>new Promise((resolve,reject)=>{
   const id=++seq,timer=setTimeout(()=>{cleanup();policy.terminate();reject(Error('POLICY_TIMEOUT'));},5000);
@@ -14,7 +17,7 @@ export function createMatchAuthority({engine,epoch,mode='human-timed',decks,form
   const onMessage=({data})=>{if(data?.id!==id)return;cleanup();data.error?reject(Error('POLICY_FAILED')):resolve(data);};
   const onError=()=>{cleanup();reject(Error('POLICY_FAILED'));};
   policy.addEventListener('message',onMessage);policy.addEventListener('error',onError);
-  policy.postMessage({id,packet:makeCpuObservation(engine.get_filtered_game_state(actor),actor,actions),rng});
+  policy.postMessage({id,packet:makeCpuObservation(engine.get_filtered_game_state(actor),actor,actions,{difficulty,legal:engine.get_legal_actions_for_viewer_js(actor),playbook:playbooks[actor]}),rng});
  });
  let outcomes=[];
  function observe(result){

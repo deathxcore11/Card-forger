@@ -7,7 +7,8 @@ import {evaluateMatchAdmission} from './match-input.mjs';
 import {PRACTICE_COVERAGE} from './practice-coverage.mjs';
 import {createMatchAuthority} from './match-authority.mjs';
 import {createJournal} from './worker-journal.mjs';
-const VERSION='practice-candidate-v1';
+import {CPU_CONFIGURATION_VERSION} from './cpu-difficulty-config.mjs';
+const VERSION='practice-candidate-v2:'+CPU_CONFIGURATION_VERSION;
 let opening=null,epoch=null,sessionOnly=false;
 export function validPracticeBinding(data){
  return !!data&&typeof data==='object'&&!Array.isArray(data)&&!Object.keys(data).some(k=>!['v','epoch','id','op','ownerId','match','operation','input','sessionOnly'].includes(k))&&data.v===1&&data.id==='bind'&&data.op==='bind'&&/^[-\w]{1,80}$/.test(data.epoch||'')&&['create','resume'].includes(data.operation)&&!(data.operation==='resume'&&Object.hasOwn(data,'input'))&&(!Object.hasOwn(data,'sessionOnly')||typeof data.sessionOnly==='boolean');
@@ -25,7 +26,7 @@ async function boot(data){
  let handler=null;
  if(admission.admitted&&cpuAvailable){
   let presentation=record.getPresentation();
-  const {adapter,choose}=createMatchAuthority({engine,epoch,format,decks:input.engineLists,
+  const {adapter,choose}=createMatchAuthority({engine,epoch,format,decks:input.engineLists,difficulty:input.difficulty,cpuPlaybookProposals:[input.decks.player.practiceCpuPlan,input.decks.opponent.practiceCpuPlan],
    onStart:()=>{presentation=initialPresentation(input,JSON.parse(engine.export_game_state_json()));record.setPresentation(presentation);},
    present:view=>presentInstances(view,presentation)});
   handler=createJournal({engine:adapter,storage:record.storage,choose,version:VERSION+':'+RUNTIME_IDENTITY.wasmSha256+':'+digest,epoch,timing:{matchId:data.match,humanActor:0},turnLimits:data.sessionOnly?{}:null});

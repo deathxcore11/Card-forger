@@ -1,0 +1,2302 @@
+{
+  "task": "CPU-003",
+  "configuration": "cpu-config-v1",
+  "profiles": {
+    "Easy": {
+      "depth": 1,
+      "maxNodes": 24,
+      "maxReplies": 4,
+      "maxMs": 12,
+      "planWeight": 0,
+      "counterWeight": 0
+    },
+    "Medium": {
+      "depth": 2,
+      "maxNodes": 128,
+      "maxReplies": 24,
+      "maxMs": 30,
+      "planWeight": 1,
+      "counterWeight": 0.25
+    },
+    "Hard": {
+      "depth": 3,
+      "maxNodes": 512,
+      "maxReplies": 128,
+      "maxMs": 60,
+      "planWeight": 1.5,
+      "counterWeight": 0.8
+    }
+  },
+  "limits": [
+    "Small deterministic samples; no statistical proof of difficulty ordering.",
+    "Identical decks within each game; paired seeds swap policy seats, first player stays seat 0.",
+    "Direct policy calls with real engine validation; worker separately exercised by tactical tests.",
+    "Latency is this Node host, not signed-in browser/mobile performance.",
+    "No reload recovery or owner account test."
+  ],
+  "games": [
+    {
+      "deck": "starter",
+      "seed": 12345,
+      "levels": [
+        "Easy",
+        "Medium"
+      ],
+      "swapped": false,
+      "deckSha256": "a20d30ed0992ceb7075529569f901036ad8968deb357ea9c366e202a55161aba",
+      "decisions": 239,
+      "policyLatencyMs": {
+        "p50": 0.0265510000026552,
+        "p95": 1.2191709999970044,
+        "max": 113.73220700000093
+      },
+      "enumerationLatencyMs": {
+        "p50": 64.47963299999901,
+        "p95": 347.38100900000063,
+        "max": 2873.0529380000007
+      },
+      "nodes": 149,
+      "budgetExhaustions": 1,
+      "expandedBlocks": 0,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 224,
+        "DeclareAttackers": 8,
+        "DeclareBlockers": 5
+      },
+      "winner": 1,
+      "turn": 12,
+      "status": "COMPLETE",
+      "traceSha256": "8009c3b895869a6762f3dd2db9e65387fef097d3f767a8893f50da475388492a",
+      "tail": [
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  81,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  90,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  115,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  24,
+                  115
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "starter",
+      "seed": 12345,
+      "levels": [
+        "Medium",
+        "Easy"
+      ],
+      "swapped": true,
+      "deckSha256": "a20d30ed0992ceb7075529569f901036ad8968deb357ea9c366e202a55161aba",
+      "decisions": 239,
+      "policyLatencyMs": {
+        "p50": 0.024183999994420446,
+        "p95": 0.4563060000000405,
+        "max": 2.1664849999942817
+      },
+      "enumerationLatencyMs": {
+        "p50": 48.802710999996634,
+        "p95": 207.85553000000073,
+        "max": 317.0433720000001
+      },
+      "nodes": 127,
+      "budgetExhaustions": 1,
+      "expandedBlocks": 0,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 224,
+        "DeclareAttackers": 8,
+        "DeclareBlockers": 5
+      },
+      "winner": 1,
+      "turn": 12,
+      "status": "COMPLETE",
+      "traceSha256": "37d7e94376ed8a516710350b18aa4a49cc67c5f153135f3aac8f28d61bed9798",
+      "tail": [
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  81,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  107,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  115,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  24,
+                  115
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "starter",
+      "seed": 98765,
+      "levels": [
+        "Easy",
+        "Medium"
+      ],
+      "swapped": false,
+      "deckSha256": "a20d30ed0992ceb7075529569f901036ad8968deb357ea9c366e202a55161aba",
+      "decisions": 374,
+      "policyLatencyMs": {
+        "p50": 0.01982000000134576,
+        "p95": 0.38249200000427663,
+        "max": 7.6993729999958305
+      },
+      "enumerationLatencyMs": {
+        "p50": 40.32689100000425,
+        "p95": 117.53310899999633,
+        "max": 2195.6050959999993
+      },
+      "nodes": 362,
+      "budgetExhaustions": 4,
+      "expandedBlocks": 191,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 348,
+        "DiscardToHandSize": 1,
+        "DeclareAttackers": 13,
+        "DeclareBlockers": 7,
+        "ChooseLegend": 1,
+        "AssignCombatDamage": 2
+      },
+      "winner": 0,
+      "turn": 17,
+      "status": "COMPLETE",
+      "traceSha256": "7aa7e5e0aabf0c2a684a6985396bb72fc5f97f21019d0ab7db6f89c179cc80fa",
+      "tail": [
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  53,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "starter",
+      "seed": 98765,
+      "levels": [
+        "Medium",
+        "Easy"
+      ],
+      "swapped": true,
+      "deckSha256": "a20d30ed0992ceb7075529569f901036ad8968deb357ea9c366e202a55161aba",
+      "decisions": 442,
+      "policyLatencyMs": {
+        "p50": 0.02418999999645166,
+        "p95": 0.3913520000060089,
+        "max": 17.60973900000681
+      },
+      "enumerationLatencyMs": {
+        "p50": 52.52436099998886,
+        "p95": 170.68566700001247,
+        "max": 3299.7096130000136
+      },
+      "nodes": 728,
+      "budgetExhaustions": 9,
+      "expandedBlocks": 118,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 416,
+        "DiscardToHandSize": 1,
+        "DeclareAttackers": 17,
+        "DeclareBlockers": 5,
+        "ChooseLegend": 1
+      },
+      "winner": 1,
+      "turn": 22,
+      "status": "COMPLETE",
+      "traceSha256": "82121b9b458aa8206abbd976755820ffd6b7e14d312ead418d79464039ce3bbc",
+      "tail": [
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  88,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  110,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  112,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  14,
+                  88
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "starter",
+      "seed": 12345,
+      "levels": [
+        "Medium",
+        "Hard"
+      ],
+      "swapped": false,
+      "deckSha256": "a20d30ed0992ceb7075529569f901036ad8968deb357ea9c366e202a55161aba",
+      "decisions": 352,
+      "policyLatencyMs": {
+        "p50": 0.022041000018361956,
+        "p95": 0.9975799999956507,
+        "max": 23.152220000018133
+      },
+      "enumerationLatencyMs": {
+        "p50": 63.73812200000975,
+        "p95": 272.7265410000109,
+        "max": 3362.9245929999743
+      },
+      "nodes": 1649,
+      "budgetExhaustions": 3,
+      "expandedBlocks": 113,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 332,
+        "DeclareAttackers": 13,
+        "DeclareBlockers": 4,
+        "ChooseLegend": 1
+      },
+      "winner": 1,
+      "turn": 18,
+      "status": "COMPLETE",
+      "traceSha256": "34fa991a8e3ba22dfd450f41d1a3e21d255c8153394da30aa84bf5deb263e860",
+      "tail": [
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  73,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  81,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  90,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  94,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  107,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  119,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  12,
+                  81
+                ],
+                [
+                  24,
+                  73
+                ],
+                [
+                  43,
+                  107
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "starter",
+      "seed": 12345,
+      "levels": [
+        "Hard",
+        "Medium"
+      ],
+      "swapped": true,
+      "deckSha256": "a20d30ed0992ceb7075529569f901036ad8968deb357ea9c366e202a55161aba",
+      "decisions": 277,
+      "policyLatencyMs": {
+        "p50": 0.03511100000469014,
+        "p95": 1.3266780000049039,
+        "max": 8.914758999999322
+      },
+      "enumerationLatencyMs": {
+        "p50": 86.26438399999824,
+        "p95": 597.8143730000011,
+        "max": 1795.2441959999996
+      },
+      "nodes": 314,
+      "budgetExhaustions": 0,
+      "expandedBlocks": 9,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 259,
+        "DeclareAttackers": 10,
+        "DeclareBlockers": 6
+      },
+      "winner": 1,
+      "turn": 14,
+      "status": "COMPLETE",
+      "traceSha256": "26e35da7bd7a79345abe08a181f9d1c281db01fa3774e5980df7b0e027421a94",
+      "tail": [
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  81,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  90,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  107,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  24,
+                  81
+                ],
+                [
+                  43,
+                  107
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "starter",
+      "seed": 12345,
+      "levels": [
+        "Easy",
+        "Hard"
+      ],
+      "swapped": false,
+      "deckSha256": "a20d30ed0992ceb7075529569f901036ad8968deb357ea9c366e202a55161aba",
+      "decisions": 360,
+      "policyLatencyMs": {
+        "p50": 0.0347440000041388,
+        "p95": 1.1496820000029402,
+        "max": 10.388119000010192
+      },
+      "enumerationLatencyMs": {
+        "p50": 84.66379099999904,
+        "p95": 439.41960199997993,
+        "max": 1772.2543719999958
+      },
+      "nodes": 825,
+      "budgetExhaustions": 2,
+      "expandedBlocks": 117,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 338,
+        "DeclareAttackers": 13,
+        "DeclareBlockers": 5,
+        "ChooseLegend": 1,
+        "AssignCombatDamage": 1
+      },
+      "winner": 1,
+      "turn": 18,
+      "status": "COMPLETE",
+      "traceSha256": "40f2ac7ad042899b5739b9ee16814d18627f4a1398c46e5cb833706c47267e0f",
+      "tail": [
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  73,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  81,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  94,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  119,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  1,
+                  119
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "starter",
+      "seed": 98765,
+      "levels": [
+        "Hard",
+        "Easy"
+      ],
+      "swapped": true,
+      "deckSha256": "a20d30ed0992ceb7075529569f901036ad8968deb357ea9c366e202a55161aba",
+      "decisions": 460,
+      "policyLatencyMs": {
+        "p50": 0.027744000020902604,
+        "p95": 0.7763770000019576,
+        "max": 10.081440000009025
+      },
+      "enumerationLatencyMs": {
+        "p50": 56.36898200001451,
+        "p95": 154.05593699999736,
+        "max": 2062.864036999992
+      },
+      "nodes": 1654,
+      "budgetExhaustions": 7,
+      "expandedBlocks": 235,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 433,
+        "DiscardToHandSize": 1,
+        "DeclareAttackers": 18,
+        "DeclareBlockers": 5,
+        "ChooseLegend": 1
+      },
+      "winner": 0,
+      "turn": 23,
+      "status": "COMPLETE",
+      "traceSha256": "6db3426e858d099477b33111ad614b384800546acb75c3b74ba88a2fe9c2ebe2",
+      "tail": [
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  3,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  14,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  32,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  45,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  53,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  71,
+                  32
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "large",
+      "seed": 31415,
+      "levels": [
+        "Medium",
+        "Hard"
+      ],
+      "swapped": false,
+      "deckSha256": "9e488b9ebf3d42dd06c97587bf79bdf08fd05edcbbfb062d7624cc158be756f9",
+      "decisions": 521,
+      "policyLatencyMs": {
+        "p50": 0.034635999996680766,
+        "p95": 1.5288319999817759,
+        "max": 15.62986099999398
+      },
+      "enumerationLatencyMs": {
+        "p50": 69.6195229999721,
+        "p95": 203.18115000001853,
+        "max": 5461.629149999993
+      },
+      "nodes": 4600,
+      "budgetExhaustions": 9,
+      "expandedBlocks": 464,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 492,
+        "DeclareAttackers": 21,
+        "DeclareBlockers": 5,
+        "AssignCombatDamage": 1
+      },
+      "winner": 0,
+      "turn": 23,
+      "status": "COMPLETE",
+      "traceSha256": "f05cf581bc1376e68c5e73167355d6419be88fdaeff62ac78e1de48d6590bad8",
+      "tail": [
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  18,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  23,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  33,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  37,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  42,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  52,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  60,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  78,
+                  33
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "starter",
+      "seed": 98765,
+      "levels": [
+        "Medium",
+        "Hard"
+      ],
+      "swapped": false,
+      "deckSha256": "a20d30ed0992ceb7075529569f901036ad8968deb357ea9c366e202a55161aba",
+      "decisions": 443,
+      "policyLatencyMs": {
+        "p50": 0.025831999999354593,
+        "p95": 0.8994090000051074,
+        "max": 20.875221000009333
+      },
+      "enumerationLatencyMs": {
+        "p50": 66.04545099999814,
+        "p95": 246.2552580000047,
+        "max": 3891.490042000005
+      },
+      "nodes": 3746,
+      "budgetExhaustions": 9,
+      "expandedBlocks": 111,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 417,
+        "DiscardToHandSize": 1,
+        "DeclareAttackers": 18,
+        "DeclareBlockers": 4,
+        "ChooseLegend": 1
+      },
+      "winner": 1,
+      "turn": 22,
+      "status": "COMPLETE",
+      "traceSha256": "bd478b939893730f1d71949b7afa48de7d1be65b2fcf73793cb41607ccb7547a",
+      "tail": [
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  71,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  80,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  84,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  88,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  92,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  110,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  112,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  116,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  3,
+                  71
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "starter",
+      "seed": 12345,
+      "levels": [
+        "Hard",
+        "Easy"
+      ],
+      "swapped": true,
+      "deckSha256": "a20d30ed0992ceb7075529569f901036ad8968deb357ea9c366e202a55161aba",
+      "decisions": 277,
+      "policyLatencyMs": {
+        "p50": 0.02206800000567455,
+        "p95": 0.7535400000051595,
+        "max": 94.83233400000609
+      },
+      "enumerationLatencyMs": {
+        "p50": 78.392789000005,
+        "p95": 534.152402000007,
+        "max": 1821.9527890000027
+      },
+      "nodes": 205,
+      "budgetExhaustions": 2,
+      "expandedBlocks": 9,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 259,
+        "DeclareAttackers": 10,
+        "DeclareBlockers": 6
+      },
+      "winner": 1,
+      "turn": 14,
+      "status": "COMPLETE",
+      "traceSha256": "a025c312e7ce0a9cd6735c7436f44915f095e9f59dee152c34c056b7bcd5fa26",
+      "tail": [
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  81,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  90,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  107,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  24,
+                  81
+                ],
+                [
+                  43,
+                  107
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "small",
+      "seed": 31415,
+      "levels": [
+        "Medium",
+        "Hard"
+      ],
+      "swapped": false,
+      "deckSha256": "0a01cc89a30c6a33fa4b411f4dc0f8552aa4183ed481c21b700ca9b2c1d04eb1",
+      "decisions": 1011,
+      "policyLatencyMs": {
+        "p50": 0.02200900000752881,
+        "p95": 1.0963489999994636,
+        "max": 37.926760000002105
+      },
+      "enumerationLatencyMs": {
+        "p50": 97.089999000018,
+        "p95": 243.53716600005282,
+        "max": 3909.096749999997
+      },
+      "nodes": 10219,
+      "budgetExhaustions": 29,
+      "expandedBlocks": 456,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 951,
+        "DeclareAttackers": 49,
+        "DeclareBlockers": 8,
+        "AssignCombatDamage": 1
+      },
+      "winner": 1,
+      "turn": 52,
+      "status": "COMPLETE",
+      "traceSha256": "871c16a2d2141b998b7b9e93d951366f408c998b5f94638d56a076f3e1b77a61",
+      "tail": [
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  63,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  64,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  70,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  73,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  79,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  82,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  109,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  116,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  28,
+                  64
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "large",
+      "seed": 31415,
+      "levels": [
+        "Hard",
+        "Medium"
+      ],
+      "swapped": true,
+      "deckSha256": "9e488b9ebf3d42dd06c97587bf79bdf08fd05edcbbfb062d7624cc158be756f9",
+      "decisions": 333,
+      "policyLatencyMs": {
+        "p50": 0.016673000005539507,
+        "p95": 0.4104700000025332,
+        "max": 2.638983999961056
+      },
+      "enumerationLatencyMs": {
+        "p50": 50.27950000000419,
+        "p95": 169.26822900003754,
+        "max": 704.6076730000204
+      },
+      "nodes": 725,
+      "budgetExhaustions": 1,
+      "expandedBlocks": 79,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 314,
+        "DeclareAttackers": 12,
+        "DeclareBlockers": 4,
+        "AssignCombatDamage": 1
+      },
+      "winner": 1,
+      "turn": 16,
+      "status": "COMPLETE",
+      "traceSha256": "83b38e39f182110221595ebbdd448e9454600d29c3c69c3bb787daf7c2757cde",
+      "tail": [
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  63,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  72,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  78,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  81,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  23,
+                  63
+                ],
+                [
+                  53,
+                  63
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "AssignCombatDamage",
+            "data": {
+              "mode": "Normal",
+              "assignments": [
+                [
+                  23,
+                  5
+                ],
+                [
+                  53,
+                  2
+                ]
+              ],
+              "trample_damage": 0,
+              "controller_damage": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "deck": "starter",
+      "seed": 98765,
+      "levels": [
+        "Hard",
+        "Medium"
+      ],
+      "swapped": true,
+      "deckSha256": "a20d30ed0992ceb7075529569f901036ad8968deb357ea9c366e202a55161aba",
+      "decisions": 429,
+      "policyLatencyMs": {
+        "p50": 0.028701999995973893,
+        "p95": 1.0506580000001122,
+        "max": 21.1761259999912
+      },
+      "enumerationLatencyMs": {
+        "p50": 68.74166400000104,
+        "p95": 214.58442500000092,
+        "max": 3035.0219779999898
+      },
+      "nodes": 2943,
+      "budgetExhaustions": 8,
+      "expandedBlocks": 112,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 403,
+        "DiscardToHandSize": 1,
+        "DeclareAttackers": 17,
+        "DeclareBlockers": 4,
+        "ChooseLegend": 1,
+        "AssignCombatDamage": 1
+      },
+      "winner": 1,
+      "turn": 20,
+      "status": "COMPLETE",
+      "traceSha256": "edd82b26a07696655166f7b88d7d527acdadb03a3bf0f92f774ddab533539612",
+      "tail": [
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  80,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  84,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  88,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  92,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  106,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  112,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  116,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  32,
+                  84
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "starter",
+      "seed": 98765,
+      "levels": [
+        "Easy",
+        "Hard"
+      ],
+      "swapped": false,
+      "deckSha256": "a20d30ed0992ceb7075529569f901036ad8968deb357ea9c366e202a55161aba",
+      "decisions": 354,
+      "policyLatencyMs": {
+        "p50": 0.025746999992406927,
+        "p95": 0.8363050000043586,
+        "max": 10.044098999991547
+      },
+      "enumerationLatencyMs": {
+        "p50": 66.50233999999182,
+        "p95": 235.56466200000432,
+        "max": 4334.978745
+      },
+      "nodes": 977,
+      "budgetExhaustions": 4,
+      "expandedBlocks": 115,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 332,
+        "DiscardToHandSize": 1,
+        "DeclareAttackers": 13,
+        "DeclareBlockers": 4,
+        "ChooseLegend": 1,
+        "AssignCombatDamage": 1
+      },
+      "winner": 0,
+      "turn": 17,
+      "status": "COMPLETE",
+      "traceSha256": "c5c87746786c278aefa977da69f0e9dcc233d50bfae61ef20da65786621af2d2",
+      "tail": [
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  45,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  53,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    },
+    {
+      "deck": "small",
+      "seed": 31415,
+      "levels": [
+        "Hard",
+        "Medium"
+      ],
+      "swapped": true,
+      "deckSha256": "0a01cc89a30c6a33fa4b411f4dc0f8552aa4183ed481c21b700ca9b2c1d04eb1",
+      "decisions": 731,
+      "policyLatencyMs": {
+        "p50": 0.021864999987883493,
+        "p95": 1.0830129999958444,
+        "max": 32.3232480000006
+      },
+      "enumerationLatencyMs": {
+        "p50": 122.43207199999597,
+        "p95": 266.298758000019,
+        "max": 4530.059468000021
+      },
+      "nodes": 7480,
+      "budgetExhaustions": 19,
+      "expandedBlocks": 422,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 688,
+        "DeclareAttackers": 35,
+        "DeclareBlockers": 6
+      },
+      "winner": 0,
+      "turn": 37,
+      "status": "COMPLETE",
+      "traceSha256": "0a21ea8dbeb677c7604cfe769e0f53545e2ddbbd123ffe450b9f04bbd53a31de",
+      "tail": [
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  5,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  14,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  23,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  27,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  37,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  42,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  46,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  53,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  56,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  84,
+                  5
+                ],
+                [
+                  119,
+                  23
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    }
+  ],
+  "counts": {
+    "complete": 16,
+    "errors": 0,
+    "limits": 0,
+    "decisions": 6842
+  },
+  "pairResults": {
+    "starter:Easy/Medium": {
+      "games": 4,
+      "wins": {
+        "Medium": 1,
+        "Easy": 3
+      }
+    },
+    "starter:Hard/Medium": {
+      "games": 4,
+      "wins": {
+        "Hard": 2,
+        "Medium": 2
+      }
+    },
+    "starter:Easy/Hard": {
+      "games": 4,
+      "wins": {
+        "Hard": 2,
+        "Easy": 2
+      }
+    },
+    "large:Hard/Medium": {
+      "games": 2,
+      "wins": {
+        "Medium": 2
+      }
+    },
+    "small:Hard/Medium": {
+      "games": 2,
+      "wins": {
+        "Hard": 2
+      }
+    }
+  },
+  "sources": {
+    "cpu-public-observation.mjs": "2b609f5547ffe58d2a3252c40ca3e7a5bfc266700be3da4eb95f736c3a629ade",
+    "cpu-combat-evaluation.mjs": "85c366be13c77ebb05f3107d44761153b7f23685ee299a2355d79e90a5ac399e",
+    "cpu-public-policy.mjs": "a4050ff5a84c2ba82acf6c63535a54947fbc7aa4d7fa1b39e6eff77db9c322bb",
+    "cpu-difficulty-config.mjs": "0c2998a0a13848e959d9428d8e792933edb81fc130d3d67e48ace51fb04d404b",
+    "cpu-playbook.mjs": "b6e1c38dccbe79ba87a0fe4ea73037ac7960862c3d77ccc2d08a6ec5cbe9be2c",
+    "cpu-hand-observation.mjs": "601144c3beea2d095620c27de2e27958b305bf59471da3ee8e7a49e057a25efd",
+    "cpu-tactical-planning.mjs": "f392763bc560ebac56a8b6bd5957654ec8503fc072cc3daf94e97e483184b3a9",
+    "cpu-legal-candidates.mjs": "0fb5f513a024be6f91ccd45c3860b1ba526635c78c399a6d5bd0d5ea0d04bc7e",
+    "cpu-calibration-engine.mjs": "cf5fdbf09f34bf0d50f1e3a5f91f61901933ab5cd0a52b2be007f07e04895da0"
+  },
+  "executionBatches": [
+    {
+      "execution": {
+        "offset": 0,
+        "prefixGames": 5
+      },
+      "sources": {
+        "cpu-node-worker.mjs": "5ad81eae4b2173771faba50cab4f51231374bb41de3f01e7806d6579d7ca92b0",
+        "cpu-combat-evaluation.mjs": "85c366be13c77ebb05f3107d44761153b7f23685ee299a2355d79e90a5ac399e",
+        "cpu-public-policy.mjs": "a4050ff5a84c2ba82acf6c63535a54947fbc7aa4d7fa1b39e6eff77db9c322bb",
+        "cpu-public-observation.mjs": "2b609f5547ffe58d2a3252c40ca3e7a5bfc266700be3da4eb95f736c3a629ade",
+        "cpu-test-runtime.mjs": "cb61a6e28ba5e119ea62ccf1f4b520e9360291648303e7f56ee62bb9be28e927",
+        "cpu-difficulty-config.mjs": "0c2998a0a13848e959d9428d8e792933edb81fc130d3d67e48ace51fb04d404b",
+        "cpu-playbook.mjs": "b6e1c38dccbe79ba87a0fe4ea73037ac7960862c3d77ccc2d08a6ec5cbe9be2c",
+        "cpu-hand-observation.mjs": "601144c3beea2d095620c27de2e27958b305bf59471da3ee8e7a49e057a25efd",
+        "cpu-baseline-engine.mjs": "f3532b473d5de809ef3b631dc7c269fcd9422b05b177f210c711cbf935066617",
+        "cpu-discard-engine.mjs": "c85bf4462910b2c02a5495b0d5725daca19d5428615d95a968817d739137b2d6",
+        "cpu-tactical-planning.mjs": "f392763bc560ebac56a8b6bd5957654ec8503fc072cc3daf94e97e483184b3a9",
+        "cpu-legal-candidates.mjs": "0fb5f513a024be6f91ccd45c3860b1ba526635c78c399a6d5bd0d5ea0d04bc7e",
+        "cpu-calibration-engine.mjs": "ee23687f2bd8aa2e3c7688255298ad56144dd652299022f377530e207b6f64c7",
+        "cpu-survival-engine.mjs": "30d0c3850fe60a379b02023b9ac4fc485af685cc8d0ae63c481e8f39fb7916ca",
+        "cpu-public-worker.mjs": "8a5c4c16aa20b5addcade8a9de1d6aefda58aadd09fd9eab4a68ce0da83e243d"
+      },
+      "harnessSha256": "ee23687f2bd8aa2e3c7688255298ad56144dd652299022f377530e207b6f64c7"
+    },
+    {
+      "execution": {
+        "offset": 5,
+        "shard": 0,
+        "shards": 3
+      },
+      "sources": {
+        "cpu-public-observation.mjs": "2b609f5547ffe58d2a3252c40ca3e7a5bfc266700be3da4eb95f736c3a629ade",
+        "cpu-combat-evaluation.mjs": "85c366be13c77ebb05f3107d44761153b7f23685ee299a2355d79e90a5ac399e",
+        "cpu-public-policy.mjs": "a4050ff5a84c2ba82acf6c63535a54947fbc7aa4d7fa1b39e6eff77db9c322bb",
+        "cpu-difficulty-config.mjs": "0c2998a0a13848e959d9428d8e792933edb81fc130d3d67e48ace51fb04d404b",
+        "cpu-playbook.mjs": "b6e1c38dccbe79ba87a0fe4ea73037ac7960862c3d77ccc2d08a6ec5cbe9be2c",
+        "cpu-hand-observation.mjs": "601144c3beea2d095620c27de2e27958b305bf59471da3ee8e7a49e057a25efd",
+        "cpu-tactical-planning.mjs": "f392763bc560ebac56a8b6bd5957654ec8503fc072cc3daf94e97e483184b3a9",
+        "cpu-legal-candidates.mjs": "0fb5f513a024be6f91ccd45c3860b1ba526635c78c399a6d5bd0d5ea0d04bc7e",
+        "cpu-calibration-engine.mjs": "cf5fdbf09f34bf0d50f1e3a5f91f61901933ab5cd0a52b2be007f07e04895da0"
+      },
+      "harnessSha256": null
+    },
+    {
+      "execution": {
+        "offset": 5,
+        "shard": 1,
+        "shards": 3
+      },
+      "sources": {
+        "cpu-public-observation.mjs": "2b609f5547ffe58d2a3252c40ca3e7a5bfc266700be3da4eb95f736c3a629ade",
+        "cpu-combat-evaluation.mjs": "85c366be13c77ebb05f3107d44761153b7f23685ee299a2355d79e90a5ac399e",
+        "cpu-public-policy.mjs": "a4050ff5a84c2ba82acf6c63535a54947fbc7aa4d7fa1b39e6eff77db9c322bb",
+        "cpu-difficulty-config.mjs": "0c2998a0a13848e959d9428d8e792933edb81fc130d3d67e48ace51fb04d404b",
+        "cpu-playbook.mjs": "b6e1c38dccbe79ba87a0fe4ea73037ac7960862c3d77ccc2d08a6ec5cbe9be2c",
+        "cpu-hand-observation.mjs": "601144c3beea2d095620c27de2e27958b305bf59471da3ee8e7a49e057a25efd",
+        "cpu-tactical-planning.mjs": "f392763bc560ebac56a8b6bd5957654ec8503fc072cc3daf94e97e483184b3a9",
+        "cpu-legal-candidates.mjs": "0fb5f513a024be6f91ccd45c3860b1ba526635c78c399a6d5bd0d5ea0d04bc7e",
+        "cpu-calibration-engine.mjs": "cf5fdbf09f34bf0d50f1e3a5f91f61901933ab5cd0a52b2be007f07e04895da0"
+      },
+      "harnessSha256": null
+    },
+    {
+      "execution": {
+        "offset": 5,
+        "shard": 2,
+        "shards": 3
+      },
+      "sources": {
+        "cpu-public-observation.mjs": "2b609f5547ffe58d2a3252c40ca3e7a5bfc266700be3da4eb95f736c3a629ade",
+        "cpu-combat-evaluation.mjs": "85c366be13c77ebb05f3107d44761153b7f23685ee299a2355d79e90a5ac399e",
+        "cpu-public-policy.mjs": "a4050ff5a84c2ba82acf6c63535a54947fbc7aa4d7fa1b39e6eff77db9c322bb",
+        "cpu-difficulty-config.mjs": "0c2998a0a13848e959d9428d8e792933edb81fc130d3d67e48ace51fb04d404b",
+        "cpu-playbook.mjs": "b6e1c38dccbe79ba87a0fe4ea73037ac7960862c3d77ccc2d08a6ec5cbe9be2c",
+        "cpu-hand-observation.mjs": "601144c3beea2d095620c27de2e27958b305bf59471da3ee8e7a49e057a25efd",
+        "cpu-tactical-planning.mjs": "f392763bc560ebac56a8b6bd5957654ec8503fc072cc3daf94e97e483184b3a9",
+        "cpu-legal-candidates.mjs": "0fb5f513a024be6f91ccd45c3860b1ba526635c78c399a6d5bd0d5ea0d04bc7e",
+        "cpu-calibration-engine.mjs": "cf5fdbf09f34bf0d50f1e3a5f91f61901933ab5cd0a52b2be007f07e04895da0"
+      },
+      "harnessSha256": null
+    }
+  ]
+}

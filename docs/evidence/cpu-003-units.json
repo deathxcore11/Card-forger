@@ -1,0 +1,13 @@
+{
+  "command": "node --test experiments/phase-engine/test-cpu-difficulties.mjs experiments/phase-engine/test-cpu-public-observation.mjs experiments/phase-engine/test-damage-interaction.mjs",
+  "counts": {
+    "PASS": 19,
+    "FAIL": 0
+  },
+  "stdout": "\u2714 Medium finds a two-spell sequence Easy does not search (4.133414ms)\n\u2714 Hard finds a three-spell sequence beyond Medium depth (0.939706ms)\n\u2714 search uses only own supplied hand and cannot spend future discount below colored costs (0.790042ms)\n\u2714 deterministic node budgets and timed fallback always return a supplied candidate (17.132681ms)\n\u2714 all levels choose the life-saving trade and never randomize into the losing line (7.612924ms)\n\u2714 a proposed deck plan is bound to the exact own deck and declared dependencies (0.500127ms)\n\u2714 labels remain gated and unknown profiles fail explicitly (0.930676ms)\n\u2714 private identities, IDs, history and game RNG never reach policy (13.614381ms)\n\u2714 hidden-card substitutions and private RNG changes cannot alter any profile decision (7.792461ms)\n\u2714 all untapped actual attackers are retained; tapped bystanders are excluded (0.495212ms)\n\u2714 changing a defender to a public permanent does not invent player damage (0.533244ms)\n\u2714 unknown protected and face-down public objects downgrade confidence (1.461202ms)\n\u2714 foreign projection rejected before policy data is built (1.302317ms)\n\u2714 safe trade beats immediate loss without recognizing a card name (0.735599ms)\n\u2714 a costly chump at healthy life is not rewarded automatically (0.403462ms)\n\u2714 damage projection retains exact engine targets, totals and modes only for the permitted seat (7.188141ms)\n\u2714 damage ingress rejects duplicate targets, fractional/negative/overflow amounts and injected fields (2.665776ms)\n\u2714 damage draft sends nothing until confirmation and duplicate confirmation cannot submit twice (13.865386ms)\n\u2714 CPU can choose an engine-authored damage split without receiving handles or hidden identities (7.269936ms)\n\u2139 tests 19\n\u2139 suites 0\n\u2139 pass 19\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 320.199624\n",
+  "sources": {
+    "test-cpu-difficulties.mjs": "c98463ae782c5029cb6c37e50fcae9608f89a3649482998bacae5bc63fec493f",
+    "test-cpu-public-observation.mjs": "0a1e4def57d0a2df8626ec287d73cd9888a75c185d8f8bf4a52b9d3c7fd2c1dd",
+    "test-damage-interaction.mjs": "b0ec95309e77a1df477d8eab0cf6be7818e5c8fc1b02b52d2548eaf388d3d302"
+  }
+}
