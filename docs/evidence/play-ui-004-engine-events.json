@@ -1,0 +1,1392 @@
+[
+  {
+    "diagnostic": "Worker started · fixture 5"
+  },
+  {
+    "diagnostic": "Fetching /experiments/phase-engine/runtime/a86578b23adcd26c/manifest.json"
+  },
+  {
+    "diagnostic": "Received /experiments/phase-engine/runtime/a86578b23adcd26c/manifest.json (200)"
+  },
+  {
+    "diagnostic": "Read 1784 bytes from /experiments/phase-engine/runtime/a86578b23adcd26c/manifest.json"
+  },
+  {
+    "diagnostic": "Fetching /experiments/phase-engine/runtime/a86578b23adcd26c/engine_wasm.js"
+  },
+  {
+    "diagnostic": "Received /experiments/phase-engine/runtime/a86578b23adcd26c/engine_wasm.js (200)"
+  },
+  {
+    "diagnostic": "Read 72311 bytes from /experiments/phase-engine/runtime/a86578b23adcd26c/engine_wasm.js"
+  },
+  {
+    "diagnostic": "Fetching /experiments/phase-engine/runtime/a86578b23adcd26c/wasm.part-00.bin"
+  },
+  {
+    "diagnostic": "Received /experiments/phase-engine/runtime/a86578b23adcd26c/wasm.part-00.bin (200)"
+  },
+  {
+    "diagnostic": "Read 16777216 bytes from /experiments/phase-engine/runtime/a86578b23adcd26c/wasm.part-00.bin"
+  },
+  {
+    "diagnostic": "Fetching /experiments/phase-engine/runtime/a86578b23adcd26c/wasm.part-01.bin"
+  },
+  {
+    "diagnostic": "Received /experiments/phase-engine/runtime/a86578b23adcd26c/wasm.part-01.bin (200)"
+  },
+  {
+    "diagnostic": "Read 16777216 bytes from /experiments/phase-engine/runtime/a86578b23adcd26c/wasm.part-01.bin"
+  },
+  {
+    "diagnostic": "Fetching /experiments/phase-engine/runtime/a86578b23adcd26c/wasm.part-02.bin"
+  },
+  {
+    "diagnostic": "Received /experiments/phase-engine/runtime/a86578b23adcd26c/wasm.part-02.bin (200)"
+  },
+  {
+    "diagnostic": "Read 4432422 bytes from /experiments/phase-engine/runtime/a86578b23adcd26c/wasm.part-02.bin"
+  },
+  {
+    "diagnostic": "Fetching /experiments/phase-engine/runtime/a86578b23adcd26c/card-rules.bin"
+  },
+  {
+    "diagnostic": "Received /experiments/phase-engine/runtime/a86578b23adcd26c/card-rules.bin (200)"
+  },
+  {
+    "diagnostic": "Read 3536582 bytes from /experiments/phase-engine/runtime/a86578b23adcd26c/card-rules.bin"
+  },
+  {
+    "receipt": {
+      "runtime": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+      "seed": 4119,
+      "evidence": "Engineered position; real engine and production UI/session. Not a full match, production CPU, Commander or account test."
+    }
+  },
+  {
+    "ui": {
+      "pending": null,
+      "busy": true,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 0,
+      "pending": null,
+      "busy": true,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 0,
+      "pending": null,
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "evidence": {
+      "revision": 0,
+      "phase": "DeclareBlockers",
+      "decision": "DeclareBlockers",
+      "life": [
+        20,
+        20
+      ],
+      "cards": [
+        {
+          "id": 1,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 2,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 3,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 4,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 8,
+          "name": "Scarecrow Guide",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 24,
+          "name": "Ordinary Bear",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 28,
+          "name": "Llanowar Elves",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 61,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 62,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 63,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 64,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 68,
+          "name": "Lashwhip Predator",
+          "zone": "Battlefield",
+          "tapped": true,
+          "damage": 0
+        },
+        {
+          "id": 91,
+          "name": "Tapestry Warden",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 96,
+          "name": "Bear Cub",
+          "zone": "Battlefield",
+          "tapped": true,
+          "damage": 0
+        }
+      ],
+      "mutations": []
+    }
+  },
+  {
+    "ui": {
+      "revision": 0,
+      "pending": null,
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 0,
+      "pending": null,
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "evidence": {
+      "revision": 0,
+      "phase": "DeclareBlockers",
+      "decision": "DeclareBlockers",
+      "life": [
+        20,
+        20
+      ],
+      "cards": [
+        {
+          "id": 1,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 2,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 3,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 4,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 8,
+          "name": "Scarecrow Guide",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 24,
+          "name": "Ordinary Bear",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 28,
+          "name": "Llanowar Elves",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 61,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 62,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 63,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 64,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 68,
+          "name": "Lashwhip Predator",
+          "zone": "Battlefield",
+          "tapped": true,
+          "damage": 0
+        },
+        {
+          "id": 91,
+          "name": "Tapestry Warden",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 96,
+          "name": "Bear Cub",
+          "zone": "Battlefield",
+          "tapped": true,
+          "damage": 0
+        }
+      ],
+      "mutations": []
+    }
+  },
+  {
+    "ui": {
+      "revision": 0,
+      "pending": {
+        "interactionId": "wasm-709f5c9af31ba814.0.8",
+        "type": "relations",
+        "relations": [
+          {
+            "sourceId": "wasm-709f5c9af31ba814.0.8.r1",
+            "targetId": "wasm-709f5c9af31ba814.0.8.d0",
+            "group": null
+          }
+        ],
+        "revision": 0
+      },
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 0,
+      "pending": {
+        "interactionId": "wasm-709f5c9af31ba814.0.8",
+        "type": "relations",
+        "relations": [
+          {
+            "sourceId": "wasm-709f5c9af31ba814.0.8.r1",
+            "targetId": "wasm-709f5c9af31ba814.0.8.d2",
+            "group": null
+          }
+        ],
+        "revision": 0
+      },
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 0,
+      "pending": null,
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 0,
+      "pending": {
+        "interactionId": "wasm-709f5c9af31ba814.0.8",
+        "type": "relations",
+        "relations": [
+          {
+            "sourceId": "wasm-709f5c9af31ba814.0.8.r1",
+            "targetId": "wasm-709f5c9af31ba814.0.8.d2",
+            "group": null
+          }
+        ],
+        "revision": 0
+      },
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 0,
+      "pending": {
+        "interactionId": "wasm-709f5c9af31ba814.0.8",
+        "type": "relations",
+        "relations": [
+          {
+            "sourceId": "wasm-709f5c9af31ba814.0.8.r1",
+            "targetId": "wasm-709f5c9af31ba814.0.8.d2",
+            "group": null
+          },
+          {
+            "sourceId": "wasm-709f5c9af31ba814.0.8.r2",
+            "targetId": "wasm-709f5c9af31ba814.0.8.d1",
+            "group": null
+          }
+        ],
+        "revision": 0
+      },
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 0,
+      "pending": {
+        "interactionId": "wasm-709f5c9af31ba814.0.8",
+        "type": "relations",
+        "relations": [
+          {
+            "sourceId": "wasm-709f5c9af31ba814.0.8.r1",
+            "targetId": "wasm-709f5c9af31ba814.0.8.d2",
+            "group": null
+          },
+          {
+            "sourceId": "wasm-709f5c9af31ba814.0.8.r2",
+            "targetId": "wasm-709f5c9af31ba814.0.8.d1",
+            "group": null
+          }
+        ],
+        "revision": 0
+      },
+      "busy": true,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 1,
+      "pending": null,
+      "busy": true,
+      "error": null
+    }
+  },
+  {
+    "evidence": {
+      "revision": 1,
+      "phase": "DeclareBlockers",
+      "decision": "Priority",
+      "life": [
+        20,
+        20
+      ],
+      "cards": [
+        {
+          "id": 1,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 2,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 3,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 4,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 8,
+          "name": "Scarecrow Guide",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 24,
+          "name": "Ordinary Bear",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 28,
+          "name": "Llanowar Elves",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 61,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 62,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 63,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 64,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 68,
+          "name": "Lashwhip Predator",
+          "zone": "Battlefield",
+          "tapped": true,
+          "damage": 0
+        },
+        {
+          "id": 91,
+          "name": "Tapestry Warden",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 96,
+          "name": "Bear Cub",
+          "zone": "Battlefield",
+          "tapped": true,
+          "damage": 0
+        }
+      ],
+      "mutations": [
+        {
+          "actor": 0,
+          "action": "InteractionSubmission",
+          "submission": {
+            "interactionId": "wasm-709f5c9af31ba814.0.8",
+            "response": {
+              "type": "relations",
+              "data": {
+                "relations": [
+                  {
+                    "sourceId": "wasm-709f5c9af31ba814.0.8.r1",
+                    "targetId": "wasm-709f5c9af31ba814.0.8.d2",
+                    "group": null
+                  },
+                  {
+                    "sourceId": "wasm-709f5c9af31ba814.0.8.r2",
+                    "targetId": "wasm-709f5c9af31ba814.0.8.d1",
+                    "group": null
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "ui": {
+      "revision": 2,
+      "pending": null,
+      "busy": true,
+      "error": null
+    }
+  },
+  {
+    "evidence": {
+      "revision": 2,
+      "phase": "DeclareBlockers",
+      "decision": "Priority",
+      "life": [
+        20,
+        20
+      ],
+      "cards": [
+        {
+          "id": 1,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 2,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 3,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 4,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 8,
+          "name": "Scarecrow Guide",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 24,
+          "name": "Ordinary Bear",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 28,
+          "name": "Llanowar Elves",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 61,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 62,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 63,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 64,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 68,
+          "name": "Lashwhip Predator",
+          "zone": "Battlefield",
+          "tapped": true,
+          "damage": 0
+        },
+        {
+          "id": 91,
+          "name": "Tapestry Warden",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 96,
+          "name": "Bear Cub",
+          "zone": "Battlefield",
+          "tapped": true,
+          "damage": 0
+        }
+      ],
+      "mutations": [
+        {
+          "actor": 0,
+          "action": "InteractionSubmission",
+          "submission": {
+            "interactionId": "wasm-709f5c9af31ba814.0.8",
+            "response": {
+              "type": "relations",
+              "data": {
+                "relations": [
+                  {
+                    "sourceId": "wasm-709f5c9af31ba814.0.8.r1",
+                    "targetId": "wasm-709f5c9af31ba814.0.8.d2",
+                    "group": null
+                  },
+                  {
+                    "sourceId": "wasm-709f5c9af31ba814.0.8.r2",
+                    "targetId": "wasm-709f5c9af31ba814.0.8.d1",
+                    "group": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": "PassPriority"
+        }
+      ]
+    }
+  },
+  {
+    "ui": {
+      "revision": 2,
+      "pending": null,
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 2,
+      "pending": null,
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 2,
+      "pending": null,
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "evidence": {
+      "revision": 2,
+      "phase": "DeclareBlockers",
+      "decision": "Priority",
+      "life": [
+        20,
+        20
+      ],
+      "cards": [
+        {
+          "id": 1,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 2,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 3,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 4,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 8,
+          "name": "Scarecrow Guide",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 24,
+          "name": "Ordinary Bear",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 28,
+          "name": "Llanowar Elves",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 61,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 62,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 63,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 64,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 68,
+          "name": "Lashwhip Predator",
+          "zone": "Battlefield",
+          "tapped": true,
+          "damage": 0
+        },
+        {
+          "id": 91,
+          "name": "Tapestry Warden",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 96,
+          "name": "Bear Cub",
+          "zone": "Battlefield",
+          "tapped": true,
+          "damage": 0
+        }
+      ],
+      "mutations": [
+        {
+          "actor": 0,
+          "action": "InteractionSubmission",
+          "submission": {
+            "interactionId": "wasm-709f5c9af31ba814.0.8",
+            "response": {
+              "type": "relations",
+              "data": {
+                "relations": [
+                  {
+                    "sourceId": "wasm-709f5c9af31ba814.0.8.r1",
+                    "targetId": "wasm-709f5c9af31ba814.0.8.d2",
+                    "group": null
+                  },
+                  {
+                    "sourceId": "wasm-709f5c9af31ba814.0.8.r2",
+                    "targetId": "wasm-709f5c9af31ba814.0.8.d1",
+                    "group": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": "PassPriority"
+        }
+      ]
+    }
+  },
+  {
+    "ui": {
+      "revision": 2,
+      "pending": null,
+      "busy": true,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 3,
+      "pending": null,
+      "busy": true,
+      "error": null
+    }
+  },
+  {
+    "evidence": {
+      "revision": 3,
+      "phase": "CombatDamage",
+      "decision": "Priority",
+      "life": [
+        13,
+        20
+      ],
+      "cards": [
+        {
+          "id": 1,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 2,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 3,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 4,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 8,
+          "name": "Scarecrow Guide",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 24,
+          "name": "Ordinary Bear",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 2
+        },
+        {
+          "id": 28,
+          "name": "Llanowar Elves",
+          "zone": "Graveyard",
+          "tapped": false,
+          "damage": 4
+        },
+        {
+          "id": 61,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 62,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 63,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 64,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 68,
+          "name": "Lashwhip Predator",
+          "zone": "Battlefield",
+          "tapped": true,
+          "damage": 0
+        },
+        {
+          "id": 91,
+          "name": "Tapestry Warden",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 1
+        },
+        {
+          "id": 96,
+          "name": "Bear Cub",
+          "zone": "Graveyard",
+          "tapped": true,
+          "damage": 4
+        }
+      ],
+      "mutations": [
+        {
+          "actor": 0,
+          "action": "InteractionSubmission",
+          "submission": {
+            "interactionId": "wasm-709f5c9af31ba814.0.8",
+            "response": {
+              "type": "relations",
+              "data": {
+                "relations": [
+                  {
+                    "sourceId": "wasm-709f5c9af31ba814.0.8.r1",
+                    "targetId": "wasm-709f5c9af31ba814.0.8.d2",
+                    "group": null
+                  },
+                  {
+                    "sourceId": "wasm-709f5c9af31ba814.0.8.r2",
+                    "targetId": "wasm-709f5c9af31ba814.0.8.d1",
+                    "group": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": "PassPriority"
+        },
+        {
+          "actor": 0,
+          "action": "PassPriority"
+        }
+      ]
+    }
+  },
+  {
+    "ui": {
+      "revision": 4,
+      "pending": null,
+      "busy": true,
+      "error": null
+    }
+  },
+  {
+    "evidence": {
+      "revision": 4,
+      "phase": "CombatDamage",
+      "decision": "Priority",
+      "life": [
+        13,
+        20
+      ],
+      "cards": [
+        {
+          "id": 1,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 2,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 3,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 4,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 8,
+          "name": "Scarecrow Guide",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 24,
+          "name": "Ordinary Bear",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 2
+        },
+        {
+          "id": 28,
+          "name": "Llanowar Elves",
+          "zone": "Graveyard",
+          "tapped": false,
+          "damage": 4
+        },
+        {
+          "id": 61,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 62,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 63,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 64,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 68,
+          "name": "Lashwhip Predator",
+          "zone": "Battlefield",
+          "tapped": true,
+          "damage": 0
+        },
+        {
+          "id": 91,
+          "name": "Tapestry Warden",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 1
+        },
+        {
+          "id": 96,
+          "name": "Bear Cub",
+          "zone": "Graveyard",
+          "tapped": true,
+          "damage": 4
+        }
+      ],
+      "mutations": [
+        {
+          "actor": 0,
+          "action": "InteractionSubmission",
+          "submission": {
+            "interactionId": "wasm-709f5c9af31ba814.0.8",
+            "response": {
+              "type": "relations",
+              "data": {
+                "relations": [
+                  {
+                    "sourceId": "wasm-709f5c9af31ba814.0.8.r1",
+                    "targetId": "wasm-709f5c9af31ba814.0.8.d2",
+                    "group": null
+                  },
+                  {
+                    "sourceId": "wasm-709f5c9af31ba814.0.8.r2",
+                    "targetId": "wasm-709f5c9af31ba814.0.8.d1",
+                    "group": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": "PassPriority"
+        },
+        {
+          "actor": 0,
+          "action": "PassPriority"
+        },
+        {
+          "actor": 1,
+          "action": "PassPriority"
+        }
+      ]
+    }
+  },
+  {
+    "ui": {
+      "revision": 4,
+      "pending": null,
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 4,
+      "pending": null,
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "ui": {
+      "revision": 4,
+      "pending": null,
+      "busy": false,
+      "error": null
+    }
+  },
+  {
+    "evidence": {
+      "revision": 4,
+      "phase": "CombatDamage",
+      "decision": "Priority",
+      "life": [
+        13,
+        20
+      ],
+      "cards": [
+        {
+          "id": 1,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 2,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 3,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 4,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 8,
+          "name": "Scarecrow Guide",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 24,
+          "name": "Ordinary Bear",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 2
+        },
+        {
+          "id": 28,
+          "name": "Llanowar Elves",
+          "zone": "Graveyard",
+          "tapped": false,
+          "damage": 4
+        },
+        {
+          "id": 61,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 62,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 63,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 64,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 0
+        },
+        {
+          "id": 68,
+          "name": "Lashwhip Predator",
+          "zone": "Battlefield",
+          "tapped": true,
+          "damage": 0
+        },
+        {
+          "id": 91,
+          "name": "Tapestry Warden",
+          "zone": "Battlefield",
+          "tapped": false,
+          "damage": 1
+        },
+        {
+          "id": 96,
+          "name": "Bear Cub",
+          "zone": "Graveyard",
+          "tapped": true,
+          "damage": 4
+        }
+      ],
+      "mutations": [
+        {
+          "actor": 0,
+          "action": "InteractionSubmission",
+          "submission": {
+            "interactionId": "wasm-709f5c9af31ba814.0.8",
+            "response": {
+              "type": "relations",
+              "data": {
+                "relations": [
+                  {
+                    "sourceId": "wasm-709f5c9af31ba814.0.8.r1",
+                    "targetId": "wasm-709f5c9af31ba814.0.8.d2",
+                    "group": null
+                  },
+                  {
+                    "sourceId": "wasm-709f5c9af31ba814.0.8.r2",
+                    "targetId": "wasm-709f5c9af31ba814.0.8.d1",
+                    "group": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": "PassPriority"
+        },
+        {
+          "actor": 0,
+          "action": "PassPriority"
+        },
+        {
+          "actor": 1,
+          "action": "PassPriority"
+        }
+      ]
+    }
+  }
+]

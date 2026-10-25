@@ -27,7 +27,8 @@ export function resolvePracticeArtwork(surface){
  if(surface.face&&faces.length&&!face)return null;
  const card=face?{...original,image_uris:face.image_uris,oracle_text:face.oracle_text}:original;
  const imageSources=magicArtworkSources(card,'normal');
- return {card,finish:saved.finish,badges:Array.isArray(saved.badges)?saved.badges:[],imageSources,imageUrl:imageSources[0]||null,oracleText:card.oracle_text||faces.map(f=>f.oracle_text).filter(Boolean).join('\n\n')};
+ const artImageUrl=card.image_uris?.art_crop||(!surface.face?faces[0]?.image_uris?.art_crop:null)||null;
+ return {card,finish:saved.finish,badges:Array.isArray(saved.badges)?saved.badges:[],imageSources,imageUrl:imageSources[0]||null,artImageUrl,oracleText:card.oracle_text||faces.map(f=>f.oracle_text).filter(Boolean).join('\n\n')};
 }
 export function practiceArtworkHooks(){return {
  resolveCard:resolvePracticeArtwork,
@@ -40,10 +41,13 @@ export function practiceArtworkHooks(){return {
  },
  decorateCard(node,surface){
   const data=resolvePracticeArtwork(surface),img=node.querySelector('img');if(!data||!img)return;
-  img.dataset.artSources=JSON.stringify(data.imageSources);img.dataset.artIndex='0';img.classList.add('card-img');
+  const cropped=node.dataset.presentation==='battlefield';
+  img.dataset.artSources=JSON.stringify(cropped&&data.artImageUrl?[data.artImageUrl,...data.imageSources]:data.imageSources);img.dataset.artIndex='0';img.classList.add('card-img');
   if(node.classList.contains('play-match-card')&&data.card.rarity){const badge=document.createElement('span');badge.className='play-match-card-badges';badge.innerHTML=rarityEmblem('mtg',data.card.rarity);node.append(badge);}
   if(!data.finish)return;
-  const template=document.createElement('template');template.innerHTML='<span '+finishAttrs('mtg',data.card,{priceFinish:data.finish},'card')+'></span>';
+  // Preserve the exact finish identity on the crop, but do not stretch a
+  // measured full-card foil mask over artwork with different geometry.
+  const template=document.createElement('template');template.innerHTML='<span '+finishAttrs('mtg',data.card,{priceFinish:data.finish},cropped?'art':'card')+'></span>';
   for(const attr of template.content.firstElementChild.attributes)node.setAttribute(attr.name,attr.value);
   node.classList.add('play-match-art-surface');
  },
