@@ -1,0 +1,109 @@
+{
+  "upstream": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+  "sourceFiles": {
+    "protocol-fault.mjs": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+    "interaction-surface.mjs": "a077d3a2936e02cca9f7a17ea825d40ca4bc62f34a2ee6c6db2ee145c941f195",
+    "worker-journal.mjs": "5a4bcc4bb685c5e8f724967a409083ae8d5dd4aec50e5ec325424e67bc06e0ed",
+    "browser-authority.mjs": "2b9245b1df73471803d9ca83464bd26157ed1d3d394541e4987a81dae441f7e4",
+    "browser-client.mjs": "b15b65136d5932a4d7cb7041621f45051ece07b511d0303e47deeee6265bdb36",
+    "smoke-policy-worker.mjs": "364f29be9d6eeab8eeb281de8eaa3b598b04c0056291592ca9560f0d97b6140b",
+    "seat-surface.mjs": "aa4023c24248506616ee0a430d6af42944051a8bd3c9f0aef6ec6e986dfbd3e5"
+  },
+  "cases": [
+    {
+      "seed": 12345,
+      "first": 0,
+      "actions": 384,
+      "turn": 22,
+      "winner": 1,
+      "traceSha256": "1c65efe508467e56300fb7d6d814a7d81c7d74836927fec3b4d26df271882572",
+      "milliseconds": 18806
+    },
+    {
+      "seed": 67890,
+      "first": 0,
+      "actions": 425,
+      "turn": 24,
+      "winner": 1,
+      "traceSha256": "91dcacf7d14de96d284322b70939bdb06fabd1a8152a592c150d164064b884fc",
+      "milliseconds": 12875
+    },
+    {
+      "seed": 24680,
+      "first": 0,
+      "actions": 922,
+      "turn": 56,
+      "winner": 1,
+      "traceSha256": "0eedc2b0264094af8faafa4f50cae8bd9b908fb317fba8c02960f73b3c358fcd",
+      "milliseconds": 31371
+    },
+    {
+      "seed": 12345,
+      "first": 1,
+      "actions": 399,
+      "turn": 23,
+      "winner": 1,
+      "traceSha256": "af5dfa42a387344453db5a5b31e2ed55668982492c7d20e10ba96e4216b0ed93",
+      "milliseconds": 11625
+    },
+    {
+      "seed": 67890,
+      "first": 1,
+      "actions": 410,
+      "turn": 23,
+      "winner": 1,
+      "traceSha256": "1223f804457f3e2aefad1454654cc10c847f45f4be2f1d8fa11d6f982b79dec4",
+      "milliseconds": 13580
+    },
+    {
+      "seed": 24680,
+      "first": 1,
+      "actions": 930,
+      "turn": 57,
+      "winner": 1,
+      "traceSha256": "3abe1d729ee84ea9121f8cf615d5573b5b76d3704944e3228a70c4f8356a1ae5",
+      "milliseconds": 31571
+    }
+  ],
+  "checks": [
+    "duplicate receipt",
+    "stale rejection",
+    "ID collision",
+    "concurrent revision rejection"
+  ],
+  "limits": "Forest/Bears smoke only; ungraded summary-only policy. Not game UI, general privacy/rules/card-pool certification, production offline package, device performance or full engine gate.",
+  "browser": "153.0.8010.0",
+  "humanRoute": {
+    "actions": 384,
+    "turn": 22,
+    "terminal": {
+      "winner": 1
+    },
+    "choices": {
+      "MulliganDecision": 1,
+      "PassPriority": 174,
+      "PlayLand": 11,
+      "CastSpell": 1,
+      "DeclareAttackers": 1
+    },
+    "noChoice": "CHOICE_REQUIRED",
+    "onlySeat": 0
+  },
+  "humanBottom": {
+    "revision": 2,
+    "selected": "3",
+    "handCountAfter": 6,
+    "coldOfflineDuplicate": true
+  },
+  "coldOffline": {
+    "freshBrowserProcess": true,
+    "serverStopped": true,
+    "networkOffline": true,
+    "restoredRevision": 80,
+    "pending": "Priority",
+    "duplicateReceiptSurvived": true,
+    "exactTraceAndOutcome": true,
+    "milliseconds": 16699,
+    "newMatchCreated": true
+  }
+}

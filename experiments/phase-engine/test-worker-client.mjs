@@ -43,3 +43,8 @@ test('malformed same-session reply closes transport instead of accepting a move'
   w.onmessage({data:{v:2,epoch:m.epoch,id:m.id,ok:true,result:{revision:999}}});await assert.rejects(p,/OUTCOME_UNKNOWN/);assert(w.terminated);
  }finally{globalThis.Worker=old;}
 });
+
+test('closing during a human response reports unknown outcome rather than a read failure',async()=>{
+ const old=globalThis.Worker;globalThis.Worker=FakeWorker;
+ try{const c=connect('test',{mode:'human'});await c.ready;const p=c.request('respond',{revision:0,id:'human-response',submission:{interactionId:'i',response:{type:'select',data:{choiceIds:['c']}}}});await Promise.resolve();c.close();await assert.rejects(p,/OUTCOME_UNKNOWN/);}finally{globalThis.Worker=old;}
+});

@@ -1,5 +1,6 @@
 import {createJournal,fail} from './worker-journal.mjs';
 import {describeChoices} from './smoke-policy-worker.mjs';
+import {projectInteraction} from './interaction-surface.mjs';
 import {createSeatController} from './seat-surface.mjs';
 const PIN='71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234';
 export const VERSION=PIN+':browser-smoke-v1';
@@ -47,13 +48,15 @@ async function boot(epoch,match,mode) {
   return smokeChoose(actions,rng);
  };
  const adapter={
+  humanSeat:controller?0:null,
+  respond:controller?submission=>{const r=engine.submit_interaction_js(0,submission);if(['applied','Applied'].includes(r.status))return true;if(['rejected','Rejected'].includes(r.status))return false;fail('ENGINE_FAILED');}:undefined,
   start(seed,first){const result=engine.initialize_game({player:{main_deck:[...Array(56).fill('Forest'),...Array(4).fill('Grizzly Bears')]},opponent:{main_deck:[...Array(57).fill('Forest'),...Array(3).fill('Grizzly Bears')]}},seed,format,null,2,first);if(!Array.isArray(result.events))fail('INITIALIZE_FAILED');},
   save:()=>engine.export_game_state_json(),restore:s=>engine.restore_game_state(s),
-  summary(revision){const s=engine.get_filtered_game_state(0).state;return {turn:s.turn_number,waiting:s.waiting_for?.type||null,terminal:s.waiting_for?.type==='GameOver'?{winner:s.waiting_for.data?.winner??null}:null,...(controller?{surface:controller.read(revision)}:{})};},
+  summary(revision){const s=engine.get_filtered_game_state(0).state;return {turn:s.turn_number,waiting:s.waiting_for?.type||null,terminal:s.waiting_for?.type==='GameOver'?{winner:s.waiting_for.data?.winner??null}:null,...(controller?{surface:{...controller.read(revision),interaction:projectInteraction(engine.get_viewer_snapshot_js(0).viewerInteraction,0)}}:{})};},
   legal(){for(const actor of [0,1]){const {actions}=engine.get_legal_actions_for_viewer_js(actor);if(actions.length)return {actor,actions};}return {actor:null,actions:[]};},
   apply(actor,action){const r=engine.submit_action(actor,action);if(!['applied','Applied'].includes(r.status))fail('ENGINE_REJECTED');}
  };
- return createJournal({engine:adapter,storage:await openStore(match),choose,version:mode==='human'?VERSION+':human-seat-v1':VERSION,epoch});
+ return createJournal({engine:adapter,storage:await openStore(match),choose,version:mode==='human'?VERSION+':human-seat-v2':VERSION,epoch});
 }
 // One match per worker. The main thread receives only bounded diagnostic status;
 // no authority save, raw legal action, library order, hand or event is posted.
@@ -69,3 +72,4 @@ globalThis.onmessage=async({data})=>{
  try{const handler=await opening;postMessage(await handler(data));}
  catch{postMessage({v:1,epoch:boundEpoch,id:data?.id,ok:false,error:'BOOT_FAILED'});}
 };
+

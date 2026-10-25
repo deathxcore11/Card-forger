@@ -1,0 +1,23 @@
+{
+  "upstream": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+  "sourceFiles": {
+    "protocol-fault.mjs": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+    "interaction-surface.mjs": "a077d3a2936e02cca9f7a17ea825d40ca4bc62f34a2ee6c6db2ee145c941f195",
+    "worker-journal.mjs": "51c80a067a2f899e266f3a58d44a1914c4906216b724d7b1ecb61c92d1237065",
+    "browser-authority.mjs": "2b9245b1df73471803d9ca83464bd26157ed1d3d394541e4987a81dae441f7e4",
+    "browser-client.mjs": "b15b65136d5932a4d7cb7041621f45051ece07b511d0303e47deeee6265bdb36",
+    "smoke-policy-worker.mjs": "364f29be9d6eeab8eeb281de8eaa3b598b04c0056291592ca9560f0d97b6140b",
+    "seat-surface.mjs": "aa4023c24248506616ee0a430d6af42944051a8bd3c9f0aef6ec6e986dfbd3e5"
+  },
+  "cases": [],
+  "checks": [],
+  "limits": "Forest/Bears smoke only; ungraded summary-only policy. Not game UI, general privacy/rules/card-pool certification, production offline package, device performance or full engine gate.",
+  "browser": "153.0.8010.0",
+  "humanBottom": {
+    "revision": 2,
+    "selected": "3",
+    "handCountAfter": 6,
+    "coldOfflineDuplicate": true
+  },
+  "choicesOnly": true
+}

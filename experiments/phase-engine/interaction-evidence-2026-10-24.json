@@ -1,0 +1,66 @@
+{
+  "provenance": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "runtimeOrigin": "original-upstream-artifact",
+    "buildIdentity": "upstream-run-40129115223-artifact-12574954346",
+    "sourceCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "sourceTree": "3b2a30411991062847d46c2aebd8cee5df2fb4db",
+    "sourceDiffSha256": null,
+    "buildReceiptSha256": null,
+    "glue": "47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd3476cfb70131de6287c9",
+    "wasm": "6057521d851bb8544eaeea467f741b90cd2941aa5ba2fddb17e1bcc3d9933f8f",
+    "integrationFixtureGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "fixtureCardCount": 6137,
+    "loadedNames": [
+      "Head Games",
+      "Ninja of the Deep Hours",
+      "Moon-Circuit Hacker",
+      "Ornithopter",
+      "Island",
+      "Plains",
+      "Swamp",
+      "Mountain",
+      "Forest",
+      "Raise the Alarm",
+      "Krenko, Mob Boss",
+      "Parallel Lives",
+      "Doubling Season",
+      "Sprout Swarm",
+      "Basalt Monolith",
+      "Power Artifact",
+      "Lightning Bolt",
+      "Counterspell",
+      "Satoru Umezawa",
+      "Grizzly Bears"
+    ],
+    "subsetSha256": "01d3b29609c9eccd3230d3a9e1892fa83a24b9590d5254cb37cf4cf5b7c1bce8",
+    "subsetBytes": 162288
+  },
+  "sourceFiles": {
+    "interaction-engine.mjs": "881b142e178e6dbe3a035ce6bd40aa22939c557b8a75ff91dcd0b244ad7c15c4",
+    "interaction-surface.mjs": "a077d3a2936e02cca9f7a17ea825d40ca4bc62f34a2ee6c6db2ee145c941f195",
+    "worker-journal.mjs": "51c80a067a2f899e266f3a58d44a1914c4906216b724d7b1ecb61c92d1237065",
+    "protocol-fault.mjs": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+    "mechanics-inputs.mjs": "8ffab9a3c44518d751e3c83d0349228c3ffc5f349275c25e04164637339907ad",
+    "mechanics-fixtures.mjs": "af169de1170105698f2edbf1c9feaee2c0846d729bf2d6490344796093fc8568"
+  },
+  "cases": [
+    {
+      "name": "Mulligan, keep and exact bottom through durable human route",
+      "accepted": 3,
+      "invalidCountRejected": true,
+      "rebindRejectsOldInteraction": true,
+      "duplicateAfterRestore": true,
+      "handCount": 6
+    },
+    {
+      "name": "Head Games non-AI-candidate selection through human route",
+      "selectedCount": 2,
+      "correctOpponentHand": true,
+      "ownLibraryUnchanged": true,
+      "permissionRetired": true
+    }
+  ],
+  "networkCalls": 0,
+  "limits": "Original runtime, Node execution, in-memory transactional store, same-process restore. Head Games uses engineered setup. No corrected ninjutsu, browser UI, CPU strategy, full pregame/payment/target coverage or cold offline certification."
+}

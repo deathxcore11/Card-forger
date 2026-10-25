@@ -6,6 +6,7 @@ import {createServer} from 'node:http';
 import {resolve,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
+const choicesOnly=process.argv.includes('--choices-only');
 const pkg=process.env.CARDSTASHY_PHASE_PKG,source=process.env.CARDSTASHY_PHASE_SOURCE;
 assert(pkg&&source,'Use the exact external pkg/source paths documented in README.md.');
 const out=resolve(process.env.CARDSTASHY_PHASE_BROWSER_OUTPUT||'test-results/phase-browser');await mkdir(out,{recursive:true});
@@ -14,7 +15,7 @@ const inputs=[['engine_wasm.js','47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd347
 const routes=new Map();
 for(const [file,hash]of inputs){const bytes=await readFile(join(pkg,file));assert.equal(sha(bytes),hash);routes.set('/runtime/'+file,bytes);}
 const cards=await readFile(join(source,'crates/engine/tests/fixtures/runtime_card_export_fixture.json'));assert.equal(sha(cards),'ee062b8ad351e067723b79fc8462aaea19202ef9756d35b2101334eb3e350107');routes.set('/runtime/cards.json',cards);
-const dir=new URL('./',import.meta.url),files=['worker-journal.mjs','browser-authority.mjs','browser-client.mjs','smoke-policy-worker.mjs','seat-surface.mjs'];
+const dir=new URL('./',import.meta.url),files=['protocol-fault.mjs','interaction-surface.mjs','worker-journal.mjs','browser-authority.mjs','browser-client.mjs','smoke-policy-worker.mjs','seat-surface.mjs'];
 for(const file of files)routes.set('/'+file,await readFile(new URL(file,dir)));
 routes.set('/',Buffer.from(`<!doctype html><meta charset="utf-8"><title>CardStashy engine diagnostic</title><p>Research harness. No playable interface.</p><script type="module">import {connect} from './browser-client.mjs';window.connect=connect;window.loaded=true;</script>`));
 const cache='phase-research-'+sha(Buffer.concat([...routes.values()]));
@@ -38,6 +39,7 @@ try{
  let page=await open();report.browser=await context.browser().version();
  await page.evaluate(async()=>{await navigator.serviceWorker.register('/sw.js');await navigator.serviceWorker.ready;if(!navigator.serviceWorker.controller)await new Promise(r=>navigator.serviceWorker.addEventListener('controllerchange',r,{once:true}));});
  const reference=JSON.parse(await readFile(new URL('evidence-2026-10-24.json',dir),'utf8'));
+ if(!choicesOnly){
  for(const first of [0,1])for(const seed of [12345,67890,24680]){
   const key=`smoke-${seed}-${first}`,start=performance.now();let status;
   if(seed===12345&&first===0){
@@ -78,10 +80,37 @@ try{
  });
  assert.equal(human.onlySeat,0);for(const type of ['MulliganDecision','PlayLand','CastSpell','DeclareAttackers','PassPriority'])assert(human.choices[type]>0,type);
  report.humanRoute=human;console.log(JSON.stringify({humanRoute:human}));
+ }
+ // Exercise human mulligan/bottom through the real worker, not its AI candidates.
+ const bottom=await page.evaluate(async()=>{
+  window.client?.close();window.client=connect('human-bottom',{mode:'human'});
+  let status=await client.request('create',{seed:12345,first:0});
+  const pick=value=>{const o=status.surface.interaction.opportunities.find(o=>o.type==='choose');const c=o.choices.find(c=>c.surfaces.some(s=>s.type==='value'&&s.value===value));return {interactionId:o.interactionId,response:{type:'choose',data:{choiceId:c.id}}};};
+  status=await client.request('respond',{id:'redraw',revision:status.revision,submission:pick('mulligan')});
+  status=await client.request('respond',{id:'keep',revision:status.revision,submission:pick('keep')});
+  const o=status.surface.interaction.opportunities.find(o=>o.type==='select');if(!o||o.min!==1||o.max!==1)throw Error('Missing exact bottom choice');
+  const chosen=o.choices.at(-1),submission={interactionId:o.interactionId,response:{type:'select',data:{choiceIds:[chosen.id]}}};
+  window.bottomSubmission=submission;
+  return {revision:status.revision,selected:chosen.surfaces.find(s=>s.type==='object').reference};
+ });
+ await copyRecord(page,'human-bottom','cold-bottom');
+ const bottomResult=await page.evaluate(async()=>client.request('respond',{id:'bottom-once',revision:2,submission:window.bottomSubmission}));
+ assert.equal(bottomResult.surface.hand.length,6);assert.equal(bottomResult.revision,3);
+ report.humanBottom={...bottom,handCountAfter:6};
  // Finish acknowledged writes, stop all workers/browser processes, then remove
  // the origin server and networking before navigating a fresh browser process.
  await context.close();context=null;await new Promise(r=>server.close(r));const servedBeforeCold=requests;
  page=await open(true);assert.equal(await page.evaluate(()=>navigator.onLine),false);
+ const coldBottom=await page.evaluate(async()=>{
+  window.client=connect('cold-bottom',{mode:'human'});let status=await client.request('resume');
+  const o=status.surface.interaction.opportunities.find(o=>o.type==='select'),chosen=o.choices.at(-1);
+  const submission={interactionId:o.interactionId,response:{type:'select',data:{choiceIds:[chosen.id]}}};
+  status=await client.request('respond',{id:'cold-bottom-once',revision:status.revision,submission});
+  const duplicate=await client.request('respond',{id:'cold-bottom-once',revision:2,submission});
+  return {hand:status.surface.hand,duplicateHand:duplicate.surface.hand,revision:status.revision};
+ });
+ assert.equal(coldBottom.hand.length,6);assert.deepEqual(coldBottom.hand,coldBottom.duplicateHand);assert.equal(coldBottom.revision,3);report.humanBottom.coldOfflineDuplicate=true;
+ if(!choicesOnly){
  const coldStart=performance.now(),restored=await run(page,{key:'cold-resume',resume:true,stop:80});assert.equal(restored.revision,80);assert.equal(restored.waiting,'Priority');
  const repeated=await page.evaluate(()=>client.request('step',{id:'step-79',revision:79}));assert.deepEqual(repeated,restored);
  const final=await run(page,{key:'cold-resume',resume:true}),cold=await readRecord(page,'cold-resume'),expected=reference.cases[0];
@@ -89,5 +118,8 @@ try{
  report.coldOffline={freshBrowserProcess:true,serverStopped:true,networkOffline:true,restoredRevision:80,pending:'Priority',duplicateReceiptSurvived:true,exactTraceAndOutcome:true,milliseconds:Math.round(performance.now()-coldStart)};
  // New match creation also works from the cached package with no origin server.
  const fresh=await run(page,{key:'created-offline',seed:67890,first:1,stop:1});assert.equal(fresh.revision,1);report.coldOffline.newMatchCreated=true;
- await writeFile(join(out,'browser-report.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report.coldOffline));
+ }
+ report.choicesOnly=choicesOnly;assert.equal(requests,servedBeforeCold);
+ await writeFile(join(out,'browser-report.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({coldOffline:report.coldOffline,humanBottom:report.humanBottom,choicesOnly}));
 }finally{await context?.close();if(server.listening)await new Promise(r=>server.close(r));}
+

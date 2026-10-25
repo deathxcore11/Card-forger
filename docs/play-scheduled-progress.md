@@ -269,3 +269,36 @@ preserved unchanged; only this shared progress document needed an append merge.
 The UI source bytes in the 43-test and browser evidence did not change. The
 other checkpoint's 77 engine tests are its recorded execution, not a new run
 by this UI follow-up. No whole-branch merge or runtime substitution occurred.
+
+## October 24, 2026 — authoritative human choice ingress
+
+Started from verified remote `cdc839477ed11ae4f0e340e38b8433e372fedf6e`;
+complete tree contains no AGENTS.md. Used an isolated exact-ref experiment copy.
+The browser human worker now accepts bounded engine interaction submissions
+through the durable journal, without requiring AI-candidate membership.
+Mulligan bottoming and Head Games noncandidate selection pass real original-WASM
+checks. Invalid/stale selections reject; duplicate recovery cannot apply twice.
+
+Executed 86 focused Node tests, all passing. Full browser regression reproduced
+six baseline games, the scripted human game and original offline checks, plus
+pending bottom-choice cold-offline resume. A final targeted browser run verifies
+the final unknown-adapter-result guard. Exact hashes/results and the one corrected
+focused-harness setup failure are recorded in
+[human interaction checkpoint](play-human-interaction-checkpoint.md).
+No screen controls, corrected engine, competent CPU or playable match are claimed.
+Ninjutsu assertions remain intact; no original mechanics rerun in this slice.
+
+A materially different local WASM attempt is running from clean a49b8aa source:
+`-Zhint-mostly-unused=yes` only for the engine library, serialized LLVM, opt 0,
+MIR opt 0, 256 codegen units, one job, no incremental. No source or card stripping.
+It has a 20-minute ceiling, no paid infrastructure. Existing source and original
+runtime are untouched. Do not launch competing Rust builds. If scratch survives,
+log: `/workspace/scratch/04b6689e06e8/engine-ninjutsu-build/wasm-unused-a49b8aa.log`;
+lock: `engine-ninjutsu-build/local-build.lock`; target: `wasm-unused-target`.
+There is no successful artifact or receipt at this checkpoint; record completion
+separately and preserve all provenance gates.
+
+Next: corrected WASM + both preserved ninjutsu regressions, then actual controls,
+payments/targets/cancel, pregame, CPU, board/countdown and result recovery. New
+interaction history is an input trace, not yet portable raw-action replay.
+Production, website-release branch, APK and schemas are unchanged.
