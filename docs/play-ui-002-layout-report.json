@@ -1,0 +1,901 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "scenario": "guest",
+      "width": 1280,
+      "height": 720,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "guest",
+      "width": 1920,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "guest",
+      "width": 2560,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "guest",
+      "width": 3440,
+      "height": 1440,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "guest",
+      "width": 1024,
+      "height": 768,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "guest",
+      "width": 900,
+      "height": 650,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "guest",
+      "width": 1180,
+      "height": 757,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "guest",
+      "width": 590,
+      "height": 378,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "home",
+      "width": 1280,
+      "height": 720,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "home",
+      "width": 1920,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "home",
+      "width": 2560,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "home",
+      "width": 3440,
+      "height": 1440,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "home",
+      "width": 1024,
+      "height": 768,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "home",
+      "width": 900,
+      "height": 650,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "home",
+      "width": 1180,
+      "height": 757,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "home",
+      "width": 590,
+      "height": 378,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "ready",
+      "width": 1280,
+      "height": 720,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "ready",
+      "width": 1920,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "ready",
+      "width": 2560,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "ready",
+      "width": 3440,
+      "height": 1440,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "ready",
+      "width": 1024,
+      "height": 768,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "ready",
+      "width": 900,
+      "height": 650,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "ready",
+      "width": 1180,
+      "height": 757,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "ready",
+      "width": 590,
+      "height": 378,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "friends",
+      "width": 1280,
+      "height": 720,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "friends",
+      "width": 1920,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "friends",
+      "width": 2560,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "friends",
+      "width": 3440,
+      "height": 1440,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "friends",
+      "width": 1024,
+      "height": 768,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "friends",
+      "width": 900,
+      "height": 650,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "friends",
+      "width": 1180,
+      "height": 757,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "friends",
+      "width": 590,
+      "height": 378,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "pregame",
+      "width": 1280,
+      "height": 720,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "pregame",
+      "width": 1920,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "pregame",
+      "width": 2560,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "pregame",
+      "width": 3440,
+      "height": 1440,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "pregame",
+      "width": 1024,
+      "height": 768,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "pregame",
+      "width": 900,
+      "height": 650,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "pregame",
+      "width": 1180,
+      "height": 757,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "pregame",
+      "width": 590,
+      "height": 378,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "result",
+      "width": 1280,
+      "height": 720,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "result",
+      "width": 1920,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "result",
+      "width": 2560,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "result",
+      "width": 3440,
+      "height": 1440,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "result",
+      "width": 1024,
+      "height": 768,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "result",
+      "width": 900,
+      "height": 650,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "result",
+      "width": 1180,
+      "height": 757,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "result",
+      "width": 590,
+      "height": 378,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "error",
+      "width": 1280,
+      "height": 720,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "error",
+      "width": 1920,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "error",
+      "width": 2560,
+      "height": 1080,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "error",
+      "width": 3440,
+      "height": 1440,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "error",
+      "width": 1024,
+      "height": 768,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "error",
+      "width": 900,
+      "height": 650,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "error",
+      "width": 1180,
+      "height": 757,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    },
+    {
+      "scenario": "error",
+      "width": 590,
+      "height": 378,
+      "checks": {
+        "playDiscoverable": true,
+        "pageNoHorizontalOverflow": true,
+        "prerequisiteReachable": true,
+        "noFalseRecoveryPromise": true,
+        "controlsFit": true
+      },
+      "begins": 0,
+      "commands": [],
+      "exits": 0,
+      "passed": true
+    }
+  ]
+}
