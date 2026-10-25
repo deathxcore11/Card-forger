@@ -1,6 +1,7 @@
 // Human-only, engine-authored interaction projection. Never feed this to CPU.
 // Supports exact choices, count-bounded selections and ordered target sequences.
 // Other schemas remain unavailable; no AI candidate list supplies legality.
+import {presentInteractionChoices} from './choice-presentation.mjs';
 import {fail} from './protocol-fault.mjs';
 const obj=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 const token=v=>typeof v==='string'&&v.length>0&&v.length<=256&&!/[\u0000-\u001f\u007f]/.test(v);
@@ -54,7 +55,7 @@ export function interactionSubmission(value){
  }
  fail('UNSUPPORTED_INTERACTION');
 }
-export function projectInteraction(raw,seat){
+export function projectInteraction(raw,seat,context){
  if(![0,1].includes(seat)||!obj(raw)||!Array.isArray(raw.opportunities)||raw.opportunities.length>1024)fail('INVALID_INTERACTION_VIEW');
  const canSubmit=raw.canSubmit===true&&raw.authorizedSubmitters?.includes(seat)===true;
  const opportunities=[];
@@ -116,5 +117,5 @@ export function projectInteraction(raw,seat){
   }
   opportunities.push({interactionId:o.interactionId,type:exact?'choose':sequence?'sequence':'select',min,max,choices,...(sequence?{unique:spec.data.unique===true,escape:token(spec.data.escape)?spec.data.escape:null}:{})});
  }
- return {kind:token(raw.waitingForKind?.code)?raw.waitingForKind.code:null,canSubmit:canSubmit&&opportunities.length>0,opportunities};
+ return presentInteractionChoices({kind:token(raw.waitingForKind?.code)?raw.waitingForKind.code:null,canSubmit:canSubmit&&opportunities.length>0,opportunities},seat,context);
 }

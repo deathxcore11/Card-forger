@@ -63,7 +63,7 @@ export function createMatchAuthority({engine,epoch,mode='human-timed',decks,form
    const actor=s.waiting_for?.type==='Priority'?s.waiting_for.data.player:interaction?.canSubmit&&interaction.authorizedSubmitters?.includes(0)?0:1;
    return {turn:s.turn_number,waiting:s.waiting_for?.type||null,terminal:s.waiting_for?.type==='GameOver'?{winner:s.waiting_for.data?.winner??null}:null,
     priorityCapability:priorityCapability({state:s,actor,epoch,revision,engineProof:readPriorityProof(revision)}),
-    ...(controller?{surface:present({...controller.read(revision),commander:commanders.read({state:s},0),awaitingHuman:interaction?.authorizedSubmitters?.includes(0)===true,interaction:projectInteraction(interaction,0)})}:{})};
+    ...(controller?{surface:present({...controller.read(revision),commander:commanders.read({state:s},0),awaitingHuman:interaction?.authorizedSubmitters?.includes(0)===true,interaction:projectInteraction(interaction,0,{state:s,preview:action=>engine.preview_action_js(0,action)})})}:{})};
   },
   legal(context){
    const cacheable=context?.epoch===epoch&&Number.isSafeInteger(context?.revision)&&context.revision>=0;

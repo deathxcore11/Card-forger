@@ -1,0 +1,100 @@
+{
+  "runtime": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+  "definitions": "4711be54f4fb53b2909e98bb839e78abe88f4a99f305dc45dd68611d4e9ac4ec",
+  "scope": "Engineered positions through actual shipped WASM, authority, journal, session and browser controls. No complete-match claim.",
+  "evidence": [
+    {
+      "mode": "pay",
+      "status": "PASS",
+      "video": "pay.webm",
+      "life": 18,
+      "tapped": false,
+      "landPlays": 1,
+      "acceptedChoiceSubmissions": 1,
+      "retryIdempotent": true,
+      "staleRejected": true
+    },
+    {
+      "mode": "tapped",
+      "status": "PASS",
+      "video": "tapped.webm",
+      "life": 20,
+      "tapped": true,
+      "landPlays": 1,
+      "acceptedChoiceSubmissions": 1,
+      "retryIdempotent": true,
+      "staleRejected": true
+    },
+    {
+      "mode": "confirm",
+      "status": "PASS",
+      "life": 18,
+      "tapped": false,
+      "landPlays": 1,
+      "acceptedChoiceSubmissions": 1,
+      "retryIdempotent": true,
+      "staleRejected": true
+    },
+    {
+      "mode": "basic",
+      "status": "PASS",
+      "landPlays": 1,
+      "acceptedCommands": 1,
+      "prompt": false,
+      "video": "basic.webm"
+    },
+    {
+      "mode": "low-life",
+      "status": "PASS",
+      "video": "low-life.webm",
+      "life": 1,
+      "tapped": true,
+      "landPlays": 1,
+      "acceptedChoiceSubmissions": 1,
+      "retryIdempotent": true,
+      "staleRejected": true
+    },
+    {
+      "card": "Abandoned Air Temple",
+      "basicLandControlled": false,
+      "status": "PASS",
+      "tapped": true,
+      "noRevealOrPaymentPrompt": true
+    },
+    {
+      "card": "Abandoned Air Temple",
+      "basicLandControlled": true,
+      "status": "PASS",
+      "tapped": false,
+      "noRevealOrPaymentPrompt": true
+    },
+    {
+      "case": "shockland-life-payment",
+      "life": 1,
+      "waiting": "ReplacementChoice",
+      "payPreview": "applied"
+    },
+    {
+      "case": "native-optional-payment-attempt",
+      "life": 1,
+      "afterLife": 1,
+      "zone": "Battlefield",
+      "tapped": true,
+      "waiting": "Priority"
+    },
+    {
+      "case": "shockland-life-payment",
+      "life": 2,
+      "waiting": "ReplacementChoice",
+      "payPreview": "applied"
+    },
+    {
+      "case": "native-optional-payment-attempt",
+      "life": 2,
+      "afterLife": 0,
+      "zone": "Exile",
+      "tapped": false,
+      "waiting": "GameOver"
+    }
+  ]
+}

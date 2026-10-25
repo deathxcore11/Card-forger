@@ -1,0 +1,1200 @@
+{
+  "scope": "Controlled presentation fixtures using production table/CSS. No live account or rules-engine claim. Half-sized CSS viewport models 200% desktop layout, not browser zoom input.",
+  "cases": [
+    {
+      "name": "screenshot",
+      "measurements": {
+        "viewport": {
+          "width": 1366,
+          "height": 1024
+        },
+        "hand": 7,
+        "clientWidth": 696,
+        "scrollWidth": 696,
+        "scrollbarStyle": "thin",
+        "row": {
+          "left": 320,
+          "right": 1016,
+          "top": 727.875,
+          "bottom": 1008
+        },
+        "ancestors": [
+          {
+            "class": "play-match-card-row",
+            "overflowX": "auto",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 696
+          },
+          {
+            "class": "play-match-lane",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 696
+          },
+          {
+            "class": "play-match-zone-groups",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 696
+          },
+          {
+            "class": "play-match-zone play-match-hand",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "relative",
+            "zIndex": "auto",
+            "width": 696
+          },
+          {
+            "class": "play-match-hand-area",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "absolute",
+            "zIndex": "10",
+            "width": 696
+          },
+          {
+            "class": "play-match-mat",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "absolute",
+            "zIndex": "auto",
+            "width": 1366
+          },
+          {
+            "class": "play-match-main",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "absolute",
+            "zIndex": "auto",
+            "width": 1366
+          },
+          {
+            "class": "play-match-table",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "relative",
+            "zIndex": "auto",
+            "width": 1366
+          },
+          {
+            "class": "",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 1366
+          },
+          {
+            "class": "",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 1366
+          }
+        ],
+        "faces": [
+          {
+            "id": "2",
+            "left": 324.8014221191406,
+            "right": 527.762451171875,
+            "top": 739.4312133789062,
+            "bottom": 1004.8030395507812,
+            "width": 202.96102905273438
+          },
+          {
+            "id": "3",
+            "left": 409.4084777832031,
+            "right": 604.283203125,
+            "top": 741.7711181640625,
+            "bottom": 1001.7083129882812,
+            "width": 194.87472534179688
+          },
+          {
+            "id": "4",
+            "left": 494.144775390625,
+            "right": 680.69580078125,
+            "top": 744.4201049804688,
+            "bottom": 998.6060791015625,
+            "width": 186.551025390625
+          },
+          {
+            "id": "5",
+            "left": 579,
+            "right": 757,
+            "top": 747.375,
+            "bottom": 995.5,
+            "width": 178
+          },
+          {
+            "id": "6",
+            "left": 655.30419921875,
+            "right": 841.855224609375,
+            "top": 744.4201049804688,
+            "bottom": 998.6060791015625,
+            "width": 186.551025390625
+          },
+          {
+            "id": "7",
+            "left": 731.716796875,
+            "right": 926.591552734375,
+            "top": 741.7711181640625,
+            "bottom": 1001.7083129882812,
+            "width": 194.874755859375
+          },
+          {
+            "id": "88",
+            "left": 808.237548828125,
+            "right": 1011.1985473632812,
+            "top": 739.4312133789062,
+            "bottom": 1004.8030395507812,
+            "width": 202.96099853515625
+          }
+        ]
+      },
+      "checks": {
+        "allCardsReachable": true,
+        "ordinaryHandFits": true,
+        "menuOpens": true,
+        "menuActionVisible": true,
+        "menuToggleReachable": true,
+        "inspectorOpens": true,
+        "inspectorCloses": true,
+        "dragSubmitsOnce": true
+      },
+      "hit": [
+        {
+          "id": "2",
+          "reachable": true
+        },
+        {
+          "id": "3",
+          "reachable": true
+        },
+        {
+          "id": "4",
+          "reachable": true
+        },
+        {
+          "id": "5",
+          "reachable": true
+        },
+        {
+          "id": "6",
+          "reachable": true
+        },
+        {
+          "id": "7",
+          "reachable": true
+        },
+        {
+          "id": "88",
+          "reachable": true
+        }
+      ]
+    },
+    {
+      "name": "desktop",
+      "measurements": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "hand": 7,
+        "clientWidth": 1250,
+        "scrollWidth": 1250,
+        "scrollbarStyle": "thin",
+        "row": {
+          "left": 320,
+          "right": 1570,
+          "top": 783.875,
+          "bottom": 1064
+        },
+        "ancestors": [
+          {
+            "class": "play-match-card-row",
+            "overflowX": "auto",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 1250
+          },
+          {
+            "class": "play-match-lane",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 1250
+          },
+          {
+            "class": "play-match-zone-groups",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 1250
+          },
+          {
+            "class": "play-match-zone play-match-hand",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "relative",
+            "zIndex": "auto",
+            "width": 1250
+          },
+          {
+            "class": "play-match-hand-area",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "absolute",
+            "zIndex": "10",
+            "width": 1250
+          },
+          {
+            "class": "play-match-mat",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "absolute",
+            "zIndex": "auto",
+            "width": 1920
+          },
+          {
+            "class": "play-match-main",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "absolute",
+            "zIndex": "auto",
+            "width": 1920
+          },
+          {
+            "class": "play-match-table",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "relative",
+            "zIndex": "auto",
+            "width": 1920
+          },
+          {
+            "class": "",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 1920
+          },
+          {
+            "class": "",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 1920
+          }
+        ],
+        "faces": [
+          {
+            "id": "2",
+            "left": 584.9263916015625,
+            "right": 787.887451171875,
+            "top": 795.4312133789062,
+            "bottom": 1060.802978515625,
+            "width": 202.9610595703125
+          },
+          {
+            "id": "3",
+            "left": 675.158447265625,
+            "right": 870.033203125,
+            "top": 797.7711181640625,
+            "bottom": 1057.708251953125,
+            "width": 194.874755859375
+          },
+          {
+            "id": "4",
+            "left": 765.519775390625,
+            "right": 952.07080078125,
+            "top": 800.4201049804688,
+            "bottom": 1054.6060791015625,
+            "width": 186.551025390625
+          },
+          {
+            "id": "5",
+            "left": 856,
+            "right": 1034,
+            "top": 803.375,
+            "bottom": 1051.5,
+            "width": 178
+          },
+          {
+            "id": "6",
+            "left": 937.92919921875,
+            "right": 1124.480224609375,
+            "top": 800.4201049804688,
+            "bottom": 1054.6060791015625,
+            "width": 186.551025390625
+          },
+          {
+            "id": "7",
+            "left": 1019.966796875,
+            "right": 1214.841552734375,
+            "top": 797.7711181640625,
+            "bottom": 1057.708251953125,
+            "width": 194.874755859375
+          },
+          {
+            "id": "88",
+            "left": 1102.112548828125,
+            "right": 1305.073486328125,
+            "top": 795.4312133789062,
+            "bottom": 1060.802978515625,
+            "width": 202.9609375
+          }
+        ]
+      },
+      "checks": {
+        "allCardsReachable": true,
+        "ordinaryHandFits": true,
+        "menuOpens": true,
+        "menuActionVisible": true,
+        "menuToggleReachable": true,
+        "inspectorOpens": true,
+        "inspectorCloses": true,
+        "dragSubmitsOnce": true
+      },
+      "hit": [
+        {
+          "id": "2",
+          "reachable": true
+        },
+        {
+          "id": "3",
+          "reachable": true
+        },
+        {
+          "id": "4",
+          "reachable": true
+        },
+        {
+          "id": "5",
+          "reachable": true
+        },
+        {
+          "id": "6",
+          "reachable": true
+        },
+        {
+          "id": "7",
+          "reachable": true
+        },
+        {
+          "id": "88",
+          "reachable": true
+        }
+      ]
+    },
+    {
+      "name": "ultrawide",
+      "measurements": {
+        "viewport": {
+          "width": 2560,
+          "height": 1080
+        },
+        "hand": 7,
+        "clientWidth": 1890,
+        "scrollWidth": 1890,
+        "scrollbarStyle": "thin",
+        "row": {
+          "left": 320,
+          "right": 2210,
+          "top": 783.875,
+          "bottom": 1064
+        },
+        "ancestors": [
+          {
+            "class": "play-match-card-row",
+            "overflowX": "auto",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 1890
+          },
+          {
+            "class": "play-match-lane",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 1890
+          },
+          {
+            "class": "play-match-zone-groups",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 1890
+          },
+          {
+            "class": "play-match-zone play-match-hand",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "relative",
+            "zIndex": "auto",
+            "width": 1890
+          },
+          {
+            "class": "play-match-hand-area",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "absolute",
+            "zIndex": "10",
+            "width": 1890
+          },
+          {
+            "class": "play-match-mat",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "absolute",
+            "zIndex": "auto",
+            "width": 2560
+          },
+          {
+            "class": "play-match-main",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "absolute",
+            "zIndex": "auto",
+            "width": 2560
+          },
+          {
+            "class": "play-match-table",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "relative",
+            "zIndex": "auto",
+            "width": 2560
+          },
+          {
+            "class": "",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 2560
+          },
+          {
+            "class": "",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 2560
+          }
+        ],
+        "faces": [
+          {
+            "id": "2",
+            "left": 904.9264526367188,
+            "right": 1107.887451171875,
+            "top": 795.4312133789062,
+            "bottom": 1060.802978515625,
+            "width": 202.96099853515625
+          },
+          {
+            "id": "3",
+            "left": 995.158447265625,
+            "right": 1190.033203125,
+            "top": 797.7711181640625,
+            "bottom": 1057.708251953125,
+            "width": 194.874755859375
+          },
+          {
+            "id": "4",
+            "left": 1085.519775390625,
+            "right": 1272.07080078125,
+            "top": 800.4201049804688,
+            "bottom": 1054.6060791015625,
+            "width": 186.551025390625
+          },
+          {
+            "id": "5",
+            "left": 1176,
+            "right": 1354,
+            "top": 803.375,
+            "bottom": 1051.5,
+            "width": 178
+          },
+          {
+            "id": "6",
+            "left": 1257.92919921875,
+            "right": 1444.480224609375,
+            "top": 800.4201049804688,
+            "bottom": 1054.6060791015625,
+            "width": 186.551025390625
+          },
+          {
+            "id": "7",
+            "left": 1339.966796875,
+            "right": 1534.841552734375,
+            "top": 797.7711181640625,
+            "bottom": 1057.708251953125,
+            "width": 194.874755859375
+          },
+          {
+            "id": "88",
+            "left": 1422.112548828125,
+            "right": 1625.0736083984375,
+            "top": 795.4312133789062,
+            "bottom": 1060.802978515625,
+            "width": 202.9610595703125
+          }
+        ]
+      },
+      "checks": {
+        "allCardsReachable": true,
+        "ordinaryHandFits": true,
+        "menuOpens": true,
+        "menuActionVisible": true,
+        "menuToggleReachable": true,
+        "inspectorOpens": true,
+        "inspectorCloses": true,
+        "dragSubmitsOnce": true
+      },
+      "hit": [
+        {
+          "id": "2",
+          "reachable": true
+        },
+        {
+          "id": "3",
+          "reachable": true
+        },
+        {
+          "id": "4",
+          "reachable": true
+        },
+        {
+          "id": "5",
+          "reachable": true
+        },
+        {
+          "id": "6",
+          "reachable": true
+        },
+        {
+          "id": "7",
+          "reachable": true
+        },
+        {
+          "id": "88",
+          "reachable": true
+        }
+      ]
+    },
+    {
+      "name": "zoom-equivalent",
+      "measurements": {
+        "viewport": {
+          "width": 683,
+          "height": 512
+        },
+        "hand": 7,
+        "clientWidth": 653,
+        "scrollWidth": 653,
+        "scrollbarStyle": "thin",
+        "row": {
+          "left": 15,
+          "right": 668,
+          "top": 896.59375,
+          "bottom": 1116.59375
+        },
+        "ancestors": [
+          {
+            "class": "play-match-card-row",
+            "overflowX": "auto",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 653
+          },
+          {
+            "class": "play-match-lane",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 653
+          },
+          {
+            "class": "play-match-zone-groups",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 653
+          },
+          {
+            "class": "play-match-zone play-match-hand",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "relative",
+            "zIndex": "auto",
+            "width": 653
+          },
+          {
+            "class": "play-match-hand-area",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "relative",
+            "zIndex": "10",
+            "width": 653
+          },
+          {
+            "class": "play-match-mat",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "relative",
+            "zIndex": "auto",
+            "width": 667
+          },
+          {
+            "class": "play-match-main",
+            "overflowX": "auto",
+            "overflowY": "auto",
+            "position": "relative",
+            "zIndex": "auto",
+            "width": 667
+          },
+          {
+            "class": "play-match-table",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "relative",
+            "zIndex": "auto",
+            "width": 683
+          },
+          {
+            "class": "",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 683
+          },
+          {
+            "class": "",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 683
+          }
+        ],
+        "faces": [
+          {
+            "id": "2",
+            "left": 86.62630462646484,
+            "right": 230.29549407958984,
+            "top": 916.6425170898438,
+            "bottom": 1104.4915771484375,
+            "width": 143.669189453125
+          },
+          {
+            "id": "3",
+            "left": 150.49514770507812,
+            "right": 288.4402770996094,
+            "top": 918.298828125,
+            "bottom": 1102.3009033203125,
+            "width": 137.94512939453125
+          },
+          {
+            "id": "4",
+            "left": 214.4554901123047,
+            "right": 346.50848388671875,
+            "top": 920.1739501953125,
+            "bottom": 1100.10498046875,
+            "width": 132.05299377441406
+          },
+          {
+            "id": "5",
+            "left": 278.5,
+            "right": 404.5,
+            "top": 922.265625,
+            "bottom": 1097.90625,
+            "width": 126
+          },
+          {
+            "id": "6",
+            "left": 336.49151611328125,
+            "right": 468.5445251464844,
+            "top": 920.1739501953125,
+            "bottom": 1100.10498046875,
+            "width": 132.05300903320312
+          },
+          {
+            "id": "7",
+            "left": 394.5597229003906,
+            "right": 532.5048828125,
+            "top": 918.298828125,
+            "bottom": 1102.3009033203125,
+            "width": 137.94515991210938
+          },
+          {
+            "id": "88",
+            "left": 452.7044982910156,
+            "right": 596.3737182617188,
+            "top": 916.6425170898438,
+            "bottom": 1104.4915771484375,
+            "width": 143.66921997070312
+          }
+        ]
+      },
+      "checks": {
+        "allCardsReachable": true,
+        "ordinaryHandFits": true,
+        "menuOpens": true,
+        "menuActionVisible": true,
+        "menuToggleReachable": true,
+        "inspectorOpens": true,
+        "inspectorCloses": true
+      },
+      "hit": [
+        {
+          "id": "2",
+          "reachable": true
+        },
+        {
+          "id": "3",
+          "reachable": true
+        },
+        {
+          "id": "4",
+          "reachable": true
+        },
+        {
+          "id": "5",
+          "reachable": true
+        },
+        {
+          "id": "6",
+          "reachable": true
+        },
+        {
+          "id": "7",
+          "reachable": true
+        },
+        {
+          "id": "88",
+          "reachable": true
+        }
+      ]
+    },
+    {
+      "name": "large-hand",
+      "measurements": {
+        "viewport": {
+          "width": 1366,
+          "height": 1024
+        },
+        "hand": 14,
+        "clientWidth": 696,
+        "scrollWidth": 811,
+        "scrollbarStyle": "thin",
+        "row": {
+          "left": 320,
+          "right": 1016,
+          "top": 727.875,
+          "bottom": 1008
+        },
+        "ancestors": [
+          {
+            "class": "play-match-card-row",
+            "overflowX": "auto",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 696
+          },
+          {
+            "class": "play-match-lane",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 696
+          },
+          {
+            "class": "play-match-zone-groups",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 696
+          },
+          {
+            "class": "play-match-zone play-match-hand",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "relative",
+            "zIndex": "auto",
+            "width": 696
+          },
+          {
+            "class": "play-match-hand-area",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "absolute",
+            "zIndex": "10",
+            "width": 696
+          },
+          {
+            "class": "play-match-mat",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "absolute",
+            "zIndex": "auto",
+            "width": 1366
+          },
+          {
+            "class": "play-match-main",
+            "overflowX": "visible",
+            "overflowY": "visible",
+            "position": "absolute",
+            "zIndex": "auto",
+            "width": 1366
+          },
+          {
+            "class": "play-match-table",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "relative",
+            "zIndex": "auto",
+            "width": 1366
+          },
+          {
+            "class": "",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 1366
+          },
+          {
+            "class": "",
+            "overflowX": "hidden",
+            "overflowY": "hidden",
+            "position": "static",
+            "zIndex": "auto",
+            "width": 1366
+          }
+        ],
+        "faces": [
+          {
+            "id": "2",
+            "left": 320.674560546875,
+            "right": 527.5866088867188,
+            "top": 738.3781127929688,
+            "bottom": 1006.3463745117188,
+            "width": 206.91204833984375
+          },
+          {
+            "id": "3",
+            "left": 364.674560546875,
+            "right": 571.5866088867188,
+            "top": 738.3781127929688,
+            "bottom": 1006.3463745117188,
+            "width": 206.91204833984375
+          },
+          {
+            "id": "4",
+            "left": 408.674560546875,
+            "right": 615.5866088867188,
+            "top": 738.3781127929688,
+            "bottom": 1006.3463745117188,
+            "width": 206.91204833984375
+          },
+          {
+            "id": "5",
+            "left": 452.674560546875,
+            "right": 659.5866088867188,
+            "top": 738.3781127929688,
+            "bottom": 1006.3463745117188,
+            "width": 206.91204833984375
+          },
+          {
+            "id": "6",
+            "left": 504.963134765625,
+            "right": 703.9113159179688,
+            "top": 740.5623168945312,
+            "bottom": 1003.2568359375,
+            "width": 198.94818115234375
+          },
+          {
+            "id": "7",
+            "left": 557.3861083984375,
+            "right": 748.1280517578125,
+            "top": 743.05712890625,
+            "bottom": 1000.1578979492188,
+            "width": 190.741943359375
+          },
+          {
+            "id": "40",
+            "left": 609.9331665039062,
+            "right": 792.2364501953125,
+            "top": 745.8594970703125,
+            "bottom": 997.05322265625,
+            "width": 182.30328369140625
+          },
+          {
+            "id": "41",
+            "left": 658.2635498046875,
+            "right": 840.5668334960938,
+            "top": 745.8594970703125,
+            "bottom": 997.05322265625,
+            "width": 182.30328369140625
+          },
+          {
+            "id": "42",
+            "left": 702.3719482421875,
+            "right": 893.1138916015625,
+            "top": 743.05712890625,
+            "bottom": 1000.1578979492188,
+            "width": 190.741943359375
+          },
+          {
+            "id": "43",
+            "left": 746.5886840820312,
+            "right": 945.536865234375,
+            "top": 740.5623168945312,
+            "bottom": 1003.2568359375,
+            "width": 198.94818115234375
+          },
+          {
+            "id": "44",
+            "left": 790.9133911132812,
+            "right": 997.825439453125,
+            "top": 738.3781127929688,
+            "bottom": 1006.3463745117188,
+            "width": 206.91204833984375
+          },
+          {
+            "id": "45",
+            "left": 834.9133911132812,
+            "right": 1041.825439453125,
+            "top": 738.3781127929688,
+            "bottom": 1006.3463745117188,
+            "width": 206.91204833984375
+          },
+          {
+            "id": "46",
+            "left": 878.9133911132812,
+            "right": 1085.825439453125,
+            "top": 738.3781127929688,
+            "bottom": 1006.3463745117188,
+            "width": 206.91204833984375
+          },
+          {
+            "id": "47",
+            "left": 922.9133911132812,
+            "right": 1129.825439453125,
+            "top": 738.3781127929688,
+            "bottom": 1006.3463745117188,
+            "width": 206.91204833984375
+          }
+        ]
+      },
+      "checks": {
+        "allCardsReachable": true,
+        "ordinaryHandFits": true,
+        "menuOpens": true,
+        "menuActionVisible": true,
+        "menuToggleReachable": true,
+        "inspectorOpens": true,
+        "inspectorCloses": true
+      },
+      "hit": [
+        {
+          "id": "2",
+          "reachable": true
+        },
+        {
+          "id": "3",
+          "reachable": true
+        },
+        {
+          "id": "4",
+          "reachable": true
+        },
+        {
+          "id": "5",
+          "reachable": true
+        },
+        {
+          "id": "6",
+          "reachable": true
+        },
+        {
+          "id": "7",
+          "reachable": true
+        },
+        {
+          "id": "40",
+          "reachable": true
+        },
+        {
+          "id": "41",
+          "reachable": true
+        },
+        {
+          "id": "42",
+          "reachable": true
+        },
+        {
+          "id": "43",
+          "reachable": true
+        },
+        {
+          "id": "44",
+          "reachable": true
+        },
+        {
+          "id": "45",
+          "reachable": true
+        },
+        {
+          "id": "46",
+          "reachable": true
+        },
+        {
+          "id": "47",
+          "reachable": true
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "passed": true,
+  "sourceSha256": {
+    "experiments/phase-engine/ui-review.html": "513ed38b033b2102be7b4b9ff134efac4d1db83ab4ce50cc7d675426328aa8b2",
+    "finish-effects.css": "d1ff9a1b4da5ac87ce58efd0702182bae09cc54404efd265024ac8fd35377d98",
+    "play-menu.css": "8f8129adb7117c8259f0ff360b9e2e5d55f668430fd5f6eec29c3915246cae67",
+    "experiments/phase-engine/match-table.css": "2cee5ddd9cf7ce264a71c717f910d4d6f1a58056c8aad241fd6841594adf7f6d",
+    "style.css": "04e17cfdff56d36d510b32f645b0d5bd56d3801d0fb54a95dc6ddf01d9582df5",
+    "experiments/phase-engine/ui-review.mjs": "2452c80622f93b48d97763ce5f6f1d2c69d96d44a6a8a3ea5c64a7eb9e820b38",
+    "experiments/phase-engine/match-table.mjs": "7545bd56a14c7a26241a8a0ba9e43e2f86bbb36eab187059ddbbf3190cf177e5",
+    "play-card-surface.js": "a3a922b5c89d48978583cd1e1dd6b715efe1eaa0041564265b7c28f3d1282beb",
+    "play-player-mat.js": "92508dfa4539442cf513cd246a5859c94ea6708d66eb7727b0da3a0114eca361",
+    "play-turn-controls.js": "03988d14754cdd949dc0aa8c6f8613d21060e6de389dcaa317b058b2f71adb2f",
+    "experiments/phase-engine/interaction-surface.mjs": "fac157b3a67cf1a5b1d7efdbe1e8f703e0afa530e0769d74d065b41c08992673",
+    "experiments/phase-engine/card-placement.mjs": "9444e7277c84d18966bb8d386de581febe6f3954d2c2eae51ace09842dc103fd",
+    "icons.js": "dd77097bd833de7afd48a8dfd0c84e48cd64b0da423c72466523019d6fb9a28b",
+    "experiments/phase-engine/card-stats.mjs": "9d2df7ff86d2f96e97481451b7cdb3eb500d447430f4f9862ba76c49ca7bb46f",
+    "experiments/phase-engine/random-outcomes.mjs": "1aa212c485c766caf1d80403f2413c22bb17194cbbfa54979a699a38ea2d12d0",
+    "core.js": "afde1efb68f3609a5e2a412fab4c8962c0ccde7371f9b88f42340686e6e6f1a7",
+    "artwork.js": "abb307ff9c1c918ddd3d6734c95d8608041aa59a46fbd8cf5fa00e57878cd825",
+    "ui.js": "8757c5194817622fba6a407e319be39e67ee54f34770e0029554e7f98a6b90b8",
+    "finish-preview.js": "8c7039ec52e9d7509c5aff4e967a7c93e58fec5a77d0031dee987b6f7162d86b",
+    "rarity-emblem.js": "493354bcd30705cab0f447e44ffeef714f0c31ef693417e9d29b21e9f568c28e",
+    "commander-evidence.js": "34921c07e7af5ffcc302193403541a76158c55ac2488b15eb13f0d6a15dfb3d3",
+    "rule-dex.js": "c78deb62af0f7740e04360323500c7cc1f05ca2df891497c7c3c0dff44bf6cc5",
+    "play-deck-context.js": "7094ebad2d1bcbe99fa6f54ad39d04413a83d3862b85254b8659dd4fe542226b",
+    "power.js": "801e5c500dc6f3a274466ff40b2db9983525df3514e5defca39adc7186393b48",
+    "experiments/phase-engine/practice-preflight.mjs": "2df8f023a703e183e75bfd7113e5d176d91142d649540aafd49a897623632d04",
+    "brand.js": "60b3b0f745ebf1133d16de4ef703eabfd24a188d530158ecf0a922c39f6bd2d9",
+    "profile-art.js": "e2c0eedbeaf4848db0c35a7fbf115288cff7fffd234037a089978f887960983a",
+    "experiments/phase-engine/choice-presentation.mjs": "ed1bab8f154aea5787c8d2b7928ff8eb8dc5a6d4a61caf9e9d711dc3ecbf2e32",
+    "experiments/phase-engine/protocol-fault.mjs": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+    "mtg-tcgprice.js": "dc0511eb7edbb414867602cf8e8f173de90890137524904dff525588e2ae5e94",
+    "emblems.js": "0f3e1baeea5bbe94feed8fc62ecc8991a7d198de219fde0c235e8b3d3240e694",
+    "formats.js": "5982aa0ead244f965d5fa982c32bbe500f93ea24f4a976ca608e0746798772e9",
+    "pokemon-set-art.js": "b73f62fcd6f6f5edc46cb67a1c5de269e8bbf121995504db9307048cf7368bf0",
+    "tier.js": "e752b29e55b52472102e32db18a95cef7c70802fb7592c2756307066538d315e",
+    "feedback-layer.js": "084ac243e3aa2d8d4680175d2e17a8a5e15f0c6a9a07b6599c4eede9bba28aab",
+    "finish-materials.js": "c63e7c193743e124432d9a7d45c7809d0ce0656ce0de9148872a2f7ec6d2bcdd",
+    "finish-effects.js": "4e41844eb8a415470d5777b5577d6997c06fc9d388639def68c183149c726a91",
+    "ygo-rarity-foil.js": "267637c97e651a2314e8811e175ef27e23bd40f56b51a56cd0304ebcf46e1300",
+    "ygo-name-foil.js": "a7a63089eb201041669be66fc426a2aa2d86ea697fc3ac806134884de0f832b7",
+    "ptcg-foil.js": "3e8e77fc97956ea3cee6de76b28f9a1376a13a8c5ef75c5546ae18a32a4abaa6",
+    "mtg-foil.js": "3df5647c9b0ab28aef675d3ad4c4fbc494a01854511b003cdc1e8ea9d9c97414",
+    "ygo-foil-recipes.js": "fa39f79c2744b9facb9d2d8d741ecb19204f73de473a880e3e2be55284116bd6",
+    "pricing-presentation.js": "67fbba3c65eac1c625e60d7fce034918481218b6209fbae5446b092bab934e93",
+    "commander-combos.js": "ffc88532a161a35b0e62820fe19eb9b83150324c76c9f4f486ecb8ae9486fa06",
+    "game-changers.js": "cee1b308d381ea0f7909979a01d0b2f2fc8221d0cdce53a89aa42c7421d6af13",
+    "extras.js": "33fc5ca8360779c90069651552207375e792200c5ff86e38863ff50c66dd2192",
+    "rule-reference.js": "1be69458e407f1ba9d81de8cf5ce966253f64bcfa3cbb91f7b49256f5d1e3501",
+    "store.js": "47598d7e7d6080f41ade8ba8142742aa2d4eb7e02b1b0b3bf72e7e443d4dc66b",
+    "rule-extra.js": "2e74d3f9db240866d0fc9c0433113be91af8703785b40c14f8ac15a63caaa66a",
+    "experiments/phase-engine/cpu-difficulty-config.mjs": "f0a9998c21b55ea2814a7e43f1be02eae41731859e9fd8205bfa70f3ff613715",
+    "experiments/phase-engine/match-input.mjs": "2dd79994239ebe00f13b2a3495840b34864507088c663c2ee440afb747ef3ffd",
+    "card-discovery.js": "f080f785107944b1b30a4468388c0571a434ad98fddf1fa5b59767fcf1fc523d",
+    "mtg-wiki-knowledge.js": "ae613ef23136e2dfcbc34e5692bd4197f69acf09be859bc72675cfcfa6b2b720",
+    "rule-lessons.js": "acfccb9ea2153407b7d26c8ddb9d725e459f6fb34332b9302bee104a4cac7318",
+    "rule-corpus.js": "c73301b679b2c9c1c6aabbea4f99d493738620c724bc09387c2cec8f62919d91",
+    "rule-hover.js": "5948f80dcd827a418ceb962659f1247ed40985807ab051ca2438e84a77409505",
+    "engine-map.js": "f19e76625d9447ef43e47ac40948f12d410ace7145d1103ad2bd3fa85f15da5e",
+    "strategy-risk.js": "cb2d4351d9633c858c0b3732eade696e9f19e60637f95373a78ddd6bc4b318ab",
+    "ygo.js": "b54959bc32d57a7e12e034bb6f8df387d3cbff566645e1178dc3e2c193ce4192",
+    "ptcg.js": "cb2108adea5577e3db9e2e6a89a496f91398a77ab7de4bcbb13a0bf7175a7cc6",
+    "deckaudit.js": "895dc335495ad977b653d2c906735225ae3ed5308df29572454977fb166c81ab",
+    "scouting.js": "51d95c80bd65fa3cb8ddc8df812cb098a1a4e1e9edeb912d045a5fb31e8c6aa1",
+    "mtg-tags.js": "dc1d28cb9595d58b0b5051c3f214719465bf3f73ced08f86be536bf036c8c77c",
+    "goldfish.js": "8bfab95443a8a45635d9e45f50b19ed5f31128452113360af804c518a21eb748",
+    "insights.js": "cb118f46095cb418060ca58dfcd7e6677bdbe2990094376e6e698c76e4e17237",
+    "commander-criteria.js": "09d3a9dad3fbe7d8bfa6e228eecb87a0266718de8ef7485083b1e89519fc2530",
+    "commander-strategy.js": "ccb07ba16ca84812af6b655d6806db8afe6226f205177e32b8ade342be92d7e2",
+    "meta.js": "83cb7a76ed1f4a22fb5b2e695664001036d0a5d1e5e39732a3af675071cfcdd3",
+    "deckpower.js": "829efac88f6fda7c7ec860cb8fd3c97073bbdb7d34b5baa6705c744d25af52c8",
+    "price-reference.js": "54fab155607d71843914cb96ebd5e8825c6e8f6302ea12e34c8e427f2f148418",
+    "games.js": "e05afb6c8c6d19e9d238529fad73b9e5ee10b2866a694de7257708a5ebb7cebb",
+    "ygo-foil-analysis.js": "3bd6e4a29f92de1d70a0a72991c8b3b8a8d14a48d26174e20cf0b332dcfb6e6d",
+    "foil-gl.js": "d41e88f3484f5bcaf14c931eb0e7095414b2d4aca2c260f7e86a6051fc1c5568",
+    "pokemon-promo-evidence.js": "1d4e82315b91bf8cb05c055461a0e383a653feef01d0bc9cb6cd9f2f9090e696",
+    "pokemon-variant-options.js": "638e93bc9b48dd04cc779a411b40106db446859b1a5c311a8febe3a2f2d810fc",
+    "pokemon-anniversary-masks.js": "29e0c3e3103a03c2d295b1f2ccfe7e40a844b484100aa4a61fbe35777647a554",
+    "mtg-foil-recipes.js": "315782cbad391c4f6b59a75f61da5353a018f9c4970068afa9a5596974be3117",
+    "mtg-foil-analysis.js": "d734b4f42e7a8db32f2083db2a7d4d82fb4445aca23cf3ddafea58ccbbb5cb34",
+    "ptcg-foil-recipes.js": "7bbc3b1b9ce6277618f205da423e2f1139c7873198d959a596c2536aa8c71790",
+    "ygo-prices.js": "6dfd620cdc4b873919f181cad0d1d42a682d9d214029678044c097d5e8f62ab7",
+    "condition-value.js": "d74de09e51263c161785a52297b7adf02c92b41fe46a271c41686341ad5e4678",
+    "ygo-set-prices.js": "821515bf8e8ea2d869755966c1af588f66d60e8842e1d16cc8458f19b126a60d",
+    "planner.js": "8e0b9b867d2c92ded76fd0c53f77a886280bd1ad744d412e929b9d6fbefaf92d",
+    "mtg-cheap.js": "8a2c1f43ee5f221be54c0d5283ef40478761a5f658bb7fcc7426773973569649",
+    "pricehist.js": "f1c045fef7b4cecd9cb4ee74108a1dc5560bb415d2e0a094493a2d5391452c8c",
+    "mtg-keyword-reference.js": "280e8c999f7ca455660e028d3f3bace07b8d4592fe9b8d11524cdfee4b531fbc",
+    "experiments/phase-engine/catalog-admission.mjs": "cd92cb29003e9e631d49f17a8a2c63a97ac41092fb1fb8145c84cacc1cb4e8f7",
+    "mtg-vocabulary.js": "19bb3a653f0e1869ea77b88c40559ec878b610618bc82a4c68f858dec77ba29e",
+    "deck-mechanic-plan.js": "1d1fac0775c9a3ed5ff3b4c308917f967b4f23d6764b2662f47c8c92c5a1b052",
+    "storage.js": "4d688ebc66fe16f685273b27010f4f87d152ee5332f0ad78c9d9a7b3daa812c6",
+    "mtg-ability-endpoints.js": "719591e6e630ac31b0473d07106f440e6b59ac9632c7b5c19ee595b2798c1ba8",
+    "pairing.js": "14b5b47abf526644d6e32e14101929fa1437e4cdb748c4dfe0e65b26e8f8bec4",
+    "collector-search.js": "93fec67b44ba06b61cafdf9eab3761af2cf1359e1b017320d262684c58985f85",
+    "mtg-effects.js": "a41bdc6a008be2912fe155234b75ce34c4349520da15afe6438ca6062c760566",
+    "ygo-identity.js": "49bfc25d09543ccca80ed60b27b29c09ba07b537019009e870982236a93c2368",
+    "pokemon-identity.js": "4126dcb8926f3d69c6801fc6e791fec80c31daf2c0f18bbd0f2ef38d56617dcd",
+    "pokemon-prices.js": "72fa4306a4c52b2aaa334cc5fe4bfd1e0749cc7039ba69b88f82d619c6d4dc18",
+    "pokemon-catalogue-supplement.js": "bb04ab13b21791507042116209cb34264890b5e8ac8a0b9b30ddb57a7ab2a937",
+    "ptcg-glc-rules.js": "83d1281345ec8d6a8cf09028162acfcc0c90c2113f97511f509768a2d39b366e",
+    "pokemon-corrections.js": "b6396ce5f3eb1d6d676ac1c7b72b4bcf88c0d2637d15a0921da9faf5106dcdc9",
+    "magic-owned-detail.js": "464876557b7c759ecb4c3a2d05fec0682e071f8b4474a3c4072df3e51c0cf903",
+    "magic-card-color.js": "0cecf2fe696f060efb7086664da84ac4dc78f1c95270c91a60280e5f23ab9de5",
+    "value-history.js": "482ac6ef703375918982aca5e8e608628ae10036297f7a90de2b1589e89bf96f",
+    "mtg-route-coverage.js": "eb7d43cf24b723bcec522de09937deb5ed251abd021e93bd5a710941d082aeda",
+    "mtg-mana-sources.js": "6e2905b76befa02fa37329751ddbb050ab363d34ef8c7581d0b1568645f6eb69",
+    "mtg-commander-conditions.js": "1981b42b751ce485c56af85914e0b5109847ecf79a2a34a85d21fdbc818cb43b",
+    "meta-curation.js": "e6bb57cd63bbfc1132bd6bb90771b46613f1422e6c4d570c1eda803f5af2534a",
+    "matchup.js": "a8de56b41bb1666a85708b84a4389575bdfef38f2fe98f57e0e9f0d926895116",
+    "mtg-land-requirements.js": "5baf21529b41e98df476cbef55b0b526d03d8c805239d29a846f55794bf5855f",
+    "pokemon-role.js": "4c33bd5adf9ae86c2a56298e57e6f196395ebdf2764ce281c662991367658b2e",
+    "account-scope.js": "2fcb0c0d12524ee218f20a97d4fd44594404926e2be45144fd0230dc68636a9a",
+    "pokemon-art.js": "bde7b32ba6388ec00c344a2f935d9883fd3803dacb8ecc80141f09c665dfd830",
+    "ptcg-product.js": "b26360b5b62480665b9281eec5b8c75cb95c776db20002128d37f41dd6758b2d",
+    "experiments/phase-engine/ui-review-catalog.json": "96a38cc6aac78eec7c254afaba4a9d30d9971f1343af206e9ecd8002a6fdcd9d"
+  }
+}

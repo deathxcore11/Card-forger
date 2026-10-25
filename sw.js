@@ -1,5 +1,6 @@
-const CACHE = "cardforge-shell-v323-play-flow";
+const CACHE = "cardforge-shell-v324-choice-ui";
 const ASSETS = [
+  "./experiments/phase-engine/choice-presentation.mjs",
   "./play-card-support.js",
   "./experiments/phase-engine/shipped-response-proof.mjs",
   "./experiments/phase-engine/compiled-card-support.mjs",
