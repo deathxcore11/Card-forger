@@ -1,5 +1,5 @@
 // Human-only, engine-authored interaction projection. Never feed this to CPU.
-// This first ingress supports exact choices and count-bounded card selections.
+// Supports exact choices, count-bounded selections and ordered target sequences.
 // Other schemas remain unavailable; no AI candidate list supplies legality.
 import {fail} from './protocol-fault.mjs';
 const obj=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
@@ -12,8 +12,8 @@ export function interactionSubmission(value){
   if(!keys(data,['choiceId'])||!token(data.choiceId))fail('BAD_INTERACTION');
   return {interactionId:value.interactionId,response:{type,data:{choiceId:data.choiceId}}};
  }
- if(type==='select'){
-  if(!keys(data,['choiceIds'])||!Array.isArray(data.choiceIds)||data.choiceIds.length>1024||!data.choiceIds.every(token)||new Set(data.choiceIds).size!==data.choiceIds.length)fail('BAD_INTERACTION');
+ if(type==='select'||type==='sequence'){
+  if(!keys(data,['choiceIds'])||!Array.isArray(data.choiceIds)||data.choiceIds.length>1024||!data.choiceIds.every(token)||type==='select'&&new Set(data.choiceIds).size!==data.choiceIds.length)fail('BAD_INTERACTION');
   return {interactionId:value.interactionId,response:{type,data:{choiceIds:[...data.choiceIds]}}};
  }
  fail('UNSUPPORTED_INTERACTION');
@@ -26,8 +26,9 @@ export function projectInteraction(raw,seat){
   if(!token(o?.interactionId))fail('INVALID_INTERACTION_VIEW');
   const exact=o.response?.type==='exactChoices',spec=o.response?.data?.spec;
   const selection=o.response?.type==='schema'&&spec?.type==='select'&&spec.data?.constraint?.type==='count'&&spec.data?.confirm==='explicit';
-  if(!exact&&!selection)continue;
-  const min=exact?1:spec.data.constraint.data?.min,max=exact?1:spec.data.constraint.data?.max;
+  const sequence=o.response?.type==='schema'&&spec?.type==='sequence'&&spec.data?.confirm==='explicit';
+  if(!exact&&!selection&&!sequence)continue;
+  const min=exact?1:sequence?spec.data.min:spec.data.constraint.data?.min,max=exact?1:sequence?spec.data.max:spec.data.constraint.data?.max;
   if(!Number.isSafeInteger(min)||!Number.isSafeInteger(max)||min<0||max<min||max>1024)continue;
   const rows=exact?o.response.data.choices:o.response.data.candidates;
   if(!Array.isArray(rows)||rows.length>4096)continue;
@@ -38,13 +39,14 @@ export function projectInteraction(raw,seat){
      const d=s.data;
      return [{type:'object',reference:token(d.reference)?d.reference:null,name:token(d.name)?d.name:null,zone:token(d.zone)?d.zone:null}];
     }
+    if(s?.type==='player'&&[0,1].includes(s.data?.seat))return [{type:'player',seat:s.data.seat}];
     if(s?.type==='value'&&obj(s.data))return [{type:'value',role:token(s.data.role)?s.data.role:null,value:token(s.data.value)?s.data.value:null}];
     if(s?.type==='action'&&token(s.data?.code))return [{type:'action',code:s.data.code}];
     return [];
    });
    return {id:c.id,available:c.status?.type==='available',surfaces};
   });
-  opportunities.push({interactionId:o.interactionId,type:exact?'choose':'select',min,max,choices});
+  opportunities.push({interactionId:o.interactionId,type:exact?'choose':sequence?'sequence':'select',min,max,choices,...(sequence?{unique:spec.data.unique===true,escape:token(spec.data.escape)?spec.data.escape:null}:{})});
  }
  return {kind:token(raw.waitingForKind?.code)?raw.waitingForKind.code:null,canSubmit:canSubmit&&opportunities.length>0,opportunities};
 }

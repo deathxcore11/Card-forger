@@ -1,6 +1,7 @@
 // DOM presentation for a private, engine-backed research match. No card rules.
 const labels={MulliganDecision:'Opening hand',Priority:'Priority',DeclareAttackers:'Declare attackers',DeclareBlockers:'Declare blockers',GameOver:'Match finished'};
-const actionText=c=>c.surfaces.map(s=>s.name||s.value||s.code||'').filter(Boolean).join(' · ')||'Choose';
+const actionNames={tapLandForMana:'Tap for mana',cancelCast:'Cancel casting',passPriority:'Pass priority',castSpell:'Cast spell',activateAbility:'Activate ability',mulliganDecision:'Opening hand'};
+const actionText=(c,kind)=>c.surfaces.map(s=>s.type==='player'?`Player ${s.seat+1}`:s.type==='action'?(kind==='ManaPayment'&&s.code==='passPriority'?'Pay selected mana':actionNames[s.code]||s.code.replace(/([a-z])([A-Z])/g,'$1 $2')):s.name||s.value||'').filter(Boolean).join(' · ')||'Choose';
 export function mountMatchTable(root,{session,profile={displayName:'You'},resolveCard=()=>null,onExit=()=>{}}){
  let menu=null,lastRevision=-1;const log=[];let lastRenderKey=null;
  function updateClock(clock){const out=root.querySelector('[aria-label="Response time"]');if(out){out.textContent=clock?.remainingSeconds!==null&&clock?.remainingSeconds!==undefined?`${clock.remainingSeconds}s to respond`:clock?.needsChoice?'Your choice is required':'';out.className=clock?.warning?'play-match-warning':'';}}
@@ -40,7 +41,8 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
   const history=element('details');history.append(element('summary','Game progress'));const entries=element('ol');for(const row of log.slice(-20))entries.append(element('li',row));history.append(entries);rail.append(history);
   const selectedCard=cardById.get(selected),inspectPanel=element('section');inspectPanel.append(element('h2',selectedCard?.name||'Inspect a card'));
   if(selectedCard){const data=resolveCard(selectedCard);if(data?.imageUrl){const img=element('img');img.src=data.imageUrl;img.alt=selectedCard.name;inspectPanel.append(img);}inspectPanel.append(element('p',creatureState(selectedCard)),element('p',(selectedCard.keywords||[]).join(' · ')));if(data?.oracleText)inspectPanel.append(element('p',data.oracleText));}
-  else inspectPanel.append(element('p','Click a visible card to pin its details here.'));rail.append(inspectPanel);
+  if(selectedCard?.zone==='Hand'&&selectedCard.controller===view.seat&&!selectedCard.types?.includes('Land')&&view.decision.kind==='Priority'&&view.prioritySeat===view.seat){for(const payment of ['auto','manual'])inspectPanel.append(button(payment==='auto'?'Cast · automatic mana':'Cast · manual mana',()=>session.cast(selectedCard.id,payment),{disabled:busy||!!error&&error!=='CHOICE_REJECTED',key:`cast-${payment}-${selectedCard.id}`}));}
+  if(!selectedCard)inspectPanel.append(element('p','Click a visible card to pin its details here.'));rail.append(inspectPanel);
   if(menu!==null){const pop=element('div',undefined,'play-match-context');pop.setAttribute('role','menu');pop.append(button('Inspect card',()=>{menu=null;render(session.snapshot());},{key:'menu-inspect'}));for(const c of view.choices.filter(c=>c.sourceId===menu))pop.append(button(c.label,()=>session.choose(c.token),{disabled:busy||!!error&&error!=='CHOICE_REJECTED'}));pop.append(button('Close menu',()=>{menu=null;render(session.snapshot());root.querySelector(`[data-instance="${selected}"]`)?.focus();},{key:'menu-close'}));rail.append(pop);}
   main.append(table,rail);root.append(main);
   const footer=element('footer',undefined,'play-match-decisions');footer.setAttribute('aria-label','Match decisions');footer.dataset.keepScroll='decisions';
@@ -52,10 +54,12 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
   if(!status.terminal){
    for(const choice of view.choices)controls.append(button(choice.label,()=>session.choose(choice.token),{disabled:busy||!!error&&error!=='CHOICE_REJECTED',key:choice.token}));
    for(const o of (view.canAct?[]:view.interaction?.opportunities)||[]){
-    const group=element('fieldset');group.append(element('legend',o.type==='select'?`Select ${o.min===o.max?o.min:o.min+'–'+o.max}`:'Choose one'));
-    for(const c of o.choices)group.append(button(actionText(c),()=>session.select(o.interactionId,c.id),{key:c.id,disabled:busy||!c.available||!!error&&error!=='CHOICE_REJECTED',pressed:pending?.interactionId===o.interactionId&&pending.choiceIds.includes(c.id)}));
+    const group=element('fieldset');group.append(element('legend',o.type!=='choose'?`${o.type==='sequence'?'Choose in order':'Select'} ${o.min===o.max?o.min:o.min+'–'+o.max}`:'Choose one'));
+    for(const c of o.choices)group.append(button(actionText(c,view.decision.kind),()=>session.select(o.interactionId,c.id),{key:c.id,disabled:busy||!c.available||!!error&&error!=='CHOICE_REJECTED',pressed:pending?.interactionId===o.interactionId&&pending.choiceIds.includes(c.id)}));
+    if(o.type==='sequence'&&pending?.interactionId===o.interactionId)group.append(element('p','Order: '+pending.choiceIds.map(id=>actionText(o.choices.find(c=>c.id===id))).join(' → ')));
     const count=pending?.interactionId===o.interactionId?pending.choiceIds.length:0;
     group.append(button('Confirm choice',()=>session.confirm(),{disabled:busy||!!error&&error!=='CHOICE_REJECTED'||count<o.min||count>o.max||!pending,key:`confirm-${o.interactionId}`}));
+    if(o.min===0)group.append(button('Select none',()=>session.selectNone(o.interactionId),{disabled:busy,key:`none-${o.interactionId}`}));
     group.append(button('Clear selection',()=>session.clearSelection(),{disabled:busy,key:`clear-${o.interactionId}`}));controls.append(group);
    }
    if(view.awaitingHuman&&!view.canAct&&!view.interaction?.canSubmit)controls.append(element('p','This decision is not available in the research controls yet. The game remains saved.'));

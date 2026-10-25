@@ -67,19 +67,22 @@ export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.rand
    return snapshot();
   },
   inspect(id){if(!status?.surface.cards.some(c=>c.id===id&&c.known))return false;selected=id;publish();return true;},
+  cast(instanceId,payment='auto'){return command('act',{command:{kind:'cast',instanceId,payment}});},
   choose(token){if(!status?.surface.choices.some(c=>c.token===token))throw Error('STALE_CHOICE');return command('step',{choice:token});},
   select(interactionId,choiceId){
    const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);
    if(!o||!o.choices.some(c=>c.id===choiceId&&c.available))throw Error('STALE_CHOICE');
    if(!pending||pending.interactionId!==interactionId)pending={interactionId,type:o.type,choiceIds:[],revision:status.revision};
    if(o.type==='choose')pending.choiceIds=[choiceId];
+   else if(o.type==='sequence'){if(o.max===1)pending.choiceIds=[choiceId];else if(!o.unique||!pending.choiceIds.includes(choiceId))pending.choiceIds=[...pending.choiceIds,choiceId];}
    else pending.choiceIds=pending.choiceIds.includes(choiceId)?pending.choiceIds.filter(id=>id!==choiceId):[...pending.choiceIds,choiceId];
    publish();
   },
+  selectNone(interactionId){const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);if(!o||o.min!==0)throw Error('CHOICE_REQUIRED');pending={interactionId,type:o.type,choiceIds:[],revision:status.revision};publish();},
   confirm(){
    const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===pending?.interactionId);
    if(!o||pending.revision!==status.revision||pending.choiceIds.length<o.min||pending.choiceIds.length>o.max)throw Error('CHOICE_INCOMPLETE');
-   const response=o.type==='choose'?{type:'choose',data:{choiceId:pending.choiceIds[0]}}:{type:'select',data:{choiceIds:pending.choiceIds}};
+   const response=o.type==='choose'?{type:'choose',data:{choiceId:pending.choiceIds[0]}}:{type:o.type,data:{choiceIds:pending.choiceIds}};
    return command('respond',{submission:{interactionId:o.interactionId,response}});
   },
   clearSelection(){pending=null;publish();}, // local draft only; never cancels a rules prompt

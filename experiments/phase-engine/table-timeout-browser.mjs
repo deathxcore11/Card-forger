@@ -7,7 +7,7 @@ import {pathToFileURL} from 'node:url';
 import {loadMechanicsInputs,sha} from './mechanics-inputs.mjs';
 const inputs=await loadMechanicsInputs({cardNames:['Forest','Grizzly Bears','Lightning Bolt']});
 const out=resolve(process.env.CARDSTASHY_TABLE_OUTPUT||'test-results/phase-table-timeout');await mkdir(out,{recursive:true});
-const routes=new Map(),files=['visible-cpu-policy.mjs','visible-policy-worker.mjs','table-client.mjs','table-authority.mjs','worker-journal.mjs','protocol-fault.mjs','priority-clock.mjs','priority-scheduler.mjs','seat-surface.mjs','interaction-surface.mjs','smoke-policy-worker.mjs','match-session.mjs','match-table.mjs','match-table.css'];
+const routes=new Map(),files=['human-command.mjs','visible-cpu-policy.mjs','visible-policy-worker.mjs','table-client.mjs','table-authority.mjs','worker-journal.mjs','protocol-fault.mjs','priority-clock.mjs','priority-scheduler.mjs','seat-surface.mjs','interaction-surface.mjs','smoke-policy-worker.mjs','match-session.mjs','match-table.mjs','match-table.css'];
 for(const file of files)routes.set('/'+file,await readFile(new URL(file,import.meta.url)));
 routes.set('/runtime/engine_wasm.js',await readFile(join(inputs.pkg,'engine_wasm.js')));routes.set('/runtime/engine_wasm_bg.wasm',inputs.wasm);routes.set('/runtime/cards.json',Buffer.from(inputs.cardsJson));
 const config={version:inputs.provenance.buildIdentity+':table-v1',cardCount:3,hashes:Object.fromEntries([...routes].filter(([p])=>p.startsWith('/runtime/')).map(([p,b])=>[p,sha(b)]))};

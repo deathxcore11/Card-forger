@@ -1,14 +1,17 @@
 // Research transport only. No UI, card coverage or opponent-strength certification.
 import {createPriorityClock} from './priority-clock.mjs';
+import {humanCommand} from './human-command.mjs';
 import {interactionSubmission} from './interaction-surface.mjs';
 import {Fault,fail} from './protocol-fault.mjs';
 export {Fault,fail} from './protocol-fault.mjs';
 export function packet(m) {
- if(!m||typeof m!=='object'||Array.isArray(m)||Object.keys(m).some(k=>!['v','epoch','id','op','revision','seed','first','choice','submission'].includes(k)))fail('BAD_REQUEST');
- if(typeof m.id!=='string'||typeof m.epoch!=='string'||m.v!==1||!['create','resume','status','step','respond','tick'].includes(m.op)||!/^[-\w]{1,80}$/.test(m.id||'')||!/^[-\w]{1,80}$/.test(m.epoch||''))fail('BAD_REQUEST');
+ if(!m||typeof m!=='object'||Array.isArray(m)||Object.keys(m).some(k=>!['v','epoch','id','op','revision','seed','first','choice','submission','command'].includes(k)))fail('BAD_REQUEST');
+ if(typeof m.id!=='string'||typeof m.epoch!=='string'||m.v!==1||!['create','resume','status','step','respond','tick','act'].includes(m.op)||!/^[-\w]{1,80}$/.test(m.id||'')||!/^[-\w]{1,80}$/.test(m.epoch||''))fail('BAD_REQUEST');
  if(m.op==='create'&&(!Number.isInteger(m.seed)||m.seed<0||m.seed>0xffffffff||![0,1].includes(m.first)))fail('BAD_REQUEST');
- if(['step','respond','tick'].includes(m.op)&&(!Number.isSafeInteger(m.revision)||m.revision<0))fail('BAD_REQUEST');
+ if(['step','respond','tick','act'].includes(m.op)&&(!Number.isSafeInteger(m.revision)||m.revision<0))fail('BAD_REQUEST');
  if(Object.hasOwn(m,'choice')&&(m.op!=='step'||typeof m.choice!=='string'||m.choice.length<1||m.choice.length>160||/[\u0000-\u001f\u007f]/.test(m.choice)))fail('BAD_REQUEST');
+ if(m.op==='act')humanCommand(m.command);
+ else if(Object.hasOwn(m,'command'))fail('BAD_REQUEST');
  if(m.op==='respond')interactionSubmission(m.submission);
  else if(Object.hasOwn(m,'submission'))fail('BAD_REQUEST');
  return m;
@@ -27,7 +30,7 @@ function validSave(s) {
 export function createJournal({engine,storage,choose,version,epoch,timing=null}) {
  let clock=null;
  let current=null,queue=Promise.resolve(),poisoned=false;
- const fingerprint=m=>{const parts=[m.op,m.revision??null,m.seed??null,m.first??null];if(m.choice!==undefined)parts.push(m.choice);if(m.submission!==undefined)parts.push(interactionSubmission(m.submission));return JSON.stringify(parts);};
+ const fingerprint=m=>{const parts=[m.op,m.revision??null,m.seed??null,m.first??null];if(m.choice!==undefined)parts.push(m.choice);if(m.submission!==undefined)parts.push(interactionSubmission(m.submission));if(m.command!==undefined)parts.push(humanCommand(m.command));return JSON.stringify(parts);};
  const clockContext=revision=>({...engine.clockContext(revision),matchId:timing.matchId,revision});
  const makeClock=saved=>createPriorityClock({...timing,saved});
  const armClock=(revision,saved=null)=>{const c=makeClock(saved);if(c.arm(clockContext(revision)).state==='stale-clock')fail('CLOCK_CONTEXT_MISMATCH');return c;};
@@ -76,6 +79,9 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
    const fresh=engine.legal(),valid=clock.validate(proposal,clockContext(current.revision),fresh.actor===ctx.actor?fresh.actions:[]);
    if(!valid.ok)fail('STALE_TIMEOUT');
    actor=valid.actor;action=valid.action;
+  }else if(m.op==='act'){
+   if(typeof engine.act!=='function'||engine.humanSeat!==0)fail('HUMAN_ROUTE_UNAVAILABLE');
+   actor=0;action={type:'HumanCast',data:humanCommand(m.command)};
   }else if(m.op==='respond'){
    if(typeof engine.respond!=='function'||engine.humanSeat!==0)fail('HUMAN_ROUTE_UNAVAILABLE');
    actor=engine.humanSeat;action={type:'InteractionSubmission',data:interactionSubmission(m.submission)};
@@ -91,8 +97,8 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
    actor=legal.actor;policyRng=proposal.rng;
   }
   try {
-   if(m.op==='respond'){
-    const applied=engine.respond(action.data);
+   if(m.op==='respond'||m.op==='act'){
+    const applied=m.op==='act'?engine.act(action.data):engine.respond(action.data);
     if(applied===false)return {rejected:true,reason:'ENGINE_REJECTED',...summary()};
     if(applied!==true)fail('INVALID_ENGINE_RESPONSE');
    }else engine.apply(actor,action);

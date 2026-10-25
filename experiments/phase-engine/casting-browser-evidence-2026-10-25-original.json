@@ -1,0 +1,58 @@
+{
+  "provenance": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "runtimeOrigin": "original-upstream-artifact",
+    "buildIdentity": "upstream-run-40129115223-artifact-12574954346",
+    "sourceCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "sourceTree": "3b2a30411991062847d46c2aebd8cee5df2fb4db",
+    "sourceDiffSha256": null,
+    "buildReceiptSha256": null,
+    "glue": "47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd3476cfb70131de6287c9",
+    "wasm": "6057521d851bb8544eaeea467f741b90cd2941aa5ba2fddb17e1bcc3d9933f8f",
+    "integrationFixtureGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "fixtureCardCount": 6137,
+    "loadedNames": [
+      "Forest",
+      "Grizzly Bears",
+      "Lightning Bolt",
+      "Mountain"
+    ],
+    "subsetSha256": "e0c2ef8a4b1fa390e1aa9d57895163087661883ddc1435fd3ae6f16e7c00fe9f",
+    "subsetBytes": 52495
+  },
+  "files": {
+    "/human-command.mjs": "57d08876ce33962e61428632271ad070198e7f59f39c1c8c23256006aa950d5b",
+    "/visible-cpu-policy.mjs": "6fde41a268b1874b2e2817266a8a61a76f2fe63c53efcedcf80f5917ab095fd2",
+    "/visible-policy-worker.mjs": "0c8c5dd513c461c135cf2ee38df77f0fe935ff2f08a8f4be6932af703bdef233",
+    "/table-client.mjs": "13107d3f56ae0c0d56697083c09b5b27a7ed3a3df5a31a1e6cfb802a8841d19f",
+    "/table-authority.mjs": "39fefae5cd4535c9259e7d8df457ebfac591ba5d269fecf3d2d4f67d423f6eb1",
+    "/worker-journal.mjs": "b35889c31eb55d58652fa6cb53f86d53b94ed87a3340ffbd955cce0d1026493e",
+    "/protocol-fault.mjs": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+    "/priority-clock.mjs": "4c939bf6d616ecf582228918bd73094c43b998e0168996961429c8e964707602",
+    "/priority-scheduler.mjs": "d82af4727976497dc1f5cab3948ca1ee394c35865d5e544916a381bc3f839bfa",
+    "/seat-surface.mjs": "2ca66c1e8a49cd40f84c1f8af1e3468a9c3dbeb448f8624a516af991c48571d6",
+    "/interaction-surface.mjs": "74be3366770216e09c3fafeaa7209f6929ed916841d85cef5786816c17654492",
+    "/smoke-policy-worker.mjs": "b3ca7af308ecb588e96b0c5e388a74ccc69548f5b1907d60529e11c400517f66",
+    "/match-session.mjs": "93d5b9d417cdb42ea07d68ee2d9ef087cb26423a50d2f0a8b97323f27196e3ec",
+    "/match-table.mjs": "97751b512b1acfd7c53eaff1100ae838eb8a6d4e4247c7c04accd713dbb979af",
+    "/match-table.css": "3a7a37f6837c8556e8450bb6c7f14d82fea6fe5fae3f22505a7cf2e2cdfd1215",
+    "/runtime/engine_wasm.js": "47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd3476cfb70131de6287c9",
+    "/runtime/engine_wasm_bg.wasm": "6057521d851bb8544eaeea467f741b90cd2941aa5ba2fddb17e1bcc3d9933f8f",
+    "/runtime/cards.json": "e0c2ef8a4b1fa390e1aa9d57895163087661883ddc1435fd3ae6f16e7c00fe9f",
+    "/runtime-config.mjs": "7312ade74a9976a56d9f696ad170b06b9a6d2f6e3104a728e8ec3ccb2189d570",
+    "/": "2181a73ed6e181de2b2bf5675b8a9cef04b987a748dcd125560207d9ea860645",
+    "/sw.js": "8531c20102185f2dd3e54d89b412b539b8c11f6b96c1517c0cc12d2d2f1b5498"
+  },
+  "checks": [
+    "visible manual cast from exact hand instance",
+    "ordered opponent target confirmation",
+    "explicit cast cancellation preserves card and untapped mana source",
+    "explicit tap and payment confirmation",
+    "visible stack and legal response",
+    "chosen opponent takes three damage"
+  ],
+  "limits": "Four-card Modern research fixture with Mountain/Bolt versus Forest. No account, real artwork/finish, competitive deck or broad payment/mechanic claim. Not an owner-ready app preview.",
+  "browser": "153.0.8010.0",
+  "finalRevision": 14,
+  "harnessSha256": "b4f84046e79da10cbca31e105c722469d169c01db4310114db095f41b8b047ec"
+}

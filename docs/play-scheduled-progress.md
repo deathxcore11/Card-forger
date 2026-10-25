@@ -561,3 +561,48 @@ CPU first, then Friends; Draft stays deferred. Nothing published, deployed,
 merged into production, migrated or added to an APK. Continue with active build
 delivery/provenance and preserved ninjutsu/Stifle tests before another engine run.
 
+
+## October 24, 2026 — human casting/targets/manual payment and owner pause
+
+Continued from 311be2ab026ab5f97bba95645b7e6e0448cfc762. Added a bounded human
+cast-announcement command independent of AI candidate membership. The worker
+binds seat zero, requires an authorized visible hand instance, leaves targets
+empty for the engine's staged prompt, and requires explicit Auto/Manual payment.
+The same durable journal handles admission, exact receipts and rejection. Human
+transport is versioned v3; older research human saves are not silently migrated.
+
+Ordered engine target sequences now reach the human projection, including
+viewer-authorized player targets. Added explicit zero-count selection and
+single-target replacement; neither changes the game until confirmation.
+Real original-WASM checks pass for Lightning Bolt: announce without guessed
+targets, choose opponent, recover/reject a stale target capability, cancel before
+payment without moving the card/tapping land, announce again, choose Mountain
+mana, explicitly pay, retain real stack/priority, and deal three to the selected
+opponent. The browser exercises the visible manual-cast/target/cancel/mana/pay
+buttons and finishes at revision 14. These are four-card Modern controls fixtures,
+not a general payment/face/mechanic certificate or mounted account Play flow.
+Exact code/input hashes are in the two casting evidence files. All 116 current
+Node guards pass with zero failures/skips/cancellations. The earlier complete
+six-game/browser recovery regression also finished successfully on its recorded
+pre-cast source bytes; it is not a claim that every newer UI change has that
+whole regression receipt. The later full visible table still reaches the same
+386-action terminal result, with its own exact source hashes.
+
+The packaging-corrected approved run 40153568000 / job 121049996121 remains
+in progress at the latest observed status. Do not trigger another paid build.
+Its exact approved source has 92 Node guards; current future CI guard count is
+116. Both preserved ninjutsu failures remain unchanged on the original runtime;
+corrected delivered bytes have not been obtained here. Required next step when
+resumed: download the run's artifact, verify receipt/source/fixture/runtime,
+execute mechanics and real Stifle fresh-process restore, then run these controls
+on the verified corrected runtime. Do not substitute the old binary.
+
+Owner asked to avoid consuming their weekly ChatGPT allowance merely while
+GitHub builds. Saved current work and paused the hourly Continue CardStashy Play
+continuation; the GitHub job itself continues independently. No further polling
+or active implementation is needed until the owner asks to resume. This is a
+resource-saving pause, not completion of the Play goal. The account route, real
+eligible saved/imported deck matches, exact art/finish binding, complete pregame/
+payment/combat schemas, difficulty calibration and Practice history remain open.
+No production publication, website-release change, APK, migration or external
+message. No additional paid attempt is authorized by this pause.

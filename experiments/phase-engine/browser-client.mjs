@@ -16,7 +16,7 @@ export function connect(match,{timeout=30000,mode='auto'}={}) {
   if(closed)return reject(Error('WORKER_CLOSED'));
   if(pending.has(message.id))return reject(Error('REQUEST_PENDING'));
   const timer=setTimeout(()=>{pending.delete(message.id);reject(Error('OUTCOME_UNKNOWN'));close();},timeout);
-  pending.set(message.id,{resolve,reject,timer,mutates:['create','step','respond','tick'].includes(message.op)});
+  pending.set(message.id,{resolve,reject,timer,mutates:['create','step','respond','tick','act'].includes(message.op)});
   try{worker.postMessage({...message,v:1,epoch});}
   catch{clearTimeout(timer);pending.delete(message.id);reject(Error('REQUEST_NOT_SENT'));}
  });}

@@ -15,7 +15,7 @@ const inputs=[['engine_wasm.js','47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd347
 const routes=new Map();
 for(const [file,hash]of inputs){const bytes=await readFile(join(pkg,file));assert.equal(sha(bytes),hash);routes.set('/runtime/'+file,bytes);}
 const cards=await readFile(join(source,'crates/engine/tests/fixtures/runtime_card_export_fixture.json'));assert.equal(sha(cards),'ee062b8ad351e067723b79fc8462aaea19202ef9756d35b2101334eb3e350107');routes.set('/runtime/cards.json',cards);
-const dir=new URL('./',import.meta.url),files=['priority-clock.mjs','protocol-fault.mjs','interaction-surface.mjs','worker-journal.mjs','browser-authority.mjs','browser-client.mjs','smoke-policy-worker.mjs','seat-surface.mjs'];
+const dir=new URL('./',import.meta.url),files=['human-command.mjs','priority-clock.mjs','protocol-fault.mjs','interaction-surface.mjs','worker-journal.mjs','browser-authority.mjs','browser-client.mjs','smoke-policy-worker.mjs','seat-surface.mjs'];
 for(const file of files)routes.set('/'+file,await readFile(new URL(file,dir)));
 routes.set('/',Buffer.from(`<!doctype html><meta charset="utf-8"><title>CardStashy engine diagnostic</title><p>Research harness. No playable interface.</p><script type="module">import {connect} from './browser-client.mjs';window.connect=connect;window.loaded=true;</script>`));
 const cache='phase-research-'+sha(Buffer.concat([...routes.values()]));
