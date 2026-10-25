@@ -6,6 +6,9 @@ import {resolve} from 'node:path';
 import {gunzipSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
 import {cpuPacket,chooseVisible,CPU_POLICY_VERSION} from './visible-cpu-policy.mjs';
+import {makeCpuObservation,PUBLIC_CPU_VERSION} from './cpu-public-observation.mjs';
+import {chooseCpu} from './cpu-public-policy.mjs';
+import {cpuLegalCandidates} from './cpu-legal-candidates.mjs';
 import {projectSeat} from './seat-surface.mjs';
 import {prepare,deck,state,tracker,candidates} from './mechanics-fixtures.mjs';
 import {RUNTIME_IDENTITY,RULES_IDENTITY,validateRuntimeManifest,validateRulesManifest} from './runtime-assets.mjs';
@@ -27,18 +30,19 @@ const catalog=JSON.parse(decoded),names=['Forest','Bear Cub','Ordinary Bear','Gh
 const subset=Object.fromEntries(names.map(name=>{assert(catalog[name.toLowerCase()]);return [name.toLowerCase(),catalog[name.toLowerCase()]];}));
 let networkCalls=0;globalThis.fetch=async()=>{networkCalls++;throw Error('CPU acceptance forbids network');};
 const e=await import(new URL('engine_wasm.js',runtime));await e.default({module_or_path:wasm});assert.equal(e.load_card_database(JSON.stringify(subset)),names.length);
-const report={task:'CPU-001',baseCommit,testedCommit:process.env.CARDSTASHY_CPU_COMMIT||null,policyVersion:CPU_POLICY_VERSION,runtimeSha256:RUNTIME_IDENTITY.wasmSha256,
+const report={task:'CPU-001 regression / CPU-002',baseCommit,testedCommit:process.env.CARDSTASHY_CPU_COMMIT||null,policyVersion:PUBLIC_CPU_VERSION,legacyPolicyVersion:CPU_POLICY_VERSION,runtimeSha256:RUNTIME_IDENTITY.wasmSha256,
  sourceSha256:sha(await readFile(new URL(import.meta.url))),policySha256:sha(await readFile(new URL('visible-cpu-policy.mjs',here))),
  projectionSha256:sha(await readFile(new URL('seat-surface.mjs',here))),node:process.version,cases:[],
- limits:['Engineered initial positions, not full legal match histories.','No browser, signed-in account, reload recovery or complete-match test in this task.','Privacy fixtures cover the described variations only; no complete noninterference proof.','Policy and rules implementation are unchanged.']};
+ limits:['Engineered initial positions, not full legal match histories.','No browser, signed-in account, reload recovery or complete-match test in this task.','Privacy fixtures cover the described variations only; no complete noninterference proof.','Rules implementation and legacy policy unchanged; public CPU wrapper supplies survival evaluation.']};
+report.cpuSources=Object.fromEntries(await Promise.all(['cpu-public-observation.mjs','cpu-combat-evaluation.mjs','cpu-public-policy.mjs'].map(async p=>[p,sha(await readFile(new URL(p,here)))])));
 async function run(id,name,expected,body){
  const evidence={id,name,layer:'engine + CPU policy',expected};
  try{await body(evidence);evidence.status='PASS';}catch(error){evidence.status='FAIL';evidence.assertion=error.message;}
  report.cases.push(evidence);console.log(`${evidence.status} ${id}: ${name}`);
 }
 function proposal(actor){
- const actions=e.get_legal_actions_for_viewer_js(actor).actions;assert(actions.length);
- const packet=cpuPacket(projectSeat(e.get_filtered_game_state(actor),actor),actions),selection=chooseVisible(packet,777);
+ const actions=cpuLegalCandidates(e,actor,e.get_legal_actions_for_viewer_js(actor).actions).actions;assert(actions.length);
+ const packet=makeCpuObservation(e.get_filtered_game_state(actor),actor,actions),selection=chooseCpu(packet,777);
  assert(Number.isInteger(selection.index)&&selection.index>=0&&selection.index<actions.length);
  return {actor,actions,packet,selection,action:actions[selection.index]};
 }

@@ -2,18 +2,19 @@
 import {submitHumanCommand} from './human-command.mjs';
 import {fail} from './protocol-fault.mjs';
 import {projectInteraction} from './interaction-surface.mjs';
-import {cpuPacket} from './visible-cpu-policy.mjs';
+import {makeCpuObservation} from './cpu-public-observation.mjs';
+import {cpuLegalCandidates} from './cpu-legal-candidates.mjs';
 import {projectSeat,createSeatController} from './seat-surface.mjs';
 import {projectRandomEvents} from './random-outcomes.mjs';
 export function createMatchAuthority({engine,epoch,mode='human-timed',decks,format,onStart=()=>{},present=view=>view,policyWorker}={}){
- const policy=policyWorker||new Worker(new URL('./visible-policy-worker.mjs',import.meta.url),{type:'module'});let seq=0;
+ const policy=policyWorker||new Worker(new URL('./cpu-public-worker.mjs',import.meta.url),{type:'module'});let seq=0;
  const cpuChoose=(actions,rng,actor)=>new Promise((resolve,reject)=>{
   const id=++seq,timer=setTimeout(()=>{cleanup();policy.terminate();reject(Error('POLICY_TIMEOUT'));},5000);
   const cleanup=()=>{clearTimeout(timer);policy.removeEventListener('message',onMessage);policy.removeEventListener('error',onError);};
   const onMessage=({data})=>{if(data?.id!==id)return;cleanup();data.error?reject(Error('POLICY_FAILED')):resolve(data);};
   const onError=()=>{cleanup();reject(Error('POLICY_FAILED'));};
   policy.addEventListener('message',onMessage);policy.addEventListener('error',onError);
-  policy.postMessage({id,packet:cpuPacket(projectSeat(engine.get_filtered_game_state(actor),actor),actions),rng});
+  policy.postMessage({id,packet:makeCpuObservation(engine.get_filtered_game_state(actor),actor,actions),rng});
  });
  let outcomes=[];
  function observe(result){
@@ -38,7 +39,7 @@ export function createMatchAuthority({engine,epoch,mode='human-timed',decks,form
   drainOutcomes(){const pending=outcomes;outcomes=[];return pending;},
   save:()=>engine.export_game_state_json(),restore(s){outcomes=[];return engine.restore_game_state(s);},
   summary(revision){const s=engine.get_filtered_game_state(0).state;return {turn:s.turn_number,waiting:s.waiting_for?.type||null,terminal:s.waiting_for?.type==='GameOver'?{winner:s.waiting_for.data?.winner??null}:null,...(controller?{surface:present({...controller.read(revision),awaitingHuman:engine.get_viewer_snapshot_js(0).viewerInteraction.authorizedSubmitters?.includes(0)===true,interaction:projectInteraction(engine.get_viewer_snapshot_js(0).viewerInteraction,0)})}:{})};},
-  legal(){for(const actor of [0,1]){const {actions}=engine.get_legal_actions_for_viewer_js(actor);if(actions.length)return {actor,actions};}return {actor:null,actions:[]};},
+  legal(){for(const actor of [0,1]){const {actions}=engine.get_legal_actions_for_viewer_js(actor);if(actions.length)return {actor,actions:controller&&actor===0?actions:cpuLegalCandidates(engine,actor,actions).actions};}return {actor:null,actions:[]};},
   apply(actor,action){const r=observe(engine.submit_action(actor,action));if(!['applied','Applied'].includes(r.status))fail('ENGINE_REJECTED');}
  };
  return {adapter,choose,close:()=>policy.terminate()};
