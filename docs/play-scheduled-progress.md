@@ -497,3 +497,32 @@ payment/cancel, board/inspector/countdown and bounded CPU controls. Finish a com
 private 1v1 match and terminal-result recovery before calling this ready to test.
 Standard/Commander and CPU first; Friends follows, Draft remains deferred.
 
+
+### Approved remote proof completion — October 24, 10:07 PM Eastern
+
+Run 40150756588 attempt 2 finished. Crucial distinction: **compilation, 86 Node
+checks and all eight real-WASM mechanics cases passed on the runner**, including
+both preserved printed/Satoru ninjutsu response/restore regressions. The workflow
+failed only at artifact delivery: unpacked evidence was 338,743,397 bytes, above
+the 268,435,456-byte cap. Its fallback deleted pkg before upload. The corrected
+runtime therefore cannot be retrieved from the saved artifact. No local corrected
+WASM, Stifle regression, or browser match is claimed.
+
+Downloaded artifact 12583223712 and verified its GitHub SHA-256
+c3d2dca39a560dde36db946bfd7b42186dfcbd3f1415faa2471a5e5f966b53d3.
+Durable reports, receipt, exact source commit object and file hash inventory are
+in experiments/phase-engine/remote-proof-2026-10-25/. The receipt pins corrected
+source tree 60fc8715ad91f5c91b81f8a8335e238c623ec957 and WASM hash
+a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee.
+These are remote execution evidence; the missing bytes cannot be independently
+reverified here. The original-runtime failures remain valid and unchanged.
+
+Fixed future successful-build packaging to gzip the exact pkg directory before
+applying the unchanged 256 MiB delivery cap. Exercised the tar command against
+the available original runtime: 12,414,391-byte archive, every extracted file
+byte-identical. This is a packaging round-trip check, not a corrected build.
+CI script syntax passes. No second paid build was launched; existing one-attempt
+approval has been consumed. Recovering a deliverable corrected runtime requires
+a separately authorized build with this packaging correction. Independent
+controls/board integration work can continue; do not repeat the original OOM
+builds or describe the uploaded evidence archive as containing a runtime.

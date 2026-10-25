@@ -1,0 +1,35 @@
+{
+  "artifactId": 12583223712,
+  "zipSha256": "c3d2dca39a560dde36db946bfd7b42186dfcbd3f1415faa2471a5e5f966b53d3",
+  "runtimeDelivered": false,
+  "files": {
+    "LICENSE-APACHE": "30df43435c4fcbb978d62df0f25c33788ed06bbe9445bf9fcb0ef7c02c9b7333",
+    "verification-result.json": "911c0db6b7c802c885b06273902fe864a0841cdf9ba0d1795263da97f99f4e07",
+    "README.txt": "6f5a0a5a939c64116d97d6d4ec0936e98b4b1af2f8ebd9379eb26bfe10231db8",
+    "build-receipt.json": "da3ca01eca17d82a5bf7bc4996fac7511216e3dd6127979d2f68bd52e5fd7aaa",
+    "source-commit.txt": "ebe2e039a895409f489c3dcd0d917719cd6857475ae2332b2c5e6138a804aaab",
+    "LICENSE-MIT": "d807ee186bec7bddb0df461a80ae7cd9b45a47add5196b2fa842448236483365",
+    "source.patch": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+    "mechanics-report.json": "cc66de5cff76fc8607ded66105c528684f876a88a533b6e37c1fd53230eb2dd7",
+    "logs/toolchain-versions.log": "4b2cddfbf989ef7e986c6e620e4d109d352c369d2d78dadaf100154aa2838ac5",
+    "logs/source-init.log": "0f8748bde9e5ad6d3ac369bc592d2b8295992b11707808364a3d5a46e7a87af2",
+    "logs/source-commit.log": "81a9f6c2e11501aa50d9754e634d451176e9ac69fafe6689840fe29f0ee4a378",
+    "logs/toolchain-install.log": "4c84ac2b58a421e4c4c0a3af63bac92ad22bfc66bf225a91e370c8ad90ebb5f4",
+    "logs/bindgen-version.log": "ecc769992686a6a051dc08dd5e941e52e2cc64228a2f7fe4a822680028990d1c",
+    "logs/source-checkout.log": "baa3ea02cce72d7ad1551add2e4242ff1f126bb5c3329c1d838e31a2c1620a50",
+    "logs/bindgen-install.log": "574cb7f84052b4b4c5b119799c6a6f70c70adf2c64c9f02e854f1af3b40aee0c",
+    "logs/source-remote.log": "f2201bfd6bee45073346c36008564d14e47c6e00764cf4ede10a7817e8062819",
+    "logs/bindgen-web.log": "1fcd3140c436d90b257403c90d599849f210f179894f9fc0a9c144b8784d2234",
+    "logs/engine-wasm-build.log": "29d1df19eafc81940e9265b828eb109b6384365add77ae74927b9f5f740bc1a6",
+    "logs/source-apply.log": "77cfd101575d03af9f6efd6bc2093778680cd88177faca2dcc099423cb8ebec8",
+    "logs/source-fetch.log": "6d751bff1f1afa5788b59f80e5cbfd4dee7b6e4f0f2f5b817ca17d668f145f61",
+    "logs/mechanics.log": "e5f02c0eca8719e8c4b865aef855054efe7e9b1ed69696e58899bd7d0edd8cf0",
+    "logs/node-guards.log": "6851a33cfc064c768ce9480f7ef719b1e8731348c2434aab85798237a70ef26e"
+  },
+  "packagingCheck": {
+    "input": "original pinned runtime, not corrected missing runtime",
+    "archiveBytes": 12414391,
+    "roundTripExact": true
+  },
+  "limitations": "Remote runner executed original eight mechanics regressions. New Stifle suite and local corrected-runtime/browser checks did not run. No runtime bytes in downloaded artifact."
+}

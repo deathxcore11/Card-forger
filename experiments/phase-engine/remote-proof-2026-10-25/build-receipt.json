@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "buildIdentity": "cardstashy-ci-40150756588-2-ninjutsu-a49b8aa",
+  "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+  "sourceCommit": "32916c6b505f78bb33311e377b7dd9d0109cb718",
+  "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+  "sourceDiffSha256": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+  "glueSha256": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+  "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+  "integrationFixtureGzipSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9"
+}

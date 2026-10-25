@@ -1,0 +1,41 @@
+{
+  "cardstashyCommit": "f1021d3d5504d70610eb65fab3cd9005127cb661",
+  "runId": "40150756588",
+  "attempt": "2",
+  "runner": {
+    "platform": "darwin",
+    "arch": "x64",
+    "release": "24.6.0",
+    "memoryBytes": 15032385536
+  },
+  "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+  "expectedSourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+  "patchSha256": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+  "toolchain": "nightly-2026-04-19",
+  "wasmBindgenCli": "0.2.121",
+  "passed": false,
+  "rustflags": "-C link-arg=-z -C link-arg=stack-size=16777216 -Zno-parallel-backend -Zmir-opt-level=0 -Zfewer-names=yes -Zthreads=1 -Ztime-passes=yes",
+  "buildProfile": "wasm-dev; locked online engine-wasm package build; one job; opt/debug/LTO/incremental off; 256 codegen units; 16 MiB compiler thread stack",
+  "receipt": {
+    "schemaVersion": 1,
+    "buildIdentity": "cardstashy-ci-40150756588-2-ninjutsu-a49b8aa",
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "sourceCommit": "32916c6b505f78bb33311e377b7dd9d0109cb718",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "sourceDiffSha256": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+    "glueSha256": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "integrationFixtureGzipSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9"
+  },
+  "nodeGuards": 86,
+  "mechanicsCases": 8,
+  "proofPassedBeforeArtifactLimit": true,
+  "artifactDelivery": {
+    "status": "failed-package-omitted",
+    "reason": "complete evidence bundle exceeds 256 MiB",
+    "originalBytes": 338743397,
+    "limitBytes": 268435456,
+    "truncatedLogs": []
+  },
+  "exitCode": 1
+}

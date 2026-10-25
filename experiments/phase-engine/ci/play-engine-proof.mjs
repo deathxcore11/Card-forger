@@ -97,10 +97,15 @@ async function run(){
   try{await command('mechanics',process.execPath,['experiments/phase-engine/mechanics-smoke.mjs'],{env:{CARDSTASHY_PHASE_PKG:pkg,CARDSTASHY_PHASE_SOURCE:source,CARDSTASHY_PHASE_BUILD_RECEIPT:receiptPath,CARDSTASHY_PHASE_MECHANICS_OUTPUT:mechanicsOutput},maxMinutes:3});}
   finally{try{await copyFile(join(mechanicsOutput,'mechanics-report.json'),join(artifact,'mechanics-report.json'));}catch(error){if(error.code!=='ENOENT')throw error;}}
   const report=JSON.parse(await readFile(join(artifact,'mechanics-report.json'),'utf8'));assert.equal(report.cases.length,8);assert(report.cases.every(c=>c.passed===true));assert.equal(report.provenance.loadedNames.length,20);assert.equal(report.provenance.sourceCommit,sourceCommit);assert.equal(report.provenance.runtimeOrigin,'local-research-build');result.mechanicsCases=8;result.passed=true;
+  // Debug WASM compresses substantially. Bound the actual delivered archive,
+  // preserving exact runtime bytes and receipt instead of discarding a passing
+  // build solely because its unpacked package exceeds the upload ceiling.
+  await command('package-runtime','tar',['-czf',join(artifact,'runtime-package.tar.gz'),'-C',artifact,'pkg'],{maxMinutes:2});
+  await rm(pkg,{recursive:true,force:true});
  }catch(error){failure=error;result.error=String(error.stack||error);result.exitCode=error.exitCode||1;}
  finally{
   await writeFile(join(artifact,'verification-result.json'),JSON.stringify(result,null,2)+'\n');
-  await writeFile(join(artifact,'README.txt'),'Private optional research evidence. No deployment or adoption. No card-data bundle, target directory, saved game snapshot or Cargo cache is included. The build receipt records supplied source/runtime bytes, not an authenticated compiler correctness claim. source-commit.txt contains the exact local Git commit object for reconstruction from the pinned base plus source.patch. Full dependency/data-rights and product engine gates remain open.\n');
+  await writeFile(join(artifact,'README.txt'),'Private optional research evidence. No deployment or adoption. No card-data bundle, target directory, saved game snapshot or Cargo cache is included. The build receipt records supplied source/runtime bytes, not an authenticated compiler correctness claim. runtime-package.tar.gz contains the exact pkg directory; extract it before setting CARDSTASHY_PHASE_PKG. source-commit.txt contains the exact local Git commit object for reconstruction from the pinned base plus source.patch. Full dependency/data-rights and product engine gates remain open.\n');
   const inventory=await files(artifact),originalBytes=inventory.reduce((n,f)=>n+f.bytes,0);
   if(originalBytes>MAX_ARTIFACT){
    // Preserve the actual proof failure code; if tests passed, package delivery
