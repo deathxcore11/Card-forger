@@ -52,7 +52,7 @@ def main():
         archive=pathlib.Path(tmp)/'runtime.zip'
         with archive.open('wb') as f:subprocess.run(['gh','api',f'repos/deathxcore11/Card-forger/actions/artifacts/{ARTIFACT}/zip'],stdout=f,check=True,timeout=120)
         rules=pathlib.Path(tmp)/'card-rules.gz'
-        with rules.open('wb') as f:subprocess.run(['gh','api','-H','Accept: application/vnd.github.raw+json',f'repos/phase-rs/phase/contents/crates/engine/tests/fixtures/integration_cards.json.gz?ref={PIN}'],stdout=f,check=True,timeout=120)
+        subprocess.run(['curl','--fail','--location','--silent','--show-error','--max-time','120',f'https://raw.githubusercontent.com/phase-rs/phase/{PIN}/crates/engine/tests/fixtures/integration_cards.json.gz','--output',str(rules)],check=True,timeout=130)
         manifest=package(archive,REL,rules)
     assert git('ls-remote','origin','refs/heads/'+BRANCH).split()[0]==expected,'branch moved; no overwrite'
     subprocess.run(['git','add','-f','--',str(REL)],check=True)

@@ -682,3 +682,15 @@ CPU strategy and synergy. Keep that handoff clean and do not make the Play
 release wait for those separate improvements. A basic beta CPU still needs its
 own legal/fair/recoverable match path; do not represent future strategic work
 as already implemented Hard difficulty.
+
+### Asset staging transfer correction
+
+Run 40156164006 / job 121057921505 failed before any branch write. GitHub CLI
+reported `transform: short source buffer` while requesting the gzip card fixture
+through the Contents raw media route. Checkout and artifact download occurred;
+no runtime was rebuilt or modified. Changed only that PUBLIC immutable pinned
+fixture fetch to curl/raw.githubusercontent.com, with no credentials and the same
+required gzip SHA-256/card count. Archive/source/code integrity checks remain
+unchanged. Local full package round-trip with the pinned rules file passed;
+script syntax passes. Retry uses a new exact approval commit because the script
+bytes changed; do not rerun the unchanged failed job.
