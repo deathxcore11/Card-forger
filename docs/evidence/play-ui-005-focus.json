@@ -1,0 +1,66 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "scenario": "target",
+      "layer": "synthetic DOM focus/interruptions",
+      "checks": {
+        "draftCreated": true,
+        "turnAndResponseRemainSeparate": true,
+        "sharedBrandReplacesInitial": true,
+        "controlsPreserveDraft": true,
+        "yieldCannotSkipDraft": true,
+        "controlsReturnToSummary": true,
+        "closeReturnsToKeyboardCard": true,
+        "inspectionDoesNotReplayAttention": true,
+        "closeReturnsToMagnifier": true,
+        "escapeReturnsToInspectorOrigin": true,
+        "contextMenuReceivesFocus": true,
+        "contextEscapeReturnsToCard": true,
+        "historyCloseReturnsToHistory": true,
+        "exitDialogFocusIsSafe": true,
+        "cancelExitReturnsToMenu": true,
+        "menuEscapeReturnsToSummary": true,
+        "interruptionsPreserveDraft": true,
+        "interruptionsDoNotSubmit": true,
+        "actualProfilePhotoIsRetained": true,
+        "confirmStillSubmitsOriginalTargetOnce": true
+      },
+      "passed": true
+    },
+    {
+      "scenario": "combat",
+      "layer": "synthetic DOM focus/interruptions",
+      "checks": {
+        "draftCreated": true,
+        "controlsPreserveDraft": true,
+        "yieldCannotSkipDraft": true,
+        "controlsReturnToSummary": true,
+        "closeReturnsToKeyboardCard": true,
+        "closeReturnsToMagnifier": true,
+        "escapeReturnsToInspectorOrigin": true,
+        "contextMenuReceivesFocus": true,
+        "contextEscapeReturnsToCard": true,
+        "historyCloseReturnsToHistory": true,
+        "exitDialogFocusIsSafe": true,
+        "cancelExitReturnsToMenu": true,
+        "menuEscapeReturnsToSummary": true,
+        "interruptionsPreserveDraft": true,
+        "interruptionsDoNotSubmit": true
+      },
+      "passed": true
+    },
+    {
+      "scenario": "controls",
+      "layer": "synthetic DOM focus/interruptions",
+      "checks": {
+        "modeChangeKeepsFocus": true,
+        "controlsEscapeReturnsToSummary": true,
+        "phaseStopKeepsFocus": true,
+        "stopsEscapeKeepsSetting": true,
+        "controlsNeverSubmitGameAction": true
+      },
+      "passed": true
+    }
+  ]
+}

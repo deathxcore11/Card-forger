@@ -1,7 +1,7 @@
 // Synthetic presentation fixture. No rules-engine, provider or account certification.
 import {mountMatchTable} from './match-table.mjs';
 import {practiceArtworkHooks} from '../../play-card-surface.js';
-import {profileAvatar} from '../../profile-art.js';
+import {practicePlayerPortrait} from '../../play-player-mat.js';
 const params=new URLSearchParams(location.search),scenario=params.get('case')||'opening';
 document.documentElement.dataset.theme=params.get('theme')||'dark';
 const catalog=await fetch('./ui-review-catalog.json').then(r=>r.json()),byName=new Map(catalog.map(c=>[c.name,c]));
@@ -29,16 +29,17 @@ if(scenario==='payment'||scenario==='damage')v.interaction.canSubmit=true;
 if(scenario==='commander'){v.cards.push(make(92,'Ghalta, Primal Hunger','Command'),make(93,'Ghalta, Primal Hunger','Command',1));v.players.forEach(p=>p.life=40);}
 const state={status:{revision:1,surface:v,terminal:null},selected:scenario==='mulligan'||scenario==='target'||scenario==='combat'||scenario==='response'?null:6,pending:null,busy:false,error:scenario==='payment'?'CHOICE_REJECTED':null,clock:{remainingSeconds:24,limits:{idleSeconds:80,turnSeconds:240}}},calls=[];
 let table;const repaint=()=>table.render(state),session={snapshot:()=>state,inspect(id){state.selected=id;repaint();},choose(token){calls.push(['choose',token]);state.status.revision++;if(token==='keep'){v.decision.kind='Priority';v.phase='PreCombatMain';v.choices=[{token:'pass',kind:'PassPriority',label:'Pass priority'}];}repaint();},cast(id,payment){calls.push(['cast',id,payment]);},select(interactionId,id){state.pending={interactionId,choiceIds:[id],revision:state.status.revision};repaint();},toggleRelation(interactionId,sourceId,targetId){const old=state.pending?.relations||[],has=old.some(r=>r.sourceId===sourceId&&r.targetId===targetId);state.pending={interactionId,type:'relations',relations:has?old.filter(r=>r.sourceId!==sourceId):[...old,{sourceId,targetId,group:null}],revision:state.status.revision};repaint();},selectNone(interactionId){state.pending={interactionId,type:'relations',relations:[],revision:state.status.revision};repaint();},confirm(){calls.push(['confirm',structuredClone(state.pending)]);state.busy=true;repaint();},clearSelection(){state.pending=null;repaint();},setDamage(interactionId,mode,assignments){state.pending={interactionId,mode,assignments};},concede(){calls.push(['concede']);state.status.terminal={winner:1};repaint();}};
-if(scenario==='controls'){
- state.turnFlow={version:1,supported:true,capabilities:{smartPass:true,fullControl:true,temporaryYield:true,phaseStops:true},epoch:'fixture',revision:1,decisionId:'fixture-r1',actorSeat:0,activeSeat:0,prioritySeat:0,phase:'PostCombatMain',mandatoryChoice:false,coverage:'unknown',controlMode:'smart',temporaryYield:false,passState:'idle',stops:[],stopActive:false,reason:'coverage-unknown'};
+if(['controls','target','combat'].includes(scenario)){
+ state.turnFlow={version:1,supported:true,capabilities:{smartPass:true,fullControl:true,temporaryYield:true,phaseStops:true},epoch:'fixture',revision:1,decisionId:'fixture-r1',actorSeat:v.seat,activeSeat:v.activeSeat,prioritySeat:v.prioritySeat,phase:v.phase,mandatoryChoice:scenario!=='controls',coverage:'unknown',controlMode:'smart',temporaryYield:false,passState:'idle',stops:[],stopActive:false,reason:scenario==='controls'?'coverage-unknown':'mandatory-choice'};
  Object.assign(session,{setControlMode(mode){calls.push(['control',mode]);state.turnFlow.controlMode=mode;state.turnFlow.reason=mode==='full'?'full-control':'coverage-unknown';repaint();},yieldUntilAction(){calls.push(['yield']);state.turnFlow.temporaryYield=true;repaint();},cancelYield(){calls.push(['cancel-yield']);state.turnFlow.temporaryYield=false;state.turnFlow.passState='idle';state.turnFlow.reason='cancelled';repaint();},setPhaseStop(activeSeat,phase,enabled){calls.push(['stop',activeSeat,phase,enabled]);state.turnFlow.stops=state.turnFlow.stops.filter(s=>s.activeSeat!==activeSeat||s.phase!==phase);if(enabled)state.turnFlow.stops.push({activeSeat,phase});repaint();}});
 }
-table=mountMatchTable(document.getElementById('table'),{session,format:scenario==='commander'?'Commander':'Standard',profile:{displayName:'Randall'},renderPlayerPortrait(own){const node=document.createElement('span'),c=byName.get(own?'Ghalta, Primal Hunger':'Bear Cub');node.innerHTML=profileAvatar(null,{display_name:own?'Randall':'CPU'});return node;},renderPlayerBackdrop(own){const img=document.createElement('img');img.src=byName.get(own?'Ghalta, Primal Hunger':'Bear Cub').image_uris.art_crop;img.alt='';return img;},renderMatchBackdrop(){const node=document.createElement('div');for(const name of ['Ghalta, Primal Hunger','Bear Cub']){const img=document.createElement('img');img.src=byName.get(name).image_uris.art_crop;img.alt='';node.append(img);}return node;},title:'CardStashy · Magic Practice · Beta',allowConcede:true,...practiceArtworkHooks(),renderMatchContext(){const box=document.createElement('section');box.innerHTML='<p>Keep this page open. Refreshing or leaving ends this Practice session; it cannot be resumed.</p><details data-keep-open="deck-context"><summary>Deck Power & Commander brackets</summary><p>Existing deck context remains here.</p></details>';return box;}});repaint();
+table=mountMatchTable(document.getElementById('table'),{session,format:scenario==='commander'?'Commander':'Standard',profile:{displayName:'Randall'},renderPlayerPortrait(own){return practicePlayerPortrait(document,own,{displayName:'Randall'});},renderPlayerBackdrop(own){const img=document.createElement('img');img.src=byName.get(own?'Ghalta, Primal Hunger':'Bear Cub').image_uris.art_crop;img.alt='';return img;},renderMatchBackdrop(){const node=document.createElement('div');for(const name of ['Ghalta, Primal Hunger','Bear Cub']){const img=document.createElement('img');img.src=byName.get(name).image_uris.art_crop;img.alt='';node.append(img);}return node;},title:'CardStashy · Magic Practice · Beta',allowConcede:true,...practiceArtworkHooks(),renderMatchContext(){const box=document.createElement('section');box.innerHTML='<p>Keep this page open. Refreshing or leaving ends this Practice session; it cannot be resumed.</p><details data-keep-open="deck-context"><summary>Deck Power & Commander brackets</summary><p>Existing deck context remains here.</p></details>';return box;}});repaint();
 const report=()=>{
  const q=s=>document.querySelector(s),rect=s=>{const r=q(s).getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};};
  const mat=rect('.play-match-mat'),rail=rect('.play-match-inspector'),hand=rect('.play-match-hand'),footer=rect('.play-match-decisions'),battle=rect('.play-match-battlefields');
+ const secondary=rect('.play-match-header'),portrait=rect('.play-match-seat[data-seat=you]');
  const reflow=innerWidth<=900||innerHeight<=619,opening=scenario==='mulligan',hasRail=q('.play-match-main').dataset.details==='true';
- const checks={pageContained:document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight,columnsSeparate:!hasRail||(reflow?mat.bottom<=rail.y+1:mat.right<=rail.x+1),actionsVisible:footer.bottom<=innerHeight+1,handPinned:reflow||hand.bottom<=mat.bottom+1,boardUsable:opening||battle.height>100,railBounded:!hasRail||(reflow?rail.width<=innerWidth:rail.width>=230&&rail.width<=362),handIsFullFace:q('.play-match-hand .play-match-card').dataset.presentation==='card',battlefieldIsCrop:[...document.querySelectorAll('.play-match-battlefields [data-instance]')].every(n=>n.dataset.presentation==='battlefield'),uniqueInstances:new Set([...document.querySelectorAll('[data-instance]')].map(n=>n.dataset.instance)).size===document.querySelectorAll('[data-instance]').length,phaseCorrect:!q('.play-match-phases')&&(opening?!q('.play-match-seat[data-active=true]'):q('.play-match-seat[data-active=true] .play-match-seat-phase')?.textContent.includes(scenario==='combat'?'Combat · Attackers':'Second main phase')),noPrivateLeak:!document.getElementById('table').textContent.includes('PRIVATE_CANARY'),bothSeatsVisible:opening||reflow||[...document.querySelectorAll('.play-match-seat')].every(n=>n.getBoundingClientRect().top>=mat.y&&n.getBoundingClientRect().bottom<=mat.bottom),buttonsTouchable:[...document.querySelectorAll('.play-match-actions button')].filter(n=>n.getBoundingClientRect().height).every(n=>n.getBoundingClientRect().height>=44)};
+ const checks={secondaryClearOfHand:opening||reflow||secondary.right<=hand.x,secondaryClearOfPortrait:opening||reflow||secondary.y>=portrait.bottom,pageContained:document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight,columnsSeparate:!hasRail||(reflow?mat.bottom<=rail.y+1:mat.right<=rail.x+1),actionsVisible:footer.bottom<=innerHeight+1,handPinned:reflow||hand.bottom<=mat.bottom+1,boardUsable:opening||battle.height>100,railBounded:!hasRail||(reflow?rail.width<=innerWidth:rail.width>=230&&rail.width<=362),handIsFullFace:q('.play-match-hand .play-match-card').dataset.presentation==='card',battlefieldIsCrop:[...document.querySelectorAll('.play-match-battlefields [data-instance]')].every(n=>n.dataset.presentation==='battlefield'),uniqueInstances:new Set([...document.querySelectorAll('[data-instance]')].map(n=>n.dataset.instance)).size===document.querySelectorAll('[data-instance]').length,phaseCorrect:!q('.play-match-phases')&&(opening?!q('.play-match-seat[data-active=true]'):q('.play-match-seat[data-active=true] .play-match-seat-phase')?.textContent.includes(scenario==='combat'?'Combat · Attackers':'Second main phase')),noPrivateLeak:!document.getElementById('table').textContent.includes('PRIVATE_CANARY'),bothSeatsVisible:opening||reflow||[...document.querySelectorAll('.play-match-seat')].every(n=>n.getBoundingClientRect().top>=mat.y&&n.getBoundingClientRect().bottom<=mat.bottom),buttonsTouchable:[...document.querySelectorAll('.play-match-actions button')].filter(n=>n.getBoundingClientRect().height).every(n=>n.getBoundingClientRect().height>=44)};
  return {scenario,width:innerWidth,height:innerHeight,checks,passed:Object.values(checks).every(Boolean),geometry:{mat,rail,hand,footer,battle},calls};
 };
 window.runLayoutReview=report;
@@ -64,7 +65,7 @@ window.runDecisionReview=async()=>{
  if(scenario==='controls'){
   q('.play-turn-controls').open=true;const press=text=>[...document.querySelectorAll('.play-turn-controls button,.play-cancel-auto-pass')].find(b=>b.textContent===text).click();
   checks.unknownCoverageIsExplained=q('.play-turn-flow-note').textContent.includes('paused');press('Full Control');await paint();checks.fullControlUsesSession=state.turnFlow.controlMode==='full'&&calls[0][1]==='full';checks.yieldDisabledInFull=[...document.querySelectorAll('.play-turn-controls button')].find(b=>b.textContent==='Pass until I can act').disabled;
-  press('Smart');await paint();press('Pass until I can act');await paint();checks.cancelIsVisible=!!q('.play-cancel-auto-pass');press('Cancel auto-pass');await paint();checks.cancelUsesSession=!state.turnFlow.temporaryYield&&calls.some(c=>c[0]==='cancel-yield');
+  press('Smart');await paint();press('Pass until I can act');await paint();checks.cancelIsVisible=!!q('.play-match-decisions>.play-cancel-auto-pass');press('Cancel auto-pass');await paint();checks.cancelUsesSession=!state.turnFlow.temporaryYield&&calls.some(c=>c[0]==='cancel-yield');
   q('[aria-label="Your turn · Upkeep"]').click();await paint();q('[aria-label="Opponent turn · Upkeep"]').click();await paint();checks.stopsSeparateTurns=state.turnFlow.stops.length===2&&new Set(state.turnFlow.stops.map(s=>s.activeSeat)).size===2;
   checks.noUiPassWasSent=calls.every(c=>!['choose','confirm','cast'].includes(c[0]));state.turnFlow.revision=0;repaint();checks.staleContractHidden=!q('.play-turn-controls');state.turnFlow.revision=1;state.turnFlow.capabilities={};repaint();checks.unsupportedControlsHidden=!q('.play-turn-controls');
  }else if(scenario==='commander'){
@@ -112,4 +113,46 @@ window.runDecisionReview=async()=>{
   click('keep');await paint();checks.keepTransitions=calls.length===1&&calls[0][1]==='keep'&&q('#table').dataset.stage==='match'&&!!q('.play-match-seat[data-active="true"]')&&q('.play-match-battlefields').getBoundingClientRect().height>0;
  }
  return {scenario,kind:'decision-flow',checks,passed:Object.keys(checks).length>0&&Object.values(checks).every(Boolean)};
+};
+
+// Bounded focus/interruptions regression; controlled session, not engine evidence.
+window.runFocusReview=async()=>{
+ const checks={},q=s=>document.querySelector(s),key=k=>q(`[data-focus-key="${k}"]`);
+ const paint=()=>Promise.resolve(); // Focus and session callbacks settle in microtasks; no animation timing claim.
+ const focusClick=n=>{n.focus();n.click();};
+ const escape=()=>document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+ const focusIs=k=>document.activeElement===key(k);
+ const origin=state.status.revision;
+ if(scenario==='target'||scenario==='combat'){
+  if(scenario==='target')focusClick(q('[data-instance="8"]'));
+  else focusClick(key('relation-a8-cpu'));
+  const draft=JSON.stringify(state.pending);checks.draftCreated=!!state.pending;
+  if(scenario==='target'){checks.turnAndResponseRemainSeparate=q('.play-match-seat[data-seat=cpu]').dataset.active==='true'&&q('.play-match-seat[data-seat=you]').dataset.attention==='response';checks.sharedBrandReplacesInitial=!!q('.play-match-profile-badge .stashy-logo')&&!q('.play-match-profile-badge').textContent.trim();}
+  q('.play-turn-controls').open=true;focusClick(key('turn-control-full-control'));await paint();
+  checks.controlsPreserveDraft=JSON.stringify(state.pending)===draft&&state.turnFlow.controlMode==='full';
+  checks.yieldCannotSkipDraft=key('turn-control-pass-until-i-can-act').disabled;
+  escape();checks.controlsReturnToSummary=focusIs('turn-controls-summary')&&!q('.play-turn-controls').open;
+  key('card-8').focus();key('card-8').dispatchEvent(new KeyboardEvent('keydown',{key:'i',bubbles:true}));
+  focusClick(key('close-inspector'));checks.closeReturnsToKeyboardCard=focusIs('card-8');
+  if(scenario==='target')checks.inspectionDoesNotReplayAttention=q('.play-match-seat[data-seat=you]').dataset.attentionChanged==='false';
+  focusClick(key('inspect-card-8'));focusClick(key('close-inspector'));checks.closeReturnsToMagnifier=focusIs('inspect-card-8');
+  focusClick(key('inspect-card-8'));key('close-inspector').focus();escape();checks.escapeReturnsToInspectorOrigin=focusIs('inspect-card-8')&&!key('close-inspector');
+  key('card-8').focus();key('card-8').dispatchEvent(new KeyboardEvent('keydown',{key:'F10',shiftKey:true,bubbles:true,cancelable:true}));
+  checks.contextMenuReceivesFocus=focusIs('menu-inspect');escape();checks.contextEscapeReturnsToCard=focusIs('card-8')&&!q('[role="menu"]');
+  focusClick(key('table-details'));focusClick(key('close-inspector'));checks.historyCloseReturnsToHistory=focusIs('table-details');
+  const menu=q('.play-match-menu');menu.open=true;focusClick(key('exit-match'));await paint();checks.exitDialogFocusIsSafe=focusIs('cancel-exit');
+  q('dialog').dispatchEvent(new Event('cancel',{cancelable:true}));checks.cancelExitReturnsToMenu=focusIs('exit-match')&&!q('dialog');
+  escape();checks.menuEscapeReturnsToSummary=!q('.play-match-menu').open&&document.activeElement===q('.play-match-menu summary');
+  checks.interruptionsPreserveDraft=JSON.stringify(state.pending)===draft;
+  checks.interruptionsDoNotSubmit=calls.every(c=>c[0]==='control')&&state.status.revision===origin;
+  if(scenario==='target'){const photo=practicePlayerPortrait(document,true,{displayName:'Randall',avatarUrl:byName.get('Forest').image_uris.normal});checks.actualProfilePhotoIsRetained=photo.querySelector('.profile-avatar img')?.getAttribute('src')===byName.get('Forest').image_uris.normal;focusClick(key('confirm-target'));checks.confirmStillSubmitsOriginalTargetOnce=calls.filter(c=>c[0]==='confirm').length===1&&calls.find(c=>c[0]==='confirm')[1].choiceIds[0]==='target-8';}
+ }else if(scenario==='controls'){
+  const menu=q('.play-turn-controls');menu.open=true;
+  focusClick(key('turn-control-full-control'));await paint();checks.modeChangeKeepsFocus=focusIs('turn-control-full-control');
+  escape();checks.controlsEscapeReturnsToSummary=!q('.play-turn-controls').open&&focusIs('turn-controls-summary');
+  q('.play-turn-controls').open=true;focusClick(key('turn-stop-0-Upkeep'));await paint();checks.phaseStopKeepsFocus=focusIs('turn-stop-0-Upkeep');
+  escape();checks.stopsEscapeKeepsSetting=!q('.play-turn-controls').open&&state.turnFlow.stops.some(s=>s.activeSeat===0&&s.phase==='Upkeep');
+  checks.controlsNeverSubmitGameAction=calls.every(c=>['control','stop'].includes(c[0]));
+ }
+ return {scenario,layer:'synthetic DOM focus/interruptions',checks,passed:Object.keys(checks).length>0&&Object.values(checks).every(Boolean)};
 };

@@ -1,5 +1,6 @@
 // DOM presentation for a private, engine-backed research match. No card rules.
 import {turnControlElements,turnFlowMessage} from '../../play-turn-controls.js';
+import {actionIcon} from '../../icons.js';
 import {bindCardPlacement,placementIntent} from './card-placement.mjs';
 import {validInteractionText,validInteractionRelations,validDamageAssignments} from './interaction-surface.mjs';
 import {cardStatView} from './card-stats.mjs';
@@ -112,7 +113,13 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
   for(const counter of v.counters)box.append(element('span',`${counter.count} × ${counter.label}`,'play-state-chip play-counter play-stat-'+counter.tone));
   return box;
  }
- function inspect(id){menu=null;inspectorHidden=false;session.inspect(id);}
+ let inspectorOriginKey=null;const seatAttentionKeys=new Map();
+ function restoreInspectorFocus(){
+  const keys=[inspectorOriginKey,`card-${session.snapshot().selected}`,'table-details'];
+  for(const key of keys){const node=[...root.querySelectorAll('[data-focus-key]')].find(n=>n.dataset.focusKey===key&&!n.disabled);if(node){node.focus();return;}}
+ }
+ function closeInspector(){inspectorHidden=true;detailsOpen=false;menu=null;render(session.snapshot());restoreInspectorFocus();}
+ function inspect(id){inspectorOriginKey=root.contains(document.activeElement)?document.activeElement.dataset.focusKey:null;menu=null;inspectorHidden=false;session.inspect(id);}
  function cardNode(c,selected,used){
   const id=c.id,presentation=c.zone==='Battlefield'?'battlefield':'card',key=identity(c)+':'+presentation;used.add(id);let cached=cardNodes.get(id);
   if(!cached||cached.key!==key){
@@ -155,8 +162,9 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
   const header=element('header',undefined,'play-match-header');
   header.append(element('strong',title,'play-match-brand'));
   const acting=element('div',activity.label,'play-match-activity');acting.dataset.actor=activity.actor;acting.setAttribute('role','status');header.append(acting);
-  if(!openingHand)header.append(...turnControlElements({document:root.ownerDocument,snapshot,session,onError:message=>{controlError=message;render(session.snapshot());}}));
-  if(!openingHand)header.append(button(`History & stack${view.stack.length?' · '+view.stack.length:''}`,()=>{detailsOpen=!detailsOpen;inspectorHidden=!detailsOpen;render(session.snapshot());},{key:'table-details',pressed:detailsOpen}));
+  const turnElements=openingHand?[]:turnControlElements({document:root.ownerDocument,snapshot,session,onError:message=>{controlError=message;render(session.snapshot());}}),cancelAutoPass=turnElements.find(n=>n.classList.contains('play-cancel-auto-pass'));
+  header.append(...turnElements.filter(n=>n!==cancelAutoPass));
+  if(!openingHand)header.append(button(`History & stack${view.stack.length?' · '+view.stack.length:''}`,()=>{inspectorOriginKey='table-details';detailsOpen=!detailsOpen;inspectorHidden=!detailsOpen;render(session.snapshot());},{key:'table-details',pressed:detailsOpen}));
   const matchMenu=element('details',undefined,'play-match-menu');matchMenu.dataset.keepOpen='match-menu';matchMenu.append(element('summary','Match menu'));matchMenu.append(element('p','Select cards to inspect. Press I on a focused card for details. Highlighted choices come from the rules engine.'));matchMenu.append(button(allowConcede?(status.terminal?'Return to Play':'Exit match'):'Close research table',()=>{if(!allowConcede||status.terminal)return onExit();exitOpen=true;render(session.snapshot());},{key:'exit-match'}));header.append(matchMenu);root.append(header);
   if(!openingHand){const drop=element('div','Release to cast','play-match-cast-drop');drop.dataset.placementZone='stack';drop.setAttribute('aria-hidden','true');root.append(drop);}
   if(turnBanner&&!status.terminal){const elapsed=performance.now()-turnBannerStarted;if(elapsed<800){turnBanner.style.animationDelay=`-${elapsed}ms`;root.append(turnBanner);}else turnBanner=null;}
@@ -179,9 +187,10 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
   }
   function seatPanel(player,name,own=false){
    const emblem=playerStateEmblem(snapshot,player.seat),panel=element('section',undefined,'play-match-seat');panel.dataset.active=String(emblem.active);panel.dataset.seat=own?'you':'cpu';panel.dataset.playerSeat=String(player.seat);panel.setAttribute('aria-label',own?'Your status':'CPU status');
+   const attention=own&&activity.actor==='you'&&!emblem.active?'response':emblem.active?'turn':'idle',attentionKey=JSON.stringify([emblem.title,emblem.phase,attention]);panel.dataset.attention=attention;panel.dataset.attentionChanged=String(seatAttentionKeys.has(player.seat)&&seatAttentionKeys.get(player.seat)!==attentionKey);seatAttentionKeys.set(player.seat,attentionKey);
    const art=renderPlayerBackdrop(own,player);if(art){art.classList.add('play-match-seat-art');art.setAttribute('aria-hidden','true');panel.append(art);}
    const portrait=element('div',undefined,'play-match-profile-badge'),avatar=renderPlayerPortrait(own,player)||element('span',own?(name[0]||'Y'):'CPU','play-match-avatar-fallback');portrait.setAttribute('aria-label',own?'Your profile':'CPU identity');portrait.append(avatar);panel.append(portrait);
-   const info=element('div',undefined,'play-match-player');info.append(element('strong',name));const phase=element('div',undefined,'play-match-seat-phase');phase.append(element('strong',emblem.title));if(emblem.phase)phase.append(element('span',emblem.phase));info.append(phase);if(player.poison)info.append(element('span',`${player.poison} poison`));
+   const info=element('div',undefined,'play-match-player');info.append(element('strong',name));const phase=element('div',undefined,'play-match-seat-phase'),sigil=element('span',undefined,'play-seat-emblem');sigil.setAttribute('aria-hidden','true');sigil.innerHTML=actionIcon(attention==='response'?'ideas':attention==='turn'?'refresh':'more');phase.append(sigil,element('strong',emblem.title));if(emblem.phase)phase.append(element('span',emblem.phase));info.append(phase);if(player.poison)info.append(element('span',`${player.poison} poison`,'play-seat-poison'));
    const life=element('div',undefined,'play-match-life');life.setAttribute('aria-label',`${player.life} life`);life.append(element('strong',String(player.life)),element('span','LIFE'));panel.append(info,life);return panel;
   }
   function zonesMenu(){
@@ -197,7 +206,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
   if(status.outcomes?.length){const results=element('section',undefined,'play-match-random-results');results.setAttribute('aria-label','Recent rules results');results.append(element('strong','Recent rolls & flips'));const list=element('ol');for(const row of status.outcomes)list.append(element('li',randomOutcomeText(row,view.seat),row.outcome.kind==='ignored-die'?'play-match-ignored-roll':''));results.append(list);rail.append(results);}
   const selectedCard=!inspectorHidden&&cardById.get(selected)?.known?cardById.get(selected):null,inspectPanel=element('section',undefined,'play-match-card-inspector');inspectPanel.append(element('h2',selectedCard?.name||'Inspect a card'));
   main.dataset.details=String(!!selectedCard||detailsOpen||view.stack.length>0);
-  if(selectedCard||detailsOpen)rail.prepend(button('Close inspector',()=>{inspectorHidden=true;detailsOpen=false;render(session.snapshot());},{key:'close-inspector'}));
+  if(selectedCard||detailsOpen)rail.prepend(button('Close inspector',closeInspector,{key:'close-inspector'}));
   if(selectedCard){const data=resolveCard(selectedCard),key=selectedCard.id+':'+identity(selectedCard);if(!inspectorContent||inspectorContent.key!==key){let art=null,oracle=null;if(data?.imageUrl){art=element('figure');const img=element('img');img.src=data.imageUrl;img.alt=selectedCard.name;art.append(img);decorateCard(art,selectedCard);}if(data?.oracleText)oracle=renderOracleText?renderOracleText(data.oracleText,selectedCard):element('p',data.oracleText);inspectorContent={key,art,oracle};}if(inspectorContent.art)inspectPanel.append(inspectorContent.art);inspectPanel.append(renderStats(selectedCard),element('p',(selectedCard.keywords||[]).join(' · ')));if(inspectorContent.oracle)inspectPanel.append(inspectorContent.oracle);decorateInspector(inspectPanel,selectedCard);}else inspectorContent=null;
   if(selectedCard?.zone==='Hand'&&selectedCard.controller===view.seat&&!selectedCard.types?.includes('Land')&&view.decision.kind==='Priority'&&view.prioritySeat===view.seat){for(const payment of ['auto','manual'])inspectPanel.append(button(payment==='auto'?'Cast · automatic mana':'Cast · manual mana',()=>session.cast(selectedCard.id,payment),{blockWhileBusy:true,disabled:busy||!!error&&error!=='CHOICE_REJECTED',key:`cast-${payment}-${selectedCard.id}`}));}
   const selectedCues=selectedCard?cardActionCues(snapshot,selectedCard.id):[];
@@ -206,7 +215,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
   if(menu!==null){const pop=element('div',undefined,'play-match-context');pop.setAttribute('role','menu');pop.append(button('Inspect card',()=>{menu=null;render(session.snapshot());},{key:'menu-inspect'}));for(const c of view.choices.filter(c=>c.sourceId===menu))pop.append(button(c.label,()=>session.choose(c.token),{blockWhileBusy:true,disabled:busy||!!error&&error!=='CHOICE_REJECTED'}));pop.append(button('Close menu',()=>{menu=null;render(session.snapshot());root.querySelector(`[data-instance="${selected}"]`)?.focus();},{key:'menu-close'}));rail.append(pop);}
   main.append(table,rail);root.append(main);
   const footer=element('footer',undefined,'play-match-decisions');footer.setAttribute('aria-label','Match decisions');footer.dataset.keepScroll='decisions';
-  const decisionHeading=element('div',undefined,'play-match-decision-heading'),decisionTitle=element('strong',activity.label);decisionHeading.append(decisionTitle);footer.append(decisionHeading);
+  const decisionHeading=element('div',undefined,'play-match-decision-heading'),decisionTitle=element('strong',activity.label);decisionHeading.append(decisionTitle);footer.append(decisionHeading);if(cancelAutoPass)footer.append(cancelAutoPass);
   if(activity.actor==='you'&&view.decision.kind==='Priority'){const legend=element('p',undefined,'play-match-cue-legend');legend.setAttribute('aria-label','Card highlights');for(const [tone,label]of [['play','Play / Cast'],['ability','Ability'],['selected','Inspecting']]){const item=element('span',label);item.dataset.cue=tone;legend.append(item);}legend.append(element('span','Select a highlighted card for actions.'));footer.append(legend);}
   const timer=element('output',clock?.remainingSeconds!==null&&clock?.remainingSeconds!==undefined?`${clock.remainingSeconds}s to respond`:clock?.needsChoice?'Your choice is required':'');timer.className=clock?.warning?'play-match-warning':'';timer.setAttribute('aria-label','Response time');decisionHeading.append(timer);for(const label of ['Inactivity time','Turn time']){const limit=element('output');limit.setAttribute('aria-label',label);decisionHeading.append(limit);}updateClock(clock);
   const flowNote=turnFlowMessage(snapshot);if(flowNote)footer.append(element('p',flowNote,'play-turn-flow-note'));if(controlError){const note=element('p',controlError,'play-match-error');note.setAttribute('role','alert');footer.append(note);}
@@ -329,7 +338,13 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
  const focusCombat=e=>{const node=e.target.closest?.('[data-instance],[data-combat-card]'),id=node?Number(node.dataset.instance||node.dataset.combatCard):null;if(node&&boardLinks.some(l=>!l.from.prompt&&(l.from.id===id||l.to.id===id)))focusedCombatCard=id;drawDraftLinks();};
  root.addEventListener('pointerover',focusCombat);root.addEventListener('focusin',focusCombat);
  const resize=typeof ResizeObserver==='function'?new ResizeObserver(drawDraftLinks):null;resize?.observe(root);root.addEventListener('scroll',drawDraftLinks,true);
- const keydown=e=>{if(e.key==='Escape'&&menu!==null){e.preventDefault();menu=null;render(session.snapshot());root.querySelector(`[data-instance="${session.snapshot().selected}"]`)?.focus();}};
+ const keydown=e=>{
+  if(e.key!=='Escape'||exitOpen)return;
+  if(menu!==null){e.preventDefault();e.stopPropagation();menu=null;render(session.snapshot());restoreInspectorFocus();return;}
+  const disclosure=e.target.closest?.('details[open]');
+  if(disclosure&&root.contains(disclosure)){e.preventDefault();e.stopPropagation();disclosure.open=false;disclosure.querySelector('summary')?.focus();return;}
+  if(e.target.closest?.('.play-match-inspector')&&(!inspectorHidden||detailsOpen)){e.preventDefault();e.stopPropagation();closeInspector();}
+ };
  root.addEventListener('keydown',keydown);
  return {render,requestExit(){if(!allowConcede||session.snapshot().status?.terminal)return onExit();exitOpen=true;render(session.snapshot());},destroy(){placement.destroy();disposeEffects();resize?.disconnect();root.removeEventListener('scroll',drawDraftLinks,true);root.removeEventListener('pointerover',focusCombat);root.removeEventListener('focusin',focusCombat);cardNodes.clear();bandDrafts.clear();inspectorContent=null;root.removeEventListener('keydown',keydown);root.replaceChildren();}};
 }
