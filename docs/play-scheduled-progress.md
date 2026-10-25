@@ -1066,3 +1066,48 @@ The driver still uses the land-heavy Plains/Savannah Lions control and simulated
 accounts/printing rows. It does not certify a currently eligible competitive
 Standard deck or finish the public account route. Retained its full hashed
 receipt as complete-control-match.json, separate from the earlier byte sets.
+
+
+## October 25, 2026 — explicit card-name human input
+
+Continued from remote 9767b7ed814ce3829dd4dca2f96971994b989fb4, with no AGENTS.md
+in the complete recursive tree. Isolated current modules were matched against
+remote blob hashes. Preserved newer numeric, player-mat, stats and outcome work.
+
+Added explicit arbitrary Text schema projection for engine card-name prompts,
+local text drafting, confirmation and labeled table input. Only authorized
+explicit arbitrary schemas are exposed. UTF-8 byte bounds match the engine's
+256-byte limit; blank/control/malformed Unicode input is rejected without a move.
+Names remain text, never HTML. The engine owns final name legality. Restricted
+option/text families remain unavailable; no arbitrary fallback for other schemas.
+Existing fixed-route browser harnesses now serve the added shared projection
+import. Added table-text-browser.mjs for blank/byte-bound, timer/focus and duplicate
+confirmation checks; its syntax passes, but browser execution is pending.
+
+Executed: all 160 focused Node tests pass, zero failures/skips/cancellations.
+Executed text-controls-engine.mjs: Pithing Needle resolves into a real name prompt;
+unknown name and restored stale capability reject without mutation; Basalt
+Monolith is accepted and retained on the entered Needle; recovered duplicate
+receipt does not apply again. Zero network requests. This is an engineered
+three-definition case, not inhibition-effect or broad card-name certification.
+Initial test omitted Basalt from the loaded database and was correctly rejected;
+added its unchanged, hash-bound fixture definition and retained an explicit
+unknown-name rejection regression. No engine code or existing assertion changed.
+
+Scratch source files survive but their referenced Git worktree metadata is gone.
+The original source-checkout loader failed closed and was not weakened. The new
+self-contained delivered-byte driver verifies the exact recorded ZIP digest,
+its embedded receipt, expected source identities, JS/WASM hashes, compressed and
+decoded pinned rules hashes, and selected definitions before execution. Source
+provenance is the verified archive's historical receipt, not a newly verified
+Git source tree. Exact report: account-proof-2026-10-25/text-controls.json.
+No replacement binary, rebuild or external request was used.
+
+A browser launch attempt failed before page execution: cached /tmp/chromium is
+zero bytes. New text controls are therefore NOT browser-verified here; the
+previous head's numeric/browser results remain historical. Restore a functioning
+Chromium and run table-text-browser.mjs plus table-number-browser.mjs, then repeat
+actual host and complete-match gates. Final Node checks and browser-script syntax
+pass. Public release remains disabled; viable real Standard/Commander matches,
+remaining schemas/pregame/difficulty and account-route acceptance are unfinished.
+No production, APK, schema, paid build, new subscription or external message.

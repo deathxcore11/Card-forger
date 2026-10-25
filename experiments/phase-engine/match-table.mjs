@@ -1,4 +1,5 @@
 // DOM presentation for a private, engine-backed research match. No card rules.
+import {validInteractionText} from './interaction-surface.mjs';
 import {cardStatView} from './card-stats.mjs';
 import {randomOutcomeText} from './random-outcomes.mjs';
 const labels={MulliganDecision:'Opening hand',Priority:'Priority',DeclareAttackers:'Declare attackers',DeclareBlockers:'Declare blockers',GameOver:'Match finished'};
@@ -76,6 +77,15 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
    let interactionControls=controls;
    if(view.canAct&&view.interaction?.opportunities?.length){const more=element('details',undefined,'play-match-other-actions');more.open=advancedOpen;const summary=element('summary','Abilities & other actions');summary.dataset.focusKey='other-actions-summary';more.append(summary);more.addEventListener('toggle',()=>{advancedOpen=more.open;});controls.append(more);interactionControls=more;}
    for(const o of view.interaction?.opportunities||[]){
+    if(o.type==='text'){
+     const group=element('fieldset');group.append(element('legend','Name a card'));
+     const input=element('input');input.type='text';input.autocomplete='off';input.setAttribute('aria-label','Card name');input.dataset.focusKey=`text-${o.interactionId}`;
+     const blocked=busy||!!error&&error!=='CHOICE_REJECTED';input.disabled=blocked;
+     input.value=pending?.interactionId===o.interactionId?pending.value:'';
+     const confirm=button('Confirm card name',()=>{session.setText(o.interactionId,input.value);return session.confirm();},{blockWhileBusy:true,disabled:blocked||!validInteractionText(input.value,o.maxLen),key:`confirm-${o.interactionId}`});
+     input.addEventListener('input',()=>{confirm.disabled=blocked||!validInteractionText(input.value,o.maxLen);});
+     group.append(input,confirm);interactionControls.append(group);continue;
+    }
     if(o.type==='number'){
      const group=element('fieldset');group.append(element('legend',`Choose a number · ${o.min}–${o.max}`));
      const input=element('input');input.type='number';input.min=String(o.min);input.max=String(o.max);input.step='1';input.setAttribute('aria-label','Chosen number');input.dataset.focusKey=`number-${o.interactionId}`;

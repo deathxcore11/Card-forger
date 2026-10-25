@@ -1,5 +1,6 @@
 // Private research table controller. The authority owns every rules decision.
 // No engine adoption, general card coverage or calibrated difficulty claim.
+import {validInteractionText} from './interaction-surface.mjs';
 import {createPriorityScheduler} from './priority-scheduler.mjs';
 export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.randomUUID(),schedulerOptions={},maxCpuCommands=2000}={}){
  if(!client||typeof client.request!=='function'||typeof onChange!=='function'||!Number.isSafeInteger(maxCpuCommands)||maxCpuCommands<1||maxCpuCommands>20000)throw Error('BAD_SESSION_OPTIONS');
@@ -79,16 +80,26 @@ export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.rand
    else pending.choiceIds=pending.choiceIds.includes(choiceId)?pending.choiceIds.filter(id=>id!==choiceId):[...pending.choiceIds,choiceId];
    publish();
   },
+  setText(interactionId,value){
+   const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);
+   if(!o||o.type!=='text')throw Error('STALE_CHOICE');
+   if(!validInteractionText(value,o.maxLen))throw Error('CHOICE_INCOMPLETE');
+   pending={interactionId,type:'text',value,revision:status.revision};publish();
+  },
   setNumber(interactionId,value){
    const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);
    if(!o||o.type!=='number')throw Error('STALE_CHOICE');
    if(!Number.isInteger(value)||value<o.min||value>o.max)throw Error('CHOICE_INCOMPLETE');
    pending={interactionId,type:'number',value,revision:status.revision};publish();
   },
-  selectNone(interactionId){const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);if(!o||o.type==='number'||o.min!==0)throw Error('CHOICE_REQUIRED');pending={interactionId,type:o.type,choiceIds:[],revision:status.revision};publish();},
+  selectNone(interactionId){const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);if(!o||['number','text'].includes(o.type)||o.min!==0)throw Error('CHOICE_REQUIRED');pending={interactionId,type:o.type,choiceIds:[],revision:status.revision};publish();},
   confirm(){
    const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===pending?.interactionId);
    if(!o||pending.revision!==status.revision)throw Error('CHOICE_INCOMPLETE');
+   if(o.type==='text'){
+    if(!validInteractionText(pending.value,o.maxLen))throw Error('CHOICE_INCOMPLETE');
+    return command('respond',{submission:{interactionId:o.interactionId,response:{type:'text',data:{value:pending.value}}}});
+   }
    if(o.type==='number'){
     if(!Number.isInteger(pending.value)||pending.value<o.min||pending.value>o.max)throw Error('CHOICE_INCOMPLETE');
     return command('respond',{submission:{interactionId:o.interactionId,response:{type:'number',data:{value:pending.value}}}});

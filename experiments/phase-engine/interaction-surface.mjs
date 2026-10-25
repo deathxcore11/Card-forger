@@ -5,9 +5,14 @@ import {fail} from './protocol-fault.mjs';
 const obj=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 const token=v=>typeof v==='string'&&v.length>0&&v.length<=256&&!/[\u0000-\u001f\u007f]/.test(v);
 const keys=(v,names)=>obj(v)&&Object.keys(v).length===names.length&&names.every(k=>Object.hasOwn(v,k));
+export const validInteractionText=(value,maxLen)=>typeof value==='string'&&value.trim().length>0&&!/[\u0000-\u001f\u007f]/.test(value)&&value.isWellFormed()&&new TextEncoder().encode(value).length<=maxLen;
 export function interactionSubmission(value){
  if(!keys(value,['interactionId','response'])||!token(value.interactionId)||!keys(value.response,['type','data']))fail('BAD_INTERACTION');
  const {type,data}=value.response;
+ if(type==='text'){
+  if(!keys(data,['value'])||!validInteractionText(data.value,256))fail('BAD_INTERACTION');
+  return {interactionId:value.interactionId,response:{type,data:{value:data.value}}};
+ }
  if(type==='number'){
   if(!keys(data,['value'])||!Number.isInteger(data.value)||data.value<0||data.value>4294967295)fail('BAD_INTERACTION');
   return {interactionId:value.interactionId,response:{type,data:{value:data.value}}};
@@ -29,6 +34,11 @@ export function projectInteraction(raw,seat){
  if(canSubmit)for(const o of raw.opportunities){
   if(!token(o?.interactionId))fail('INVALID_INTERACTION_VIEW');
   const exact=o.response?.type==='exactChoices',spec=o.response?.data?.spec;
+  if(o.response?.type==='schema'&&spec?.type==='text'){
+   const {maxLen,confirm,allowArbitrary}=spec.data||{};
+   if(confirm!=='explicit'||allowArbitrary!==true||!Number.isInteger(maxLen)||maxLen<1||maxLen>256)continue;
+   opportunities.push({interactionId:o.interactionId,type:'text',maxLen,choices:[]});continue;
+  }
   if(o.response?.type==='schema'&&spec?.type==='number'){
    const {min,max,confirm}=spec.data||{};
    if(confirm!=='explicit'||!Number.isInteger(min)||!Number.isInteger(max)||min<0||max<min||max>4294967295)continue;

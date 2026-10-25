@@ -1,0 +1,32 @@
+{
+  "provenance": {
+    "archiveSha": "edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b",
+    "wasm": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "glue": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "rulesGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "subsetSha": "77aa45b646e7aaf10b118c3e9da3f502851293d4ad749918fa3d5e9964e64729",
+    "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "sourceVerification": "Archive-bound historical receipt; source Git checkout not reverified in this run"
+  },
+  "checks": [
+    "Pithing Needle resolves to real card-name prompt",
+    "text prompt projected only to authorized seat",
+    "unknown card name rejected without mutation",
+    "pending name prompt restores without a move",
+    "stale capability rejected without mutation",
+    "explicit Basalt Monolith name accepted without AI candidate membership",
+    "Needle enters battlefield retaining chosen name",
+    "duplicate receipt after restore cannot submit twice"
+  ],
+  "revision": 1,
+  "networkCalls": 0,
+  "sourceSha256": {
+    "text-controls-engine.mjs": "f0f0f27123eb8249f736338e883eeac169059dacaf7f20618f887e2301217695",
+    "interaction-surface.mjs": "26a9e4719d6ba3a25564ec563a39221319613b352f1baf453e269bf67bd56865",
+    "worker-journal.mjs": "568b1cdeb91e62c42ddd41157876c98378223922dce2dc1b34d81903a4a3c984",
+    "human-command.mjs": "9b7e62b4271d35337f75fa07b5f4486e4678b1e1dafef5464d262e7e8053aa2b",
+    "runtime-assets.mjs": "40b266a4a3bb9806a386d49ea497e81fcfa2dd506e64b1e8e9082c1651489254"
+  },
+  "limits": "Engineered Pithing Needle naming, not inhibition-effect coverage, all card-name rules, browser interaction or a real account match. Source tree provenance is from the exact verified archive receipt, not a fresh source checkout verification."
+}
