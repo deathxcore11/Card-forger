@@ -56,6 +56,16 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
    let interactionControls=controls;
    if(view.canAct&&view.interaction?.opportunities?.length){const more=element('details',undefined,'play-match-other-actions');more.open=advancedOpen;const summary=element('summary','Abilities & other actions');summary.dataset.focusKey='other-actions-summary';more.append(summary);more.addEventListener('toggle',()=>{advancedOpen=more.open;});controls.append(more);interactionControls=more;}
    for(const o of view.interaction?.opportunities||[]){
+    if(o.type==='number'){
+     const group=element('fieldset');group.append(element('legend',`Choose a number · ${o.min}–${o.max}`));
+     const input=element('input');input.type='number';input.min=String(o.min);input.max=String(o.max);input.step='1';input.setAttribute('aria-label','Chosen number');input.dataset.focusKey=`number-${o.interactionId}`;
+     const blocked=busy||!!error&&error!=='CHOICE_REJECTED';input.disabled=blocked;
+     input.value=pending?.interactionId===o.interactionId?String(pending.value):'';
+     const confirm=button('Confirm number',()=>{session.setNumber(o.interactionId,input.valueAsNumber);session.confirm();},{disabled:blocked||input.value==='',key:`confirm-${o.interactionId}`});
+     // Keep typing local so a render cannot steal the caret. Never default to zero.
+     input.addEventListener('input',()=>{const n=input.valueAsNumber;confirm.disabled=blocked||input.value===''||!Number.isInteger(n)||n<o.min||n>o.max;});
+     group.append(input,confirm);interactionControls.append(group);continue;
+    }
     const group=element('fieldset');group.append(element('legend',o.type!=='choose'?`${o.type==='sequence'?'Choose in order':'Select'} ${o.min===o.max?o.min:o.min+'–'+o.max}`:'Choose one'));
     for(const c of o.choices)group.append(button(actionText(c,view.decision.kind),()=>session.select(o.interactionId,c.id),{key:c.id,disabled:busy||!c.available||!!error&&error!=='CHOICE_REJECTED',pressed:pending?.interactionId===o.interactionId&&pending.choiceIds.includes(c.id)}));
     if(o.type==='sequence'&&pending?.interactionId===o.interactionId)group.append(element('p','Order: '+pending.choiceIds.map(id=>actionText(o.choices.find(c=>c.id===id))).join(' → ')));

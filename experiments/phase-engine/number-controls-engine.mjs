@@ -1,0 +1,23 @@
+// Engineered Walking Ballista position; real corrected-runtime X input route.
+import assert from 'node:assert/strict';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {bootMechanics,sha} from './mechanics-inputs.mjs';
+import {prepare,deck,state,signature} from './mechanics-fixtures.mjs';
+import {createJournal} from './worker-journal.mjs';
+import {projectInteraction} from './interaction-surface.mjs';
+import {submitHumanCommand} from './human-command.mjs';
+const {engine:e,provenance,networkCalls}=await bootMechanics({cardNames:['Forest','Walking Ballista']});
+let saved=null,card,seq=0;
+const engine={humanSeat:0,start(){const f=prepare(e,deck('Forest','Walking Ballista'),deck('Forest'));f.move('Forest',0,'Battlefield',4);[card]=f.move('Walking Ballista',0,'Hand');f.restore();},save:()=>e.export_game_state_json(),restore:s=>e.restore_game_state(s),summary:()=>({interaction:projectInteraction(e.get_viewer_snapshot_js(0).viewerInteraction,0)}),act:c=>submitHumanCommand(e,c),respond:s=>{const r=e.submit_interaction_js(0,s);assert(['applied','rejected'].includes(r.status));return r.status==='applied';}};
+const open=()=>createJournal({engine,storage:{read:async()=>structuredClone(saved),write:async(n,expected)=>{assert.equal(saved?.revision??null,expected);saved=structuredClone(n);}},choose:()=>assert.fail('No AI candidate membership'),version:'number-proof',epoch:'number'});
+let h=open();const send=async(op,fields={})=>{const r=await h({v:1,epoch:'number',id:'n-'+(++seq),op,...fields});assert(r.ok,JSON.stringify(r));return r.result;};
+let r=await send('create',{seed:1,first:0});r=await send('act',{revision:r.revision,command:{kind:'cast',instanceId:card,payment:'manual'}});
+assert.equal(state(e).waiting_for.type,'ChooseXValue');let o=r.interaction.opportunities.find(o=>o.type==='number');assert(o);assert(o.min<=2&&o.max>=2);
+const submission=value=>({interactionId:o.interactionId,response:{type:'number',data:{value}}});
+const before=signature(e),bad=submission(o.max+1);r=await send('respond',{revision:r.revision,submission:bad});assert(r.rejected);assert.deepEqual(signature(e),before);
+const stale=submission(2);h=open();r=await send('resume');assert.deepEqual(signature(e),before);r=await send('respond',{revision:r.revision,submission:stale});assert(r.rejected);
+o=r.interaction.opportunities.find(o=>o.type==='number');assert(o);const id='number-accepted',revision=r.revision,accepted=submission(2);
+let reply=await h({v:1,epoch:'number',id,op:'respond',revision,submission:accepted});assert(reply.ok);assert(!reply.result.rejected);assert.equal(state(e).waiting_for.type,'ManaPayment');assert.deepEqual(state(e).pending_cast.cost,{generic:4,shards:[],type:'Cost'});
+const after=signature(e);h=open();await send('resume');reply=await h({v:1,epoch:'number',id,op:'respond',revision,submission:accepted});assert(reply.ok);assert.deepEqual(signature(e),after);assert.equal(networkCalls(),0);
+const report={provenance,checks:['engine-authored X range','out-of-range engine rejection without mutation','pending X restore','stale capability rejected after restore','explicit X=2 enters manual payment','duplicate accepted receipt after recovery cannot apply twice'],revision:saved.revision,networkCalls:networkCalls(),sourceSha256:Object.fromEntries(await Promise.all(['number-controls-engine.mjs','interaction-surface.mjs','worker-journal.mjs','human-command.mjs'].map(async p=>[p,sha(await readFile(new URL(p,import.meta.url)))]))),limits:'One engineered Walking Ballista X announcement. Not full spell resolution, payment-family coverage or an account-facing match.'};
+await mkdir('test-results/number-controls',{recursive:true});await writeFile('test-results/number-controls/report.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));

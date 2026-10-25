@@ -78,10 +78,21 @@ export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.rand
    else pending.choiceIds=pending.choiceIds.includes(choiceId)?pending.choiceIds.filter(id=>id!==choiceId):[...pending.choiceIds,choiceId];
    publish();
   },
-  selectNone(interactionId){const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);if(!o||o.min!==0)throw Error('CHOICE_REQUIRED');pending={interactionId,type:o.type,choiceIds:[],revision:status.revision};publish();},
+  setNumber(interactionId,value){
+   const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);
+   if(!o||o.type!=='number')throw Error('STALE_CHOICE');
+   if(!Number.isInteger(value)||value<o.min||value>o.max)throw Error('CHOICE_INCOMPLETE');
+   pending={interactionId,type:'number',value,revision:status.revision};publish();
+  },
+  selectNone(interactionId){const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);if(!o||o.type==='number'||o.min!==0)throw Error('CHOICE_REQUIRED');pending={interactionId,type:o.type,choiceIds:[],revision:status.revision};publish();},
   confirm(){
    const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===pending?.interactionId);
-   if(!o||pending.revision!==status.revision||pending.choiceIds.length<o.min||pending.choiceIds.length>o.max)throw Error('CHOICE_INCOMPLETE');
+   if(!o||pending.revision!==status.revision)throw Error('CHOICE_INCOMPLETE');
+   if(o.type==='number'){
+    if(!Number.isInteger(pending.value)||pending.value<o.min||pending.value>o.max)throw Error('CHOICE_INCOMPLETE');
+    return command('respond',{submission:{interactionId:o.interactionId,response:{type:'number',data:{value:pending.value}}}});
+   }
+   if(pending.choiceIds.length<o.min||pending.choiceIds.length>o.max)throw Error('CHOICE_INCOMPLETE');
    const response=o.type==='choose'?{type:'choose',data:{choiceId:pending.choiceIds[0]}}:{type:o.type,data:{choiceIds:pending.choiceIds}};
    return command('respond',{submission:{interactionId:o.interactionId,response}});
   },

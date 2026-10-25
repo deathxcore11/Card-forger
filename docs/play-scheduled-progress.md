@@ -804,3 +804,36 @@ browser check, and verified the overlay is absolutely positioned on the same
 card. Inspected the corrected card/inspector screenshot. The shared art report
 now includes hashes for the served root modules and stylesheet. No runtime,
 foil algorithm or unrelated game behavior changed.
+
+
+## October 25, 2026 — explicit numeric human choices
+
+Started from verified remote 2c3b70e8228fdddd9cc0025fb023b81c7f1acacd; complete
+recursive tree has no AGENTS.md. Used an isolated copy with unchanged modules
+verified against remote Git blob hashes, leaving newer local integration files
+untouched. No Rust build, infrastructure spend, release, APK or schema change.
+
+Added engine-authored Number schema projection, bounded uint32 submission,
+explicit numeric drafting/confirmation and labeled number controls. No default
+number is chosen and typing never submits. Unknown/malformed schemas remain
+unavailable; the engine validates every accepted input independently of AI lists.
+
+Executed all 143 focused Node tests: pass, zero failures/skips/cancellations.
+Executed number-controls-engine.mjs on the exact delivered corrected runtime;
+receipt/source/tree/diff/fixture and JS/WASM hashes verified by the existing loader.
+Walking Ballista in an engineered position reaches ChooseXValue, rejects an
+out-of-range value without mutation, restores the pending prompt, rejects its
+stale capability, accepts explicit X=2 with four generic mana due, and recovers
+its accepted receipt without applying twice. Zero network calls. Exact hashes
+and outcomes: account-proof-2026-10-25/number-controls.json. Two initial driver
+assertions incorrectly looked for an x_value field; source inspection corrected
+the assertion to the actual concretized pending cost, and the final run passed.
+No engine code or regression assertion was changed.
+
+UI source is implemented but no browser rendering/input test was run in this
+slice. This is one X announcement, not full Ballista resolution, all numeric
+payment families, all-card support, CPU calibration or account-facing completion.
+Original failing and corrected passing ninjutsu evidence remains unchanged.
+Next: repeat numeric entry in the actual account table, then finish the remaining
+human schemas/pregame and real eligible Standard/Commander complete-match gates.
+The owner-approved functional beta release gate remains unmet; nothing published.

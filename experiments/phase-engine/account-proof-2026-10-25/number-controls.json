@@ -1,0 +1,38 @@
+{
+  "provenance": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "runtimeOrigin": "local-research-build",
+    "buildIdentity": "cardstashy-ci-40153568000-1-ninjutsu-a49b8aa",
+    "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "sourceDiffSha256": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+    "buildReceiptSha256": "9c9e378fd2247f0a860f8f0cf4f2086464d2bf181af24ce7c02bd61161e69af2",
+    "glue": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "wasm": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "integrationFixtureGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "fixtureCardCount": 6137,
+    "loadedNames": [
+      "Forest",
+      "Walking Ballista"
+    ],
+    "subsetSha256": "1d6723733882bc17391ea4a85dda913148bf36647203c5b137fcb56bb32b125b",
+    "subsetBytes": 27304
+  },
+  "checks": [
+    "engine-authored X range",
+    "out-of-range engine rejection without mutation",
+    "pending X restore",
+    "stale capability rejected after restore",
+    "explicit X=2 enters manual payment",
+    "duplicate accepted receipt after recovery cannot apply twice"
+  ],
+  "revision": 2,
+  "networkCalls": 0,
+  "sourceSha256": {
+    "number-controls-engine.mjs": "1736f56db823aa037066af8eea288ebe3e7ed9f54480430d1e135f85584d95e0",
+    "interaction-surface.mjs": "b53c1c70eb2edcf5ac31112fcdce0d3a5ec6ee257d141cec627d874e67d51fe8",
+    "worker-journal.mjs": "b35889c31eb55d58652fa6cb53f86d53b94ed87a3340ffbd955cce0d1026493e",
+    "human-command.mjs": "57d08876ce33962e61428632271ad070198e7f59f39c1c8c23256006aa950d5b"
+  },
+  "limits": "One engineered Walking Ballista X announcement. Not full spell resolution, payment-family coverage or an account-facing match."
+}

@@ -8,6 +8,10 @@ const keys=(v,names)=>obj(v)&&Object.keys(v).length===names.length&&names.every(
 export function interactionSubmission(value){
  if(!keys(value,['interactionId','response'])||!token(value.interactionId)||!keys(value.response,['type','data']))fail('BAD_INTERACTION');
  const {type,data}=value.response;
+ if(type==='number'){
+  if(!keys(data,['value'])||!Number.isInteger(data.value)||data.value<0||data.value>4294967295)fail('BAD_INTERACTION');
+  return {interactionId:value.interactionId,response:{type,data:{value:data.value}}};
+ }
  if(type==='choose'){
   if(!keys(data,['choiceId'])||!token(data.choiceId))fail('BAD_INTERACTION');
   return {interactionId:value.interactionId,response:{type,data:{choiceId:data.choiceId}}};
@@ -25,6 +29,11 @@ export function projectInteraction(raw,seat){
  if(canSubmit)for(const o of raw.opportunities){
   if(!token(o?.interactionId))fail('INVALID_INTERACTION_VIEW');
   const exact=o.response?.type==='exactChoices',spec=o.response?.data?.spec;
+  if(o.response?.type==='schema'&&spec?.type==='number'){
+   const {min,max,confirm}=spec.data||{};
+   if(confirm!=='explicit'||!Number.isInteger(min)||!Number.isInteger(max)||min<0||max<min||max>4294967295)continue;
+   opportunities.push({interactionId:o.interactionId,type:'number',min,max,choices:[]});continue;
+  }
   const selection=o.response?.type==='schema'&&spec?.type==='select'&&spec.data?.constraint?.type==='count'&&spec.data?.confirm==='explicit';
   const sequence=o.response?.type==='schema'&&spec?.type==='sequence'&&spec.data?.confirm==='explicit';
   if(!exact&&!selection&&!sequence)continue;
