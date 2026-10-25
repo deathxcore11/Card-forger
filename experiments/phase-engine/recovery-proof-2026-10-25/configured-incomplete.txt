@@ -1,0 +1,4 @@
+Opening configured candidate
+Browser launched
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}

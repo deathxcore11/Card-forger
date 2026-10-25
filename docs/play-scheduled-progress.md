@@ -1294,3 +1294,15 @@ pregame/mandatory timeout policy, fair calibrated difficulties and actual owner
 route acceptance. Public readiness remains false. Existing release approval is
 recorded. No production, APK, schema, paid build, new subscription/budget or
 external message occurred. Do not publish a fixture-only Play button.
+
+Broader verification attempt: ran the unchanged current configured-match browser
+suite serially after the recovery probe. Its persistent-browser run again stopped
+making visible progress during runtime download after the first 16 MiB; no new
+completed game or final report was produced. The observed cgroup oom_kill count
+remained 6, so this run does not establish another OOM. A cross-command SIGINT
+attempt could not resolve the sandboxed process ID (ProcessLookupError); no
+successful termination is claimed. Treat the broader suite as incomplete,
+not passed or an engine loss. Its captured startup log is retained with this
+slice. Next verification should use an outer bounded process lifetime and isolate
+the persistent-profile/runtime-loading path before another full-suite attempt;
+the separate ephemeral-browser account/recovery path passed on final bytes.
