@@ -1,0 +1,4980 @@
+{
+  "schema": 1,
+  "task": "DECK-003",
+  "taskBase": "d7a1a91b8a9a4f36b57076ab539ef102248379f7",
+  "integrationInspected": "d81a0a14f3f34cf64fc0156abf495fab590263b6",
+  "milestoneStatus": "UNSUPPORTED",
+  "dataCandidate": {
+    "missingBefore": 44,
+    "candidateAdditions": 44,
+    "candidateMissingAfter": 0,
+    "existingDefinitionsPreserved": 25,
+    "exactListPreserved": true,
+    "productionChanged": false,
+    "correctedCandidateSha256": "6c834c2633755e0034be2300f61408c4967bac65a8ed46d4702b496bd29f1138"
+  },
+  "provenance": {
+    "appBaseCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+    "runtimeSourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "rulesSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "loadedNames": [
+      "Forest",
+      "Mountain",
+      "Grizzly Bears",
+      "Lightning Bolt",
+      "Unsummon",
+      "Sol Ring"
+    ],
+    "subsetSha256": "b3f10f47e0fa2d688e41037301d5c2727ecf0732188c98855acf7199cbf37815"
+  },
+  "source": {
+    "url": "https://data.phase-rs.dev/card-data-84d5fd2af84e2f12.json",
+    "sha256": "84d5fd2af84e2f125b740eeb05637785b2e8df26d34e41a2cd628697dae30513",
+    "bytes": 100070783,
+    "entries": 36037,
+    "metadata": {
+      "generated_at": "2026-10-24T14:06:33Z",
+      "commit": "09c286c0ff45011bcbeb9742848a95dac92b5466",
+      "mtgjson_version": "5.3.0+20261023",
+      "mtgjson_date": "2026-10-23",
+      "data_hash": "84d5fd2af84e2f12",
+      "data_filename": "card-data-84d5fd2af84e2f12.json"
+    },
+    "shippedUpstreamBase": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "sourceRelationship": "Export source is 21 commits behind the shipped upstream base; candidate compatibility requires execution, not an assumption of identical schemas."
+  },
+  "definitionLoadChecks": {
+    "status": "PASS",
+    "records": 44,
+    "variants": [
+      "upstream",
+      "corrected"
+    ],
+    "notMechanicCertification": true
+  },
+  "before": {
+    "schema": 1,
+    "task": "DECK-003",
+    "taskBase": "d7a1a91b8a9a4f36b57076ab539ef102248379f7",
+    "integrationInspected": "d81a0a14f3f34cf64fc0156abf495fab590263b6",
+    "provenance": {
+      "appBaseCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "runtimeSourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+      "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+      "rulesSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+      "loadedNames": [
+        "Forest",
+        "Mountain",
+        "Grizzly Bears",
+        "Lightning Bolt",
+        "Unsummon",
+        "Sol Ring"
+      ],
+      "subsetSha256": "b3f10f47e0fa2d688e41037301d5c2727ecf0732188c98855acf7199cbf37815"
+    },
+    "variant": "upstream",
+    "candidateSha256": "c71f6054e027d90a1a6da4da28cfc35ff5d0c6d8e7b9728fee97fe2463f5b194",
+    "effectiveCandidateSha256": "c71f6054e027d90a1a6da4da28cfc35ff5d0c6d8e7b9728fee97fe2463f5b194",
+    "correctionSha256": "eb30f22b3e500b2b420cae044b6a9845dfbe997ad44df87f4133d6b4f2e1559c",
+    "effectiveLootRecordSha256": "de48d53431162753c28a8cd6086409b7b8fd75a7ecda8161701e9c766f48a933",
+    "combinedSubsetSha256": "e5a2bb8da6dcb50c181d52b683829b7998a2ad67c9fc8c177f09c599368d5c8b",
+    "startedAt": "2026-10-25T17:52:25.677Z",
+    "environment": {
+      "node": "v24.22.1",
+      "platform": "linux",
+      "arch": "x64"
+    },
+    "rulesReference": "https://media.wizards.com/2026/downloads/MagicCompRules%2020260925.txt",
+    "cases": [
+      {
+        "id": "exact-commander-initialization",
+        "status": "PASS",
+        "expected": "The unchanged 100-card list passes construction checks with candidate data, initializes 99 library cards plus its actual commander per seat, and completes both opening hands; current admission still refuses unsupported coverage.",
+        "actual": {
+          "construction": {
+            "compatible": true,
+            "reasons": []
+          },
+          "openingHandsCompleted": true,
+          "admitted": false
+        },
+        "evidence": "exact-commander-initialization.json",
+        "acceptedCommands": 2
+      },
+      {
+        "id": "five-green-cost",
+        "status": "PASS",
+        "expected": "Gigantosaurus cannot be offered with four Forests and a Mountain; with five Forests it casts as the actual 10/10 creature.",
+        "actual": {
+          "wrongColorCastOffered": false,
+          "paidFiveGreen": true,
+          "actualObject": 5
+        },
+        "evidence": "five-green-cost.json",
+        "acceptedCommands": 3
+      },
+      {
+        "id": "beast-within-opponent-land",
+        "status": "PASS",
+        "expected": "Beast Within targets a real permanent and creates the Beast for its controller, including when indestructible prevents destruction.",
+        "actual": {
+          "victimZone": "Graveyard",
+          "token": 121,
+          "tokenController": 1
+        },
+        "evidence": "beast-within-opponent-land.json",
+        "acceptedCommands": 4
+      },
+      {
+        "id": "beast-within-indestructible",
+        "status": "PASS",
+        "expected": "Beast Within targets a real permanent and creates the Beast for its controller, including when indestructible prevents destruction.",
+        "actual": {
+          "victimZone": "Battlefield",
+          "token": 121,
+          "tokenController": 1
+        },
+        "evidence": "beast-within-indestructible.json",
+        "acceptedCommands": 4
+      },
+      {
+        "id": "garruks-uprising-draws",
+        "status": "PASS",
+        "expected": "Garruk's Uprising draws for its qualifying own entry and a later qualifying creature, and grants trample to both creatures.",
+        "actual": {
+          "drawn": 2,
+          "trampleIds": [
+            6,
+            5
+          ]
+        },
+        "evidence": "garruks-uprising-draws.json",
+        "acceptedCommands": 10
+      },
+      {
+        "id": "ordinary-land-limit-reset",
+        "status": "PASS",
+        "expected": "The land allowance is one without Loot per own turn, prevents one more play and resets on the next own turn.",
+        "actual": {
+          "initialAllowance": 1,
+          "nextTurnPlayAccepted": true,
+          "turn": 4
+        },
+        "evidence": "ordinary-land-limit-reset.json",
+        "acceptedCommands": 30
+      },
+      {
+        "id": "loot-extra-land-reset",
+        "status": "PASS",
+        "expected": "The land allowance is two with Loot per own turn, prevents one more play and resets on the next own turn.",
+        "actual": {
+          "initialAllowance": 2,
+          "nextTurnPlayAccepted": true,
+          "turn": 4
+        },
+        "evidence": "loot-extra-land-reset.json",
+        "acceptedCommands": 32
+      },
+      {
+        "id": "loot-look-six-choose",
+        "status": "FAIL",
+        "expected": "Loot privately looks at six; a legal creature may enter or the player may decline, and unselected cards go to the bottom without a player ordering choice.",
+        "actual": {
+          "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   privateLook: false,\n+   restOrder: 'preserve',\n+   rngAdvanced: false,\n+   unselectedRemainPrivate: false\n-   privateLook: true,\n-   restOrder: 'random',\n-   rngAdvanced: true,\n-   unselectedRemainPrivate: true\n  }\n"
+        },
+        "evidence": "loot-look-six-choose.json",
+        "acceptedCommands": 4
+      },
+      {
+        "id": "loot-look-six-decline",
+        "status": "FAIL",
+        "expected": "Loot privately looks at six; a legal creature may enter or the player may decline, and unselected cards go to the bottom without a player ordering choice.",
+        "actual": {
+          "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   privateLook: false,\n+   restOrder: 'preserve',\n+   rngAdvanced: false,\n+   unselectedRemainPrivate: false\n-   privateLook: true,\n-   restOrder: 'random',\n-   rngAdvanced: true,\n-   unselectedRemainPrivate: true\n  }\n"
+        },
+        "evidence": "loot-look-six-decline.json",
+        "acceptedCommands": 4
+      },
+      {
+        "id": "commanders-sphere-sacrifice",
+        "status": "PASS",
+        "expected": "Commander's Sphere offers and executes its sacrifice draw ability, moving the real artifact to the graveyard and drawing one.",
+        "actual": {
+          "sacrificedObject": 5,
+          "drawn": 1
+        },
+        "evidence": "commanders-sphere-sacrifice.json",
+        "acceptedCommands": 3
+      }
+    ],
+    "schemaRows": [
+      {
+        "name": "Arachnogenesis",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Token",
+            "supported": true,
+            "details": [
+              [
+                "token",
+                "# of attacking you creature\u00d7 +1/+2 Green Spider (Creature Spider) with Reach"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "PreventDamage",
+                "supported": true,
+                "details": [
+                  [
+                    "amount",
+                    "All"
+                  ],
+                  [
+                    "target",
+                    "any target"
+                  ],
+                  [
+                    "scope",
+                    "CombatDamage"
+                  ],
+                  [
+                    "damage_source_filter",
+                    "creature non-Spider"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Arasta of the Endless Web",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Reach",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "SpellCast",
+            "source_text": "Whenever an opponent casts an instant or sorcery spell, create a 1/2 green Spider creature token with reach.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "instant or sorcery"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "valid target",
+                "opponent"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Token",
+                "supported": true,
+                "details": [
+                  [
+                    "token",
+                    "+1/+2 Green Spider (Creature Spider) with Reach"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Curious Altisaur",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Reach",
+            "supported": true
+          },
+          {
+            "category": "keyword",
+            "label": "Vigilance",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "DamageDone",
+            "source_text": "Whenever a Dinosaur you control deals combat damage to a player, draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "damage kind",
+                "combat only"
+              ],
+              [
+                "valid target",
+                "player"
+              ],
+              [
+                "valid source",
+                "you control Dinosaur"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Dungrove Elder",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Hexproof",
+            "supported": true
+          },
+          {
+            "category": "static",
+            "label": "Continuous",
+            "source_text": "~'s power and toughness are each equal to the number of Forests you control.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "self"
+              ],
+              [
+                "mods",
+                "dynamic power, dynamic toughness"
+              ],
+              [
+                "CDA",
+                "yes"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Elder Gargaroth",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Reach",
+            "supported": true
+          },
+          {
+            "category": "keyword",
+            "label": "Trample",
+            "supported": true
+          },
+          {
+            "category": "keyword",
+            "label": "Vigilance",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "AttacksOrBlocks",
+            "source_text": "Whenever ~ attacks or blocks",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Modal",
+                "supported": true,
+                "details": [
+                  [
+                    "modal",
+                    "choose 1-1 of 3"
+                  ]
+                ],
+                "children": [
+                  {
+                    "category": "ability",
+                    "label": "Token",
+                    "supported": true,
+                    "details": [
+                      [
+                        "token",
+                        "+3/+3 Green Beast (Creature Beast)"
+                      ]
+                    ]
+                  },
+                  {
+                    "category": "ability",
+                    "label": "GainLife",
+                    "supported": true,
+                    "details": [
+                      [
+                        "amount",
+                        "3"
+                      ]
+                    ]
+                  },
+                  {
+                    "category": "ability",
+                    "label": "Draw",
+                    "supported": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Ezuri's Predation",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Token",
+            "source_text": "For each creature your opponents control, create a 4/4 green Phyrexian Beast creature token. Each of those tokens fights a different one of those creatures.",
+            "supported": true,
+            "details": [
+              [
+                "token",
+                "+4/+4 Green Phyrexian Beast (Creature Phyrexian Beast)"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Fight",
+                "supported": true,
+                "details": [
+                  [
+                    "target",
+                    "tracked set #0"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Gigantosaurus",
+        "status": "PASS",
+        "parse": []
+      },
+      {
+        "name": "Hulking Raptor",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Ward",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "Phase",
+            "source_text": "At the beginning of your first main phase, add {G}{G}.",
+            "supported": true,
+            "details": [
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "phase",
+                "precombat main"
+              ],
+              [
+                "constraint",
+                "only during your turn"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Mana",
+                "supported": true,
+                "details": [
+                  [
+                    "mana",
+                    "{G}{G}"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Loot, Exuberant Explorer",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Dig",
+            "source_text": "{4}{G}{G}, {T}: Look at the top six cards of your library. You may reveal a creature card with mana value less than or equal to the number of lands you control from among them and put it onto the battlefield. Put the rest on the bottom in a random order.",
+            "supported": true,
+            "details": [
+              [
+                "count",
+                "6"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "keep_count",
+                "1"
+              ],
+              [
+                "up_to",
+                "true"
+              ],
+              [
+                "filter",
+                "mv # of you control land- creature"
+              ],
+              [
+                "rest_to",
+                "library"
+              ],
+              [
+                "reveal",
+                "true"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "static",
+            "label": "MayPlayAdditionalLand",
+            "source_text": "You may play an additional land on each of your turns.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "you"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Managorger Hydra",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Trample",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "SpellCast",
+            "source_text": "Whenever a player casts a spell, put a +1/+1 counter on ~.",
+            "supported": true,
+            "details": [
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "PutCounter",
+                "supported": true,
+                "details": [
+                  [
+                    "counter",
+                    "1 P1P1"
+                  ],
+                  [
+                    "target",
+                    "self"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Overwhelming Stampede",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "add dynamic power, add dynamic toughness, grant Trample",
+            "source_text": "Until end of turn, creatures you control gain trample and get +X/+X, where X is the greatest power among creatures you control.",
+            "supported": true,
+            "details": [
+              [
+                "duration",
+                "until end of turn"
+              ],
+              [
+                "grants",
+                "add dynamic power"
+              ],
+              [
+                "grants",
+                "add dynamic toughness"
+              ],
+              [
+                "grants",
+                "grant Trample"
+              ],
+              [
+                "affects",
+                "you control creature"
+              ]
+            ],
+            "children": [
+              {
+                "category": "static",
+                "label": "Continuous",
+                "source_text": "gain trample and get +X/+X, where X is the greatest power among creatures you control",
+                "supported": true,
+                "details": [
+                  [
+                    "affects",
+                    "you control creature"
+                  ],
+                  [
+                    "mods",
+                    "add dynamic power, add dynamic toughness, grant Trample"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Regal Imperiosaur",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "static",
+            "label": "Continuous",
+            "source_text": "Dinosaurs you control get +1/+1.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "another you control creature Dinosaur"
+              ],
+              [
+                "mods",
+                "power +1, toughness +1"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Rhonas the Indomitable",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Deathtouch",
+            "supported": true
+          },
+          {
+            "category": "keyword",
+            "label": "Indestructible",
+            "supported": true
+          },
+          {
+            "category": "ability",
+            "label": "power +2, toughness +0, grant Trample",
+            "source_text": "{2}{G}: Another target creature gets +2/+0 and gains trample until end of turn.",
+            "supported": true,
+            "details": [
+              [
+                "duration",
+                "until end of turn"
+              ],
+              [
+                "target",
+                "another creature"
+              ],
+              [
+                "grants",
+                "power +2"
+              ],
+              [
+                "grants",
+                "toughness +0"
+              ],
+              [
+                "grants",
+                "grant Trample"
+              ],
+              [
+                "affects",
+                "parent target"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ],
+            "children": [
+              {
+                "category": "static",
+                "label": "Continuous",
+                "source_text": "get +2/+0 and gains trample",
+                "supported": true,
+                "details": [
+                  [
+                    "affects",
+                    "parent target"
+                  ],
+                  [
+                    "mods",
+                    "power +2, toughness +0, grant Trample"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "category": "static",
+            "label": "CantAttackOrBlock",
+            "source_text": "~ can't attack or block unless you control another creature with power 4 or greater.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "self"
+              ],
+              [
+                "conditional",
+                "not (another power \u22654 in battlefield you control creature is present)"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Ripjaw Raptor",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "DamageReceived",
+            "source_text": "Whenever ~ is dealt damage, draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Shamanic Revelation",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Draw",
+            "source_text": "Draw a card for each creature you control.",
+            "supported": true,
+            "details": [
+              [
+                "count",
+                "# of you control creature"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "GainLife",
+            "source_text": "Ferocious \u2014 You gain 4 life for each creature you control with power 4 or greater.",
+            "supported": true,
+            "details": [
+              [
+                "amount",
+                "4*# of power \u22654 you control creature"
+              ],
+              [
+                "conditional",
+                "# of power \u22654 in battlefield you control creature \u2265 1"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Steel Leaf Champion",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "static",
+            "label": "CantBeBlockedBy(Typed(TypedFilter { type_filters: [Creature], controller: None, properties: [PtComparison { stat: Power, scope: Current, comparator: LE, value: Fixed { value: 2 } }] }))",
+            "source_text": "~ can't be blocked by creatures with power 2 or less.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "self"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Surrak, the Hunt Caller",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "Phase",
+            "source_text": "At the beginning of combat on your turn, if creatures you control have total power 8 or greater, target creature you control gains haste until end of turn.",
+            "supported": true,
+            "details": [
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "phase",
+                "begin combat"
+              ],
+              [
+                "constraint",
+                "only during your turn"
+              ],
+              [
+                "condition",
+                "total power of you control creature \u2265 8"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "grant Haste",
+                "supported": true,
+                "details": [
+                  [
+                    "duration",
+                    "until end of turn"
+                  ],
+                  [
+                    "target",
+                    "you control creature"
+                  ],
+                  [
+                    "grants",
+                    "grant Haste"
+                  ],
+                  [
+                    "affects",
+                    "parent target"
+                  ]
+                ],
+                "children": [
+                  {
+                    "category": "static",
+                    "label": "Continuous",
+                    "source_text": "gain haste",
+                    "supported": true,
+                    "details": [
+                      [
+                        "affects",
+                        "parent target"
+                      ],
+                      [
+                        "mods",
+                        "grant Haste"
+                      ]
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Tangleweave Armor",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "LivingWeapon",
+            "supported": true
+          },
+          {
+            "category": "ability",
+            "label": "Attach",
+            "source_text": "Equip {4}",
+            "supported": true,
+            "details": [
+              [
+                "target",
+                "you control creature"
+              ],
+              [
+                "kind",
+                "activated"
+              ],
+              [
+                "timing",
+                "sorcery speed"
+              ]
+            ]
+          },
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "Living weapon \u2014 create Phyrexian Germ token and attach",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Token",
+                "supported": true,
+                "details": [
+                  [
+                    "token",
+                    "+0/+0 Black Phyrexian Germ (Creature Phyrexian Germ)"
+                  ]
+                ],
+                "children": [
+                  {
+                    "category": "ability",
+                    "label": "Attach",
+                    "supported": true,
+                    "details": [
+                      [
+                        "target",
+                        "last created"
+                      ]
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "category": "static",
+            "label": "Continuous",
+            "source_text": "Equipped creature gets +X/+X, where X is the greatest mana value among your commanders.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "equipped by self creature"
+              ],
+              [
+                "mods",
+                "add dynamic power, add dynamic toughness"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Unnatural Growth",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "Phase",
+            "source_text": "At the beginning of each combat, double the power and toughness of each creature you control until end of turn.",
+            "supported": true,
+            "details": [
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "phase",
+                "begin combat"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "DoublePTAll",
+                "supported": true,
+                "details": [
+                  [
+                    "mode",
+                    "power and toughness"
+                  ],
+                  [
+                    "filter",
+                    "you control creature"
+                  ],
+                  [
+                    "duration",
+                    "until end of turn"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Verdant Sun's Avatar",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "Whenever ~ or another creature you control enters, you gain life equal to that creature's toughness.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self or another you control creature"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "GainLife",
+                "supported": true,
+                "details": [
+                  [
+                    "amount",
+                    "self toughness"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Whiptongue Hydra",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Reach",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "When ~ enters, destroy all creatures with flying. Put a +1/+1 counter on ~ for each creature destroyed this way.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "DestroyAll",
+                "supported": true,
+                "details": [
+                  [
+                    "filter",
+                    "with Flying creature"
+                  ]
+                ],
+                "children": [
+                  {
+                    "category": "ability",
+                    "label": "PutCounter",
+                    "supported": true,
+                    "details": [
+                      [
+                        "counter",
+                        "FilteredTrackedSetSize { filter: Typed(TypedFilter { type_filters: [Creature], controller: None, properties: [] }), caused_by: Some(Destroyed) } P1P1"
+                      ],
+                      [
+                        "target",
+                        "self"
+                      ]
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Yeva, Nature's Herald",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Flash",
+            "supported": true
+          },
+          {
+            "category": "static",
+            "label": "CastWithKeyword(Flash)",
+            "source_text": "You may cast green creature spells as though they had flash.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "green you control creature"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Bonders' Enclave",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add {C}.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "{C} x1"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "Draw",
+            "source_text": "{3}, {T}: Draw a card. Activate only if you control a creature with power 4 or greater.",
+            "supported": true,
+            "details": [
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Scavenger Grounds",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add {C}.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "{C} x1"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "ChangeZoneAll",
+            "source_text": "{2}, {T}, Sacrifice a Desert: Exile all graveyards.",
+            "supported": true,
+            "details": [
+              [
+                "from",
+                "graveyard"
+              ],
+              [
+                "to",
+                "exile"
+              ],
+              [
+                "target",
+                "in graveyard card"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "War Room",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add {C}.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "{C} x1"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "Draw",
+            "source_text": "{3}, {T}, Pay life equal to the number of colors in your commanders' color identity: Draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Witch's Clinic",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add {C}.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "{C} x1"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "grant Lifelink",
+            "source_text": "{2}, {T}: Target commander gains lifelink until end of turn.",
+            "supported": true,
+            "details": [
+              [
+                "duration",
+                "until end of turn"
+              ],
+              [
+                "target",
+                "commander"
+              ],
+              [
+                "grants",
+                "grant Lifelink"
+              ],
+              [
+                "affects",
+                "parent target"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ],
+            "children": [
+              {
+                "category": "static",
+                "label": "Continuous",
+                "source_text": "gain lifelink",
+                "supported": true,
+                "details": [
+                  [
+                    "affects",
+                    "parent target"
+                  ],
+                  [
+                    "mods",
+                    "grant Lifelink"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Beast Within",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Destroy",
+            "source_text": "Destroy target permanent. Its controller creates a 3/3 green Beast creature token.",
+            "supported": true,
+            "details": [
+              [
+                "target",
+                "permanent"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Token",
+                "supported": true,
+                "details": [
+                  [
+                    "token",
+                    "+3/+3 Green Beast (Creature Beast)"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Challenger Troll",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "static",
+            "label": "CantBeBlockedByMoreThan(1)",
+            "source_text": "Each creature you control with power 4 or greater can't be blocked by more than one creature.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "power \u22654 you control creature"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Clifftop Lookout",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Reach",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "When ~ enters, reveal cards from the top of your library until you reveal a land card. Put that card onto the battlefield tapped and the rest on the bottom of your library in a random order.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "RevealUntil",
+                "supported": true,
+                "details": [
+                  [
+                    "player",
+                    "controller"
+                  ],
+                  [
+                    "until",
+                    "land"
+                  ],
+                  [
+                    "kept",
+                    "Battlefield"
+                  ],
+                  [
+                    "rest",
+                    "Library"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Collective Resistance",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Escalate",
+            "supported": true
+          },
+          {
+            "category": "ability",
+            "label": "Destroy",
+            "supported": true,
+            "details": [
+              [
+                "target",
+                "artifact"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "Destroy",
+            "supported": true,
+            "details": [
+              [
+                "target",
+                "enchantment"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "grant Hexproof, grant Indestructible",
+            "supported": true,
+            "details": [
+              [
+                "duration",
+                "until end of turn"
+              ],
+              [
+                "target",
+                "creature"
+              ],
+              [
+                "grants",
+                "grant Hexproof"
+              ],
+              [
+                "grants",
+                "grant Indestructible"
+              ],
+              [
+                "affects",
+                "parent target"
+              ]
+            ],
+            "children": [
+              {
+                "category": "static",
+                "label": "Continuous",
+                "source_text": "gain hexproof and indestructible",
+                "supported": true,
+                "details": [
+                  [
+                    "affects",
+                    "parent target"
+                  ],
+                  [
+                    "mods",
+                    "grant Hexproof, grant Indestructible"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Colossal Majesty",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "Phase",
+            "source_text": "At the beginning of your upkeep, if you control a creature with power 4 or greater, draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "phase",
+                "upkeep"
+              ],
+              [
+                "constraint",
+                "only during your turn"
+              ],
+              [
+                "condition",
+                "you control power \u22654 in battlefield you control creature"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Elemental Bond",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "Whenever a creature you control with power 3 or greater enters, draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "power \u22653 you control creature"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Garruk's Packleader",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "Whenever another creature you control with power 3 or greater enters, you may draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "power \u22653 another you control creature"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "optional",
+                "yes"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Garruk's Uprising",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "When ~ enters, if you control a creature with power 4 or greater, draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "condition",
+                "you control power \u22654 in battlefield you control creature"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          },
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "Whenever a creature you control with power 4 or greater enters, draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "power \u22654 you control creature"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          },
+          {
+            "category": "static",
+            "label": "Continuous",
+            "source_text": "Creatures you control have trample.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "you control creature"
+              ],
+              [
+                "mods",
+                "grant Trample"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Goreclaw, Terror of Qal Sisma",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "Attacks",
+            "source_text": "Whenever ~ attacks, each creature you control with power 4 or greater gets +1/+1 and gains trample until end of turn.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "power +1, toughness +1, grant Trample",
+                "supported": true,
+                "details": [
+                  [
+                    "duration",
+                    "until end of turn"
+                  ],
+                  [
+                    "grants",
+                    "power +1"
+                  ],
+                  [
+                    "grants",
+                    "toughness +1"
+                  ],
+                  [
+                    "grants",
+                    "grant Trample"
+                  ],
+                  [
+                    "affects",
+                    "power \u22654 you control creature"
+                  ]
+                ],
+                "children": [
+                  {
+                    "category": "static",
+                    "label": "Continuous",
+                    "source_text": "get +1/+1 and gains trample",
+                    "supported": true,
+                    "details": [
+                      [
+                        "affects",
+                        "power \u22654 you control creature"
+                      ],
+                      [
+                        "mods",
+                        "power +1, toughness +1, grant Trample"
+                      ]
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "category": "static",
+            "label": "ReduceCost",
+            "source_text": "Creature spells you cast with power 4 or greater cost {2} less to cast.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "you control card"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Ilysian Caryatid",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add one mana of any color. If you control a creature with power 4 or greater, add two mana of any one color instead.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "1 of {W}{U}{B}{R}{G}"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Mana",
+                "supported": true,
+                "details": [
+                  [
+                    "mana",
+                    "2 of {W}{U}{B}{R}{G}"
+                  ],
+                  [
+                    "kind",
+                    "activated"
+                  ],
+                  [
+                    "conditional",
+                    "instead if (# of power \u22654 in battlefield you control creature \u2265 1)"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Paradise Druid",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add one mana of any color.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "1 of {W}{U}{B}{R}{G}"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "static",
+            "label": "Continuous",
+            "source_text": "~ has hexproof as long as it's untapped.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "self"
+              ],
+              [
+                "mods",
+                "grant Hexproof"
+              ],
+              [
+                "conditional",
+                "not (source is tapped)"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Tamiyo's Safekeeping",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "grant Hexproof, grant Indestructible",
+            "source_text": "Target permanent you control gains hexproof and indestructible until end of turn. You gain 2 life.",
+            "supported": true,
+            "details": [
+              [
+                "duration",
+                "until end of turn"
+              ],
+              [
+                "target",
+                "you control permanent"
+              ],
+              [
+                "grants",
+                "grant Hexproof"
+              ],
+              [
+                "grants",
+                "grant Indestructible"
+              ],
+              [
+                "affects",
+                "parent target"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "GainLife",
+                "supported": true,
+                "details": [
+                  [
+                    "amount",
+                    "2"
+                  ]
+                ]
+              },
+              {
+                "category": "static",
+                "label": "Continuous",
+                "source_text": "gain hexproof and indestructible",
+                "supported": true,
+                "details": [
+                  [
+                    "affects",
+                    "parent target"
+                  ],
+                  [
+                    "mods",
+                    "grant Hexproof, grant Indestructible"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Terrian, World Tyrant",
+        "status": "PASS",
+        "parse": []
+      },
+      {
+        "name": "Thrashing Brontodon",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Destroy",
+            "source_text": "{1}, Sacrifice ~: Destroy target artifact or enchantment.",
+            "supported": true,
+            "details": [
+              [
+                "target",
+                "artifact or enchantment"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Commander's Sphere",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add one mana of any color in your commander's color identity.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "1 of commander's color identity x1"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "Draw",
+            "source_text": "Sacrifice ~: Draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Rhonas's Monument",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "SpellCast",
+            "source_text": "Whenever you cast a creature spell, target creature you control gets +2/+2 and gains trample until end of turn.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "creature"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "valid target",
+                "controller"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "power +2, toughness +2, grant Trample",
+                "supported": true,
+                "details": [
+                  [
+                    "duration",
+                    "until end of turn"
+                  ],
+                  [
+                    "target",
+                    "you control creature"
+                  ],
+                  [
+                    "grants",
+                    "power +2"
+                  ],
+                  [
+                    "grants",
+                    "toughness +2"
+                  ],
+                  [
+                    "grants",
+                    "grant Trample"
+                  ],
+                  [
+                    "affects",
+                    "parent target"
+                  ]
+                ],
+                "children": [
+                  {
+                    "category": "static",
+                    "label": "Continuous",
+                    "source_text": "get +2/+2 and gains trample",
+                    "supported": true,
+                    "details": [
+                      [
+                        "affects",
+                        "parent target"
+                      ],
+                      [
+                        "mods",
+                        "power +2, toughness +2, grant Trample"
+                      ]
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "category": "static",
+            "label": "ReduceCost",
+            "source_text": "Green creature spells you cast cost {1} less to cast.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "you control card"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Rogue's Passage",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add {C}.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "{C} x1"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "CantBeBlocked",
+            "source_text": "{4}, {T}: Target creature can't be blocked this turn.",
+            "supported": true,
+            "details": [
+              [
+                "duration",
+                "until end of turn"
+              ],
+              [
+                "target",
+                "creature"
+              ],
+              [
+                "grants",
+                "CantBeBlocked"
+              ],
+              [
+                "affects",
+                "parent target"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ],
+            "children": [
+              {
+                "category": "static",
+                "label": "CantBeBlocked",
+                "source_text": "can't be blocked",
+                "supported": true,
+                "details": [
+                  [
+                    "affects",
+                    "parent target"
+                  ],
+                  [
+                    "mods",
+                    "CantBeBlocked"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Tranquil Thicket",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Cycling",
+            "supported": true
+          },
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add {G}.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "{G}"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "Draw",
+            "supported": true,
+            "details": [
+              [
+                "kind",
+                "activated"
+              ],
+              [
+                "activates from",
+                "hand"
+              ]
+            ]
+          },
+          {
+            "category": "replacement",
+            "label": "Moved",
+            "source_text": "~ enters tapped.",
+            "supported": true,
+            "details": [
+              [
+                "scope",
+                "self"
+              ],
+              [
+                "to zone",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Tap",
+                "supported": true,
+                "details": [
+                  [
+                    "target",
+                    "self"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "limits": [
+      "Experimental data fixtures, not the deployed database or a deck admission.",
+      "Mechanic setups are engineered; the exact-deck initialization case is separately labeled.",
+      "Engine interactions are scripted human-interface submissions, not rendered browser or production CPU evidence.",
+      "No engine rebuild, production changes or recovery implementation."
+    ],
+    "loadedNames": [
+      "Forest",
+      "Mountain",
+      "Grizzly Bears",
+      "Lightning Bolt",
+      "Unsummon",
+      "Sol Ring",
+      "Ghalta, Primal Hunger",
+      "Beast Whisperer",
+      "Birds of Paradise",
+      "Carnage Tyrant",
+      "Pugnacious Hammerskull",
+      "Rishkar's Expertise",
+      "Scavenging Ooze",
+      "Scrapshooter",
+      "Surrak and Goreclaw",
+      "Thickest in the Thicket",
+      "Mosswort Bridge",
+      "Bite Down",
+      "Elvish Mystic",
+      "Fyndhorn Elves",
+      "Harmonize",
+      "Kenrith's Transformation",
+      "Llanowar Elves",
+      "Llanowar Tribe",
+      "Monstrous Onslaught",
+      "Ram Through",
+      "Rishkar, Peema Renegade",
+      "Whisperer of the Wilds",
+      "Swiftfoot Boots",
+      "Arachnogenesis",
+      "Arasta of the Endless Web",
+      "Curious Altisaur",
+      "Dungrove Elder",
+      "Elder Gargaroth",
+      "Ezuri's Predation",
+      "Gigantosaurus",
+      "Hulking Raptor",
+      "Loot, Exuberant Explorer",
+      "Managorger Hydra",
+      "Overwhelming Stampede",
+      "Regal Imperiosaur",
+      "Rhonas the Indomitable",
+      "Ripjaw Raptor",
+      "Shamanic Revelation",
+      "Steel Leaf Champion",
+      "Surrak, the Hunt Caller",
+      "Tangleweave Armor",
+      "Unnatural Growth",
+      "Verdant Sun's Avatar",
+      "Whiptongue Hydra",
+      "Yeva, Nature's Herald",
+      "Bonders' Enclave",
+      "Scavenger Grounds",
+      "War Room",
+      "Witch's Clinic",
+      "Beast Within",
+      "Challenger Troll",
+      "Clifftop Lookout",
+      "Collective Resistance",
+      "Colossal Majesty",
+      "Elemental Bond",
+      "Garruk's Packleader",
+      "Garruk's Uprising",
+      "Goreclaw, Terror of Qal Sisma",
+      "Ilysian Caryatid",
+      "Paradise Druid",
+      "Tamiyo's Safekeeping",
+      "Terrian, World Tyrant",
+      "Thrashing Brontodon",
+      "Commander's Sphere",
+      "Rhonas's Monument",
+      "Rogue's Passage",
+      "Tranquil Thicket"
+    ],
+    "exactDeckFixtureSha256": "76c881fcb980428289a3e7f234065b6c5a323592ce02e230acdb04dbfc25fa89",
+    "partial": false,
+    "counts": {
+      "PASS": 8,
+      "FAIL": 2,
+      "NOT TESTED": 0,
+      "UNSUPPORTED": 0
+    },
+    "finishedAt": "2026-10-25T17:53:08.569Z",
+    "runnerSha256": "6d70fe886a24faf194787b7d86e8257fcee342c7fe71cbd1317733953a679ebf"
+  },
+  "after": {
+    "schema": 1,
+    "task": "DECK-003",
+    "taskBase": "d7a1a91b8a9a4f36b57076ab539ef102248379f7",
+    "integrationInspected": "d81a0a14f3f34cf64fc0156abf495fab590263b6",
+    "provenance": {
+      "appBaseCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "runtimeSourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+      "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+      "rulesSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+      "loadedNames": [
+        "Forest",
+        "Mountain",
+        "Grizzly Bears",
+        "Lightning Bolt",
+        "Unsummon",
+        "Sol Ring"
+      ],
+      "subsetSha256": "b3f10f47e0fa2d688e41037301d5c2727ecf0732188c98855acf7199cbf37815"
+    },
+    "variant": "corrected",
+    "candidateSha256": "c71f6054e027d90a1a6da4da28cfc35ff5d0c6d8e7b9728fee97fe2463f5b194",
+    "effectiveCandidateSha256": "6c834c2633755e0034be2300f61408c4967bac65a8ed46d4702b496bd29f1138",
+    "correctionSha256": "eb30f22b3e500b2b420cae044b6a9845dfbe997ad44df87f4133d6b4f2e1559c",
+    "effectiveLootRecordSha256": "0f8019f84036bd5c5a5d92e6bea71d90d8c57543dddc6d265c19815c4a4dc98d",
+    "combinedSubsetSha256": "837ad57bf1faf5134d8a8484cf5f1abfc7d05460cde00aabfd40fb5b62bf155e",
+    "startedAt": "2026-10-25T17:52:25.318Z",
+    "environment": {
+      "node": "v24.22.1",
+      "platform": "linux",
+      "arch": "x64"
+    },
+    "rulesReference": "https://media.wizards.com/2026/downloads/MagicCompRules%2020260925.txt",
+    "cases": [
+      {
+        "id": "exact-commander-initialization",
+        "status": "PASS",
+        "expected": "The unchanged 100-card list passes construction checks with candidate data, initializes 99 library cards plus its actual commander per seat, and completes both opening hands; current admission still refuses unsupported coverage.",
+        "actual": {
+          "construction": {
+            "compatible": true,
+            "reasons": []
+          },
+          "openingHandsCompleted": true,
+          "admitted": false
+        },
+        "evidence": "exact-commander-initialization.json",
+        "acceptedCommands": 2
+      },
+      {
+        "id": "five-green-cost",
+        "status": "PASS",
+        "expected": "Gigantosaurus cannot be offered with four Forests and a Mountain; with five Forests it casts as the actual 10/10 creature.",
+        "actual": {
+          "wrongColorCastOffered": false,
+          "paidFiveGreen": true,
+          "actualObject": 5
+        },
+        "evidence": "five-green-cost.json",
+        "acceptedCommands": 3
+      },
+      {
+        "id": "beast-within-opponent-land",
+        "status": "PASS",
+        "expected": "Beast Within targets a real permanent and creates the Beast for its controller, including when indestructible prevents destruction.",
+        "actual": {
+          "victimZone": "Graveyard",
+          "token": 121,
+          "tokenController": 1
+        },
+        "evidence": "beast-within-opponent-land.json",
+        "acceptedCommands": 4
+      },
+      {
+        "id": "beast-within-indestructible",
+        "status": "PASS",
+        "expected": "Beast Within targets a real permanent and creates the Beast for its controller, including when indestructible prevents destruction.",
+        "actual": {
+          "victimZone": "Battlefield",
+          "token": 121,
+          "tokenController": 1
+        },
+        "evidence": "beast-within-indestructible.json",
+        "acceptedCommands": 4
+      },
+      {
+        "id": "garruks-uprising-draws",
+        "status": "PASS",
+        "expected": "Garruk's Uprising draws for its qualifying own entry and a later qualifying creature, and grants trample to both creatures.",
+        "actual": {
+          "drawn": 2,
+          "trampleIds": [
+            6,
+            5
+          ]
+        },
+        "evidence": "garruks-uprising-draws.json",
+        "acceptedCommands": 10
+      },
+      {
+        "id": "ordinary-land-limit-reset",
+        "status": "PASS",
+        "expected": "The land allowance is one without Loot per own turn, prevents one more play and resets on the next own turn.",
+        "actual": {
+          "initialAllowance": 1,
+          "nextTurnPlayAccepted": true,
+          "turn": 4
+        },
+        "evidence": "ordinary-land-limit-reset.json",
+        "acceptedCommands": 30
+      },
+      {
+        "id": "loot-extra-land-reset",
+        "status": "PASS",
+        "expected": "The land allowance is two with Loot per own turn, prevents one more play and resets on the next own turn.",
+        "actual": {
+          "initialAllowance": 2,
+          "nextTurnPlayAccepted": true,
+          "turn": 4
+        },
+        "evidence": "loot-extra-land-reset.json",
+        "acceptedCommands": 32
+      },
+      {
+        "id": "loot-look-six-choose",
+        "status": "PASS",
+        "expected": "Loot privately looks at six; a legal creature may enter or the player may decline, and unselected cards go to the bottom without a player ordering choice.",
+        "actual": {
+          "selected": 6,
+          "remainder": [
+            9,
+            5,
+            11,
+            10,
+            12
+          ],
+          "privateLook": true,
+          "restOrder": "random",
+          "rngAdvanced": true,
+          "unselectedRemainPrivate": true
+        },
+        "evidence": "loot-look-six-choose.json",
+        "acceptedCommands": 4
+      },
+      {
+        "id": "loot-look-six-decline",
+        "status": "PASS",
+        "expected": "Loot privately looks at six; a legal creature may enter or the player may decline, and unselected cards go to the bottom without a player ordering choice.",
+        "actual": {
+          "selected": null,
+          "remainder": [
+            5,
+            12,
+            10,
+            9,
+            11,
+            6
+          ],
+          "privateLook": true,
+          "restOrder": "random",
+          "rngAdvanced": true,
+          "unselectedRemainPrivate": true
+        },
+        "evidence": "loot-look-six-decline.json",
+        "acceptedCommands": 4
+      },
+      {
+        "id": "commanders-sphere-sacrifice",
+        "status": "PASS",
+        "expected": "Commander's Sphere offers and executes its sacrifice draw ability, moving the real artifact to the graveyard and drawing one.",
+        "actual": {
+          "sacrificedObject": 5,
+          "drawn": 1
+        },
+        "evidence": "commanders-sphere-sacrifice.json",
+        "acceptedCommands": 3
+      }
+    ],
+    "schemaRows": [
+      {
+        "name": "Arachnogenesis",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Token",
+            "supported": true,
+            "details": [
+              [
+                "token",
+                "# of attacking you creature\u00d7 +1/+2 Green Spider (Creature Spider) with Reach"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "PreventDamage",
+                "supported": true,
+                "details": [
+                  [
+                    "amount",
+                    "All"
+                  ],
+                  [
+                    "target",
+                    "any target"
+                  ],
+                  [
+                    "scope",
+                    "CombatDamage"
+                  ],
+                  [
+                    "damage_source_filter",
+                    "creature non-Spider"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Arasta of the Endless Web",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Reach",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "SpellCast",
+            "source_text": "Whenever an opponent casts an instant or sorcery spell, create a 1/2 green Spider creature token with reach.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "instant or sorcery"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "valid target",
+                "opponent"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Token",
+                "supported": true,
+                "details": [
+                  [
+                    "token",
+                    "+1/+2 Green Spider (Creature Spider) with Reach"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Curious Altisaur",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Reach",
+            "supported": true
+          },
+          {
+            "category": "keyword",
+            "label": "Vigilance",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "DamageDone",
+            "source_text": "Whenever a Dinosaur you control deals combat damage to a player, draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "damage kind",
+                "combat only"
+              ],
+              [
+                "valid target",
+                "player"
+              ],
+              [
+                "valid source",
+                "you control Dinosaur"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Dungrove Elder",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Hexproof",
+            "supported": true
+          },
+          {
+            "category": "static",
+            "label": "Continuous",
+            "source_text": "~'s power and toughness are each equal to the number of Forests you control.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "self"
+              ],
+              [
+                "mods",
+                "dynamic power, dynamic toughness"
+              ],
+              [
+                "CDA",
+                "yes"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Elder Gargaroth",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Reach",
+            "supported": true
+          },
+          {
+            "category": "keyword",
+            "label": "Trample",
+            "supported": true
+          },
+          {
+            "category": "keyword",
+            "label": "Vigilance",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "AttacksOrBlocks",
+            "source_text": "Whenever ~ attacks or blocks",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Modal",
+                "supported": true,
+                "details": [
+                  [
+                    "modal",
+                    "choose 1-1 of 3"
+                  ]
+                ],
+                "children": [
+                  {
+                    "category": "ability",
+                    "label": "Token",
+                    "supported": true,
+                    "details": [
+                      [
+                        "token",
+                        "+3/+3 Green Beast (Creature Beast)"
+                      ]
+                    ]
+                  },
+                  {
+                    "category": "ability",
+                    "label": "GainLife",
+                    "supported": true,
+                    "details": [
+                      [
+                        "amount",
+                        "3"
+                      ]
+                    ]
+                  },
+                  {
+                    "category": "ability",
+                    "label": "Draw",
+                    "supported": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Ezuri's Predation",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Token",
+            "source_text": "For each creature your opponents control, create a 4/4 green Phyrexian Beast creature token. Each of those tokens fights a different one of those creatures.",
+            "supported": true,
+            "details": [
+              [
+                "token",
+                "+4/+4 Green Phyrexian Beast (Creature Phyrexian Beast)"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Fight",
+                "supported": true,
+                "details": [
+                  [
+                    "target",
+                    "tracked set #0"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Gigantosaurus",
+        "status": "PASS",
+        "parse": []
+      },
+      {
+        "name": "Hulking Raptor",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Ward",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "Phase",
+            "source_text": "At the beginning of your first main phase, add {G}{G}.",
+            "supported": true,
+            "details": [
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "phase",
+                "precombat main"
+              ],
+              [
+                "constraint",
+                "only during your turn"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Mana",
+                "supported": true,
+                "details": [
+                  [
+                    "mana",
+                    "{G}{G}"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Loot, Exuberant Explorer",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Dig",
+            "source_text": "{4}{G}{G}, {T}: Look at the top six cards of your library. You may reveal a creature card with mana value less than or equal to the number of lands you control from among them and put it onto the battlefield. Put the rest on the bottom in a random order.",
+            "supported": true,
+            "details": [
+              [
+                "count",
+                "6"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "keep_count",
+                "1"
+              ],
+              [
+                "up_to",
+                "true"
+              ],
+              [
+                "filter",
+                "mv # of you control land- creature"
+              ],
+              [
+                "rest_to",
+                "library"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "static",
+            "label": "MayPlayAdditionalLand",
+            "source_text": "You may play an additional land on each of your turns.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "you"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Managorger Hydra",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Trample",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "SpellCast",
+            "source_text": "Whenever a player casts a spell, put a +1/+1 counter on ~.",
+            "supported": true,
+            "details": [
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "PutCounter",
+                "supported": true,
+                "details": [
+                  [
+                    "counter",
+                    "1 P1P1"
+                  ],
+                  [
+                    "target",
+                    "self"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Overwhelming Stampede",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "add dynamic power, add dynamic toughness, grant Trample",
+            "source_text": "Until end of turn, creatures you control gain trample and get +X/+X, where X is the greatest power among creatures you control.",
+            "supported": true,
+            "details": [
+              [
+                "duration",
+                "until end of turn"
+              ],
+              [
+                "grants",
+                "add dynamic power"
+              ],
+              [
+                "grants",
+                "add dynamic toughness"
+              ],
+              [
+                "grants",
+                "grant Trample"
+              ],
+              [
+                "affects",
+                "you control creature"
+              ]
+            ],
+            "children": [
+              {
+                "category": "static",
+                "label": "Continuous",
+                "source_text": "gain trample and get +X/+X, where X is the greatest power among creatures you control",
+                "supported": true,
+                "details": [
+                  [
+                    "affects",
+                    "you control creature"
+                  ],
+                  [
+                    "mods",
+                    "add dynamic power, add dynamic toughness, grant Trample"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Regal Imperiosaur",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "static",
+            "label": "Continuous",
+            "source_text": "Dinosaurs you control get +1/+1.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "another you control creature Dinosaur"
+              ],
+              [
+                "mods",
+                "power +1, toughness +1"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Rhonas the Indomitable",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Deathtouch",
+            "supported": true
+          },
+          {
+            "category": "keyword",
+            "label": "Indestructible",
+            "supported": true
+          },
+          {
+            "category": "ability",
+            "label": "power +2, toughness +0, grant Trample",
+            "source_text": "{2}{G}: Another target creature gets +2/+0 and gains trample until end of turn.",
+            "supported": true,
+            "details": [
+              [
+                "duration",
+                "until end of turn"
+              ],
+              [
+                "target",
+                "another creature"
+              ],
+              [
+                "grants",
+                "power +2"
+              ],
+              [
+                "grants",
+                "toughness +0"
+              ],
+              [
+                "grants",
+                "grant Trample"
+              ],
+              [
+                "affects",
+                "parent target"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ],
+            "children": [
+              {
+                "category": "static",
+                "label": "Continuous",
+                "source_text": "get +2/+0 and gains trample",
+                "supported": true,
+                "details": [
+                  [
+                    "affects",
+                    "parent target"
+                  ],
+                  [
+                    "mods",
+                    "power +2, toughness +0, grant Trample"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "category": "static",
+            "label": "CantAttackOrBlock",
+            "source_text": "~ can't attack or block unless you control another creature with power 4 or greater.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "self"
+              ],
+              [
+                "conditional",
+                "not (another power \u22654 in battlefield you control creature is present)"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Ripjaw Raptor",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "DamageReceived",
+            "source_text": "Whenever ~ is dealt damage, draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Shamanic Revelation",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Draw",
+            "source_text": "Draw a card for each creature you control.",
+            "supported": true,
+            "details": [
+              [
+                "count",
+                "# of you control creature"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "GainLife",
+            "source_text": "Ferocious \u2014 You gain 4 life for each creature you control with power 4 or greater.",
+            "supported": true,
+            "details": [
+              [
+                "amount",
+                "4*# of power \u22654 you control creature"
+              ],
+              [
+                "conditional",
+                "# of power \u22654 in battlefield you control creature \u2265 1"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Steel Leaf Champion",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "static",
+            "label": "CantBeBlockedBy(Typed(TypedFilter { type_filters: [Creature], controller: None, properties: [PtComparison { stat: Power, scope: Current, comparator: LE, value: Fixed { value: 2 } }] }))",
+            "source_text": "~ can't be blocked by creatures with power 2 or less.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "self"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Surrak, the Hunt Caller",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "Phase",
+            "source_text": "At the beginning of combat on your turn, if creatures you control have total power 8 or greater, target creature you control gains haste until end of turn.",
+            "supported": true,
+            "details": [
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "phase",
+                "begin combat"
+              ],
+              [
+                "constraint",
+                "only during your turn"
+              ],
+              [
+                "condition",
+                "total power of you control creature \u2265 8"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "grant Haste",
+                "supported": true,
+                "details": [
+                  [
+                    "duration",
+                    "until end of turn"
+                  ],
+                  [
+                    "target",
+                    "you control creature"
+                  ],
+                  [
+                    "grants",
+                    "grant Haste"
+                  ],
+                  [
+                    "affects",
+                    "parent target"
+                  ]
+                ],
+                "children": [
+                  {
+                    "category": "static",
+                    "label": "Continuous",
+                    "source_text": "gain haste",
+                    "supported": true,
+                    "details": [
+                      [
+                        "affects",
+                        "parent target"
+                      ],
+                      [
+                        "mods",
+                        "grant Haste"
+                      ]
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Tangleweave Armor",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "LivingWeapon",
+            "supported": true
+          },
+          {
+            "category": "ability",
+            "label": "Attach",
+            "source_text": "Equip {4}",
+            "supported": true,
+            "details": [
+              [
+                "target",
+                "you control creature"
+              ],
+              [
+                "kind",
+                "activated"
+              ],
+              [
+                "timing",
+                "sorcery speed"
+              ]
+            ]
+          },
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "Living weapon \u2014 create Phyrexian Germ token and attach",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Token",
+                "supported": true,
+                "details": [
+                  [
+                    "token",
+                    "+0/+0 Black Phyrexian Germ (Creature Phyrexian Germ)"
+                  ]
+                ],
+                "children": [
+                  {
+                    "category": "ability",
+                    "label": "Attach",
+                    "supported": true,
+                    "details": [
+                      [
+                        "target",
+                        "last created"
+                      ]
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "category": "static",
+            "label": "Continuous",
+            "source_text": "Equipped creature gets +X/+X, where X is the greatest mana value among your commanders.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "equipped by self creature"
+              ],
+              [
+                "mods",
+                "add dynamic power, add dynamic toughness"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Unnatural Growth",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "Phase",
+            "source_text": "At the beginning of each combat, double the power and toughness of each creature you control until end of turn.",
+            "supported": true,
+            "details": [
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "phase",
+                "begin combat"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "DoublePTAll",
+                "supported": true,
+                "details": [
+                  [
+                    "mode",
+                    "power and toughness"
+                  ],
+                  [
+                    "filter",
+                    "you control creature"
+                  ],
+                  [
+                    "duration",
+                    "until end of turn"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Verdant Sun's Avatar",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "Whenever ~ or another creature you control enters, you gain life equal to that creature's toughness.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self or another you control creature"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "GainLife",
+                "supported": true,
+                "details": [
+                  [
+                    "amount",
+                    "self toughness"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Whiptongue Hydra",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Reach",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "When ~ enters, destroy all creatures with flying. Put a +1/+1 counter on ~ for each creature destroyed this way.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "DestroyAll",
+                "supported": true,
+                "details": [
+                  [
+                    "filter",
+                    "with Flying creature"
+                  ]
+                ],
+                "children": [
+                  {
+                    "category": "ability",
+                    "label": "PutCounter",
+                    "supported": true,
+                    "details": [
+                      [
+                        "counter",
+                        "FilteredTrackedSetSize { filter: Typed(TypedFilter { type_filters: [Creature], controller: None, properties: [] }), caused_by: Some(Destroyed) } P1P1"
+                      ],
+                      [
+                        "target",
+                        "self"
+                      ]
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Yeva, Nature's Herald",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Flash",
+            "supported": true
+          },
+          {
+            "category": "static",
+            "label": "CastWithKeyword(Flash)",
+            "source_text": "You may cast green creature spells as though they had flash.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "green you control creature"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Bonders' Enclave",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add {C}.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "{C} x1"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "Draw",
+            "source_text": "{3}, {T}: Draw a card. Activate only if you control a creature with power 4 or greater.",
+            "supported": true,
+            "details": [
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Scavenger Grounds",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add {C}.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "{C} x1"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "ChangeZoneAll",
+            "source_text": "{2}, {T}, Sacrifice a Desert: Exile all graveyards.",
+            "supported": true,
+            "details": [
+              [
+                "from",
+                "graveyard"
+              ],
+              [
+                "to",
+                "exile"
+              ],
+              [
+                "target",
+                "in graveyard card"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "War Room",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add {C}.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "{C} x1"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "Draw",
+            "source_text": "{3}, {T}, Pay life equal to the number of colors in your commanders' color identity: Draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Witch's Clinic",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add {C}.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "{C} x1"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "grant Lifelink",
+            "source_text": "{2}, {T}: Target commander gains lifelink until end of turn.",
+            "supported": true,
+            "details": [
+              [
+                "duration",
+                "until end of turn"
+              ],
+              [
+                "target",
+                "commander"
+              ],
+              [
+                "grants",
+                "grant Lifelink"
+              ],
+              [
+                "affects",
+                "parent target"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ],
+            "children": [
+              {
+                "category": "static",
+                "label": "Continuous",
+                "source_text": "gain lifelink",
+                "supported": true,
+                "details": [
+                  [
+                    "affects",
+                    "parent target"
+                  ],
+                  [
+                    "mods",
+                    "grant Lifelink"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Beast Within",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Destroy",
+            "source_text": "Destroy target permanent. Its controller creates a 3/3 green Beast creature token.",
+            "supported": true,
+            "details": [
+              [
+                "target",
+                "permanent"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Token",
+                "supported": true,
+                "details": [
+                  [
+                    "token",
+                    "+3/+3 Green Beast (Creature Beast)"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Challenger Troll",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "static",
+            "label": "CantBeBlockedByMoreThan(1)",
+            "source_text": "Each creature you control with power 4 or greater can't be blocked by more than one creature.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "power \u22654 you control creature"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Clifftop Lookout",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Reach",
+            "supported": true
+          },
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "When ~ enters, reveal cards from the top of your library until you reveal a land card. Put that card onto the battlefield tapped and the rest on the bottom of your library in a random order.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "RevealUntil",
+                "supported": true,
+                "details": [
+                  [
+                    "player",
+                    "controller"
+                  ],
+                  [
+                    "until",
+                    "land"
+                  ],
+                  [
+                    "kept",
+                    "Battlefield"
+                  ],
+                  [
+                    "rest",
+                    "Library"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Collective Resistance",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Escalate",
+            "supported": true
+          },
+          {
+            "category": "ability",
+            "label": "Destroy",
+            "supported": true,
+            "details": [
+              [
+                "target",
+                "artifact"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "Destroy",
+            "supported": true,
+            "details": [
+              [
+                "target",
+                "enchantment"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "grant Hexproof, grant Indestructible",
+            "supported": true,
+            "details": [
+              [
+                "duration",
+                "until end of turn"
+              ],
+              [
+                "target",
+                "creature"
+              ],
+              [
+                "grants",
+                "grant Hexproof"
+              ],
+              [
+                "grants",
+                "grant Indestructible"
+              ],
+              [
+                "affects",
+                "parent target"
+              ]
+            ],
+            "children": [
+              {
+                "category": "static",
+                "label": "Continuous",
+                "source_text": "gain hexproof and indestructible",
+                "supported": true,
+                "details": [
+                  [
+                    "affects",
+                    "parent target"
+                  ],
+                  [
+                    "mods",
+                    "grant Hexproof, grant Indestructible"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Colossal Majesty",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "Phase",
+            "source_text": "At the beginning of your upkeep, if you control a creature with power 4 or greater, draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "phase",
+                "upkeep"
+              ],
+              [
+                "constraint",
+                "only during your turn"
+              ],
+              [
+                "condition",
+                "you control power \u22654 in battlefield you control creature"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Elemental Bond",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "Whenever a creature you control with power 3 or greater enters, draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "power \u22653 you control creature"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Garruk's Packleader",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "Whenever another creature you control with power 3 or greater enters, you may draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "power \u22653 another you control creature"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "optional",
+                "yes"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Garruk's Uprising",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "When ~ enters, if you control a creature with power 4 or greater, draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "condition",
+                "you control power \u22654 in battlefield you control creature"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          },
+          {
+            "category": "trigger",
+            "label": "ChangesZone",
+            "source_text": "Whenever a creature you control with power 4 or greater enters, draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "power \u22654 you control creature"
+              ],
+              [
+                "to",
+                "battlefield"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Draw",
+                "supported": true
+              }
+            ]
+          },
+          {
+            "category": "static",
+            "label": "Continuous",
+            "source_text": "Creatures you control have trample.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "you control creature"
+              ],
+              [
+                "mods",
+                "grant Trample"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Goreclaw, Terror of Qal Sisma",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "Attacks",
+            "source_text": "Whenever ~ attacks, each creature you control with power 4 or greater gets +1/+1 and gains trample until end of turn.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "self"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "power +1, toughness +1, grant Trample",
+                "supported": true,
+                "details": [
+                  [
+                    "duration",
+                    "until end of turn"
+                  ],
+                  [
+                    "grants",
+                    "power +1"
+                  ],
+                  [
+                    "grants",
+                    "toughness +1"
+                  ],
+                  [
+                    "grants",
+                    "grant Trample"
+                  ],
+                  [
+                    "affects",
+                    "power \u22654 you control creature"
+                  ]
+                ],
+                "children": [
+                  {
+                    "category": "static",
+                    "label": "Continuous",
+                    "source_text": "get +1/+1 and gains trample",
+                    "supported": true,
+                    "details": [
+                      [
+                        "affects",
+                        "power \u22654 you control creature"
+                      ],
+                      [
+                        "mods",
+                        "power +1, toughness +1, grant Trample"
+                      ]
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "category": "static",
+            "label": "ReduceCost",
+            "source_text": "Creature spells you cast with power 4 or greater cost {2} less to cast.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "you control card"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Ilysian Caryatid",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add one mana of any color. If you control a creature with power 4 or greater, add two mana of any one color instead.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "1 of {W}{U}{B}{R}{G}"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Mana",
+                "supported": true,
+                "details": [
+                  [
+                    "mana",
+                    "2 of {W}{U}{B}{R}{G}"
+                  ],
+                  [
+                    "kind",
+                    "activated"
+                  ],
+                  [
+                    "conditional",
+                    "instead if (# of power \u22654 in battlefield you control creature \u2265 1)"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Paradise Druid",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add one mana of any color.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "1 of {W}{U}{B}{R}{G}"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "static",
+            "label": "Continuous",
+            "source_text": "~ has hexproof as long as it's untapped.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "self"
+              ],
+              [
+                "mods",
+                "grant Hexproof"
+              ],
+              [
+                "conditional",
+                "not (source is tapped)"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Tamiyo's Safekeeping",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "grant Hexproof, grant Indestructible",
+            "source_text": "Target permanent you control gains hexproof and indestructible until end of turn. You gain 2 life.",
+            "supported": true,
+            "details": [
+              [
+                "duration",
+                "until end of turn"
+              ],
+              [
+                "target",
+                "you control permanent"
+              ],
+              [
+                "grants",
+                "grant Hexproof"
+              ],
+              [
+                "grants",
+                "grant Indestructible"
+              ],
+              [
+                "affects",
+                "parent target"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "GainLife",
+                "supported": true,
+                "details": [
+                  [
+                    "amount",
+                    "2"
+                  ]
+                ]
+              },
+              {
+                "category": "static",
+                "label": "Continuous",
+                "source_text": "gain hexproof and indestructible",
+                "supported": true,
+                "details": [
+                  [
+                    "affects",
+                    "parent target"
+                  ],
+                  [
+                    "mods",
+                    "grant Hexproof, grant Indestructible"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Terrian, World Tyrant",
+        "status": "PASS",
+        "parse": []
+      },
+      {
+        "name": "Thrashing Brontodon",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Destroy",
+            "source_text": "{1}, Sacrifice ~: Destroy target artifact or enchantment.",
+            "supported": true,
+            "details": [
+              [
+                "target",
+                "artifact or enchantment"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Commander's Sphere",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add one mana of any color in your commander's color identity.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "1 of commander's color identity x1"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "Draw",
+            "source_text": "Sacrifice ~: Draw a card.",
+            "supported": true,
+            "details": [
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Rhonas's Monument",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "trigger",
+            "label": "SpellCast",
+            "source_text": "Whenever you cast a creature spell, target creature you control gets +2/+2 and gains trample until end of turn.",
+            "supported": true,
+            "details": [
+              [
+                "watches",
+                "creature"
+              ],
+              [
+                "active in",
+                "battlefield"
+              ],
+              [
+                "valid target",
+                "controller"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "power +2, toughness +2, grant Trample",
+                "supported": true,
+                "details": [
+                  [
+                    "duration",
+                    "until end of turn"
+                  ],
+                  [
+                    "target",
+                    "you control creature"
+                  ],
+                  [
+                    "grants",
+                    "power +2"
+                  ],
+                  [
+                    "grants",
+                    "toughness +2"
+                  ],
+                  [
+                    "grants",
+                    "grant Trample"
+                  ],
+                  [
+                    "affects",
+                    "parent target"
+                  ]
+                ],
+                "children": [
+                  {
+                    "category": "static",
+                    "label": "Continuous",
+                    "source_text": "get +2/+2 and gains trample",
+                    "supported": true,
+                    "details": [
+                      [
+                        "affects",
+                        "parent target"
+                      ],
+                      [
+                        "mods",
+                        "power +2, toughness +2, grant Trample"
+                      ]
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "category": "static",
+            "label": "ReduceCost",
+            "source_text": "Green creature spells you cast cost {1} less to cast.",
+            "supported": true,
+            "details": [
+              [
+                "affects",
+                "you control card"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Rogue's Passage",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add {C}.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "{C} x1"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "CantBeBlocked",
+            "source_text": "{4}, {T}: Target creature can't be blocked this turn.",
+            "supported": true,
+            "details": [
+              [
+                "duration",
+                "until end of turn"
+              ],
+              [
+                "target",
+                "creature"
+              ],
+              [
+                "grants",
+                "CantBeBlocked"
+              ],
+              [
+                "affects",
+                "parent target"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ],
+            "children": [
+              {
+                "category": "static",
+                "label": "CantBeBlocked",
+                "source_text": "can't be blocked",
+                "supported": true,
+                "details": [
+                  [
+                    "affects",
+                    "parent target"
+                  ],
+                  [
+                    "mods",
+                    "CantBeBlocked"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Tranquil Thicket",
+        "status": "PASS",
+        "parse": [
+          {
+            "category": "keyword",
+            "label": "Cycling",
+            "supported": true
+          },
+          {
+            "category": "ability",
+            "label": "Mana",
+            "source_text": "{T}: Add {G}.",
+            "supported": true,
+            "details": [
+              [
+                "mana",
+                "{G}"
+              ],
+              [
+                "kind",
+                "activated"
+              ]
+            ]
+          },
+          {
+            "category": "ability",
+            "label": "Draw",
+            "supported": true,
+            "details": [
+              [
+                "kind",
+                "activated"
+              ],
+              [
+                "activates from",
+                "hand"
+              ]
+            ]
+          },
+          {
+            "category": "replacement",
+            "label": "Moved",
+            "source_text": "~ enters tapped.",
+            "supported": true,
+            "details": [
+              [
+                "scope",
+                "self"
+              ],
+              [
+                "to zone",
+                "battlefield"
+              ]
+            ],
+            "children": [
+              {
+                "category": "ability",
+                "label": "Tap",
+                "supported": true,
+                "details": [
+                  [
+                    "target",
+                    "self"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "limits": [
+      "Experimental data fixtures, not the deployed database or a deck admission.",
+      "Mechanic setups are engineered; the exact-deck initialization case is separately labeled.",
+      "Engine interactions are scripted human-interface submissions, not rendered browser or production CPU evidence.",
+      "No engine rebuild, production changes or recovery implementation."
+    ],
+    "loadedNames": [
+      "Forest",
+      "Mountain",
+      "Grizzly Bears",
+      "Lightning Bolt",
+      "Unsummon",
+      "Sol Ring",
+      "Ghalta, Primal Hunger",
+      "Beast Whisperer",
+      "Birds of Paradise",
+      "Carnage Tyrant",
+      "Pugnacious Hammerskull",
+      "Rishkar's Expertise",
+      "Scavenging Ooze",
+      "Scrapshooter",
+      "Surrak and Goreclaw",
+      "Thickest in the Thicket",
+      "Mosswort Bridge",
+      "Bite Down",
+      "Elvish Mystic",
+      "Fyndhorn Elves",
+      "Harmonize",
+      "Kenrith's Transformation",
+      "Llanowar Elves",
+      "Llanowar Tribe",
+      "Monstrous Onslaught",
+      "Ram Through",
+      "Rishkar, Peema Renegade",
+      "Whisperer of the Wilds",
+      "Swiftfoot Boots",
+      "Arachnogenesis",
+      "Arasta of the Endless Web",
+      "Curious Altisaur",
+      "Dungrove Elder",
+      "Elder Gargaroth",
+      "Ezuri's Predation",
+      "Gigantosaurus",
+      "Hulking Raptor",
+      "Loot, Exuberant Explorer",
+      "Managorger Hydra",
+      "Overwhelming Stampede",
+      "Regal Imperiosaur",
+      "Rhonas the Indomitable",
+      "Ripjaw Raptor",
+      "Shamanic Revelation",
+      "Steel Leaf Champion",
+      "Surrak, the Hunt Caller",
+      "Tangleweave Armor",
+      "Unnatural Growth",
+      "Verdant Sun's Avatar",
+      "Whiptongue Hydra",
+      "Yeva, Nature's Herald",
+      "Bonders' Enclave",
+      "Scavenger Grounds",
+      "War Room",
+      "Witch's Clinic",
+      "Beast Within",
+      "Challenger Troll",
+      "Clifftop Lookout",
+      "Collective Resistance",
+      "Colossal Majesty",
+      "Elemental Bond",
+      "Garruk's Packleader",
+      "Garruk's Uprising",
+      "Goreclaw, Terror of Qal Sisma",
+      "Ilysian Caryatid",
+      "Paradise Druid",
+      "Tamiyo's Safekeeping",
+      "Terrian, World Tyrant",
+      "Thrashing Brontodon",
+      "Commander's Sphere",
+      "Rhonas's Monument",
+      "Rogue's Passage",
+      "Tranquil Thicket"
+    ],
+    "exactDeckFixtureSha256": "76c881fcb980428289a3e7f234065b6c5a323592ce02e230acdb04dbfc25fa89",
+    "partial": false,
+    "counts": {
+      "PASS": 10,
+      "FAIL": 0,
+      "NOT TESTED": 0,
+      "UNSUPPORTED": 0
+    },
+    "finishedAt": "2026-10-25T17:53:08.671Z",
+    "runnerSha256": "6d70fe886a24faf194787b7d86e8257fcee342c7fe71cbd1317733953a679ebf"
+  },
+  "lootBefore": [
+    {
+      "id": "loot-look-six-choose",
+      "status": "FAIL",
+      "findings": {
+        "privateLook": false,
+        "restOrder": "preserve",
+        "rngAdvanced": false,
+        "unselectedRemainPrivate": false
+      }
+    },
+    {
+      "id": "loot-look-six-decline",
+      "status": "FAIL",
+      "findings": {
+        "privateLook": false,
+        "restOrder": "preserve",
+        "rngAdvanced": false,
+        "unselectedRemainPrivate": false
+      }
+    }
+  ],
+  "cpuTrial": {
+    "schema": 1,
+    "task": "DECK-003",
+    "status": "FAIL",
+    "seed": 7331,
+    "levels": [
+      "Medium",
+      "Medium"
+    ],
+    "format": "Commander",
+    "exactDeckFixtureSha256": "76c881fcb980428289a3e7f234065b6c5a323592ce02e230acdb04dbfc25fa89",
+    "effectiveCandidateSha256": "6c834c2633755e0034be2300f61408c4967bac65a8ed46d4702b496bd29f1138",
+    "combinedDeckDataSha256": "5f7f8fd62684afcf04841664cd08589a87d785334c490518487c9039768726eb",
+    "cpuCommit": "97fc5705ccea76a51a9132ffcac189b2f1747878",
+    "cpuConfiguration": "cpu-config-v3",
+    "cpuSources": {
+      "cpu-block-search.mjs": {
+        "gitBlobSha": "f0ca62d2b96bb922d9ae16877e25afa896a593d6",
+        "sha256": "167c87c1521c43df4e88303e70b6287da373108d94f1fee8d1b65e8188c3ce66"
+      },
+      "cpu-combat-evaluation.mjs": {
+        "gitBlobSha": "e85e8a6555dfabe4dc13608f08161b49ce5bfb92",
+        "sha256": "55add787750ef735dd7890f12f4ebb7df14d74001b4ddbc5bd220953c5e53203"
+      },
+      "cpu-difficulty-config.mjs": {
+        "gitBlobSha": "c988dbc8a57b7c540d2f223e45935e0264d1c06c",
+        "sha256": "f0a9998c21b55ea2814a7e43f1be02eae41731859e9fd8205bfa70f3ff613715"
+      },
+      "cpu-hand-observation.mjs": {
+        "gitBlobSha": "f9d1b1bee09786b767c2f8744af511efd34eb967",
+        "sha256": "601144c3beea2d095620c27de2e27958b305bf59471da3ee8e7a49e057a25efd"
+      },
+      "cpu-legal-candidates.mjs": {
+        "gitBlobSha": "dc6ca8fcec489e804b516cd64d749860cfc3f761",
+        "sha256": "3ac18bf8a3b0fd0d7337ee58cf49b80f05db3d3a6f7e13205b55b513daf16c24"
+      },
+      "cpu-playbook.mjs": {
+        "gitBlobSha": "7011a807a8ffad3d1092f4b9e656dcc3f3081485",
+        "sha256": "b6e1c38dccbe79ba87a0fe4ea73037ac7960862c3d77ccc2d08a6ec5cbe9be2c"
+      },
+      "cpu-public-observation.mjs": {
+        "gitBlobSha": "03e618a1499915348e628f71a274eb2b84b0bc60",
+        "sha256": "2b609f5547ffe58d2a3252c40ca3e7a5bfc266700be3da4eb95f736c3a629ade"
+      },
+      "cpu-public-policy.mjs": {
+        "gitBlobSha": "5cd77c58377c78d94040b96039de35f6d178fcd6",
+        "sha256": "1ac7e3df4b19d2627aa4330c9c39b2b585514149b9ff8a74b7be575dff3aa316"
+      },
+      "cpu-tactical-planning.mjs": {
+        "gitBlobSha": "4f8251de86e21b54093be5e81f377d5f845c2193",
+        "sha256": "0430518b113200c2a6e8e3fda09280847b65712c5ed7fae305c5d4dd01b4149b"
+      },
+      "human-command.mjs": {
+        "gitBlobSha": "8f6f3c302e988ccecf3ca677b5dd17c698453638",
+        "sha256": "9b7e62b4271d35337f75fa07b5f4486e4678b1e1dafef5464d262e7e8053aa2b"
+      },
+      "interaction-surface.mjs": {
+        "gitBlobSha": "5c56d6ffef92b25014829c4fbe30dbff08f2b68a",
+        "sha256": "bffbb62bd6a20d00e4265758496f5b8eb7042396c5c6e9a77c1d0fcea88c4eb0"
+      },
+      "priority-clock.mjs": {
+        "gitBlobSha": "a3b0ea4f6dae93e6b397714197ff21292b09417b",
+        "sha256": "4c939bf6d616ecf582228918bd73094c43b998e0168996961429c8e964707602"
+      },
+      "protocol-fault.mjs": {
+        "gitBlobSha": "ed15153a8b95ed8eda2dcea02d81fd5855d7b9ac",
+        "sha256": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807"
+      },
+      "random-outcomes.mjs": {
+        "gitBlobSha": "2616d0dbcab632244e06b11cbd0a28bc661d90f0",
+        "sha256": "1aa212c485c766caf1d80403f2413c22bb17194cbbfa54979a699a38ea2d12d0"
+      },
+      "seat-surface.mjs": {
+        "gitBlobSha": "5db3930878492ef254ba9a767567c5bb81ded7a7",
+        "sha256": "70176fb74d5eff9d023a406587aeb433e25fbda30dfd25dea836d0e0b4fb4f94"
+      },
+      "turn-budget.mjs": {
+        "gitBlobSha": "62b7297536206a1241a55011ba2c8b0f41330766",
+        "sha256": "efd21e1aa500d2a2beb2bb3ad69891d96d29a0c70da507264263c6cdbbcea5ff"
+      },
+      "visible-cpu-policy.mjs": {
+        "gitBlobSha": "72e08805c6a6864aeaef0fe41f6518fbfdc1560f",
+        "sha256": "755897085ee4e42cf0fa94b6f37a68187ba111f69c2f54c629ec249f4c02dfe5"
+      },
+      "worker-journal.mjs": {
+        "gitBlobSha": "08161d165814e0c07a0a3a7c9d77116cf2e4deec",
+        "sha256": "7eaa025fc8be22a7c17f927e176ec669a8ce0ae50138afe5c493fce99104a519"
+      }
+    },
+    "provenance": {
+      "appBaseCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "runtimeSourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+      "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+      "rulesSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+      "loadedNames": [
+        "Forest"
+      ],
+      "subsetSha256": "4d3cb308d7655e8eab9b0db31c368765e88fa9e5802635a1d3ae25151d8f4071"
+    },
+    "startedAt": "2026-10-25T17:58:16.674Z",
+    "decisions": 100,
+    "decisionKinds": {
+      "MulliganDecision": 2,
+      "Priority": 98
+    },
+    "maxEngineCollectionMs": 916.371744,
+    "maxPolicyMs": 1.2040079999987938,
+    "limits": [
+      "One bounded direct-policy trial with the exact list in both seats; not all mechanics or difficulty strength certification.",
+      "Policy receives only makeCpuObservation from the acting seat-filtered envelope, its legal offers and own deck playbook.",
+      "Harness records full synthetic states for debugging; they are not passed to policy.",
+      "No coverage bypass in production, worker/session integration, browser, recovery or deployment."
+    ],
+    "startingStateSha256": "7cc7d667e5a8186d3a4b5b9eadb26f7ba659e02bccefe196fd3ddface89add9d",
+    "turn": 6,
+    "lastDecision": "TriggerTargetSelection",
+    "waiting": {
+      "data": {
+        "description": "At the beginning of combat on your turn, if creatures you control have total power 8 or greater, target creature you control gains haste until end of turn.",
+        "player": 1,
+        "selection": {
+          "current_legal_targets": [
+            {
+              "Object": 168
+            },
+            {
+              "Object": 138
+            },
+            {
+              "Object": 135
+            },
+            {
+              "Object": 108
+            }
+          ],
+          "current_slot": 0
+        },
+        "source_id": 135,
+        "target_slots": [
+          {
+            "effect_detail": {
+              "type": "None"
+            },
+            "effect_kind": "GenericEffect",
+            "legal_targets": [
+              {
+                "Object": 168
+              },
+              {
+                "Object": 138
+              },
+              {
+                "Object": 135
+              },
+              {
+                "Object": 108
+              }
+            ],
+            "optional": false
+          }
+        ],
+        "trigger_controller": 1
+      },
+      "type": "TriggerTargetSelection"
+    },
+    "sameDecisionPolicyResults": [
+      {
+        "difficulty": "Easy",
+        "error": "CPU_DECISION_UNSUPPORTED"
+      },
+      {
+        "difficulty": "Medium",
+        "error": "CPU_DECISION_UNSUPPORTED"
+      },
+      {
+        "difficulty": "Hard",
+        "error": "CPU_DECISION_UNSUPPORTED"
+      }
+    ],
+    "finalStateSha256": "2d126dcd342c21f8dbff53496215fdd16a45ba9f142b393ca13084dff9b3c49b",
+    "acceptedCommands": 100,
+    "traceSha256": "78216edc6422d73dee2f38830a445a631f85703cb41676379601e46b3ae92455",
+    "finishedAt": "2026-10-25T17:58:42.976Z",
+    "runnerSha256": "9d26d9589bf9a564f1dee4ae84f8954598897f3a9ffae798eac2ec0202b942bb"
+  },
+  "cpuError": "CPU_DECISION_UNSUPPORTED",
+  "cpuRequiredDecision": {
+    "type": "TriggerTargetSelection",
+    "actor": 1,
+    "sourceName": "Surrak, the Hunt Caller",
+    "sourceObjectId": 135,
+    "legalTargetObjectIds": [
+      168,
+      138,
+      135,
+      108
+    ],
+    "offeredTypes": [
+      "ChooseTarget"
+    ],
+    "observedPolicyKinds": [
+      "unsupported"
+    ]
+  },
+  "humanContinuation": {
+    "status": "PASS",
+    "checks": [
+      {
+        "id": "100-command-gameplay-replay",
+        "status": "PASS"
+      },
+      {
+        "id": "human-trigger-target-grants-haste",
+        "status": "PASS",
+        "source": 135,
+        "actor": 1
+      },
+      {
+        "id": "temporary-haste-expires",
+        "status": "PASS"
+      }
+    ],
+    "freshCapabilitySession": {
+      "original": "wasm-867af53858dfea7e",
+      "replayed": "wasm-f8f512fd1f0268ee",
+      "scope": "Only the session ID and that exact prefix in active interaction IDs are rebound. Every other saved state field must match."
+    },
+    "runnerSha256": "98ece555baf1948057ed9d61bde9c5c125402cbe4473c42b46f385074dcbf6c0"
+  },
+  "humanContinuationAcceptedCommands": 12,
+  "sourceHashes": {
+    "experiments/phase-engine/deck-data-candidate.mjs": "0914bfe9fe8aa9c854e8b86efda91d121249569f721d2818352e15860b2288c0",
+    "experiments/phase-engine/deck-data-engine.mjs": "6d70fe886a24faf194787b7d86e8257fcee342c7fe71cbd1317733953a679ebf",
+    "experiments/phase-engine/deck-data-cpu.mjs": "9d26d9589bf9a564f1dee4ae84f8954598897f3a9ffae798eac2ec0202b942bb",
+    "experiments/phase-engine/deck-data-decision-probe.mjs": "98ece555baf1948057ed9d61bde9c5c125402cbe4473c42b46f385074dcbf6c0",
+    "experiments/phase-engine/fixtures/deck-003/cpu-005-source-receipt.json": "cdb346ed3acbc1e3488e014de3a2aa5c048f0eda97da1d72677280d2e8884432",
+    "experiments/phase-engine/fixtures/deck-003/loot-correction.json": "eb30f22b3e500b2b420cae044b6a9845dfbe997ad44df87f4133d6b4f2e1559c",
+    "experiments/phase-engine/fixtures/deck-003/source-receipt.json": "6712944786dba68d7c5ca16c03cf181905bd8387a49f03849446fccc714b972b",
+    "experiments/phase-engine/fixtures/deck-003/tramplesaurus-additions.corrected.json": "6c834c2633755e0034be2300f61408c4967bac65a8ed46d4702b496bd29f1138",
+    "experiments/phase-engine/fixtures/deck-003/tramplesaurus-additions.json": "c71f6054e027d90a1a6da4da28cfc35ff5d0c6d8e7b9728fee97fe2463f5b194"
+  },
+  "fullEvidence": {
+    "path": "docs/evidence/deck-003-data-expansion-full.json.xz",
+    "compressedBytes": 109652,
+    "compressedSha256": "ddc1d0d41cc671e214d2fd747c524861724233b260e68d01c9558bdec28b7558",
+    "decodedBytes": 27895050,
+    "decodedSha256": "36ec27487a84454bb5a73913844ee361fb1d2859941c81e5d75f9c586713d79c",
+    "roundTrip": "PASS"
+  },
+  "remaining": {
+    "wholeDeckCpuCompletion": "FAIL",
+    "fullMechanicCertification": "NOT TESTED",
+    "integratedBrowserMatch": "NOT TESTED",
+    "productionAdmission": "UNSUPPORTED",
+    "recovery": "UNSUPPORTED",
+    "engineRejectionCorrection": "NOT BUILT / NOT VALIDATED"
+  }
+}

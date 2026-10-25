@@ -1,0 +1,77 @@
+{
+  "commit": "97fc5705ccea76a51a9132ffcac189b2f1747878",
+  "files": {
+    "cpu-block-search.mjs": {
+      "gitBlobSha": "f0ca62d2b96bb922d9ae16877e25afa896a593d6",
+      "sha256": "167c87c1521c43df4e88303e70b6287da373108d94f1fee8d1b65e8188c3ce66"
+    },
+    "cpu-combat-evaluation.mjs": {
+      "gitBlobSha": "e85e8a6555dfabe4dc13608f08161b49ce5bfb92",
+      "sha256": "55add787750ef735dd7890f12f4ebb7df14d74001b4ddbc5bd220953c5e53203"
+    },
+    "cpu-difficulty-config.mjs": {
+      "gitBlobSha": "c988dbc8a57b7c540d2f223e45935e0264d1c06c",
+      "sha256": "f0a9998c21b55ea2814a7e43f1be02eae41731859e9fd8205bfa70f3ff613715"
+    },
+    "cpu-hand-observation.mjs": {
+      "gitBlobSha": "f9d1b1bee09786b767c2f8744af511efd34eb967",
+      "sha256": "601144c3beea2d095620c27de2e27958b305bf59471da3ee8e7a49e057a25efd"
+    },
+    "cpu-legal-candidates.mjs": {
+      "gitBlobSha": "dc6ca8fcec489e804b516cd64d749860cfc3f761",
+      "sha256": "3ac18bf8a3b0fd0d7337ee58cf49b80f05db3d3a6f7e13205b55b513daf16c24"
+    },
+    "cpu-playbook.mjs": {
+      "gitBlobSha": "7011a807a8ffad3d1092f4b9e656dcc3f3081485",
+      "sha256": "b6e1c38dccbe79ba87a0fe4ea73037ac7960862c3d77ccc2d08a6ec5cbe9be2c"
+    },
+    "cpu-public-observation.mjs": {
+      "gitBlobSha": "03e618a1499915348e628f71a274eb2b84b0bc60",
+      "sha256": "2b609f5547ffe58d2a3252c40ca3e7a5bfc266700be3da4eb95f736c3a629ade"
+    },
+    "cpu-public-policy.mjs": {
+      "gitBlobSha": "5cd77c58377c78d94040b96039de35f6d178fcd6",
+      "sha256": "1ac7e3df4b19d2627aa4330c9c39b2b585514149b9ff8a74b7be575dff3aa316"
+    },
+    "cpu-tactical-planning.mjs": {
+      "gitBlobSha": "4f8251de86e21b54093be5e81f377d5f845c2193",
+      "sha256": "0430518b113200c2a6e8e3fda09280847b65712c5ed7fae305c5d4dd01b4149b"
+    },
+    "human-command.mjs": {
+      "gitBlobSha": "8f6f3c302e988ccecf3ca677b5dd17c698453638",
+      "sha256": "9b7e62b4271d35337f75fa07b5f4486e4678b1e1dafef5464d262e7e8053aa2b"
+    },
+    "interaction-surface.mjs": {
+      "gitBlobSha": "5c56d6ffef92b25014829c4fbe30dbff08f2b68a",
+      "sha256": "bffbb62bd6a20d00e4265758496f5b8eb7042396c5c6e9a77c1d0fcea88c4eb0"
+    },
+    "priority-clock.mjs": {
+      "gitBlobSha": "a3b0ea4f6dae93e6b397714197ff21292b09417b",
+      "sha256": "4c939bf6d616ecf582228918bd73094c43b998e0168996961429c8e964707602"
+    },
+    "protocol-fault.mjs": {
+      "gitBlobSha": "ed15153a8b95ed8eda2dcea02d81fd5855d7b9ac",
+      "sha256": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807"
+    },
+    "random-outcomes.mjs": {
+      "gitBlobSha": "2616d0dbcab632244e06b11cbd0a28bc661d90f0",
+      "sha256": "1aa212c485c766caf1d80403f2413c22bb17194cbbfa54979a699a38ea2d12d0"
+    },
+    "seat-surface.mjs": {
+      "gitBlobSha": "5db3930878492ef254ba9a767567c5bb81ded7a7",
+      "sha256": "70176fb74d5eff9d023a406587aeb433e25fbda30dfd25dea836d0e0b4fb4f94"
+    },
+    "turn-budget.mjs": {
+      "gitBlobSha": "62b7297536206a1241a55011ba2c8b0f41330766",
+      "sha256": "efd21e1aa500d2a2beb2bb3ad69891d96d29a0c70da507264263c6cdbbcea5ff"
+    },
+    "visible-cpu-policy.mjs": {
+      "gitBlobSha": "72e08805c6a6864aeaef0fe41f6518fbfdc1560f",
+      "sha256": "755897085ee4e42cf0fa94b6f37a68187ba111f69c2f54c629ec249f4c02dfe5"
+    },
+    "worker-journal.mjs": {
+      "gitBlobSha": "08161d165814e0c07a0a3a7c9d77116cf2e4deec",
+      "sha256": "7eaa025fc8be22a7c17f927e176ec669a8ce0ae50138afe5c493fce99104a519"
+    }
+  }
+}
