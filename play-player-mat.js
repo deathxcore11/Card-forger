@@ -10,6 +10,13 @@ const loadModules=async()=>{
  const [flow,table]=await Promise.all([import('./experiments/phase-engine/practice-flow.mjs'),import('./experiments/phase-engine/match-table.mjs')]);
  return {createPracticeFlow:flow.createPracticeFlow,mountMatchTable:table.mountMatchTable};
 };
+// Keep the real profile crop/photo; use CardStashy's crest when none is present.
+export function practicePlayerPortrait(doc,own,profile={}){
+ const wrapper=doc.createElement('span');
+ if(own){wrapper.innerHTML=profileAvatar(profile?.avatarArt,{display_name:profile?.displayName,username:profile?.username,avatar_url:profile?.avatarUrl});const avatar=wrapper.querySelector('.profile-avatar'),fallback=doc.createElement('span');fallback.className='play-profile-crest';fallback.innerHTML=brandMark('brand-idle');avatar?.firstElementChild?.replaceWith(fallback);}
+ else wrapper.innerHTML=brandMark('brand-idle');
+ return wrapper;
+}
 export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwork=async()=>{},reviewDecks=async()=>null,captureContext=capturePracticeDeckContext,onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onSaveDeck=null,load=loadModules,sessionOnly=true}={}){
  if(!root||typeof readAccount!=='function'||typeof readSetup!=='function'||typeof lookup!=='function'||typeof prepareArtwork!=='function'||typeof reviewDecks!=='function')throw Error('PLAYER_MAT_HOST_REQUIRED');
  if(typeof sessionOnly!=='boolean')throw Error('INVALID_SESSION_MODE');
@@ -49,12 +56,7 @@ export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwor
  let modules;
  function deckArtUrl(deck){const cover=deck?.commander||deck?.cards?.[0]?.name,card=cover?lookup(cover):null;return card?.image_uris?.art_crop||card?.card_faces?.[0]?.image_uris?.art_crop||null;}
  function matchBackdrop(){const box=node('div');for(const deck of [matchup?.selected,matchup?.opponent]){const url=deckArtUrl(deck);if(url){const img=node('img');img.src=url;img.alt='';box.append(img);}}return box.childNodes.length?box:null;}
- function playerPortrait(own,profile){
-  const wrapper=node('span');
-  if(own)wrapper.innerHTML=profileAvatar(profile?.avatarArt,{display_name:profile?.displayName,username:profile?.username,avatar_url:profile?.avatarUrl});
-  else wrapper.textContent='CPU';
-  return wrapper;
- }
+ const playerPortrait=(own,profile)=>practicePlayerPortrait(root.ownerDocument,own,profile);
  function receive(state,ticket){
   if(ticket!==generation)return;last=state;
   warnOnLeave(!!(sessionOnly&&state.phase==='playing'&&state.game?.status&&!state.game.status.terminal));

@@ -1,0 +1,96 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "scenario": "mulligan",
+      "kind": "decision-flow",
+      "checks": {
+        "openingIsDistinct": true,
+        "cardOnlyInspects": true,
+        "cancelExitKeepsOpening": true,
+        "keepTransitions": true
+      },
+      "passed": true
+    },
+    {
+      "scenario": "target",
+      "kind": "decision-flow",
+      "checks": {
+        "selectionIsPrivate": true,
+        "targetHasPreview": true,
+        "localSelectionDoesNotReplayTurnBanner": true,
+        "inspectionPreservesDraft": true,
+        "inspectorCloses": true,
+        "clearDoesNotSubmit": true,
+        "confirmOnce": true,
+        "acceptedRevisionClearsDraft": true
+      },
+      "passed": true
+    },
+    {
+      "scenario": "combat",
+      "kind": "decision-flow",
+      "checks": {
+        "assignmentIsPrivate": true,
+        "numberedPairs": true,
+        "focusSeparatesPair": true,
+        "overviewShowsPairs": true,
+        "clearAssignments": true,
+        "confirmNoAttackersOnce": true
+      },
+      "passed": true
+    },
+    {
+      "scenario": "actions",
+      "kind": "decision-flow",
+      "checks": {
+        "playLabelDoesNotCoverArt": true,
+        "handArtworkNotDimmed": true,
+        "cuesExplainPlayAndAbility": true,
+        "tapOnlyFromAcceptedState": true,
+        "emptyStackStartsCompact": true,
+        "emptyStackDropIsReachable": true,
+        "dragIsPrivate": true,
+        "dropSubmitsOfferedTokenOnce": true,
+        "dropSurfaceRetires": true
+      },
+      "passed": true
+    },
+    {
+      "scenario": "damage",
+      "kind": "decision-flow",
+      "checks": {
+        "damageTotalVisible": true,
+        "remainingClocksVisible": true
+      },
+      "passed": true
+    },
+    {
+      "scenario": "controls",
+      "kind": "decision-flow",
+      "checks": {
+        "unknownCoverageIsExplained": true,
+        "fullControlUsesSession": true,
+        "yieldDisabledInFull": true,
+        "cancelIsVisible": true,
+        "cancelUsesSession": true,
+        "stopsSeparateTurns": true,
+        "noUiPassWasSent": true,
+        "staleContractHidden": true,
+        "unsupportedControlsHidden": true
+      },
+      "passed": true
+    },
+    {
+      "scenario": "commander",
+      "kind": "decision-flow",
+      "checks": {
+        "commandZonesSeparate": true,
+        "commandObjectsNotDuplicated": true,
+        "commandInspectionUsesSameObject": true,
+        "lifeComesFromState": true
+      },
+      "passed": true
+    }
+  ]
+}
