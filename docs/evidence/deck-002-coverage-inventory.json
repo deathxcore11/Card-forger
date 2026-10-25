@@ -1,0 +1,3935 @@
+{
+  "schema": 1,
+  "task": "DECK-002",
+  "taskBase": "ed3175347bc86b346205f3cba102a73bd3494c6c",
+  "generatedAt": "2026-10-25T16:50:12.477Z",
+  "rulesDatabaseSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+  "entries": 6137,
+  "selectedMilestone": "deck-001:tramplesaurus-rex",
+  "milestoneStatus": "UNSUPPORTED",
+  "decks": [
+    {
+      "id": "deck-001:tramplesaurus-rex",
+      "name": "Tramplesaurus Rex",
+      "commander": "Ghalta, Primal Hunger",
+      "fixtureSha256": "76c881fcb980428289a3e7f234065b6c5a323592ce02e230acdb04dbfc25fa89",
+      "exactListSha256": "6d4ced94e6de92092cf2b0b29701e10425b8db7c7982e3e77e9a9f5fa6d07660",
+      "totalCards": 100,
+      "uniqueNames": 69,
+      "counts": {
+        "missing": 44,
+        "present": 25,
+        "presentWithWarnings": 1,
+        "missingWithMappingCandidate": 0,
+        "explicitUnimplemented": 0
+      },
+      "rows": [
+        {
+          "name": "Ghalta, Primal Hunger",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "9aab5c908d77fdb3da43ee10d3f2caf163a762168618fd24153cfa38358d47b6",
+          "normalizedMappingCandidates": [
+            "ghalta, primal hunger"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": true,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 0,
+            "staticCount": 1,
+            "replacementCount": 0,
+            "keywords": [
+              "Trample"
+            ],
+            "operationTags": [
+              "Cost",
+              "Objects",
+              "PropertyAggregate",
+              "SelfRef",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [
+            "starter-pool-engine: cost reduction, trample and legend choice",
+            "DECK-001: Ram Through damage source; not full commander certification"
+          ],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Dynamic casting-cost reduction and minimum colored cost",
+            "Commander tax, zone choices and commander damage",
+            "Trample damage allocation"
+          ]
+        },
+        {
+          "name": "Arachnogenesis",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Arasta of the Endless Web",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Beast Whisperer",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "4e430ea7a8fd2449264a5287e3d8b3947c862ddacf6109ec01b2aeb8b25a9297",
+          "normalizedMappingCandidates": [
+            "beast whisperer"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 1,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Controller",
+              "Draw",
+              "Fixed",
+              "Spell",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Creature-cast trigger and mandatory draw",
+            "Draw visibility and empty-library outcome"
+          ]
+        },
+        {
+          "name": "Birds of Paradise",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "b4166ccba56288ab6638faaafc28292aa9ef5a32fe8fc1070dffd840ae8e3d5e",
+          "normalizedMappingCandidates": [
+            "birds of paradise"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [
+              "Flying"
+            ],
+            "operationTags": [
+              "Activated",
+              "AnyOneColor",
+              "Fixed",
+              "Mana",
+              "Tap"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Mana-color choice",
+            "Summoning restriction and flying combat"
+          ]
+        },
+        {
+          "name": "Carnage Tyrant",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "e9c94ac9a042945a8780ae0e91d3ade1569001d32597af1c887fd4e272970cd7",
+          "normalizedMappingCandidates": [
+            "carnage tyrant"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 0,
+            "staticCount": 1,
+            "replacementCount": 0,
+            "keywords": [
+              "Hexproof",
+              "Trample"
+            ],
+            "operationTags": [
+              "SelfRef"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Cannot-be-countered resolution",
+            "Opponent targeting rejection from hexproof",
+            "Trample allocation"
+          ]
+        },
+        {
+          "name": "Curious Altisaur",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Dungrove Elder",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Elder Gargaroth",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Ezuri's Predation",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Gigantosaurus",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Hulking Raptor",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Loot, Exuberant Explorer",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Managorger Hydra",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Overwhelming Stampede",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Pugnacious Hammerskull",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "43164ceb67721e005e5609304181034cdfb16d08eab97cf4ddd1da4afb6d17a2",
+          "normalizedMappingCandidates": [
+            "pugnacious hammerskull"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 1,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Another",
+              "EventTime",
+              "Fixed",
+              "InZone",
+              "ObjectCount",
+              "PutCounter",
+              "QuantityComparison",
+              "Ref",
+              "SelfRef",
+              "Spell",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Attack trigger with and without another Dinosaur",
+            "Stun counter and untap replacement"
+          ]
+        },
+        {
+          "name": "Regal Imperiosaur",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Rhonas the Indomitable",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Ripjaw Raptor",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Rishkar's Expertise",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "083331fcac80ce6e2e186de4feb93a12e715f84208e2e2277e30dbc04f2175ae",
+          "normalizedMappingCandidates": [
+            "rishkar's expertise"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "CastFromZone",
+              "Cmc",
+              "Controller",
+              "Draw",
+              "Fixed",
+              "InZone",
+              "Objects",
+              "PropertyAggregate",
+              "Ref",
+              "Spell",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Greatest-power draw calculation",
+            "Decline or choose optional free cast",
+            "Mana-value restriction and additional costs"
+          ]
+        },
+        {
+          "name": "Scavenging Ooze",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "12a3a76db563c57e06f93b5a9788d046d78e6fbde151c617ce2c49b43befa8dd",
+          "normalizedMappingCandidates": [
+            "scavenging ooze"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "ChangeZone",
+              "Cost",
+              "Fixed",
+              "GainLife",
+              "InZone",
+              "Mana",
+              "PutCounter",
+              "SelfRef",
+              "Spell",
+              "TargetMatchesFilter",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [
+            "DECK-001: ooze-creature and ooze-noncreature"
+          ],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Select a card from either graveyard",
+            "Pay green mana at priority with an empty hand",
+            "Conditional counter/life gain and target invalidation"
+          ]
+        },
+        {
+          "name": "Scrapshooter",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "afab0893d0ad0b0d0be1a739fca382c1ca5601d6ce2db6d5a833ff0fdfa24755",
+          "normalizedMappingCandidates": [
+            "scrapshooter"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 1,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [
+              "Reach",
+              {
+                "Gift": {
+                  "type": "Card"
+                }
+              }
+            ],
+            "operationTags": [
+              "AdditionalCostPaid",
+              "Destroy",
+              "Or",
+              "SelfRef",
+              "Spell",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Promise or decline gift and choose opponent",
+            "Gift draw and conditional enter trigger",
+            "Artifact/enchantment target and reach"
+          ]
+        },
+        {
+          "name": "Shamanic Revelation",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Steel Leaf Champion",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Surrak and Goreclaw",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "a72e761c6779e3054d8834fa36046631d4aa79e00b22ba91f8c32f6e18f1b7d9",
+          "normalizedMappingCandidates": [
+            "surrak and goreclaw"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 1,
+            "staticCount": 1,
+            "replacementCount": 0,
+            "keywords": [
+              "Trample"
+            ],
+            "operationTags": [
+              "AddKeyword",
+              "Another",
+              "Fixed",
+              "GenericEffect",
+              "NonToken",
+              "PutCounter",
+              "Spell",
+              "TriggeringSource",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Trample grant to other creatures",
+            "Nontoken-enter trigger, counter and temporary haste",
+            "Haste expiry and token distinction"
+          ]
+        },
+        {
+          "name": "Surrak, the Hunt Caller",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Tangleweave Armor",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Thickest in the Thicket",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "276df4e5b90c2013fe85d23c1e7e43e6e33f9b00ee2a711523f0b25529b36e33",
+          "normalizedMappingCandidates": [
+            "thickest in the thicket"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 2,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Controller",
+              "Draw",
+              "Fixed",
+              "InZone",
+              "ObjectCount",
+              "Objects",
+              "OnlyDuringYourTurn",
+              "Power",
+              "PropertyAggregate",
+              "PtComparison",
+              "PutCounter",
+              "QuantityCheck",
+              "Ref",
+              "SelfRef",
+              "Spell",
+              "Target",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Enter-trigger target and power-dependent counters",
+            "Greatest-power end-step condition, ties and draw"
+          ]
+        },
+        {
+          "name": "Unnatural Growth",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Verdant Sun's Avatar",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Whiptongue Hydra",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Yeva, Nature's Herald",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Bonders' Enclave",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Mosswort Bridge",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "bd88dc9c01509f16563ff5ee9bb35dc1bc0098bf2522b4daed4dbcc4f7d8c7b0",
+          "normalizedMappingCandidates": [
+            "mosswort bridge"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 2,
+            "triggerCount": 1,
+            "staticCount": 0,
+            "replacementCount": 1,
+            "keywords": [
+              {
+                "Hideaway": 4
+              }
+            ],
+            "operationTags": [
+              "Activated",
+              "Any",
+              "CastFromZone",
+              "Composite",
+              "Controller",
+              "Cost",
+              "Dig",
+              "ExiledBySource",
+              "Fixed",
+              "HideawayConceal",
+              "Mana",
+              "Mandatory",
+              "Objects",
+              "ParentTarget",
+              "PropertyAggregate",
+              "QuantityCheck",
+              "Ref",
+              "SelfRef",
+              "SetTapState",
+              "Single",
+              "Spell",
+              "Tap",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Private hideaway selection and random bottom order",
+            "Linked face-down exile identity",
+            "Power threshold and free-play permission",
+            "Spell versus land timing, land allowance and additional costs"
+          ]
+        },
+        {
+          "name": "Scavenger Grounds",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "War Room",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Witch's Clinic",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Beast Within",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Bite Down",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "e45496bfd4a8aaced034cb922b40b3ad875759c06b61215dba07fc9eeb8f6d79",
+          "normalizedMappingCandidates": [
+            "bite down"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "DealDamage",
+              "Or",
+              "Power",
+              "Ref",
+              "Spell",
+              "Target",
+              "TargetOnly",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Own creature and opposing creature/planeswalker targets",
+            "Illegal-target resolution and damage source"
+          ]
+        },
+        {
+          "name": "Challenger Troll",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Clifftop Lookout",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Collective Resistance",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Colossal Majesty",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Elemental Bond",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Elvish Mystic",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "31a2c0d5d1d650c71e14415650eb95e4a330c9f6e4de1ae1069c9b8b5ac0c4b4",
+          "normalizedMappingCandidates": [
+            "elvish mystic"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "Fixed",
+              "Mana",
+              "Tap"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Green mana activation",
+            "Summoning restriction and repeated activation rejection"
+          ]
+        },
+        {
+          "name": "Fyndhorn Elves",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "2472165ed49e49241c31deedcde505436fa370110a44a1fd5fa1e9e20acd75b6",
+          "normalizedMappingCandidates": [
+            "fyndhorn elves"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "Fixed",
+              "Mana",
+              "Tap"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Green mana activation",
+            "Summoning restriction and repeated activation rejection"
+          ]
+        },
+        {
+          "name": "Garruk's Packleader",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Garruk's Uprising",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Goreclaw, Terror of Qal Sisma",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Harmonize",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "7e78dbe51bcb0600d7d362b06490bde517c9425d490c9e072da1a5fec18928eb",
+          "normalizedMappingCandidates": [
+            "harmonize"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Controller",
+              "Draw",
+              "Fixed",
+              "Spell"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Three draws in order",
+            "Hidden identities and empty-library outcome"
+          ]
+        },
+        {
+          "name": "Ilysian Caryatid",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Kenrith's Transformation",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "fa6a9d64fc115438109d730c7019c03f8570e32137f30b3dca87a0d1bcb489a3",
+          "normalizedMappingCandidates": [
+            "kenrith's transformation"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 1,
+            "staticCount": 1,
+            "replacementCount": 0,
+            "keywords": [
+              {
+                "Enchant": {
+                  "type": "Typed",
+                  "type_filters": [
+                    "Creature"
+                  ],
+                  "controller": null,
+                  "properties": []
+                }
+              }
+            ],
+            "operationTags": [
+              "AddSubtype",
+              "Controller",
+              "Draw",
+              "EnchantedBy",
+              "Fixed",
+              "RemoveAllAbilities",
+              "RemoveAllSubtypes",
+              "SelfRef",
+              "SetCardTypes",
+              "SetColor",
+              "SetPower",
+              "SetToughness",
+              "Spell",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Aura target and attachment",
+            "Enter-trigger draw",
+            "Ability/type/color/base-stat layers and existing counters"
+          ]
+        },
+        {
+          "name": "Llanowar Elves",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "7ace45af39aa4c665ca753c8e71ac42b32950ded83c8ae8b59ea1b9cb7a38ef9",
+          "normalizedMappingCandidates": [
+            "llanowar elves"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": true,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "Fixed",
+              "Mana",
+              "Tap"
+            ]
+          },
+          "boundedEvidence": [
+            "starter-pool-engine: mana activation and duplicate rejection"
+          ],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Green mana activation",
+            "Summoning restriction and repeated activation rejection"
+          ]
+        },
+        {
+          "name": "Llanowar Tribe",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "9a77b3172373d58d8e571d293e4eac101b209ba3e748b880f9ee50a54792b519",
+          "normalizedMappingCandidates": [
+            "llanowar tribe"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "Fixed",
+              "Mana",
+              "Tap"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Three-green mana activation",
+            "Summoning restriction and repeated activation rejection"
+          ]
+        },
+        {
+          "name": "Monstrous Onslaught",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "c8b7e27d255e7bb7d64778286201cef0f7e3f3fbfb253b83b7a21f327706029c",
+          "normalizedMappingCandidates": [
+            "monstrous onslaught"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Damage",
+              "DealDamage",
+              "Objects",
+              "PropertyAggregate",
+              "Ref",
+              "Spell",
+              "Typed",
+              "Variable"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Cast-time greatest-power value",
+            "Multiple targets and damage allocation",
+            "Invalidated targets and legal allocation totals"
+          ]
+        },
+        {
+          "name": "Paradise Druid",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Ram Through",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "7ec1da574c30456b3f600f624345925843d828834c258bda2f774ed8524fe908",
+          "normalizedMappingCandidates": [
+            "ram through"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [
+            {
+              "type": "SwallowedClause",
+              "detector": "Replacement_Instead",
+              "description": "Target creature you control deals damage equal to its power to target creature you don't control. If the creature you control has trample, e",
+              "line_index": 0,
+              "unit_span": {
+                "first_line": 0,
+                "last_line": 0,
+                "start_byte": 0,
+                "end_byte": 200,
+                "precision": "Exact",
+                "ordinal_within_span": 0
+              },
+              "items": [
+                0
+              ]
+            },
+            {
+              "type": "SwallowedClause",
+              "detector": "Condition_If",
+              "description": "Target creature you control deals damage equal to its power to target creature you don't control. If the creature you control has trample, e",
+              "line_index": 0,
+              "unit_span": {
+                "first_line": 0,
+                "last_line": 0,
+                "start_byte": 0,
+                "end_byte": 200,
+                "precision": "Exact",
+                "ordinal_within_span": 0
+              },
+              "items": [
+                0
+              ],
+              "gap": {
+                "kind": "unparsed_condition",
+                "guard": "the creature you control has trample"
+              }
+            }
+          ],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "DealDamage",
+              "Power",
+              "Ref",
+              "Spell",
+              "Target",
+              "TargetController",
+              "TargetOnly",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [
+            "DECK-001: paid case PASS; wrong-color atomicity FAIL"
+          ],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Ordered own/opponent creature targets",
+            "Wrong-color rejection and full-state atomicity",
+            "Trample excess, nontrample and deathtouch controls",
+            "Either target becoming illegal"
+          ]
+        },
+        {
+          "name": "Rishkar, Peema Renegade",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "4a08f28446954c314d0b3763da51d7a35409364a5e9f31afa3956bc216b0234e",
+          "normalizedMappingCandidates": [
+            "rishkar, peema renegade"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 1,
+            "staticCount": 1,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "Any",
+              "Counters",
+              "Fixed",
+              "GrantAbility",
+              "Mana",
+              "PutCounter",
+              "SelfRef",
+              "Spell",
+              "Tap",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Zero, one or two distinct enter-trigger targets",
+            "Counter-dependent granted mana ability",
+            "Summoning restrictions for granted tap ability"
+          ]
+        },
+        {
+          "name": "Tamiyo's Safekeeping",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Terrian, World Tyrant",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Thrashing Brontodon",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Whisperer of the Wilds",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "0dc1762d74b6725df0bce2a9da15e4bf33c632efe61d69ee5ae69f713d39357d",
+          "normalizedMappingCandidates": [
+            "whisperer of the wilds"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 2,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "Fixed",
+              "InZone",
+              "Mana",
+              "ObjectCount",
+              "PtComparison",
+              "QuantityComparison",
+              "Ref",
+              "RequiresCondition",
+              "Tap",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Choose available mana ability",
+            "Power-threshold condition and output",
+            "Summoning restriction"
+          ]
+        },
+        {
+          "name": "Commander's Sphere",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Rhonas's Monument",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Sol Ring",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "d9397f3cd813cec7061af694a4618b175817184bceb7c0a123c70aad21edd2a2",
+          "normalizedMappingCandidates": [
+            "sol ring"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "Colorless",
+              "Fixed",
+              "Mana",
+              "Tap"
+            ]
+          },
+          "boundedEvidence": [
+            "DECK-001: empty-hand-mana-ability"
+          ],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Mana ability through the interaction interface",
+            "Manual/automatic payment and tap-state preservation",
+            "Mana-only priority capability"
+          ]
+        },
+        {
+          "name": "Swiftfoot Boots",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "bdc4fedcb78829a3d7256c349a728cad3637f0f4937eef4c2b0f1abd079a7489",
+          "normalizedMappingCandidates": [
+            "swiftfoot boots"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 1,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "AddKeyword",
+              "AsSorcery",
+              "Attach",
+              "Cost",
+              "Equip",
+              "EquippedBy",
+              "Mana",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Equip target and sorcery timing",
+            "Attachment legality, hexproof and haste",
+            "Reattachment without losing object identity"
+          ]
+        },
+        {
+          "name": "Rogue's Passage",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Tranquil Thicket",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Obtain and review the exact current card definition before specifying executable decision fixtures."
+          ]
+        },
+        {
+          "name": "Forest",
+          "qty": 32,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "0d0b0886c4ecdb66346a8b4275e29f2f322b46a3ae320a1b9552c568e95ecc88",
+          "normalizedMappingCandidates": [
+            "forest"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": true,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "Fixed",
+              "Mana",
+              "Tap"
+            ]
+          },
+          "boundedEvidence": [
+            "Existing starter fixtures; no independent full-card certificate"
+          ],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Land allowance and legal play timing",
+            "Mana activation and payment"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deck-001:calling-all-angels",
+      "name": "Calling All Angels",
+      "commander": "Giada, Font of Hope",
+      "fixtureSha256": "2f727450068e6ef31fcb112aaa0782789e19ae12aeeead774d904675a21243e3",
+      "exactListSha256": "4422d942c13600e0155eba6314be4df6a290d463fffa4e058331c6fede24e706",
+      "totalCards": 100,
+      "uniqueNames": 69,
+      "counts": {
+        "missing": 44,
+        "present": 25,
+        "presentWithWarnings": 0,
+        "missingWithMappingCandidate": 0,
+        "explicitUnimplemented": 0
+      },
+      "rows": [
+        {
+          "name": "Giada, Font of Hope",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "f9b9b08ac18e00ddfc62dab241c0f8a5398c7058605c6e4ffb4a871583e6008c",
+          "normalizedMappingCandidates": [
+            "giada, font of hope"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 1,
+            "keywords": [
+              "Flying",
+              "Vigilance"
+            ],
+            "operationTags": [
+              "Activated",
+              "Another",
+              "Fixed",
+              "Mana",
+              "Mandatory",
+              "ObjectCount",
+              "PutCounter",
+              "Ref",
+              "SelfRef",
+              "Spell",
+              "Tap",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [
+            "DECK-001: Angel payment and forbidden artifact payment"
+          ],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Always Watching",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Angel of the Ruins",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "368a91dc6a34f196b8faa41ad501cd84c37d0100ee1e39c4475c97ef099aa85c",
+          "normalizedMappingCandidates": [
+            "angel of the ruins"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 1,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [
+              "Flying",
+              {
+                "Typecycling": {
+                  "cost": {
+                    "type": "Cost",
+                    "shards": [],
+                    "generic": 2
+                  },
+                  "subtype": "Plains"
+                }
+              }
+            ],
+            "operationTags": [
+              "Activated",
+              "Any",
+              "ChangeZone",
+              "Composite",
+              "Controller",
+              "Cost",
+              "Cycling",
+              "Discard",
+              "Fixed",
+              "Mana",
+              "Or",
+              "SearchLibrary",
+              "SelfRef",
+              "Shuffle",
+              "Spell",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Angelic Destiny",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "8c7aee93913c998eb13c781d2872ef1248138c6fb90a81def4cd63c013d6f122",
+          "normalizedMappingCandidates": [
+            "angelic destiny"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 1,
+            "staticCount": 1,
+            "replacementCount": 0,
+            "keywords": [
+              {
+                "Enchant": {
+                  "type": "Typed",
+                  "type_filters": [
+                    "Creature"
+                  ],
+                  "controller": null,
+                  "properties": []
+                }
+              }
+            ],
+            "operationTags": [
+              "AddKeyword",
+              "AddPower",
+              "AddSubtype",
+              "AddToughness",
+              "AttachedTo",
+              "Bounce",
+              "EnchantedBy",
+              "SelfRef",
+              "Spell",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Angelic Field Marshal",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "dd8300fd2dc64888db70314655be42d037a505b02af003c3365be8d2bbe4921c",
+          "normalizedMappingCandidates": [
+            "angelic field marshal"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 0,
+            "staticCount": 2,
+            "replacementCount": 0,
+            "keywords": [
+              "Flying"
+            ],
+            "operationTags": [
+              "AddKeyword",
+              "AddPower",
+              "AddToughness",
+              "ControlsCommander",
+              "SelfRef",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Angelic Sleuth",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Archangel of Tithes",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "90a45983d2f63095f1cb342acdea6df1e51964cbd7e92c701f142d05153aab5d",
+          "normalizedMappingCandidates": [
+            "archangel of tithes"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 0,
+            "staticCount": 2,
+            "replacementCount": 0,
+            "keywords": [
+              "Flying"
+            ],
+            "operationTags": [
+              "And",
+              "Cost",
+              "Not",
+              "PerAffectedCreature",
+              "SourceIsAttacking",
+              "SourceIsTapped",
+              "Typed",
+              "UnlessPay"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Austere Command",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Bishop of Wings",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Cleansing Nova",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Court of Grace",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Day of Judgment",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Emeria Shepherd",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "cba4929c67feab6fe4f1de915b94a928fd5d175e32c84fc857b112b07ae0d17e",
+          "normalizedMappingCandidates": [
+            "emeria shepherd"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 1,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [
+              "Flying"
+            ],
+            "operationTags": [
+              "ChangeZone",
+              "ConditionInstead",
+              "InZone",
+              "ParentTarget",
+              "Spell",
+              "Typed",
+              "ZoneChangeObjectMatchesFilter"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Exemplar of Light",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "fe9bc41ee925d7e5906b6f9bdd6b56c1f7dc7ac5ada186dd1ab56833c40ab87d",
+          "normalizedMappingCandidates": [
+            "exemplar of light"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 2,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [
+              "Flying"
+            ],
+            "operationTags": [
+              "Controller",
+              "Draw",
+              "Fixed",
+              "OncePerTurn",
+              "PutCounter",
+              "SelfRef",
+              "Spell"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Fateful Absence",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "6bf8f5725437b310147136b894fc33ce0d24b3797c89afe01a352c045e112c82",
+          "normalizedMappingCandidates": [
+            "fateful absence"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Destroy",
+              "Investigate",
+              "Or",
+              "ParentObjectTargetController",
+              "Spell",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Firemane Commando",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "32a38670a42e81b4de61cd13b6b4b9ad825d9fe2d4aaaa8692f2c3ea135ebfc3",
+          "normalizedMappingCandidates": [
+            "firemane commando"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 2,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [
+              "Flying"
+            ],
+            "operationTags": [
+              "And",
+              "AttackTarget",
+              "AttackersDeclaredCount",
+              "Controller",
+              "Draw",
+              "EventTime",
+              "Fixed",
+              "Spell",
+              "TriggeringPlayer",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Grasp of Fate",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "f14ca003566016450d8a6dd664c65e17530cdbe3187907f3d5bf90bbcdfa4fb4",
+          "normalizedMappingCandidates": [
+            "grasp of fate"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 1,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "ChangeZone",
+              "Opponent",
+              "Player",
+              "PlayerCount",
+              "Ref",
+              "SelfRef",
+              "Spell",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Herald of Eternal Dawn",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Herald of War",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Linvala, the Preserver",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Lyra Dawnbringer",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Merchant of Truth",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Metropolis Reformer",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Norn's Choirmaster",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Reya Dawnbringer",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Righteous Valkyrie",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "86c0a505ca5fbf4828e389f533ae70713c2d1bd965767d2ba698945eba0f594c",
+          "normalizedMappingCandidates": [
+            "righteous valkyrie"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 1,
+            "staticCount": 1,
+            "replacementCount": 0,
+            "keywords": [
+              "Flying"
+            ],
+            "operationTags": [
+              "AddPower",
+              "AddToughness",
+              "Another",
+              "Demonstrative",
+              "Fixed",
+              "GainLife",
+              "LifeAboveStarting",
+              "Or",
+              "QuantityComparison",
+              "Ref",
+              "Spell",
+              "Toughness",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [
+            "DECK-001: enters with Giada counter; own life-gain/lord abilities not tested"
+          ],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Search the Premises",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Sephara, Sky's Blade",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Seraph of the Sword",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Serra Avenger",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Speaker of the Heavens",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Sunblast Angel",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Wojek Investigator",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "4d6639ec2eb5c294cd27e34ef2cc21990ab567934021b83eb7ba95f511d2cf28",
+          "normalizedMappingCandidates": [
+            "wojek investigator"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 1,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [
+              "Flying",
+              "Vigilance"
+            ],
+            "operationTags": [
+              "Controller",
+              "HandSize",
+              "Investigate",
+              "OnlyDuringYourTurn",
+              "Opponent",
+              "PlayerAttribute",
+              "PlayerCount",
+              "Ref",
+              "ScopedPlayer",
+              "Spell"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Endless Atlas",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Metallic Mimic",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "c28c9f8153fcbdb1342cf295d40071109c41e0f70da1755744a021437b5ff77d",
+          "normalizedMappingCandidates": [
+            "metallic mimic"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 0,
+            "staticCount": 1,
+            "replacementCount": 2,
+            "keywords": [],
+            "operationTags": [
+              "AddChosenSubtype",
+              "Another",
+              "Choose",
+              "CreatureType",
+              "Fixed",
+              "IsChosenCreatureType",
+              "Mandatory",
+              "PutCounter",
+              "SelfRef",
+              "Spell",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Tome of Legends",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "b9f9306116922d83fff3dfde39524fa6bc666e91419136f067c38b8f7ca74d23",
+          "normalizedMappingCandidates": [
+            "tome of legends"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 1,
+            "staticCount": 0,
+            "replacementCount": 1,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "Composite",
+              "Controller",
+              "Cost",
+              "Draw",
+              "Fixed",
+              "IsCommander",
+              "Mana",
+              "Mandatory",
+              "OfType",
+              "Owned",
+              "PutCounter",
+              "RemoveCounter",
+              "SelfRef",
+              "Spell",
+              "Tap",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Vanquisher's Banner",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "6f5a3d204fbd431d5b26cbe0c0442858036fc7b384094bb67d084a48bd162ee5",
+          "normalizedMappingCandidates": [
+            "vanquisher's banner"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 0,
+            "triggerCount": 1,
+            "staticCount": 1,
+            "replacementCount": 1,
+            "keywords": [],
+            "operationTags": [
+              "AddPower",
+              "AddToughness",
+              "Choose",
+              "Controller",
+              "Draw",
+              "Fixed",
+              "IsChosenCreatureType",
+              "Mandatory",
+              "SelfRef",
+              "Spell",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Bonders' Enclave",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "War Room",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Angel of Finality",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Angel of Vitality",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Cut a Deal",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "5b47cef0d7ed81e6a888f7a0eee4482bbba6de1d5b4c3cb16c95c30efd1af600",
+          "normalizedMappingCandidates": [
+            "cut a deal"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Controller",
+              "Draw",
+              "Fixed",
+              "Opponent",
+              "PerformedActionThisWay",
+              "PlayerCount",
+              "Ref",
+              "Spell"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Dazzling Angel",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Defy Death",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Destroy Evil",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Exorcise",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Inspiring Overseer",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Invoke the Divine",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Secret Rendezvous",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "8a457b2b6b8c16c63b1fdf1221f0a6c621f842251bbf0af3a84cd89dd86b05d8",
+          "normalizedMappingCandidates": [
+            "secret rendezvous"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "AnyOf",
+              "Controller",
+              "Draw",
+              "Fixed",
+              "ScopedPlayer",
+              "Spell",
+              "TargetOnly",
+              "TargetPlayer",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Segovian Angel",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Starnheim Aspirant",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Swords to Plowshares",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "07e94133bb38958d3b4aa36e0594971034c26dcd00cd7b225cc02c035d8ff841",
+          "normalizedMappingCandidates": [
+            "swords to plowshares",
+            "swords to plowshares [e6c41473-2398-4888-9f0c-467dce7c39a4]"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "ChangeZone",
+              "GainLife",
+              "ParentTargetController",
+              "Power",
+              "Ref",
+              "Spell",
+              "Target",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Thraben Watcher",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Valorous Stance",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Vanguard Seraph",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Youthful Valkyrie",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Arcane Signet",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "979ae0940bba8460bbbafdbf75b3c91cb72c728e6423cb47b132760484f3b767",
+          "normalizedMappingCandidates": [
+            "arcane signet"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "AnyInCommandersColorIdentity",
+              "Fixed",
+              "Mana",
+              "Tap"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Commander's Sphere",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Heraldic Banner",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "d90e769ee19d3f73563d08a4ad1e30c99ba827b34821742f05d93313942adfa4",
+          "normalizedMappingCandidates": [
+            "heraldic banner"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 1,
+            "replacementCount": 1,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "AddPower",
+              "AddToughness",
+              "Choose",
+              "ChosenColor",
+              "Fixed",
+              "IsChosenColor",
+              "Mana",
+              "Mandatory",
+              "SelfRef",
+              "Spell",
+              "Tap",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Marble Diamond",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Mind Stone",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "1963127c4d5c0a22b25fad7179254f9b3ee2456a874a66c37872bfb0ae1e3127",
+          "normalizedMappingCandidates": [
+            "mind stone"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 2,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "Colorless",
+              "Composite",
+              "Controller",
+              "Cost",
+              "Draw",
+              "Fixed",
+              "Mana",
+              "Sacrifice",
+              "SelfRef",
+              "Tap"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Patchwork Banner",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Sol Ring",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "d9397f3cd813cec7061af694a4618b175817184bceb7c0a123c70aad21edd2a2",
+          "normalizedMappingCandidates": [
+            "sol ring"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "Colorless",
+              "Fixed",
+              "Mana",
+              "Tap"
+            ]
+          },
+          "boundedEvidence": [
+            "DECK-001: empty-hand-mana-ability"
+          ],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Swiftfoot Boots",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "bdc4fedcb78829a3d7256c349a728cad3637f0f4937eef4c2b0f1abd079a7489",
+          "normalizedMappingCandidates": [
+            "swiftfoot boots"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 1,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "AddKeyword",
+              "AsSorcery",
+              "Attach",
+              "Cost",
+              "Equip",
+              "EquippedBy",
+              "Mana",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Radiant Fountain",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Secluded Steppe",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Seraph Sanctuary",
+          "qty": 1,
+          "compiledDefinition": "MISSING",
+          "recordSha256": null,
+          "normalizedMappingCandidates": [],
+          "remediation": "ADD_EXECUTABLE_CARD_DATA_THEN_VALIDATE",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": null,
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Temple of the False God",
+          "qty": 1,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "1a021ee3d9f71f4d88fd9e7dfa2484e8ab092bf82272425c8e393de21fb00daf",
+          "normalizedMappingCandidates": [
+            "temple of the false god"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": false,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "Colorless",
+              "Fixed",
+              "InZone",
+              "Mana",
+              "ObjectCount",
+              "QuantityComparison",
+              "Ref",
+              "RequiresCondition",
+              "Tap",
+              "Typed"
+            ]
+          },
+          "boundedEvidence": [],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        },
+        {
+          "name": "Plains",
+          "qty": 32,
+          "compiledDefinition": "PRESENT",
+          "recordSha256": "2f8ef2cfe3a6482d92aba0172a96ae26c6a9b508e3c05ce93fbe4ada985cab60",
+          "normalizedMappingCandidates": [
+            "plains"
+          ],
+          "remediation": "VALIDATE_EXISTING_DEFINITION",
+          "additionalEngineChange": "NOT TESTED",
+          "mappingChangeProvenRequired": false,
+          "admittedByExistingCoverage": true,
+          "explicitUnimplementedPaths": [],
+          "parseWarnings": [],
+          "executableShape": {
+            "abilityCount": 1,
+            "triggerCount": 0,
+            "staticCount": 0,
+            "replacementCount": 0,
+            "keywords": [],
+            "operationTags": [
+              "Activated",
+              "Fixed",
+              "Mana",
+              "Tap"
+            ]
+          },
+          "boundedEvidence": [
+            "Existing coverage list and bounded payment fixtures"
+          ],
+          "fullCardHumanDecisions": "NOT TESTED",
+          "fullCardCpuDecisions": "NOT TESTED",
+          "nextDecisionFixtures": [
+            "Deferred behind the selected complete-deck milestone; retain exact card and existing definition inventory."
+          ]
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Inventory and dependency triage, not new execution passes.",
+    "Missing exact records require an executable-data addition or verified mapping first; whether parser/engine work is additionally needed remains NOT TESTED.",
+    "Normalized-name matches are search hints, never automatic substitutions.",
+    "Present records, parser warnings and absent warnings do not prove human/CPU completion.",
+    "No list changes, runtime changes, coverage admission, browser match, history or recovery implementation."
+  ],
+  "consistencyChecks": {
+    "status": "PASS",
+    "exactDeckFilesUnmodified": true,
+    "totalRows": 138,
+    "selectedPresentCardsWithNamedDecisionFixtures": 25,
+    "coveragePromotion": false
+  },
+  "sourceSha256": "64a37afa67cf0a772d6de72fa77da250401bcb3fd784f26060477eb73b6c192f"
+}
