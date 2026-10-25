@@ -1,0 +1,3 @@
+// Execution evidence only, not an exhaustive rules/legality catalog. Growing
+// this list requires an executed fixture and controls for its required choices.
+export const PRACTICE_COVERAGE={coverageVersion:'delivered-mechanics-and-standard-starter-v2',testedCardNames:['Forest','Plains','Island','Swamp','Mountain','Grizzly Bears','Savannah Lions','Lightning Bolt','Counterspell','Raise the Alarm','Parallel Lives','Basalt Monolith','Power Artifact','Ninja of the Deep Hours','Moon-Circuit Hacker','Ornithopter','Satoru Umezawa','Head Games','Llanowar Elves','Bear Cub','Ordinary Bear','Ghalta, Primal Hunger','Lashwhip Predator','Tarmogoyf','Tapestry Warden','Virulent Emissary','Scarecrow Guide']};

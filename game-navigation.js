@@ -1,7 +1,7 @@
 // Game changes transfer semantic sections, never resource identities or provider filters.
 export const GAME_ROUTES = ['mtg', 'ygo', 'ptcg'];
 export const LEGACY_ROUTES = {catalog:'search',builder:'deck',discover:'decks/ideas',library:'decks/inspiration',wishlist:'collection/wishlist',compare:'search',playtest:'deck/active/playtest',guides:'deck/active/engine',sources:'settings'};
-const views = new Set(['community','home','search','collection','decks','deck','tdeck','sets','set','shared','scan','rules','settings','wiki']);
+const views = new Set(['community','home','search','collection','decks','deck','tdeck','sets','set','shared','scan','rules','settings','wiki','play']);
 export function routeSegments(hash = '#home') {
   const raw = String(hash).replace(/^.*?#/, '') || 'home';
   let parts;
@@ -22,6 +22,7 @@ export function gameSwitchRoute(source, target) {
   if (section === 'set') section = 'sets';
   if (section === 'deck' || section === 'tdeck') { section = 'decks'; semanticTab = 'mine'; }
   if (section === 'shared') { section = 'decks'; semanticTab = 'inspiration'; }
+  if (section === 'play' && target !== 'mtg') section = 'home';
   let wanted = false;
   if (section === 'collection') {
     semanticTab ||= tab || source.collectionTab || 'cards';

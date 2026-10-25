@@ -11,6 +11,16 @@ import {loadMtgBooster,mtgBoosterCards} from './mtg-boosters.js';
 // Booster pack photos trim to the pack itself wherever they appear.
 document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]'))trimPackArt(e.target);},true);
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
+import {syncDesktopPlayEntries} from './desktop-play.js';
+import {createPlaySetup} from './play-setup.js';
+import {parsePlayDeckImport} from './play-deck-import.js';
+import {playMenuMarkup} from './play-menu.js';
+import {createPracticeOpponentBuilder} from './play-opponent-build.js';
+import {createPlayerMat} from './play-player-mat.js';
+import {createPracticeCardPreparation} from './play-card-preparation.js';
+import {createPracticeCatalogReview} from './play-catalog-review.js';
+import {selectPracticeStarter} from './play-starter-deck.js';
+import {mountPracticePregame} from './play-pregame.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -76,7 +86,7 @@ import { createScannerLookup } from "./scanner-lookup.js";
 import {SheetHistory,BROWSE_TYPES,sheetKey} from "./sheet-history.js";
 import {handleArtworkError} from "./artwork.js";
 import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,rememberDetailViewport,restoreDetailViewport,detailTabKey,createDetailJump,conditionBuyLink} from "./pricing-presentation.js";
-import {syncDeckViewers} from './deck-viewer.js';
+import {syncDeckViewers,deckViewer} from './deck-viewer.js';
 import {modeFor,registerWorkbench,quoteModel,recordQuote} from "./workbench-ui.js";
 import { locationPicker, rememberLocation, chooseLocation } from "./collection-locations.js";
 import { captureAuthFields, restoreAuthFields, authFeedback, togglePassword } from "./auth-form.js";
@@ -390,12 +400,13 @@ async function resolve(name, fuzzy = false, refresh = false) {
   return cacheCard(d, [name]);
 }
 
-async function resolveNames(names, progress = () => {}, refresh = false) {
+async function resolveNames(names, progress = () => {}, refresh = false, current = () => true) {
   const wanted = [...new Map(names.filter(Boolean).map((n) => [key(n), n])).values()].filter((n) => refresh || !meta(n)),
     failed = [],
     matched = new Map(),
     retried = new Set();
   for (let i = 0; i < wanted.length; i += 75) {
+    if(!current())return {failed,matched,total:wanted.length,cancelled:true};
     const chunk = wanted.slice(i, i + 75);
     progress(`Loading card data ${Math.min(i + 75, wanted.length)}/${wanted.length}…`);
     try {
@@ -404,6 +415,7 @@ async function resolveNames(names, progress = () => {}, refresh = false) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifiers: chunk.map((name) => ({ name: name.split(" // ")[0] })) }),
       });
+      if(!current())return {failed,matched,total:wanted.length,cancelled:true};
       for (const c of r.data || []) {
         const aliases = chunk.filter((n) => key(n) === key(c.name) || key(n.split(" // ")[0]) === key(c.name.split(" // ")[0]) || c.card_faces?.some((f) => key(f.name) === key(n)));
         cacheCard(c, aliases);
@@ -411,11 +423,13 @@ async function resolveNames(names, progress = () => {}, refresh = false) {
       }
       for (const n of chunk) if (!matched.has(key(n))) failed.push(n);
     } catch (e) {
+      if(!current())return {failed,matched,total:wanted.length,cancelled:true};
       // A batch the database couldn't be reached for gets one more pass after a cooldown.
       if (e?.network && !retried.has(i)) { retried.add(i); progress("The card database is busy; trying again…"); await new Promise((r) => setTimeout(r, 4000)); i -= 75; continue; }
       failed.push(...chunk);
     }
   }
+  if(!current())return {failed,matched,total:wanted.length,cancelled:true};
   saveCatalogSoon();
   return { failed, matched, total: wanted.length };
 }
@@ -915,7 +929,7 @@ const fileSafe = (s) => String(s).replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g,
    Routing
    ========================================================= */
 
-const VIEWS = ["community", "home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared", "tdeck", "rules", "wiki"];
+const VIEWS = ["community", "home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared", "tdeck", "rules", "wiki", "play"];
 
 function parseHash() {
   const segments = routeSegments(location.hash);
@@ -1036,6 +1050,7 @@ function render() {
   document.body.dataset.game = g;
   document.body.style?.setProperty("--game-color", GAME_COLOR[g]);
   syncGameTabs($("#gameTabs"), g);
+  syncDesktopPlayEntries(g);
   // Opening a set shows a small logo loading card until its cards (and Pokémon card details) are in.
   {const U=g==="mtg"?ui.set:T.ui(g).set,waiting=ui.view==="set"&&!U.error&&!U.candidates?.length&&(U.busy||U.detailsBusy||!U.loaded||(g==="ptcg"&&U.loaded&&U.detailsTried!==U.generation+":"+U.id&&U.cards?.some(c=>(T.cardOf(g,c.id)||c).brief)));syncDataLoading(!!waiting);}
   refreshProfileAvatar();
@@ -1043,7 +1058,7 @@ function render() {
   content?.setAttribute?.("aria-labelledby", `game-tab-${g}`);
   const views = {
     community:()=>community.page(), home: V.home, search: V.search, wiki:()=>V.wikiPage(currentWikiPage()?.state), collection: V.collection, decks: V.decks,
-    deck: V.deckPage, scan: () => scanView("mtg", "Magic"), settings: V.settings, sets: V.setsPage, set: V.setPage, shared: V.sharedPage,
+    deck: V.deckPage, play: renderPlayPage, scan: () => scanView("mtg", "Magic"), settings: V.settings, sets: V.setsPage, set: V.setPage, shared: V.sharedPage,
   };
   // Yu-Gi-Oh! and Pokémon share their own screens; Magic keeps its full set.
   const tcgViews = {
@@ -1368,6 +1383,11 @@ function switchGame(game) {
   return navigate({...target,mode:game===source?'replace':'push'});
 }
 function applyHistory() {
+  if(playerMatHost?.snapshot()?.phase==='playing'){
+    const hash=normalizeRoute(location.hash),entry=historyEntry(history.state,hash);
+    if(entry?.entryId!==activeEntry?.entryId||hash!==activeEntry?.route){restoreActiveHistory({mode:entry?'pop':'legacy',entry});playerMatHost.requestExit();}
+    return;
+  }
   if(askNavigation?.historyChanged())return;
   if(settingsPopup.historyChanged())return;
   if(!navigationReady)return;
@@ -1394,6 +1414,9 @@ const topDialog=()=>[...document.querySelectorAll('dialog[open]')].sort((a,b)=>(
 const parentRoute=hash=>/^#wiki\//.test(hash)?'#wiki':/^#(?:t?set)\//.test(hash)?'#sets':/^#(?:t?deck)\//.test(hash)?'#decks':/^#collection\/./.test(hash)?'#collection':'#home';
 let backBusy=0;
 function appBack(){
+  const matchPhase=playerMatHost?.snapshot()?.phase;
+  if(matchPhase==='playing'){playerMatHost.requestExit();return true;}
+  if(matchPhase==='finished'){closePlayerMat();return true;}
   // A second Back while the first is still settling (a fast double swipe) does nothing rather than skipping a level.
   if(Date.now()-backBusy<250)return true;backBusy=Date.now();
   if(askNavigation?.busy)return true;
@@ -1434,6 +1457,7 @@ createWikiDeckHandoff({A,article:()=>currentWikiPage()?.state.response,game:T.ga
  importDeck:snapshot=>{deckImportSheet({text:snapshot.text,name:snapshot.title,format:snapshot.format||'60-card casual',commander:snapshot.commander,destination:'new',url:snapshot.source.url,kind:'Community deck',description:`Source decklist from ${snapshot.source.name}: ${snapshot.source.title}.`});if(!snapshot.format){const field=$('#dImpFormat'),choice=document.createElement('option'),preview=$('#dImpPreviewBtn');choice.value='';choice.textContent='Choose a format';choice.disabled=true;choice.selected=true;field.prepend(choice);field.value='';preview.disabled=true;$('#dImpCommanderRow').style.display='none';field.addEventListener('change',()=>{preview.disabled=!field.value;});}}
 });
 const deckPipeline=createDeckPipeline({S,T,api,resolve,cacheCard,meta,priceOf,inv,tcgCtx});
+const randomBuildSeed=async request=>{if(request.game!=='mtg')return deckPipeline.resolveSeed(request);const f=formatOf(request.format),theme=String(request.theme||'').replace(/[^\p{L}\p{N} '-]/gu,'').slice(0,80);return cacheCard(await api('/cards/random?'+new URLSearchParams({q:`${f.legality?'f:'+f.legality:'game:paper'} -t:land ${f.commander?'is:commander':''} ${theme?`(t:"${theme}" or o:"${theme}")`:''}`})));};
 const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game:T.game,
  identity:()=>{const account=accountGeneration;return ()=>!accountLocked&&account===accountGeneration;},
  coachHooks:(result,deck)=>result.request.game==='mtg'?V.mtgCoachHooks(deck,result.power):T.tcgCoachHooks(result.request.game,deck,T.SOURCES[result.request.game].formats.find(f=>f.id===result.request.format),result.power),
@@ -1441,7 +1465,7 @@ const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game
  root:()=>$('#sheetBody'),isOpen:()=>$('#sheet').open&&S.ui.sheetCtx?.type==='deck-flow',
  paint:html=>{$('#sheetBody').innerHTML=html;wireSheetBack();},open:(html,request)=>openSheet(html,{type:'deck-flow',request}),
  onInput:fn=>document.addEventListener('input',e=>{if(e.target.matches('[data-flow-field]'))fn(e);}),
- random:async request=>{if(request.game!=='mtg')return deckPipeline.resolveSeed(request);const f=formatOf(request.format),theme=String(request.theme||'').replace(/[^\p{L}\p{N} '-]/gu,'').slice(0,80);return cacheCard(await api('/cards/random?'+new URLSearchParams({q:`${f.legality?'f:'+f.legality:'game:paper'} -t:land ${f.commander?'is:commander':''} ${theme?`(t:"${theme}" or o:"${theme}")`:''}`})));},
+ random:randomBuildSeed,
  save:async(result,current)=>{const write=scopedCommit(),r=result.request,id=uid(),name=(r.seedCard?.name||result.deck.buildAround||'My deck')+' · '+r.formatName;
   if(!current())throw Error('Your workspace changed. Rebuild this deck.');
   const d=r.game==='mtg'?withSnapshot({...structuredClone(result.deck),id,name,budget:r.budget,versions:[]},'Generated'):{...structuredClone(result.deck),id,name,format:r.format,createdAt:new Date().toISOString()};
@@ -1456,6 +1480,83 @@ A.aiDeckReview = t => showAiReview(t.dataset.ai, render);
 const C = {}; // change handlers
 C.chooseLocation = t => chooseLocation(t);
 const I = {}; // input handlers
+// Branch beta setup uses the real account workspace and shared deck renderers.
+// It does not start a manual/cosmetic game or adopt the candidate rules engine.
+const readPlayAccount=()=>{const a=cloudInfo();return {user:a.user?{id:a.user.id}:null,profile:a.profile,art:{avatar:a.art?.avatar||S.state.settings.cardAvatar||null},switching:a.switching,locked:accountLocked,accountGeneration};};
+const playSetup = createPlaySetup({
+  readAccount:readPlayAccount,
+  readDecks:()=>S.state.decks,
+  parseImport:text=>parsePlayDeckImport(text,{parseDeckImport}),
+  resolveNames:async names=>{const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;await resolveNames(names,()=>{},false,current);return {failed:current()?names.filter(name=>!meta(name)):[]};}
+});
+const practiceOpponentBuilder=createPracticeOpponentBuilder({pipeline:deckPipeline,pickSeed:randomBuildSeed,
+ readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked,playSetup.snapshot().match.format],
+ onSelect:deck=>playSetup.chooseOpponent(deck),onChange:()=>refreshPlayMenu()});
+A.playRandomOpponent=async()=>{const state=playSetup.snapshot();if(!state.profile.signedIn||state.match.mode!=='cpu')return;const root=document.querySelector('.play-menu'),targetBracket=root?.querySelector('[data-opponent-bracket]')?.value||null,deckStyle=root?.querySelector('[data-opponent-style]')?.value||'classic';await practiceOpponentBuilder.build({format:state.match.format,targetBracket,deckStyle});};
+A.playCancelOpponentBuild=()=>practiceOpponentBuilder.cancel();
+A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profile.signedIn||state.match.mode!=='cpu'||!state.selected)return;try{playSetup.chooseOpponent(state.selected);refreshPlayMenu();}catch(e){toast(e.message);}};
+A.playStarter=async()=>{if(!playSetup.snapshot().profile.signedIn)return;try{await selectPracticeStarter(playSetup);refreshPlayMenu();}catch(e){toast(e.message);}};
+// Product activation stays gated until the real-deck/pregame/difficulty gates
+// pass. The account/table lifecycle below is testable independently of activation.
+const PLAY_MATCH_RELEASE_READY=true;
+let playerMatHost=null,playerMatRoot=null,practicePregame=null;
+function closePlayerMat(){practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;}
+A.playStartCandidate=async()=>{
+ if(!PLAY_MATCH_RELEASE_READY)return toast('Practice integration is still being verified.');
+ if(playerMatHost||practicePregame||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
+ const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
+ if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
+ playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
+ practicePregame=mountPracticePregame({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),onCancel:closePlayerMat,onConfirm:async options=>{
+  practicePregame?.destroy();practicePregame=null;
+  const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
+  const cards=createPracticeCardPreparation({selectionKey:key,isCurrent:current,
+   resolveNames:names=>resolveNames(names,()=>{},false,current),
+   lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),
+   fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+  playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:cards.prepare,reviewDecks:createPracticeCatalogReview({isCurrent:current,lookupNames:identifiers=>api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers})})}),lookup:cards.lookup,onClose:closePlayerMat});
+  try{await playerMatHost.start(options);}catch(e){toast(e.message);}
+ }});
+};
+function playDeckPreview(deck) {
+  if(!deck||!Array.isArray(deck.cards)||!Array.isArray(deck.side||[])||(deck.format!==undefined&&typeof deck.format!=='string')||[...deck.cards,...(deck.side||[])].some(row=>!row||typeof row.name!=='string'||!Number.isSafeInteger(row.qty)||row.qty<1))return '<p class="note warn">This deck needs review in Decks before its cards can be displayed.</p>';
+  return deckViewer('mtg',V.deckList(deck,{readOnly:true,unfiltered:true,preserveExactList:true,cardAction:'playInspectCard'}));
+}
+function renderPlayPage() {
+  if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>CPU practice is being developed for Magic.</p></section>';
+  if(!syncDesktopPlayEntries('mtg').eligible)return '<section class="empty"><h1>Play</h1><p>The Play beta is available on desktop. Your saved decks remain available in Decks.</p></section>';
+  const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();
+  for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:state.selectedSource==='saved'&&state.selected?.id===deck.id}));}
+  const inspected=state.inspectedSeat==='opponent'?state.opponent:state.selected;
+  return playMenuMarkup(state,{matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected)});
+}
+const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
+  const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
+  const importOpen=document.getElementById('playImportDisclosure')?.open;
+  render();
+  for(const [key,top]of scrolls){const node=document.querySelector(`[data-play-scroll="${key}"]`);if(node)node.scrollTop=top;}
+  const disclosure=document.getElementById('playImportDisclosure');if(disclosure&&importOpen!==undefined)disclosure.open=importOpen;
+}};
+A.playSelectDeck=t=>{playSetup.selectDeck(t.dataset.playDeck);refreshPlayMenu();document.getElementById('playSelectedTitle')?.focus({preventScroll:true});};
+A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu();};
+A.playClearSelection=()=>{playSetup.clearSelection();refreshPlayMenu();};
+A.playConfigure=t=>{playSetup.configure({[t.dataset.playOption]:t.dataset.playValue});refreshPlayMenu();document.querySelector(`[data-act="playConfigure"][aria-pressed="true"]`)?.focus({preventScroll:true});};
+C.playMatchOption=t=>{const key=t.dataset.playOption,value=t.value;playSetup.configure({[key]:value});refreshPlayMenu();document.querySelector(`[data-play-option="${key}"]${key==='mode'?':checked':''}`)?.focus({preventScroll:true});};
+I.playDeckSearch=t=>{const start=t.selectionStart,end=t.selectionEnd;playSetup.searchDecks(t.value);refreshPlayMenu();const field=document.getElementById('playDeckSearch');field?.focus({preventScroll:true});try{field?.setSelectionRange(start,end);}catch{}};
+A.playInspectCard=t=>A.card({dataset:{name:t.dataset.name,readOnly:'true'}});
+I.playImportDraft=C.playImportDraft=t=>{
+  const before=playSetup.snapshot();
+  playSetup.updateDraft({[t.dataset.playField]:t.value});
+  // An edit retires the old preview immediately. Preserve this exact field,
+  // selection and scroll: all three fields intentionally share one handler.
+  if(before.importStatus!=='idle'||before.error){
+    const id=t.id,start=t.selectionStart,end=t.selectionEnd,scroll=t.scrollTop;
+    refreshPlayMenu();const again=document.getElementById(id);again?.focus({preventScroll:true});
+    try{again?.setSelectionRange(start,end);}catch{}if(again)again.scrollTop=scroll;
+  }
+};
+A.playImportPreview=async()=>{const pending=playSetup.importDraft();refreshPlayMenu();await pending;refreshPlayMenu();};
+A.playImportUse=()=>{const state=playSetup.reviewImport();refreshPlayMenu();if(!state.error)document.getElementById('playSelectedTitle')?.focus();};
 function restoreSheetHistory() { const saved=sheetTrail.pop(); if(saved)restoreSheet(saved); else closeSheet(false); }
 const printingPicker = createPrintingPicker({ A, C, I, openSheet, getContext:()=>S.ui.sheetCtx, getBody:()=>$("#sheetBody"), back:restoreSheetHistory });
 registerWorkbench({A,C,commit,render,openSheet,closeSheet,refreshSheet,toast,
@@ -6404,7 +6505,7 @@ async function boot() {
     accountChanged: () => {
       invalidateAiAuth();clearAiReviews();
       dismissConditionInfo();aiMatchups.reset();resetMatchups();matchupImport=null;
-      accountLocked=true;valueHistoryReady=false;accountGeneration++;workspaceVisitRevision++;lastUndo=null;
+      accountLocked=true;valueHistoryReady=false;accountGeneration++;workspaceVisitRevision++;lastUndo=null;closePlayerMat();
       community.reset();deckBoxTransitions.reset();clearConditionAttempts();conditionScheduler=createConditionRefreshScheduler();
       clearAskConversations();clearRulesConversations();rulesGuideOrigin=null;
       scanCtx.accountChanged?.();profilePicker.close(true);headerPicker.close(true);
@@ -6487,7 +6588,7 @@ async function boot() {
   window.addEventListener('storage',async event=>{
     if(event.key!=='cardstashy-workspace-changed'||accountLocked)return;
     if(!await accountWorkspaces.current()){
-      accountLocked=true;accountGeneration++;invalidateAiAuth();clearAiReviews();pauseLocalConflict();
+      accountLocked=true;accountGeneration++;closePlayerMat();invalidateAiAuth();clearAiReviews();pauseLocalConflict();
       for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
       render();
     }
@@ -6527,3 +6628,4 @@ A.checkRelease=async()=>{await checkRelease();settingsPopup.refresh();};
 document.addEventListener('toggle',e=>{if(e.target.matches?.('details[data-release-item]')&&e.target.open){acknowledgeRelease(e.target.dataset.releaseItem);e.target.querySelectorAll('.release-dot').forEach(n=>n.remove());}},true);
 onReleaseChange(()=>{refreshProfileAvatar();document.querySelectorAll('.release-dot,[data-release-unread]').forEach(n=>{if(!releaseState().unread)n.remove();});});
 void checkRelease();
+

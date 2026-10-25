@@ -31,15 +31,15 @@ try{
     state.decks=[];const empty=homeDeckShelf(game);assert.match(empty,/No saved decks yet/);assert.equal((empty.match(/data-home-personal-deck=/g)||[]).length,0);
   }
 }finally{S.state=old;globalThis.fetch=oldFetch;for(const g of GAME_IDS){delete heroState[g];if(originalHeroes[g])heroState[g]=originalHeroes[g];}}
-assert.doesNotMatch(readFileSync(new URL('./index.html',import.meta.url),'utf8'),/headerPlay|data-desktop-play-entry|headerPlayStatus/,'website release has no Play entry');
+assert.match(readFileSync(new URL('./index.html',import.meta.url),'utf8'),/id="headerPlay" data-desktop-play-entry="practice"[^>]*hidden disabled/,'Play starts hidden until conservative desktop admission');
 const pack=todayPackMarkup('mtg',{code:'fdn',name:'Foundations',set_type:'expansion',digital:false,released_at:'2024-11-15'});
 assert.match(pack,/homeTodayPack/,'collectible pack action remains');assert.doesNotMatch(pack,/today-draft|data-desktop-play-entry|todayDraftStatus/,'website release has no Draft placeholder');
 const desktop={ua:'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',platform:'Win32',anyFine:true,anyHover:true};
 assert.equal(playDeviceEligibility(desktop).eligible,true);
 assert.equal(playDeviceEligibility({...desktop,maxTouchPoints:10}).eligible,true,'touch laptop is not excluded for touch alone');
 for(const patch of [{native:true},{mobile:true},{ua:'Mozilla/5.0 (Linux; Android 17) AppleWebKit desktop mode'},{ua:'Mozilla/5.0 (iPad)'},{ua:'Mozilla/5.0 (Macintosh)',platform:'MacIntel',maxTouchPoints:5},{anyFine:false},{anyHover:false},{ua:'Unknown browser'}])assert.equal(playDeviceEligibility({...desktop,...patch}).eligible,false,JSON.stringify(patch));
-const nodes=[{dataset:{},hidden:true,disabled:false},{dataset:{},hidden:true,disabled:false}],root={querySelectorAll:()=>nodes},view={navigator:{userAgent:desktop.ua,platform:'Win32'},matchMedia:()=>({matches:true})};
-syncDesktopPlayEntries('mtg',root,view);for(const n of nodes){assert.equal(n.hidden,false);assert.equal(n.disabled,true);assert.equal(n.dataset.playReadiness,'development');}
+const nodes=[{dataset:{desktopPlayEntry:'practice'},hidden:true,disabled:false},{dataset:{desktopPlayEntry:'draft'},hidden:true,disabled:false}],root={querySelectorAll:()=>nodes},view={navigator:{userAgent:desktop.ua,platform:'Win32'},matchMedia:()=>({matches:true})};
+syncDesktopPlayEntries('mtg',root,view);for(const n of nodes){assert.equal(n.hidden,false);assert.equal(n.disabled,n.dataset.desktopPlayEntry!=='practice');assert.equal(n.dataset.playReadiness,'cpu-beta');}
 syncDesktopPlayEntries('ptcg',root,view);for(const n of nodes)assert.equal(n.hidden,true);
 syncDesktopPlayEntries('mtg',root,{...view,navigator:{userAgent:'Android',platform:'Linux'}});for(const n of nodes)assert.equal(n.hidden,true);
-console.log('PASS: one daily artwork; exact daily/value/deck/discovery order; bounded escaped personal shelf without state/provider changes; conservative desktop, touch-laptop, mobile/tablet/native/unknown admission; no published Play/Draft entries; future device admission remains isolated.');
+console.log('PASS: Home order and ownership stay unchanged; desktop-only Magic Practice entry is admitted; other games, phones/native and Draft stay unavailable.');

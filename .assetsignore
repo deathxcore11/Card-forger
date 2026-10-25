@@ -75,3 +75,41 @@ ai-matchup-route.js
 
 # Future game admission is not loaded by the website-only release.
 desktop-play.js
+
+# Only the reviewed browser Play modules and immutable runtime are public.
+!desktop-play.js
+!experiments/
+experiments/*
+!experiments/phase-engine/
+experiments/phase-engine/*
+!experiments/phase-engine/practice-session-record.mjs
+!experiments/phase-engine/turn-budget.mjs
+!experiments/phase-engine/card-placement.mjs
+!experiments/phase-engine/card-stats.mjs
+!experiments/phase-engine/random-outcomes.mjs
+!experiments/phase-engine/human-command.mjs
+!experiments/phase-engine/interaction-surface.mjs
+!experiments/phase-engine/match-authority.mjs
+!experiments/phase-engine/match-input.mjs
+!experiments/phase-engine/catalog-admission.mjs
+!experiments/phase-engine/match-session.mjs
+!experiments/phase-engine/match-table.mjs
+!experiments/phase-engine/practice-authority.mjs
+!experiments/phase-engine/practice-client.mjs
+!experiments/phase-engine/practice-coverage.mjs
+!experiments/phase-engine/practice-preflight.mjs
+!experiments/phase-engine/practice-flow.mjs
+!experiments/phase-engine/practice-presentation.mjs
+!experiments/phase-engine/practice-record.mjs
+!experiments/phase-engine/priority-clock.mjs
+!experiments/phase-engine/priority-scheduler.mjs
+!experiments/phase-engine/protocol-fault.mjs
+!experiments/phase-engine/runtime-assets.mjs
+!experiments/phase-engine/seat-surface.mjs
+!experiments/phase-engine/visible-cpu-policy.mjs
+!experiments/phase-engine/visible-policy-worker.mjs
+!experiments/phase-engine/worker-journal.mjs
+!experiments/phase-engine/match-table.css
+!experiments/phase-engine/runtime/
+experiments/phase-engine/runtime/*
+!experiments/phase-engine/runtime/a86578b23adcd26c/

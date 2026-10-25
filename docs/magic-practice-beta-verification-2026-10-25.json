@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "release": "4.0.0",
+  "baseReleaseCommit": "fe1d753749af2324bd875e32ca8af8f8dbfd2ac9",
+  "date": "2026-10-25",
+  "focusedTests": 322,
+  "mechanicsCases": 16,
+  "browser": "153.0.8010.0",
+  "fullMatch": {
+    "revision": 279,
+    "winner": 0,
+    "turn": 13,
+    "humanCommands": 137
+  },
+  "activationOverride": false,
+  "stubbedSharedModules": [],
+  "catalog": [
+    {
+      "name": "Forest",
+      "id": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+      "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+      "standard": "legal"
+    },
+    {
+      "name": "Llanowar Elves",
+      "id": "6a0b230b-d391-4998-a3f7-7b158a0ec2cd",
+      "oracleId": "68954295-54e3-4303-a6bc-fc4547a4e3a3",
+      "standard": "legal"
+    },
+    {
+      "name": "Bear Cub",
+      "id": "d8662ebb-068b-41d2-b504-4b5854e4d4aa",
+      "oracleId": "ed206651-3d9b-4546-8d45-0682817192fd",
+      "standard": "legal"
+    },
+    {
+      "name": "Ordinary Bear",
+      "id": "0feb9817-56e1-465a-851c-b2fe202aa8ae",
+      "oracleId": "89a2fab8-b074-42aa-a871-d9c5de2d0895",
+      "standard": "legal"
+    },
+    {
+      "name": "Ghalta, Primal Hunger",
+      "id": "6a9c39e4-a8cf-42dd-8d0e-45634b335546",
+      "oracleId": "b0b6be0c-41cf-4757-9f0e-87227b6ba6b3",
+      "standard": "legal"
+    },
+    {
+      "name": "Lashwhip Predator",
+      "id": "24553e98-29a9-47e3-91c7-9add708d9ad1",
+      "oracleId": "56035e66-e730-436d-8de2-4ded7fd1b51e",
+      "standard": "legal"
+    },
+    {
+      "name": "Tarmogoyf",
+      "id": "8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f",
+      "oracleId": "45900b2f-f6a9-4c42-9642-008f3c1cf6dd",
+      "standard": "legal"
+    },
+    {
+      "name": "Tapestry Warden",
+      "id": "7cbbab6c-43ae-4e50-97ce-532a3316591a",
+      "oracleId": "981138d0-bf61-406a-85be-68cc5e58796c",
+      "standard": "legal"
+    },
+    {
+      "name": "Virulent Emissary",
+      "id": "0702efed-915e-466a-96bb-ac09af06b21e",
+      "oracleId": "3d4bec90-7bbc-4385-a2b8-303c7a8d0a0f",
+      "standard": "legal"
+    },
+    {
+      "name": "Scarecrow Guide",
+      "id": "3dc08461-bec6-4a18-b782-da4c92abb789",
+      "oracleId": "cf7bb5d4-c33f-4879-a793-6d6f2a4d94be",
+      "standard": "legal"
+    }
+  ],
+  "catalogSource": "https://api.scryfall.com/cards/collection",
+  "catalogSha256": "670741c0bbbce9516913dc9a3202dcd962026dc58c0ada291f9f5722e8d04727",
+  "runtime": {
+    "schemaVersion": 1,
+    "buildIdentity": "cardstashy-ci-40153568000-1-ninjutsu-a49b8aa",
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "sourceDiffSha256": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+    "glueSha256": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "integrationFixtureGzipSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "receiptSha256": "9c9e378fd2247f0a860f8f0cf4f2086464d2bf181af24ce7c02bd61161e69af2",
+    "subsetSha256": "a2ccab25cb5cb2c68bf9a4b4b1f4889b4ddc564d1fd06f84205bbaacc18e7cee",
+    "loadedNames": [
+      "Forest",
+      "Llanowar Elves",
+      "Bear Cub",
+      "Ordinary Bear",
+      "Ghalta, Primal Hunger",
+      "Lashwhip Predator",
+      "Tarmogoyf",
+      "Tapestry Warden",
+      "Virulent Emissary",
+      "Scarecrow Guide",
+      "Air Elemental",
+      "Lightning Bolt"
+    ]
+  },
+  "damageBrowserChecks": [
+    "blank values require deliberate assignment",
+    "integer/range/total validation sends no command",
+    "clock-only render preserves input and focus",
+    "engine rejection keeps the decision available",
+    "corrected split is confirmed once despite double-click",
+    "accepted revision retires stale allocations",
+    "explicit zero target is omitted on the sparse wire"
+  ],
+  "reportHashes": {
+    "fullMatch": "5fddf2c44881061e07cb3df3b78458fda2176c671f1e5a4fa574ed1df916ef94",
+    "mechanics": "c5db6dac9ed574c7cf8248b4cc95921c0d141c08064749a95cfdf53a48cc02eb",
+    "damageBrowser": "af1da00b63aa4ebb23bc3f2351fb67134b82be714132a188fd4f5760782d4cf2"
+  },
+  "limits": "Real app start handler/resolver, setup/import, pregame, preparation, current catalog review, real shared artwork/foil/Power/wiki dependencies, production coverage, delivered engine and table. Account/deck backend and card API served from fixture account and captured current public responses; not an actual signed-in owner session or arbitrary-deck support. Match IndexedDB access forbidden.",
+  "deferred": [
+    "reliable save/resume",
+    "arbitrary card/deck support",
+    "graded CPU strengths",
+    "Friends",
+    "Draft",
+    "Android Play update"
+  ]
+}

@@ -31,6 +31,7 @@
 <link rel="stylesheet" href="home-overview.css">
 <link rel="stylesheet" href="deck-viewer.css">
 <title>CardStashy</title>
+<link rel="stylesheet" href="play-menu.css">
 </head>
 <body data-view="home">
 <div id="ambient" aria-hidden="true"><div class="amb-art"></div></div>
@@ -44,7 +45,9 @@
       <button data-act="go" data-to="#collection" data-nav="collection">Collection</button>
       <button data-act="go" data-to="#decks" data-nav="decks">Decks</button>
       <button data-act="go" data-to="#scan" data-nav="scan">Scan</button>
+      <button id="headerPlay" data-desktop-play-entry="practice" data-act="go" data-to="#play" data-nav="play" hidden disabled aria-describedby="headerPlayStatus">Play · Beta</button>
     </nav>
+    <span id="headerPlayStatus" class="home-sr-only">Magic CPU Practice beta. Start with the beta starter decks.</span>
     <button class="icon" data-act="menu" aria-label="Settings">⚙</button>
   </header>
   <main id="content" role="tabpanel" aria-labelledby="game-tab-mtg"><p class="muted center pad">Loading your cards…</p></main>
