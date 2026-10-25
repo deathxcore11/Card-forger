@@ -16,7 +16,7 @@ test('unknown cards cannot leak private type into a battlefield label',()=>{
 test('phase wording handles both main phases and preserves unfamiliar phases',()=>{
  assert.equal(matchPhaseLabel('PreCombatMain'),'First main phase');
  assert.equal(matchPhaseLabel('PostCombatMain'),'Second main phase');
- assert.equal(matchPhaseLabel('DeclareBlockers'),'Declare blockers');
+ assert.equal(matchPhaseLabel('DeclareBlockers'),'Combat · Blockers');
  assert.equal(matchPhaseLabel('CustomDecision'),'Custom Decision');
  assert.equal(matchPhaseLabel(null),'');
 });
@@ -33,7 +33,7 @@ test('required prompts, in-flight actions and terminal state keep honest labels'
  const surface={seat:0,activeSeat:0,awaitingHuman:true,decision:{kind:'MulliganDecision'}};
  assert.equal(matchActivity({status:{surface}}).label,'Opening hand');
  assert.equal(matchActivity({status:{surface},busy:true}).label,'Resolving your action…');
- surface.decision.kind='DeclareBlockers';assert.equal(matchActivity({status:{surface}}).label,'Declare blockers');
+ surface.decision.kind='DeclareBlockers';assert.equal(matchActivity({status:{surface}}).label,'Choose blockers');
  assert.equal(matchActivity({status:{surface},error:'RECOVERY_REQUIRED'}).label,'Match stopped');
  assert.equal(matchActivity({status:{surface,terminal:{winner:0}}}).label,'Match finished');
 });

@@ -5,6 +5,7 @@ import {capturePracticeDeckContext} from './play-deck-context.js';
 import {reviewPracticeSetup} from './experiments/phase-engine/practice-preflight.mjs';
 import {powerChip} from './power.js';
 import {brandMark} from './brand.js';
+import {profileAvatar} from './profile-art.js';
 const loadModules=async()=>{
  const [flow,table]=await Promise.all([import('./experiments/phase-engine/practice-flow.mjs'),import('./experiments/phase-engine/match-table.mjs')]);
  return {createPracticeFlow:flow.createPracticeFlow,mountMatchTable:table.mountMatchTable};
@@ -42,12 +43,20 @@ export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwor
   }return details;
  }
  let modules;
+ function deckArtUrl(deck){const cover=deck?.commander||deck?.cards?.[0]?.name,card=cover?lookup(cover):null;return card?.image_uris?.art_crop||card?.card_faces?.[0]?.image_uris?.art_crop||null;}
+ function matchBackdrop(){const box=node('div');for(const deck of [matchup?.selected,matchup?.opponent]){const url=deckArtUrl(deck);if(url){const img=node('img');img.src=url;img.alt='';box.append(img);}}return box.childNodes.length?box:null;}
+ function playerPortrait(own,profile){
+  const wrapper=node('span');
+  if(own)wrapper.innerHTML=profileAvatar(profile?.avatarArt,{display_name:profile?.displayName,username:profile?.username,avatar_url:profile?.avatarUrl});
+  else wrapper.textContent='CPU';
+  return wrapper;
+ }
  function receive(state,ticket){
   if(ticket!==generation)return;last=state;
   warnOnLeave(!!(sessionOnly&&state.phase==='playing'&&state.game?.status&&!state.game.status.terminal));
   if(sessionOnly&&state.phase==='session-ended')message('Practice session stopped',['The outcome could not be verified. Start a new match from Play.',sessionNote],true);
   else if(state.phase==='finished'&&state.game?.status?.terminal&&!reviewingResult)resultScreen(state,ticket);
-  else if(state.game){pendingPaint=state;if(frame===null)frame=view.requestAnimationFrame(()=>{frame=null;const paint=pendingPaint;pendingPaint=null;if(ticket!==generation||!paint)return;const session=flow?.getSession();if(!session)return;if(!table)table=modules.mountMatchTable(root,{session,profile:paint.binding?.profile,title:'CardStashy · Magic Practice · Beta',allowConcede:true,...practiceArtworkHooks(),onExit:()=>{if(last?.phase==='finished'&&!reviewingResult)return resultScreen(last,ticket);onClose();},renderMatchContext:()=>{const context=contextPanel(paint.binding);if(!sessionOnly)return context;const wrapper=node('section');wrapper.append(node('p',sessionNote));if(context)wrapper.append(context);return wrapper;}});table.render(paint.game);});}
+  else if(state.game){pendingPaint=state;if(frame===null)frame=view.requestAnimationFrame(()=>{frame=null;const paint=pendingPaint;pendingPaint=null;if(ticket!==generation||!paint)return;const session=flow?.getSession();if(!session)return;if(!table)table=modules.mountMatchTable(root,{session,profile:paint.binding?.profile,renderPlayerPortrait:own=>playerPortrait(own,paint.binding?.profile),renderPlayerBackdrop:own=>{const deck=own?matchup?.selected:matchup?.opponent,url=deckArtUrl(deck);if(!url)return null;const img=node('img');img.src=url;img.alt='';img.title=deck?.commander?'Commander art: '+deck.commander:'Deck artwork';return img;},format:matchup?.match?.format,renderMatchBackdrop:matchBackdrop,title:'CardStashy · Magic Practice · Beta',allowConcede:true,...practiceArtworkHooks(),onExit:()=>{if(last?.phase==='finished'&&!reviewingResult)return resultScreen(last,ticket);onClose();},renderMatchContext:()=>{const context=contextPanel(paint.binding);if(!sessionOnly)return context;const wrapper=node('section');wrapper.append(node('p',sessionNote));if(context)wrapper.append(context);return wrapper;}});table.render(paint.game);});}
   else if(state.phase==='unavailable'){
    const a=state.binding?.admission,notes=[];for(const [seat,label]of [['player','Your deck'],['opponent','CPU deck']]){const s=a?.seats?.[seat];if(s&&!s.admitted){notes.push(label+': this list did not pass the match checks.');if(s.unsupported?.length)notes.push(label+': unverified cards — '+s.unsupported.join(', '));}}
    if(state.error==='DIFFICULTY_UNAVAILABLE')notes.push('This CPU difficulty is not available yet. Choose Medium in setup.');message('Match needs review',notes,true);

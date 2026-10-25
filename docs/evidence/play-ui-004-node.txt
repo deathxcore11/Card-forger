@@ -1,0 +1,48 @@
+✔ placement requires one visible owned hand action and identifies the engine destination (3.523532ms)
+✔ tap, off-zone drop, Escape and lost priority never send a command (1.491353ms)
+✔ accepted drop sends the current token once, never coordinates or fabricated card movement (3.468898ms)
+✔ revision/token races and busy transitions retire the highlighted offer (1.912309ms)
+✔ current stats and colors come from the engine, without applying a counter twice (3.888226ms)
+✔ damage does not decrease toughness; reductions can color each stat independently (0.626192ms)
+✔ temporary changes can expire independently of counters and printed baseline (2.408655ms)
+✔ unknown baselines and hidden instances do not get invented values (0.513007ms)
+✔ combat projection requires authorization and explicit bounded edges (5.221568ms)
+✔ edge membership, duplicate pairs, grouping and source capacity are bounded before engine validation (1.715541ms)
+✔ relation wire copies exact bounded identifiers and rejects malformed group or extra fields (1.114422ms)
+✔ combat session drafts locally, confirms once, and clears on new accepted revision (16.315566ms)
+✔ inspection and draft selection never send a game command (8.066958ms)
+✔ double-click cannot submit two commands at the same revision (3.650998ms)
+✔ CPU advances only until the next human decision (23.86136ms)
+✔ unsupported human prompt never falls through to CPU (1.123266ms)
+✔ bounded CPU exhaustion pauses without inventing a result (8.756114ms)
+✔ mandatory selection needs explicit confirmation; clear is local (16.847841ms)
+✔ unknown acknowledgement freezes commands for recovery (1.208672ms)
+✔ instance leaving authorized view retires inspector selection (5.146905ms)
+✔ countdown refresh reads authority time instead of replaying cached remaining time (7.493669ms)
+✔ optional zero-count selection remains explicit and can be confirmed without picking a card (3.421486ms)
+✔ battlefield grouping preserves each instance and uses current public types (3.541311ms)
+✔ unknown cards cannot leak private type into a battlefield label (0.365454ms)
+✔ phase wording handles both main phases and preserves unfamiliar phases (0.28738ms)
+✔ turn ownership never determines who must act (0.543869ms)
+✔ required prompts, in-flight actions and terminal state keep honest labels (0.248914ms)
+✔ action cues require current offered commands, never name or mana guesses (1.667816ms)
+✔ ability cues require an available exact reference and authorized interaction (1.055925ms)
+✔ ambiguous object roles are not turned into a playable-card promise (0.223749ms)
+✔ opponent turn emblem coexists with the human decision and never invents an opening phase (5.014755ms)
+✔ battlefield presentation follows current types and never reveals hidden type (0.459991ms)
+✔ direct card selection requires one exact available object-only offer (0.67971ms)
+✔ selection preview is revision-bound, private-reference-safe and never mutates the snapshot (2.55129ms)
+✔ combat preview connects only declared public endpoints and clears when authority advances (0.801419ms)
+✔ art crop and full card preserve one printing and finish without changing the game object (5.10337ms)
+✔ a transformed object uses the authorized face crop, never the other face crop (0.66827ms)
+✔ artwork freezes the existing selected printing without changing the source list (4.805678ms)
+✔ wrong printings, unknown finishes and private instances never acquire a guessed effect or image (1.073176ms)
+✔ an authorized back face uses that face of the same printing (1.143436ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 716.272005
