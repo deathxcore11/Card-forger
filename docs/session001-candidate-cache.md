@@ -1,0 +1,28 @@
+# SESSION-001-LATENCY-B: reuse unchanged CPU candidates
+
+Integration owns this change, starting from `2a1cb86ccf102321f3cfe662a9fcf83b6447bcbf` on `codex/play-integration-20261025`. Scope was reserved in issue #50 before editing. It addresses the shared-authority dependency in CPU diagnostic `3c7a186`; it does not merge CPU-003 or enable Easy/Hard.
+
+Previously the journal rebuilt preview-validated block candidates both before worker choice and before submit. The authority now retains a private candidate snapshot for its engine instance and epoch, journal revision, actor, full pending decision and freshly generated base legal actions. Both reads still fetch current engine suggestions. Returned candidates are cloned so callers cannot modify the retained snapshot. The journal supplies revision context internally. Calls without matching epoch and valid revision remain uncached.
+
+Start, restore, human submission, interaction response and CPU submission invalidate the snapshot before the engine call, including rejected or thrown calls. Accepted mutation advances the journal revision. Serialized commands, stale epoch/revision rejection, fresh candidate membership checks, idempotent receipts, persistence conflict handling and final authoritative engine submission remain in place. This relies on the existing exclusive-owner contract: no code may mutate a journal's raw engine outside its authority adapter. It adds no disk cache, browser match persistence or recovery feature.
+
+## Evidence
+
+- **PASS — 347 focused checks**, including six new cache/journal regressions: immutable returned copies; changed revision/epoch; changed actor/decision/base actions; all mutation and rejection paths; authority isolation/final rejection; stale worker proposal.
+- **PASS — five actual engine/production-worker fixtures** through the journal. Four-by-four: 228 uncached previews versus 114 with reuse. Three-by-eight: 234 versus 117. Four-by-twelve: 228 versus 114. Ghalta at 12 life selects the trade and remains alive at 12. Chosen actions match the uncached policy result and are accepted; duplicate/stale commands do not resubmit.
+- **PASS — all 16 CPU-002 survival engine/worker regressions**.
+- **PASS — packaging:** all five CPU-002 production modules exist and are explicitly allowed by `.assetsignore` and included in `sw.js`; service-worker syntax checks. Cache-version bump remains part of final release metadata.
+- **PASS — preceding combined UI-001/002 + CPU-002 browser match**, implementation at `be5ed9490e6df986e55e8088712694da6bc5386b`, harness at `2a1cb86ccf102321f3cfe662a9fcf83b6447bcbf`. Chromium 153.0.8010.0, 1920×1080, fixture account/backend and captured card data, real app start handler/table/workers and unchanged engine. CPU won turn 16, 355 accepted actions, 174 human commands. Activation override false. Source hashes and command trace are in `evidence/combined-ui-cpu002-browser.json`. This is pre-cache evidence, not proof of the new optimization.
+- **IN PROGRESS — complete browser match including this cache change.** Final result must be recorded separately against source hashes before release.
+
+Reproduce with `node --test experiments/phase-engine/test-*.mjs test-play-*.mjs`, `node experiments/phase-engine/authority-candidates-engine.mjs` and `node experiments/phase-engine/cpu-survival-engine.mjs`. Engine fixtures use seed 12345 and the hash-verified existing `a86578b23adcd26c` runtime. Exact boards, actions, source hashes and timings are in `evidence/session001-candidate-cache.json`. The first draft of the fixture used repeated legendary Ghalta on large boards and failed setup; the corrected fixture uses nonlegendary Air Elemental. No production workaround was added.
+
+Timings were sampled while other validation processes were running. The uncached measurement covers two collections; the cached measurement covers a full journal step, including worker and accepted submit. They are not equal-stage benchmark percentiles. The reliable measured improvement is eliminating the duplicate preview set, not a universal latency target.
+
+## Remaining limits and ownership
+
+CPU-003 block-scoring budgets, survival-aware traversal ordering and >12-blocker expansion are still CPU-owned gaps. The twenty-blocker regression checks unchanged selection and accepted submission, not sufficient joint-block coverage; expansion still skips that board. Candidate reuse does not establish overall responsiveness or difficulty strength ordering.
+
+SESSION-001 Smart pass/Full Control/stops implementation and authoritative completeness proof remain unfinished. UI-003/004 refinements and richer outcome/revision-history handling remain separate gates. Owner sign-in, actual 200% zoom and final production smoke are **NOT TESTED** here. Recovery is **UNSUPPORTED**. Rat remains separate from this starter hotfix. The browser log includes failed non-blocking resource requests; completion does not mean a clean-network or all-journey certification.
+
+Changed production files: `match-authority.mjs`, `worker-journal.mjs`, `.assetsignore`, `sw.js`. Dedicated tests: `test-authority-candidates.mjs`, `authority-candidates-engine.mjs`; this report and evidence. CPU policy, public combat projection, candidate enumeration and compiled runtime are unchanged. No paid engine build, APK change or production deployment. Roll back this task by reverting its bounded commit on the integration branch; the live rollback remains release `2af11c9` until a new deployment is verified.

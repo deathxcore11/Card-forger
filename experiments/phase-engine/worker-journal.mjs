@@ -49,6 +49,8 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null,t
  const outcomeSummary=rows=>typeof engine.drainOutcomes==='function'||rows!==undefined?{outcomes:structuredClone(rows||[])}:{};
  const nextOutcomes=revision=>typeof engine.drainOutcomes==='function'?{outcomes:appendRandomOutcomes(current?.outcomes||[],engine.drainOutcomes(),revision)}:{};
  const summary=()=>({...structuredClone(view(current.revision)),revision:current.revision,...outcomeSummary(current.outcomes),...clockSummary(current.revision),...turnSummary(current.revision)});
+ // Revision context is authority-local, not supplied by the policy or UI.
+ const legalNow=()=>engine.legal({epoch,revision:current.revision});
  async function execute(raw) {
   const m=packet(raw);if(m.epoch!==epoch)fail('STALE_SESSION');
   if(poisoned)fail('RECOVERY_REQUIRED');
@@ -92,10 +94,10 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null,t
    // through the actual engine and this same idempotent journal command.
   }else if(m.op==='tick'){
    if(!timing)fail('TIMER_UNAVAILABLE');
-   const legal=engine.legal(),ctx=clockContext(current.revision);
+   const legal=legalNow(),ctx=clockContext(current.revision);
    const proposal=clock.propose(ctx,legal.actor===ctx.actor?legal.actions:[]);
    if(proposal.state!=='timeout-proposal')return {...summary(),clock:proposal};
-   const fresh=engine.legal(),valid=clock.validate(proposal,clockContext(current.revision),fresh.actor===ctx.actor?fresh.actions:[]);
+   const fresh=legalNow(),valid=clock.validate(proposal,clockContext(current.revision),fresh.actor===ctx.actor?fresh.actions:[]);
    if(!valid.ok)fail('STALE_TIMEOUT');
    actor=valid.actor;action=valid.action;
   }else if(m.op==='act'){
@@ -105,13 +107,13 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null,t
    if(typeof engine.respond!=='function'||engine.humanSeat!==0)fail('HUMAN_ROUTE_UNAVAILABLE');
    actor=engine.humanSeat;action={type:'InteractionSubmission',data:interactionSubmission(m.submission)};
   }else{
-  const legal=engine.legal();
+  const legal=legalNow();
   if(!legal.actions?.length)fail('NO_LEGAL_ACTOR');
   // The decision worker sees summaries, never an engine save, events, object
   // handles, unknown card identities or ordered libraries.
   const proposal=await choose(legal.actions,current.policyRng,{choice:m.choice,revision:current.revision,actor:legal.actor});
   if(!recordObject(proposal)||!Number.isInteger(proposal.index)||proposal.index<0||proposal.index>=legal.actions.length||!Number.isInteger(proposal.rng)||proposal.rng<0||proposal.rng>0xffffffff)fail('BAD_PROPOSAL');
-  action=legal.actions[proposal.index];const now=engine.legal();
+  action=legal.actions[proposal.index];const now=legalNow();
   if(now.actor!==legal.actor||!now.actions.some(a=>JSON.stringify(a)===JSON.stringify(action)))fail('STALE_ACTION');
    actor=legal.actor;policyRng=proposal.rng;
   }

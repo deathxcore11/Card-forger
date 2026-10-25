@@ -1,0 +1,246 @@
+{
+  "task": "SESSION-001-LATENCY-B",
+  "runtime": "a86578b23adcd26c",
+  "node": "v24.22.1",
+  "platform": "linux",
+  "cases": [
+    {
+      "id": "ghalta-survival",
+      "status": "PASS",
+      "fixture": {
+        "id": "ghalta-survival",
+        "attack": [
+          "Ghalta, Primal Hunger"
+        ],
+        "block": [
+          "Ghalta, Primal Hunger"
+        ],
+        "life": 12
+      },
+      "setupSha256": "e4470a7bd87fbce914d4f3fdf261ee6abd0fc3e93afe182b972f3a62cc546cd6",
+      "uncachedPreviews": 0,
+      "cachedPreviews": 0,
+      "uncachedTwoCollectionsMs": 267.4472029999997,
+      "cachedJournalStepMs": 450.83309499999996,
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              99,
+              5
+            ]
+          ]
+        }
+      },
+      "acceptedRevision": 1
+    },
+    {
+      "id": "four-by-four",
+      "status": "PASS",
+      "fixture": {
+        "id": "four-by-four",
+        "attack": [
+          "Bear Cub",
+          "Bear Cub",
+          "Bear Cub",
+          "Bear Cub"
+        ],
+        "block": [
+          "Ordinary Bear",
+          "Ordinary Bear",
+          "Ordinary Bear",
+          "Ordinary Bear"
+        ],
+        "life": 8
+      },
+      "setupSha256": "f5fb0cc3f3c5589000ceb0339555706a2e796bc77e6598ad608b358a222184db",
+      "uncachedPreviews": 228,
+      "cachedPreviews": 114,
+      "uncachedTwoCollectionsMs": 4840.2447710000015,
+      "cachedJournalStepMs": 2398.7119859999984,
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              76,
+              5
+            ],
+            [
+              99,
+              6
+            ],
+            [
+              115,
+              19
+            ]
+          ]
+        }
+      },
+      "acceptedRevision": 1
+    },
+    {
+      "id": "three-by-eight",
+      "status": "PASS",
+      "fixture": {
+        "id": "three-by-eight",
+        "attack": [
+          "Bear Cub",
+          "Bear Cub",
+          "Bear Cub"
+        ],
+        "block": [
+          "Ordinary Bear",
+          "Ordinary Bear",
+          "Ordinary Bear",
+          "Ordinary Bear",
+          "Bear Cub",
+          "Bear Cub",
+          "Bear Cub",
+          "Bear Cub"
+        ],
+        "life": 6
+      },
+      "setupSha256": "4f0a7c808c1f0cfed3cd3faa18b25fe490163e93b1284f09363697af182c04af",
+      "uncachedPreviews": 234,
+      "cachedPreviews": 117,
+      "uncachedTwoCollectionsMs": 3867.169915999999,
+      "cachedJournalStepMs": 2299.4063060000008,
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              105,
+              5
+            ],
+            [
+              111,
+              6
+            ],
+            [
+              115,
+              28
+            ]
+          ]
+        }
+      },
+      "acceptedRevision": 1
+    },
+    {
+      "id": "four-by-twelve",
+      "status": "PASS",
+      "fixture": {
+        "id": "four-by-twelve",
+        "attack": [
+          "Bear Cub",
+          "Bear Cub",
+          "Bear Cub",
+          "Bear Cub"
+        ],
+        "block": [
+          "Ordinary Bear",
+          "Ordinary Bear",
+          "Ordinary Bear",
+          "Ordinary Bear",
+          "Bear Cub",
+          "Bear Cub",
+          "Bear Cub",
+          "Bear Cub",
+          "Air Elemental",
+          "Air Elemental",
+          "Air Elemental",
+          "Air Elemental"
+        ],
+        "life": 8
+      },
+      "setupSha256": "5de0416ed8c63475f81d0971455d3e67fb5876d3e0cc43a94d231253ddea78be",
+      "uncachedPreviews": 228,
+      "cachedPreviews": 114,
+      "uncachedTwoCollectionsMs": 4065.780799999997,
+      "cachedJournalStepMs": 2230.3257899999953,
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              111,
+              5
+            ],
+            [
+              115,
+              6
+            ],
+            [
+              119,
+              19
+            ]
+          ]
+        }
+      },
+      "acceptedRevision": 1
+    },
+    {
+      "id": "four-by-twenty",
+      "status": "PASS",
+      "fixture": {
+        "id": "four-by-twenty",
+        "attack": [
+          "Bear Cub",
+          "Bear Cub",
+          "Bear Cub",
+          "Bear Cub"
+        ],
+        "block": [
+          "Ordinary Bear",
+          "Ordinary Bear",
+          "Ordinary Bear",
+          "Ordinary Bear",
+          "Bear Cub",
+          "Bear Cub",
+          "Bear Cub",
+          "Bear Cub",
+          "Air Elemental",
+          "Air Elemental",
+          "Air Elemental",
+          "Air Elemental",
+          "Knight of Dawn",
+          "Knight of Dawn",
+          "Knight of Dawn",
+          "Knight of Dawn",
+          "Darksteel Myr",
+          "Darksteel Myr",
+          "Darksteel Myr",
+          "Darksteel Myr"
+        ],
+        "life": 8
+      },
+      "setupSha256": "beadbe7a820463b036440a6c9b92f53cb6a6619e958e7f6fdacb5737058a5374",
+      "uncachedPreviews": 0,
+      "cachedPreviews": 0,
+      "uncachedTwoCollectionsMs": 460.51558900000236,
+      "cachedJournalStepMs": 552.5063640000008,
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              72,
+              5
+            ]
+          ]
+        }
+      },
+      "acceptedRevision": 1
+    }
+  ],
+  "limits": "Engine fixtures, not browser or broad search-coverage proof. CPU-002 policy unchanged. More than twelve blockers still skips expansion.",
+  "sources": {
+    "match-authority.mjs": "e4b9de791e74b0cab1d606c68579d31373f6799519e6dc311e06b6cf38a2b5f5",
+    "worker-journal.mjs": "cdf6ba18fef9d04c45cf16d41a86fa4d6398354e58f6da82f51a0bc7f749523f",
+    "cpu-legal-candidates.mjs": "0fb5f513a024be6f91ccd45c3860b1ba526635c78c399a6d5bd0d5ea0d04bc7e",
+    "cpu-public-policy.mjs": "80bde4f3c497cd8e765123b462e33d640fd1d3d7d18b610e7dfbfe2fcda4a8a2",
+    "authority-candidates-engine.mjs": "20688f95b76e2c108219e345a37eb04437edc26016de5fd14ac965b58b0d7b19"
+  }
+}

@@ -90,6 +90,11 @@ experiments/phase-engine/*
 !experiments/phase-engine/human-command.mjs
 !experiments/phase-engine/interaction-surface.mjs
 !experiments/phase-engine/match-authority.mjs
+!experiments/phase-engine/cpu-public-observation.mjs
+!experiments/phase-engine/cpu-combat-evaluation.mjs
+!experiments/phase-engine/cpu-public-policy.mjs
+!experiments/phase-engine/cpu-public-worker.mjs
+!experiments/phase-engine/cpu-legal-candidates.mjs
 !experiments/phase-engine/match-input.mjs
 !experiments/phase-engine/catalog-admission.mjs
 !experiments/phase-engine/match-session.mjs
