@@ -1,0 +1,1955 @@
+{
+  "schema": 1,
+  "task": "DECK-001",
+  "taskBase": "cfc8f6a5d9cbcfad9252805616cb3467e2ff4ec4",
+  "integrationInspected": "2a1cb86ccf102321f3cfe662a9fcf83b6447bcbf",
+  "provenance": {
+    "appBaseCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+    "runtimeSourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "rulesSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "loadedNames": [
+      "Ghalta, Primal Hunger",
+      "Beast Whisperer",
+      "Birds of Paradise",
+      "Carnage Tyrant",
+      "Pugnacious Hammerskull",
+      "Rishkar's Expertise",
+      "Scavenging Ooze",
+      "Scrapshooter",
+      "Surrak and Goreclaw",
+      "Thickest in the Thicket",
+      "Mosswort Bridge",
+      "Bite Down",
+      "Elvish Mystic",
+      "Fyndhorn Elves",
+      "Harmonize",
+      "Kenrith's Transformation",
+      "Llanowar Elves",
+      "Llanowar Tribe",
+      "Monstrous Onslaught",
+      "Ram Through",
+      "Rishkar, Peema Renegade",
+      "Whisperer of the Wilds",
+      "Sol Ring",
+      "Swiftfoot Boots",
+      "Forest",
+      "Giada, Font of Hope",
+      "Angel of the Ruins",
+      "Angelic Destiny",
+      "Angelic Field Marshal",
+      "Archangel of Tithes",
+      "Emeria Shepherd",
+      "Exemplar of Light",
+      "Fateful Absence",
+      "Firemane Commando",
+      "Grasp of Fate",
+      "Righteous Valkyrie",
+      "Wojek Investigator",
+      "Metallic Mimic",
+      "Tome of Legends",
+      "Vanquisher's Banner",
+      "Cut a Deal",
+      "Secret Rendezvous",
+      "Swords to Plowshares",
+      "Arcane Signet",
+      "Heraldic Banner",
+      "Mind Stone",
+      "Temple of the False God",
+      "Plains"
+    ],
+    "subsetSha256": "594d3cb22f1331d3d4dbb38c17014d66929d06c2953cc6a62d9376a3572a18b8"
+  },
+  "startedAt": "2026-10-25T16:37:11.753Z",
+  "environment": {
+    "node": "v24.22.1",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "rulesReference": "https://media.wizards.com/2026/downloads/MagicCompRules%2020260925.txt",
+  "sessionContractReference": "fe480bfa42222bd20274b4a97ba60419bad64f94:docs/session001-turn-flow-v1.md",
+  "cases": [
+    {
+      "id": "admission-original",
+      "title": "Both exact precons are rejected before play",
+      "status": "PASS",
+      "expected": "Both-seat admission blocks unsupported exact lists without modifying either input.",
+      "actual": {
+        "deckOrder": [
+          "Tramplesaurus Rex",
+          "Calling All Angels"
+        ],
+        "admission": {
+          "coverageVersion": "delivered-mechanics-and-standard-starter-v2",
+          "seats": {
+            "player": {
+              "constructionLegal": false,
+              "reasons": [
+                "Unknown cards: Arachnogenesis, Arasta of the Endless Web, Beast Within, Bonders' Enclave, Challenger Troll, Clifftop Lookout, +38 more"
+              ],
+              "unsupported": [
+                "Arachnogenesis",
+                "Arasta of the Endless Web",
+                "Beast Whisperer",
+                "Birds of Paradise",
+                "Carnage Tyrant",
+                "Curious Altisaur",
+                "Dungrove Elder",
+                "Elder Gargaroth",
+                "Ezuri's Predation",
+                "Gigantosaurus",
+                "Hulking Raptor",
+                "Loot, Exuberant Explorer",
+                "Managorger Hydra",
+                "Overwhelming Stampede",
+                "Pugnacious Hammerskull",
+                "Regal Imperiosaur",
+                "Rhonas the Indomitable",
+                "Ripjaw Raptor",
+                "Rishkar's Expertise",
+                "Scavenging Ooze",
+                "Scrapshooter",
+                "Shamanic Revelation",
+                "Steel Leaf Champion",
+                "Surrak and Goreclaw",
+                "Surrak, the Hunt Caller",
+                "Tangleweave Armor",
+                "Thickest in the Thicket",
+                "Unnatural Growth",
+                "Verdant Sun's Avatar",
+                "Whiptongue Hydra",
+                "Yeva, Nature's Herald",
+                "Bonders' Enclave",
+                "Mosswort Bridge",
+                "Scavenger Grounds",
+                "War Room",
+                "Witch's Clinic",
+                "Beast Within",
+                "Bite Down",
+                "Challenger Troll",
+                "Clifftop Lookout",
+                "Collective Resistance",
+                "Colossal Majesty",
+                "Elemental Bond",
+                "Elvish Mystic",
+                "Fyndhorn Elves",
+                "Garruk's Packleader",
+                "Garruk's Uprising",
+                "Goreclaw, Terror of Qal Sisma",
+                "Harmonize",
+                "Ilysian Caryatid",
+                "Kenrith's Transformation",
+                "Llanowar Tribe",
+                "Monstrous Onslaught",
+                "Paradise Druid",
+                "Ram Through",
+                "Rishkar, Peema Renegade",
+                "Tamiyo's Safekeeping",
+                "Terrian, World Tyrant",
+                "Thrashing Brontodon",
+                "Whisperer of the Wilds",
+                "Commander's Sphere",
+                "Rhonas's Monument",
+                "Sol Ring",
+                "Swiftfoot Boots",
+                "Rogue's Passage",
+                "Tranquil Thicket"
+              ],
+              "admitted": false
+            },
+            "opponent": {
+              "constructionLegal": false,
+              "reasons": [
+                "Unknown cards: Always Watching, Angel of Finality, Angel of Vitality, Angelic Sleuth, Austere Command, Bishop of Wings, +38 more"
+              ],
+              "unsupported": [
+                "Always Watching",
+                "Angel of the Ruins",
+                "Angelic Destiny",
+                "Angelic Field Marshal",
+                "Angelic Sleuth",
+                "Archangel of Tithes",
+                "Austere Command",
+                "Bishop of Wings",
+                "Cleansing Nova",
+                "Court of Grace",
+                "Day of Judgment",
+                "Emeria Shepherd",
+                "Exemplar of Light",
+                "Fateful Absence",
+                "Firemane Commando",
+                "Grasp of Fate",
+                "Herald of Eternal Dawn",
+                "Herald of War",
+                "Linvala, the Preserver",
+                "Lyra Dawnbringer",
+                "Merchant of Truth",
+                "Metropolis Reformer",
+                "Norn's Choirmaster",
+                "Reya Dawnbringer",
+                "Righteous Valkyrie",
+                "Search the Premises",
+                "Sephara, Sky's Blade",
+                "Seraph of the Sword",
+                "Serra Avenger",
+                "Speaker of the Heavens",
+                "Sunblast Angel",
+                "Wojek Investigator",
+                "Endless Atlas",
+                "Metallic Mimic",
+                "Tome of Legends",
+                "Vanquisher's Banner",
+                "Bonders' Enclave",
+                "War Room",
+                "Angel of Finality",
+                "Angel of Vitality",
+                "Cut a Deal",
+                "Dazzling Angel",
+                "Defy Death",
+                "Destroy Evil",
+                "Exorcise",
+                "Inspiring Overseer",
+                "Invoke the Divine",
+                "Secret Rendezvous",
+                "Segovian Angel",
+                "Starnheim Aspirant",
+                "Swords to Plowshares",
+                "Thraben Watcher",
+                "Valorous Stance",
+                "Vanguard Seraph",
+                "Youthful Valkyrie",
+                "Arcane Signet",
+                "Commander's Sphere",
+                "Heraldic Banner",
+                "Marble Diamond",
+                "Mind Stone",
+                "Patchwork Banner",
+                "Sol Ring",
+                "Swiftfoot Boots",
+                "Radiant Fountain",
+                "Secluded Steppe",
+                "Seraph Sanctuary",
+                "Temple of the False God",
+                "Giada, Font of Hope"
+              ],
+              "admitted": false
+            }
+          },
+          "admitted": false
+        },
+        "inputUnchanged": true
+      },
+      "evidence": "admission-original.json"
+    },
+    {
+      "id": "admission-swapped",
+      "title": "Both exact precons are rejected before play",
+      "status": "PASS",
+      "expected": "Both-seat admission blocks unsupported exact lists without modifying either input.",
+      "actual": {
+        "deckOrder": [
+          "Calling All Angels",
+          "Tramplesaurus Rex"
+        ],
+        "admission": {
+          "coverageVersion": "delivered-mechanics-and-standard-starter-v2",
+          "seats": {
+            "player": {
+              "constructionLegal": false,
+              "reasons": [
+                "Unknown cards: Always Watching, Angel of Finality, Angel of Vitality, Angelic Sleuth, Austere Command, Bishop of Wings, +38 more"
+              ],
+              "unsupported": [
+                "Always Watching",
+                "Angel of the Ruins",
+                "Angelic Destiny",
+                "Angelic Field Marshal",
+                "Angelic Sleuth",
+                "Archangel of Tithes",
+                "Austere Command",
+                "Bishop of Wings",
+                "Cleansing Nova",
+                "Court of Grace",
+                "Day of Judgment",
+                "Emeria Shepherd",
+                "Exemplar of Light",
+                "Fateful Absence",
+                "Firemane Commando",
+                "Grasp of Fate",
+                "Herald of Eternal Dawn",
+                "Herald of War",
+                "Linvala, the Preserver",
+                "Lyra Dawnbringer",
+                "Merchant of Truth",
+                "Metropolis Reformer",
+                "Norn's Choirmaster",
+                "Reya Dawnbringer",
+                "Righteous Valkyrie",
+                "Search the Premises",
+                "Sephara, Sky's Blade",
+                "Seraph of the Sword",
+                "Serra Avenger",
+                "Speaker of the Heavens",
+                "Sunblast Angel",
+                "Wojek Investigator",
+                "Endless Atlas",
+                "Metallic Mimic",
+                "Tome of Legends",
+                "Vanquisher's Banner",
+                "Bonders' Enclave",
+                "War Room",
+                "Angel of Finality",
+                "Angel of Vitality",
+                "Cut a Deal",
+                "Dazzling Angel",
+                "Defy Death",
+                "Destroy Evil",
+                "Exorcise",
+                "Inspiring Overseer",
+                "Invoke the Divine",
+                "Secret Rendezvous",
+                "Segovian Angel",
+                "Starnheim Aspirant",
+                "Swords to Plowshares",
+                "Thraben Watcher",
+                "Valorous Stance",
+                "Vanguard Seraph",
+                "Youthful Valkyrie",
+                "Arcane Signet",
+                "Commander's Sphere",
+                "Heraldic Banner",
+                "Marble Diamond",
+                "Mind Stone",
+                "Patchwork Banner",
+                "Sol Ring",
+                "Swiftfoot Boots",
+                "Radiant Fountain",
+                "Secluded Steppe",
+                "Seraph Sanctuary",
+                "Temple of the False God",
+                "Giada, Font of Hope"
+              ],
+              "admitted": false
+            },
+            "opponent": {
+              "constructionLegal": false,
+              "reasons": [
+                "Unknown cards: Arachnogenesis, Arasta of the Endless Web, Beast Within, Bonders' Enclave, Challenger Troll, Clifftop Lookout, +38 more"
+              ],
+              "unsupported": [
+                "Arachnogenesis",
+                "Arasta of the Endless Web",
+                "Beast Whisperer",
+                "Birds of Paradise",
+                "Carnage Tyrant",
+                "Curious Altisaur",
+                "Dungrove Elder",
+                "Elder Gargaroth",
+                "Ezuri's Predation",
+                "Gigantosaurus",
+                "Hulking Raptor",
+                "Loot, Exuberant Explorer",
+                "Managorger Hydra",
+                "Overwhelming Stampede",
+                "Pugnacious Hammerskull",
+                "Regal Imperiosaur",
+                "Rhonas the Indomitable",
+                "Ripjaw Raptor",
+                "Rishkar's Expertise",
+                "Scavenging Ooze",
+                "Scrapshooter",
+                "Shamanic Revelation",
+                "Steel Leaf Champion",
+                "Surrak and Goreclaw",
+                "Surrak, the Hunt Caller",
+                "Tangleweave Armor",
+                "Thickest in the Thicket",
+                "Unnatural Growth",
+                "Verdant Sun's Avatar",
+                "Whiptongue Hydra",
+                "Yeva, Nature's Herald",
+                "Bonders' Enclave",
+                "Mosswort Bridge",
+                "Scavenger Grounds",
+                "War Room",
+                "Witch's Clinic",
+                "Beast Within",
+                "Bite Down",
+                "Challenger Troll",
+                "Clifftop Lookout",
+                "Collective Resistance",
+                "Colossal Majesty",
+                "Elemental Bond",
+                "Elvish Mystic",
+                "Fyndhorn Elves",
+                "Garruk's Packleader",
+                "Garruk's Uprising",
+                "Goreclaw, Terror of Qal Sisma",
+                "Harmonize",
+                "Ilysian Caryatid",
+                "Kenrith's Transformation",
+                "Llanowar Tribe",
+                "Monstrous Onslaught",
+                "Paradise Druid",
+                "Ram Through",
+                "Rishkar, Peema Renegade",
+                "Tamiyo's Safekeeping",
+                "Terrian, World Tyrant",
+                "Thrashing Brontodon",
+                "Whisperer of the Wilds",
+                "Commander's Sphere",
+                "Rhonas's Monument",
+                "Sol Ring",
+                "Swiftfoot Boots",
+                "Rogue's Passage",
+                "Tranquil Thicket"
+              ],
+              "admitted": false
+            }
+          },
+          "admitted": false
+        },
+        "inputUnchanged": true
+      },
+      "evidence": "admission-swapped.json"
+    },
+    {
+      "id": "empty-hand-mana-ability",
+      "title": "Empty hand retains a Sol Ring activation",
+      "status": "PASS",
+      "expected": "An engine-authored mana ability remains available despite a legacy pass-only action list; it produces two colorless mana.",
+      "actual": {
+        "legacyActionTypes": [
+          "PassPriority"
+        ],
+        "legacyAutoPassRecommended": true,
+        "interactionAutoPassRecommended": false,
+        "source": 5,
+        "mana": {
+          "mana": [
+            {
+              "color": "Colorless",
+              "pip_id": 1,
+              "restrictions": [],
+              "snow": false,
+              "source_id": 5
+            },
+            {
+              "color": "Colorless",
+              "pip_id": 2,
+              "restrictions": [],
+              "snow": false,
+              "source_id": 5
+            }
+          ]
+        },
+        "sessionPolicy": "NOT TESTED; mana-only window remains a conservative stop"
+      },
+      "evidence": "empty-hand-mana-ability.json"
+    },
+    {
+      "id": "ooze-creature",
+      "title": "Empty-hand activation targets creature in a graveyard",
+      "status": "PASS",
+      "expected": "Legal graveyard target is exiled; counter and life gain occur only for a creature card.",
+      "actual": {
+        "targetZone": "Exile",
+        "life": 21,
+        "counters": {
+          "P1P1": 1
+        },
+        "actingSeat": 0,
+        "activeSeat": 1,
+        "source": 5,
+        "target": 99
+      },
+      "evidence": "ooze-creature.json"
+    },
+    {
+      "id": "ooze-noncreature",
+      "title": "Empty-hand activation targets land in a graveyard",
+      "status": "PASS",
+      "expected": "Legal graveyard target is exiled; counter and life gain occur only for a creature card.",
+      "actual": {
+        "targetZone": "Exile",
+        "life": 20,
+        "counters": {},
+        "actingSeat": 0,
+        "activeSeat": 1,
+        "source": 5,
+        "target": 61
+      },
+      "evidence": "ooze-noncreature.json"
+    },
+    {
+      "id": "giada-angel-payment",
+      "title": "Restricted mana pays for an Angel spell",
+      "status": "PASS",
+      "expected": "Giada mana plus two Plains casts Righteous Valkyrie; it enters with one additional +1/+1 counter.",
+      "actual": {
+        "zone": "Battlefield",
+        "counters": {
+          "P1P1": 1
+        },
+        "power": 3,
+        "toughness": 5,
+        "mana": {
+          "mana": []
+        }
+      },
+      "evidence": "giada-angel-payment.json"
+    },
+    {
+      "id": "giada-forbidden-payment",
+      "title": "Restricted Angel mana cannot pay for Sol Ring",
+      "status": "PASS",
+      "expected": "Non-Angel spell is rejected with its card and restricted mana unchanged.",
+      "actual": {
+        "status": "rejected",
+        "stateUnchanged": true,
+        "automaticCandidateCount": 0,
+        "mana": {
+          "mana": [
+            {
+              "color": "White",
+              "pip_id": 1,
+              "restrictions": [
+                {
+                  "OnlyForSpellType": "Angel"
+                }
+              ],
+              "snow": false,
+              "source_id": 6
+            }
+          ]
+        }
+      },
+      "evidence": "giada-forbidden-payment.json"
+    },
+    {
+      "id": "ram-through-wrong-color",
+      "title": "Opponent-turn instant with wrong colors",
+      "status": "FAIL",
+      "expected": "White mana cannot pay {1}{G}; automatic submission rejects without mutation.",
+      "actual": {
+        "error": "rejection must leave the entire exported save unchanged\n+ actual - expected\n\n+ [\n+   {\n+     after: undefined,\n+     before: [\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 0\n+       },\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 1\n+       },\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 2\n+       },\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 3\n+       },\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 4\n+       },\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 5\n+       },\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 6\n+       },\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 1\n+         },\n+         turn_zone_change_index: 7\n+       },\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 1\n+         },\n+         turn_zone_change_index: 8\n+       },\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 1\n+         },\n+         turn_zone_change_index: 9\n+       },\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 1\n+         },\n+         turn_zone_change_index: 10\n+       },\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 1\n+         },\n+         turn_zone_change_index: 11\n+       },\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 1\n+         },\n+         turn_zone_change_index: 12\n+       },\n+       {\n+         recorded_turn_number: 1,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 1\n+         },\n+         turn_zone_change_index: 13\n+       }\n+     ],\n+     path: '/state/zone_change_library_knowledge_stamps'\n+   }\n+ ]\n- []\n"
+      },
+      "evidence": "ram-through-wrong-color.json"
+    },
+    {
+      "id": "ram-through-paid",
+      "title": "Opponent-turn instant with legal payment",
+      "status": "PASS",
+      "expected": "Two-target instant resolves through real priority; Ghalta deals lethal 6 to the Hammerskull and 6 excess to its controller.",
+      "actual": {
+        "spellZone": "Graveyard",
+        "targetZone": "Graveyard",
+        "opponentLife": 14,
+        "sourceZone": "Battlefield",
+        "automaticCandidateCount": 1
+      },
+      "evidence": "ram-through-paid.json"
+    }
+  ],
+  "decks": [
+    {
+      "id": "deck-001:tramplesaurus-rex",
+      "name": "Tramplesaurus Rex",
+      "commander": "Ghalta, Primal Hunger",
+      "source": "https://magic.wizards.com/en/news/announcements/foundations-commander-decklists",
+      "sourceHtmlSha256": "69123a084a09ceb302ec249bf2505d914b55a8da586534530b0bf91cb5e9beea",
+      "revisionSha256": "6d4ced94e6de92092cf2b0b29701e10425b8db7c7982e3e77e9a9f5fa6d07660",
+      "total": 100,
+      "uniqueNames": 69,
+      "rows": [
+        {
+          "name": "Ghalta, Primal Hunger",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": true,
+          "compiledRecordSha256": "9aab5c908d77fdb3da43ee10d3f2caf163a762168618fd24153cfa38358d47b6"
+        },
+        {
+          "name": "Arachnogenesis",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Arasta of the Endless Web",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Beast Whisperer",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "4e430ea7a8fd2449264a5287e3d8b3947c862ddacf6109ec01b2aeb8b25a9297"
+        },
+        {
+          "name": "Birds of Paradise",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "b4166ccba56288ab6638faaafc28292aa9ef5a32fe8fc1070dffd840ae8e3d5e"
+        },
+        {
+          "name": "Carnage Tyrant",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "e9c94ac9a042945a8780ae0e91d3ade1569001d32597af1c887fd4e272970cd7"
+        },
+        {
+          "name": "Curious Altisaur",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Dungrove Elder",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Elder Gargaroth",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Ezuri's Predation",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Gigantosaurus",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Hulking Raptor",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Loot, Exuberant Explorer",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Managorger Hydra",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Overwhelming Stampede",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Pugnacious Hammerskull",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "43164ceb67721e005e5609304181034cdfb16d08eab97cf4ddd1da4afb6d17a2"
+        },
+        {
+          "name": "Regal Imperiosaur",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Rhonas the Indomitable",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Ripjaw Raptor",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Rishkar's Expertise",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "083331fcac80ce6e2e186de4feb93a12e715f84208e2e2277e30dbc04f2175ae"
+        },
+        {
+          "name": "Scavenging Ooze",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "12a3a76db563c57e06f93b5a9788d046d78e6fbde151c617ce2c49b43befa8dd"
+        },
+        {
+          "name": "Scrapshooter",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "afab0893d0ad0b0d0be1a739fca382c1ca5601d6ce2db6d5a833ff0fdfa24755"
+        },
+        {
+          "name": "Shamanic Revelation",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Steel Leaf Champion",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Surrak and Goreclaw",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "a72e761c6779e3054d8834fa36046631d4aa79e00b22ba91f8c32f6e18f1b7d9"
+        },
+        {
+          "name": "Surrak, the Hunt Caller",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Tangleweave Armor",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Thickest in the Thicket",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "276df4e5b90c2013fe85d23c1e7e43e6e33f9b00ee2a711523f0b25529b36e33"
+        },
+        {
+          "name": "Unnatural Growth",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Verdant Sun's Avatar",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Whiptongue Hydra",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Yeva, Nature's Herald",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Bonders' Enclave",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Mosswort Bridge",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "bd88dc9c01509f16563ff5ee9bb35dc1bc0098bf2522b4daed4dbcc4f7d8c7b0"
+        },
+        {
+          "name": "Scavenger Grounds",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "War Room",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Witch's Clinic",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Beast Within",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Bite Down",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "e45496bfd4a8aaced034cb922b40b3ad875759c06b61215dba07fc9eeb8f6d79"
+        },
+        {
+          "name": "Challenger Troll",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Clifftop Lookout",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Collective Resistance",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Colossal Majesty",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Elemental Bond",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Elvish Mystic",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "31a2c0d5d1d650c71e14415650eb95e4a330c9f6e4de1ae1069c9b8b5ac0c4b4"
+        },
+        {
+          "name": "Fyndhorn Elves",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "2472165ed49e49241c31deedcde505436fa370110a44a1fd5fa1e9e20acd75b6"
+        },
+        {
+          "name": "Garruk's Packleader",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Garruk's Uprising",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Goreclaw, Terror of Qal Sisma",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Harmonize",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "7e78dbe51bcb0600d7d362b06490bde517c9425d490c9e072da1a5fec18928eb"
+        },
+        {
+          "name": "Ilysian Caryatid",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Kenrith's Transformation",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "fa6a9d64fc115438109d730c7019c03f8570e32137f30b3dca87a0d1bcb489a3"
+        },
+        {
+          "name": "Llanowar Elves",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": true,
+          "compiledRecordSha256": "7ace45af39aa4c665ca753c8e71ac42b32950ded83c8ae8b59ea1b9cb7a38ef9"
+        },
+        {
+          "name": "Llanowar Tribe",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "9a77b3172373d58d8e571d293e4eac101b209ba3e748b880f9ee50a54792b519"
+        },
+        {
+          "name": "Monstrous Onslaught",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "c8b7e27d255e7bb7d64778286201cef0f7e3f3fbfb253b83b7a21f327706029c"
+        },
+        {
+          "name": "Paradise Druid",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Ram Through",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "7ec1da574c30456b3f600f624345925843d828834c258bda2f774ed8524fe908"
+        },
+        {
+          "name": "Rishkar, Peema Renegade",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "4a08f28446954c314d0b3763da51d7a35409364a5e9f31afa3956bc216b0234e"
+        },
+        {
+          "name": "Tamiyo's Safekeeping",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Terrian, World Tyrant",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Thrashing Brontodon",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Whisperer of the Wilds",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "0dc1762d74b6725df0bce2a9da15e4bf33c632efe61d69ee5ae69f713d39357d"
+        },
+        {
+          "name": "Commander's Sphere",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Rhonas's Monument",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Sol Ring",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "d9397f3cd813cec7061af694a4618b175817184bceb7c0a123c70aad21edd2a2"
+        },
+        {
+          "name": "Swiftfoot Boots",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "bdc4fedcb78829a3d7256c349a728cad3637f0f4937eef4c2b0f1abd079a7489"
+        },
+        {
+          "name": "Rogue's Passage",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Tranquil Thicket",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Forest",
+          "qty": 32,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": true,
+          "compiledRecordSha256": "0d0b0886c4ecdb66346a8b4275e29f2f322b46a3ae320a1b9552c568e95ecc88"
+        }
+      ],
+      "missingCompiled": [
+        "Arachnogenesis",
+        "Arasta of the Endless Web",
+        "Curious Altisaur",
+        "Dungrove Elder",
+        "Elder Gargaroth",
+        "Ezuri's Predation",
+        "Gigantosaurus",
+        "Hulking Raptor",
+        "Loot, Exuberant Explorer",
+        "Managorger Hydra",
+        "Overwhelming Stampede",
+        "Regal Imperiosaur",
+        "Rhonas the Indomitable",
+        "Ripjaw Raptor",
+        "Shamanic Revelation",
+        "Steel Leaf Champion",
+        "Surrak, the Hunt Caller",
+        "Tangleweave Armor",
+        "Unnatural Growth",
+        "Verdant Sun's Avatar",
+        "Whiptongue Hydra",
+        "Yeva, Nature's Herald",
+        "Bonders' Enclave",
+        "Scavenger Grounds",
+        "War Room",
+        "Witch's Clinic",
+        "Beast Within",
+        "Challenger Troll",
+        "Clifftop Lookout",
+        "Collective Resistance",
+        "Colossal Majesty",
+        "Elemental Bond",
+        "Garruk's Packleader",
+        "Garruk's Uprising",
+        "Goreclaw, Terror of Qal Sisma",
+        "Ilysian Caryatid",
+        "Paradise Druid",
+        "Tamiyo's Safekeeping",
+        "Terrian, World Tyrant",
+        "Thrashing Brontodon",
+        "Commander's Sphere",
+        "Rhonas's Monument",
+        "Rogue's Passage",
+        "Tranquil Thicket"
+      ],
+      "coverageExcluded": [
+        "Arachnogenesis",
+        "Arasta of the Endless Web",
+        "Beast Whisperer",
+        "Birds of Paradise",
+        "Carnage Tyrant",
+        "Curious Altisaur",
+        "Dungrove Elder",
+        "Elder Gargaroth",
+        "Ezuri's Predation",
+        "Gigantosaurus",
+        "Hulking Raptor",
+        "Loot, Exuberant Explorer",
+        "Managorger Hydra",
+        "Overwhelming Stampede",
+        "Pugnacious Hammerskull",
+        "Regal Imperiosaur",
+        "Rhonas the Indomitable",
+        "Ripjaw Raptor",
+        "Rishkar's Expertise",
+        "Scavenging Ooze",
+        "Scrapshooter",
+        "Shamanic Revelation",
+        "Steel Leaf Champion",
+        "Surrak and Goreclaw",
+        "Surrak, the Hunt Caller",
+        "Tangleweave Armor",
+        "Thickest in the Thicket",
+        "Unnatural Growth",
+        "Verdant Sun's Avatar",
+        "Whiptongue Hydra",
+        "Yeva, Nature's Herald",
+        "Bonders' Enclave",
+        "Mosswort Bridge",
+        "Scavenger Grounds",
+        "War Room",
+        "Witch's Clinic",
+        "Beast Within",
+        "Bite Down",
+        "Challenger Troll",
+        "Clifftop Lookout",
+        "Collective Resistance",
+        "Colossal Majesty",
+        "Elemental Bond",
+        "Elvish Mystic",
+        "Fyndhorn Elves",
+        "Garruk's Packleader",
+        "Garruk's Uprising",
+        "Goreclaw, Terror of Qal Sisma",
+        "Harmonize",
+        "Ilysian Caryatid",
+        "Kenrith's Transformation",
+        "Llanowar Tribe",
+        "Monstrous Onslaught",
+        "Paradise Druid",
+        "Ram Through",
+        "Rishkar, Peema Renegade",
+        "Tamiyo's Safekeeping",
+        "Terrian, World Tyrant",
+        "Thrashing Brontodon",
+        "Whisperer of the Wilds",
+        "Commander's Sphere",
+        "Rhonas's Monument",
+        "Sol Ring",
+        "Swiftfoot Boots",
+        "Rogue's Passage",
+        "Tranquil Thicket"
+      ],
+      "fullMatch": {
+        "status": "UNSUPPORTED",
+        "reason": "Exact deck has missing compiled definitions and fails existing admission; no substitutions or stub records."
+      },
+      "currentPickerAvailability": "NOT TESTED",
+      "liveCatalogLegality": "NOT TESTED"
+    },
+    {
+      "id": "deck-001:calling-all-angels",
+      "name": "Calling All Angels",
+      "commander": "Giada, Font of Hope",
+      "source": "https://magic.wizards.com/en/news/announcements/foundations-commander-decklists",
+      "sourceHtmlSha256": "69123a084a09ceb302ec249bf2505d914b55a8da586534530b0bf91cb5e9beea",
+      "revisionSha256": "4422d942c13600e0155eba6314be4df6a290d463fffa4e058331c6fede24e706",
+      "total": 100,
+      "uniqueNames": 69,
+      "rows": [
+        {
+          "name": "Giada, Font of Hope",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "f9b9b08ac18e00ddfc62dab241c0f8a5398c7058605c6e4ffb4a871583e6008c"
+        },
+        {
+          "name": "Always Watching",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Angel of the Ruins",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "368a91dc6a34f196b8faa41ad501cd84c37d0100ee1e39c4475c97ef099aa85c"
+        },
+        {
+          "name": "Angelic Destiny",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "8c7aee93913c998eb13c781d2872ef1248138c6fb90a81def4cd63c013d6f122"
+        },
+        {
+          "name": "Angelic Field Marshal",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "dd8300fd2dc64888db70314655be42d037a505b02af003c3365be8d2bbe4921c"
+        },
+        {
+          "name": "Angelic Sleuth",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Archangel of Tithes",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "90a45983d2f63095f1cb342acdea6df1e51964cbd7e92c701f142d05153aab5d"
+        },
+        {
+          "name": "Austere Command",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Bishop of Wings",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Cleansing Nova",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Court of Grace",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Day of Judgment",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Emeria Shepherd",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "cba4929c67feab6fe4f1de915b94a928fd5d175e32c84fc857b112b07ae0d17e"
+        },
+        {
+          "name": "Exemplar of Light",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "fe9bc41ee925d7e5906b6f9bdd6b56c1f7dc7ac5ada186dd1ab56833c40ab87d"
+        },
+        {
+          "name": "Fateful Absence",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "6bf8f5725437b310147136b894fc33ce0d24b3797c89afe01a352c045e112c82"
+        },
+        {
+          "name": "Firemane Commando",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "32a38670a42e81b4de61cd13b6b4b9ad825d9fe2d4aaaa8692f2c3ea135ebfc3"
+        },
+        {
+          "name": "Grasp of Fate",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "f14ca003566016450d8a6dd664c65e17530cdbe3187907f3d5bf90bbcdfa4fb4"
+        },
+        {
+          "name": "Herald of Eternal Dawn",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Herald of War",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Linvala, the Preserver",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Lyra Dawnbringer",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Merchant of Truth",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Metropolis Reformer",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Norn's Choirmaster",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Reya Dawnbringer",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Righteous Valkyrie",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "86c0a505ca5fbf4828e389f533ae70713c2d1bd965767d2ba698945eba0f594c"
+        },
+        {
+          "name": "Search the Premises",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Sephara, Sky's Blade",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Seraph of the Sword",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Serra Avenger",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Speaker of the Heavens",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Sunblast Angel",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Wojek Investigator",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "4d6639ec2eb5c294cd27e34ef2cc21990ab567934021b83eb7ba95f511d2cf28"
+        },
+        {
+          "name": "Endless Atlas",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Metallic Mimic",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "c28c9f8153fcbdb1342cf295d40071109c41e0f70da1755744a021437b5ff77d"
+        },
+        {
+          "name": "Tome of Legends",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "b9f9306116922d83fff3dfde39524fa6bc666e91419136f067c38b8f7ca74d23"
+        },
+        {
+          "name": "Vanquisher's Banner",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "6f5a3d204fbd431d5b26cbe0c0442858036fc7b384094bb67d084a48bd162ee5"
+        },
+        {
+          "name": "Bonders' Enclave",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "War Room",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Angel of Finality",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Angel of Vitality",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Cut a Deal",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "5b47cef0d7ed81e6a888f7a0eee4482bbba6de1d5b4c3cb16c95c30efd1af600"
+        },
+        {
+          "name": "Dazzling Angel",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Defy Death",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Destroy Evil",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Exorcise",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Inspiring Overseer",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Invoke the Divine",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Secret Rendezvous",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "8a457b2b6b8c16c63b1fdf1221f0a6c621f842251bbf0af3a84cd89dd86b05d8"
+        },
+        {
+          "name": "Segovian Angel",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Starnheim Aspirant",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Swords to Plowshares",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "07e94133bb38958d3b4aa36e0594971034c26dcd00cd7b225cc02c035d8ff841"
+        },
+        {
+          "name": "Thraben Watcher",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Valorous Stance",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Vanguard Seraph",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Youthful Valkyrie",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Arcane Signet",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "979ae0940bba8460bbbafdbf75b3c91cb72c728e6423cb47b132760484f3b767"
+        },
+        {
+          "name": "Commander's Sphere",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Heraldic Banner",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "d90e769ee19d3f73563d08a4ad1e30c99ba827b34821742f05d93313942adfa4"
+        },
+        {
+          "name": "Marble Diamond",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Mind Stone",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "1963127c4d5c0a22b25fad7179254f9b3ee2456a874a66c37872bfb0ae1e3127"
+        },
+        {
+          "name": "Patchwork Banner",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Sol Ring",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "d9397f3cd813cec7061af694a4618b175817184bceb7c0a123c70aad21edd2a2"
+        },
+        {
+          "name": "Swiftfoot Boots",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "bdc4fedcb78829a3d7256c349a728cad3637f0f4937eef4c2b0f1abd079a7489"
+        },
+        {
+          "name": "Radiant Fountain",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Secluded Steppe",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Seraph Sanctuary",
+          "qty": 1,
+          "compiledRecord": false,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": null
+        },
+        {
+          "name": "Temple of the False God",
+          "qty": 1,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": false,
+          "compiledRecordSha256": "1a021ee3d9f71f4d88fd9e7dfa2484e8ab092bf82272425c8e393de21fb00daf"
+        },
+        {
+          "name": "Plains",
+          "qty": 32,
+          "compiledRecord": true,
+          "explicitUnimplemented": false,
+          "admittedByCoverage": true,
+          "compiledRecordSha256": "2f8ef2cfe3a6482d92aba0172a96ae26c6a9b508e3c05ce93fbe4ada985cab60"
+        }
+      ],
+      "missingCompiled": [
+        "Always Watching",
+        "Angelic Sleuth",
+        "Austere Command",
+        "Bishop of Wings",
+        "Cleansing Nova",
+        "Court of Grace",
+        "Day of Judgment",
+        "Herald of Eternal Dawn",
+        "Herald of War",
+        "Linvala, the Preserver",
+        "Lyra Dawnbringer",
+        "Merchant of Truth",
+        "Metropolis Reformer",
+        "Norn's Choirmaster",
+        "Reya Dawnbringer",
+        "Search the Premises",
+        "Sephara, Sky's Blade",
+        "Seraph of the Sword",
+        "Serra Avenger",
+        "Speaker of the Heavens",
+        "Sunblast Angel",
+        "Endless Atlas",
+        "Bonders' Enclave",
+        "War Room",
+        "Angel of Finality",
+        "Angel of Vitality",
+        "Dazzling Angel",
+        "Defy Death",
+        "Destroy Evil",
+        "Exorcise",
+        "Inspiring Overseer",
+        "Invoke the Divine",
+        "Segovian Angel",
+        "Starnheim Aspirant",
+        "Thraben Watcher",
+        "Valorous Stance",
+        "Vanguard Seraph",
+        "Youthful Valkyrie",
+        "Commander's Sphere",
+        "Marble Diamond",
+        "Patchwork Banner",
+        "Radiant Fountain",
+        "Secluded Steppe",
+        "Seraph Sanctuary"
+      ],
+      "coverageExcluded": [
+        "Giada, Font of Hope",
+        "Always Watching",
+        "Angel of the Ruins",
+        "Angelic Destiny",
+        "Angelic Field Marshal",
+        "Angelic Sleuth",
+        "Archangel of Tithes",
+        "Austere Command",
+        "Bishop of Wings",
+        "Cleansing Nova",
+        "Court of Grace",
+        "Day of Judgment",
+        "Emeria Shepherd",
+        "Exemplar of Light",
+        "Fateful Absence",
+        "Firemane Commando",
+        "Grasp of Fate",
+        "Herald of Eternal Dawn",
+        "Herald of War",
+        "Linvala, the Preserver",
+        "Lyra Dawnbringer",
+        "Merchant of Truth",
+        "Metropolis Reformer",
+        "Norn's Choirmaster",
+        "Reya Dawnbringer",
+        "Righteous Valkyrie",
+        "Search the Premises",
+        "Sephara, Sky's Blade",
+        "Seraph of the Sword",
+        "Serra Avenger",
+        "Speaker of the Heavens",
+        "Sunblast Angel",
+        "Wojek Investigator",
+        "Endless Atlas",
+        "Metallic Mimic",
+        "Tome of Legends",
+        "Vanquisher's Banner",
+        "Bonders' Enclave",
+        "War Room",
+        "Angel of Finality",
+        "Angel of Vitality",
+        "Cut a Deal",
+        "Dazzling Angel",
+        "Defy Death",
+        "Destroy Evil",
+        "Exorcise",
+        "Inspiring Overseer",
+        "Invoke the Divine",
+        "Secret Rendezvous",
+        "Segovian Angel",
+        "Starnheim Aspirant",
+        "Swords to Plowshares",
+        "Thraben Watcher",
+        "Valorous Stance",
+        "Vanguard Seraph",
+        "Youthful Valkyrie",
+        "Arcane Signet",
+        "Commander's Sphere",
+        "Heraldic Banner",
+        "Marble Diamond",
+        "Mind Stone",
+        "Patchwork Banner",
+        "Sol Ring",
+        "Swiftfoot Boots",
+        "Radiant Fountain",
+        "Secluded Steppe",
+        "Seraph Sanctuary",
+        "Temple of the False God"
+      ],
+      "fullMatch": {
+        "status": "UNSUPPORTED",
+        "reason": "Exact deck has missing compiled definitions and fails existing admission; no substitutions or stub records."
+      },
+      "currentPickerAvailability": "NOT TESTED",
+      "liveCatalogLegality": "NOT TESTED"
+    }
+  ],
+  "limits": [
+    "Exact published lists are retained; unavailable card records are not invented or substituted.",
+    "Full decks are audited for admission, not initialized with missing rules.",
+    "Mechanic starts are engineered two-seat Vintage positions, not complete Commander games.",
+    "Interaction API assertions are not rendered browser controls or CPU-policy checks.",
+    "Live catalog legality, current picker/account availability, full matches and broader support remain unverified.",
+    "Product recovery remains UNSUPPORTED. No engine build or deployment is part of this task."
+  ],
+  "partial": false,
+  "counts": {
+    "PASS": 8,
+    "FAIL": 1,
+    "NOT TESTED": 0,
+    "UNSUPPORTED": 0
+  },
+  "sourceSha256": {
+    "deck-execution-audit.mjs": "f94a86d9a9e369319ac53ee649fe598677073fc8c68f870f265c4a10a9cf8ef0",
+    "acceptance-inputs.mjs": "ff29722ad1efe200130bf031880073d8d7b87ecda7d7e9718753f02a39697405",
+    "mechanics-fixtures.mjs": "41376f6253f4fe6c5cc15cda917111e6f4bbb8c74886d5f5d7c566f37ef494e4",
+    "mechanics-inputs.mjs": "66461978fed003c3931601beb8d752dcbadabc424df7e899ce789156e4a21874",
+    "runtime-assets.mjs": "b210246c9d60e051927b47669cedb59ec7c5920bfca80e6cbc64b2f89e1b668e",
+    "interaction-surface.mjs": "bffbb62bd6a20d00e4265758496f5b8eb7042396c5c6e9a77c1d0fcea88c4eb0",
+    "match-input.mjs": "dbaa6c50da3d9dd33c6fe3eb71142c7b94109b396d88a187c129d12eb364c6ce",
+    "practice-coverage.mjs": "49fe0a22ccaa21b37b548461ea94cae98c8ae666087055ba31c16afbd9564652",
+    "catalog-admission.mjs": "3e0a141c42d328afaf48bd7083e0a86605305db875b33878c1e2a7481b09c390",
+    "fixtures/deck-001/tramplesaurus-rex.json": "76c881fcb980428289a3e7f234065b6c5a323592ce02e230acdb04dbfc25fa89",
+    "fixtures/deck-001/calling-all-angels.json": "2f727450068e6ef31fcb112aaa0782789e19ae12aeeead774d904675a21243e3"
+  },
+  "finishedAt": "2026-10-25T16:37:29.347Z"
+}
