@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "status": "research-runtime-not-public-play-adoption",
+  "buildIdentity": "cardstashy-ci-40153568000-1-ninjutsu-a49b8aa",
+  "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+  "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+  "artifactId": 12584327345,
+  "artifactZipSha256": "edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b",
+  "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+  "wasmBytes": 338226914,
+  "encoding": "gzip",
+  "compressedSha256": "0fd7805c6e785aef1abaf48d73f5228bcb37db3d8406c89177b9dade105c4026",
+  "compressedBytes": 37986854,
+  "chunks": [
+    {
+      "path": "wasm.part-00.bin",
+      "bytes": 16777216,
+      "sha256": "5721d1bdcf601162b9f41ef806332fcca2957565e86101f6e5d2b2afda2fa325"
+    },
+    {
+      "path": "wasm.part-01.bin",
+      "bytes": 16777216,
+      "sha256": "d2b535a9c2296c6994ce3ed676d032a1ead847fcea12bf43ffc2347676c10837"
+    },
+    {
+      "path": "wasm.part-02.bin",
+      "bytes": 4432422,
+      "sha256": "5b1007b7c501d430808f37d1f75cab38a1d85995cc90d235262cfcdc16d71f61"
+    }
+  ],
+  "glue": {
+    "path": "engine_wasm.js",
+    "sha256": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc"
+  },
+  "limits": "External executable card-data and real-deck admission remain separate. No engine execution on the web server.",
+  "cardDatabase": {
+    "path": "card-rules.bin",
+    "encoding": "gzip",
+    "sha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "bytes": 3536582,
+    "decodedSha256": "6e1cfd15ae73b426ee6fb4e26c7a5d83af96e905c0f5fd3d301a3d195e40118e",
+    "decodedBytes": 20102075,
+    "entries": 6137,
+    "source": "pinned upstream integration fixture, not a full-card support certificate"
+  }
+}
