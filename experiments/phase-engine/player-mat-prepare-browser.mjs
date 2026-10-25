@@ -1,0 +1,53 @@
+// Actual player-mat launch/capture with simulated metadata preparation and flow.
+// No engine, worker, account authentication, catalog fetch or game is executed.
+import assert from 'node:assert/strict';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {createServer} from 'node:http';
+import {resolve,join} from 'node:path';
+import {pathToFileURL} from 'node:url';
+import {createHash} from 'node:crypto';
+const sha=b=>createHash('sha256').update(b).digest('hex'),routes=new Map(),stubs={
+ 'core.js':"export const cardKey=name=>String(name||'').trim().toLowerCase();",
+ 'ui.js':"export const magicArtworkSources=()=>[];",
+ 'finish-preview.js':"export const finishAttrs=()=>'';export const attachFinishPreview=()=>()=>{};",
+ 'artwork.js':"export const handleArtworkError=()=>{};",
+ 'rarity-emblem.js':"export const rarityEmblem=()=>'';",
+ 'commander-evidence.js':"export const cardBracketBadges=()=>[];",
+ 'rule-dex.js':"export const ruleText=()=>'';export const ruleCardContext=()=>({});export const dismissRuleHint=()=>{};",
+ 'play-deck-context.js':"export const capturePracticeDeckContext=d=>d;",
+ 'power.js':"export const powerChip=()=>'';"
+};
+for(const [name,source]of Object.entries(stubs))routes.set('/site/'+name,Buffer.from(source));
+for(const name of ['play-player-mat.js','play-card-surface.js'])routes.set('/site/'+name,await readFile(new URL('../../'+name,import.meta.url)));
+routes.set('/',Buffer.from(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:2rem;background:#18191c;color:#eee;font:16px system-ui}</style><main id="mat"></main><script type="module">
+import {createPlayerMat} from '/site/play-player-mat.js';
+window.account={user:{id:'fixture-owner'},accountGeneration:1};window.catalog=new Map();window.lookups=[];window.events=[];window.flowCreated=0;window.flowStarted=0;window.loadedModules=0;window.prepared=null;window.preparePending=false;
+window.setup={profile:{ownerId:'fixture-owner',signedIn:true,displayName:'Fixture'},match:{mode:'cpu',format:'Standard',difficulty:'Medium'},selected:{name:'Original selected list',format:'Standard',cards:[{name:'Plains',qty:58,printingId:'plains-a',finish:'foil'},{name:'Savannah Lions',qty:2,printingId:'lions-a',finish:'nonfoil'}],side:[{name:'Lightning Bolt',qty:1,printingId:'bolt-a',finish:'nonfoil'}]},opponent:{name:'Original opponent list',format:'Standard',cards:[{name:'Forest',qty:60,printingId:'forest-a',finish:'nonfoil'}],side:[]}};
+const metadata=[['plains-a','Plains'],['lions-a','Savannah Lions'],['bolt-a','Lightning Bolt'],['forest-a','Forest']];
+window.finishPrep=()=>{for(const [id,name]of metadata)catalog.set(id,{id,name,finishes:['nonfoil','foil'],oracle_text:'Resolved '+name,type_line:name==='Plains'||name==='Forest'?'Basic Land':'Fixture spell',image_uris:{normal:location.origin+'/art/'+id+'.jpg'}});window.resolvePrep();};
+const lookup=(name,printing)=>{lookups.push({name,printing});return catalog.get(printing)||null;};
+const load=async()=>{loadedModules++;events.push('modules');return {createPracticeFlow:options=>{flowCreated++;events.push('flow');window.flowOptions={sessionOnly:options.sessionOnly};return {async start(start){flowStarted++;events.push('start');window.captured=structuredClone(options.readSetup());window.startInput=structuredClone(start);const result={phase:'playing',matchId:'fixture-match',binding:null,game:null,error:null};options.onChange(result);return result;},resume(){throw Error('UNEXPECTED_RESUME');},getSession(){return null;},reconcile(){return true;},detach(){}};},mountMatchTable(){throw Error('UNEXPECTED_TABLE_MOUNT');}};};
+window.host=createPlayerMat({root:document.getElementById('mat'),readAccount:()=>account,readSetup:()=>setup,lookup,captureContext:d=>d,load,prepareArtwork:async value=>{events.push('prepare');prepared=structuredClone(value);value.selected.cards[0].qty=1;window.preparePending=true;await new Promise((resolve,reject)=>{window.resolvePrep=resolve;window.rejectPrep=reject;});events.push('prepared');},onChange:s=>events.push('phase:'+s.phase)});
+window.original=structuredClone(setup);window.openPromise=(new URL(location.href).searchParams.has('resume')?host.resume('old-match'):host.start({seed:12345,first:0})).then(result=>({ok:true,result}),error=>({ok:false,error:error.message}));window.ready=true;
+</script>`));
+const server=createServer((req,res)=>{const p=new URL(req.url,'http://localhost').pathname,b=routes.get(p);if(!b){res.writeHead(404).end();return;}res.setHeader('Content-Type',p==='/'?'text/html':'text/javascript');res.end(b);});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+const out=resolve(process.env.CARDSTASHY_PREPARE_OUTPUT||'test-results/player-mat-prepare');await mkdir(out,{recursive:true});
+const {chromium}=await import(pathToFileURL(join(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES,'playwright/index.mjs'))),browser=await chromium.launch({headless:true,executablePath:process.env.CARDSTASHY_CHROMIUM_PATH,args:['--no-sandbox','--disable-dev-shm-usage']});
+const report={passed:false,browser:browser.version(),checks:[],sourceSha256:Object.fromEntries([...routes].map(([p,b])=>[p,sha(b)])),stubbedModules:Object.keys(stubs),limits:'Actual player-mat host and artwork capture with simulated metadata/preparation promises and stubbed flow, deck context, styling/wiki/finish dependencies. No engine, workers, real account, network card resolution, rendering or complete-match proof.'};
+const errors=[];async function open(resume=false){const page=await browser.newPage({viewport:{width:1280,height:720}});page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:'+server.address().port+(resume?'/?resume=1':''));await page.waitForFunction(()=>window.ready);if(!resume)await page.waitForFunction(()=>preparePending);return page;}
+try{
+ let page=await open();
+ assert.deepEqual(await page.evaluate(()=>({flowCreated,flowStarted,lookups:lookups.length,loadedModules})),{flowCreated:0,flowStarted:0,lookups:0,loadedModules:1});assert.match(await page.locator('h1').innerText(),/Preparing your cards/);
+ const prepared=await page.evaluate(()=>prepared);assert.deepEqual(prepared,await page.evaluate(()=>original));await page.evaluate(()=>finishPrep());const opened=await page.evaluate(()=>openPromise);assert.equal(opened.ok,true);
+ const capture=await page.evaluate(()=>({captured,startInput,setup,flowCreated,flowStarted,flowOptions,lookups,events}));assert.equal(capture.flowCreated,1);assert.equal(capture.flowStarted,1);assert.equal(capture.flowOptions.sessionOnly,true);
+ assert.equal(capture.captured.selected.cards[0].qty,58);assert.equal(capture.captured.selected.name,'Original selected list');assert.equal(capture.captured.selected.cards[0].playArtwork.card.id,'plains-a');assert.equal(capture.captured.selected.cards[0].playArtwork.finish,'foil');assert.equal(capture.captured.selected.cards[1].playArtwork.card.oracle_text,'Resolved Savannah Lions');assert.equal(capture.captured.selected.side[0].playArtwork.card.id,'bolt-a');assert.equal(capture.captured.opponent.cards[0].playArtwork.card.id,'forest-a');assert.equal(capture.lookups.length,4);assert(capture.events.indexOf('prepared')<capture.events.indexOf('flow'));assert(capture.events.indexOf('flow')<capture.events.indexOf('start'));
+ await page.evaluate(()=>{setup.selected.cards[0].qty=3;setup.selected.side[0].finish='foil';setup.opponent.name='Changed later';});const frozen=await page.evaluate(()=>captured);assert.equal(frozen.selected.cards[0].qty,58);assert.equal(frozen.selected.side[0].finish,'nonfoil');assert.equal(frozen.opponent.name,'Original opponent list');await page.close();
+ report.checks.push('metadata preparation gates flow creation, worker-start surrogate and lookup after module loading','actual artwork capture receives resolved exact-printing metadata for both main lists and sideboard','prepare receives a cloned selection; mutating it cannot alter the selected list','captured source list, printing, finish and opponent remain frozen after later setup edits');
+ for(const [name,change]of [['account',()=>{account={user:{id:'other-owner'},accountGeneration:2};}],['selection',()=>{setup.selected.cards[0].qty=57;}],['opponent',()=>{setup.opponent.name='Changed during preparation';}]]){
+  page=await open();await page.evaluate(change);await page.evaluate(()=>finishPrep());const result=await page.evaluate(()=>openPromise);assert.equal(result.ok,false);assert.equal(result.error,'SELECTION_CHANGED');assert.deepEqual(await page.evaluate(()=>({flowCreated,flowStarted,lookups:lookups.length})),{flowCreated:0,flowStarted:0,lookups:0});assert.match(await page.locator('h1').innerText(),/Practice could not open/);await page.close();report.checks.push(name+' change during preparation prevents capture and flow startup');
+ }
+ page=await open();await page.evaluate(()=>rejectPrep(Error('ARTWORK_PREPARE_FAILED')));const failed=await page.evaluate(()=>openPromise);assert.equal(failed.ok,false);assert.equal(failed.error,'ARTWORK_PREPARE_FAILED');assert.equal(await page.evaluate(()=>flowCreated+flowStarted+lookups.length),0);assert.match(await page.locator('body').innerText(),/ARTWORK_PREPARE_FAILED/);assert.match(await page.locator('h1').innerText(),/Practice could not open/);await page.screenshot({path:join(out,'preparation-error.png')});await page.close();report.checks.push('rejected preparation presents the error and creates no flow or worker-start surrogate');
+ page=await open(true);const resumed=await page.evaluate(()=>openPromise);assert.equal(resumed.ok,false);assert.equal(resumed.error,'SESSION_RESUME_UNAVAILABLE');assert.deepEqual(await page.evaluate(()=>({flowCreated,flowStarted,lookups:lookups.length,loadedModules,preparePending})),{flowCreated:0,flowStarted:0,lookups:0,loadedModules:0,preparePending:false});await page.close();report.checks.push('session-only resume rejects before module load, metadata preparation or flow startup');
+ assert.deepEqual(errors,[]);report.passed=true;console.log(JSON.stringify({passed:true,checks:report.checks,limits:report.limits}));
+}catch(error){report.error=String(error.stack||error);throw error;}
+finally{report.harnessSha256=sha(await readFile(new URL(import.meta.url)));await writeFile(join(out,'report.json'),JSON.stringify(report,null,2)+'\n');await browser.close();await new Promise(r=>server.close(r));}

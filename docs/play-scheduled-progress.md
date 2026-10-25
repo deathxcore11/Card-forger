@@ -1831,3 +1831,54 @@ was freshly read as fe1d753749af2324bd875e32ca8af8f8dbfd2ac9; verify again befor
 selected-source integration. Owner release approval remains sufficient once the
 concrete account-facing beta passes its actual core gates. Production unchanged.
 Evidence: experiments/phase-engine/session-beta-proof-2026-10-25/.
+
+## October 25, 2026 — substantial-list human controls and artwork preparation
+
+Continued at freshly pushed9ede66e1f8fb057e0487dbfec3fe96d0a13d9724 after the
+owner asked to continue and requested a ready/working/remaining list. Owner again
+prioritized core rules/playability and deferring strength/modes/resume, with a
+published beta for owner/friends bug testing. No new approval/payment requested.
+
+Fixed an actual account-launch integration gap: createPlayerMat now awaits an
+optional prepareArtwork callback before capturing artwork/context and creating
+its flow. The app passes its existing account-guarded resolveNames loader for
+both exact selected lists and sideboards. Frozen setup is checked again after
+the await; stale account/deck changes cannot start a worker. Preparation gets a
+clone, source lists remain untouched, missing exact printing still never becomes
+a falsely claimed printing. Existing renderer and finish/rarity/wiki hooks are
+reused. Bumped private shell cache for these bytes. No inventory or schema writes.
+
+New actual-host/capturePracticeArtwork browser proof passes: no lookup/flow/start
+before metadata resolves; main/opponent/side exact-print metadata available when
+captured; later source edits cannot alter frozen captures; account/selected list/
+opponent changes during loading prevent start; rejected preparation shows a
+recoverable setup error and creates no flow; session-only resume rejects early.
+Dependencies/metadata loading/flow are simulated in this focused host proof.
+It does not establish a signed-in owner match or final rendered artwork quality.
+
+New green-deck-browser.mjs runs the exact60-card24Forest/36creature list through
+the real account/setup coordinator, session-only authority and visible controls.
+Its server explicitly overrides coverage TEST-ONLY for that list; production
+practice-coverage.mjs is unchanged. Authority IndexedDB getter throws. Exact
+runtime/rules bytes remain verified by the normal loader. Actual human driver
+uses published castSpell opportunities and inspector->Cast-auto, never bypassing
+gameplay UI with direct engine commands. It completes revision236/turn12 with
+CPU winner1 and114human commands:105prioritypasses,3lands,2casts,2individual attacks,
+1no-block,1Keep. Human actually casts ScavengingOoze and Tarmogoyf. Exact Forest
+printing/finish observed. No reported unsupported prompt/game error in that run.
+This is one substantial-list visible-match proof, not all9cards/optional abilities,
+independent current Standard legality, actual signed-in account or release proof.
+Do not promote test-only admission to production supported-card certification.
+
+Reports in session-beta-proof-2026-10-25/green-browser.json and
+card-preparation.json bind their exact source bytes. Current252focused checks and
+three flying/reach engine assertions remain the preceding checkpoint; no unrelated
+broad repeat was needed for this host-only preparation change. Navigation tests
+and syntax checks were rerun and pass. Runtime/binaries/pool unchanged. No paid
+build, raw saved-match upload, deployment, APK/server schema/subscription change.
+
+Next core work remains real selected/imported-list admission and actual app launch
+at known tested scope, then current-release selected-source integration/publication
+for owner testing. Advanced difficulty and resume remain deferred. Do not repeat
+old storage experiments or polish menus instead of finishing that launch. Current
+public match flag/button are still gated; no live beta is claimed by this proof.

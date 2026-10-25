@@ -1,0 +1,911 @@
+{
+  "passed": true,
+  "checks": [
+    "60-card mono-green selected snapshots admitted by engine with test-only coverage",
+    "account/setup flow starts session-only authority with IndexedDB access forbidden",
+    "exact Forest printing/finish reaches visible table",
+    "visible human gameplay reaches engine terminal on a 24-land/36-creature deck"
+  ],
+  "files": {
+    "/practice-flow.mjs": "6f4b937d7a0fc026b9d61c3471740869da00ab945265106118283cb5fb4ce8cc",
+    "/practice-authority.mjs": "a279bb75d5c3137852c7b09cb7e47fd3ee53ab344d1b880c7781b935f7e6d760",
+    "/practice-client.mjs": "e4a376f2429222a3d376385bdc997f5b8fe5d51acddd2e447b4c3408d9887999",
+    "/practice-session-record.mjs": "f8190129e4d3188a29ad3d122a3b14155ed31f72c4dc7068019ca369c5b14204",
+    "/practice-record.mjs": "997e43c3ab1cc431bb64eeb8d633916f400e463c8b13d09a47464f3989bc2313",
+    "/practice-presentation.mjs": "52c94571744aa406292e6819cb268191bf7b55470fe501a84a1f3c0b444052ba",
+    "/practice-coverage.mjs": "8e4b4580f72657769f188006b04e74d781204eb0aeffc68138c239b5780250d2",
+    "/runtime-assets.mjs": "b210246c9d60e051927b47669cedb59ec7c5920bfca80e6cbc64b2f89e1b668e",
+    "/match-input.mjs": "11ab10b1ad37dc15d87af08fbe0dd9c9311ca7084533216d2f8860f6a711bf10",
+    "/match-authority.mjs": "8860d2e65a20b502a516d1cc90f9d8db8c645ddc9f1664eea879f14aea85df45",
+    "/human-command.mjs": "9b7e62b4271d35337f75fa07b5f4486e4678b1e1dafef5464d262e7e8053aa2b",
+    "/visible-cpu-policy.mjs": "6fde41a268b1874b2e2817266a8a61a76f2fe63c53efcedcf80f5917ab095fd2",
+    "/visible-policy-worker.mjs": "0c8c5dd513c461c135cf2ee38df77f0fe935ff2f08a8f4be6932af703bdef233",
+    "/worker-journal.mjs": "7eaa025fc8be22a7c17f927e176ec669a8ce0ae50138afe5c493fce99104a519",
+    "/turn-budget.mjs": "efd21e1aa500d2a2beb2bb3ad69891d96d29a0c70da507264263c6cdbbcea5ff",
+    "/protocol-fault.mjs": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+    "/priority-clock.mjs": "4c939bf6d616ecf582228918bd73094c43b998e0168996961429c8e964707602",
+    "/priority-scheduler.mjs": "384c3ebad47090992a0e544d91cb0d4c234a9fc75d085b9aa84905eaf06586f3",
+    "/seat-surface.mjs": "70176fb74d5eff9d023a406587aeb433e25fbda30dfd25dea836d0e0b4fb4f94",
+    "/interaction-surface.mjs": "1c11bc585304bea499575daca025c17abe50689060ee1c454daca6a0ecc44cbc",
+    "/match-session.mjs": "1b9d48f064219fc16016e993e8abd9aca8a477b6138008d1a88fa98c952f045b",
+    "/card-placement.mjs": "e84ae49658ec58cbaa21488c6a73162a8e370f280425cfc2778ae394f28f3259",
+    "/match-table.mjs": "27887e99b101b817134a432395e4044ebf5094df9270e6c33a64904460d0c9d5",
+    "/match-table.css": "aa65b4a57a4c7eae1bfa064aeb517036ddbf38c444331492d91a56ef6d1f57ba",
+    "/card-stats.mjs": "9d2df7ff86d2f96e97481451b7cdb3eb500d447430f4f9862ba76c49ca7bb46f",
+    "/random-outcomes.mjs": "1aa212c485c766caf1d80403f2413c22bb17194cbbfa54979a699a38ea2d12d0",
+    "/runtime/a86578b23adcd26c/manifest.json": "86f0bab388d622f856bf4a83921f9ce1878eb377b3abfe74126ecf3b5ccc7513",
+    "/runtime/a86578b23adcd26c/engine_wasm.js": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "/runtime/a86578b23adcd26c/card-rules.bin": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "/runtime/a86578b23adcd26c/wasm.part-00.bin": "f267974f9b6582f47fd2e4cbb7cea0917d6b595f1827933b6c2709af099e158f",
+    "/runtime/a86578b23adcd26c/wasm.part-01.bin": "535e0be33fff841d62f101d5fa0268151dd59f7608d784211ae8f0a790842f73",
+    "/runtime/a86578b23adcd26c/wasm.part-02.bin": "4880cc2e849a8dda9527ce5ea0b8ed6ced0fccade4da588e079b8297b55928e7",
+    "/": "14f9228626f5ca92fb1be31f85e7b59497d12362db0a811246079e4d9f200232"
+  },
+  "limits": "Exact delivered engine; simulated account/setup readers; a60-card mono-green casual list. Test-only coverage admits these10exactnames, without modifying production coverage. IndexedDB denial injected into authority. Does not certify every optional ability/card drawn, actual signed-in owner route, independent current legality, all supported pools, difficulty or release readiness.",
+  "commands": [
+    {
+      "revision": 0,
+      "turn": 1,
+      "phase": "Untap",
+      "kind": "MulliganDecision",
+      "method": "visible-keep"
+    },
+    {
+      "revision": 2,
+      "turn": 1,
+      "phase": "Upkeep",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 4,
+      "turn": 1,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-land",
+      "label": "Play Forest"
+    },
+    {
+      "revision": 5,
+      "turn": 1,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 7,
+      "turn": 1,
+      "phase": "BeginCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 9,
+      "turn": 1,
+      "phase": "EndCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 11,
+      "turn": 1,
+      "phase": "PostCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 13,
+      "turn": 1,
+      "phase": "End",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 16,
+      "turn": 2,
+      "phase": "Upkeep",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 18,
+      "turn": 2,
+      "phase": "Draw",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 22,
+      "turn": 2,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 24,
+      "turn": 2,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 26,
+      "turn": 2,
+      "phase": "BeginCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 28,
+      "turn": 2,
+      "phase": "EndCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 30,
+      "turn": 2,
+      "phase": "PostCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 32,
+      "turn": 2,
+      "phase": "End",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 33,
+      "turn": 3,
+      "phase": "Upkeep",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 35,
+      "turn": 3,
+      "phase": "Draw",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 37,
+      "turn": 3,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-land",
+      "label": "Play Forest"
+    },
+    {
+      "revision": 38,
+      "turn": 3,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-inspect-cast-auto",
+      "card": "Scavenging Ooze"
+    },
+    {
+      "revision": 39,
+      "turn": 3,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 41,
+      "turn": 3,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 43,
+      "turn": 3,
+      "phase": "BeginCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 45,
+      "turn": 3,
+      "phase": "EndCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 47,
+      "turn": 3,
+      "phase": "PostCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 49,
+      "turn": 3,
+      "phase": "End",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 52,
+      "turn": 4,
+      "phase": "Upkeep",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 54,
+      "turn": 4,
+      "phase": "Draw",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 58,
+      "turn": 4,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 60,
+      "turn": 4,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 62,
+      "turn": 4,
+      "phase": "BeginCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 65,
+      "turn": 4,
+      "phase": "EndCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 67,
+      "turn": 4,
+      "phase": "PostCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 69,
+      "turn": 4,
+      "phase": "End",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 70,
+      "turn": 5,
+      "phase": "Upkeep",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 72,
+      "turn": 5,
+      "phase": "Draw",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 74,
+      "turn": 5,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-land",
+      "label": "Play Forest"
+    },
+    {
+      "revision": 75,
+      "turn": 5,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 77,
+      "turn": 5,
+      "phase": "BeginCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 79,
+      "turn": 5,
+      "phase": "DeclareAttackers",
+      "kind": "DeclareAttackers",
+      "method": "visible-individual-attack",
+      "selected": 1
+    },
+    {
+      "revision": 80,
+      "turn": 5,
+      "phase": "DeclareAttackers",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 83,
+      "turn": 5,
+      "phase": "DeclareBlockers",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 85,
+      "turn": 5,
+      "phase": "CombatDamage",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 87,
+      "turn": 5,
+      "phase": "EndCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 89,
+      "turn": 5,
+      "phase": "PostCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 91,
+      "turn": 5,
+      "phase": "End",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 94,
+      "turn": 6,
+      "phase": "Upkeep",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 96,
+      "turn": 6,
+      "phase": "Draw",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 99,
+      "turn": 6,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 101,
+      "turn": 6,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 103,
+      "turn": 6,
+      "phase": "BeginCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 106,
+      "turn": 6,
+      "phase": "DeclareAttackers",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 108,
+      "turn": 6,
+      "phase": "DeclareBlockers",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 110,
+      "turn": 6,
+      "phase": "CombatDamage",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 112,
+      "turn": 6,
+      "phase": "EndCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 114,
+      "turn": 6,
+      "phase": "PostCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 116,
+      "turn": 6,
+      "phase": "End",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 117,
+      "turn": 7,
+      "phase": "Upkeep",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 119,
+      "turn": 7,
+      "phase": "Draw",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 121,
+      "turn": 7,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 123,
+      "turn": 7,
+      "phase": "BeginCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 125,
+      "turn": 7,
+      "phase": "EndCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 127,
+      "turn": 7,
+      "phase": "PostCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 129,
+      "turn": 7,
+      "phase": "End",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 132,
+      "turn": 8,
+      "phase": "Upkeep",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 134,
+      "turn": 8,
+      "phase": "Draw",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 138,
+      "turn": 8,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 140,
+      "turn": 8,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 142,
+      "turn": 8,
+      "phase": "BeginCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 145,
+      "turn": 8,
+      "phase": "DeclareAttackers",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 147,
+      "turn": 8,
+      "phase": "DeclareBlockers",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 149,
+      "turn": 8,
+      "phase": "CombatDamage",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 151,
+      "turn": 8,
+      "phase": "EndCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 153,
+      "turn": 8,
+      "phase": "PostCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 155,
+      "turn": 8,
+      "phase": "End",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 156,
+      "turn": 9,
+      "phase": "Upkeep",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 158,
+      "turn": 9,
+      "phase": "Draw",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 160,
+      "turn": 9,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-inspect-cast-auto",
+      "card": "Tarmogoyf"
+    },
+    {
+      "revision": 161,
+      "turn": 9,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 163,
+      "turn": 9,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 165,
+      "turn": 9,
+      "phase": "BeginCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 167,
+      "turn": 9,
+      "phase": "EndCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 169,
+      "turn": 9,
+      "phase": "PostCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 171,
+      "turn": 9,
+      "phase": "End",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 174,
+      "turn": 10,
+      "phase": "Upkeep",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 176,
+      "turn": 10,
+      "phase": "Draw",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 179,
+      "turn": 10,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 181,
+      "turn": 10,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 183,
+      "turn": 10,
+      "phase": "BeginCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 186,
+      "turn": 10,
+      "phase": "DeclareAttackers",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 187,
+      "turn": 10,
+      "phase": "DeclareBlockers",
+      "kind": "DeclareBlockers",
+      "method": "visible-no-block"
+    },
+    {
+      "revision": 189,
+      "turn": 10,
+      "phase": "DeclareBlockers",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 191,
+      "turn": 10,
+      "phase": "CombatDamage",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 193,
+      "turn": 10,
+      "phase": "EndCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 195,
+      "turn": 10,
+      "phase": "PostCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 197,
+      "turn": 10,
+      "phase": "End",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 198,
+      "turn": 11,
+      "phase": "Upkeep",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 200,
+      "turn": 11,
+      "phase": "Draw",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 202,
+      "turn": 11,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 204,
+      "turn": 11,
+      "phase": "BeginCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 206,
+      "turn": 11,
+      "phase": "DeclareAttackers",
+      "kind": "DeclareAttackers",
+      "method": "visible-individual-attack",
+      "selected": 1
+    },
+    {
+      "revision": 207,
+      "turn": 11,
+      "phase": "DeclareAttackers",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 210,
+      "turn": 11,
+      "phase": "DeclareBlockers",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 212,
+      "turn": 11,
+      "phase": "CombatDamage",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 214,
+      "turn": 11,
+      "phase": "EndCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 216,
+      "turn": 11,
+      "phase": "PostCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 218,
+      "turn": 11,
+      "phase": "End",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 221,
+      "turn": 12,
+      "phase": "Upkeep",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 223,
+      "turn": 12,
+      "phase": "Draw",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 226,
+      "turn": 12,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 228,
+      "turn": 12,
+      "phase": "PreCombatMain",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 230,
+      "turn": 12,
+      "phase": "BeginCombat",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 233,
+      "turn": 12,
+      "phase": "DeclareAttackers",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    },
+    {
+      "revision": 235,
+      "turn": 12,
+      "phase": "DeclareBlockers",
+      "kind": "Priority",
+      "method": "visible-priority-pass"
+    }
+  ],
+  "prompts": [
+    "MulliganDecision",
+    "Priority",
+    "DeclareAttackers",
+    "DeclareBlockers"
+  ],
+  "castCards": [
+    "Scavenging Ooze",
+    "Tarmogoyf"
+  ],
+  "browser": "153.0.8010.0",
+  "terminal": {
+    "revision": 236,
+    "winner": 1,
+    "turn": 12,
+    "humanCommands": 114
+  },
+  "requestPaths": [
+    "/",
+    "/match-table.css",
+    "/practice-flow.mjs",
+    "/match-table.mjs",
+    "/practice-client.mjs",
+    "/match-input.mjs",
+    "/runtime-assets.mjs",
+    "/match-session.mjs",
+    "/card-placement.mjs",
+    "/interaction-surface.mjs",
+    "/card-stats.mjs",
+    "/random-outcomes.mjs",
+    "/priority-scheduler.mjs",
+    "/protocol-fault.mjs",
+    "/practice-authority.mjs",
+    "/runtime-assets.mjs",
+    "/practice-record.mjs",
+    "/practice-session-record.mjs",
+    "/practice-presentation.mjs",
+    "/practice-coverage.mjs",
+    "/match-authority.mjs",
+    "/worker-journal.mjs",
+    "/match-input.mjs",
+    "/human-command.mjs",
+    "/visible-cpu-policy.mjs",
+    "/seat-surface.mjs",
+    "/protocol-fault.mjs",
+    "/interaction-surface.mjs",
+    "/random-outcomes.mjs",
+    "/priority-clock.mjs",
+    "/turn-budget.mjs",
+    "/runtime/a86578b23adcd26c/manifest.json",
+    "/runtime/a86578b23adcd26c/engine_wasm.js",
+    "/runtime/a86578b23adcd26c/wasm.part-00.bin",
+    "/runtime/a86578b23adcd26c/wasm.part-01.bin",
+    "/runtime/a86578b23adcd26c/wasm.part-02.bin",
+    "/runtime/a86578b23adcd26c/card-rules.bin",
+    "/visible-policy-worker.mjs",
+    "/visible-cpu-policy.mjs"
+  ],
+  "harnessSha256": "215d8ce84a879bd1dbb9490bac5ac37cf36b69b196ebeae7ad9b420c3b5efe23"
+}

@@ -7,8 +7,8 @@ const loadModules=async()=>{
  const [flow,table]=await Promise.all([import('./experiments/phase-engine/practice-flow.mjs'),import('./experiments/phase-engine/match-table.mjs')]);
  return {createPracticeFlow:flow.createPracticeFlow,mountMatchTable:table.mountMatchTable};
 };
-export function createPlayerMat({root,readAccount,readSetup,lookup,captureContext=capturePracticeDeckContext,onChange=()=>{},onClose=()=>{},load=loadModules,sessionOnly=true}={}){
- if(!root||typeof readAccount!=='function'||typeof readSetup!=='function'||typeof lookup!=='function')throw Error('PLAYER_MAT_HOST_REQUIRED');
+export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwork=async()=>{},captureContext=capturePracticeDeckContext,onChange=()=>{},onClose=()=>{},load=loadModules,sessionOnly=true}={}){
+ if(!root||typeof readAccount!=='function'||typeof readSetup!=='function'||typeof lookup!=='function'||typeof prepareArtwork!=='function')throw Error('PLAYER_MAT_HOST_REQUIRED');
  if(typeof sessionOnly!=='boolean')throw Error('INVALID_SESSION_MODE');
  let generation=0,flow=null,table=null,opening=false,last=null,frame=null,pendingPaint=null,warning=false;
  const view=root.ownerDocument.defaultView;
@@ -46,7 +46,7 @@ export function createPlayerMat({root,readAccount,readSetup,lookup,captureContex
   if(opening||flow)throw Error('MATCH_ALREADY_OPEN');opening=true;const ticket=++generation,owner=accountKey(),setup=resume?null:readSetup(),selection=setup&&setupKey(setup);
   try{
    if(!resume&&(!setup?.selected||!setup?.opponent))throw Error('CHOOSE_BOTH_DECKS');
-   message('Opening Practice…',sessionOnly?[sessionNote]:[]);modules=await load();
+   message('Opening Practice…',sessionOnly?[sessionNote]:[]);modules=await load();if(!resume){message('Preparing your cards…',sessionOnly?[sessionNote]:[]);await prepareArtwork(structuredClone(setup));}
    if(ticket!==generation||accountKey()!==owner||!resume&&setupKey(readSetup())!==selection)throw Error('SELECTION_CHANGED');
    const captured=resume?null:{...setup,selected:captureContext(capturePracticeArtwork(setup.selected,lookup)),opponent:captureContext(capturePracticeArtwork(setup.opponent,lookup))};
    flow=modules.createPracticeFlow({readAccount,readSetup:()=>captured,sessionOnly,onChange:state=>receive(state,ticket),onProgress:p=>{if(ticket===generation&&!table)message(p.stage==='rules'?'Preparing card rules…':'Loading Practice…',sessionOnly?[sessionNote]:[]);}});

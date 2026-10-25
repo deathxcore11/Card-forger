@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "browser": "153.0.8010.0",
+  "checks": [
+    "metadata preparation gates flow creation, worker-start surrogate and lookup after module loading",
+    "actual artwork capture receives resolved exact-printing metadata for both main lists and sideboard",
+    "prepare receives a cloned selection; mutating it cannot alter the selected list",
+    "captured source list, printing, finish and opponent remain frozen after later setup edits",
+    "account change during preparation prevents capture and flow startup",
+    "selection change during preparation prevents capture and flow startup",
+    "opponent change during preparation prevents capture and flow startup",
+    "rejected preparation presents the error and creates no flow or worker-start surrogate",
+    "session-only resume rejects before module load, metadata preparation or flow startup"
+  ],
+  "sourceSha256": {
+    "/site/core.js": "c89b20720c58c69b1a61a83f2931a1ff0e2758d09644384fbfff4bed3a20690c",
+    "/site/ui.js": "2979c7ecbc46082c794cbb05de5becdc0643ece7a91b0045be5ab255add977ca",
+    "/site/finish-preview.js": "79a93f4935bff9e938b4f2ad63756419dac5d63b91321275bfab69335b5b815f",
+    "/site/artwork.js": "19e064e93c1fa8ce88386e3275e6a178c11b040ae855e92ec4e4505e06d0ca97",
+    "/site/rarity-emblem.js": "dd086d2e9de72db60ffe415899447f40f467302c40272ef8f13b4a739e43f41d",
+    "/site/commander-evidence.js": "480bbba69c5cfc99107e258be97f44eb5d25e49556f1ad183fdf328e6235f1ad",
+    "/site/rule-dex.js": "2ae565a562a646b6cb022b50170d5985d756e723167436bd01b8b0f02fe87506",
+    "/site/play-deck-context.js": "45228303a9cc6550f1eb72eb7271e972d8786fa56c52d317280feb2f249d512a",
+    "/site/power.js": "1c780a26c4620c6fe2731918b5b4d70174a267e5250b60189bd9a4aab9461645",
+    "/site/play-player-mat.js": "3513c449c8fc9a8d83f6cffca21175dc73f73bd9f3b9fb52f9fe31eafcf422ee",
+    "/site/play-card-surface.js": "f7ce88f328cbabc630647bb829b8aabaa255d8caf25b2153be9a9e1b6c2e27e0",
+    "/": "439265d18831ad06211248236d759834a18bb0abcf848a6f662032692be9ab8d"
+  },
+  "stubbedModules": [
+    "core.js",
+    "ui.js",
+    "finish-preview.js",
+    "artwork.js",
+    "rarity-emblem.js",
+    "commander-evidence.js",
+    "rule-dex.js",
+    "play-deck-context.js",
+    "power.js"
+  ],
+  "limits": "Actual player-mat host and artwork capture with simulated metadata/preparation promises and stubbed flow, deck context, styling/wiki/finish dependencies. No engine, workers, real account, network card resolution, rendering or complete-match proof.",
+  "harnessSha256": "ee0ab62a8cd4d5a354526e7872451aeadcc0d1d7d80dc798ae135d22bee73d75"
+}

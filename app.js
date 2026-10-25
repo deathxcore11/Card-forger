@@ -1506,7 +1506,11 @@ A.playStartCandidate=async()=>{
  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
  practicePregame=mountPracticePregame({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),onCancel:closePlayerMat,onConfirm:async options=>{
   practicePregame?.destroy();practicePregame=null;
-  playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),lookup:(name,wanted)=>{const exact=wanted?S.state.printings?.[wanted]:null;return exact||meta(name);},onClose:closePlayerMat});
+  playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:async setup=>{
+   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
+   const names=[...new Set([setup.selected,setup.opponent].flatMap(d=>[...(d.cards||[]),...(d.side||[])].map(r=>r.name)))];
+   await resolveNames(names,()=>{},false,current);if(!current())throw Error('ACCOUNT_CHANGED');
+  },lookup:(name,wanted)=>{const exact=wanted?S.state.printings?.[wanted]:null;return exact||meta(name);},onClose:closePlayerMat});
   try{await playerMatHost.start(options);}catch(e){toast(e.message);}
  }});
 };

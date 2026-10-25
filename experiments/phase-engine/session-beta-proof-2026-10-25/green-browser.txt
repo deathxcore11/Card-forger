@@ -1,0 +1,10 @@
+BROWSER Loading download
+BROWSER Loading download
+BROWSER Loading download
+BROWSER Loading rules
+BROWSER Loading ready
+Human commands 25 revision 47 castNames ["Scavenging Ooze"]
+Human commands 50 revision 101 castNames ["Scavenging Ooze"]
+Human commands 75 revision 155 castNames ["Scavenging Ooze"]
+Human commands 100 revision 204 castNames ["Scavenging Ooze","Tarmogoyf"]
+{"terminal":{"revision":236,"winner":1,"turn":12,"humanCommands":114},"castCards":["Scavenging Ooze","Tarmogoyf"],"prompts":["MulliganDecision","Priority","DeclareAttackers","DeclareBlockers"]}
