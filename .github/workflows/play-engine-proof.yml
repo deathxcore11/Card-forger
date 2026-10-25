@@ -1,0 +1,60 @@
+name: Optional CardStashy Play engine proof
+
+# Prepared only. Do not use the approval message without a separate explicit
+# approval of this exact job and its possible private-repository billing.
+# Ordinary commits skip the job before runner allocation. An approved empty
+# commit on the exact Play branch works even while this file is absent from the
+# default branch; no paths filter and no dispatch/schedule/chained trigger.
+# A 45-minute job at $0.062/min is about $2.79 if fully billable; allowances
+# are unknown, artifact storage is additional, and this is not a dollar cap.
+on:
+  push:
+    branches:
+      - codex/cardstashy-play-engine-20261024
+
+permissions:
+  contents: read
+
+concurrency:
+  group: optional-play-engine-proof-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: >-
+      github.event_name == 'push' &&
+      github.repository == 'deathxcore11/Card-forger' &&
+      github.event.repository.private == true &&
+      github.ref == 'refs/heads/codex/cardstashy-play-engine-20261024' &&
+      github.event.head_commit.message == 'APPROVED: verify CardStashy Play engine'
+    runs-on: macos-15-intel
+    timeout-minutes: 45
+    steps:
+      - name: Read the exact approved private-repository commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Install Node 24 without package-manager caching
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Build and verify the exact isolated research candidate
+        id: proof
+        timeout-minutes: 42
+        run: node experiments/phase-engine/ci/play-engine-proof.mjs --approved-ci-run
+
+      - name: Retain bounded private research evidence, including failed checks
+        if: ${{ always() && steps.proof.outputs.upload_ready == 'true' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: play-engine-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/play-engine-proof/artifact/
+          retention-days: 1
+          if-no-files-found: error
+          compression-level: 6
+          include-hidden-files: false

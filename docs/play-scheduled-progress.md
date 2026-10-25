@@ -121,3 +121,43 @@ connect/test the timed authority through the real worker/storage boundary;
 add scheduler/countdown and complete explicit mandatory-choice policy. The
 new authority is not mounted in the application. Full engine, UI, CPU,
 Casual/Draft and reviewable-Practice gates remain open.
+
+## October 25, 2026 — native verification and concrete browser build option
+
+The clean committed source candidate `a49b8aa` compiled with native Cranelift
+under the existing memory limit. Ten ninjutsu integration regressions passed,
+including paid response priority, Stifle, save/restore, copied activations,
+original source/defender identity, Rings and Satoru-granted ninjutsu. Additional
+selections passed eight Kaito, ten resolved combat membership and fifteen
+ability-referent tests. Forty-two structural/source-census checks also passed.
+These are 43 behavioral integration passes plus 42 census passes, not a full
+engine certification. See [native proof](../experiments/phase-engine/native-evidence-2026-10-25.json)
+and the [updated source checkpoint](../experiments/phase-engine/NINJUTSU-SOURCE-CHECKPOINT.md).
+
+Direct native execution requires `RUST_MIN_STACK=16777216`. One first Kaito
+invocation omitted it and overflowed; its correctly configured rerun passed.
+The keyword/index library unit selections and full parser-output projection
+remain pending. A filter matching zero tests supplies no coverage.
+
+The corrected browser WASM remains unavailable; the existing runtime's two
+ninjutsu failures stay preserved. A bounded optional 14 GiB Intel macOS Actions
+proof has been prepared for review, with exact source/tree/patch/fixture checks,
+new runtime hashes and real mechanics execution. Ordinary commits cannot
+allocate its runner. It has not run and does not establish a working artifact.
+Execution requires separate approval because private Actions allowance is
+unknown and overage can cost money. It contains no deployment or adoption.
+The Play branch's Pages concurrency group is isolated by workflow/ref so a
+research push cannot cancel another branch's website release.
+
+Forge source study is recorded in [CPU findings](play-forge-cpu-findings.md).
+It supplies concrete combat, target and payment requirements, independently
+authored and not yet executed against a CardStashy policy. No Forge code was
+imported and the selected engine was not switched. The owner supplied a Sanar,
+Curiosity and Magmakin cleanup-loop reference; its exact rules and future
+acceptance cases are tracked separately, without claiming engine support.
+
+The delivery target remains one private complete human-versus-CPU match:
+supported decks, usable player choices, stack responses, visible timer,
+legal bounded CPU decisions, saved recovery and a real terminal result.
+The board and complete human/CPU integration remain unfinished. Additional
+reference documents and passing source checks do not close that product gate.

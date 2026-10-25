@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "kind": "targeted-native-regression-evidence",
+  "observedDate": "2026-10-25",
+  "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+  "sourceCommit": "a49b8aa7a1fedb9743a2fd1f77b8c39e258ef6db",
+  "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+  "sourceWorktreeClean": true,
+  "patchSha256": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+  "rustc": "1.97.0-nightly (0febdbab2 2026-04-18)",
+  "toolchain": "nightly-2026-04-19",
+  "target": "x86_64-unknown-linux-gnu",
+  "codegenBackend": "cranelift",
+  "cargoArguments": [
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "phase-engine",
+    "--target",
+    "x86_64-unknown-linux-gnu",
+    "--features",
+    "test-support",
+    "--test",
+    "integration",
+    "ninjutsu_stack::",
+    "--",
+    "--test-threads=1"
+  ],
+  "environment": {
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_TEST_OPT_LEVEL": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "CARGO_PROFILE_TEST_CODEGEN_UNITS": "256",
+    "CARGO_PROFILE_TEST_LTO": "false",
+    "RUST_MIN_STACK": "16777216",
+    "RUSTFLAGS": "-Zcodegen-backend=cranelift -Zmir-opt-level=0 -Zfewer-names=yes -Zthreads=1"
+  },
+  "compiledIntegrationBinarySha256": "7ddd498aa937dc3206cd01e41e61080406fc2f8fe9370ee79e58f66f4eb37fc6",
+  "cargoBuildDurationSeconds": 799,
+  "selections": [
+    {
+      "filter": "ninjutsu_stack::",
+      "passed": 10,
+      "failed": 0,
+      "durationSeconds": 10.88,
+      "exitCode": 0,
+      "tests": [
+        "ninjutsu_stack::copied_ninjutsu_does_not_extend_original_announcement_reveal",
+        "ninjutsu_stack::copied_ninjutsu_uses_copy_controller_and_keeps_original_source",
+        "ninjutsu_stack::legacy_ninjutsu_without_permanent_defender_pin_enters_nonattacking",
+        "ninjutsu_stack::ninjutsu_does_not_attack_a_new_incarnation_of_the_original_defender",
+        "ninjutsu_stack::ninjutsu_does_not_follow_a_source_that_left_and_returned_to_hand",
+        "ninjutsu_stack::ninjutsu_enters_tapped_without_attacking_when_original_defender_left",
+        "ninjutsu_stack::ninjutsu_has_a_paid_response_window_and_resumes_from_saved_state",
+        "ninjutsu_stack::opponent_can_stifle_ninjutsu_without_refunding_paid_costs",
+        "ninjutsu_stack::rings_observes_ninjutsu_and_copies_its_countered_activation",
+        "ninjutsu_stack::satoru_granted_ninjutsu_survives_returning_its_grant_source_as_cost"
+      ],
+      "evidence": "retained Cargo log"
+    },
+    {
+      "filter": "kaito",
+      "passed": 8,
+      "failed": 0,
+      "durationSeconds": 1.33,
+      "exitCode": 0,
+      "evidence": "direct binary execution observed in session"
+    },
+    {
+      "filter": "cr733_resolved_combat_membership",
+      "passed": 10,
+      "failed": 0,
+      "durationSeconds": 1.49,
+      "exitCode": 0,
+      "evidence": "direct binary execution observed in session"
+    },
+    {
+      "filter": "copy_that_ability_referent",
+      "passed": 15,
+      "failed": 0,
+      "durationSeconds": 3.01,
+      "exitCode": 0,
+      "evidence": "direct binary execution observed in session"
+    },
+    {
+      "filter": "census",
+      "passed": 42,
+      "failed": 0,
+      "durationSeconds": 134.99,
+      "exitCode": 0,
+      "classification": "structural/source-census",
+      "evidence": "direct binary execution observed in session"
+    },
+    {
+      "filter": "stack_bound_reveal",
+      "passed": 0,
+      "failed": 0,
+      "exitCode": 0,
+      "evidence": "zero selected; not coverage"
+    }
+  ],
+  "behavioralIntegrationPasses": 43,
+  "structuralCensusPasses": 42,
+  "executionCorrection": "First direct Kaito execution omitted RUST_MIN_STACK and overflowed (exit 134); rerun with 16777216 passed all 8. This was an execution-environment error.",
+  "retainedCargoLog": {
+    "path": "native-ninjutsu-a49b8aa.log",
+    "sha256": "18e71cec9a9e7bc97db0425d045e9db64f6c2f7c9928bbeebf4458b809edc043"
+  },
+  "notRun": [
+    "keyword library unit selection (48)",
+    "casting-index library unit selection",
+    "full parser-output projection",
+    "full engine suite",
+    "corrected browser WASM build and mechanics"
+  ],
+  "browserRuntimeStatus": "blocked: original runtime retained, six passing mechanics scenarios and two preserved ninjutsu response-window failures",
+  "playableMatch": false
+}

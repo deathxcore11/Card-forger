@@ -1,10 +1,12 @@
-# Ninjutsu source correction — blocked candidate, not verified runtime
+# Ninjutsu source correction — native regressions pass, browser runtime blocked
 
 **Open:** no corrected browser package exists. The earlier WASM build was
 OOM-killed. The current source candidate also corrects the subsequently found
 Satoru granted-keyword regression and has passed independent code review.
-Native regression compilation is running; execution results remain pending.
-Do not adopt the candidate or remove the original runtime failure assertions.
+The lower-memory native Cranelift build succeeded: 43 targeted behavioral
+integration tests and 42 source-census checks passed. The corrected browser
+package remains unbuilt. Do not adopt the candidate or remove the original
+runtime failure assertions.
 
 The [source patch](upstream/ninjutsu-stack-a49b8aa.patch) applies to Phase
 `71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234` (0.117.0). It is a local research
@@ -47,8 +49,8 @@ covers printed markers, distinct granted costs, index equality and expiry.
 The printed builder logic/order is retained by extraction; full parser-output
 projection has not run and no regenerated card bundle is claimed.
 
-This is a description of the candidate implementation and intended tests,
-not a claim those Rust behavioral assertions have passed.
+The ten ninjutsu integration regressions passed on the compiled native
+candidate. The additional casting-index unit test has not run.
 
 ## Evidence at the source checkpoint
 
@@ -69,7 +71,11 @@ not a claim those Rust behavioral assertions have passed.
 - Interaction-binding generation is inapplicable: its unchanged generator
   exports only unchanged `types::interaction` DTOs, excluding these stack and
   pending-completion payloads.
-- Native behavioral tests and corrected-WASM mechanics: **pending**.
+- Native behavioral integration selections: **43 passed**, plus **42 passed**
+  structural/source-census checks. Exact selections and limits are recorded in
+  [native evidence](native-evidence-2026-10-25.json).
+- Library unit selections, full parser-output projection, broad engine tests
+  and corrected-WASM mechanics remain **pending**.
 
 The updated mechanics harness selects twenty unchanged records from the same
 6,137-record pinned fixture. Its fresh run against the original upstream
@@ -100,14 +106,14 @@ cargo build --locked --offline -p engine-wasm
 The first source candidate (`c880f8c`) exited 101 for the two exhaustive-match
 errors. It completed borrow checking with a reported 6,010 MB RSS and did not
 increase the cgroup OOM-kill count. This does not establish LLVM code-generation
-feasibility. The corrected candidate is now rebuilding in the same clean
-separate completion worktree and target directory, with a twenty-minute bound.
+feasibility. The next attempt used the same separate completion worktree and
+target directory, with a twenty-minute bound.
 The corrected `d64f609` attempt was killed by signal 9 after monomorphization
 and metadata generation; the cgroup OOM-kill count increased from two to four.
 Compiler reporting reached 7,751 MB RSS. No corrected WASM package was produced.
 Further unchanged LLVM attempts are not justified under the same 8 GiB ceiling.
-Native Cranelift remains a separate regression route after the granted-keyword
-correction. Never relabel the original upstream artifact as this
+Native Cranelift subsequently compiled and ran the focused regressions after
+the granted-keyword correction. Never relabel the original upstream artifact as this
 build. If compilation succeeds, run wasm-bindgen 0.2.121 to a new package,
 record the exact executable hashes, and exercise the mechanics suite using
 the explicit receipt option below.
@@ -145,30 +151,35 @@ same verified provenance. The receipt identifies supplied bytes and source;
 it is not an authenticated assertion that compilation was correct. A receipt
 is created only after a successful build and actual artifact hashing.
 
-## Native regression prerequisite
+## Native regression execution
 
 The installed nightly native Cranelift backend is available as a separate
 fallback. Eight missing development dependency archives were acquired from
 official static.crates.io at their locked versions and verified against
 `Cargo.lock`; offline metadata-only graphs for the integration and library-test
-targets now pass. Native compilation is running on clean source `a49b8aa`;
-no behavioral result is available yet.
+targets pass. Native compilation completed on clean source `a49b8aa` in
+13 minutes 19 seconds; its ten ninjutsu tests passed in 10.88 seconds.
 
-Run sequentially after the WASM build exits, with a separate target directory,
+The build used a separate target directory,
 one Cargo job, no incremental state, opt/debug/LTO off and 256 codegen units:
 
 ```text
 RUSTFLAGS=-Zcodegen-backend=cranelift -Zmir-opt-level=0
           -Zfewer-names=yes -Zthreads=1
+RUST_MIN_STACK=16777216
 cargo test --locked --offline -p phase-engine
   --target x86_64-unknown-linux-gnu --features test-support
   --test integration 'ninjutsu_stack::' -- --test-threads=1
-cargo test --locked --offline -p phase-engine
-  --target x86_64-unknown-linux-gnu --features test-support
-  --lib 'game::keywords::tests::' -- --test-threads=1
 ```
 
-The selectors cover ten integration and 48 keyword unit tests. The additional
-casting index test is a separate library-test selection. Filtering
-execution does not shrink the compiled harness. A twenty-minute timeout is
-inconclusive, and native success does not certify the WASM artifact.
+The resulting native integration binary also passed selections `kaito` (8),
+`cr733_resolved_combat_membership` (10), `copy_that_ability_referent` (15) and
+`census` (42). A `stack_bound_reveal` filter selected zero tests and supplies
+no additional coverage. A first direct Kaito invocation omitted the required
+16 MiB test-thread stack and overflowed; the correctly configured invocation
+passed all eight tests. Keep that environment on direct binary execution too.
+
+The 48 keyword library unit tests and additional casting-index unit selection
+remain unexecuted. Filtering execution does not shrink the compiled harness.
+A timeout is inconclusive. Native success does not certify a WASM artifact,
+complete engine coverage, player controls or a playable CPU match.
