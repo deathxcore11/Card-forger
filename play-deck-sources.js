@@ -19,8 +19,7 @@ export function playDeckSupport(deck){
  const review=reviewPracticeSetup({profile:{signedIn:true,ownerId:'presentation-check'},match:{format:deck?.format,mode:'cpu',difficulty:'Medium'},selected:deck,opponent:deck});
  const seat=review.seats?.player;
  if(!seat)return {status:'review',label:'List needs review',detail:'Rows, quantities or commander declaration need review before play.'};
- if(!seat.covered)return {status:'unsupported',label:'Unsupported for play',detail:`${seat.unsupported.length} card names outside the tested beta pool. You can inspect and save this exact list.`,unsupported:seat.unsupported};
- return {status:'pool',label:'In the tested card pool',detail:'Final format and engine checks still run before the match.'};
+ return {status:'pool',label:'Ready for match checks',detail:'Play checks this exact list against the engine card data and format rules before dealing.'};
 }
 // The caller performs the normal account-scoped deck write only after Save deck.
 export function preparePlayDeckSave(deck,id){

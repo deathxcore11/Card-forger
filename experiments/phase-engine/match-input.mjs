@@ -27,14 +27,15 @@ export function prepareMatchInput({player,opponent,format,difficulty,profile={},
  return structuredClone({schema:1,format,difficulty,runtimeIdentity,profile,
   decks:{player,opponent},engineLists:{player:playerDeck,opponent:opponentDeck}});
 }
-export function evaluateCardCoverage(input,{testedCardNames,coverageVersion}={}){
- if(!Array.isArray(testedCardNames)||typeof coverageVersion!=='string'||!coverageVersion)throw Error('COVERAGE_REQUIRED');
- const covered=new Set(testedCardNames.map(n=>n.toLocaleLowerCase('en-US')));
+export function evaluateCardCoverage(input,{testedCardNames,availableCardNames,unimplementedCardNames=[],coverageVersion}={}){
+ const names=availableCardNames??testedCardNames;
+ if(!Array.isArray(names)||typeof coverageVersion!=='string'||!coverageVersion)throw Error('COVERAGE_REQUIRED');
+ const covered=new Set(names.map(n=>n.toLocaleLowerCase('en-US'))),unimplemented=new Set(unimplementedCardNames.map(n=>n.toLocaleLowerCase('en-US')));
  const seats={};
  for(const seat of ['player','opponent']){
   const deck=input.engineLists[seat];
   const unsupported=[...new Set([...deck.main_deck,...deck.sideboard,...deck.commander].filter(n=>!covered.has(n.toLocaleLowerCase('en-US'))))];
-  seats[seat]={unsupported,covered:unsupported.length===0};
+  seats[seat]={unsupported,covered:unsupported.length===0,...(availableCardNames?{reasons:unsupported.map(n=>n+': '+(unimplemented.has(n.toLocaleLowerCase('en-US'))?'a required rule is not implemented.':'card rules are not installed.'))}:{})};
  }
  return {coverageVersion,seats,covered:seats.player.covered&&seats.opponent.covered};
 }
@@ -45,7 +46,7 @@ export function evaluateMatchAdmission(engine,input,coverage={}){
   const gate=engine.evaluateDeckFormatGate({...input.engineLists[seat],selected_format:input.format,player_count:2});
   if(typeof gate?.compatible!=='boolean'||!Array.isArray(gate.reasons))throw Error('INVALID_FORMAT_GATE');
   const catalog=input.decks[seat].practiceCatalogReview===undefined?null:evaluateCatalogAdmission(input.engineLists[seat],input.format,input.decks[seat].practiceCatalogReview);
-  seats[seat]={...(catalog?{catalog}:{}),constructionLegal:gate.compatible,reasons:[...gate.reasons,...(catalog?.reasons||[])],unsupported:checked.seats[seat].unsupported,admitted:gate.compatible&&checked.seats[seat].covered&&(!catalog||catalog.admitted)};
+  seats[seat]={...(catalog?{catalog}:{}),constructionLegal:gate.compatible,reasons:[...gate.reasons,...(catalog?.reasons||[]),...(checked.seats[seat].reasons||[])],unsupported:checked.seats[seat].unsupported,admitted:gate.compatible&&checked.seats[seat].covered&&(!catalog||catalog.admitted)};
  }
  return {coverageVersion:checked.coverageVersion,seats,admitted:seats.player.admitted&&seats.opponent.admitted};
 }

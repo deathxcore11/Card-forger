@@ -1,5 +1,6 @@
-const CACHE = "cardforge-shell-v320-play-ui-cpu-patch";
+const CACHE = "cardforge-shell-v321-regular-deck-play";
 const ASSETS = [
+  "./experiments/phase-engine/compiled-card-support.mjs",
   "./experiments/phase-engine/priority-flow.mjs",
   "./play-deck-sources.js",
   "./play-quick-match.js",

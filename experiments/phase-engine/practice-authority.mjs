@@ -4,7 +4,6 @@ import {openPracticeRecord} from './practice-record.mjs';
 import {openPracticeSessionRecord} from './practice-session-record.mjs';
 import {initialPresentation,presentInstances} from './practice-presentation.mjs';
 import {evaluateMatchAdmission} from './match-input.mjs';
-import {PRACTICE_COVERAGE} from './practice-coverage.mjs';
 import {createMatchAuthority} from './match-authority.mjs';
 import {createJournal} from './worker-journal.mjs';
 import {CPU_CONFIGURATION_VERSION,CPU_DIFFICULTIES,CPU_LABELS_READY} from './cpu-difficulty-config.mjs';
@@ -16,8 +15,8 @@ export function validPracticeBinding(data){
 async function boot(data){
  const record=await (sessionOnly?openPracticeSessionRecord:openPracticeRecord)({ownerId:data.ownerId,matchId:data.match,...(data.operation==='create'?{input:data.input}:{})});
  const {input,digest}=record;
- const {engine}=await loadEngineAssets({baseURL:new URL('./runtime/a86578b23adcd26c/',import.meta.url),loadCards:true,onProgress:value=>postMessage({v:1,epoch,id:'loading',progress:value})});
- const admission=evaluateMatchAdmission(engine,input,PRACTICE_COVERAGE);
+ const {engine,cardSupport}=await loadEngineAssets({baseURL:new URL('./runtime/a86578b23adcd26c/',import.meta.url),loadCards:true,onProgress:value=>postMessage({v:1,epoch,id:'loading',progress:value})});
+ const admission=evaluateMatchAdmission(engine,input,cardSupport);
  const format=engine.getFormatRegistry().find(f=>f.format===input.format)?.default_config;
  if(!format)throw Error('FORMAT_UNAVAILABLE');
  // Policy readiness is separate from both-seat executable deck admission.

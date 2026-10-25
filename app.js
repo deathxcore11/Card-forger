@@ -20,7 +20,7 @@ import {createPlayerMat} from './play-player-mat.js';
 import {createPracticeCardPreparation} from './play-card-preparation.js';
 import {createPracticeCatalogReview} from './play-catalog-review.js';
 import {selectPracticeStarter} from './play-starter-deck.js';
-import {mountPracticePregame} from './play-pregame.js';
+import {mountPracticePregame,resolvePracticePregame} from './play-pregame.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -1508,11 +1508,11 @@ const cancelPlayBuilds=()=>{for(const builder of Object.values(playBuilders))bui
 let quickStatus={busy:false,error:null},quickSequence=0;
 A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBuilds();playSetup.configure({mode:t.dataset.playStyle==='social'?'friends':'cpu'});if(t.dataset.playStyle!=='social')playSetup.setPlayStyle(t.dataset.playStyle);refreshPlayMenu();};
 A.playFindOpponent=async()=>{
- const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return;
+ const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
- try{const sources=readPlaySources(),starter={id:'play-quick-starter',name:'Green creatures · Beta starter',format:'Standard',cards:structuredClone(PRACTICE_STARTER_ROWS),side:[]},candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck),...(state.match.format==='Standard'?[starter]:[]),state.selected];
+ try{const sources=readPlaySources(),starter={id:'play-quick-starter',name:'Green creatures · Starter',format:'Standard',cards:structuredClone(PRACTICE_STARTER_ROWS),side:[]},candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck),...(state.match.format==='Standard'?[starter]:[]),state.selected];
  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
- const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return;playSetup.setQuickOpponent(result);
+ const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
 };
 A.playSaveDeck=async()=>{const state=playSetup.snapshot(),deck=state.inspectedSeat==='opponent'?state.opponent:state.selected;if(!deck)return;try{const job=savePlayDeck(deck);refreshPlayMenu();await job;}catch(e){toast(e.message);}finally{refreshPlayMenu();}};
@@ -1547,15 +1547,20 @@ A.playStarter=async()=>{cancelPlayBuilds();if(!playSetup.snapshot().profile.sign
 // Product activation stays gated until the real-deck/pregame/difficulty gates
 // pass. The account/table lifecycle below is testable independently of activation.
 const PLAY_MATCH_RELEASE_READY=true;
-let playerMatHost=null,playerMatRoot=null,practicePregame=null;
+let playerMatHost=null,playerMatRoot=null,practicePregame=null,playStarting=false;
 function closePlayerMat(){practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
 A.playStartCandidate=async()=>{
  if(!PLAY_MATCH_RELEASE_READY)return toast('Practice integration is still being verified.');
- if(playerMatHost||practicePregame||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
+ if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
+ playStarting=true;
+ try{
+ const initial=playSetup.snapshot();
+ if(initial.playStyle==='quick'&&initial.match.mode==='cpu'&&!initial.quickMatch){if(!await A.playFindOpponent())return;}
+ if(T.game()!=='mtg'||S.ui.view!=='play'||!syncDesktopPlayEntries('mtg').eligible)return;
  const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
  if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
- practicePregame=mountPracticePregame({root:playerMatRoot,renderDeckArtwork:deck=>{const art=document.createElement('div');art.className='play-pregame-art';art.innerHTML=V.deckArtwork(deck);return art;},readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),onCancel:closePlayerMat,onConfirm:async options=>{
+ const beginGame=async options=>{
   practicePregame?.destroy();practicePregame=null;
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
   const cards=createPracticeCardPreparation({selectionKey:key,isCurrent:current,
@@ -1564,7 +1569,10 @@ A.playStartCandidate=async()=>{
    fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
   playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:cards.prepare,reviewDecks:createPracticeCatalogReview({isCurrent:current,lookupNames:identifiers=>api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers})})}),lookup:cards.lookup,onClose:closePlayerMat,onSaveDeck:savePlayDeck,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();}});
   try{await playerMatHost.start(options);}catch(e){toast(e.message);}
- }});
+ };
+ if(source.playStyle==='quick')await beginGame(resolvePracticePregame('random'));
+ else practicePregame=mountPracticePregame({root:playerMatRoot,renderDeckArtwork:deck=>{const art=document.createElement('div');art.className='play-pregame-art';art.innerHTML=V.deckArtwork(deck);return art;},readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),onCancel:closePlayerMat,onConfirm:beginGame});
+ }finally{playStarting=false;}
 };
 function playDeckPreview(deck) {
   if(!deck||!Array.isArray(deck.cards)||!Array.isArray(deck.side||[])||(deck.format!==undefined&&typeof deck.format!=='string')||[...deck.cards,...(deck.side||[])].some(row=>!row||typeof row.name!=='string'||!Number.isSafeInteger(row.qty)||row.qty<1))return '<p class="note warn">This deck needs review in Decks before its cards can be displayed.</p>';
@@ -1572,7 +1580,7 @@ function playDeckPreview(deck) {
 }
 function renderPlayPage() {
   if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>Choose Magic in the game selector to prepare a CPU match.</p><a class="btn" href="#home">Return Home</a></section>';
-  if(!syncDesktopPlayEntries('mtg').eligible)return '<section class="empty"><h1>Play</h1><p>Use a supported desktop browser with a mouse or trackpad for the Play beta. Your saved decks remain available in Decks.</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';
+  if(!syncDesktopPlayEntries('mtg').eligible)return '<section class="empty"><h1>Play</h1><p>Use a supported desktop browser with a mouse or trackpad for Play. Your saved decks remain available in Decks.</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:(state.playStyle!=='quick'&&state.inspectedSeat==='opponent'?state.opponentSource==='saved'&&state.opponent?.id===deck.id:state.selectedSource==='saved'&&state.selected?.id===deck.id)}));}
   const inspected=state.match.mode==='cpu'&&state.inspectedSeat==='opponent'?state.opponent:state.selected;

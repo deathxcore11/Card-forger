@@ -1,4 +1,5 @@
 // Exact delivered bytes only. A loaded definition is not a tested-card claim.
+import {compiledCardSupport} from './compiled-card-support.mjs';
 export const RUNTIME_IDENTITY={wasmSha256:'a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee',glueSha256:'7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc',sourceTree:'60fc8715ad91f5c91b81f8a8335e238c623ec957',wasmBytes:338226914};
 export const RULES_IDENTITY={path:'card-rules.bin',encoding:'gzip',sha256:'0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9',bytes:3536582,decodedSha256:'6e1cfd15ae73b426ee6fb4e26c7a5d83af96e905c0f5fd3d301a3d195e40118e',decodedBytes:20102075,entries:6137};
 const sha=async bytes=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -53,11 +54,11 @@ export async function loadEngineAssets({baseURL,fetcher=fetch,signal,onProgress=
  if(await sha(compressed)!==manifest.compressedSha256)throw Error('RUNTIME_ARCHIVE_MISMATCH');
  const wasm=await expandGzip(compressed,RUNTIME_IDENTITY.wasmBytes,signal);
  if(await sha(wasm)!==RUNTIME_IDENTITY.wasmSha256)throw Error('RUNTIME_WASM_MISMATCH');
- let cardsJson=null,cardNames=null;
+ let cardsJson=null,cardNames=null,cardSupport=null;
  if(loadCards){
   const m=manifest.cardDatabase,b=await read(m.path,m.sha256,m.bytes),decoded=await expandGzip(b,m.decodedBytes,signal);
   if(await sha(decoded)!==m.decodedSha256)throw Error('RULES_DATABASE_MISMATCH');
-  cardsJson=new TextDecoder('utf-8',{fatal:true}).decode(decoded);cardNames=Object.keys(JSON.parse(cardsJson));
+  cardsJson=new TextDecoder('utf-8',{fatal:true}).decode(decoded);const catalog=JSON.parse(cardsJson);cardNames=Object.keys(catalog);cardSupport=compiledCardSupport(catalog,m.decodedSha256);
   if(cardNames.length!==m.entries)throw Error('RULES_DATABASE_MISMATCH');onProgress({stage:'rules',completed:1,total:1});
  }
  signal?.throwIfAborted();const url=URL.createObjectURL(new Blob([glue],{type:'text/javascript'}));let engine;
@@ -65,5 +66,5 @@ export async function loadEngineAssets({baseURL,fetcher=fetch,signal,onProgress=
  await engine.default({module_or_path:wasm});
  if(loadCards&&engine.load_card_database(cardsJson)!==RULES_IDENTITY.entries)throw Error('RULES_DATABASE_MISMATCH');
  try{await cache?.put(manifestURL,new Response(text,{headers:{'Content-Type':'application/json'}}));}catch{}
- onProgress({stage:'ready',completed:1,total:1});return {engine,manifest,cardNames};
+ onProgress({stage:'ready',completed:1,total:1});return {engine,manifest,cardNames,cardSupport};
 }

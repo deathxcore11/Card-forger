@@ -1,5 +1,5 @@
 // An explicit beta list, never a replacement for a saved/imported owner deck.
-export const PRACTICE_STARTER_NAME='Green creatures · Beta starter';
+export const PRACTICE_STARTER_NAME='Green creatures · Starter';
 export const PRACTICE_STARTER_ROWS=Object.freeze([
  Object.freeze({name:'Forest',qty:24}),
  ...['Llanowar Elves','Bear Cub','Ordinary Bear','Ghalta, Primal Hunger','Lashwhip Predator','Tarmogoyf','Tapestry Warden','Virulent Emissary','Scarecrow Guide'].map(name=>Object.freeze({name,qty:4}))
