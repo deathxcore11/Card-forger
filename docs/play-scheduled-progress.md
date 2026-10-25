@@ -796,3 +796,11 @@ absent. This uses a scan fixture, not a real-account gameplay proof. The main
 app route still needs to mount the coordinator/table and pass these hooks and
 captured rows; drag/highlight and complete card-choice integration remain open.
 No new artwork system, generated replacement art, paid AI generation or APK.
+
+Art-probe visual QA follow-up: the first isolated art page omitted the existing
+finish-effects.css, causing the finish layer to occupy layout space. Added that
+shared stylesheet to the probe (the actual app already loads it), reran the
+browser check, and verified the overlay is absolutely positioned on the same
+card. Inspected the corrected card/inspector screenshot. The shared art report
+now includes hashes for the served root modules and stylesheet. No runtime,
+foil algorithm or unrelated game behavior changed.
