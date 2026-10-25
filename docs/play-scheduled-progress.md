@@ -196,3 +196,40 @@ Broader regression outcome: all 313 package test commands completed across
 resumed runs after restoring missing verified baseline test dependencies and
 the unchanged existing APK fixture. Relevant shared-view and Play checks were
 rerun after the final metadata-caller sync. No APK build occurred.
+
+## October 24, 2026 — bounded priority scheduler
+
+Started from verified remote head `adfe4fa744512a09f240be4024b006c891116b04`.
+The complete recursive tree contains no AGENTS.md. Used an isolated, exact-ref
+copy of the experiment modules; existing workspaces and UI edits were untouched.
+
+Added `priority-scheduler.mjs` around the timed priority journal. It reads the
+authority's retained deadline, projects countdown seconds and the last-five-second
+warning, coalesces refreshes, submits at most one timeout per cycle and stops
+polling at another actor or mandatory choice. Unknown write acknowledgement
+stops for recovery rather than retrying a mutation or inventing a result.
+Stop invalidates late callbacks; an already-submitted mutation still belongs
+to the authority and must be recovered from its durable receipt.
+
+Executed: `node --test experiments/phase-engine/test-*.mjs`: **77 passed,
+zero failed/skipped**, including eight new scheduler tests. Executed
+`priority-scheduler-engine.mjs` against the original hash-verified WASM and
+20-record subset: restored 30-second deadline, exactly one accepted pass,
+one durable receipt, next actor seat one, unchanged 20/20 life, zero fetches.
+Exact input/source hashes are in
+`experiments/phase-engine/priority-scheduler-evidence-2026-10-24.json`.
+This uses an engineered position and in-memory storage in one process, not
+browser cold-offline validation or a mounted countdown.
+
+The corrected WASM remains unavailable. No unchanged memory-failing build was
+repeated, no paid build was launched, and neither preserved ninjutsu failure
+was changed or rerun in this slice. Native evidence remains historical.
+Mandatory prompts explicitly stop without a guessed action; that is a safety
+boundary, **not** the complete no-stall/timeout product policy.
+
+Next: corrected provenance-verified WASM and both ninjutsu regressions first;
+then wire scheduler/status projection through worker/storage and the actual
+board, completing human choices, pregame, CPU and result recovery. Resume must
+construct/recover an authority before restarting a failed scheduler. Call
+scheduler.refresh after accepted external commands and foreground events.
+All full Practice gates, Casual and Draft remain open. Nothing deployed.

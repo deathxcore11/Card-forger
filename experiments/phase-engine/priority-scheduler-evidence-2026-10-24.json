@@ -1,0 +1,72 @@
+{
+  "provenance": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "runtimeOrigin": "original-upstream-artifact",
+    "buildIdentity": "upstream-run-40129115223-artifact-12574954346",
+    "sourceCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "sourceTree": "3b2a30411991062847d46c2aebd8cee5df2fb4db",
+    "sourceDiffSha256": null,
+    "buildReceiptSha256": null,
+    "glue": "47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd3476cfb70131de6287c9",
+    "wasm": "6057521d851bb8544eaeea467f741b90cd2941aa5ba2fddb17e1bcc3d9933f8f",
+    "integrationFixtureGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "fixtureCardCount": 6137,
+    "loadedNames": [
+      "Head Games",
+      "Ninja of the Deep Hours",
+      "Moon-Circuit Hacker",
+      "Ornithopter",
+      "Island",
+      "Plains",
+      "Swamp",
+      "Mountain",
+      "Forest",
+      "Raise the Alarm",
+      "Krenko, Mob Boss",
+      "Parallel Lives",
+      "Doubling Season",
+      "Sprout Swarm",
+      "Basalt Monolith",
+      "Power Artifact",
+      "Lightning Bolt",
+      "Counterspell",
+      "Satoru Umezawa",
+      "Grizzly Bears"
+    ],
+    "subsetSha256": "01d3b29609c9eccd3230d3a9e1892fa83a24b9590d5254cb37cf4cf5b7c1bce8",
+    "subsetBytes": 162288
+  },
+  "sourceFiles": {
+    "priority-scheduler-engine.mjs": "39684eb6b2020703e94e19a2713594204bb8183799d2f262d8d2812d39150504",
+    "priority-scheduler.mjs": "d82af4727976497dc1f5cab3948ca1ee394c35865d5e544916a381bc3f839bfa",
+    "timed-priority-journal.mjs": "78818941b73016350f9ad345aaf9b22436feb2c559a9bbc94a3b3d1cbe074c45",
+    "priority-clock.mjs": "b5ea9f73715f39fcf868a731209e8b912dfb01dae73eee3905e5ecb8e9c23227",
+    "mechanics-inputs.mjs": "8ffab9a3c44518d751e3c83d0349228c3ffc5f349275c25e04164637339907ad",
+    "mechanics-fixtures.mjs": "af169de1170105698f2edbf1c9feaee2c0846d729bf2d6490344796093fc8568"
+  },
+  "setupSha256": "9be5c6a43cb72ab28c0b741ac14d1be25be26f1462a29e7395eb4583bcacdd2b",
+  "schedulerStatuses": [
+    {
+      "revision": 0,
+      "state": "expired",
+      "remainingSeconds": 0,
+      "warning": false,
+      "needsChoice": false
+    },
+    {
+      "revision": 1,
+      "state": "other-actor",
+      "remainingSeconds": null,
+      "warning": false,
+      "needsChoice": false
+    }
+  ],
+  "defaultResponseSeconds": 30,
+  "retainedDeadlineAt": 31000,
+  "acceptedPasses": 1,
+  "durableRevision": 1,
+  "durableReceipt": true,
+  "nextActor": 1,
+  "networkCalls": 0,
+  "limits": "Original runtime only, engineered position, in-memory compare-and-write store and reconstructed authority in one process. No fresh-process/browser IndexedDB proof, mounted scheduler/countdown, corrected ninjutsu runtime or complete mandatory-choice timeout policy."
+}
