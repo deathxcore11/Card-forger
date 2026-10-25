@@ -1,0 +1,1716 @@
+TAP version 13
+# Subtest: placement requires one visible owned hand action and identifies the engine destination
+ok 1 - placement requires one visible owned hand action and identifies the engine destination
+  ---
+  duration_ms: 3.586652
+  type: 'test'
+  ...
+# Subtest: tap, off-zone drop, Escape and lost priority never send a command
+ok 2 - tap, off-zone drop, Escape and lost priority never send a command
+  ---
+  duration_ms: 1.055259
+  type: 'test'
+  ...
+# Subtest: accepted drop sends the current token once, never coordinates or fabricated card movement
+ok 3 - accepted drop sends the current token once, never coordinates or fabricated card movement
+  ---
+  duration_ms: 1.50534
+  type: 'test'
+  ...
+# Subtest: revision/token races and busy transitions retire the highlighted offer
+ok 4 - revision/token races and busy transitions retire the highlighted offer
+  ---
+  duration_ms: 1.288634
+  type: 'test'
+  ...
+# Subtest: current stats and colors come from the engine, without applying a counter twice
+ok 5 - current stats and colors come from the engine, without applying a counter twice
+  ---
+  duration_ms: 3.07241
+  type: 'test'
+  ...
+# Subtest: damage does not decrease toughness; reductions can color each stat independently
+ok 6 - damage does not decrease toughness; reductions can color each stat independently
+  ---
+  duration_ms: 39.446765
+  type: 'test'
+  ...
+# Subtest: temporary changes can expire independently of counters and printed baseline
+ok 7 - temporary changes can expire independently of counters and printed baseline
+  ---
+  duration_ms: 7.770555
+  type: 'test'
+  ...
+# Subtest: unknown baselines and hidden instances do not get invented values
+ok 8 - unknown baselines and hidden instances do not get invented values
+  ---
+  duration_ms: 0.534003
+  type: 'test'
+  ...
+# Subtest: bounded combat ingress preserves exact endpoints/groups; rejects duplication and injection
+ok 9 - bounded combat ingress preserves exact endpoints/groups; rejects duplication and injection
+  ---
+  duration_ms: 4.087228
+  type: 'test'
+  ...
+# Subtest: relation projection retains authorized topology only and rejects malformed edge domains
+ok 10 - relation projection retains authorized topology only and rejects malformed edge domains
+  ---
+  duration_ms: 1.280387
+  type: 'test'
+  ...
+# Subtest: local relation constraints do not invent special blocking limits or ignore endpoint restrictions
+ok 11 - local relation constraints do not invent special blocking limits or ignore endpoint restrictions
+  ---
+  duration_ms: 0.83102
+  type: 'test'
+  ...
+# Subtest: attack targets replace by source, clear remains local and confirmation retires the draft
+ok 12 - attack targets replace by source, clear remains local and confirmation retires the draft
+  ---
+  duration_ms: 6.433795
+  type: 'test'
+  ...
+# Subtest: multi-block assignments reach the engine unchanged and no-blocks needs explicit confirmation
+ok 13 - multi-block assignments reach the engine unchanged and no-blocks needs explicit confirmation
+  ---
+  duration_ms: 5.320944
+  type: 'test'
+  ...
+# Subtest: combat projection requires authorization and explicit bounded edges
+ok 14 - combat projection requires authorization and explicit bounded edges
+  ---
+  duration_ms: 4.57444
+  type: 'test'
+  ...
+# Subtest: edge membership, duplicate pairs, grouping and source capacity are bounded before engine validation
+ok 15 - edge membership, duplicate pairs, grouping and source capacity are bounded before engine validation
+  ---
+  duration_ms: 2.3207
+  type: 'test'
+  ...
+# Subtest: relation wire copies exact bounded identifiers and rejects malformed group or extra fields
+ok 16 - relation wire copies exact bounded identifiers and rejects malformed group or extra fields
+  ---
+  duration_ms: 0.792647
+  type: 'test'
+  ...
+# Subtest: combat session drafts locally, confirms once, and clears on new accepted revision
+ok 17 - combat session drafts locally, confirms once, and clears on new accepted revision
+  ---
+  duration_ms: 17.566586
+  type: 'test'
+  ...
+# Subtest: a response is authorized during the other seat turn
+ok 18 - a response is authorized during the other seat turn
+  ---
+  duration_ms: 17.783201
+  type: 'test'
+  ...
+# Subtest: an unvalidated winning-looking candidate loses before score is considered
+ok 19 - an unvalidated winning-looking candidate loses before score is considered
+  ---
+  duration_ms: 2.397763
+  type: 'test'
+  ...
+# Subtest: unknown opponent hand and draw order cannot influence the packet
+ok 20 - unknown opponent hand and draw order cannot influence the packet
+  ---
+  duration_ms: 1.631443
+  type: 'test'
+  ...
+# Subtest: reasons cannot cite private evidence or expired reveal grants
+ok 21 - reasons cannot cite private evidence or expired reveal grants
+  ---
+  duration_ms: 1.64742
+  type: 'test'
+  ...
+# Subtest: a changed live revision rejects a formerly legal choice
+ok 22 - a changed live revision rejects a formerly legal choice
+  ---
+  duration_ms: 0.687649
+  type: 'test'
+  ...
+# Subtest: policy cannot forge the actor or mutate its supplied observation
+ok 23 - policy cannot forge the actor or mutate its supplied observation
+  ---
+  duration_ms: 2.038122
+  type: 'test'
+  ...
+# Subtest: finite ledgers distinguish mana deficit, sustaining loops and positive output
+ok 24 - finite ledgers distinguish mana deficit, sustaining loops and positive output
+  ---
+  duration_ms: 2.752478
+  type: 'test'
+  ...
+# Subtest: creature-only mana cannot fund abilities and a missing repeat path fails
+ok 25 - creature-only mana cannot fund abilities and a missing repeat path fails
+  ---
+  duration_ms: 0.247784
+  type: 'test'
+  ...
+# Subtest: loop proposal requires a finite budget and preserved responses
+ok 26 - loop proposal requires a finite budget and preserved responses
+  ---
+  duration_ms: 1.74432
+  type: 'test'
+  ...
+# Subtest: policy packet rejects claims of win odds and arbitrary instructions
+ok 27 - policy packet rejects claims of win odds and arbitrary instructions
+  ---
+  duration_ms: 0.536801
+  type: 'test'
+  ...
+# Subtest: reference provenance does not equate published UI with a private CPU policy
+ok 28 - reference provenance does not equate published UI with a private CPU policy
+  ---
+  duration_ms: 0.504911
+  type: 'test'
+  ...
+# Subtest: a copied casual-redraw affordance cannot bypass the format authority
+ok 29 - a copied casual-redraw affordance cannot bypass the format authority
+  ---
+  duration_ms: 0.58413
+  type: 'test'
+  ...
+# Subtest: a response proposal cannot execute outside its declared response window
+ok 30 - a response proposal cannot execute outside its declared response window
+  ---
+  duration_ms: 0.405711
+  type: 'test'
+  ...
+# Subtest: missing source classification cannot masquerade as observed evidence
+ok 31 - missing source classification cannot masquerade as observed evidence
+  ---
+  duration_ms: 0.276904
+  type: 'test'
+  ...
+# Subtest: untrusted rejection labels cannot enter the evidence log and budgets stay finite
+ok 32 - untrusted rejection labels cannot enter the evidence log and budgets stay finite
+  ---
+  duration_ms: 1.030145
+  type: 'test'
+  ...
+# Subtest: fact fields enforce their declared scalar types
+ok 33 - fact fields enforce their declared scalar types
+  ---
+  duration_ms: 1.647224
+  type: 'test'
+  ...
+# Subtest: ownership alone cannot reveal an own next draw while public counts remain usable
+ok 34 - ownership alone cannot reveal an own next draw while public counts remain usable
+  ---
+  duration_ms: 0.931075
+  type: 'test'
+  ...
+# Subtest: ledger totals reject overflow even when every individual amount is safe
+ok 35 - ledger totals reject overflow even when every individual amount is safe
+  ---
+  duration_ms: 0.611376
+  type: 'test'
+  ...
+# Subtest: concession is bound to seat zero and cannot carry an arbitrary player or engine action
+ok 36 - concession is bound to seat zero and cannot carry an arbitrary player or engine action
+  ---
+  duration_ms: 4.654983
+  type: 'test'
+  ...
+# Subtest: confirmed concession is journaled once and duplicate recovery returns its original receipt
+ok 37 - confirmed concession is journaled once and duplicate recovery returns its original receipt
+  ---
+  duration_ms: 4.596988
+  type: 'test'
+  ...
+# Subtest: cast ingress rejects arbitrary engine actions and hidden or foreign instances
+ok 38 - cast ingress rejects arbitrary engine actions and hidden or foreign instances
+  ---
+  duration_ms: 0.505897
+  type: 'test'
+  ...
+# Subtest: announcement sends no guessed targets and requires explicit payment mode
+ok 39 - announcement sends no guessed targets and requires explicit payment mode
+  ---
+  duration_ms: 0.453369
+  type: 'test'
+  ...
+# Subtest: cast bypasses suggestion membership but still commits/replays through the journal
+ok 40 - cast bypasses suggestion membership but still commits/replays through the journal
+  ---
+  duration_ms: 2.021868
+  type: 'test'
+  ...
+# Subtest: ordered target response preserves order while exact selection refuses duplicates
+ok 41 - ordered target response preserves order while exact selection refuses duplicates
+  ---
+  duration_ms: 2.146574
+  type: 'test'
+  ...
+# Subtest: ordinary engine rejection leaves casting route available for correction
+ok 42 - ordinary engine rejection leaves casting route available for correction
+  ---
+  duration_ms: 0.603512
+  type: 'test'
+  ...
+# Subtest: bounded ingress refuses fabricated actions, fields, duplicate and huge selections
+ok 43 - bounded ingress refuses fabricated actions, fields, duplicate and huge selections
+  ---
+  duration_ms: 4.389663
+  type: 'test'
+  ...
+# Subtest: valid human submission is committed once and replayed across recovery
+ok 44 - valid human submission is committed once and replayed across recovery
+  ---
+  duration_ms: 3.122918
+  type: 'test'
+  ...
+# Subtest: engine refusal preserves revision and permits a corrected selection
+ok 45 - engine refusal preserves revision and permits a corrected selection
+  ---
+  duration_ms: 1.064704
+  type: 'test'
+  ...
+# Subtest: automatic mode and stale revision never enter the human engine route
+ok 46 - automatic mode and stale revision never enter the human engine route
+  ---
+  duration_ms: 0.950738
+  type: 'test'
+  ...
+# Subtest: lost write acknowledgement requires recovery and receipt prevents replay
+ok 47 - lost write acknowledgement requires recovery and receipt prevents replay
+  ---
+  duration_ms: 1.432195
+  type: 'test'
+  ...
+# Subtest: queued request owns its submission bytes before caller can change them
+ok 48 - queued request owns its submission bytes before caller can change them
+  ---
+  duration_ms: 4.04973
+  type: 'test'
+  ...
+# Subtest: projection excludes authority witnesses and unknown fields, retires unauthorized choices
+ok 49 - projection excludes authority witnesses and unknown fields, retires unauthorized choices
+  ---
+  duration_ms: 1.445095
+  type: 'test'
+  ...
+# Subtest: unknown adapter outcomes poison the journal instead of reporting a harmless rejection
+ok 50 - unknown adapter outcomes poison the journal instead of reporting a harmless rejection
+  ---
+  duration_ms: 1.039103
+  type: 'test'
+  ...
+# Subtest: command zone separation retains exact quantities and sideboard
+ok 51 - command zone separation retains exact quantities and sideboard
+  ---
+  duration_ms: 3.034505
+  type: 'test'
+  ...
+# Subtest: both declared commanders survive without silently dropping a partner
+ok 52 - both declared commanders survive without silently dropping a partner
+  ---
+  duration_ms: 0.841616
+  type: 'test'
+  ...
+# Subtest: malformed and incompatible declarations cannot become an engine list
+ok 53 - malformed and incompatible declarations cannot become an engine list
+  ---
+  duration_ms: 1.281505
+  type: 'test'
+  ...
+# Subtest: frozen inputs retain printings and do not change when account deck edits
+ok 54 - frozen inputs retain printings and do not change when account deck edits
+  ---
+  duration_ms: 0.510262
+  type: 'test'
+  ...
+# Subtest: format legality and tested support gate independently for both seats
+ok 55 - format legality and tested support gate independently for both seats
+  ---
+  duration_ms: 0.640423
+  type: 'test'
+  ...
+# Subtest: inspection and draft selection never send a game command
+ok 56 - inspection and draft selection never send a game command
+  ---
+  duration_ms: 3.673307
+  type: 'test'
+  ...
+# Subtest: double-click cannot submit two commands at the same revision
+ok 57 - double-click cannot submit two commands at the same revision
+  ---
+  duration_ms: 1.37494
+  type: 'test'
+  ...
+# Subtest: CPU advances only until the next human decision
+ok 58 - CPU advances only until the next human decision
+  ---
+  duration_ms: 13.953807
+  type: 'test'
+  ...
+# Subtest: unsupported human prompt never falls through to CPU
+ok 59 - unsupported human prompt never falls through to CPU
+  ---
+  duration_ms: 4.126723
+  type: 'test'
+  ...
+# Subtest: bounded CPU exhaustion pauses without inventing a result
+ok 60 - bounded CPU exhaustion pauses without inventing a result
+  ---
+  duration_ms: 8.300759
+  type: 'test'
+  ...
+# Subtest: mandatory selection needs explicit confirmation; clear is local
+ok 61 - mandatory selection needs explicit confirmation; clear is local
+  ---
+  duration_ms: 2.846542
+  type: 'test'
+  ...
+# Subtest: unknown acknowledgement freezes commands for recovery
+ok 62 - unknown acknowledgement freezes commands for recovery
+  ---
+  duration_ms: 0.725372
+  type: 'test'
+  ...
+# Subtest: instance leaving authorized view retires inspector selection
+ok 63 - instance leaving authorized view retires inspector selection
+  ---
+  duration_ms: 3.031318
+  type: 'test'
+  ...
+# Subtest: countdown refresh reads authority time instead of replaying cached remaining time
+ok 64 - countdown refresh reads authority time instead of replaying cached remaining time
+  ---
+  duration_ms: 3.844728
+  type: 'test'
+  ...
+# Subtest: optional zero-count selection remains explicit and can be confirmed without picking a card
+ok 65 - optional zero-count selection remains explicit and can be confirmed without picking a card
+  ---
+  duration_ms: 1.850327
+  type: 'test'
+  ...
+# Subtest: number ingress accepts uint32 only, without coercion or extra fields
+ok 66 - number ingress accepts uint32 only, without coercion or extra fields
+  ---
+  duration_ms: 3.525583
+  type: 'test'
+  ...
+# Subtest: numeric projection preserves engine range and seat permission, fails closed on invalid schema
+ok 67 - numeric projection preserves engine range and seat permission, fails closed on invalid schema
+  ---
+  duration_ms: 3.554714
+  type: 'test'
+  ...
+# Subtest: number draft requires explicit confirmation, preserves zero, and clears after accepted revision
+ok 68 - number draft requires explicit confirmation, preserves zero, and clears after accepted revision
+  ---
+  duration_ms: 8.039558
+  type: 'test'
+  ...
+# Subtest: binding carries the immutable input once; commands use the private epoch
+ok 69 - binding carries the immutable input once; commands use the private epoch
+  ---
+  duration_ms: 9.801344
+  type: 'test'
+  ...
+# Subtest: account changes retire in-flight results and prevent any later request
+ok 70 - account changes retire in-flight results and prevent any later request
+  ---
+  duration_ms: 1.886337
+  type: 'test'
+  ...
+# Subtest: resume binding does not transmit a replacement deck snapshot
+ok 71 - resume binding does not transmit a replacement deck snapshot
+  ---
+  duration_ms: 1.210643
+  type: 'test'
+  ...
+# Subtest: foreign epochs and malformed progress cannot reach UI callbacks
+ok 72 - foreign epochs and malformed progress cannot reach UI callbacks
+  ---
+  duration_ms: 0.797313
+  type: 'test'
+  ...
+# Subtest: session-only binding is explicit, requires acknowledgment and preserves stable command ids
+ok 73 - session-only binding is explicit, requires acknowledgment and preserves stable command ids
+  ---
+  duration_ms: 1.006954
+  type: 'test'
+  ...
+# Subtest: session flags and forbidden resume are rejected before allocating a worker
+ok 74 - session flags and forbidden resume are rejected before allocating a worker
+  ---
+  duration_ms: 1.681929
+  type: 'test'
+  ...
+# Subtest: session mode never silently falls back to a durable worker
+ok 75 - session mode never silently falls back to a durable worker
+  ---
+  duration_ms: 1.813598
+  type: 'test'
+  ...
+# Subtest: a session account change retires an in-flight explicit concession without guessing its result
+ok 76 - a session account change retires an in-flight explicit concession without guessing its result
+  ---
+  duration_ms: 3.422202
+  type: 'test'
+  ...
+# Subtest: selected account/import list is captured once and opponent stays exact
+ok 77 - selected account/import list is captured once and opponent stays exact
+  ---
+  duration_ms: 3.735272
+  type: 'test'
+  ...
+# Subtest: account transition during engine startup rejects stale binding and retires worker
+ok 78 - account transition during engine startup rejects stale binding and retires worker
+  ---
+  duration_ms: 1.726232
+  type: 'test'
+  ...
+# Subtest: changed account generation retires active session and ignores its late projections
+ok 79 - changed account generation retires active session and ignores its late projections
+  ---
+  duration_ms: 0.769039
+  type: 'test'
+  ...
+# Subtest: unadmitted decks and unimplemented difficulty never start a game
+ok 80 - unadmitted decks and unimplemented difficulty never start a game
+  ---
+  duration_ms: 0.682306
+  type: 'test'
+  ...
+# Subtest: resume uses stored input without re-reading or regenerating selected decks
+ok 81 - resume uses stored input without re-reading or regenerating selected decks
+  ---
+  duration_ms: 0.448725
+  type: 'test'
+  ...
+# Subtest: a startup outcome needing recovery retains the original match identity
+ok 82 - a startup outcome needing recovery retains the original match identity
+  ---
+  duration_ms: 2.66697
+  type: 'test'
+  ...
+# Subtest: accepted terminal and recovery projections update the host phase without adding actions
+ok 83 - accepted terminal and recovery projections update the host phase without adding actions
+  ---
+  duration_ms: 0.402321
+  type: 'test'
+  ...
+# Subtest: an account mismatch, missing pregame or Friends selection cannot bind a worker
+ok 84 - an account mismatch, missing pregame or Friends selection cannot bind a worker
+  ---
+  duration_ms: 0.477255
+  type: 'test'
+  ...
+# Subtest: recovery closes the old epoch before reopening the same frozen match without a command retry
+ok 85 - recovery closes the old epoch before reopening the same frozen match without a command retry
+  ---
+  duration_ms: 1.77948
+  type: 'test'
+  ...
+# Subtest: recovery is single-flight and rejects a later account generation before binding
+ok 86 - recovery is single-flight and rejects a later account generation before binding
+  ---
+  duration_ms: 1.614097
+  type: 'test'
+  ...
+# Subtest: failed startup keeps recovery bound to the original account and stored match
+ok 87 - failed startup keeps recovery bound to the original account and stored match
+  ---
+  duration_ms: 1.239918
+  type: 'test'
+  ...
+# Subtest: start consumes the opponent already selected in account setup and freezes both lists
+ok 88 - start consumes the opponent already selected in account setup and freezes both lists
+  ---
+  duration_ms: 0.454703
+  type: 'test'
+  ...
+# Subtest: old session projections and loader events cannot overwrite a recovered epoch
+ok 89 - old session projections and loader events cannot overwrite a recovered epoch
+  ---
+  duration_ms: 1.49804
+  type: 'test'
+  ...
+# Subtest: account reconciliation also retires a failed-start recovery identity
+ok 90 - account reconciliation also retires a failed-start recovery identity
+  ---
+  duration_ms: 1.477966
+  type: 'test'
+  ...
+# Subtest: session-only mode reaches the worker explicitly while default flow retains durable behavior
+ok 91 - session-only mode reaches the worker explicitly while default flow retains durable behavior
+  ---
+  duration_ms: 0.496172
+  type: 'test'
+  ...
+# Subtest: session-only resume and recovery reject before reading an account or creating a worker
+ok 92 - session-only resume and recovery reject before reading an account or creating a worker
+  ---
+  duration_ms: 0.567047
+  type: 'test'
+  ...
+# Subtest: a lost session-only authority stops the match without fabricating a result or reopening
+ok 93 - a lost session-only authority stops the match without fabricating a result or reopening
+  ---
+  duration_ms: 0.383969
+  type: 'test'
+  ...
+# Subtest: session-only startup game errors retire the worker and retain no recovery route
+ok 94 - session-only startup game errors retire the worker and retain no recovery route
+  ---
+  duration_ms: 0.459302
+  type: 'test'
+  ...
+# Subtest: failed session-only worker startup reports stopped session rather than saved-match recovery
+ok 95 - failed session-only worker startup reports stopped session rather than saved-match recovery
+  ---
+  duration_ms: 0.428393
+  type: 'test'
+  ...
+# Subtest: a rejected session-only choice remains correctable without retiring the live authority
+ok 96 - a rejected session-only choice remains correctable without retiring the live authority
+  ---
+  duration_ms: 0.22599
+  type: 'test'
+  ...
+# Subtest: preflight permits engine loading without claiming construction legality or changing source
+ok 97 - preflight permits engine loading without claiming construction legality or changing source
+  ---
+  duration_ms: 4.529637
+  type: 'test'
+  ...
+# Subtest: outside pool checks include both sideboards and separate command zones
+ok 98 - outside pool checks include both sideboards and separate command zones
+  ---
+  duration_ms: 0.899883
+  type: 'test'
+  ...
+# Subtest: malformed, mismatched, missing, guest, friend and future CPU choices fail before engine work
+ok 99 - malformed, mismatched, missing, guest, friend and future CPU choices fail before engine work
+  ---
+  duration_ms: 2.78993
+  type: 'test'
+  ...
+# Subtest: menu requires release flag AND preflight and escapes per-seat unsupported names
+ok 100 - menu requires release flag AND preflight and escapes per-seat unsupported names
+  ---
+  duration_ms: 2.593632
+  type: 'test'
+  ...
+# Subtest: two printings of the same card bind to stable instance IDs
+ok 101 - two printings of the same card bind to stable instance IDs
+  ---
+  duration_ms: 4.446534
+  type: 'test'
+  ...
+# Subtest: hidden, newly created and foreign instances receive no invented printing
+ok 102 - hidden, newly created and foreign instances receive no invented printing
+  ---
+  duration_ms: 1.232624
+  type: 'test'
+  ...
+# Subtest: missing or extra starting cards cannot silently lose their printing identity
+ok 103 - missing or extra starting cards cannot silently lose their printing identity
+  ---
+  duration_ms: 0.765659
+  type: 'test'
+  ...
+# Subtest: transform and copy effects retain the original physical printing of an existing instance
+ok 104 - transform and copy effects retain the original physical printing of an existing instance
+  ---
+  duration_ms: 0.751066
+  type: 'test'
+  ...
+# Subtest: account and match identities form separate tuple keys
+ok 105 - account and match identities form separate tuple keys
+  ---
+  duration_ms: 4.492919
+  type: 'test'
+  ...
+# Subtest: snapshot canonicalization is finite, stable and ignores undefined object fields only
+ok 106 - snapshot canonicalization is finite, stable and ignores undefined object fields only
+  ---
+  duration_ms: 2.47836
+  type: 'test'
+  ...
+# Subtest: a persisted engine list cannot diverge from the original deck snapshot
+ok 107 - a persisted engine list cannot diverge from the original deck snapshot
+  ---
+  duration_ms: 2.752482
+  type: 'test'
+  ...
+# Subtest: digest binds printing, finish, format, profile and CPU difficulty
+ok 108 - digest binds printing, finish, format, profile and CPU difficulty
+  ---
+  duration_ms: 45.717699
+  type: 'test'
+  ...
+# Subtest: a deck capture without an optional profile remains valid across the worker boundary
+ok 109 - a deck capture without an optional profile remains valid across the worker boundary
+  ---
+  duration_ms: 2.313501
+  type: 'test'
+  ...
+# Subtest: journal writes request strict durability and refuse an ignored durability option
+ok 110 - journal writes request strict durability and refuse an ignored durability option
+  ---
+  duration_ms: 10.650772
+  type: 'test'
+  ...
+# Subtest: owned record operations close fresh connections on success and abort; close retires the handle
+ok 111 - owned record operations close fresh connections on success and abort; close retires the handle
+  ---
+  duration_ms: 3.737505
+  type: 'test'
+  ...
+# Subtest: worker accepts legacy durable binding and explicit boolean session mode only
+ok 112 - worker accepts legacy durable binding and explicit boolean session mode only
+  ---
+  duration_ms: 2.199893
+  type: 'test'
+  ...
+# Subtest: invalid flags and session resume never start storage or engine loading
+ok 113 - invalid flags and session resume never start storage or engine loading
+  ---
+  duration_ms: 1.892037
+  type: 'test'
+  ...
+# Subtest: session records do not touch IndexedDB and freeze input, presentation and accepted journals
+ok 114 - session records do not touch IndexedDB and freeze input, presentation and accepted journals
+  ---
+  duration_ms: 18.856826
+  type: 'test'
+  ...
+# Subtest: session CAS accepts one simultaneous next revision and rejects stale overwrites
+ok 115 - session CAS accepts one simultaneous next revision and rejects stale overwrites
+  ---
+  duration_ms: 5.237332
+  type: 'test'
+  ...
+# Subtest: a fresh session does not resume another worker or another account
+ok 116 - a fresh session does not resume another worker or another account
+  ---
+  duration_ms: 9.736579
+  type: 'test'
+  ...
+# Subtest: the unchanged journal preserves exact receipt replay and engine terminal rules in a session
+ok 117 - the unchanged journal preserves exact receipt replay and engine terminal rules in a session
+  ---
+  duration_ms: 8.744524
+  type: 'test'
+  ...
+# Subtest: default clock waits before deadline and proposes only at deadline
+ok 118 - default clock waits before deadline and proposes only at deadline
+  ---
+  duration_ms: 4.628279
+  type: 'test'
+  ...
+# Subtest: repeated arm/read/proposal calls retain the deadline and timeout ID
+ok 119 - repeated arm/read/proposal calls retain the deadline and timeout ID
+  ---
+  duration_ms: 0.561413
+  type: 'test'
+  ...
+# Subtest: export/restore does not reset an expired deadline or proposal identity
+ok 120 - export/restore does not reset an expired deadline or proposal identity
+  ---
+  duration_ms: 0.706399
+  type: 'test'
+  ...
+# Subtest: required target/payment/blocker/search choices never receive a guessed action
+ok 121 - required target/payment/blocker/search choices never receive a guessed action
+  ---
+  duration_ms: 0.581136
+  type: 'test'
+  ...
+# Subtest: no actual legal pass yields timeout-needs-choice without inventing a loss
+ok 122 - no actual legal pass yields timeout-needs-choice without inventing a loss
+  ---
+  duration_ms: 0.504917
+  type: 'test'
+  ...
+# Subtest: changed seat/revision/decision identity cannot execute an old clock or reset it
+ok 123 - changed seat/revision/decision identity cannot execute an old clock or reset it
+  ---
+  duration_ms: 0.329156
+  type: 'test'
+  ...
+# Subtest: other actor never gets an automatic human timeout pass
+ok 124 - other actor never gets an automatic human timeout pass
+  ---
+  duration_ms: 0.595538
+  type: 'test'
+  ...
+# Subtest: suspension suppresses proposals while wall time continues; resume retains deadline
+ok 125 - suspension suppresses proposals while wall time continues; resume retains deadline
+  ---
+  duration_ms: 0.600326
+  type: 'test'
+  ...
+# Subtest: timeout pass revalidates exact legal membership and current actor immediately before submit
+ok 126 - timeout pass revalidates exact legal membership and current actor immediately before submit
+  ---
+  duration_ms: 0.851899
+  type: 'test'
+  ...
+# Subtest: rejected validation leaves the clock unchanged, accepted acknowledgement consumes once
+ok 127 - rejected validation leaves the clock unchanged, accepted acknowledgement consumes once
+  ---
+  duration_ms: 2.305406
+  type: 'test'
+  ...
+# Subtest: new accepted revision can arm a new decision but cannot revive prior revision
+ok 128 - new accepted revision can arm a new decision but cannot revive prior revision
+  ---
+  duration_ms: 0.529271
+  type: 'test'
+  ...
+# Subtest: tampered or incompatible persisted deadlines are rejected
+ok 129 - tampered or incompatible persisted deadlines are rejected
+  ---
+  duration_ms: 1.083464
+  type: 'test'
+  ...
+# Subtest: acknowledgement cannot consume a mandatory decision or a non-pass proposal
+ok 130 - acknowledgement cannot consume a mandatory decision or a non-pass proposal
+  ---
+  duration_ms: 0.34812
+  type: 'test'
+  ...
+# Subtest: journal deadline drives countdown and one pass; no timer remains for CPU actor
+ok 131 - journal deadline drives countdown and one pass; no timer remains for CPU actor
+  ---
+  duration_ms: 11.883294
+  type: 'test'
+  ...
+# Subtest: cold journal reconstruction preserves expired deadline
+ok 132 - cold journal reconstruction preserves expired deadline
+  ---
+  duration_ms: 1.131618
+  type: 'test'
+  ...
+# Subtest: all mandatory prompts stop scheduling without guessing a choice or result
+ok 133 - all mandatory prompts stop scheduling without guessing a choice or result
+  ---
+  duration_ms: 6.826196
+  type: 'test'
+  ...
+# Subtest: scheduled wake consults authority instead of subtracting callback intervals
+ok 134 - scheduled wake consults authority instead of subtracting callback intervals
+  ---
+  duration_ms: 22.713352
+  type: 'test'
+  ...
+# Subtest: stop suppresses a late status and never issues tick
+ok 135 - stop suppresses a late status and never issues tick
+  ---
+  duration_ms: 2.389924
+  type: 'test'
+  ...
+# Subtest: overlapping refreshes coalesce and never overlap authority requests
+ok 136 - overlapping refreshes coalesce and never overlap authority requests
+  ---
+  duration_ms: 4.32237
+  type: 'test'
+  ...
+# Subtest: unknown mutation acknowledgement stops until explicit recovery, with no retry loop
+ok 137 - unknown mutation acknowledgement stops until explicit recovery, with no retry loop
+  ---
+  duration_ms: 1.44508
+  type: 'test'
+  ...
+# Subtest: countdown projection drops unexpected private data and malformed time stops
+ok 138 - countdown projection drops unexpected private data and malformed time stops
+  ---
+  duration_ms: 0.510306
+  type: 'test'
+  ...
+# Subtest: mandatory prompt keeps the inactivity clock alive after its reaction window expires
+ok 139 - mandatory prompt keeps the inactivity clock alive after its reaction window expires
+  ---
+  duration_ms: 0.722407
+  type: 'test'
+  ...
+# Subtest: turn budget can expire independently of a new response window
+ok 140 - turn budget can expire independently of a new response window
+  ---
+  duration_ms: 1.967562
+  type: 'test'
+  ...
+# Subtest: terminal turn budget stops even if a stale priority clock still says waiting
+ok 141 - terminal turn budget stops even if a stale priority clock still says waiting
+  ---
+  duration_ms: 0.306859
+  type: 'test'
+  ...
+# Subtest: outcome projection keeps only authorized roll facts and distinguishes coin success from a face
+ok 142 - outcome projection keeps only authorized roll facts and distinguishes coin success from a face
+  ---
+  duration_ms: 3.015723
+  type: 'test'
+  ...
+# Subtest: known malformed random events fail closed, including invalid ignored natural rolls
+ok 143 - known malformed random events fail closed, including invalid ignored natural rolls
+  ---
+  duration_ms: 1.082361
+  type: 'test'
+  ...
+# Subtest: all authority submission paths use viewer-authorized outcomes; rejected responses and rollback cannot retain a roll
+ok 144 - all authority submission paths use viewer-authorized outcomes; rejected responses and rollback cannot retain a roll
+  ---
+  duration_ms: 2.020966
+  type: 'test'
+  ...
+# Subtest: durable timeline bounds memory, preserves event order and rejects forged/duplicate identities
+ok 145 - durable timeline bounds memory, preserves event order and rejects forged/duplicate identities
+  ---
+  duration_ms: 4.516566
+  type: 'test'
+  ...
+# Subtest: accepted engine/RNG result and timeline commit atomically; duplicate and restored receipt do not roll again
+ok 146 - accepted engine/RNG result and timeline commit atomically; duplicate and restored receipt do not roll again
+  ---
+  duration_ms: 4.003157
+  type: 'test'
+  ...
+# Subtest: failed outcome persistence restores the engine and does not advertise an uncommitted roll
+ok 147 - failed outcome persistence restores the engine and does not advertise an uncommitted roll
+  ---
+  duration_ms: 1.502139
+  type: 'test'
+  ...
+# Subtest: corrupt saved outcome data is refused before recovery; older records without outcomes stay compatible
+ok 148 - corrupt saved outcome data is refused before recovery; older records without outcomes stay compatible
+  ---
+  duration_ms: 1.954518
+  type: 'test'
+  ...
+# Subtest: manifest must bind exact verified source, glue and uncompressed runtime
+ok 149 - manifest must bind exact verified source, glue and uncompressed runtime
+  ---
+  duration_ms: 2.518972
+  type: 'test'
+  ...
+# Subtest: chunk paths, counts and sizes cannot redirect or expand the package
+ok 150 - chunk paths, counts and sizes cannot redirect or expand the package
+  ---
+  duration_ms: 0.643678
+  type: 'test'
+  ...
+# Subtest: rules database metadata must bind the exact pinned compressed and decoded bytes
+ok 151 - rules database metadata must bind the exact pinned compressed and decoded bytes
+  ---
+  duration_ms: 1.194577
+  type: 'test'
+  ...
+# Subtest: a valid pinned cached manifest starts without a manifest network request
+ok 152 - a valid pinned cached manifest starts without a manifest network request
+  ---
+  duration_ms: 4.694993
+  type: 'test'
+  ...
+# Subtest: invalid cached manifests are evicted before downloading a replacement
+    # Subtest: malformed JSON
+    ok 1 - malformed JSON
+      ---
+      duration_ms: 1.6233
+      type: 'test'
+      ...
+    # Subtest: oversized JSON
+    ok 2 - oversized JSON
+      ---
+      duration_ms: 0.882295
+      type: 'test'
+      ...
+    # Subtest: wrong runtime
+    ok 3 - wrong runtime
+      ---
+      duration_ms: 3.983176
+      type: 'test'
+      ...
+    # Subtest: wrong rules
+    ok 4 - wrong rules
+      ---
+      duration_ms: 1.683096
+      type: 'test'
+      ...
+    1..4
+ok 153 - invalid cached manifests are evicted before downloading a replacement
+  ---
+  duration_ms: 9.591084
+  type: 'test'
+  ...
+# Subtest: missing or unreadable cache falls back to a validated download
+    # Subtest: cache miss
+    ok 1 - cache miss
+      ---
+      duration_ms: 0.676567
+      type: 'test'
+      ...
+    # Subtest: cache read fails
+    ok 2 - cache read fails
+      ---
+      duration_ms: 1.192056
+      type: 'test'
+      ...
+    1..2
+ok 154 - missing or unreadable cache falls back to a validated download
+  ---
+  duration_ms: 2.789301
+  type: 'test'
+  ...
+# Subtest: a downloaded invalid manifest fails closed without retrying a cached alternative
+ok 155 - a downloaded invalid manifest fails closed without retrying a cached alternative
+  ---
+  duration_ms: 0.808608
+  type: 'test'
+  ...
+# Subtest: aborting before manifest admission performs no cache read or network request
+ok 156 - aborting before manifest admission performs no cache read or network request
+  ---
+  duration_ms: 0.451701
+  type: 'test'
+  ...
+# Subtest: aborting while reading a cached manifest neither evicts it nor falls back to network
+ok 157 - aborting while reading a cached manifest neither evicts it nor falls back to network
+  ---
+  duration_ms: 1.235277
+  type: 'test'
+  ...
+# Subtest: aborting while reading a downloaded manifest prevents binary loading and cache admission
+ok 158 - aborting while reading a downloaded manifest prevents binary loading and cache admission
+  ---
+  duration_ms: 0.523405
+  type: 'test'
+  ...
+# Subtest: drops private zones, future order, base identity, raw rules and RNG
+ok 159 - drops private zones, future order, base identity, raw rules and RNG
+  ---
+  duration_ms: 5.262493
+  type: 'test'
+  ...
+# Subtest: different hidden worlds produce the same surface
+ok 160 - different hidden worlds produce the same surface
+  ---
+  duration_ms: 0.75442
+  type: 'test'
+  ...
+# Subtest: base stats and token identity are visible facts only on authorized objects
+ok 161 - base stats and token identity are visible facts only on authorized objects
+  ---
+  duration_ms: 0.65586
+  type: 'test'
+  ...
+# Subtest: cannot change the bound seat or accept unscoped state
+ok 162 - cannot change the bound seat or accept unscoped state
+  ---
+  duration_ms: 0.71218
+  type: 'test'
+  ...
+# Subtest: unsupported decision cannot leak hidden candidate lists
+ok 163 - unsupported decision cannot leak hidden candidate lists
+  ---
+  duration_ms: 0.500902
+  type: 'test'
+  ...
+# Subtest: human action uses an offered epoch/revision-bound token and retains RNG
+ok 164 - human action uses an offered epoch/revision-bound token and retains RNG
+  ---
+  duration_ms: 1.426046
+  type: 'test'
+  ...
+# Subtest: inspecting is read-only and changed candidates invalidate the choice
+ok 165 - inspecting is read-only and changed candidates invalidate the choice
+  ---
+  duration_ms: 0.481621
+  type: 'test'
+  ...
+# Subtest: mulligan bottoming cannot be offered as another free keep/mulligan
+ok 166 - mulligan bottoming cannot be offered as another free keep/mulligan
+  ---
+  duration_ms: 0.459742
+  type: 'test'
+  ...
+# Subtest: ordered choices can remove a repeated occurrence and reorder locally before explicit submission
+ok 167 - ordered choices can remove a repeated occurrence and reorder locally before explicit submission
+  ---
+  duration_ms: 9.246989
+  type: 'test'
+  ...
+# Subtest: sequence edits reject invalid indices, edges, foreign prompts and retired revisions
+ok 168 - sequence edits reject invalid indices, edges, foreign prompts and retired revisions
+  ---
+  duration_ms: 1.860041
+  type: 'test'
+  ...
+# Subtest: in-flight confirmation freezes local order and a retired control cannot edit after close
+ok 169 - in-flight confirmation freezes local order and a retired control cannot edit after close
+  ---
+  duration_ms: 1.028679
+  type: 'test'
+  ...
+# Subtest: text ingress preserves exact Unicode and rejects blank, malformed, oversized and injected fields
+ok 170 - text ingress preserves exact Unicode and rejects blank, malformed, oversized and injected fields
+  ---
+  duration_ms: 4.659058
+  type: 'test'
+  ...
+# Subtest: only explicitly authorized arbitrary text schema is exposed
+ok 171 - only explicitly authorized arbitrary text schema is exposed
+  ---
+  duration_ms: 1.457064
+  type: 'test'
+  ...
+# Subtest: text draft is local, confirmed once, and retired by accepted revision
+ok 172 - text draft is local, confirmed once, and retired by accepted revision
+  ---
+  duration_ms: 5.128476
+  type: 'test'
+  ...
+# Subtest: deadline and engine are stored together; reads and premature ticks never rewrite
+ok 173 - deadline and engine are stored together; reads and premature ticks never rewrite
+  ---
+  duration_ms: 10.878563
+  type: 'test'
+  ...
+# Subtest: cold restore retains the deadline and applies one timeout pass
+ok 174 - cold restore retains the deadline and applies one timeout pass
+  ---
+  duration_ms: 5.153678
+  type: 'test'
+  ...
+# Subtest: simultaneous human and expiry requests serialize to one accepted pass
+ok 175 - simultaneous human and expiry requests serialize to one accepted pass
+  ---
+  duration_ms: 7.948472
+  type: 'test'
+  ...
+# Subtest: duplicate human pass replays receipt after restore without another action
+ok 176 - duplicate human pass replays receipt after restore without another action
+  ---
+  duration_ms: 5.264063
+  type: 'test'
+  ...
+# Subtest: required choices, other seats and missing pass never get an automatic action
+ok 177 - required choices, other seats and missing pass never get an automatic action
+  ---
+  duration_ms: 6.187752
+  type: 'test'
+  ...
+# Subtest: wrong actor, stale revision and unavailable pass preserve deadline
+ok 178 - wrong actor, stale revision and unavailable pass preserve deadline
+  ---
+  duration_ms: 5.065435
+  type: 'test'
+  ...
+# Subtest: failed write poisons the authority; recovery uses actual durable outcome
+ok 179 - failed write poisons the authority; recovery uses actual durable outcome
+  ---
+  duration_ms: 5.025356
+  type: 'test'
+  ...
+# Subtest: two authorities cannot overwrite the same revision
+ok 180 - two authorities cannot overwrite the same revision
+  ---
+  duration_ms: 3.831016
+  type: 'test'
+  ...
+# Subtest: mismatched persisted clock fails closed instead of extending its deadline
+ok 181 - mismatched persisted clock fails closed instead of extending its deadline
+  ---
+  duration_ms: 2.120716
+  type: 'test'
+  ...
+# Subtest: defaults provide independent inactivity and hard own-turn budgets
+ok 182 - defaults provide independent inactivity and hard own-turn budgets
+  ---
+  duration_ms: 4.350979
+  type: 'test'
+  ...
+# Subtest: reads and duplicate/rejected action observations cannot renew either deadline
+ok 183 - reads and duplicate/rejected action observations cannot renew either deadline
+  ---
+  duration_ms: 0.542796
+  type: 'test'
+  ...
+# Subtest: only a newly accepted human action resets inactivity, never the hard deadline
+ok 184 - only a newly accepted human action resets inactivity, never the hard deadline
+  ---
+  duration_ms: 0.362625
+  type: 'test'
+  ...
+# Subtest: CPU wait pauses inactivity while hard own-turn clock keeps running
+ok 185 - CPU wait pauses inactivity while hard own-turn clock keeps running
+  ---
+  duration_ms: 0.397463
+  type: 'test'
+  ...
+# Subtest: reactive and mandatory human choices during CPU turn consume inactivity without a turn budget
+ok 186 - reactive and mandatory human choices during CPU turn consume inactivity without a turn budget
+  ---
+  duration_ms: 2.753861
+  type: 'test'
+  ...
+# Subtest: pure CPU turn waiting cannot create an automatic forfeit
+ok 187 - pure CPU turn waiting cannot create an automatic forfeit
+  ---
+  duration_ms: 0.357184
+  type: 'test'
+  ...
+# Subtest: steady human actions cannot avoid the hard turn limit
+ok 188 - steady human actions cannot avoid the hard turn limit
+  ---
+  duration_ms: 0.23434
+  type: 'test'
+  ...
+# Subtest: hard expiry while CPU responds waits for an authoritative human action window
+ok 189 - hard expiry while CPU responds waits for an authoritative human action window
+  ---
+  duration_ms: 0.903703
+  type: 'test'
+  ...
+# Subtest: late accepted input cannot reset already expired inactivity
+ok 190 - late accepted input cannot reset already expired inactivity
+  ---
+  duration_ms: 0.231903
+  type: 'test'
+  ...
+# Subtest: warnings appear only in the last configured window and invalid reads do not extend it
+ok 191 - warnings appear only in the last configured window and invalid reads do not extend it
+  ---
+  duration_ms: 0.232089
+  type: 'test'
+  ...
+# Subtest: forfeit proposals are stable and validate current revision, action and deadline
+ok 192 - forfeit proposals are stable and validate current revision, action and deadline
+  ---
+  duration_ms: 2.163403
+  type: 'test'
+  ...
+# Subtest: acknowledgement is once-only, requires next accepted engine revision and never invents a result
+ok 193 - acknowledgement is once-only, requires next accepted engine revision and never invents a result
+  ---
+  duration_ms: 0.928002
+  type: 'test'
+  ...
+# Subtest: terminal positions, stale observations and disabled concession cannot execute a forfeit
+ok 194 - terminal positions, stale observations and disabled concession cannot execute a forfeit
+  ---
+  duration_ms: 0.481185
+  type: 'test'
+  ...
+# Subtest: new own turn receives a new hard budget while old proposals cannot follow it
+ok 195 - new own turn receives a new hard budget while old proposals cannot follow it
+  ---
+  duration_ms: 0.239711
+  type: 'test'
+  ...
+# Subtest: invalid options, context, IDs and time are rejected; backward wall time cannot renew deadlines
+ok 196 - invalid options, context, IDs and time are rejected; backward wall time cannot renew deadlines
+  ---
+  duration_ms: 5.405854
+  type: 'test'
+  ...
+# Subtest: CPU receives no card identities, handles, library order or hidden hand data
+ok 197 - CPU receives no card identities, handles, library order or hidden hand data
+  ---
+  duration_ms: 2.756319
+  type: 'test'
+  ...
+# Subtest: uses available land then creature development instead of pass
+ok 198 - uses available land then creature development instead of pass
+  ---
+  duration_ms: 0.725217
+  type: 'test'
+  ...
+# Subtest: unsupported choice fails without inventing a pass
+ok 199 - unsupported choice fails without inventing a pass
+  ---
+  duration_ms: 0.516028
+  type: 'test'
+  ...
+# Subtest: unblocked attackers have a positive score
+ok 200 - unblocked attackers have a positive score
+  ---
+  duration_ms: 0.437178
+  type: 'test'
+  ...
+# Subtest: timeout is uncertain, terminates the worker and never retries
+ok 201 - timeout is uncertain, terminates the worker and never retries
+  ---
+  duration_ms: 20.559002
+  type: 'test'
+  ...
+# Subtest: old epoch reply cannot settle a pending command
+ok 202 - old epoch reply cannot settle a pending command
+  ---
+  duration_ms: 3.60497
+  type: 'test'
+  ...
+# Subtest: postMessage failure cleans its request without terminating a usable worker
+ok 203 - postMessage failure cleans its request without terminating a usable worker
+  ---
+  duration_ms: 1.142068
+  type: 'test'
+  ...
+# Subtest: worker failure or explicit close during a move reports uncertain outcome
+ok 204 - worker failure or explicit close during a move reports uncertain outcome
+  ---
+  duration_ms: 1.235595
+  type: 'test'
+  ...
+# Subtest: malformed same-session reply closes transport instead of accepting a move
+ok 205 - malformed same-session reply closes transport instead of accepting a move
+  ---
+  duration_ms: 0.424012
+  type: 'test'
+  ...
+# Subtest: closing during a human response reports unknown outcome rather than a read failure
+ok 206 - closing during a human response reports unknown outcome rather than a read failure
+  ---
+  duration_ms: 1.157515
+  type: 'test'
+  ...
+# Subtest: concurrent commands serialize; only one accepts a revision
+ok 207 - concurrent commands serialize; only one accepts a revision
+  ---
+  duration_ms: 5.509896
+  type: 'test'
+  ...
+# Subtest: duplicate returns receipt, collision rejects, prototype-named IDs are ordinary IDs
+ok 208 - duplicate returns receipt, collision rejects, prototype-named IDs are ordinary IDs
+  ---
+  duration_ms: 2.492011
+  type: 'test'
+  ...
+# Subtest: lost acknowledgement survives restart without repeating accepted move
+ok 209 - lost acknowledgement survives restart without repeating accepted move
+  ---
+  duration_ms: 1.787226
+  type: 'test'
+  ...
+# Subtest: failed persistence restores state and requires explicit recovery
+ok 210 - failed persistence restores state and requires explicit recovery
+  ---
+  duration_ms: 1.264179
+  type: 'test'
+  ...
+# Subtest: throw after engine mutation restores last durable state
+ok 211 - throw after engine mutation restores last durable state
+  ---
+  duration_ms: 37.846034
+  type: 'test'
+  ...
+# Subtest: two authorities cannot overwrite the same durable revision
+ok 212 - two authorities cannot overwrite the same durable revision
+  ---
+  duration_ms: 1.72466
+  type: 'test'
+  ...
+# Subtest: malformed and stale-session requests never apply
+ok 213 - malformed and stale-session requests never apply
+  ---
+  duration_ms: 1.226107
+  type: 'test'
+  ...
+# Subtest: out-of-range policy proposals never apply or leak state
+ok 214 - out-of-range policy proposals never apply or leak state
+  ---
+  duration_ms: 0.687731
+  type: 'test'
+  ...
+# Subtest: policy packet omits object IDs and hidden payloads; seeded choices repeat
+ok 215 - policy packet omits object IDs and hidden payloads; seeded choices repeat
+  ---
+  duration_ms: 2.73059
+  type: 'test'
+  ...
+# Subtest: __proto__ receipt persists as data and replays exactly once
+ok 216 - __proto__ receipt persists as data and replays exactly once
+  ---
+  duration_ms: 0.828372
+  type: 'test'
+  ...
+# Subtest: incompatible saved version is refused
+ok 217 - incompatible saved version is refused
+  ---
+  duration_ms: 0.475948
+  type: 'test'
+  ...
+# Subtest: human choice context is revision-bound and part of durable request identity
+ok 218 - human choice context is revision-bound and part of durable request identity
+  ---
+  duration_ms: 1.310953
+  type: 'test'
+  ...
+# Subtest: chooser rejection leaves engine, RNG and accepted trace unchanged
+ok 219 - chooser rejection leaves engine, RNG and accepted trace unchanged
+  ---
+  duration_ms: 0.589701
+  type: 'test'
+  ...
+# Subtest: choice is a bounded step-only string
+ok 220 - choice is a bounded step-only string
+  ---
+  duration_ms: 1.385081
+  type: 'test'
+  ...
+# Subtest: malformed saves reject before restoration or another move
+ok 221 - malformed saves reject before restoration or another move
+  ---
+  duration_ms: 3.480082
+  type: 'test'
+  ...
+# Subtest: failed initial persistence requires a new authority before retrying
+ok 222 - failed initial persistence requires a new authority before retrying
+  ---
+  duration_ms: 1.343393
+  type: 'test'
+  ...
+# Subtest: summary receives the accepted revision and cannot override it
+ok 223 - summary receives the accepted revision and cannot override it
+  ---
+  duration_ms: 0.820377
+  type: 'test'
+  ...
+# Subtest: status reuses the accepted projection and a new action invalidates it
+ok 224 - status reuses the accepted projection and a new action invalidates it
+  ---
+  duration_ms: 1.505026
+  type: 'test'
+  ...
+# Subtest: a newly terminal projection rejects another move and preserves its receipt
+ok 225 - a newly terminal projection rejects another move and preserves its receipt
+  ---
+  duration_ms: 0.569592
+  type: 'test'
+  ...
+# Subtest: timer reads and early ticks preserve durable deadline; expiry passes exactly once
+ok 226 - timer reads and early ticks preserve durable deadline; expiry passes exactly once
+  ---
+  duration_ms: 6.38881
+  type: 'test'
+  ...
+# Subtest: human command wins a race with expired timer without a second pass
+ok 227 - human command wins a race with expired timer without a second pass
+  ---
+  duration_ms: 1.379256
+  type: 'test'
+  ...
+# Subtest: cold recovery retains expiry and durable timeout receipt after lost acknowledgement
+ok 228 - cold recovery retains expiry and durable timeout receipt after lost acknowledgement
+  ---
+  duration_ms: 1.750669
+  type: 'test'
+  ...
+# Subtest: resume never replenishes response time
+ok 229 - resume never replenishes response time
+  ---
+  duration_ms: 0.448245
+  type: 'test'
+  ...
+# Subtest: mandatory choice expiry never guesses an action; explicit interaction re-arms next decision
+ok 230 - mandatory choice expiry never guesses an action; explicit interaction re-arms next decision
+  ---
+  duration_ms: 3.606913
+  type: 'test'
+  ...
+# Subtest: inconsistent saved clock refuses recovery
+ok 231 - inconsistent saved clock refuses recovery
+  ---
+  duration_ms: 0.538962
+  type: 'test'
+  ...
+# Subtest: cached board status keeps a live countdown without renewing the deadline
+ok 232 - cached board status keeps a live countdown without renewing the deadline
+  ---
+  duration_ms: 0.377962
+  type: 'test'
+  ...
+# Subtest: optional budget appears in authoritative status without changing the 30-second clock
+ok 233 - optional budget appears in authoritative status without changing the 30-second clock
+  ---
+  duration_ms: 7.444771
+  type: 'test'
+  ...
+# Subtest: mandatory choice idle expiry submits actual engine concession once and replays the exact receipt
+ok 234 - mandatory choice idle expiry submits actual engine concession once and replays the exact receipt
+  ---
+  duration_ms: 7.096074
+  type: 'test'
+  ...
+# Subtest: late human action cannot reset the expired budget or execute its original move
+ok 235 - late human action cannot reset the expired budget or execute its original move
+  ---
+  duration_ms: 1.465479
+  type: 'test'
+  ...
+# Subtest: accepted human actions replenish idle but repeated actions cannot extend the hard turn limit
+ok 236 - accepted human actions replenish idle but repeated actions cannot extend the hard turn limit
+  ---
+  duration_ms: 5.549148
+  type: 'test'
+  ...
+# Subtest: a CPU action and status reads cannot replenish human inactivity
+ok 237 - a CPU action and status reads cannot replenish human inactivity
+  ---
+  duration_ms: 1.590789
+  type: 'test'
+  ...
+# Subtest: a required human response on CPU turn gets inactivity protection without an own-turn hard budget
+ok 238 - a required human response on CPU turn gets inactivity protection without an own-turn hard budget
+  ---
+  duration_ms: 0.845377
+  type: 'test'
+  ...
+# Subtest: reaction expiry still passes legal priority once and does not reset inactivity
+ok 239 - reaction expiry still passes legal priority once and does not reset inactivity
+  ---
+  duration_ms: 2.253765
+  type: 'test'
+  ...
+# Subtest: rejected input preserves the inactivity deadline rather than awarding action time
+ok 240 - rejected input preserves the inactivity deadline rather than awarding action time
+  ---
+  duration_ms: 1.13199
+  type: 'test'
+  ...
+# Subtest: engine rejection of timed concession cannot fabricate a winner or stored loss
+ok 241 - engine rejection of timed concession cannot fabricate a winner or stored loss
+  ---
+  duration_ms: 1.282192
+  type: 'test'
+  ...
+# Subtest: session-only budget refuses resume instead of replenishing a saved deadline
+ok 242 - session-only budget refuses resume instead of replenishing a saved deadline
+  ---
+  duration_ms: 1.060999
+  type: 'test'
+  ...
+# Subtest: budget expiry is revalidated after an asynchronous proposal before engine mutation
+ok 243 - budget expiry is revalidated after an asynchronous proposal before engine mutation
+  ---
+  duration_ms: 1.136362
+  type: 'test'
+  ...
+# Subtest: old journal mode remains without turn budget fields or idle forfeits
+ok 244 - old journal mode remains without turn budget fields or idle forfeits
+  ---
+  duration_ms: 0.716123
+  type: 'test'
+  ...
+# Subtest: automatic priority passes and later CPU responses cannot refresh previously used idle time
+ok 245 - automatic priority passes and later CPU responses cannot refresh previously used idle time
+  ---
+  duration_ms: 1.051911
+  type: 'test'
+  ...
+# Subtest: one launch resolves both exact printings, reference selections and sideboard without saving or mutating rows
+ok 246 - one launch resolves both exact printings, reference selections and sideboard without saving or mutating rows
+  ---
+  duration_ms: 3.948352
+  type: 'test'
+  ...
+# Subtest: wrong ID, wrong card or failed lookup cannot substitute an arbitrary name version
+ok 247 - wrong ID, wrong card or failed lookup cannot substitute an arbitrary name version
+  ---
+  duration_ms: 1.886823
+  type: 'test'
+  ...
+# Subtest: account changes during an awaited lookup clear all private preparation data
+ok 248 - account changes during an awaited lookup clear all private preparation data
+  ---
+  duration_ms: 8.041799
+  type: 'test'
+  ...
+# Subtest: face names match their exact double-faced printing and a new preparation replaces prior metadata
+ok 249 - face names match their exact double-faced printing and a new preparation replaces prior metadata
+  ---
+  duration_ms: 1.123251
+  type: 'test'
+  ...
+# Subtest: explicit player and CPU choices retain the independent shuffle seed
+ok 250 - explicit player and CPU choices retain the independent shuffle seed
+  ---
+  duration_ms: 2.744311
+  type: 'test'
+  ...
+# Subtest: random starting seat uses a separate unbiased random bit and never a fabricated face
+ok 251 - random starting seat uses a separate unbiased random bit and never a fabricated face
+  ---
+  duration_ms: 0.543184
+  type: 'test'
+  ...
+# Subtest: invalid starting choice and failed randomness do not yield a game configuration
+ok 252 - invalid starting choice and failed randomness do not yield a game configuration
+  ---
+  duration_ms: 0.880428
+  type: 'test'
+  ...
+# Subtest: app Back asks for active-match concession and closes a finished match without another loss
+ok 253 - app Back asks for active-match concession and closes a finished match without another loss
+  ---
+  duration_ms: 3.56233
+  type: 'test'
+  ...
+# Subtest: browser traversal restores the active route before confirmation and does not mutate match state
+ok 254 - browser traversal restores the active route before confirmation and does not mutate match state
+  ---
+  duration_ms: 1.290244
+  type: 'test'
+  ...
+# Subtest: profile projection contains chosen display/art fields and no email/auth metadata
+ok 255 - profile projection contains chosen display/art fields and no email/auth metadata
+  ---
+  duration_ms: 4.884234
+  type: 'test'
+  ...
+# Subtest: selection preserves exact commander/main/side counts and never mutates source
+ok 256 - selection preserves exact commander/main/side counts and never mutates source
+  ---
+  duration_ms: 1.734342
+  type: 'test'
+  ...
+# Subtest: Play excludes other formats without altering their saved lists
+ok 257 - Play excludes other formats without altering their saved lists
+  ---
+  duration_ms: 1.342672
+  type: 'test'
+  ...
+# Subtest: select by ID re-reads the current owner and refuses arbitrary deck payloads
+ok 258 - select by ID re-reads the current owner and refuses arbitrary deck payloads
+  ---
+  duration_ms: 2.839796
+  type: 'test'
+  ...
+# Subtest: draft and import state reset on account generation/switching, including A to B to A
+ok 259 - draft and import state reset on account generation/switching, including A to B to A
+  ---
+  duration_ms: 1.475476
+  type: 'test'
+  ...
+# Subtest: typing is silent by default and oversized draft text is rejected without truncation
+ok 260 - typing is silent by default and oversized draft text is rejected without truncation
+  ---
+  duration_ms: 0.523045
+  type: 'test'
+  ...
+# Subtest: import lookup annotates unknowns and explicit review keeps every original row
+ok 261 - import lookup annotates unknowns and explicit review keeps every original row
+  ---
+  duration_ms: 2.957158
+  type: 'test'
+  ...
+# Subtest: failed parser or malformed row never destroys a prior saved selection
+ok 262 - failed parser or malformed row never destroys a prior saved selection
+  ---
+  duration_ms: 3.061475
+  type: 'test'
+  ...
+# Subtest: malformed saved rows are shown with explicit issues and retained rather than silently cut
+ok 263 - malformed saved rows are shown with explicit issues and retained rather than silently cut
+  ---
+  duration_ms: 0.52957
+  type: 'test'
+  ...
+# Subtest: late name resolution across observed account switch is ignored
+ok 264 - late name resolution across observed account switch is ignored
+  ---
+  duration_ms: 8.095659
+  type: 'test'
+  ...
+# Subtest: late resolver is ignored when A to B to A happened between reads using accountGeneration
+ok 265 - late resolver is ignored when A to B to A happened between reads using accountGeneration
+  ---
+  duration_ms: 1.035881
+  type: 'test'
+  ...
+# Subtest: draft edits invalidate an in-flight import and guest scope cannot read decks
+ok 266 - draft edits invalidate an in-flight import and guest scope cannot read decks
+  ---
+  duration_ms: 1.269481
+  type: 'test'
+  ...
+# Subtest: locked or signed-out snapshots redact stale profile details and imported review data
+ok 267 - locked or signed-out snapshots redact stale profile details and imported review data
+  ---
+  duration_ms: 1.700876
+  type: 'test'
+  ...
+# Subtest: structured parser notes retain line/reason and preview clones before explicit use
+ok 268 - structured parser notes retain line/reason and preview clones before explicit use
+  ---
+  duration_ms: 1.77975
+  type: 'test'
+  ...
+# Subtest: real parser injection clears all attempted names after successful lookup
+ok 269 - real parser injection clears all attempted names after successful lookup
+  ---
+  duration_ms: 8.959635
+  type: 'test'
+  ...
+# Subtest: name resolver replaces attempted unverified names while retaining unknown non-row notes
+ok 270 - name resolver replaces attempted unverified names while retaining unknown non-row notes
+  ---
+  duration_ms: 1.694665
+  type: 'test'
+  ...
+# Subtest: structured fatal parser issues block review and keep prior selection
+ok 271 - structured fatal parser issues block review and keep prior selection
+  ---
+  duration_ms: 1.826527
+  type: 'test'
+  ...
+# Subtest: importDraft reconciles scope before reading draft arguments
+ok 272 - importDraft reconciles scope before reading draft arguments
+  ---
+  duration_ms: 0.880547
+  type: 'test'
+  ...
+# Subtest: choosing an import retires the duplicate preview and preserves selected source details
+ok 273 - choosing an import retires the duplicate preview and preserves selected source details
+  ---
+  duration_ms: 1.632212
+  type: 'test'
+  ...
+# Subtest: format changes retire incompatible selection and pending import without rewriting saved decks
+ok 274 - format changes retire incompatible selection and pending import without rewriting saved decks
+  ---
+  duration_ms: 2.256776
+  type: 'test'
+  ...
+# Subtest: CPU preferences are account-scoped setup only, and invalid modes cannot enable a match
+ok 275 - CPU preferences are account-scoped setup only, and invalid modes cannot enable a match
+  ---
+  duration_ms: 1.755853
+  type: 'test'
+  ...
+# Subtest: a pasted list cannot select a different format behind the match selector
+ok 276 - a pasted list cannot select a different format behind the match selector
+  ---
+  duration_ms: 0.455692
+  type: 'test'
+  ...
+# Subtest: a saved deck changed elsewhere cannot retain an incompatible match selection
+ok 277 - a saved deck changed elsewhere cannot retain an incompatible match selection
+  ---
+  duration_ms: 0.410456
+  type: 'test'
+  ...
+# Subtest: saved or imported player selection can freeze an exact CPU list before selecting another player deck
+ok 278 - saved or imported player selection can freeze an exact CPU list before selecting another player deck
+  ---
+  duration_ms: 3.932917
+  type: 'test'
+  ...
+1..278
+# tests 284
+# suites 0
+# pass 284
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7712.97146

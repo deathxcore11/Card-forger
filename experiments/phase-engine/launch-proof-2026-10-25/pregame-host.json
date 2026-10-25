@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "browser": "153.0.8010.0",
+  "appSha256": "0ef827fdffd30fd559f36618b2366445ae3e954980648f14ad22e3e7cee72780",
+  "entrySha256": "0ec3753544ca697d414aa630aca82352df9901b7de4e40cf360a44cf2976f3d3",
+  "checks": [
+    "actual app entrypoint waits for explicit confirmation instead of forcing human first",
+    "duplicate entry cannot mount another pregame or start",
+    "explicit CPU-first reaches player-mat start once",
+    "close and cancel restore app input and detach host",
+    "startup error cannot remount a second confirm prompt"
+  ],
+  "limits": "Exact extracted app entrypoint with simulated dependencies and test-only release admission. Public source flag remains false. Does not certify real account, engine gameplay or release readiness."
+}

@@ -1,0 +1,15 @@
+{
+  "app.js": "0ef827fdffd30fd559f36618b2366445ae3e954980648f14ad22e3e7cee72780",
+  "play-menu.js": "96d13fb1aa471b1740b1bb84dd357ee4a3b312c69171dadadd96c70c6e49c0ce",
+  "play-player-mat.js": "d10a96ac3ccc6060424b5ad5c013dc43be0c2b72a304248b520fcd4d9ec4ef55",
+  "play-card-preparation.js": "b48a1e3e87eb0ce98b2ab8528eaa7be7bddf5433de887642ae592c838b613f3b",
+  "sw.js": "cbbb13c2309805c216d8bbeeb956d515a178fe005fe769ed3a960a894da6ced4",
+  "test-play-card-preparation.mjs": "3fcd6e5f35c286ea650862b7a324068a8899ed935a366757110ed7540e44bc0a",
+  "test-play-setup.mjs": "d8a495dd44f6314a6f27c0b97aa8a6510db1f498cfca7aaea010da27af733b1f",
+  "experiments/phase-engine/practice-preflight.mjs": "d1333d1f31354bdf29be1b2b54807beeeb6996d338f72e0e12272657f1a927c6",
+  "experiments/phase-engine/match-input.mjs": "7d3cecfb5028d2b068f77f30a883a0e796865108e30a5c576317585307aea418",
+  "experiments/phase-engine/test-practice-preflight.mjs": "5974cc48de676a0486af6cd698d3b267f423bb5c7ac99ccf0955235780b2b896",
+  "experiments/phase-engine/player-mat-launch-browser.mjs": "91fabfbbfe40211a792c35322361c04387530fd59fe5244f0102c1ba544d3f7b",
+  "experiments/phase-engine/player-mat-prepare-browser.mjs": "9221f796cbaac8a3114b2733ebe6345699c8511daf4f66a92dc98c97786815af",
+  "experiments/phase-engine/practice-pregame-host-browser.mjs": "4cb1a418e1a74b1930330fb8651cea582d898cde275c5117932592453d6c129f"
+}

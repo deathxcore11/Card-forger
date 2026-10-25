@@ -1,0 +1,5 @@
+{
+  "executedHarnessSha256": "44eb85b58db34b2bd844da91acd66a76fc51e453a123f309cbb5d2ab1d2a1212",
+  "sampledAtEndHarnessSha256": "6372948d90a824c462da43af19420749ce60695a62c4fd0372a74262fee441b1",
+  "difference": "During the run only temporary HTML debug-file output and HTTP GET logging were removed, then restored. The driver sampled its disk hash at finalization, after the diagnostic-only trim. Served module/page/runtime hashes in player-mat-match.json are captured before launch and are the actual bytes tested. The checked-in final driver removes those diagnostics and captures its own hash before launch to prevent this ambiguity in future. No gameplay or assertions changed during this match. The later strict signedIn preflight check and CPU-copy menu action are covered separately by focused and app-entry tests; no second complete-match repeat is claimed."
+}

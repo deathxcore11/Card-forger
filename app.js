@@ -18,6 +18,7 @@ import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {createPlayerMat} from './play-player-mat.js';
+import {createPracticeCardPreparation} from './play-card-preparation.js';
 import {mountPracticePregame} from './play-pregame.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
@@ -1493,6 +1494,7 @@ const practiceOpponentBuilder=createPracticeOpponentBuilder({pipeline:deckPipeli
  onSelect:deck=>playSetup.chooseOpponent(deck),onChange:()=>refreshPlayMenu()});
 A.playRandomOpponent=async()=>{const state=playSetup.snapshot();if(!state.profile.signedIn||state.match.mode!=='cpu')return;const root=document.querySelector('.play-menu'),targetBracket=root?.querySelector('[data-opponent-bracket]')?.value||null,deckStyle=root?.querySelector('[data-opponent-style]')?.value||'classic';await practiceOpponentBuilder.build({format:state.match.format,targetBracket,deckStyle});};
 A.playCancelOpponentBuild=()=>practiceOpponentBuilder.cancel();
+A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profile.signedIn||state.match.mode!=='cpu'||!state.selected)return;try{playSetup.chooseOpponent(state.selected);refreshPlayMenu();}catch(e){toast(e.message);}};
 // Product activation stays gated until the real-deck/pregame/difficulty gates
 // pass. The account/table lifecycle below is testable independently of activation.
 const PLAY_MATCH_RELEASE_READY=false;
@@ -1506,11 +1508,12 @@ A.playStartCandidate=async()=>{
  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
  practicePregame=mountPracticePregame({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),onCancel:closePlayerMat,onConfirm:async options=>{
   practicePregame?.destroy();practicePregame=null;
-  playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:async setup=>{
-   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
-   const names=[...new Set([setup.selected,setup.opponent].flatMap(d=>[...(d.cards||[]),...(d.side||[])].map(r=>r.name)))];
-   await resolveNames(names,()=>{},false,current);if(!current())throw Error('ACCOUNT_CHANGED');
-  },lookup:(name,wanted)=>{const exact=wanted?S.state.printings?.[wanted]:null;return exact||meta(name);},onClose:closePlayerMat});
+  const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
+  const cards=createPracticeCardPreparation({selectionKey:key,isCurrent:current,
+   resolveNames:names=>resolveNames(names,()=>{},false,current),
+   lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),
+   fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+  playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:closePlayerMat});
   try{await playerMatHost.start(options);}catch(e){toast(e.message);}
  }});
 };
@@ -1524,7 +1527,7 @@ function renderPlayPage() {
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();
   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:state.selectedSource==='saved'&&state.selected?.id===deck.id}));}
   const inspected=state.inspectedSeat==='opponent'?state.opponent:state.selected;
-  return playMenuMarkup(state,{avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected)});
+  return playMenuMarkup(state,{matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected)});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);

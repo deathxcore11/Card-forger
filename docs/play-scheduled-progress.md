@@ -1882,3 +1882,73 @@ at known tested scope, then current-release selected-source integration/publicat
 for owner testing. Advanced difficulty and resume remain deferred. Do not repeat
 old storage experiments or polish menus instead of finishing that launch. Current
 public match flag/button are still gated; no live beta is claimed by this proof.
+
+## October 25 — early deck admission, exact printings and full player-mat launch
+
+Parent checked twice: `d78fde04be2742a013713310845f3b66ef9ce4e1`;
+complete recursive tree `184bc5915925bcd529530e7ba596fbe8d1b18ea5`
+contains no AGENTS.md. Changes remain isolated to Play; no release/APK/schema,
+paid build, new service or spending-cap change.
+
+Implemented:
+- Lightweight `reviewPracticeSetup` rejects missing/invalid selections,
+  unsupported main/side/commander names, signed-out state, Friends and unavailable
+  CPU settings BEFORE mat module load, artwork preparation or worker creation.
+  It uses the same card coverage helper as authoritative admission. Passing this
+  review explicitly leaves construction legality pending the real engine gate.
+  No coverage names were added and no format or copy-limit gate was weakened.
+- Menu lists per-seat unsupported names (escaped), exposes only the beta Medium
+  policy for selection, and wires its future Start action to both release flag
+  and preflight. `PLAY_MATCH_RELEASE_READY` remains false.
+- Selected saved/imported list can be copied as the CPU's exact list with
+  `Use selected deck for CPU`; selecting a different human list cannot alter it.
+  Account changes clear both. This supplements the existing Random opponent.
+- Launch now resolves requested printing IDs, including reference selections and
+  sideboards, into a per-launch in-memory cache using the existing card API.
+  Exact ID/name/face checks reject a substituted printing; account changes clear
+  pending metadata. Source rows, finish choices and collection stay untouched.
+  Name-only imports use existing catalog metadata. Actual artwork capture still
+  uses CardStashy's shared finish/wiki/badge hooks.
+
+Executed evidence (`experiments/phase-engine/launch-proof-2026-10-25/`):
+- Final sequential focused command: **284 tests pass**, zero fail/cancel/skip.
+  This includes the existing Phase guards, pregame, navigation, account/import
+  setup, new preflight and exact-printing preparation checks. `focused.tap`.
+- Actual player-mat host/capture browser: preparation wait/order, frozen rows,
+  scope/selection changes, rejected preparation, resume rejection, and an
+  unsupported sideboard rejected BEFORE any module/flow load all pass.
+- Extracted actual app entrypoint + real pregame and preparation constructor:
+  explicit CPU-first, duplicate guard, cancel/close and unknown-start failure
+  pass. Remaining account/setup/mat dependencies simulated, release flag true
+  only in the test. Final app source hash in report.
+- **New full integration match passes:** real setup controller and real paste
+  parser select an imported 60-card mono-green list, preserve the saved source,
+  choose a separate saved CPU deck, explicitly confirm pregame, prepare metadata
+  (saved opponent exact Forest fetched once), then use the actual product
+  `createPlayerMat` host with real flow/worker/table and delivered runtime.
+  Human visible controls reach engine GameOver at **revision 236, turn 12,
+  CPU winner 1, 114 human commands**, including Scavenging Ooze/Tarmogoyf casts.
+  Authority IndexedDB access is forbidden. The original pool remains unchanged;
+  this harness uses the SAME explicitly test-only ten-name pool as the earlier
+  green coordinator test. This advances integration, not broad pool certification.
+- `player-mat-match.json` binds all served module/page/runtime hashes. Shared
+  Power/foil/wiki dependency modules are stubbed and enumerated; metadata/API and
+  account readers are simulated. This is NOT an actual signed-in owner/site
+  session, real art/foil visual signoff, independently current-Standard legality,
+  all optional card abilities, graded CPU or production readiness.
+- Driver-only diagnostic edit/hash timing is recorded in
+  `harness-identity-note.json`; served bytes were captured before launch. Final
+  driver captures its own identity before launch. No gameplay/assertion changes
+  occurred during the game. Small later setup/menu changes are separately tested.
+- Two initial harness attempts were driver setup errors (embedded newline
+  escaping; nested-path runtime URL mapping), fixed without engine/source or
+  assertion changes. They do not count as passing games. No new OOM kill (10).
+
+Next concrete work: finish an explicitly reviewed eligible REAL deck-version
+pool (including current format metadata and required optional choices), then
+exercise the actual app account entrypoint with shared art dependencies and
+selectively integrate into the CURRENT website-release head. The existing
+18-name production pool and a test-only green list are still insufficient for
+promising arbitrary owner decks. Do not reopen save/resume or calibrated CPU
+strength as initial-beta blockers. Owner publication approval remains active;
+no new approval is needed when the core gates pass. The beta has NOT shipped.

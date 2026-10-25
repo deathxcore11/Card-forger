@@ -56,3 +56,10 @@ test('a pasted list cannot select a different format behind the match selector',
 test('a saved deck changed elsewhere cannot retain an incompatible match selection',()=>{
  const f=fixture();f.setup.selectDeck('same-id');f.decks.a[0].format='Standard';const s=f.setup.snapshot();assert.equal(s.selected,null);assert.match(s.error,/format changed/);assert.equal(f.decks.a[0].format,'Standard');
 });
+
+test('saved or imported player selection can freeze an exact CPU list before selecting another player deck',async()=>{
+ const f=fixture();f.setup.selectDeck('same-id');const saved=f.setup.snapshot().selected;f.setup.chooseOpponent(saved);saved.cards[0].qty=999;assert.notEqual(f.setup.snapshot().opponent.cards[0].qty,999);
+ await f.setup.importPaste('a list');f.setup.reviewImport();const imported=f.setup.snapshot().selected;f.setup.chooseOpponent(imported);const cpu=f.setup.snapshot().opponent;
+ f.setup.clearSelection();assert.deepEqual(f.setup.snapshot().opponent,cpu);assert.equal(f.setup.snapshot().selected,null);
+ f.account={...f.account,accountGeneration:2};assert.equal(f.setup.snapshot().opponent,null);
+});
