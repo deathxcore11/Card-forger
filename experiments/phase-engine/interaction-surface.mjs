@@ -84,7 +84,7 @@ export function projectInteraction(raw,seat){
    const d=spec.data,ids=new Set(choices.map(c=>c.id));
    if(ids.size!==choices.length||!['atMostOne','engineValidated'].includes(d.sourceConstraint)||typeof d.allowGroups!=='boolean'||!Array.isArray(d.edges)||d.edges.length>1024)continue;
    const sources=new Set();let total=0;
-   if(!d.edges.every(e=>{if(!obj(e)||!token(e.sourceId)||!ids.has(e.sourceId)||sources.has(e.sourceId)||!Array.isArray(e.targetIds)||e.targetIds.some(t=>!token(t)||!ids.has(t)||t===e.sourceId)||new Set(e.targetIds).size!==e.targetIds.length)return false;sources.add(e.sourceId);total+=e.targetIds.length;return total<=4096;}))continue;
+   if(!d.edges.every(e=>{if(!obj(e)||!token(e.sourceId)||!ids.has(e.sourceId)||sources.has(e.sourceId)||!Array.isArray(e.targetIds)||e.targetIds.length>1024||e.targetIds.some(t=>!token(t)||!ids.has(t)||t===e.sourceId)||new Set(e.targetIds).size!==e.targetIds.length)return false;sources.add(e.sourceId);total+=e.targetIds.length;return total<=1024;}))continue;
    opportunities.push({interactionId:o.interactionId,type:'relations',min,max,sourceConstraint:d.sourceConstraint,allowGroups:d.allowGroups,edges:d.edges.map(e=>({sourceId:e.sourceId,targetIds:[...e.targetIds]})),choices});continue;
   }
   opportunities.push({interactionId:o.interactionId,type:exact?'choose':sequence?'sequence':'select',min,max,choices,...(sequence?{unique:spec.data.unique===true,escape:token(spec.data.escape)?spec.data.escape:null}:{})});

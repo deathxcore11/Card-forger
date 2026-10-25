@@ -80,6 +80,23 @@ export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.rand
    else pending.choiceIds=pending.choiceIds.includes(choiceId)?pending.choiceIds.filter(id=>id!==choiceId):[...pending.choiceIds,choiceId];
    publish();
   },
+  toggleRelation(interactionId,sourceId,targetId){
+   const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);
+   if(o?.type!=='relations')throw Error('STALE_CHOICE');
+   let relations=pending?.interactionId===interactionId&&pending.revision===status.revision?[...pending.relations]:[];
+   const found=relations.findIndex(r=>r.sourceId===sourceId&&r.targetId===targetId);
+   if(found>=0)relations.splice(found,1);
+   else{if(o.sourceConstraint==='atMostOne')relations=relations.filter(r=>r.sourceId!==sourceId);relations.push({sourceId,targetId,group:null});}
+   if(!validInteractionRelations(o,relations,{complete:false}))throw Error('STALE_CHOICE');
+   pending={interactionId,type:'relations',relations,revision:status.revision};publish();
+  },
+  setRelationGroup(interactionId,sourceId,group){
+   const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);
+   if(o?.type!=='relations'||!o.allowGroups||pending?.interactionId!==interactionId||pending.revision!==status.revision||!pending.relations.some(r=>r.sourceId===sourceId))throw Error('STALE_CHOICE');
+   const relations=pending.relations.map(r=>r.sourceId===sourceId?{...r,group}:r);
+   if(!validInteractionRelations(o,relations,{complete:false}))throw Error('CHOICE_INCOMPLETE');
+   pending={...pending,relations};publish();
+  },
   setRelations(interactionId,relations){
    const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);
    if(!o||o.type!=='relations')throw Error('STALE_CHOICE');

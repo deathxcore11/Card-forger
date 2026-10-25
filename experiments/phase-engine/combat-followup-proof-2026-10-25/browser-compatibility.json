@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "browser": "153.0.8010.0",
+  "checks": [
+    "attacker selection is local until confirmation",
+    "clear is local only",
+    "timer-only paint retains assignments",
+    "keyboard can select a combat target",
+    "duplicate confirm sends exactly one command",
+    "engineValidated multi-block keeps two targets for one blocker"
+  ],
+  "sourceSha256": {
+    "/interaction-surface.mjs": "1c11bc585304bea499575daca025c17abe50689060ee1c454daca6a0ecc44cbc",
+    "/protocol-fault.mjs": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+    "/card-placement.mjs": "e84ae49658ec58cbaa21488c6a73162a8e370f280425cfc2778ae394f28f3259",
+    "/match-table.mjs": "8d8d967a2c7e5844048e05d05a12ed7123aa8589bef2365146c3bc4a63b4e0bc",
+    "/match-table.css": "dc7bd442b9aead4b7ddc0364468c45fcefeda2d18eb5205b998de9fafc922ac3",
+    "/card-stats.mjs": "9d2df7ff86d2f96e97481451b7cdb3eb500d447430f4f9862ba76c49ca7bb46f",
+    "/random-outcomes.mjs": "1aa212c485c766caf1d80403f2413c22bb17194cbbfa54979a699a38ea2d12d0",
+    "/match-session.mjs": "c7fd7b6d37018631b538a1fcdd3102b6de0811c97b2d47391a32a4a3bfdc865c",
+    "/priority-scheduler.mjs": "d82af4727976497dc1f5cab3948ca1ee394c35865d5e544916a381bc3f839bfa",
+    "/": "f480d051b93b88c61cfffd322da6ac814d03ed8ad692e0f5e2389bf7270c0e26"
+  },
+  "limits": "Shared actual table/session with simulated transport. Actual rule validation is a separate delivered-runtime driver, not a signed-in full match."
+}

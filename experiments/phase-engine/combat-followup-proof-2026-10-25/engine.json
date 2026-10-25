@@ -1,0 +1,203 @@
+{
+  "provenance": {
+    "archiveSha": "edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b",
+    "wasm": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "glue": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "rulesGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "subsetSha": "20cdbd29388c909cae99e3b91768e39e3b78f09ac3ed42c7947f9581b0f0c50f",
+    "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "sourceVerification": "Archive-bound historical receipt; source Git checkout not reverified in this run"
+  },
+  "results": [
+    {
+      "kind": "noncandidate-attack-subset",
+      "revision": 1,
+      "absentFromCandidates": true,
+      "combat": {
+        "attacked_defenders_this_combat": {
+          "0": [
+            1
+          ]
+        },
+        "attacked_permanent_kinds": {},
+        "attacked_permanents": {},
+        "attackers": [
+          {
+            "attack_target": {
+              "data": 1,
+              "type": "Player"
+            },
+            "band_id": null,
+            "blocked": false,
+            "defending_player": 1,
+            "object_id": 6
+          },
+          {
+            "attack_target": {
+              "data": 1,
+              "type": "Player"
+            },
+            "band_id": null,
+            "blocked": false,
+            "defending_player": 1,
+            "object_id": 28
+          }
+        ],
+        "attacking_incarnations_this_combat": [
+          {
+            "incarnation": 1,
+            "object_id": 6
+          },
+          {
+            "incarnation": 0,
+            "object_id": 28
+          }
+        ],
+        "blocker_assignments": {},
+        "blocker_to_attacker": {},
+        "blockers_declared_by": [],
+        "creature_attacked_defenders_this_combat": {
+          "6": [
+            1
+          ],
+          "28": [
+            1
+          ]
+        },
+        "creature_blocked_attackers_this_combat": [],
+        "damage_assignments": {},
+        "damage_step_index": null,
+        "first_strike_done": false,
+        "first_strike_participants": null,
+        "pending_blocker_declaration_events": [],
+        "pending_damage": [],
+        "regular_damage_done": false,
+        "removed_attackers_this_combat": []
+      },
+      "checks": [
+        "foreign endpoint rejected without mutation",
+        "pending combat prompt recovery",
+        "stale capability rejected",
+        "chosen pairs accepted by actual engine",
+        "duplicate accepted receipt recovery"
+      ]
+    },
+    {
+      "kind": "special-multiple-blocking",
+      "revision": 1,
+      "absentFromCandidates": false,
+      "combat": {
+        "attacked_defenders_this_combat": {
+          "1": [
+            0
+          ]
+        },
+        "attacked_permanent_kinds": {},
+        "attacked_permanents": {},
+        "attackers": [
+          {
+            "attack_target": {
+              "data": 0,
+              "type": "Player"
+            },
+            "band_id": null,
+            "blocked": true,
+            "defending_player": 0,
+            "object_id": 74
+          },
+          {
+            "attack_target": {
+              "data": 0,
+              "type": "Player"
+            },
+            "band_id": null,
+            "blocked": true,
+            "defending_player": 0,
+            "object_id": 76
+          }
+        ],
+        "attacking_incarnations_this_combat": [
+          {
+            "incarnation": 0,
+            "object_id": 74
+          },
+          {
+            "incarnation": 0,
+            "object_id": 76
+          }
+        ],
+        "blocker_assignments": {
+          "74": [
+            5
+          ],
+          "76": [
+            5
+          ]
+        },
+        "blocker_to_attacker": {
+          "5": [
+            74,
+            76
+          ]
+        },
+        "blockers_declared_by": [
+          0
+        ],
+        "creature_attacked_defenders_this_combat": {
+          "74": [
+            0
+          ],
+          "76": [
+            0
+          ]
+        },
+        "creature_blocked_attackers_this_combat": [
+          {
+            "attacker": {
+              "incarnation": 0,
+              "object_id": 74
+            },
+            "blocker": {
+              "incarnation": 0,
+              "object_id": 5
+            }
+          },
+          {
+            "attacker": {
+              "incarnation": 0,
+              "object_id": 76
+            },
+            "blocker": {
+              "incarnation": 0,
+              "object_id": 5
+            }
+          }
+        ],
+        "damage_assignments": {},
+        "damage_step_index": null,
+        "first_strike_done": false,
+        "first_strike_participants": null,
+        "pending_blocker_declaration_events": [],
+        "pending_damage": [],
+        "regular_damage_done": false,
+        "removed_attackers_this_combat": []
+      },
+      "checks": [
+        "foreign endpoint rejected without mutation",
+        "pending combat prompt recovery",
+        "stale capability rejected",
+        "chosen pairs accepted by actual engine",
+        "duplicate accepted receipt recovery"
+      ],
+      "ordinaryMultiBlockRejected": true
+    }
+  ],
+  "networkCalls": 0,
+  "sourceSha256": {
+    "combat-declarations-engine.mjs": "d16183e221fb2ceee28f5b9d4ffd7017d030da1540da2370fecdca272e28a5c5",
+    "interaction-surface.mjs": "1c11bc585304bea499575daca025c17abe50689060ee1c454daca6a0ecc44cbc",
+    "worker-journal.mjs": "568b1cdeb91e62c42ddd41157876c98378223922dce2dc1b34d81903a4a3c984"
+  },
+  "limits": "Two engineered combat declarations, not complete combat/damage/banding/planeswalker/must-attack coverage, calibrated CPU or real account-deck acceptance."
+}

@@ -1226,3 +1226,71 @@ No production, APK, schema, subscription/budget change, paid build or messages.
 Next: carry these authoritative combat controls into full real-deck/account match
 gates, then complete remaining decisions and pregame without widening admission
 from these narrow fixture passes.
+
+
+## October 25, 2026 — combat editing, validation and bounded layout follow-up
+
+Started at 20f28bc7f38225270bdcdf634499f49f7f888f18; during implementation the
+remote advanced to 94229c4e0ff35a1c81afc6e1092ad4cb7a56eb9b with overlapping
+combat work. Reconciled against that exact current head and its instruction
+tree (no AGENTS.md). Kept the canonical validInteractionRelations/setRelations
+APIs, all four concurrent combat guards, original runtime driver, browser test
+and its historical evidence. No old whole-branch merge or discarded checkpoint.
+
+The table now uses individual combat choices in place of incomplete preset
+combinations when a relations prompt exists. Stable instance numbers distinguish
+same-name creatures; source inspection stays available. Assignment rows scroll
+inside a bounded area with confirmation/clear controls above them. Band inputs
+use the existing dark/glass colors. Local typing remains local until confirmation;
+invalid or fractional group values disable confirmation, timer-only updates keep
+the input and focus, and a retired input cannot change a later revision. Explicit
+Clear/None clears those local band drafts. No automatic combat submission.
+
+Added toggle/group convenience methods over the preserved canonical session API.
+Bounded projected edges to the pinned engine's 1024-element relation domain.
+Kept actual special blocking-capacity decisions with the engine. No CPU packet,
+card admission, engine source, binary or rules interpretation was replaced.
+
+Executed after reconciliation: all 173 focused Node guards pass with zero
+failures/skips/cancellations. Both the adapted existing combat browser test and
+new drafts browser test pass on Chromium 153. The latter covers destination
+replacement, local clear, explicit no-blockers confirmation, invalid band values,
+group zero, timer/focus retention and duplicate/stale-event suppression. Geometry
+passes 1280x720, 1920x1080, 3440x1440 and 1024x768; visually inspected the selected
+combat fixture. This fixture deliberately has no card art or real account.
+
+The additional delivered-byte driver again accepts a legal two-Bears attack
+subset absent from generated candidates, accepts Palace Guard blocking two
+attackers, rejects ordinary Bear multi-blocking and forged/stale endpoints,
+restores pending combat and replays the accepted receipt without duplication.
+Exact ZIP/receipt/JS/WASM/rules hashes verify; zero network calls. Source provenance
+remains the archive's historical receipt, not a fresh source checkout. Its first
+local assertion used an incorrect blocked_by field; corrected it to the actual
+blocker_to_attacker mapping and reran. No engine assertion was removed/weakened.
+This repeats narrow coverage, not two independent all-combat certifications.
+
+A larger earlier-byte control run reached genuine GameOver after 386 actions,
+187 human button commands and turn 22, and passed pending-bottoming cold recovery.
+Its process later exited 137 before all final checks completed; cgroup oom_kill=6
+was observed in the shared 8 GiB environment. A subsequent serialized final-source
+run stalled during runtime loading and was interrupted (exit 130) before gameplay.
+Neither is counted as a passed final complete-match suite or new cold-terminal
+certificate. Partial outcomes and exact source hashes are retained separately.
+No resource ceiling/interrupt/timeout was converted into a match result.
+
+Updated the configured-match browser driver to exercise the actual individual
+attacker and explicit no-block controls, including zero available attackers,
+and to support a separate output directory. That full modified driver remains
+UNVERIFIED to completion. Targeted final combat browser/runtime checks passed;
+prior generic complete-match receipts remain bound to their original sources.
+
+All new outcomes: experiments/phase-engine/combat-followup-proof-2026-10-25/.
+Original/concurrent combat reports are preserved unchanged. The runtime was only
+locally recompressed for a verification server, with exact unchanged decompressed
+WASM and pinned rules hashes; no runtime asset or Rust build was committed.
+Next: finish a bounded serialized complete-match run through the modified driver,
+then viable supported real Standard/Commander lists, remaining human choices/
+pregame/mandatory timeout policy, fair calibrated difficulties and actual owner
+route acceptance. Public readiness remains false. Existing release approval is
+recorded. No production, APK, schema, paid build, new subscription/budget or
+external message occurred. Do not publish a fixture-only Play button.

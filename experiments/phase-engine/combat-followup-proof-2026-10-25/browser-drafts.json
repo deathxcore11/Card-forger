@@ -1,0 +1,58 @@
+{
+  "passed": true,
+  "browser": "153.0.8010.0",
+  "geometry": [
+    {
+      "width": 1280,
+      "height": 720,
+      "overflow": false,
+      "footerBottom": 712,
+      "buttonHeight": 44
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "overflow": false,
+      "footerBottom": 1066,
+      "buttonHeight": 44
+    },
+    {
+      "width": 3440,
+      "height": 1440,
+      "overflow": false,
+      "footerBottom": 1426,
+      "buttonHeight": 44
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "overflow": false,
+      "footerBottom": 754,
+      "buttonHeight": 44
+    }
+  ],
+  "checks": [
+    "individual attacker/blocker controls replace incomplete preset combinations",
+    "individual pair selection is local until confirmation",
+    "attack destination replacement and clearing",
+    "fractional band group disables confirmation without a command",
+    "explicit optional band group zero retained on timer paint",
+    "rapid duplicate confirmation sends one command",
+    "retired band input cannot mutate a newer revision",
+    "special multiple blocking pairs preserved for engine validation",
+    "no-blockers choice requires explicit confirmation"
+  ],
+  "sourceSha256": {
+    "/match-table.mjs": "8d8d967a2c7e5844048e05d05a12ed7123aa8589bef2365146c3bc4a63b4e0bc",
+    "/match-table.css": "dc7bd442b9aead4b7ddc0364468c45fcefeda2d18eb5205b998de9fafc922ac3",
+    "/card-placement.mjs": "e84ae49658ec58cbaa21488c6a73162a8e370f280425cfc2778ae394f28f3259",
+    "/interaction-surface.mjs": "1c11bc585304bea499575daca025c17abe50689060ee1c454daca6a0ecc44cbc",
+    "/card-stats.mjs": "9d2df7ff86d2f96e97481451b7cdb3eb500d447430f4f9862ba76c49ca7bb46f",
+    "/random-outcomes.mjs": "1aa212c485c766caf1d80403f2413c22bb17194cbbfa54979a699a38ea2d12d0",
+    "/protocol-fault.mjs": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+    "/match-session.mjs": "c7fd7b6d37018631b538a1fcdd3102b6de0811c97b2d47391a32a4a3bfdc865c",
+    "/priority-scheduler.mjs": "d82af4727976497dc1f5cab3948ca1ee394c35865d5e544916a381bc3f839bfa",
+    "/": "a927a00637ab4f4562516d26e48c366e85e86dc394ee11083c6f94debda5e486"
+  },
+  "limits": "Real shared table/session with simulated relation schemas and transport; actual combat legality is verified separately. Not full combat, physical-device, CPU or signed-in account acceptance."
+}

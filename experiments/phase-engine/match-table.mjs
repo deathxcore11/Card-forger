@@ -7,7 +7,7 @@ const labels={MulliganDecision:'Opening hand',Priority:'Priority',DeclareAttacke
 const actionNames={tapLandForMana:'Tap for mana',cancelCast:'Cancel casting',passPriority:'Pass priority',castSpell:'Cast spell',activateAbility:'Activate ability',mulliganDecision:'Opening hand'};
 const actionText=(c,kind)=>c.surfaces.map(s=>s.type==='player'?`Player ${s.seat+1}`:s.type==='action'?(kind==='ManaPayment'&&s.code==='passPriority'?'Pay selected mana':actionNames[s.code]||s.code.replace(/([a-z])([A-Z])/g,'$1 $2')):s.type==='value'&&s.role==='abilityIndex'?`Ability ${Number(s.value)+1}`:s.type==='value'&&s.role==='paymentMode'?(s.value==='manual'?'Manual mana':'Automatic mana'):s.name||s.value||'').filter(Boolean).join(' · ')||'Choose';
 export function mountMatchTable(root,{session,profile={displayName:'You'},resolveCard=()=>null,decorateCard=()=>{},decorateInspector=()=>{},renderOracleText=null,renderMatchContext=()=>null,allowConcede=false,title='CardStashy · Private rules test',mountEffects=()=>()=>{},onExit=()=>{}}){
- const disposeEffects=mountEffects(root),cardNodes=new Map();let inspectorContent=null;let menu=null,exitOpen=false,advancedOpen=false,lastRevision=-1;const log=[];let lastRenderKey=null;
+ const disposeEffects=mountEffects(root),cardNodes=new Map(),bandDrafts=new Map();let bandRevision=null;let inspectorContent=null;let menu=null,exitOpen=false,advancedOpen=false,lastRevision=-1;const log=[];let lastRenderKey=null;
  function updateClock(clock){const out=root.querySelector('[aria-label="Response time"]');if(out){out.textContent=clock?.remainingSeconds!==null&&clock?.remainingSeconds!==undefined?`${clock.remainingSeconds}s to respond`:clock?.needsChoice?'Your choice is required':'';out.className=clock?.warning?'play-match-warning':'';}}
  function element(tag,text,cls){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;}
  function button(text,action,{disabled=false,key,pressed,blockWhileBusy=false}={}){const b=element('button',text);b.type='button';b.disabled=disabled;if(key)b.dataset.focusKey=key;if(pressed!==undefined)b.setAttribute('aria-pressed',String(pressed));const failed=e=>{if(['MATCH_NOT_READY','STALE_CHOICE','CHOICE_INCOMPLETE'].includes(e.message)){render(session.snapshot());return;}queueMicrotask(()=>{throw e;});};b.addEventListener('click',()=>{if(blockWhileBusy&&session.snapshot().busy)return;try{const result=action();if(result?.catch)result.catch(failed);}catch(e){failed(e);}});return b;}
@@ -44,6 +44,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
   const scrolls=[...root.querySelectorAll('[data-keep-scroll]')].map(n=>[n.dataset.keepScroll,n.scrollTop]);
   placement.cancel();root.replaceChildren();root.className='play-match-table';
   if(!status){root.append(element('p',error?'Match recovery is required.':'Opening match…'));return;}
+  if(bandRevision!==status.revision){bandDrafts.clear();bandRevision=status.revision;}
   const view=status.surface,cardById=new Map(view.cards.map(c=>[c.id,c]));
   if(status.revision!==lastRevision){log.push(`Turn ${view.turn} · ${labels[view.decision.kind]||view.decision.kind}`);lastRevision=status.revision;}
   const header=element('header',undefined,'play-match-header');
@@ -76,37 +77,31 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
   if(status.terminal)footer.append(element('p',status.terminal.winner===null?'Draw':status.terminal.winner===view.seat?'You won':'CPU won'));
   const controls=element('div',undefined,'play-match-actions');
   if(!status.terminal){
-   for(const choice of view.choices)controls.append(button(choice.label,()=>session.choose(choice.token),{blockWhileBusy:true,disabled:busy||!!error&&error!=='CHOICE_REJECTED',key:choice.token}));
+   for(const choice of view.interaction?.opportunities?.some(o=>o.type==='relations')?[]:view.choices)controls.append(button(choice.label,()=>session.choose(choice.token),{blockWhileBusy:true,disabled:busy||!!error&&error!=='CHOICE_REJECTED',key:choice.token}));
    let interactionControls=controls;
-   if(view.canAct&&view.interaction?.opportunities?.length){const more=element('details',undefined,'play-match-other-actions');more.open=advancedOpen;const summary=element('summary','Abilities & other actions');summary.dataset.focusKey='other-actions-summary';more.append(summary);more.addEventListener('toggle',()=>{advancedOpen=more.open;});controls.append(more);interactionControls=more;}
+   if(view.canAct&&view.interaction?.opportunities?.length&&!view.interaction.opportunities.some(o=>o.type==='relations')){const more=element('details',undefined,'play-match-other-actions');more.open=advancedOpen;const summary=element('summary','Abilities & other actions');summary.dataset.focusKey='other-actions-summary';more.append(summary);more.addEventListener('toggle',()=>{advancedOpen=more.open;});controls.append(more);interactionControls=more;}
    for(const o of view.interaction?.opportunities||[]){
     if(o.type==='relations'){
-     const group=element('fieldset'),attacking=view.decision.kind==='DeclareAttackers',draft=pending?.interactionId===o.interactionId?pending.relations:[],blocked=busy||!!error&&error!=='CHOICE_REJECTED';
-     group.append(element('legend',attacking?'Choose attackers and defenders':'Choose blockers and attackers'));
-     const byId=new Map(o.choices.map(c=>[c.id,c]));
+     const attacking=view.decision.kind==='DeclareAttackers',group=element('fieldset',undefined,'play-combat-choices');group.append(element('legend',attacking?'Choose attackers':'Choose blockers'));
+     const draft=pending?.interactionId===o.interactionId?pending.relations:null,blocked=busy||!!error&&error!=='CHOICE_REJECTED',byId=new Map(o.choices.map(c=>[c.id,c]));
+     const choiceName=id=>{const c=byId.get(id);return c?.surfaces.map(s=>s.type==='player'?(s.seat===view.seat?'You':'CPU'):s.type==='object'?`${s.name||'Card'}${s.reference?' · #'+s.reference:''}`:s.value||'').filter(Boolean).join(' · ')||'Card';};
+     let confirmCombat;const bandKey=source=>o.interactionId+':'+source;
+     const validBands=()=>!draft?.some(r=>bandDrafts.get(bandKey(r.sourceId))?.valid===false);const clearBands=()=>{for(const edge of o.edges)bandDrafts.delete(bandKey(edge.sourceId));};
+     const rowsBox=element('div',undefined,'play-combat-rows');
      for(const edge of o.edges){
-      const source=byId.get(edge.sourceId),row=element('div',undefined,'play-match-combat-row');row.append(element('strong',actionText(source,view.decision.kind)));
-      const targets=element('div',undefined,'play-match-combat-targets');
-      for(const targetId of edge.targetIds){
-       const target=byId.get(targetId),selectedRelation=draft.find(r=>r.sourceId===edge.sourceId&&r.targetId===targetId),text=(attacking?'Attack ':'Block ')+actionText(target,view.decision.kind);
-       targets.append(button(text,()=>{
-        let next=draft.filter(r=>!(r.sourceId===edge.sourceId&&r.targetId===targetId));
-        if(!selectedRelation){if(o.sourceConstraint==='atMostOne')next=next.filter(r=>r.sourceId!==edge.sourceId);next.push({sourceId:edge.sourceId,targetId,group:null});}
-        session.setRelations(o.interactionId,next);
-       },{key:`relation-${o.interactionId}-${edge.sourceId}-${targetId}`,pressed:!!selectedRelation,blockWhileBusy:true,disabled:blocked||!source.available||!target.available||!selectedRelation&&draft.length>=o.max&&!(o.sourceConstraint==='atMostOne'&&draft.some(r=>r.sourceId===edge.sourceId))}));
-      }
-      if(!edge.targetIds.length)targets.append(element('span','No available target'));
-      row.append(targets);
-      if(o.allowGroups&&draft.some(r=>r.sourceId===edge.sourceId)){
-       const label=element('label','Band group (optional)'),input=element('input');input.type='number';input.min='0';input.max='4294967295';input.step='1';input.dataset.focusKey=`band-${o.interactionId}-${edge.sourceId}`;input.setAttribute('aria-label',`Band group for ${actionText(source,view.decision.kind)}`);input.disabled=blocked;input.value=draft.find(r=>r.sourceId===edge.sourceId).group??'';
-       const set=button('Set band group',()=>{const value=input.value===''?null:input.valueAsNumber;session.setRelations(o.interactionId,draft.map(r=>r.sourceId===edge.sourceId?{...r,group:value}:r));},{key:`set-band-${o.interactionId}-${edge.sourceId}`,blockWhileBusy:true,disabled:blocked});
-       input.addEventListener('input',()=>{set.disabled=blocked||input.value!==''&&(!Number.isInteger(input.valueAsNumber)||input.valueAsNumber<0||input.valueAsNumber>4294967295);});label.append(input);row.append(label,set);
-      }
-      group.append(row);
+      const row=element('div',undefined,'play-combat-row');row.append(element('strong',choiceName(edge.sourceId)));
+      const source=byId.get(edge.sourceId),reference=source?.surfaces.find(s=>s.type==='object')?.reference;
+      if(reference&&view.cards.some(c=>c.known&&String(c.id)===reference))row.append(button('Inspect',()=>session.inspect(Number(reference)),{key:`inspect-${edge.sourceId}`}));
+      for(const targetId of edge.targetIds){const chosen=draft?.some(r=>r.sourceId===edge.sourceId&&r.targetId===targetId);row.append(button((attacking?'Attack ':'Block ')+choiceName(targetId),()=>session.toggleRelation(o.interactionId,edge.sourceId,targetId),{key:`relation-${edge.sourceId}-${targetId}`,pressed:!!chosen,blockWhileBusy:true,disabled:blocked||!source?.available||!byId.get(targetId)?.available}));}
+      if(o.allowGroups&&draft?.some(r=>r.sourceId===edge.sourceId)){
+       const label=element('label','Band group (optional)'),input=element('input');input.type='number';input.min='0';input.max='4294967295';input.step='1';const key=bandKey(edge.sourceId),saved=bandDrafts.get(key);input.value=saved?saved.raw:String(draft.find(r=>r.sourceId===edge.sourceId).group??'');if(saved?.valid===false)input.setCustomValidity('Enter a whole group number or leave blank.');input.disabled=blocked;input.setAttribute('aria-label',`Band group for ${choiceName(edge.sourceId)}`);input.dataset.focusKey=`band-${edge.sourceId}`;
+       input.addEventListener('input',()=>{const live=session.snapshot();if(live.busy||live.status?.revision!==status.revision)return;input.setCustomValidity('');const n=input.value===''?null:input.valueAsNumber,valid=!input.validity.badInput&&(n===null||Number.isInteger(n)&&n>=0&&n<=4294967295);input.setCustomValidity(valid?'':'Enter a whole group number or leave blank.');bandDrafts.set(key,{raw:input.value,value:n,valid});if(confirmCombat)confirmCombat.disabled=blocked||!draft||!validInteractionRelations(o,draft)||draft.length<o.min||!validBands();});label.append(input);row.append(label);
+      }rowsBox.append(row);
      }
-     group.append(element('p',`${draft.length} ${attacking?'attacker':'block'}${draft.length===1?'':'s'} selected`));
-     group.append(button(attacking?'Confirm attackers':'Confirm blockers',()=>{if(pending?.interactionId!==o.interactionId)session.setRelations(o.interactionId,[]);return session.confirm();},{blockWhileBusy:true,disabled:blocked||!validInteractionRelations(o,draft),key:`confirm-${o.interactionId}`}));
-     group.append(button('Clear combat selection',()=>session.setRelations(o.interactionId,[]),{blockWhileBusy:true,disabled:blocked,key:`clear-${o.interactionId}`}));interactionControls.append(group);continue;
+     group.append(element('p',draft?.length?draft.length+' combat assignments selected.':'Choose individual assignments, then confirm.'));
+     confirmCombat=button(attacking?'Confirm attackers':'Confirm blockers',()=>{if(!validBands())return;for(const source of new Set(draft.map(r=>r.sourceId))){const band=bandDrafts.get(bandKey(source));if(band)session.setRelationGroup(o.interactionId,source,band.value);}return session.confirm();},{key:`confirm-${o.interactionId}`,blockWhileBusy:true,disabled:blocked||!draft||!validInteractionRelations(o,draft)||draft.length<o.min||!validBands()});group.append(confirmCombat);
+     if(o.min===0)group.append(button(attacking?'Declare no attackers':'Declare no blockers',()=>{clearBands();session.selectNone(o.interactionId);},{key:`none-${o.interactionId}`,blockWhileBusy:true,disabled:blocked}));
+     group.append(button('Clear selection',()=>{clearBands();session.clearSelection();},{key:`clear-${o.interactionId}`,disabled:blocked}),rowsBox);interactionControls.append(group);continue;
     }
     if(o.type==='text'){
      const group=element('fieldset');group.append(element('legend','Name a card'));
@@ -146,5 +141,5 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
  }
  const keydown=e=>{if(e.key==='Escape'&&menu!==null){e.preventDefault();menu=null;render(session.snapshot());root.querySelector(`[data-instance="${session.snapshot().selected}"]`)?.focus();}};
  root.addEventListener('keydown',keydown);
- return {render,destroy(){placement.destroy();disposeEffects();cardNodes.clear();inspectorContent=null;root.removeEventListener('keydown',keydown);root.replaceChildren();}};
+ return {render,destroy(){placement.destroy();disposeEffects();cardNodes.clear();bandDrafts.clear();inspectorContent=null;root.removeEventListener('keydown',keydown);root.replaceChildren();}};
 }

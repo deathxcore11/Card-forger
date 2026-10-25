@@ -24,11 +24,11 @@ const browser=await chromium.launch({headless:true,executablePath:process.env.CA
 try{
  const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:'+server.address().port);await page.waitForFunction(()=>window.loaded);
  const confirm=page.getByRole('button',{name:'Confirm attackers'}),targets=page.getByRole('button',{name:'Attack CPU',exact:true});
- assert(await confirm.isEnabled());assert.equal(await targets.count(),2);
+ assert(await confirm.isDisabled());assert.equal(await targets.count(),2);
  await targets.nth(0).click();assert.equal(await targets.nth(0).getAttribute('aria-pressed'),'true');assert.equal(await page.evaluate(()=>sent.length),0);
- await targets.nth(1).click();assert.match(await page.locator('fieldset').innerText(),/2 attackers selected/);
+ await targets.nth(1).click();assert.match(await page.locator('fieldset').innerText(),/2 combat assignments selected/);
  await page.evaluate(()=>{const s=session.snapshot();s.clock={remainingSeconds:12};table.render(s);});assert.equal(await targets.nth(0).getAttribute('aria-pressed'),'true');
- await page.getByRole('button',{name:'Clear combat selection'}).click();assert.equal(await targets.nth(0).getAttribute('aria-pressed'),'false');assert.equal(await page.evaluate(()=>sent.length),0);
+ await page.getByRole('button',{name:'Clear selection'}).click();assert.equal(await targets.nth(0).getAttribute('aria-pressed'),'false');assert.equal(await page.evaluate(()=>sent.length),0);
  await targets.nth(0).focus();await page.keyboard.press('Enter');await targets.nth(1).click();
  await page.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent==='Confirm attackers');b.click();b.click();});
  await page.waitForFunction(()=>session.snapshot().status.revision===1&&!session.snapshot().busy);

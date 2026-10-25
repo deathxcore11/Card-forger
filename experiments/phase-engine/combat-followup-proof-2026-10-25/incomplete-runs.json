@@ -1,0 +1,26 @@
+{
+  "priorRun": {
+    "exitCode": 137,
+    "engineTerminal": {
+      "acceptedActions": 386,
+      "humanCommands": 187,
+      "turn": 22,
+      "winner": 1
+    },
+    "fullSuitePassed": false,
+    "stage": "after terminal, during additional verification",
+    "cgroupOomKillsObservedAfterward": 6,
+    "limits": "Memory kill was observed in the shared 8 GiB environment; no complete final verification receipt."
+  },
+  "serializedRun": {
+    "exitCode": 130,
+    "endedBy": "Interrupted stalled local verification",
+    "stage": "Runtime loading before a match was created",
+    "downloadProgress": {
+      "completed": 16777216,
+      "total": 37608099
+    },
+    "fullSuitePassed": false
+  },
+  "notes": "These runs are not counted as final-byte complete-match or cold-terminal certification. No game result was invented from a resource ceiling, interruption or timeout."
+}
