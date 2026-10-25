@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "status": "blocked-before-runner",
+  "recordedDateUTC": "2026-10-25",
+  "repository": "deathxcore11/Card-forger",
+  "branch": "codex/cardstashy-play-engine-20261024",
+  "reviewedSourceCommit": "d9e7a792a3cd08c041493b3d13844686d48e7810",
+  "approvalCommit": "f1021d3d5504d70610eb65fab3cd9005127cb661",
+  "sourceTree": "8f24bac7a4dc0aee749a5c6529ecf550716e368c",
+  "approval": "Owner explicitly approved one prepared higher-memory build in chat. One approval push was performed; no re-run was requested.",
+  "workflowRunUrl": "https://github.com/deathxcore11/Card-forger/actions/runs/40150756588",
+  "job": {
+    "id": 121041649837,
+    "run_id": 40150756588,
+    "workflow_name": "Optional CardStashy Play engine proof",
+    "head_branch": "codex/cardstashy-play-engine-20261024",
+    "run_url": "https://api.github.com/repos/deathxcore11/Card-forger/actions/runs/40150756588",
+    "run_attempt": 1,
+    "node_id": "CR_kwDOVGGGfs8AAAAcLqUArQ",
+    "head_sha": "f1021d3d5504d70610eb65fab3cd9005127cb661",
+    "url": "https://api.github.com/repos/deathxcore11/Card-forger/actions/jobs/121041649837",
+    "html_url": "https://github.com/deathxcore11/Card-forger/actions/runs/40150756588/job/121041649837",
+    "status": "completed",
+    "conclusion": "failure",
+    "created_at": "2026-10-25T01:28:25Z",
+    "started_at": "2026-10-25T01:28:25Z",
+    "completed_at": "2026-10-25T01:28:30Z",
+    "name": "verify",
+    "steps": [],
+    "check_run_url": "https://api.github.com/repos/deathxcore11/Card-forger/check-runs/121041649837",
+    "labels": [
+      "macos-15-intel"
+    ],
+    "runner_id": 0,
+    "runner_name": "",
+    "runner_group_id": 0,
+    "runner_group_name": ""
+  },
+  "artifactCount": 0,
+  "annotation": {
+    "source": "GitHub workflow summary, authenticated browser observation",
+    "text": "The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings",
+    "limitation": "GitHub's annotation does not distinguish failed payments from a spending-limit block."
+  },
+  "outcome": {
+    "runnerAllocated": false,
+    "stepsExecuted": 0,
+    "buildExecuted": false,
+    "testsExecuted": false,
+    "artifactProduced": false,
+    "runtimeProvenanceEstablished": false,
+    "engineAdopted": false,
+    "billingChanged": false,
+    "chargedAmount": "Not inspected or verified."
+  },
+  "next": "Owner must resolve the GitHub Billing & plans block before a new remote proof can start. Do not automatically retry paid builds. Preserve the original WASM's two failing ninjutsu regressions and all existing provenance gates; continue independent no-charge implementation where useful."
+}

@@ -322,3 +322,33 @@ Its existing 45-minute job, 40-minute script deadline, private artifact limits,
 exact-source patch checks and eight real mechanics assertions remain intact.
 The higher-memory run still needs explicit approval for potential Actions
 charges; no approval marker commit has been created.
+
+## October 25, 2026 — approved remote proof blocked before execution
+
+The owner explicitly approved one prepared higher-memory build. Rechecked the
+Play head `d9e7a792a3cd08c041493b3d13844686d48e7810` and complete tree
+(no AGENTS.md), then made the empty approval commit
+`f1021d3d5504d70610eb65fab3cd9005127cb661` using a guarded ref update.
+No source bytes changed in that approval commit.
+
+[Actions run 40150756588](https://github.com/deathxcore11/Card-forger/actions/runs/40150756588)
+failed at 2026-10-25 01:28:30 UTC before a runner was allocated. The `verify`
+job has runner ID 0, zero steps and zero artifacts. GitHub's authenticated
+workflow-summary annotation states:
+
+> The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings
+
+This is an account billing/spending-limit gate, not a compiler or engine-test
+failure. GitHub does not identify which of those two causes applies. No build,
+checks or provenance verification ran in this job; there is no corrected WASM.
+No billing setting was changed, and the charged amount was not inspected.
+The prior 86 local guard passes remain historical evidence only. Both original
+WASM ninjutsu regressions remain unchanged and unresolved.
+
+Exact job metadata and the observed annotation are preserved in
+`experiments/phase-engine/remote-proof-blocked-evidence-2026-10-25.json`.
+The owner must resolve GitHub Billing & plans before a remote proof can start.
+Do not create another approval marker or automatically re-run paid builds.
+Only one attempt was triggered; no publication, deployment, APK or migration.
+Independent no-charge human-controls/CPU/recovery work remains available, so
+this build blocker does not establish that all useful development is blocked.
