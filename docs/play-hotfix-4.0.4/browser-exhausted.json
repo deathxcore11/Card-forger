@@ -1,0 +1,75 @@
+{
+  "status": "PASS",
+  "castPath": "exhausted",
+  "browser": "153.0.8010.0",
+  "provenance": {
+    "appBaseCommit": "a335844f5b1e3cfa90afc2248919251740882254",
+    "runtimeSourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "rulesSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "loadedNames": [
+      "Forest",
+      "Virulent Emissary",
+      "Ghalta, Primal Hunger",
+      "Tapestry Warden",
+      "Ordinary Bear",
+      "Bear Cub"
+    ],
+    "subsetSha256": "2e9559bb286ee33dea85e435cd6dd2b3bcbb7da8fdc7dbddb7c0c8eb7a426107"
+  },
+  "automaticDraw": {
+    "before": 6,
+    "after": 7,
+    "libraryDelta": -1,
+    "newBadge": true
+  },
+  "cast": {
+    "card": "Virulent Emissary",
+    "destination": "Cast button",
+    "automaticMana": true,
+    "forestTapped": true,
+    "resolved": true,
+    "submissions": 1
+  },
+  "turnCompletion": {
+    "activeSeat": 1,
+    "phase": "Upkeep",
+    "emptyAttackDeclarations": 0
+  },
+  "requests": [
+    "create",
+    "status",
+    "autoPass",
+    "step",
+    "status",
+    "autoPass",
+    "step",
+    "status",
+    "step",
+    "status",
+    "act",
+    "status",
+    "autoPass",
+    "step",
+    "status",
+    "autoPass",
+    "step",
+    "status",
+    "autoPass",
+    "step",
+    "status",
+    "autoPass",
+    "step",
+    "status",
+    "autoPass",
+    "step",
+    "status",
+    "autoPass",
+    "step",
+    "step",
+    "status",
+    "status"
+  ],
+  "scope": "Engineered position; actual production authority, journal, session, DOM pointer gesture and shipped WASM; CPU response is a deterministic pass. Not a full game or live-account test.",
+  "recording": "opening-turn.mp4"
+}

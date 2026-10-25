@@ -1,4 +1,4 @@
-import {evaluateCatalogAdmission} from './catalog-admission.mjs';
+import {evaluateCatalogAdmission,canonicalPlayName} from './catalog-admission.mjs';
 // Pure bridge from CardStashy's account/import snapshots to exact engine lists.
 // Construction legality and executed-card support remain separate admissions.
 const name=v=>typeof v==='string'&&v.trim().length>0&&v.length<=512?v.trim():null;
@@ -17,7 +17,7 @@ export function engineDeckFromSnapshot(snapshot,format){
  if(format==='Standard'&&commanders.length)throw Error('UNEXPECTED_COMMANDER');
  if(commanders.length>2||new Set(commanders).size!==commanders.length)throw Error('INVALID_COMMANDERS');
  for(const card of commanders){const index=main.findIndex(n=>n.toLocaleLowerCase('en-US')===card.toLocaleLowerCase('en-US'));if(index<0)throw Error('COMMANDER_NOT_IN_SNAPSHOT');main.splice(index,1);}
- return {main_deck:main,sideboard:side,commander:commanders};
+ return {main_deck:main.map(canonicalPlayName),sideboard:side.map(canonicalPlayName),commander:commanders.map(canonicalPlayName)};
 }
 export function prepareMatchInput({player,opponent,format,difficulty,profile={},runtimeIdentity}={}){
  if(!['Easy','Medium','Hard'].includes(difficulty)||typeof runtimeIdentity!=='string'||!runtimeIdentity.length)throw Error('INVALID_MATCH_OPTIONS');

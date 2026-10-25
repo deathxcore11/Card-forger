@@ -8,7 +8,7 @@ export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.rand
  let status=null,selected=null,pending=null,error=null,closed=false,busy=false,cpuCommands=0,clock=null;
  const flow=createPriorityFlow({read:()=>({status,pending,error,busy}),onChange:()=>publish(),onError:()=>{error='RECOVERY_REQUIRED';publish();},dispatch:async binding=>{
   if(closed||status?.revision!==binding.revision||status?.priorityCapability?.epoch!==binding.epoch||status?.priorityCapability?.decisionId!==binding.decisionId)return;
-  await command('autoPass',{decisionId:binding.decisionId});
+  await command(binding.explicitYield?'yieldPriority':'autoPass',{decisionId:binding.decisionId});
  }});
  const snapshot=()=>structuredClone({status,selected,pending,error,busy,clock,cpuCommands,turnFlow:flow.snapshot()});
  const publish=()=>{if(!closed){flow.reconcile();onChange(snapshot());}};
@@ -67,6 +67,7 @@ export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.rand
   snapshot,
   setControlMode:mode=>flow.setControlMode(mode),
   yieldUntilAction:()=>flow.yieldUntilAction(),
+  yieldOpponentTurn:()=>flow.yieldOpponentTurn(),
   cancelYield:()=>flow.cancelYield(),
   setPhaseStop:(activeSeat,phase,enabled)=>flow.setPhaseStop(activeSeat,phase,enabled),
   async open({resume=false,seed=12345,first=0}={}){

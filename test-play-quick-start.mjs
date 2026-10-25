@@ -13,9 +13,8 @@ test('one Quick Play click pairs once, skips the confirmation screen and starts 
 test('a cancelled/stale pairing or navigation away cannot start a match',async()=>{for(const options of [{matchResult:false},{route:'home'}]){const f=fixture(options),pending=f.A.playStartCandidate();f.release();await pending;assert.equal(f.counts().starts,0);assert.equal(f.counts().pregames,0);}});
 test('Practice preserves the optional starting-player setup',async()=>{const f=fixture({quick:false});await f.A.playStartCandidate();assert.deepEqual(f.counts(),{pairCalls:0,starts:0,pregames:1,first:null});});
 
-test('tested starter launch preserves the tested pairing and waits for selection to finish',async()=>{
- const starter=readFileSync(new URL('./app.js',import.meta.url),'utf8').match(/A\.playStarterMatch=async\(\)=>\{[^\n]+/)[0];
- let done;const steps=[],A={},playSetup={snapshot:()=>({profile:{signedIn:true}}),setPlayStyle:value=>steps.push(value)};
- new Function('A','cancelPlayBuilds','playSetup','selectPracticeStarter','refreshPlayMenu','toast',starter)(A,()=>{},playSetup,async()=>{steps.push('select');await new Promise(r=>done=r);},()=>steps.push('refresh'),()=>{});
- A.playStartCandidate=async()=>steps.push('start');const pending=A.playStarterMatch();assert.deepEqual(steps,['practice','select']);done();await pending;assert.deepEqual(steps,['practice','select','refresh','start']);
+test('production Play has no starter selection or implicit starter opponent',()=>{
+ const app=readFileSync(new URL('./app.js',import.meta.url),'utf8'),menu=readFileSync(new URL('./play-menu.js',import.meta.url),'utf8'),mat=readFileSync(new URL('./play-player-mat.js',import.meta.url),'utf8');
+ assert.doesNotMatch(app,/playStarter|PRACTICE_STARTER_ROWS|play-quick-starter/);
+ assert.doesNotMatch(menu,/tested starter|playStarter/i);assert.doesNotMatch(mat,/onStarter|tested Standard deck/);
 });

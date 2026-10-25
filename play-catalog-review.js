@@ -1,6 +1,6 @@
 // Fresh public card metadata only; no deck, inventory or match record writes.
 import {engineDeckFromSnapshot} from './experiments/phase-engine/match-input.mjs';
-import {catalogNameKey,catalogListKey,evaluateCatalogAdmission} from './experiments/phase-engine/catalog-admission.mjs';
+import {catalogNameKey,catalogListKey,catalogCardMatchesName,evaluateCatalogAdmission} from './experiments/phase-engine/catalog-admission.mjs';
 export function createPracticeCatalogReview({lookupNames,isCurrent,now=()=>Date.now()}={}){
  if(typeof lookupNames!=='function'||typeof isCurrent!=='function')throw Error('CATALOG_REVIEW_READERS_REQUIRED');
  return async setup=>{
@@ -10,7 +10,16 @@ export function createPracticeCatalogReview({lookupNames,isCurrent,now=()=>Date.
   const records=new Map(),wanted=[...names.values()];
   for(let i=0;i<wanted.length;i+=75){check();const batch=wanted.slice(i,i+75),result=await lookupNames(batch.map(name=>({name})));check();
    if(!Array.isArray(result?.data))throw Error('CATALOG_LOOKUP_INCOMPLETE');
-   for(const name of batch){const card=result.data.find(c=>[c.name,...(c.card_faces||[]).map(f=>f.name)].some(n=>catalogNameKey(n)===catalogNameKey(name)));records.set(catalogNameKey(name),{name,oracleId:card?.oracle_id||'',legality:card?.legalities?.[format.toLowerCase()]||'unknown'});}
+   const data=[...result.data],unresolved=batch.filter(name=>!data.some(card=>catalogCardMatchesName(card,name)));
+   // Collection lookups can reject combined names that the exact front-face
+   // lookup recognizes. Retry once, but accept only the full certified identity.
+   const fronts=[...new Set(unresolved.filter(name=>name.includes('//')).map(name=>name.split(/\s*\/\/\s*/)[0].trim()))];
+   if(fronts.length){check();const retry=await lookupNames(fronts.map(name=>({name})));check();if(!Array.isArray(retry?.data))throw Error('CATALOG_LOOKUP_INCOMPLETE');data.push(...retry.data);}
+   for(const name of batch){
+    const matches=data.filter(card=>catalogCardMatchesName(card,name)),ids=new Set(matches.map(card=>card?.oracle_id).filter(id=>typeof id==='string'&&id));
+    const card=ids.size===1?matches.find(card=>card.oracle_id===[...ids][0]):null;
+    records.set(catalogNameKey(name),{name,canonicalName:card?.name||'',oracleId:card?.oracle_id||'',legality:card?.legalities?.[format.toLowerCase()]||'unknown'});
+   }
   }
   check();const checkedAt=now(),reviews={},reasons=[];
   for(const [seat,list]of Object.entries(lists)){const unique=[...new Set([...list.main_deck,...list.sideboard,...list.commander].map(catalogNameKey))];const review={schema:1,format,listKey:catalogListKey(list,format),checkedAt,cards:unique.map(n=>records.get(n))};const gate=evaluateCatalogAdmission(list,format,review,{now:checkedAt});if(!gate.admitted)reasons.push(...gate.reasons.map(r=>(seat==='player'?'Your deck: ':'CPU deck: ')+r));reviews[seat]=review;}

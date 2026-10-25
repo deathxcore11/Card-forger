@@ -78,3 +78,21 @@
 
 /* Response mode stays visible beside the current decision, outside advanced stops. */
 .play-turn-mode{margin-top:12px;padding-top:10px;border-top:1px solid #aac8d62e}.play-turn-mode>div{display:flex;gap:6px}.play-turn-mode button{flex:1;min-height:36px;padding:7px 10px;font-size:12px}.play-turn-mode button[aria-pressed=true]{border-color:#e5ce9c;background:#d2b57230;color:#f1dfb9}.play-turn-mode p{margin:7px 0 0!important;font-size:11px;line-height:1.4;color:#c6d8dc}
+
+.play-match-new-card{position:absolute;top:8px;right:8px;z-index:4;padding:3px 8px;border-radius:12px;background:#e1c78a;color:#10242b;font-size:12px;font-weight:750;box-shadow:0 0 18px #e1c78a66}.play-match-card[data-new-card=true]{outline:2px solid #e1c78a;outline-offset:2px}
+
+/* Keep small boards legible and each land row near its controller. */
+.play-match-card-wrap[data-presentation=battlefield][data-family=land]{width:104px;height:104px}
+.play-match-card[data-presentation=battlefield][data-family=land] .play-match-card-name{font-size:12px;bottom:15px}
+.play-match-card[data-presentation=battlefield][data-family=land] .play-match-piece-art{inset:10% 0}
+.play-match-battlefields .play-match-zone-heading{position:static;width:auto;height:auto;clip-path:none;font-size:12px;opacity:.85}
+.play-match-battlefields .play-match-zone-heading h2{font-size:12px}
+.play-match-seat-area[data-seat=you] .play-match-zone-groups{justify-content:flex-end;min-height:calc(100% - 24px)}
+.play-match-seat-area[data-seat=cpu] .play-match-zone-groups{justify-content:flex-end;min-height:calc(100% - 24px)}
+.play-match-lane[data-card-group=lands]{order:2}
+.play-match-lane[data-card-group=creatures]{order:0}
+.play-match-lane[data-card-group=other]{order:1}
+.play-match-decisions>details[data-keep-open=table-help]{font-size:12px;color:#c6d8dc;margin-top:7px}
+.play-match-card[data-new-card=true]{animation:play-card-arrival .6s ease-out}
+@keyframes play-card-arrival{from{opacity:.3;filter:brightness(1.6)}to{opacity:1;filter:brightness(1)}}
+@media(prefers-reduced-motion:reduce){.play-match-card[data-new-card=true]{animation:none}}

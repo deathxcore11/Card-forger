@@ -1,10 +1,11 @@
 // Resolve the selected printings for a single launch, without changing decks,
 // collection, finish selections or the shared catalog. Host capture freezes them.
+import {catalogCardMatchesName} from './experiments/phase-engine/catalog-admission.mjs';
 export function createPracticeCardPreparation({resolveNames,lookup,fetchPrinting,selectionKey,isCurrent}={}){
  if([resolveNames,lookup,fetchPrinting,selectionKey,isCurrent].some(f=>typeof f!=='function'))throw Error('CARD_PREPARATION_READERS_REQUIRED');
  const printings=new Map();let prepared=false;
  const current=()=>{if(!isCurrent()){printings.clear();prepared=false;throw Error('ACCOUNT_CHANGED');}};
- const matches=(card,name)=>[card?.name,...(card?.card_faces||[]).map(f=>f.name)].some(n=>typeof n==='string'&&selectionKey(n)===selectionKey(name));
+ const matches=catalogCardMatchesName;
  return {
   async prepare(setup){
    current();prepared=false;printings.clear();

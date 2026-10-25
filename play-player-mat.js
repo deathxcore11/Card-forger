@@ -41,7 +41,7 @@ export function practiceAdmissionSummary(admission){
  }
  return {title:unsupported?'This deck isn’t supported by the current game engine yet.':'Check the selected deck format.',lines:seats,details};
 }
-export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwork=async()=>{},reviewDecks=async()=>null,captureContext=capturePracticeDeckContext,onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onSaveDeck=null,onStarter=null,load=loadModules,sessionOnly=true}={}){
+export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwork=async()=>{},reviewDecks=async()=>null,captureContext=capturePracticeDeckContext,onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onSaveDeck=null,load=loadModules,sessionOnly=true}={}){
  if(!root||typeof readAccount!=='function'||typeof readSetup!=='function'||typeof lookup!=='function'||typeof prepareArtwork!=='function'||typeof reviewDecks!=='function')throw Error('PLAYER_MAT_HOST_REQUIRED');
  if(typeof sessionOnly!=='boolean')throw Error('INVALID_SESSION_MODE');
  let generation=0,flow=null,table=null,opening=false,last=null,frame=null,pendingPaint=null,warning=false,reviewingResult=false,resultKey=null,matchup=null,matchOwner=null,savedDeckId=null,savePromise=null;
@@ -57,7 +57,6 @@ export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwor
   stopPaint();table?.destroy();table=null;root.replaceChildren();root.className='play-mat-message';const panel=node('section');panel.className='panel play-journey-message';const mark=node('div');mark.className='play-journey-logo';mark.setAttribute('aria-hidden','true');mark.innerHTML=brandMark(dismiss?'brand-idle':'brand-loading');const heading=node('h1',title);heading.tabIndex=-1;panel.append(mark,heading);panel.setAttribute('aria-live','polite');
   for(const line of lines)panel.append(node('p',line));
   const actions=node('div');actions.className='actions wrap';const back=node('button',dismiss?'Return to Play setup':'Cancel and return to setup');back.type='button';back.className=dismiss?'btn':'btn ghost';back.addEventListener('click',onClose);actions.append(back);
-  if(diagnostic&&onStarter){const starter=node('button','Choose a tested Standard deck');starter.type='button';starter.className='btn ghost';starter.addEventListener('click',onStarter);actions.append(starter);}
   if(diagnostic){const copy=node('button','Copy diagnostic report'),feedback=node('span');copy.type='button';copy.className='btn ghost';feedback.setAttribute('role','status');copy.addEventListener('click',async()=>{try{await view.navigator.clipboard.writeText(diagnostic);feedback.textContent='Report copied.';}catch{feedback.textContent='Copy unavailable. Expand the report below to copy it.';}});actions.append(copy,feedback);}
   panel.append(actions);
   if(details.length){const disclosure=node('details');disclosure.append(node('summary','View affected cards and format details'));for(const line of details)disclosure.append(node('p',line));panel.append(disclosure);}

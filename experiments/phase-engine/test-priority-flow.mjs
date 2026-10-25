@@ -122,3 +122,15 @@ test('real session exposes controls, preserves unknown windows, and retires meth
  const session=createMatchSession({client:{async request(op){calls.push(op);return structuredClone(current);},close(){}}});
  await session.open();assert.equal(session.snapshot().turnFlow.reason,'coverage-unknown');session.setControlMode('full');assert.equal(session.snapshot().turnFlow.reason,'full-control');session.setPhaseStop(1,'Draw',true);assert.equal(session.snapshot().turnFlow.stops.length,1);session.setControlMode('smart');session.yieldUntilAction();await new Promise(r=>setTimeout(r,5));assert(!calls.includes('autoPass'));session.close();assert.throws(()=>session.cancelYield(),/SESSION_CLOSED/);
 });
+test('explicit opponent-turn yield can pass known or unknown responses, cancels, and ends on our turn',async()=>{
+ const x=fixture({coverage:'unknown',meaningfulAction:null,manaWindow:null,passAvailable:false});x.f.reconcile();assert.equal(x.jobs.size,0);x.f.yieldOpponentTurn();assert.equal(x.jobs.size,1);await x.flush();assert.equal(x.sent[0].explicitYield,true);x.f.cancelYield();assert.equal(x.f.snapshot().opponentYield,false);
+ const y=fixture({coverage:'unknown'});y.f.yieldOpponentTurn();y.state.status.priorityCapability.activeSeat=0;y.f.reconcile();assert.equal(y.jobs.size,0);assert.equal(y.f.snapshot().opponentYield,false);assert.throws(()=>y.f.yieldOpponentTurn(),/YIELD_UNAVAILABLE/);
+});
+test('opponent-turn yield respects mandatory choices, phase stops and Full Control',()=>{
+ for(const patch of [{mandatoryChoice:true},{activeSeat:0}]){const x=fixture(patch);assert.throws(()=>x.f.yieldOpponentTurn());assert.equal(x.jobs.size,0);}
+ const x=fixture({coverage:'unknown'});x.f.setPhaseStop(1,'PreCombatMain',true);x.f.yieldOpponentTurn();assert.equal(x.jobs.size,0);assert.equal(x.f.snapshot().reason,'phase-stop');x.f.setControlMode('full');assert.equal(x.f.snapshot().opponentYield,false);
+});
+test('explicit yield is revision-bound and allowed only during opponent priority',async()=>{
+ const x=journalFixture();x.capability=cap({coverage:'unknown',passAvailable:false});await x.send('create','open',{seed:1,first:0});const p={revision:0,decisionId:'decision-0'};const a=await x.send('yieldPriority','yield',p);assert(a.ok,JSON.stringify(a));assert.deepEqual(await x.send('yieldPriority','yield',p),a);assert.equal(x.accepted,1);
+ for(const patch of [{activeSeat:0},{mandatoryChoice:true},{prioritySeat:null},{actorSeat:1}]){const y=journalFixture();y.capability=cap(patch);await y.send('create','open',{seed:1,first:0});assert.equal((await y.send('yieldPriority','yield',p)).error,'AUTO_PASS_UNAVAILABLE');assert.equal(y.accepted,0);}
+});

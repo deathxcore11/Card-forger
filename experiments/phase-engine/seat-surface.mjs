@@ -39,7 +39,7 @@ export function projectSeat(envelope,seat) {
  cards.sort((a,b)=>a.id-b.id);const allowed=new Set(cards.map(c=>c.id));
  const onlyKnownIds=ids=>list(ids).filter(n=>allowed.has(n));
  const players=s.players.map((p,i)=>({seat:i,life:p.life,poison:p.poison_counters||0,handCount:list(p.hand).length,
-  libraryCount:list(p.library).length,graveyard:onlyKnownIds(p.graveyard)}));
+  libraryCount:list(p.library).length,...(i===seat&&Number.isSafeInteger(p.cards_drawn_this_turn)?{drawnThisTurn:p.cards_drawn_this_turn}:{}),graveyard:onlyKnownIds(p.graveyard)}));
  return {seat,turn:s.turn_number,phase:scalar(s.phase),activeSeat:seatId(s.active_player)?s.active_player:null,
   prioritySeat:seatId(s.priority_player)?s.priority_player:null,players,cards,hand:onlyKnownIds(s.players[seat].hand),
   battlefield:onlyKnownIds(s.battlefield),exile:onlyKnownIds(s.exile),command:onlyKnownIds(s.command_zone),

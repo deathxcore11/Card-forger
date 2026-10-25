@@ -19,7 +19,6 @@ import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {createPlayerMat} from './play-player-mat.js';
 import {createPracticeCardPreparation} from './play-card-preparation.js';
 import {createPracticeCatalogReview} from './play-catalog-review.js';
-import {selectPracticeStarter} from './play-starter-deck.js';
 import {mountPracticePregame,resolvePracticePregame} from './play-pregame.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
@@ -45,7 +44,6 @@ import {playSourceEntries,createPlayDeckSaver} from './play-deck-sources.js';
 import {chooseQuickOpponent} from './play-quick-match.js';
 import {readCpuOptions} from './play-cpu-options.js';
 import {capturePracticeDeckContext} from './play-deck-context.js';
-import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
 import {createCommunity,incomingRequestCount,sharedDeckCopy} from './community-profile.js';
 import {addScannedEntry} from './collection-stack.js';
 import {profileAvatar,profileArt,createProfileArtPicker} from './profile-art.js';
@@ -1510,7 +1508,7 @@ A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBu
 A.playFindOpponent=async()=>{
  const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
- try{const sources=readPlaySources(),starter={id:'play-quick-starter',name:'Green creatures · Starter',format:'Standard',cards:structuredClone(PRACTICE_STARTER_ROWS),side:[]},candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck),...(state.match.format==='Standard'?[starter]:[]),state.selected];
+ try{const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck),state.selected];
  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
@@ -1543,8 +1541,6 @@ A.playCancelDeckBuild=()=>{const state=playSetup.snapshot();playBuilders[state.p
 A.playRandomOpponent=async()=>{playSetup.inspectSeat('opponent');return A.playRandomDeck();};
 A.playCancelOpponentBuild=()=>practiceOpponentBuilder.cancel();
 A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profile.signedIn||state.match.mode!=='cpu'||!state.selected)return;try{playSetup.chooseOpponent(state.selected);refreshPlayMenu();}catch(e){toast(e.message);}};
-A.playStarter=async()=>{cancelPlayBuilds();if(!playSetup.snapshot().profile.signedIn)return;try{await selectPracticeStarter(playSetup);refreshPlayMenu();}catch(e){toast(e.message);}};
-A.playStarterMatch=async()=>{cancelPlayBuilds();if(!playSetup.snapshot().profile.signedIn)return;try{playSetup.setPlayStyle('practice');await selectPracticeStarter(playSetup);refreshPlayMenu();await A.playStartCandidate();}catch(e){toast(e.message);}};
 // Product activation stays gated until the real-deck/pregame/difficulty gates
 // pass. The account/table lifecycle below is testable independently of activation.
 const PLAY_MATCH_RELEASE_READY=true;
@@ -1568,7 +1564,7 @@ A.playStartCandidate=async()=>{
    resolveNames:names=>resolveNames(names,()=>{},false,current),
    lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),
    fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
-  playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:cards.prepare,reviewDecks:createPracticeCatalogReview({isCurrent:current,lookupNames:identifiers=>api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers})})}),lookup:cards.lookup,onClose:closePlayerMat,onStarter:()=>{closePlayerMat();A.playStarterMatch();},onSaveDeck:savePlayDeck,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();}});
+  playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:cards.prepare,reviewDecks:createPracticeCatalogReview({isCurrent:current,lookupNames:identifiers=>api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers})})}),lookup:cards.lookup,onClose:closePlayerMat,onSaveDeck:savePlayDeck,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();}});
   try{await playerMatHost.start(options);}catch(e){toast(e.message);}
  };
  if(source.playStyle==='quick')await beginGame(resolvePracticePregame('random'));
@@ -6686,4 +6682,3 @@ A.checkRelease=async()=>{await checkRelease();settingsPopup.refresh();};
 document.addEventListener('toggle',e=>{if(e.target.matches?.('details[data-release-item]')&&e.target.open){acknowledgeRelease(e.target.dataset.releaseItem);e.target.querySelectorAll('.release-dot').forEach(n=>n.remove());}},true);
 onReleaseChange(()=>{refreshProfileAvatar();document.querySelectorAll('.release-dot,[data-release-unread]').forEach(n=>{if(!releaseState().unread)n.remove();});});
 void checkRelease();
-
