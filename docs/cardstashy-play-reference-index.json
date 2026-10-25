@@ -176,6 +176,28 @@
       "sha256": "7c07648229d6fd927d37756879f10f34de6caed9f72417fdf62774c99dbb9141",
       "reference_notes": "Close-up Cancel/Auto controls, distinct from phase advance and inspection; cancellation restores only uncommitted play.",
       "inspection_provenance": "Inspected by the primary agent in the originating chat; indexed by the handoff agent without reopening the image."
+    },
+    {
+      "uploaded_name": "image(20261025-005622).png",
+      "library_file_id": "libfile_64760fe4396081918c19b997e4c2a8a7",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_64760fe4396081918c19b997e4c2a8a7&account_id=personal",
+      "original_local_path": "/workspace/scratch/04b6689e06e8/upload/image(20261025-005622).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 869186,
+      "sha256": "62b59b9e939d860d323093607fa7076e82fce740193bcfff250c6dbc7aa42b3f",
+      "reference_notes": "Owner annotated the narrow single-column setup: use desktop width, organize the deck shelf, import and inspector rather than a long page.",
+      "inspection_provenance": "Inspected directly from the owner-provided scratch attachment in the October 25 desktop layout follow-up. Screenshot not copied into product assets."
+    },
+    {
+      "uploaded_name": "image(20261025-005706).png",
+      "library_file_id": "libfile_77eb219ac9f08191a389e2b8c08c5e8f",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_77eb219ac9f08191a389e2b8c08c5e8f&account_id=personal",
+      "original_local_path": "/workspace/scratch/04b6689e06e8/upload/image(20261025-005706).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 2358382,
+      "sha256": "7e6a2ffa2265a52787589f318b3557202f40b606f7cbd60a0344690be83d4f77",
+      "reference_notes": "Artwork-led wide deck browser with selected deck on the right and anchored setup controls. Keep CardStashy warm glass, art and existing four card views, not the reference branding.",
+      "inspection_provenance": "Inspected directly from the owner-provided scratch attachment in the October 25 desktop layout follow-up. Screenshot not copied into product assets."
     }
   ],
   "original_engineering_handoff_files": {
@@ -218,5 +240,6 @@
     "engine_release_gate_passed": false,
     "source_builds": "Two local source builds were OOM-killed at the 8 GiB container limit; execution used a separately verified upstream artifact.",
     "artifact_expiration": "Upstream artifact links can expire. No signed download URL is preserved as durable evidence; never silently substitute a different build."
-  }
+  },
+  "current_owner_scope": "October 25 clarification: Standard and Commander only for the first desktop Play milestone; 1v1 Practice CPU with Easy/Medium/Hard and private Friends. Finish playable CPU first, Friends next, Draft deferred until these work. No publication."
 }

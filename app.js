@@ -1481,13 +1481,21 @@ function renderPlayPage() {
   if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>CPU practice is being developed for Magic.</p></section>';
   if(!syncDesktopPlayEntries('mtg').eligible)return '<section class="empty"><h1>Play</h1><p>The Play beta is available on desktop. Your saved decks remain available in Decks.</p></section>';
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();
-  for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck));}
-  const formatOptions='<option value="">Choose a format</option>'+FORMATS.map(f=>`<option value="${esc(f.name)}"${state.draft.format===f.name?' selected':''}>${esc(f.name)}</option>`).join('');
-  return playMenuMarkup(state,{avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(state.selected),importPreview:playDeckPreview(state.reviewDeck),formatOptions});
+  for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:state.selectedSource==='saved'&&state.selected?.id===deck.id}));}
+  return playMenuMarkup(state,{avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(state.selected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(state.selected)});
 }
-const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg')render();};
-A.playSelectDeck=t=>{playSetup.selectDeck(t.dataset.playDeck);refreshPlayMenu();};
+const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
+  const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
+  const importOpen=document.getElementById('playImportDisclosure')?.open;
+  render();
+  for(const [key,top]of scrolls){const node=document.querySelector(`[data-play-scroll="${key}"]`);if(node)node.scrollTop=top;}
+  const disclosure=document.getElementById('playImportDisclosure');if(disclosure&&importOpen!==undefined)disclosure.open=importOpen;
+}};
+A.playSelectDeck=t=>{playSetup.selectDeck(t.dataset.playDeck);refreshPlayMenu();document.getElementById('playSelectedTitle')?.focus({preventScroll:true});};
 A.playClearSelection=()=>{playSetup.clearSelection();refreshPlayMenu();};
+A.playConfigure=t=>{playSetup.configure({[t.dataset.playOption]:t.dataset.playValue});refreshPlayMenu();document.querySelector(`[data-act="playConfigure"][aria-pressed="true"]`)?.focus({preventScroll:true});};
+C.playMatchOption=t=>{const key=t.dataset.playOption,value=t.value;playSetup.configure({[key]:value});refreshPlayMenu();document.querySelector(`[data-play-option="${key}"]${key==='mode'?':checked':''}`)?.focus({preventScroll:true});};
+I.playDeckSearch=t=>{const start=t.selectionStart,end=t.selectionEnd;playSetup.searchDecks(t.value);refreshPlayMenu();const field=document.getElementById('playDeckSearch');field?.focus({preventScroll:true});try{field?.setSelectionRange(start,end);}catch{}};
 A.playInspectCard=t=>A.card({dataset:{name:t.dataset.name,readOnly:'true'}});
 I.playImportDraft=C.playImportDraft=t=>{
   const before=playSetup.snapshot();

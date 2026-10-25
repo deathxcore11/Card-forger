@@ -101,6 +101,7 @@ export function goldfishFor(d, cards = d.cards, tag = "") {
 }
 const coverOf = (d) =>
   art(meta(d.commander) || d.cards.map((c) => meta(c.name)).find((c) => art(c)));
+export const deckArtwork = d => d && Array.isArray(d.cards) && d.cards.every(c=>c&&typeof c.name==='string') ? img(coverOf(d), '') : '';
 
 /* ---------- Home ---------- */
 
@@ -166,7 +167,7 @@ export function refreshDeckScores(root) {
   }
 }
 
-export function deckTile(d, wide = false) {
+export function deckTile(d, wide = false, {playSelection = null} = {}) {
   // A planned deck and its missing copies share one existing per-name USD
   // resolution (including selected/cheapest known printings), main deck only.
   const rows = rowsFor(d), t = comparisonTotals(rows),
@@ -178,7 +179,7 @@ export function deckTile(d, wide = false) {
     cover = coverOf(d),
     target = formatOf(d).size,
     owned = t.copies ? t.covered / t.copies : 0;
-  return `<button class="deck-tile ${wide ? "wide" : ""}" data-act="go" data-to="#deck/${esc(d.id)}">
+  return `<button class="deck-tile ${wide ? "wide" : ""}" ${typeof playSelection==='boolean' ? `data-act="playSelectDeck" data-play-deck="${esc(d.id)}" aria-pressed="${playSelection}" aria-label="Select ${esc(d.name)}"` : `data-act="go" data-to="#deck/${esc(d.id)}"`}>
     <span class="tile-art">${img(cover, d.name)}</span>
     <span class="tile-shade"></span>
     <span class="tile-top"><span class="deck-format-stack"><span class="chip dark">${esc(formatOf(d).name)}</span>${deckBoxMarkup(d,{images:d.cards.slice(0,3).map(r=>cardImage(meta(r.name)))})}</span>${colorDots(meta(d.commander))}</span>

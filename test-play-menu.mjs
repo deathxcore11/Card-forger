@@ -2,15 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {playMenuMarkup} from './play-menu.js';
 import {S,blank} from './store.js';
-import {deckList} from './views.js';
+import {deckList,deckArtwork,deckTile} from './views.js';
 import {deckViewer} from './deck-viewer.js';
 import {routeSegments,gameSwitchRoute} from './game-navigation.js';
 import {readFileSync} from 'node:fs';
 
-const base=()=>({profile:{signedIn:true,displayName:'A Player',username:'player',ownerId:'private-account-id'},decks:[],selected:null,selectedSource:null,importStatus:'idle',draft:{name:'',text:'',format:''},warnings:[],unresolved:[],busy:false});
+const base=()=>({match:{format:'Standard',mode:'cpu',difficulty:'Medium'},browse:{query:''},profile:{signedIn:true,displayName:'A Player',username:'player',ownerId:'private-account-id'},decks:[],selected:null,selectedSource:null,importStatus:'idle',draft:{name:'',text:'',format:''},warnings:[],unresolved:[],busy:false});
 test('menu preserves supplied shared renderers and keeps match creation unavailable',()=>{
-  const state=base();state.decks=[{id:'one',name:'Existing deck',format:'Modern'}];
-  state.selected={id:'one',name:'Existing deck',format:'Modern',cards:[{name:'Island',qty:60}],side:[]};state.selectedSource='saved';state.readiness={ready:true};
+  const state=base();state.decks=[{id:'one',name:'Existing deck',format:'Standard'}];
+  state.selected={id:'one',name:'Existing deck',format:'Standard',cards:[{name:'Island',qty:60}],side:[]};state.selectedSource='saved';state.readiness={ready:true};
   const tile='<button class="deck-tile" data-act="go" data-to="#deck/one">Shared deck tile</button>';
   const preview='<section class="deck-viewer" data-deck-view="stacks">Shared card rows</section>';
   const html=playMenuMarkup(state,{avatarMarkup:'<span class="profile-avatar">Shared avatar</span>',deckTiles:new Map([['one',tile]]),deckPreview:preview});
@@ -56,5 +56,28 @@ test('an account change retires an in-flight real name lookup before cache write
 test('selected import is displayed once and exposes a focus destination',()=>{
  const s=base();s.importStatus='selected';s.selectedSource='import';s.selected={name:'Chosen list',cards:[{name:'Island',qty:60}],side:[]};
  const html=playMenuMarkup(s,{deckPreview:'<div>Selected exact list</div>'});
- assert.equal((html.match(/Selected exact list/g)||[]).length,1);assert.doesNotMatch(html,/Review imported list|Use this list/);assert.match(html,/id="playSelectedTitle" tabindex="-1"/);
+ assert.equal((html.match(/Selected exact list/g)||[]).length,1);assert.doesNotMatch(html,/Review imported list|data-act="playImportUse"/);assert.match(html,/id="playSelectedTitle" tabindex="-1"/);
+});
+
+
+test('desktop setup has one persistent inspector and only Standard/Commander formats',()=>{
+ const html=playMenuMarkup(base());assert.match(html,/class="play-workspace"/);assert.match(html,/<aside class="panel play-inspector"/);
+ assert.match(html,/data-play-value="Standard"/);assert.match(html,/data-play-value="Commander"/);assert.doesNotMatch(html,/data-play-value="(?:Modern|Draft)"/);
+ assert.match(html,/name="playOpponent" value="cpu"/);assert.match(html,/name="playOpponent" value="friends"/);assert.match(html,/>Easy<\/option>/);assert.match(html,/>Medium<\/option>/);assert.match(html,/>Hard<\/option>/);
+});
+test('shelf filters exact format and search without deleting the selected deck preview',()=>{
+ const s=base();s.decks=[{id:'a',name:'Alpha',format:'Standard'},{id:'b',name:'Beta',format:'Commander'},{id:'c',name:'Gamma',format:'Standard'}];s.browse.query='alpha';
+ s.selected={name:'Gamma',format:'Standard',cards:[]};const html=playMenuMarkup(s,{deckPreview:'<div>Selected rows</div>'});
+ assert.match(html,/data-play-deck="a"/);assert.doesNotMatch(html,/data-play-deck="[bc]"/);assert.match(html,/Selected rows/);assert.match(html,/1 of 2 Standard decks/);
+});
+test('friends preference exposes no invented connection and does not advertise a CPU difficulty',()=>{
+ const s=base();s.match.mode='friends';const html=playMenuMarkup(s);assert.match(html,/disabled[^>]*>Play with friends<\/button>/);assert.doesNotMatch(html,/id="playDifficulty"|data-act="(?:createRoom|joinRoom)"/);
+});
+
+
+test('malformed selected rows cannot crash artwork rendering and shared tiles retain their default route',()=>{
+ S.state=blank();S.catalog={};assert.equal(deckArtwork({name:'Broken',cards:[null]}),'');
+ const d={id:'one',name:'A deck',format:'Standard',cards:[{name:'Island',qty:60}],side:[]};
+ assert.match(deckTile(d),/data-act="go" data-to="#deck\/one"/);
+ assert.match(deckTile(d,false,{playSelection:true}),/data-act="playSelectDeck" data-play-deck="one" aria-pressed="true"/);
 });

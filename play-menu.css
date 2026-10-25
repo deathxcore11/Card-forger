@@ -1,16 +1,68 @@
-/* Layout only: colors, type, buttons, deck tiles and card views use the app. */
-.play-menu{display:grid;gap:24px}
-.play-menu>.panel{margin:0}
-.play-menu .page-head{margin-bottom:12px}
-.play-profile{display:flex;align-items:center;gap:16px}
-.play-profile h2,.play-profile p{margin:0}
-.play-profile>div{flex:1;min-width:0}
-.play-profile .profile-avatar{flex-shrink:0}
-.play-deck-choices{align-items:start}
-.play-deck-choice{display:grid;gap:8px;min-width:0}
-.play-deck-choice>.deck-tile{width:100%}
-.play-deck-choice>.btn{justify-self:stretch}
-.play-deck-choice.selected>.btn{outline:2px solid var(--gold);outline-offset:2px}
-.play-menu textarea{width:100%;resize:vertical}
+/* Play owns desktop space; all art, cards, colors and finish rendering remain
+   shared with CardStashy. These rules do not change other routes. */
+body[data-view="play"] #content{max-width:none;width:100%;padding:18px clamp(16px,2vw,40px) 20px}
+.play-menu{display:grid;gap:16px;min-width:0}
+.play-menu .panel{margin:0;background:color-mix(in srgb,var(--surface) 84%,transparent);backdrop-filter:blur(18px) saturate(1.15);box-shadow:0 12px 40px #0001}
+.play-heading{display:flex;align-items:center;gap:24px;min-width:0}
+.play-heading h1{font-size:27px}
+.play-heading .eyebrow{margin:0 0 3px}
+.play-format{display:flex;gap:6px}
+.play-beta{margin-left:auto}
+.play-workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,30%);gap:18px;min-width:0;min-height:0}
+.play-library,.play-inspector{min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:0}
+.play-library-head,.play-inspector-head{padding:16px 18px;border-bottom:1px solid var(--line)}
+.play-menu .page-head{margin:0 0 12px;gap:10px}
+.play-menu .page-head h2{font-size:18px}
+.play-search{display:flex;align-items:center;gap:14px;margin:0}
+.play-search input{flex:1;min-width:0;margin:0}
+.play-library-scroll,.play-inspector-scroll{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:16px 18px;scroll-padding:16px}
+.play-import{border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--surface-2) 58%,transparent)}
+.play-import>summary{padding:12px 14px;cursor:pointer;font-weight:700;min-height:44px}
+.play-import>summary>span{font-weight:400;margin-left:12px}
+.play-import-body{padding:4px 14px 14px}
+.play-import-body>label{display:block;margin-top:12px}
+.play-menu textarea{width:100%;resize:vertical;min-height:120px}
+.play-result-count{margin:16px 0 10px}
+.play-menu .play-deck-choices{grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));align-items:start;gap:16px}
+.play-deck-choice{position:relative;min-width:0;border-radius:16px}
+.play-deck-choice>.deck-tile{width:100%;height:216px}
+.play-menu .tile-body{bottom:33px}
+.play-menu .tile-body :is(.tile-stats,.bar){display:none}
+.play-deck-selection{position:absolute;bottom:9px;left:12px;font-size:12px;font-weight:700;color:#f5ddb1;pointer-events:none}
+.play-deck-choice.selected{outline:2px solid var(--gold);outline-offset:3px;box-shadow:0 0 25px color-mix(in srgb,var(--gold) 18%,transparent)}
+.play-deck-choice:has(:focus-visible){outline:2px solid var(--gold);outline-offset:5px}
+.play-other-formats{margin-top:18px}
+.play-inspector-head>.page-head{margin-bottom:12px}
+.play-selected-cover{position:relative;isolation:isolate;min-height:150px;border-radius:10px;overflow:hidden;background:var(--surface-2);color:#fff;display:flex;align-items:end}
+.play-selected-cover>img,.play-selected-cover>.img-missing{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+.play-selected-cover::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#080b1020,#080b10ed);z-index:-1}
+.play-selected-copy{padding:16px;width:100%;overflow-wrap:anywhere}
+.play-selected-copy h3{font-size:20px;margin:0}
+.play-selected-copy .eyebrow{color:#f5ddb1}
+.play-selected-copy p{margin:4px 0 0}
+.play-inspector-scroll{flex:1}
 .play-menu .deck-viewer{min-width:0}
-@media(max-width:700px){.play-profile{flex-wrap:wrap}.play-menu{gap:18px}}
+.play-inspector .deck-view-toolbar{margin-top:0}
+.play-selection-empty{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted)}
+.play-selection-empty>span{font-size:60px;color:var(--gold);opacity:.5}
+.play-match-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px 24px;padding:14px 18px}
+.play-profile{display:flex;align-items:center;gap:10px;min-width:0;margin-right:auto}
+.play-profile>div{display:grid;min-width:0}
+.play-profile b,.play-profile span{overflow-wrap:anywhere}
+.play-profile .profile-avatar{flex-shrink:0;width:44px;height:44px}
+.play-opponent{border:0;margin:0;padding:0;display:flex;gap:8px;min-width:0}
+.play-opponent legend,.play-difficulty{font-size:12px;color:var(--muted)}
+.play-opponent legend{margin-bottom:5px}
+.play-opponent label{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;color:var(--text);font-size:14px;margin:0;min-height:44px}
+.play-opponent label:has(:checked){border-color:var(--gold);background:color-mix(in srgb,var(--gold) 10%,transparent)}
+.play-opponent input{appearance:auto;accent-color:var(--gold);width:16px;min-height:0;height:16px;margin:0;padding:0}
+.play-difficulty{display:grid;gap:5px;margin:0}
+.play-difficulty select{min-width:120px;margin:0;min-height:44px}
+.play-start{align-self:end}
+.play-start .btn{min-width:150px;min-height:44px}
+.play-menu #playMatchStatus{flex-basis:100%;margin:0;border-top:1px solid var(--line);padding-top:9px;font-size:12px}
+@media(min-width:1100px) and (min-height:700px){.play-menu{height:calc(100dvh - 116px);min-height:560px;grid-template-rows:auto minmax(0,1fr) auto}}
+@media(min-width:1800px){.play-workspace{grid-template-columns:minmax(0,1fr) minmax(460px,29%)}.play-deck-choice>.deck-tile{height:244px}}
+@media(max-width:1099px),(max-height:699px){.play-library-scroll,.play-inspector-scroll{max-height:65vh}.play-match-bar{position:relative}.play-workspace{grid-template-columns:minmax(0,1fr) minmax(320px,38%)}}
+@media(max-width:800px){.play-workspace{grid-template-columns:1fr}.play-heading{flex-wrap:wrap;gap:12px}.play-search{display:block}.play-beta{margin-left:0}.play-profile{flex-basis:100%}.play-library-scroll,.play-inspector-scroll{max-height:65vh}}
+@media(prefers-reduced-transparency:reduce){.play-menu .panel{background:var(--surface);backdrop-filter:none}}

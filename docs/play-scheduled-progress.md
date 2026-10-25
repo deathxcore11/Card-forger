@@ -233,3 +233,39 @@ board, completing human choices, pregame, CPU and result recovery. Resume must
 construct/recover an authority before restarting a failed scheduler. Call
 scheduler.refresh after accepted external commands and foreground events.
 All full Practice gates, Casual and Draft remain open. Nothing deployed.
+
+## October 25, 2026 — PC layout and explicit initial mode scope
+
+Verified remote Play head `adfe4fa744512a09f240be4024b006c891116b04` and its
+complete tree: no AGENTS.md. Confirmed local edited-source baselines against
+remote Git blob hashes before changes; restored the reference index from the
+exact remote content before appending new attachment identities.
+
+Owner made playable CPU the number-one goal and then supplied two annotated
+PC layout references. Owner now explicitly selects Standard/Commander only,
+CPU Practice with selectable difficulty and private Friends; Draft is deferred
+until these work. Added the corresponding setup flow in a full-width desktop
+workspace, independently scrolling deck browser and right-side inspector,
+anchored match controls, format/search filters and account-scoped preferences.
+Shared card/deck/finish rendering remains in use. Both start paths stay disabled.
+
+Final selected regression command passes 43 Node tests; browser fixture passes
+light/dark at 1280/1440/1920/2560 desktop widths and 900×650 reflow. The initial
+text-wide stale-action assertion needed narrowing to the actual button after
+copy changed; all final checks pass. Captured source hashes, exact checks and
+limits are in [desktop layout checkpoint](play-desktop-layout-checkpoint.md).
+No new engine test or successful runtime build is claimed. Preserved ninjutsu
+failures remain untouched. No paid build, production merge, deployment or APK.
+
+Next slice returns to corrected browser runtime and authoritative human
+controls, then CPU/board/timer/recovery to finish an actual private 1v1 match.
+The larger-memory job remains prepared, unrun and unapproved. Do not repeatedly
+retry the same memory-failing command. Do not spend the next run extending menus
+or Draft while the core playable match remains unfinished.
+
+Integration note: the concurrent scheduler checkpoint `5eb07f6f5659d7276ef003ac02eef1bc5b63ff53`
+completed before this UI branch update. Its four engine/scheduler files are
+preserved unchanged; only this shared progress document needed an append merge.
+The UI source bytes in the 43-test and browser evidence did not change. The
+other checkpoint's 77 engine tests are its recorded execution, not a new run
+by this UI follow-up. No whole-branch merge or runtime substitution occurred.

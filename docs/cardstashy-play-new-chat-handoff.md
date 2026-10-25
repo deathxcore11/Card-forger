@@ -5,6 +5,23 @@ work without relying on the originating conversation. Read the linked source
 documents and actual references; this handoff is an index and current decision
 record, not a claim that the game is built.
 
+## Current owner priority and initial scope — October 25
+
+**Goal one is a complete, human-playable 1v1 CPU match in the private branch
+preview.** Setup pages and source tests do not satisfy that milestone.
+
+The owner explicitly selected **Standard and Commander only for now**, with
+organized desktop deck selection, Practice against CPU with Easy/Medium/Hard,
+and private Friends. Complete CPU first, Friends next. **Draft is deferred until
+this works**, retaining it as future work rather than requiring it in the first
+reviewable milestone. This newer decision supersedes older combined-release
+scope language below. No public Play, production deployment or APK is authorized.
+
+The [desktop layout checkpoint](play-desktop-layout-checkpoint.md) implements
+the broad PC shelf/right inspector/bottom controls and those setup preferences.
+The corrected browser runtime and actual gameplay remain unfinished. Prioritize
+runtime proof and real player controls/CPU/recovery over further menu expansion.
+
 ## Latest owner instruction: split the work
 
 The owner has put Play development on hold **in the originating chat**. That
