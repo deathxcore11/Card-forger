@@ -22,6 +22,14 @@ the broad PC shelf/right inspector/bottom controls and those setup preferences.
 The corrected browser runtime and actual gameplay remain unfinished. Prioritize
 runtime proof and real player controls/CPU/recovery over further menu expansion.
 
+
+Owner clarification (October 25): Practice must let the player choose the CPU's
+exact deck from precons, the existing Meta tab, permitted online meta lists or
+the app's Random Deck builder, using CardStashy's existing UI. Keep difficulty
+independent and freeze the chosen/generated list before start. See
+[opponent deck sources](play-opponent-deck-sources.md) for source behavior,
+validation/recovery gates and the bounded precon-parser checkpoint.
+
 ## Latest owner instruction: split the work
 
 The owner has put Play development on hold **in the originating chat**. That

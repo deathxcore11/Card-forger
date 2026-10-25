@@ -379,3 +379,36 @@ uses the small account budget; its listed local checks actually ran.
 Next: capture the remote result/artifact and verify its source/runtime receipt,
 then execute this response suite on the corrected bytes if available. The
 actual playable CPU/board/choices/countdown/result milestone remains unfinished.
+
+## October 25, 2026 — precon data and explicit CPU deck selection
+
+Verified Play head `3fabbea87408b560beaaef67c1bfcecb9f4dd6c8` and its full tree:
+no AGENTS.md. The owner supplied DeckCheck precons and clarified that Practice
+must allow choosing the CPU's exact deck from precons, the existing Meta tab,
+permitted online meta lists or the app's Random Deck builder, within the existing
+CardStashy UI. Difficulty remains separate. Captured these requirements in the
+handoff and [opponent deck source checkpoint](play-opponent-deck-sources.md).
+
+No DeckCheck catalog was scraped. MTGJSON's public source is now retrievable;
+added an isolated precon normalizer and exact-source verifier. All ten parser
+regressions passed. Actually parsed the 2026-10-24 catalog (3,131 product rows,
+198 Commander Deck rows) and three complete source decks: Upgrades Unleashed,
+Turtle Power! and Counter Surge. Preserved commanders/main/side and all product
+extras, printing IDs and finish flags. Initial plain-source-note and Unicode-name
+failures were corrected with regression cases before the final catalog pass.
+Exact input/code hashes and counts are committed in the source evidence JSON.
+These checks do not establish current format legality, engine support or CPU
+piloting; the parser/picker is not mounted in the product. No all-precon claim.
+
+The single approved remote proof remains running on attempt 2 at this checkpoint:
+run `40150756588`, job `121043947174`, source `f1021d3`. Do not launch a competing
+paid build. Preserved original ninjutsu assertions and the newly saved Stifle
+proof are unchanged. This commit uses `[skip ci]` to reserve the small Actions
+budget for that approved job; the ten new local tests and exact-source verifier
+actually ran. No production/website-release/APK/schema changes or publication.
+
+Next: obtain and verify the corrected runtime/artifact if this active job succeeds,
+run both original mechanics failures and the new real Stifle response/restore
+suite, then continue human controls/CPU/board/timer/recovery. Wire the selected
+CPU source through exact-list validation and durable match identity as part of
+that playable milestone; do not spend another slice only expanding menus.

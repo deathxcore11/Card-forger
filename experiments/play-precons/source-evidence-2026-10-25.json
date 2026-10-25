@@ -1,0 +1,93 @@
+{
+  "checkedAt": "2026-10-25T01:53:38.348Z",
+  "sourceUrl": "https://mtgjson.com/api/v5/DeckList.json",
+  "indexSha256": "8531267c6a9539a7d242aa4fe622100f6abc414fb00335474d9ff0b804259b76",
+  "indexBytes": 651379,
+  "meta": {
+    "date": "2026-10-24",
+    "version": "5.3.0+20261024"
+  },
+  "products": 3131,
+  "commanderDeckTypeProducts": 198,
+  "samples": [
+    {
+      "id": "UpgradesUnleashed_NEC",
+      "name": "Upgrades Unleashed",
+      "dataUrl": "https://mtgjson.com/api/v5/decks/UpgradesUnleashed_NEC.json",
+      "sourceUrl": "https://magic.wizards.com/en/articles/archive/feature/kamigawa-neon-dynasty-commander-decklists-2022-02-07",
+      "sha256": "a8ee9a18c614a472e3f46f96942ba91afadd28f4fdeb4e8e3e1e1431e11a2d24",
+      "bytes": 692185,
+      "counts": {
+        "commander": 1,
+        "mainBoard": 99,
+        "sideBoard": 0,
+        "tokens": 0,
+        "planes": 0,
+        "schemes": 0,
+        "displayCommander": 1
+      },
+      "commanders": [
+        {
+          "name": "Chishiro, the Shattered Blade",
+          "quantity": 1,
+          "finish": "foil",
+          "scryfallId": "bffa36ac-137d-481c-b1b7-76a88ef15d54"
+        }
+      ],
+      "deckCardCount": 100,
+      "playStatus": "unverified"
+    },
+    {
+      "id": "TurtlePower_TMC",
+      "name": "Turtle Power!",
+      "dataUrl": "https://mtgjson.com/api/v5/decks/TurtlePower_TMC.json",
+      "sourceUrl": "https://magic.wizards.com/en/news/announcements/teenage-mutant-ninja-turtles-commander-decklist",
+      "sha256": "e0cf1af2d27deca968785daab14717a7b2e3cee27551cc173091d0ab69fdd2f3",
+      "bytes": 540257,
+      "counts": {
+        "commander": 1,
+        "mainBoard": 99,
+        "sideBoard": 0,
+        "tokens": 0,
+        "planes": 0,
+        "schemes": 0,
+        "displayCommander": 0
+      },
+      "commanders": [
+        {
+          "name": "Heroes in a Half Shell",
+          "quantity": 1,
+          "finish": "foil",
+          "scryfallId": "ccc2a4e6-f505-4040-9d8a-c7b8e1a2b55e"
+        }
+      ],
+      "deckCardCount": 100,
+      "playStatus": "unverified"
+    },
+    {
+      "id": "CounterSurge_Q01",
+      "name": "Counter Surge",
+      "dataUrl": "https://mtgjson.com/api/v5/decks/CounterSurge_Q01.json",
+      "sourceUrl": "https://magic.wizards.com/en/articles/archive/feature/challenger-decks-lists-2018-02-23",
+      "sha256": "99aa23e1c8765aecca8316410b459514c86ae00124b3b67fa8eac94890d41356",
+      "bytes": 278340,
+      "counts": {
+        "commander": 0,
+        "mainBoard": 60,
+        "sideBoard": 15,
+        "tokens": 0,
+        "planes": 0,
+        "schemes": 0,
+        "displayCommander": 0
+      },
+      "commanders": [],
+      "deckCardCount": 60,
+      "playStatus": "unverified"
+    }
+  ],
+  "sourceFiles": {
+    "mtgjson-precons.mjs": "aa1e22bdf9389eed2c8ca4415c6d789fd8e3e083e36ebd48ff34c749ecae0c9c",
+    "test-mtgjson-precons.mjs": "1e8231696642392743cda36a266e2c61cdc7f73f05805af821392b27155f8bc9",
+    "verify-precon-sources.mjs": "3e10b5ebcb15781bf2e96695d7823787b3a62eef10b9d3d91a1f527aac86aa4a"
+  }
+}
