@@ -7,7 +7,8 @@ import {evaluateMatchAdmission} from './match-input.mjs';
 import {PRACTICE_COVERAGE} from './practice-coverage.mjs';
 import {createMatchAuthority} from './match-authority.mjs';
 import {createJournal} from './worker-journal.mjs';
-const VERSION='practice-candidate-v1';
+import {CPU_CONFIGURATION_VERSION,CPU_DIFFICULTIES,CPU_LABELS_READY} from './cpu-difficulty-config.mjs';
+const VERSION='practice-candidate-v2:'+CPU_CONFIGURATION_VERSION;
 let opening=null,epoch=null,sessionOnly=false;
 export function validPracticeBinding(data){
  return !!data&&typeof data==='object'&&!Array.isArray(data)&&!Object.keys(data).some(k=>!['v','epoch','id','op','ownerId','match','operation','input','sessionOnly'].includes(k))&&data.v===1&&data.id==='bind'&&data.op==='bind'&&/^[-\w]{1,80}$/.test(data.epoch||'')&&['create','resume'].includes(data.operation)&&!(data.operation==='resume'&&Object.hasOwn(data,'input'))&&(!Object.hasOwn(data,'sessionOnly')||typeof data.sessionOnly==='boolean');
@@ -19,13 +20,12 @@ async function boot(data){
  const admission=evaluateMatchAdmission(engine,input,PRACTICE_COVERAGE);
  const format=engine.getFormatRegistry().find(f=>f.format===input.format)?.default_config;
  if(!format)throw Error('FORMAT_UNAVAILABLE');
- // Difficulty calibration is unfinished; do not silently serve one policy
- // behind three strength labels. This private integration proof uses Medium.
- const cpuAvailable=input.difficulty==='Medium';
+ // Policy readiness is separate from both-seat executable deck admission.
+ const cpuAvailable=CPU_DIFFICULTIES.includes(input.difficulty)&&(CPU_LABELS_READY||input.difficulty==='Medium');
  let handler=null;
  if(admission.admitted&&cpuAvailable){
   let presentation=record.getPresentation();
-  const {adapter,choose}=createMatchAuthority({engine,epoch,format,decks:input.engineLists,
+  const {adapter,choose}=createMatchAuthority({engine,epoch,format,decks:input.engineLists,difficulty:input.difficulty,cpuPlaybookProposals:[input.decks.player.practiceCpuPlan,input.decks.opponent.practiceCpuPlan],
    onStart:()=>{presentation=initialPresentation(input,JSON.parse(engine.export_game_state_json()));record.setPresentation(presentation);},
    present:view=>presentInstances(view,presentation)});
   handler=createJournal({engine:adapter,storage:record.storage,choose,version:VERSION+':'+RUNTIME_IDENTITY.wasmSha256+':'+digest,epoch,timing:{matchId:data.match,humanActor:0},turnLimits:data.sessionOnly?{}:null});

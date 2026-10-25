@@ -1,0 +1,4394 @@
+{
+  "task": "CPU-002",
+  "runtime": "a86578b23adcd26c",
+  "policy": "public-cpu-v1",
+  "cases": [
+    {
+      "id": "ghalta-survival",
+      "fixture": {
+        "id": "ghalta-survival",
+        "attack": [
+          "Ghalta, Primal Hunger"
+        ],
+        "block": [
+          "Ghalta, Primal Hunger"
+        ],
+        "life": 12,
+        "blocks": 1
+      },
+      "setupSha256": "5aa74e58226bbb2956fa398ed8cc0e676072ec9cbd40d5350d967938bc219ea6",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 1,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              99,
+              5
+            ]
+          ]
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              0
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "loss",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              12
+            ],
+            "lost": 24,
+            "killed": 24,
+            "predictedCasualties": [
+              0,
+              1
+            ],
+            "outcome": "survive",
+            "score": 0,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            0
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            12
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "two-attackers",
+      "fixture": {
+        "id": "two-attackers",
+        "attack": [
+          "Ghalta, Primal Hunger",
+          "Bear Cub"
+        ],
+        "block": [
+          "Ghalta, Primal Hunger",
+          "Bear Cub"
+        ],
+        "life": 12,
+        "blocks": 2
+      },
+      "setupSha256": "87309226a10d00c33a2c98529fd2a05fad32f9c4741ab5dfc9dd815397057078",
+      "expansion": {
+        "added": 4,
+        "examined": 4,
+        "truncated": false
+      },
+      "selection": {
+        "index": 5,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              76,
+              6
+            ],
+            [
+              99,
+              5
+            ]
+          ]
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              -2
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "loss",
+            "score": -4.666666666666666,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              0
+            ],
+            "lost": 0,
+            "killed": 4,
+            "predictedCasualties": [
+              0
+            ],
+            "outcome": "loss",
+            "score": 0,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 2,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              10
+            ],
+            "lost": 24,
+            "killed": 24,
+            "predictedCasualties": [
+              1,
+              2
+            ],
+            "outcome": "survive",
+            "score": -0.6666666666666666,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 3,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              0
+            ],
+            "lost": 4,
+            "killed": 4,
+            "predictedCasualties": [
+              0,
+              3
+            ],
+            "outcome": "loss",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 4,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              0
+            ],
+            "lost": 4,
+            "killed": 0,
+            "predictedCasualties": [
+              3
+            ],
+            "outcome": "loss",
+            "score": -8,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 5,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              12
+            ],
+            "lost": 28,
+            "killed": 28,
+            "predictedCasualties": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "outcome": "survive",
+            "score": 0,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 6,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              2
+            ],
+            "lost": 4,
+            "killed": 4,
+            "predictedCasualties": [
+              0,
+              3
+            ],
+            "outcome": "survive",
+            "score": -3.333333333333333,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 7,
+          "evaluation": {
+            "confidence": "estimate",
+            "life": [
+              20,
+              0
+            ],
+            "lost": 0,
+            "killed": 4,
+            "predictedCasualties": [
+              0
+            ],
+            "outcome": "unknown",
+            "score": 0,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 8,
+          "evaluation": {
+            "confidence": "estimate",
+            "life": [
+              20,
+              10
+            ],
+            "lost": 24,
+            "killed": 24,
+            "predictedCasualties": [
+              1,
+              2
+            ],
+            "outcome": "unknown",
+            "score": -0.6666666666666666,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            -2
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            0
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      76,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "previewValidated": true,
+          "life": [
+            20,
+            10
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      76,
+                      6
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "previewValidated": true,
+          "life": [
+            20,
+            0
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "previewValidated": true,
+          "life": [
+            20,
+            0
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      6
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "AssignCombatDamage",
+                "data": {
+                  "mode": "Normal",
+                  "assignments": [
+                    [
+                      99,
+                      2
+                    ]
+                  ],
+                  "trample_damage": 10,
+                  "controller_damage": 0
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "previewValidated": true,
+          "life": [
+            20,
+            12
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      76,
+                      6
+                    ],
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "previewValidated": true,
+          "life": [
+            20,
+            2
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      76,
+                      5
+                    ],
+                    [
+                      99,
+                      6
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "AssignCombatDamage",
+                "data": {
+                  "mode": "Normal",
+                  "assignments": [
+                    [
+                      99,
+                      2
+                    ]
+                  ],
+                  "trample_damage": 10,
+                  "controller_damage": 0
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "previewValidated": true,
+          "life": [
+            20,
+            0
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      76,
+                      5
+                    ],
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "AssignCombatDamage",
+                "data": {
+                  "mode": "Normal",
+                  "assignments": [
+                    [
+                      76,
+                      2
+                    ],
+                    [
+                      99,
+                      0
+                    ]
+                  ],
+                  "trample_damage": 0,
+                  "controller_damage": 0
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 8,
+          "previewValidated": true,
+          "life": [
+            20,
+            10
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      76,
+                      6
+                    ],
+                    [
+                      99,
+                      6
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "AssignCombatDamage",
+                "data": {
+                  "mode": "Normal",
+                  "assignments": [
+                    [
+                      76,
+                      12
+                    ],
+                    [
+                      99,
+                      0
+                    ]
+                  ],
+                  "trample_damage": 0,
+                  "controller_damage": 0
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "trample-survival",
+      "fixture": {
+        "id": "trample-survival",
+        "attack": [
+          "Ghalta, Primal Hunger"
+        ],
+        "block": [
+          "Ordinary Bear"
+        ],
+        "life": 8,
+        "blocks": 1
+      },
+      "setupSha256": "c0b877d1932818cec9ea17ea51a8427bbf4714b3ce3e2f9f11d26e4b2a6341cd",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 1,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              99,
+              5
+            ]
+          ]
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              -4
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "loss",
+            "score": -6,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              1
+            ],
+            "lost": 9,
+            "killed": 0,
+            "predictedCasualties": [
+              1
+            ],
+            "outcome": "survive",
+            "score": -12.5,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            -4
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            1
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "AssignCombatDamage",
+                "data": {
+                  "mode": "Normal",
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ],
+                  "trample_damage": 7,
+                  "controller_damage": 0
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "bad-chump",
+      "fixture": {
+        "id": "bad-chump",
+        "attack": [
+          "Ordinary Bear"
+        ],
+        "block": [
+          "Bear Cub"
+        ],
+        "life": 20,
+        "blocks": 0
+      },
+      "setupSha256": "68d5ce29d6d8b0a04750e87237952a8a40bd15a370ec6db794dbde3b89a3cc9e",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 0,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": []
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              16
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "survive",
+            "score": -0.8,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              20
+            ],
+            "lost": 4,
+            "killed": 0,
+            "predictedCasualties": [
+              1
+            ],
+            "outcome": "survive",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            16
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            20
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "first-strike-blocker",
+      "fixture": {
+        "id": "first-strike-blocker",
+        "attack": [
+          "Bear Cub"
+        ],
+        "block": [
+          "Knight of Dawn"
+        ],
+        "life": 2,
+        "blocks": 1
+      },
+      "setupSha256": "fc5bfdd5d35267209ac9fc31a865d210e1e6e624bd7b9ac8f3ddd331375c6dcd",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 1,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              99,
+              5
+            ]
+          ]
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              0
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "loss",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              2
+            ],
+            "lost": 0,
+            "killed": 4,
+            "predictedCasualties": [
+              0
+            ],
+            "outcome": "survive",
+            "score": 4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            0
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            2
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "first-strike-attacker-bad-trade",
+      "fixture": {
+        "id": "first-strike-attacker-bad-trade",
+        "attack": [
+          "Knight of Dawn"
+        ],
+        "block": [
+          "Bear Cub"
+        ],
+        "life": 20,
+        "blocks": 0
+      },
+      "setupSha256": "5c19bd32bb72cef840ae36986d6c5eb84e5e57076c496503070459f507e53e95",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 0,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": []
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              18
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "survive",
+            "score": -0.4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              20
+            ],
+            "lost": 4,
+            "killed": 0,
+            "predictedCasualties": [
+              1
+            ],
+            "outcome": "survive",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            18
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            20
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "double-strike-survival",
+      "fixture": {
+        "id": "double-strike-survival",
+        "attack": [
+          "Hearthfire Hobgoblin"
+        ],
+        "block": [
+          "Bear Cub"
+        ],
+        "life": 4,
+        "blocks": 1
+      },
+      "setupSha256": "07dbfe561dd6ef214006f49c28a03154203d46255e2c7a387b8d153996504781",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 1,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              99,
+              5
+            ]
+          ]
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              0
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "loss",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              4
+            ],
+            "lost": 4,
+            "killed": 0,
+            "predictedCasualties": [
+              1
+            ],
+            "outcome": "survive",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            0
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            4
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "double-strike-large-blocker",
+      "fixture": {
+        "id": "double-strike-large-blocker",
+        "attack": [
+          "Hearthfire Hobgoblin"
+        ],
+        "block": [
+          "Ordinary Bear"
+        ],
+        "life": 4,
+        "blocks": 1
+      },
+      "setupSha256": "5b44640989aa4bb4ab3af0a27864fa69c5f046f5ae13a8f0b03f908ac1c5ed1c",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 1,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              99,
+              5
+            ]
+          ]
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              0
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "loss",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              4
+            ],
+            "lost": 0,
+            "killed": 6,
+            "predictedCasualties": [
+              0
+            ],
+            "outcome": "survive",
+            "score": 6,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            0
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            4
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "deathtouch-bad-trade",
+      "fixture": {
+        "id": "deathtouch-bad-trade",
+        "attack": [
+          "Feral Abomination"
+        ],
+        "block": [
+          "Ghalta, Primal Hunger"
+        ],
+        "life": 20,
+        "blocks": 0
+      },
+      "setupSha256": "61f49166e976e6f97c13b00b1a6e94dac879825c3dfd4f8ddba19893422ffc82",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 0,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": []
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              15
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "survive",
+            "score": -1,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              20
+            ],
+            "lost": 24,
+            "killed": 12,
+            "predictedCasualties": [
+              0,
+              1
+            ],
+            "outcome": "survive",
+            "score": -12,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            15
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            20
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "deathtouch-lifelink-trample",
+      "fixture": {
+        "id": "deathtouch-lifelink-trample",
+        "attack": [
+          "Ghalta, Primal Hunger"
+        ],
+        "block": [
+          "Gifted Aetherborn"
+        ],
+        "life": 10,
+        "blocks": 1
+      },
+      "setupSha256": "cb3c018c342b2c867f20412cf54e18ea670dd15293dba4ccf65a0a20738490ea",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 1,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              99,
+              5
+            ]
+          ]
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              -2
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "loss",
+            "score": -4.800000000000001,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              3
+            ],
+            "lost": 9,
+            "killed": 24,
+            "predictedCasualties": [
+              0,
+              1
+            ],
+            "outcome": "survive",
+            "score": 12.2,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            -2
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            3
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "AssignCombatDamage",
+                "data": {
+                  "mode": "Normal",
+                  "assignments": [
+                    [
+                      99,
+                      3
+                    ]
+                  ],
+                  "trample_damage": 9,
+                  "controller_damage": 0
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "marked-damage-bad-trade",
+      "fixture": {
+        "id": "marked-damage-bad-trade",
+        "attack": [
+          "Bear Cub"
+        ],
+        "block": [
+          "Ordinary Bear"
+        ],
+        "life": 20,
+        "marked": 3,
+        "blocks": 0
+      },
+      "setupSha256": "7751bd485154bff177ba51cc9029ce5933260c94f5d900816022c6513cd3e579",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 0,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": []
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              18
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "survive",
+            "score": -0.4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              20
+            ],
+            "lost": 9,
+            "killed": 4,
+            "predictedCasualties": [
+              0,
+              1
+            ],
+            "outcome": "survive",
+            "score": -5,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            18
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            20
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "toughness-vigilance-survival",
+      "fixture": {
+        "id": "toughness-vigilance-survival",
+        "attack": [
+          "Tapestry Warden"
+        ],
+        "block": [
+          "Bear Cub"
+        ],
+        "life": 4,
+        "blocks": 1,
+        "tappedBystander": true
+      },
+      "setupSha256": "e99bd6b4f33140858a5704b0005773a678aa71971839571027a23cd0d76f8c39",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 1,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              99,
+              6
+            ]
+          ]
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              0
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "loss",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              4
+            ],
+            "lost": 4,
+            "killed": 0,
+            "predictedCasualties": [
+              2
+            ],
+            "outcome": "survive",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            0
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            4
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      6
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "indestructible-trample",
+      "fixture": {
+        "id": "indestructible-trample",
+        "attack": [
+          "Ghalta, Primal Hunger"
+        ],
+        "block": [
+          "Darksteel Myr"
+        ],
+        "life": 12,
+        "blocks": 1
+      },
+      "setupSha256": "6eeb858e03920d6735409a47980a44852f6f02450c7ca4a257bfd8f21bc64f14",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 1,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              99,
+              5
+            ]
+          ]
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              0
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "loss",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              1
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "survive",
+            "score": -3.6666666666666665,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            0
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            1
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "AssignCombatDamage",
+                "data": {
+                  "mode": "Normal",
+                  "assignments": [
+                    [
+                      99,
+                      1
+                    ]
+                  ],
+                  "trample_damage": 11,
+                  "controller_damage": 0
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "flying-legal-blocks",
+      "fixture": {
+        "id": "flying-legal-blocks",
+        "attack": [
+          "Air Elemental"
+        ],
+        "block": [
+          "Bear Cub",
+          "Air Elemental"
+        ],
+        "life": 4,
+        "blocks": 1
+      },
+      "setupSha256": "6e58ed94be67909bb681ef4c9df2015099fafbc9ef80353fb45a0f0908fd97b8",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 1,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              99,
+              5
+            ]
+          ]
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              0
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "loss",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              4
+            ],
+            "lost": 10,
+            "killed": 10,
+            "predictedCasualties": [
+              0,
+              2
+            ],
+            "outcome": "survive",
+            "score": 0,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            0
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            4
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "multiple-blockers-uncertainty",
+      "fixture": {
+        "id": "multiple-blockers-uncertainty",
+        "attack": [
+          "Ordinary Bear"
+        ],
+        "block": [
+          "Bear Cub",
+          "Bear Cub"
+        ],
+        "life": 20,
+        "uncertainMulti": true
+      },
+      "setupSha256": "a6a1f8001d3fe03ce9421f8478b4e7c5570602246cabb99d5ad2c04d5fdecdbf",
+      "expansion": {
+        "added": 1,
+        "examined": 1,
+        "truncated": false
+      },
+      "selection": {
+        "index": 0,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": []
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              16
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "survive",
+            "score": -0.8,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              20
+            ],
+            "lost": 4,
+            "killed": 0,
+            "predictedCasualties": [
+              1
+            ],
+            "outcome": "survive",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 2,
+          "evaluation": {
+            "confidence": "supported-no-response-model",
+            "life": [
+              20,
+              20
+            ],
+            "lost": 4,
+            "killed": 0,
+            "predictedCasualties": [
+              2
+            ],
+            "outcome": "survive",
+            "score": -4,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 3,
+          "evaluation": {
+            "confidence": "estimate",
+            "life": [
+              20,
+              20
+            ],
+            "lost": 8,
+            "killed": 0,
+            "predictedCasualties": [
+              1,
+              2
+            ],
+            "outcome": "unknown",
+            "score": -8,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            16
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            20
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      76,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "previewValidated": true,
+          "life": [
+            20,
+            20
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "previewValidated": true,
+          "life": [
+            20,
+            20
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      76,
+                      5
+                    ],
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "AssignCombatDamage",
+                "data": {
+                  "mode": "Normal",
+                  "assignments": [
+                    [
+                      76,
+                      2
+                    ],
+                    [
+                      99,
+                      2
+                    ]
+                  ],
+                  "trample_damage": 0,
+                  "controller_damage": 0
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "public-trigger-uncertainty",
+      "fixture": {
+        "id": "public-trigger-uncertainty",
+        "attack": [
+          "Virulent Emissary"
+        ],
+        "block": [
+          "Ordinary Bear"
+        ],
+        "life": 20,
+        "uncertain": true
+      },
+      "setupSha256": "ae4eb70d1598e7dafad6726ed55b2100a24b6aff4af0e501df1ea02737cb550e",
+      "expansion": {
+        "added": 0,
+        "examined": 0,
+        "truncated": false
+      },
+      "selection": {
+        "index": 0,
+        "rng": 777
+      },
+      "action": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": []
+        }
+      },
+      "predictions": [
+        {
+          "index": 0,
+          "evaluation": {
+            "confidence": "estimate",
+            "life": [
+              20,
+              19
+            ],
+            "lost": 0,
+            "killed": 0,
+            "predictedCasualties": [],
+            "outcome": "unknown",
+            "score": -0.2,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        },
+        {
+          "index": 1,
+          "evaluation": {
+            "confidence": "estimate",
+            "life": [
+              20,
+              20
+            ],
+            "lost": 9,
+            "killed": 4,
+            "predictedCasualties": [
+              0,
+              1
+            ],
+            "outcome": "unknown",
+            "score": -5,
+            "assumption": "No intervening responses; engine remains authoritative."
+          }
+        }
+      ],
+      "workerAccepted": true,
+      "difficulties": [
+        "Medium",
+        "Easy",
+        "Hard"
+      ],
+      "witnesses": [
+        {
+          "index": 0,
+          "previewValidated": true,
+          "life": [
+            20,
+            19
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "previewValidated": true,
+          "life": [
+            20,
+            20
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    }
+  ],
+  "limits": "Engineered positions with unchanged compiled records. Combat predictions are conditional on no intervening responses; no universal rules/strategy guarantee.",
+  "counts": {
+    "PASS": 16,
+    "FAIL": 0
+  },
+  "sources": {
+    "cpu-public-observation.mjs": "2b609f5547ffe58d2a3252c40ca3e7a5bfc266700be3da4eb95f736c3a629ade",
+    "cpu-combat-evaluation.mjs": "55add787750ef735dd7890f12f4ebb7df14d74001b4ddbc5bd220953c5e53203",
+    "cpu-public-policy.mjs": "1ac7e3df4b19d2627aa4330c9c39b2b585514149b9ff8a74b7be575dff3aa316",
+    "cpu-survival-engine.mjs": "cb700436a858d5edbebcbbcb8e3b39dc4abf48defb9abfb9376b695d93dcc72e",
+    "cpu-test-runtime.mjs": "cb61a6e28ba5e119ea62ccf1f4b520e9360291648303e7f56ee62bb9be28e927"
+  },
+  "productionSources": {
+    "cpu-combat-evaluation.mjs": "55add787750ef735dd7890f12f4ebb7df14d74001b4ddbc5bd220953c5e53203",
+    "cpu-tactical-planning.mjs": "0430518b113200c2a6e8e3fda09280847b65712c5ed7fae305c5d4dd01b4149b",
+    "cpu-difficulty-config.mjs": "f0a9998c21b55ea2814a7e43f1be02eae41731859e9fd8205bfa70f3ff613715"
+  }
+}

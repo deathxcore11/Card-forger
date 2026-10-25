@@ -1,0 +1,107 @@
+{
+  "task": "SESSION-001 conservative authority gate",
+  "runtime": "a86578b23adcd26c",
+  "cases": [
+    {
+      "first": 0,
+      "status": "PASS",
+      "capability": {
+        "epoch": "flow-0",
+        "revision": 0,
+        "decisionId": "decision-0",
+        "actorSeat": 0,
+        "activeSeat": 0,
+        "prioritySeat": 0,
+        "phase": "Upkeep",
+        "mandatoryChoice": false,
+        "coverage": "unknown",
+        "meaningfulAction": null,
+        "manaWindow": null,
+        "passAvailable": false
+      },
+      "turnFlow": {
+        "version": 1,
+        "supported": true,
+        "capabilities": {
+          "smartPass": true,
+          "fullControl": true,
+          "temporaryYield": true,
+          "phaseStops": true
+        },
+        "epoch": "flow-0",
+        "revision": 0,
+        "decisionId": "decision-0",
+        "actorSeat": 0,
+        "activeSeat": 0,
+        "prioritySeat": 0,
+        "phase": "Upkeep",
+        "mandatoryChoice": false,
+        "coverage": "unknown",
+        "controlMode": "smart",
+        "temporaryYield": false,
+        "passState": "idle",
+        "stops": [],
+        "stopActive": false,
+        "reason": "coverage-unknown"
+      },
+      "stateSha256": "dcd23874c1580ef7c1ae1d5b44757ef8d8d6d3888d85078d58835a2ab84584c0",
+      "automaticPass": "AUTO_PASS_UNAVAILABLE",
+      "acceptedRevision": 0
+    },
+    {
+      "first": 1,
+      "status": "PASS",
+      "capability": {
+        "epoch": "flow-1",
+        "revision": 0,
+        "decisionId": "decision-0",
+        "actorSeat": 1,
+        "activeSeat": 1,
+        "prioritySeat": 1,
+        "phase": "Upkeep",
+        "mandatoryChoice": false,
+        "coverage": "unknown",
+        "meaningfulAction": null,
+        "manaWindow": null,
+        "passAvailable": false
+      },
+      "turnFlow": {
+        "version": 1,
+        "supported": true,
+        "capabilities": {
+          "smartPass": true,
+          "fullControl": true,
+          "temporaryYield": true,
+          "phaseStops": true
+        },
+        "epoch": "flow-1",
+        "revision": 0,
+        "decisionId": "decision-0",
+        "actorSeat": 1,
+        "activeSeat": 1,
+        "prioritySeat": 1,
+        "phase": "Upkeep",
+        "mandatoryChoice": false,
+        "coverage": "unknown",
+        "controlMode": "smart",
+        "temporaryYield": false,
+        "passState": "idle",
+        "stops": [],
+        "stopActive": false,
+        "reason": "not-human-priority"
+      },
+      "stateSha256": "b7456421acf3743d0feb075e62d0577585b438faab9dfcdbf29b784d1c2c9185",
+      "automaticPass": "AUTO_PASS_UNAVAILABLE",
+      "acceptedRevision": 0
+    }
+  ],
+  "limits": "Real engine/journal, small Vintage fixture, not complete action coverage, UI, Commander or recovery proof.",
+  "sources": {
+    "priority-flow.mjs": "5cad99977a1583c5f18ad17f87033bf9b30c41899858c962650e0b118d989912",
+    "match-session.mjs": "6f33af7e8c105e671fa74b78723ee5371475b2adac572759ce90b8191fbf9a0a",
+    "match-authority.mjs": "6c879da23e6801fa4a4e63687ad3250242e532da137efa0af430617d99c6b73f",
+    "worker-journal.mjs": "02ea0d053db86ce3f0838b0af1cea2d32dc41e781b00c0aef8c7b0e3afab2c86",
+    "practice-client.mjs": "ca80185145839cc92cf8d97a18301599ddd1a5a76934963b871a002a5224dc47",
+    "priority-flow-engine.mjs": "45c107668f3e9e802717d07523782e355964e96ff3ce35f3ebd529d2756f047c"
+  }
+}

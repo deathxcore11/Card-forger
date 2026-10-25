@@ -6,6 +6,18 @@ const object=(id,controller,power=12,toughness=12)=>({id,controller,owner:contro
 const actions=[{type:'DeclareBlockers',data:{assignments:[]}},{type:'DeclareBlockers',data:{assignments:[[2,1]]}}];
 function envelope(){return {state:{viewer_projection:1,players:[{life:20,hand:[7],library:[8]},{life:12,hand:[],library:[]}],objects:{1:object(1,0),2:object(2,1),7:{id:7,zone:'Hand',controller:0,get name(){throw Error('PRIVATE_HAND_READ');}},8:{id:8,zone:'Library',controller:0,get name(){throw Error('PRIVATE_LIBRARY_READ');}}},battlefield:[1,2],stack:[],combat:{attackers:[{object_id:1,attack_target:{type:'Player',data:1},defending_player:1,band_id:null}]},waiting_for:{type:'DeclareBlockers',data:{player:1,valid_block_targets:{2:[1]}}}}};}
 test('private identities, IDs, history and game RNG never reach policy',()=>{const e=envelope();e.state.private_save='SECRET_SAVE';e.state.rng_seed=113793;e.state.history=['SECRET_HAND'];const p=makeCpuObservation(e,1,actions);assert.doesNotMatch(JSON.stringify(p),/SECRET|113793|object_id|Public creature/);assert.equal(chooseCpu(p,123).index,1);});
+test('hidden-card substitutions and private RNG changes cannot alter any profile decision',()=>{
+ for(const difficulty of ['Easy','Medium','Hard']){
+  const a=envelope(),b=envelope();
+  a.state.rng_seed=1;b.state.rng_seed=98765;
+  a.state.objects[7]={id:7,zone:'Hand',controller:0,name:'Secret removal',power:99};
+  b.state.objects[7]={id:7,zone:'Hand',controller:0,name:'Secret land',power:0};
+  a.state.objects[8]={id:8,zone:'Library',controller:0,name:'Secret next draw'};
+  b.state.objects[8]={id:8,zone:'Library',controller:0,name:'Different secret draw'};
+  const pa=makeCpuObservation(a,1,actions,{difficulty}),pb=makeCpuObservation(b,1,actions,{difficulty});
+  assert.deepEqual(pa,pb);assert.deepEqual(chooseCpu(pa,123),chooseCpu(pb,123));
+ }
+});
 test('all untapped actual attackers are retained; tapped bystanders are excluded',()=>{const e=envelope();e.state.objects[3]={...object(3,0),tapped:true};e.state.battlefield.push(3);const p=makeCpuObservation(e,1,actions);assert.equal(p.combat.attackers.length,1);assert.equal(p.combat.objects[p.combat.attackers[0].object].tapped,false);});
 test('changing a defender to a public permanent does not invent player damage',()=>{const e=envelope();e.state.objects[3]={...object(3,1),card_types:{core_types:['Planeswalker']},power:null,toughness:null};e.state.battlefield.push(3);e.state.combat.attackers[0].attack_target={type:'Planeswalker',data:3};const p=makeCpuObservation(e,1,actions),r=rankBlockCandidates(p.combat);assert.equal(r[0].evaluation.life[1],12);});
 test('unknown protected and face-down public objects downgrade confidence',()=>{const e=envelope();e.state.objects[1].keywords=[{Protection:{Color:'Green'}}];let p=makeCpuObservation(e,1,actions);assert(rankBlockCandidates(p.combat).every(r=>r.evaluation.outcome==='unknown'));e.state.objects[1].face_down=true;e.state.objects[1].name='SECRET_FRONT';p=makeCpuObservation(e,1,actions);assert.doesNotMatch(JSON.stringify(p),/SECRET_FRONT/);assert(rankBlockCandidates(p.combat).every(r=>r.evaluation.outcome==='unknown'));});

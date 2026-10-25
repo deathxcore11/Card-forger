@@ -1,0 +1,5687 @@
+{
+  "task": "CPU-004 isolated stage profile",
+  "configuration": "cpu-config-v2",
+  "profiles": {
+    "Easy": {
+      "depth": 1,
+      "maxNodes": 24,
+      "maxReplies": 4,
+      "maxMs": 12,
+      "planWeight": 0,
+      "counterWeight": 0
+    },
+    "Medium": {
+      "depth": 2,
+      "maxNodes": 128,
+      "maxReplies": 24,
+      "maxMs": 30,
+      "planWeight": 1,
+      "counterWeight": 0.25
+    },
+    "Hard": {
+      "depth": 3,
+      "maxNodes": 512,
+      "maxReplies": 128,
+      "maxMs": 60,
+      "planWeight": 1.5,
+      "counterWeight": 0.8
+    }
+  },
+  "games": [
+    {
+      "deck": "starter",
+      "seed": 12345,
+      "levels": [
+        "Medium",
+        "Easy"
+      ],
+      "swapped": true,
+      "deckSha256": "a20d30ed0992ceb7075529569f901036ad8968deb357ea9c366e202a55161aba",
+      "decisions": 239,
+      "policyLatencyMs": {
+        "p50": 0.030025000000023283,
+        "p95": 0.6539080000002286,
+        "max": 6.788089999998192
+      },
+      "enumerationLatencyMs": {
+        "p50": 54.356195999997,
+        "p95": 209.03637000000163,
+        "max": 663.2219349999978
+      },
+      "nodes": 140,
+      "budgetExhaustions": 1,
+      "expandedBlocks": 0,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 224,
+        "DeclareAttackers": 8,
+        "DeclareBlockers": 5
+      },
+      "collectionStages": [
+        {
+          "decision": 0,
+          "turn": 1,
+          "waiting": "MulliganDecision",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 179.74185599999964,
+              "count": 4
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 37.45052099999975,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 1,
+          "turn": 1,
+          "waiting": "MulliganDecision",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 55.17518300000029,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 36.1313540000001,
+              "count": 2
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 26.944024000000354,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 2,
+          "turn": 1,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 43.892769000000044,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 27.728752000000895,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 3,
+          "turn": 1,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.4504799999995157,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 26.7919869999987,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.402812000000267,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 4,
+          "turn": 1,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 139.886856000001,
+              "count": 4
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 25.962001999998392,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 5,
+          "turn": 1,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 87.74198799999976,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 26.196759000000384,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 6,
+          "turn": 1,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.43106599999919126,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 17.780692000000272,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 21.73665600000095,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 7,
+          "turn": 1,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 19.274977000000945,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 33.08432999999968,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 8,
+          "turn": 1,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.39055000000007567,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 27.95653499999935,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 27.365555999998833,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 9,
+          "turn": 1,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 15.145774999999048,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 22.930857999999716,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 10,
+          "turn": 1,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6460860000006505,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 26.519140000000334,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 40.282508999998754,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 11,
+          "turn": 1,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 56.15984199999912,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 26.77790500000083,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 12,
+          "turn": 1,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.8466690000004746,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 24.866186999999627,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.393620999999257,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 13,
+          "turn": 1,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 18.336584000000585,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 34.65900200000033,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 14,
+          "turn": 1,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 2.6873859999996057,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 30.932762999998886,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 34.29360500000075,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 15,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6077740000000631,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 31.870372999999745,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 27.36880099999871,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 16,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 43.83085100000062,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 24.91336500000034,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 17,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.39905300000100397,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 10.977215000000797,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.466286000000764,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 18,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 16.401687999999922,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 19.235451000000467,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 19,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.7043410000005679,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 56.77185500000087,
+              "count": 3
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 19.683183999999528,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 20,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.48872299999857205,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 121.24174999999923,
+              "count": 2
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 20.051609999998618,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 21,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.41087700000025507,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 10.190818000000945,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 19.89519300000029,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 22,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 37.081365999998525,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.04326300000139,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 23,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.40831100000104925,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 29.616868999999497,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 21.70285100000001,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 24,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 22.21151099999952,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 23.077229999998963,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 25,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.5707970000003115,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 14.013591999999335,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 20.972004999999626,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 26,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 16.641410000000178,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 20.876702999999907,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 27,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 1.7868319999997766,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 14.74747600000046,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.881502000000182,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 28,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 18.642336999999316,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.88395599999967,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 29,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.5911919999998645,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 35.20874100000037,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 21.69898000000103,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 30,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 36.089530999999624,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 34.84625199999937,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 31,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 1.1020140000000538,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 20.41389700000036,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 41.3408640000016,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 32,
+          "turn": 2,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 33.59072300000116,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 32.47190799999953,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 33,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 16.27016100000037,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 26.691554000000906,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 34,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.5798329999997804,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 21.601935000000594,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 26.54413299999942,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 35,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 21.615577999999005,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 30.079365999999936,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 36,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6295629999985977,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 17.239901999999347,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 27.171433999999863,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 37,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 134.5549030000002,
+              "count": 3
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 30.710986000000048,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 38,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 106.63313199999902,
+              "count": 2
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 27.488741999999547,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 39,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 12.286099999999351,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 29.061639999999898,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 40,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 1.114582000000155,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 25.761175999999978,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 32.17229699999916,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 41,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 43.013441999999486,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 28.959359000000404,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 42,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 1.0850879999998142,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 19.364661000001433,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 30.38894800000162,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 43,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 22.32449799999995,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 80.78893900000003,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 44,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.7965129999993223,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 17.761875000000146,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 28.408206000000064,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 45,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 19.0458409999992,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 40.15105600000061,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 46,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 1.5942380000014964,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 20.01401000000078,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 29.842909999999392,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 47,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 43.234840999999506,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 25.81013499999972,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 48,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 1.0420650000014575,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 18.61478299999908,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 25.87943600000108,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 49,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 19.32248199999958,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 31.462429999999586,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 50,
+          "turn": 3,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.7905209999989893,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 24.117363999999725,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.320027000001573,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 51,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6921229999989009,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 13.95399499999985,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.68742099999872,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 52,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 26.880989999999656,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 24.660265999998956,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 53,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.7521629999992001,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 16.23507900000004,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.993039000000863,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 54,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 20.3017179999988,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 24.532648999998855,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 55,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.40546399999948335,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 127.9857860000011,
+              "count": 4
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.713541000000987,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 56,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.43105000000105065,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 165.19546599999921,
+              "count": 3
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 21.737105000000156,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 57,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.9640760000002047,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 11.125425000000178,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 28.847445999999763,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 58,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 19.744135000000824,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 29.07305500000075,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 59,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.8651780000000144,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 121.71529999999984,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 35.060795000001235,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 60,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 21.335791999999856,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 28.373184000000037,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 61,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.3454810000002908,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 17.356019000000742,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 25.700133000000278,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 62,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 30.52192500000092,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 27.955754999999044,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 63,
+          "turn": 4,
+          "waiting": "DeclareAttackers",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 19.538320999999996,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 44.20566400000098,
+              "count": 2
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.25334499999917,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 64,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6618979999984731,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 29.310256999999183,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 31.38676199999827,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 65,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 30.44941899999867,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.987672000001112,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 66,
+          "turn": 4,
+          "waiting": "DeclareBlockers",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 55.244001999999455,
+              "count": 2
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 36.566523999998026,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 67,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.38374199999816483,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 16.523635000001377,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 27.123367999996844,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 68,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 38.04820599999948,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 28.163626000001386,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 69,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.8802499999983411,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 21.87819799999852,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 25.56962299999941,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 70,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 24.415632000000187,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 29.919857999997475,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 71,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.3887699999977485,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 22.03742599999896,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 35.53377699999692,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 72,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 19.18405100000018,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 32.069297999998525,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 73,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.8406829999985348,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 41.47128100000191,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 35.73645900000338,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 74,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 21.81880000000092,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 56.52395500000057,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 75,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6292510000021139,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 26.519554999998945,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 45.36819299999843,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 76,
+          "turn": 4,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 59.698631999999634,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 29.357946000000084,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 77,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 74.89174400000047,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 51.666119999998045,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 78,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.8966319999999541,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 46.410540000000765,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 76.87408199999845,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 79,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 57.8736370000006,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 26.86037099999885,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 80,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.5118550000006508,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 16.75811000000249,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 33.969616000002134,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 81,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 463.6168429999998,
+              "count": 2
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 22.191439999998693,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 82,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 630.1723220000022,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 32.26555500000177,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 83,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.7488099999973201,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 18.48032299999977,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 31.3634349999993,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 84,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 75.38066700000127,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 24.970588000000134,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 85,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.7822779999987688,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 16.923885000000155,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 26.54290399999809,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 86,
+          "turn": 5,
+          "waiting": "DeclareAttackers",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 21.64289099999951,
+              "count": 2
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 34.342704999999114,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 87,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 100.26463500000318,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 25.208754999999655,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 88,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6205270000027667,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 17.056519999998272,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 25.700532999999268,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 89,
+          "turn": 5,
+          "waiting": "DeclareBlockers",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 6.416208999999071,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 10.898769999999786,
+              "count": 2
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.63517299999876,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 90,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 92.18009499999971,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 24.28702499999781,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 91,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.7194299999973737,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 21.12157500000103,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 26.82316599999831,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 92,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 74.14502199999697,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 25.115954999997484,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 93,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 1.1002859999971406,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 15.687316999999894,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 21.392777999997634,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 94,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 83.25794499999756,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 25.378557,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 95,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6438880000023346,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 14.2237810000006,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 25.43205300000045,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 96,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 602.878861000001,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 55.03675700000167,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 97,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6442979999992531,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 15.897260999998252,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 25.852684000001318,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 98,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 69.58473400000003,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 25.968786999997974,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 99,
+          "turn": 5,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6255639999981213,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 17.45580499999778,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.511269999999058,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 100,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.37035199999809265,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 11.402231000000029,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 31.906426000001375,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 101,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 69.79774700000053,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 26.101243999997678,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 102,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.8311260000009497,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 12.810585000002902,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 27.056867999999668,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 103,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 67.61113900000055,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 22.347350000000006,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 104,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.5031109999981709,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 97.69857100000081,
+              "count": 2
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.43626199999926,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 105,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.5813500000003842,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 13.477176000000327,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.599812000000384,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 106,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 111.34641699999702,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 26.46052199999758,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 107,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6799109999992652,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 522.1511160000009,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 35.49903800000175,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 108,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 78.42089100000157,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 26.62947499999791,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 109,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.531382000001031,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 69.34503899999982,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 28.87271099999998,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 110,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 75.70334499999808,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 26.29645900000105,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 111,
+          "turn": 6,
+          "waiting": "DeclareAttackers",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 19.729679000000033,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 28.648629999999685,
+              "count": 4
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 25.976456000000326,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 112,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.8490469999997003,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 24.551823000001605,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 36.81134200000088,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 113,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 80.05445899999904,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 38.241594999999506,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 114,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.665209999999206,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 19.005348999999114,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 32.27989600000001,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 115,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 81.70349899999928,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 23.37748300000021,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 116,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 1.143411000000924,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 20.220955000000686,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 28.3201939999999,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 117,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 76.5451920000014,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 25.955599000000802,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 118,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6603090000025986,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 17.751993000001676,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 34.8833719999966,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 119,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 77.49829500000124,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 24.90175399999862,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 120,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 1.124295000001439,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 51.4423429999988,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 39.91492199999993,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 121,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 67.82894999999917,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 27.5987810000006,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 122,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.7814319999997679,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 17.34369599999991,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 28.805567999999766,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 123,
+          "turn": 6,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 66.53520500000013,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 27.240185000002384,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 124,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 47.926117999999406,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 27.099444999999832,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 125,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.821976999999606,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 22.043392000003223,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 20.52655500000037,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 126,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 58.90441500000088,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 23.665326999998797,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 127,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.35040700000172365,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 20.14357999999993,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 20.61102800000299,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 128,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 571.2363049999985,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 23.867568999998184,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 129,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 1.7295709999998508,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 32.91878599999836,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 26.750065000000177,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 130,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 70.68134700000155,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.67464199999813,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 131,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.5447819999972126,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 18.185785000001488,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 20.832085999998526,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 132,
+          "turn": 7,
+          "waiting": "DeclareAttackers",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 17.025675999997475,
+              "count": 2
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 33.01638599999933,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 133,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 72.08410299999741,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 28.304284000001644,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 134,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6068489999997837,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 16.47497099999964,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 22.59889800000019,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 135,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 510.8344109999998,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 24.534042999999656,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 136,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.7509229999996023,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 19.70335100000011,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.072183000000223,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 137,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 70.47093600000153,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 24.32123599999977,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 138,
+          "turn": 7,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.39430799999900046,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 24.945700000000215,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.245990000003076,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 139,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6689560000013444,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 41.445221999998466,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 21.728532000000996,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 140,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 65.06906700000036,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 22.464696999999433,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 141,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 1.8184870000004594,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 46.12923100000262,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 27.289530000001832,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 142,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 75.18101200000092,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 23.814938000003167,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 143,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.5701399999998102,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 454.5514660000008,
+              "count": 2
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 28.324670000001788,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 144,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.38959500000055414,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 256.868814999998,
+              "count": 5
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.93440400000327,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 145,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.40672799999811104,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 11.35792699999729,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.81799499999761,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 146,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 78.19869499999913,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 37.874619000001985,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 147,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.8122800000019197,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 40.24136600000202,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.22719099999813,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 148,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 66.99497999999949,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 28.7224810000007,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 149,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.4728820000018459,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 14.589844999998604,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.73659300000145,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 150,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 66.04451500000141,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 26.330031000001327,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 151,
+          "turn": 8,
+          "waiting": "DeclareAttackers",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 15.473606999999902,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 30.34916499999963,
+              "count": 4
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 35.12941000000137,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 152,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.7241209999992861,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 17.60464100000172,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 30.001776000000973,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 153,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 69.6531750000031,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 25.554763000000094,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 154,
+          "turn": 8,
+          "waiting": "DeclareBlockers",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 20.171033999999054,
+              "count": 3
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 27.55951500000083,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 155,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6408540000011271,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 15.942333999999391,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.757415000000037,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 156,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 101.39585500000248,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 25.84357000000091,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 157,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6206219999985478,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 26.30240000000049,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 26.85026199999993,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 158,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 145.8037320000003,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 57.11315600000671,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 159,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6611489999995683,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 20.79377399999794,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 30.728375999999116,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 160,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 31.427676999999676,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 31.25190599999769,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 161,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.7155459999994491,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 46.35263699999632,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 28.999195999997028,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 162,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 30.625384000006306,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 33.44983900000079,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 163,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6508840000024065,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 18.919197000002896,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 31.49442899999849,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 164,
+          "turn": 8,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 31.944131000003836,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 29.755922999996983,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 165,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 14.563472000001639,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 28.845595999999205,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 166,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 1.4070219999994151,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 32.891811000001326,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.785582999997132,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 167,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 16.187652000000526,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 25.495211999994353,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 168,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.47827200000028824,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 28.40856299999723,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 37.95462299999781,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 169,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 167.05796900000132,
+              "count": 2
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 27.15122600000177,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 170,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 12.747730999995838,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 30.185450999997556,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 171,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.322571999997308,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 31.855854000001273,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 28.032451999999466,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 172,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 81.79971400000068,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 56.89277999999467,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 173,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.7478730000002543,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 19.288283000001684,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 32.26380000000063,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 174,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 31.294631999997364,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 27.85470599999826,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 175,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.8347460000004503,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 21.84040400000231,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 28.800144000000728,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 176,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 35.18749000000389,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 36.4587640000027,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 177,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.4914280000011786,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 23.35700199999701,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 29.87760800000251,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 178,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 86.72194199999649,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 29.80835500000103,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 179,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 1.604103000005125,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 17.80106800000067,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 25.325409999997646,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 180,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 26.15950700000394,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 31.46042199999647,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 181,
+          "turn": 9,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.47888699999748496,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 22.492675000001327,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 25.85141300000396,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 182,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.3158709999988787,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 68.80779199999961,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.816832999997132,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 183,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 26.28770500000246,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.722138999997696,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 184,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.3858799999943585,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 58.712404000005336,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 26.807285000002594,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 185,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 35.83891699999367,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 28.0762590000013,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 186,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.9849019999965094,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 302.82094900000084,
+              "count": 5
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 22.908604000003834,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 187,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.7139539999989211,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 26.687324999998964,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 26.472899000000325,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 188,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 19.987379999998666,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 26.123423999997613,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 189,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.4021489999940968,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 36.19102600000042,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 25.19325299999764,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 190,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 18.27832400000625,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 25.026043999998365,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 191,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 2.019677000003867,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 15.644712000001164,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 35.78518100000656,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 192,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 21.380598999996437,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 23.960391000000527,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 193,
+          "turn": 10,
+          "waiting": "DeclareAttackers",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 17.188490000000456,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 26.10738400000264,
+              "count": 4
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.808913000000757,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 194,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.3547400000024936,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 16.256350000003295,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.893380999994406,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 195,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 22.926768999997876,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.954931000000215,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 196,
+          "turn": 10,
+          "waiting": "DeclareBlockers",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 15.562988999998197,
+              "count": 2
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 24.678319999999076,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 197,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6990030000015395,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 16.22628799999802,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 25.63764999999694,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 198,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 25.591738000002806,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.01122000000032,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 199,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.5776279999990948,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 17.267767999997886,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 26.393479999998817,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 200,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 17.983428999999887,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 24.99440599999798,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 201,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.3179009999948903,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 15.461032999999588,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.04899600000499,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 202,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 19.05844700000307,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.531270999999833,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 203,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.37095599999884143,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 28.90971300000092,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.181459999999788,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 204,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 21.8445189999984,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 24.419201999997313,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 205,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.46745999999984633,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 13.775219000002835,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 21.897131999998237,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 206,
+          "turn": 10,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 23.218089000001783,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.79162200000428,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 207,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 20.260087000002386,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 27.938901999994414,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 208,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6930829999982961,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 24.687104999997246,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.23177299999952,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 209,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 19.22710299999744,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 23.917749000000185,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 210,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.3470729999971809,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 19.301371999994444,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 31.269905000001017,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 211,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 159.1960160000017,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 49.81608099999721,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 212,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6086339999965276,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 19.987747999999556,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 26.658990999996604,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 213,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 73.95865500000218,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 37.282265999994706,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 214,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.3772450000033132,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 14.494006000000809,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.884503000001132,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 215,
+          "turn": 11,
+          "waiting": "DeclareAttackers",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 15.53944099999353,
+              "count": 2
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.394838000000163,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 216,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 25.009744999995746,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 19.33815499999764,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 217,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.35810099999798695,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 14.961775999996462,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.527587000004132,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 218,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 122.40287499999977,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 23.25088500000129,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 219,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.5935109999991255,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 17.026977999994415,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 22.867170999998052,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 220,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 21.969528000001446,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.453629000003275,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 221,
+          "turn": 11,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.5492289999965578,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 19.424721000003046,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 21.745335999999952,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 222,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.4049730000042473,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 46.51328800000192,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 21.22888299999613,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 223,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 24.778057999996236,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.75985000000219,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 224,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.5658999999941443,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 45.51561100000254,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 21.1282779999965,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 225,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 22.348678999995172,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.771303000001353,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 226,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6279730000023847,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 268.4851289999933,
+              "count": 5
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 24.150197999995726,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 227,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.6153080000003683,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 11.446212999995623,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 21.83042099999875,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 228,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 33.48871400000644,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 21.251851000000897,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 229,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.4542299999957322,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 28.018089000004693,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 112.71814100000483,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 230,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 28.0277700000006,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 25.602359999997134,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 231,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.3531749999965541,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 14.370646000003035,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 22.00942799999757,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 232,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 24.172136000001046,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 20.974787999999535,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 233,
+          "turn": 12,
+          "waiting": "DeclareAttackers",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 38.12600000000384,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 51.19439399999828,
+              "count": 5
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 26.889218999996956,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 234,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.45414899999741465,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 18.5300289999941,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 28.15626400000474,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 235,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 24.042686000000685,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 24.589764999996987,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 236,
+          "turn": 12,
+          "waiting": "DeclareBlockers",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 29.24222700000246,
+              "count": 4
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 22.863046000005852,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 237,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 0.3233710000058636,
+              "count": 0
+            },
+            {
+              "actor": 1,
+              "stage": "engineLegal",
+              "ms": 17.291135999999824,
+              "count": 1
+            },
+            {
+              "actor": 1,
+              "stage": "cpuExpansion",
+              "ms": 23.306743000001006,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        },
+        {
+          "decision": 238,
+          "turn": 12,
+          "waiting": "Priority",
+          "stages": [
+            {
+              "actor": 0,
+              "stage": "engineLegal",
+              "ms": 123.15142399999604,
+              "count": 1
+            },
+            {
+              "actor": 0,
+              "stage": "cpuExpansion",
+              "ms": 27.454868000000715,
+              "previews": 0,
+              "added": 0
+            }
+          ]
+        }
+      ],
+      "winner": 1,
+      "turn": 12,
+      "status": "COMPLETE",
+      "traceSha256": "37d7e94376ed8a516710350b18aa4a49cc67c5f153135f3aac8f28d61bed9798",
+      "tail": [
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  81,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  107,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ],
+                [
+                  115,
+                  {
+                    "type": "Player",
+                    "data": 0
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  24,
+                  115
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          }
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Small deterministic samples; no statistical proof of difficulty ordering.",
+    "Identical decks within each game; paired seeds swap policy seats, first player stays seat 0.",
+    "Direct policy calls with real engine validation; worker separately exercised by tactical tests.",
+    "Latency is this Node host, not signed-in browser/mobile performance.",
+    "No reload recovery or owner account test."
+  ],
+  "execution": {
+    "offset": 1,
+    "shard": 0,
+    "shards": 16
+  },
+  "counts": {
+    "complete": 1,
+    "errors": 0,
+    "limits": 0
+  },
+  "sources": {
+    "cpu-public-observation.mjs": "2b609f5547ffe58d2a3252c40ca3e7a5bfc266700be3da4eb95f736c3a629ade",
+    "cpu-combat-evaluation.mjs": "85c366be13c77ebb05f3107d44761153b7f23685ee299a2355d79e90a5ac399e",
+    "cpu-public-policy.mjs": "1ac7e3df4b19d2627aa4330c9c39b2b585514149b9ff8a74b7be575dff3aa316",
+    "cpu-difficulty-config.mjs": "339d7376b1de0aa512dcb93a0cb7fbf206ffa5f4b5b9d1fa71b7015a558f6b97",
+    "cpu-playbook.mjs": "b6e1c38dccbe79ba87a0fe4ea73037ac7960862c3d77ccc2d08a6ec5cbe9be2c",
+    "cpu-hand-observation.mjs": "601144c3beea2d095620c27de2e27958b305bf59471da3ee8e7a49e057a25efd",
+    "cpu-tactical-planning.mjs": "39ddcf4fb1a9cfdd33c6c69d27575ac2794e1cb08b7bbb48d7ee2aa8f4bfcc01",
+    "cpu-legal-candidates.mjs": "3ac18bf8a3b0fd0d7337ee58cf49b80f05db3d3a6f7e13205b55b513daf16c24",
+    "cpu-stage-match-engine.mjs": "f3ba361c06825f03bbea4e9af864ff4b54d472dd7601a29c2a152e84af52f67f",
+    "cpu-block-search.mjs": "167c87c1521c43df4e88303e70b6287da373108d94f1fee8d1b65e8188c3ce66"
+  }
+}

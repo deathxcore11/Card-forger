@@ -1,0 +1,13 @@
+{
+  "task": "combined CPU/UI/session dependency checks",
+  "counts": {
+    "tests": 396,
+    "pass": 396,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "command": "node --test --test-reporter=tap experiments/phase-engine/test-*.mjs test-play-*.mjs",
+  "tapSha256": "17837d05718acb4b20480fe50180a5064d897f5c7525aa22ef31b821de147449",
+  "limits": "Node unit/synthetic checks; not a full-match or deployment receipt."
+}

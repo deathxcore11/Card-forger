@@ -1,0 +1,20 @@
+{
+  "kind": "Assertions over captured real-engine browser fixture evidence",
+  "passed": true,
+  "checks": {
+    "draftsStayedAtRevisionZero": true,
+    "selectionChangeAndClearObserved": true,
+    "exactlyOneBlockSubmission": true,
+    "acceptedDamagePhase": true,
+    "lifeFrom20To13": true,
+    "bearSurvivesWithTwoDamage": true,
+    "cubAndElvesDied": true,
+    "vigilantAttackerStayedUntapped": true
+  },
+  "limitations": [
+    "Engineered initial position",
+    "Scripted pass-only opponent",
+    "Not full match or production CPU",
+    "Not Commander, account or recovery evidence"
+  ]
+}

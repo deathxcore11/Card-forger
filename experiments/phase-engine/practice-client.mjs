@@ -20,7 +20,7 @@ export function connectPractice({ownerId,match,input,resume=false,sessionOnly=fa
  worker.onerror=()=>close();worker.onmessageerror=()=>close();
  function send(message){return new Promise((resolve,reject)=>{
   if(!isCurrent()){close('ACCOUNT_CHANGED');return reject(Error('ACCOUNT_CHANGED'));}if(closed)return reject(Error('WORKER_CLOSED'));if(pending.has(message.id))return reject(Error('REQUEST_PENDING'));
-  const mutates=['create','step','respond','tick','act'].includes(message.op),timer=setTimeout(()=>{pending.delete(message.id);reject(Error(mutates?'OUTCOME_UNKNOWN':'WORKER_TIMEOUT'));close();},message.op==='bind'?bootTimeout:timeout);
+ const mutates=['create','step','respond','tick','act','autoPass'].includes(message.op),timer=setTimeout(()=>{pending.delete(message.id);reject(Error(mutates?'OUTCOME_UNKNOWN':'WORKER_TIMEOUT'));close();},message.op==='bind'?bootTimeout:timeout);
   pending.set(message.id,{resolve,reject,timer,mutates});try{worker.postMessage({...message,v:1,epoch});}catch{clearTimeout(timer);pending.delete(message.id);reject(Error('REQUEST_NOT_SENT'));}
  });}
  const ready=send({id:'bind',op:'bind',ownerId,match,operation:resume?'resume':'create',sessionOnly,...(!resume?{input}:{})});

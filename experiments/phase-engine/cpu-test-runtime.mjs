@@ -18,7 +18,7 @@ const wasm=gunzipSync(compressed);assert.equal(wasm.length,RUNTIME_IDENTITY.wasm
 const glue=await readFile(new URL('engine_wasm.js',runtime));assert.equal(sha(glue),RUNTIME_IDENTITY.glueSha256);
 const rules=await readFile(new URL('card-rules.bin',runtime));assert.equal(sha(rules),RULES_IDENTITY.sha256);
 const decoded=gunzipSync(rules);assert.equal(sha(decoded),RULES_IDENTITY.decodedSha256);
-const catalog=JSON.parse(decoded),names=['Forest','Bear Cub','Ordinary Bear','Ghalta, Primal Hunger','Tapestry Warden','Knight of Dawn','Hearthfire Hobgoblin','Feral Abomination','Gifted Aetherborn','Darksteel Myr','Air Elemental','Virulent Emissary'];
+const catalog=JSON.parse(decoded),names=['Forest','Bear Cub','Ordinary Bear','Ghalta, Primal Hunger','Tapestry Warden','Knight of Dawn','Hearthfire Hobgoblin','Feral Abomination','Gifted Aetherborn','Darksteel Myr','Air Elemental','Virulent Emissary','Llanowar Elves','Lashwhip Predator','Tarmogoyf','Scarecrow Guide'];
 const subset=Object.fromEntries(names.map(name=>{assert(catalog[name.toLowerCase()]);return [name.toLowerCase(),catalog[name.toLowerCase()]];}));
 let networkCalls=0;globalThis.fetch=async()=>{networkCalls++;throw Error('CPU acceptance forbids network');};
 export const e=await import(new URL('engine_wasm.js',runtime));await e.default({module_or_path:wasm});assert.equal(e.load_card_database(JSON.stringify(subset)),names.length);

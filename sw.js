@@ -1,5 +1,11 @@
 const CACHE = "cardforge-shell-v319-magic-practice-beta";
 const ASSETS = [
+  "./experiments/phase-engine/priority-flow.mjs",
+  "./experiments/phase-engine/cpu-block-search.mjs",
+  "./experiments/phase-engine/cpu-difficulty-config.mjs",
+  "./experiments/phase-engine/cpu-hand-observation.mjs",
+  "./experiments/phase-engine/cpu-playbook.mjs",
+  "./experiments/phase-engine/cpu-tactical-planning.mjs",
   "./experiments/phase-engine/cpu-public-observation.mjs",
   "./experiments/phase-engine/cpu-combat-evaluation.mjs",
   "./experiments/phase-engine/cpu-public-policy.mjs",

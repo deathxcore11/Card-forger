@@ -2,11 +2,16 @@
 // No engine adoption, general card coverage or calibrated difficulty claim.
 import {validInteractionText,validInteractionRelations,validDamageAssignments} from './interaction-surface.mjs';
 import {createPriorityScheduler} from './priority-scheduler.mjs';
+import {createPriorityFlow} from './priority-flow.mjs';
 export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.randomUUID(),schedulerOptions={},maxCpuCommands=2000}={}){
  if(!client||typeof client.request!=='function'||typeof onChange!=='function'||!Number.isSafeInteger(maxCpuCommands)||maxCpuCommands<1||maxCpuCommands>20000)throw Error('BAD_SESSION_OPTIONS');
  let status=null,selected=null,pending=null,error=null,closed=false,busy=false,cpuCommands=0,clock=null;
- const snapshot=()=>structuredClone({status,selected,pending,error,busy,clock,cpuCommands});
- const publish=()=>{if(!closed)onChange(snapshot());};
+ const flow=createPriorityFlow({read:()=>({status,pending,error,busy}),onChange:()=>publish(),onError:()=>{error='RECOVERY_REQUIRED';publish();},dispatch:async binding=>{
+  if(closed||status?.revision!==binding.revision||status?.priorityCapability?.epoch!==binding.epoch||status?.priorityCapability?.decisionId!==binding.decisionId)return;
+  await command('autoPass',{decisionId:binding.decisionId});
+ }});
+ const snapshot=()=>structuredClone({status,selected,pending,error,busy,clock,cpuCommands,turnFlow:flow.snapshot()});
+ const publish=()=>{if(!closed){flow.reconcile();onChange(snapshot());}};
  function accept(next){
   if(!Number.isSafeInteger(next?.revision)||!next.surface||!Array.isArray(next.surface.cards))throw Error('INVALID_MATCH_STATUS');
   if(status&&next.revision<status.revision)throw Error('STALE_MATCH_STATUS');
@@ -60,6 +65,10 @@ export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.rand
  });
  return {
   snapshot,
+  setControlMode:mode=>flow.setControlMode(mode),
+  yieldUntilAction:()=>flow.yieldUntilAction(),
+  cancelYield:()=>flow.cancelYield(),
+  setPhaseStop:(activeSeat,phase,enabled)=>flow.setPhaseStop(activeSeat,phase,enabled),
   async open({resume=false,seed=12345,first=0}={}){
    if(status||closed||busy)throw Error('ALREADY_OPEN');busy=true;publish();
    try{await request(resume?'resume':'create',resume?{}:{seed,first});await driveCpu();}
@@ -155,6 +164,6 @@ export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.rand
   },
   clearSelection(){pending=null;publish();}, // local draft only; never cancels a rules prompt
   async refresh(){if(closed||busy||error)return;busy=true;timer.stop();try{await request('status');await driveCpu();}catch{error='RECOVERY_REQUIRED';}finally{busy=false;publish();if(!error)await timer.start();}},
-  close(){closed=true;timer.stop();client.close();}
+  close(){closed=true;flow.close();timer.stop();client.close();}
  };
 }

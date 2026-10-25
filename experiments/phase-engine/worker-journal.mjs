@@ -5,12 +5,15 @@ import {humanCommand} from './human-command.mjs';
 import {interactionSubmission} from './interaction-surface.mjs';
 import {Fault,fail} from './protocol-fault.mjs';
 import {appendRandomOutcomes,validOutcomeTimeline} from './random-outcomes.mjs';
+import {FLOW_PHASES} from './priority-flow.mjs';
 export {Fault,fail} from './protocol-fault.mjs';
 export function packet(m) {
- if(!m||typeof m!=='object'||Array.isArray(m)||Object.keys(m).some(k=>!['v','epoch','id','op','revision','seed','first','choice','submission','command'].includes(k)))fail('BAD_REQUEST');
- if(typeof m.id!=='string'||typeof m.epoch!=='string'||m.v!==1||!['create','resume','status','step','respond','tick','act'].includes(m.op)||!/^[-\w]{1,80}$/.test(m.id||'')||!/^[-\w]{1,80}$/.test(m.epoch||''))fail('BAD_REQUEST');
+ if(!m||typeof m!=='object'||Array.isArray(m)||Object.keys(m).some(k=>!['v','epoch','id','op','revision','seed','first','choice','submission','command','decisionId'].includes(k)))fail('BAD_REQUEST');
+ if(typeof m.id!=='string'||typeof m.epoch!=='string'||m.v!==1||!['create','resume','status','step','respond','tick','act','autoPass'].includes(m.op)||!/^[-\w]{1,80}$/.test(m.id||'')||!/^[-\w]{1,80}$/.test(m.epoch||''))fail('BAD_REQUEST');
  if(m.op==='create'&&(!Number.isInteger(m.seed)||m.seed<0||m.seed>0xffffffff||![0,1].includes(m.first)))fail('BAD_REQUEST');
- if(['step','respond','tick','act'].includes(m.op)&&(!Number.isSafeInteger(m.revision)||m.revision<0))fail('BAD_REQUEST');
+ if(['step','respond','tick','act','autoPass'].includes(m.op)&&(!Number.isSafeInteger(m.revision)||m.revision<0))fail('BAD_REQUEST');
+ if(m.op==='autoPass'){if(typeof m.decisionId!=='string'||!/^[-\w]{1,80}$/.test(m.decisionId))fail('BAD_REQUEST');}
+ else if(Object.hasOwn(m,'decisionId'))fail('BAD_REQUEST');
  if(Object.hasOwn(m,'choice')&&(m.op!=='step'||typeof m.choice!=='string'||m.choice.length<1||m.choice.length>160||/[\u0000-\u001f\u007f]/.test(m.choice)))fail('BAD_REQUEST');
  if(m.op==='act')humanCommand(m.command);
  else if(Object.hasOwn(m,'command'))fail('BAD_REQUEST');
@@ -37,8 +40,8 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null,t
  let current=null,queue=Promise.resolve(),poisoned=false,projection=null;
  // Only this serialized authority mutates the engine. Reuse its seat projection
  // between accepted actions; countdown reads still inspect the live clock.
- const view=revision=>{if(!projection||projection.revision!==revision)projection={revision,value:engine.summary(revision)};return projection.value;};
- const fingerprint=m=>{const parts=[m.op,m.revision??null,m.seed??null,m.first??null];if(m.choice!==undefined)parts.push(m.choice);if(m.submission!==undefined)parts.push(interactionSubmission(m.submission));if(m.command!==undefined)parts.push(humanCommand(m.command));return JSON.stringify(parts);};
+ const view=revision=>{if(!projection||projection.revision!==revision){const value=engine.summary(revision);if(!value.priorityCapability&&typeof engine.priorityCapability==='function')value.priorityCapability=engine.priorityCapability(revision);projection={revision,value};}return projection.value;};
+ const fingerprint=m=>{const parts=[m.op,m.revision??null,m.seed??null,m.first??null];if(m.decisionId!==undefined)parts.push(m.decisionId);if(m.choice!==undefined)parts.push(m.choice);if(m.submission!==undefined)parts.push(interactionSubmission(m.submission));if(m.command!==undefined)parts.push(humanCommand(m.command));return JSON.stringify(parts);};
  const clockContext=revision=>({...engine.clockContext(revision),matchId:timing.matchId,revision});
  const makeClock=saved=>createPriorityClock({...timing,saved});
  const armClock=(revision,saved=null)=>{const c=makeClock(saved);if(c.arm(clockContext(revision)).state==='stale-clock')fail('CLOCK_CONTEXT_MISMATCH');return c;};
@@ -92,6 +95,12 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null,t
   if(expireTurn()){
    // A late input cannot revive an expired budget. The concession still goes
    // through the actual engine and this same idempotent journal command.
+  }else if(m.op==='autoPass'){
+   // Recompute under the mutation queue. Cached UI facts never authorize a pass.
+   const c=engine.priorityCapability?.(current.revision);
+   if(engine.humanSeat!==0||!c||c.epoch!==epoch||c.revision!==current.revision||c.decisionId!==m.decisionId||c.actorSeat!==0||c.prioritySeat!==0||c.mandatoryChoice!==false||c.coverage!=='complete'||c.meaningfulAction!==false||c.manaWindow!==false||c.passAvailable!==true||![0,1].includes(c.activeSeat)||!FLOW_PHASES.includes(c.phase))fail('AUTO_PASS_UNAVAILABLE');
+   const fresh=legalNow();actor=fresh.actor;action=fresh.actions?.find(a=>a.type==='PassPriority');
+   if(actor!==0||!action)fail('AUTO_PASS_UNAVAILABLE');
   }else if(m.op==='tick'){
    if(!timing)fail('TIMER_UNAVAILABLE');
    const legal=legalNow(),ctx=clockContext(current.revision);
@@ -132,7 +141,7 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null,t
     history:[...current.history,{actor,action}],engine:engine.save(),receipts:{...current.receipts},...nextOutcomes(current.revision+1)};
    const nextClock=timing?armClock(next.revision,current.clock):null;
    if(timing)next.clock=nextClock.snapshot();
-   observeTurn(next.revision,actor===0&&m.op!=='tick'&&!timedForfeit);
+   observeTurn(next.revision,actor===0&&m.op!=='tick'&&m.op!=='autoPass'&&!timedForfeit);
    const response={...view(next.revision),revision:next.revision,...outcomeSummary(next.outcomes),...clockSummary(next.revision,nextClock),...turnSummary(next.revision)};
    Object.defineProperty(next.receipts,m.id,{value:{fingerprint:fp,response},enumerable:true,writable:true,configurable:true});
    // Compare-and-write prevents a second tab/worker overwriting this match.

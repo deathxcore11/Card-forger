@@ -1,0 +1,40 @@
+{
+  "task": "CPU-005 enablement",
+  "cases": [
+    {
+      "name": "preflight accepts each implemented beta tier",
+      "status": "PASS"
+    },
+    {
+      "name": "unknown difficulty is rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "both-seat unsupported deck guard remains",
+      "status": "PASS"
+    },
+    {
+      "name": "account and mode guards remain",
+      "status": "PASS"
+    },
+    {
+      "name": "two-card plan survives selected-difficulty forwarding",
+      "status": "PASS"
+    },
+    {
+      "name": "three-card plan survives selected-difficulty forwarding",
+      "status": "PASS"
+    }
+  ],
+  "layer": "Pure preflight and synthetic authority-to-real-policy routing; not a signed-in browser match",
+  "sources": {
+    "play-menu.js": "af8a6d7e8c3ce5b6ddbb58a4f05a6289bc9dd9d98da14c9124788c00c201b468",
+    "experiments/phase-engine/practice-preflight.mjs": "c94a0807c9561e08315fe0bfd4cb21416b7be032e414f8b1bcea59408e6b2df4",
+    "experiments/phase-engine/practice-authority.mjs": "45acfaf6042a0b276041f34e63bf69b0a91c93a31b6f3f2ba4b765d564cf7333",
+    "experiments/phase-engine/match-authority.mjs": "e6658d6e832f797d1ad87b35dc2456fe2d80e1a7a61bf717fec491f00a78c19c"
+  },
+  "counts": {
+    "PASS": 6,
+    "FAIL": 0
+  }
+}

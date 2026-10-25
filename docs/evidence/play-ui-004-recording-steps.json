@@ -1,0 +1,33 @@
+{
+  "kind": "Stepped capture of actual browser interactions; 2.5 seconds per captured state. Not continuous real-time footage.",
+  "steps": [
+    {
+      "frame": "02.jpg",
+      "label": "Choose blockers: no assignments"
+    },
+    {
+      "frame": "03.jpg",
+      "label": "Select Ordinary Bear: legal attackers highlighted"
+    },
+    {
+      "frame": "05.jpg",
+      "label": "Change private assignment from Lashwhip Predator to Bear Cub"
+    },
+    {
+      "frame": "06.jpg",
+      "label": "Clear tentative blocks: engine revision unchanged"
+    },
+    {
+      "frame": "07.jpg",
+      "label": "Two tentative pairs: Bear to Cub, Elves to Warden"
+    },
+    {
+      "frame": "09.jpg",
+      "label": "Accepted once: next human priority window"
+    },
+    {
+      "frame": "10.jpg",
+      "label": "Combat resolved: life 20 to 13; Bear survives; Cub and Elves die"
+    }
+  ]
+}

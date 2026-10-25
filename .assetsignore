@@ -118,3 +118,9 @@ experiments/phase-engine/*
 !experiments/phase-engine/runtime/
 experiments/phase-engine/runtime/*
 !experiments/phase-engine/runtime/a86578b23adcd26c/
+!experiments/phase-engine/cpu-block-search.mjs
+!experiments/phase-engine/cpu-difficulty-config.mjs
+!experiments/phase-engine/cpu-hand-observation.mjs
+!experiments/phase-engine/cpu-playbook.mjs
+!experiments/phase-engine/cpu-tactical-planning.mjs
+!experiments/phase-engine/priority-flow.mjs

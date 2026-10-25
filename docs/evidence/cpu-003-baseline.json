@@ -1,0 +1,1894 @@
+{
+  "task": "CPU-001 regression / CPU-002",
+  "baseCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+  "testedCommit": null,
+  "policyVersion": "public-cpu-v1",
+  "legacyPolicyVersion": "visible-tactics-v2",
+  "runtimeSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+  "sourceSha256": "f3532b473d5de809ef3b631dc7c269fcd9422b05b177f210c711cbf935066617",
+  "policySha256": "755897085ee4e42cf0fa94b6f37a68187ba111f69c2f54c629ec249f4c02dfe5",
+  "projectionSha256": "70176fb74d5eff9d023a406587aeb433e25fbda30dfd25dea836d0e0b4fb4f94",
+  "node": "v24.22.1",
+  "cases": [
+    {
+      "id": "CPU-001-A",
+      "name": "CPU blocks lethal Ghalta attack",
+      "layer": "engine + CPU policy",
+      "expected": "Choose the generated block, trade creatures, remain alive at 12 life.",
+      "start": {
+        "seed": 12345,
+        "cpuSeat": 1,
+        "cpuLife": 12,
+        "attacker": "Ghalta, Primal Hunger",
+        "blocker": "Ghalta, Primal Hunger",
+        "setupSha256": "f531a9b70d63ee1ddf22cedc20d425a85d0f4a6bf3f44c342fcea39545dd24d6"
+      },
+      "packet": {
+        "version": "public-cpu-v1",
+        "difficulty": "Medium",
+        "legacy": {
+          "version": "visible-tactics-v2",
+          "ownLife": 12,
+          "opponentLife": 20,
+          "ownBattlefield": [
+            {
+              "power": 12,
+              "toughness": 12,
+              "damage": 0,
+              "tapped": false,
+              "keywords": [
+                "Trample"
+              ]
+            }
+          ],
+          "opponentBattlefield": [
+            {
+              "power": 12,
+              "toughness": 12,
+              "damage": 0,
+              "tapped": true,
+              "keywords": [
+                "Trample"
+              ]
+            }
+          ],
+          "choices": [
+            {
+              "kind": "block",
+              "blocks": []
+            },
+            {
+              "kind": "block",
+              "blocks": [
+                {
+                  "blocker": {
+                    "power": 12,
+                    "toughness": 12,
+                    "damage": 0,
+                    "tapped": false,
+                    "keywords": [
+                      "Trample"
+                    ]
+                  },
+                  "attacker": {
+                    "power": 12,
+                    "toughness": 12,
+                    "damage": 0,
+                    "tapped": true,
+                    "keywords": [
+                      "Trample"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "hand": {
+          "plan": "generic-material",
+          "planVersion": null,
+          "proposalAccepted": false,
+          "mana": 0,
+          "lands": 0,
+          "cards": [],
+          "castIndices": [
+            null,
+            null
+          ],
+          "discardIndices": [
+            null,
+            null
+          ]
+        },
+        "combat": {
+          "seat": 1,
+          "life": [
+            20,
+            12
+          ],
+          "objects": [
+            {
+              "known": true,
+              "controller": 0,
+              "creature": true,
+              "power": 12,
+              "toughness": 12,
+              "damage": 0,
+              "damageFromToughness": false,
+              "tapped": true,
+              "keywords": [
+                "Trample"
+              ],
+              "uncertain": false
+            },
+            {
+              "known": true,
+              "controller": 1,
+              "creature": true,
+              "power": 12,
+              "toughness": 12,
+              "damage": 0,
+              "damageFromToughness": false,
+              "tapped": false,
+              "keywords": [
+                "Trample"
+              ],
+              "uncertain": false
+            }
+          ],
+          "attackers": [
+            {
+              "object": 0,
+              "target": {
+                "kind": "player",
+                "seat": 1
+              },
+              "defendingSeat": 1,
+              "banded": false
+            }
+          ],
+          "legalBlocks": [
+            [
+              1,
+              0
+            ]
+          ],
+          "blockCandidates": [
+            [],
+            [
+              [
+                1,
+                0
+              ]
+            ]
+          ],
+          "attackCandidates": [
+            null,
+            null
+          ],
+          "decision": "DeclareBlockers",
+          "complete": true,
+          "uncertain": false
+        }
+      },
+      "proposal": {
+        "index": 1,
+        "rng": 777
+      },
+      "selectedAction": {
+        "type": "DeclareBlockers",
+        "data": {
+          "assignments": [
+            [
+              99,
+              5
+            ]
+          ]
+        }
+      },
+      "acceptedActions": [
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  5,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  99,
+                  5
+                ]
+              ]
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        }
+      ],
+      "actual": {
+        "life": [
+          20,
+          12
+        ],
+        "waiting": {
+          "data": {
+            "player": 0
+          },
+          "type": "Priority"
+        },
+        "phase": "PostCombatMain"
+      },
+      "alternative": {
+        "action": {
+          "type": "DeclareBlockers",
+          "data": {
+            "assignments": [
+              [
+                99,
+                5
+              ]
+            ]
+          }
+        },
+        "acceptedActions": [
+          {
+            "actor": 1,
+            "action": {
+              "type": "DeclareBlockers",
+              "data": {
+                "assignments": [
+                  [
+                    99,
+                    5
+                  ]
+                ]
+              }
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 0,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 1,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 0,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 1,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 0,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 1,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          }
+        ],
+        "life": [
+          20,
+          12
+        ],
+        "waiting": {
+          "data": {
+            "player": 0
+          },
+          "type": "Priority"
+        },
+        "attackerZone": "Graveyard",
+        "blockerZone": "Graveyard"
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "CPU-001-B",
+      "name": "CPU takes an unopposed Tapestry Warden attack",
+      "layer": "engine + CPU policy",
+      "expected": "Attack with Warden and deal its four toughness as damage.",
+      "start": {
+        "seed": 12345,
+        "cpuSeat": 0,
+        "attacker": "Tapestry Warden",
+        "opponentBattlefield": [],
+        "setupSha256": "089632ce863c9afdf0d8c957fd8f9f928506b0f38fbcc6b595d456b043e1f2db"
+      },
+      "packet": {
+        "version": "public-cpu-v1",
+        "difficulty": "Medium",
+        "legacy": {
+          "version": "visible-tactics-v2",
+          "ownLife": 20,
+          "opponentLife": 20,
+          "ownBattlefield": [
+            {
+              "power": 3,
+              "toughness": 4,
+              "damage": 0,
+              "tapped": false,
+              "keywords": [
+                "Vigilance"
+              ]
+            }
+          ],
+          "opponentBattlefield": [],
+          "choices": [
+            {
+              "kind": "attack",
+              "attackers": []
+            },
+            {
+              "kind": "attack",
+              "attackers": [
+                {
+                  "power": 3,
+                  "toughness": 4,
+                  "damage": 0,
+                  "tapped": false,
+                  "keywords": [
+                    "Vigilance"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "hand": {
+          "plan": "generic-material",
+          "planVersion": null,
+          "proposalAccepted": false,
+          "mana": 0,
+          "lands": 0,
+          "cards": [],
+          "castIndices": [
+            null,
+            null
+          ],
+          "discardIndices": [
+            null,
+            null
+          ]
+        },
+        "combat": {
+          "seat": 0,
+          "life": [
+            20,
+            20
+          ],
+          "objects": [
+            {
+              "known": true,
+              "controller": 0,
+              "creature": true,
+              "power": 3,
+              "toughness": 4,
+              "damage": 0,
+              "damageFromToughness": true,
+              "tapped": false,
+              "keywords": [
+                "Vigilance"
+              ],
+              "uncertain": false
+            }
+          ],
+          "attackers": [],
+          "legalBlocks": [],
+          "blockCandidates": [
+            null,
+            null
+          ],
+          "attackCandidates": [
+            [],
+            [
+              {
+                "object": 0,
+                "target": {
+                  "kind": "player",
+                  "seat": 1
+                }
+              }
+            ]
+          ],
+          "decision": "DeclareAttackers",
+          "complete": true,
+          "uncertain": false
+        }
+      },
+      "proposal": {
+        "index": 1,
+        "rng": 777
+      },
+      "selectedAction": {
+        "type": "DeclareAttackers",
+        "data": {
+          "attacks": [
+            [
+              5,
+              {
+                "type": "Player",
+                "data": 1
+              }
+            ]
+          ],
+          "bands": []
+        }
+      },
+      "acceptedActions": [
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  5,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        }
+      ],
+      "actual": {
+        "life": [
+          20,
+          16
+        ],
+        "waiting": {
+          "data": {
+            "player": 0
+          },
+          "type": "Priority"
+        },
+        "phase": "PostCombatMain"
+      },
+      "alternative": {
+        "action": {
+          "type": "DeclareAttackers",
+          "data": {
+            "attacks": [
+              [
+                5,
+                {
+                  "type": "Player",
+                  "data": 1
+                }
+              ]
+            ],
+            "bands": []
+          }
+        },
+        "acceptedActions": [
+          {
+            "actor": 0,
+            "action": {
+              "type": "DeclareAttackers",
+              "data": {
+                "attacks": [
+                  [
+                    5,
+                    {
+                      "type": "Player",
+                      "data": 1
+                    }
+                  ]
+                ],
+                "bands": []
+              }
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 0,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 1,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 0,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 1,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 0,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 1,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 0,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          },
+          {
+            "actor": 1,
+            "action": {
+              "type": "PassPriority"
+            },
+            "generatedCandidate": true,
+            "acceptedByEngine": true
+          }
+        ],
+        "life": [
+          20,
+          16
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "CPU-001-C",
+      "name": "CPU develops a castable creature",
+      "layer": "engine + CPU policy",
+      "expected": "Choose and successfully resolve Bear Cub instead of passing.",
+      "start": {
+        "seed": 12345,
+        "cpuSeat": 0,
+        "hand": [
+          "Bear Cub"
+        ],
+        "untappedForests": 2,
+        "setupSha256": "0f12f2984a2c8d01901b569f25eac0f9ced854d5d587cfb56a1dd7a1abc60e8c"
+      },
+      "packet": {
+        "version": "public-cpu-v1",
+        "difficulty": "Medium",
+        "legacy": {
+          "version": "visible-tactics-v2",
+          "ownLife": 20,
+          "opponentLife": 20,
+          "ownBattlefield": [
+            {
+              "power": 0,
+              "toughness": 0,
+              "damage": 0,
+              "tapped": false,
+              "keywords": []
+            },
+            {
+              "power": 0,
+              "toughness": 0,
+              "damage": 0,
+              "tapped": false,
+              "keywords": []
+            }
+          ],
+          "opponentBattlefield": [],
+          "choices": [
+            {
+              "kind": "pass"
+            },
+            {
+              "kind": "cast",
+              "card": {
+                "power": 2,
+                "toughness": 2,
+                "damage": 0,
+                "tapped": false,
+                "keywords": []
+              },
+              "available": true
+            }
+          ]
+        },
+        "hand": {
+          "plan": "generic-material",
+          "planVersion": null,
+          "proposalAccepted": false,
+          "mana": 2,
+          "lands": 2,
+          "cards": [
+            {
+              "power": 2,
+              "toughness": 2,
+              "creature": true,
+              "land": false,
+              "instant": false,
+              "cost": {
+                "generic": 1,
+                "colored": 1,
+                "total": 2
+              },
+              "powerDiscount": false,
+              "toughnessEnabler": false,
+              "hasAbility": false,
+              "hasTriggers": false,
+              "keywords": []
+            }
+          ],
+          "castIndices": [
+            null,
+            0
+          ],
+          "discardIndices": [
+            null,
+            null
+          ]
+        },
+        "combat": {
+          "seat": 0,
+          "life": [
+            20,
+            20
+          ],
+          "objects": [
+            {
+              "known": true,
+              "controller": 0,
+              "creature": false,
+              "power": null,
+              "toughness": null,
+              "damage": 0,
+              "damageFromToughness": false,
+              "tapped": false,
+              "keywords": [],
+              "uncertain": false
+            },
+            {
+              "known": true,
+              "controller": 0,
+              "creature": false,
+              "power": null,
+              "toughness": null,
+              "damage": 0,
+              "damageFromToughness": false,
+              "tapped": false,
+              "keywords": [],
+              "uncertain": false
+            }
+          ],
+          "attackers": [],
+          "legalBlocks": [],
+          "blockCandidates": [
+            null,
+            null
+          ],
+          "attackCandidates": [
+            null,
+            null
+          ],
+          "decision": "Priority",
+          "complete": true,
+          "uncertain": false
+        }
+      },
+      "proposal": {
+        "index": 1,
+        "rng": 777
+      },
+      "selectedAction": {
+        "type": "CastSpell",
+        "data": {
+          "object_id": 5,
+          "card_id": 5,
+          "targets": [],
+          "payment_mode": {
+            "type": "Auto"
+          }
+        }
+      },
+      "acceptedActions": [
+        {
+          "actor": 0,
+          "action": {
+            "type": "CastSpell",
+            "data": {
+              "object_id": 5,
+              "card_id": 5,
+              "targets": [],
+              "payment_mode": {
+                "type": "Auto"
+              }
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        }
+      ],
+      "actual": {
+        "life": [
+          20,
+          20
+        ],
+        "waiting": {
+          "data": {
+            "player": 0
+          },
+          "type": "Priority"
+        },
+        "phase": "PreCombatMain"
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "CPU-001-D",
+      "name": "CPU attacks with an unopposed Bear Cub",
+      "layer": "engine + CPU policy",
+      "expected": "Choose attack and deal two combat damage.",
+      "start": {
+        "seed": 12345,
+        "cpuSeat": 0,
+        "attacker": "Bear Cub",
+        "opponentBattlefield": [],
+        "setupSha256": "d4e5a029424e79033b293fdc1f13307af366deb96d3260ea46232b785c465f02"
+      },
+      "packet": {
+        "version": "public-cpu-v1",
+        "difficulty": "Medium",
+        "legacy": {
+          "version": "visible-tactics-v2",
+          "ownLife": 20,
+          "opponentLife": 20,
+          "ownBattlefield": [
+            {
+              "power": 2,
+              "toughness": 2,
+              "damage": 0,
+              "tapped": false,
+              "keywords": []
+            }
+          ],
+          "opponentBattlefield": [],
+          "choices": [
+            {
+              "kind": "attack",
+              "attackers": []
+            },
+            {
+              "kind": "attack",
+              "attackers": [
+                {
+                  "power": 2,
+                  "toughness": 2,
+                  "damage": 0,
+                  "tapped": false,
+                  "keywords": []
+                }
+              ]
+            }
+          ]
+        },
+        "hand": {
+          "plan": "generic-material",
+          "planVersion": null,
+          "proposalAccepted": false,
+          "mana": 0,
+          "lands": 0,
+          "cards": [],
+          "castIndices": [
+            null,
+            null
+          ],
+          "discardIndices": [
+            null,
+            null
+          ]
+        },
+        "combat": {
+          "seat": 0,
+          "life": [
+            20,
+            20
+          ],
+          "objects": [
+            {
+              "known": true,
+              "controller": 0,
+              "creature": true,
+              "power": 2,
+              "toughness": 2,
+              "damage": 0,
+              "damageFromToughness": false,
+              "tapped": false,
+              "keywords": [],
+              "uncertain": false
+            }
+          ],
+          "attackers": [],
+          "legalBlocks": [],
+          "blockCandidates": [
+            null,
+            null
+          ],
+          "attackCandidates": [
+            [],
+            [
+              {
+                "object": 0,
+                "target": {
+                  "kind": "player",
+                  "seat": 1
+                }
+              }
+            ]
+          ],
+          "decision": "DeclareAttackers",
+          "complete": true,
+          "uncertain": false
+        }
+      },
+      "proposal": {
+        "index": 1,
+        "rng": 777
+      },
+      "selectedAction": {
+        "type": "DeclareAttackers",
+        "data": {
+          "attacks": [
+            [
+              5,
+              {
+                "type": "Player",
+                "data": 1
+              }
+            ]
+          ],
+          "bands": []
+        }
+      },
+      "acceptedActions": [
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  5,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        }
+      ],
+      "actual": {
+        "life": [
+          20,
+          18
+        ],
+        "waiting": {
+          "data": {
+            "player": 0
+          },
+          "type": "Priority"
+        },
+        "phase": "PostCombatMain"
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "CPU-001-E",
+      "name": "Hidden world changes do not change CPU packet or decision",
+      "layer": "engine + CPU policy",
+      "expected": "Identical packet, selected action and policy RNG after changing opponent hand identity and both private library orders.",
+      "start": {
+        "seed": 12345,
+        "cpuSeat": 1,
+        "opponentHandCount": 1,
+        "setupSha256": "24f09e771ff62cad62e715cae34c4a553371a9394d2ce2fb0eeee7dbcaa2ba67"
+      },
+      "actual": {
+        "hiddenChanges": {
+          "opponentHandBefore": "Bear Cub",
+          "opponentHandAfter": "Ordinary Bear",
+          "bothLibrariesReversed": true
+        },
+        "firstPacket": {
+          "version": "public-cpu-v1",
+          "difficulty": "Medium",
+          "legacy": {
+            "version": "visible-tactics-v2",
+            "ownLife": 20,
+            "opponentLife": 20,
+            "ownBattlefield": [
+              {
+                "power": 12,
+                "toughness": 12,
+                "damage": 0,
+                "tapped": false,
+                "keywords": [
+                  "Trample"
+                ]
+              }
+            ],
+            "opponentBattlefield": [
+              {
+                "power": 12,
+                "toughness": 12,
+                "damage": 0,
+                "tapped": true,
+                "keywords": [
+                  "Trample"
+                ]
+              }
+            ],
+            "choices": [
+              {
+                "kind": "block",
+                "blocks": []
+              },
+              {
+                "kind": "block",
+                "blocks": [
+                  {
+                    "blocker": {
+                      "power": 12,
+                      "toughness": 12,
+                      "damage": 0,
+                      "tapped": false,
+                      "keywords": [
+                        "Trample"
+                      ]
+                    },
+                    "attacker": {
+                      "power": 12,
+                      "toughness": 12,
+                      "damage": 0,
+                      "tapped": true,
+                      "keywords": [
+                        "Trample"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "hand": {
+            "plan": "generic-material",
+            "planVersion": null,
+            "proposalAccepted": false,
+            "mana": 0,
+            "lands": 0,
+            "cards": [],
+            "castIndices": [
+              null,
+              null
+            ],
+            "discardIndices": [
+              null,
+              null
+            ]
+          },
+          "combat": {
+            "seat": 1,
+            "life": [
+              20,
+              20
+            ],
+            "objects": [
+              {
+                "known": true,
+                "controller": 0,
+                "creature": true,
+                "power": 12,
+                "toughness": 12,
+                "damage": 0,
+                "damageFromToughness": false,
+                "tapped": true,
+                "keywords": [
+                  "Trample"
+                ],
+                "uncertain": false
+              },
+              {
+                "known": true,
+                "controller": 1,
+                "creature": true,
+                "power": 12,
+                "toughness": 12,
+                "damage": 0,
+                "damageFromToughness": false,
+                "tapped": false,
+                "keywords": [
+                  "Trample"
+                ],
+                "uncertain": false
+              }
+            ],
+            "attackers": [
+              {
+                "object": 0,
+                "target": {
+                  "kind": "player",
+                  "seat": 1
+                },
+                "defendingSeat": 1,
+                "banded": false
+              }
+            ],
+            "legalBlocks": [
+              [
+                1,
+                0
+              ]
+            ],
+            "blockCandidates": [
+              [],
+              [
+                [
+                  1,
+                  0
+                ]
+              ]
+            ],
+            "attackCandidates": [
+              null,
+              null
+            ],
+            "decision": "DeclareBlockers",
+            "complete": true,
+            "uncertain": false
+          }
+        },
+        "secondPacket": {
+          "version": "public-cpu-v1",
+          "difficulty": "Medium",
+          "legacy": {
+            "version": "visible-tactics-v2",
+            "ownLife": 20,
+            "opponentLife": 20,
+            "ownBattlefield": [
+              {
+                "power": 12,
+                "toughness": 12,
+                "damage": 0,
+                "tapped": false,
+                "keywords": [
+                  "Trample"
+                ]
+              }
+            ],
+            "opponentBattlefield": [
+              {
+                "power": 12,
+                "toughness": 12,
+                "damage": 0,
+                "tapped": true,
+                "keywords": [
+                  "Trample"
+                ]
+              }
+            ],
+            "choices": [
+              {
+                "kind": "block",
+                "blocks": []
+              },
+              {
+                "kind": "block",
+                "blocks": [
+                  {
+                    "blocker": {
+                      "power": 12,
+                      "toughness": 12,
+                      "damage": 0,
+                      "tapped": false,
+                      "keywords": [
+                        "Trample"
+                      ]
+                    },
+                    "attacker": {
+                      "power": 12,
+                      "toughness": 12,
+                      "damage": 0,
+                      "tapped": true,
+                      "keywords": [
+                        "Trample"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "hand": {
+            "plan": "generic-material",
+            "planVersion": null,
+            "proposalAccepted": false,
+            "mana": 0,
+            "lands": 0,
+            "cards": [],
+            "castIndices": [
+              null,
+              null
+            ],
+            "discardIndices": [
+              null,
+              null
+            ]
+          },
+          "combat": {
+            "seat": 1,
+            "life": [
+              20,
+              20
+            ],
+            "objects": [
+              {
+                "known": true,
+                "controller": 0,
+                "creature": true,
+                "power": 12,
+                "toughness": 12,
+                "damage": 0,
+                "damageFromToughness": false,
+                "tapped": true,
+                "keywords": [
+                  "Trample"
+                ],
+                "uncertain": false
+              },
+              {
+                "known": true,
+                "controller": 1,
+                "creature": true,
+                "power": 12,
+                "toughness": 12,
+                "damage": 0,
+                "damageFromToughness": false,
+                "tapped": false,
+                "keywords": [
+                  "Trample"
+                ],
+                "uncertain": false
+              }
+            ],
+            "attackers": [
+              {
+                "object": 0,
+                "target": {
+                  "kind": "player",
+                  "seat": 1
+                },
+                "defendingSeat": 1,
+                "banded": false
+              }
+            ],
+            "legalBlocks": [
+              [
+                1,
+                0
+              ]
+            ],
+            "blockCandidates": [
+              [],
+              [
+                [
+                  1,
+                  0
+                ]
+              ]
+            ],
+            "attackCandidates": [
+              null,
+              null
+            ],
+            "decision": "DeclareBlockers",
+            "complete": true,
+            "uncertain": false
+          }
+        },
+        "firstProposal": {
+          "index": 1,
+          "rng": 777
+        },
+        "secondProposal": {
+          "index": 1,
+          "rng": 777
+        },
+        "firstAction": {
+          "type": "DeclareBlockers",
+          "data": {
+            "assignments": [
+              [
+                99,
+                28
+              ]
+            ]
+          }
+        },
+        "secondAction": {
+          "type": "DeclareBlockers",
+          "data": {
+            "assignments": [
+              [
+                99,
+                28
+              ]
+            ]
+          }
+        }
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "CPU-001-F",
+      "name": "CPU resolves a forced legend choice",
+      "layer": "engine + CPU policy",
+      "expected": "Choose a generated keep action and leave exactly one Ghalta on battlefield.",
+      "start": {
+        "seed": 12345,
+        "cpuSeat": 0,
+        "setupSha256": "3ac41f7206743c44289713d46e4dff4aa563907dfed0dbc361ba6c8037353752"
+      },
+      "packet": {
+        "version": "public-cpu-v1",
+        "difficulty": "Medium",
+        "legacy": {
+          "version": "visible-tactics-v2",
+          "ownLife": 20,
+          "opponentLife": 20,
+          "ownBattlefield": [
+            {
+              "power": 0,
+              "toughness": 0,
+              "damage": 0,
+              "tapped": true,
+              "keywords": []
+            },
+            {
+              "power": 0,
+              "toughness": 0,
+              "damage": 0,
+              "tapped": true,
+              "keywords": []
+            },
+            {
+              "power": 12,
+              "toughness": 12,
+              "damage": 0,
+              "tapped": false,
+              "keywords": [
+                "Trample"
+              ]
+            },
+            {
+              "power": 12,
+              "toughness": 12,
+              "damage": 0,
+              "tapped": false,
+              "keywords": [
+                "Trample"
+              ]
+            }
+          ],
+          "opponentBattlefield": [],
+          "choices": [
+            {
+              "kind": "legend",
+              "card": {
+                "power": 12,
+                "toughness": 12,
+                "damage": 0,
+                "tapped": false,
+                "keywords": [
+                  "Trample"
+                ]
+              },
+              "available": true
+            },
+            {
+              "kind": "legend",
+              "card": {
+                "power": 12,
+                "toughness": 12,
+                "damage": 0,
+                "tapped": false,
+                "keywords": [
+                  "Trample"
+                ]
+              },
+              "available": true
+            }
+          ]
+        },
+        "hand": {
+          "plan": "generic-material",
+          "planVersion": null,
+          "proposalAccepted": false,
+          "mana": 0,
+          "lands": 2,
+          "cards": [],
+          "castIndices": [
+            null,
+            null
+          ],
+          "discardIndices": [
+            null,
+            null
+          ]
+        },
+        "combat": {
+          "seat": 0,
+          "life": [
+            20,
+            20
+          ],
+          "objects": [
+            {
+              "known": true,
+              "controller": 0,
+              "creature": false,
+              "power": null,
+              "toughness": null,
+              "damage": 0,
+              "damageFromToughness": false,
+              "tapped": true,
+              "keywords": [],
+              "uncertain": false
+            },
+            {
+              "known": true,
+              "controller": 0,
+              "creature": false,
+              "power": null,
+              "toughness": null,
+              "damage": 0,
+              "damageFromToughness": false,
+              "tapped": true,
+              "keywords": [],
+              "uncertain": false
+            },
+            {
+              "known": true,
+              "controller": 0,
+              "creature": true,
+              "power": 12,
+              "toughness": 12,
+              "damage": 0,
+              "damageFromToughness": false,
+              "tapped": false,
+              "keywords": [
+                "Trample"
+              ],
+              "uncertain": false
+            },
+            {
+              "known": true,
+              "controller": 0,
+              "creature": true,
+              "power": 12,
+              "toughness": 12,
+              "damage": 0,
+              "damageFromToughness": false,
+              "tapped": false,
+              "keywords": [
+                "Trample"
+              ],
+              "uncertain": false
+            }
+          ],
+          "attackers": [],
+          "legalBlocks": [],
+          "blockCandidates": [
+            null,
+            null
+          ],
+          "attackCandidates": [
+            null,
+            null
+          ],
+          "decision": "ChooseLegend",
+          "complete": true,
+          "uncertain": false
+        }
+      },
+      "proposal": {
+        "index": 0,
+        "rng": 777
+      },
+      "selectedAction": {
+        "type": "ChooseLegend",
+        "data": {
+          "keep": 5
+        }
+      },
+      "acceptedActions": [
+        {
+          "actor": 0,
+          "action": {
+            "type": "CastSpell",
+            "data": {
+              "object_id": 6,
+              "card_id": 6,
+              "targets": [],
+              "payment_mode": {
+                "type": "Auto"
+              }
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "ChooseLegend",
+            "data": {
+              "keep": 5
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        }
+      ],
+      "actual": {
+        "life": [
+          20,
+          20
+        ],
+        "waiting": {
+          "data": {
+            "player": 0
+          },
+          "type": "Priority"
+        },
+        "phase": "PreCombatMain"
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "CPU-001-G",
+      "name": "Unsupported CPU choices stop explicitly",
+      "layer": "synthetic policy contract",
+      "expected": "Throw CPU_DECISION_UNSUPPORTED without inventing an action.",
+      "start": {
+        "choices": [
+          {
+            "kind": "unsupported"
+          }
+        ],
+        "policyRng": 777
+      },
+      "actual": {
+        "error": "CPU_DECISION_UNSUPPORTED",
+        "actionSubmitted": false
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "CPU-001-H",
+      "name": "Signed-in complete starter match and recovery",
+      "layer": "browser",
+      "status": "NOT TESTED",
+      "expected": "Integration runs the combined changes through a signed-in complete match.",
+      "actual": "Outside this bounded engine/policy task."
+    }
+  ],
+  "limits": [
+    "Engineered initial positions, not full legal match histories.",
+    "No browser, signed-in account, reload recovery or complete-match test in this task.",
+    "Privacy fixtures cover the described variations only; no complete noninterference proof.",
+    "Rules implementation and legacy policy unchanged; public CPU wrapper supplies survival evaluation."
+  ],
+  "cpuSources": {
+    "cpu-public-observation.mjs": "2b609f5547ffe58d2a3252c40ca3e7a5bfc266700be3da4eb95f736c3a629ade",
+    "cpu-combat-evaluation.mjs": "85c366be13c77ebb05f3107d44761153b7f23685ee299a2355d79e90a5ac399e",
+    "cpu-public-policy.mjs": "a4050ff5a84c2ba82acf6c63535a54947fbc7aa4d7fa1b39e6eff77db9c322bb"
+  },
+  "networkCalls": 0,
+  "counts": {
+    "PASS": 7,
+    "FAIL": 0,
+    "NOT TESTED": 1,
+    "UNSUPPORTED": 0
+  }
+}

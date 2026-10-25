@@ -2,7 +2,7 @@
 
 Owner: integration/Live Push. Integration implementation base: be5ed9490e6df986e55e8088712694da6bc5386b (UI-001, UI-002, CPU-002 combined).
 
-**Contract frozen for implementation; runtime implementation is NOT complete.** This document and its synthetic snapshots do not enable controls or prove engine capability. UI must require the actual runtime field and corresponding capability flag. No UI fallback based on hand contents, mana estimates, visible buttons or filtered choices.
+**Conservative session implementation now exists; complete Smart passing remains blocked by unknown engine action coverage.** See `session001-flow-implementation.md`. The methods and runtime field exist; this document and its synthetic snapshots do not prove complete engine capability. UI must require the actual runtime field and corresponding capability flag. No UI fallback based on hand contents, mana estimates, visible buttons or filtered choices.
 
 ## Wire shape
 
@@ -69,7 +69,7 @@ The session and authority both guard revision changes. Authority recomputes imme
 
 ## Synthetic fixture snapshots
 
-These are UI-development fixtures only, not runtime evidence. The actual old runtime currently has no turnFlow field.
+These are UI-development fixtures only, not runtime evidence. Actual engine/session-policy snapshots are recorded in `evidence/session001-flow-engine.json`; their coverage is unknown and they do not authorize an automatic pass.
 
 ```json
 {

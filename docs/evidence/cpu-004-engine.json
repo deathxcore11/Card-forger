@@ -1,0 +1,2019 @@
+{
+  "task": "CPU-004",
+  "baseline": "3c7a1860a314d9e56d056b017fb82781c4ca6dfc",
+  "baselineCandidateSha256": "0fb5f513a024be6f91ccd45c3860b1ba526635c78c399a6d5bd0d5ea0d04bc7e",
+  "authoritySha256": "e4b9de791e74b0cab1d606c68579d31373f6799519e6dc311e06b6cf38a2b5f5",
+  "cacheRequired": true,
+  "cases": [
+    {
+      "id": "four-by-four",
+      "count": 4,
+      "air": false,
+      "attack": [
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub"
+      ],
+      "block": [
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub"
+      ],
+      "startLife": 2,
+      "setupSha256": "c1970a315aa5b9724d7df654d28e7bad2c66a18c8f2c28b477b8ff764c5f16c0",
+      "eligibleBlockers": 4,
+      "before": {
+        "ms": 2072.522530000002,
+        "previews": 114,
+        "added": 114,
+        "truncated": true
+      },
+      "after": {
+        "ms": 131.95172599999933,
+        "previews": 4,
+        "added": 4,
+        "truncated": true
+      },
+      "search": {
+        "nodes": 308,
+        "evaluations": 96,
+        "elapsedMs": 14.134475999999268
+      },
+      "profiles": [
+        {
+          "difficulty": "Easy",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  74,
+                  28
+                ],
+                [
+                  76,
+                  19
+                ],
+                [
+                  99,
+                  6
+                ],
+                [
+                  115,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 2,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      74,
+                      28
+                    ],
+                    [
+                      76,
+                      19
+                    ],
+                    [
+                      99,
+                      6
+                    ],
+                    [
+                      115,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "difficulty": "Medium",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  74,
+                  28
+                ],
+                [
+                  76,
+                  19
+                ],
+                [
+                  99,
+                  6
+                ],
+                [
+                  115,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 2,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      74,
+                      28
+                    ],
+                    [
+                      76,
+                      19
+                    ],
+                    [
+                      99,
+                      6
+                    ],
+                    [
+                      115,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "difficulty": "Hard",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  74,
+                  28
+                ],
+                [
+                  76,
+                  19
+                ],
+                [
+                  99,
+                  6
+                ],
+                [
+                  115,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 2,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      74,
+                      28
+                    ],
+                    [
+                      76,
+                      19
+                    ],
+                    [
+                      99,
+                      6
+                    ],
+                    [
+                      115,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        }
+      ],
+      "authority": {
+        "ms": 254.64568900000086,
+        "previews": 4,
+        "firstCollectionPreviews": 4,
+        "action": {
+          "type": "DeclareBlockers",
+          "data": {
+            "assignments": [
+              [
+                74,
+                28
+              ],
+              [
+                76,
+                19
+              ],
+              [
+                99,
+                6
+              ],
+              [
+                115,
+                5
+              ]
+            ]
+          }
+        },
+        "accepted": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "twelve-blockers",
+      "count": 12,
+      "air": false,
+      "attack": [
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub"
+      ],
+      "block": [
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Virulent Emissary"
+      ],
+      "startLife": 2,
+      "setupSha256": "0ee3cb2ba15518feed6a74d0d644632ad51c331a389748f71baeadb2da1cc311",
+      "eligibleBlockers": 12,
+      "before": {
+        "ms": 1791.1232019999989,
+        "previews": 114,
+        "added": 114,
+        "truncated": true
+      },
+      "after": {
+        "ms": 107.67412899999908,
+        "previews": 4,
+        "added": 4,
+        "truncated": true
+      },
+      "search": {
+        "nodes": 165,
+        "evaluations": 9,
+        "elapsedMs": 6.183267000000342
+      },
+      "profiles": [
+        {
+          "difficulty": "Easy",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  72,
+                  28
+                ],
+                [
+                  85,
+                  19
+                ],
+                [
+                  105,
+                  6
+                ],
+                [
+                  111,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 2,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      72,
+                      28
+                    ],
+                    [
+                      85,
+                      19
+                    ],
+                    [
+                      105,
+                      6
+                    ],
+                    [
+                      111,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "difficulty": "Medium",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  72,
+                  28
+                ],
+                [
+                  85,
+                  19
+                ],
+                [
+                  105,
+                  6
+                ],
+                [
+                  111,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 2,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      72,
+                      28
+                    ],
+                    [
+                      85,
+                      19
+                    ],
+                    [
+                      105,
+                      6
+                    ],
+                    [
+                      111,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "difficulty": "Hard",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  72,
+                  28
+                ],
+                [
+                  85,
+                  19
+                ],
+                [
+                  105,
+                  6
+                ],
+                [
+                  111,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 2,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      72,
+                      28
+                    ],
+                    [
+                      85,
+                      19
+                    ],
+                    [
+                      105,
+                      6
+                    ],
+                    [
+                      111,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        }
+      ],
+      "authority": {
+        "ms": 271.0235079999984,
+        "previews": 4,
+        "firstCollectionPreviews": 4,
+        "action": {
+          "type": "DeclareBlockers",
+          "data": {
+            "assignments": [
+              [
+                72,
+                28
+              ],
+              [
+                85,
+                19
+              ],
+              [
+                105,
+                6
+              ],
+              [
+                111,
+                5
+              ]
+            ]
+          }
+        },
+        "accepted": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "thirteen-blockers",
+      "count": 13,
+      "air": false,
+      "attack": [
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub"
+      ],
+      "block": [
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Llanowar Elves"
+      ],
+      "startLife": 2,
+      "setupSha256": "afa937067ce7231c3dadb283e742544ba1ebc1f01717eb6036f0b3a9d20c04a1",
+      "eligibleBlockers": 13,
+      "before": {
+        "ms": 21.19504599999709,
+        "previews": 0,
+        "added": 0,
+        "truncated": true
+      },
+      "after": {
+        "ms": 59.871093000001565,
+        "previews": 4,
+        "added": 4,
+        "truncated": true
+      },
+      "search": {
+        "nodes": 173,
+        "evaluations": 9,
+        "elapsedMs": 1.2683670000005804
+      },
+      "profiles": [
+        {
+          "difficulty": "Easy",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  72,
+                  28
+                ],
+                [
+                  85,
+                  19
+                ],
+                [
+                  87,
+                  6
+                ],
+                [
+                  105,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 2,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      72,
+                      28
+                    ],
+                    [
+                      85,
+                      19
+                    ],
+                    [
+                      87,
+                      6
+                    ],
+                    [
+                      105,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "difficulty": "Medium",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  72,
+                  28
+                ],
+                [
+                  85,
+                  19
+                ],
+                [
+                  87,
+                  6
+                ],
+                [
+                  105,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 2,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      72,
+                      28
+                    ],
+                    [
+                      85,
+                      19
+                    ],
+                    [
+                      87,
+                      6
+                    ],
+                    [
+                      105,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "difficulty": "Hard",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  72,
+                  28
+                ],
+                [
+                  85,
+                  19
+                ],
+                [
+                  87,
+                  6
+                ],
+                [
+                  105,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 2,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      72,
+                      28
+                    ],
+                    [
+                      85,
+                      19
+                    ],
+                    [
+                      87,
+                      6
+                    ],
+                    [
+                      105,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        }
+      ],
+      "authority": {
+        "ms": 433.91588700000284,
+        "previews": 4,
+        "firstCollectionPreviews": 4,
+        "action": {
+          "type": "DeclareBlockers",
+          "data": {
+            "assignments": [
+              [
+                72,
+                28
+              ],
+              [
+                85,
+                19
+              ],
+              [
+                87,
+                6
+              ],
+              [
+                105,
+                5
+              ]
+            ]
+          }
+        },
+        "accepted": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "twenty-blockers",
+      "count": 20,
+      "air": false,
+      "attack": [
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub"
+      ],
+      "block": [
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Llanowar Elves",
+        "Llanowar Elves",
+        "Llanowar Elves",
+        "Llanowar Elves",
+        "Air Elemental",
+        "Air Elemental",
+        "Air Elemental",
+        "Air Elemental"
+      ],
+      "startLife": 2,
+      "setupSha256": "5a568daa199ba7281184ea6019ee80ace7fb4f33b8c1e55de09f1d747b1a1c52",
+      "eligibleBlockers": 20,
+      "before": {
+        "ms": 23.133967000001576,
+        "previews": 0,
+        "added": 0,
+        "truncated": true
+      },
+      "after": {
+        "ms": 89.28869100000156,
+        "previews": 4,
+        "added": 4,
+        "truncated": true
+      },
+      "search": {
+        "nodes": 229,
+        "evaluations": 9,
+        "elapsedMs": 0.9765770000012708
+      },
+      "profiles": [
+        {
+          "difficulty": "Easy",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  83,
+                  28
+                ],
+                [
+                  84,
+                  19
+                ],
+                [
+                  100,
+                  6
+                ],
+                [
+                  108,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 2,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      83,
+                      28
+                    ],
+                    [
+                      84,
+                      19
+                    ],
+                    [
+                      100,
+                      6
+                    ],
+                    [
+                      108,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "difficulty": "Medium",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  83,
+                  28
+                ],
+                [
+                  84,
+                  19
+                ],
+                [
+                  100,
+                  6
+                ],
+                [
+                  108,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 2,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      83,
+                      28
+                    ],
+                    [
+                      84,
+                      19
+                    ],
+                    [
+                      100,
+                      6
+                    ],
+                    [
+                      108,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "difficulty": "Hard",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  83,
+                  28
+                ],
+                [
+                  84,
+                  19
+                ],
+                [
+                  100,
+                  6
+                ],
+                [
+                  108,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 2,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      83,
+                      28
+                    ],
+                    [
+                      84,
+                      19
+                    ],
+                    [
+                      100,
+                      6
+                    ],
+                    [
+                      108,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        }
+      ],
+      "authority": {
+        "ms": 309.97330100000545,
+        "previews": 4,
+        "firstCollectionPreviews": 4,
+        "action": {
+          "type": "DeclareBlockers",
+          "data": {
+            "assignments": [
+              [
+                83,
+                28
+              ],
+              [
+                84,
+                19
+              ],
+              [
+                100,
+                6
+              ],
+              [
+                108,
+                5
+              ]
+            ]
+          }
+        },
+        "accepted": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "twenty-flying-scarcity",
+      "count": 20,
+      "air": true,
+      "attack": [
+        "Air Elemental",
+        "Air Elemental",
+        "Air Elemental",
+        "Air Elemental"
+      ],
+      "block": [
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Bear Cub",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Ordinary Bear",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Virulent Emissary",
+        "Llanowar Elves",
+        "Llanowar Elves",
+        "Llanowar Elves",
+        "Llanowar Elves",
+        "Air Elemental",
+        "Air Elemental",
+        "Air Elemental",
+        "Air Elemental"
+      ],
+      "startLife": 4,
+      "setupSha256": "b6dbce394ddfdd882668644f5b4e096b205b0d2112d6515d1a5fffea4819bb70",
+      "eligibleBlockers": 4,
+      "before": {
+        "ms": 1067.2637969999996,
+        "previews": 114,
+        "added": 114,
+        "truncated": true
+      },
+      "after": {
+        "ms": 52.23677000000316,
+        "previews": 4,
+        "added": 4,
+        "truncated": true
+      },
+      "search": {
+        "nodes": 308,
+        "evaluations": 96,
+        "elapsedMs": 2.729413000000932
+      },
+      "profiles": [
+        {
+          "difficulty": "Easy",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  74,
+                  28
+                ],
+                [
+                  76,
+                  19
+                ],
+                [
+                  99,
+                  6
+                ],
+                [
+                  115,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 4,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      74,
+                      28
+                    ],
+                    [
+                      76,
+                      19
+                    ],
+                    [
+                      99,
+                      6
+                    ],
+                    [
+                      115,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "difficulty": "Medium",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  74,
+                  28
+                ],
+                [
+                  76,
+                  19
+                ],
+                [
+                  99,
+                  6
+                ],
+                [
+                  115,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 4,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      74,
+                      28
+                    ],
+                    [
+                      76,
+                      19
+                    ],
+                    [
+                      99,
+                      6
+                    ],
+                    [
+                      115,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "difficulty": "Hard",
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  74,
+                  28
+                ],
+                [
+                  76,
+                  19
+                ],
+                [
+                  99,
+                  6
+                ],
+                [
+                  115,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": 4,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      74,
+                      28
+                    ],
+                    [
+                      76,
+                      19
+                    ],
+                    [
+                      99,
+                      6
+                    ],
+                    [
+                      115,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": false,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ],
+          "status": "PASS"
+        }
+      ],
+      "authority": {
+        "ms": 186.38782200000423,
+        "previews": 4,
+        "firstCollectionPreviews": 4,
+        "action": {
+          "type": "DeclareBlockers",
+          "data": {
+            "assignments": [
+              [
+                74,
+                28
+              ],
+              [
+                76,
+                19
+              ],
+              [
+                99,
+                6
+              ],
+              [
+                115,
+                5
+              ]
+            ]
+          }
+        },
+        "accepted": true
+      },
+      "status": "PASS"
+    }
+  ],
+  "limits": [
+    "Engineered lethal boards, not complete matches or universal block coverage.",
+    "Single before/after timing per board; engine calls are synchronous and can overrun a cooperative deadline.",
+    "Production worker checked for each profile; exact supplied authority module checked separately for Medium and candidate reuse."
+  ],
+  "counts": {
+    "PASS": 5,
+    "FAIL": 0
+  },
+  "sources": {
+    "cpu-block-search-engine.mjs": "e714c805c7ef3292d0a961557422e781c950694a5227d72533e85ee56c5624f6",
+    "cpu-block-search.mjs": "167c87c1521c43df4e88303e70b6287da373108d94f1fee8d1b65e8188c3ce66",
+    "cpu-legal-candidates.mjs": "3ac18bf8a3b0fd0d7337ee58cf49b80f05db3d3a6f7e13205b55b513daf16c24",
+    "cpu-public-policy.mjs": "1ac7e3df4b19d2627aa4330c9c39b2b585514149b9ff8a74b7be575dff3aa316",
+    "cpu-tactical-planning.mjs": "39ddcf4fb1a9cfdd33c6c69d27575ac2794e1cb08b7bbb48d7ee2aa8f4bfcc01",
+    "cpu-difficulty-config.mjs": "339d7376b1de0aa512dcb93a0cb7fbf206ffa5f4b5b9d1fa71b7015a558f6b97",
+    "cpu-public-observation.mjs": "2b609f5547ffe58d2a3252c40ca3e7a5bfc266700be3da4eb95f736c3a629ade",
+    "cpu-combat-evaluation.mjs": "85c366be13c77ebb05f3107d44761153b7f23685ee299a2355d79e90a5ac399e"
+  },
+  "cpu004ProductionSources": {
+    "cpu-block-search.mjs": "167c87c1521c43df4e88303e70b6287da373108d94f1fee8d1b65e8188c3ce66",
+    "cpu-public-policy.mjs": "1ac7e3df4b19d2627aa4330c9c39b2b585514149b9ff8a74b7be575dff3aa316",
+    "cpu-difficulty-config.mjs": "339d7376b1de0aa512dcb93a0cb7fbf206ffa5f4b5b9d1fa71b7015a558f6b97",
+    "cpu-tactical-planning.mjs": "39ddcf4fb1a9cfdd33c6c69d27575ac2794e1cb08b7bbb48d7ee2aa8f4bfcc01",
+    "cpu-legal-candidates.mjs": "3ac18bf8a3b0fd0d7337ee58cf49b80f05db3d3a6f7e13205b55b513daf16c24"
+  }
+}

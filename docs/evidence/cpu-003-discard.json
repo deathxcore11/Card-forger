@@ -1,0 +1,98 @@
+{
+  "task": "CPU-003 mandatory discard",
+  "cases": [
+    {
+      "difficulty": "Easy",
+      "count": 8,
+      "setupSha256": "a20eea08ffa9baac1a02aed62ee0992e4dbe066a96cef951569a68088efc7b98",
+      "action": {
+        "type": "SelectCards",
+        "data": {
+          "cards": [
+            1
+          ]
+        }
+      },
+      "status": "PASS",
+      "remainingHand": 7
+    },
+    {
+      "difficulty": "Medium",
+      "count": 8,
+      "setupSha256": "a20eea08ffa9baac1a02aed62ee0992e4dbe066a96cef951569a68088efc7b98",
+      "action": {
+        "type": "SelectCards",
+        "data": {
+          "cards": [
+            1
+          ]
+        }
+      },
+      "status": "PASS",
+      "remainingHand": 7
+    },
+    {
+      "difficulty": "Hard",
+      "count": 8,
+      "setupSha256": "a20eea08ffa9baac1a02aed62ee0992e4dbe066a96cef951569a68088efc7b98",
+      "action": {
+        "type": "SelectCards",
+        "data": {
+          "cards": [
+            1
+          ]
+        }
+      },
+      "status": "PASS",
+      "remainingHand": 7
+    },
+    {
+      "difficulty": "Easy",
+      "count": 9,
+      "setupSha256": "799ca535c85f6fc0e3f5aaff1db5c201cb6787ffcbc7445c847ff2bb8f6ee75e",
+      "action": {
+        "type": "SelectCards",
+        "data": {
+          "cards": [
+            1,
+            2
+          ]
+        }
+      },
+      "status": "PASS",
+      "remainingHand": 7
+    },
+    {
+      "difficulty": "Medium",
+      "count": 9,
+      "setupSha256": "799ca535c85f6fc0e3f5aaff1db5c201cb6787ffcbc7445c847ff2bb8f6ee75e",
+      "action": {
+        "type": "SelectCards",
+        "data": {
+          "cards": [
+            1,
+            2
+          ]
+        }
+      },
+      "status": "PASS",
+      "remainingHand": 7
+    },
+    {
+      "difficulty": "Hard",
+      "count": 9,
+      "setupSha256": "799ca535c85f6fc0e3f5aaff1db5c201cb6787ffcbc7445c847ff2bb8f6ee75e",
+      "action": {
+        "type": "SelectCards",
+        "data": {
+          "cards": [
+            1,
+            2
+          ]
+        }
+      },
+      "status": "PASS",
+      "remainingHand": 7
+    }
+  ]
+}

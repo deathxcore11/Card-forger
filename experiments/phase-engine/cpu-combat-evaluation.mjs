@@ -45,6 +45,7 @@ export function estimateBlocks(combat,assignments){
  }
  const ownLost=life[seat]<=0,otherLost=life[1-seat]<=0;
  return {confidence:supported?'supported-no-response-model':'estimate',life,lost,killed,
+  predictedCasualties:objects.flatMap((c,i)=>c.alive?[]:[i]),
   outcome:supported?(ownLost?(otherLost?'draw':'loss'):(otherLost?'win':'survive')):'unknown',
   score:killed-lost+(life[seat]-combat.life[seat])*Math.min(2,4/Math.max(1,combat.life[seat]))-(life[1-seat]-combat.life[1-seat])*.3,
   assumption:'No intervening responses; engine remains authoritative.'};

@@ -2,6 +2,7 @@
 // The policy worker receives local indices, never names, object handles or saves.
 import {projectSeat} from './seat-surface.mjs';
 import {cpuPacket} from './visible-cpu-policy.mjs';
+import {ownHandObservation} from './cpu-hand-observation.mjs';
 export const PUBLIC_CPU_VERSION='public-cpu-v1';
 const list=v=>Array.isArray(v)?v:[];
 const finite=v=>Number.isFinite(v)?v:null;
@@ -13,7 +14,7 @@ function publicEffects(o){
   return s.mode!=='Continuous'||list(s.modifications).some(m=>!['AssignDamageFromToughness','AddStaticMode'].includes(m.type)||(m.type==='AddStaticMode'&&!m.mode?.CrewContribution));
  });
 }
-export function makeCpuObservation(envelope,seat,actions,{difficulty='Medium'}={}){
+export function makeCpuObservation(envelope,seat,actions,{difficulty='Medium',legal=null,playbook=null}={}){
  const s=envelope?.state;
  if(!s||s.viewer_projection!==seat||![0,1].includes(seat)||!Array.isArray(actions))throw Error('INVALID_CPU_VIEW');
  const view=projectSeat(envelope,seat),legacy=cpuPacket(view,actions);
@@ -33,7 +34,7 @@ export function makeCpuObservation(envelope,seat,actions,{difficulty='Medium'}={
  const w=s.waiting_for,legalBlocks=w?.type==='DeclareBlockers'&&w.data?.player===seat?Object.entries(w.data.valid_block_targets||{}).flatMap(([b,targets])=>list(targets).map(a=>[indices.get(Number(b))??null,indices.get(a)??null])):[];
  const blockCandidates=actions.map(a=>a.type==='DeclareBlockers'?list(a.data?.assignments).map(([b,t])=>[indices.get(b)??null,indices.get(t)??null]):null);
  const attackCandidates=actions.map(a=>a.type==='DeclareAttackers'?list(a.data?.attacks).map(([id,t])=>({object:indices.get(id)??null,target:target(t)})):null);
- return {version:PUBLIC_CPU_VERSION,difficulty,legacy,combat:{seat,life:list(s.players).map(p=>finite(p.life)),objects,attackers,legalBlocks,blockCandidates,attackCandidates,
+ return {version:PUBLIC_CPU_VERSION,difficulty,legacy,hand:ownHandObservation(s,seat,actions,legal,playbook),combat:{seat,life:list(s.players).map(p=>finite(p.life)),objects,attackers,legalBlocks,blockCandidates,attackCandidates,
   decision:w?.type||null,complete:attackers.every(a=>a.object!==null&&a.target.kind!=='unknown'&&!a.banded)&&s.combat?.first_strike_done!==true&&s.combat?.regular_damage_done!==true,
   uncertain:list(s.stack).length>0||objects.some(o=>!o.known||o.uncertain)}};
 }

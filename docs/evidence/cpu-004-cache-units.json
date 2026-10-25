@@ -1,0 +1,13 @@
+{
+  "PASS": 6,
+  "FAIL": 0,
+  "command": "node --test isolated/test-authority-candidates.mjs",
+  "stdout": "\u2714 unchanged decision expands once and returned candidate mutations cannot corrupt the snapshot (24.109411ms)\n\u2714 new revision, wrong epoch and absent revision never reuse expansion (19.013365ms)\n\u2714 fresh actor, base suggestions and mandatory decision remain authoritative (7.301457ms)\n\u2714 all mutation routes, including rejected and thrown submissions, retire the snapshot (30.832704ms)\n\u2714 cache is isolated by authority instance and final engine rejection is retained (3.614161ms)\n\u2714 journal binds both reads to its revision and still rejects a changed legal proposal (4.301687ms)\n\u2139 tests 6\n\u2139 suites 0\n\u2139 pass 6\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 403.209614\n",
+  "authorityCommit": "4bd9801c0b5593288c9c29b76cc447ce47781f75",
+  "sources": {
+    "match-authority.mjs": "e4b9de791e74b0cab1d606c68579d31373f6799519e6dc311e06b6cf38a2b5f5",
+    "worker-journal.mjs": "cdf6ba18fef9d04c45cf16d41a86fa4d6398354e58f6da82f51a0bc7f749523f",
+    "test-authority-candidates.mjs": "ccdc9988bf68fbea64642654cbdef034494785a343018c2c4bbb622d3fdf1b9c"
+  },
+  "fixturePatch": "docs/evidence/cpu-004-cache-fixture.patch"
+}

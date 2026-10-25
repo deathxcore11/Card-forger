@@ -1,0 +1,445 @@
+{
+  "authoritySha256": "e6658d6e832f797d1ad87b35dc2456fe2d80e1a7a61bf717fec491f00a78c19c",
+  "task": "CPU-005",
+  "base": "ee77800dc2e19e1e1d39cad387f16e07b44be704",
+  "oldSources": {
+    "cpu-combat-evaluation.mjs": "85c366be13c77ebb05f3107d44761153b7f23685ee299a2355d79e90a5ac399e",
+    "cpu-tactical-planning.mjs": "39ddcf4fb1a9cfdd33c6c69d27575ac2794e1cb08b7bbb48d7ee2aa8f4bfcc01"
+  },
+  "cases": [
+    {
+      "id": "dead-blocker-phantom-threat",
+      "setupSha256": "97b72dfd74fab887e317ceea177977f4406a5d2ae8891728b7d981840d89d70b",
+      "profiles": [
+        {
+          "difficulty": "Easy",
+          "before": 4,
+          "after": 4,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  5,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          },
+          "accepted": true
+        },
+        {
+          "difficulty": "Medium",
+          "before": -4,
+          "after": 4,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  5,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          },
+          "accepted": true
+        },
+        {
+          "difficulty": "Hard",
+          "before": -21.6,
+          "after": 4,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  5,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          },
+          "accepted": true
+        }
+      ],
+      "responses": [
+        {
+          "block": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": []
+            }
+          },
+          "life": [
+            2,
+            0
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "ownZone": "Battlefield",
+          "blockerZone": "Exile",
+          "counterZone": null,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "block": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  99,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": [
+            2,
+            4
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "ownZone": "Battlefield",
+          "blockerZone": "Graveyard",
+          "counterZone": null,
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      99,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "surviving-tapped-counterthreat",
+      "setupSha256": "82c71982d7d657b71c06e8a33a9984e13d3c7787fe1c3568cdde8a25f2e9af77",
+      "profiles": [
+        {
+          "difficulty": "Easy",
+          "before": 4,
+          "after": 4,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  5,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          },
+          "accepted": true
+        },
+        {
+          "difficulty": "Medium",
+          "before": -4,
+          "after": -4,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [],
+              "bands": []
+            }
+          },
+          "accepted": true
+        },
+        {
+          "difficulty": "Hard",
+          "before": -21.6,
+          "after": -21.6,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [],
+              "bands": []
+            }
+          },
+          "accepted": true
+        }
+      ],
+      "responses": [
+        {
+          "block": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": []
+            }
+          },
+          "life": [
+            2,
+            0
+          ],
+          "waiting": {
+            "data": {
+              "winner": 0
+            },
+            "type": "GameOver"
+          },
+          "ownZone": "Battlefield",
+          "blockerZone": "Exile",
+          "counterZone": "Exile",
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": []
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        },
+        {
+          "block": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  76,
+                  5
+                ]
+              ]
+            }
+          },
+          "life": [
+            2,
+            4
+          ],
+          "waiting": {
+            "data": {
+              "player": 0
+            },
+            "type": "Priority"
+          },
+          "ownZone": "Battlefield",
+          "blockerZone": "Graveyard",
+          "counterZone": "Battlefield",
+          "trace": [
+            {
+              "actor": 1,
+              "action": {
+                "type": "DeclareBlockers",
+                "data": {
+                  "assignments": [
+                    [
+                      76,
+                      5
+                    ]
+                  ]
+                }
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 0,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            },
+            {
+              "actor": 1,
+              "action": {
+                "type": "PassPriority"
+              },
+              "generatedCandidate": true,
+              "acceptedByEngine": true
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    }
+  ],
+  "limits": [
+    "Engineered positions using unchanged compiled cards, seed12345.",
+    "Future-board predictions are conditional; no hidden-card or future-draw access.",
+    "Worker/engine fixtures are not a complete browser or owner-account match."
+  ],
+  "counts": {
+    "PASS": 2,
+    "FAIL": 0,
+    "workerProfiles": 6
+  },
+  "sources": {
+    "cpu-counterattack-engine.mjs": "9254ee8f1c62e2b886c5623b17c3339652799a8c0906c43a1b0f3268a46b80a2",
+    "cpu-combat-evaluation.mjs": "55add787750ef735dd7890f12f4ebb7df14d74001b4ddbc5bd220953c5e53203",
+    "cpu-tactical-planning.mjs": "0430518b113200c2a6e8e3fda09280847b65712c5ed7fae305c5d4dd01b4149b",
+    "cpu-difficulty-config.mjs": "f0a9998c21b55ea2814a7e43f1be02eae41731859e9fd8205bfa70f3ff613715",
+    "cpu-public-policy.mjs": "1ac7e3df4b19d2627aa4330c9c39b2b585514149b9ff8a74b7be575dff3aa316"
+  },
+  "productionSources": {
+    "cpu-combat-evaluation.mjs": "55add787750ef735dd7890f12f4ebb7df14d74001b4ddbc5bd220953c5e53203",
+    "cpu-tactical-planning.mjs": "0430518b113200c2a6e8e3fda09280847b65712c5ed7fae305c5d4dd01b4149b",
+    "cpu-difficulty-config.mjs": "f0a9998c21b55ea2814a7e43f1be02eae41731859e9fd8205bfa70f3ff613715"
+  }
+}
