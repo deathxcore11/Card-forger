@@ -1,12 +1,13 @@
 // Research transport only. No UI, card coverage or opponent-strength certification.
+import {createPriorityClock} from './priority-clock.mjs';
 import {interactionSubmission} from './interaction-surface.mjs';
 import {Fault,fail} from './protocol-fault.mjs';
 export {Fault,fail} from './protocol-fault.mjs';
 export function packet(m) {
  if(!m||typeof m!=='object'||Array.isArray(m)||Object.keys(m).some(k=>!['v','epoch','id','op','revision','seed','first','choice','submission'].includes(k)))fail('BAD_REQUEST');
- if(typeof m.id!=='string'||typeof m.epoch!=='string'||m.v!==1||!['create','resume','status','step','respond'].includes(m.op)||!/^[-\w]{1,80}$/.test(m.id||'')||!/^[-\w]{1,80}$/.test(m.epoch||''))fail('BAD_REQUEST');
+ if(typeof m.id!=='string'||typeof m.epoch!=='string'||m.v!==1||!['create','resume','status','step','respond','tick'].includes(m.op)||!/^[-\w]{1,80}$/.test(m.id||'')||!/^[-\w]{1,80}$/.test(m.epoch||''))fail('BAD_REQUEST');
  if(m.op==='create'&&(!Number.isInteger(m.seed)||m.seed<0||m.seed>0xffffffff||![0,1].includes(m.first)))fail('BAD_REQUEST');
- if(['step','respond'].includes(m.op)&&(!Number.isSafeInteger(m.revision)||m.revision<0))fail('BAD_REQUEST');
+ if(['step','respond','tick'].includes(m.op)&&(!Number.isSafeInteger(m.revision)||m.revision<0))fail('BAD_REQUEST');
  if(Object.hasOwn(m,'choice')&&(m.op!=='step'||typeof m.choice!=='string'||m.choice.length<1||m.choice.length>160||/[\u0000-\u001f\u007f]/.test(m.choice)))fail('BAD_REQUEST');
  if(m.op==='respond')interactionSubmission(m.submission);
  else if(Object.hasOwn(m,'submission'))fail('BAD_REQUEST');
@@ -23,10 +24,15 @@ function validSave(s) {
 }
 // Durable receipts and engine state are one atomic record. Unknown engine errors
 // never cross the boundary. Serialization prevents overlapping WASM mutations.
-export function createJournal({engine,storage,choose,version,epoch}) {
+export function createJournal({engine,storage,choose,version,epoch,timing=null}) {
+ let clock=null;
  let current=null,queue=Promise.resolve(),poisoned=false;
  const fingerprint=m=>{const parts=[m.op,m.revision??null,m.seed??null,m.first??null];if(m.choice!==undefined)parts.push(m.choice);if(m.submission!==undefined)parts.push(interactionSubmission(m.submission));return JSON.stringify(parts);};
- const summary=()=>({...engine.summary(current.revision),revision:current.revision});
+ const clockContext=revision=>({...engine.clockContext(revision),matchId:timing.matchId,revision});
+ const makeClock=saved=>createPriorityClock({...timing,saved});
+ const armClock=(revision,saved=null)=>{const c=makeClock(saved);if(c.arm(clockContext(revision)).state==='stale-clock')fail('CLOCK_CONTEXT_MISMATCH');return c;};
+ const clockSummary=(revision,c=clock)=>timing?{clock:c.inspect(clockContext(revision))}:{};
+ const summary=()=>({...engine.summary(current.revision),revision:current.revision,...clockSummary(current.revision)});
  async function execute(raw) {
   const m=packet(raw);if(m.epoch!==epoch)fail('STALE_SESSION');
   if(poisoned)fail('RECOVERY_REQUIRED');
@@ -37,13 +43,20 @@ export function createJournal({engine,storage,choose,version,epoch}) {
     if(!saved)fail('NO_SAVE');
     if(saved.version!==version||saved.schema!==1)fail('INCOMPATIBLE_SAVE');
     if(!validSave(saved))fail('CORRUPT_SAVE');
-    try{engine.restore(saved.engine);current=saved;return summary();}
+    try{engine.restore(saved.engine);
+     if(timing){
+      if(!saved.clock)fail('INCOMPATIBLE_SAVE');
+      clock=makeClock(saved.clock);
+      if(['unarmed','stale-clock','committed'].includes(clock.inspect(clockContext(saved.revision)).state))fail('CLOCK_CONTEXT_MISMATCH');
+     }
+     current=saved;return summary();}
     catch(error){poisoned=true;throw error;}
    }
    if(saved)fail('ALREADY_EXISTS');
    try{
     engine.start(m.seed,m.first);
     const next={schema:1,version,seed:m.seed,first:m.first,revision:0,policyRng:0x63d34a91,history:[],receipts:{},engine:engine.save()};
+    if(timing){clock=armClock(0);next.clock=clock.snapshot();}
     await storage.write(next,null);current=next;return summary();
    }catch(error){poisoned=true;throw error;}
   }
@@ -55,7 +68,15 @@ export function createJournal({engine,storage,choose,version,epoch}) {
   if(current.revision>=20000)fail('ACTION_LIMIT');
   if(engine.summary(current.revision).terminal)fail('GAME_OVER');
   let actor,action,policyRng=current.policyRng;
-  if(m.op==='respond'){
+  if(m.op==='tick'){
+   if(!timing)fail('TIMER_UNAVAILABLE');
+   const legal=engine.legal(),ctx=clockContext(current.revision);
+   const proposal=clock.propose(ctx,legal.actor===ctx.actor?legal.actions:[]);
+   if(proposal.state!=='timeout-proposal')return {...summary(),clock:proposal};
+   const fresh=engine.legal(),valid=clock.validate(proposal,clockContext(current.revision),fresh.actor===ctx.actor?fresh.actions:[]);
+   if(!valid.ok)fail('STALE_TIMEOUT');
+   actor=valid.actor;action=valid.action;
+  }else if(m.op==='respond'){
    if(typeof engine.respond!=='function'||engine.humanSeat!==0)fail('HUMAN_ROUTE_UNAVAILABLE');
    actor=engine.humanSeat;action={type:'InteractionSubmission',data:interactionSubmission(m.submission)};
   }else{
@@ -77,11 +98,13 @@ export function createJournal({engine,storage,choose,version,epoch}) {
    }else engine.apply(actor,action);
    const next={...current,revision:current.revision+1,policyRng,
     history:[...current.history,{actor,action}],engine:engine.save(),receipts:{...current.receipts}};
-   const response={...engine.summary(next.revision),revision:next.revision};
+   const nextClock=timing?armClock(next.revision,current.clock):null;
+   if(timing)next.clock=nextClock.snapshot();
+   const response={...engine.summary(next.revision),revision:next.revision,...clockSummary(next.revision,nextClock)};
    Object.defineProperty(next.receipts,m.id,{value:{fingerprint:fp,response},enumerable:true,writable:true,configurable:true});
    // Compare-and-write prevents a second tab/worker overwriting this match.
    await storage.write(next,current.revision);
-   current=next;return structuredClone(response);
+   current=next;clock=nextClock;return structuredClone(response);
   } catch(error) {
    try{engine.restore(current.engine);}catch{poisoned=true;}
    // A failed transaction or conflicting writer requires reloading the durable
@@ -96,4 +119,5 @@ export function createJournal({engine,storage,choose,version,epoch}) {
   queue=task.then(()=>undefined);return task;
  };
 }
+
 

@@ -41,13 +41,19 @@ async function boot(epoch,match,mode) {
   policy.addEventListener('message',onMessage);policy.addEventListener('error',onError);
   policy.postMessage({id,choices:describeChoices(actions),rng});
  });
- const controller=mode==='human'?createSeatController({engine,seat:0,epoch}):null;
+ const controller=mode.startsWith('human')?createSeatController({engine,seat:0,epoch}):null;
  const choose=(actions,rng,context)=>{
   if(controller&&context.actor===0)return controller.select(actions,rng,context);
   if(context.choice!==undefined)fail('WRONG_SEAT');
   return smokeChoose(actions,rng);
  };
  const adapter={
+  clockContext(revision){
+   const w=engine.get_filtered_game_state(0).state.waiting_for;
+   const interaction=engine.get_viewer_snapshot_js(0).viewerInteraction;
+   const actor=w?.type==='Priority'?w.data.player:interaction?.canSubmit&&interaction.authorizedSubmitters?.includes(0)?0:1;
+   return {actor,kind:w?.type||'Unavailable',decisionId:`decision-${revision}`};
+  },
   humanSeat:controller?0:null,
   respond:controller?submission=>{const r=engine.submit_interaction_js(0,submission);if(['applied','Applied'].includes(r.status))return true;if(['rejected','Rejected'].includes(r.status))return false;fail('ENGINE_FAILED');}:undefined,
   start(seed,first){const result=engine.initialize_game({player:{main_deck:[...Array(56).fill('Forest'),...Array(4).fill('Grizzly Bears')]},opponent:{main_deck:[...Array(57).fill('Forest'),...Array(3).fill('Grizzly Bears')]}},seed,format,null,2,first);if(!Array.isArray(result.events))fail('INITIALIZE_FAILED');},
@@ -56,7 +62,7 @@ async function boot(epoch,match,mode) {
   legal(){for(const actor of [0,1]){const {actions}=engine.get_legal_actions_for_viewer_js(actor);if(actions.length)return {actor,actions};}return {actor:null,actions:[]};},
   apply(actor,action){const r=engine.submit_action(actor,action);if(!['applied','Applied'].includes(r.status))fail('ENGINE_REJECTED');}
  };
- return createJournal({engine:adapter,storage:await openStore(match),choose,version:mode==='human'?VERSION+':human-seat-v2':VERSION,epoch});
+ return createJournal({engine:adapter,storage:await openStore(match),choose,version:controller?VERSION+':human-seat-v2'+(mode==='human-timed'?':clock-v1':''):VERSION,epoch,...(mode==='human-timed'?{timing:{matchId:match,humanActor:0}}:{})});
 }
 // One match per worker. The main thread receives only bounded diagnostic status;
 // no authority save, raw legal action, library order, hand or event is posted.
@@ -64,7 +70,7 @@ let opening=null,boundEpoch=null;
 globalThis.onmessage=async({data})=>{
  if(!opening){
   const {epoch,match,mode='auto'}=data||{};
-  if(!data||Object.keys(data).some(k=>!['v','epoch','id','op','match','mode'].includes(k))||!['auto','human'].includes(mode)||data?.op!=='bind'||!/^[-\w]{1,80}$/.test(epoch||'')||!/^[-\w]{1,80}$/.test(match||'')){postMessage({v:1,epoch:null,id:null,ok:false,error:'BIND_REQUIRED'});return;}
+  if(!data||Object.keys(data).some(k=>!['v','epoch','id','op','match','mode'].includes(k))||!['auto','human','human-timed'].includes(mode)||data?.op!=='bind'||!/^[-\w]{1,80}$/.test(epoch||'')||!/^[-\w]{1,80}$/.test(match||'')){postMessage({v:1,epoch:null,id:null,ok:false,error:'BIND_REQUIRED'});return;}
   boundEpoch=epoch;opening=boot(epoch,match,mode);
   try{await opening;postMessage({v:1,epoch,id:'bind',ok:true});}
   catch{postMessage({v:1,epoch,id:'bind',ok:false,error:'BOOT_FAILED'});}return;
@@ -72,4 +78,5 @@ globalThis.onmessage=async({data})=>{
  try{const handler=await opening;postMessage(await handler(data));}
  catch{postMessage({v:1,epoch:boundEpoch,id:data?.id,ok:false,error:'BOOT_FAILED'});}
 };
+
 

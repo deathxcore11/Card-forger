@@ -1,0 +1,52 @@
+{
+  "upstream": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+  "sourceFiles": {
+    "priority-scheduler.mjs": "6e7c6a38aae6f14ce2dbb0e1caa27176232c70611e514f78e4fd5747e83db108",
+    "priority-clock.mjs": "b5ea9f73715f39fcf868a731209e8b912dfb01dae73eee3905e5ecb8e9c23227",
+    "protocol-fault.mjs": "bbe597137f4f31aa900c4b5c76e84abd1635247cad439492a34df1b894470f62",
+    "interaction-surface.mjs": "8e45e28bade63144ffc06e0459004dd485c7c9935bc3adb245dbe6c656b84e34",
+    "worker-journal.mjs": "4012d7989793a36ad2cefb2ed15e2a626db95b6b84c0c0be107f1eabf5a85fe5",
+    "browser-authority.mjs": "ac2df9e5ac223052d905c1655ad91530d09da8436e0f4ed9a13b67a1c1aff8ba",
+    "browser-client.mjs": "aec892bfd1303a5b54669d268c48153a609447d9e05b11c6c6a83b46d45cff01",
+    "smoke-policy-worker.mjs": "364f29be9d6eeab8eeb281de8eaa3b598b04c0056291592ca9560f0d97b6140b",
+    "seat-surface.mjs": "aa4023c24248506616ee0a430d6af42944051a8bd3c9f0aef6ec6e986dfbd3e5"
+  },
+  "cases": [],
+  "checks": [
+    "real human priority",
+    "early tick no mutation",
+    "cold browser restart offline",
+    "unchanged absolute deadline",
+    "scheduler single legal pass",
+    "duplicate receipt no second move",
+    "atomic clock/action/receipt IndexedDB record"
+  ],
+  "limits": "Forest/Bears smoke only; ungraded summary-only policy. Not game UI, general privacy/rules/card-pool certification, production offline package, device performance or full engine gate.",
+  "browser": "153.0.8010.0",
+  "result": {
+    "resumedDeadline": 1792894105491,
+    "ticks": 1,
+    "latest": {
+      "revision": 3,
+      "state": "other-actor",
+      "remainingSeconds": null,
+      "warning": false,
+      "needsChoice": false
+    },
+    "duplicateRevision": 3,
+    "finalRevision": 3,
+    "prioritySeat": 1
+  },
+  "harnessSha256": "5f684002803e6cb55c57cb4b53780b27f47839dc848ae4c2f7fce2a2e5c13387",
+  "inputs": [
+    [
+      "engine_wasm.js",
+      "47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd3476cfb70131de6287c9"
+    ],
+    [
+      "engine_wasm_bg.wasm",
+      "6057521d851bb8544eaeea467f741b90cd2941aa5ba2fddb17e1bcc3d9933f8f"
+    ]
+  ],
+  "fixtureSha256": "ee062b8ad351e067723b79fc8462aaea19202ef9756d35b2101334eb3e350107"
+}

@@ -451,3 +451,49 @@ break-test the first complete human-vs-CPU match (pregame, choices, legal bounde
 CPU, board/inspector, visible 30-second response countdown, recovery, terminal
 result). Shelf tabs are recorded integration work, not a reason to defer that
 match. No publication, production merge, website-release change, APK or migration.
+
+## October 24, 2026 — browser worker timer and atomic human-command integration
+
+Verified remote Play head `afe351e89b1740b8dd4580000d2bf30c81461265` and the
+complete recursive tree (no AGENTS.md). Worked from isolated exact-ref experiment
+modules; existing dirty workspaces and the website-release branch were untouched.
+The owner requested a pushed testable candidate, followed by live release only
+after successful testing. This checkpoint does not meet that playable gate.
+
+Added optional `human-timed` worker mode. The existing human/CPU command journal
+now saves the response clock, accepted action, policy RNG and receipt in the
+same compare-and-write record. Explicit actions and expired timer passes share
+one serialized revision gate. Resume validates the persisted decision and retains
+its absolute deadline. A timeout never invokes the CPU chooser for the human.
+Mandatory choices stop with `timeout-needs-choice`; the complete no-stall product
+policy is still unresolved. The existing untimed diagnostic modes remain available.
+
+Executed **92 Node tests, zero failures/skips/cancellations**, including six new
+timer/journal cases: early ticks, human/timer races, lost-ack recovery, retained
+deadline, mandatory selections and corrupt clock refusal. CI proof's future
+guard count is updated to 92; no hosted job was triggered by this change.
+
+Executed the real browser timer harness against the original SHA-verified runtime
+and three-card fixture: human keep and CPU keep reach human Priority; an early
+tick leaves the revision unchanged; the browser closes, the local server stops,
+and a fresh offline browser resumes the same deadline. The scheduler waits for
+the real 30-second deadline and commits one legal pass. A duplicate request
+returns its durable receipt with no second history entry. Chromium 153.0.8010.0.
+Evidence: `experiments/phase-engine/browser-timer-evidence-2026-10-24.json`.
+The first launch failed because Playwright's default executable was absent;
+the existing explicit Chromium path resolved that environment issue.
+This is a diagnostic worker/storage test, not the visible countdown, full board,
+all-prompt offline coverage, CPU strength, or a playable Standard/Commander match.
+
+At the latest check the approved run 40150756588, attempt 2, job 121043947174,
+remains in build/verification. No corrected artifact or new ninjutsu pass is
+claimed. Both original regressions and the Stifle/restore tests are unchanged.
+No new paid run, production merge, deployment, APK, migration or public activation.
+
+Next: inspect the active build result and provenance; run the preserved mechanics
+and Stifle/restore checks on corrected bytes if available. Connect accepted command
+refreshes and foreground events to the scheduler, then the actual player choice,
+payment/cancel, board/inspector/countdown and bounded CPU controls. Finish a complete
+private 1v1 match and terminal-result recovery before calling this ready to test.
+Standard/Commander and CPU first; Friends follows, Draft remains deferred.
+
