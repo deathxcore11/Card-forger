@@ -1,0 +1,74 @@
+{
+  "version": "4.0.1",
+  "commit": "2b7f180071ea15dfac41390a0b7e3013ee65377d",
+  "tree": "40bfd8b6da21a06dd728c97d3c6dd5e101be7748",
+  "deployment": {
+    "status": "completed",
+    "conclusion": "success",
+    "url": "https://dash.cloudflare.com/463cf46936691d9c289153374d04c99e/workers/services/view/cardforge2/production/builds/4ed74bf6-805d-4a47-923a-324a9e14fe59",
+    "completedAt": "2026-10-25T20:33:46Z"
+  },
+  "focusedNode": {
+    "pass": 442,
+    "fail": 0
+  },
+  "ui": {
+    "passed": true,
+    "errors": [],
+    "keyboard": {
+      "closeFocus": "card-8",
+      "escapeFocus": "inspect-card-8",
+      "passed": true
+    },
+    "suites": {
+      "deck": {
+        "passed": true,
+        "cases": 0,
+        "checks": 34
+      },
+      "session": {
+        "passed": true,
+        "cases": 0,
+        "checks": 9
+      },
+      "focus": {
+        "passed": true,
+        "cases": 3,
+        "checks": 0
+      },
+      "decisions": {
+        "passed": true,
+        "cases": 7,
+        "checks": 0
+      },
+      "suite": {
+        "passed": true,
+        "cases": 96,
+        "checks": 0
+      }
+    },
+    "sourceCount": 218,
+    "fullReportSha256": "2f8598b03ecdcf62e405a3ec691bbb1c6042b9903390a9ce098e2218a0bba5b9"
+  },
+  "liveVerification": {
+    "servedBytes": "NOT TESTED",
+    "finalLiveMatch": "NOT TESTED",
+    "reason": "Browser reload reached account loading; subsequent observation rejected by browser URL policy. No workaround attempted."
+  },
+  "engineBuild": {
+    "authorizedAttempts": 1,
+    "dispatched": false,
+    "reviewedCommit": "8ba7b21821a25a5faaa688edeecf86668349b41c"
+  },
+  "android": {
+    "version": "0.6.0 beta",
+    "versionCode": 13,
+    "interfaceVersion": "3.95.1"
+  },
+  "nextTarget": {
+    "web": "4.1",
+    "apk": "0.9 beta provisional",
+    "friends": "invite-only 1v1; NOT IMPLEMENTED"
+  },
+  "recovery": "UNSUPPORTED"
+}
