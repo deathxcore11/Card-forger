@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "browser": "153.0.8010.0",
+  "geometry": [
+    {
+      "width": 1280,
+      "height": 720,
+      "formWidth": 620,
+      "within": true,
+      "overflow": false
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "formWidth": 620,
+      "within": true,
+      "overflow": false
+    },
+    {
+      "width": 3440,
+      "height": 1440,
+      "formWidth": 620,
+      "within": true,
+      "overflow": false
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "formWidth": 620,
+      "within": true,
+      "overflow": false
+    }
+  ],
+  "baseCssSha256": "64c73ac31a7c2cdef3cf533747c8c8bfc907a008c98aa5f48eb98356df91f75b",
+  "cssSha256": "7070ce8f9fa6e0393de8b7e8862fe4cfaf3a52016f4b28dc2188226d6c897b8c",
+  "moduleSha256": "31fa9a5be6109923eca8403ad2197e3e368adb12f957f4c619ae3f4d57a43c0a",
+  "harnessSha256": "bf7b3b678a2bc11b51bf8ceb607923c8f78a18a3d2f6cf3cb10c5ed3d74d81b3",
+  "checks": [
+    "no engine callback or randomness before explicit confirmation",
+    "Escape cancels once without creating a match",
+    "explicit CPU/player/random first-seat choices",
+    "duplicate confirmation invokes start and randomness once",
+    "changed account generation and source deck refuse start",
+    "keyboard confirmation works",
+    "destroyed prompt cannot start a match",
+    "unknown startup outcome locks all later submit events and requires recovery",
+    "failed prompt can return exactly once",
+    "profile edits invalidate the captured setup"
+  ],
+  "limits": "Actual pregame module with simulated account/deck readers and start callback. No rules-engine match, signed-in production route, private-friend pregame or all mulligan behavior claim."
+}

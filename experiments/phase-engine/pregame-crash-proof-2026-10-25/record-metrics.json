@@ -1,0 +1,28 @@
+{
+  "passed": false,
+  "metrics": {
+    "revision": 87,
+    "history": 87,
+    "receipts": 87,
+    "engineCharacters": 305380,
+    "receiptCharacters": 442084,
+    "largestReceiptCharacters": 8074,
+    "result": null,
+    "snapshotDigest": "bca789ac3910720ff53dd71d371c3a674ec93021d57e9af561a9ba58eb014f76"
+  },
+  "expected": {
+    "matchId": "configured-standard",
+    "revision": 386,
+    "winner": 1,
+    "reason": "engine-terminal",
+    "finishedAt": 1792919609614,
+    "snapshotDigest": "bca789ac3910720ff53dd71d371c3a674ec93021d57e9af561a9ba58eb014f76",
+    "format": "Standard",
+    "difficulty": "Medium",
+    "humanCommands": 187,
+    "humanCasts": 1,
+    "turn": 22
+  },
+  "harnessSha256": "b70dfc8d3169665f5c0cc8bcc543715cf4c778656f579388344ae737f71fb286",
+  "limits": "Read-only actual saved-record metrics after the failed post-match restart. Matching revision/result establishes persistence in this profile, not an engine restore, whole-record equivalence or an OOM root-cause proof."
+}

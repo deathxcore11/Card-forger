@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "tests": 186,
+  "failures": 0,
+  "skipped": 0,
+  "cancelled": 0,
+  "limits": "Focused module tests; no full-account, real-deck, calibrated-difficulty or recovery certificate.",
+  "archiveSha256": "edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b",
+  "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee"
+}

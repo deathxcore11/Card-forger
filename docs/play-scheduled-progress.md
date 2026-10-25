@@ -1478,3 +1478,85 @@ human decisions/mandatory timeout policy and calibrated difficulty gates once
 recovery is trustworthy. Existing release approval applies after actual gates,
 not to this fixture-only candidate. No production, APK, schema/migration,
 subscription/budget increase, paid build or external message occurred.
+
+
+## October 25, 2026 — explicit pregame and strict-write crash reproduction
+
+Started at freshly verified remote a77a2856fb03aeb4aecf187a9126f0d06eb8174a.
+The complete recursive remote tree has no AGENTS.md. Existing experiment modules
+match the remote Git blob identities; excluded three old untracked research probes.
+No concurrent local engine/browser test was running when this slice began.
+Read current handoff, engine evaluation, human-route proof, mechanics acceptance,
+response timer, CPU-context and linked core art/release/CPU requirements.
+
+The private app candidate now mounts explicit pregame before starting the player
+mat, replacing its unconditional human-first start. Player/CPU/random first seat
+and an independent crypto shuffle seed are resolved only after confirmation.
+No invented coin/die face. Changed account generation, selected lists, format,
+difficulty or profile invalidate confirmation. Duplicate submit, retired controls
+and unknown startup outcomes cannot create a second match. Cancel/close restores
+app input; the preserved newer app creates its player mat only after confirmation. Public readiness remains false;
+no enabled public Play button or production publication follows.
+
+All 186 focused tests pass (zero skips/failures/cancellations). Actual Chromium
+153 pregame checks pass keyboard confirmation, cancel, source/account changes,
+duplicate confirmation and failed-start lockout at four desktop sizes. Visually
+reviewed 1280x720 capture. A separate browser proof executes the exact app action
+with test-only admission enabled and simulated dependencies: no start before
+confirmation, explicit CPU-first once, duplicate entry blocked, close/cancel
+cleanup and startup error handling. These are not signed-in app or engine proofs.
+
+Reverified retained archive SHA-256
+edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b and WASM
+a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee.
+The unchanged loader checks delivered runtime/rules identities. No Rust build,
+binary substitution or change to original/corrected ninjutsu evidence.
+
+Added an isolated browser process-group helper and crash harnesses. Actual strict
+IndexedDB record storage passed six SIGKILL/offline restarts at revisions 12,
+152 and 386, preserving complete journals, frozen inputs, receipts and terminal
+metadata. A second stress run passed 386 sequential acknowledgements and six
+restarts with simulated journals up to 1,631,725 bytes. These isolate storage;
+they are NOT engine-match durability or power-loss guarantees.
+
+The real-engine strict-write game again reached engine GameOver, revision 386,
+turn 22, winner seat 1, 187 explicit human commands and one human cast. It passed
+pending-bottoming SIGKILL/offline recovery and continued the actual game. After
+terminal SIGKILL and offline restart it exited 137; shared oom_kill rose 9 to 10.
+The complete suite is FAILED/INCOMPLETE. Terminal whole-record comparison,
+Commander initialization, illegal-list and final account-change assertions did
+not finish. Terminal partial receipt and failure log are preserved.
+
+A fresh read-only browser inspection (no engine loading, service worker bypass,
+no journal reconstruction) found stored revision 87, 87 history/receipt entries,
+result null, versus acknowledged terminal 386. Same frozen input digest. This
+reproduces rollback WITH strict storage: do not call strict writes a fix. The
+record inspected has 305,380 engine characters and 442,084 receipt characters.
+The root cause is unresolved; memory failure and rollback remain release blockers.
+Original earlier rollback evidence remains unchanged.
+
+Proof files: experiments/phase-engine/pregame-crash-proof-2026-10-25/.
+The executed full-game harness is practice-crash-engine-browser.mjs. A separate
+practice-crash-engine-compact-browser.mjs replaces potentially huge terminal
+assertion diffs with exact whole-record SHA-256 comparison and compact revision
+metrics. It is syntax checked but its full-match repeat has NOT executed. This
+is diagnostic hardening, not an engine/storage correction.
+
+Next: use compact whole-record comparisons and checkpoint exact acknowledgement
+versus fresh storage at bounded revisions/blob sizes to isolate rollback without
+an enormous assertion diff. Record profile/origin before any next long run.
+Then verify real eligible Standard/Commander decks, remaining explicit choices,
+mandatory-timeout policy, fair calibrated difficulties, and signed-in owner flow.
+Do not start another paid engine build. The pregame does not settle format-specific
+pregame/coin winner rights or the complete mulligan matrix. Owner release approval
+still applies once actual gates pass, but they remain unmet. No production, APK,
+schema, subscription, budget increase or external message changes occurred.
+
+Concurrent checkpoint handling: before ref update, remote advanced to
+632165e75da235e34cda4b0617ed67491b912bd2. Preserved its app.js, menu CSS,
+service-worker changes, all reports and progress entry. Rebased this slice as
+only failed-start/profile pregame hardening, additional stress/compact diagnostics
+and this separate revision-87 evidence. Repeated pregame and exact app-entry
+browser checks against that newer app/CSS; both pass. The app keeps its newer
+lazy player-mat creation behavior. Bumped only its existing private shell cache
+version for the changed pregame bytes. No old whole-branch overwrite.
