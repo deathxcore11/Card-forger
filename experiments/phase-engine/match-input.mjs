@@ -1,3 +1,4 @@
+import {evaluateCatalogAdmission} from './catalog-admission.mjs';
 // Pure bridge from CardStashy's account/import snapshots to exact engine lists.
 // Construction legality and executed-card support remain separate admissions.
 const name=v=>typeof v==='string'&&v.trim().length>0&&v.length<=512?v.trim():null;
@@ -43,7 +44,8 @@ export function evaluateMatchAdmission(engine,input,coverage={}){
  for(const seat of ['player','opponent']){
   const gate=engine.evaluateDeckFormatGate({...input.engineLists[seat],selected_format:input.format,player_count:2});
   if(typeof gate?.compatible!=='boolean'||!Array.isArray(gate.reasons))throw Error('INVALID_FORMAT_GATE');
-  seats[seat]={constructionLegal:gate.compatible,reasons:[...gate.reasons],unsupported:checked.seats[seat].unsupported,admitted:gate.compatible&&checked.seats[seat].covered};
+  const catalog=input.decks[seat].practiceCatalogReview===undefined?null:evaluateCatalogAdmission(input.engineLists[seat],input.format,input.decks[seat].practiceCatalogReview);
+  seats[seat]={...(catalog?{catalog}:{}),constructionLegal:gate.compatible,reasons:[...gate.reasons,...(catalog?.reasons||[])],unsupported:checked.seats[seat].unsupported,admitted:gate.compatible&&checked.seats[seat].covered&&(!catalog||catalog.admitted)};
  }
  return {coverageVersion:checked.coverageVersion,seats,admitted:seats.player.admitted&&seats.opponent.admitted};
 }

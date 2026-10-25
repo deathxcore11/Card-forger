@@ -19,6 +19,7 @@ import {playMenuMarkup} from './play-menu.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {createPlayerMat} from './play-player-mat.js';
 import {createPracticeCardPreparation} from './play-card-preparation.js';
+import {createPracticeCatalogReview} from './play-catalog-review.js';
 import {mountPracticePregame} from './play-pregame.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
@@ -1513,7 +1514,7 @@ A.playStartCandidate=async()=>{
    resolveNames:names=>resolveNames(names,()=>{},false,current),
    lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),
    fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
-  playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:closePlayerMat});
+  playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:cards.prepare,reviewDecks:createPracticeCatalogReview({isCurrent:current,lookupNames:identifiers=>api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers})})}),lookup:cards.lookup,onClose:closePlayerMat});
   try{await playerMatHost.start(options);}catch(e){toast(e.message);}
  }});
 };

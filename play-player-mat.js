@@ -8,8 +8,8 @@ const loadModules=async()=>{
  const [flow,table]=await Promise.all([import('./experiments/phase-engine/practice-flow.mjs'),import('./experiments/phase-engine/match-table.mjs')]);
  return {createPracticeFlow:flow.createPracticeFlow,mountMatchTable:table.mountMatchTable};
 };
-export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwork=async()=>{},captureContext=capturePracticeDeckContext,onChange=()=>{},onClose=()=>{},load=loadModules,sessionOnly=true}={}){
- if(!root||typeof readAccount!=='function'||typeof readSetup!=='function'||typeof lookup!=='function'||typeof prepareArtwork!=='function')throw Error('PLAYER_MAT_HOST_REQUIRED');
+export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwork=async()=>{},reviewDecks=async()=>null,captureContext=capturePracticeDeckContext,onChange=()=>{},onClose=()=>{},load=loadModules,sessionOnly=true}={}){
+ if(!root||typeof readAccount!=='function'||typeof readSetup!=='function'||typeof lookup!=='function'||typeof prepareArtwork!=='function'||typeof reviewDecks!=='function')throw Error('PLAYER_MAT_HOST_REQUIRED');
  if(typeof sessionOnly!=='boolean')throw Error('INVALID_SESSION_MODE');
  let generation=0,flow=null,table=null,opening=false,last=null,frame=null,pendingPaint=null,warning=false;
  const view=root.ownerDocument.defaultView;
@@ -49,11 +49,14 @@ export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwor
    if(!resume){const review=reviewPracticeSetup(setup);if(!review.canLoad){const error=Error('PRACTICE_SETUP_UNAVAILABLE');error.review=review;throw error;}}
    message('Opening Practice…',sessionOnly?[sessionNote]:[]);modules=await load();if(!resume){message('Preparing your cards…',sessionOnly?[sessionNote]:[]);await prepareArtwork(structuredClone(setup));}
    if(ticket!==generation||accountKey()!==owner||!resume&&setupKey(readSetup())!==selection)throw Error('SELECTION_CHANGED');
+   const catalog=resume?null:await reviewDecks(structuredClone(setup));
+   if(ticket!==generation||accountKey()!==owner||!resume&&setupKey(readSetup())!==selection)throw Error('SELECTION_CHANGED');
    const captured=resume?null:{...setup,selected:captureContext(capturePracticeArtwork(setup.selected,lookup)),opponent:captureContext(capturePracticeArtwork(setup.opponent,lookup))};
+   if(catalog){captured.selected.practiceCatalogReview=structuredClone(catalog.player);captured.opponent.practiceCatalogReview=structuredClone(catalog.opponent);}
    flow=modules.createPracticeFlow({readAccount,readSetup:()=>captured,sessionOnly,onChange:state=>receive(state,ticket),onProgress:p=>{if(ticket===generation&&!table)message(p.stage==='rules'?'Preparing card rules…':'Loading Practice…',sessionOnly?[sessionNote]:[]);}});
    const result=resume?await flow.resume(matchId):await flow.start({opponent:captured.opponent,seed,first});
    if(ticket!==generation)throw Error('PLAYER_MAT_CLOSED');return result;
-  }catch(error){if(ticket===generation){warnOnLeave(false);message(error.review?'Review Practice setup':'Practice could not open',error.review?[...error.review.reasons,...Object.entries(error.review.seats||{}).filter(([,s])=>s.unsupported.length).map(([seat,s])=>(seat==='player'?'Your deck':'CPU deck')+': '+s.unsupported.join(', '))]:[error.message,...(sessionOnly?[sessionNote]:[])],true);onChange({phase:sessionOnly?'session-ended':'error',error:error.message});}throw error;}
+  }catch(error){if(ticket===generation){warnOnLeave(false);message(error.review?'Review Practice setup':'Practice could not open',error.review?[...error.review.reasons,...Object.entries(error.review.seats||{}).filter(([,s])=>s.unsupported.length).map(([seat,s])=>(seat==='player'?'Your deck':'CPU deck')+': '+s.unsupported.join(', '))]:[...(error.reasons||[error.message]),...(sessionOnly?[sessionNote]:[])],true);onChange({phase:sessionOnly?'session-ended':'error',error:error.message});}throw error;}
   finally{if(ticket===generation)opening=false;}
  }
  return {start:options=>open(options),resume:matchId=>open({resume:true,matchId}),snapshot:()=>last?structuredClone(last):null,requestExit:()=>table?.requestExit(),

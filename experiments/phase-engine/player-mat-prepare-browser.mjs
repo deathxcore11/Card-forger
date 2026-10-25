@@ -19,7 +19,7 @@ const sha=b=>createHash('sha256').update(b).digest('hex'),routes=new Map(),stubs
 };
 for(const [name,source]of Object.entries(stubs))routes.set('/site/'+name,Buffer.from(source));
 for(const name of ['play-player-mat.js','play-card-surface.js'])routes.set('/site/'+name,await readFile(new URL('../../'+name,import.meta.url)));
-for(const name of ['practice-preflight.mjs','practice-coverage.mjs','match-input.mjs'])routes.set('/site/experiments/phase-engine/'+name,await readFile(new URL(name,import.meta.url)));
+for(const name of ['practice-preflight.mjs','practice-coverage.mjs','match-input.mjs','catalog-admission.mjs'])routes.set('/site/experiments/phase-engine/'+name,await readFile(new URL(name,import.meta.url)));
 routes.set('/',Buffer.from(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:2rem;background:#18191c;color:#eee;font:16px system-ui}</style><main id="mat"></main><script type="module">
 import {createPlayerMat} from '/site/play-player-mat.js';
 window.account={user:{id:'fixture-owner'},accountGeneration:1};window.catalog=new Map();window.lookups=[];window.events=[];window.flowCreated=0;window.flowStarted=0;window.loadedModules=0;window.prepared=null;window.preparePending=false;

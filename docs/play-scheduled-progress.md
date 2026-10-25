@@ -1952,3 +1952,62 @@ selectively integrate into the CURRENT website-release head. The existing
 promising arbitrary owner decks. Do not reopen save/resume or calibrated CPU
 strength as initial-beta blockers. Owner publication approval remains active;
 no new approval is needed when the core gates pass. The beta has NOT shipped.
+
+## October 25 — fresh catalog legality bound to the frozen match lists
+
+Verified remote Play head `a36349e62ee48bbc7899fadbe3e36ebfc0e28836`;
+complete recursive tree `07df58d40d16d140a479563d5b69a04bea4fb070`
+contains no AGENTS.md. This slice adds the missing CURRENT catalog-legality
+check; it does not expand the existing tested-card pool or activate Play.
+
+The actual app launch now requests fresh named-card metadata through its
+existing `/cards/collection` API, in batches of at most 75, deduplicated across
+both lists. It does not rely on the compiled fixture's format tags or old cached
+artwork metadata. It includes sideboards and declared commanders, requires an
+Oracle identity and `legal` status for the selected Standard/Commander format,
+and rejects unavailable, missing, banned, rotated or restricted entries.
+No source lists, collection records or printing/finish choices are rewritten.
+
+The product mat waits for this account-scoped review before creating its flow
+or authority worker, checks account AND selected lists again after the await,
+and displays explicit per-seat reasons on rejection. The review is cloned into
+each frozen deck snapshot with its format, semantic full-list key (quantities,
+main/side/command zones), lookup time and individual card statuses. Worker
+admission rechecks that evidence when present: changed lists, missing entries,
+duplicate metadata, future timestamps and evidence older than 24 hours reject,
+even if the compiled engine's gate returns compatible. Engine construction,
+copy limits and executed-card coverage remain independent mandatory gates.
+The input digest already covers these nested snapshot fields.
+
+Research harnesses without catalog evidence retain their historical narrow
+behavior; the real app constructor always supplies the fresh review callback.
+That distinction is explicit: this optional research path is NOT current-format
+certification. Browser harness route inventories were updated for the new
+shared import without changing gameplay/regression assertions. The extracted
+app-entry harness stubs the new catalog constructor; it remains a lifecycle test.
+
+Executed: final focused sequential suite **289 passed**, zero failures,
+cancellations or skips (`catalog-proof-2026-10-25/focused.tap`), including five
+new tests for exact snapshot admission, bad/missing legalities, side/commander
+coverage, version/freshness, batching/account races, and malformed evidence.
+JavaScript syntax checks pass. These use simulated catalog responses and a
+controlled engine-gate double; no fresh real deck or browser match is claimed.
+The prior 236-action host-match evidence is preserved unchanged.
+
+Workspace maintenance removed the local delivered runtime/browser cache in this
+run. No Rust build or replacement runtime was attempted; the durable corrected
+archive remains `libfile_d318ce26c60481919a7063890c856e89` with its recorded
+receipt/hashes. Reacquire it before the next real-engine run, rather than saying
+it needs another paid build. Existing independent source implementation proceeded.
+Scryfall's public docs endpoints returned 403 during this run, so no new API
+contract claim relies on that fetch; this uses CardStashy's existing collection
+request/response contract and named-card metadata fields, with explicit rejection
+of incomplete data. No successful external catalog lookup was executed here.
+
+Next: restore exact durable runtime/browser inputs, choose a concrete eligible
+Standard/Commander list using actual current metadata AND existing compiled
+support, test its required optional choices, and exercise the full app/shared art
+path. Then selectively integrate reviewed sources into the CURRENT release head
+and publish under the owner's existing approval. Still no live beta, APK/schema,
+subscription, spending-cap or paid engine-build change. Resume and CPU tuning
+remain deferred; preserved save rollback evidence is not a beta prerequisite.
