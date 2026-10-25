@@ -412,3 +412,42 @@ run both original mechanics failures and the new real Stifle response/restore
 suite, then continue human controls/CPU/board/timer/recovery. Wire the selected
 CPU source through exact-list validation and durable match identity as part of
 that playable milestone; do not spend another slice only expanding menus.
+
+## October 25, 2026 — focused source tabs and deterministic shelf rotation
+
+Verified remote Play head `44bf1ef09db4c6ff4c9aa1f4766296bb5a291495`
+and full tree (no AGENTS.md). Inspected all six new owner screenshots and the
+Moxgate Y'shtola guide. Indexed exact attachment IDs and hashes. Owner wants a
+broad sourced library with rotating choices, explicitly avoiding overwhelming
+screens. Recorded My Decks / Precons / Meta / Build, Random inside Build, one tab
+at a time and a shared player/CPU browser with the persistent right inspector.
+See [rotation checkpoint](play-library-rotation.md).
+
+Added an isolated deterministic shelf selector and existing-Meta-feed adapter:
+source-date freshness, explicit cEDH scope, duplicate-list grouping retaining
+source/printing variants, archetype variety and previous-visit avoidance.
+Twenty precon/shelf tests passed, zero fail/skip/cancel; syntax passed. This is
+presentation/data-layer code with authored fixtures, not mounted tabs or CPU
+play. Existing product code and the engine regressions are unchanged.
+
+Inspected the existing MTGO and EDHTop16 adapters. Live official MTGO index was
+retrieved and hash-recorded; the selected October 24 Standard Challenge page
+failed with a 25-second/zero-byte timeout. Web retrieval also timed out. No event
+parser result or new live meta deck import is claimed; the inline check exited
+1 with missing-file ENOENT. Exact outcomes are in the shelf evidence JSON.
+No unofficial paid connector, new backend, messages or bulk restricted scrape.
+
+At 2026-10-25T02:00:54Z the approved corrected-engine run `40150756588`
+attempt 2 / job `121043947174` is still in build/verification, with no artifacts.
+Do not launch another paid run. User explicitly asked about CPU break testing;
+we stated that six earlier simple engine games and focused tests do not prove a
+complete CPU match on the user's real decks. That product gate is still open.
+This checkpoint skips unrelated hosted CI while the approved budgeted job runs;
+its 20 listed local tests actually executed.
+
+Next: prioritize this active build's completion, exact artifact/provenance and
+preserved printed/Satoru ninjutsu plus real Stifle/restore cases. Then connect and
+break-test the first complete human-vs-CPU match (pregame, choices, legal bounded
+CPU, board/inspector, visible 30-second response countdown, recovery, terminal
+result). Shelf tabs are recorded integration work, not a reason to defer that
+match. No publication, production merge, website-release change, APK or migration.

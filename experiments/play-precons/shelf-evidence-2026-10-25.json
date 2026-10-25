@@ -1,0 +1,31 @@
+{
+  "checkedAt": "2026-10-25T01:59:56Z",
+  "testCommand": "node --test experiments/play-precons/test-*.mjs",
+  "tests": {
+    "passed": 20,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "syntaxCheck": "node --check experiments/play-precons/deck-shelf.mjs (exit 0)",
+  "liveSource": {
+    "indexUrl": "https://www.mtgo.com/decklists",
+    "indexBytes": 295770,
+    "indexSha256": "e2d06c0df786069866b46614f9d63514ca4191f32daf38ec025e0fc1a7c4e1c9",
+    "indexParse": "Selected latest Standard Challenge with unchanged mtgmeta.js",
+    "normalizerGitBlob": "d1aad5114d7e44eaa5c3f4970709a8760ef76fa7",
+    "selectedEventUrl": "https://www.mtgo.com/decklist/standard-challenge-16-2026-10-2412856977",
+    "eventFetch": "curl exit 28; 25-second timeout; 0 bytes. Web retrieval also timed out.",
+    "eventParse": "NOT EXECUTED: no event HTML; inline check exited 1 with ENOENT",
+    "newLiveDecksImported": 0
+  },
+  "limits": [
+    "Unit cases use authored data, not live meta decks.",
+    "No integrated product tabs or CPU deck picker tested.",
+    "No match legality, CPU piloting or engine adoption claim."
+  ],
+  "sourceFiles": {
+    "deck-shelf.mjs": "46febfa30d741bc2900829bc085c762896d4e4f03760054f588679cfc358163e",
+    "test-deck-shelf.mjs": "01ada31c9da83eb75b13c0f4189cc01ba2fb5e6ccc50d4fbc1591ca9f2387fab"
+  }
+}

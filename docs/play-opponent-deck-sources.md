@@ -89,3 +89,12 @@ Existing Meta/online-list/Random adapters, exact match-manifest persistence,
 engine preflight and CPU piloting remain to connect and test. No product UI or
 full match was exercised by these parser fixtures. The approved corrected-engine
 build and preserved ninjutsu response regressions remain the immediate priority.
+
+## Follow-up: rotating choices without overwhelming the UI
+
+The owner supplied six more screenshots and a Moxgate pilot-guide link, then
+explicitly requested tabs and a focused interface. See
+[Play library rotation](play-library-rotation.md) for the four-tab decision,
+source review, reference identities, implemented selector and exact test limits.
+The full source catalog belongs behind focused browsing, not several stacked
+feeds. No screen polish or source count substitutes for a working CPU match.

@@ -198,6 +198,72 @@
       "sha256": "7e6a2ffa2265a52787589f318b3557202f40b606f7cbd60a0344690be83d4f77",
       "reference_notes": "Artwork-led wide deck browser with selected deck on the right and anchored setup controls. Keep CardStashy warm glass, art and existing four card views, not the reference branding.",
       "inspection_provenance": "Inspected directly from the owner-provided scratch attachment in the October 25 desktop layout follow-up. Screenshot not copied into product assets."
+    },
+    {
+      "uploaded_name": "image(20261025-015327).png",
+      "library_file_id": "libfile_c1c1b797610c81919a95d29fbf4bada7",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_c1c1b797610c81919a95d29fbf4bada7&account_id=personal",
+      "original_local_path": "/workspace/scratch/04b6689e06e8/upload/image(20261025-015327).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 1492488,
+      "sha256": "693a37fa3cf2d0bd505dccd002279469b2755a95927e1d89fdcb5646077c2cb1",
+      "reference_notes": "Current CardStashy wide deck shelf, persistent right inspector and anchored setup controls. Preserve this base while organizing sources into tabs.",
+      "inspection_provenance": "Inspected directly from owner-provided scratch attachments on October 25. Screenshot not copied into product assets."
+    },
+    {
+      "uploaded_name": "image(20261025-015349).png",
+      "library_file_id": "libfile_1412ec8a5bd88191b63080fd8a2b2290",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_1412ec8a5bd88191b63080fd8a2b2290&account_id=personal",
+      "original_local_path": "/workspace/scratch/04b6689e06e8/upload/image(20261025-015349).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 181911,
+      "sha256": "2efd45a73589378ea9cda95e56aedd7c3a2378706be34556a0ab631ec0cb5e19",
+      "reference_notes": "Builder, My Decks and random entry actions. Reuse existing CardStashy builder; keep Random within Build.",
+      "inspection_provenance": "Inspected directly from owner-provided scratch attachments on October 25. Screenshot not copied into product assets."
+    },
+    {
+      "uploaded_name": "image(20261025-015413).png",
+      "library_file_id": "libfile_f526bf5b06c88191a4cf1d098d8d6c1e",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_f526bf5b06c88191a4cf1d098d8d6c1e&account_id=personal",
+      "original_local_path": "/workspace/scratch/04b6689e06e8/upload/image(20261025-015413).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 2478468,
+      "sha256": "959bf23fb4d40214adbcd0acff67786ad4a6783173f8e207d3a661221d5a7864",
+      "reference_notes": "Featured rotating art-led choices; cap initial shelf and show one library tab at a time. Provider brackets are not independently verified.",
+      "inspection_provenance": "Inspected directly from owner-provided scratch attachments on October 25. Screenshot not copied into product assets."
+    },
+    {
+      "uploaded_name": "image(20261025-015455).png",
+      "library_file_id": "libfile_6fa5b255d9c48191964e22eeea5d5b0a",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_6fa5b255d9c48191964e22eeea5d5b0a&account_id=personal",
+      "original_local_path": "/workspace/scratch/04b6689e06e8/upload/image(20261025-015455).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 56122,
+      "sha256": "f20989faaaf6f96c38264481340b218aee14a790717e0cbdf04aebc955d9c1af",
+      "reference_notes": "Explicit opponent-seat Choose and random action. Does not expand initial 1v1 scope to the reference's additional seats.",
+      "inspection_provenance": "Inspected directly from owner-provided scratch attachments on October 25. Screenshot not copied into product assets."
+    },
+    {
+      "uploaded_name": "image(20261025-015553).png",
+      "library_file_id": "libfile_b0b10f898ef0819197d14fb6b5da3679",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_b0b10f898ef0819197d14fb6b5da3679&account_id=personal",
+      "original_local_path": "/workspace/scratch/04b6689e06e8/upload/image(20261025-015553).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 2690910,
+      "sha256": "7c9700e1f40a263aba62e8365a7011af8235bde31ca977bb684648e5d6bcf846",
+      "reference_notes": "Searchable set catalog and upcoming groups. Set existence is distinct from a playable precon or engine-supported card pool.",
+      "inspection_provenance": "Inspected directly from owner-provided scratch attachments on October 25. Screenshot not copied into product assets."
+    },
+    {
+      "uploaded_name": "image(20261025-015614).png",
+      "library_file_id": "libfile_632dd403414c81918239af7e9b464190",
+      "library_url": "https://chatgpt.com/library?file_id=libfile_632dd403414c81918239af7e9b464190&account_id=personal",
+      "original_local_path": "/workspace/scratch/04b6689e06e8/upload/image(20261025-015614).png",
+      "local_path_is_ephemeral": true,
+      "local_bytes": 1749633,
+      "sha256": "f19833a0e950070fe6075315df860b5d16484762ea3954f915a37e28ba7ed647",
+      "reference_notes": "Rotating New Additions plus persistent deck summary/guide action in right rail. Require real first-seen dates; do not clutter tiles with all details.",
+      "inspection_provenance": "Inspected directly from owner-provided scratch attachments on October 25. Screenshot not copied into product assets."
     }
   ],
   "original_engineering_handoff_files": {
@@ -221,7 +287,11 @@
     "https://html.spec.whatwg.org/dev/workers.html",
     "https://magic.wizards.com/en/news/announcements/teenage-mutant-ninja-turtles-commander-decklist",
     "https://magic.wizards.com/en/news/announcements/star-trek-commander-decklists",
-    "https://mtgjson.com/api/v5/DeckList.json"
+    "https://mtgjson.com/api/v5/DeckList.json",
+    "https://www.moxgate.com/guides/yshtola-nights-blessed-commander/",
+    "https://deckcheck.co/app/precons",
+    "https://www.mtgo.com/decklists",
+    "https://edhtop16.com/about"
   ],
   "engine_provenance": {
     "candidate": "phase-rs/phase",
@@ -241,5 +311,6 @@
     "source_builds": "Two local source builds were OOM-killed at the 8 GiB container limit; execution used a separately verified upstream artifact.",
     "artifact_expiration": "Upstream artifact links can expire. No signed download URL is preserved as durable evidence; never silently substitute a different build."
   },
-  "current_owner_scope": "October 25 clarification: Standard and Commander only for the first desktop Play milestone; 1v1 Practice CPU with Easy/Medium/Hard and private Friends. Finish playable CPU first, Friends next, Draft deferred until these work. No publication."
+  "current_owner_scope": "October 25 clarification: Standard and Commander only for the first desktop Play milestone; 1v1 Practice CPU with Easy/Medium/Hard and private Friends. Finish playable CPU first, Friends next, Draft deferred until these work. No publication.",
+  "current_library_ui_direction": "October 25: broad sourced deck choice behind My Decks / Precons / Meta / Build tabs; Random within Build, one tab at a time, compact rotating shelves, filters disclosed, shared player/CPU browser and persistent right inspector. Exact selected decks never reroll."
 }
