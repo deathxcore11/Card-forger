@@ -1,0 +1,10 @@
+✔ app Back asks for active-match concession and closes a finished match without another loss (3.947676ms)
+✔ browser traversal restores the active route before confirmation and does not mutate match state (4.444722ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 233.025083

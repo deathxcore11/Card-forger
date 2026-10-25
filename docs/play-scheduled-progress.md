@@ -1726,3 +1726,108 @@ hashes and scoped reports only. Local raw exports are excluded and may be pruned
 Future exact-payload reproduction requires those explicit local inputs or a newly
 recorded test run, not an invented replacement. Remaining useful code/report work
 was completed without asking for additional access or payment.
+
+## October 25, 2026 — owner-scoped session-only beta and anti-stall clocks
+
+Owner explicitly changed the first beta's priorities during this run: saved
+progress/resume may be deferred; intentional Back/Exit can forfeit; publish a
+usable core for owner/friends to test rather than spending hours circling future
+features. Stronger difficulty and extra modes may follow. This supersedes the
+previous requirement to solve whole-journal IndexedDB crash recovery before any
+initial beta. Original rollback/NotReadableError evidence remains valid; do not
+say it is fixed. Latest current handoff begins with this scope correction.
+
+Started at freshly verified remote 05a9f5d4086dbfb082a8b847747ee9d529d03596,
+complete recursive tree with no AGENTS.md. Retained source modules copied to
+isolated save-fix; required current handoff and linked rules/controls/timer/CPU
+contracts reviewed. No Rust build, spending, binary substitution, server schema,
+APK, collection/scanner/finish change or external message.
+
+Implemented explicit sessionOnly:true bind/ack and account-flow option. Product
+mat defaults to it. Frozen deck/printing/context and exact revision receipts stay
+in that worker's in-memory journal; no large match IndexedDB read/write occurs.
+Historical durable research mode remains explicit default on lower-level clients
+so its old tests/evidence are not rewritten. Session resume/recover is refused;
+fatal/unknown outcomes retire the session with no invented result, while rejected
+human choices remain correctable. Before-unload warns only on a live accepted
+nonterminal match; terminal/detach/account-change/error removes it. In-app Back
+opens existing concession confirmation and restores the current route before
+navigation; Cancel does not act. Finished matches close without another loss.
+Browsers cannot guarantee an asynchronous concede on tab kill/refresh: no claim
+of reliable persisted abandonment scoring. UI explains no resume and explicit
+Exit forfeiture. Existing engine concession is used, never a synthetic winner.
+
+Implemented authority-owned anti-stall budgets for session-only mode: 30-second
+legal priority response remains; 90 seconds human inactivity, paused for CPU
+thinking, reset only by accepted HUMAN actions; 5-minute own-turn wall-clock cap
+never renewed by legal repeated actions or CPU responses. Inspection, rejected
+inputs and automatic passes cannot reset idle. Budget expiry before a late
+command/after async CPU selection is revalidated and submits a real Concede once
+with timeout reason/request ID in accepted trace. Mandatory choices are never
+strategically guessed. Session-only budgets refuse durable resume. Scheduler
+keeps idle running after a mandatory response clock expires, handles independently
+expired hard turns, and stops at terminal. UI shows separate clocks, warning at
+30s for budgets and5s for reaction, without rebuilding a focused input. Defaults
+are initial beta settings, not calibrated competitive timing.
+
+Pinned manifest is now cache-first with full runtime/rules identity validation;
+invalid cached manifests are evicted, invalid downloads fail closed, aborts retain
+their reason. No weakening of chunk/glue/WASM/rules hashes. All new static imports
+are in the current SW inventory; shell cache version updated. Existing historical
+browser harnesses need new static module routes if rerun; their captured outcomes
+remain historical, not newly executed against these files.
+
+Executed 250 focused Phase/pregame tests, zero failures/skips/cancellations, plus
+2 exact app-navigation extraction tests. An initial new scheduler test used an
+inconsistent mock state (waiting+expired); corrected to the actual authority's
+expired state without removing its timeout assertions; final250 all pass.
+
+Actual Chromium153/default clocks/delivered runtime: session-only account/setup
+coordinator starts with IndexedDB access throwing in the served authority; idle
+Mulligan decision expires after a REAL90-second wait and engine yields winner1,
+revision1, no guessed bottoming/payment. Cancel Exit preserves revision. A new
+independent session has revision0 and reuses the validated runtime cache (one
+manifest request across the starts). Complete visible control game reaches engine
+GameOver revision384,turn22,winner1,187human commands,onehuman cast, with explicit
+attack/no-block choices. Confirmed Exit in a third session yields one engine loss.
+No match IndexedDB access. These use simulated account/setup readers and a land-
+heavy control, NOT actual signed-in owner flow or general real-deck readiness.
+The full browser run binds its exact route bytes; later scheduler terminal guard
+and presentation cleanup are covered by final250 and the final UI proof, not a
+repeated complete game. Do not collapse these scoped outcomes into one broad pass.
+
+Final lightweight browser proof passes1280x720/1920x1080/3440x1440: separate clocks,
+visible decisions, warning boundaries, stable numeric input/focus during polls,
+requestExit dialog and cancelled Exit without an action/navigation. Visually
+reviewed1280; fixed touching timer labels with spacing and repeated final UI proof.
+Text-only projected table, not full artwork signoff. Existing shared artwork and
+emblems/Power/bracket/wiki hooks are preserved in the product host.
+
+Owner asked specifically for correct flying blocking. Exact corrected WASM/glue/
+receipt and unchanged6137-rule fixture pass3/3 engineered combat cases: Bear->flyer
+explicit relation rejected with semantic/combat/counters/damage/RNG unchanged;
+flying blocker accepted; Reach blocker accepted; real combat damage checked.
+Earlier driver assumptions hit correctly skipped/filtered capabilities; first two
+reports retained separately, no rules assertions removed. No network. These are
+engineered combat positions, not complete legal histories or all-abilities support.
+
+Independent next-deck probe: a 60-card mono-green creature list passes the pinned
+engine's Standard gate and completes315actions,turn16 in a both-seat policy Node
+mirror, with12casts and combat. Record exact list/trace in green-deck-probe.json.
+It is NOT independently verified current Standard legality; optional abilities,
+human choice/UI paths, all draws and CPU strength are unproved. Do not promote
+all9 names to full coverage from one game. Jasmine compiled restriction has an
+Unimplemented node; Isamaru absent. This is a better NEXT browser fixture, not a
+release certificate or an excuse to broaden supported pools silently.
+
+Next concrete work: finish the actual selected/imported-deck account launch and
+review eligible real deck versions through the mat, including exact art and the
+CPU's supported decisions. Keep a basic honestly labeled CPU for the first beta;
+strong difficulty tuning may follow. Do NOT return to crash-resume as a release
+blocker for the session-only scope. No more full-game repeats unless new behavior
+or unresolved failures justify them. Source public activation remains false and
+setup button disabled: no fixture-only public Play release. Current website head
+was freshly read as fe1d753749af2324bd875e32ca8af8f8dbfd2ac9; verify again before
+selected-source integration. Owner release approval remains sufficient once the
+concrete account-facing beta passes its actual core gates. Production unchanged.
+Evidence: experiments/phase-engine/session-beta-proof-2026-10-25/.

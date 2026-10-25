@@ -6,8 +6,9 @@ import {RUNTIME_IDENTITY} from './runtime-assets.mjs';
 import {createMatchSession} from './match-session.mjs';
 
 export function createPracticeFlow({readAccount,readSetup,onChange=()=>{},onProgress=()=>{},
- connect=connectPractice,makeSession=createMatchSession,newId=()=>crypto.randomUUID()}={}){
+ connect=connectPractice,makeSession=createMatchSession,newId=()=>crypto.randomUUID(),sessionOnly=false}={}){
  if(typeof readAccount!=='function'||typeof readSetup!=='function')throw Error('ACCOUNT_READERS_REQUIRED');
+ if(typeof sessionOnly!=='boolean')throw Error('INVALID_SESSION_MODE');
  let operation=0,client=null,session=null,bound=null,recoveryOwner=null,state={phase:'idle',matchId:null,binding:null,game:null,error:null};
  const snapshot=()=>structuredClone(state);
  const publish=()=>onChange(snapshot());
@@ -22,14 +23,22 @@ export function createPracticeFlow({readAccount,readSetup,onChange=()=>{},onProg
   if((bound||recoveryOwner)&&!current(bound||recoveryOwner)){retire();state={phase:'account-changed',matchId:null,binding:null,game:null,error:'ACCOUNT_CHANGED'};publish();return false;}
   return true;
  }
+ function acceptGame(game){
+  // An engine-rejected selection can be corrected in the same live session.
+  // A lost authority cannot be recovered when its only record was in memory.
+  const failed=!!game.error&&(!sessionOnly||game.error!=='CHOICE_REJECTED');
+  state.game=game;state.phase=failed?(sessionOnly?'session-ended':'recovery-required'):game.status?.terminal?'finished':'playing';state.error=game.error||null;
+  if(sessionOnly&&failed)retire();
+ }
  async function open({resume=false,matchId,input,seed,first}={}){
+  if(resume&&sessionOnly)throw Error('SESSION_RESUME_UNAVAILABLE');
   if(state.phase==='opening'||session)throw Error('MATCH_ALREADY_OPEN');
-  const owner=account();retire();const ticket=operation;bound=owner;recoveryOwner=owner;
+  const owner=account();retire();const ticket=operation;bound=owner;recoveryOwner=sessionOnly?null:owner;
   state={phase:'opening',matchId,binding:null,game:null,error:null};publish();
   let candidate;
   const active=()=>ticket===operation&&current(owner);
   try{
-   candidate=connect({ownerId:owner.ownerId,match:matchId,resume,...(!resume?{input}:{}),isCurrent:active,
+   candidate=connect({ownerId:owner.ownerId,match:matchId,resume,...(sessionOnly?{sessionOnly:true}:{}),...(!resume?{input}:{}),isCurrent:active,
     onProgress:p=>{if(active())onProgress(structuredClone(p));}});client=candidate;
    const binding=await candidate.ready;
    if(!active())throw Error('ACCOUNT_CHANGED');
@@ -37,16 +46,16 @@ export function createPracticeFlow({readAccount,readSetup,onChange=()=>{},onProg
    if(!binding.admission?.admitted||!binding.cpuAvailable){
     candidate.close();client=null;bound=null;recoveryOwner=null;state.phase='unavailable';state.error=binding.cpuAvailable?'DECK_NOT_ADMITTED':'DIFFICULTY_UNAVAILABLE';publish();return snapshot();
    }
-   session=makeSession({client:candidate,onChange:game=>{if(active()){state.game=game;if(state.phase!=='opening'){state.phase=game.error?'recovery-required':game.status?.terminal?'finished':'playing';state.error=game.error||null;}publish();}}});
+   session=makeSession({client:candidate,onChange:game=>{if(active()){state.game=game;if(state.phase!=='opening')acceptGame(game);publish();}}});
    const game=await session.open({resume,...(!resume?{seed,first}:{})});
    if(!active())throw Error('ACCOUNT_CHANGED');
-   state.game=game;state.phase=game.error?'recovery-required':game.status?.terminal?'finished':'playing';state.error=game.error||null;publish();return snapshot();
+   acceptGame(game);publish();return snapshot();
   }catch(error){
    candidate?.close();
    if(ticket!==operation)throw Error('ACCOUNT_CHANGED');
    session?.close();session=null;client=null;
-   const changed=!current(owner);bound=null;if(changed)recoveryOwner=null;
-   state={...state,phase:changed?'account-changed':'recovery-required',...(changed?{matchId:null,binding:null,game:null}:{}),error:changed?'ACCOUNT_CHANGED':String(error.message)};publish();throw error;
+   const changed=!current(owner);bound=null;if(changed||sessionOnly)recoveryOwner=null;
+   state={...state,phase:changed?'account-changed':sessionOnly?'session-ended':'recovery-required',...(changed?{matchId:null,binding:null,game:null}:{}),error:changed?'ACCOUNT_CHANGED':String(error.message)};publish();throw error;
   }
  }
  return {snapshot,reconcile,
@@ -58,8 +67,9 @@ export function createPracticeFlow({readAccount,readSetup,onChange=()=>{},onProg
    const input=prepareMatchInput({player:setup.selected,opponent:opponent===undefined?setup.opponent:opponent,format:setup.match.format,difficulty:setup.match.difficulty,profile:setup.profile,runtimeIdentity:RUNTIME_IDENTITY.wasmSha256});
    return open({matchId:newId(),input,seed,first});
   },
-  resume(matchId){return open({resume:true,matchId});},
+  resume(matchId){if(sessionOnly)throw Error('SESSION_RESUME_UNAVAILABLE');return open({resume:true,matchId});},
   recover(){
+   if(sessionOnly)throw Error('SESSION_RESUME_UNAVAILABLE');
    // An unknown outcome is never retried as a fresh command or match. Retire
    // the old epoch first, then read the committed journal using its frozen list.
    if(state.phase!=='recovery-required'||!state.matchId||!recoveryOwner)throw Error('RECOVERY_NOT_AVAILABLE');

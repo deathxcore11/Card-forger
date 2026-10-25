@@ -1,0 +1,136 @@
+{
+  "passed": true,
+  "provenance": {
+    "buildIdentity": "cardstashy-ci-40153568000-1-ninjutsu-a49b8aa",
+    "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "sourceDiffSha256": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+    "buildReceiptSha256": "9c9e378fd2247f0a860f8f0cf4f2086464d2bf181af24ce7c02bd61161e69af2",
+    "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "glueSha256": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "rulesGzipSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "rulesDecodedSha256": "6e1cfd15ae73b426ee6fb4e26c7a5d83af96e905c0f5fd3d301a3d195e40118e",
+    "fixtureEntries": 6137,
+    "loadedNames": [
+      "Forest",
+      "Grizzly Bears",
+      "Air Elemental",
+      "Scarecrow Guide"
+    ],
+    "subsetSha256": "beda351838af1860ac256050e888e18cd4fee87ddfe32aeb10e43af437a091a9",
+    "sourceVerification": "Delivered bytes match pinned identities and retained build receipt. Source checkout/archive was not reverified in this run."
+  },
+  "cases": [
+    {
+      "name": "Grizzly Bears cannot block a flying attacker",
+      "passed": true,
+      "setupSha256": "20ceb785fb75464b9f577ffd82d276a0a746cf1e731f132fa54392578d937772",
+      "blocker": "Grizzly Bears",
+      "attacker": "Air Elemental",
+      "publishedLegalEdge": false,
+      "explicitRelationStatus": "rejected",
+      "rejectedStateUnchanged": true,
+      "finalLife": [
+        14,
+        20
+      ],
+      "finalSemanticSha256": "7ebccb811d004f4e776895fbfeb525d8e3482ff0b1430fabc5c683bb719734a8",
+      "setupAndPriorityTrace": {
+        "acceptedActions": 15,
+        "acceptedTraceSha256": "9aa0ffa0fc4a9138943bc5010be63b2073ced2fc1ad12d09537609804b5addc1",
+        "events": {
+          "PriorityPassed": 6,
+          "PhaseChanged": 6,
+          "PermanentTapped": 2,
+          "AttackersDeclared": 1,
+          "LifeChanged": 2,
+          "DamageDealt": 2,
+          "CombatDamageDealtToPlayer": 1
+        }
+      },
+      "checks": [
+        "no legal ground-to-flying edge",
+        "explicit illegal relation rejected",
+        "semantic state/combat/RNG unchanged",
+        "unblocked flyer plus ground control attacker deal four plus two to defender"
+      ]
+    },
+    {
+      "name": "Air Elemental can block a flying attacker",
+      "passed": true,
+      "setupSha256": "427ee7d512c69bb830c234fd950c9975379b42c4157177f48c4d1bdfe7609d89",
+      "blocker": "Air Elemental",
+      "attacker": "Air Elemental",
+      "publishedLegalEdge": true,
+      "explicitRelationStatus": "applied",
+      "rejectedStateUnchanged": false,
+      "finalLife": [
+        20,
+        20
+      ],
+      "finalSemanticSha256": "8c6975f57dbd9388e9d8262603167eee34a0b60b2bdaff90ef4020b45ee34d29",
+      "setupAndPriorityTrace": {
+        "acceptedActions": 15,
+        "acceptedTraceSha256": "ee2f6dfaf31cbd8c9b5a6f2646de2c9f30fb66cf3dc358204445c785f4cbdb7a",
+        "events": {
+          "PriorityPassed": 6,
+          "PhaseChanged": 6,
+          "PermanentTapped": 1,
+          "AttackersDeclared": 1,
+          "DamageDealt": 2,
+          "ZoneChanged": 2,
+          "CreatureDestroyed": 2
+        }
+      },
+      "checks": [
+        "legal flying/reach-to-flying edge",
+        "explicit relation accepted",
+        "real blocker assignment and blocked flag",
+        "combat damage preserves defending player life"
+      ]
+    },
+    {
+      "name": "Scarecrow Guide can block a flying attacker",
+      "passed": true,
+      "setupSha256": "0f543bd33969b3e65a62018da2a330e9b1eb7be8bc21777b531d70cf65d07e10",
+      "blocker": "Scarecrow Guide",
+      "attacker": "Air Elemental",
+      "publishedLegalEdge": true,
+      "explicitRelationStatus": "applied",
+      "rejectedStateUnchanged": false,
+      "finalLife": [
+        20,
+        20
+      ],
+      "finalSemanticSha256": "4db184917738fc313d42f271de239ad4fdad4f914db7f361b799e5985975d520",
+      "setupAndPriorityTrace": {
+        "acceptedActions": 15,
+        "acceptedTraceSha256": "ee2f6dfaf31cbd8c9b5a6f2646de2c9f30fb66cf3dc358204445c785f4cbdb7a",
+        "events": {
+          "PriorityPassed": 6,
+          "PhaseChanged": 6,
+          "PermanentTapped": 1,
+          "AttackersDeclared": 1,
+          "DamageDealt": 2,
+          "ZoneChanged": 1,
+          "CreatureDestroyed": 1
+        }
+      },
+      "checks": [
+        "legal flying/reach-to-flying edge",
+        "explicit relation accepted",
+        "real blocker assignment and blocked flag",
+        "combat damage preserves defending player life"
+      ]
+    }
+  ],
+  "limits": "Three engineered two-player Vintage combat positions (ground-rejection case includes a ground control attacker and legal flying control blocker to expose authentic combat capabilities), not complete legal histories, eligible real Standard/Commander decks, UI gesture tests, CPU tactics, all combat mechanics or broad card coverage.",
+  "networkCalls": 0,
+  "sourceSha256": {
+    "flying-blocks-engine.mjs": "0686700203f29a109ed78f04a473848461201358ddd5d93936d22764c5403dd1",
+    "mechanics-fixtures.mjs": "41376f6253f4fe6c5cc15cda917111e6f4bbb8c74886d5f5d7c566f37ef494e4",
+    "mechanics-inputs.mjs": "66461978fed003c3931601beb8d752dcbadabc424df7e899ce789156e4a21874",
+    "interaction-surface.mjs": "1c11bc585304bea499575daca025c17abe50689060ee1c454daca6a0ecc44cbc",
+    "runtime-assets.mjs": "b210246c9d60e051927b47669cedb59ec7c5920bfca80e6cbc64b2f89e1b668e"
+  }
+}

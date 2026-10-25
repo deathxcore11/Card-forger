@@ -1,0 +1,211 @@
+{
+  "passed": true,
+  "checks": [
+    "distinct reaction 30 seconds, inactivity 1:30 and turn 5:00 displays from shared scheduler projection",
+    "inactivity and turn warnings activate at 30 seconds and remain off above the boundary",
+    "reaction warning activates at its separate five-second boundary",
+    "clock-only scheduler polls retain exact numeric input, text, focus and accepted revision without mutation requests",
+    "response/inactivity/turn timers, numeric input, decisions footer and exit control fit all three desktop viewports",
+    "programmatic exit opens the existing concession confirmation; Keep playing cancels without an engine command or navigation"
+  ],
+  "layouts": [
+    {
+      "width": 1280,
+      "height": 720,
+      "boxes": [
+        {
+          "tag": "Response time",
+          "left": 1140.890625,
+          "top": 585.875,
+          "right": 1253,
+          "bottom": 607.625,
+          "width": 112.109375,
+          "height": 21.75
+        },
+        {
+          "tag": "Inactivity time",
+          "left": 1063.09375,
+          "top": 585.875,
+          "right": 1128.890625,
+          "bottom": 607.625,
+          "width": 65.796875,
+          "height": 21.75
+        },
+        {
+          "tag": "Turn time",
+          "left": 980.828125,
+          "top": 585.875,
+          "right": 1051.09375,
+          "bottom": 607.625,
+          "width": 70.265625,
+          "height": 21.75
+        },
+        {
+          "tag": "Match decisions",
+          "left": 8,
+          "top": 572.875,
+          "right": 1272,
+          "bottom": 712,
+          "width": 1264,
+          "height": 139.125
+        },
+        {
+          "tag": "Chosen number",
+          "left": 41.25,
+          "top": 644.625,
+          "right": 102.25,
+          "bottom": 688.625,
+          "width": 61,
+          "height": 44
+        },
+        {
+          "tag": "BUTTON",
+          "left": 1163.375,
+          "top": 8,
+          "right": 1272,
+          "bottom": 49.75,
+          "width": 108.625,
+          "height": 41.75
+        }
+      ],
+      "screenshot": "/workspace/scratch/04b6689e06e8/test-results/table-budget/budget-1280x720.png"
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "boxes": [
+        {
+          "tag": "Response time",
+          "left": 1774.890625,
+          "top": 939.875,
+          "right": 1887,
+          "bottom": 961.625,
+          "width": 112.109375,
+          "height": 21.75
+        },
+        {
+          "tag": "Inactivity time",
+          "left": 1697.09375,
+          "top": 939.875,
+          "right": 1762.890625,
+          "bottom": 961.625,
+          "width": 65.796875,
+          "height": 21.75
+        },
+        {
+          "tag": "Turn time",
+          "left": 1614.828125,
+          "top": 939.875,
+          "right": 1685.09375,
+          "bottom": 961.625,
+          "width": 70.265625,
+          "height": 21.75
+        },
+        {
+          "tag": "Match decisions",
+          "left": 14,
+          "top": 926.875,
+          "right": 1906,
+          "bottom": 1066,
+          "width": 1892,
+          "height": 139.125
+        },
+        {
+          "tag": "Chosen number",
+          "left": 47.25,
+          "top": 998.625,
+          "right": 108.25,
+          "bottom": 1042.625,
+          "width": 61,
+          "height": 44
+        },
+        {
+          "tag": "BUTTON",
+          "left": 1797.375,
+          "top": 14,
+          "right": 1906,
+          "bottom": 55.75,
+          "width": 108.625,
+          "height": 41.75
+        }
+      ],
+      "screenshot": "/workspace/scratch/04b6689e06e8/test-results/table-budget/budget-1920x1080.png"
+    },
+    {
+      "width": 3440,
+      "height": 1440,
+      "boxes": [
+        {
+          "tag": "Response time",
+          "left": 3294.890625,
+          "top": 1299.875,
+          "right": 3407,
+          "bottom": 1321.625,
+          "width": 112.109375,
+          "height": 21.75
+        },
+        {
+          "tag": "Inactivity time",
+          "left": 3217.09375,
+          "top": 1299.875,
+          "right": 3282.890625,
+          "bottom": 1321.625,
+          "width": 65.796875,
+          "height": 21.75
+        },
+        {
+          "tag": "Turn time",
+          "left": 3134.828125,
+          "top": 1299.875,
+          "right": 3205.09375,
+          "bottom": 1321.625,
+          "width": 70.265625,
+          "height": 21.75
+        },
+        {
+          "tag": "Match decisions",
+          "left": 14,
+          "top": 1286.875,
+          "right": 3426,
+          "bottom": 1426,
+          "width": 3412,
+          "height": 139.125
+        },
+        {
+          "tag": "Chosen number",
+          "left": 47.25,
+          "top": 1358.625,
+          "right": 108.25,
+          "bottom": 1402.625,
+          "width": 61,
+          "height": 44
+        },
+        {
+          "tag": "BUTTON",
+          "left": 3317.375,
+          "top": 14,
+          "right": 3426,
+          "bottom": 55.75,
+          "width": 108.625,
+          "height": 41.75
+        }
+      ],
+      "screenshot": "/workspace/scratch/04b6689e06e8/test-results/table-budget/budget-3440x1440.png"
+    }
+  ],
+  "browser": "153.0.8010.0",
+  "sourceSha256": {
+    "/interaction-surface.mjs": "1c11bc585304bea499575daca025c17abe50689060ee1c454daca6a0ecc44cbc",
+    "/protocol-fault.mjs": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+    "/card-placement.mjs": "e84ae49658ec58cbaa21488c6a73162a8e370f280425cfc2778ae394f28f3259",
+    "/match-table.mjs": "27887e99b101b817134a432395e4044ebf5094df9270e6c33a64904460d0c9d5",
+    "/match-table.css": "aa65b4a57a4c7eae1bfa064aeb517036ddbf38c444331492d91a56ef6d1f57ba",
+    "/card-stats.mjs": "9d2df7ff86d2f96e97481451b7cdb3eb500d447430f4f9862ba76c49ca7bb46f",
+    "/random-outcomes.mjs": "1aa212c485c766caf1d80403f2413c22bb17194cbbfa54979a699a38ea2d12d0",
+    "/match-session.mjs": "1b9d48f064219fc16016e993e8abd9aca8a477b6138008d1a88fa98c952f045b",
+    "/priority-scheduler.mjs": "384c3ebad47090992a0e544d91cb0d4c234a9fc75d085b9aa84905eaf06586f3",
+    "/": "06d9397d35bb27ceeb8d2fb307bf91926631298b2ce331b50a0e975c0bcc3cf1"
+  },
+  "limits": "Actual current shared table, session and scheduler with simulated authoritative clock/status schemas. No engine or real elapsed-time wait, account route, offline persistence, complete match or timeout-forfeit proof.",
+  "harnessSha256": "79fce094edea07af453fbb7f9303334a044efe7586bc8fc48858518288692d57"
+}

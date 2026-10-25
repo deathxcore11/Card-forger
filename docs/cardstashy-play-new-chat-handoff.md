@@ -1,3 +1,36 @@
+# Owner beta scope update — October 25, 2026
+
+Latest direct owner instructions supersede earlier mandatory-resume gates below.
+The owner explicitly prioritizes a usable published beta for their own/friends'
+testing, allows save/resume to be deferred, and says intentional Back/Exit may
+count as a loss. Do NOT spend another run repeating durable-journal crash tests
+as the prerequisite to an initial session-only beta. Preserve their evidence;
+never claim the underlying IndexedDB rollback is fixed.
+
+Initial beta matches now use explicit sessionOnly:true in the product mat/flow:
+a live worker retains frozen inputs/printing and idempotent in-memory receipts,
+without large match IndexedDB reads/writes. Resume is unavailable. Confirmed
+Exit/Back concedes through the engine; Cancel does nothing. Browser unload has a
+leave warning; a process kill/unknown outcome cannot reliably commit an engine
+loss and is not invented as one. A stopped session can start a new match.
+
+The owner also requested separate anti-stall clocks: existing 30-second legal
+priority response, 90 seconds of actual human inactivity, hard 5-minute own-turn
+budget independent of legal actions. Only accepted human actions reset idle;
+inspection, invalid inputs and automatic passes do not. CPU thinking pauses idle,
+while hard own-turn wall time continues. Mandatory choices time out by an actual
+engine concession, never an invented target/payment. Defaults need playtesting.
+CPU strength tuning may follow the first usable beta; do not mislabel identical
+policies as three verified strengths. Friends and Draft remain later scope.
+
+Release authorization remains explicit. Next priority is one actual account-to-
+match beta with an eligible real list and usable controls/art. Existing tiny
+land-heavy controls cannot be advertised as support for the owner's full decks.
+Keep unrelated live changes intact and integrate selected reviewed source into
+the CURRENT release head. No APK/server schema/subscription/budget changes.
+
+---
+
 # Current owner authorization and runtime status — October 24 late evening
 
 This update supersedes older release/paid-build status statements below. Owner

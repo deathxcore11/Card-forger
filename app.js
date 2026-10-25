@@ -1381,6 +1381,11 @@ function switchGame(game) {
   return navigate({...target,mode:game===source?'replace':'push'});
 }
 function applyHistory() {
+  if(playerMatHost?.snapshot()?.phase==='playing'){
+    const hash=normalizeRoute(location.hash),entry=historyEntry(history.state,hash);
+    if(entry?.entryId!==activeEntry?.entryId||hash!==activeEntry?.route){restoreActiveHistory({mode:entry?'pop':'legacy',entry});playerMatHost.requestExit();}
+    return;
+  }
   if(askNavigation?.historyChanged())return;
   if(settingsPopup.historyChanged())return;
   if(!navigationReady)return;
@@ -1407,6 +1412,9 @@ const topDialog=()=>[...document.querySelectorAll('dialog[open]')].sort((a,b)=>(
 const parentRoute=hash=>/^#wiki\//.test(hash)?'#wiki':/^#(?:t?set)\//.test(hash)?'#sets':/^#(?:t?deck)\//.test(hash)?'#decks':/^#collection\/./.test(hash)?'#collection':'#home';
 let backBusy=0;
 function appBack(){
+  const matchPhase=playerMatHost?.snapshot()?.phase;
+  if(matchPhase==='playing'){playerMatHost.requestExit();return true;}
+  if(matchPhase==='finished'){closePlayerMat();return true;}
   // A second Back while the first is still settling (a fast double swipe) does nothing rather than skipping a level.
   if(Date.now()-backBusy<250)return true;backBusy=Date.now();
   if(askNavigation?.busy)return true;

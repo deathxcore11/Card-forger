@@ -1,9 +1,9 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {createPracticeFlow} from './practice-flow.mjs';
-function fixture({ready,game={status:{terminal:null},error:null}}={}){
+function fixture({ready,game={status:{terminal:null},error:null},sessionOnly=false}={}){
  let a={user:{id:'owner-a'},accountGeneration:1},closed=0,opened=0,last,sessionOptions;const connections=[],events=[],sessions=[];
  const deck={name:'Selected',format:'Standard',cards:[{name:'Plains',qty:60,finish:'foil',printingId:'exact'}]},setup={selected:deck,match:{format:'Standard',difficulty:'Medium',mode:'cpu'},profile:{ownerId:'owner-a',signedIn:true,displayName:'A'}};
- const flow=createPracticeFlow({readAccount:()=>a,readSetup:()=>setup,newId:()=> 'new-match',connect:options=>{last=options;connections.push(options);events.push('connect');return {ready:ready||Promise.resolve({admission:{admitted:true},cpuAvailable:true}),close(){closed++;events.push('close');}};},makeSession:options=>{sessionOptions=options;sessions.push(options);return {async open(options){opened++;return game;},close(){closed++;events.push('close');}};}});
+ const flow=createPracticeFlow({readAccount:()=>a,readSetup:()=>setup,newId:()=> 'new-match',sessionOnly,connect:options=>{last=options;connections.push(options);events.push('connect');return {ready:ready||Promise.resolve({admission:{admitted:true},cpuAvailable:true}),close(){closed++;events.push('close');}};},makeSession:options=>{sessionOptions=options;sessions.push(options);return {async open(options){opened++;return game;},close(){closed++;events.push('close');}};}});
  return {flow,deck,setup,account:v=>{a=v;},last:()=>last,connections,events,sessions,closed:()=>closed,opened:()=>opened,emit:g=>sessionOptions.onChange(g)};
 }
 test('selected account/import list is captured once and opponent stays exact',async()=>{
@@ -76,4 +76,37 @@ test('account reconciliation also retires a failed-start recovery identity',asyn
  f.account({user:{id:'owner-b'},accountGeneration:2});assert.equal(f.flow.reconcile(),false);
  assert.equal(f.flow.snapshot().matchId,null);assert.equal(f.flow.snapshot().binding,null);assert.equal(f.flow.snapshot().game,null);
  assert.throws(()=>f.flow.recover(),/RECOVERY_NOT_AVAILABLE/);
+});
+
+test('session-only mode reaches the worker explicitly while default flow retains durable behavior',async()=>{
+ const durable=fixture(),ephemeral=fixture({sessionOnly:true});
+ await durable.flow.start({opponent:durable.deck,seed:1});await ephemeral.flow.start({opponent:ephemeral.deck,seed:1});
+ assert.equal(Object.hasOwn(durable.last(),'sessionOnly'),false);assert.equal(ephemeral.last().sessionOnly,true);
+ assert.equal(ephemeral.last().resume,false);assert.equal(ephemeral.flow.snapshot().phase,'playing');
+});
+test('session-only resume and recovery reject before reading an account or creating a worker',()=>{
+ let touched=0;const flow=createPracticeFlow({sessionOnly:true,readAccount(){touched++;throw Error('SHOULD_NOT_READ');},readSetup(){touched++;},connect(){touched++;}});
+ assert.throws(()=>flow.resume('old-match'),/SESSION_RESUME_UNAVAILABLE/);assert.throws(()=>flow.recover(),/SESSION_RESUME_UNAVAILABLE/);assert.equal(touched,0);
+});
+test('a lost session-only authority stops the match without fabricating a result or reopening',async()=>{
+ const f=fixture({sessionOnly:true});await f.flow.start({opponent:f.deck,seed:1});const old=f.sessions[0],connection=f.connections[0];
+ const failure={status:{revision:7,terminal:null},error:'RECOVERY_REQUIRED'};f.emit(failure);
+ assert.equal(f.flow.snapshot().phase,'session-ended');assert.deepEqual(f.flow.snapshot().game,failure);assert.equal(f.flow.getSession(),null);assert(f.closed()>0);
+ assert.throws(()=>f.flow.recover(),/SESSION_RESUME_UNAVAILABLE/);assert.throws(()=>f.flow.resume('new-match'),/SESSION_RESUME_UNAVAILABLE/);assert.equal(f.connections.length,1);
+ old.onChange({status:{terminal:{winner:1}},error:null});connection.onProgress({stage:'ready'});assert.deepEqual(f.flow.snapshot().game,failure);assert.equal(connection.isCurrent(),false);
+});
+test('session-only startup game errors retire the worker and retain no recovery route',async()=>{
+ const game={status:null,error:'RECOVERY_REQUIRED'},f=fixture({sessionOnly:true,game});
+ const result=await f.flow.start({opponent:f.deck,seed:1});assert.equal(result.phase,'session-ended');assert.deepEqual(result.game,game);assert.equal(f.flow.getSession(),null);assert(f.closed()>0);assert.equal(f.connections.length,1);
+ assert.throws(()=>f.flow.recover(),/SESSION_RESUME_UNAVAILABLE/);
+});
+test('failed session-only worker startup reports stopped session rather than saved-match recovery',async()=>{
+ const f=fixture({sessionOnly:true,ready:Promise.reject(Error('WORKER_TIMEOUT'))});
+ await assert.rejects(f.flow.start({opponent:f.deck,seed:1}),/WORKER_TIMEOUT/);assert.equal(f.flow.snapshot().phase,'session-ended');assert.equal(f.flow.snapshot().game,null);assert.equal(f.opened(),0);assert.equal(f.flow.getSession(),null);
+ assert.throws(()=>f.flow.recover(),/SESSION_RESUME_UNAVAILABLE/);assert.equal(f.connections.length,1);
+});
+test('a rejected session-only choice remains correctable without retiring the live authority',async()=>{
+ const f=fixture({sessionOnly:true});await f.flow.start({opponent:f.deck,seed:1});const closed=f.closed();
+ f.emit({status:{revision:4,terminal:null},error:'CHOICE_REJECTED'});assert.equal(f.flow.snapshot().phase,'playing');assert(f.flow.getSession());assert.equal(f.closed(),closed);assert.equal(f.connections.length,1);
+ f.emit({status:{revision:5,terminal:{winner:0}},error:null});assert.equal(f.flow.snapshot().phase,'finished');assert.equal(f.flow.snapshot().game.status.terminal.winner,0);assert.equal(f.closed(),closed);
 });

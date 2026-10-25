@@ -55,3 +55,19 @@ test('countdown projection drops unexpected private data and malformed time stop
  await h.scheduler.start();assert.deepEqual(h.statuses[0],{revision:3,state:'waiting',remainingSeconds:1,warning:true,needsChoice:false});h.scheduler.stop();
  const bad=harness(async()=>({revision:0,clock:{state:'waiting',remainingMs:NaN,deadlineAt:10}}));await bad.scheduler.start();assert.equal(bad.errors.length,1);assert.equal(bad.timers.size,0);
 });
+
+test('mandatory prompt keeps the inactivity clock alive after its reaction window expires',async()=>{
+ let time=0,ticks=0;
+ const result=()=>({revision:0,clock:{state:time>=30000?'timeout-needs-choice':'waiting',remainingMs:Math.max(0,30000-time),deadlineAt:30000},turnClock:{state:time>=90000?'expired':'waiting',idleRemainingMs:Math.max(0,90000-time),turnRemainingMs:300000-time,remainingMs:Math.max(0,90000-time),warning:time>=60000,expired:time>=90000,reason:time>=90000?'inactivity':null,save:'private'}});
+ const h=harness(async({op})=>{if(op==='tick'){ticks++;return {revision:1,clock:{state:'other-actor'},turnClock:{state:'terminal'}};}return result();});
+ await h.scheduler.start();assert.equal(h.statuses.at(-1).limits.idleSeconds,90);assert.equal(h.statuses.at(-1).limits.turnSeconds,300);
+ time=30000;await h.scheduler.refresh();assert.equal(h.statuses.at(-1).needsChoice,true);assert.equal(h.timers.size,1);assert.equal(ticks,0);
+ time=90000;await h.scheduler.refresh();assert.equal(ticks,1);assert.equal(h.timers.size,0);assert.equal(h.errors.length,0);assert.equal(h.statuses.at(-1).state,'other-actor');
+});
+test('turn budget can expire independently of a new response window',async()=>{
+ const h=harness(async({op})=>op==='tick'?{revision:8,clock:{state:'other-actor'},turnClock:{state:'terminal'}}:{revision:7,clock:{state:'waiting',remainingMs:29000,deadlineAt:330000},turnClock:{state:'expired',idleRemainingMs:89000,turnRemainingMs:0,remainingMs:0,warning:true,expired:true,reason:'turn-limit'}});
+ await h.scheduler.start();assert.equal(h.statuses.at(-1).revision,8);assert.equal(h.timers.size,0);assert.equal(h.errors.length,0);
+});
+test('terminal turn budget stops even if a stale priority clock still says waiting',async()=>{
+ const calls=[];const h=harness(async({op})=>{calls.push(op);return {revision:9,clock:{state:'waiting',remainingMs:1000,deadlineAt:30000},turnClock:{state:'terminal'}};});await h.scheduler.start();assert.deepEqual(calls,['status']);assert.equal(h.timers.size,0);assert.equal(h.errors.length,0);
+});

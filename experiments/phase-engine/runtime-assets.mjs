@@ -31,12 +31,22 @@ export async function loadEngineAssets({baseURL,fetcher=fetch,signal,onProgress=
   const bytes=await response.arrayBuffer();if(length!==undefined&&bytes.byteLength!==length||await sha(bytes)!==hash)throw Error('RUNTIME_ASSET_MISMATCH');
   signal?.throwIfAborted();try{await cache?.put(url,new Response(bytes));}catch{}return bytes;
  };
- // Only a manifest whose entire package has passed is retained for offline boot.
- const manifestURL=urlFor('manifest.json');let text;
- try{const r=await fetcher(manifestURL,{signal});if(!r.ok)throw Error('RUNTIME_ASSET_UNAVAILABLE');text=await r.text();}
- catch(error){signal?.throwIfAborted();const cached=await cache?.match(manifestURL);if(!cached)throw error;text=await cached.text();}
- if(text.length>16384)throw Error('BAD_RUNTIME_MANIFEST');const manifest=validateRuntimeManifest(JSON.parse(text));
- if(loadCards)validateRulesManifest(manifest.cardDatabase);
+ // This immutable package is already pinned to exact source/runtime identities.
+ // A previously verified manifest can start offline without a network probe;
+ // validate it again and evict an invalid entry before attempting a download.
+ // Only a manifest whose entire package has passed is retained below.
+ const manifestURL=urlFor('manifest.json');let text,manifest,cachedManifest=null;
+ const parseManifest=value=>{if(value.length>16384)throw Error('BAD_RUNTIME_MANIFEST');const m=validateRuntimeManifest(JSON.parse(value));if(loadCards)validateRulesManifest(m.cardDatabase);return m;};
+ signal?.throwIfAborted();
+ try{cachedManifest=await cache?.match(manifestURL);}catch{signal?.throwIfAborted();}
+ if(cachedManifest){
+  try{text=await cachedManifest.text();signal?.throwIfAborted();manifest=parseManifest(text);}
+  catch{signal?.throwIfAborted();try{await cache?.delete(manifestURL);}catch{}}
+ }
+ if(!manifest){
+  signal?.throwIfAborted();const r=await fetcher(manifestURL,{signal});if(!r.ok)throw Error('RUNTIME_ASSET_UNAVAILABLE');
+  text=await r.text();signal?.throwIfAborted();manifest=parseManifest(text);
+ }
  const glue=await read(manifest.glue.path,RUNTIME_IDENTITY.glueSha256);
  const compressed=new Uint8Array(manifest.compressedBytes);let offset=0;
  for(const c of manifest.chunks){const b=await read(c.path,c.sha256,c.bytes);compressed.set(new Uint8Array(b),offset);offset+=b.byteLength;onProgress({stage:'download',completed:offset,total:manifest.compressedBytes});}

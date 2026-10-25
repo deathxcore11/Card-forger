@@ -1,0 +1,147 @@
+[
+  {
+    "path": "app.js",
+    "size": 416562,
+    "sha": "16d5982bdaf1fb59b1acb7af7390298b559fd101"
+  },
+  {
+    "path": "sw.js",
+    "size": 12957,
+    "sha": "025070fa2337b53fa935dda9b7fb58a228ec0c22"
+  },
+  {
+    "path": "play-player-mat.js",
+    "size": 7559,
+    "sha": "d663f63a98bbbf4965c129df1deba17475050878"
+  },
+  {
+    "path": "play-pregame.js",
+    "size": 3636,
+    "sha": "280eb1d5e08acd14ff922918716e5a64ee7c402d"
+  },
+  {
+    "path": "test-play-session-navigation.mjs",
+    "size": 1787,
+    "sha": "526ecc6c50f210b317c08a02c933407db8df6fcf"
+  },
+  {
+    "path": "docs/cardstashy-play-new-chat-handoff.md",
+    "size": 34506,
+    "sha": "5a9352b6ec920c79908b7bb9dab61bb2b8dbdf15"
+  },
+  {
+    "path": "docs/play-scheduled-progress.md",
+    "size": 120957,
+    "sha": "2073d23ffdd820ec84ec09c5365d3bcb3e6060da"
+  },
+  {
+    "path": "experiments/phase-engine/practice-authority.mjs",
+    "size": 4264,
+    "sha": "5be3885a83e7d469cd2200b268bf204e1110ec2f"
+  },
+  {
+    "path": "experiments/phase-engine/practice-client.mjs",
+    "size": 3215,
+    "sha": "b2d61f9645ff1ed91e484fb1b1d59d28a5efae13"
+  },
+  {
+    "path": "experiments/phase-engine/practice-flow.mjs",
+    "size": 5838,
+    "sha": "e2c0e669e948347f93e96f7a71c728998f285aa0"
+  },
+  {
+    "path": "experiments/phase-engine/practice-session-record.mjs",
+    "size": 1553,
+    "sha": "7e4ea863f60098bca138b52ea5794ff59a31d8c7"
+  },
+  {
+    "path": "experiments/phase-engine/runtime-assets.mjs",
+    "size": 6571,
+    "sha": "1c4d57a359d69565d96d233955f2cec4aa10d0e7"
+  },
+  {
+    "path": "experiments/phase-engine/turn-budget.mjs",
+    "size": 5855,
+    "sha": "62b7297536206a1241a55011ba2c8b0f41330766"
+  },
+  {
+    "path": "experiments/phase-engine/worker-journal.mjs",
+    "size": 11681,
+    "sha": "08161d165814e0c07a0a3a7c9d77116cf2e4deec"
+  },
+  {
+    "path": "experiments/phase-engine/match-session.mjs",
+    "size": 10685,
+    "sha": "0b9568e15828ad36a5ce7616d94d6e22c5a022bb"
+  },
+  {
+    "path": "experiments/phase-engine/priority-scheduler.mjs",
+    "size": 3865,
+    "sha": "d0a74ea912a6c56beec1c3787c2f95b142ff00e7"
+  },
+  {
+    "path": "experiments/phase-engine/match-table.mjs",
+    "size": 25187,
+    "sha": "d0cc90acf11c96030eed312be5594c98795a1af7"
+  },
+  {
+    "path": "experiments/phase-engine/match-table.css",
+    "size": 7510,
+    "sha": "6204fad0a499dc94c9294a61edd5787d3e891df6"
+  },
+  {
+    "path": "experiments/phase-engine/test-practice-client.mjs",
+    "size": 5986,
+    "sha": "b48fd819476ee8f98a810e0898698c5669ac949c"
+  },
+  {
+    "path": "experiments/phase-engine/test-practice-flow.mjs",
+    "size": 11353,
+    "sha": "7d0ba255340bc271f0b70deb71f6061c02d800ec"
+  },
+  {
+    "path": "experiments/phase-engine/test-practice-session-record.mjs",
+    "size": 5672,
+    "sha": "f25619c09e1fa03f7ba82221d05c265a4187a06d"
+  },
+  {
+    "path": "experiments/phase-engine/test-practice-session-binding.mjs",
+    "size": 1453,
+    "sha": "ef8543e25ab42255c4f1c5430ffdb8ab97ee9f2c"
+  },
+  {
+    "path": "experiments/phase-engine/test-runtime-assets.mjs",
+    "size": 5985,
+    "sha": "d2879601afe809d9a9a1ad8111aa328d0fb0131d"
+  },
+  {
+    "path": "experiments/phase-engine/test-turn-budget.mjs",
+    "size": 7187,
+    "sha": "a7e3947a009c77b02acbf3a142b1f7d9e88dbaaa"
+  },
+  {
+    "path": "experiments/phase-engine/test-worker-turn-budget.mjs",
+    "size": 8050,
+    "sha": "b2cd2405d86b205c367e20f8ee62f29a10f2cd81"
+  },
+  {
+    "path": "experiments/phase-engine/test-priority-scheduler.mjs",
+    "size": 7236,
+    "sha": "f159e4fe90b7eac865177cc94eb229c2fe2b1b73"
+  },
+  {
+    "path": "experiments/phase-engine/practice-session-beta-browser.mjs",
+    "size": 9657,
+    "sha": "ed6312d46924d7477dff510b2baac308e7d01d34"
+  },
+  {
+    "path": "experiments/phase-engine/table-budget-browser.mjs",
+    "size": 8729,
+    "sha": "5e580562111fa54493f24833bcdbe76c9b1b0bdf"
+  },
+  {
+    "path": "experiments/phase-engine/flying-blocks-engine.mjs",
+    "size": 9935,
+    "sha": "3d20ec63ba7e4cfdaf10795f2e9253d0918d17a7"
+  }
+]

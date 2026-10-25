@@ -1,0 +1,21 @@
+BROWSER Loading download
+BROWSER Loading download
+BROWSER Loading download
+BROWSER Loading rules
+BROWSER Loading ready
+Waiting for actual 90-second opening-hand inactivity forfeit
+PASS actual engine idle-forfeit
+BROWSER Loading download
+BROWSER Loading download
+BROWSER Loading download
+BROWSER Loading rules
+BROWSER Loading ready
+Human commands 50 revision 101
+Human commands 100 revision 204
+Human commands 150 revision 307
+BROWSER Loading download
+BROWSER Loading download
+BROWSER Loading download
+BROWSER Loading rules
+BROWSER Loading ready
+{"checks":["session-only mode starts real engine with IndexedDB access forbidden","resume refused before another match starts","visible idle countdown and cancelled Exit preserve exact revision","actual 90-second mandatory-choice timeout concedes through engine without selecting cards","new session starts independently; validated cached manifest avoids second download","complete visible session-only control game with actual casting/combat and no persistent match writes","confirmed Exit produces real engine loss once"],"terminal":{"revision":384,"winner":1,"turn":22,"humanCommands":187,"humanCasts":1}}

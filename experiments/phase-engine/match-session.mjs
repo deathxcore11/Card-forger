@@ -49,12 +49,12 @@ export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.rand
     // A status already in flight may arrive after a player command. It cannot
     // replace that accepted revision or its deadline with an older projection.
     if(!closed&&next.revision>=status.revision)accept(next);
-    return {revision:status.revision,clock:status.clock};
+    return {revision:status.revision,clock:status.clock,...(status.turnClock?{turnClock:status.turnClock}:{})};
    }
    if(busy||closed||(error&&error!=='CHOICE_REJECTED'))return {revision:status.revision,clock:{state:'suspended'}};
    // Journal serializes this with any player action racing the expired deadline.
    busy=true;publish();
-   try{const next=await request('tick',{id:newId(),revision:status.revision});await driveCpu();return {revision:status.revision,clock:status.clock};}
+   try{const next=await request('tick',{id:newId(),revision:status.revision});await driveCpu();return {revision:status.revision,clock:status.clock,...(status.turnClock?{turnClock:status.turnClock}:{})};}
    finally{busy=false;publish();}
   },onStatus:value=>{clock=value;publish();},onError:()=>{error='RECOVERY_REQUIRED';publish();}
  });

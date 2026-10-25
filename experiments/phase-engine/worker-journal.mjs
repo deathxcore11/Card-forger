@@ -1,5 +1,6 @@
 // Research transport only. No UI, card coverage or opponent-strength certification.
 import {createPriorityClock} from './priority-clock.mjs';
+import {createTurnBudget} from './turn-budget.mjs';
 import {humanCommand} from './human-command.mjs';
 import {interactionSubmission} from './interaction-surface.mjs';
 import {Fault,fail} from './protocol-fault.mjs';
@@ -29,7 +30,9 @@ function validSave(s) {
 }
 // Durable receipts and engine state are one atomic record. Unknown engine errors
 // never cross the boundary. Serialization prevents overlapping WASM mutations.
-export function createJournal({engine,storage,choose,version,epoch,timing=null}) {
+export function createJournal({engine,storage,choose,version,epoch,timing=null,turnLimits=null}) {
+ if(turnLimits!==null&&(!recordObject(turnLimits)||engine.humanSeat!==0||typeof engine.act!=='function'||typeof engine.clockContext!=='function'))throw Error('BAD_TURN_OPTIONS');
+ const turnBudget=turnLimits===null?null:createTurnBudget({...turnLimits,now:turnLimits.now??timing?.now,humanSeat:0});
  let clock=null;
  let current=null,queue=Promise.resolve(),poisoned=false,projection=null;
  // Only this serialized authority mutates the engine. Reuse its seat projection
@@ -40,14 +43,18 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
  const makeClock=saved=>createPriorityClock({...timing,saved});
  const armClock=(revision,saved=null)=>{const c=makeClock(saved);if(c.arm(clockContext(revision)).state==='stale-clock')fail('CLOCK_CONTEXT_MISMATCH');return c;};
  const clockSummary=(revision,c=clock)=>timing?{clock:c.inspect(clockContext(revision))}:{};
+ const budgetContext=revision=>{const s=view(revision),c=engine.clockContext(revision);return {revision,turn:s.surface?.turn??s.turn,activeSeat:s.surface?.activeSeat,humanCanAct:c.actor===0,canConcede:engine.humanSeat===0&&typeof engine.act==='function'&&!s.terminal,terminal:s.terminal};};
+ const turnSummary=revision=>turnBudget?{turnClock:turnBudget.inspect(budgetContext(revision))}:{};
+ const observeTurn=(revision,acceptedHumanAction=false)=>{if(turnBudget&&turnBudget.observe(budgetContext(revision),{acceptedHumanAction}).state==='stale-budget')fail('TURN_CLOCK_CONTEXT_MISMATCH');};
  const outcomeSummary=rows=>typeof engine.drainOutcomes==='function'||rows!==undefined?{outcomes:structuredClone(rows||[])}:{};
  const nextOutcomes=revision=>typeof engine.drainOutcomes==='function'?{outcomes:appendRandomOutcomes(current?.outcomes||[],engine.drainOutcomes(),revision)}:{};
- const summary=()=>({...structuredClone(view(current.revision)),revision:current.revision,...outcomeSummary(current.outcomes),...clockSummary(current.revision)});
+ const summary=()=>({...structuredClone(view(current.revision)),revision:current.revision,...outcomeSummary(current.outcomes),...clockSummary(current.revision),...turnSummary(current.revision)});
  async function execute(raw) {
   const m=packet(raw);if(m.epoch!==epoch)fail('STALE_SESSION');
   if(poisoned)fail('RECOVERY_REQUIRED');
   if(m.op==='create'||m.op==='resume') {
    if(current)fail('ALREADY_OPEN');
+   if(m.op==='resume'&&turnBudget)fail('TURN_LIMITS_RESUME_UNAVAILABLE');
    const saved=await storage.read();
    if(m.op==='resume') {
     if(!saved)fail('NO_SAVE');
@@ -67,6 +74,7 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
     engine.start(m.seed,m.first);
     const next={schema:1,version,seed:m.seed,first:m.first,revision:0,policyRng:0x63d34a91,history:[],receipts:{},engine:engine.save(),...nextOutcomes(0)};
     if(timing){clock=armClock(0);next.clock=clock.snapshot();}
+    observeTurn(0);
     await storage.write(next,null);current=next;return summary();
    }catch(error){poisoned=true;throw error;}
   }
@@ -77,8 +85,12 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
   if(m.revision!==current.revision)fail('STALE_REVISION');
   if(current.revision>=20000)fail('ACTION_LIMIT');
   if(view(current.revision).terminal)fail('GAME_OVER');
-  let actor,action,policyRng=current.policyRng;
-  if(m.op==='tick'){
+  let actor,action,timedForfeit=null,policyRng=current.policyRng;
+  const expireTurn=()=>{if(!turnBudget)return false;const ctx=budgetContext(current.revision),proposal=turnBudget.propose(ctx);if(proposal.state!=='forfeit-proposal')return false;const valid=turnBudget.validate(proposal,ctx);if(!valid.ok)fail('STALE_TIMEOUT');timedForfeit=proposal;actor=0;action={type:'HumanTimeoutConcede',data:{kind:'concede'},reason:proposal.reason,requestId:proposal.requestId,deadlineAt:proposal.deadlineAt};return true;};
+  if(expireTurn()){
+   // A late input cannot revive an expired budget. The concession still goes
+   // through the actual engine and this same idempotent journal command.
+  }else if(m.op==='tick'){
    if(!timing)fail('TIMER_UNAVAILABLE');
    const legal=engine.legal(),ctx=clockContext(current.revision);
    const proposal=clock.propose(ctx,legal.actor===ctx.actor?legal.actions:[]);
@@ -104,9 +116,13 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
    actor=legal.actor;policyRng=proposal.rng;
   }
   try {
+   // A bounded CPU proposal can cross the deadline while it is being selected.
+   // Recheck immediately before mutation, without renewing either clock.
+   if(!timedForfeit)expireTurn();
    projection=null;
-   if(m.op==='respond'||m.op==='act'){
-    const applied=m.op==='act'?engine.act(action.data):engine.respond(action.data);
+   if(timedForfeit||m.op==='respond'||m.op==='act'){
+    const applied=(timedForfeit||m.op==='act')?engine.act(action.data):engine.respond(action.data);
+    if(timedForfeit&&applied===false)fail('TIMEOUT_CONCEDE_REJECTED');
     if(applied===false)return {rejected:true,reason:'ENGINE_REJECTED',...summary()};
     if(applied!==true)fail('INVALID_ENGINE_RESPONSE');
    }else engine.apply(actor,action);
@@ -114,7 +130,8 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
     history:[...current.history,{actor,action}],engine:engine.save(),receipts:{...current.receipts},...nextOutcomes(current.revision+1)};
    const nextClock=timing?armClock(next.revision,current.clock):null;
    if(timing)next.clock=nextClock.snapshot();
-   const response={...view(next.revision),revision:next.revision,...outcomeSummary(next.outcomes),...clockSummary(next.revision,nextClock)};
+   observeTurn(next.revision,actor===0&&m.op!=='tick'&&!timedForfeit);
+   const response={...view(next.revision),revision:next.revision,...outcomeSummary(next.outcomes),...clockSummary(next.revision,nextClock),...turnSummary(next.revision)};
    Object.defineProperty(next.receipts,m.id,{value:{fingerprint:fp,response},enumerable:true,writable:true,configurable:true});
    // Compare-and-write prevents a second tab/worker overwriting this match.
    await storage.write(next,current.revision);
