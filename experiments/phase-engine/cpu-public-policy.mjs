@@ -8,6 +8,36 @@ export function analyzeCpu(packet,rng,{now,cancelled}={}){
  if(packet?.version!==PUBLIC_CPU_VERSION||!Array.isArray(packet.legacy?.choices)||packet.legacy.choices.length!==packet.combat?.blockCandidates?.length)throw Error('INVALID_CPU_PACKET');
  const profile=cpuProfile(packet.difficulty),budget=makeSearchBudget(profile,now,cancelled);
  const finish=index=>({index,rng:rng>>>0,metrics:{...budget.stats(),difficulty:packet.difficulty,configuration:CPU_CONFIGURATION_VERSION}});
+ if(packet.commanderZone){
+  if(!Array.isArray(packet.commanderZone)||packet.commanderZone.length!==packet.legacy.choices.length||packet.commanderZone.some(c=>c!==null&&(c?.available!==true||typeof c.accept!=='boolean')))throw Error('INVALID_CPU_PACKET');
+  // Default to preserving command-zone access; no graveyard-recursion plan
+  // is inferred from a hidden library or unspecified future draws.
+  let index=packet.commanderZone.findIndex(c=>c?.accept===true);
+  if(index<0)index=packet.commanderZone.findIndex(c=>c?.accept===false);
+  if(index<0)throw Error('CPU_DECISION_UNSUPPORTED');return finish(index);
+ }
+ if(packet.combatTax){
+  if(!Array.isArray(packet.combatTax)||packet.combatTax.length!==packet.legacy.choices.length||packet.combatTax.some(c=>c!==null&&(c?.available!==true||typeof c.accept!=='boolean')))throw Error('INVALID_CPU_PACKET');
+  // Honor the already chosen combat declaration whenever the engine offers
+  // its payment. Decline only when paying is absent from the legal offers.
+  let index=packet.combatTax.findIndex(c=>c?.accept===true);
+  if(index<0)index=packet.combatTax.findIndex(c=>c?.accept===false);
+  if(index<0)throw Error('CPU_DECISION_UNSUPPORTED');return finish(index);
+ }
+ if(packet.named){
+  if(!Array.isArray(packet.named)||packet.named.length!==packet.legacy.choices.length)throw Error('INVALID_CPU_PACKET');
+  let index=-1,best=-Infinity;
+  for(const [i,c]of packet.named.entries())if(c?.available===true){
+   if(!Number.isSafeInteger(c.preference)||c.preference<0)throw Error('INVALID_CPU_PACKET');
+   if(c.preference>best){best=c.preference;index=i;}
+  }
+  if(index<0)throw Error('CPU_DECISION_UNSUPPORTED');return finish(index);
+ }
+ if(packet.modes){
+  if(!Array.isArray(packet.modes)||packet.modes.length!==packet.legacy.choices.length)throw Error('INVALID_CPU_PACKET');
+  const index=packet.modes.findIndex(c=>c?.available===true);
+  if(index<0)throw Error('CPU_DECISION_UNSUPPORTED');return finish(index);
+ }
  if(packet.ordering){
   if(!Array.isArray(packet.ordering)||packet.ordering.length!==packet.legacy.choices.length)throw Error('INVALID_CPU_PACKET');
   const index=packet.ordering.findIndex(c=>c?.available===true);

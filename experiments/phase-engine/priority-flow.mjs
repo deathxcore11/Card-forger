@@ -5,13 +5,13 @@ const seat=n=>n===0||n===1;
 export function priorityCapability({state,actor,epoch,revision,engineProof}={}){
  const priority=state?.waiting_for?.type==='Priority';
  const proof=engineProof?.value;
- // Only the versioned reducer-family certificate establishes absence. The
- // authority creates this envelope from a fresh synchronous engine read; it is
- // never accepted from UI input. Old runtimes and malformed/stale proofs stop.
+ // The authority supplies either the native reducer-family certificate or a
+ // bounded response proof for the pinned shipped runtime. Neither proof comes
+ // from UI input or absence in an AI action list. Unknown/stale proofs stop.
  const complete=priority&&seat(actor)&&seat(state?.active_player)&&FLOW_PHASES.includes(state?.phase)
   &&typeof epoch==='string'&&Number.isSafeInteger(revision)&&revision>=0
   &&engineProof?.epoch===epoch&&engineProof?.revision===revision
-  &&proof?.version===1&&proof.status==='actionless'&&proof.passVerified===true
+  &&proof?.version===1&&(proof.status==='actionless'||proof.status==='no-response'&&proof.source==='shipped-response-v1')&&proof.passVerified===true
   &&proof.actor===actor&&proof.priorityHolder===state.waiting_for.data?.player
   &&proof.actor===proof.priorityHolder&&typeof proof.floatingMana==='boolean';
  return {epoch,revision,decisionId:`decision-${revision}`,actorSeat:seat(actor)?actor:null,

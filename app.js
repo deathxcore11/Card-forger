@@ -1537,13 +1537,14 @@ A.playLoadSource=async()=>{
  }catch(e){if(current())cache.statuses[key]={busy:false,error:'Deck source could not load. Try again.'};}
  finally{if(currentPlaySources()===cache){cache.statuses[key].busy=false;refreshPlayMenu();}}
 };
-A.playPickSourceDeck=t=>{cancelPlayBuilds();const state=playSetup.snapshot(),entry=(readPlaySources()[state.browse.source]||[]).find(e=>e.key===t.dataset.playEntry);if(!entry)return toast('This source list changed. Choose it again.');try{playSetup.chooseTemporary(entry.deck,{seat:state.playStyle==='quick'?'player':state.inspectedSeat,sourceKind:entry.kind});refreshPlayMenu();document.getElementById('playSelectedTitle')?.focus({preventScroll:true});}catch(e){toast(e.message);}};
+A.playPickSourceDeck=t=>{cancelPlayBuilds();const state=playSetup.snapshot(),entry=(readPlaySources()[state.browse.source]||[]).find(e=>e.key===t.dataset.playEntry);if(!entry)return toast('This source list changed. Choose it again.');try{playSetup.chooseTemporary(entry.deck,{seat:state.playStyle==='quick'?'player':state.inspectedSeat,sourceKind:entry.kind});refreshPlayMenu();focusNextPlaySelection();}catch(e){toast(e.message);}};
 A.playRandomDeck=async()=>{const state=playSetup.snapshot();if(!state.profile.signedIn)return;const root=document.querySelector('.play-menu'),targetBracket=root?.querySelector('[data-opponent-bracket]')?.value||null,deckStyle=root?.querySelector('[data-opponent-style]')?.value||'classic';await playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].build({format:state.match.format,targetBracket,deckStyle});};
 A.playCancelDeckBuild=()=>{const state=playSetup.snapshot();playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].cancel();};
 A.playRandomOpponent=async()=>{playSetup.inspectSeat('opponent');return A.playRandomDeck();};
 A.playCancelOpponentBuild=()=>practiceOpponentBuilder.cancel();
 A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profile.signedIn||state.match.mode!=='cpu'||!state.selected)return;try{playSetup.chooseOpponent(state.selected);refreshPlayMenu();}catch(e){toast(e.message);}};
 A.playStarter=async()=>{cancelPlayBuilds();if(!playSetup.snapshot().profile.signedIn)return;try{await selectPracticeStarter(playSetup);refreshPlayMenu();}catch(e){toast(e.message);}};
+A.playStarterMatch=async()=>{cancelPlayBuilds();if(!playSetup.snapshot().profile.signedIn)return;try{playSetup.setPlayStyle('practice');await selectPracticeStarter(playSetup);refreshPlayMenu();await A.playStartCandidate();}catch(e){toast(e.message);}};
 // Product activation stays gated until the real-deck/pregame/difficulty gates
 // pass. The account/table lifecycle below is testable independently of activation.
 const PLAY_MATCH_RELEASE_READY=true;
@@ -1567,7 +1568,7 @@ A.playStartCandidate=async()=>{
    resolveNames:names=>resolveNames(names,()=>{},false,current),
    lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),
    fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
-  playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:cards.prepare,reviewDecks:createPracticeCatalogReview({isCurrent:current,lookupNames:identifiers=>api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers})})}),lookup:cards.lookup,onClose:closePlayerMat,onSaveDeck:savePlayDeck,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();}});
+  playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:cards.prepare,reviewDecks:createPracticeCatalogReview({isCurrent:current,lookupNames:identifiers=>api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers})})}),lookup:cards.lookup,onClose:closePlayerMat,onStarter:()=>{closePlayerMat();A.playStarterMatch();},onSaveDeck:savePlayDeck,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();}});
   try{await playerMatHost.start(options);}catch(e){toast(e.message);}
  };
  if(source.playStyle==='quick')await beginGame(resolvePracticePregame('random'));
@@ -1593,7 +1594,8 @@ const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   for(const [key,top]of scrolls){const node=document.querySelector(`[data-play-scroll="${key}"]`);if(node)node.scrollTop=top;}
   const disclosure=document.getElementById('playImportDisclosure');if(disclosure&&importOpen!==undefined)disclosure.open=importOpen;
 }};
-A.playSelectDeck=t=>{cancelPlayBuilds();playSetup.selectDeck(t.dataset.playDeck,playSetup.snapshot().playStyle==='quick'?'player':playSetup.snapshot().inspectedSeat);refreshPlayMenu();document.getElementById('playSelectedTitle')?.focus({preventScroll:true});};
+function focusNextPlaySelection(){const state=playSetup.snapshot();const target=state.match.mode==='cpu'&&state.playStyle!=='quick'&&state.selected&&!state.opponent?document.querySelector('[data-act="playInspectSeat"][data-play-seat="opponent"]'):document.getElementById('playSelectedTitle');target?.focus({preventScroll:true});}
+A.playSelectDeck=t=>{cancelPlayBuilds();playSetup.selectDeck(t.dataset.playDeck,playSetup.snapshot().playStyle==='quick'?'player':playSetup.snapshot().inspectedSeat);refreshPlayMenu();focusNextPlaySelection();};
 A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu();};
 A.playClearSelection=()=>{cancelPlayBuilds();playSetup.clearSelection(playSetup.snapshot().inspectedSeat);refreshPlayMenu();};
 A.playConfigure=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};playSetup.configure({[t.dataset.playOption]:t.dataset.playValue});refreshPlayMenu();document.querySelector(`[data-act="playConfigure"][aria-pressed="true"]`)?.focus({preventScroll:true});};

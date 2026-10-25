@@ -27,21 +27,25 @@ export function prepareMatchInput({player,opponent,format,difficulty,profile={},
  return structuredClone({schema:1,format,difficulty,runtimeIdentity,profile,
   decks:{player,opponent},engineLists:{player:playerDeck,opponent:opponentDeck}});
 }
-export function evaluateCardCoverage(input,{testedCardNames,availableCardNames,unimplementedCardNames=[],coverageVersion}={}){
+export function evaluateCardCoverage(input,{testedCardNames,availableCardNames,unimplementedCardNames=[],coverageVersion,canonicalNames={}}={}){
  const names=availableCardNames??testedCardNames;
  if(!Array.isArray(names)||typeof coverageVersion!=='string'||!coverageVersion)throw Error('COVERAGE_REQUIRED');
  const covered=new Set(names.map(n=>n.toLocaleLowerCase('en-US'))),unimplemented=new Set(unimplementedCardNames.map(n=>n.toLocaleLowerCase('en-US')));
+ const resolved=n=>(typeof canonicalNames[n]==='string'?canonicalNames[n]:n).toLocaleLowerCase('en-US');
  const seats={};
  for(const seat of ['player','opponent']){
   const deck=input.engineLists[seat];
-  const unsupported=[...new Set([...deck.main_deck,...deck.sideboard,...deck.commander].filter(n=>!covered.has(n.toLocaleLowerCase('en-US'))))];
-  seats[seat]={unsupported,covered:unsupported.length===0,...(availableCardNames?{reasons:unsupported.map(n=>n+': '+(unimplemented.has(n.toLocaleLowerCase('en-US'))?'a required rule is not implemented.':'card rules are not installed.'))}:{})};
+  const unsupported=[...new Set([...deck.main_deck,...deck.sideboard,...deck.commander].filter(n=>!covered.has(resolved(n))))];
+  seats[seat]={unsupported,covered:unsupported.length===0,...(availableCardNames?{reasons:unsupported.map(n=>n+': '+(unimplemented.has(resolved(n))?'a required rule is not implemented.':'card rules are not installed.'))}:{})};
  }
  return {coverageVersion,seats,covered:seats.player.covered&&seats.opponent.covered};
 }
 
 export function evaluateMatchAdmission(engine,input,coverage={}){
- const checked=evaluateCardCoverage(input,coverage),seats={};
+ const requested=[...new Set(Object.values(input.engineLists).flatMap(d=>[...d.main_deck,...d.sideboard,...d.commander]))];
+ const canonical=typeof engine.canonicalCardNames==='function'?engine.canonicalCardNames(requested):null;
+ const canonicalNames=Object.fromEntries(requested.map((n,i)=>[n,Array.isArray(canonical)?canonical[i]:null]));
+ const checked=evaluateCardCoverage(input,{...coverage,canonicalNames}),seats={};
  for(const seat of ['player','opponent']){
   const gate=engine.evaluateDeckFormatGate({...input.engineLists[seat],selected_format:input.format,player_count:2});
   if(typeof gate?.compatible!=='boolean'||!Array.isArray(gate.reasons))throw Error('INVALID_FORMAT_GATE');

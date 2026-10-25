@@ -1,5 +1,6 @@
 // Adapt existing source records into temporary Play selections. No provider,
 // builder, inventory or engine-admission implementation lives here.
+import {cardRuleSupport,PLAY_CARD_SUPPORT_VERSION} from './play-card-support.js';
 import {reviewPracticeSetup} from './experiments/phase-engine/practice-preflight.mjs';
 export const PLAY_DECK_SOURCES=Object.freeze([['yours','Your decks'],['precons','Precons'],['community','Community'],['meta','Meta'],['random','Random']]);
 const clone=value=>structuredClone(value);
@@ -19,7 +20,10 @@ export function playDeckSupport(deck){
  const review=reviewPracticeSetup({profile:{signedIn:true,ownerId:'presentation-check'},match:{format:deck?.format,mode:'cpu',difficulty:'Medium'},selected:deck,opponent:deck});
  const seat=review.seats?.player;
  if(!seat)return {status:'review',label:'List needs review',detail:'Rows, quantities or commander declaration need review before play.'};
- return {status:'pool',label:'Ready for match checks',detail:'Play checks this exact list against the engine card data and format rules before dealing.'};
+ const affected=[...new Set([...deck.cards,...(deck.side||[])].map(row=>row.name))].map(name=>({name,kind:cardRuleSupport(name)})).filter(card=>card.kind!=='available');
+ const missing=affected.filter(card=>card.kind==='missing'),unimplemented=affected.filter(card=>card.kind==='unimplemented');
+ if(affected.length)return {status:'unsupported',label:'Not supported yet',detail:`${missing.length} missing card definition${missing.length===1?'':'s'} · ${unimplemented.length} card${unimplemented.length===1?'':'s'} with unfinished rules. You can still browse and save this exact list.`,affected,coverageVersion:PLAY_CARD_SUPPORT_VERSION};
+ return {status:'pool',label:'Rules available',detail:'Card definitions are installed for this exact list. Format legality is checked before dealing; individual interactions may still need fixes.',affected:[],coverageVersion:PLAY_CARD_SUPPORT_VERSION};
 }
 // The caller performs the normal account-scoped deck write only after Save deck.
 export function preparePlayDeckSave(deck,id){

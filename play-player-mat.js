@@ -20,7 +20,28 @@ export function practicePlayerPortrait(doc,own,profile={}){
 export function practiceEndingText(terminal){
  return ({'human-concession':'You conceded this match.','idle-timeout':'The match ended because your inactivity timer expired.','turn-timeout':'The match ended because your turn time expired.','engine-terminal':'The game ended under the rules.'})[terminal?.reason]||'The reason for this ending is unavailable.';
 }
-export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwork=async()=>{},reviewDecks=async()=>null,captureContext=capturePracticeDeckContext,onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onSaveDeck=null,load=loadModules,sessionOnly=true}={}){
+export function practiceAdmissionSummary(admission){
+ const seats=[],details=[];let previous=null,unsupported=false;
+ for(const [seat,label]of [['player','Your deck'],['opponent','CPU deck']]){
+  const result=admission?.seats?.[seat];if(!result)continue;
+  const reasons=[...new Set((result.reasons||[]).map(reason=>typeof reason==='string'?reason:reason?.message||reason?.reason||'Review the format rules.'))];
+  const missing=reasons.filter(reason=>reason.includes(': card rules are not installed.')).length;
+  const unfinished=reasons.filter(reason=>reason.includes(': a required rule is not implemented.')).length;
+  const format=reasons.length-missing-unfinished;unsupported ||= !!result.unsupported?.length||missing+unfinished>0;
+  const signature=JSON.stringify([result.admitted,reasons.toSorted(),[...new Set(result.unsupported||[])].sort()]);
+  if(result.admitted)seats.push(label+': checks passed.');
+  else if(seat==='opponent'&&signature===previous)seats.push(label+': Same issues as your deck.');
+  else{
+   const counts=[];if(missing)counts.push(`${missing} missing definition${missing===1?'':'s'}`);if(unfinished)counts.push(`${unfinished} card${unfinished===1?'':'s'} with unfinished rules`);if(format)counts.push(`${format} format or identity issue${format===1?'':'s'}`);
+   seats.push(label+': '+(counts.join(' · ')||'Needs review')+'.');
+   for(const reason of reasons)details.push(label+': '+reason);
+   if(!reasons.length)for(const name of result.unsupported||[])details.push(label+': '+name+' — rules unavailable.');
+  }
+  previous=signature;
+ }
+ return {title:unsupported?'This deck isn’t supported by the current game engine yet.':'Check the selected deck format.',lines:seats,details};
+}
+export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwork=async()=>{},reviewDecks=async()=>null,captureContext=capturePracticeDeckContext,onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onSaveDeck=null,onStarter=null,load=loadModules,sessionOnly=true}={}){
  if(!root||typeof readAccount!=='function'||typeof readSetup!=='function'||typeof lookup!=='function'||typeof prepareArtwork!=='function'||typeof reviewDecks!=='function')throw Error('PLAYER_MAT_HOST_REQUIRED');
  if(typeof sessionOnly!=='boolean')throw Error('INVALID_SESSION_MODE');
  let generation=0,flow=null,table=null,opening=false,last=null,frame=null,pendingPaint=null,warning=false,reviewingResult=false,resultKey=null,matchup=null,matchOwner=null,savedDeckId=null,savePromise=null;
@@ -32,7 +53,17 @@ export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwor
  const accountKey=()=>{const a=readAccount()||{};return JSON.stringify([a.user?.id,a.accountGeneration??a.generation??null,!!a.locked,!!a.switching]);};
  const setupKey=s=>JSON.stringify([s.profile?.ownerId,s.selected,s.opponent,s.match]);
  const node=(tag,text)=>{const el=root.ownerDocument.createElement(tag);if(text!==undefined)el.textContent=text;return el;};
- function message(title,lines=[],dismiss=false){stopPaint();table?.destroy();table=null;root.replaceChildren();root.className='play-mat-message';const panel=node('section');panel.className='panel play-journey-message';const mark=node('div');mark.className='play-journey-logo';mark.setAttribute('aria-hidden','true');mark.innerHTML=brandMark(dismiss?'brand-idle':'brand-loading');const heading=node('h1',title);heading.tabIndex=-1;panel.append(mark,heading);panel.setAttribute('aria-live','polite');for(const line of lines)panel.append(node('p',line));const back=node('button',dismiss?'Return to Play setup':'Cancel and return to setup');back.type='button';back.className=dismiss?'btn':'btn ghost';back.addEventListener('click',onClose);panel.append(back);root.append(panel);if(dismiss)heading.focus();}
+ function message(title,lines=[],dismiss=false,{details=[],diagnostic=null}={}){
+  stopPaint();table?.destroy();table=null;root.replaceChildren();root.className='play-mat-message';const panel=node('section');panel.className='panel play-journey-message';const mark=node('div');mark.className='play-journey-logo';mark.setAttribute('aria-hidden','true');mark.innerHTML=brandMark(dismiss?'brand-idle':'brand-loading');const heading=node('h1',title);heading.tabIndex=-1;panel.append(mark,heading);panel.setAttribute('aria-live','polite');
+  for(const line of lines)panel.append(node('p',line));
+  const actions=node('div');actions.className='actions wrap';const back=node('button',dismiss?'Return to Play setup':'Cancel and return to setup');back.type='button';back.className=dismiss?'btn':'btn ghost';back.addEventListener('click',onClose);actions.append(back);
+  if(diagnostic&&onStarter){const starter=node('button','Choose a tested Standard deck');starter.type='button';starter.className='btn ghost';starter.addEventListener('click',onStarter);actions.append(starter);}
+  if(diagnostic){const copy=node('button','Copy diagnostic report'),feedback=node('span');copy.type='button';copy.className='btn ghost';feedback.setAttribute('role','status');copy.addEventListener('click',async()=>{try{await view.navigator.clipboard.writeText(diagnostic);feedback.textContent='Report copied.';}catch{feedback.textContent='Copy unavailable. Expand the report below to copy it.';}});actions.append(copy,feedback);}
+  panel.append(actions);
+  if(details.length){const disclosure=node('details');disclosure.append(node('summary','View affected cards and format details'));for(const line of details)disclosure.append(node('p',line));panel.append(disclosure);}
+  if(diagnostic){const report=node('details');report.append(node('summary','Diagnostic report'),node('pre',diagnostic));panel.append(report);}
+  root.append(panel);if(dismiss)heading.focus();
+ }
  function resultScreen(state,ticket){
   const game=state.game,key=JSON.stringify([game.status.revision,game.status.terminal,state.history?.state]);if(resultKey===key)return;resultKey=key;
   stopPaint();table?.destroy();table=null;root.replaceChildren();root.className='play-mat-message play-mat-result';const panel=node('section');panel.className='panel play-journey-message play-match-result';
@@ -73,8 +104,9 @@ export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwor
   else if(state.phase==='finished'&&state.game?.status?.terminal&&!reviewingResult)resultScreen(state,ticket);
   else if(state.game){pendingPaint=state;if(frame===null)frame=view.requestAnimationFrame(()=>{frame=null;const paint=pendingPaint;pendingPaint=null;if(ticket!==generation||!paint)return;const session=flow?.getSession();if(!session)return;if(!table)table=modules.mountMatchTable(root,{session,profile:paint.binding?.profile,renderPlayerPortrait:own=>playerPortrait(own,paint.binding?.profile),renderPlayerBackdrop:own=>{const deck=own?matchup?.selected:matchup?.opponent,url=deckArtUrl(deck);if(!url)return null;const img=node('img');img.src=url;img.alt='';img.title=deck?.commander?'Commander art: '+deck.commander:'Deck artwork';return img;},format:matchup?.match?.format,renderMatchBackdrop:matchBackdrop,title:'CardStashy · Magic Practice',allowConcede:true,...practiceArtworkHooks(),onExit:()=>{if(last?.phase==='finished'&&!reviewingResult)return resultScreen(last,ticket);onClose();},renderMatchContext:()=>{const context=contextPanel(paint.binding);if(!sessionOnly)return context;const wrapper=node('section');wrapper.append(node('p',sessionNote));if(context)wrapper.append(context);return wrapper;}});table.render(paint.game);});}
   else if(state.phase==='unavailable'){
-   const a=state.binding?.admission,notes=[];for(const [seat,label]of [['player','Your deck'],['opponent','CPU deck']]){const s=a?.seats?.[seat];if(s&&!s.admitted){notes.push(label+': this list did not pass the match checks.');for(const reason of s.reasons||[])notes.push(label+': '+(typeof reason==='string'?reason:reason.message||reason.reason||'Review the format rules.'));if(!s.reasons?.length&&s.unsupported?.length)notes.push(label+': card rules unavailable — '+s.unsupported.join(', '));}}
-   if(state.error==='DIFFICULTY_UNAVAILABLE')notes.push('This CPU difficulty is not available yet. Choose Medium in setup.');message('Match needs review',notes,true);
+   const admission=state.binding?.admission,summary=practiceAdmissionSummary(admission);
+   if(state.error==='DIFFICULTY_UNAVAILABLE')summary.lines.push('This CPU difficulty is not available yet. Choose Medium in setup.');
+   message(summary.title,summary.lines,true,{details:summary.details,diagnostic:JSON.stringify({error:state.error,admission},null,2)});
   }else if(state.phase==='account-changed')message('Account changed',['Return to Play in the current account.'],true);
   else if(state.phase==='recovery-required'&&!state.game)message(sessionOnly?'Practice session stopped':'Recover your saved match',sessionOnly?['The outcome could not be verified. Start a new match from Play.',sessionNote]:['The outcome is uncertain. Resume this same match before another command.'],true);
   onChange(structuredClone(state));
@@ -90,7 +122,7 @@ export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwor
    if(ticket!==generation||accountKey()!==owner||!resume&&setupKey(readSetup())!==selection)throw Error('SELECTION_CHANGED');
    const captured=resume?null:{...setup,selected:captureContext(capturePracticeArtwork(setup.selected,lookup)),opponent:captureContext(capturePracticeArtwork(setup.opponent,lookup))};
    if(catalog){captured.selected.practiceCatalogReview=structuredClone(catalog.player);captured.opponent.practiceCatalogReview=structuredClone(catalog.opponent);}
-   flow=modules.createPracticeFlow({readAccount,readSetup:()=>captured,sessionOnly,onChange:state=>receive(state,ticket),onProgress:p=>{if(ticket===generation&&!table)message(p.stage==='rules'?'Preparing card rules…':'Loading Practice…',sessionOnly?[sessionNote]:[]);}});
+   flow=modules.createPracticeFlow({readAccount,readSetup:()=>captured,sessionOnly,onChange:state=>receive(state,ticket),onProgress:p=>{if(ticket===generation&&!table)message(['rules','rules-download'].includes(p.stage)?'Preparing card rules…':'Loading Practice…',sessionOnly?[sessionNote]:[]);}});
    const result=resume?await flow.resume(matchId):await flow.start({opponent:captured.opponent,seed,first});
    if(ticket!==generation)throw Error('PLAYER_MAT_CLOSED');return result;
   }catch(error){if(ticket===generation){warnOnLeave(false);message(error.review?'Review Practice setup':'Practice could not open',error.review?[...error.review.reasons,...Object.entries(error.review.seats||{}).filter(([,s])=>s.unsupported.length).map(([seat,s])=>(seat==='player'?'Your deck':'CPU deck')+': '+s.unsupported.join(', '))]:Array.isArray(error.reasons)?error.reasons:['The match could not be prepared. Return to setup and try again; your selected decks remain there.',...(sessionOnly?[sessionNote]:[])],true);onChange({phase:sessionOnly?'session-ended':'error',error:error.message});}throw error;}

@@ -1,5 +1,5 @@
 // Account-deck integration candidate. Not mounted or publicly activated.
-import {loadEngineAssets,RUNTIME_IDENTITY} from './runtime-assets.mjs';
+import {loadEngineAssets,RUNTIME_IDENTITY,EXPANDED_RULES_IDENTITY,EXPANDED_RULES_MANIFEST} from './runtime-assets.mjs';
 import {openPracticeRecord} from './practice-record.mjs';
 import {openPracticeSessionRecord} from './practice-session-record.mjs';
 import {initialPresentation,presentInstances} from './practice-presentation.mjs';
@@ -15,7 +15,7 @@ export function validPracticeBinding(data){
 async function boot(data){
  const record=await (sessionOnly?openPracticeSessionRecord:openPracticeRecord)({ownerId:data.ownerId,matchId:data.match,...(data.operation==='create'?{input:data.input}:{})});
  const {input,digest}=record;
- const {engine,cardSupport}=await loadEngineAssets({baseURL:new URL('./runtime/a86578b23adcd26c/',import.meta.url),loadCards:true,onProgress:value=>postMessage({v:1,epoch,id:'loading',progress:value})});
+ const {engine,cardSupport}=await loadEngineAssets({baseURL:new URL('./runtime/a86578b23adcd26c/',import.meta.url),loadCards:true,rulesIdentity:EXPANDED_RULES_IDENTITY,manifestPath:EXPANDED_RULES_MANIFEST,onProgress:value=>postMessage({v:1,epoch,id:'loading',progress:value})});
  const admission=evaluateMatchAdmission(engine,input,cardSupport);
  const format=engine.getFormatRegistry().find(f=>f.format===input.format)?.default_config;
  if(!format)throw Error('FORMAT_UNAVAILABLE');
@@ -24,10 +24,10 @@ async function boot(data){
  let handler=null;
  if(admission.admitted&&cpuAvailable){
   let presentation=record.getPresentation();
-  const {adapter,choose}=createMatchAuthority({engine,epoch,format,decks:input.engineLists,difficulty:input.difficulty,cpuPlaybookProposals:[input.decks.player.practiceCpuPlan,input.decks.opponent.practiceCpuPlan],
+  const {adapter,choose}=createMatchAuthority({engine,epoch,format,runtimeIdentity:RUNTIME_IDENTITY.wasmSha256,decks:input.engineLists,difficulty:input.difficulty,cpuPlaybookProposals:[input.decks.player.practiceCpuPlan,input.decks.opponent.practiceCpuPlan],
    onStart:()=>{presentation=initialPresentation(input,JSON.parse(engine.export_game_state_json()));record.setPresentation(presentation);},
    present:view=>presentInstances(view,presentation)});
-  handler=createJournal({engine:adapter,storage:record.storage,choose,version:VERSION+':'+RUNTIME_IDENTITY.wasmSha256+':'+digest,epoch,timing:{matchId:data.match,humanActor:0},turnLimits:data.sessionOnly?{}:null});
+  handler=createJournal({engine:adapter,storage:record.storage,choose,version:VERSION+':'+RUNTIME_IDENTITY.wasmSha256+':'+cardSupport.coverageVersion+':'+digest,epoch,timing:{matchId:data.match,humanActor:0},turnLimits:data.sessionOnly?{}:null});
  }
  return {handler,binding:{sessionOnly,admission,cpuAvailable,format:input.format,difficulty:input.difficulty,profile:input.profile,deckName:input.decks.player.name,opponentName:input.decks.opponent.name,snapshotDigest:digest,runtimeIdentity:input.runtimeIdentity,deckContexts:{player:input.decks.player.practiceContext||null,opponent:input.decks.opponent.practiceContext||null}}};
 }

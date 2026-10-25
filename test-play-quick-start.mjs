@@ -12,3 +12,10 @@ function fixture({quick=true,matchResult=true,route='play'}={}){
 test('one Quick Play click pairs once, skips the confirmation screen and starts with a random first seat',async()=>{const f=fixture(),pending=f.A.playStartCandidate();await f.A.playStartCandidate();assert.equal(f.counts().pairCalls,1);f.release();await pending;assert.deepEqual(f.counts(),{pairCalls:1,starts:1,pregames:0,first:1});});
 test('a cancelled/stale pairing or navigation away cannot start a match',async()=>{for(const options of [{matchResult:false},{route:'home'}]){const f=fixture(options),pending=f.A.playStartCandidate();f.release();await pending;assert.equal(f.counts().starts,0);assert.equal(f.counts().pregames,0);}});
 test('Practice preserves the optional starting-player setup',async()=>{const f=fixture({quick:false});await f.A.playStartCandidate();assert.deepEqual(f.counts(),{pairCalls:0,starts:0,pregames:1,first:null});});
+
+test('tested starter launch preserves the tested pairing and waits for selection to finish',async()=>{
+ const starter=readFileSync(new URL('./app.js',import.meta.url),'utf8').match(/A\.playStarterMatch=async\(\)=>\{[^\n]+/)[0];
+ let done;const steps=[],A={},playSetup={snapshot:()=>({profile:{signedIn:true}}),setPlayStyle:value=>steps.push(value)};
+ new Function('A','cancelPlayBuilds','playSetup','selectPracticeStarter','refreshPlayMenu','toast',starter)(A,()=>{},playSetup,async()=>{steps.push('select');await new Promise(r=>done=r);},()=>steps.push('refresh'),()=>{});
+ A.playStartCandidate=async()=>steps.push('start');const pending=A.playStarterMatch();assert.deepEqual(steps,['practice','select']);done();await pending;assert.deepEqual(steps,['practice','select','refresh','start']);
+});

@@ -133,3 +133,4 @@ experiments/phase-engine/runtime/*
 !experiments/phase-engine/practice-result-history.mjs
 
 !experiments/phase-engine/compiled-card-support.mjs
+!experiments/phase-engine/shipped-response-proof.mjs

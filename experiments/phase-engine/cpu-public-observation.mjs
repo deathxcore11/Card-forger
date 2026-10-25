@@ -59,6 +59,55 @@ function triggerOrderObservation(s,seat,actions){
   return a.type==='OrderTriggers'&&Array.isArray(order)&&order.length===n&&new Set(order).size===n&&order.every(i=>Number.isInteger(i)&&i>=0&&i<n)?{available:true}:null;
  });
 }
+function modeChoiceObservation(s,seat,actions){
+ const w=s.waiting_for,d=w?.data,m=d?.modal;
+ if(!['ModeChoice','AbilityModeChoice'].includes(w?.type)||d?.player!==seat)return null;
+ if(!Number.isSafeInteger(m?.mode_count)||m.mode_count<1||!Number.isSafeInteger(m.min_choices)||!Number.isSafeInteger(m.max_choices)||m.min_choices<0||m.max_choices<m.min_choices||typeof m.allow_repeat_modes!=='boolean')return null;
+ const unavailable=list(d.unavailable_modes);
+ // Only availability crosses the policy boundary. Mode text, pending spell
+ // identity, targets and private card/library facts remain in the authority.
+ return actions.map(a=>{
+  const indices=a.data?.indices;
+  return a.type==='SelectModes'&&Array.isArray(indices)&&indices.length>=m.min_choices&&indices.length<=m.max_choices&&
+   (m.allow_repeat_modes||new Set(indices).size===indices.length)&&indices.every(i=>Number.isSafeInteger(i)&&i>=0&&i<m.mode_count&&!unavailable.includes(i))?{available:true}:null;
+ });
+}
+function namedChoiceObservation(s,seat,actions){
+ const w=s.waiting_for,d=w?.data;
+ if(w?.type!=='NamedChoice'||d?.player!==seat)return null;
+ const options=list(d.options);
+ // Free-form card names without an engine offer are not invented here.
+ if(!options.length||options.some(o=>typeof o!=='string'))return null;
+ const offered=new Set(options),counts=new Map();
+ if(d.choice_type==='CreatureType'){
+  const ownHand=new Set(list(s.players[seat].hand));
+  const ids=new Set([...ownHand,...list(s.battlefield)]);
+  for(const id of ids){
+   const o=s.objects?.[id];
+   if(!o||o.controller!==seat||o.display_visible_to_viewer!==true||o.face_down||o.name==='Hidden Card'||
+    !(o.zone==='Battlefield'||o.zone==='Hand'&&ownHand.has(id))||!list(o.card_types?.core_types).includes('Creature'))continue;
+   // A generic tribal preference, using only own authorized hand and public
+   // creatures. No library, opponent hand, source context or names are sent.
+   for(const subtype of new Set(list(o.card_types?.subtypes)))if(offered.has(subtype))counts.set(subtype,(counts.get(subtype)||0)+1);
+  }
+ }
+ return actions.map(a=>a.type==='ChooseOption'&&typeof a.data?.choice==='string'&&offered.has(a.data.choice)?
+  {available:true,preference:counts.get(a.data.choice)||0}:null);
+}
+function combatTaxObservation(s,seat,actions){
+ const w=s.waiting_for;
+ if(w?.type!=='CombatTaxPayment'||w.data?.player!==seat)return null;
+ // The engine's legal offers certify affordability; do not reconstruct mana
+ // payment from card text or inspect the pending declaration/source context.
+ return actions.map(a=>a.type==='PayCombatTax'&&typeof a.data?.accept==='boolean'?{available:true,accept:a.data.accept}:null);
+}
+function commanderZoneObservation(s,seat,actions){
+ const w=s.waiting_for;
+ if(w?.type!=='CommanderZoneChoice'||w.data?.player!==seat)return null;
+ // Only this commander-specific optional decision is handled. Generic
+ // optional effects may have entirely different consequences.
+ return actions.map(a=>a.type==='DecideOptionalEffect'&&typeof a.data?.accept==='boolean'?{available:true,accept:a.data.accept}:null);
+}
 export function makeCpuObservation(envelope,seat,actions,{difficulty='Medium',legal=null,playbook=null}={}){
  const s=envelope?.state;
  if(!s||s.viewer_projection!==seat||![0,1].includes(seat)||!Array.isArray(actions))throw Error('INVALID_CPU_VIEW');
@@ -79,7 +128,7 @@ export function makeCpuObservation(envelope,seat,actions,{difficulty='Medium',le
  const w=s.waiting_for,legalBlocks=w?.type==='DeclareBlockers'&&w.data?.player===seat?Object.entries(w.data.valid_block_targets||{}).flatMap(([b,targets])=>list(targets).map(a=>[indices.get(Number(b))??null,indices.get(a)??null])):[];
  const blockCandidates=actions.map(a=>a.type==='DeclareBlockers'?list(a.data?.assignments).map(([b,t])=>[indices.get(b)??null,indices.get(t)??null]):null);
  const attackCandidates=actions.map(a=>a.type==='DeclareAttackers'?list(a.data?.attacks).map(([id,t])=>({object:indices.get(id)??null,target:target(t)})):null);
- return {version:PUBLIC_CPU_VERSION,difficulty,legacy,ordering:triggerOrderObservation(s,seat,actions),targets:targetObservation(s,seat,actions,publicObjects,objects),hand:ownHandObservation(s,seat,actions,legal,playbook),combat:{seat,life:list(s.players).map(p=>finite(p.life)),objects,attackers,legalBlocks,blockCandidates,attackCandidates,
+ return {version:PUBLIC_CPU_VERSION,difficulty,legacy,commanderZone:commanderZoneObservation(s,seat,actions),combatTax:combatTaxObservation(s,seat,actions),named:namedChoiceObservation(s,seat,actions),modes:modeChoiceObservation(s,seat,actions),ordering:triggerOrderObservation(s,seat,actions),targets:targetObservation(s,seat,actions,publicObjects,objects),hand:ownHandObservation(s,seat,actions,legal,playbook),combat:{seat,life:list(s.players).map(p=>finite(p.life)),objects,attackers,legalBlocks,blockCandidates,attackCandidates,
   decision:w?.type||null,complete:attackers.every(a=>a.object!==null&&a.target.kind!=='unknown'&&!a.banded)&&s.combat?.first_strike_done!==true&&s.combat?.regular_damage_done!==true,
   uncertain:list(s.stack).length>0||objects.some(o=>!o.known||o.uncertain)}};
 }

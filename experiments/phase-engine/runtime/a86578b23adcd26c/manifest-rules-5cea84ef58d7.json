@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "status": "research-runtime-not-public-play-adoption",
+  "buildIdentity": "cardstashy-ci-40153568000-1-ninjutsu-a49b8aa",
+  "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+  "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+  "artifactId": 12584327345,
+  "artifactZipSha256": "edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b",
+  "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+  "wasmBytes": 338226914,
+  "encoding": "gzip",
+  "compressedSha256": "0fd7805c6e785aef1abaf48d73f5228bcb37db3d8406c89177b9dade105c4026",
+  "compressedBytes": 37986854,
+  "chunks": [
+    {
+      "path": "wasm.part-00.bin",
+      "bytes": 16777216,
+      "sha256": "5721d1bdcf601162b9f41ef806332fcca2957565e86101f6e5d2b2afda2fa325"
+    },
+    {
+      "path": "wasm.part-01.bin",
+      "bytes": 16777216,
+      "sha256": "d2b535a9c2296c6994ce3ed676d032a1ead847fcea12bf43ffc2347676c10837"
+    },
+    {
+      "path": "wasm.part-02.bin",
+      "bytes": 4432422,
+      "sha256": "5b1007b7c501d430808f37d1f75cab38a1d85995cc90d235262cfcdc16d71f61"
+    }
+  ],
+  "glue": {
+    "path": "engine_wasm.js",
+    "sha256": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc"
+  },
+  "limits": "External executable card-data and real-deck admission remain separate. No engine execution on the web server.",
+  "cardDatabase": {
+    "encoding": "gzip",
+    "sha256": "5cea84ef58d7a9aad43516c695e6ab297143e762ca26e4cc9c35eb17422d23b3",
+    "bytes": 15896195,
+    "decodedSha256": "4711be54f4fb53b2909e98bb839e78abe88f4a99f305dc45dd68611d4e9ac4ec",
+    "decodedBytes": 100075045,
+    "entries": 36037,
+    "chunks": [
+      {
+        "path": "card-rules-5cea84ef58d7.part-00.bin",
+        "bytes": 1048572,
+        "sha256": "702d3c992c78d0adb030bd541f170fd42a7d542ab06b159378f7bdf64822fc08"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-01.bin",
+        "bytes": 1048572,
+        "sha256": "1b6ce00262287d29b40d375b36e88034c3361ad02871ea71537113ef1a4d6c4b"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-02.bin",
+        "bytes": 1048572,
+        "sha256": "e787c88761ead14727d84e039a19d8a88c737f924d6e9db113a3b99de63288f1"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-03.bin",
+        "bytes": 1048572,
+        "sha256": "cc7d2bf0f3e7239fdee92ee11c9bf82f7b149f6fdbd9454aced57957f8624c18"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-04.bin",
+        "bytes": 1048572,
+        "sha256": "ca167a010d2aa4cd08a0a87b5c6d4c41b8756d4dbf198cfc07e8096e5bfdf4a6"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-05.bin",
+        "bytes": 1048572,
+        "sha256": "29c93df5394f7f7e17e97a5cd2c805e7723d8dd4489fd5bc55bd048b4a28b473"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-06.bin",
+        "bytes": 1048572,
+        "sha256": "5216835d4aecd1f8c3afd0a144e0d8a73649d5ae12f11000c6877a2023cf0a25"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-07.bin",
+        "bytes": 1048572,
+        "sha256": "0e5396618ef1eda16e0d9ec756f35e42599baa0c9f3118f5a2287c5e862b478a"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-08.bin",
+        "bytes": 1048572,
+        "sha256": "9aedddf9fa591a0b86777346bbb3207d9266fe0fafb83f41462e09ce95ada488"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-09.bin",
+        "bytes": 1048572,
+        "sha256": "089b65ddafd5699135f9905b05eb7d08432f0f01174ea11769a6222099920a9b"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-10.bin",
+        "bytes": 1048572,
+        "sha256": "d37effa296d1d880ed343037e2e5e3927396fa118599ff2adb22691e2df5342b"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-11.bin",
+        "bytes": 1048572,
+        "sha256": "b302620845cc96c3a23e56315e37f1450ccc407cdd40ef92009acc7ef4dd4082"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-12.bin",
+        "bytes": 1048572,
+        "sha256": "3fd4c5bc8d01a46df15fa41514c12c572186af37495f8382b3407f12b88da949"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-13.bin",
+        "bytes": 1048572,
+        "sha256": "2842cd68b11f52cd9274f6258121bfb73c90c21ca0ef3297dae956925c3ed118"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-14.bin",
+        "bytes": 1048572,
+        "sha256": "89415266c9d837be5af44d66cc499e68e6a9190099dfbe3a0576b8a4ac6f9928"
+      },
+      {
+        "path": "card-rules-5cea84ef58d7.part-15.bin",
+        "bytes": 167615,
+        "sha256": "8de20a083b3811cddd1f79022b530ab1dc2be60d7d6b607da44f6a87842aa0bf"
+      }
+    ],
+    "source": "Compatible upstream additions with existing shipped records preserved; corrected Loot visibility/order. Definition availability is not a behavior certification."
+  }
+}

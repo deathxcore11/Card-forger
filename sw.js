@@ -1,5 +1,7 @@
-const CACHE = "cardforge-shell-v321-regular-deck-play";
+const CACHE = "cardforge-shell-v322-expanded-deck-rules";
 const ASSETS = [
+  "./play-card-support.js",
+  "./experiments/phase-engine/shipped-response-proof.mjs",
   "./experiments/phase-engine/compiled-card-support.mjs",
   "./experiments/phase-engine/priority-flow.mjs",
   "./play-deck-sources.js",

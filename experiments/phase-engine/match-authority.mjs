@@ -7,10 +7,11 @@ import {cpuLegalCandidates} from './cpu-legal-candidates.mjs';
 import {createCpuPlaybook} from './cpu-playbook.mjs';
 import {cpuProfile} from './cpu-difficulty-config.mjs';
 import {priorityCapability} from './priority-flow.mjs';
+import {readShippedResponseProof} from './shipped-response-proof.mjs';
 import {createCommanderProjector} from './commander-projection.mjs';
 import {projectSeat,createSeatController} from './seat-surface.mjs';
 import {projectRandomEvents} from './random-outcomes.mjs';
-export function createMatchAuthority({engine,epoch,mode='human-timed',decks,format,difficulty='Medium',cpuPlaybookProposals=[],onStart=()=>{},present=view=>view,policyWorker}={}){
+export function createMatchAuthority({engine,epoch,mode='human-timed',decks,format,difficulty='Medium',runtimeIdentity=null,cpuPlaybookProposals=[],onStart=()=>{},present=view=>view,policyWorker}={}){
  cpuProfile(difficulty);const playbooks=[createCpuPlaybook(decks?.player,cpuPlaybookProposals[0]),createCpuPlaybook(decks?.opponent,cpuPlaybookProposals[1])];
  const policy=policyWorker||new Worker(new URL('./cpu-public-worker.mjs',import.meta.url),{type:'module'});let seq=0;
  // The journal is the sole mutator of this engine instance. Cache only the
@@ -42,8 +43,11 @@ export function createMatchAuthority({engine,epoch,mode='human-timed',decks,form
   if(context.choice!==undefined)fail('WRONG_SEAT');return cpuChoose(actions,rng,context.actor);
  };
  const readPriorityProof=revision=>{
-  if(typeof engine.get_priority_capability_v1_js!=='function')return null;
-  try{return {epoch,revision,value:engine.get_priority_capability_v1_js(0)};}catch{return null;}
+  try{
+   const native=typeof engine.get_priority_capability_v1_js==='function'?engine.get_priority_capability_v1_js(0):null;
+   const value=native?.status==='actionless'?native:readShippedResponseProof(engine,0,runtimeIdentity);
+   return value?{epoch,revision,value}:null;
+  }catch{return null;}
  };
  const adapter={
   clockContext(revision){const w=engine.get_filtered_game_state(0).state.waiting_for,interaction=engine.get_viewer_snapshot_js(0).viewerInteraction;const actor=w?.type==='Priority'?w.data.player:interaction?.canSubmit&&interaction.authorizedSubmitters?.includes(0)?0:1;return {actor,kind:w?.type||'Unavailable',decisionId:`decision-${revision}`};},
