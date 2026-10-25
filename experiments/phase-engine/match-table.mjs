@@ -1,6 +1,6 @@
 // DOM presentation for a private, engine-backed research match. No card rules.
 import {bindCardPlacement,placementIntent} from './card-placement.mjs';
-import {validInteractionText} from './interaction-surface.mjs';
+import {validInteractionText,validInteractionRelations} from './interaction-surface.mjs';
 import {cardStatView} from './card-stats.mjs';
 import {randomOutcomeText} from './random-outcomes.mjs';
 const labels={MulliganDecision:'Opening hand',Priority:'Priority',DeclareAttackers:'Declare attackers',DeclareBlockers:'Declare blockers',GameOver:'Match finished'};
@@ -80,6 +80,34 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
    let interactionControls=controls;
    if(view.canAct&&view.interaction?.opportunities?.length){const more=element('details',undefined,'play-match-other-actions');more.open=advancedOpen;const summary=element('summary','Abilities & other actions');summary.dataset.focusKey='other-actions-summary';more.append(summary);more.addEventListener('toggle',()=>{advancedOpen=more.open;});controls.append(more);interactionControls=more;}
    for(const o of view.interaction?.opportunities||[]){
+    if(o.type==='relations'){
+     const group=element('fieldset'),attacking=view.decision.kind==='DeclareAttackers',draft=pending?.interactionId===o.interactionId?pending.relations:[],blocked=busy||!!error&&error!=='CHOICE_REJECTED';
+     group.append(element('legend',attacking?'Choose attackers and defenders':'Choose blockers and attackers'));
+     const byId=new Map(o.choices.map(c=>[c.id,c]));
+     for(const edge of o.edges){
+      const source=byId.get(edge.sourceId),row=element('div',undefined,'play-match-combat-row');row.append(element('strong',actionText(source,view.decision.kind)));
+      const targets=element('div',undefined,'play-match-combat-targets');
+      for(const targetId of edge.targetIds){
+       const target=byId.get(targetId),selectedRelation=draft.find(r=>r.sourceId===edge.sourceId&&r.targetId===targetId),text=(attacking?'Attack ':'Block ')+actionText(target,view.decision.kind);
+       targets.append(button(text,()=>{
+        let next=draft.filter(r=>!(r.sourceId===edge.sourceId&&r.targetId===targetId));
+        if(!selectedRelation){if(o.sourceConstraint==='atMostOne')next=next.filter(r=>r.sourceId!==edge.sourceId);next.push({sourceId:edge.sourceId,targetId,group:null});}
+        session.setRelations(o.interactionId,next);
+       },{key:`relation-${o.interactionId}-${edge.sourceId}-${targetId}`,pressed:!!selectedRelation,blockWhileBusy:true,disabled:blocked||!source.available||!target.available||!selectedRelation&&draft.length>=o.max&&!(o.sourceConstraint==='atMostOne'&&draft.some(r=>r.sourceId===edge.sourceId))}));
+      }
+      if(!edge.targetIds.length)targets.append(element('span','No available target'));
+      row.append(targets);
+      if(o.allowGroups&&draft.some(r=>r.sourceId===edge.sourceId)){
+       const label=element('label','Band group (optional)'),input=element('input');input.type='number';input.min='0';input.max='4294967295';input.step='1';input.dataset.focusKey=`band-${o.interactionId}-${edge.sourceId}`;input.setAttribute('aria-label',`Band group for ${actionText(source,view.decision.kind)}`);input.disabled=blocked;input.value=draft.find(r=>r.sourceId===edge.sourceId).group??'';
+       const set=button('Set band group',()=>{const value=input.value===''?null:input.valueAsNumber;session.setRelations(o.interactionId,draft.map(r=>r.sourceId===edge.sourceId?{...r,group:value}:r));},{key:`set-band-${o.interactionId}-${edge.sourceId}`,blockWhileBusy:true,disabled:blocked});
+       input.addEventListener('input',()=>{set.disabled=blocked||input.value!==''&&(!Number.isInteger(input.valueAsNumber)||input.valueAsNumber<0||input.valueAsNumber>4294967295);});label.append(input);row.append(label,set);
+      }
+      group.append(row);
+     }
+     group.append(element('p',`${draft.length} ${attacking?'attacker':'block'}${draft.length===1?'':'s'} selected`));
+     group.append(button(attacking?'Confirm attackers':'Confirm blockers',()=>{if(pending?.interactionId!==o.interactionId)session.setRelations(o.interactionId,[]);return session.confirm();},{blockWhileBusy:true,disabled:blocked||!validInteractionRelations(o,draft),key:`confirm-${o.interactionId}`}));
+     group.append(button('Clear combat selection',()=>session.setRelations(o.interactionId,[]),{blockWhileBusy:true,disabled:blocked,key:`clear-${o.interactionId}`}));interactionControls.append(group);continue;
+    }
     if(o.type==='text'){
      const group=element('fieldset');group.append(element('legend','Name a card'));
      const input=element('input');input.type='text';input.autocomplete='off';input.setAttribute('aria-label','Card name');input.dataset.focusKey=`text-${o.interactionId}`;

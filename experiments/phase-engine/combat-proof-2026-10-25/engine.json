@@ -1,0 +1,48 @@
+{
+  "provenance": {
+    "archiveSha": "edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b",
+    "wasm": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "glue": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "rulesGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "subsetSha": "20cdbd29388c909cae99e3b91768e39e3b78f09ac3ed42c7947f9581b0f0c50f",
+    "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "sourceVerification": "Archive-bound historical receipt; source Git checkout not reverified in this run"
+  },
+  "results": [
+    {
+      "mode": "attack",
+      "assignments": 2,
+      "candidates": 6,
+      "revision": 1,
+      "checks": [
+        "invalid target rejects unchanged",
+        "pending combat restores",
+        "stale capability rejects unchanged",
+        "explicit relations accepted without AI membership",
+        "duplicate receipt does not repeat combat"
+      ]
+    },
+    {
+      "mode": "block",
+      "assignments": 2,
+      "candidates": 21,
+      "revision": 1,
+      "checks": [
+        "invalid target rejects unchanged",
+        "pending combat restores",
+        "stale capability rejects unchanged",
+        "explicit relations accepted without AI membership",
+        "duplicate receipt does not repeat combat"
+      ]
+    }
+  ],
+  "networkCalls": 0,
+  "limits": "Engineered four-Bears attack subset and Palace Guard multi-block positions, not all combat restrictions, banding, browser controls, eligible real decks or full account match.",
+  "sourceSha256": {
+    "combat-controls-engine.mjs": "48201cf92b8965890acf4f2cf073977af9273aba9e4d4c0109dc7ed759ec6336",
+    "interaction-surface.mjs": "8be2254af174366b4c3c8ab9d82d4518c5c6d738835994423204a304f2968e62",
+    "worker-journal.mjs": "568b1cdeb91e62c42ddd41157876c98378223922dce2dc1b34d81903a4a3c984",
+    "runtime-assets.mjs": "40b266a4a3bb9806a386d49ea497e81fcfa2dd506e64b1e8e9082c1651489254"
+  }
+}

@@ -1,6 +1,6 @@
 // Private research table controller. The authority owns every rules decision.
 // No engine adoption, general card coverage or calibrated difficulty claim.
-import {validInteractionText} from './interaction-surface.mjs';
+import {validInteractionText,validInteractionRelations} from './interaction-surface.mjs';
 import {createPriorityScheduler} from './priority-scheduler.mjs';
 export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.randomUUID(),schedulerOptions={},maxCpuCommands=2000}={}){
  if(!client||typeof client.request!=='function'||typeof onChange!=='function'||!Number.isSafeInteger(maxCpuCommands)||maxCpuCommands<1||maxCpuCommands>20000)throw Error('BAD_SESSION_OPTIONS');
@@ -73,12 +73,18 @@ export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.rand
   choose(token){if(!status?.surface.choices.some(c=>c.token===token))throw Error('STALE_CHOICE');return command('step',{choice:token});},
   select(interactionId,choiceId){
    const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);
-   if(!o||!o.choices.some(c=>c.id===choiceId&&c.available))throw Error('STALE_CHOICE');
+   if(!o||!['choose','select','sequence'].includes(o.type)||!o.choices.some(c=>c.id===choiceId&&c.available))throw Error('STALE_CHOICE');
    if(!pending||pending.interactionId!==interactionId)pending={interactionId,type:o.type,choiceIds:[],revision:status.revision};
    if(o.type==='choose')pending.choiceIds=[choiceId];
    else if(o.type==='sequence'){if(o.max===1)pending.choiceIds=[choiceId];else if(!o.unique||!pending.choiceIds.includes(choiceId))pending.choiceIds=[...pending.choiceIds,choiceId];}
    else pending.choiceIds=pending.choiceIds.includes(choiceId)?pending.choiceIds.filter(id=>id!==choiceId):[...pending.choiceIds,choiceId];
    publish();
+  },
+  setRelations(interactionId,relations){
+   const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);
+   if(!o||o.type!=='relations')throw Error('STALE_CHOICE');
+   if(!validInteractionRelations(o,relations,{complete:false}))throw Error('CHOICE_INCOMPLETE');
+   pending={interactionId,type:'relations',relations:structuredClone(relations),revision:status.revision};publish();
   },
   setText(interactionId,value){
    const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);
@@ -92,10 +98,14 @@ export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.rand
    if(!Number.isInteger(value)||value<o.min||value>o.max)throw Error('CHOICE_INCOMPLETE');
    pending={interactionId,type:'number',value,revision:status.revision};publish();
   },
-  selectNone(interactionId){const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);if(!o||['number','text'].includes(o.type)||o.min!==0)throw Error('CHOICE_REQUIRED');pending={interactionId,type:o.type,choiceIds:[],revision:status.revision};publish();},
+  selectNone(interactionId){const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);if(!o||['number','text'].includes(o.type)||o.min!==0)throw Error('CHOICE_REQUIRED');pending={interactionId,type:o.type,...(o.type==='relations'?{relations:[]}:{choiceIds:[]}),revision:status.revision};publish();},
   confirm(){
    const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===pending?.interactionId);
    if(!o||pending.revision!==status.revision)throw Error('CHOICE_INCOMPLETE');
+   if(o.type==='relations'){
+    if(!validInteractionRelations(o,pending.relations))throw Error('CHOICE_INCOMPLETE');
+    return command('respond',{submission:{interactionId:o.interactionId,response:{type:'relations',data:{relations:pending.relations}}}});
+   }
    if(o.type==='text'){
     if(!validInteractionText(pending.value,o.maxLen))throw Error('CHOICE_INCOMPLETE');
     return command('respond',{submission:{interactionId:o.interactionId,response:{type:'text',data:{value:pending.value}}}});

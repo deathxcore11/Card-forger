@@ -1171,3 +1171,58 @@ remain required. Public readiness stays false. No live release, APK, schema,
 subscription, budget increase, paid engine build or external message occurred.
 Next: carry authoritative announcement/target/payment/combat affordances across
 supported real deck versions and finish the complete owner-facing match gate.
+
+
+## October 25, 2026 — explicit human combat assignments
+
+Started from verified remote 20f28bc7f38225270bdcdf634499f49f7f888f18;
+complete recursive tree contains no AGENTS.md. Used an isolated current-byte
+workspace and retained the newer placement gestures and browser fixes.
+
+Added human-only explicit relations schema projection, bounded source/target
+edges, optional numeric band groups and local assignment drafting. Sources
+with atMostOne cannot select two defenders; engineValidated sources retain
+multi-target capability for effects such as Palace Guard. The engine remains
+authoritative for menace, must-attack, blocking capacity, banding and all other
+combat restrictions. No AI candidate membership supplies human legality.
+The table provides attacker/defender and blocker/attacker rows, clear and
+explicit confirmation. Drafting/clearing changes no engine state. New accepted
+revisions clear the draft; timer-only renders retain it. Keyboard buttons and
+existing card inspection/placement remain available.
+
+Executed all 168 focused Phase Node tests: zero failures/skips/cancellations.
+Executed shared table/session Chromium 153 checks with simulated transport:
+local two-attacker drafting, clear, keyboard selection, timer retention,
+duplicate-confirm suppression and one-source/two-target blocking projection.
+Repeated existing pointer-placement and numeric-entry browser checks; both pass.
+
+Executed combat-controls-engine.mjs against the exact delivered ZIP, embedded
+receipt, JS/WASM hashes and compressed/decoded pinned rules hashes. Engineered
+four-Bears position accepts an explicit two-attacker subset absent from generated
+attack candidates. A separate opponent-turn position accepts Palace Guard
+blocking two attackers and rejects an ordinary Bear blocking two, unchanged.
+Both cases reject bad/stale capabilities, restore pending combat and recover
+the accepted receipt without duplicate assignments. Zero network requests.
+These are real runtime checks; the shared browser driver uses separate projection
+fixtures. Source provenance is the verified archive's historical receipt,
+not a newly reconstructed source checkout. No Rust build or binary substitution.
+
+Driver corrections before final success: initial seat-one journal use correctly
+failed because the human route is fixed to seat zero; replaced that setup with
+a genuine seat-zero blocking decision on the opponent turn. A controller-swapped
+fixture was unsuitable and discarded. The actual persisted combat field is
+blocker_to_attacker, not blockers; final assertions inspect exact assignments.
+The first browser follow-up referenced a module-scoped fixture from page.evaluate;
+the corrected harness exposes its fixture explicitly. No engine/assertion was
+weakened. Final byte-scoped reports: experiments/phase-engine/combat-proof-2026-10-25/.
+
+Limits: this does not certify all combat restrictions, banding semantics,
+damage-assignment order, real account/deck admission or a complete new match.
+Existing original failing/corrected passing ninjutsu evidence is unchanged.
+Public release stays disabled. Actual eligible Standard/Commander decks,
+remaining human schemas/pregame, complete mandatory timeout policy and calibrated
+Easy/Medium/Hard still need acceptance through the owner-facing account route.
+No production, APK, schema, subscription/budget change, paid build or messages.
+Next: carry these authoritative combat controls into full real-deck/account match
+gates, then complete remaining decisions and pregame without widening admission
+from these narrow fixture passes.
