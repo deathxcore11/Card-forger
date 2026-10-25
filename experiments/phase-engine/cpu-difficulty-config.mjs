@@ -1,4 +1,4 @@
-export const CPU_CONFIGURATION_VERSION='cpu-config-v1';
+export const CPU_CONFIGURATION_VERSION='cpu-config-v2';
 export const CPU_DIFFICULTIES=Object.freeze(['Easy','Medium','Hard']);
 // Release readiness is separate from implementation. Integration enables labels
 // after reviewing paired-seed measurements and the combined UI/account checks.

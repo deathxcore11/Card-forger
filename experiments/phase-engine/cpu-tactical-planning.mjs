@@ -1,8 +1,8 @@
 import {creatureValue,estimateBlocks} from './cpu-combat-evaluation.mjs';
 const has=(c,k)=>c?.keywords?.includes(k),power=c=>Math.max(0,c.damageFromToughness?c.toughness:c.power);
-export function makeSearchBudget(profile,now=()=>performance.now()){
+export function makeSearchBudget(profile,now=()=>performance.now(),cancelled=()=>false){
  const started=now();let nodes=0,exhausted=false;
- return {take(){if(nodes>=profile.maxNodes||now()-started>=profile.maxMs){exhausted=true;return false;}nodes++;return true;},stats(){return {nodes,elapsedMs:now()-started,budgetExhausted:exhausted};}};
+ return {take(){if(nodes>=profile.maxNodes||now()-started>=profile.maxMs||cancelled()){exhausted=true;return false;}nodes++;return true;},stats(){return {nodes,elapsedMs:now()-started,budgetExhausted:exhausted};}};
 }
 export function handSequenceScore(hand,root,profile,budget){
  const card=hand?.cards[root];if(!card)return null;

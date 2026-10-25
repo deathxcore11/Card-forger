@@ -1,14 +1,15 @@
 import {chooseVisible} from './visible-cpu-policy.mjs';
 import {PUBLIC_CPU_VERSION} from './cpu-public-observation.mjs';
-import {rankBlockCandidates,survivalRank,creatureValue} from './cpu-combat-evaluation.mjs';
+import {creatureValue} from './cpu-combat-evaluation.mjs';
+import {chooseBoundedBlock} from './cpu-block-search.mjs';
 import {cpuProfile,CPU_CONFIGURATION_VERSION} from './cpu-difficulty-config.mjs';
 import {makeSearchBudget,handSequenceScore,attackScore} from './cpu-tactical-planning.mjs';
-export function analyzeCpu(packet,rng,{now}={}){
+export function analyzeCpu(packet,rng,{now,cancelled}={}){
  if(packet?.version!==PUBLIC_CPU_VERSION||!Array.isArray(packet.legacy?.choices)||packet.legacy.choices.length!==packet.combat?.blockCandidates?.length)throw Error('INVALID_CPU_PACKET');
- const profile=cpuProfile(packet.difficulty),budget=makeSearchBudget(profile,now);
+ const profile=cpuProfile(packet.difficulty),budget=makeSearchBudget(profile,now,cancelled);
  const finish=index=>({index,rng:rng>>>0,metrics:{...budget.stats(),difficulty:packet.difficulty,configuration:CPU_CONFIGURATION_VERSION}});
- const ranked=rankBlockCandidates(packet.combat).sort((a,b)=>survivalRank(b.evaluation)-survivalRank(a.evaluation)||b.evaluation.score-a.evaluation.score||a.index-b.index);
- if(ranked.length)return finish(ranked[0].index);
+ const block=chooseBoundedBlock(packet.combat,budget);
+ if(block)return finish(block.index);
  if(packet.combat.decision==='DiscardToHandSize'){
   let index=-1,best=Infinity;
   for(const [i,ids]of (packet.hand?.discardIndices||[]).entries())if(ids!==null){
