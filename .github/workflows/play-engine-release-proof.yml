@@ -1,0 +1,59 @@
+name: Manual CardStashy release engine proof
+
+# Preparation is not billing approval. No push, schedule, deployment or chaining.
+# Register this workflow on the default branch before attempting dispatch with
+# an exact integration ref. Registration itself is a separate reviewed change.
+on:
+  workflow_dispatch:
+    inputs:
+      approval:
+        description: 'After owner approves possible billing, type BUILD RELEASE ENGINE ONCE'
+        type: string
+        required: true
+      expected_commit:
+        description: 'Exact 40-character integration commit reviewed for this one build'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cardstashy-manual-release-engine-proof
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.repository == 'deathxcore11/Card-forger' &&
+      github.event.inputs.approval == 'BUILD RELEASE ENGINE ONCE' &&
+      github.event.inputs.expected_commit == github.sha
+    runs-on: macos-15-intel
+    timeout-minutes: 75
+    steps:
+      - name: Check out the exact reviewed integration commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Install Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Build and test the pinned candidate without adopting it
+        id: proof
+        timeout-minutes: 72
+        run: node experiments/phase-engine/ci/release-engine-proof.mjs --approved-manual-build
+      - name: Retain bounded build evidence
+        if: ${{ always() && steps.proof.outputs.upload_ready == 'true' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-engine-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/release-engine-proof/artifact/
+          retention-days: 1
+          if-no-files-found: error
+          compression-level: 6
+          include-hidden-files: false

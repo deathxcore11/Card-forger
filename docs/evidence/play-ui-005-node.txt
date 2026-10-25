@@ -1,0 +1,32 @@
+✔ battlefield grouping preserves each instance and uses current public types (4.446344ms)
+✔ unknown cards cannot leak private type into a battlefield label (0.70959ms)
+✔ phase wording handles both main phases and preserves unfamiliar phases (0.617729ms)
+✔ turn ownership never determines who must act (0.922564ms)
+✔ required prompts, in-flight actions and terminal state keep honest labels (0.840558ms)
+✔ action cues require current offered commands, never name or mana guesses (1.128099ms)
+✔ ability cues require an available exact reference and authorized interaction (1.133716ms)
+✔ ambiguous object roles are not turned into a playable-card promise (0.58209ms)
+✔ opponent turn emblem coexists with the human decision and never invents an opening phase (4.573659ms)
+✔ battlefield presentation follows current types and never reveals hidden type (1.008539ms)
+✔ direct card selection requires one exact available object-only offer (1.215695ms)
+✔ selection preview is revision-bound, private-reference-safe and never mutates the snapshot (1.723765ms)
+✔ combat preview connects only declared public endpoints and clears when authority advances (1.456856ms)
+✔ art crop and full card preserve one printing and finish without changing the game object (5.681078ms)
+✔ a transformed object uses the authorized face crop, never the other face crop (0.624229ms)
+✔ artwork freezes the existing selected printing without changing the source list (5.786038ms)
+✔ wrong printings, unknown finishes and private instances never acquire a guessed effect or image (1.625947ms)
+✔ an authorized back face uses that face of the same printing (1.089537ms)
+✔ starter action explicitly discloses the format switch before committing (6.431762ms)
+✔ Friends changes the visible instructions and hides CPU-only controls (0.565959ms)
+✔ the deck browser marks the inspected seat without replacing either matchup list (1.493535ms)
+✔ guest has a direct sign-in action and no false match-readiness promise (0.505687ms)
+✔ app Back asks for active-match concession and closes a finished match without another loss (4.521316ms)
+✔ browser traversal restores the active route before confirmation and does not mutate match state (2.795229ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 447.754424

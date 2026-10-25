@@ -2,15 +2,26 @@
 // Neither cards, legacy recommendations nor UI choices establish completeness.
 export const FLOW_PHASES=Object.freeze(['Untap','Upkeep','Draw','PreCombatMain','BeginCombat','DeclareAttackers','DeclareBlockers','CombatDamage','EndCombat','PostCombatMain','End','Cleanup']);
 const seat=n=>n===0||n===1;
-export function priorityCapability({state,actor,epoch,revision}={}){
+export function priorityCapability({state,actor,epoch,revision,engineProof}={}){
  const priority=state?.waiting_for?.type==='Priority';
+ const proof=engineProof?.value;
+ // Only the versioned reducer-family certificate establishes absence. The
+ // authority creates this envelope from a fresh synchronous engine read; it is
+ // never accepted from UI input. Old runtimes and malformed/stale proofs stop.
+ const complete=priority&&seat(actor)&&seat(state?.active_player)&&FLOW_PHASES.includes(state?.phase)
+  &&typeof epoch==='string'&&Number.isSafeInteger(revision)&&revision>=0
+  &&engineProof?.epoch===epoch&&engineProof?.revision===revision
+  &&proof?.version===1&&proof.status==='actionless'&&proof.passVerified===true
+  &&proof.actor===actor&&proof.priorityHolder===state.waiting_for.data?.player
+  &&proof.actor===proof.priorityHolder&&typeof proof.floatingMana==='boolean';
  return {epoch,revision,decisionId:`decision-${revision}`,actorSeat:seat(actor)?actor:null,
   activeSeat:seat(state?.active_player)?state.active_player:null,
   prioritySeat:priority&&seat(state.waiting_for.data?.player)?state.waiting_for.data.player:null,
   phase:FLOW_PHASES.includes(state?.phase)?state.phase:null,
   mandatoryChoice:actor===0&&!priority&&state?.waiting_for?.type!=='GameOver',
-  // RULES-004: none of the delivered engine flags certifies complete coverage.
-  coverage:'unknown',meaningfulAction:null,manaWindow:null,passAvailable:false};
+  // RULES-004: neither legacy recommendation nor a union of offers is a proof.
+  coverage:complete?'complete':'unknown',meaningfulAction:complete?false:null,
+  manaWindow:complete?proof.floatingMana:null,passAvailable:complete};
 }
 export function createPriorityFlow({read,dispatch,onChange=()=>{},onError=()=>{},enqueue=fn=>setTimeout(fn,0),dequeue=clearTimeout}={}){
  if(typeof read!=='function'||typeof dispatch!=='function')throw Error('BAD_FLOW_OPTIONS');

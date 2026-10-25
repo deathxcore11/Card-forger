@@ -1,0 +1,246 @@
+{
+  "schema": 1,
+  "task": "RULES-002",
+  "taskBase": "ed3175347bc86b346205f3cba102a73bd3494c6c",
+  "integrationInspected": "4bd9801c0b5593288c9c29b76cc447ce47781f75",
+  "provenance": {
+    "appBaseCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+    "runtimeSourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "rulesSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "loadedNames": [
+      "Plains",
+      "Forest",
+      "Ram Through",
+      "Savannah Lions",
+      "Grizzly Bears"
+    ],
+    "subsetSha256": "fabe6bab1acca8c9395bcdb3cfc7445afc862cd50ddd955854f53204bddf458d"
+  },
+  "startedAt": "2026-10-25T19:34:05.836Z",
+  "environment": {
+    "node": "v24.22.1",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "cases": [
+    {
+      "id": "natural-setup",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "expected": "A real legal history reaches a draw-step priority window with two untapped Plains, own/opposing creatures, Ram Through in hand and draw metadata.",
+      "status": "PASS",
+      "actual": {
+        "acceptedActions": 69,
+        "turn": 5,
+        "phase": "Draw",
+        "ids": {
+          "own": 11,
+          "opposing": 90,
+          "spell": 31,
+          "lands": [
+            5,
+            10
+          ]
+        },
+        "stampCount": 1,
+        "restoreUsed": false,
+        "stateEdited": false
+      }
+    },
+    {
+      "id": "repeated-save-control",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "expected": "Five consecutive saves with no attempted action are deeply identical, including metadata.",
+      "status": "PASS",
+      "actual": [
+        {
+          "sha256": "88c563d983b648867060f45eded4e800274a9341712d19e8ca2ab6b790ab0e9d",
+          "stamps": [
+            {
+              "recorded_turn_number": 5,
+              "source": {
+                "boundary_generation": 0,
+                "library_owner": 0
+              },
+              "turn_zone_change_index": 0
+            }
+          ]
+        },
+        {
+          "sha256": "88c563d983b648867060f45eded4e800274a9341712d19e8ca2ab6b790ab0e9d",
+          "stamps": [
+            {
+              "recorded_turn_number": 5,
+              "source": {
+                "boundary_generation": 0,
+                "library_owner": 0
+              },
+              "turn_zone_change_index": 0
+            }
+          ]
+        },
+        {
+          "sha256": "88c563d983b648867060f45eded4e800274a9341712d19e8ca2ab6b790ab0e9d",
+          "stamps": [
+            {
+              "recorded_turn_number": 5,
+              "source": {
+                "boundary_generation": 0,
+                "library_owner": 0
+              },
+              "turn_zone_change_index": 0
+            }
+          ]
+        },
+        {
+          "sha256": "88c563d983b648867060f45eded4e800274a9341712d19e8ca2ab6b790ab0e9d",
+          "stamps": [
+            {
+              "recorded_turn_number": 5,
+              "source": {
+                "boundary_generation": 0,
+                "library_owner": 0
+              },
+              "turn_zone_change_index": 0
+            }
+          ]
+        },
+        {
+          "sha256": "88c563d983b648867060f45eded4e800274a9341712d19e8ca2ab6b790ab0e9d",
+          "stamps": [
+            {
+              "recorded_turn_number": 5,
+              "source": {
+                "boundary_generation": 0,
+                "library_owner": 0
+              },
+              "turn_zone_change_index": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "read-only-control",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "expected": "Both-seat reads, legal-action generation and target queries leave the entire save unchanged.",
+      "status": "PASS",
+      "actual": {
+        "unchanged": true,
+        "targetQuery": []
+      }
+    },
+    {
+      "id": "natural-rejection-atomicity",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "expected": "Wrong-color automatic cast rejects and preserves the entire save in a naturally reached valid-target position.",
+      "status": "FAIL",
+      "actual": {
+        "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    precast_shortcut_runtime: {\n      materializing: false,\n      must_diverge: null,\n      next_epoch: 0,\n...\n      },\n-     zone_change_library_knowledge_stamps: [\n-       {\n-         recorded_turn_number: 5,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 0\n-       }\n-     ],\n      zone_changes_this_turn: [\n        {\n          arrival: {\n            controller: 0,\n            owner: 0\n"
+      },
+      "stack": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    precast_shortcut_runtime: {\n      materializing: false,\n      must_diverge: null,\n      next_epoch: 0,\n...\n      },\n-     zone_change_library_knowledge_stamps: [\n-       {\n-         recorded_turn_number: 5,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 0\n-       }\n-     ],\n      zone_changes_this_turn: [\n        {\n          arrival: {\n            controller: 0,\n            owner: 0\n\n    at file:///workspace/scratch/f0e03787acbc/gameplay/experiments/phase-engine/rejection-atomicity-audit.mjs:93:51\n    at record (file:///workspace/scratch/f0e03787acbc/gameplay/experiments/phase-engine/rejection-atomicity-audit.mjs:27:17)\n    at file:///workspace/scratch/f0e03787acbc/gameplay/experiments/phase-engine/rejection-atomicity-audit.mjs:92:1"
+    },
+    {
+      "id": "natural-resource-preservation",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "expected": "Rejection leaves every recorded field except the separately reported event-metadata field unchanged.",
+      "status": "PASS",
+      "actual": {
+        "rejection": {
+          "code": "action_not_allowed",
+          "disposition": "unavailable",
+          "message": "That action is not allowed right now.",
+          "related_object_ids": [
+            31
+          ]
+        },
+        "allDifferencePaths": [
+          "/state/zone_change_library_knowledge_stamps"
+        ],
+        "cardsManaLifeAndZonesUnchanged": true
+      }
+    },
+    {
+      "id": "natural-immediate-seat-visibility",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "expected": "Each seat gets the same filtered/viewer/transition output before and after rejection; hidden hand/library identities remain hidden.",
+      "status": "PASS",
+      "actual": {
+        "seats": [
+          0,
+          1
+        ],
+        "equal": true
+      }
+    },
+    {
+      "id": "second-rejection-control",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "expected": "Repeating the same rejected action does not make a further state change.",
+      "status": "PASS",
+      "actual": {
+        "unchanged": true
+      }
+    },
+    {
+      "id": "six-action-seat-visibility",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "expected": "After six equivalent accepted continuations, both seats have identical filtered state and visible transition events with and without rejection.",
+      "status": "PASS",
+      "actual": {
+        "acceptedContinuationActions": 6,
+        "seats": [
+          0,
+          1
+        ],
+        "equal": true
+      }
+    },
+    {
+      "id": "engineered-rejection-atomicity",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "expected": "The original engineered-fixture pattern also rejects without changing the entire save.",
+      "status": "FAIL",
+      "actual": {
+        "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    precast_shortcut_runtime: {\n      materializing: false,\n      must_diverge: null,\n      next_epoch: 1,\n...\n      },\n-     zone_change_library_knowledge_stamps: [\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 0\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 1\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 2\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 3\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 4\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 5\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 6\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 1\n-         },\n-         turn_zone_change_index: 7\n-       },\n-       {\n-         recorded"
+      },
+      "stack": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    precast_shortcut_runtime: {\n      materializing: false,\n      must_diverge: null,\n      next_epoch: 1,\n...\n      },\n-     zone_change_library_knowledge_stamps: [\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 0\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 1\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 2\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 3\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 4\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 5\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 0\n-         },\n-         turn_zone_change_index: 6\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 1\n-         },\n-         turn_zone_change_index: 7\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 1\n-         },\n-         turn_zone_change_index: 8\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 1\n-         },\n-         turn_zone_change_index: 9\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 1\n-         },\n-         turn_zone_change_index: 10\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 1\n-         },\n-         turn_zone_change_index: 11\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 1\n-         },\n-         turn_zone_change_index: 12\n-       },\n-       {\n-         recorded_turn_number: 1,\n-         source: {\n-           boundary_generation: 0,\n-           library_owner: 1\n-         },\n-         turn_zone_change_index: 13\n-       }\n-     ]\n    }\n  }\n\n    at file:///workspace/scratch/f"
+    }
+  ],
+  "limits": [
+    "Engine/API assertions, not a browser or production CPU match.",
+    "No new runtime, card data, coverage promotion, session policy or recovery implementation.",
+    "Subsequent-visibility checks cover the named fixtures and six accepted continuations; no universal privacy or harmlessness claim."
+  ],
+  "counts": {
+    "PASS": 7,
+    "FAIL": 2,
+    "NOT TESTED": 0,
+    "UNSUPPORTED": 0
+  },
+  "sourceSha256": {
+    "rejection-atomicity-audit.mjs": "1704f6ed1df00f9a1815632af76dc5ed05e2408ee4a53092fc847066cc01d190",
+    "acceptance-inputs.mjs": "ff29722ad1efe200130bf031880073d8d7b87ecda7d7e9718753f02a39697405",
+    "mechanics-fixtures.mjs": "41376f6253f4fe6c5cc15cda917111e6f4bbb8c74886d5f5d7c566f37ef494e4",
+    "mechanics-inputs.mjs": "66461978fed003c3931601beb8d752dcbadabc424df7e899ce789156e4a21874",
+    "runtime-assets.mjs": "b210246c9d60e051927b47669cedb59ec7c5920bfca80e6cbc64b2f89e1b668e"
+  },
+  "finishedAt": "2026-10-25T19:34:23.113Z",
+  "integrationRecheck": {
+    "integrationHeadInspected": "3110e75c330b63b4dfccda2c259a6785dd9797ad",
+    "scope": "Independent engine-only rerun against unchanged shipped WASM; not a browser or integrated session test.",
+    "productionFilesChanged": [],
+    "engineBuildPerformed": false,
+    "fullEvidenceSha256": "4a594dab6a1b74d72ed32a48790a333647bf4c456a6a3f67a64abc0f7764c781",
+    "fullEvidenceBytes": 20299850,
+    "naturalSetupAcceptedActions": 69,
+    "naturalDifferencePaths": [
+      "/state/zone_change_library_knowledge_stamps"
+    ],
+    "engineeredDifferencePaths": [
+      "/state/zone_change_library_knowledge_stamps"
+    ],
+    "candidatePatch": "experiments/phase-engine/upstream/rejection-boundary-candidate.patch on Rules handoff ca33218d",
+    "decision": "FAIL; do not mark engine rejection atomicity fixed without a corrected executable and regression evidence."
+  }
+}

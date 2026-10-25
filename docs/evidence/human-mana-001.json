@@ -1,0 +1,569 @@
+{
+  "task": "HUMAN-MANA-001",
+  "status": "PASS",
+  "engineered": true,
+  "seed": 12345,
+  "provenance": {
+    "appBaseCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+    "runtimeSourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "rulesSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "loadedNames": [
+      "Forest",
+      "Scarecrow Guide",
+      "Ghalta, Primal Hunger",
+      "Ordinary Bear",
+      "Tapestry Warden"
+    ],
+    "subsetSha256": "0ee120f1a084701d3666fecee9911a13f64c55b286cecedd030098814ae4b636"
+  },
+  "browser": {
+    "status": "PASS",
+    "version": "153.0.8010.0",
+    "control": "Choose green mana",
+    "returnedTo": "ManaPayment",
+    "scope": "actual rendered production table + real engine/seat-controller endpoint; controlled session transport, not full app"
+  },
+  "ghaltaResolved": true,
+  "steps": [
+    {
+      "label": "manual cast",
+      "waiting": "ManaPayment",
+      "legalActions": [
+        {
+          "type": "PassPriority"
+        },
+        {
+          "type": "ActivateAbility",
+          "data": {
+            "source_id": 19,
+            "ability_index": 0
+          }
+        },
+        {
+          "type": "CancelCast"
+        }
+      ],
+      "rawCanSubmit": true,
+      "authorizedSubmitters": [
+        0
+      ],
+      "projectedCanSubmit": true
+    },
+    {
+      "label": "guide mana activation",
+      "waiting": "ChooseManaColor",
+      "legalActions": [
+        {
+          "type": "ChooseManaColor",
+          "data": {
+            "choice": {
+              "type": "SingleColor",
+              "data": "White"
+            },
+            "count": 1
+          }
+        },
+        {
+          "type": "ChooseManaColor",
+          "data": {
+            "choice": {
+              "type": "SingleColor",
+              "data": "Blue"
+            },
+            "count": 1
+          }
+        },
+        {
+          "type": "ChooseManaColor",
+          "data": {
+            "choice": {
+              "type": "SingleColor",
+              "data": "Black"
+            },
+            "count": 1
+          }
+        },
+        {
+          "type": "ChooseManaColor",
+          "data": {
+            "choice": {
+              "type": "SingleColor",
+              "data": "Red"
+            },
+            "count": 1
+          }
+        },
+        {
+          "type": "ChooseManaColor",
+          "data": {
+            "choice": {
+              "type": "SingleColor",
+              "data": "Green"
+            },
+            "count": 1
+          }
+        }
+      ],
+      "rawCanSubmit": true,
+      "authorizedSubmitters": [
+        0
+      ],
+      "projectedCanSubmit": false
+    },
+    {
+      "label": "green selected",
+      "waiting": "ManaPayment",
+      "legalActions": [
+        {
+          "type": "PassPriority"
+        },
+        {
+          "type": "CancelCast"
+        }
+      ],
+      "rawCanSubmit": true,
+      "authorizedSubmitters": [
+        0
+      ],
+      "projectedCanSubmit": true
+    },
+    {
+      "label": "continue payment 0",
+      "waiting": "ManaPayment",
+      "legalActions": [
+        {
+          "type": "PassPriority"
+        },
+        {
+          "type": "CancelCast"
+        }
+      ],
+      "rawCanSubmit": true,
+      "authorizedSubmitters": [
+        0
+      ],
+      "projectedCanSubmit": true
+    },
+    {
+      "label": "continue payment 1",
+      "waiting": "ManaPayment",
+      "legalActions": [
+        {
+          "type": "PassPriority"
+        },
+        {
+          "type": "CancelCast"
+        }
+      ],
+      "rawCanSubmit": true,
+      "authorizedSubmitters": [
+        0
+      ],
+      "projectedCanSubmit": true
+    },
+    {
+      "label": "continue payment 2",
+      "waiting": "ManaPayment",
+      "legalActions": [
+        {
+          "type": "PassPriority"
+        },
+        {
+          "type": "CancelCast"
+        }
+      ],
+      "rawCanSubmit": true,
+      "authorizedSubmitters": [
+        0
+      ],
+      "projectedCanSubmit": true
+    },
+    {
+      "label": "continue payment 3",
+      "waiting": "ManaPayment",
+      "legalActions": [
+        {
+          "type": "PassPriority"
+        },
+        {
+          "type": "CancelCast"
+        }
+      ],
+      "rawCanSubmit": true,
+      "authorizedSubmitters": [
+        0
+      ],
+      "projectedCanSubmit": true
+    },
+    {
+      "label": "continue payment 4",
+      "waiting": "ManaPayment",
+      "legalActions": [
+        {
+          "type": "PassPriority"
+        },
+        {
+          "type": "CancelCast"
+        }
+      ],
+      "rawCanSubmit": true,
+      "authorizedSubmitters": [
+        0
+      ],
+      "projectedCanSubmit": true
+    },
+    {
+      "label": "continue payment 5",
+      "waiting": "ManaPayment",
+      "legalActions": [
+        {
+          "type": "PassPriority"
+        },
+        {
+          "type": "CancelCast"
+        }
+      ],
+      "rawCanSubmit": true,
+      "authorizedSubmitters": [
+        0
+      ],
+      "projectedCanSubmit": true
+    },
+    {
+      "label": "continue payment 6",
+      "waiting": "ManaPayment",
+      "legalActions": [
+        {
+          "type": "PassPriority"
+        },
+        {
+          "type": "CancelCast"
+        }
+      ],
+      "rawCanSubmit": true,
+      "authorizedSubmitters": [
+        0
+      ],
+      "projectedCanSubmit": true
+    },
+    {
+      "label": "continue payment 7",
+      "waiting": "Priority",
+      "legalActions": [
+        {
+          "type": "PassPriority"
+        }
+      ],
+      "rawCanSubmit": true,
+      "authorizedSubmitters": [
+        0
+      ],
+      "projectedCanSubmit": true
+    }
+  ],
+  "surface": {
+    "seat": 0,
+    "turn": 2,
+    "phase": "PreCombatMain",
+    "activeSeat": 0,
+    "prioritySeat": 0,
+    "players": [
+      {
+        "seat": 0,
+        "life": 20,
+        "poison": 0,
+        "handCount": 1,
+        "libraryCount": 52,
+        "graveyard": []
+      },
+      {
+        "seat": 1,
+        "life": 20,
+        "poison": 0,
+        "handCount": 0,
+        "libraryCount": 60,
+        "graveyard": []
+      }
+    ],
+    "cards": [
+      {
+        "id": 1,
+        "zone": "Battlefield",
+        "owner": 0,
+        "controller": 0,
+        "known": true,
+        "tapped": true,
+        "name": "Forest",
+        "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+        "face": "Forest",
+        "power": null,
+        "toughness": null,
+        "basePower": null,
+        "baseToughness": null,
+        "isToken": false,
+        "isEmblem": false,
+        "displaySource": null,
+        "tokenImageRef": null,
+        "damage": 0,
+        "counters": {},
+        "types": [
+          "Land"
+        ],
+        "keywords": []
+      },
+      {
+        "id": 2,
+        "zone": "Battlefield",
+        "owner": 0,
+        "controller": 0,
+        "known": true,
+        "tapped": false,
+        "name": "Forest",
+        "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+        "face": "Forest",
+        "power": null,
+        "toughness": null,
+        "basePower": null,
+        "baseToughness": null,
+        "isToken": false,
+        "isEmblem": false,
+        "displaySource": null,
+        "tokenImageRef": null,
+        "damage": 0,
+        "counters": {},
+        "types": [
+          "Land"
+        ],
+        "keywords": []
+      },
+      {
+        "id": 3,
+        "zone": "Battlefield",
+        "owner": 0,
+        "controller": 0,
+        "known": true,
+        "tapped": false,
+        "name": "Forest",
+        "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+        "face": "Forest",
+        "power": null,
+        "toughness": null,
+        "basePower": null,
+        "baseToughness": null,
+        "isToken": false,
+        "isEmblem": false,
+        "displaySource": null,
+        "tokenImageRef": null,
+        "damage": 0,
+        "counters": {},
+        "types": [
+          "Land"
+        ],
+        "keywords": []
+      },
+      {
+        "id": 4,
+        "zone": "Battlefield",
+        "owner": 0,
+        "controller": 0,
+        "known": true,
+        "tapped": false,
+        "name": "Forest",
+        "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+        "face": "Forest",
+        "power": null,
+        "toughness": null,
+        "basePower": null,
+        "baseToughness": null,
+        "isToken": false,
+        "isEmblem": false,
+        "displaySource": null,
+        "tokenImageRef": null,
+        "damage": 0,
+        "counters": {},
+        "types": [
+          "Land"
+        ],
+        "keywords": []
+      },
+      {
+        "id": 5,
+        "zone": "Battlefield",
+        "owner": 0,
+        "controller": 0,
+        "known": true,
+        "tapped": false,
+        "name": "Tapestry Warden",
+        "oracleId": "981138d0-bf61-406a-85be-68cc5e58796c",
+        "face": "Tapestry Warden",
+        "power": 3,
+        "toughness": 4,
+        "basePower": 3,
+        "baseToughness": 4,
+        "isToken": false,
+        "isEmblem": false,
+        "displaySource": null,
+        "tokenImageRef": null,
+        "damage": 0,
+        "counters": {},
+        "types": [
+          "Artifact",
+          "Creature"
+        ],
+        "keywords": [
+          "Vigilance"
+        ]
+      },
+      {
+        "id": 6,
+        "zone": "Battlefield",
+        "owner": 0,
+        "controller": 0,
+        "known": true,
+        "tapped": false,
+        "name": "Ordinary Bear",
+        "oracleId": "89a2fab8-b074-42aa-a871-d9c5de2d0895",
+        "face": "Ordinary Bear",
+        "power": 4,
+        "toughness": 5,
+        "basePower": 4,
+        "baseToughness": 5,
+        "isToken": false,
+        "isEmblem": false,
+        "displaySource": null,
+        "tokenImageRef": null,
+        "damage": 0,
+        "counters": {},
+        "types": [
+          "Creature"
+        ],
+        "keywords": []
+      },
+      {
+        "id": 19,
+        "zone": "Battlefield",
+        "owner": 0,
+        "controller": 0,
+        "known": true,
+        "tapped": false,
+        "name": "Scarecrow Guide",
+        "oracleId": "cf7bb5d4-c33f-4879-a793-6d6f2a4d94be",
+        "face": "Scarecrow Guide",
+        "power": 2,
+        "toughness": 1,
+        "basePower": 2,
+        "baseToughness": 1,
+        "isToken": false,
+        "isEmblem": false,
+        "displaySource": null,
+        "tokenImageRef": null,
+        "damage": 0,
+        "counters": {},
+        "types": [
+          "Artifact",
+          "Creature"
+        ],
+        "keywords": [
+          "Reach"
+        ]
+      },
+      {
+        "id": 28,
+        "zone": "Hand",
+        "owner": 0,
+        "controller": 0,
+        "known": true,
+        "tapped": false,
+        "name": "Ghalta, Primal Hunger",
+        "oracleId": "b0b6be0c-41cf-4757-9f0e-87227b6ba6b3",
+        "face": "Ghalta, Primal Hunger",
+        "power": 12,
+        "toughness": 12,
+        "basePower": 12,
+        "baseToughness": 12,
+        "isToken": false,
+        "isEmblem": false,
+        "displaySource": null,
+        "tokenImageRef": null,
+        "damage": 0,
+        "counters": {},
+        "types": [
+          "Creature"
+        ],
+        "keywords": [
+          "Trample"
+        ]
+      }
+    ],
+    "hand": [
+      28
+    ],
+    "battlefield": [
+      19,
+      6,
+      5,
+      1,
+      2,
+      3,
+      4
+    ],
+    "exile": [],
+    "command": [],
+    "stack": [
+      {
+        "id": 28,
+        "source": 28,
+        "controller": 0
+      }
+    ],
+    "decision": {
+      "kind": "ChooseManaColor",
+      "supported": true
+    },
+    "choices": [
+      {
+        "token": "human-mana-fixture:2:0",
+        "label": "Choose white mana",
+        "kind": "ChooseManaColor",
+        "sourceId": null
+      },
+      {
+        "token": "human-mana-fixture:2:1",
+        "label": "Choose blue mana",
+        "kind": "ChooseManaColor",
+        "sourceId": null
+      },
+      {
+        "token": "human-mana-fixture:2:2",
+        "label": "Choose black mana",
+        "kind": "ChooseManaColor",
+        "sourceId": null
+      },
+      {
+        "token": "human-mana-fixture:2:3",
+        "label": "Choose red mana",
+        "kind": "ChooseManaColor",
+        "sourceId": null
+      },
+      {
+        "token": "human-mana-fixture:2:4",
+        "label": "Choose green mana",
+        "kind": "ChooseManaColor",
+        "sourceId": null
+      }
+    ],
+    "canAct": true,
+    "unavailableReason": null
+  },
+  "sources": {
+    "experiments/phase-engine/seat-surface.mjs": "55e5beedac9db3fdf5ea7be881676c4d8bcd9445bc239b1556622ef959b481b8",
+    "experiments/phase-engine/human-mana-engine.mjs": "af35b44211d2c3d6b16d59e3304430aa87be04fee6c226bd5eec180f4ee17548",
+    "experiments/phase-engine/test-seat-surface.mjs": "8b1a2c15b19c39ebf707aa86998c6047d773f666d092d4bfaef8d23a81750b86"
+  },
+  "limits": [
+    "Engineered starting board; actual commands thereafter.",
+    "Real production table click with controlled transport to real WASM/seat controller, not a full app match.",
+    "Only existing engine-offered SingleColor/count1 mana choices supported by this change. Other group/batch/Phyrexian contracts remain unsupported."
+  ]
+}

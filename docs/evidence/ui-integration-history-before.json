@@ -1,0 +1,805 @@
+{
+  "browser": "153.0.8010.0",
+  "startedAt": "2026-10-25T19:45:39.903Z",
+  "fixtureSource": "Committed ui-review-catalog.json; bounded mode modifies only controlled fixture state as recorded in fixtureOverrides.",
+  "boundary": "Current frozen production UI source, controlled fixture sessions and providers; no real match, live account, real save provider, touch or actual browser zoom claim.",
+  "suites": {
+    "commander": {
+      "passed": true,
+      "checks": {
+        "publicName": true,
+        "exactTax": true,
+        "exactCount": true,
+        "hiddenPublicIdentityRetained": true,
+        "recordedDamage": true,
+        "noHiddenTaxGuess": true,
+        "noCommands": true
+      }
+    },
+    "history": {
+      "passed": false,
+      "checks": {
+        "savedMessage": true,
+        "reason": true,
+        "maxTen": true,
+        "exactPrinting": true,
+        "textSafe": true,
+        "noResumePromise": true,
+        "headingReachable": false
+      },
+      "geometry": {
+        "rootTop": 0,
+        "rootHeight": 1000,
+        "scrollHeight": 1252,
+        "panelTop": -192.203125,
+        "headingTop": -114.90625
+      }
+    },
+    "unavailable": {
+      "passed": true,
+      "checks": {
+        "warning": true,
+        "outcomeUnchanged": true,
+        "noFalseSaved": true,
+        "noList": true
+      }
+    }
+  },
+  "fixtureOverrides": [
+    {
+      "path": "/experiments/phase-engine/ui-review.mjs",
+      "underlyingSha256": "8b33b502e946c8ee10d6f213a43e164adb33d5fb57fb93fa31f79da957689a94",
+      "servedSha256": "5fe8afd4f892fe5d34102c9707d5b49aac25f28b8e38bb3a5fb88a51262c36a4",
+      "purpose": "Controlled data only; production components unchanged"
+    },
+    {
+      "path": "/experiments/phase-engine/ui-journey-review.mjs",
+      "underlyingSha256": "21c00a8abc096a1632a4da56fd528a6f6a12aa48ec8dbfda1ca93b2a57c0da19",
+      "servedSha256": "a7a0c1174c5c74aebdba7a2fdb46dacf5f8979f9137eb342c2aa4a4dde631324",
+      "purpose": "Controlled data only; production components unchanged"
+    }
+  ],
+  "errors": [],
+  "passed": false,
+  "finishedAt": "2026-10-25T19:45:44.723Z",
+  "sources": [
+    {
+      "path": "experiments/phase-engine/ui-review.html",
+      "sha256": "513ed38b033b2102be7b4b9ff134efac4d1db83ab4ce50cc7d675426328aa8b2",
+      "gitBlob": "7bded19e5380436a5554efa1187221c9162ff16b",
+      "bytes": 853
+    },
+    {
+      "path": "style.css",
+      "sha256": "04e17cfdff56d36d510b32f645b0d5bd56d3801d0fb54a95dc6ddf01d9582df5",
+      "gitBlob": "ee5e4436d8505ee963f96b6f425357846b3c78b3",
+      "bytes": 538627
+    },
+    {
+      "path": "finish-effects.css",
+      "sha256": "d1ff9a1b4da5ac87ce58efd0702182bae09cc54404efd265024ac8fd35377d98",
+      "gitBlob": "1f2d6371d223d35cb3ba32970dcefb44e44d3bf5",
+      "bytes": 19312
+    },
+    {
+      "path": "play-menu.css",
+      "sha256": "b78083aeb8967d0b24d785601f6c116217f4a120b0cf7d12b55bc41a13bed354",
+      "gitBlob": "39a955bf58b604fe03992643ef1a514138e5afd2",
+      "bytes": 17328
+    },
+    {
+      "path": "experiments/phase-engine/match-table.css",
+      "sha256": "497f0d5d8d2e2da2be36ec328ccb6655a6772c94cc9ee4da3504ce964f23a4fa",
+      "gitBlob": "29ad0561c9046aa754a2b5fb03c454c490e9184e",
+      "bytes": 36723
+    },
+    {
+      "path": "experiments/phase-engine/ui-review.mjs",
+      "sha256": "5fe8afd4f892fe5d34102c9707d5b49aac25f28b8e38bb3a5fb88a51262c36a4",
+      "gitBlob": "68e3d8197e2dd960404a5247688509f6e2556695",
+      "bytes": 26604
+    },
+    {
+      "path": "experiments/phase-engine/match-table.mjs",
+      "sha256": "78ecf391603a2e3f2852cbf57d5b1e68aab640e4d726e98f3edea68cab726ca6",
+      "gitBlob": "879f57a637632a7f2c562e1e33a826ce897931be",
+      "bytes": 59287
+    },
+    {
+      "path": "play-card-surface.js",
+      "sha256": "a3a922b5c89d48978583cd1e1dd6b715efe1eaa0041564265b7c28f3d1282beb",
+      "gitBlob": "d3452ff974cbb6c46a32d69f5481a93468d39b29",
+      "bytes": 5075
+    },
+    {
+      "path": "play-player-mat.js",
+      "sha256": "11312dea64529906ca2762c9d123ba0fe78258fb32d768f999eb53d57fe72148",
+      "gitBlob": "563e70c709b5a7c4bb69a857abb05afa5d77c4a2",
+      "bytes": 15192
+    },
+    {
+      "path": "core.js",
+      "sha256": "afde1efb68f3609a5e2a412fab4c8962c0ccde7371f9b88f42340686e6e6f1a7",
+      "gitBlob": "c392e32ce4a95e651d15eef452eb52be4594ff1b",
+      "bytes": 20528
+    },
+    {
+      "path": "ui.js",
+      "sha256": "8757c5194817622fba6a407e319be39e67ee54f34770e0029554e7f98a6b90b8",
+      "gitBlob": "d55d2c361744bf2bdee2dd5de9099f36c6e149ba",
+      "bytes": 13848
+    },
+    {
+      "path": "finish-preview.js",
+      "sha256": "8c7039ec52e9d7509c5aff4e967a7c93e58fec5a77d0031dee987b6f7162d86b",
+      "gitBlob": "c4a87ec81bd22b58748831456197ca03f30f91ef",
+      "bytes": 19298
+    },
+    {
+      "path": "artwork.js",
+      "sha256": "abb307ff9c1c918ddd3d6734c95d8608041aa59a46fbd8cf5fa00e57878cd825",
+      "gitBlob": "1dcb1af15d943d0799f5dee39fbc1cf0bc6908e3",
+      "bytes": 7123
+    },
+    {
+      "path": "rarity-emblem.js",
+      "sha256": "493354bcd30705cab0f447e44ffeef714f0c31ef693417e9d29b21e9f568c28e",
+      "gitBlob": "f199f968e05ebba097b0cd65ea4fd44de31728d5",
+      "bytes": 2677
+    },
+    {
+      "path": "commander-evidence.js",
+      "sha256": "34921c07e7af5ffcc302193403541a76158c55ac2488b15eb13f0d6a15dfb3d3",
+      "gitBlob": "5f0022a01c6c26b4ed673d264591d1e8e447ec1c",
+      "bytes": 6050
+    },
+    {
+      "path": "rule-dex.js",
+      "sha256": "c78deb62af0f7740e04360323500c7cc1f05ca2df891497c7c3c0dff44bf6cc5",
+      "gitBlob": "5e3bb04abdb14657d16b558547f760c40a9e62d7",
+      "bytes": 26822
+    },
+    {
+      "path": "play-deck-context.js",
+      "sha256": "7094ebad2d1bcbe99fa6f54ad39d04413a83d3862b85254b8659dd4fe542226b",
+      "gitBlob": "64f382221418ca07b0880016580232ffaa2ec21b",
+      "bytes": 2306
+    },
+    {
+      "path": "experiments/phase-engine/practice-preflight.mjs",
+      "sha256": "c94a0807c9561e08315fe0bfd4cb21416b7be032e414f8b1bcea59408e6b2df4",
+      "gitBlob": "b36b515c451b49140f930df906dc41bc4a4cf756",
+      "bytes": 1963
+    },
+    {
+      "path": "power.js",
+      "sha256": "801e5c500dc6f3a274466ff40b2db9983525df3514e5defca39adc7186393b48",
+      "gitBlob": "493f49db0bd269fd4c11fd45b8544b0dbeb867b3",
+      "bytes": 46284
+    },
+    {
+      "path": "brand.js",
+      "sha256": "60b3b0f745ebf1133d16de4ef703eabfd24a188d530158ecf0a922c39f6bd2d9",
+      "gitBlob": "d14f39e159774424969b7a96f7656595f0aff4b6",
+      "bytes": 12004
+    },
+    {
+      "path": "profile-art.js",
+      "sha256": "e2c0eedbeaf4848db0c35a7fbf115288cff7fffd234037a089978f887960983a",
+      "gitBlob": "41e8eb26fcec704949e1c5e2dbba8526a0018c47",
+      "bytes": 13158
+    },
+    {
+      "path": "play-turn-controls.js",
+      "sha256": "9777ba5967531e902f19375f6c9fd480cb4539b6c333e4c6ce226b45457666b3",
+      "gitBlob": "70d8c851bf8f69661da42b99664c8b21cecdd5a6",
+      "bytes": 4132
+    },
+    {
+      "path": "icons.js",
+      "sha256": "dd77097bd833de7afd48a8dfd0c84e48cd64b0da423c72466523019d6fb9a28b",
+      "gitBlob": "35e451a2496014e6666909851252d17f719d32fe",
+      "bytes": 14102
+    },
+    {
+      "path": "experiments/phase-engine/card-placement.mjs",
+      "sha256": "e84ae49658ec58cbaa21488c6a73162a8e370f280425cfc2778ae394f28f3259",
+      "gitBlob": "8f5b6a36c51f445427fa6ffff02525de4c4cb805",
+      "bytes": 5083
+    },
+    {
+      "path": "experiments/phase-engine/interaction-surface.mjs",
+      "sha256": "bffbb62bd6a20d00e4265758496f5b8eb7042396c5c6e9a77c1d0fcea88c4eb0",
+      "gitBlob": "5c56d6ffef92b25014829c4fbe30dbff08f2b68a",
+      "bytes": 9735
+    },
+    {
+      "path": "experiments/phase-engine/card-stats.mjs",
+      "sha256": "9d2df7ff86d2f96e97481451b7cdb3eb500d447430f4f9862ba76c49ca7bb46f",
+      "gitBlob": "8bdc2bd4e69fd6ace1a3e9aef7b86781cfe75b52",
+      "bytes": 1357
+    },
+    {
+      "path": "experiments/phase-engine/random-outcomes.mjs",
+      "sha256": "1aa212c485c766caf1d80403f2413c22bb17194cbbfa54979a699a38ea2d12d0",
+      "gitBlob": "2616d0dbcab632244e06b11cbd0a28bc661d90f0",
+      "bytes": 2990
+    },
+    {
+      "path": "formats.js",
+      "sha256": "5982aa0ead244f965d5fa982c32bbe500f93ea24f4a976ca608e0746798772e9",
+      "gitBlob": "0b63b8f85172611b86bab8aa874fb1e39e3565f1",
+      "bytes": 9922
+    },
+    {
+      "path": "mtg-tcgprice.js",
+      "sha256": "dc0511eb7edbb414867602cf8e8f173de90890137524904dff525588e2ae5e94",
+      "gitBlob": "79347dff45f0412233c23b5ec93a27bb42ea3b74",
+      "bytes": 6308
+    },
+    {
+      "path": "tier.js",
+      "sha256": "e752b29e55b52472102e32db18a95cef7c70802fb7592c2756307066538d315e",
+      "gitBlob": "611ee43bbfc2e1e84891567492553ce2d180b42f",
+      "bytes": 3023
+    },
+    {
+      "path": "pokemon-set-art.js",
+      "sha256": "b73f62fcd6f6f5edc46cb67a1c5de269e8bbf121995504db9307048cf7368bf0",
+      "gitBlob": "55d01d52a88b3ffa4456f63b90e71cd581c9893f",
+      "bytes": 32139
+    },
+    {
+      "path": "emblems.js",
+      "sha256": "0f3e1baeea5bbe94feed8fc62ecc8991a7d198de219fde0c235e8b3d3240e694",
+      "gitBlob": "4659083fab78bad841abb1b08c1258fd99627012",
+      "bytes": 15066
+    },
+    {
+      "path": "feedback-layer.js",
+      "sha256": "084ac243e3aa2d8d4680175d2e17a8a5e15f0c6a9a07b6599c4eede9bba28aab",
+      "gitBlob": "27b9d1740eff7ae02089459f6d079da2d857d973",
+      "bytes": 2211
+    },
+    {
+      "path": "finish-effects.js",
+      "sha256": "4e41844eb8a415470d5777b5577d6997c06fc9d388639def68c183149c726a91",
+      "gitBlob": "fec0b2e43d630cf3d524812e5aece3d7fb7ed675",
+      "bytes": 51601
+    },
+    {
+      "path": "finish-materials.js",
+      "sha256": "c63e7c193743e124432d9a7d45c7809d0ce0656ce0de9148872a2f7ec6d2bcdd",
+      "gitBlob": "4841d0cad247581dbcbc15e923840cbdc367cfac",
+      "bytes": 2645
+    },
+    {
+      "path": "ygo-name-foil.js",
+      "sha256": "a7a63089eb201041669be66fc426a2aa2d86ea697fc3ac806134884de0f832b7",
+      "gitBlob": "44978621ba0810f0df3e48853291313306ed9f08",
+      "bytes": 9320
+    },
+    {
+      "path": "ygo-rarity-foil.js",
+      "sha256": "267637c97e651a2314e8811e175ef27e23bd40f56b51a56cd0304ebcf46e1300",
+      "gitBlob": "0f016a5879b6acbf49eeb95b3e90076b8a169007",
+      "bytes": 12333
+    },
+    {
+      "path": "mtg-foil.js",
+      "sha256": "3df5647c9b0ab28aef675d3ad4c4fbc494a01854511b003cdc1e8ea9d9c97414",
+      "gitBlob": "c29973e040a7d46efb532bacc857effca5321c39",
+      "bytes": 12793
+    },
+    {
+      "path": "ptcg-foil.js",
+      "sha256": "3e8e77fc97956ea3cee6de76b28f9a1376a13a8c5ef75c5546ae18a32a4abaa6",
+      "gitBlob": "0d7842436779d65bb16cd6e3fb8a550e931866ae",
+      "bytes": 31149
+    },
+    {
+      "path": "ygo-foil-recipes.js",
+      "sha256": "fa39f79c2744b9facb9d2d8d741ecb19204f73de473a880e3e2be55284116bd6",
+      "gitBlob": "f4a4d3b29d447730ca0ba4cb4fa127cf2444d6ec",
+      "bytes": 8661
+    },
+    {
+      "path": "pricing-presentation.js",
+      "sha256": "67fbba3c65eac1c625e60d7fce034918481218b6209fbae5446b092bab934e93",
+      "gitBlob": "b4741257b7fe0bb13906a1b064996ec8529e9796",
+      "bytes": 31593
+    },
+    {
+      "path": "commander-combos.js",
+      "sha256": "ffc88532a161a35b0e62820fe19eb9b83150324c76c9f4f486ecb8ae9486fa06",
+      "gitBlob": "7577f39edbd71334c3cab15485b07d5bc513223a",
+      "bytes": 5068
+    },
+    {
+      "path": "game-changers.js",
+      "sha256": "cee1b308d381ea0f7909979a01d0b2f2fc8221d0cdce53a89aa42c7421d6af13",
+      "gitBlob": "f8c22766788e776c9d729bb919967bd6b4e088ab",
+      "bytes": 6067
+    },
+    {
+      "path": "extras.js",
+      "sha256": "33fc5ca8360779c90069651552207375e792200c5ff86e38863ff50c66dd2192",
+      "gitBlob": "3063a9f875d163d854e0acd196549279b9e307d2",
+      "bytes": 22043
+    },
+    {
+      "path": "store.js",
+      "sha256": "47598d7e7d6080f41ade8ba8142742aa2d4eb7e02b1b0b3bf72e7e443d4dc66b",
+      "gitBlob": "086efc65d28a39f69af4fa0ea9b43b853d55f80f",
+      "bytes": 5666
+    },
+    {
+      "path": "rule-reference.js",
+      "sha256": "1be69458e407f1ba9d81de8cf5ce966253f64bcfa3cbb91f7b49256f5d1e3501",
+      "gitBlob": "12d9e27eca499e95ea6c109e5a60c28978b767ca",
+      "bytes": 14115
+    },
+    {
+      "path": "experiments/phase-engine/match-input.mjs",
+      "sha256": "dbaa6c50da3d9dd33c6fe3eb71142c7b94109b396d88a187c129d12eb364c6ce",
+      "gitBlob": "fb5661c4b011b4d0f648a81d98ceb2f456c2babf",
+      "bytes": 3996
+    },
+    {
+      "path": "experiments/phase-engine/practice-coverage.mjs",
+      "sha256": "49fe0a22ccaa21b37b548461ea94cae98c8ae666087055ba31c16afbd9564652",
+      "gitBlob": "31825679aad6a330600914426a2792db5d1aa436",
+      "bytes": 702
+    },
+    {
+      "path": "experiments/phase-engine/cpu-difficulty-config.mjs",
+      "sha256": "f0a9998c21b55ea2814a7e43f1be02eae41731859e9fd8205bfa70f3ff613715",
+      "gitBlob": "c988dbc8a57b7c540d2f223e45935e0264d1c06c",
+      "bytes": 778
+    },
+    {
+      "path": "rule-extra.js",
+      "sha256": "2e74d3f9db240866d0fc9c0433113be91af8703785b40c14f8ac15a63caaa66a",
+      "gitBlob": "1707aafeba2544b5fde2d7d936cd2a3f0a5ea543",
+      "bytes": 3806
+    },
+    {
+      "path": "card-discovery.js",
+      "sha256": "f080f785107944b1b30a4468388c0571a434ad98fddf1fa5b59767fcf1fc523d",
+      "gitBlob": "719968135fc15e08998f71c4ccaa768e998ac5d7",
+      "bytes": 4284
+    },
+    {
+      "path": "mtg-wiki-knowledge.js",
+      "sha256": "ae613ef23136e2dfcbc34e5692bd4197f69acf09be859bc72675cfcfa6b2b720",
+      "gitBlob": "3b516e8dc7afff4ea0938478e056812997616166",
+      "bytes": 14600
+    },
+    {
+      "path": "rule-lessons.js",
+      "sha256": "acfccb9ea2153407b7d26c8ddb9d725e459f6fb34332b9302bee104a4cac7318",
+      "gitBlob": "c75397b80b25c054ded596e87e56fdda7618720d",
+      "bytes": 23551
+    },
+    {
+      "path": "rule-corpus.js",
+      "sha256": "c73301b679b2c9c1c6aabbea4f99d493738620c724bc09387c2cec8f62919d91",
+      "gitBlob": "058fb67d1b76863922bf362d499a18c4388b8faf",
+      "bytes": 2704
+    },
+    {
+      "path": "rule-hover.js",
+      "sha256": "5948f80dcd827a418ceb962659f1247ed40985807ab051ca2438e84a77409505",
+      "gitBlob": "f10e379010e0d66dc3feb0509b9d3876141d9461",
+      "bytes": 4640
+    },
+    {
+      "path": "engine-map.js",
+      "sha256": "f19e76625d9447ef43e47ac40948f12d410ace7145d1103ad2bd3fa85f15da5e",
+      "gitBlob": "0b8a15052297d935dfde3183350e947d5ea2fc30",
+      "bytes": 7386
+    },
+    {
+      "path": "strategy-risk.js",
+      "sha256": "cb2d4351d9633c858c0b3732eade696e9f19e60637f95373a78ddd6bc4b318ab",
+      "gitBlob": "015cb7f4ba1d0c9b504794fe6e7f860a781fe4a4",
+      "bytes": 3438
+    },
+    {
+      "path": "ygo.js",
+      "sha256": "b54959bc32d57a7e12e034bb6f8df387d3cbff566645e1178dc3e2c193ce4192",
+      "gitBlob": "c5fec1c675d2e35095bc0cdbd145bb008371cdad",
+      "bytes": 35172
+    },
+    {
+      "path": "ptcg.js",
+      "sha256": "cb2108adea5577e3db9e2e6a89a496f91398a77ab7de4bcbb13a0bf7175a7cc6",
+      "gitBlob": "c89ab2a312f89ef8424b506ed52390f09c7f6458",
+      "bytes": 56452
+    },
+    {
+      "path": "deckaudit.js",
+      "sha256": "895dc335495ad977b653d2c906735225ae3ed5308df29572454977fb166c81ab",
+      "gitBlob": "78dc60dd196d20a4cfa11357cad2251e1c882d53",
+      "bytes": 3502
+    },
+    {
+      "path": "scouting.js",
+      "sha256": "51d95c80bd65fa3cb8ddc8df812cb098a1a4e1e9edeb912d045a5fb31e8c6aa1",
+      "gitBlob": "9e225118002247a41f0ed6a622ddf6ce48e3c82b",
+      "bytes": 9608
+    },
+    {
+      "path": "goldfish.js",
+      "sha256": "8bfab95443a8a45635d9e45f50b19ed5f31128452113360af804c518a21eb748",
+      "gitBlob": "b82e7100d1a996f60ddc8aff38adfdf5a680bf79",
+      "bytes": 37315
+    },
+    {
+      "path": "mtg-tags.js",
+      "sha256": "dc1d28cb9595d58b0b5051c3f214719465bf3f73ced08f86be536bf036c8c77c",
+      "gitBlob": "da0258eaf83de0bea0162586ac66c4240e5fb89b",
+      "bytes": 1320
+    },
+    {
+      "path": "insights.js",
+      "sha256": "cb118f46095cb418060ca58dfcd7e6677bdbe2990094376e6e698c76e4e17237",
+      "gitBlob": "7d4b259ac99a58506a5cb354b173342c3d7fe3f9",
+      "bytes": 30828
+    },
+    {
+      "path": "commander-criteria.js",
+      "sha256": "09d3a9dad3fbe7d8bfa6e228eecb87a0266718de8ef7485083b1e89519fc2530",
+      "gitBlob": "61719d126765a91f4e937e55110138268c813659",
+      "bytes": 24922
+    },
+    {
+      "path": "commander-strategy.js",
+      "sha256": "ccb07ba16ca84812af6b655d6806db8afe6226f205177e32b8ade342be92d7e2",
+      "gitBlob": "3825dbe8c9fc3edae8ed1604c1ac938760be2fd7",
+      "bytes": 50197
+    },
+    {
+      "path": "meta.js",
+      "sha256": "83cb7a76ed1f4a22fb5b2e695664001036d0a5d1e5e39732a3af675071cfcdd3",
+      "gitBlob": "56456c8813255fb6ae5bbab36dd4d18a584080ca",
+      "bytes": 15776
+    },
+    {
+      "path": "deckpower.js",
+      "sha256": "829efac88f6fda7c7ec860cb8fd3c97073bbdb7d34b5baa6705c744d25af52c8",
+      "gitBlob": "c183a093e15437dc4c3373eee8474f488407eb66",
+      "bytes": 116919
+    },
+    {
+      "path": "games.js",
+      "sha256": "e05afb6c8c6d19e9d238529fad73b9e5ee10b2866a694de7257708a5ebb7cebb",
+      "gitBlob": "7c6b0a2d7b2acc468f55299e8a0fc5c8510c3b93",
+      "bytes": 1104
+    },
+    {
+      "path": "experiments/phase-engine/protocol-fault.mjs",
+      "sha256": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+      "gitBlob": "ed15153a8b95ed8eda2dcea02d81fd5855d7b9ac",
+      "bytes": 144
+    },
+    {
+      "path": "price-reference.js",
+      "sha256": "54fab155607d71843914cb96ebd5e8825c6e8f6302ea12e34c8e427f2f148418",
+      "gitBlob": "dc9b0668410b55a534ba44a4312ea7fc051e949b",
+      "bytes": 598
+    },
+    {
+      "path": "foil-gl.js",
+      "sha256": "d41e88f3484f5bcaf14c931eb0e7095414b2d4aca2c260f7e86a6051fc1c5568",
+      "gitBlob": "242d679993d91401ada7978f578d75db30de6654",
+      "bytes": 13419
+    },
+    {
+      "path": "ygo-foil-analysis.js",
+      "sha256": "3bd6e4a29f92de1d70a0a72991c8b3b8a8d14a48d26174e20cf0b332dcfb6e6d",
+      "gitBlob": "28e924e6d73c85a1fc6864b6cb859ac51aa0fee8",
+      "bytes": 10139
+    },
+    {
+      "path": "ptcg-foil-recipes.js",
+      "sha256": "7bbc3b1b9ce6277618f205da423e2f1139c7873198d959a596c2536aa8c71790",
+      "gitBlob": "df87998f977f03c8729615ab8cb76531df2736db",
+      "bytes": 16663
+    },
+    {
+      "path": "pokemon-anniversary-masks.js",
+      "sha256": "29e0c3e3103a03c2d295b1f2ccfe7e40a844b484100aa4a61fbe35777647a554",
+      "gitBlob": "3be8382efc98547e48cde61f18f4816049d3a5e6",
+      "bytes": 367118
+    },
+    {
+      "path": "pokemon-variant-options.js",
+      "sha256": "638e93bc9b48dd04cc779a411b40106db446859b1a5c311a8febe3a2f2d810fc",
+      "gitBlob": "62ef5f9aabdf10a2e38abba504f6f4d754955c00",
+      "bytes": 7196
+    },
+    {
+      "path": "pokemon-promo-evidence.js",
+      "sha256": "1d4e82315b91bf8cb05c055461a0e383a653feef01d0bc9cb6cd9f2f9090e696",
+      "gitBlob": "6690cc30955f998580dc585777c10f8f58e236b5",
+      "bytes": 2611
+    },
+    {
+      "path": "mtg-foil-recipes.js",
+      "sha256": "315782cbad391c4f6b59a75f61da5353a018f9c4970068afa9a5596974be3117",
+      "gitBlob": "4e635e9eadb82ab93017a358143e08a3f81aa429",
+      "bytes": 9660
+    },
+    {
+      "path": "mtg-foil-analysis.js",
+      "sha256": "d734b4f42e7a8db32f2083db2a7d4d82fb4445aca23cf3ddafea58ccbbb5cb34",
+      "gitBlob": "8303cadc657752980fa6123370c25627333dea75",
+      "bytes": 3296
+    },
+    {
+      "path": "planner.js",
+      "sha256": "8e0b9b867d2c92ded76fd0c53f77a886280bd1ad744d412e929b9d6fbefaf92d",
+      "gitBlob": "faabb9699f87152e36cd8f430a7972378c6cd70f",
+      "bytes": 26673
+    },
+    {
+      "path": "ygo-prices.js",
+      "sha256": "6dfd620cdc4b873919f181cad0d1d42a682d9d214029678044c097d5e8f62ab7",
+      "gitBlob": "c5a6ec2d6a31c8692e5b58d90c2bcb9d0b28c0c3",
+      "bytes": 7932
+    },
+    {
+      "path": "condition-value.js",
+      "sha256": "d74de09e51263c161785a52297b7adf02c92b41fe46a271c41686341ad5e4678",
+      "gitBlob": "520e9a69b993d5ce2d8d8426baf0bbfe1af32800",
+      "bytes": 13107
+    },
+    {
+      "path": "ygo-set-prices.js",
+      "sha256": "821515bf8e8ea2d869755966c1af588f66d60e8842e1d16cc8458f19b126a60d",
+      "gitBlob": "5daca8166f38edd96aa0acadfbe87ac6377fca2c",
+      "bytes": 7272
+    },
+    {
+      "path": "mtg-cheap.js",
+      "sha256": "8a2c1f43ee5f221be54c0d5283ef40478761a5f658bb7fcc7426773973569649",
+      "gitBlob": "89cfdbbca2adac5d9cce14624d306a600e9c37e4",
+      "bytes": 4349
+    },
+    {
+      "path": "pricehist.js",
+      "sha256": "f1c045fef7b4cecd9cb4ee74108a1dc5560bb415d2e0a094493a2d5391452c8c",
+      "gitBlob": "6b26c34a8b7aa6f84e55e450b867cc28f3579d2c",
+      "bytes": 10023
+    },
+    {
+      "path": "experiments/phase-engine/catalog-admission.mjs",
+      "sha256": "3e0a141c42d328afaf48bd7083e0a86605305db875b33878c1e2a7481b09c390",
+      "gitBlob": "b09ac56d69b22ecf3036305e9689d337b5788a09",
+      "bytes": 1410
+    },
+    {
+      "path": "mtg-vocabulary.js",
+      "sha256": "19bb3a653f0e1869ea77b88c40559ec878b610618bc82a4c68f858dec77ba29e",
+      "gitBlob": "8b6a713ef20085b29564177a571249b6bdf2dd2e",
+      "bytes": 13135
+    },
+    {
+      "path": "deck-mechanic-plan.js",
+      "sha256": "1d1fac0775c9a3ed5ff3b4c308917f967b4f23d6764b2662f47c8c92c5a1b052",
+      "gitBlob": "00380de6f38d632dd51ec3ce81675ee91e55cfa1",
+      "bytes": 24520
+    },
+    {
+      "path": "mtg-keyword-reference.js",
+      "sha256": "280e8c999f7ca455660e028d3f3bace07b8d4592fe9b8d11524cdfee4b531fbc",
+      "gitBlob": "e91258e8cbdac633495c6140f26deb4a10c6f9c3",
+      "bytes": 137642
+    },
+    {
+      "path": "storage.js",
+      "sha256": "4d688ebc66fe16f685273b27010f4f87d152ee5332f0ad78c9d9a7b3daa812c6",
+      "gitBlob": "e2915ad6aadb3f6ce56e71b50ab2d145300f5f89",
+      "bytes": 4985
+    },
+    {
+      "path": "mtg-ability-endpoints.js",
+      "sha256": "719591e6e630ac31b0473d07106f440e6b59ac9632c7b5c19ee595b2798c1ba8",
+      "gitBlob": "9d1923d53a6e4d84f8c67f4d6a366cf84834986a",
+      "bytes": 10641
+    },
+    {
+      "path": "pairing.js",
+      "sha256": "14b5b47abf526644d6e32e14101929fa1437e4cdb748c4dfe0e65b26e8f8bec4",
+      "gitBlob": "371a7ed1c8f365bbe120a184f65b1dadcf1838ab",
+      "bytes": 22769
+    },
+    {
+      "path": "mtg-effects.js",
+      "sha256": "a41bdc6a008be2912fe155234b75ce34c4349520da15afe6438ca6062c760566",
+      "gitBlob": "f948f14e5255229dd5dd7f096588543ba3d2f680",
+      "bytes": 28287
+    },
+    {
+      "path": "collector-search.js",
+      "sha256": "93fec67b44ba06b61cafdf9eab3761af2cf1359e1b017320d262684c58985f85",
+      "gitBlob": "b228c81b32d4f307cbb388efb570136754ed65e9",
+      "bytes": 3088
+    },
+    {
+      "path": "ygo-identity.js",
+      "sha256": "49bfc25d09543ccca80ed60b27b29c09ba07b537019009e870982236a93c2368",
+      "gitBlob": "c1516c821731381a4ad2a472492d021948dd500d",
+      "bytes": 1614
+    },
+    {
+      "path": "mtg-mana-sources.js",
+      "sha256": "6e2905b76befa02fa37329751ddbb050ab363d34ef8c7581d0b1568645f6eb69",
+      "gitBlob": "aefb3fca404f214736996666858a1f2ed643d0f7",
+      "bytes": 3296
+    },
+    {
+      "path": "pokemon-corrections.js",
+      "sha256": "b6396ce5f3eb1d6d676ac1c7b72b4bcf88c0d2637d15a0921da9faf5106dcdc9",
+      "gitBlob": "42f7104ae70321d2078ce46f2fcff4423edd1644",
+      "bytes": 7567
+    },
+    {
+      "path": "pokemon-identity.js",
+      "sha256": "4126dcb8926f3d69c6801fc6e791fec80c31daf2c0f18bbd0f2ef38d56617dcd",
+      "gitBlob": "5fc3ca14e5b0d90d713ff94e8112eb32b9646773",
+      "bytes": 1769
+    },
+    {
+      "path": "pokemon-prices.js",
+      "sha256": "72fa4306a4c52b2aaa334cc5fe4bfd1e0749cc7039ba69b88f82d619c6d4dc18",
+      "gitBlob": "0ef42d5af051c6f112e6ee35555541ebe4528b62",
+      "bytes": 6399
+    },
+    {
+      "path": "pokemon-catalogue-supplement.js",
+      "sha256": "bb04ab13b21791507042116209cb34264890b5e8ac8a0b9b30ddb57a7ab2a937",
+      "gitBlob": "eb23c7bceed2597a97dc3f528fdc667652ebe3db",
+      "bytes": 3204
+    },
+    {
+      "path": "ptcg-glc-rules.js",
+      "sha256": "83d1281345ec8d6a8cf09028162acfcc0c90c2113f97511f509768a2d39b366e",
+      "gitBlob": "5fecb49ba6a30394c5a26d1f7b745436fe2749a0",
+      "bytes": 2346
+    },
+    {
+      "path": "meta-curation.js",
+      "sha256": "e6bb57cd63bbfc1132bd6bb90771b46613f1422e6c4d570c1eda803f5af2534a",
+      "gitBlob": "e1e3d064d5ca59d3a52a8fd075aa9b6794834641",
+      "bytes": 7586
+    },
+    {
+      "path": "matchup.js",
+      "sha256": "a8de56b41bb1666a85708b84a4389575bdfef38f2fe98f57e0e9f0d926895116",
+      "gitBlob": "27181f369ed1f2a838acb52ca1223e1aea7fe9d9",
+      "bytes": 32385
+    },
+    {
+      "path": "mtg-route-coverage.js",
+      "sha256": "eb7d43cf24b723bcec522de09937deb5ed251abd021e93bd5a710941d082aeda",
+      "gitBlob": "5bd4bc04174a2263e552c41848616becbaa685a9",
+      "bytes": 7796
+    },
+    {
+      "path": "magic-owned-detail.js",
+      "sha256": "464876557b7c759ecb4c3a2d05fec0682e071f8b4474a3c4072df3e51c0cf903",
+      "gitBlob": "24365453de28f16dd932cf83a182a0d84f64ccdc",
+      "bytes": 3991
+    },
+    {
+      "path": "magic-card-color.js",
+      "sha256": "0cecf2fe696f060efb7086664da84ac4dc78f1c95270c91a60280e5f23ab9de5",
+      "gitBlob": "0858a8da14c1381277027ab8755dfb90c3d7fdf3",
+      "bytes": 474
+    },
+    {
+      "path": "value-history.js",
+      "sha256": "482ac6ef703375918982aca5e8e608628ae10036297f7a90de2b1589e89bf96f",
+      "gitBlob": "5c388142540fa1773f5ccd32529defdd1d2d6d63",
+      "bytes": 2418
+    },
+    {
+      "path": "mtg-commander-conditions.js",
+      "sha256": "1981b42b751ce485c56af85914e0b5109847ecf79a2a34a85d21fdbc818cb43b",
+      "gitBlob": "2250ca9f9899b4975ea433e7dfb2bfa76faa1faf",
+      "bytes": 5591
+    },
+    {
+      "path": "pokemon-role.js",
+      "sha256": "4c33bd5adf9ae86c2a56298e57e6f196395ebdf2764ce281c662991367658b2e",
+      "gitBlob": "4f8422b1c772fb74285886ead2930b77a126baf1",
+      "bytes": 1327
+    },
+    {
+      "path": "mtg-land-requirements.js",
+      "sha256": "5baf21529b41e98df476cbef55b0b526d03d8c805239d29a846f55794bf5855f",
+      "gitBlob": "d4295bcf3d5f82e651853c02f8088b84b7e1c0a3",
+      "bytes": 10719
+    },
+    {
+      "path": "account-scope.js",
+      "sha256": "2fcb0c0d12524ee218f20a97d4fd44594404926e2be45144fd0230dc68636a9a",
+      "gitBlob": "f772de8aaa074374aec58fde6d7818cc5549ff1a",
+      "bytes": 738
+    },
+    {
+      "path": "pokemon-art.js",
+      "sha256": "bde7b32ba6388ec00c344a2f935d9883fd3803dacb8ecc80141f09c665dfd830",
+      "gitBlob": "7c8ef85a1018e5fe6b617af1e8658a52e48979b3",
+      "bytes": 8161
+    },
+    {
+      "path": "ptcg-product.js",
+      "sha256": "b26360b5b62480665b9281eec5b8c75cb95c776db20002128d37f41dd6758b2d",
+      "gitBlob": "35b034445cbafcb71495ad34ba89ef46ecf1c5b0",
+      "bytes": 4338
+    },
+    {
+      "path": "experiments/phase-engine/ui-review-catalog.json",
+      "sha256": "96a38cc6aac78eec7c254afaba4a9d30d9971f1343af206e9ecd8002a6fdcd9d",
+      "gitBlob": "adb4c2ffab2ad0f6f29be5b4514eab8dcc0a7784",
+      "bytes": 17715
+    },
+    {
+      "path": "experiments/phase-engine/ui-journey-review.html",
+      "sha256": "3fcd3eeea0793dd4ef4021fbdba30fbc86882d33552bb55c9217295e893c7a4c",
+      "gitBlob": "f2ef3e854ab8e443894ee49e34ef4cf89512a172",
+      "bytes": 835
+    },
+    {
+      "path": "experiments/phase-engine/ui-journey-review.mjs",
+      "sha256": "a7a0c1174c5c74aebdba7a2fdb46dacf5f8979f9137eb342c2aa4a4dde631324",
+      "gitBlob": "c72b23f305955ea2adaaff0cc5cdbed8bb9394c7",
+      "bytes": 11054
+    },
+    {
+      "path": "play-menu.js",
+      "sha256": "a5da9a89d90a139381b0d60d2af8d8ee7bcfa03ff4ba9bbe92f99ea9d23d196e",
+      "gitBlob": "77eda18c83f96df41461d6311e81357fb7f7c372",
+      "bytes": 18164
+    },
+    {
+      "path": "play-pregame.js",
+      "sha256": "fdfaae34c1a310bb1ce4f7c9d6e6f0bdcc69de5450b39691b7bcc21f99b257d0",
+      "gitBlob": "e0b573fbf115e0e1d628760d8744c6d4ac6c3131",
+      "bytes": 4350
+    },
+    {
+      "path": "play-starter-deck.js",
+      "sha256": "75aee3a4b6f0baffb3d3fbfb35a598ce9996502739a487b5a27759669923fbcc",
+      "gitBlob": "7dd7f80b4dd24d519e938b6d201153bd60fa58be",
+      "bytes": 1225
+    },
+    {
+      "path": "desktop-play.js",
+      "sha256": "5d1ccfd26becbfe2be181b6d722b59ffc3543dc0846a383fbaf74e0c0121a304",
+      "gitBlob": "190f54da8ee74d100afccbd7088e5ef9d08b999d",
+      "bytes": 1648
+    },
+    {
+      "path": "play-cpu-options.js",
+      "sha256": "b5b1e655b29577a4854a30db7af4014c209f40a1919f702c3e3c3869a2eba458",
+      "gitBlob": "b175b4a8f3d0eddd635adcf26ac3f76276c10534",
+      "bytes": 476
+    },
+    {
+      "path": "play-deck-sources.js",
+      "sha256": "c1c1dabb1d1dacce8d913942e803a533005d4ba176208be09cb3e73f145cd725",
+      "gitBlob": "efa840c3eaa51f38910973a2dc40fd4b17e7514d",
+      "bytes": 5340
+    },
+    {
+      "path": "index.html",
+      "sha256": "21b9ef5a40774499276dfa4517e02c1c8d5a8d7770a7c721ad61a68feff334ed",
+      "gitBlob": "7eac62c1b65408198694fa03d38a65d04748e3c6",
+      "bytes": 18123
+    }
+  ]
+}

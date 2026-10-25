@@ -1,0 +1,2285 @@
+[
+  {
+    "harnessSha256": "f6e4934796eb2b9722ef354054ec3352129ac7dce555667e81086c6ec281fd30",
+    "error": "page.waitForFunction: Timeout 180000ms exceeded.\n    at /workspace/scratch/b84b6f89e67a/integration/experiments/phase-engine/starter-app-browser.mjs:30:497",
+    "blocker": null,
+    "lastPage": "",
+    "terminal": null
+  },
+  {
+    "harnessSha256": "57a8b0028370727fab202de7ef8e766b8254d563e5ad3108e24f6ee01d86cf02",
+    "error": "Error: NO_VISIBLE_DRIVER_FOR_PROMPT\n    at file:///workspace/scratch/b84b6f89e67a/integration/experiments/phase-engine/starter-app-browser.mjs:50:154",
+    "blocker": {
+      "revision": 209,
+      "waiting": "ChooseManaColor",
+      "view": {
+        "seat": 0,
+        "turn": 11,
+        "phase": "PreCombatMain",
+        "activeSeat": 0,
+        "prioritySeat": 0,
+        "players": [
+          {
+            "seat": 0,
+            "life": 24,
+            "poison": 0,
+            "handCount": 2,
+            "libraryCount": 48,
+            "graveyard": []
+          },
+          {
+            "seat": 1,
+            "life": 24,
+            "poison": 0,
+            "handCount": 3,
+            "libraryCount": 48,
+            "graveyard": []
+          }
+        ],
+        "cards": [
+          {
+            "id": 5,
+            "zone": "Battlefield",
+            "owner": 0,
+            "controller": 0,
+            "known": true,
+            "tapped": false,
+            "name": "Scarecrow Guide",
+            "oracleId": "cf7bb5d4-c33f-4879-a793-6d6f2a4d94be",
+            "face": "Scarecrow Guide",
+            "power": 2,
+            "toughness": 1,
+            "basePower": 2,
+            "baseToughness": 1,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Artifact",
+              "Creature"
+            ],
+            "keywords": [
+              "Reach"
+            ],
+            "printing": {
+              "name": "Scarecrow Guide",
+              "qty": 4,
+              "playArtwork": {
+                "card": {
+                  "id": "3dc08461-bec6-4a18-b782-da4c92abb789",
+                  "oracle_id": "cf7bb5d4-c33f-4879-a793-6d6f2a4d94be",
+                  "name": "Scarecrow Guide",
+                  "set": "woe",
+                  "collector_number": "250",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/3/d/3dc08461-bec6-4a18-b782-da4c92abb789.jpg?1783915057",
+                    "normal": "https://cards.scryfall.io/normal/front/3/d/3dc08461-bec6-4a18-b782-da4c92abb789.jpg?1783915057",
+                    "large": "https://cards.scryfall.io/large/front/3/d/3dc08461-bec6-4a18-b782-da4c92abb789.jpg?1783915057",
+                    "png": "https://cards.scryfall.io/png/front/3/d/3dc08461-bec6-4a18-b782-da4c92abb789.png?1783915057",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/3/d/3dc08461-bec6-4a18-b782-da4c92abb789.jpg?1783915057",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/3/d/3dc08461-bec6-4a18-b782-da4c92abb789.jpg?1783915057",
+                    "thumb": "https://cards.scryfall.io/thumb/front/3/d/3dc08461-bec6-4a18-b782-da4c92abb789.webp?1783915057",
+                    "grid": "https://cards.scryfall.io/grid/front/3/d/3dc08461-bec6-4a18-b782-da4c92abb789.webp?1783915057",
+                    "display": "https://cards.scryfall.io/display/front/3/d/3dc08461-bec6-4a18-b782-da4c92abb789.webp?1783915057",
+                    "art": "https://cards.scryfall.io/art/front/3/d/3dc08461-bec6-4a18-b782-da4c92abb789.webp?1783915057",
+                    "crop": "https://cards.scryfall.io/crop/front/3/d/3dc08461-bec6-4a18-b782-da4c92abb789.webp?1783915057",
+                    "jpeg": "https://cards.scryfall.io/normal/front/3/d/3dc08461-bec6-4a18-b782-da4c92abb789.jpg?1783915057"
+                  },
+                  "oracle_text": "Reach\n{1}: Add one mana of any color. Activate only once each turn.",
+                  "type_line": "Artifact Creature \u2014 Scarecrow",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "common",
+                  "mana_cost": "{2}",
+                  "cmc": 2,
+                  "power": "2",
+                  "toughness": "1",
+                  "keywords": [
+                    "Reach"
+                  ],
+                  "colors": [],
+                  "color_identity": [],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "legal",
+                    "vintage": "legal",
+                    "penny": "not_legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "not_legal",
+                    "paupercommander": "legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "not_legal",
+                    "predh": "not_legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Scarecrow Guide"
+          },
+          {
+            "id": 20,
+            "zone": "Battlefield",
+            "owner": 0,
+            "controller": 0,
+            "known": true,
+            "tapped": true,
+            "name": "Forest",
+            "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+            "face": "Forest",
+            "power": null,
+            "toughness": null,
+            "basePower": null,
+            "baseToughness": null,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Land"
+            ],
+            "keywords": [],
+            "printing": {
+              "name": "Forest",
+              "qty": 24,
+              "playArtwork": {
+                "card": {
+                  "id": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+                  "oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+                  "name": "Forest",
+                  "set": "mdd",
+                  "collector_number": "301",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "normal": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "large": "https://cards.scryfall.io/large/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "png": "https://cards.scryfall.io/png/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.png?1791578317",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "thumb": "https://cards.scryfall.io/thumb/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "grid": "https://cards.scryfall.io/grid/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "display": "https://cards.scryfall.io/display/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "art": "https://cards.scryfall.io/art/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "crop": "https://cards.scryfall.io/crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "jpeg": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317"
+                  },
+                  "oracle_text": "({T}: Add {G}.)",
+                  "type_line": "Basic Land \u2014 Forest",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "common",
+                  "mana_cost": "",
+                  "cmc": 0,
+                  "keywords": [],
+                  "colors": [],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "legal",
+                    "vintage": "legal",
+                    "penny": "legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "legal",
+                    "predh": "legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Forest"
+          },
+          {
+            "id": 27,
+            "zone": "Battlefield",
+            "owner": 0,
+            "controller": 0,
+            "known": true,
+            "tapped": false,
+            "name": "Tapestry Warden",
+            "oracleId": "981138d0-bf61-406a-85be-68cc5e58796c",
+            "face": "Tapestry Warden",
+            "power": 3,
+            "toughness": 4,
+            "basePower": 3,
+            "baseToughness": 4,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Artifact",
+              "Creature"
+            ],
+            "keywords": [
+              "Vigilance"
+            ],
+            "printing": {
+              "name": "Tapestry Warden",
+              "qty": 4,
+              "playArtwork": {
+                "card": {
+                  "id": "7cbbab6c-43ae-4e50-97ce-532a3316591a",
+                  "oracle_id": "981138d0-bf61-406a-85be-68cc5e58796c",
+                  "name": "Tapestry Warden",
+                  "set": "eoe",
+                  "collector_number": "209",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.jpg?1783905930",
+                    "normal": "https://cards.scryfall.io/normal/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.jpg?1783905930",
+                    "large": "https://cards.scryfall.io/large/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.jpg?1783905930",
+                    "png": "https://cards.scryfall.io/png/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.png?1783905930",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.jpg?1783905930",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.jpg?1783905930",
+                    "thumb": "https://cards.scryfall.io/thumb/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.webp?1783905930",
+                    "grid": "https://cards.scryfall.io/grid/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.webp?1783905930",
+                    "display": "https://cards.scryfall.io/display/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.webp?1783905930",
+                    "art": "https://cards.scryfall.io/art/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.webp?1783905930",
+                    "crop": "https://cards.scryfall.io/crop/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.webp?1783905930",
+                    "jpeg": "https://cards.scryfall.io/normal/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.jpg?1783905930"
+                  },
+                  "oracle_text": "Vigilance\nEach creature you control with toughness greater than its power assigns combat damage equal to its toughness rather than its power.\nEach creature you control with toughness greater than its power stations permanents using its toughness rather than its power.",
+                  "type_line": "Artifact Creature \u2014 Robot Soldier",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "uncommon",
+                  "mana_cost": "{3}{G}",
+                  "cmc": 4,
+                  "power": "3",
+                  "toughness": "4",
+                  "keywords": [
+                    "Vigilance"
+                  ],
+                  "colors": [
+                    "G"
+                  ],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "not_legal",
+                    "vintage": "legal",
+                    "penny": "not_legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "not_legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "not_legal",
+                    "predh": "not_legal",
+                    "tlr": "not_legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Tapestry Warden"
+          },
+          {
+            "id": 28,
+            "zone": "Battlefield",
+            "owner": 0,
+            "controller": 0,
+            "known": true,
+            "tapped": false,
+            "name": "Ordinary Bear",
+            "oracleId": "89a2fab8-b074-42aa-a871-d9c5de2d0895",
+            "face": "Ordinary Bear",
+            "power": 4,
+            "toughness": 5,
+            "basePower": 4,
+            "baseToughness": 5,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Creature"
+            ],
+            "keywords": [],
+            "printing": {
+              "name": "Ordinary Bear",
+              "qty": 4,
+              "playArtwork": {
+                "card": {
+                  "id": "0feb9817-56e1-465a-851c-b2fe202aa8ae",
+                  "oracle_id": "89a2fab8-b074-42aa-a871-d9c5de2d0895",
+                  "name": "Ordinary Bear",
+                  "set": "hob",
+                  "collector_number": "133",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.jpg?1785323277",
+                    "normal": "https://cards.scryfall.io/normal/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.jpg?1785323277",
+                    "large": "https://cards.scryfall.io/large/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.jpg?1785323277",
+                    "png": "https://cards.scryfall.io/png/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.png?1785323277",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.jpg?1785323277",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.jpg?1785323277",
+                    "thumb": "https://cards.scryfall.io/thumb/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.webp?1785323277",
+                    "grid": "https://cards.scryfall.io/grid/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.webp?1785323277",
+                    "display": "https://cards.scryfall.io/display/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.webp?1785323277",
+                    "art": "https://cards.scryfall.io/art/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.webp?1785323277",
+                    "crop": "https://cards.scryfall.io/crop/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.webp?1785323277",
+                    "jpeg": "https://cards.scryfall.io/normal/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.jpg?1785323277"
+                  },
+                  "oracle_text": "",
+                  "type_line": "Creature \u2014 Bear",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "promo_types": [
+                    "universesbeyond"
+                  ],
+                  "set_type": "expansion",
+                  "rarity": "common",
+                  "mana_cost": "{3}{G}",
+                  "cmc": 4,
+                  "power": "4",
+                  "toughness": "5",
+                  "keywords": [],
+                  "colors": [
+                    "G"
+                  ],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "legal",
+                    "vintage": "legal",
+                    "penny": "legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "not_legal",
+                    "paupercommander": "legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "not_legal",
+                    "predh": "not_legal",
+                    "tlr": "not_legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Ordinary Bear"
+          },
+          {
+            "id": 43,
+            "zone": "Battlefield",
+            "owner": 0,
+            "controller": 0,
+            "known": true,
+            "tapped": false,
+            "name": "Tapestry Warden",
+            "oracleId": "981138d0-bf61-406a-85be-68cc5e58796c",
+            "face": "Tapestry Warden",
+            "power": 3,
+            "toughness": 4,
+            "basePower": 3,
+            "baseToughness": 4,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Artifact",
+              "Creature"
+            ],
+            "keywords": [
+              "Vigilance"
+            ],
+            "printing": {
+              "name": "Tapestry Warden",
+              "qty": 4,
+              "playArtwork": {
+                "card": {
+                  "id": "7cbbab6c-43ae-4e50-97ce-532a3316591a",
+                  "oracle_id": "981138d0-bf61-406a-85be-68cc5e58796c",
+                  "name": "Tapestry Warden",
+                  "set": "eoe",
+                  "collector_number": "209",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.jpg?1783905930",
+                    "normal": "https://cards.scryfall.io/normal/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.jpg?1783905930",
+                    "large": "https://cards.scryfall.io/large/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.jpg?1783905930",
+                    "png": "https://cards.scryfall.io/png/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.png?1783905930",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.jpg?1783905930",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.jpg?1783905930",
+                    "thumb": "https://cards.scryfall.io/thumb/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.webp?1783905930",
+                    "grid": "https://cards.scryfall.io/grid/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.webp?1783905930",
+                    "display": "https://cards.scryfall.io/display/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.webp?1783905930",
+                    "art": "https://cards.scryfall.io/art/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.webp?1783905930",
+                    "crop": "https://cards.scryfall.io/crop/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.webp?1783905930",
+                    "jpeg": "https://cards.scryfall.io/normal/front/7/c/7cbbab6c-43ae-4e50-97ce-532a3316591a.jpg?1783905930"
+                  },
+                  "oracle_text": "Vigilance\nEach creature you control with toughness greater than its power assigns combat damage equal to its toughness rather than its power.\nEach creature you control with toughness greater than its power stations permanents using its toughness rather than its power.",
+                  "type_line": "Artifact Creature \u2014 Robot Soldier",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "uncommon",
+                  "mana_cost": "{3}{G}",
+                  "cmc": 4,
+                  "power": "3",
+                  "toughness": "4",
+                  "keywords": [
+                    "Vigilance"
+                  ],
+                  "colors": [
+                    "G"
+                  ],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "not_legal",
+                    "vintage": "legal",
+                    "penny": "not_legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "not_legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "not_legal",
+                    "predh": "not_legal",
+                    "tlr": "not_legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Tapestry Warden"
+          },
+          {
+            "id": 45,
+            "zone": "Battlefield",
+            "owner": 0,
+            "controller": 0,
+            "known": true,
+            "tapped": true,
+            "name": "Forest",
+            "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+            "face": "Forest",
+            "power": null,
+            "toughness": null,
+            "basePower": null,
+            "baseToughness": null,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Land"
+            ],
+            "keywords": [],
+            "printing": {
+              "name": "Forest",
+              "qty": 24,
+              "playArtwork": {
+                "card": {
+                  "id": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+                  "oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+                  "name": "Forest",
+                  "set": "mdd",
+                  "collector_number": "301",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "normal": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "large": "https://cards.scryfall.io/large/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "png": "https://cards.scryfall.io/png/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.png?1791578317",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "thumb": "https://cards.scryfall.io/thumb/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "grid": "https://cards.scryfall.io/grid/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "display": "https://cards.scryfall.io/display/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "art": "https://cards.scryfall.io/art/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "crop": "https://cards.scryfall.io/crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "jpeg": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317"
+                  },
+                  "oracle_text": "({T}: Add {G}.)",
+                  "type_line": "Basic Land \u2014 Forest",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "common",
+                  "mana_cost": "",
+                  "cmc": 0,
+                  "keywords": [],
+                  "colors": [],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "legal",
+                    "vintage": "legal",
+                    "penny": "legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "legal",
+                    "predh": "legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Forest"
+          },
+          {
+            "id": 46,
+            "zone": "Battlefield",
+            "owner": 0,
+            "controller": 0,
+            "known": true,
+            "tapped": true,
+            "name": "Forest",
+            "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+            "face": "Forest",
+            "power": null,
+            "toughness": null,
+            "basePower": null,
+            "baseToughness": null,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Land"
+            ],
+            "keywords": [],
+            "printing": {
+              "name": "Forest",
+              "qty": 24,
+              "playArtwork": {
+                "card": {
+                  "id": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+                  "oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+                  "name": "Forest",
+                  "set": "mdd",
+                  "collector_number": "301",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "normal": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "large": "https://cards.scryfall.io/large/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "png": "https://cards.scryfall.io/png/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.png?1791578317",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "thumb": "https://cards.scryfall.io/thumb/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "grid": "https://cards.scryfall.io/grid/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "display": "https://cards.scryfall.io/display/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "art": "https://cards.scryfall.io/art/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "crop": "https://cards.scryfall.io/crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "jpeg": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317"
+                  },
+                  "oracle_text": "({T}: Add {G}.)",
+                  "type_line": "Basic Land \u2014 Forest",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "common",
+                  "mana_cost": "",
+                  "cmc": 0,
+                  "keywords": [],
+                  "colors": [],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "legal",
+                    "vintage": "legal",
+                    "penny": "legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "legal",
+                    "predh": "legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Forest"
+          },
+          {
+            "id": 48,
+            "zone": "Battlefield",
+            "owner": 0,
+            "controller": 0,
+            "known": true,
+            "tapped": true,
+            "name": "Forest",
+            "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+            "face": "Forest",
+            "power": null,
+            "toughness": null,
+            "basePower": null,
+            "baseToughness": null,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Land"
+            ],
+            "keywords": [],
+            "printing": {
+              "name": "Forest",
+              "qty": 24,
+              "playArtwork": {
+                "card": {
+                  "id": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+                  "oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+                  "name": "Forest",
+                  "set": "mdd",
+                  "collector_number": "301",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "normal": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "large": "https://cards.scryfall.io/large/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "png": "https://cards.scryfall.io/png/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.png?1791578317",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "thumb": "https://cards.scryfall.io/thumb/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "grid": "https://cards.scryfall.io/grid/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "display": "https://cards.scryfall.io/display/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "art": "https://cards.scryfall.io/art/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "crop": "https://cards.scryfall.io/crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "jpeg": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317"
+                  },
+                  "oracle_text": "({T}: Add {G}.)",
+                  "type_line": "Basic Land \u2014 Forest",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "common",
+                  "mana_cost": "",
+                  "cmc": 0,
+                  "keywords": [],
+                  "colors": [],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "legal",
+                    "vintage": "legal",
+                    "penny": "legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "legal",
+                    "predh": "legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Forest"
+          },
+          {
+            "id": 49,
+            "zone": "Hand",
+            "owner": 0,
+            "controller": 0,
+            "known": true,
+            "tapped": false,
+            "name": "Ghalta, Primal Hunger",
+            "oracleId": "b0b6be0c-41cf-4757-9f0e-87227b6ba6b3",
+            "face": "Ghalta, Primal Hunger",
+            "power": 12,
+            "toughness": 12,
+            "basePower": 12,
+            "baseToughness": 12,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Creature"
+            ],
+            "keywords": [
+              "Trample"
+            ],
+            "printing": {
+              "name": "Ghalta, Primal Hunger",
+              "qty": 4,
+              "playArtwork": {
+                "card": {
+                  "id": "6a9c39e4-a8cf-42dd-8d0e-45634b335546",
+                  "oracle_id": "b0b6be0c-41cf-4757-9f0e-87227b6ba6b3",
+                  "name": "Ghalta, Primal Hunger",
+                  "set": "fdn",
+                  "collector_number": "222",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.jpg?1783909058",
+                    "normal": "https://cards.scryfall.io/normal/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.jpg?1783909058",
+                    "large": "https://cards.scryfall.io/large/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.jpg?1783909058",
+                    "png": "https://cards.scryfall.io/png/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.png?1783909058",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.jpg?1783909058",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.jpg?1783909058",
+                    "thumb": "https://cards.scryfall.io/thumb/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.webp?1783909058",
+                    "grid": "https://cards.scryfall.io/grid/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.webp?1783909058",
+                    "display": "https://cards.scryfall.io/display/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.webp?1783909058",
+                    "art": "https://cards.scryfall.io/art/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.webp?1783909058",
+                    "crop": "https://cards.scryfall.io/crop/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.webp?1783909058",
+                    "jpeg": "https://cards.scryfall.io/normal/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.jpg?1783909058"
+                  },
+                  "oracle_text": "This spell costs {X} less to cast, where X is the total power of creatures you control.\nTrample (This creature can deal excess combat damage to the player or planeswalker it's attacking.)",
+                  "type_line": "Legendary Creature \u2014 Elder Dinosaur",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "frame_effects": [
+                    "legendary"
+                  ],
+                  "border_color": "black",
+                  "set_type": "core",
+                  "rarity": "rare",
+                  "mana_cost": "{10}{G}{G}",
+                  "cmc": 12,
+                  "power": "12",
+                  "toughness": "12",
+                  "keywords": [
+                    "Trample"
+                  ],
+                  "colors": [
+                    "G"
+                  ],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "not_legal",
+                    "vintage": "legal",
+                    "penny": "legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "not_legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "not_legal",
+                    "predh": "not_legal",
+                    "tlr": "not_legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Ghalta, Primal Hunger"
+          },
+          {
+            "id": 51,
+            "zone": "Battlefield",
+            "owner": 0,
+            "controller": 0,
+            "known": true,
+            "tapped": true,
+            "name": "Forest",
+            "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+            "face": "Forest",
+            "power": null,
+            "toughness": null,
+            "basePower": null,
+            "baseToughness": null,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Land"
+            ],
+            "keywords": [],
+            "printing": {
+              "name": "Forest",
+              "qty": 24,
+              "playArtwork": {
+                "card": {
+                  "id": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+                  "oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+                  "name": "Forest",
+                  "set": "mdd",
+                  "collector_number": "301",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "normal": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "large": "https://cards.scryfall.io/large/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "png": "https://cards.scryfall.io/png/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.png?1791578317",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "thumb": "https://cards.scryfall.io/thumb/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "grid": "https://cards.scryfall.io/grid/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "display": "https://cards.scryfall.io/display/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "art": "https://cards.scryfall.io/art/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "crop": "https://cards.scryfall.io/crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "jpeg": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317"
+                  },
+                  "oracle_text": "({T}: Add {G}.)",
+                  "type_line": "Basic Land \u2014 Forest",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "common",
+                  "mana_cost": "",
+                  "cmc": 0,
+                  "keywords": [],
+                  "colors": [],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "legal",
+                    "vintage": "legal",
+                    "penny": "legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "legal",
+                    "predh": "legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Forest"
+          },
+          {
+            "id": 56,
+            "zone": "Battlefield",
+            "owner": 0,
+            "controller": 0,
+            "known": true,
+            "tapped": false,
+            "name": "Virulent Emissary",
+            "oracleId": "3d4bec90-7bbc-4385-a2b8-303c7a8d0a0f",
+            "face": "Virulent Emissary",
+            "power": 1,
+            "toughness": 1,
+            "basePower": 1,
+            "baseToughness": 1,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Creature"
+            ],
+            "keywords": [
+              "Deathtouch"
+            ],
+            "printing": {
+              "name": "Virulent Emissary",
+              "qty": 4,
+              "playArtwork": {
+                "card": {
+                  "id": "0702efed-915e-466a-96bb-ac09af06b21e",
+                  "oracle_id": "3d4bec90-7bbc-4385-a2b8-303c7a8d0a0f",
+                  "name": "Virulent Emissary",
+                  "set": "ecl",
+                  "collector_number": "202",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.jpg?1783904418",
+                    "normal": "https://cards.scryfall.io/normal/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.jpg?1783904418",
+                    "large": "https://cards.scryfall.io/large/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.jpg?1783904418",
+                    "png": "https://cards.scryfall.io/png/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.png?1783904418",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.jpg?1783904418",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.jpg?1783904418",
+                    "thumb": "https://cards.scryfall.io/thumb/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.webp?1783904418",
+                    "grid": "https://cards.scryfall.io/grid/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.webp?1783904418",
+                    "display": "https://cards.scryfall.io/display/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.webp?1783904418",
+                    "art": "https://cards.scryfall.io/art/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.webp?1783904418",
+                    "crop": "https://cards.scryfall.io/crop/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.webp?1783904418",
+                    "jpeg": "https://cards.scryfall.io/normal/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.jpg?1783904418"
+                  },
+                  "oracle_text": "Deathtouch\nWhenever another creature you control enters, you gain 1 life.",
+                  "type_line": "Creature \u2014 Elf Assassin",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "uncommon",
+                  "mana_cost": "{G}",
+                  "cmc": 1,
+                  "power": "1",
+                  "toughness": "1",
+                  "keywords": [
+                    "Deathtouch"
+                  ],
+                  "colors": [
+                    "G"
+                  ],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "not_legal",
+                    "vintage": "legal",
+                    "penny": "not_legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "not_legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "not_legal",
+                    "predh": "not_legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Virulent Emissary"
+          },
+          {
+            "id": 58,
+            "zone": "Hand",
+            "owner": 0,
+            "controller": 0,
+            "known": true,
+            "tapped": false,
+            "name": "Ghalta, Primal Hunger",
+            "oracleId": "b0b6be0c-41cf-4757-9f0e-87227b6ba6b3",
+            "face": "Ghalta, Primal Hunger",
+            "power": 12,
+            "toughness": 12,
+            "basePower": 12,
+            "baseToughness": 12,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Creature"
+            ],
+            "keywords": [
+              "Trample"
+            ],
+            "printing": {
+              "name": "Ghalta, Primal Hunger",
+              "qty": 4,
+              "playArtwork": {
+                "card": {
+                  "id": "6a9c39e4-a8cf-42dd-8d0e-45634b335546",
+                  "oracle_id": "b0b6be0c-41cf-4757-9f0e-87227b6ba6b3",
+                  "name": "Ghalta, Primal Hunger",
+                  "set": "fdn",
+                  "collector_number": "222",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.jpg?1783909058",
+                    "normal": "https://cards.scryfall.io/normal/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.jpg?1783909058",
+                    "large": "https://cards.scryfall.io/large/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.jpg?1783909058",
+                    "png": "https://cards.scryfall.io/png/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.png?1783909058",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.jpg?1783909058",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.jpg?1783909058",
+                    "thumb": "https://cards.scryfall.io/thumb/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.webp?1783909058",
+                    "grid": "https://cards.scryfall.io/grid/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.webp?1783909058",
+                    "display": "https://cards.scryfall.io/display/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.webp?1783909058",
+                    "art": "https://cards.scryfall.io/art/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.webp?1783909058",
+                    "crop": "https://cards.scryfall.io/crop/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.webp?1783909058",
+                    "jpeg": "https://cards.scryfall.io/normal/front/6/a/6a9c39e4-a8cf-42dd-8d0e-45634b335546.jpg?1783909058"
+                  },
+                  "oracle_text": "This spell costs {X} less to cast, where X is the total power of creatures you control.\nTrample (This creature can deal excess combat damage to the player or planeswalker it's attacking.)",
+                  "type_line": "Legendary Creature \u2014 Elder Dinosaur",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "frame_effects": [
+                    "legendary"
+                  ],
+                  "border_color": "black",
+                  "set_type": "core",
+                  "rarity": "rare",
+                  "mana_cost": "{10}{G}{G}",
+                  "cmc": 12,
+                  "power": "12",
+                  "toughness": "12",
+                  "keywords": [
+                    "Trample"
+                  ],
+                  "colors": [
+                    "G"
+                  ],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "not_legal",
+                    "vintage": "legal",
+                    "penny": "legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "not_legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "not_legal",
+                    "predh": "not_legal",
+                    "tlr": "not_legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Ghalta, Primal Hunger"
+          },
+          {
+            "id": 61,
+            "zone": "Battlefield",
+            "owner": 1,
+            "controller": 1,
+            "known": true,
+            "tapped": false,
+            "name": "Ordinary Bear",
+            "oracleId": "89a2fab8-b074-42aa-a871-d9c5de2d0895",
+            "face": "Ordinary Bear",
+            "power": 4,
+            "toughness": 5,
+            "basePower": 4,
+            "baseToughness": 5,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Creature"
+            ],
+            "keywords": [],
+            "printing": {
+              "name": "Ordinary Bear",
+              "qty": 4,
+              "finish": "nonfoil",
+              "playArtwork": {
+                "card": {
+                  "id": "0feb9817-56e1-465a-851c-b2fe202aa8ae",
+                  "oracle_id": "89a2fab8-b074-42aa-a871-d9c5de2d0895",
+                  "name": "Ordinary Bear",
+                  "set": "hob",
+                  "collector_number": "133",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.jpg?1785323277",
+                    "normal": "https://cards.scryfall.io/normal/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.jpg?1785323277",
+                    "large": "https://cards.scryfall.io/large/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.jpg?1785323277",
+                    "png": "https://cards.scryfall.io/png/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.png?1785323277",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.jpg?1785323277",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.jpg?1785323277",
+                    "thumb": "https://cards.scryfall.io/thumb/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.webp?1785323277",
+                    "grid": "https://cards.scryfall.io/grid/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.webp?1785323277",
+                    "display": "https://cards.scryfall.io/display/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.webp?1785323277",
+                    "art": "https://cards.scryfall.io/art/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.webp?1785323277",
+                    "crop": "https://cards.scryfall.io/crop/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.webp?1785323277",
+                    "jpeg": "https://cards.scryfall.io/normal/front/0/f/0feb9817-56e1-465a-851c-b2fe202aa8ae.jpg?1785323277"
+                  },
+                  "oracle_text": "",
+                  "type_line": "Creature \u2014 Bear",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "promo_types": [
+                    "universesbeyond"
+                  ],
+                  "set_type": "expansion",
+                  "rarity": "common",
+                  "mana_cost": "{3}{G}",
+                  "cmc": 4,
+                  "power": "4",
+                  "toughness": "5",
+                  "keywords": [],
+                  "colors": [
+                    "G"
+                  ],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "legal",
+                    "vintage": "legal",
+                    "penny": "legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "not_legal",
+                    "paupercommander": "legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "not_legal",
+                    "predh": "not_legal",
+                    "tlr": "not_legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Ordinary Bear"
+          },
+          {
+            "id": 80,
+            "zone": "Battlefield",
+            "owner": 1,
+            "controller": 1,
+            "known": true,
+            "tapped": false,
+            "name": "Tarmogoyf",
+            "oracleId": "45900b2f-f6a9-4c42-9642-008f3c1cf6dd",
+            "face": "Tarmogoyf",
+            "power": 0,
+            "toughness": 1,
+            "basePower": 0,
+            "baseToughness": 0,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Creature"
+            ],
+            "keywords": [],
+            "printing": {
+              "name": "Tarmogoyf",
+              "qty": 4,
+              "finish": "nonfoil",
+              "playArtwork": {
+                "card": {
+                  "id": "8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f",
+                  "oracle_id": "45900b2f-f6a9-4c42-9642-008f3c1cf6dd",
+                  "name": "Tarmogoyf",
+                  "set": "fra",
+                  "collector_number": "116",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/8/b/8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f.jpg?1789127270",
+                    "normal": "https://cards.scryfall.io/normal/front/8/b/8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f.jpg?1789127270",
+                    "large": "https://cards.scryfall.io/large/front/8/b/8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f.jpg?1789127270",
+                    "png": "https://cards.scryfall.io/png/front/8/b/8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f.png?1789127270",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/8/b/8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f.jpg?1789127270",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/8/b/8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f.jpg?1789127270",
+                    "thumb": "https://cards.scryfall.io/thumb/front/8/b/8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f.webp?1789127270",
+                    "grid": "https://cards.scryfall.io/grid/front/8/b/8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f.webp?1789127270",
+                    "display": "https://cards.scryfall.io/display/front/8/b/8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f.webp?1789127270",
+                    "art": "https://cards.scryfall.io/art/front/8/b/8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f.webp?1789127270",
+                    "crop": "https://cards.scryfall.io/crop/front/8/b/8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f.webp?1789127270",
+                    "jpeg": "https://cards.scryfall.io/normal/front/8/b/8be5ee47-8f8a-4e3c-b1a1-9ca0e1fdec7f.jpg?1789127270"
+                  },
+                  "oracle_text": "Tarmogoyf's power is equal to the number of card types among cards in all graveyards and its toughness is equal to that number plus 1.",
+                  "type_line": "Creature \u2014 Lhurgoyf",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "mythic",
+                  "mana_cost": "{1}{G}",
+                  "cmc": 2,
+                  "power": "*",
+                  "toughness": "1+*",
+                  "keywords": [],
+                  "colors": [
+                    "G"
+                  ],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "not_legal",
+                    "vintage": "legal",
+                    "penny": "not_legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "not_legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "not_legal",
+                    "predh": "legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Tarmogoyf"
+          },
+          {
+            "id": 88,
+            "zone": "Battlefield",
+            "owner": 1,
+            "controller": 1,
+            "known": true,
+            "tapped": false,
+            "name": "Lashwhip Predator",
+            "oracleId": "56035e66-e730-436d-8de2-4ded7fd1b51e",
+            "face": "Lashwhip Predator",
+            "power": 5,
+            "toughness": 7,
+            "basePower": 5,
+            "baseToughness": 7,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Creature"
+            ],
+            "keywords": [
+              "Reach"
+            ],
+            "printing": {
+              "name": "Lashwhip Predator",
+              "qty": 4,
+              "finish": "nonfoil",
+              "playArtwork": {
+                "card": {
+                  "id": "24553e98-29a9-47e3-91c7-9add708d9ad1",
+                  "oracle_id": "56035e66-e730-436d-8de2-4ded7fd1b51e",
+                  "name": "Lashwhip Predator",
+                  "set": "eoe",
+                  "collector_number": "195",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/2/4/24553e98-29a9-47e3-91c7-9add708d9ad1.jpg?1783905935",
+                    "normal": "https://cards.scryfall.io/normal/front/2/4/24553e98-29a9-47e3-91c7-9add708d9ad1.jpg?1783905935",
+                    "large": "https://cards.scryfall.io/large/front/2/4/24553e98-29a9-47e3-91c7-9add708d9ad1.jpg?1783905935",
+                    "png": "https://cards.scryfall.io/png/front/2/4/24553e98-29a9-47e3-91c7-9add708d9ad1.png?1783905935",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/2/4/24553e98-29a9-47e3-91c7-9add708d9ad1.jpg?1783905935",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/2/4/24553e98-29a9-47e3-91c7-9add708d9ad1.jpg?1783905935",
+                    "thumb": "https://cards.scryfall.io/thumb/front/2/4/24553e98-29a9-47e3-91c7-9add708d9ad1.webp?1783905935",
+                    "grid": "https://cards.scryfall.io/grid/front/2/4/24553e98-29a9-47e3-91c7-9add708d9ad1.webp?1783905935",
+                    "display": "https://cards.scryfall.io/display/front/2/4/24553e98-29a9-47e3-91c7-9add708d9ad1.webp?1783905935",
+                    "art": "https://cards.scryfall.io/art/front/2/4/24553e98-29a9-47e3-91c7-9add708d9ad1.webp?1783905935",
+                    "crop": "https://cards.scryfall.io/crop/front/2/4/24553e98-29a9-47e3-91c7-9add708d9ad1.webp?1783905935",
+                    "jpeg": "https://cards.scryfall.io/normal/front/2/4/24553e98-29a9-47e3-91c7-9add708d9ad1.jpg?1783905935"
+                  },
+                  "oracle_text": "This spell costs {2} less to cast if your opponents control three or more creatures.\nReach",
+                  "type_line": "Creature \u2014 Plant Beast",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "uncommon",
+                  "mana_cost": "{4}{G}{G}",
+                  "cmc": 6,
+                  "power": "5",
+                  "toughness": "7",
+                  "keywords": [
+                    "Reach"
+                  ],
+                  "colors": [
+                    "G"
+                  ],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "not_legal",
+                    "vintage": "legal",
+                    "penny": "not_legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "not_legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "not_legal",
+                    "predh": "not_legal",
+                    "tlr": "not_legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Lashwhip Predator"
+          },
+          {
+            "id": 89,
+            "zone": "Battlefield",
+            "owner": 1,
+            "controller": 1,
+            "known": true,
+            "tapped": false,
+            "name": "Bear Cub",
+            "oracleId": "ed206651-3d9b-4546-8d45-0682817192fd",
+            "face": "Bear Cub",
+            "power": 2,
+            "toughness": 2,
+            "basePower": 2,
+            "baseToughness": 2,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Creature"
+            ],
+            "keywords": [],
+            "printing": {
+              "name": "Bear Cub",
+              "qty": 4,
+              "finish": "nonfoil",
+              "playArtwork": {
+                "card": {
+                  "id": "d8662ebb-068b-41d2-b504-4b5854e4d4aa",
+                  "oracle_id": "ed206651-3d9b-4546-8d45-0682817192fd",
+                  "name": "Bear Cub",
+                  "set": "fdn",
+                  "collector_number": "552",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/d/8/d8662ebb-068b-41d2-b504-4b5854e4d4aa.jpg?1783908951",
+                    "normal": "https://cards.scryfall.io/normal/front/d/8/d8662ebb-068b-41d2-b504-4b5854e4d4aa.jpg?1783908951",
+                    "large": "https://cards.scryfall.io/large/front/d/8/d8662ebb-068b-41d2-b504-4b5854e4d4aa.jpg?1783908951",
+                    "png": "https://cards.scryfall.io/png/front/d/8/d8662ebb-068b-41d2-b504-4b5854e4d4aa.png?1783908951",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/d/8/d8662ebb-068b-41d2-b504-4b5854e4d4aa.jpg?1783908951",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/d/8/d8662ebb-068b-41d2-b504-4b5854e4d4aa.jpg?1783908951",
+                    "thumb": "https://cards.scryfall.io/thumb/front/d/8/d8662ebb-068b-41d2-b504-4b5854e4d4aa.webp?1783908951",
+                    "grid": "https://cards.scryfall.io/grid/front/d/8/d8662ebb-068b-41d2-b504-4b5854e4d4aa.webp?1783908951",
+                    "display": "https://cards.scryfall.io/display/front/d/8/d8662ebb-068b-41d2-b504-4b5854e4d4aa.webp?1783908951",
+                    "art": "https://cards.scryfall.io/art/front/d/8/d8662ebb-068b-41d2-b504-4b5854e4d4aa.webp?1783908951",
+                    "crop": "https://cards.scryfall.io/crop/front/d/8/d8662ebb-068b-41d2-b504-4b5854e4d4aa.webp?1783908951",
+                    "jpeg": "https://cards.scryfall.io/normal/front/d/8/d8662ebb-068b-41d2-b504-4b5854e4d4aa.jpg?1783908951"
+                  },
+                  "oracle_text": "",
+                  "type_line": "Creature \u2014 Bear",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "promo_types": [
+                    "beginnerbox"
+                  ],
+                  "set_type": "core",
+                  "rarity": "common",
+                  "mana_cost": "{1}{G}",
+                  "cmc": 2,
+                  "power": "2",
+                  "toughness": "2",
+                  "keywords": [],
+                  "colors": [
+                    "G"
+                  ],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "legal",
+                    "vintage": "legal",
+                    "penny": "not_legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "not_legal",
+                    "predh": "legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Bear Cub"
+          },
+          {
+            "id": 93,
+            "zone": "Battlefield",
+            "owner": 1,
+            "controller": 1,
+            "known": true,
+            "tapped": true,
+            "name": "Forest",
+            "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+            "face": "Forest",
+            "power": null,
+            "toughness": null,
+            "basePower": null,
+            "baseToughness": null,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Land"
+            ],
+            "keywords": [],
+            "printing": {
+              "name": "Forest",
+              "qty": 24,
+              "finish": "foil",
+              "printingId": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+              "playArtwork": {
+                "card": {
+                  "id": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+                  "oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+                  "name": "Forest",
+                  "set": "mdd",
+                  "collector_number": "301",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "normal": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "large": "https://cards.scryfall.io/large/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "png": "https://cards.scryfall.io/png/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.png?1791578317",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "thumb": "https://cards.scryfall.io/thumb/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "grid": "https://cards.scryfall.io/grid/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "display": "https://cards.scryfall.io/display/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "art": "https://cards.scryfall.io/art/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "crop": "https://cards.scryfall.io/crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "jpeg": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317"
+                  },
+                  "oracle_text": "({T}: Add {G}.)",
+                  "type_line": "Basic Land \u2014 Forest",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "common",
+                  "mana_cost": "",
+                  "cmc": 0,
+                  "keywords": [],
+                  "colors": [],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "legal",
+                    "vintage": "legal",
+                    "penny": "legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "legal",
+                    "predh": "legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "foil",
+                "source": "selected-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Forest"
+          },
+          {
+            "id": 96,
+            "zone": "Battlefield",
+            "owner": 1,
+            "controller": 1,
+            "known": true,
+            "tapped": false,
+            "name": "Virulent Emissary",
+            "oracleId": "3d4bec90-7bbc-4385-a2b8-303c7a8d0a0f",
+            "face": "Virulent Emissary",
+            "power": 1,
+            "toughness": 1,
+            "basePower": 1,
+            "baseToughness": 1,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Creature"
+            ],
+            "keywords": [
+              "Deathtouch"
+            ],
+            "printing": {
+              "name": "Virulent Emissary",
+              "qty": 4,
+              "finish": "nonfoil",
+              "playArtwork": {
+                "card": {
+                  "id": "0702efed-915e-466a-96bb-ac09af06b21e",
+                  "oracle_id": "3d4bec90-7bbc-4385-a2b8-303c7a8d0a0f",
+                  "name": "Virulent Emissary",
+                  "set": "ecl",
+                  "collector_number": "202",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.jpg?1783904418",
+                    "normal": "https://cards.scryfall.io/normal/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.jpg?1783904418",
+                    "large": "https://cards.scryfall.io/large/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.jpg?1783904418",
+                    "png": "https://cards.scryfall.io/png/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.png?1783904418",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.jpg?1783904418",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.jpg?1783904418",
+                    "thumb": "https://cards.scryfall.io/thumb/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.webp?1783904418",
+                    "grid": "https://cards.scryfall.io/grid/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.webp?1783904418",
+                    "display": "https://cards.scryfall.io/display/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.webp?1783904418",
+                    "art": "https://cards.scryfall.io/art/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.webp?1783904418",
+                    "crop": "https://cards.scryfall.io/crop/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.webp?1783904418",
+                    "jpeg": "https://cards.scryfall.io/normal/front/0/7/0702efed-915e-466a-96bb-ac09af06b21e.jpg?1783904418"
+                  },
+                  "oracle_text": "Deathtouch\nWhenever another creature you control enters, you gain 1 life.",
+                  "type_line": "Creature \u2014 Elf Assassin",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "uncommon",
+                  "mana_cost": "{G}",
+                  "cmc": 1,
+                  "power": "1",
+                  "toughness": "1",
+                  "keywords": [
+                    "Deathtouch"
+                  ],
+                  "colors": [
+                    "G"
+                  ],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "not_legal",
+                    "vintage": "legal",
+                    "penny": "not_legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "not_legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "not_legal",
+                    "predh": "not_legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "nonfoil",
+                "source": "existing-catalog-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Virulent Emissary"
+          },
+          {
+            "id": 103,
+            "zone": "Battlefield",
+            "owner": 1,
+            "controller": 1,
+            "known": true,
+            "tapped": true,
+            "name": "Forest",
+            "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+            "face": "Forest",
+            "power": null,
+            "toughness": null,
+            "basePower": null,
+            "baseToughness": null,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Land"
+            ],
+            "keywords": [],
+            "printing": {
+              "name": "Forest",
+              "qty": 24,
+              "finish": "foil",
+              "printingId": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+              "playArtwork": {
+                "card": {
+                  "id": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+                  "oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+                  "name": "Forest",
+                  "set": "mdd",
+                  "collector_number": "301",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "normal": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "large": "https://cards.scryfall.io/large/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "png": "https://cards.scryfall.io/png/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.png?1791578317",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "thumb": "https://cards.scryfall.io/thumb/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "grid": "https://cards.scryfall.io/grid/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "display": "https://cards.scryfall.io/display/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "art": "https://cards.scryfall.io/art/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "crop": "https://cards.scryfall.io/crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "jpeg": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317"
+                  },
+                  "oracle_text": "({T}: Add {G}.)",
+                  "type_line": "Basic Land \u2014 Forest",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "common",
+                  "mana_cost": "",
+                  "cmc": 0,
+                  "keywords": [],
+                  "colors": [],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "legal",
+                    "vintage": "legal",
+                    "penny": "legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "legal",
+                    "predh": "legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "foil",
+                "source": "selected-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Forest"
+          },
+          {
+            "id": 108,
+            "zone": "Battlefield",
+            "owner": 1,
+            "controller": 1,
+            "known": true,
+            "tapped": true,
+            "name": "Forest",
+            "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+            "face": "Forest",
+            "power": null,
+            "toughness": null,
+            "basePower": null,
+            "baseToughness": null,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Land"
+            ],
+            "keywords": [],
+            "printing": {
+              "name": "Forest",
+              "qty": 24,
+              "finish": "foil",
+              "printingId": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+              "playArtwork": {
+                "card": {
+                  "id": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+                  "oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+                  "name": "Forest",
+                  "set": "mdd",
+                  "collector_number": "301",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "normal": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "large": "https://cards.scryfall.io/large/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "png": "https://cards.scryfall.io/png/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.png?1791578317",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "thumb": "https://cards.scryfall.io/thumb/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "grid": "https://cards.scryfall.io/grid/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "display": "https://cards.scryfall.io/display/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "art": "https://cards.scryfall.io/art/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "crop": "https://cards.scryfall.io/crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "jpeg": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317"
+                  },
+                  "oracle_text": "({T}: Add {G}.)",
+                  "type_line": "Basic Land \u2014 Forest",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "common",
+                  "mana_cost": "",
+                  "cmc": 0,
+                  "keywords": [],
+                  "colors": [],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "legal",
+                    "vintage": "legal",
+                    "penny": "legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "legal",
+                    "predh": "legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "foil",
+                "source": "selected-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Forest"
+          },
+          {
+            "id": 117,
+            "zone": "Battlefield",
+            "owner": 1,
+            "controller": 1,
+            "known": true,
+            "tapped": true,
+            "name": "Forest",
+            "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+            "face": "Forest",
+            "power": null,
+            "toughness": null,
+            "basePower": null,
+            "baseToughness": null,
+            "isToken": false,
+            "isEmblem": false,
+            "displaySource": null,
+            "tokenImageRef": null,
+            "damage": 0,
+            "counters": {},
+            "types": [
+              "Land"
+            ],
+            "keywords": [],
+            "printing": {
+              "name": "Forest",
+              "qty": 24,
+              "finish": "foil",
+              "printingId": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+              "playArtwork": {
+                "card": {
+                  "id": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+                  "oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+                  "name": "Forest",
+                  "set": "mdd",
+                  "collector_number": "301",
+                  "image_uris": {
+                    "small": "https://cards.scryfall.io/small/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "normal": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "large": "https://cards.scryfall.io/large/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "png": "https://cards.scryfall.io/png/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.png?1791578317",
+                    "art_crop": "https://cards.scryfall.io/art_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "border_crop": "https://cards.scryfall.io/border_crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317",
+                    "thumb": "https://cards.scryfall.io/thumb/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "grid": "https://cards.scryfall.io/grid/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "display": "https://cards.scryfall.io/display/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "art": "https://cards.scryfall.io/art/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "crop": "https://cards.scryfall.io/crop/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.webp?1791578317",
+                    "jpeg": "https://cards.scryfall.io/normal/front/2/e/2e781bfd-f8cb-4d20-b977-4359f3a21311.jpg?1791578317"
+                  },
+                  "oracle_text": "({T}: Add {G}.)",
+                  "type_line": "Basic Land \u2014 Forest",
+                  "layout": "normal",
+                  "finishes": [
+                    "nonfoil",
+                    "foil"
+                  ],
+                  "frame": "2015",
+                  "border_color": "black",
+                  "set_type": "expansion",
+                  "rarity": "common",
+                  "mana_cost": "",
+                  "cmc": 0,
+                  "keywords": [],
+                  "colors": [],
+                  "color_identity": [
+                    "G"
+                  ],
+                  "legalities": {
+                    "standard": "legal",
+                    "future": "legal",
+                    "historic": "legal",
+                    "timeless": "legal",
+                    "gladiator": "legal",
+                    "pioneer": "legal",
+                    "modern": "legal",
+                    "legacy": "legal",
+                    "pauper": "legal",
+                    "vintage": "legal",
+                    "penny": "legal",
+                    "commander": "legal",
+                    "oathbreaker": "legal",
+                    "standardbrawl": "legal",
+                    "brawl": "legal",
+                    "competitivebrawl": "legal",
+                    "alchemy": "legal",
+                    "paupercommander": "legal",
+                    "duel": "legal",
+                    "oldschool": "not_legal",
+                    "premodern": "legal",
+                    "predh": "legal",
+                    "tlr": "legal"
+                  }
+                },
+                "finish": "foil",
+                "source": "selected-printing",
+                "badges": []
+              }
+            },
+            "printedName": "Forest"
+          }
+        ],
+        "hand": [
+          49,
+          58
+        ],
+        "battlefield": [
+          20,
+          56,
+          93,
+          96,
+          46,
+          5,
+          103,
+          89,
+          48,
+          108,
+          80,
+          51,
+          27,
+          117,
+          88,
+          45,
+          43,
+          61,
+          28
+        ],
+        "exile": [],
+        "command": [],
+        "stack": [
+          {
+            "id": 49,
+            "source": 49,
+            "controller": 0
+          }
+        ],
+        "decision": {
+          "kind": "ChooseManaColor",
+          "supported": false
+        },
+        "choices": [],
+        "canAct": false,
+        "unavailableReason": "DECISION_NOT_IMPLEMENTED",
+        "commander": {
+          "version": 1,
+          "coverage": "public-designation-ledger",
+          "commanders": [],
+          "damage": [],
+          "damageAvailable": true
+        },
+        "awaitingHuman": true,
+        "interaction": {
+          "kind": "manaGroups",
+          "canSubmit": false,
+          "opportunities": []
+        }
+      }
+    },
+    "lastPage": "CardStashy \u00b7 Magic Practice \u00b7 Beta\nChoose Mana Color\nControls\nHistory & stack \u00b7 1\nMatch menu\nZones\nCPU battlefield\n9\nCreatures \u00b7 5\nOrdinary Bear\n4\n/\n5\nCreature\n\u2315\nTarmogoyf\n0\n/\n1\nCreature\n\u2315\nLashwhip Predator\n5\n/\n7\nCreature\nReach\n\u2315\nBear Cub\n2\n/\n2\nCreature\n\u2315\nVirulent Emissary\n1\n/\n1\nCreature\nDeathtouch\n\u2315\nLands \u00b7 4\nForest\n\u21b7 Tapped\nLand\n\u2315\nForest\n\u21b7 Tapped\nLand\n\u2315\nForest\n\u21b7 Tapped\nLand\n\u2315\nForest\n\u21b7 Tapped\nLand\n\u2315\nYour battlefield\n10\nCreatures \u00b7 5\nScarecrow Guide\n2\n/\n1\nArtifact \u00b7 Creature\nReach\n\u2315\nTapestry Warden\n3\n/\n4\nArtifact \u00b7 Creature\nVigilance\n\u2315\nOrdinary Bear\n4\n/\n5\nCreature\n\u2315\nTapestry Warden\n3\n/\n4\nArtifact \u00b7 Creature\nVigilance\n\u2315\nVirulent Emissary\n1\n/\n1\nCreature\nDeathtouch\n\u2315\nLands \u00b7 5\nForest\n\u21b7 Tapped\nLand\n\u2315\nForest\n\u21b7 Tapped\nLand\n\u2315\nForest\n\u21b7 Tapped\nLand\n\u2315\nForest\n\u21b7 Tapped\nLand\n\u2315\nForest\n\u21b7 Tapped\nLand\n\u2315\nYour hand\n2\nSelect a card to inspect\n\u2315\n\u2315\nCPU\nWaiting\n24\nLIFE\nBeta player\nYour turn \u00b7 11\nFirst main phase\n24\nLIFE\nClose inspector\nStack \u00b7 1\n\nGhalta, Primal Hunger\n\nGhalta, Primal Hunger\n12\n/\n12\nBase 12/12\n\nTrample\n\nThis spell costs Variable mana less to cast, where X is the total power of creatures you control.\nTrample (This creature can deal excess combat damage to the player or planeswalker it's attacking.)\nnonfoil \u00b7 Rare\nRead in CardStashy Wiki\n\nKeep this page open. Refreshing or leaving ends this Practice session; it cannot be resumed.\n\nDeck Power & Commander brackets\nGame progress\nChoose Mana Color\n30s to respond\nIdle 1:30\nTurn 4:43\n\nThis decision is not supported by these beta controls yet. Exit this match and report the card or effect.",
+    "terminal": null
+  }
+]

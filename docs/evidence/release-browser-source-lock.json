@@ -1,0 +1,1709 @@
+{
+  "passed": true,
+  "sourceFiles": 243,
+  "mismatches": [],
+  "files": [
+    {
+      "path": "account-scope.js",
+      "gitBlob": "f772de8aaa074374aec58fde6d7818cc5549ff1a",
+      "underlyingSha256": "2fcb0c0d12524ee218f20a97d4fd44594404926e2be45144fd0230dc68636a9a",
+      "servedSha256": "2fcb0c0d12524ee218f20a97d4fd44594404926e2be45144fd0230dc68636a9a",
+      "matches": true
+    },
+    {
+      "path": "adapt.js",
+      "gitBlob": "bb37a4cc2312b99219b0b3df9ea6bd588c034b13",
+      "underlyingSha256": "d4d3dfd90c28ae3e31f0f1f1da4f6b57d4f72d1732a897910ea34bb62d78f794",
+      "servedSha256": "d4d3dfd90c28ae3e31f0f1f1da4f6b57d4f72d1732a897910ea34bb62d78f794",
+      "matches": true
+    },
+    {
+      "path": "ai-auth.js",
+      "gitBlob": "d1633a443cd709b62eb935d4fef8530b2e154a4e",
+      "underlyingSha256": "e49db54b41542d3c5749a66f1703e1da639420ab7d58d04aaa2f11e9148f133f",
+      "servedSha256": "e49db54b41542d3c5749a66f1703e1da639420ab7d58d04aaa2f11e9148f133f",
+      "matches": true
+    },
+    {
+      "path": "ai-deck-goal.js",
+      "gitBlob": "b9d5f1e7e7dd6fb0edb17234a3da291cff88eaaa",
+      "underlyingSha256": "3ae7953f5581f93f7713f2499428859f0a655ded3c799298080589a9ceec67ff",
+      "servedSha256": "3ae7953f5581f93f7713f2499428859f0a655ded3c799298080589a9ceec67ff",
+      "matches": true
+    },
+    {
+      "path": "ai-review.js",
+      "gitBlob": "cd4df248b2bb632dd7867bd7923f8f493eafbb6d",
+      "underlyingSha256": "eba48ae78556e08011d344210a164883144555cc85c9d9c66d822ff03a1e5fd3",
+      "servedSha256": "eba48ae78556e08011d344210a164883144555cc85c9d9c66d822ff03a1e5fd3",
+      "matches": true
+    },
+    {
+      "path": "ai-rules-panel.js",
+      "gitBlob": "e8e88790de7864f7b82cd16d52332433223dabe8",
+      "underlyingSha256": "34c82c4fa054888e39aa19d8081a31b79c014707ee4580af9aa2e2da2cf73cdc",
+      "servedSha256": "34c82c4fa054888e39aa19d8081a31b79c014707ee4580af9aa2e2da2cf73cdc",
+      "matches": true
+    },
+    {
+      "path": "ai-ui.js",
+      "gitBlob": "361995a2036f6a3e497a6ebba8cb0cbc3698437d",
+      "underlyingSha256": "21ffebc3465da24436504a60a35d21d536231c0f125c954d63bbadc637181cee",
+      "servedSha256": "21ffebc3465da24436504a60a35d21d536231c0f125c954d63bbadc637181cee",
+      "matches": true
+    },
+    {
+      "path": "android-beta.js",
+      "gitBlob": "0c042505147cfec383edb15351ccc00ef9ec3856",
+      "underlyingSha256": "9897e0568a4cf5543158eccce5e69067b0747b3f27cccf43393e2205bcdbed95",
+      "servedSha256": "9897e0568a4cf5543158eccce5e69067b0747b3f27cccf43393e2205bcdbed95",
+      "matches": true
+    },
+    {
+      "path": "app-info.js",
+      "gitBlob": "050e77a16d03e8c157ab9a1464d5c778022316ae",
+      "underlyingSha256": "a8b808b310d40462a45c077983f6ee4196bde474b58275caf5effc2c2a1871dd",
+      "servedSha256": "a8b808b310d40462a45c077983f6ee4196bde474b58275caf5effc2c2a1871dd",
+      "matches": true
+    },
+    {
+      "path": "artwork.js",
+      "gitBlob": "1dcb1af15d943d0799f5dee39fbc1cf0bc6908e3",
+      "underlyingSha256": "abb307ff9c1c918ddd3d6734c95d8608041aa59a46fbd8cf5fa00e57878cd825",
+      "servedSha256": "abb307ff9c1c918ddd3d6734c95d8608041aa59a46fbd8cf5fa00e57878cd825",
+      "matches": true
+    },
+    {
+      "path": "auth-form.js",
+      "gitBlob": "f0b15aa5e21b6a88d60cd04457cf6f3fbb4ebaf8",
+      "underlyingSha256": "8fd5bb791621c6ee0ad5753fe156fd90e8ae1c9967174b414e847b7917549b79",
+      "servedSha256": "8fd5bb791621c6ee0ad5753fe156fd90e8ae1c9967174b414e847b7917549b79",
+      "matches": true
+    },
+    {
+      "path": "binders.js",
+      "gitBlob": "288810b074baadefa4ea267bd7d1ac7db2b9683a",
+      "underlyingSha256": "14ed61dda2bb6a21e84808d79b3cd621b609ffbc2ca767bfc4c6f06541fa4415",
+      "servedSha256": "14ed61dda2bb6a21e84808d79b3cd621b609ffbc2ca767bfc4c6f06541fa4415",
+      "matches": true
+    },
+    {
+      "path": "brand.js",
+      "gitBlob": "d14f39e159774424969b7a96f7656595f0aff4b6",
+      "underlyingSha256": "60b3b0f745ebf1133d16de4ef703eabfd24a188d530158ecf0a922c39f6bd2d9",
+      "servedSha256": "60b3b0f745ebf1133d16de4ef703eabfd24a188d530158ecf0a922c39f6bd2d9",
+      "matches": true
+    },
+    {
+      "path": "build-overlay.js",
+      "gitBlob": "dd26654c8de406e0d42bdba0b265d350a7da77a1",
+      "underlyingSha256": "c21f70bf7b27a0e6471e6a3c6ceb0385d20c68e426ee4a56cf52aa0157d55f28",
+      "servedSha256": "c21f70bf7b27a0e6471e6a3c6ceb0385d20c68e426ee4a56cf52aa0157d55f28",
+      "matches": true
+    },
+    {
+      "path": "builder.js",
+      "gitBlob": "182b321dad4f756a8f0f9877d44e2580626cf671",
+      "underlyingSha256": "f4a39ce5930a05aeaf52da33ef6c8b2b93d312454964d25fc033ea4ff23dfc7a",
+      "servedSha256": "f4a39ce5930a05aeaf52da33ef6c8b2b93d312454964d25fc033ea4ff23dfc7a",
+      "matches": true
+    },
+    {
+      "path": "buy.js",
+      "gitBlob": "ff516f3007b1aa05d76d402b49980a656623453e",
+      "underlyingSha256": "18f38713b33382a746d2cac97c8530fbe4b295bf090613e16f6749ad87954e93",
+      "servedSha256": "18f38713b33382a746d2cac97c8530fbe4b295bf090613e16f6749ad87954e93",
+      "matches": true
+    },
+    {
+      "path": "card-actions.js",
+      "gitBlob": "994b8d460ad9499ddd0e27a58c525d77bc408b33",
+      "underlyingSha256": "73054bb3a1f66cb03b1a11b7632fa4d86a520dcaf16343970d51b7b50402a169",
+      "servedSha256": "73054bb3a1f66cb03b1a11b7632fa4d86a520dcaf16343970d51b7b50402a169",
+      "matches": true
+    },
+    {
+      "path": "card-detail-extras.js",
+      "gitBlob": "8efb3cd818c7f0f3ff86196ef1a57589ce97778a",
+      "underlyingSha256": "61ff71ba3ab072df69035065348500fcd165ba3b3e4ebea0f96251b99cbc8791",
+      "servedSha256": "61ff71ba3ab072df69035065348500fcd165ba3b3e4ebea0f96251b99cbc8791",
+      "matches": true
+    },
+    {
+      "path": "card-discovery.js",
+      "gitBlob": "719968135fc15e08998f71c4ccaa768e998ac5d7",
+      "underlyingSha256": "f080f785107944b1b30a4468388c0571a434ad98fddf1fa5b59767fcf1fc523d",
+      "servedSha256": "f080f785107944b1b30a4468388c0571a434ad98fddf1fa5b59767fcf1fc523d",
+      "matches": true
+    },
+    {
+      "path": "catalog-tools.js",
+      "gitBlob": "35048fdb02f0b157af69e3b723fd59be3c937454",
+      "underlyingSha256": "789c7511d33aaec308848ba14793ef5f94feae456ff39a0d12c0e926f3cc19d5",
+      "servedSha256": "789c7511d33aaec308848ba14793ef5f94feae456ff39a0d12c0e926f3cc19d5",
+      "matches": true
+    },
+    {
+      "path": "cloud.js",
+      "gitBlob": "fcbfcd0064f400ecf5535ac87c9b02d2999fefb7",
+      "underlyingSha256": "d80f6c9e48470cd1e1ebe41dd46c3bff4108afe235e9d4e6af050b8d037ef1e1",
+      "servedSha256": "d80f6c9e48470cd1e1ebe41dd46c3bff4108afe235e9d4e6af050b8d037ef1e1",
+      "matches": true
+    },
+    {
+      "path": "coach-evidence.js",
+      "gitBlob": "fab5ed8d38f0dec6d37b2cd7e561b066865a5708",
+      "underlyingSha256": "ca9e8c563a8e06c274079b11ea2691bbd10af1f268e7886f953e71f418cf7a99",
+      "servedSha256": "ca9e8c563a8e06c274079b11ea2691bbd10af1f268e7886f953e71f418cf7a99",
+      "matches": true
+    },
+    {
+      "path": "collection-locations.js",
+      "gitBlob": "0498e0d2cc2268156350db4afcdc4122c8e84d6a",
+      "underlyingSha256": "d1ecfd96bd1b69e06820e79f7b3b3f5c3aee9d5cbedc6ff2729df846aa636135",
+      "servedSha256": "d1ecfd96bd1b69e06820e79f7b3b3f5c3aee9d5cbedc6ff2729df846aa636135",
+      "matches": true
+    },
+    {
+      "path": "collection-sort.js",
+      "gitBlob": "962510198224b71f1647b291bad803afe2522aa1",
+      "underlyingSha256": "2c935ebe1ebb92e3363890cdd7010cc6a6ffad77cd07675e44b3c2d815d8b530",
+      "servedSha256": "2c935ebe1ebb92e3363890cdd7010cc6a6ffad77cd07675e44b3c2d815d8b530",
+      "matches": true
+    },
+    {
+      "path": "collection-stack.js",
+      "gitBlob": "3c7815a151d7082b8b2996c8fa089a32b6f3db85",
+      "underlyingSha256": "d5d8c8b31a69e4de3bc9c295ccbb8c31795dfd0977fdc1b18faa8053b143d152",
+      "servedSha256": "d5d8c8b31a69e4de3bc9c295ccbb8c31795dfd0977fdc1b18faa8053b143d152",
+      "matches": true
+    },
+    {
+      "path": "collector-search.js",
+      "gitBlob": "b228c81b32d4f307cbb388efb570136754ed65e9",
+      "underlyingSha256": "93fec67b44ba06b61cafdf9eab3761af2cf1359e1b017320d262684c58985f85",
+      "servedSha256": "93fec67b44ba06b61cafdf9eab3761af2cf1359e1b017320d262684c58985f85",
+      "matches": true
+    },
+    {
+      "path": "commander-combos.js",
+      "gitBlob": "7577f39edbd71334c3cab15485b07d5bc513223a",
+      "underlyingSha256": "ffc88532a161a35b0e62820fe19eb9b83150324c76c9f4f486ecb8ae9486fa06",
+      "servedSha256": "ffc88532a161a35b0e62820fe19eb9b83150324c76c9f4f486ecb8ae9486fa06",
+      "matches": true
+    },
+    {
+      "path": "commander-criteria.js",
+      "gitBlob": "61719d126765a91f4e937e55110138268c813659",
+      "underlyingSha256": "09d3a9dad3fbe7d8bfa6e228eecb87a0266718de8ef7485083b1e89519fc2530",
+      "servedSha256": "09d3a9dad3fbe7d8bfa6e228eecb87a0266718de8ef7485083b1e89519fc2530",
+      "matches": true
+    },
+    {
+      "path": "commander-evidence.js",
+      "gitBlob": "5f0022a01c6c26b4ed673d264591d1e8e447ec1c",
+      "underlyingSha256": "34921c07e7af5ffcc302193403541a76158c55ac2488b15eb13f0d6a15dfb3d3",
+      "servedSha256": "34921c07e7af5ffcc302193403541a76158c55ac2488b15eb13f0d6a15dfb3d3",
+      "matches": true
+    },
+    {
+      "path": "commander-strategy.js",
+      "gitBlob": "3825dbe8c9fc3edae8ed1604c1ac938760be2fd7",
+      "underlyingSha256": "ccb07ba16ca84812af6b655d6806db8afe6226f205177e32b8ade342be92d7e2",
+      "servedSha256": "ccb07ba16ca84812af6b655d6806db8afe6226f205177e32b8ade342be92d7e2",
+      "matches": true
+    },
+    {
+      "path": "community-art.js",
+      "gitBlob": "bfc0b3594a33a600bff67e566222985761b01a3f",
+      "underlyingSha256": "a0d0fa892d074cda7dad6369497ab579e671debf498f6d69cef597894e8d9e5e",
+      "servedSha256": "a0d0fa892d074cda7dad6369497ab579e671debf498f6d69cef597894e8d9e5e",
+      "matches": true
+    },
+    {
+      "path": "community-edition.js",
+      "gitBlob": "a4fe9f045cbfecb2cf2e2932e0a21d714d37d5a3",
+      "underlyingSha256": "e00157bf360046a038704455f2865dc2b29586692bb83f74c882fb4fd27850a6",
+      "servedSha256": "e00157bf360046a038704455f2865dc2b29586692bb83f74c882fb4fd27850a6",
+      "matches": true
+    },
+    {
+      "path": "community-feed.js",
+      "gitBlob": "fd2900e3d9cbaa73cbe075e047948325a8b2d78b",
+      "underlyingSha256": "4a3d5213027e739297753f900d38db16abf5a86441207c3874e831e8a9bde05f",
+      "servedSha256": "4a3d5213027e739297753f900d38db16abf5a86441207c3874e831e8a9bde05f",
+      "matches": true
+    },
+    {
+      "path": "community-sources.js",
+      "gitBlob": "504e50628ece0671d833182a9064ed49e68994f0",
+      "underlyingSha256": "5f0e02bd19d0b9068637c302850c9e371ac399099ede279584e7d45718fbded5",
+      "servedSha256": "5f0e02bd19d0b9068637c302850c9e371ac399099ede279584e7d45718fbded5",
+      "matches": true
+    },
+    {
+      "path": "condition-value.js",
+      "gitBlob": "520e9a69b993d5ce2d8d8426baf0bbfe1af32800",
+      "underlyingSha256": "d74de09e51263c161785a52297b7adf02c92b41fe46a271c41686341ad5e4678",
+      "servedSha256": "d74de09e51263c161785a52297b7adf02c92b41fe46a271c41686341ad5e4678",
+      "matches": true
+    },
+    {
+      "path": "confidence.js",
+      "gitBlob": "5834448079d564d998c362a4e6581af5ddeb9de9",
+      "underlyingSha256": "6e78820c5e32d35f733b4ceefb17b903fa9c48c7874740d666bce0ce8a610c5d",
+      "servedSha256": "6e78820c5e32d35f733b4ceefb17b903fa9c48c7874740d666bce0ce8a610c5d",
+      "matches": true
+    },
+    {
+      "path": "config.js",
+      "gitBlob": "1b4ca8026c51df6dae463f8ecb3d151bd0302c8d",
+      "underlyingSha256": "45c619fc7ac818cc6548c73ed3f08d20cd647731c27de6443f6afbb0d1755c82",
+      "servedSha256": "45c619fc7ac818cc6548c73ed3f08d20cd647731c27de6443f6afbb0d1755c82",
+      "matches": true
+    },
+    {
+      "path": "core.js",
+      "gitBlob": "c392e32ce4a95e651d15eef452eb52be4594ff1b",
+      "underlyingSha256": "afde1efb68f3609a5e2a412fab4c8962c0ccde7371f9b88f42340686e6e6f1a7",
+      "servedSha256": "afde1efb68f3609a5e2a412fab4c8962c0ccde7371f9b88f42340686e6e6f1a7",
+      "matches": true
+    },
+    {
+      "path": "daily-clock.js",
+      "gitBlob": "84dbf8b1ddc728943535c58aad9c3848105b3c42",
+      "underlyingSha256": "1b11bcc493f9c270c503e854766fdcf0f753d8fbce173529951ae55657e2cc13",
+      "servedSha256": "1b11bcc493f9c270c503e854766fdcf0f753d8fbce173529951ae55657e2cc13",
+      "matches": true
+    },
+    {
+      "path": "deck-box.js",
+      "gitBlob": "9634022e5030e857b49182d8511eb026326b2666",
+      "underlyingSha256": "48d0a0c57c881408370f01e9c733e83dac923efac8c79d3340429b79deb68a78",
+      "servedSha256": "48d0a0c57c881408370f01e9c733e83dac923efac8c79d3340429b79deb68a78",
+      "matches": true
+    },
+    {
+      "path": "deck-flow.js",
+      "gitBlob": "ba286f116431134163e57fdcd5d7b00d1e198d02",
+      "underlyingSha256": "7b82d8b51a5c8fcf696f059e447259cacc7bd0b3d02ca0ea9589e61400abe61d",
+      "servedSha256": "7b82d8b51a5c8fcf696f059e447259cacc7bd0b3d02ca0ea9589e61400abe61d",
+      "matches": true
+    },
+    {
+      "path": "deck-mechanic-plan.js",
+      "gitBlob": "00380de6f38d632dd51ec3ce81675ee91e55cfa1",
+      "underlyingSha256": "1d1fac0775c9a3ed5ff3b4c308917f967b4f23d6764b2662f47c8c92c5a1b052",
+      "servedSha256": "1d1fac0775c9a3ed5ff3b4c308917f967b4f23d6764b2662f47c8c92c5a1b052",
+      "matches": true
+    },
+    {
+      "path": "deck-optimizer.js",
+      "gitBlob": "97c9cf5eaa9d9a4c9f1633dd9fd728cf8f953efb",
+      "underlyingSha256": "1f2d6f7b832410f7e42bcfa8cd20d3ff97c32fc0191ce6d808035cb7dc8e1efa",
+      "servedSha256": "1f2d6f7b832410f7e42bcfa8cd20d3ff97c32fc0191ce6d808035cb7dc8e1efa",
+      "matches": true
+    },
+    {
+      "path": "deck-preferences.js",
+      "gitBlob": "a3c071bf51fcb430bc0902fd93c69a0f4e6da689",
+      "underlyingSha256": "c3b084d4cf4a9e661588aebb2163e25d9e9a8369c584052f8e5ac298d5e4e9fc",
+      "servedSha256": "c3b084d4cf4a9e661588aebb2163e25d9e9a8369c584052f8e5ac298d5e4e9fc",
+      "matches": true
+    },
+    {
+      "path": "deck-safety.js",
+      "gitBlob": "246e2898addbf3fe6e387e884dcdd2774af01af3",
+      "underlyingSha256": "0ee1e06a23ade6e1cfbad163accb5858d53ecd615e4740aafa17269434fe3fcf",
+      "servedSha256": "0ee1e06a23ade6e1cfbad163accb5858d53ecd615e4740aafa17269434fe3fcf",
+      "matches": true
+    },
+    {
+      "path": "deck-seeds.js",
+      "gitBlob": "0eeb214a27594185c82d34446e3a328e69a1b6be",
+      "underlyingSha256": "744b69c6c943d65d3242ddc74edeb58b7af5b38d3924b6846612dfd4dc830948",
+      "servedSha256": "744b69c6c943d65d3242ddc74edeb58b7af5b38d3924b6846612dfd4dc830948",
+      "matches": true
+    },
+    {
+      "path": "deck-strategy-plan.js",
+      "gitBlob": "749beb0de7099d095566d2d4f14ef82c875c1306",
+      "underlyingSha256": "899f2ff377b57627a782ef9a94b9894c0f1181128a16b4a0f63cb64a1f0620c1",
+      "servedSha256": "899f2ff377b57627a782ef9a94b9894c0f1181128a16b4a0f63cb64a1f0620c1",
+      "matches": true
+    },
+    {
+      "path": "deck-viewer.css",
+      "gitBlob": "d0af9aa7169ec8651617f30d669674add9fdff7c",
+      "underlyingSha256": "2662d7afeb06227271d736c6751e2620376566fcba75e7865084d8617b5f311a",
+      "servedSha256": "2662d7afeb06227271d736c6751e2620376566fcba75e7865084d8617b5f311a",
+      "matches": true
+    },
+    {
+      "path": "deck-viewer.js",
+      "gitBlob": "102b96f2a03389c575c5e87f701c7b1146d7f2e8",
+      "underlyingSha256": "aee2ae1fd78926330b8bf57b94e3c6ef9086d0cf3b87b5f4f56e047331fdd526",
+      "servedSha256": "aee2ae1fd78926330b8bf57b94e3c6ef9086d0cf3b87b5f4f56e047331fdd526",
+      "matches": true
+    },
+    {
+      "path": "deckaudit.js",
+      "gitBlob": "78dc60dd196d20a4cfa11357cad2251e1c882d53",
+      "underlyingSha256": "895dc335495ad977b653d2c906735225ae3ed5308df29572454977fb166c81ab",
+      "servedSha256": "895dc335495ad977b653d2c906735225ae3ed5308df29572454977fb166c81ab",
+      "matches": true
+    },
+    {
+      "path": "deckpower.js",
+      "gitBlob": "c183a093e15437dc4c3373eee8474f488407eb66",
+      "underlyingSha256": "829efac88f6fda7c7ec860cb8fd3c97073bbdb7d34b5baa6705c744d25af52c8",
+      "servedSha256": "829efac88f6fda7c7ec860cb8fd3c97073bbdb7d34b5baa6705c744d25af52c8",
+      "matches": true
+    },
+    {
+      "path": "desktop-play.js",
+      "gitBlob": "190f54da8ee74d100afccbd7088e5ef9d08b999d",
+      "underlyingSha256": "5d1ccfd26becbfe2be181b6d722b59ffc3543dc0846a383fbaf74e0c0121a304",
+      "servedSha256": "5d1ccfd26becbfe2be181b6d722b59ffc3543dc0846a383fbaf74e0c0121a304",
+      "matches": true
+    },
+    {
+      "path": "dialog.js",
+      "gitBlob": "35ff0f33f4dabfcfb98b53170828b9d740c964ed",
+      "underlyingSha256": "d3bce22894062ed0e173b390253f0638031a638318c4a66c548c57ba8178b167",
+      "servedSha256": "d3bce22894062ed0e173b390253f0638031a638318c4a66c548c57ba8178b167",
+      "matches": true
+    },
+    {
+      "path": "emblems.js",
+      "gitBlob": "4659083fab78bad841abb1b08c1258fd99627012",
+      "underlyingSha256": "0f3e1baeea5bbe94feed8fc62ecc8991a7d198de219fde0c235e8b3d3240e694",
+      "servedSha256": "0f3e1baeea5bbe94feed8fc62ecc8991a7d198de219fde0c235e8b3d3240e694",
+      "matches": true
+    },
+    {
+      "path": "engine-map.js",
+      "gitBlob": "0b8a15052297d935dfde3183350e947d5ea2fc30",
+      "underlyingSha256": "f19e76625d9447ef43e47ac40948f12d410ace7145d1103ad2bd3fa85f15da5e",
+      "servedSha256": "f19e76625d9447ef43e47ac40948f12d410ace7145d1103ad2bd3fa85f15da5e",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/card-placement.mjs",
+      "gitBlob": "8f5b6a36c51f445427fa6ffff02525de4c4cb805",
+      "underlyingSha256": "e84ae49658ec58cbaa21488c6a73162a8e370f280425cfc2778ae394f28f3259",
+      "servedSha256": "e84ae49658ec58cbaa21488c6a73162a8e370f280425cfc2778ae394f28f3259",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/card-stats.mjs",
+      "gitBlob": "8bdc2bd4e69fd6ace1a3e9aef7b86781cfe75b52",
+      "underlyingSha256": "9d2df7ff86d2f96e97481451b7cdb3eb500d447430f4f9862ba76c49ca7bb46f",
+      "servedSha256": "9d2df7ff86d2f96e97481451b7cdb3eb500d447430f4f9862ba76c49ca7bb46f",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/catalog-admission.mjs",
+      "gitBlob": "b09ac56d69b22ecf3036305e9689d337b5788a09",
+      "underlyingSha256": "3e0a141c42d328afaf48bd7083e0a86605305db875b33878c1e2a7481b09c390",
+      "servedSha256": "3e0a141c42d328afaf48bd7083e0a86605305db875b33878c1e2a7481b09c390",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/commander-projection.mjs",
+      "gitBlob": "349118ef28c5165589f6c38e45a7dceb456b1409",
+      "underlyingSha256": "ca3a8fed63aad125036ee9ac9e655e3f147e14d29ad339a4ab9e73b8fdd78190",
+      "servedSha256": "ca3a8fed63aad125036ee9ac9e655e3f147e14d29ad339a4ab9e73b8fdd78190",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/cpu-block-search.mjs",
+      "gitBlob": "f0ca62d2b96bb922d9ae16877e25afa896a593d6",
+      "underlyingSha256": "167c87c1521c43df4e88303e70b6287da373108d94f1fee8d1b65e8188c3ce66",
+      "servedSha256": "167c87c1521c43df4e88303e70b6287da373108d94f1fee8d1b65e8188c3ce66",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/cpu-combat-evaluation.mjs",
+      "gitBlob": "e85e8a6555dfabe4dc13608f08161b49ce5bfb92",
+      "underlyingSha256": "55add787750ef735dd7890f12f4ebb7df14d74001b4ddbc5bd220953c5e53203",
+      "servedSha256": "55add787750ef735dd7890f12f4ebb7df14d74001b4ddbc5bd220953c5e53203",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/cpu-difficulty-config.mjs",
+      "gitBlob": "c988dbc8a57b7c540d2f223e45935e0264d1c06c",
+      "underlyingSha256": "f0a9998c21b55ea2814a7e43f1be02eae41731859e9fd8205bfa70f3ff613715",
+      "servedSha256": "f0a9998c21b55ea2814a7e43f1be02eae41731859e9fd8205bfa70f3ff613715",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/cpu-hand-observation.mjs",
+      "gitBlob": "f9d1b1bee09786b767c2f8744af511efd34eb967",
+      "underlyingSha256": "601144c3beea2d095620c27de2e27958b305bf59471da3ee8e7a49e057a25efd",
+      "servedSha256": "601144c3beea2d095620c27de2e27958b305bf59471da3ee8e7a49e057a25efd",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/cpu-legal-candidates.mjs",
+      "gitBlob": "dc6ca8fcec489e804b516cd64d749860cfc3f761",
+      "underlyingSha256": "3ac18bf8a3b0fd0d7337ee58cf49b80f05db3d3a6f7e13205b55b513daf16c24",
+      "servedSha256": "3ac18bf8a3b0fd0d7337ee58cf49b80f05db3d3a6f7e13205b55b513daf16c24",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/cpu-playbook.mjs",
+      "gitBlob": "7011a807a8ffad3d1092f4b9e656dcc3f3081485",
+      "underlyingSha256": "b6e1c38dccbe79ba87a0fe4ea73037ac7960862c3d77ccc2d08a6ec5cbe9be2c",
+      "servedSha256": "b6e1c38dccbe79ba87a0fe4ea73037ac7960862c3d77ccc2d08a6ec5cbe9be2c",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/cpu-public-observation.mjs",
+      "gitBlob": "8e9f0834bcb31e3121edfa2a30ff682d5a7c816d",
+      "underlyingSha256": "35c6945aee6756cdd9af18ff4dd9ad3620b7492085ddb1f11e1b7c5f232df4bf",
+      "servedSha256": "35c6945aee6756cdd9af18ff4dd9ad3620b7492085ddb1f11e1b7c5f232df4bf",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/cpu-public-policy.mjs",
+      "gitBlob": "1d51ec7555545935979d9363c959577d1c5cdf8f",
+      "underlyingSha256": "f1c6cf140231fc70fcc51bfbd2891dbda4aa9cf7eabe155dcf0a504895ccdf68",
+      "servedSha256": "f1c6cf140231fc70fcc51bfbd2891dbda4aa9cf7eabe155dcf0a504895ccdf68",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/cpu-public-worker.mjs",
+      "gitBlob": "81750f53e35588f01a5029b509698a097a061f62",
+      "underlyingSha256": "8a5c4c16aa20b5addcade8a9de1d6aefda58aadd09fd9eab4a68ce0da83e243d",
+      "servedSha256": "8a5c4c16aa20b5addcade8a9de1d6aefda58aadd09fd9eab4a68ce0da83e243d",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/cpu-tactical-planning.mjs",
+      "gitBlob": "4f8251de86e21b54093be5e81f377d5f845c2193",
+      "underlyingSha256": "0430518b113200c2a6e8e3fda09280847b65712c5ed7fae305c5d4dd01b4149b",
+      "servedSha256": "0430518b113200c2a6e8e3fda09280847b65712c5ed7fae305c5d4dd01b4149b",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/human-command.mjs",
+      "gitBlob": "8f6f3c302e988ccecf3ca677b5dd17c698453638",
+      "underlyingSha256": "9b7e62b4271d35337f75fa07b5f4486e4678b1e1dafef5464d262e7e8053aa2b",
+      "servedSha256": "9b7e62b4271d35337f75fa07b5f4486e4678b1e1dafef5464d262e7e8053aa2b",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/interaction-surface.mjs",
+      "gitBlob": "5c56d6ffef92b25014829c4fbe30dbff08f2b68a",
+      "underlyingSha256": "bffbb62bd6a20d00e4265758496f5b8eb7042396c5c6e9a77c1d0fcea88c4eb0",
+      "servedSha256": "bffbb62bd6a20d00e4265758496f5b8eb7042396c5c6e9a77c1d0fcea88c4eb0",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/match-authority.mjs",
+      "gitBlob": "017ebd7e17ebdc26708f8f6a52d7ce4d15479d3b",
+      "underlyingSha256": "d2e490d3ff4d192c2914fbbc35588d4cdd7522c81c8a55288438cdac39d074c9",
+      "servedSha256": "d2e490d3ff4d192c2914fbbc35588d4cdd7522c81c8a55288438cdac39d074c9",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/match-input.mjs",
+      "gitBlob": "fb5661c4b011b4d0f648a81d98ceb2f456c2babf",
+      "underlyingSha256": "dbaa6c50da3d9dd33c6fe3eb71142c7b94109b396d88a187c129d12eb364c6ce",
+      "servedSha256": "dbaa6c50da3d9dd33c6fe3eb71142c7b94109b396d88a187c129d12eb364c6ce",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/match-result.mjs",
+      "gitBlob": "481c4a0b7d8a60f711416b54c23aa09a7cc6d55e",
+      "underlyingSha256": "168d0599c24180688f0d8001baba2835eb41b1edf96bf7c25da1da5da59b91f5",
+      "servedSha256": "168d0599c24180688f0d8001baba2835eb41b1edf96bf7c25da1da5da59b91f5",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/match-session.mjs",
+      "gitBlob": "e178b1f46223b45e0d33d255c5ba9159c1f01817",
+      "underlyingSha256": "6f33af7e8c105e671fa74b78723ee5371475b2adac572759ce90b8191fbf9a0a",
+      "servedSha256": "6f33af7e8c105e671fa74b78723ee5371475b2adac572759ce90b8191fbf9a0a",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/match-table.css",
+      "gitBlob": "29ad0561c9046aa754a2b5fb03c454c490e9184e",
+      "underlyingSha256": "497f0d5d8d2e2da2be36ec328ccb6655a6772c94cc9ee4da3504ce964f23a4fa",
+      "servedSha256": "497f0d5d8d2e2da2be36ec328ccb6655a6772c94cc9ee4da3504ce964f23a4fa",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/match-table.mjs",
+      "gitBlob": "879f57a637632a7f2c562e1e33a826ce897931be",
+      "underlyingSha256": "78ecf391603a2e3f2852cbf57d5b1e68aab640e4d726e98f3edea68cab726ca6",
+      "servedSha256": "78ecf391603a2e3f2852cbf57d5b1e68aab640e4d726e98f3edea68cab726ca6",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/practice-authority.mjs",
+      "gitBlob": "109dbea5cebeeb55364d1828c7c53cf57f9025bc",
+      "underlyingSha256": "45acfaf6042a0b276041f34e63bf69b0a91c93a31b6f3f2ba4b765d564cf7333",
+      "servedSha256": "f6f534dc0ff241c9dce5e66dc91d5293d3defb9ebc2fcba00cd20b9be9e2b5a6",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/practice-client.mjs",
+      "gitBlob": "02933a95dc3b89b729f255fe7e53c610cec752c8",
+      "underlyingSha256": "ca80185145839cc92cf8d97a18301599ddd1a5a76934963b871a002a5224dc47",
+      "servedSha256": "ca80185145839cc92cf8d97a18301599ddd1a5a76934963b871a002a5224dc47",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/practice-coverage.mjs",
+      "gitBlob": "31825679aad6a330600914426a2792db5d1aa436",
+      "underlyingSha256": "49fe0a22ccaa21b37b548461ea94cae98c8ae666087055ba31c16afbd9564652",
+      "servedSha256": "49fe0a22ccaa21b37b548461ea94cae98c8ae666087055ba31c16afbd9564652",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/practice-flow.mjs",
+      "gitBlob": "6e4d72fdfad65764c33a30c0c63ea0198c924011",
+      "underlyingSha256": "2a27146fa0a4731638c5fde51d2175cfed46be30a3b237f1782eab36b7d44693",
+      "servedSha256": "2a27146fa0a4731638c5fde51d2175cfed46be30a3b237f1782eab36b7d44693",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/practice-preflight.mjs",
+      "gitBlob": "b36b515c451b49140f930df906dc41bc4a4cf756",
+      "underlyingSha256": "c94a0807c9561e08315fe0bfd4cb21416b7be032e414f8b1bcea59408e6b2df4",
+      "servedSha256": "c94a0807c9561e08315fe0bfd4cb21416b7be032e414f8b1bcea59408e6b2df4",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/practice-presentation.mjs",
+      "gitBlob": "ed7f8d0c067dd6b0cedac4cc1a2f6d6dc215ede4",
+      "underlyingSha256": "52c94571744aa406292e6819cb268191bf7b55470fe501a84a1f3c0b444052ba",
+      "servedSha256": "52c94571744aa406292e6819cb268191bf7b55470fe501a84a1f3c0b444052ba",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/practice-record.mjs",
+      "gitBlob": "1f439f37d292e6bdf5c35aa1202602b6006283c7",
+      "underlyingSha256": "9f2d584134fbfecb2269193197cb42355e1ab0c7e1a771ada007bfb09f8a17c8",
+      "servedSha256": "9f2d584134fbfecb2269193197cb42355e1ab0c7e1a771ada007bfb09f8a17c8",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/practice-result-history.mjs",
+      "gitBlob": "7bb2bdc744628397bbd274fea5d6c3ae28081404",
+      "underlyingSha256": "04068d32cee4ba4c928911e3f69cc9966f1286fd15c224e44dc51912112799d3",
+      "servedSha256": "04068d32cee4ba4c928911e3f69cc9966f1286fd15c224e44dc51912112799d3",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/practice-session-record.mjs",
+      "gitBlob": "9f49ac0994d742eaee1ba7af27932b937680949e",
+      "underlyingSha256": "633a52e5a284f07980aabd68e4ff5bbb1352b6892e3be56d6c8c04f29a808cdd",
+      "servedSha256": "633a52e5a284f07980aabd68e4ff5bbb1352b6892e3be56d6c8c04f29a808cdd",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/priority-clock.mjs",
+      "gitBlob": "a3b0ea4f6dae93e6b397714197ff21292b09417b",
+      "underlyingSha256": "4c939bf6d616ecf582228918bd73094c43b998e0168996961429c8e964707602",
+      "servedSha256": "4c939bf6d616ecf582228918bd73094c43b998e0168996961429c8e964707602",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/priority-flow.mjs",
+      "gitBlob": "923de815bb38b01f777f3ea58c6e7261dbc347bb",
+      "underlyingSha256": "0ea56b4ca7578e198e6398352447491dbb66edee2a16912f7b71e305329f0214",
+      "servedSha256": "0ea56b4ca7578e198e6398352447491dbb66edee2a16912f7b71e305329f0214",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/priority-scheduler.mjs",
+      "gitBlob": "d0a74ea912a6c56beec1c3787c2f95b142ff00e7",
+      "underlyingSha256": "384c3ebad47090992a0e544d91cb0d4c234a9fc75d085b9aa84905eaf06586f3",
+      "servedSha256": "384c3ebad47090992a0e544d91cb0d4c234a9fc75d085b9aa84905eaf06586f3",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/protocol-fault.mjs",
+      "gitBlob": "ed15153a8b95ed8eda2dcea02d81fd5855d7b9ac",
+      "underlyingSha256": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+      "servedSha256": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/random-outcomes.mjs",
+      "gitBlob": "2616d0dbcab632244e06b11cbd0a28bc661d90f0",
+      "underlyingSha256": "1aa212c485c766caf1d80403f2413c22bb17194cbbfa54979a699a38ea2d12d0",
+      "servedSha256": "1aa212c485c766caf1d80403f2413c22bb17194cbbfa54979a699a38ea2d12d0",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/runtime-assets.mjs",
+      "gitBlob": "1c4d57a359d69565d96d233955f2cec4aa10d0e7",
+      "underlyingSha256": "b210246c9d60e051927b47669cedb59ec7c5920bfca80e6cbc64b2f89e1b668e",
+      "servedSha256": "b210246c9d60e051927b47669cedb59ec7c5920bfca80e6cbc64b2f89e1b668e",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/runtime/a86578b23adcd26c/card-rules.bin",
+      "gitBlob": "62775ed2e3acec6d1ffa2a663f7a768b11545913",
+      "underlyingSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+      "servedSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/runtime/a86578b23adcd26c/engine_wasm.js",
+      "gitBlob": "4c1f7bcd19e1d747535da34f7ad172f6fd55e535",
+      "underlyingSha256": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+      "servedSha256": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/runtime/a86578b23adcd26c/manifest.json",
+      "gitBlob": "c450fa884cff07c4c0492377341c393415ff5665",
+      "underlyingSha256": "08484fd023bae66da232336c5c7cdbd259b587a63e0079dbfb7a3d539ac43d24",
+      "servedSha256": "08484fd023bae66da232336c5c7cdbd259b587a63e0079dbfb7a3d539ac43d24",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/runtime/a86578b23adcd26c/wasm.part-00.bin",
+      "gitBlob": "f8692764c4e11c3b2a095e507f61ac0505f5b4c5",
+      "underlyingSha256": "5721d1bdcf601162b9f41ef806332fcca2957565e86101f6e5d2b2afda2fa325",
+      "servedSha256": "5721d1bdcf601162b9f41ef806332fcca2957565e86101f6e5d2b2afda2fa325",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/runtime/a86578b23adcd26c/wasm.part-01.bin",
+      "gitBlob": "70f6ba9c82266b710280ca35b75805de91eca41b",
+      "underlyingSha256": "d2b535a9c2296c6994ce3ed676d032a1ead847fcea12bf43ffc2347676c10837",
+      "servedSha256": "d2b535a9c2296c6994ce3ed676d032a1ead847fcea12bf43ffc2347676c10837",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/runtime/a86578b23adcd26c/wasm.part-02.bin",
+      "gitBlob": "45d63ccea096976a4b8fae9b0cf913c1864e6e86",
+      "underlyingSha256": "5b1007b7c501d430808f37d1f75cab38a1d85995cc90d235262cfcdc16d71f61",
+      "servedSha256": "5b1007b7c501d430808f37d1f75cab38a1d85995cc90d235262cfcdc16d71f61",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/seat-surface.mjs",
+      "gitBlob": "821d4ec681238a6070d68d60968121c8c0167e87",
+      "underlyingSha256": "55e5beedac9db3fdf5ea7be881676c4d8bcd9445bc239b1556622ef959b481b8",
+      "servedSha256": "55e5beedac9db3fdf5ea7be881676c4d8bcd9445bc239b1556622ef959b481b8",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/turn-budget.mjs",
+      "gitBlob": "62b7297536206a1241a55011ba2c8b0f41330766",
+      "underlyingSha256": "efd21e1aa500d2a2beb2bb3ad69891d96d29a0c70da507264263c6cdbbcea5ff",
+      "servedSha256": "efd21e1aa500d2a2beb2bb3ad69891d96d29a0c70da507264263c6cdbbcea5ff",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/visible-cpu-policy.mjs",
+      "gitBlob": "72e08805c6a6864aeaef0fe41f6518fbfdc1560f",
+      "underlyingSha256": "755897085ee4e42cf0fa94b6f37a68187ba111f69c2f54c629ec249f4c02dfe5",
+      "servedSha256": "755897085ee4e42cf0fa94b6f37a68187ba111f69c2f54c629ec249f4c02dfe5",
+      "matches": true
+    },
+    {
+      "path": "experiments/phase-engine/worker-journal.mjs",
+      "gitBlob": "c466d2218dd95b01e05604f0dc4678ce193a4784",
+      "underlyingSha256": "6be9686508e07b7d9994b255f2bbfb7849d4c5c14b4ee50385f6ca93224de015",
+      "servedSha256": "6be9686508e07b7d9994b255f2bbfb7849d4c5c14b4ee50385f6ca93224de015",
+      "matches": true
+    },
+    {
+      "path": "extras.js",
+      "gitBlob": "3063a9f875d163d854e0acd196549279b9e307d2",
+      "underlyingSha256": "33fc5ca8360779c90069651552207375e792200c5ff86e38863ff50c66dd2192",
+      "servedSha256": "33fc5ca8360779c90069651552207375e792200c5ff86e38863ff50c66dd2192",
+      "matches": true
+    },
+    {
+      "path": "facts.js",
+      "gitBlob": "c0613b5516fbcf125165dc0cb9296a1a783855cb",
+      "underlyingSha256": "a4a23f95470785dc1351d1dfb1f17ad15b9fa9f8ae8ec375557affc0337b3ffc",
+      "servedSha256": "a4a23f95470785dc1351d1dfb1f17ad15b9fa9f8ae8ec375557affc0337b3ffc",
+      "matches": true
+    },
+    {
+      "path": "feedback-layer.js",
+      "gitBlob": "27b9d1740eff7ae02089459f6d079da2d857d973",
+      "underlyingSha256": "084ac243e3aa2d8d4680175d2e17a8a5e15f0c6a9a07b6599c4eede9bba28aab",
+      "servedSha256": "084ac243e3aa2d8d4680175d2e17a8a5e15f0c6a9a07b6599c4eede9bba28aab",
+      "matches": true
+    },
+    {
+      "path": "feel.js",
+      "gitBlob": "50740ec09d7a95c1cf8d199134f1994bf7c4cf49",
+      "underlyingSha256": "b2c9876d71ea4b31da74f99ce2fad037adfeac698821cdb898adf6307565112d",
+      "servedSha256": "b2c9876d71ea4b31da74f99ce2fad037adfeac698821cdb898adf6307565112d",
+      "matches": true
+    },
+    {
+      "path": "finish-effects.css",
+      "gitBlob": "1f2d6371d223d35cb3ba32970dcefb44e44d3bf5",
+      "underlyingSha256": "d1ff9a1b4da5ac87ce58efd0702182bae09cc54404efd265024ac8fd35377d98",
+      "servedSha256": "d1ff9a1b4da5ac87ce58efd0702182bae09cc54404efd265024ac8fd35377d98",
+      "matches": true
+    },
+    {
+      "path": "finish-effects.js",
+      "gitBlob": "fec0b2e43d630cf3d524812e5aece3d7fb7ed675",
+      "underlyingSha256": "4e41844eb8a415470d5777b5577d6997c06fc9d388639def68c183149c726a91",
+      "servedSha256": "4e41844eb8a415470d5777b5577d6997c06fc9d388639def68c183149c726a91",
+      "matches": true
+    },
+    {
+      "path": "finish-materials.js",
+      "gitBlob": "4841d0cad247581dbcbc15e923840cbdc367cfac",
+      "underlyingSha256": "c63e7c193743e124432d9a7d45c7809d0ce0656ce0de9148872a2f7ec6d2bcdd",
+      "servedSha256": "c63e7c193743e124432d9a7d45c7809d0ce0656ce0de9148872a2f7ec6d2bcdd",
+      "matches": true
+    },
+    {
+      "path": "finish-preview.js",
+      "gitBlob": "c4a87ec81bd22b58748831456197ca03f30f91ef",
+      "underlyingSha256": "8c7039ec52e9d7509c5aff4e967a7c93e58fec5a77d0031dee987b6f7162d86b",
+      "servedSha256": "8c7039ec52e9d7509c5aff4e967a7c93e58fec5a77d0031dee987b6f7162d86b",
+      "matches": true
+    },
+    {
+      "path": "foil-gl.js",
+      "gitBlob": "242d679993d91401ada7978f578d75db30de6654",
+      "underlyingSha256": "d41e88f3484f5bcaf14c931eb0e7095414b2d4aca2c260f7e86a6051fc1c5568",
+      "servedSha256": "d41e88f3484f5bcaf14c931eb0e7095414b2d4aca2c260f7e86a6051fc1c5568",
+      "matches": true
+    },
+    {
+      "path": "formats.js",
+      "gitBlob": "0b63b8f85172611b86bab8aa874fb1e39e3565f1",
+      "underlyingSha256": "5982aa0ead244f965d5fa982c32bbe500f93ea24f4a976ca608e0746798772e9",
+      "servedSha256": "5982aa0ead244f965d5fa982c32bbe500f93ea24f4a976ca608e0746798772e9",
+      "matches": true
+    },
+    {
+      "path": "game-changers.js",
+      "gitBlob": "f8c22766788e776c9d729bb919967bd6b4e088ab",
+      "underlyingSha256": "cee1b308d381ea0f7909979a01d0b2f2fc8221d0cdce53a89aa42c7421d6af13",
+      "servedSha256": "cee1b308d381ea0f7909979a01d0b2f2fc8221d0cdce53a89aa42c7421d6af13",
+      "matches": true
+    },
+    {
+      "path": "game-wiki-article.js",
+      "gitBlob": "5b06e430f65140503731e6b63a7f6c4dc019b412",
+      "underlyingSha256": "fec95ea49d327f110448db0fc43533bc9b4265fb6910158ba1d80895ee896dca",
+      "servedSha256": "fec95ea49d327f110448db0fc43533bc9b4265fb6910158ba1d80895ee896dca",
+      "matches": true
+    },
+    {
+      "path": "game-wiki-knowledge.js",
+      "gitBlob": "d5ca25ba149a39b9fe37e51a8c3a406ef1e4253b",
+      "underlyingSha256": "69aed5f6152e8c765dd15d883e5f0b5d9e90b6755541e3c82c18b94ad089ead8",
+      "servedSha256": "69aed5f6152e8c765dd15d883e5f0b5d9e90b6755541e3c82c18b94ad089ead8",
+      "matches": true
+    },
+    {
+      "path": "games.js",
+      "gitBlob": "7c6b0a2d7b2acc468f55299e8a0fc5c8510c3b93",
+      "underlyingSha256": "e05afb6c8c6d19e9d238529fad73b9e5ee10b2866a694de7257708a5ebb7cebb",
+      "servedSha256": "e05afb6c8c6d19e9d238529fad73b9e5ee10b2866a694de7257708a5ebb7cebb",
+      "matches": true
+    },
+    {
+      "path": "goldfish.js",
+      "gitBlob": "b82e7100d1a996f60ddc8aff38adfdf5a680bf79",
+      "underlyingSha256": "8bfab95443a8a45635d9e45f50b19ed5f31128452113360af804c518a21eb748",
+      "servedSha256": "8bfab95443a8a45635d9e45f50b19ed5f31128452113360af804c518a21eb748",
+      "matches": true
+    },
+    {
+      "path": "grid-settings.js",
+      "gitBlob": "10acb122e575e83ffc449f80965d930e066d51e7",
+      "underlyingSha256": "82585230208d2e84ef4af0f94456aa54df1274e83fd0c82f962df73696d7592c",
+      "servedSha256": "82585230208d2e84ef4af0f94456aa54df1274e83fd0c82f962df73696d7592c",
+      "matches": true
+    },
+    {
+      "path": "guide.js",
+      "gitBlob": "b03672be4f8804000be342cbdd6df96c216c912a",
+      "underlyingSha256": "209b1f5e9493a6fab286ff09a83b131f3f645651128976a7666b5c9d8a6793b0",
+      "servedSha256": "209b1f5e9493a6fab286ff09a83b131f3f645651128976a7666b5c9d8a6793b0",
+      "matches": true
+    },
+    {
+      "path": "home-deck-activity.js",
+      "gitBlob": "858d2f0e52b78293777e5886f67326b75fecc2f5",
+      "underlyingSha256": "99de7c5fcf1c0b72a7086ee744a04e35c873e33930ccc9d2cd36dc120858622c",
+      "servedSha256": "99de7c5fcf1c0b72a7086ee744a04e35c873e33930ccc9d2cd36dc120858622c",
+      "matches": true
+    },
+    {
+      "path": "home-search.js",
+      "gitBlob": "64794161d77c1d7207cb6b3114862e2c0ad93002",
+      "underlyingSha256": "053a7319f12601938fe1ace383a46924422eb967fe61dd727c54623c0ae6101f",
+      "servedSha256": "053a7319f12601938fe1ace383a46924422eb967fe61dd727c54623c0ae6101f",
+      "matches": true
+    },
+    {
+      "path": "home-ui.js",
+      "gitBlob": "73a9041df3b04e55ff1d88bbeebe73c7b6c174e7",
+      "underlyingSha256": "645ad8a3adbdb06a55387322f9bd236284e19380f7deb91dbebb72d9f273eec2",
+      "servedSha256": "645ad8a3adbdb06a55387322f9bd236284e19380f7deb91dbebb72d9f273eec2",
+      "matches": true
+    },
+    {
+      "path": "icons.js",
+      "gitBlob": "35e451a2496014e6666909851252d17f719d32fe",
+      "underlyingSha256": "dd77097bd833de7afd48a8dfd0c84e48cd64b0da423c72466523019d6fb9a28b",
+      "servedSha256": "dd77097bd833de7afd48a8dfd0c84e48cd64b0da423c72466523019d6fb9a28b",
+      "matches": true
+    },
+    {
+      "path": "importance.js",
+      "gitBlob": "fd4a02f2354b12b076618d68b1cf62c576bd9bc9",
+      "underlyingSha256": "b8185eb8c103e0457fd22efc1e7a7bd5b3c75b462f7666cbbbc5b6c5f9853c3d",
+      "servedSha256": "b8185eb8c103e0457fd22efc1e7a7bd5b3c75b462f7666cbbbc5b6c5f9853c3d",
+      "matches": true
+    },
+    {
+      "path": "insights.js",
+      "gitBlob": "7d4b259ac99a58506a5cb354b173342c3d7fe3f9",
+      "underlyingSha256": "cb118f46095cb418060ca58dfcd7e6677bdbe2990094376e6e698c76e4e17237",
+      "servedSha256": "cb118f46095cb418060ca58dfcd7e6677bdbe2990094376e6e698c76e4e17237",
+      "matches": true
+    },
+    {
+      "path": "install.js",
+      "gitBlob": "4866ebbcccd14430bc3b7d3d9528dc382d1d652a",
+      "underlyingSha256": "1eeec9eeb93832db62bbadb3c137a1e3a2308437ce573a0ea889815d1b442e46",
+      "servedSha256": "1eeec9eeb93832db62bbadb3c137a1e3a2308437ce573a0ea889815d1b442e46",
+      "matches": true
+    },
+    {
+      "path": "magic-card-color.js",
+      "gitBlob": "0858a8da14c1381277027ab8755dfb90c3d7fdf3",
+      "underlyingSha256": "0cecf2fe696f060efb7086664da84ac4dc78f1c95270c91a60280e5f23ab9de5",
+      "servedSha256": "0cecf2fe696f060efb7086664da84ac4dc78f1c95270c91a60280e5f23ab9de5",
+      "matches": true
+    },
+    {
+      "path": "magic-matchups-ui.js",
+      "gitBlob": "0f76b23170ccc683a8fd4846925379d48345ab92",
+      "underlyingSha256": "a90f83139540e08b220ecef5d9254eff70fd3b59e0f3ceb7b31d2a2fd48500e0",
+      "servedSha256": "a90f83139540e08b220ecef5d9254eff70fd3b59e0f3ceb7b31d2a2fd48500e0",
+      "matches": true
+    },
+    {
+      "path": "magic-owned-detail.js",
+      "gitBlob": "24365453de28f16dd932cf83a182a0d84f64ccdc",
+      "underlyingSha256": "464876557b7c759ecb4c3a2d05fec0682e071f8b4474a3c4072df3e51c0cf903",
+      "servedSha256": "464876557b7c759ecb4c3a2d05fec0682e071f8b4474a3c4072df3e51c0cf903",
+      "matches": true
+    },
+    {
+      "path": "matchup.js",
+      "gitBlob": "27181f369ed1f2a838acb52ca1223e1aea7fe9d9",
+      "underlyingSha256": "a8de56b41bb1666a85708b84a4389575bdfef38f2fe98f57e0e9f0d926895116",
+      "servedSha256": "a8de56b41bb1666a85708b84a4389575bdfef38f2fe98f57e0e9f0d926895116",
+      "matches": true
+    },
+    {
+      "path": "matchups-ui.js",
+      "gitBlob": "d4ae95d4c9799f6a4228eee12f3f6b2cd829b907",
+      "underlyingSha256": "1e6a1284a94f4ead4dfad0e136046468b4c4fa4b86dac6a11a7cfdccae1bc4cd",
+      "servedSha256": "1e6a1284a94f4ead4dfad0e136046468b4c4fa4b86dac6a11a7cfdccae1bc4cd",
+      "matches": true
+    },
+    {
+      "path": "meta-curation.js",
+      "gitBlob": "e1e3d064d5ca59d3a52a8fd075aa9b6794834641",
+      "underlyingSha256": "e6bb57cd63bbfc1132bd6bb90771b46613f1422e6c4d570c1eda803f5af2534a",
+      "servedSha256": "e6bb57cd63bbfc1132bd6bb90771b46613f1422e6c4d570c1eda803f5af2534a",
+      "matches": true
+    },
+    {
+      "path": "meta.js",
+      "gitBlob": "56456c8813255fb6ae5bbab36dd4d18a584080ca",
+      "underlyingSha256": "83cb7a76ed1f4a22fb5b2e695664001036d0a5d1e5e39732a3af675071cfcdd3",
+      "servedSha256": "83cb7a76ed1f4a22fb5b2e695664001036d0a5d1e5e39732a3af675071cfcdd3",
+      "matches": true
+    },
+    {
+      "path": "mobile-tilt.js",
+      "gitBlob": "76df7c3f3052079e91f9a8298862ca1e1953815e",
+      "underlyingSha256": "6a0b231089bb058eb4e765e5a3881d7071cf98a5986ebc42e6178e839d310686",
+      "servedSha256": "6a0b231089bb058eb4e765e5a3881d7071cf98a5986ebc42e6178e839d310686",
+      "matches": true
+    },
+    {
+      "path": "mtg-ability-endpoints.js",
+      "gitBlob": "9d1923d53a6e4d84f8c67f4d6a366cf84834986a",
+      "underlyingSha256": "719591e6e630ac31b0473d07106f440e6b59ac9632c7b5c19ee595b2798c1ba8",
+      "servedSha256": "719591e6e630ac31b0473d07106f440e6b59ac9632c7b5c19ee595b2798c1ba8",
+      "matches": true
+    },
+    {
+      "path": "mtg-cheap.js",
+      "gitBlob": "89cfdbbca2adac5d9cce14624d306a600e9c37e4",
+      "underlyingSha256": "8a2c1f43ee5f221be54c0d5283ef40478761a5f658bb7fcc7426773973569649",
+      "servedSha256": "8a2c1f43ee5f221be54c0d5283ef40478761a5f658bb7fcc7426773973569649",
+      "matches": true
+    },
+    {
+      "path": "mtg-commander-conditions.js",
+      "gitBlob": "2250ca9f9899b4975ea433e7dfb2bfa76faa1faf",
+      "underlyingSha256": "1981b42b751ce485c56af85914e0b5109847ecf79a2a34a85d21fdbc818cb43b",
+      "servedSha256": "1981b42b751ce485c56af85914e0b5109847ecf79a2a34a85d21fdbc818cb43b",
+      "matches": true
+    },
+    {
+      "path": "mtg-effects.js",
+      "gitBlob": "f948f14e5255229dd5dd7f096588543ba3d2f680",
+      "underlyingSha256": "a41bdc6a008be2912fe155234b75ce34c4349520da15afe6438ca6062c760566",
+      "servedSha256": "a41bdc6a008be2912fe155234b75ce34c4349520da15afe6438ca6062c760566",
+      "matches": true
+    },
+    {
+      "path": "mtg-foil-analysis.js",
+      "gitBlob": "8303cadc657752980fa6123370c25627333dea75",
+      "underlyingSha256": "d734b4f42e7a8db32f2083db2a7d4d82fb4445aca23cf3ddafea58ccbbb5cb34",
+      "servedSha256": "d734b4f42e7a8db32f2083db2a7d4d82fb4445aca23cf3ddafea58ccbbb5cb34",
+      "matches": true
+    },
+    {
+      "path": "mtg-foil-recipes.js",
+      "gitBlob": "4e635e9eadb82ab93017a358143e08a3f81aa429",
+      "underlyingSha256": "315782cbad391c4f6b59a75f61da5353a018f9c4970068afa9a5596974be3117",
+      "servedSha256": "315782cbad391c4f6b59a75f61da5353a018f9c4970068afa9a5596974be3117",
+      "matches": true
+    },
+    {
+      "path": "mtg-foil.js",
+      "gitBlob": "c29973e040a7d46efb532bacc857effca5321c39",
+      "underlyingSha256": "3df5647c9b0ab28aef675d3ad4c4fbc494a01854511b003cdc1e8ea9d9c97414",
+      "servedSha256": "3df5647c9b0ab28aef675d3ad4c4fbc494a01854511b003cdc1e8ea9d9c97414",
+      "matches": true
+    },
+    {
+      "path": "mtg-keyword-reference.js",
+      "gitBlob": "e91258e8cbdac633495c6140f26deb4a10c6f9c3",
+      "underlyingSha256": "280e8c999f7ca455660e028d3f3bace07b8d4592fe9b8d11524cdfee4b531fbc",
+      "servedSha256": "280e8c999f7ca455660e028d3f3bace07b8d4592fe9b8d11524cdfee4b531fbc",
+      "matches": true
+    },
+    {
+      "path": "mtg-land-requirements.js",
+      "gitBlob": "d4295bcf3d5f82e651853c02f8088b84b7e1c0a3",
+      "underlyingSha256": "5baf21529b41e98df476cbef55b0b526d03d8c805239d29a846f55794bf5855f",
+      "servedSha256": "5baf21529b41e98df476cbef55b0b526d03d8c805239d29a846f55794bf5855f",
+      "matches": true
+    },
+    {
+      "path": "mtg-mana-sources.js",
+      "gitBlob": "aefb3fca404f214736996666858a1f2ed643d0f7",
+      "underlyingSha256": "6e2905b76befa02fa37329751ddbb050ab363d34ef8c7581d0b1568645f6eb69",
+      "servedSha256": "6e2905b76befa02fa37329751ddbb050ab363d34ef8c7581d0b1568645f6eb69",
+      "matches": true
+    },
+    {
+      "path": "mtg-primary-inputs.js",
+      "gitBlob": "6124d2fe27d750f5c1217ba453a251ab5fa63cc3",
+      "underlyingSha256": "ef68290f425b3eaba8b5b2f75633e12d566058ad88939bd4c189f803d0cfd095",
+      "servedSha256": "ef68290f425b3eaba8b5b2f75633e12d566058ad88939bd4c189f803d0cfd095",
+      "matches": true
+    },
+    {
+      "path": "mtg-route-coverage.js",
+      "gitBlob": "5bd4bc04174a2263e552c41848616becbaa685a9",
+      "underlyingSha256": "eb7d43cf24b723bcec522de09937deb5ed251abd021e93bd5a710941d082aeda",
+      "servedSha256": "eb7d43cf24b723bcec522de09937deb5ed251abd021e93bd5a710941d082aeda",
+      "matches": true
+    },
+    {
+      "path": "mtg-tags.js",
+      "gitBlob": "da0258eaf83de0bea0162586ac66c4240e5fb89b",
+      "underlyingSha256": "dc1d28cb9595d58b0b5051c3f214719465bf3f73ced08f86be536bf036c8c77c",
+      "servedSha256": "dc1d28cb9595d58b0b5051c3f214719465bf3f73ced08f86be536bf036c8c77c",
+      "matches": true
+    },
+    {
+      "path": "mtg-tcgprice.js",
+      "gitBlob": "79347dff45f0412233c23b5ec93a27bb42ea3b74",
+      "underlyingSha256": "dc0511eb7edbb414867602cf8e8f173de90890137524904dff525588e2ae5e94",
+      "servedSha256": "dc0511eb7edbb414867602cf8e8f173de90890137524904dff525588e2ae5e94",
+      "matches": true
+    },
+    {
+      "path": "mtg-vocabulary.js",
+      "gitBlob": "8b6a713ef20085b29564177a571249b6bdf2dd2e",
+      "underlyingSha256": "19bb3a653f0e1869ea77b88c40559ec878b610618bc82a4c68f858dec77ba29e",
+      "servedSha256": "19bb3a653f0e1869ea77b88c40559ec878b610618bc82a4c68f858dec77ba29e",
+      "matches": true
+    },
+    {
+      "path": "mtg-wiki-client.js",
+      "gitBlob": "e678fa300460caec17cbb58cb9dedd1a92b1ec96",
+      "underlyingSha256": "02098bf72b9fcdb6792251ecd649aff263fac58ed312f9502313810e05d42e91",
+      "servedSha256": "02098bf72b9fcdb6792251ecd649aff263fac58ed312f9502313810e05d42e91",
+      "matches": true
+    },
+    {
+      "path": "mtg-wiki-knowledge.js",
+      "gitBlob": "3b516e8dc7afff4ea0938478e056812997616166",
+      "underlyingSha256": "ae613ef23136e2dfcbc34e5692bd4197f69acf09be859bc72675cfcfa6b2b720",
+      "servedSha256": "ae613ef23136e2dfcbc34e5692bd4197f69acf09be859bc72675cfcfa6b2b720",
+      "matches": true
+    },
+    {
+      "path": "mtg-wiki-ui.js",
+      "gitBlob": "a4fd135261b22882f05edc7a5420b9e35537ece6",
+      "underlyingSha256": "bc1a2080ffbb108984338701c0791af2d565063c5d4fd6c15ae394940fd3fe2c",
+      "servedSha256": "bc1a2080ffbb108984338701c0791af2d565063c5d4fd6c15ae394940fd3fe2c",
+      "matches": true
+    },
+    {
+      "path": "pairing.js",
+      "gitBlob": "371a7ed1c8f365bbe120a184f65b1dadcf1838ab",
+      "underlyingSha256": "14b5b47abf526644d6e32e14101929fa1437e4cdb748c4dfe0e65b26e8f8bec4",
+      "servedSha256": "14b5b47abf526644d6e32e14101929fa1437e4cdb748c4dfe0e65b26e8f8bec4",
+      "matches": true
+    },
+    {
+      "path": "password-auth.js",
+      "gitBlob": "3c5c8f6447b8ce7c02320932bcc87cb23b2c988d",
+      "underlyingSha256": "60fc207eec408abfe294077e0b9e20ba08c504c91bcb409eb68a21afeca4ee21",
+      "servedSha256": "60fc207eec408abfe294077e0b9e20ba08c504c91bcb409eb68a21afeca4ee21",
+      "matches": true
+    },
+    {
+      "path": "planner.js",
+      "gitBlob": "faabb9699f87152e36cd8f430a7972378c6cd70f",
+      "underlyingSha256": "8e0b9b867d2c92ded76fd0c53f77a886280bd1ad744d412e929b9d6fbefaf92d",
+      "servedSha256": "8e0b9b867d2c92ded76fd0c53f77a886280bd1ad744d412e929b9d6fbefaf92d",
+      "matches": true
+    },
+    {
+      "path": "play-card-preparation.js",
+      "gitBlob": "6c7e0892ef052f97ad7d09c6c575ba2c24eebbb2",
+      "underlyingSha256": "b48a1e3e87eb0ce98b2ab8528eaa7be7bddf5433de887642ae592c838b613f3b",
+      "servedSha256": "b48a1e3e87eb0ce98b2ab8528eaa7be7bddf5433de887642ae592c838b613f3b",
+      "matches": true
+    },
+    {
+      "path": "play-card-surface.js",
+      "gitBlob": "d3452ff974cbb6c46a32d69f5481a93468d39b29",
+      "underlyingSha256": "a3a922b5c89d48978583cd1e1dd6b715efe1eaa0041564265b7c28f3d1282beb",
+      "servedSha256": "a3a922b5c89d48978583cd1e1dd6b715efe1eaa0041564265b7c28f3d1282beb",
+      "matches": true
+    },
+    {
+      "path": "play-catalog-review.js",
+      "gitBlob": "c709570ecf4d1cea42c2a23c8da034a7744479d3",
+      "underlyingSha256": "8a311ba3c2c8166b899c0e023e2a4c7dde3ec1917f91034bf441508754955021",
+      "servedSha256": "8a311ba3c2c8166b899c0e023e2a4c7dde3ec1917f91034bf441508754955021",
+      "matches": true
+    },
+    {
+      "path": "play-deck-context.js",
+      "gitBlob": "64f382221418ca07b0880016580232ffaa2ec21b",
+      "underlyingSha256": "7094ebad2d1bcbe99fa6f54ad39d04413a83d3862b85254b8659dd4fe542226b",
+      "servedSha256": "7094ebad2d1bcbe99fa6f54ad39d04413a83d3862b85254b8659dd4fe542226b",
+      "matches": true
+    },
+    {
+      "path": "play-deck-import.js",
+      "gitBlob": "39b9d7d951f75865572d44accde898fc487e17e1",
+      "underlyingSha256": "3bf31b969ebf948dbb31b17e0747a567d6c5c6c46f69e9a5a0304c4152136303",
+      "servedSha256": "3bf31b969ebf948dbb31b17e0747a567d6c5c6c46f69e9a5a0304c4152136303",
+      "matches": true
+    },
+    {
+      "path": "play-deck-sources.js",
+      "gitBlob": "efa840c3eaa51f38910973a2dc40fd4b17e7514d",
+      "underlyingSha256": "c1c1dabb1d1dacce8d913942e803a533005d4ba176208be09cb3e73f145cd725",
+      "servedSha256": "c1c1dabb1d1dacce8d913942e803a533005d4ba176208be09cb3e73f145cd725",
+      "matches": true
+    },
+    {
+      "path": "play-menu.css",
+      "gitBlob": "277286a34808df2aec8ed63f2f9b19e431312026",
+      "underlyingSha256": "8f8129adb7117c8259f0ff360b9e2e5d55f668430fd5f6eec29c3915246cae67",
+      "servedSha256": "8f8129adb7117c8259f0ff360b9e2e5d55f668430fd5f6eec29c3915246cae67",
+      "matches": true
+    },
+    {
+      "path": "play-player-mat.js",
+      "gitBlob": "a1337d09543fa8b4a16711409b1d0914c8148702",
+      "underlyingSha256": "bbaa5d091fd3c3c3aa9f03a5a7ba6e6b3b97f054000e1aa5873bb86eaa102f8b",
+      "servedSha256": "bbaa5d091fd3c3c3aa9f03a5a7ba6e6b3b97f054000e1aa5873bb86eaa102f8b",
+      "matches": true
+    },
+    {
+      "path": "play-pregame.js",
+      "gitBlob": "e0b573fbf115e0e1d628760d8744c6d4ac6c3131",
+      "underlyingSha256": "fdfaae34c1a310bb1ce4f7c9d6e6f0bdcc69de5450b39691b7bcc21f99b257d0",
+      "servedSha256": "fdfaae34c1a310bb1ce4f7c9d6e6f0bdcc69de5450b39691b7bcc21f99b257d0",
+      "matches": true
+    },
+    {
+      "path": "play-setup.js",
+      "gitBlob": "20a0b206bea9dc083af78645c65a7573db461235",
+      "underlyingSha256": "37915b8f2baf63adfeee56eed80b4d8dca2d332cea3a62644e40c1200b9cf77c",
+      "servedSha256": "37915b8f2baf63adfeee56eed80b4d8dca2d332cea3a62644e40c1200b9cf77c",
+      "matches": true
+    },
+    {
+      "path": "play-starter-deck.js",
+      "gitBlob": "7dd7f80b4dd24d519e938b6d201153bd60fa58be",
+      "underlyingSha256": "75aee3a4b6f0baffb3d3fbfb35a598ce9996502739a487b5a27759669923fbcc",
+      "servedSha256": "75aee3a4b6f0baffb3d3fbfb35a598ce9996502739a487b5a27759669923fbcc",
+      "matches": true
+    },
+    {
+      "path": "play-turn-controls.js",
+      "gitBlob": "70d8c851bf8f69661da42b99664c8b21cecdd5a6",
+      "underlyingSha256": "9777ba5967531e902f19375f6c9fd480cb4539b6c333e4c6ce226b45457666b3",
+      "servedSha256": "9777ba5967531e902f19375f6c9fd480cb4539b6c333e4c6ce226b45457666b3",
+      "matches": true
+    },
+    {
+      "path": "pokemon-anniversary-masks.js",
+      "gitBlob": "3be8382efc98547e48cde61f18f4816049d3a5e6",
+      "underlyingSha256": "29e0c3e3103a03c2d295b1f2ccfe7e40a844b484100aa4a61fbe35777647a554",
+      "servedSha256": "29e0c3e3103a03c2d295b1f2ccfe7e40a844b484100aa4a61fbe35777647a554",
+      "matches": true
+    },
+    {
+      "path": "pokemon-art.js",
+      "gitBlob": "7c8ef85a1018e5fe6b617af1e8658a52e48979b3",
+      "underlyingSha256": "bde7b32ba6388ec00c344a2f935d9883fd3803dacb8ecc80141f09c665dfd830",
+      "servedSha256": "bde7b32ba6388ec00c344a2f935d9883fd3803dacb8ecc80141f09c665dfd830",
+      "matches": true
+    },
+    {
+      "path": "pokemon-catalogue-supplement.js",
+      "gitBlob": "eb23c7bceed2597a97dc3f528fdc667652ebe3db",
+      "underlyingSha256": "bb04ab13b21791507042116209cb34264890b5e8ac8a0b9b30ddb57a7ab2a937",
+      "servedSha256": "bb04ab13b21791507042116209cb34264890b5e8ac8a0b9b30ddb57a7ab2a937",
+      "matches": true
+    },
+    {
+      "path": "pokemon-corrections.js",
+      "gitBlob": "42f7104ae70321d2078ce46f2fcff4423edd1644",
+      "underlyingSha256": "b6396ce5f3eb1d6d676ac1c7b72b4bcf88c0d2637d15a0921da9faf5106dcdc9",
+      "servedSha256": "b6396ce5f3eb1d6d676ac1c7b72b4bcf88c0d2637d15a0921da9faf5106dcdc9",
+      "matches": true
+    },
+    {
+      "path": "pokemon-identity.js",
+      "gitBlob": "5fc3ca14e5b0d90d713ff94e8112eb32b9646773",
+      "underlyingSha256": "4126dcb8926f3d69c6801fc6e791fec80c31daf2c0f18bbd0f2ef38d56617dcd",
+      "servedSha256": "4126dcb8926f3d69c6801fc6e791fec80c31daf2c0f18bbd0f2ef38d56617dcd",
+      "matches": true
+    },
+    {
+      "path": "pokemon-prices.js",
+      "gitBlob": "0ef42d5af051c6f112e6ee35555541ebe4528b62",
+      "underlyingSha256": "72fa4306a4c52b2aaa334cc5fe4bfd1e0749cc7039ba69b88f82d619c6d4dc18",
+      "servedSha256": "72fa4306a4c52b2aaa334cc5fe4bfd1e0749cc7039ba69b88f82d619c6d4dc18",
+      "matches": true
+    },
+    {
+      "path": "pokemon-promo-evidence.js",
+      "gitBlob": "6690cc30955f998580dc585777c10f8f58e236b5",
+      "underlyingSha256": "1d4e82315b91bf8cb05c055461a0e383a653feef01d0bc9cb6cd9f2f9090e696",
+      "servedSha256": "1d4e82315b91bf8cb05c055461a0e383a653feef01d0bc9cb6cd9f2f9090e696",
+      "matches": true
+    },
+    {
+      "path": "pokemon-role.js",
+      "gitBlob": "4f8422b1c772fb74285886ead2930b77a126baf1",
+      "underlyingSha256": "4c33bd5adf9ae86c2a56298e57e6f196395ebdf2764ce281c662991367658b2e",
+      "servedSha256": "4c33bd5adf9ae86c2a56298e57e6f196395ebdf2764ce281c662991367658b2e",
+      "matches": true
+    },
+    {
+      "path": "pokemon-set-art.js",
+      "gitBlob": "55d01d52a88b3ffa4456f63b90e71cd581c9893f",
+      "underlyingSha256": "b73f62fcd6f6f5edc46cb67a1c5de269e8bbf121995504db9307048cf7368bf0",
+      "servedSha256": "b73f62fcd6f6f5edc46cb67a1c5de269e8bbf121995504db9307048cf7368bf0",
+      "matches": true
+    },
+    {
+      "path": "pokemon-variant-options.js",
+      "gitBlob": "62ef5f9aabdf10a2e38abba504f6f4d754955c00",
+      "underlyingSha256": "638e93bc9b48dd04cc779a411b40106db446859b1a5c311a8febe3a2f2d810fc",
+      "servedSha256": "638e93bc9b48dd04cc779a411b40106db446859b1a5c311a8febe3a2f2d810fc",
+      "matches": true
+    },
+    {
+      "path": "power.js",
+      "gitBlob": "493f49db0bd269fd4c11fd45b8544b0dbeb867b3",
+      "underlyingSha256": "801e5c500dc6f3a274466ff40b2db9983525df3514e5defca39adc7186393b48",
+      "servedSha256": "801e5c500dc6f3a274466ff40b2db9983525df3514e5defca39adc7186393b48",
+      "matches": true
+    },
+    {
+      "path": "price-origin.js",
+      "gitBlob": "b37b4a620ad08ad1b6790ec5ac1fc56ee7212969",
+      "underlyingSha256": "6dbee6e6dd48f1f08a635653ec563caf16815e43c9915cafdd63b3834206c1f8",
+      "servedSha256": "6dbee6e6dd48f1f08a635653ec563caf16815e43c9915cafdd63b3834206c1f8",
+      "matches": true
+    },
+    {
+      "path": "price-reference.js",
+      "gitBlob": "dc9b0668410b55a534ba44a4312ea7fc051e949b",
+      "underlyingSha256": "54fab155607d71843914cb96ebd5e8825c6e8f6302ea12e34c8e427f2f148418",
+      "servedSha256": "54fab155607d71843914cb96ebd5e8825c6e8f6302ea12e34c8e427f2f148418",
+      "matches": true
+    },
+    {
+      "path": "pricehist.js",
+      "gitBlob": "6b26c34a8b7aa6f84e55e450b867cc28f3579d2c",
+      "underlyingSha256": "f1c045fef7b4cecd9cb4ee74108a1dc5560bb415d2e0a094493a2d5391452c8c",
+      "servedSha256": "f1c045fef7b4cecd9cb4ee74108a1dc5560bb415d2e0a094493a2d5391452c8c",
+      "matches": true
+    },
+    {
+      "path": "pricing-presentation.js",
+      "gitBlob": "b4741257b7fe0bb13906a1b064996ec8529e9796",
+      "underlyingSha256": "67fbba3c65eac1c625e60d7fce034918481218b6209fbae5446b092bab934e93",
+      "servedSha256": "67fbba3c65eac1c625e60d7fce034918481218b6209fbae5446b092bab934e93",
+      "matches": true
+    },
+    {
+      "path": "printing-carousel.js",
+      "gitBlob": "1c292a0619d57de662bcd3ecd99a066ccdcad7d3",
+      "underlyingSha256": "d34abed99a1fc2154844f239fcb99e41ef3500d659871c3c3db967af669687c5",
+      "servedSha256": "d34abed99a1fc2154844f239fcb99e41ef3500d659871c3c3db967af669687c5",
+      "matches": true
+    },
+    {
+      "path": "printing-picker.js",
+      "gitBlob": "07a8b34c477c357e03f5d017f5374f7ac89a984e",
+      "underlyingSha256": "c7d99e813143da1bab9028652a9b1003435827623f4a804ba1c61e935c53645b",
+      "servedSha256": "c7d99e813143da1bab9028652a9b1003435827623f4a804ba1c61e935c53645b",
+      "matches": true
+    },
+    {
+      "path": "profile-art.js",
+      "gitBlob": "41e8eb26fcec704949e1c5e2dbba8526a0018c47",
+      "underlyingSha256": "e2c0eedbeaf4848db0c35a7fbf115288cff7fffd234037a089978f887960983a",
+      "servedSha256": "e2c0eedbeaf4848db0c35a7fbf115288cff7fffd234037a089978f887960983a",
+      "matches": true
+    },
+    {
+      "path": "ptcg-foil-recipes.js",
+      "gitBlob": "df87998f977f03c8729615ab8cb76531df2736db",
+      "underlyingSha256": "7bbc3b1b9ce6277618f205da423e2f1139c7873198d959a596c2536aa8c71790",
+      "servedSha256": "7bbc3b1b9ce6277618f205da423e2f1139c7873198d959a596c2536aa8c71790",
+      "matches": true
+    },
+    {
+      "path": "ptcg-foil.js",
+      "gitBlob": "0d7842436779d65bb16cd6e3fb8a550e931866ae",
+      "underlyingSha256": "3e8e77fc97956ea3cee6de76b28f9a1376a13a8c5ef75c5546ae18a32a4abaa6",
+      "servedSha256": "3e8e77fc97956ea3cee6de76b28f9a1376a13a8c5ef75c5546ae18a32a4abaa6",
+      "matches": true
+    },
+    {
+      "path": "ptcg-glc-rules.js",
+      "gitBlob": "5fecb49ba6a30394c5a26d1f7b745436fe2749a0",
+      "underlyingSha256": "83d1281345ec8d6a8cf09028162acfcc0c90c2113f97511f509768a2d39b366e",
+      "servedSha256": "83d1281345ec8d6a8cf09028162acfcc0c90c2113f97511f509768a2d39b366e",
+      "matches": true
+    },
+    {
+      "path": "ptcg-product.js",
+      "gitBlob": "35b034445cbafcb71495ad34ba89ef46ecf1c5b0",
+      "underlyingSha256": "b26360b5b62480665b9281eec5b8c75cb95c776db20002128d37f41dd6758b2d",
+      "servedSha256": "b26360b5b62480665b9281eec5b8c75cb95c776db20002128d37f41dd6758b2d",
+      "matches": true
+    },
+    {
+      "path": "ptcg.js",
+      "gitBlob": "c89ab2a312f89ef8424b506ed52390f09c7f6458",
+      "underlyingSha256": "cb2108adea5577e3db9e2e6a89a496f91398a77ab7de4bcbb13a0bf7175a7cc6",
+      "servedSha256": "cb2108adea5577e3db9e2e6a89a496f91398a77ab7de4bcbb13a0bf7175a7cc6",
+      "matches": true
+    },
+    {
+      "path": "quick-quantity.js",
+      "gitBlob": "4c7cadda3123088cf23b62b3ff489fd0fffffd2a",
+      "underlyingSha256": "655ccb06e3fb5faf70184a849ea4379cf123ddf7b55a4634bf9f4f0742ff4ee3",
+      "servedSha256": "655ccb06e3fb5faf70184a849ea4379cf123ddf7b55a4634bf9f4f0742ff4ee3",
+      "matches": true
+    },
+    {
+      "path": "rarity-emblem.js",
+      "gitBlob": "f199f968e05ebba097b0cd65ea4fd44de31728d5",
+      "underlyingSha256": "493354bcd30705cab0f447e44ffeef714f0c31ef693417e9d29b21e9f568c28e",
+      "servedSha256": "493354bcd30705cab0f447e44ffeef714f0c31ef693417e9d29b21e9f568c28e",
+      "matches": true
+    },
+    {
+      "path": "release-record.js",
+      "gitBlob": "d036e4836be28cf9eec051055aa0d65d6e5fdd66",
+      "underlyingSha256": "40fd72a127fcbd415211bc2b7ef5ea7e297a1696c8cfd1c086a4a45e0e5009d3",
+      "servedSha256": "40fd72a127fcbd415211bc2b7ef5ea7e297a1696c8cfd1c086a4a45e0e5009d3",
+      "matches": true
+    },
+    {
+      "path": "release-status.js",
+      "gitBlob": "f8bd0319484bd4a40406792188ea0795a89b05e9",
+      "underlyingSha256": "11f99960f1aa37c4d6eccb7e1df57220fcc01aec694771d2a54c65cf19fc878b",
+      "servedSha256": "11f99960f1aa37c4d6eccb7e1df57220fcc01aec694771d2a54c65cf19fc878b",
+      "matches": true
+    },
+    {
+      "path": "rule-corpus.js",
+      "gitBlob": "058fb67d1b76863922bf362d499a18c4388b8faf",
+      "underlyingSha256": "c73301b679b2c9c1c6aabbea4f99d493738620c724bc09387c2cec8f62919d91",
+      "servedSha256": "c73301b679b2c9c1c6aabbea4f99d493738620c724bc09387c2cec8f62919d91",
+      "matches": true
+    },
+    {
+      "path": "rule-dex.js",
+      "gitBlob": "5e3bb04abdb14657d16b558547f760c40a9e62d7",
+      "underlyingSha256": "c78deb62af0f7740e04360323500c7cc1f05ca2df891497c7c3c0dff44bf6cc5",
+      "servedSha256": "c78deb62af0f7740e04360323500c7cc1f05ca2df891497c7c3c0dff44bf6cc5",
+      "matches": true
+    },
+    {
+      "path": "rule-extra.js",
+      "gitBlob": "1707aafeba2544b5fde2d7d936cd2a3f0a5ea543",
+      "underlyingSha256": "2e74d3f9db240866d0fc9c0433113be91af8703785b40c14f8ac15a63caaa66a",
+      "servedSha256": "2e74d3f9db240866d0fc9c0433113be91af8703785b40c14f8ac15a63caaa66a",
+      "matches": true
+    },
+    {
+      "path": "rule-hover.js",
+      "gitBlob": "f10e379010e0d66dc3feb0509b9d3876141d9461",
+      "underlyingSha256": "5948f80dcd827a418ceb962659f1247ed40985807ab051ca2438e84a77409505",
+      "servedSha256": "5948f80dcd827a418ceb962659f1247ed40985807ab051ca2438e84a77409505",
+      "matches": true
+    },
+    {
+      "path": "rule-learning.js",
+      "gitBlob": "4451a9e2a90e7aa42bb8395d34333b3f3d165f95",
+      "underlyingSha256": "01eab9291fdfabd8b235a21a497ae9bd5f463bf336b304cc1d82eb25c214a644",
+      "servedSha256": "01eab9291fdfabd8b235a21a497ae9bd5f463bf336b304cc1d82eb25c214a644",
+      "matches": true
+    },
+    {
+      "path": "rule-lessons.js",
+      "gitBlob": "c75397b80b25c054ded596e87e56fdda7618720d",
+      "underlyingSha256": "acfccb9ea2153407b7d26c8ddb9d725e459f6fb34332b9302bee104a4cac7318",
+      "servedSha256": "acfccb9ea2153407b7d26c8ddb9d725e459f6fb34332b9302bee104a4cac7318",
+      "matches": true
+    },
+    {
+      "path": "rule-reference.js",
+      "gitBlob": "12d9e27eca499e95ea6c109e5a60c28978b767ca",
+      "underlyingSha256": "1be69458e407f1ba9d81de8cf5ce966253f64bcfa3cbb91f7b49256f5d1e3501",
+      "servedSha256": "1be69458e407f1ba9d81de8cf5ce966253f64bcfa3cbb91f7b49256f5d1e3501",
+      "matches": true
+    },
+    {
+      "path": "scan-signals.js",
+      "gitBlob": "536939e3302ed84fa248fd4383bb81188141d3db",
+      "underlyingSha256": "b9765a12a56dc0a0ee0b1a886520cf6fd2b9f19b83eeb8f6e294b55e8f393ef3",
+      "servedSha256": "b9765a12a56dc0a0ee0b1a886520cf6fd2b9f19b83eeb8f6e294b55e8f393ef3",
+      "matches": true
+    },
+    {
+      "path": "scan.js",
+      "gitBlob": "c29b13d6e389edc638a01c90c37b49a5db968174",
+      "underlyingSha256": "2d1ab54b7bd16b123913eafbb9c0a4f8aeba8792728be5eab19ae447dee9cc8a",
+      "servedSha256": "2d1ab54b7bd16b123913eafbb9c0a4f8aeba8792728be5eab19ae447dee9cc8a",
+      "matches": true
+    },
+    {
+      "path": "scouting.js",
+      "gitBlob": "9e225118002247a41f0ed6a622ddf6ce48e3c82b",
+      "underlyingSha256": "51d95c80bd65fa3cb8ddc8df812cb098a1a4e1e9edeb912d045a5fb31e8c6aa1",
+      "servedSha256": "51d95c80bd65fa3cb8ddc8df812cb098a1a4e1e9edeb912d045a5fb31e8c6aa1",
+      "matches": true
+    },
+    {
+      "path": "set-browser.js",
+      "gitBlob": "76213ca81fb71fa4325b480da357490e3aa61320",
+      "underlyingSha256": "59030da4c034b53174738642c62eec7765c4314e44e716f38d0d129a8bb423f1",
+      "servedSha256": "59030da4c034b53174738642c62eec7765c4314e44e716f38d0d129a8bb423f1",
+      "matches": true
+    },
+    {
+      "path": "set-experience.js",
+      "gitBlob": "b8089d3fbc0b509f0cb461cc63c3698ecdf2143c",
+      "underlyingSha256": "a127f4d27c77fe337fd8a0360d7e7b54069912eba37f0d6c27343eefd1d67c09",
+      "servedSha256": "a127f4d27c77fe337fd8a0360d7e7b54069912eba37f0d6c27343eefd1d67c09",
+      "matches": true
+    },
+    {
+      "path": "set-list-ui.js",
+      "gitBlob": "268e34deb088c89fa9208940a1a10606c5569b1e",
+      "underlyingSha256": "c1e5d738bf8c8e8a1a413d1f296c7268a3cdacf64c5822eed676bc9f55466304",
+      "servedSha256": "c1e5d738bf8c8e8a1a413d1f296c7268a3cdacf64c5822eed676bc9f55466304",
+      "matches": true
+    },
+    {
+      "path": "set-release-metadata.js",
+      "gitBlob": "16a3bb936ccd25371adc19d5911fb8f128f857f1",
+      "underlyingSha256": "674badaf892873727fc9dbea064996645aae8bbf81b826587c3c10d3afbb09a3",
+      "servedSha256": "674badaf892873727fc9dbea064996645aae8bbf81b826587c3c10d3afbb09a3",
+      "matches": true
+    },
+    {
+      "path": "settings-theme.js",
+      "gitBlob": "6be291ae1b5137be103f02ddff27fda831395247",
+      "underlyingSha256": "6593595b113594791e6231f787d5d665d84bc99746158716475923a992348f8f",
+      "servedSha256": "6593595b113594791e6231f787d5d665d84bc99746158716475923a992348f8f",
+      "matches": true
+    },
+    {
+      "path": "share.js",
+      "gitBlob": "4cfbca9937cd5fdd8b5c84deb2c6d63d191a07c9",
+      "underlyingSha256": "42c161e77f6656eac3db5ff218df9e6f4eda573c851dbd80f390e0d73d6ec63c",
+      "servedSha256": "42c161e77f6656eac3db5ff218df9e6f4eda573c851dbd80f390e0d73d6ec63c",
+      "matches": true
+    },
+    {
+      "path": "shared-deck-view.js",
+      "gitBlob": "cf34077d2faedecfed9ef8e800d6c4205b8b0acf",
+      "underlyingSha256": "492a817df0fe2c650bed1a3c5581a2bdc217642b720c9edc5f8349ac501fe66d",
+      "servedSha256": "492a817df0fe2c650bed1a3c5581a2bdc217642b720c9edc5f8349ac501fe66d",
+      "matches": true
+    },
+    {
+      "path": "shared-history.js",
+      "gitBlob": "fb68eaf1d06b8915c754bc1809ec45491312454a",
+      "underlyingSha256": "1622f6cbb7a5aa2badfe69c803766abb90380586554c3555a7bda6d4477ea9b9",
+      "servedSha256": "1622f6cbb7a5aa2badfe69c803766abb90380586554c3555a7bda6d4477ea9b9",
+      "matches": true
+    },
+    {
+      "path": "sharedprices.js",
+      "gitBlob": "7f8e6a119ef24f7f3dc013c581c5ef4e3071188d",
+      "underlyingSha256": "b8cffbab0eb67b5eeb9866c4e6d696c13fefc2ba60bc02ca25bd6fa9e59ae166",
+      "servedSha256": "b8cffbab0eb67b5eeb9866c4e6d696c13fefc2ba60bc02ca25bd6fa9e59ae166",
+      "matches": true
+    },
+    {
+      "path": "storage.js",
+      "gitBlob": "e2915ad6aadb3f6ce56e71b50ab2d145300f5f89",
+      "underlyingSha256": "4d688ebc66fe16f685273b27010f4f87d152ee5332f0ad78c9d9a7b3daa812c6",
+      "servedSha256": "4d688ebc66fe16f685273b27010f4f87d152ee5332f0ad78c9d9a7b3daa812c6",
+      "matches": true
+    },
+    {
+      "path": "store.js",
+      "gitBlob": "086efc65d28a39f69af4fa0ea9b43b853d55f80f",
+      "underlyingSha256": "47598d7e7d6080f41ade8ba8142742aa2d4eb7e02b1b0b3bf72e7e443d4dc66b",
+      "servedSha256": "47598d7e7d6080f41ade8ba8142742aa2d4eb7e02b1b0b3bf72e7e443d4dc66b",
+      "matches": true
+    },
+    {
+      "path": "strategy-risk.js",
+      "gitBlob": "015cb7f4ba1d0c9b504794fe6e7f860a781fe4a4",
+      "underlyingSha256": "cb2d4351d9633c858c0b3732eade696e9f19e60637f95373a78ddd6bc4b318ab",
+      "servedSha256": "cb2d4351d9633c858c0b3732eade696e9f19e60637f95373a78ddd6bc4b318ab",
+      "matches": true
+    },
+    {
+      "path": "style.css",
+      "gitBlob": "ee5e4436d8505ee963f96b6f425357846b3c78b3",
+      "underlyingSha256": "04e17cfdff56d36d510b32f645b0d5bd56d3801d0fb54a95dc6ddf01d9582df5",
+      "servedSha256": "04e17cfdff56d36d510b32f645b0d5bd56d3801d0fb54a95dc6ddf01d9582df5",
+      "matches": true
+    },
+    {
+      "path": "sync-merge.js",
+      "gitBlob": "c8f4d61c2abf13582f7d703448a308116aa6c9d4",
+      "underlyingSha256": "0a6fdd613fb9341e3819c77efb93d98ddcacffaf4828c240540509e4949fc64d",
+      "servedSha256": "0a6fdd613fb9341e3819c77efb93d98ddcacffaf4828c240540509e4949fc64d",
+      "matches": true
+    },
+    {
+      "path": "tcg.js",
+      "gitBlob": "706f6ce8b555b33cb34e68b4d43cc3232ac089a3",
+      "underlyingSha256": "89fa09bf8f87186637004eb29f691928fed418744e586079d0d8c2f88e7388ad",
+      "servedSha256": "89fa09bf8f87186637004eb29f691928fed418744e586079d0d8c2f88e7388ad",
+      "matches": true
+    },
+    {
+      "path": "tcgbuild.js",
+      "gitBlob": "d29c02550e5ae46da2450d4b00fbff962dec2cb2",
+      "underlyingSha256": "06c6af2a354b7f23583ab6b518f01668fddd144155d79bece03d63f7fb3be9d1",
+      "servedSha256": "06c6af2a354b7f23583ab6b518f01668fddd144155d79bece03d63f7fb3be9d1",
+      "matches": true
+    },
+    {
+      "path": "tcgcompare.js",
+      "gitBlob": "7e9e225a1702de8825ed8df2da79502b975455da",
+      "underlyingSha256": "41be760b1d962e9488cf8edaa123b01e40244189e97b9b9e8c1bd6397d610f25",
+      "servedSha256": "41be760b1d962e9488cf8edaa123b01e40244189e97b9b9e8c1bd6397d610f25",
+      "matches": true
+    },
+    {
+      "path": "tier-card.js",
+      "gitBlob": "81f21af47b40c1b6344dbd48a636138dffe844b7",
+      "underlyingSha256": "7c97d450e9bb17c6befc8294856944959602d54793f096d8cc4a1a482fe8d818",
+      "servedSha256": "7c97d450e9bb17c6befc8294856944959602d54793f096d8cc4a1a482fe8d818",
+      "matches": true
+    },
+    {
+      "path": "tier.js",
+      "gitBlob": "611ee43bbfc2e1e84891567492553ce2d180b42f",
+      "underlyingSha256": "e752b29e55b52472102e32db18a95cef7c70802fb7592c2756307066538d315e",
+      "servedSha256": "e752b29e55b52472102e32db18a95cef7c70802fb7592c2756307066538d315e",
+      "matches": true
+    },
+    {
+      "path": "tiles.js",
+      "gitBlob": "b78d4b2fd4ca13e90bc1246bdf694b68db3e23fa",
+      "underlyingSha256": "0e669d41733496927393af2cd4403b4cb082aac0f5a204b56b02547745e48c4a",
+      "servedSha256": "0e669d41733496927393af2cd4403b4cb082aac0f5a204b56b02547745e48c4a",
+      "matches": true
+    },
+    {
+      "path": "trade.js",
+      "gitBlob": "228f6c83b6d72874969d1ad6f7dcb286a3ad6fc7",
+      "underlyingSha256": "8a9226ceef7633eed3ce9deb4fc030a129d94a4b5102d42cebd6c84b3d4f0bfc",
+      "servedSha256": "8a9226ceef7633eed3ce9deb4fc030a129d94a4b5102d42cebd6c84b3d4f0bfc",
+      "matches": true
+    },
+    {
+      "path": "ui.js",
+      "gitBlob": "d55d2c361744bf2bdee2dd5de9099f36c6e149ba",
+      "underlyingSha256": "8757c5194817622fba6a407e319be39e67ee54f34770e0029554e7f98a6b90b8",
+      "servedSha256": "8757c5194817622fba6a407e319be39e67ee54f34770e0029554e7f98a6b90b8",
+      "matches": true
+    },
+    {
+      "path": "value-history.js",
+      "gitBlob": "5c388142540fa1773f5ccd32529defdd1d2d6d63",
+      "underlyingSha256": "482ac6ef703375918982aca5e8e608628ae10036297f7a90de2b1589e89bf96f",
+      "servedSha256": "482ac6ef703375918982aca5e8e608628ae10036297f7a90de2b1589e89bf96f",
+      "matches": true
+    },
+    {
+      "path": "value-page.js",
+      "gitBlob": "836d6fa0d612cb8758b91a544c5a86babaa063d3",
+      "underlyingSha256": "0dc38929c6069d35586e1155b6c653cff1e66a1af88358dc9b691b7fe71fd8b2",
+      "servedSha256": "0dc38929c6069d35586e1155b6c653cff1e66a1af88358dc9b691b7fe71fd8b2",
+      "matches": true
+    },
+    {
+      "path": "views.js",
+      "gitBlob": "74d30a9073e77fe5fb56574ad4e394e1cc536c98",
+      "underlyingSha256": "0cf60301603e30dc245372d74ea7fceecd56deb3028c61c0e328c5e2b089da0e",
+      "servedSha256": "0cf60301603e30dc245372d74ea7fceecd56deb3028c61c0e328c5e2b089da0e",
+      "matches": true
+    },
+    {
+      "path": "wiki-card-handoff.js",
+      "gitBlob": "07683e6413a124c4d0510955f4370ca6841b85d0",
+      "underlyingSha256": "187a840f71db78e115028b050c98a979db5df226fa897199293f1529f2ba0f99",
+      "servedSha256": "187a840f71db78e115028b050c98a979db5df226fa897199293f1529f2ba0f99",
+      "matches": true
+    },
+    {
+      "path": "wiki-deck-handoff.js",
+      "gitBlob": "fa97d1f8607e8f2a8da92ad93a4d5c0b9ee06ee3",
+      "underlyingSha256": "e3f942608d627f2844c8da9af94824caf0c69496300ac0c258745d84f94ab768",
+      "servedSha256": "e3f942608d627f2844c8da9af94824caf0c69496300ac0c258745d84f94ab768",
+      "matches": true
+    },
+    {
+      "path": "wiki-sources.js",
+      "gitBlob": "9c144646a01d8ff09c144c764f9cebeff54cdf3a",
+      "underlyingSha256": "0ae32de0afa5e4a0d949b48c792dfd6df5c04714cc2d03c57a2afd7ea2f70e43",
+      "servedSha256": "0ae32de0afa5e4a0d949b48c792dfd6df5c04714cc2d03c57a2afd7ea2f70e43",
+      "matches": true
+    },
+    {
+      "path": "workbench-ui.js",
+      "gitBlob": "e14481600d443617f09cd3beef576c5d05efc003",
+      "underlyingSha256": "40f8ad8fa4c2e13b038f35bebe91125d7ac17d198e0aaf14eeca33ed1155874d",
+      "servedSha256": "40f8ad8fa4c2e13b038f35bebe91125d7ac17d198e0aaf14eeca33ed1155874d",
+      "matches": true
+    },
+    {
+      "path": "ygo-foil-analysis.js",
+      "gitBlob": "28e924e6d73c85a1fc6864b6cb859ac51aa0fee8",
+      "underlyingSha256": "3bd6e4a29f92de1d70a0a72991c8b3b8a8d14a48d26174e20cf0b332dcfb6e6d",
+      "servedSha256": "3bd6e4a29f92de1d70a0a72991c8b3b8a8d14a48d26174e20cf0b332dcfb6e6d",
+      "matches": true
+    },
+    {
+      "path": "ygo-foil-recipes.js",
+      "gitBlob": "f4a4d3b29d447730ca0ba4cb4fa127cf2444d6ec",
+      "underlyingSha256": "fa39f79c2744b9facb9d2d8d741ecb19204f73de473a880e3e2be55284116bd6",
+      "servedSha256": "fa39f79c2744b9facb9d2d8d741ecb19204f73de473a880e3e2be55284116bd6",
+      "matches": true
+    },
+    {
+      "path": "ygo-history-identity.js",
+      "gitBlob": "ec770d35633b81b9ad223f61c1212715bd5d5525",
+      "underlyingSha256": "9e44330ef05f9aa135f1218c88fdb18b98b0d5d08fa3d62fc019e8bf5816e7b8",
+      "servedSha256": "9e44330ef05f9aa135f1218c88fdb18b98b0d5d08fa3d62fc019e8bf5816e7b8",
+      "matches": true
+    },
+    {
+      "path": "ygo-identity.js",
+      "gitBlob": "c1516c821731381a4ad2a472492d021948dd500d",
+      "underlyingSha256": "49bfc25d09543ccca80ed60b27b29c09ba07b537019009e870982236a93c2368",
+      "servedSha256": "49bfc25d09543ccca80ed60b27b29c09ba07b537019009e870982236a93c2368",
+      "matches": true
+    },
+    {
+      "path": "ygo-name-foil.js",
+      "gitBlob": "44978621ba0810f0df3e48853291313306ed9f08",
+      "underlyingSha256": "a7a63089eb201041669be66fc426a2aa2d86ea697fc3ac806134884de0f832b7",
+      "servedSha256": "a7a63089eb201041669be66fc426a2aa2d86ea697fc3ac806134884de0f832b7",
+      "matches": true
+    },
+    {
+      "path": "ygo-price-selection.js",
+      "gitBlob": "989597965d444dd954d8040d475b6479d9860ef9",
+      "underlyingSha256": "dc6a6ca913d8b63e3f7e71dce8c714b282e3e3c51d6312b8056e102185511252",
+      "servedSha256": "dc6a6ca913d8b63e3f7e71dce8c714b282e3e3c51d6312b8056e102185511252",
+      "matches": true
+    },
+    {
+      "path": "ygo-prices.js",
+      "gitBlob": "c5a6ec2d6a31c8692e5b58d90c2bcb9d0b28c0c3",
+      "underlyingSha256": "6dfd620cdc4b873919f181cad0d1d42a682d9d214029678044c097d5e8f62ab7",
+      "servedSha256": "6dfd620cdc4b873919f181cad0d1d42a682d9d214029678044c097d5e8f62ab7",
+      "matches": true
+    },
+    {
+      "path": "ygo-rarity-foil.js",
+      "gitBlob": "0f016a5879b6acbf49eeb95b3e90076b8a169007",
+      "underlyingSha256": "267637c97e651a2314e8811e175ef27e23bd40f56b51a56cd0304ebcf46e1300",
+      "servedSha256": "267637c97e651a2314e8811e175ef27e23bd40f56b51a56cd0304ebcf46e1300",
+      "matches": true
+    },
+    {
+      "path": "ygo-set-prices.js",
+      "gitBlob": "5daca8166f38edd96aa0acadfbe87ac6377fca2c",
+      "underlyingSha256": "821515bf8e8ea2d869755966c1af588f66d60e8842e1d16cc8458f19b126a60d",
+      "servedSha256": "821515bf8e8ea2d869755966c1af588f66d60e8842e1d16cc8458f19b126a60d",
+      "matches": true
+    },
+    {
+      "path": "ygo.js",
+      "gitBlob": "c5fec1c675d2e35095bc0cdbd145bb008371cdad",
+      "underlyingSha256": "b54959bc32d57a7e12e034bb6f8df387d3cbff566645e1178dc3e2c193ce4192",
+      "servedSha256": "b54959bc32d57a7e12e034bb6f8df387d3cbff566645e1178dc3e2c193ce4192",
+      "matches": true
+    }
+  ],
+  "guard": "Only practice-authority.mjs has the documented test-only IndexedDB denial prefix."
+}

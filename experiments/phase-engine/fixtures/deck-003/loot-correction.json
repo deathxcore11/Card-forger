@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "name": "Loot, Exuberant Explorer",
+  "sourceRecordSha256": "de48d53431162753c28a8cd6086409b7b8fd75a7ecda8161701e9c766f48a933",
+  "correction": {
+    "abilities[0].effect.reveal": {"before": true, "after": false},
+    "abilities[0].effect.rest_order": {"before": "ABSENT", "after": "random"}
+  },
+  "rulesSource": "https://magic.wizards.com/en/news/feature/foundations-release-notes",
+  "engineSource": "https://github.com/phase-rs/phase/blob/71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234/crates/engine/src/types/ability.rs#L18724",
+  "scope": "Experimental card-data correction using fields already supported by the shipped WASM. Full card, CPU and production admission still need review."
+}

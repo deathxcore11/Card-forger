@@ -1,0 +1,12 @@
+--- a/crates/engine/src/game/engine.rs
++++ b/crates/engine/src/game/engine.rs
+@@ -1546,8 +1546,8 @@
+     // A completed hidden-search audience is an event-filtering sidecar for the
+     // immediately preceding action. Drop it before a new outer action starts;
+     // the active search itself remains the sole authority during the prompt.
++    let boundary_snapshot = std::sync::Arc::new(state.clone());
+     state.clear_completed_hidden_search_audiences();
+-    let boundary_snapshot = std::sync::Arc::new(state.clone());
+     let cast_undo_boundary =
+         super::engine_casting::CastUndoBoundaryGuard::enter(boundary_snapshot.clone());
+     let mut journal_start = state.resolved_rules_journal.entries().len();

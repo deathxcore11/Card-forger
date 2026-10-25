@@ -7,6 +7,8 @@ const scalar=v=>typeof v==='string'&&v.length<=300?v:null;
 const list=v=>Array.isArray(v)?v:[];
 const visible=o=>o?.display_visible_to_viewer===true&&o.name!=='Hidden Card'&&!o.face_down;
 const publicZones=new Set(['Battlefield','Graveyard','Stack','Exile','Command']);
+const manaColors=new Set(['White','Blue','Black','Red','Green','Colorless']);
+const singleManaDecision=(s,seat)=>s.waiting_for?.type==='ChooseManaColor'&&s.waiting_for.data?.player===seat&&s.waiting_for.data.choice?.type==='SingleColor'&&Array.isArray(s.waiting_for.data.choice.data?.options)&&s.waiting_for.data.choice.data.options.length>0&&s.waiting_for.data.choice.data.options.every(c=>manaColors.has(c));
 const basicDecisions=new Set(['MulliganDecision','Priority','DeclareAttackers','DeclareBlockers','GameOver']);
 export function projectSeat(envelope,seat) {
  const s=envelope?.state;
@@ -42,11 +44,14 @@ export function projectSeat(envelope,seat) {
   prioritySeat:seatId(s.priority_player)?s.priority_player:null,players,cards,hand:onlyKnownIds(s.players[seat].hand),
   battlefield:onlyKnownIds(s.battlefield),exile:onlyKnownIds(s.exile),command:onlyKnownIds(s.command_zone),
   stack:list(s.stack).map(e=>({id:id(e.id)?e.id:null,source:allowed.has(e.source_id)?e.source_id:null,controller:seatId(e.controller)?e.controller:null})),
-  decision:{kind:scalar(s.waiting_for?.type),supported:basicDecisions.has(s.waiting_for?.type)&&(s.waiting_for?.type!=='MulliganDecision'||list(s.waiting_for.data?.pending).find(p=>p.player===seat)?.phase?.type==='Declare')}};
+  decision:{kind:scalar(s.waiting_for?.type),supported:singleManaDecision(s,seat)||basicDecisions.has(s.waiting_for?.type)&&(s.waiting_for?.type!=='MulliganDecision'||list(s.waiting_for.data?.pending).find(p=>p.player===seat)?.phase?.type==='Declare')}};
 }
 function label(action,view) {
  const data=action.data||{},byId=new Map(view.cards.map(c=>[c.id,c]));
  const ownCard=n=>{const o=byId.get(n);return o?.known&&o.controller===view.seat?o:null;};
+ // This bounded fallback labels only an actual engine-offered single color.
+ // Batch/combination/Phyrexian schemas remain under their separate contracts.
+ if(view.decision.kind==='ChooseManaColor'&&action.type==='ChooseManaColor'&&data.count===1&&data.choice?.type==='SingleColor'&&manaColors.has(data.choice.data))return `Choose ${data.choice.data.toLowerCase()} mana`;
  if(action.type==='PassPriority')return 'Pass priority';
  if(action.type==='MulliganDecision')return data.choice?.type==='Keep'?'Keep hand':data.choice?.type==='Mulligan'?'Take a mulligan':null;
  if(action.type==='PlayLand'){const c=ownCard(data.object_id);return c&&c.zone==='Hand'?`Play ${c.name}`:null;}

@@ -8,6 +8,30 @@ export function analyzeCpu(packet,rng,{now,cancelled}={}){
  if(packet?.version!==PUBLIC_CPU_VERSION||!Array.isArray(packet.legacy?.choices)||packet.legacy.choices.length!==packet.combat?.blockCandidates?.length)throw Error('INVALID_CPU_PACKET');
  const profile=cpuProfile(packet.difficulty),budget=makeSearchBudget(profile,now,cancelled);
  const finish=index=>({index,rng:rng>>>0,metrics:{...budget.stats(),difficulty:packet.difficulty,configuration:CPU_CONFIGURATION_VERSION}});
+ if(packet.ordering){
+  if(!Array.isArray(packet.ordering)||packet.ordering.length!==packet.legacy.choices.length)throw Error('INVALID_CPU_PACKET');
+  const index=packet.ordering.findIndex(c=>c?.available===true);
+  if(index<0)throw Error('CPU_DECISION_UNSUPPORTED');return finish(index);
+ }
+ if(packet.targets){
+  if(!Array.isArray(packet.targets.choices)||packet.targets.choices.length!==packet.legacy.choices.length)throw Error('INVALID_CPU_PACKET');
+  let best=-Infinity,index=-1;
+  for(const [i,t]of packet.targets.choices.entries()){
+   if(!t)continue;
+   // Neutral/opaque effects use stable engine-offer order. This completes the
+   // required choice without pretending to understand an unmodeled effect.
+   let score=t.kind==='decline'?-1:0;
+   if(t.kind==='permanent'||t.kind==='player'){
+    const value=t.card?creatureValue(t.card):10;
+    if(packet.targets.intent==='hostile')score=(t.own?-1:1)*(10+value);
+    if(packet.targets.intent==='friendly')score=(t.own?1:-1)*(10+value);
+    if(packet.targets.intent==='haste')score=t.own?1:0;
+    if(packet.targets.intent==='haste'&&t.own&&t.card?.creature&&!t.card.tapped&&t.card.summoningSick&&!t.card.keywords.includes('Haste'))score=100+value;
+   }
+   if(score>best){best=score;index=i;}
+  }
+  if(index<0)throw Error('CPU_DECISION_UNSUPPORTED');return finish(index);
+ }
  const block=chooseBoundedBlock(packet.combat,budget);
  if(block)return finish(block.index);
  if(packet.combat.decision==='DiscardToHandSize'){

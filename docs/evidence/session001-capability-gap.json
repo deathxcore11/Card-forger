@@ -1,0 +1,124 @@
+{
+  "task": "SESSION-001 action coverage counterexample",
+  "provenance": {
+    "appBaseCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+    "runtimeSourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "rulesSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "loadedNames": [
+      "Forest",
+      "Swamp",
+      "Bane of the Living"
+    ],
+    "subsetSha256": "a34472bfbfb52dbbf8c14b8110f1df9e82c7ce7a0aed50defe59d433a05b0fc9"
+  },
+  "fixture": {
+    "seed": 12345,
+    "format": "Vintage",
+    "card": "Bane of the Living",
+    "handObject": 5,
+    "battlefield": "Eight untapped Swamps",
+    "phase": "PreCombatMain",
+    "actor": 0
+  },
+  "startingStateSha256": "ec922a84af25ada6faf74d8654e5be02b5382d0f78963cf4165c81f097475de4",
+  "cases": [
+    {
+      "id": "PlayFaceDown",
+      "status": "PASS",
+      "expected": "Engine accepts the action even though flat, grouped and interaction offers omit it; unknown coverage blocks automation.",
+      "flatTypes": [
+        "PassPriority",
+        "CastSpell"
+      ],
+      "groupedTypes": [
+        "TapLandForMana",
+        "CastSpell"
+      ],
+      "interactionCodes": [
+        "passPriority",
+        "castSpell",
+        "tapLandForMana"
+      ],
+      "topAutoPassRecommended": false,
+      "nestedAutoPassRecommended": false,
+      "capability": {
+        "epoch": "gap-fixture",
+        "revision": 0,
+        "decisionId": "decision-0",
+        "actorSeat": 0,
+        "activeSeat": 0,
+        "prioritySeat": 0,
+        "phase": "PreCombatMain",
+        "mandatoryChoice": false,
+        "coverage": "unknown",
+        "meaningfulAction": null,
+        "manaWindow": null,
+        "passAvailable": false
+      },
+      "action": {
+        "type": "PlayFaceDown",
+        "data": {
+          "object_id": 5,
+          "card_id": 5
+        }
+      },
+      "accepted": true,
+      "beforeStateSha256": "ec922a84af25ada6faf74d8654e5be02b5382d0f78963cf4165c81f097475de4",
+      "afterStateSha256": "a4ec91f2db7c75dea15a5560d646f10c4f5779645e71df95521973946f45a4c0"
+    },
+    {
+      "id": "TurnFaceUp",
+      "status": "PASS",
+      "expected": "Engine accepts the action even though flat, grouped and interaction offers omit it; unknown coverage blocks automation.",
+      "flatTypes": [
+        "PassPriority"
+      ],
+      "groupedTypes": [
+        "TapLandForMana"
+      ],
+      "interactionCodes": [
+        "passPriority",
+        "tapLandForMana"
+      ],
+      "topAutoPassRecommended": true,
+      "nestedAutoPassRecommended": false,
+      "capability": {
+        "epoch": "gap-fixture",
+        "revision": 1,
+        "decisionId": "decision-1",
+        "actorSeat": 0,
+        "activeSeat": 0,
+        "prioritySeat": 0,
+        "phase": "PreCombatMain",
+        "mandatoryChoice": false,
+        "coverage": "unknown",
+        "meaningfulAction": null,
+        "manaWindow": null,
+        "passAvailable": false
+      },
+      "action": {
+        "type": "TurnFaceUp",
+        "data": {
+          "object_id": 5,
+          "x": 1
+        }
+      },
+      "accepted": true,
+      "beforeStateSha256": "a4ec91f2db7c75dea15a5560d646f10c4f5779645e71df95521973946f45a4c0",
+      "afterStateSha256": "7399a65b066ce1fa6c15be0afa531948c76602441fdf1802a8567605ba0c8695"
+    }
+  ],
+  "limits": [
+    "Engineered starting position with unchanged compiled card definitions; not a complete match.",
+    "Acceptance witnesses show actions omitted by published candidates; they do not prove correct Magic rules execution for these mechanics.",
+    "No capability promotion, production behavior change, new runtime, or arbitrary-deck support."
+  ],
+  "sources": {
+    "priority-capability-gap-engine.mjs": "c5908d2958185b2ff4f967837079a711eff47c8206ab01ea69ae3238163c49a0",
+    "priority-flow.mjs": "0ea56b4ca7578e198e6398352447491dbb66edee2a16912f7b71e305329f0214",
+    "acceptance-inputs.mjs": "ff29722ad1efe200130bf031880073d8d7b87ecda7d7e9718753f02a39697405",
+    "mechanics-fixtures.mjs": "41376f6253f4fe6c5cc15cda917111e6f4bbb8c74886d5f5d7c566f37ef494e4",
+    "interaction-surface.mjs": "bffbb62bd6a20d00e4265758496f5b8eb7042396c5c6e9a77c1d0fcea88c4eb0"
+  }
+}

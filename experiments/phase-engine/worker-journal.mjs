@@ -6,6 +6,7 @@ import {interactionSubmission} from './interaction-surface.mjs';
 import {Fault,fail} from './protocol-fault.mjs';
 import {appendRandomOutcomes,validOutcomeTimeline} from './random-outcomes.mjs';
 import {FLOW_PHASES} from './priority-flow.mjs';
+import {terminalOutcome} from './match-result.mjs';
 export {Fault,fail} from './protocol-fault.mjs';
 export function packet(m) {
  if(!m||typeof m!=='object'||Array.isArray(m)||Object.keys(m).some(k=>!['v','epoch','id','op','revision','seed','first','choice','submission','command','decisionId'].includes(k)))fail('BAD_REQUEST');
@@ -51,7 +52,8 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null,t
  const observeTurn=(revision,acceptedHumanAction=false)=>{if(turnBudget&&turnBudget.observe(budgetContext(revision),{acceptedHumanAction}).state==='stale-budget')fail('TURN_CLOCK_CONTEXT_MISMATCH');};
  const outcomeSummary=rows=>typeof engine.drainOutcomes==='function'||rows!==undefined?{outcomes:structuredClone(rows||[])}:{};
  const nextOutcomes=revision=>typeof engine.drainOutcomes==='function'?{outcomes:appendRandomOutcomes(current?.outcomes||[],engine.drainOutcomes(),revision)}:{};
- const summary=()=>({...structuredClone(view(current.revision)),revision:current.revision,...outcomeSummary(current.outcomes),...clockSummary(current.revision),...turnSummary(current.revision)});
+ const resultView=(revision,history)=>{const value=structuredClone(view(revision));if(value.terminal)value.terminal=terminalOutcome(value.terminal,history?.at(-1)?.action);return value;};
+ const summary=()=>({...resultView(current.revision,current.history),revision:current.revision,...outcomeSummary(current.outcomes),...clockSummary(current.revision),...turnSummary(current.revision)});
  // Revision context is authority-local, not supplied by the policy or UI.
  const legalNow=()=>engine.legal({epoch,revision:current.revision});
  async function execute(raw) {
@@ -142,7 +144,7 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null,t
    const nextClock=timing?armClock(next.revision,current.clock):null;
    if(timing)next.clock=nextClock.snapshot();
    observeTurn(next.revision,actor===0&&m.op!=='tick'&&m.op!=='autoPass'&&!timedForfeit);
-   const response={...view(next.revision),revision:next.revision,...outcomeSummary(next.outcomes),...clockSummary(next.revision,nextClock),...turnSummary(next.revision)};
+   const response={...resultView(next.revision,next.history),revision:next.revision,...outcomeSummary(next.outcomes),...clockSummary(next.revision,nextClock),...turnSummary(next.revision)};
    Object.defineProperty(next.receipts,m.id,{value:{fingerprint:fp,response},enumerable:true,writable:true,configurable:true});
    // Compare-and-write prevents a second tab/worker overwriting this match.
    await storage.write(next,current.revision);

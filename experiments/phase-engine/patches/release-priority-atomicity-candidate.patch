@@ -1,0 +1,259 @@
+diff --git a/crates/engine/src/game/engine.rs b/crates/engine/src/game/engine.rs
+--- a/crates/engine/src/game/engine.rs
++++ b/crates/engine/src/game/engine.rs
+@@ -738,6 +738,101 @@
+         }
+     }
+     PriorityPreflight::Actionless
++}
++
++/// Versioned, viewer-scoped proof for voluntary empty-window automation.
++/// This contains no actions, object identities, or private diagnostic payloads.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct PriorityCapabilityV1 {
++    pub version: u8,
++    pub status: PriorityCapabilityStatusV1,
++    pub actor: Option<PlayerId>,
++    pub priority_holder: Option<PlayerId>,
++    pub floating_mana: Option<bool>,
++    pub pass_verified: bool,
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
++#[serde(rename_all = "camelCase")]
++pub enum PriorityCapabilityStatusV1 {
++    Actionless,
++    Actionable,
++    NotPriority,
++    Unknown,
++}
++
++/// Read-only certification from the reducer-family preflight, never the AI
++/// action list or either legacy auto-pass recommendation. V1 is deliberately
++/// limited to two-seat, non-shared-turn games. The caller must still bind this
++/// observation to its current decision/revision, preserve floating mana and
++/// user stops, and recompute it inside the serialized submission boundary.
++pub fn priority_capability_for_viewer_v1(
++    state: &GameState,
++    viewer: PlayerId,
++) -> PriorityCapabilityV1 {
++    let mut result = PriorityCapabilityV1 {
++        version: 1,
++        status: PriorityCapabilityStatusV1::Unknown,
++        actor: None,
++        priority_holder: None,
++        floating_mana: None,
++        pass_verified: false,
++    };
++    if state.players.len() != 2
++        || state.format_config.topology().has_shared_team_turns()
++        || viewer.0 as usize >= state.players.len()
++        || state.active_player.0 as usize >= state.players.len()
++    {
++        return result;
++    }
++    let holder = match &state.waiting_for {
++        WaitingFor::Priority { player } => *player,
++        _ => {
++            result.status = PriorityCapabilityStatusV1::NotPriority;
++            return result;
++        }
++    };
++    if holder.0 as usize >= state.players.len()
++        || state.priority_player.0 as usize >= state.players.len()
++        || state.turn_decision_controller.is_some_and(|id| id.0 as usize >= state.players.len())
++    {
++        return result;
++    }
++    let Ok(principal) = priority_principal_for_preflight(state) else {
++        return result;
++    };
++    if principal.authenticated_actor() != viewer {
++        return result;
++    }
++    // Derived layers and reducer previews touch only this disposable state.
++    let mut projected = state.clone();
++    super::layers::flush_layers(&mut projected);
++    result.actor = Some(viewer);
++    result.priority_holder = Some(holder);
++    result.floating_mana = Some(projected.players[holder.0 as usize].mana_pool.total() > 0);
++    match preflight_priority_window(&projected) {
++        PriorityPreflight::Actionless => {
++            // A proof of no alternatives is distinct from permission to pass.
++            // Verify the exact pass through the canonical reducer as well.
++            if apply_interaction_for_simulation(
++                &mut projected,
++                viewer,
++                holder,
++                GameAction::PassPriority,
++            )
++            .is_ok()
++            {
++                result.status = PriorityCapabilityStatusV1::Actionless;
++                result.pass_verified = true;
++            }
++        }
++        PriorityPreflight::Actionable { .. } => {
++            result.status = PriorityCapabilityStatusV1::Actionable;
++        }
++        PriorityPreflight::NotPriorityWindow | PriorityPreflight::Indeterminate { .. } => {}
++    }
++    result
+ }
+ 
+ /// The narrow admission gate for engine-owned prospective progress. It keeps
+@@ -1546,8 +1641,8 @@
+     // A completed hidden-search audience is an event-filtering sidecar for the
+     // immediately preceding action. Drop it before a new outer action starts;
+     // the active search itself remains the sole authority during the prompt.
++    let boundary_snapshot = std::sync::Arc::new(state.clone());
+     state.clear_completed_hidden_search_audiences();
+-    let boundary_snapshot = std::sync::Arc::new(state.clone());
+     let cast_undo_boundary =
+         super::engine_casting::CastUndoBoundaryGuard::enter(boundary_snapshot.clone());
+     let mut journal_start = state.resolved_rules_journal.entries().len();
+diff --git a/crates/engine-wasm/src/lib.rs b/crates/engine-wasm/src/lib.rs
+--- a/crates/engine-wasm/src/lib.rs
++++ b/crates/engine-wasm/src/lib.rs
+@@ -2593,6 +2593,23 @@
+         ))
+     }) {
+         Ok(val) => val,
++        Err(_) => JsValue::NULL,
++    }
++}
++
++/// Versioned read-only Priority proof. Null, unknown versions, and all statuses
++/// except actionless must stop automatic passing. Even actionless requires
++/// passVerified=true and floatingMana=false, plus caller-owned decision guards.
++#[wasm_bindgen]
++pub fn get_priority_capability_v1_js(player_id: u32) -> JsValue {
++    let viewer = match viewer_player_id(player_id) {
++        Ok(viewer) => viewer,
++        Err(_) => return JsValue::NULL,
++    };
++    match with_state(|state| {
++        to_js(&engine::game::engine::priority_capability_for_viewer_v1(state, viewer))
++    }) {
++        Ok(value) => value,
+         Err(_) => JsValue::NULL,
+     }
+ }
+diff --git a/crates/engine/tests/integration/main.rs b/crates/engine/tests/integration/main.rs
+--- a/crates/engine/tests/integration/main.rs
++++ b/crates/engine/tests/integration/main.rs
+@@ -2100,3 +2100,5 @@
+ mod squall_attack_batch_chosen_number;
+ mod strago_cast_this_way_rider;
+ mod tifa_additional_combat;
++
++mod priority_capability_v1;
+diff --git a/crates/engine/tests/integration/priority_capability_v1.rs b/crates/engine/tests/integration/priority_capability_v1.rs
+new file mode 100644
+--- /dev/null
++++ b/crates/engine/tests/integration/priority_capability_v1.rs
+@@ -0,0 +1,103 @@
++// Candidate source only: requires compile and real-WASM acceptance before shipping.
++use engine::game::engine::{priority_capability_for_viewer_v1, PriorityCapabilityStatusV1};
++use engine::game::zones;
++use engine::types::{GameState, PlayerId};
++use engine::types::game_state::WaitingFor;
++use engine::types::phase::Phase;
++use engine::types::zones::Zone;
++use engine::types::identifiers::{ObjectId, CardId};
++
++fn empty_priority() -> GameState {
++    let mut state = GameState::new_two_player(42);
++    state.active_player = PlayerId(0);
++    state.priority_player = PlayerId(0);
++    state.phase = Phase::PreCombatMain;
++    state.waiting_for = WaitingFor::Priority { player: PlayerId(0) };
++    state
++}
++
++#[test]
++fn empty_window_is_certified_without_live_mutation() {
++    let state = empty_priority();
++    let before = state.clone();
++    let capability = priority_capability_for_viewer_v1(&state, PlayerId(0));
++    assert_eq!(capability.version, 1);
++    assert_eq!(capability.status, PriorityCapabilityStatusV1::Actionless);
++    assert_eq!(capability.actor, Some(PlayerId(0)));
++    assert_eq!(capability.priority_holder, Some(PlayerId(0)));
++    assert_eq!(capability.floating_mana, Some(false));
++    assert!(capability.pass_verified);
++    assert_eq!(state, before);
++}
++
++#[test]
++fn unauthorized_or_invalid_viewer_gets_no_private_facts() {
++    let state = empty_priority();
++    for viewer in [PlayerId(1), PlayerId(2), PlayerId(255)] {
++        let capability = priority_capability_for_viewer_v1(&state, viewer);
++        assert_eq!(capability.status, PriorityCapabilityStatusV1::Unknown);
++        assert_eq!(capability.actor, None);
++        assert_eq!(capability.priority_holder, None);
++        assert_eq!(capability.floating_mana, None);
++        assert!(!capability.pass_verified);
++    }
++}
++
++#[test]
++fn controller_authority_and_semantic_holder_remain_distinct() {
++    let mut state = empty_priority();
++    state.turn_decision_controller = Some(PlayerId(1));
++    state.priority_player = PlayerId(1);
++    let capability = priority_capability_for_viewer_v1(&state, PlayerId(1));
++    assert_eq!(capability.actor, Some(PlayerId(1)));
++    assert_eq!(capability.priority_holder, Some(PlayerId(0)));
++    assert_eq!(priority_capability_for_viewer_v1(&state, PlayerId(0)).actor, None);
++    state.priority_player = PlayerId(0);
++    assert_eq!(priority_capability_for_viewer_v1(&state, PlayerId(1)).status, PriorityCapabilityStatusV1::Unknown);
++}
++
++#[test]
++fn floating_mana_is_a_separate_required_stop() {
++    use engine::types::mana::{ManaType, ManaUnit};
++    let mut state = empty_priority();
++    state.players[0].mana_pool.add(ManaUnit::new(ManaType::Colorless, ObjectId(0), false, vec![]));
++    let before = state.clone();
++    let capability = priority_capability_for_viewer_v1(&state, PlayerId(0));
++    assert_eq!(capability.floating_mana, Some(true));
++    assert_eq!(state, before);
++}
++
++#[test]
++fn legal_land_play_prevents_an_actionless_certificate() {
++    let mut state = empty_priority();
++    let land = zones::create_object(&mut state, CardId(1), PlayerId(0), "Island".to_owned(), Zone::Hand);
++    state.objects.get_mut(&land).unwrap().card_types.core_types.push(engine::types::card_type::CoreType::Land);
++    let before = state.clone();
++    let capability = priority_capability_for_viewer_v1(&state, PlayerId(0));
++    assert_eq!(capability.status, PriorityCapabilityStatusV1::Actionable);
++    assert!(!capability.pass_verified);
++    assert_eq!(state, before);
++}
++
++#[test]
++fn terminal_is_never_a_priority_certificate() {
++    let mut state = empty_priority();
++    state.waiting_for = WaitingFor::GameOver { winner: None };
++    let capability = priority_capability_for_viewer_v1(&state, PlayerId(0));
++    assert_eq!(capability.status, PriorityCapabilityStatusV1::NotPriority);
++    assert!(!capability.pass_verified);
++}
++
++#[test]
++fn wire_contract_is_versioned_and_contains_no_action_payloads() {
++    let capability = priority_capability_for_viewer_v1(&empty_priority(), PlayerId(1));
++    let wire = serde_json::to_value(capability).unwrap();
++    assert_eq!(wire, serde_json::json!({
++        "version": 1,
++        "status": "unknown",
++        "actor": null,
++        "priorityHolder": null,
++        "floatingMana": null,
++        "passVerified": false
++    }));
++}

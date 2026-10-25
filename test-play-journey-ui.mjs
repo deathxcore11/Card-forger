@@ -12,10 +12,10 @@ test('Friends changes the visible instructions and hides CPU-only controls',()=>
  const html=playMenuMarkup(state);assert.match(html,/Friends · Coming later/);assert.doesNotMatch(html,/id="playDifficulty"|data-act="playStarter"|CPU CANARY|data-play-seat="opponent"/);
  assert.match(html,/Choose Practice · CPU to play this beta/);
 });
-test('inspecting the opponent does not mark its deck as the player selection',()=>{
- const state=setup();state.match.format='Standard';state.selectedSource='saved';state.inspectedSeat='opponent';
+test('the deck browser marks the inspected seat without replacing either matchup list',()=>{
+ const state=setup();state.match.format='Standard';state.selectedSource='saved';state.opponentSource='saved';state.inspectedSeat='opponent';
  state.selected={id:'you',name:'Your list',format:'Standard',cards:[]};state.opponent={id:'cpu',name:'CPU list',format:'Standard',cards:[]};state.decks=[state.selected,state.opponent];
- const html=playMenuMarkup(state);assert.match(html,/data-play-deck="you" aria-pressed="true"/);assert.match(html,/data-play-deck="cpu" aria-pressed="false"/);
+ const html=playMenuMarkup(state);assert.match(html,/data-play-deck="you" aria-pressed="false"/);assert.match(html,/data-play-deck="cpu" aria-pressed="true"/);
 });
 test('guest has a direct sign-in action and no false match-readiness promise',()=>{
  const state=setup();state.profile={signedIn:false};const html=playMenuMarkup(state,{matchReleaseReady:true});

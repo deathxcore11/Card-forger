@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "status": "source-prepared-build-blocked",
+  "sourceDirectory": "/workspace/scratch/b84b6f89e67a/phase-release-source",
+  "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+  "reconstructedShippedTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+  "localReconstructionCommit": "e0094f8215c1b7bc427829b52b99076342748f0a",
+  "atomicityPatchSha256": "a0649f935de578d9dd0c24a7a0127ac74f341f49bfe2b624dea30087a3d70b31",
+  "toolchain": "nightly-2026-04-19",
+  "target": "wasm32-unknown-unknown",
+  "wasmBindgenCli": "0.2.121",
+  "availableTools": {
+    "cargo": null,
+    "rustc": null,
+    "rustup": null,
+    "wasm-bindgen": null,
+    "wasm-pack": null,
+    "cc": "/usr/bin/cc"
+  },
+  "effectiveMemoryBytes": 8589934592,
+  "requiredBuildMemoryBytes": 12884901888,
+  "buildStarted": false,
+  "installsStarted": false,
+  "paidBuildsTriggered": false,
+  "workflowDispatched": false,
+  "reason": "Effective 8 GiB is below established 12 GiB build guard. Source reconstruction and candidate patch applicability only; no compilation or runtime-fix claim.",
+  "networkChecks": {
+    "rustNightlyManifest": "HEAD 200",
+    "cratesSparseConfig": "HEAD 200",
+    "sourceGit": "git ls-remote and pinned fetch/checkout succeeded"
+  },
+  "guardEvidence": {
+    "url": "https://github.com/deathxcore11/Card-forger/blob/b6502b5df93af729c0ce2d3006a0b3d304c5b273/experiments/phase-engine/ci/play-engine-proof.mjs#L52",
+    "source": "assert(totalmem()>=12*1024**3,'optional runner must provide at least 12 GiB RAM before any installs or compilation');",
+    "interpretation": "Repository execution guard backed by earlier failures; not a proven universal 12 GiB compiler minimum."
+  },
+  "historicalOom": {
+    "url": "https://github.com/deathxcore11/Card-forger/blob/b6502b5df93af729c0ce2d3006a0b3d304c5b273/experiments/phase-engine/NINJUTSU-SOURCE-CHECKPOINT.md#L94",
+    "reportedMemoryLimitGiB": 8,
+    "reportedCompilerRssMB": 7751,
+    "reportedSignal": 9,
+    "reportedCgroupOomKillCountBefore": 2,
+    "reportedCgroupOomKillCountAfter": 4,
+    "evidenceType": "Historical repository report, not a fresh build in this recheck."
+  },
+  "historicalSuccessfulJob": {
+    "url": "https://github.com/deathxcore11/Card-forger/actions/runs/40153568000/job/121049996121",
+    "runnerLabel": "macos-15-intel",
+    "memoryBytes": 15032385536,
+    "conclusion": "success",
+    "startedAt": "2026-10-25T02:12:33Z",
+    "completedAt": "2026-10-25T02:37:26Z",
+    "rerunWarning": "Historical run uses old source; rerunning it does not apply the new atomicity/capability patches."
+  },
+  "possibleFutureJobCost": {
+    "officialPricingUrl": "https://docs.github.com/en/billing/reference/actions-runner-pricing",
+    "checkedDate": "2026-10-25",
+    "standardMacosUSDPerMinute": 0.062,
+    "existingJobTimeoutMinutes": 45,
+    "runnerUsageAt45MinutesUSD": 2.79,
+    "allowancesAndActualBilling": "Unknown; storage additional; not a guaranteed dollar cap.",
+    "status": "No paid job authorized or triggered by this diagnostic. Before requesting approval prepare exact new source/tree pins and regressions; old historical rerun is insufficient."
+  }
+}

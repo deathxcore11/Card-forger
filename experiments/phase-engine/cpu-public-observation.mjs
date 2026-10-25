@@ -14,6 +14,51 @@ function publicEffects(o){
   return s.mode!=='Continuous'||list(s.modifications).some(m=>!['AssignDamageFromToughness','AddStaticMode'].includes(m.type)||(m.type==='AddStaticMode'&&!m.mode?.CrewContribution));
  });
 }
+// A target offer carries permission; policy receives only a positional choice
+// and public characteristics. Never ship target handles, source text or IDs.
+function targetObservation(s,seat,actions,publicObjects,objects){
+ const w=s.waiting_for,d=w?.data;
+ if(!['TargetSelection','TriggerTargetSelection'].includes(w?.type)||d?.player!==seat)return null;
+ const slot=d.target_slots?.[d.selection?.current_slot];
+ if(!slot)return null;
+ const refs=list(d.selection?.current_legal_targets);
+ const matches=(a,b)=>a&&b&&Object.keys(a).length===1&&Object.keys(b).length===1&&
+  ((Number.isSafeInteger(a.Object)&&a.Object===b.Object)||(Number.isInteger(a.Player)&&a.Player===b.Player));
+ const byId=new Map(publicObjects.map((o,i)=>[o.id,i]));
+ let intent='neutral';
+ const hostile=new Set(['DealDamage','Destroy','Counter','Tap','LoseLife','Discard','DiscardCard','Mill']);
+ const friendly=new Set(['Untap','GainLife','Draw','Regenerate','RemoveAllDamage']);
+ if(hostile.has(slot.effect_kind))intent='hostile';else if(friendly.has(slot.effect_kind))intent='friendly';
+ // The current public stack ability supplies semantic evidence for this
+ // single-slot haste grant. Multiple/chained/ambiguous effects stay neutral.
+ const top=list(s.stack).at(-1),a=top?.kind?.data?.ability,e=a?.effect,ss=list(e?.static_abilities);
+ if(w.type==='TriggerTargetSelection'&&d.target_slots.length===1&&top?.kind?.type==='TriggeredAbility'&&
+  top.source_id===d.source_id&&a?.source_id===d.source_id&&a.controller===seat&&!a.sub_ability&&
+  byId.has(d.source_id)&&objects[byId.get(d.source_id)].known&&e?.type==='GenericEffect'&&e.duration==='UntilEndOfTurn'&&
+  e.target?.type==='Typed'&&e.target.controller==='You'&&JSON.stringify(e.target.type_filters)==='["Creature"]'&&list(e.target.properties).length===0&&
+  ss.length===1&&ss[0].mode==='Continuous'&&ss[0].affected?.type==='ParentTarget'&&!ss[0].condition&&
+  ss[0].modifications?.length===1&&ss[0].modifications[0].type==='AddKeyword'&&ss[0].modifications[0].keyword==='Haste')intent='haste';
+ return {intent,choices:actions.map(action=>{
+  if(action.type!=='ChooseTarget'||!action.data||!Object.hasOwn(action.data,'target'))return null;
+  const t=action.data.target;
+  if(t===null)return slot.optional===true?{kind:'decline'}:null;
+  if(!refs.some(r=>matches(t,r)))return null;
+  if(Number.isInteger(t.Player)&&[0,1].includes(t.Player))return {kind:'player',own:t.Player===seat};
+  const index=byId.get(t.Object),o=publicObjects[index],c=objects[index];
+  if(!c?.known)return {kind:'opaque'};
+  return {kind:'permanent',own:c.controller===seat,card:{...c,summoningSick:o.has_summoning_sickness===true}};
+ })};
+}
+function triggerOrderObservation(s,seat,actions){
+ const w=s.waiting_for;
+ if(w?.type!=='OrderTriggers'||w.data?.player!==seat)return null;
+ const n=list(w.data.triggers).length;
+ // Permutations are already engine offers. Only the availability bit crosses
+ // the worker boundary; unknown ordering effects retain deterministic order.
+ return actions.map(a=>{const order=a.data?.order;
+  return a.type==='OrderTriggers'&&Array.isArray(order)&&order.length===n&&new Set(order).size===n&&order.every(i=>Number.isInteger(i)&&i>=0&&i<n)?{available:true}:null;
+ });
+}
 export function makeCpuObservation(envelope,seat,actions,{difficulty='Medium',legal=null,playbook=null}={}){
  const s=envelope?.state;
  if(!s||s.viewer_projection!==seat||![0,1].includes(seat)||!Array.isArray(actions))throw Error('INVALID_CPU_VIEW');
@@ -34,7 +79,7 @@ export function makeCpuObservation(envelope,seat,actions,{difficulty='Medium',le
  const w=s.waiting_for,legalBlocks=w?.type==='DeclareBlockers'&&w.data?.player===seat?Object.entries(w.data.valid_block_targets||{}).flatMap(([b,targets])=>list(targets).map(a=>[indices.get(Number(b))??null,indices.get(a)??null])):[];
  const blockCandidates=actions.map(a=>a.type==='DeclareBlockers'?list(a.data?.assignments).map(([b,t])=>[indices.get(b)??null,indices.get(t)??null]):null);
  const attackCandidates=actions.map(a=>a.type==='DeclareAttackers'?list(a.data?.attacks).map(([id,t])=>({object:indices.get(id)??null,target:target(t)})):null);
- return {version:PUBLIC_CPU_VERSION,difficulty,legacy,hand:ownHandObservation(s,seat,actions,legal,playbook),combat:{seat,life:list(s.players).map(p=>finite(p.life)),objects,attackers,legalBlocks,blockCandidates,attackCandidates,
+ return {version:PUBLIC_CPU_VERSION,difficulty,legacy,ordering:triggerOrderObservation(s,seat,actions),targets:targetObservation(s,seat,actions,publicObjects,objects),hand:ownHandObservation(s,seat,actions,legal,playbook),combat:{seat,life:list(s.players).map(p=>finite(p.life)),objects,attackers,legalBlocks,blockCandidates,attackCandidates,
   decision:w?.type||null,complete:attackers.every(a=>a.object!==null&&a.target.kind!=='unknown'&&!a.banded)&&s.combat?.first_strike_done!==true&&s.combat?.regular_damage_done!==true,
   uncertain:list(s.stack).length>0||objects.some(o=>!o.known||o.uncertain)}};
 }

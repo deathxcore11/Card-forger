@@ -1,0 +1,19 @@
+{
+  "note": "Read-only integration dependencies consumed in isolated preview. Final UI handoff is based on this integration commit; no CPU, preflight, session or authority file is modified by UI.",
+  "cpuRef": "97fc5705ccea76a51a9132ffcac189b2f1747878",
+  "cpuConfigurationGitBlob": "c988dbc8a57b7c540d2f223e45935e0264d1c06c",
+  "adapterSource": "docs/evidence/cpu-005-enable-beta.patch",
+  "adapterSourceGitBlob": "3bf168606f5e7581813daa88b15c0b8eb92816b0",
+  "files": {
+    "cpu-difficulty-config.mjs": "f0a9998c21b55ea2814a7e43f1be02eae41731859e9fd8205bfa70f3ff613715",
+    "practice-preflight.mjs": "c94a0807c9561e08315fe0bfd4cb21416b7be032e414f8b1bcea59408e6b2df4",
+    "match-session.mjs": "6f33af7e8c105e671fa74b78723ee5371475b2adac572759ce90b8191fbf9a0a",
+    "priority-flow.mjs": "5cad99977a1583c5f18ad17f87033bf9b30c41899858c962650e0b118d989912"
+  },
+  "integrationRef": "353420fb07fc09d3cf4d1eae25437c470a7476b9",
+  "integrationBlobs": {
+    "match-session.mjs": "e178b1f46223b45e0d33d255c5ba9159c1f01817",
+    "priority-flow.mjs": "a4aedf0d02930042e128cf8b82f9c5240554d6e8",
+    "practice-preflight.mjs": "b36b515c451b49140f930df906dc41bc4a4cf756"
+  }
+}

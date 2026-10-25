@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createPriorityFlow,priorityCapability} from './priority-flow.mjs';
 import {createJournal,packet} from './worker-journal.mjs';
 import {createMatchSession} from './match-session.mjs';
+import {createMatchAuthority} from './match-authority.mjs';
 const cap=(patch={})=>({epoch:'flow',revision:0,decisionId:'decision-0',actorSeat:0,activeSeat:1,prioritySeat:0,phase:'PreCombatMain',mandatoryChoice:false,coverage:'complete',meaningfulAction:false,manaWindow:false,passAvailable:true,...patch});
 function fixture(patch={}){
  const jobs=new Map(),sent=[];let seq=0;
@@ -16,6 +17,39 @@ test('delivered engine legacy flags never establish coverage, including empty-lo
   assert.equal(c.coverage,'unknown');assert.equal(c.passAvailable,false);assert.equal(c.phase,phase==='UnknownPhase'?null:phase);
   const x=fixture(c);x.f.reconcile();assert.equal(x.jobs.size,0);assert.equal(x.f.snapshot().reason,'coverage-unknown');
  }
+});
+const proofValue=()=>({version:1,status:'actionless',actor:0,priorityHolder:0,floatingMana:false,passVerified:true});
+const proofInput=()=>({state:{active_player:1,phase:'End',waiting_for:{type:'Priority',data:{player:0}}},actor:0,epoch:'flow',revision:3,engineProof:{epoch:'flow',revision:3,value:proofValue()}});
+test('only the exact engine v1 actionless certificate permits the bound positive path',async()=>{
+ const c=priorityCapability(proofInput());assert.equal(c.coverage,'complete');assert.equal(c.meaningfulAction,false);assert.equal(c.manaWindow,false);
+ const x=fixture(c);x.state.status.revision=3;x.f.reconcile();assert.equal(x.jobs.size,1);await x.flush();assert.deepEqual(x.sent,[{epoch:'flow',revision:3,decisionId:'decision-3'}]);
+});
+test('missing, stale, malformed, nonempty and differently authorized engine certificates stop',()=>{
+ const changes=[
+  i=>delete i.engineProof,i=>{i.engineProof.epoch='old';},i=>{i.engineProof.revision=2;},
+  i=>{i.engineProof.value=null;},i=>{i.engineProof.value.version=2;},i=>{i.engineProof.value.version='1';},
+  ...['actionable','unknown','notPriority','other'].map(status=>i=>{i.engineProof.value.status=status;}),
+  i=>{i.engineProof.value.passVerified=false;},i=>{i.engineProof.value.passVerified=1;},
+  i=>{i.engineProof.value.actor=1;},i=>{i.engineProof.value.priorityHolder=1;},
+  i=>{i.engineProof.value.floatingMana=null;},i=>{i.state.phase='UnsupportedPhase';},
+  i=>{i.state.waiting_for={type:'TargetSelection',data:{player:0}};},i=>{i.actor=1;}
+ ];
+ for(const change of changes){const i=proofInput();change(i);const c=priorityCapability(i);assert.equal(c.coverage,'unknown');assert.equal(c.passAvailable,false);const x=fixture(c);x.state.status.revision=3;x.f.reconcile();assert.equal(x.jobs.size,0);}
+});
+test('an actionless certificate never spends or passes away floating mana',()=>{
+ const i=proofInput();i.engineProof.value.floatingMana=true;const c=priorityCapability(i);assert.equal(c.coverage,'complete');assert.equal(c.manaWindow,true);
+ const x=fixture(c);x.state.status.revision=3;x.f.reconcile();assert.equal(x.jobs.size,0);assert.equal(x.f.snapshot().reason,'mana-window');
+});
+test('authority recomputes optional engine certificate and fails closed on absence or exception',()=>{
+ let value=proofValue(),reads=0,throws=false;
+ const engine={get_filtered_game_state:()=>({state:proofInput().state}),get_viewer_snapshot_js:()=>({viewerInteraction:{}}),get_priority_capability_v1_js(seat){assert.equal(seat,0);reads++;if(throws)throw Error('FAILED_PROOF');return value;}};
+ const authority=createMatchAuthority({engine,mode:'cpu-test',epoch:'flow',policyWorker:{terminate(){}}});
+ try{
+  assert.equal(authority.adapter.summary(3).priorityCapability.coverage,'complete');assert.equal(reads,1);
+  value={...proofValue(),status:'actionable'};assert.equal(authority.adapter.priorityCapability(3).coverage,'unknown');assert.equal(reads,2);
+  throws=true;assert.equal(authority.adapter.summary(4).priorityCapability.coverage,'unknown');assert.equal(reads,3);
+  delete engine.get_priority_capability_v1_js;assert.equal(authority.adapter.priorityCapability(4).coverage,'unknown');assert.equal(reads,3);
+ }finally{authority.close();}
 });
 test('known empty window queues one bound pass; unchanged acknowledgement cannot loop',async()=>{
  const x=fixture();x.f.reconcile();x.f.reconcile();assert.equal(x.jobs.size,1);assert.equal(x.f.snapshot().passState,'queued');await x.flush();assert.equal(x.sent.length,1);assert.equal(x.jobs.size,0);assert.equal(x.f.snapshot().reason,'cancelled');

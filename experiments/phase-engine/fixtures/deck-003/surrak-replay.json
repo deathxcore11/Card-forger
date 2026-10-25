@@ -1,0 +1,792 @@
+{
+  "seed": 7331,
+  "exactDeckFixtureSha256": "76c881fcb980428289a3e7f234065b6c5a323592ce02e230acdb04dbfc25fa89",
+  "effectiveCandidateSha256": "6c834c2633755e0034be2300f61408c4967bac65a8ed46d4702b496bd29f1138",
+  "trace": [
+    {
+      "actor": 0,
+      "decision": "MulliganDecision",
+      "action": {
+        "type": "MulliganDecision",
+        "data": {
+          "choice": {
+            "type": "Keep"
+          }
+        }
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "MulliganDecision",
+      "action": {
+        "type": "MulliganDecision",
+        "data": {
+          "choice": {
+            "type": "Keep"
+          }
+        }
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PlayLand",
+        "data": {
+          "object_id": 11,
+          "card_id": 11
+        }
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PlayLand",
+        "data": {
+          "object_id": 103,
+          "card_id": 103
+        }
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "CastSpell",
+        "data": {
+          "object_id": 168,
+          "card_id": 168,
+          "targets": [],
+          "payment_mode": {
+            "type": "Auto"
+          }
+        }
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PlayLand",
+        "data": {
+          "object_id": 26,
+          "card_id": 26
+        }
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PlayLand",
+        "data": {
+          "object_id": 128,
+          "card_id": 128
+        }
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "CastSpell",
+        "data": {
+          "object_id": 138,
+          "card_id": 138,
+          "targets": [],
+          "payment_mode": {
+            "type": "Auto"
+          }
+        }
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "CastSpell",
+        "data": {
+          "object_id": 114,
+          "card_id": 114,
+          "targets": [],
+          "payment_mode": {
+            "type": "Auto"
+          }
+        }
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PlayLand",
+        "data": {
+          "object_id": 50,
+          "card_id": 50
+        }
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "CastSpell",
+        "data": {
+          "object_id": 12,
+          "card_id": 12,
+          "targets": [],
+          "payment_mode": {
+            "type": "Auto"
+          }
+        }
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PlayLand",
+        "data": {
+          "object_id": 173,
+          "card_id": 173
+        }
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "CastSpell",
+        "data": {
+          "object_id": 135,
+          "card_id": 135,
+          "targets": [],
+          "payment_mode": {
+            "type": "Auto"
+          }
+        }
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "CastSpell",
+        "data": {
+          "object_id": 108,
+          "card_id": 108,
+          "targets": [],
+          "payment_mode": {
+            "type": "Auto"
+          }
+        }
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 1,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    },
+    {
+      "actor": 0,
+      "decision": "Priority",
+      "action": {
+        "type": "PassPriority"
+      }
+    }
+  ],
+  "traceSha256": "78216edc6422d73dee2f38830a445a631f85703cb41676379601e46b3ae92455",
+  "expectedDecision": "TriggerTargetSelection",
+  "expectedAcceptedCommands": 100
+}

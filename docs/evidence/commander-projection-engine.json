@@ -1,0 +1,766 @@
+{
+  "runtime": {
+    "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "glueSha256": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "wasmBytes": 338226914
+  },
+  "seed": 12345,
+  "layer": "unchanged engine, engineered initial positions, generated-candidate actions; not complete-match evidence",
+  "fixtures": [
+    {
+      "id": "COMMANDER-CAST",
+      "status": "PASS",
+      "initial": {
+        "version": 1,
+        "coverage": "visible-public-objects",
+        "commanders": [
+          {
+            "id": 199,
+            "owner": 0,
+            "controller": 0,
+            "zone": "Command",
+            "tax": 0,
+            "castCount": null
+          },
+          {
+            "id": 200,
+            "owner": 1,
+            "controller": 1,
+            "zone": "Command",
+            "tax": 0,
+            "castCount": null
+          }
+        ],
+        "damage": [],
+        "damageAvailable": true
+      },
+      "announced": {
+        "version": 1,
+        "coverage": "visible-public-objects",
+        "commanders": [
+          {
+            "id": 199,
+            "owner": 0,
+            "controller": 0,
+            "zone": "Stack",
+            "tax": 2,
+            "castCount": 1
+          },
+          {
+            "id": 200,
+            "owner": 1,
+            "controller": 1,
+            "zone": "Battlefield",
+            "tax": 0,
+            "castCount": null
+          }
+        ],
+        "damage": [],
+        "damageAvailable": true
+      },
+      "resolved": {
+        "version": 1,
+        "coverage": "visible-public-objects",
+        "commanders": [
+          {
+            "id": 199,
+            "owner": 0,
+            "controller": 0,
+            "zone": "Battlefield",
+            "tax": 2,
+            "castCount": 1
+          },
+          {
+            "id": 200,
+            "owner": 1,
+            "controller": 1,
+            "zone": "Battlefield",
+            "tax": 0,
+            "castCount": null
+          }
+        ],
+        "damage": [],
+        "damageAvailable": true
+      },
+      "trace": [
+        {
+          "actor": 0,
+          "action": {
+            "type": "CastSpell",
+            "data": {
+              "object_id": 199,
+              "card_id": 199,
+              "targets": [],
+              "payment_mode": {
+                "type": "Auto"
+              }
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        }
+      ]
+    },
+    {
+      "id": "COMMANDER-TRADE-RETURN-RECAST",
+      "status": "PASS",
+      "projection": {
+        "version": 1,
+        "coverage": "public-designation-ledger",
+        "commanders": [
+          {
+            "id": 199,
+            "owner": 0,
+            "controller": 0,
+            "zone": "Stack",
+            "tax": 4,
+            "castCount": 2,
+            "name": "Ghalta, Primal Hunger",
+            "visible": true
+          },
+          {
+            "id": 200,
+            "owner": 1,
+            "controller": 1,
+            "zone": "Command",
+            "tax": 0,
+            "castCount": null,
+            "name": "Ghalta, Primal Hunger",
+            "visible": true
+          }
+        ],
+        "damage": [],
+        "damageAvailable": true
+      },
+      "trace": [
+        {
+          "actor": 0,
+          "action": {
+            "type": "CastSpell",
+            "data": {
+              "object_id": 199,
+              "card_id": 199,
+              "targets": [],
+              "payment_mode": {
+                "type": "Auto"
+              }
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [],
+              "bands": []
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "SelectCards",
+            "data": {
+              "cards": [
+                105
+              ]
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  199,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DeclareBlockers",
+            "data": {
+              "assignments": [
+                [
+                  200,
+                  199
+                ]
+              ]
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "DecideOptionalEffect",
+            "data": {
+              "accept": true
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DecideOptionalEffect",
+            "data": {
+              "accept": true
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "CastSpell",
+            "data": {
+              "object_id": 199,
+              "card_id": 199,
+              "targets": [],
+              "payment_mode": {
+                "type": "Auto"
+              }
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        }
+      ]
+    },
+    {
+      "id": "COMMANDER-COMBAT-DAMAGE",
+      "status": "PASS",
+      "projection": {
+        "version": 1,
+        "coverage": "visible-public-objects",
+        "commanders": [
+          {
+            "id": 199,
+            "owner": 0,
+            "controller": 0,
+            "zone": "Battlefield",
+            "tax": 0,
+            "castCount": null
+          },
+          {
+            "id": 200,
+            "owner": 1,
+            "controller": 1,
+            "zone": "Command",
+            "tax": 0,
+            "castCount": null
+          }
+        ],
+        "damage": [
+          {
+            "commanderId": 199,
+            "player": 1,
+            "amount": 12
+          }
+        ],
+        "damageAvailable": true
+      },
+      "trace": [
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  199,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 0,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        },
+        {
+          "actor": 1,
+          "action": {
+            "type": "PassPriority"
+          },
+          "generatedCandidate": true,
+          "acceptedByEngine": true
+        }
+      ]
+    },
+    {
+      "id": "COMMANDER-HIDDEN-ZONE-REDACTION",
+      "status": "PASS",
+      "projection": {
+        "version": 1,
+        "coverage": "visible-public-objects",
+        "commanders": [
+          {
+            "id": 200,
+            "owner": 1,
+            "controller": 1,
+            "zone": "Command",
+            "tax": 0,
+            "castCount": null
+          }
+        ],
+        "damage": [],
+        "damageAvailable": true
+      },
+      "publicLedger": {
+        "version": 1,
+        "coverage": "public-designation-ledger",
+        "commanders": [
+          {
+            "id": 199,
+            "owner": 0,
+            "name": "Ghalta, Primal Hunger",
+            "controller": null,
+            "zone": null,
+            "tax": null,
+            "castCount": null,
+            "visible": false
+          },
+          {
+            "id": 200,
+            "owner": 1,
+            "controller": 1,
+            "zone": "Command",
+            "tax": 0,
+            "castCount": null,
+            "name": "Ghalta, Primal Hunger",
+            "visible": true
+          }
+        ],
+        "damage": [
+          {
+            "commanderId": 199,
+            "player": 1,
+            "amount": 12
+          }
+        ],
+        "damageAvailable": true
+      },
+      "setup": "engineered public commander relocation to Library; no legal transition claim"
+    }
+  ]
+}

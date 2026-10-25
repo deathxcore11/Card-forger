@@ -1,4 +1,5 @@
 // Account-local Practice records. No auth/database service or collection writes.
+import {journalMatchResult} from './match-result.mjs';
 import {prepareMatchInput} from './match-input.mjs';
 import {RUNTIME_IDENTITY} from './runtime-assets.mjs';
 const identity=v=>typeof v==='string'&&/^[-\w]{1,160}$/.test(v);
@@ -51,14 +52,7 @@ export async function openPracticeRecord({ownerId,matchId,input,db,now=()=>Date.
   write:(journal,expected)=>transact('readwrite',(s,done,abort)=>{
    const q=s.get(key);q.onsuccess=()=>{try{
     const prior=validateRecord(q.result);if((prior?.journal?.revision??null)!==expected)throw Error('WRITE_CONFLICT');
-    let result=prior?.result??null;
-    const response=Object.values(journal.receipts).find(r=>r.response.revision===journal.revision)?.response;
-    if(response?.terminal){
-     const winner=response.terminal.winner;if(winner!==null&&![0,1].includes(winner))throw Error('INVALID_MATCH_RESULT');
-     if(result&&(result.revision!==journal.revision||result.winner!==winner))throw Error('RESULT_CONFLICT');
-     result??={matchId,revision:journal.revision,winner,reason:journal.history.at(-1)?.action?.type==='HumanConcede'?'concession':'engine-terminal',finishedAt:now(),snapshotDigest:digest,format:frozen.format,difficulty:frozen.difficulty};
-    }
-    if(prior?.result&&!response?.terminal)throw Error('RESULT_CONFLICT');
+    const result=journalMatchResult(journal,{matchId,snapshotDigest:digest,format:frozen.format,difficulty:frozen.difficulty,now},prior?.result??null);
     s.put({schema:1,ownerId,matchId,snapshotDigest:digest,input:frozen,presentation,journal,result,createdAt:prior?.createdAt??now(),updatedAt:now()},key);done();
    }catch(e){abort(e);}};
   })

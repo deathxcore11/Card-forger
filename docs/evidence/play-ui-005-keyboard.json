@@ -1,0 +1,10 @@
+{
+  "layer": "Browser keyboard inputs; controlled session",
+  "closeFocus": "card-8",
+  "escapeFocus": "inspect-card-8",
+  "dialogFocus": "cancel-exit",
+  "exitEscapeFocus": "exit-match",
+  "dialogClosed": true,
+  "targetAfterExit": "Choose a target\n24s to respond\nIdle 1:20\nTurn 4:00\nChoose one\n\nTarget: Ordinary Bear\n\nConfirm target\nCancel\nChoose from list · 2",
+  "finalFocus": "card-8"
+}

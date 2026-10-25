@@ -124,3 +124,10 @@ experiments/phase-engine/runtime/*
 !experiments/phase-engine/cpu-playbook.mjs
 !experiments/phase-engine/cpu-tactical-planning.mjs
 !experiments/phase-engine/priority-flow.mjs
+!play-deck-sources.js
+!play-quick-match.js
+!play-cpu-options.js
+!play-turn-controls.js
+!experiments/phase-engine/commander-projection.mjs
+!experiments/phase-engine/match-result.mjs
+!experiments/phase-engine/practice-result-history.mjs
