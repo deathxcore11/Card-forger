@@ -1,0 +1,1913 @@
+{
+  "task": "RULES-MANIFEST-001",
+  "owner": "rules-testing chat",
+  "baseCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+  "report": {
+    "schema": 1,
+    "startedAt": "2026-10-25T15:04:28.952Z",
+    "environment": {
+      "node": "v24.22.1",
+      "platform": "linux",
+      "arch": "x64"
+    },
+    "provenance": {
+      "appBaseCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "runtimeSourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+      "wasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+      "rulesSha256": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+      "loadedNames": [
+        "Forest",
+        "Island",
+        "Swamp",
+        "Plains",
+        "Manifest Dread",
+        "Grizzly Bears",
+        "Lightning Bolt",
+        "Elvish Visionary",
+        "Conductive Machete",
+        "Doom Blade",
+        "Unsummon",
+        "Swords to Plowshares",
+        "Declaration in Stone"
+      ],
+      "subsetSha256": "aab85b94bc67a4bccd34e415122a44c947244143aca43fc8b7899df9f266720b"
+    },
+    "cases": [
+      {
+        "id": "choice-0",
+        "checklist": [
+          3,
+          4,
+          5
+        ],
+        "title": "Human chooses either of the two real cards (0)",
+        "status": "PASS",
+        "expected": "Both choices are available only to the controller; selected instance enters face down and the other goes to graveyard.",
+        "actual": {
+          "chosenInstance": 6,
+          "otherInstance": 5,
+          "selectedZone": "Battlefield",
+          "otherZone": "Graveyard",
+          "opponentChoiceCount": 0
+        },
+        "evidence": "choice-0.json"
+      },
+      {
+        "id": "choice-1",
+        "checklist": [
+          3,
+          4,
+          5
+        ],
+        "title": "Human chooses either of the two real cards (1)",
+        "status": "PASS",
+        "expected": "Both choices are available only to the controller; selected instance enters face down and the other goes to graveyard.",
+        "actual": {
+          "chosenInstance": 5,
+          "otherInstance": 6,
+          "selectedZone": "Battlefield",
+          "otherZone": "Graveyard",
+          "opponentChoiceCount": 0
+        },
+        "evidence": "choice-1.json"
+      },
+      {
+        "id": "engine-facedown-characteristics",
+        "checklist": [
+          6
+        ],
+        "title": "Engine face-down characteristics",
+        "status": "PASS",
+        "expected": "Manifested permanent has no subtypes, color, mana cost, abilities or ward and is 2/2.",
+        "actual": {
+          "power": 2,
+          "toughness": 2,
+          "types": {
+            "core_types": [
+              "Creature"
+            ],
+            "subtypes": [],
+            "supertypes": []
+          },
+          "colors": [],
+          "manaCost": {
+            "type": "NoCost"
+          },
+          "abilities": [],
+          "keywords": [],
+          "note": "Raw authority retains printed identity for controller inspection; name-sensitive rule behavior is a separate test."
+        },
+        "evidence": "engine-facedown-characteristics.json"
+      },
+      {
+        "id": "public-and-private-view",
+        "checklist": [
+          6,
+          8,
+          28,
+          32
+        ],
+        "title": "Public face-down stats and controller-only inspection",
+        "status": "FAIL",
+        "expected": "Both seat projections retain public 2/2 stats, and the controller can inspect the underlying identity.",
+        "actual": {
+          "error": "public face-down power must survive the UI projection\n\nundefined !== 2\n"
+        },
+        "evidence": "public-and-private-view.json"
+      },
+      {
+        "id": "private-filter-isolation",
+        "checklist": [
+          4,
+          8,
+          27,
+          32
+        ],
+        "title": "Engine controller inspection and opponent privacy",
+        "status": "FAIL",
+        "expected": "Engine filtered controller state permits inspection; opponent state contains no hidden name or printed ID.",
+        "actual": {
+          "error": "opponent snapshot must not contain the face-down identity\n+ actual - expected\n\n+ [\n+   '/state/state/battlefield_entries_this_turn/0/name',\n+   '/state/state/zone_changes_this_turn/1/name',\n+   '/state/state/zone_changes_this_turn/1/trigger_source_context/lki/name',\n+   '/state/state/zone_changes_this_turn/1/trigger_source_context/printed_ref/face_name'\n+ ]\n- []\n"
+        },
+        "evidence": "private-filter-isolation.json"
+      },
+      {
+        "id": "noncreature-forest",
+        "checklist": [
+          7,
+          17
+        ],
+        "title": "Manifest Forest without a free turn-up",
+        "status": "FAIL",
+        "expected": "Land and instant enter as 2/2 creatures; illegal turn-up is rejected with no state change.",
+        "actual": {
+          "error": "rejected action must not change the save\n+ actual - expected\n\n+ [\n+   {\n+     after: undefined,\n+     before: [\n+       {\n+         recorded_turn_number: 2,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 1\n+       },\n+       {\n+         recorded_turn_number: 2,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 2\n+       }\n+     ],\n+     path: '/state/zone_change_library_knowledge_stamps'\n+   }\n+ ]\n- []\n",
+          "differences": [
+            {
+              "path": "/state/zone_change_library_knowledge_stamps",
+              "before": [
+                {
+                  "recorded_turn_number": 2,
+                  "source": {
+                    "boundary_generation": 0,
+                    "library_owner": 0
+                  },
+                  "turn_zone_change_index": 1
+                },
+                {
+                  "recorded_turn_number": 2,
+                  "source": {
+                    "boundary_generation": 0,
+                    "library_owner": 0
+                  },
+                  "turn_zone_change_index": 2
+                }
+              ]
+            }
+          ]
+        },
+        "evidence": "noncreature-forest.json"
+      },
+      {
+        "id": "noncreature-lightning-bolt",
+        "checklist": [
+          7,
+          17
+        ],
+        "title": "Manifest Lightning Bolt without a free turn-up",
+        "status": "FAIL",
+        "expected": "Land and instant enter as 2/2 creatures; illegal turn-up is rejected with no state change.",
+        "actual": {
+          "error": "rejected action must not change the save\n+ actual - expected\n\n+ [\n+   {\n+     after: undefined,\n+     before: [\n+       {\n+         recorded_turn_number: 2,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 1\n+       },\n+       {\n+         recorded_turn_number: 2,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 2\n+       }\n+     ],\n+     path: '/state/zone_change_library_knowledge_stamps'\n+   }\n+ ]\n- []\n",
+          "differences": [
+            {
+              "path": "/state/zone_change_library_knowledge_stamps",
+              "before": [
+                {
+                  "recorded_turn_number": 2,
+                  "source": {
+                    "boundary_generation": 0,
+                    "library_owner": 0
+                  },
+                  "turn_zone_change_index": 1
+                },
+                {
+                  "recorded_turn_number": 2,
+                  "source": {
+                    "boundary_generation": 0,
+                    "library_owner": 0
+                  },
+                  "turn_zone_change_index": 2
+                }
+              ]
+            }
+          ]
+        },
+        "evidence": "noncreature-lightning-bolt.json"
+      },
+      {
+        "id": "turn-up-special-action",
+        "checklist": [
+          9,
+          10,
+          11
+        ],
+        "title": "Turn up Elvish Visionary without casting or ETB draw",
+        "status": "PASS",
+        "expected": "Mana is paid, the same permanent turns up immediately, stack and library count do not change.",
+        "actual": {
+          "sameInstance": 6,
+          "libraryCount": 49,
+          "manaSourcesTapped": 2,
+          "stackSize": 0
+        },
+        "evidence": "turn-up-special-action.json"
+      },
+      {
+        "id": "insufficient-mana",
+        "checklist": [
+          9,
+          17
+        ],
+        "title": "Turn-up payment rejects insufficient mana",
+        "status": "FAIL",
+        "expected": "No spent mana, moved card, changed counters or partially completed turn-up after rejection.",
+        "actual": {
+          "error": "rejected action must not change the save\n+ actual - expected\n\n+ [\n+   {\n+     after: undefined,\n+     before: [\n+       {\n+         recorded_turn_number: 2,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 1\n+       },\n+       {\n+         recorded_turn_number: 2,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 2\n+       }\n+     ],\n+     path: '/state/zone_change_library_knowledge_stamps'\n+   }\n+ ]\n- []\n",
+          "differences": [
+            {
+              "path": "/state/zone_change_library_knowledge_stamps",
+              "before": [
+                {
+                  "recorded_turn_number": 2,
+                  "source": {
+                    "boundary_generation": 0,
+                    "library_owner": 0
+                  },
+                  "turn_zone_change_index": 1
+                },
+                {
+                  "recorded_turn_number": 2,
+                  "source": {
+                    "boundary_generation": 0,
+                    "library_owner": 0
+                  },
+                  "turn_zone_change_index": 2
+                }
+              ]
+            }
+          ]
+        },
+        "evidence": "insufficient-mana.json"
+      },
+      {
+        "id": "wrong-colors",
+        "checklist": [
+          9,
+          17
+        ],
+        "title": "Turn-up payment rejects wrong colors",
+        "status": "FAIL",
+        "expected": "No spent mana, moved card, changed counters or partially completed turn-up after rejection.",
+        "actual": {
+          "error": "rejected action must not change the save\n+ actual - expected\n\n+ [\n+   {\n+     after: undefined,\n+     before: [\n+       {\n+         recorded_turn_number: 2,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 1\n+       },\n+       {\n+         recorded_turn_number: 2,\n+         source: {\n+           boundary_generation: 0,\n+           library_owner: 0\n+         },\n+         turn_zone_change_index: 2\n+       }\n+     ],\n+     path: '/state/zone_change_library_knowledge_stamps'\n+   }\n+ ]\n- []\n",
+          "differences": [
+            {
+              "path": "/state/zone_change_library_knowledge_stamps",
+              "before": [
+                {
+                  "recorded_turn_number": 2,
+                  "source": {
+                    "boundary_generation": 0,
+                    "library_owner": 0
+                  },
+                  "turn_zone_change_index": 1
+                },
+                {
+                  "recorded_turn_number": 2,
+                  "source": {
+                    "boundary_generation": 0,
+                    "library_owner": 0
+                  },
+                  "turn_zone_change_index": 2
+                }
+              ]
+            }
+          ]
+        },
+        "evidence": "wrong-colors.json"
+      },
+      {
+        "id": "attachments-and-counters",
+        "checklist": [
+          11,
+          12
+        ],
+        "title": "Turn up with an attached Machete, counter and tapped status",
+        "status": "PASS",
+        "expected": "Same permanent, attachment, counter and tapped status persist; no Visionary ETB draw.",
+        "actual": {
+          "instance": 6,
+          "attachment": 28,
+          "tapped": true,
+          "counters": {
+            "P1P1": 1
+          },
+          "power": 4,
+          "toughness": 3
+        },
+        "evidence": "attachments-and-counters.json"
+      },
+      {
+        "id": "library-0",
+        "checklist": [
+          14
+        ],
+        "title": "Manifest with 0 cards in library",
+        "status": "PASS",
+        "expected": "One card is manifested; empty library does nothing without prompting or crashing.",
+        "actual": {
+          "faceDownCount": 0,
+          "prompt": "Priority"
+        },
+        "evidence": "library-0.json"
+      },
+      {
+        "id": "library-1",
+        "checklist": [
+          14
+        ],
+        "title": "Manifest with 1 cards in library",
+        "status": "PASS",
+        "expected": "One card is manifested; empty library does nothing without prompting or crashing.",
+        "actual": {
+          "faceDownCount": 1,
+          "prompt": "Priority"
+        },
+        "evidence": "library-1.json"
+      },
+      {
+        "id": "invalid-selection",
+        "checklist": [
+          17
+        ],
+        "title": "Invalid manifest selection has no partial effect",
+        "status": "PASS",
+        "expected": "An object outside the two choices is rejected with the whole saved state unchanged.",
+        "actual": {
+          "status": "rejected",
+          "stateUnchanged": true
+        },
+        "evidence": "invalid-selection.json"
+      },
+      {
+        "id": "cpu-choice-and-turnup",
+        "checklist": [
+          16,
+          28,
+          30
+        ],
+        "title": "CPU completes manifest and turns up using its allowed view",
+        "status": "FAIL",
+        "expected": "CPU chooses a valid creature from its own choice and can turn it up; no private names or IDs go to the policy.",
+        "actual": {
+          "error": "CPU_DECISION_UNSUPPORTED"
+        },
+        "evidence": "cpu-choice-and-turnup.json"
+      },
+      {
+        "id": "cpu-hidden-world-equivalence",
+        "checklist": [
+          27
+        ],
+        "title": "Changing opponent hidden hand preserves CPU decisions",
+        "status": "PASS",
+        "expected": "Two different real, unrevealed opponent hands with the same public observations and seed produce identical policy packets and selected actions.",
+        "actual": {
+          "firstHand": [
+            "Grizzly Bears",
+            "Elvish Visionary"
+          ],
+          "secondHand": [
+            "Lightning Bolt",
+            "Forest"
+          ],
+          "sameVisibleState": true,
+          "samePacket": true,
+          "sameChoice": true,
+          "seed": 777,
+          "scope": "one policy position; no complete-game fairness claim"
+        },
+        "evidence": "cpu-hidden-world-equivalence.json"
+      },
+      {
+        "id": "pending-state-restore",
+        "checklist": [
+          33
+        ],
+        "title": "Engine serialization preserves a pending manifest choice",
+        "status": "PASS",
+        "expected": "Restoring the same saved engine state preserves candidates and selection result; this is not browser reload support.",
+        "actual": {
+          "choicePreserved": true,
+          "endStatePreserved": true,
+          "productReload": "UNSUPPORTED",
+          "note": "Authority regenerates opaque interaction tokens on restoration; compare semantic choices and reacquire tokens."
+        },
+        "evidence": "pending-state-restore.json"
+      },
+      {
+        "id": "distinct-manifests",
+        "checklist": [
+          13
+        ],
+        "title": "Two identical printed cards retain separate instance identities",
+        "status": "PASS",
+        "expected": "Both chosen original instances exist face down; turning one up does not turn up or replace the other.",
+        "actual": {
+          "first": 48,
+          "second": 54,
+          "firstFaceUp": true,
+          "secondFaceDown": true
+        },
+        "evidence": "distinct-manifests.json"
+      },
+      {
+        "id": "nameless-rule",
+        "checklist": [
+          6
+        ],
+        "title": "Two face-down Bears do not share a name for Declaration in Stone",
+        "status": "FAIL",
+        "expected": "Exiling one face-down creature does not exile another face-down creature with the same printed name.",
+        "actual": {
+          "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Exile'\n- 'Battlefield'\n"
+        },
+        "evidence": "nameless-rule.json"
+      },
+      {
+        "id": "nameless-control",
+        "checklist": [
+          6
+        ],
+        "title": "Same-name removal control with different printed identities",
+        "status": "FAIL",
+        "expected": "Declaration in Stone targets one of two face-down creatures with different printed names; the other remains.",
+        "actual": {
+          "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Exile'\n- 'Battlefield'\n"
+        },
+        "evidence": "nameless-control.json"
+      },
+      {
+        "id": "reveal-destroy",
+        "checklist": [
+          15
+        ],
+        "title": "Reveal manifested creature on destroy",
+        "status": "PASS",
+        "expected": "Identity is available to the opponent when the permanent leaves; correct destination and face-up characteristics are restored.",
+        "actual": {
+          "zone": "Graveyard",
+          "faceDown": false,
+          "eventTypes": [
+            "StackPushed",
+            "BecomesTarget",
+            "PermanentTapped",
+            "AbilityActivated",
+            "ManaAdded",
+            "ManaAbilityProduced",
+            "TappedForMana",
+            "PermanentTapped",
+            "AbilityActivated",
+            "ManaAdded",
+            "ManaAbilityProduced",
+            "TappedForMana",
+            "ZoneChanged",
+            "SpellCast",
+            "ManaExpended",
+            "PriorityPassed",
+            "ZoneChanged",
+            "CreatureDestroyed",
+            "EffectResolved",
+            "ZoneChanged",
+            "StackResolved"
+          ],
+          "eventReveal": false,
+          "objectReveal": true,
+          "revealed": true
+        },
+        "evidence": "reveal-destroy.json"
+      },
+      {
+        "id": "reveal-bounce",
+        "checklist": [
+          15
+        ],
+        "title": "Reveal manifested creature on bounce",
+        "status": "FAIL",
+        "expected": "Identity is available to the opponent when the permanent leaves; correct destination and face-up characteristics are restored.",
+        "actual": {
+          "error": "authorized departure must expose the identity in an event or the visible object"
+        },
+        "evidence": "reveal-bounce.json"
+      },
+      {
+        "id": "reveal-exile",
+        "checklist": [
+          15
+        ],
+        "title": "Reveal manifested creature on exile",
+        "status": "PASS",
+        "expected": "Identity is available to the opponent when the permanent leaves; correct destination and face-up characteristics are restored.",
+        "actual": {
+          "zone": "Exile",
+          "faceDown": false,
+          "eventTypes": [
+            "StackPushed",
+            "BecomesTarget",
+            "PermanentTapped",
+            "AbilityActivated",
+            "ManaAdded",
+            "ManaAbilityProduced",
+            "TappedForMana",
+            "ZoneChanged",
+            "SpellCast",
+            "ManaExpended",
+            "PriorityPassed",
+            "ZoneChanged",
+            "EffectResolved",
+            "LifeChanged",
+            "EffectResolved",
+            "ZoneChanged",
+            "StackResolved"
+          ],
+          "eventReveal": false,
+          "objectReveal": true,
+          "revealed": true
+        },
+        "evidence": "reveal-exile.json"
+      },
+      {
+        "id": "reveal-game-end",
+        "checklist": [
+          15
+        ],
+        "title": "Reveal face-down permanent at game end",
+        "status": "PASS",
+        "expected": "Concession reaches GameOver and the formerly hidden permanent is revealed to the other seat.",
+        "actual": {
+          "terminal": true,
+          "revealed": true
+        },
+        "evidence": "reveal-game-end.json"
+      }
+    ],
+    "limits": [
+      "Engineered starting positions are not full game histories.",
+      "Manifest Dread is tested directly; Innocuous Rat is absent from the shipped database.",
+      "Same-process engine state restoration is not browser reload or fresh-process recovery.",
+      "No card is promoted into the supported pool by this report."
+    ],
+    "catalog": [
+      {
+        "name": "Innocuous Rat",
+        "status": "UNSUPPORTED",
+        "reason": "Missing compiled record"
+      },
+      {
+        "name": "Bronze Bombshell",
+        "status": "UNSUPPORTED",
+        "reason": "Missing compiled record"
+      },
+      {
+        "name": "Rats of Rath",
+        "status": "UNSUPPORTED",
+        "reason": "Missing compiled record"
+      },
+      {
+        "name": "Progenitus",
+        "status": "UNSUPPORTED",
+        "reason": "Missing compiled record"
+      },
+      {
+        "name": "Soldier of Fortune",
+        "status": "UNSUPPORTED",
+        "reason": "Missing compiled record"
+      },
+      {
+        "name": "Chaos Orb",
+        "status": "UNSUPPORTED",
+        "reason": "Contains explicit Unimplemented effect"
+      },
+      {
+        "name": "City in a Bottle",
+        "status": "UNSUPPORTED",
+        "reason": "Missing compiled record"
+      },
+      {
+        "name": "Karn Liberated",
+        "status": "UNSUPPORTED",
+        "reason": "Missing compiled record"
+      },
+      {
+        "name": "Panglacial Wurm",
+        "status": "UNSUPPORTED",
+        "reason": "Missing compiled record"
+      }
+    ],
+    "counts": {
+      "PASS": 14,
+      "FAIL": 10,
+      "NOT TESTED": 0,
+      "UNSUPPORTED": 0
+    },
+    "partial": false,
+    "finishedAt": "2026-10-25T15:05:16.448Z",
+    "sourceSha256": {
+      "acceptance-inputs.mjs": "ff29722ad1efe200130bf031880073d8d7b87ecda7d7e9718753f02a39697405",
+      "manifest-acceptance.mjs": "71a64b4d082079e321750e8c61c8f9c95582378223b7378538336da85ea3dd91",
+      "seat-surface.mjs": "70176fb74d5eff9d023a406587aeb433e25fbda30dfd25dea836d0e0b4fb4f94",
+      "visible-cpu-policy.mjs": "755897085ee4e42cf0fa94b6f37a68187ba111f69c2f54c629ec249f4c02dfe5",
+      "interaction-surface.mjs": "bffbb62bd6a20d00e4265758496f5b8eb7042396c5c6e9a77c1d0fcea88c4eb0",
+      "mechanics-fixtures.mjs": "41376f6253f4fe6c5cc15cda917111e6f4bbb8c74886d5f5d7c566f37ef494e4",
+      "mechanics-inputs.mjs": "66461978fed003c3931601beb8d752dcbadabc424df7e899ce789156e4a21874",
+      "runtime-assets.mjs": "b210246c9d60e051927b47669cedb59ec7c5920bfca80e6cbc64b2f89e1b668e"
+    }
+  },
+  "acceptanceLedger": [
+    {
+      "test": 1,
+      "title": "Rat death triggers",
+      "status": "UNSUPPORTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Destroy, sacrifice and combat death each create one Rat trigger.",
+      "actual": "Innocuous Rat is absent from the shipped 6,137-record catalog; no Rat death fixture can run.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 2,
+      "title": "Rat exile / bounce",
+      "status": "UNSUPPORTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Non-death departures do not create a Rat death trigger.",
+      "actual": "Rat is absent; not executed.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 3,
+      "title": "Respond before Rat choice",
+      "status": "UNSUPPORTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "choice-0",
+          "sha256": "45aad02830add234c5cc41f60aa937ba129fe0ce8c78b5ffa2b1eaa13fdd367a",
+          "archiveKey": "cases.choice-0.startingState"
+        },
+        {
+          "case": "choice-1",
+          "sha256": "fa1f1022e7a3ecff6a5962469f6f4c883660747d7c1555b38472678867ff9063",
+          "archiveKey": "cases.choice-1.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "choice-0",
+          "archiveKey": "cases.choice-0",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "choice-1",
+          "archiveKey": "cases.choice-1",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Priority is available before the Rat trigger resolves; no premature choice.",
+      "actual": "Rat trigger cannot run. Standalone Manifest Dread spell separately remains on the stack with priority before its choice.",
+      "automatedAssertions": [
+        "choice-0",
+        "choice-1"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 4,
+      "title": "Private top-two choice",
+      "status": "FAIL",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "choice-0",
+          "sha256": "45aad02830add234c5cc41f60aa937ba129fe0ce8c78b5ffa2b1eaa13fdd367a",
+          "archiveKey": "cases.choice-0.startingState"
+        },
+        {
+          "case": "choice-1",
+          "sha256": "fa1f1022e7a3ecff6a5962469f6f4c883660747d7c1555b38472678867ff9063",
+          "archiveKey": "cases.choice-1.startingState"
+        },
+        {
+          "case": "private-filter-isolation",
+          "sha256": "5781a9432d8da9d68b7e8e96d0fe36fc9eb49357b7a7a6e0d893fd7ab64b9c66",
+          "archiveKey": "cases.private-filter-isolation.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "choice-0",
+          "archiveKey": "cases.choice-0",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "choice-1",
+          "archiveKey": "cases.choice-1",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "private-filter-isolation",
+          "archiveKey": "cases.private-filter-isolation",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Controller can choose either card; opponent and opponent CPU do not receive hidden identities.",
+      "actual": "Human interaction API offers both choices privately during selection. After manifest, raw opponent snapshot historical metadata leaks the selected identity. Current app projection strips it.",
+      "automatedAssertions": [
+        "choice-0",
+        "choice-1",
+        "private-filter-isolation"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 5,
+      "title": "Actual card instance",
+      "status": "PASS",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "choice-0",
+          "sha256": "45aad02830add234c5cc41f60aa937ba129fe0ce8c78b5ffa2b1eaa13fdd367a",
+          "archiveKey": "cases.choice-0.startingState"
+        },
+        {
+          "case": "choice-1",
+          "sha256": "fa1f1022e7a3ecff6a5962469f6f4c883660747d7c1555b38472678867ff9063",
+          "archiveKey": "cases.choice-1.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "choice-0",
+          "archiveKey": "cases.choice-0",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "choice-1",
+          "archiveKey": "cases.choice-1",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Selected original card becomes the permanent; other goes to graveyard.",
+      "actual": "Engine assertions confirm both selections retain the selected non-token instance ID and move the other card to graveyard. UI not exercised.",
+      "automatedAssertions": [
+        "choice-0",
+        "choice-1"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 6,
+      "title": "Face-down characteristics",
+      "status": "FAIL",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "engine-facedown-characteristics",
+          "sha256": "9dc1c143db9dc8a1040dee11ce99ea75ba992410ca5142844bc6f45baae72e16",
+          "archiveKey": "cases.engine-facedown-characteristics.startingState"
+        },
+        {
+          "case": "nameless-rule",
+          "sha256": "f6fd525bb96c5bba633d0f5f5bdfd878a176391caad95cfae7085414a963beec",
+          "archiveKey": "cases.nameless-rule.startingState"
+        },
+        {
+          "case": "nameless-control",
+          "sha256": "152a6d2970798b64815cd983f4e449f8ccc35552a32e9c9435e7693147dde3f7",
+          "archiveKey": "cases.nameless-control.startingState"
+        },
+        {
+          "case": "public-and-private-view",
+          "sha256": "41d8532fcbb429c364d67b03ae1ea592a141492829ac882423d1319c310c0cd6",
+          "archiveKey": "cases.public-and-private-view.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "engine-facedown-characteristics",
+          "archiveKey": "cases.engine-facedown-characteristics",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "nameless-rule",
+          "archiveKey": "cases.nameless-rule",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "nameless-control",
+          "archiveKey": "cases.nameless-control",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "public-and-private-view",
+          "archiveKey": "cases.public-and-private-view",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Nameless colorless 2/2 creature, no abilities/subtypes/mana cost/ward; mana value zero.",
+      "actual": "Characteristic-field assertions pass except mana value is not separately asserted. Declaration in Stone wrongly exiles a second nameless permanent. Public stats are also missing from the app projection.",
+      "automatedAssertions": [
+        "engine-facedown-characteristics",
+        "nameless-rule",
+        "nameless-control",
+        "public-and-private-view"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 7,
+      "title": "Noncreature manifest",
+      "status": "PASS",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "noncreature-forest",
+          "sha256": "b37cd16b734e1c870820579120aafe73259a3a0f5f55d0a8d74be4a960abbde8",
+          "archiveKey": "cases.noncreature-forest.startingState"
+        },
+        {
+          "case": "noncreature-lightning-bolt",
+          "sha256": "a42e981035479062a16e8d7c0e9c9ec1272e468ddd112b4b91c44485997ed996",
+          "archiveKey": "cases.noncreature-lightning-bolt.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "noncreature-forest",
+          "archiveKey": "cases.noncreature-forest",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "noncreature-lightning-bolt",
+          "archiveKey": "cases.noncreature-lightning-bolt",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Land and instant can manifest but cannot use creature-only turn-up permission.",
+      "actual": "Both enter as 2/2 and have no legal TurnFaceUp candidate; forged turn-up is rejected. Each broader case fails the unchanged-save assertion recorded under #17.",
+      "automatedAssertions": [
+        "noncreature-forest",
+        "noncreature-lightning-bolt"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 8,
+      "title": "Private controller inspection",
+      "status": "FAIL",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "public-and-private-view",
+          "sha256": "41d8532fcbb429c364d67b03ae1ea592a141492829ac882423d1319c310c0cd6",
+          "archiveKey": "cases.public-and-private-view.startingState"
+        },
+        {
+          "case": "private-filter-isolation",
+          "sha256": "5781a9432d8da9d68b7e8e96d0fe36fc9eb49357b7a7a6e0d893fd7ab64b9c66",
+          "archiveKey": "cases.private-filter-isolation.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "public-and-private-view",
+          "archiveKey": "cases.public-and-private-view",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "private-filter-isolation",
+          "archiveKey": "cases.private-filter-isolation",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Controller can inspect privately without revealing to opponents.",
+      "actual": "Engine main-object filtering permits controller inspection; app projection drops the identity and public stats. Raw historical metadata additionally leaks the name to opponent API. Rendered inspector not tested.",
+      "automatedAssertions": [
+        "public-and-private-view",
+        "private-filter-isolation"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 9,
+      "title": "Turn-up and mana",
+      "status": "FAIL",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "turn-up-special-action",
+          "sha256": "7c6f8c6062bbffd114c6e11c3b150d0ef0b38ba9cc5a01d09035dde50d1bce7f",
+          "archiveKey": "cases.turn-up-special-action.startingState"
+        },
+        {
+          "case": "insufficient-mana",
+          "sha256": "31021334fb8fee63ce3d7e2b245f7c2de71149717af036cae77a9562f3e546e4",
+          "archiveKey": "cases.insufficient-mana.startingState"
+        },
+        {
+          "case": "wrong-colors",
+          "sha256": "76004063a58540eb9cd50d0bafc6a7c984d3ecad6b3dbd3d3c7a028fab475830",
+          "archiveKey": "cases.wrong-colors.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "turn-up-special-action",
+          "archiveKey": "cases.turn-up-special-action",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "insufficient-mana",
+          "archiveKey": "cases.insufficient-mana",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "wrong-colors",
+          "archiveKey": "cases.wrong-colors",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Pay the creature mana cost with priority; reject insufficient or wrong-colored payment without changes.",
+      "actual": "Successful turn-up taps two sources. Both invalid payments reject without spending/moving; exported knowledge metadata changes.",
+      "automatedAssertions": [
+        "turn-up-special-action",
+        "insufficient-mana",
+        "wrong-colors"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 10,
+      "title": "Turn-up special action",
+      "status": "PASS",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "turn-up-special-action",
+          "sha256": "7c6f8c6062bbffd114c6e11c3b150d0ef0b38ba9cc5a01d09035dde50d1bce7f",
+          "archiveKey": "cases.turn-up-special-action.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "turn-up-special-action",
+          "archiveKey": "cases.turn-up-special-action",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Complete turn-up immediately without casting or a pre-completion response window.",
+      "actual": "Accepted action turns up the same instance without adding stack entries; engine layer only.",
+      "automatedAssertions": [
+        "turn-up-special-action"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 11,
+      "title": "No repeated ETB",
+      "status": "PASS",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "turn-up-special-action",
+          "sha256": "7c6f8c6062bbffd114c6e11c3b150d0ef0b38ba9cc5a01d09035dde50d1bce7f",
+          "archiveKey": "cases.turn-up-special-action.startingState"
+        },
+        {
+          "case": "attachments-and-counters",
+          "sha256": "5e58f3929d5b0533872f794e70ee5a1d25251afe982beebbd3b8036013b711ec",
+          "archiveKey": "cases.attachments-and-counters.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "turn-up-special-action",
+          "archiveKey": "cases.turn-up-special-action",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "attachments-and-counters",
+          "archiveKey": "cases.attachments-and-counters",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Turning up does not repeat enters-the-battlefield abilities.",
+      "actual": "Elvish Visionary turn-up does not draw and preserves the entered-battlefield turn.",
+      "automatedAssertions": [
+        "turn-up-special-action",
+        "attachments-and-counters"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 12,
+      "title": "Persist permanent state",
+      "status": "PASS",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "attachments-and-counters",
+          "sha256": "5e58f3929d5b0533872f794e70ee5a1d25251afe982beebbd3b8036013b711ec",
+          "archiveKey": "cases.attachments-and-counters.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "attachments-and-counters",
+          "archiveKey": "cases.attachments-and-counters",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Counters, tapped status and legal attachments persist.",
+      "actual": "Conductive Machete attachment, one +1/+1 counter, tapped state and same instance persist; resulting Visionary is 4/3.",
+      "automatedAssertions": [
+        "attachments-and-counters"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 13,
+      "title": "Distinct face-down objects",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "distinct-manifests",
+          "sha256": "03a46a2c9bff9717448eed3012b3e437453953947a8bc5812bb545782e3af4fc",
+          "archiveKey": "cases.distinct-manifests.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "distinct-manifests",
+          "archiveKey": "cases.distinct-manifests",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Stable identity survives dragging, sorting and animations.",
+      "actual": "Engine keeps two distinct original IDs and turning up one leaves the other face down. Browser movement/sorting/animation scope not tested.",
+      "automatedAssertions": [
+        "distinct-manifests"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 14,
+      "title": "Small libraries",
+      "status": "PASS",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "library-0",
+          "sha256": "3aab6aa184b41284f32d04c2257cb50b1f9036c8950dee2c2749979fdaf3c717",
+          "archiveKey": "cases.library-0.startingState"
+        },
+        {
+          "case": "library-1",
+          "sha256": "17599664884fe21eaad54eca1792f990194612a5ada74f011c5d62f1b2c5691f",
+          "archiveKey": "cases.library-1.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "library-0",
+          "archiveKey": "cases.library-0",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "library-1",
+          "archiveKey": "cases.library-1",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "One-card library manifests that card; empty library does not crash or strand a prompt.",
+      "actual": "Both engine fixtures return to Priority with the expected zero/one manifested permanent.",
+      "automatedAssertions": [
+        "library-0",
+        "library-1"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 15,
+      "title": "Required reveals",
+      "status": "FAIL",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "reveal-destroy",
+          "sha256": "dae3130711b00800816a8c1efa8bdcbc95909882dd8d00b90d170bc38168d6ab",
+          "archiveKey": "cases.reveal-destroy.startingState"
+        },
+        {
+          "case": "reveal-bounce",
+          "sha256": "f8783a55ff57ef73d9d2a25ce7059e965c8a0e9fea587c68f50821a662c4325f",
+          "archiveKey": "cases.reveal-bounce.startingState"
+        },
+        {
+          "case": "reveal-exile",
+          "sha256": "942edcf17d744a2c9a56f6fd5eedcbd6e0896591b0d10bc71bb2031d739314ad",
+          "archiveKey": "cases.reveal-exile.startingState"
+        },
+        {
+          "case": "reveal-game-end",
+          "sha256": "13f7f96edee83e09d49786e5b2c12abbea758b7d5ca58353e8b497662c5b42b5",
+          "archiveKey": "cases.reveal-game-end.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "reveal-destroy",
+          "archiveKey": "cases.reveal-destroy",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "reveal-bounce",
+          "archiveKey": "cases.reveal-bounce",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "reveal-exile",
+          "archiveKey": "cases.reveal-exile",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "reveal-game-end",
+          "archiveKey": "cases.reveal-game-end",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Reveal face-down identity on required departure and game end.",
+      "actual": "Destroy/exile reveal in public destination, concession reveals at game end. Unsummon returns card to hidden hand without identity in opponent authorized transition.",
+      "automatedAssertions": [
+        "reveal-destroy",
+        "reveal-bounce",
+        "reveal-exile",
+        "reveal-game-end"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 16,
+      "title": "All human / CPU choices",
+      "status": "FAIL",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "cpu-choice-and-turnup",
+          "sha256": "54429bb92873538da0f14f1557f95e3094995fe63a4a80d1fc45178ac05e05f0",
+          "archiveKey": "cases.cpu-choice-and-turnup.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "cpu-choice-and-turnup",
+          "archiveKey": "cases.cpu-choice-and-turnup",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "All choice types can be completed by human and CPU without stranded prompts.",
+      "actual": "Manifest CPU packet contains unsupported choices and policy throws CPU_DECISION_UNSUPPORTED. Later turn-up action not reached. Other choice types not covered.",
+      "automatedAssertions": [
+        "cpu-choice-and-turnup"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 17,
+      "title": "Atomic rejection",
+      "status": "FAIL",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "invalid-selection",
+          "sha256": "444fa3de9f478a2c96e4ddf8f57364f452e4ac5890419eb4da25738a775426fd",
+          "archiveKey": "cases.invalid-selection.startingState"
+        },
+        {
+          "case": "noncreature-forest",
+          "sha256": "b37cd16b734e1c870820579120aafe73259a3a0f5f55d0a8d74be4a960abbde8",
+          "archiveKey": "cases.noncreature-forest.startingState"
+        },
+        {
+          "case": "noncreature-lightning-bolt",
+          "sha256": "a42e981035479062a16e8d7c0e9c9ec1272e468ddd112b4b91c44485997ed996",
+          "archiveKey": "cases.noncreature-lightning-bolt.startingState"
+        },
+        {
+          "case": "insufficient-mana",
+          "sha256": "31021334fb8fee63ce3d7e2b245f7c2de71149717af036cae77a9562f3e546e4",
+          "archiveKey": "cases.insufficient-mana.startingState"
+        },
+        {
+          "case": "wrong-colors",
+          "sha256": "76004063a58540eb9cd50d0bafc6a7c984d3ecad6b3dbd3d3c7a028fab475830",
+          "archiveKey": "cases.wrong-colors.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "invalid-selection",
+          "archiveKey": "cases.invalid-selection",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "noncreature-forest",
+          "archiveKey": "cases.noncreature-forest",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "noncreature-lightning-bolt",
+          "archiveKey": "cases.noncreature-lightning-bolt",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "insufficient-mana",
+          "archiveKey": "cases.insufficient-mana",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "wrong-colors",
+          "archiveKey": "cases.wrong-colors",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Illegal actions leave state unchanged.",
+      "actual": "Invalid manifest selection leaves full save unchanged. Rejected turn-up removes zone_change_library_knowledge_stamps; no card movement or mana-spending change was observed.",
+      "automatedAssertions": [
+        "invalid-selection",
+        "noncreature-forest",
+        "noncreature-lightning-bolt",
+        "insufficient-mana",
+        "wrong-colors"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 18,
+      "title": "Auto / manual payment",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Equivalent legal payments with restricted mana, alternative costs and source previews.",
+      "actual": "Not executed.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 19,
+      "title": "Land allowances",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Ordinary and additional land plays enforce and reset their allowances.",
+      "actual": "Not executed.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 20,
+      "title": "Stack responses / targets",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Responses, counters and illegal targets produce correct actual state changes.",
+      "actual": "Manifest timing and removal targeting are exercised, but counterspells and targets becoming illegal are not tested in this bounded suite.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 21,
+      "title": "Simultaneous trigger order",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Correct ordering across controllers including four-player Commander.",
+      "actual": "Not executed; this suite uses two seats.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 22,
+      "title": "Combat abilities",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "First/double strike, trample, deathtouch, lifelink and disappearing blockers resolve correctly.",
+      "actual": "Not executed.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 23,
+      "title": "Replacement effects",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Graveyard-to-exile replacements produce the right event and trigger set.",
+      "actual": "Not executed. Swords to Plowshares is direct exile, not this replacement-effect test.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 24,
+      "title": "Tokens / counters / copies / expiry",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Identity and correct expiration coexist across tokens, counters, copies and temporary effects.",
+      "actual": "One counter/equipment fixture is covered in #12; the requested combined scope is not tested.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 25,
+      "title": "Commander bookkeeping",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Command zone choices, tax and damage tracked separately for each player and commander.",
+      "actual": "Not executed.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 26,
+      "title": "Loops",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Finite choices, declining and mandatory loops terminate with correct outcomes.",
+      "actual": "Not executed.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 27,
+      "title": "Hidden-hand fairness",
+      "status": "PASS",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "cpu-hidden-world-equivalence",
+          "sha256": "37ee630abee3174d28ce675247fa51b755d22b6b63fe5e96670f1c25d1b40301",
+          "archiveKey": "cases.cpu-hidden-world-equivalence.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "cpu-hidden-world-equivalence",
+          "archiveKey": "cases.cpu-hidden-world-equivalence",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Same observable information and RNG seed give identical CPU decisions when hidden opponent hand changes.",
+      "actual": "One position swaps real hidden hand Grizzly Bears + Elvish Visionary for Lightning Bolt + Forest. Visible state, policy packet and decision are identical at seed 777. Broader positions/difficulties not tested.",
+      "automatedAssertions": [
+        "cpu-hidden-world-equivalence"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 28,
+      "title": "CPU own face-down cards",
+      "status": "FAIL",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "cpu-choice-and-turnup",
+          "sha256": "54429bb92873538da0f14f1557f95e3094995fe63a4a80d1fc45178ac05e05f0",
+          "archiveKey": "cases.cpu-choice-and-turnup.startingState"
+        },
+        {
+          "case": "public-and-private-view",
+          "sha256": "41d8532fcbb429c364d67b03ae1ea592a141492829ac882423d1319c310c0cd6",
+          "archiveKey": "cases.public-and-private-view.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "cpu-choice-and-turnup",
+          "archiveKey": "cases.cpu-choice-and-turnup",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "public-and-private-view",
+          "archiveKey": "cases.public-and-private-view",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "CPU uses its own permitted face-down information intelligently without reading opponent identities.",
+      "actual": "CPU cannot complete manifest SelectCards; app projection lacks private inspection. Turn-up tactic not reached.",
+      "automatedAssertions": [
+        "cpu-choice-and-turnup",
+        "public-and-private-view"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 29,
+      "title": "CPU tactics",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Recognize available win, defend visible threat and preserve essential combo pieces.",
+      "actual": "Not executed.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 30,
+      "title": "Difficulty boundaries",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Every difficulty obeys the same legality and information boundaries.",
+      "actual": "No per-difficulty comparison; one direct policy seed does not prove this.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 31,
+      "title": "Deck archetype coverage",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Complete games with supported aggro/control/graveyard/token/combo lists; separate stalls from losses.",
+      "actual": "No full matches were run in this rules audit.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 32,
+      "title": "Current inspector / privacy",
+      "status": "FAIL",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "public-and-private-view",
+          "sha256": "41d8532fcbb429c364d67b03ae1ea592a141492829ac882423d1319c310c0cd6",
+          "archiveKey": "cases.public-and-private-view.startingState"
+        },
+        {
+          "case": "private-filter-isolation",
+          "sha256": "5781a9432d8da9d68b7e8e96d0fe36fc9eb49357b7a7a6e0d893fd7ab64b9c66",
+          "archiveKey": "cases.private-filter-isolation.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "public-and-private-view",
+          "archiveKey": "cases.public-and-private-view",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        },
+        {
+          "case": "private-filter-isolation",
+          "archiveKey": "cases.private-filter-isolation",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Inspector uses current characteristics; hidden identity never leaks through UI surfaces.",
+      "actual": "App face-down projection lacks public stats and private controller inspection. Raw runtime leaks metadata, but current projection removes it. DOM/artwork/tooltips/accessibility/network/log surfaces not tested.",
+      "automatedAssertions": [
+        "public-and-private-view",
+        "private-filter-isolation"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 33,
+      "title": "Reload pending choices",
+      "status": "UNSUPPORTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [
+        {
+          "case": "pending-state-restore",
+          "sha256": "88520df499bc269d64e033d7349858bc63ed3776177c9c1d295796f7027c85db",
+          "archiveKey": "cases.pending-state-restore.startingState"
+        }
+      ],
+      "actions": [
+        {
+          "case": "pending-state-restore",
+          "archiveKey": "cases.pending-state-restore",
+          "fields": [
+            "fixture",
+            "extraFixture",
+            "actions",
+            "interactions",
+            "rejectedAttempt",
+            "concession"
+          ]
+        }
+      ],
+      "expected": "Browser reload resumes pending manifest, payment, targets, combat and CPU priority without duplicates or rerandomizing.",
+      "actual": "Release is session only. Same-process engine save/restore passes semantic manifest-choice comparison; browser/fresh-process recovery not tested.",
+      "automatedAssertions": [
+        "pending-state-restore"
+      ],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 34,
+      "title": "Client synchronization",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Clients agree after accepted actions, reconnects and duplicates where multiplayer is supported.",
+      "actual": "Not executed; no remote multiplayer clients in this audit.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 35,
+      "title": "Exactly-once results",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Correct deck-version result recorded once through refresh and repeated exits.",
+      "actual": "Not executed; no account writes.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    },
+    {
+      "test": 36,
+      "title": "Unsupported import admission",
+      "status": "NOT TESTED",
+      "buildCommit": "2af11c9a1326e0db75b875d9c122e3dea01055d7",
+      "startingState": [],
+      "actions": [],
+      "expected": "Import warns or blocks before a rules-enforced match with unsupported cards.",
+      "actual": "Rat and Manifest Dread remain outside the current coverage list. No import UI/admission execution in this suite; source existence is not a pass.",
+      "automatedAssertions": [],
+      "layer": "engine/API and pure application adapters; no rendered browser or full match",
+      "note": "Statuses are limited to the explicitly recorded scope. This does not admit the mechanic to the supported pool."
+    }
+  ],
+  "fullEvidence": {
+    "path": "gameplay-manifest-20261025-full.json.xz",
+    "encoding": "xz-compressed UTF-8 JSON",
+    "sha256": "1f93a8f92b78b4f1b26e1dfc8a36e8c306f45be01848eda060e9b4e8379ad059",
+    "bytes": 75728,
+    "decodedSha256": "2382d5b6e3e557a56bb4bfedf5a49c1cbcdc9d3bb911c06b75566be4b2574400",
+    "decodedBytes": 10492026
+  },
+  "productionFilesModified": [],
+  "deploymentPerformed": false,
+  "engineBuildTriggered": false
+}
