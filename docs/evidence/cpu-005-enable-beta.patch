@@ -1,0 +1,86 @@
+--- a/experiments/phase-engine/match-authority.mjs
++++ b/experiments/phase-engine/match-authority.mjs
+@@ -4,9 +4,12 @@
+ import {projectInteraction} from './interaction-surface.mjs';
+ import {makeCpuObservation} from './cpu-public-observation.mjs';
+ import {cpuLegalCandidates} from './cpu-legal-candidates.mjs';
++import {createCpuPlaybook} from './cpu-playbook.mjs';
++import {cpuProfile} from './cpu-difficulty-config.mjs';
+ import {projectSeat,createSeatController} from './seat-surface.mjs';
+ import {projectRandomEvents} from './random-outcomes.mjs';
+-export function createMatchAuthority({engine,epoch,mode='human-timed',decks,format,onStart=()=>{},present=view=>view,policyWorker}={}){
++export function createMatchAuthority({engine,epoch,mode='human-timed',decks,format,difficulty='Medium',cpuPlaybookProposals=[],onStart=()=>{},present=view=>view,policyWorker}={}){
++ cpuProfile(difficulty);const playbooks=[createCpuPlaybook(decks?.player,cpuPlaybookProposals[0]),createCpuPlaybook(decks?.opponent,cpuPlaybookProposals[1])];
+  const policy=policyWorker||new Worker(new URL('./cpu-public-worker.mjs',import.meta.url),{type:'module'});let seq=0;
+  // The journal is the sole mutator of this engine instance. Cache only the
+  // expensive CPU expansion, never the engine's fresh base suggestions or submit.
+@@ -19,7 +22,7 @@
+   const onMessage=({data})=>{if(data?.id!==id)return;cleanup();data.error?reject(Error('POLICY_FAILED')):resolve(data);};
+   const onError=()=>{cleanup();reject(Error('POLICY_FAILED'));};
+   policy.addEventListener('message',onMessage);policy.addEventListener('error',onError);
+-  policy.postMessage({id,packet:makeCpuObservation(engine.get_filtered_game_state(actor),actor,actions),rng});
++  policy.postMessage({id,packet:makeCpuObservation(engine.get_filtered_game_state(actor),actor,actions,{difficulty,legal:engine.get_legal_actions_for_viewer_js(actor),playbook:playbooks[actor]}),rng});
+  });
+  let outcomes=[];
+  function observe(result){
+--- a/experiments/phase-engine/practice-authority.mjs
++++ b/experiments/phase-engine/practice-authority.mjs
+@@ -7,7 +7,8 @@
+ import {PRACTICE_COVERAGE} from './practice-coverage.mjs';
+ import {createMatchAuthority} from './match-authority.mjs';
+ import {createJournal} from './worker-journal.mjs';
+-const VERSION='practice-candidate-v1';
++import {CPU_CONFIGURATION_VERSION,CPU_DIFFICULTIES,CPU_LABELS_READY} from './cpu-difficulty-config.mjs';
++const VERSION='practice-candidate-v2:'+CPU_CONFIGURATION_VERSION;
+ let opening=null,epoch=null,sessionOnly=false;
+ export function validPracticeBinding(data){
+  return !!data&&typeof data==='object'&&!Array.isArray(data)&&!Object.keys(data).some(k=>!['v','epoch','id','op','ownerId','match','operation','input','sessionOnly'].includes(k))&&data.v===1&&data.id==='bind'&&data.op==='bind'&&/^[-\w]{1,80}$/.test(data.epoch||'')&&['create','resume'].includes(data.operation)&&!(data.operation==='resume'&&Object.hasOwn(data,'input'))&&(!Object.hasOwn(data,'sessionOnly')||typeof data.sessionOnly==='boolean');
+@@ -19,13 +20,12 @@
+  const admission=evaluateMatchAdmission(engine,input,PRACTICE_COVERAGE);
+  const format=engine.getFormatRegistry().find(f=>f.format===input.format)?.default_config;
+  if(!format)throw Error('FORMAT_UNAVAILABLE');
+- // Difficulty calibration is unfinished; do not silently serve one policy
+- // behind three strength labels. This private integration proof uses Medium.
+- const cpuAvailable=input.difficulty==='Medium';
++ // Policy readiness is separate from both-seat executable deck admission.
++ const cpuAvailable=CPU_DIFFICULTIES.includes(input.difficulty)&&(CPU_LABELS_READY||input.difficulty==='Medium');
+  let handler=null;
+  if(admission.admitted&&cpuAvailable){
+   let presentation=record.getPresentation();
+-  const {adapter,choose}=createMatchAuthority({engine,epoch,format,decks:input.engineLists,
++  const {adapter,choose}=createMatchAuthority({engine,epoch,format,decks:input.engineLists,difficulty:input.difficulty,cpuPlaybookProposals:[input.decks.player.practiceCpuPlan,input.decks.opponent.practiceCpuPlan],
+    onStart:()=>{presentation=initialPresentation(input,JSON.parse(engine.export_game_state_json()));record.setPresentation(presentation);},
+    present:view=>presentInstances(view,presentation)});
+   handler=createJournal({engine:adapter,storage:record.storage,choose,version:VERSION+':'+RUNTIME_IDENTITY.wasmSha256+':'+digest,epoch,timing:{matchId:data.match,humanActor:0},turnLimits:data.sessionOnly?{}:null});
+--- a/experiments/phase-engine/practice-preflight.mjs
++++ b/experiments/phase-engine/practice-preflight.mjs
+@@ -2,11 +2,12 @@
+ // A positive result is permission to run authoritative admission, not legality.
+ import {prepareMatchInput,evaluateCardCoverage} from './match-input.mjs';
+ import {PRACTICE_COVERAGE} from './practice-coverage.mjs';
++import {CPU_DIFFICULTIES,CPU_LABELS_READY} from './cpu-difficulty-config.mjs';
+ export function reviewPracticeSetup(setup,{coverage=PRACTICE_COVERAGE}={}){
+  const reasons=[],profile=setup?.profile,match=setup?.match;
+  if(profile?.signedIn!==true||typeof profile.ownerId!=='string'||!profile.ownerId||profile.locked)reasons.push('Sign in to the current account before starting Practice.');
+  if(match?.mode!=='cpu')reasons.push('Private friend matches are coming after CPU practice.');
+- if(match?.difficulty!=='Medium')reasons.push('Choose Medium for the first beta. Easy and Hard tuning will follow.');
++ if(!CPU_DIFFICULTIES.includes(match?.difficulty)||(!CPU_LABELS_READY&&match?.difficulty!=='Medium'))reasons.push('Choose an available beta CPU difficulty.');
+  for(const [seat,label]of [['selected','your deck'],['opponent','the CPU deck']])if(!setup?.[seat])reasons.push('Choose '+label+' first.');
+  let support=null;
+  if(setup?.selected&&setup?.opponent){
+--- a/play-menu.js
++++ b/play-menu.js
+@@ -1,3 +1,4 @@
++import {CPU_LABELS_READY} from './experiments/phase-engine/cpu-difficulty-config.mjs';
+ import {reviewPracticeSetup} from './experiments/phase-engine/practice-preflight.mjs';
+ // Desktop setup only. Format/difficulty preferences do not certify engine,
+ // construction legality, card support or a working opponent connection.
+@@ -20,7 +21,7 @@
+   const matchBar=`<footer class="panel play-match-bar" aria-label="Match setup">
+       <div class="play-profile">${avatarMarkup}<div><b>${esc(p.displayName || (signedIn ? 'Player' : 'Your player profile'))}</b>${p.username ? `<span class="small muted">@${esc(p.username)}</span>` : ''}<span class="small muted">${signedIn ? 'Your seat · 1v1' : 'Sign in to prepare your match'}</span></div></div>
+       <fieldset class="play-opponent"><legend>Play against</legend>${[['cpu','Practice · CPU'],['friends','Friends']].map(([value,label]) => `<label><input type="radio" name="playOpponent" value="${value}" data-change="playMatchOption" data-play-option="mode" ${match.mode === value ? 'checked' : ''}><span>${label}</span></label>`).join('')}</fieldset>
+-      ${match.mode === 'cpu' ? `<label class="play-difficulty">Difficulty<select id="playDifficulty" data-change="playMatchOption" data-play-option="difficulty">${['Easy','Medium','Hard'].map(level => `<option value="${level}"${match.difficulty === level ? ' selected' : ''}${level==='Medium'?'':' disabled'}>${level}${level==='Medium'?' · Beta CPU':' · Coming later'}</option>`).join('')}</select></label>` : '<p class="small muted play-friends-note">Private matches<br>Coming after CPU practice</p>'}
++      ${match.mode === 'cpu' ? `<label class="play-difficulty">Difficulty<select id="playDifficulty" data-change="playMatchOption" data-play-option="difficulty">${['Easy','Medium','Hard'].map(level => `<option value="${level}"${match.difficulty === level ? ' selected' : ''}${CPU_LABELS_READY||level==='Medium'?'':' disabled'}>${level}${CPU_LABELS_READY||level==='Medium'?(level==='Hard'?' · Experimental beta':' · Beta CPU'):' · Coming later'}</option>`).join('')}</select></label>` : '<p class="small muted play-friends-note">Private matches<br>Coming after CPU practice</p>'}
+       <div class="play-start"><button class="btn" data-act="playStartCandidate" ${canStart?'':'disabled'} aria-describedby="playMatchStatus">${match.mode === 'friends' ? 'Play with friends' : 'Play CPU'}</button></div>
+       <div id="playMatchStatus" class="small muted" role="status"><p>${esc(footerText)}</p>${Object.entries(review.seats||{}).map(([seat,s])=>notices(s.unsupported,(seat==='player'?'Your deck':'CPU deck')+': outside tested beta pool')).join('')}</div>
+       ${signedIn&&match.mode==='cpu'?`<div class="play-starter"><button class="btn ghost" data-act="playStarter" ${state.busy?'disabled':''}>${match.format==='Standard'?'Use beta starter decks':'Switch to Standard starter decks'}</button><p class="small muted">${match.format==='Standard'?'Choose two tested 60-card starter lists.':'This changes the visible format to Standard and selects two tested 60-card starter lists.'} Saved decks stay unchanged.</p></div>`:!signedIn?'<button class="btn" data-act="menu">Sign in to play</button>':''}

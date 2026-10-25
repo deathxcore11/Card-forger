@@ -1,0 +1,21 @@
+{
+  "base": "d81a0a14f3f34cf64fc0156abf495fab590263b6",
+  "files": {
+    "experiments/phase-engine/match-authority.mjs": {
+      "before": "e4b9de791e74b0cab1d606c68579d31373f6799519e6dc311e06b6cf38a2b5f5",
+      "after": "e6658d6e832f797d1ad87b35dc2456fe2d80e1a7a61bf717fec491f00a78c19c"
+    },
+    "experiments/phase-engine/practice-authority.mjs": {
+      "before": "5dd67591c6140b3fc6e9d82ee855d92fe07f8e2125d57d3718d8582e7de976ca",
+      "after": "45acfaf6042a0b276041f34e63bf69b0a91c93a31b6f3f2ba4b765d564cf7333"
+    },
+    "experiments/phase-engine/practice-preflight.mjs": {
+      "before": "d1333d1f31354bdf29be1b2b54807beeeb6996d338f72e0e12272657f1a927c6",
+      "after": "c94a0807c9561e08315fe0bfd4cb21416b7be032e414f8b1bcea59408e6b2df4"
+    },
+    "play-menu.js": {
+      "before": "96c5337a93fe6009aac30f2ba626d140b40d640a813a54476ebfde332a24f379",
+      "after": "af8a6d7e8c3ce5b6ddbb58a4f05a6289bc9dd9d98da14c9124788c00c201b468"
+    }
+  }
+}

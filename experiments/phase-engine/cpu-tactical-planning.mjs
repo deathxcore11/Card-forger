@@ -32,10 +32,14 @@ export function attackScore(combat,attacks,profile,budget){
   let score=e.killed-e.lost+(combat.life[1-seat]-e.life[1-seat])*.8;
   if(e.life[1-seat]<=0&&e.life[seat]>0)score+=1000;
   if(e.life[seat]<=0)score-=2000;
-  if(profile.counterWeight){
-   const committed=new Set(attacks.filter(a=>!has(combat.objects[a.object],'Vigilance')).map(a=>a.object));
-   const defense=combat.objects.reduce((sum,c,i)=>sum+(c.known&&c.creature&&c.controller===seat&&!c.tapped&&!committed.has(i)?Math.max(0,c.toughness):0),0);
-   const counter=Math.max(0,blockers.reduce((sum,{c})=>sum+power(c),0)-defense);
+  if(profile.counterWeight&&e.life.every(life=>life>0)){
+   // This future-board estimate inherits the combat model's uncertainty. Dead
+   // creatures cannot counterattack or defend; tapped opponents may untap on
+   // their next turn. No hidden cards or future draws are inspected.
+   const casualties=new Set(e.predictedCasualties),committed=new Set(attacks.filter(a=>!has(combat.objects[a.object],'Vigilance')).map(a=>a.object));
+   const survivors=combat.objects.map((c,i)=>({c,i})).filter(({c,i})=>c.known&&c.creature&&!casualties.has(i));
+   const defense=survivors.reduce((sum,{c,i})=>sum+(c.controller===seat&&!c.tapped&&!committed.has(i)?Math.max(0,c.toughness):0),0);
+   const counter=Math.max(0,survivors.reduce((sum,{c})=>sum+(c.controller!==seat&&!has(c,'Defender')?power(c):0),0)-defense);
    score-=counter*profile.counterWeight;if(counter>=Math.max(1,e.life[seat]))score-=30*profile.counterWeight;
   }
   worst=Math.min(worst,score);

@@ -33,4 +33,4 @@ test('a proposed deck plan is bound to the exact own deck and declared dependenc
  const book=createCpuPlaybook(deck,proposal);assert(book.proposalAccepted);assert(currentCpuPlaybook(book,deck));assert.equal(currentCpuPlaybook(book,{...deck,main_deck:['Forest']}),null);
  assert.equal(createCpuPlaybook(deck,{...proposal,dependencies:['Missing combo piece']}).proposalAccepted,false);assert.equal(createCpuPlaybook({main_deck:['Unsupported card']}).kind,'generic-material');
 });
-test('labels remain gated and unknown profiles fail explicitly',()=>{assert.equal(CPU_LABELS_READY,false);assert.throws(()=>chooseCpu(packet('Impossible',[card(1,1,1)],1),1),/INVALID_CPU_DIFFICULTY/);});
+test('beta tiers are implemented and unknown profiles fail explicitly',()=>{assert.equal(CPU_LABELS_READY,true);assert.throws(()=>chooseCpu(packet('Impossible',[card(1,1,1)],1),1),/INVALID_CPU_DIFFICULTY/);});
