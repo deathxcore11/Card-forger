@@ -85,3 +85,34 @@ body.practice-table-open{overflow:hidden}#practicePlayerMat{position:fixed;inset
 @media(max-width:600px){.play-pregame-versus{grid-template-columns:1fr}.play-pregame-seat{min-height:120px}.play-pregame-seat strong{font-size:18px}.play-journey-message .actions{flex-direction:column;align-items:stretch}}
 @media(max-width:1199px){body[data-view=play] #content{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 28px)}}
 @media(max-width:600px){.play-matchup{flex-direction:column;align-items:stretch}.play-versus{text-align:center}.play-matchup-seat{width:100%}.play-match-bar .play-starter .btn{white-space:normal}.play-match-bar>.play-starter p{min-width:0;flex-basis:100%}}
+
+/* Source browsing and temporary match selections share the existing deck art. */
+.play-source-tabs{display:flex;gap:5px;flex-wrap:wrap;margin:2px 0 15px;padding:5px;background:color-mix(in srgb,var(--surface-2) 65%,transparent);border:1px solid var(--line);border-radius:14px}
+.play-source-tabs>button{flex:1 1 auto;min-height:44px;padding:9px 12px;border:1px solid transparent;background:transparent;border-radius:10px;color:var(--muted);font:600 13px inherit;cursor:pointer}
+.play-source-tabs>button[aria-pressed=true]{background:linear-gradient(130deg,#e3c37c25,#c4a85c0a);color:var(--text);border-color:#d8b76c66;box-shadow:0 3px 15px #0002}
+.play-source-tabs>button:focus-visible,.play-source-card:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.play-source-intro{font-size:13px;line-height:1.5;color:var(--muted);margin:0 0 14px;max-width:65ch}
+.play-source-tools{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.play-source-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(245px,100%),1fr));gap:16px}
+.play-source-card{position:relative;isolation:isolate;overflow:hidden;min-height:250px;width:100%;padding:0;text-align:left;border:1px solid var(--line);border-radius:17px;color:#f4f3e8;background:#151c1d;cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.play-source-card>img,.play-source-card>.img-missing{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+.play-source-card:after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,#101719fa 3%,#17201bd9 44%,#14201b08);z-index:-1}
+.play-source-card-copy{display:flex;flex-direction:column;gap:6px;justify-content:flex-end;min-height:250px;padding:20px 17px}
+.play-source-card-copy>small{font-size:10px;line-height:1.4;color:#cfdbd6;max-height:42px;overflow:hidden}.play-source-card-copy>strong{font-size:20px;line-height:1.2;overflow-wrap:anywhere}.play-source-card-copy>span{font-size:12px;color:#ced9d3}.play-source-card-copy>b{font-size:12px;color:#e8cd8a;margin-top:5px}
+.play-source-card:hover{transform:translateY(-3px);border-color:#c9b278;box-shadow:0 10px 30px #0003}.play-source-card[aria-pressed=true]{border-color:#e4bf76;box-shadow:0 0 0 2px #d8b76c44}.play-source-card:disabled{cursor:default;opacity:.8}
+.play-source-art-fallback{position:absolute;inset:0;display:grid;place-items:start center;padding-top:20px;color:#dfc88966;font-size:74px;background:radial-gradient(ellipse at 20% 0%,#769f8033,transparent 75%);z-index:-2}
+.play-support{align-self:flex-start;border:1px solid #ffffff30;padding:4px 7px;border-radius:6px}.play-support[data-support=unsupported]{color:#ebc9a7}.play-support[data-support=pool]{color:#a7dcc6}
+.play-selection-support{border:1px solid var(--line);background:color-mix(in srgb,var(--surface-2) 60%,transparent);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:13px}.play-selection-support p{font-size:12px;color:var(--muted);line-height:1.5;margin:5px 0 0}.play-save-actions{align-items:center;margin:0 0 18px}
+.play-random-panel{padding:25px 22px;border:1px solid #d8b76c44;border-radius:18px;background:radial-gradient(ellipse at 20% 0%,#adc7b41a,transparent 60%),linear-gradient(135deg,#d8b76c08,#121b2008);text-align:center}.play-random-panel h3{font-size:24px;margin:5px 0 10px}.play-random-panel p{max-width:50ch;margin:12px auto;font-size:13px;line-height:1.6;color:var(--muted)}.play-random-panel>button{margin:8px 4px}.play-random-emblem{font-size:55px;color:#d8b76c}.play-random-panel details{text-align:left;padding:12px;margin:18px auto;max-width:400px;border:1px solid var(--line);border-radius:12px}.play-random-panel details label{display:block;margin-top:10px}.play-random-panel summary{cursor:pointer;font-size:13px;min-height:28px}
+@media(max-width:760px){.play-source-tabs{gap:3px}.play-source-tabs>button{font-size:12px;padding:8px}.play-source-grid{grid-template-columns:1fr}.play-random-panel{padding:16px}.play-source-card,.play-source-card-copy{min-height:220px}}
+@media(prefers-reduced-motion:reduce){.play-source-card{transition:none}.play-source-card:hover{transform:none}}
+
+/* One setup, two clear paths. Decks stay temporary until an explicit save. */
+.play-paths{display:flex;flex-wrap:wrap;gap:6px}.play-paths [aria-pressed=true]{background:#d4b77c20;border-color:#d4b77c88;color:var(--text)}.play-start{display:flex;flex-wrap:wrap;gap:8px}.play-build-state{margin:18px auto;padding:20px;max-width:430px;border:1px solid #d8c28d55;border-radius:22px;background:linear-gradient(120deg,#243439ee,#1b262dee);box-shadow:0 16px 45px #0003;color:#edf4f3}.play-build-state .brand-mark{margin:0 auto 10px;max-width:80px}.play-build-state>strong{display:block;font-size:18px}.play-build-state p{color:#d2dcde}.play-matchup-seat{position:relative;overflow:hidden;isolation:isolate;min-height:135px}.play-matchup-seat>img,.play-matchup-seat>.deck-artwork{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;opacity:.4}.play-matchup-seat:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#172429b8,#142126dd);z-index:-1}.play-matchup-seat strong{font-size:20px}.play-paths button{min-height:44px}
+/* Let matchup art and the deck shelf lead; supporting setup copy stays compact. */
+.play-matchup.panel{padding:0;border:0;background:none;box-shadow:none;backdrop-filter:none}
+.play-match-bar>.play-starter{padding:0;border:0;gap:12px}
+.play-match-bar>.play-starter p{font-size:12px;line-height:1.5}
+.play-match-bar{gap:10px 20px}
+.play-match-bar #playMatchStatus{padding-top:7px}.play-match-bar #playMatchStatus>p{margin:0;line-height:1.5}
+.play-match-bar .play-session-note{font-size:11px;line-height:1.5}

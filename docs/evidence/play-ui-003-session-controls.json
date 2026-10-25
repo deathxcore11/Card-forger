@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "checks": {
+    "actualContractSupported": true,
+    "unknownCoverageExplained": true,
+    "fullControlUsesRealSession": true,
+    "yieldDisabledInFull": true,
+    "unknownYieldStops": true,
+    "actualStopActivates": true,
+    "turnStopsSeparate": true,
+    "noGameCommands": true,
+    "revisionUnchanged": true
+  },
+  "requests": [
+    "create",
+    "status"
+  ],
+  "sourceCommit": "353420fb07fc09d3cf4d1eae25437c470a7476b9",
+  "evidence": "Production session/priority flow and UI controls, controlled client with captured real-engine unknown capability. No live engine mutation or complete match."
+}

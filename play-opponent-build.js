@@ -11,7 +11,7 @@ export function createPracticeOpponentBuilder({pipeline,pickSeed,readScope,onSel
    if(!['Standard','Commander'].includes(format)||!['classic','infinite-mana'].includes(deckStyle))throw Error('INVALID_OPPONENT_OPTIONS');
    const bracket=normalizeCommanderTarget(targetBracket);if(format!=='Commander'&&bracket!==null)throw Error('COMMANDER_BRACKET_ONLY');
    const ticket=++sequence,scope=key(),current=()=>ticket===sequence&&scope===key();
-   activeScope=scope;state={...state,request:{format,targetBracket:bracket,deckStyle},busy:true,status:'Choosing an opponent build-around…',error:null};publish();
+   activeScope=scope;state={...state,request:{format,targetBracket:bracket,deckStyle},busy:true,status:'Choosing a build-around…',error:null};publish();
    try{
     const request={game:'mtg',format,targetBracket:bracket,deckStyle,budget:'',budgetBasis:'total',budgetMode:'cap',preferOwned:false,ownedOnly:false,randomSeed:random()};
     const seed=await pickSeed(request);if(!current())return null;if(!seed?.name)throw Error('No legal build-around was returned.');
@@ -19,8 +19,8 @@ export function createPracticeOpponentBuilder({pipeline,pickSeed,readScope,onSel
     if(!current())return null;
     if(!result?.ok||!pipeline.recheck(result))throw Error(result?.message||'The generated list did not pass its construction checks.');
     if(result.deck?.format!==format||result.request?.format!==format||result.request?.targetBracket!==bracket||result.request?.deckStyle!==deckStyle)throw Error('The generated list changed the requested format, bracket or style.');
-    const deck=structuredClone({...result.deck,name:result.deck.name||seed.name+' · CPU opponent',practiceBuild:{source:'shared-random-builder',request:result.request,bracket:result.bracket||result.plan?.bracket||null}});
-    onSelect(deck);state={request:{format,targetBracket:bracket,deckStyle},busy:false,status:'Opponent built. Review the exact list before playing.',error:null,result:deck};publish();return structuredClone(deck);
+    const deck=structuredClone({...result.deck,name:result.deck.name||seed.name+' · Random deck',practiceBuild:{source:'shared-random-builder',request:result.request,bracket:result.bracket||result.plan?.bracket||null}});
+    onSelect(deck);state={request:{format,targetBracket:bracket,deckStyle},busy:false,status:'Deck built. Review the exact list before playing.',error:null,result:deck};publish();return structuredClone(deck);
    }catch(error){if(!current())return null;state={...state,busy:false,status:'',error:error.message};publish();return null;}
    finally{if(ticket===sequence&&!current()){state={busy:false,status:'',error:null,result:null};publish();}}
   }

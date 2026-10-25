@@ -10,10 +10,10 @@ const loadModules=async()=>{
  const [flow,table]=await Promise.all([import('./experiments/phase-engine/practice-flow.mjs'),import('./experiments/phase-engine/match-table.mjs')]);
  return {createPracticeFlow:flow.createPracticeFlow,mountMatchTable:table.mountMatchTable};
 };
-export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwork=async()=>{},reviewDecks=async()=>null,captureContext=capturePracticeDeckContext,onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,load=loadModules,sessionOnly=true}={}){
+export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwork=async()=>{},reviewDecks=async()=>null,captureContext=capturePracticeDeckContext,onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onSaveDeck=null,load=loadModules,sessionOnly=true}={}){
  if(!root||typeof readAccount!=='function'||typeof readSetup!=='function'||typeof lookup!=='function'||typeof prepareArtwork!=='function'||typeof reviewDecks!=='function')throw Error('PLAYER_MAT_HOST_REQUIRED');
  if(typeof sessionOnly!=='boolean')throw Error('INVALID_SESSION_MODE');
- let generation=0,flow=null,table=null,opening=false,last=null,frame=null,pendingPaint=null,warning=false,reviewingResult=false,resultKey=null,matchup=null;
+ let generation=0,flow=null,table=null,opening=false,last=null,frame=null,pendingPaint=null,warning=false,reviewingResult=false,resultKey=null,matchup=null,matchOwner=null,savedDeckId=null,savePromise=null;
  const view=root.ownerDocument.defaultView;
  const sessionNote='Keep this page open. Refreshing or leaving ends this Practice session; it cannot be resumed.';
  const beforeUnload=event=>{event.preventDefault();event.returnValue='';};
@@ -31,6 +31,10 @@ export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwor
   if(matchup)panel.append(node('p',matchup.selected.name+' vs '+matchup.opponent.name));
   panel.append(node('p',sessionOnly?'Session-only match: no resumable match record is saved.':'Review the final board before leaving.'));
   const actions=node('div');actions.className='actions wrap';const add=(label,fn,primary=false)=>{const b=node('button',label);b.type='button';b.className=primary?'btn':'btn ghost';b.addEventListener('click',fn);actions.append(b);};
+  const savedLink=()=>{const link=node('a','Open saved deck');link.className='btn ghost';link.href='#deck/'+encodeURIComponent(savedDeckId)+'/cards';link.addEventListener('click',onClose);actions.append(link);};
+  if(savedDeckId)savedLink();
+  if(onSaveDeck&&matchup?.selected){const save=node('button',savedDeckId?'Deck saved':'Save deck'),feedback=node('p');save.type='button';save.className='btn ghost';save.disabled=!!savedDeckId||!!savePromise;feedback.setAttribute('role','status');actions.append(save);
+   save.addEventListener('click',async()=>{if(savePromise||ticket!==generation||accountKey()!==matchOwner)return;save.disabled=true;save.textContent='Saving deck…';try{savePromise=Promise.resolve(onSaveDeck(structuredClone(matchup.selected)));const id=await savePromise;if(ticket!==generation||accountKey()!==matchOwner)return;savedDeckId=id;save.textContent='Deck saved';feedback.textContent='Saved to Your decks.';savedLink();}catch{if(ticket===generation){feedback.textContent='The deck could not be saved. Try again.';save.disabled=false;save.textContent='Retry saving deck';}}finally{savePromise=null;}});panel.append(feedback);}
   add('Review final board',()=>{reviewingResult=true;resultKey=null;receive(state,ticket);});
   if(onRematch)add('Rematch setup',onRematch,true);add('Return to Play setup',onClose);if(onHome)add('Home',onHome);panel.append(actions);root.append(panel);title.focus();
  }
@@ -68,7 +72,7 @@ export function createPlayerMat({root,readAccount,readSetup,lookup,prepareArtwor
   if(resume&&sessionOnly)throw Error('SESSION_RESUME_UNAVAILABLE');
   if(opening||flow)throw Error('MATCH_ALREADY_OPEN');opening=true;const ticket=++generation,owner=accountKey(),setup=resume?null:readSetup(),selection=setup&&setupKey(setup);
   try{
-   if(!resume){const review=reviewPracticeSetup(setup);if(!review.canLoad){const error=Error('PRACTICE_SETUP_UNAVAILABLE');error.review=review;throw error;}matchup=structuredClone(setup);}
+   if(!resume){const review=reviewPracticeSetup(setup);if(!review.canLoad){const error=Error('PRACTICE_SETUP_UNAVAILABLE');error.review=review;throw error;}matchup=structuredClone(setup);matchOwner=owner;}
    message('Opening Practice…',sessionOnly?[sessionNote]:[]);modules=await load();if(!resume){message('Preparing your cards…',sessionOnly?[sessionNote]:[]);await prepareArtwork(structuredClone(setup));}
    if(ticket!==generation||accountKey()!==owner||!resume&&setupKey(readSetup())!==selection)throw Error('SELECTION_CHANGED');
    const catalog=resume?null:await reviewDecks(structuredClone(setup));

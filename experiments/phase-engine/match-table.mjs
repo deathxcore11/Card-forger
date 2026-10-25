@@ -1,4 +1,5 @@
 // DOM presentation for a private, engine-backed research match. No card rules.
+import {turnControlElements,turnFlowMessage} from '../../play-turn-controls.js';
 import {bindCardPlacement,placementIntent} from './card-placement.mjs';
 import {validInteractionText,validInteractionRelations,validDamageAssignments} from './interaction-surface.mjs';
 import {cardStatView} from './card-stats.mjs';
@@ -95,7 +96,7 @@ export function cardActionCues(snapshot,instanceId){
  return cues;
 }
 export function mountMatchTable(root,{session,profile={displayName:'You'},renderPlayerPortrait=()=>null,renderPlayerBackdrop=()=>null,renderMatchBackdrop=()=>null,format=null,resolveCard=()=>null,decorateCard=()=>{},decorateInspector=()=>{},renderOracleText=null,renderMatchContext=()=>null,allowConcede=false,title='CardStashy · Private rules test',mountEffects=()=>()=>{},onExit=()=>{}}){
- const disposeEffects=mountEffects(root),cardNodes=new Map(),bandDrafts=new Map();let bandRevision=null;let inspectorContent=null;let menu=null,exitOpen=false,advancedOpen=false,lastRevision=-1,inspectorHidden=false,detailsOpen=false,showAllCombatLines=false,focusedCombatCard=null;const log=[];let lastRenderKey=null,lastTurnKey=null,turnBanner=null,turnBannerStarted=0,linkLayer=null,boardLinks=[],combatSourceId=null,combatReplace=false;
+ const disposeEffects=mountEffects(root),cardNodes=new Map(),bandDrafts=new Map();let bandRevision=null;let inspectorContent=null;let menu=null,exitOpen=false,advancedOpen=false,lastRevision=-1,inspectorHidden=false,detailsOpen=false,showAllCombatLines=false,focusedCombatCard=null;const log=[];let lastRenderKey=null,lastTurnKey=null,turnBanner=null,turnBannerStarted=0,linkLayer=null,boardLinks=[],combatSourceId=null,combatReplace=false,controlError='';
  const duration=seconds=>`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
  function updateClock(clock){for(const [label,field,title] of [['Inactivity time','idleSeconds','Idle'],['Turn time','turnSeconds','Turn']]){const out=root.querySelector(`[aria-label="${label}"]`),seconds=clock?.limits?.[field];if(out){out.textContent=Number.isSafeInteger(seconds)?`${title} ${duration(seconds)}`:'';out.className=Number.isSafeInteger(seconds)&&seconds<=30?'play-match-warning':'';}}const out=root.querySelector('[aria-label="Response time"]');if(out){out.textContent=clock?.remainingSeconds!==null&&clock?.remainingSeconds!==undefined?`${clock.remainingSeconds}s to respond`:clock?.needsChoice?'Your choice is required':'';out.className=clock?.warning?'play-match-warning':'';}}
  function element(tag,text,cls){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;}
@@ -138,14 +139,14 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
  function render(snapshot){
   placement.reconcile();
   const {status,selected,pending,busy,error,clock}=snapshot;
-  const renderKey=JSON.stringify([status?.revision,status?.surface,status?.outcomes,selected,pending,busy,error,menu,exitOpen,advancedOpen,inspectorHidden,detailsOpen,showAllCombatLines,combatSourceId,combatReplace]);
+  const renderKey=JSON.stringify([status?.revision,status?.surface,status?.outcomes,selected,pending,busy,error,menu,exitOpen,advancedOpen,inspectorHidden,detailsOpen,showAllCombatLines,combatSourceId,combatReplace,snapshot.turnFlow,controlError]);
   if(renderKey===lastRenderKey){updateClock(clock);return;}lastRenderKey=renderKey;
   const focused=root.contains(document.activeElement)?document.activeElement.dataset.focusKey:null;
   const disclosures=[...root.querySelectorAll('details[data-keep-open]')].map(n=>[n.dataset.keepOpen,n.open]);
   const scrolls=[...root.querySelectorAll('[data-keep-scroll]')].map(n=>[n.dataset.keepScroll,n.scrollTop,n.scrollLeft]);
   placement.cancel();root.replaceChildren();root.className='play-match-table';
   if(!status){root.append(element('p',error?'This match could not continue.':'Opening match…'));return;}
-  if(bandRevision!==status.revision){bandDrafts.clear();focusedCombatCard=null;combatSourceId=null;combatReplace=false;bandRevision=status.revision;}
+  if(bandRevision!==status.revision){controlError='';bandDrafts.clear();focusedCombatCard=null;combatSourceId=null;combatReplace=false;bandRevision=status.revision;}
   const view=status.surface,activity=matchActivity(snapshot),openingHand=view.decision.kind==='MulliganDecision',cardById=new Map(view.cards.map(c=>[c.id,c]));
   root.dataset.stage=openingHand?'opening':'match';root.dataset.decision=view.decision.kind;if(format)root.dataset.format=format;
   const turnKey=openingHand?null:JSON.stringify([view.turn,view.activeSeat]);
@@ -154,6 +155,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
   const header=element('header',undefined,'play-match-header');
   header.append(element('strong',title,'play-match-brand'));
   const acting=element('div',activity.label,'play-match-activity');acting.dataset.actor=activity.actor;acting.setAttribute('role','status');header.append(acting);
+  if(!openingHand)header.append(...turnControlElements({document:root.ownerDocument,snapshot,session,onError:message=>{controlError=message;render(session.snapshot());}}));
   if(!openingHand)header.append(button(`History & stack${view.stack.length?' · '+view.stack.length:''}`,()=>{detailsOpen=!detailsOpen;inspectorHidden=!detailsOpen;render(session.snapshot());},{key:'table-details',pressed:detailsOpen}));
   const matchMenu=element('details',undefined,'play-match-menu');matchMenu.dataset.keepOpen='match-menu';matchMenu.append(element('summary','Match menu'));matchMenu.append(element('p','Select cards to inspect. Press I on a focused card for details. Highlighted choices come from the rules engine.'));matchMenu.append(button(allowConcede?(status.terminal?'Return to Play':'Exit match'):'Close research table',()=>{if(!allowConcede||status.terminal)return onExit();exitOpen=true;render(session.snapshot());},{key:'exit-match'}));header.append(matchMenu);root.append(header);
   if(!openingHand){const drop=element('div','Release to cast','play-match-cast-drop');drop.dataset.placementZone='stack';drop.setAttribute('aria-hidden','true');root.append(drop);}
@@ -188,7 +190,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
   }
   const opponent=view.players.find(p=>p.seat!==view.seat),you=view.players.find(p=>p.seat===view.seat),battlefields=element('div',undefined,'play-match-battlefields');battlefields.dataset.keepScroll='battlefields';
   for(const own of [false,true]){const area=element('div',undefined,'play-match-seat-area');area.dataset.seat=own?'you':'cpu';const field=zone(own?'Your battlefield':'CPU battlefield',view.cards.filter(c=>c.zone==='Battlefield'&&(c.controller===view.seat)===own));field.dataset.keepScroll=own?'your-battlefield':'cpu-battlefield';area.append(field);battlefields.append(area);}
-  const handArea=element('div',undefined,'play-match-hand-area');handArea.append(zone('Your hand',view.hand.map(id=>cardById.get(id)).filter(Boolean),{hand:true}));table.append(battlefields,handArea,seatPanel(opponent,'CPU',false),seatPanel(you,profile.displayName||'You',true));if(!openingHand)header.append(zonesMenu());
+  const handArea=element('div',undefined,'play-match-hand-area');handArea.append(zone('Your hand',view.hand.map(id=>cardById.get(id)).filter(Boolean),{hand:true}));table.append(battlefields,handArea,seatPanel(opponent,'CPU',false),seatPanel(you,profile.displayName||'You',true));if(!openingHand&&format==='Commander'){for(const own of [false,true]){const commandCards=view.cards.filter(c=>c.zone==='Command'&&(c.owner===view.seat)===own);if(!commandCards.length)continue;const area=element('section',undefined,'play-command-zone');area.dataset.seat=own?'you':'cpu';area.setAttribute('aria-label',own?'Your command zone':'CPU command zone');area.append(element('strong',own?'Your command zone':'CPU command zone'));const row=element('div');for(const c of commandCards)row.append(card(c));area.append(row);table.append(area);}}if(!openingHand)header.append(zonesMenu());
   const stack=element('section',undefined,'play-match-stack');stack.dataset.placementZone='stack';stack.append(element('h2',`Stack · ${view.stack.length}`));for(const entry of view.stack)stack.append(element('p',cardById.get(entry.source)?.name||'Ability or spell'));if(!view.stack.length)stack.append(element('p','No spells or abilities waiting','play-match-stack-empty'));if(!openingHand)rail.append(stack);
   const matchContext=!openingHand?renderMatchContext():null;if(matchContext)rail.append(matchContext);
   const history=element('details');history.dataset.keepOpen='game-progress';history.append(element('summary','Game progress'));const entries=element('ol');for(const row of log.slice(-20))entries.append(element('li',row));history.append(entries);if(!openingHand)rail.append(history);
@@ -207,6 +209,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
   const decisionHeading=element('div',undefined,'play-match-decision-heading'),decisionTitle=element('strong',activity.label);decisionHeading.append(decisionTitle);footer.append(decisionHeading);
   if(activity.actor==='you'&&view.decision.kind==='Priority'){const legend=element('p',undefined,'play-match-cue-legend');legend.setAttribute('aria-label','Card highlights');for(const [tone,label]of [['play','Play / Cast'],['ability','Ability'],['selected','Inspecting']]){const item=element('span',label);item.dataset.cue=tone;legend.append(item);}legend.append(element('span','Select a highlighted card for actions.'));footer.append(legend);}
   const timer=element('output',clock?.remainingSeconds!==null&&clock?.remainingSeconds!==undefined?`${clock.remainingSeconds}s to respond`:clock?.needsChoice?'Your choice is required':'');timer.className=clock?.warning?'play-match-warning':'';timer.setAttribute('aria-label','Response time');decisionHeading.append(timer);for(const label of ['Inactivity time','Turn time']){const limit=element('output');limit.setAttribute('aria-label',label);decisionHeading.append(limit);}updateClock(clock);
+  const flowNote=turnFlowMessage(snapshot);if(flowNote)footer.append(element('p',flowNote,'play-turn-flow-note'));if(controlError){const note=element('p',controlError,'play-match-error');note.setAttribute('role','alert');footer.append(note);}
   if(error){const reason=element('p',error==='CHOICE_REJECTED'?'The move could not be completed. Review your choices and try again.':'This match has stopped. Return to Play to start a new match.','play-match-error');reason.setAttribute('role','alert');footer.append(reason);}
   if(status.terminal)footer.append(element('p',status.terminal.winner===null?'Draw':status.terminal.winner===view.seat?'You won':'CPU won'));
   const controls=element('div',undefined,'play-match-actions');footer.dataset.complex=String(view.interaction?.opportunities?.some(o=>['assignDamage','number','text','sequence'].includes(o.type))||false);

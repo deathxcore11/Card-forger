@@ -1,0 +1,26 @@
+✔ battlefield grouping preserves each instance and uses current public types (5.769523ms)
+✔ unknown cards cannot leak private type into a battlefield label (1.078985ms)
+✔ phase wording handles both main phases and preserves unfamiliar phases (0.685665ms)
+✔ turn ownership never determines who must act (0.552275ms)
+✔ required prompts, in-flight actions and terminal state keep honest labels (0.286234ms)
+✔ action cues require current offered commands, never name or mana guesses (0.706302ms)
+✔ ability cues require an available exact reference and authorized interaction (0.622498ms)
+✔ ambiguous object roles are not turned into a playable-card promise (0.3786ms)
+✔ opponent turn emblem coexists with the human decision and never invents an opening phase (6.451586ms)
+✔ battlefield presentation follows current types and never reveals hidden type (0.95154ms)
+✔ direct card selection requires one exact available object-only offer (1.21692ms)
+✔ selection preview is revision-bound, private-reference-safe and never mutates the snapshot (3.222506ms)
+✔ combat preview connects only declared public endpoints and clears when authority advances (0.784427ms)
+✔ art crop and full card preserve one printing and finish without changing the game object (3.155685ms)
+✔ a transformed object uses the authorized face crop, never the other face crop (0.792128ms)
+✔ artwork freezes the existing selected printing without changing the source list (4.486221ms)
+✔ wrong printings, unknown finishes and private instances never acquire a guessed effect or image (1.218004ms)
+✔ an authorized back face uses that face of the same printing (0.703694ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 375.716282

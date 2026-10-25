@@ -1,0 +1,27 @@
+{
+  "kind": "synthetic-journey",
+  "checks": {
+    "homeToSetup": true,
+    "pregame": true,
+    "cancelDidNotBegin": true,
+    "beganOnce": true,
+    "openingHand": true,
+    "kept": true,
+    "cancelDidNotConcede": true,
+    "result": true,
+    "resultNoResumePromise": true,
+    "saveFailureVisible": true,
+    "exactDeckSavedOnce": true,
+    "saveRetryAttempts": true,
+    "savedDeckLink": true,
+    "home": true,
+    "setupRetained": true
+  },
+  "passed": true,
+  "begins": 1,
+  "commands": [
+    "keep",
+    "play",
+    "continue"
+  ]
+}

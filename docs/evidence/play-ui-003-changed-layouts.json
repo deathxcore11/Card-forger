@@ -1,0 +1,581 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "scenario": "actions",
+      "width": 1180,
+      "height": 757,
+      "checks": {
+        "pageContained": true,
+        "columnsSeparate": true,
+        "actionsVisible": true,
+        "handPinned": true,
+        "boardUsable": true,
+        "railBounded": true,
+        "handIsFullFace": true,
+        "battlefieldIsCrop": true,
+        "uniqueInstances": true,
+        "phaseCorrect": true,
+        "noPrivateLeak": true,
+        "bothSeatsVisible": true,
+        "buttonsTouchable": true
+      },
+      "passed": true,
+      "geometry": {
+        "mat": {
+          "x": 0,
+          "y": 0,
+          "width": 873,
+          "height": 757,
+          "right": 873,
+          "bottom": 757
+        },
+        "rail": {
+          "x": 888,
+          "y": 145,
+          "width": 270,
+          "height": 385.578125,
+          "right": 1158,
+          "bottom": 530.578125
+        },
+        "hand": {
+          "x": 287,
+          "y": 530.578125,
+          "width": 566,
+          "height": 210.421875,
+          "right": 853,
+          "bottom": 741
+        },
+        "footer": {
+          "x": 888,
+          "y": 504.640625,
+          "width": 270,
+          "height": 224.359375,
+          "right": 1158,
+          "bottom": 729
+        },
+        "battle": {
+          "x": 18,
+          "y": 95,
+          "width": 837,
+          "height": 448.578125,
+          "right": 855,
+          "bottom": 543.578125
+        }
+      },
+      "calls": []
+    },
+    {
+      "scenario": "actions",
+      "width": 1280,
+      "height": 720,
+      "checks": {
+        "pageContained": true,
+        "columnsSeparate": true,
+        "actionsVisible": true,
+        "handPinned": true,
+        "boardUsable": true,
+        "railBounded": true,
+        "handIsFullFace": true,
+        "battlefieldIsCrop": true,
+        "uniqueInstances": true,
+        "phaseCorrect": true,
+        "noPrivateLeak": true,
+        "bothSeatsVisible": true,
+        "buttonsTouchable": true
+      },
+      "passed": true,
+      "geometry": {
+        "mat": {
+          "x": 0,
+          "y": 0,
+          "width": 973,
+          "height": 720,
+          "right": 973,
+          "bottom": 720
+        },
+        "rail": {
+          "x": 988,
+          "y": 145,
+          "width": 270,
+          "height": 362.515625,
+          "right": 1258,
+          "bottom": 507.515625
+        },
+        "hand": {
+          "x": 287,
+          "y": 507.515625,
+          "width": 666,
+          "height": 196.484375,
+          "right": 953,
+          "bottom": 704
+        },
+        "footer": {
+          "x": 988,
+          "y": 467.640625,
+          "width": 270,
+          "height": 224.359375,
+          "right": 1258,
+          "bottom": 692
+        },
+        "battle": {
+          "x": 18,
+          "y": 95,
+          "width": 937,
+          "height": 425.515625,
+          "right": 955,
+          "bottom": 520.515625
+        }
+      },
+      "calls": []
+    },
+    {
+      "scenario": "actions",
+      "width": 590,
+      "height": 378,
+      "checks": {
+        "pageContained": true,
+        "columnsSeparate": true,
+        "actionsVisible": true,
+        "handPinned": true,
+        "boardUsable": true,
+        "railBounded": true,
+        "handIsFullFace": true,
+        "battlefieldIsCrop": true,
+        "uniqueInstances": true,
+        "phaseCorrect": true,
+        "noPrivateLeak": true,
+        "bothSeatsVisible": true,
+        "buttonsTouchable": true
+      },
+      "passed": true,
+      "geometry": {
+        "mat": {
+          "x": 8,
+          "y": 8,
+          "width": 559,
+          "height": 959,
+          "right": 567,
+          "bottom": 967
+        },
+        "rail": {
+          "x": 8,
+          "y": 977,
+          "width": 559,
+          "height": 759.8125,
+          "right": 567,
+          "bottom": 1736.8125
+        },
+        "hand": {
+          "x": 15,
+          "y": 735,
+          "width": 545,
+          "height": 220,
+          "right": 560,
+          "bottom": 955
+        },
+        "footer": {
+          "x": 8,
+          "y": 167.25,
+          "width": 574,
+          "height": 158.75,
+          "right": 582,
+          "bottom": 326
+        },
+        "battle": {
+          "x": 15,
+          "y": 126,
+          "width": 545,
+          "height": 491,
+          "right": 560,
+          "bottom": 617
+        }
+      },
+      "calls": []
+    },
+    {
+      "scenario": "controls",
+      "width": 1180,
+      "height": 757,
+      "checks": {
+        "pageContained": true,
+        "columnsSeparate": true,
+        "actionsVisible": true,
+        "handPinned": true,
+        "boardUsable": true,
+        "railBounded": true,
+        "handIsFullFace": true,
+        "battlefieldIsCrop": true,
+        "uniqueInstances": true,
+        "phaseCorrect": true,
+        "noPrivateLeak": true,
+        "bothSeatsVisible": true,
+        "buttonsTouchable": true
+      },
+      "passed": true,
+      "geometry": {
+        "mat": {
+          "x": 0,
+          "y": 0,
+          "width": 873,
+          "height": 757,
+          "right": 873,
+          "bottom": 757
+        },
+        "rail": {
+          "x": 888,
+          "y": 145,
+          "width": 270,
+          "height": 385.578125,
+          "right": 1158,
+          "bottom": 530.578125
+        },
+        "hand": {
+          "x": 287,
+          "y": 530.578125,
+          "width": 566,
+          "height": 210.421875,
+          "right": 853,
+          "bottom": 741
+        },
+        "footer": {
+          "x": 888,
+          "y": 502.046875,
+          "width": 270,
+          "height": 226.953125,
+          "right": 1158,
+          "bottom": 729
+        },
+        "battle": {
+          "x": 18,
+          "y": 95,
+          "width": 837,
+          "height": 448.578125,
+          "right": 855,
+          "bottom": 543.578125
+        }
+      },
+      "calls": []
+    },
+    {
+      "scenario": "controls",
+      "width": 1280,
+      "height": 720,
+      "checks": {
+        "pageContained": true,
+        "columnsSeparate": true,
+        "actionsVisible": true,
+        "handPinned": true,
+        "boardUsable": true,
+        "railBounded": true,
+        "handIsFullFace": true,
+        "battlefieldIsCrop": true,
+        "uniqueInstances": true,
+        "phaseCorrect": true,
+        "noPrivateLeak": true,
+        "bothSeatsVisible": true,
+        "buttonsTouchable": true
+      },
+      "passed": true,
+      "geometry": {
+        "mat": {
+          "x": 0,
+          "y": 0,
+          "width": 973,
+          "height": 720,
+          "right": 973,
+          "bottom": 720
+        },
+        "rail": {
+          "x": 988,
+          "y": 145,
+          "width": 270,
+          "height": 362.515625,
+          "right": 1258,
+          "bottom": 507.515625
+        },
+        "hand": {
+          "x": 287,
+          "y": 507.515625,
+          "width": 666,
+          "height": 196.484375,
+          "right": 953,
+          "bottom": 704
+        },
+        "footer": {
+          "x": 988,
+          "y": 465.046875,
+          "width": 270,
+          "height": 226.953125,
+          "right": 1258,
+          "bottom": 692
+        },
+        "battle": {
+          "x": 18,
+          "y": 95,
+          "width": 937,
+          "height": 425.515625,
+          "right": 955,
+          "bottom": 520.515625
+        }
+      },
+      "calls": []
+    },
+    {
+      "scenario": "controls",
+      "width": 590,
+      "height": 378,
+      "checks": {
+        "pageContained": true,
+        "columnsSeparate": true,
+        "actionsVisible": true,
+        "handPinned": true,
+        "boardUsable": true,
+        "railBounded": true,
+        "handIsFullFace": true,
+        "battlefieldIsCrop": true,
+        "uniqueInstances": true,
+        "phaseCorrect": true,
+        "noPrivateLeak": true,
+        "bothSeatsVisible": true,
+        "buttonsTouchable": true
+      },
+      "passed": true,
+      "geometry": {
+        "mat": {
+          "x": 8,
+          "y": 8,
+          "width": 559,
+          "height": 959,
+          "right": 567,
+          "bottom": 967
+        },
+        "rail": {
+          "x": 8,
+          "y": 977,
+          "width": 559,
+          "height": 759.8125,
+          "right": 567,
+          "bottom": 1736.8125
+        },
+        "hand": {
+          "x": 15,
+          "y": 735,
+          "width": 545,
+          "height": 220,
+          "right": 560,
+          "bottom": 955
+        },
+        "footer": {
+          "x": 8,
+          "y": 175.21875,
+          "width": 574,
+          "height": 150.78125,
+          "right": 582,
+          "bottom": 326
+        },
+        "battle": {
+          "x": 15,
+          "y": 126,
+          "width": 545,
+          "height": 491,
+          "right": 560,
+          "bottom": 617
+        }
+      },
+      "calls": []
+    },
+    {
+      "scenario": "commander",
+      "width": 1180,
+      "height": 757,
+      "checks": {
+        "pageContained": true,
+        "columnsSeparate": true,
+        "actionsVisible": true,
+        "handPinned": true,
+        "boardUsable": true,
+        "railBounded": true,
+        "handIsFullFace": true,
+        "battlefieldIsCrop": true,
+        "uniqueInstances": true,
+        "phaseCorrect": true,
+        "noPrivateLeak": true,
+        "bothSeatsVisible": true,
+        "buttonsTouchable": true
+      },
+      "passed": true,
+      "geometry": {
+        "mat": {
+          "x": 0,
+          "y": 0,
+          "width": 873,
+          "height": 757,
+          "right": 873,
+          "bottom": 757
+        },
+        "rail": {
+          "x": 888,
+          "y": 145,
+          "width": 270,
+          "height": 385.578125,
+          "right": 1158,
+          "bottom": 530.578125
+        },
+        "hand": {
+          "x": 287,
+          "y": 530.578125,
+          "width": 566,
+          "height": 210.421875,
+          "right": 853,
+          "bottom": 741
+        },
+        "footer": {
+          "x": 888,
+          "y": 544.640625,
+          "width": 270,
+          "height": 184.359375,
+          "right": 1158,
+          "bottom": 729
+        },
+        "battle": {
+          "x": 18,
+          "y": 95,
+          "width": 837,
+          "height": 448.578125,
+          "right": 855,
+          "bottom": 543.578125
+        }
+      },
+      "calls": []
+    },
+    {
+      "scenario": "commander",
+      "width": 1280,
+      "height": 720,
+      "checks": {
+        "pageContained": true,
+        "columnsSeparate": true,
+        "actionsVisible": true,
+        "handPinned": true,
+        "boardUsable": true,
+        "railBounded": true,
+        "handIsFullFace": true,
+        "battlefieldIsCrop": true,
+        "uniqueInstances": true,
+        "phaseCorrect": true,
+        "noPrivateLeak": true,
+        "bothSeatsVisible": true,
+        "buttonsTouchable": true
+      },
+      "passed": true,
+      "geometry": {
+        "mat": {
+          "x": 0,
+          "y": 0,
+          "width": 973,
+          "height": 720,
+          "right": 973,
+          "bottom": 720
+        },
+        "rail": {
+          "x": 988,
+          "y": 145,
+          "width": 270,
+          "height": 362.515625,
+          "right": 1258,
+          "bottom": 507.515625
+        },
+        "hand": {
+          "x": 287,
+          "y": 507.515625,
+          "width": 666,
+          "height": 196.484375,
+          "right": 953,
+          "bottom": 704
+        },
+        "footer": {
+          "x": 988,
+          "y": 507.640625,
+          "width": 270,
+          "height": 184.359375,
+          "right": 1258,
+          "bottom": 692
+        },
+        "battle": {
+          "x": 18,
+          "y": 95,
+          "width": 937,
+          "height": 425.515625,
+          "right": 955,
+          "bottom": 520.515625
+        }
+      },
+      "calls": []
+    },
+    {
+      "scenario": "commander",
+      "width": 590,
+      "height": 378,
+      "checks": {
+        "pageContained": true,
+        "columnsSeparate": true,
+        "actionsVisible": true,
+        "handPinned": true,
+        "boardUsable": true,
+        "railBounded": true,
+        "handIsFullFace": true,
+        "battlefieldIsCrop": true,
+        "uniqueInstances": true,
+        "phaseCorrect": true,
+        "noPrivateLeak": true,
+        "bothSeatsVisible": true,
+        "buttonsTouchable": true
+      },
+      "passed": true,
+      "geometry": {
+        "mat": {
+          "x": 8,
+          "y": 8,
+          "width": 559,
+          "height": 1249.78125,
+          "right": 567,
+          "bottom": 1257.78125
+        },
+        "rail": {
+          "x": 8,
+          "y": 1267.78125,
+          "width": 559,
+          "height": 759.8125,
+          "right": 567,
+          "bottom": 2027.59375
+        },
+        "hand": {
+          "x": 15,
+          "y": 1025.78125,
+          "width": 545,
+          "height": 220,
+          "right": 560,
+          "bottom": 1245.78125
+        },
+        "footer": {
+          "x": 8,
+          "y": 201.015625,
+          "width": 574,
+          "height": 124.984375,
+          "right": 582,
+          "bottom": 326
+        },
+        "battle": {
+          "x": 15,
+          "y": 126,
+          "width": 545,
+          "height": 491,
+          "right": 560,
+          "bottom": 617
+        }
+      },
+      "calls": []
+    }
+  ]
+}

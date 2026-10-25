@@ -63,7 +63,7 @@ test('selected import is displayed once and exposes a focus destination',()=>{
 test('desktop setup has one persistent inspector and only Standard/Commander formats',()=>{
  const html=playMenuMarkup(base());assert.match(html,/class="play-workspace"/);assert.match(html,/<aside class="panel play-inspector"/);
  assert.match(html,/data-play-value="Standard"/);assert.match(html,/data-play-value="Commander"/);assert.doesNotMatch(html,/data-play-value="(?:Modern|Draft)"/);
- assert.match(html,/name="playOpponent" value="cpu"/);assert.match(html,/name="playOpponent" value="friends"/);assert.match(html,/<option value="Easy">Easy · Beta CPU<\/option>/);assert.match(html,/<option value="Medium" selected>Medium · Beta CPU<\/option>/);assert.match(html,/<option value="Hard">Hard · Experimental beta<\/option>/);
+ assert.match(html,/data-play-style="quick"/);assert.match(html,/data-play-style="practice"/);assert.match(html,/data-play-style="social"/);assert.match(html,/<option value="Easy">Easy · Beta CPU<\/option>/);assert.match(html,/<option value="Medium" selected>Medium · Beta CPU<\/option>/);assert.match(html,/<option value="Hard">Hard · Experimental beta<\/option>/);
 });
 test('shelf filters exact format and search without deleting the selected deck preview',()=>{
  const s=base();s.decks=[{id:'a',name:'Alpha',format:'Standard'},{id:'b',name:'Beta',format:'Commander'},{id:'c',name:'Gamma',format:'Standard'}];s.browse.query='alpha';
