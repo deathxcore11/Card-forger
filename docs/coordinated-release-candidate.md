@@ -1,5 +1,7 @@
 # Coordinated Play release candidate
 
+> **Superseded release decision, 2026-10-25:** the owner explicitly directed publishing the tested candidate as-is, documenting known defects and following with a combined hotfix and APK alignment. See `release-4.0.1.md`. The candidate facts and former gates below are retained as historical evidence; they no longer prohibit this scoped publication. The prepared engine build is not needed for this release and has not been dispatched.
+
 This candidate combines integration parent `3110e75` with UI-003 `616911a` and UI-005 `26da16e`, plus the bounded integration fixes below. It is **not a production release**. Runtime `a86578b23adcd26c` is unchanged. Production remains v4.0.0 until the remaining gates pass.
 
 ## Implemented and tested

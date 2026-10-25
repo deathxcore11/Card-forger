@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v319-magic-practice-beta";
+const CACHE = "cardforge-shell-v320-play-ui-cpu-patch";
 const ASSETS = [
   "./experiments/phase-engine/priority-flow.mjs",
   "./play-deck-sources.js",
