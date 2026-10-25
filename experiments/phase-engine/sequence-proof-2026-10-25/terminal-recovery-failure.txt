@@ -1,0 +1,23 @@
+Loading {"stage":"download","completed":16777216,"total":37608099}
+Loading {"stage":"download","completed":33554432,"total":37608099}
+Loading {"stage":"download","completed":37608099,"total":37608099}
+Loading {"stage":"rules","completed":1,"total":1}
+Loading {"stage":"ready","completed":1,"total":1}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+152 !== 386
+
+    at file:///workspace/scratch/7779ccf725c5/loading-slice/experiments/phase-engine/practice-terminal-recovery-browser.mjs:11:98 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 152,
+  expected: 386,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.1

@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "tests": 183,
+  "failures": 0,
+  "skipped": 0,
+  "cancelled": 0,
+  "files": {
+    "match-table.mjs": "ee18e3e5953fe2c30cb1373a325471054b11e05b0257d4a6d3f55d478ccfa6d0",
+    "match-session.mjs": "4554146e7edd364420a5a6ea9242e58543dd4d712c6fc717f87b866f88a7598f",
+    "test-sequence-editing.mjs": "5dd082924bcaa8c186ff96edc640fa8908e5c56449e0c3da8a5cb438f7760dcf",
+    "table-sequence-browser.mjs": "673c9d99f3312713ee969bdb02d5df6b623b1721ed1c12fec3809076ce0dea57",
+    "practice-record.mjs": "6efbcf338262625b8aa2304676435a321f2509d84cbb9f79e85eb4865ca0ae12",
+    "test-practice-record.mjs": "3df1b23880124f1b82fa58f507c533cff76e8f200be9632ee5a9c1b48d5bbc23"
+  },
+  "archiveSha256": "edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b",
+  "verifiedWasmSha256": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+  "limits": "183 focused tests and simulated shared-table browser checks; actual Chromium strict-write/reload storage check. Full control game on pre-strict storage reached terminal but process exited 137. Fresh offline process recovered revision 152 rather than acknowledged terminal 386. Strict-write fix has NOT passed a forced-crash complete-match repeat. Release blocked; no real-account, viable-deck, Commander-match or difficulty certificate."
+}

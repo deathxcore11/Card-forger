@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "checks": [
+    "blank initial value and explicit confirmation",
+    "range and integer validation without submission",
+    "clock-only update preserves input node, text and focus",
+    "explicit zero submitted once under rapid duplicate click",
+    "accepted revision removes stale numeric prompt",
+    "engine-projected modified die, ignored roll and coin success display without face fabrication",
+    "timer paint leaves displayed outcomes unchanged and sends no command"
+  ],
+  "browser": "153.0.8010.0",
+  "sourceSha256": {
+    "/interaction-surface.mjs": "1c11bc585304bea499575daca025c17abe50689060ee1c454daca6a0ecc44cbc",
+    "/protocol-fault.mjs": "0ab0f4cd65031707298e412daf5533525a483aa6b30bc71cd8424ed4bbc74807",
+    "/card-placement.mjs": "e84ae49658ec58cbaa21488c6a73162a8e370f280425cfc2778ae394f28f3259",
+    "/match-table.mjs": "ee18e3e5953fe2c30cb1373a325471054b11e05b0257d4a6d3f55d478ccfa6d0",
+    "/match-table.css": "dc7bd442b9aead4b7ddc0364468c45fcefeda2d18eb5205b998de9fafc922ac3",
+    "/card-stats.mjs": "9d2df7ff86d2f96e97481451b7cdb3eb500d447430f4f9862ba76c49ca7bb46f",
+    "/random-outcomes.mjs": "1aa212c485c766caf1d80403f2413c22bb17194cbbfa54979a699a38ea2d12d0",
+    "/match-session.mjs": "4554146e7edd364420a5a6ea9242e58543dd4d712c6fc717f87b866f88a7598f",
+    "/priority-scheduler.mjs": "d82af4727976497dc1f5cab3948ca1ee394c35865d5e544916a381bc3f839bfa",
+    "/": "8b01abfe1355bf10b7039d3de59a55216e7ca172c00bc22696b7ba20c52827ce"
+  },
+  "limits": "Actual shared table/session with simulated schema/transport and outcome fixtures. Not an engine action, signed-in account route or complete match; see separate corrected-runtime proofs."
+}

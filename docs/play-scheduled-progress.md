@@ -1306,3 +1306,90 @@ not passed or an engine loss. Its captured startup log is retained with this
 slice. Next verification should use an outer bounded process lifetime and isolate
 the persistent-profile/runtime-loading path before another full-suite attempt;
 the separate ephemeral-browser account/recovery path passed on final bytes.
+
+## October 25, 2026 — editable explicit ordered choices
+
+Started from verified remote ac6f1d209fcdeb3a07180d5ea2aeaa57e8b6e142.
+The complete recursive repository tree contains no AGENTS.md. Compared local
+integration modules with remote blob hashes before editing; three untracked
+research probes were excluded from this change. No upstream engine edits.
+
+Ordered human selections now show individual numbered occurrences with local
+Remove, Move earlier and Move later controls. Repeated targets remain separate
+occurrences when the engine permits repetition. Unique selections retain their
+constraint. A full sequence disables additional entries (single-target prompts
+retain replacement behavior), and the session enforces the engine-projected
+maximum even when called directly. Edits are local until explicit confirmation;
+wrong prompts, invalid indices/edges, retired revisions, closed sessions and
+in-flight confirmation cannot edit that draft. Accepted revisions clear it.
+No generated AI candidate list establishes human legality and no rules/payment
+choice is fabricated. Final submission uses the existing authoritative route.
+
+Executed all 182 focused Node tests, zero failures/skips/cancellations. Chromium
+153 shared-table/session checks pass local repeated-occurrence removal, moving,
+capacity, timer paint preservation and explicit keyboard confirmation with the
+exact edited sequence submitted once. Repeated numeric, text and individual
+combat browser checks pass on the final session/table bytes. These checks use
+simulated transport; they do not establish a new actual-engine multi-target
+fixture. Reports and source hashes: experiments/phase-engine/sequence-proof-2026-10-25/.
+
+Rechecked the locally retained delivered archive SHA-256 edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b,
+WASM a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee and
+glue 7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc.
+Browser loader continues to verify the exact decompressed WASM and pinned rules
+identities. Source provenance remains the delivered historical receipt, not a
+fresh source reconstruction. Original failing and corrected passing ninjutsu
+assertions/evidence remain unchanged. No new Rust build or binary substitution.
+
+An initial 240-second bounded run on baseline bytes loaded the runtime, verified
+pending-bottoming cold offline restore and reached 100 human commands/revision
+206 before timeout (exit 124). It did not complete. The shutdown error is an
+interrupted browser context, not an engine loss. The former 16 MiB loading stall
+did not reproduce in this run; no speculative runtime-loading fix is claimed.
+The final-byte run uses a separate output/profile and a 600-second outer limit.
+Its exact result is recorded below once the process finishes.
+
+The longer sequence-byte run (BEFORE the strict-write change below) reached
+engine GameOver: revision 386, winner seat 1, turn 22, 187 human commands and
+one human cast. It wrote practice-partial.json, then exited 137 during terminal
+cold-browser recovery; shared cgroup oom_kill increased from 7 to 8. The full
+suite remains FAILED/INCOMPLETE: Commander, illegal-list and final account-change
+assertions did not execute to completion. No terminal recovery pass follows
+from the earlier pending-bottoming success.
+
+A separate fresh-process offline probe against that exact persistent profile
+FAILED: session revision 152, expected acknowledged terminal revision 386. Kept
+the failing assertion/log and the exact terminal partial receipt. Do not replace
+that stored game with the expected terminal receipt or call this a recovery
+success. The root cause of the rollback is not established. This is a newly
+observed release blocker, separate from supported-deck/owner-route acceptance.
+The cached shell in this diagnostic used pre-strict storage bytes, exactly as
+recorded in the partial report. A new script, practice-terminal-recovery-browser.mjs,
+requires explicit prior profile/origin/partial paths and asserts that the exact
+acknowledged revision/result survives; it does not start a substitute game.
+
+Source inspection found journal writes using the browser's default IndexedDB
+durability. Changed ONLY readwrite record transactions to request durability:
+strict and refuse a browser which does not report honoring it. No relaxed-mode
+fallback, schema change, migration, result reconstruction or automatic command
+retry. This hardens acknowledgement semantics but is NOT a verified fix for
+the observed rollback. Its full forced-crash match repeat is still REQUIRED.
+
+After this storage change, all 183 focused Node tests pass, zero failures/skips/
+cancellations. The added contract test covers the strict request and fail-closed
+unsupported branch. A lightweight actual Chromium IndexedDB check reports strict
+write durability and preserves the acknowledged journal across page reload.
+That is not a killed-process or complete-match guarantee. Sequence/combat/number/
+text browser reports remain bound to their exact unchanged session/table bytes;
+the pre-strict configured-game report retains its original storage source hash.
+
+Next: serialize fresh-process crash/recovery checks with strict record writes,
+assert exact accepted revision/receipts/result across termination and fix the
+rollback cause before claiming offline reliability. Then complete viable real
+Standard/Commander lists, remaining human decisions/pregame/mandatory timeout
+policy, fair calibrated difficulties and the signed-in owner route. Do not spend
+another run merely polling the old process or repeat a paid engine build. Existing
+release authorization applies once actual gates pass; public readiness stays false.
+No production/APK/schema change, paid build, subscription/budget increase or
+external message occurred. All partial and failing outcomes are preserved beside
+the scoped successful tests in sequence-proof-2026-10-25/.

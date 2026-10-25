@@ -76,9 +76,18 @@ export function createMatchSession({client,onChange=()=>{},newId=()=>crypto.rand
    if(!o||!['choose','select','sequence'].includes(o.type)||!o.choices.some(c=>c.id===choiceId&&c.available))throw Error('STALE_CHOICE');
    if(!pending||pending.interactionId!==interactionId)pending={interactionId,type:o.type,choiceIds:[],revision:status.revision};
    if(o.type==='choose')pending.choiceIds=[choiceId];
-   else if(o.type==='sequence'){if(o.max===1)pending.choiceIds=[choiceId];else if(!o.unique||!pending.choiceIds.includes(choiceId))pending.choiceIds=[...pending.choiceIds,choiceId];}
+   else if(o.type==='sequence'){if(o.max===1)pending.choiceIds=[choiceId];else if(!o.unique||!pending.choiceIds.includes(choiceId)){if(pending.choiceIds.length>=o.max)throw Error('CHOICE_FULL');pending.choiceIds=[...pending.choiceIds,choiceId];}}
    else pending.choiceIds=pending.choiceIds.includes(choiceId)?pending.choiceIds.filter(id=>id!==choiceId):[...pending.choiceIds,choiceId];
    publish();
+  },
+  editSequence(interactionId,index,direction){
+   const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);
+   if(closed||busy||error&&error!=='CHOICE_REJECTED'||o?.type!=='sequence'||pending?.interactionId!==interactionId||pending.revision!==status.revision)throw Error('STALE_CHOICE');
+   if(!Number.isInteger(index)||index<0||index>=pending.choiceIds.length||!['remove','earlier','later'].includes(direction))throw Error('CHOICE_INCOMPLETE');
+   const ids=[...pending.choiceIds];
+   if(direction==='remove')ids.splice(index,1);
+   else{const next=index+(direction==='earlier'?-1:1);if(next<0||next>=ids.length)throw Error('CHOICE_INCOMPLETE');[ids[index],ids[next]]=[ids[next],ids[index]];}
+   pending={...pending,choiceIds:ids};publish();
   },
   toggleRelation(interactionId,sourceId,targetId){
    const o=status?.surface.interaction?.opportunities.find(o=>o.interactionId===interactionId);

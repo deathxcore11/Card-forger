@@ -23,7 +23,12 @@ export function validatePracticeInput(input){
 }
 export async function snapshotDigest(input){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(canonical(validatePracticeInput(input)))))].map(b=>b.toString(16).padStart(2,'0')).join('');}
 const transaction=(db,mode,run)=>new Promise((resolve,reject)=>{
- const t=db.transaction('matches',mode),store=t.objectStore('matches');let result,error;
+ // Acknowledged journal/result writes must request disk durability. The
+ // browser default may acknowledge before flushing, which is insufficient
+ // for crash recovery. Fail closed if the browser cannot honor this mode.
+ const t=mode==='readwrite'?db.transaction('matches',mode,{durability:'strict'}):db.transaction('matches',mode);
+ if(mode==='readwrite'&&t.durability!=='strict'){t.abort();throw Error('MATCH_STORE_UNAVAILABLE');}
+ const store=t.objectStore('matches');let result,error;
  const finish=v=>{result=v;},abort=e=>{error=e;t.abort();};
  t.oncomplete=()=>resolve(result);t.onabort=()=>reject(error||Error('MATCH_STORE_FAILED'));t.onerror=()=>{};
  try{run(store,finish,abort);}catch(e){abort(e);}

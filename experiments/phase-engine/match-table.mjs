@@ -10,7 +10,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
  const disposeEffects=mountEffects(root),cardNodes=new Map(),bandDrafts=new Map();let bandRevision=null;let inspectorContent=null;let menu=null,exitOpen=false,advancedOpen=false,lastRevision=-1;const log=[];let lastRenderKey=null;
  function updateClock(clock){const out=root.querySelector('[aria-label="Response time"]');if(out){out.textContent=clock?.remainingSeconds!==null&&clock?.remainingSeconds!==undefined?`${clock.remainingSeconds}s to respond`:clock?.needsChoice?'Your choice is required':'';out.className=clock?.warning?'play-match-warning':'';}}
  function element(tag,text,cls){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;}
- function button(text,action,{disabled=false,key,pressed,blockWhileBusy=false}={}){const b=element('button',text);b.type='button';b.disabled=disabled;if(key)b.dataset.focusKey=key;if(pressed!==undefined)b.setAttribute('aria-pressed',String(pressed));const failed=e=>{if(['MATCH_NOT_READY','STALE_CHOICE','CHOICE_INCOMPLETE'].includes(e.message)){render(session.snapshot());return;}queueMicrotask(()=>{throw e;});};b.addEventListener('click',()=>{if(blockWhileBusy&&session.snapshot().busy)return;try{const result=action();if(result?.catch)result.catch(failed);}catch(e){failed(e);}});return b;}
+ function button(text,action,{disabled=false,key,pressed,blockWhileBusy=false}={}){const b=element('button',text);b.type='button';b.disabled=disabled;if(key)b.dataset.focusKey=key;if(pressed!==undefined)b.setAttribute('aria-pressed',String(pressed));const failed=e=>{if(['MATCH_NOT_READY','STALE_CHOICE','CHOICE_INCOMPLETE','CHOICE_FULL'].includes(e.message)){render(session.snapshot());return;}queueMicrotask(()=>{throw e;});};b.addEventListener('click',()=>{if(blockWhileBusy&&session.snapshot().busy)return;try{const result=action();if(result?.catch)result.catch(failed);}catch(e){failed(e);}});return b;}
  const placement=bindCardPlacement(root,{session,onError:e=>queueMicrotask(()=>{throw e;})});
  const creatureState=c=>[c.tapped?'Tapped':'',c.power!==null&&c.power!==undefined?`${c.power}/${c.toughness}`:'',c.damage?`${c.damage} damage`:'',...Object.entries(c.counters||{}).map(([k,v])=>`${v} ${k}`)].filter(Boolean).join(' · ');
  const identity=c=>JSON.stringify([c.known,c.name,c.face,c.isToken,c.displaySource,c.tokenImageRef,c.printing||null]);
@@ -123,8 +123,13 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},resolv
      group.append(input,confirm);interactionControls.append(group);continue;
     }
     const group=element('fieldset');group.append(element('legend',o.type!=='choose'?`${o.type==='sequence'?'Choose in order':'Select'} ${o.min===o.max?o.min:o.min+'–'+o.max}`:'Choose one'));
-    for(const c of o.choices)group.append(button(actionText(c,view.decision.kind),()=>session.select(o.interactionId,c.id),{key:c.id,blockWhileBusy:true,disabled:busy||!c.available||!!error&&error!=='CHOICE_REJECTED',pressed:pending?.interactionId===o.interactionId&&pending.choiceIds.includes(c.id)}));
-    if(o.type==='sequence'&&pending?.interactionId===o.interactionId)group.append(element('p','Order: '+pending.choiceIds.map(id=>actionText(o.choices.find(c=>c.id===id))).join(' → ')));
+    for(const c of o.choices)group.append(button(actionText(c,view.decision.kind),()=>session.select(o.interactionId,c.id),{key:c.id,blockWhileBusy:true,disabled:busy||!c.available||!!error&&error!=='CHOICE_REJECTED'||o.type==='sequence'&&o.max!==1&&pending?.interactionId===o.interactionId&&(pending.choiceIds.length>=o.max||o.unique&&pending.choiceIds.includes(c.id)),pressed:pending?.interactionId===o.interactionId&&pending.choiceIds.includes(c.id)}));
+    if(o.type==='sequence'&&pending?.interactionId===o.interactionId){
+     const order=element('ol');order.setAttribute('aria-label','Chosen order');
+     pending.choiceIds.forEach((id,index)=>{const row=element('li',actionText(o.choices.find(c=>c.id===id))),blocked=busy||!!error&&error!=='CHOICE_REJECTED';
+      for(const [direction,label,edge]of [['earlier','Move earlier',index===0],['later','Move later',index===pending.choiceIds.length-1],['remove','Remove',false]])row.append(button(label,()=>session.editSequence(o.interactionId,index,direction),{key:`sequence-${o.interactionId}-${index}-${direction}`,disabled:blocked||edge}));order.append(row);
+     });group.append(order);
+    }
     const count=pending?.interactionId===o.interactionId?pending.choiceIds.length:0;
     group.append(button('Confirm choice',()=>session.confirm(),{blockWhileBusy:true,disabled:busy||!!error&&error!=='CHOICE_REJECTED'||count<o.min||count>o.max||pending?.interactionId!==o.interactionId,key:`confirm-${o.interactionId}`}));
     if(o.min===0)group.append(button('Select none',()=>session.selectNone(o.interactionId),{blockWhileBusy:true,disabled:busy,key:`none-${o.interactionId}`}));
