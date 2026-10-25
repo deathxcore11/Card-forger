@@ -1,0 +1,16 @@
+/* Layout only: colors, type, buttons, deck tiles and card views use the app. */
+.play-menu{display:grid;gap:24px}
+.play-menu>.panel{margin:0}
+.play-menu .page-head{margin-bottom:12px}
+.play-profile{display:flex;align-items:center;gap:16px}
+.play-profile h2,.play-profile p{margin:0}
+.play-profile>div{flex:1;min-width:0}
+.play-profile .profile-avatar{flex-shrink:0}
+.play-deck-choices{align-items:start}
+.play-deck-choice{display:grid;gap:8px;min-width:0}
+.play-deck-choice>.deck-tile{width:100%}
+.play-deck-choice>.btn{justify-self:stretch}
+.play-deck-choice.selected>.btn{outline:2px solid var(--gold);outline-offset:2px}
+.play-menu textarea{width:100%;resize:vertical}
+.play-menu .deck-viewer{min-width:0}
+@media(max-width:700px){.play-profile{flex-wrap:wrap}.play-menu{gap:18px}}

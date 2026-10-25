@@ -427,3 +427,17 @@ The local CPU design is plausible and the narrow runtime spike is useful
 progress. The supported game, fair difficulties, full offline recovery and
 finished Play interface remain development work.
 
+
+## Owner clarification and setup checkpoint — October 24, 2026
+
+The first owner-facing beta target is a complete 1v1 human-versus-CPU match
+from the private Play branch preview, using the account profile and an eligible
+saved/imported deck. Reliable 1v1 precedes friend invitations/shared links;
+three/four-player Commander is a later feasibility decision. Draft remains future
+recorded scope. The owner explicitly requested saved-deck and clipboard setup
+and uniform live-site components while the browser engine is being verified.
+
+See [Play setup checkpoint](play-setup-checkpoint.md) for implemented setup,
+exact checks and outstanding printing-resolution/gameplay gates. The desktop
+setup route is available on this development branch, but the CPU match button
+stays disabled. This is not the requested playable beta or permission to publish.

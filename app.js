@@ -12,6 +12,9 @@ import {loadMtgBooster,mtgBoosterCards} from './mtg-boosters.js';
 document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]'))trimPackArt(e.target);},true);
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
 import {syncDesktopPlayEntries} from './desktop-play.js';
+import {createPlaySetup} from './play-setup.js';
+import {parsePlayDeckImport} from './play-deck-import.js';
+import {playMenuMarkup} from './play-menu.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -77,7 +80,7 @@ import { createScannerLookup } from "./scanner-lookup.js";
 import {SheetHistory,BROWSE_TYPES,sheetKey} from "./sheet-history.js";
 import {handleArtworkError} from "./artwork.js";
 import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,rememberDetailViewport,restoreDetailViewport,detailTabKey,createDetailJump,conditionBuyLink} from "./pricing-presentation.js";
-import {syncDeckViewers} from './deck-viewer.js';
+import {syncDeckViewers,deckViewer} from './deck-viewer.js';
 import {modeFor,registerWorkbench,quoteModel,recordQuote} from "./workbench-ui.js";
 import { locationPicker, rememberLocation, chooseLocation } from "./collection-locations.js";
 import { captureAuthFields, restoreAuthFields, authFeedback, togglePassword } from "./auth-form.js";
@@ -391,12 +394,13 @@ async function resolve(name, fuzzy = false, refresh = false) {
   return cacheCard(d, [name]);
 }
 
-async function resolveNames(names, progress = () => {}, refresh = false) {
+async function resolveNames(names, progress = () => {}, refresh = false, current = () => true) {
   const wanted = [...new Map(names.filter(Boolean).map((n) => [key(n), n])).values()].filter((n) => refresh || !meta(n)),
     failed = [],
     matched = new Map(),
     retried = new Set();
   for (let i = 0; i < wanted.length; i += 75) {
+    if(!current())return {failed,matched,total:wanted.length,cancelled:true};
     const chunk = wanted.slice(i, i + 75);
     progress(`Loading card data ${Math.min(i + 75, wanted.length)}/${wanted.length}…`);
     try {
@@ -405,6 +409,7 @@ async function resolveNames(names, progress = () => {}, refresh = false) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifiers: chunk.map((name) => ({ name: name.split(" // ")[0] })) }),
       });
+      if(!current())return {failed,matched,total:wanted.length,cancelled:true};
       for (const c of r.data || []) {
         const aliases = chunk.filter((n) => key(n) === key(c.name) || key(n.split(" // ")[0]) === key(c.name.split(" // ")[0]) || c.card_faces?.some((f) => key(f.name) === key(n)));
         cacheCard(c, aliases);
@@ -412,11 +417,13 @@ async function resolveNames(names, progress = () => {}, refresh = false) {
       }
       for (const n of chunk) if (!matched.has(key(n))) failed.push(n);
     } catch (e) {
+      if(!current())return {failed,matched,total:wanted.length,cancelled:true};
       // A batch the database couldn't be reached for gets one more pass after a cooldown.
       if (e?.network && !retried.has(i)) { retried.add(i); progress("The card database is busy; trying again…"); await new Promise((r) => setTimeout(r, 4000)); i -= 75; continue; }
       failed.push(...chunk);
     }
   }
+  if(!current())return {failed,matched,total:wanted.length,cancelled:true};
   saveCatalogSoon();
   return { failed, matched, total: wanted.length };
 }
@@ -916,7 +923,7 @@ const fileSafe = (s) => String(s).replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g,
    Routing
    ========================================================= */
 
-const VIEWS = ["community", "home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared", "tdeck", "rules", "wiki"];
+const VIEWS = ["community", "home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared", "tdeck", "rules", "wiki", "play"];
 
 function parseHash() {
   const segments = routeSegments(location.hash);
@@ -1044,7 +1051,7 @@ function render() {
   content?.setAttribute?.("aria-labelledby", `game-tab-${g}`);
   const views = {
     community:()=>community.page(), home: V.home, search: V.search, wiki:()=>V.wikiPage(currentWikiPage()?.state), collection: V.collection, decks: V.decks,
-    deck: V.deckPage, scan: () => scanView("mtg", "Magic"), settings: V.settings, sets: V.setsPage, set: V.setPage, shared: V.sharedPage,
+    deck: V.deckPage, play: renderPlayPage, scan: () => scanView("mtg", "Magic"), settings: V.settings, sets: V.setsPage, set: V.setPage, shared: V.sharedPage,
   };
   // Yu-Gi-Oh! and Pokémon share their own screens; Magic keeps its full set.
   const tcgViews = {
@@ -1458,6 +1465,43 @@ A.aiDeckReview = t => showAiReview(t.dataset.ai, render);
 const C = {}; // change handlers
 C.chooseLocation = t => chooseLocation(t);
 const I = {}; // input handlers
+// Branch beta setup uses the real account workspace and shared deck renderers.
+// It does not start a manual/cosmetic game or adopt the candidate rules engine.
+const playSetup = createPlaySetup({
+  readAccount:()=>{const a=cloudInfo();return {user:a.user?{id:a.user.id}:null,profile:a.profile,art:{avatar:a.art?.avatar||S.state.settings.cardAvatar||null},switching:a.switching,locked:accountLocked,accountGeneration};},
+  readDecks:()=>S.state.decks,
+  parseImport:text=>parsePlayDeckImport(text,{parseDeckImport}),
+  resolveNames:async names=>{const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;await resolveNames(names,()=>{},false,current);return {failed:current()?names.filter(name=>!meta(name)):[]};}
+});
+function playDeckPreview(deck) {
+  if(!deck||!Array.isArray(deck.cards)||!Array.isArray(deck.side||[])||(deck.format!==undefined&&typeof deck.format!=='string')||[...deck.cards,...(deck.side||[])].some(row=>!row||typeof row.name!=='string'||!Number.isSafeInteger(row.qty)||row.qty<1))return '<p class="note warn">This deck needs review in Decks before its cards can be displayed.</p>';
+  return deckViewer('mtg',V.deckList(deck,{readOnly:true,unfiltered:true,preserveExactList:true,cardAction:'playInspectCard'}));
+}
+function renderPlayPage() {
+  if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>CPU practice is being developed for Magic.</p></section>';
+  if(!syncDesktopPlayEntries('mtg').eligible)return '<section class="empty"><h1>Play</h1><p>The Play beta is available on desktop. Your saved decks remain available in Decks.</p></section>';
+  const state=playSetup.snapshot(),p=state.profile,tiles=new Map();
+  for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck));}
+  const formatOptions='<option value="">Choose a format</option>'+FORMATS.map(f=>`<option value="${esc(f.name)}"${state.draft.format===f.name?' selected':''}>${esc(f.name)}</option>`).join('');
+  return playMenuMarkup(state,{avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(state.selected),importPreview:playDeckPreview(state.reviewDeck),formatOptions});
+}
+const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg')render();};
+A.playSelectDeck=t=>{playSetup.selectDeck(t.dataset.playDeck);refreshPlayMenu();};
+A.playClearSelection=()=>{playSetup.clearSelection();refreshPlayMenu();};
+A.playInspectCard=t=>A.card({dataset:{name:t.dataset.name,readOnly:'true'}});
+I.playImportDraft=C.playImportDraft=t=>{
+  const before=playSetup.snapshot();
+  playSetup.updateDraft({[t.dataset.playField]:t.value});
+  // An edit retires the old preview immediately. Preserve this exact field,
+  // selection and scroll: all three fields intentionally share one handler.
+  if(before.importStatus!=='idle'||before.error){
+    const id=t.id,start=t.selectionStart,end=t.selectionEnd,scroll=t.scrollTop;
+    refreshPlayMenu();const again=document.getElementById(id);again?.focus({preventScroll:true});
+    try{again?.setSelectionRange(start,end);}catch{}if(again)again.scrollTop=scroll;
+  }
+};
+A.playImportPreview=async()=>{const pending=playSetup.importDraft();refreshPlayMenu();await pending;refreshPlayMenu();};
+A.playImportUse=()=>{const state=playSetup.reviewImport();refreshPlayMenu();if(!state.error)document.getElementById('playSelectedTitle')?.focus();};
 function restoreSheetHistory() { const saved=sheetTrail.pop(); if(saved)restoreSheet(saved); else closeSheet(false); }
 const printingPicker = createPrintingPicker({ A, C, I, openSheet, getContext:()=>S.ui.sheetCtx, getBody:()=>$("#sheetBody"), back:restoreSheetHistory });
 registerWorkbench({A,C,commit,render,openSheet,closeSheet,refreshSheet,toast,

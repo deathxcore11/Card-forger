@@ -1,5 +1,6 @@
-const CACHE = "cardforge-shell-v316";
+const CACHE = "cardforge-shell-v316-play-setup-1";
 const ASSETS = [
+  "./play-setup.js", "./play-deck-import.js", "./play-menu.js", "./play-menu.css",
   "./home-overview.css",
   "./deck-viewer.js",
   "./deck-viewer.css",

@@ -1,0 +1,48 @@
+{
+  "browser": "153.0.8010.0",
+  "sourceFiles": {
+    "app.js": "5a1024cfc1d28fb88503f6f2c21fad87d4ce635f13100f92f07b706fea0a558b",
+    "views.js": "7061cedfe37f96f882246a0c31401098f709e00cb49349654687d44857ad1d88",
+    "tcg.js": "89fa09bf8f87186637004eb29f691928fed418744e586079d0d8c2f88e7388ad",
+    "shared-deck-view.js": "492a817df0fe2c650bed1a3c5581a2bdc217642b720c9edc5f8349ac501fe66d",
+    "deck-experience.js": "d5d8bfc2308c93c4e5e89a2f04cc3ad69dd27e9cb29ae8a1effc303824e11a9b",
+    "play-setup.js": "4efde2c1523a59890ffbd285557992e05c383968cbda3bdbeb55b765b704d269",
+    "play-menu.js": "b1d15bb9735c5269d9e19d038789e16a6fb4d457b80a25980cffb58cede5afea",
+    "play-deck-import.js": "3bf31b969ebf948dbb31b17e0747a567d6c5c6c46f69e9a5a0304c4152136303",
+    "deck-viewer.js": "aee2ae1fd78926330b8bf57b94e3c6ef9086d0cf3b87b5f4f56e047331fdd526",
+    "deck-viewer.css": "2662d7afeb06227271d736c6751e2620376566fcba75e7865084d8617b5f311a",
+    "play-menu.css": "031ad2b20e09b5dc7a9324285ef619a0f5798f2a01ce51d9b9e1d9ed3d0224d3",
+    "scripts/play-menu-browser.mjs": "bc4f3341e91bcc9c64eb2548164ebc940751aabb3df4c4e139e6dc9070ed4439"
+  },
+  "cases": [
+    {
+      "theme": "dark",
+      "passed": true,
+      "widths": [
+        1280,
+        1440,
+        1920
+      ],
+      "sourcePreserved": true,
+      "stalePreviewRemoved": true,
+      "focusPreserved": true,
+      "accountSwitchClears": true,
+      "errors": []
+    },
+    {
+      "theme": "light",
+      "passed": true,
+      "widths": [
+        1280,
+        1440,
+        1920
+      ],
+      "sourcePreserved": true,
+      "stalePreviewRemoved": true,
+      "focusPreserved": true,
+      "accountSwitchClears": true,
+      "errors": []
+    }
+  ],
+  "limits": "Fixture account/decks and mocked name resolver. Actual shared renderers and extracted app handlers. No live authentication, external artwork, engine, match, offline or multiplayer proof."
+}

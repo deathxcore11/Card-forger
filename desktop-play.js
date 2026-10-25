@@ -14,10 +14,10 @@ export function syncDesktopPlayEntries(game,root=globalThis.document,view=global
   const n=view.navigator||{},result=playDeviceEligibility({native,ua:n.userAgent||'',platform:n.platform||'',mobile:n.userAgentData?.mobile,maxTouchPoints:n.maxTouchPoints||0,anyFine:!!view.matchMedia?.('(any-pointer:fine)').matches,anyHover:!!view.matchMedia?.('(any-hover:hover)').matches});
   for(const node of root?.querySelectorAll?.('[data-desktop-play-entry]')||[]){
     node.hidden=game!=='mtg'||!result.eligible;
-    // The engine proof gate is not complete. No control here can start a
-    // cosmetic/manual match, claim offline readiness or create a session.
-    node.disabled=true;
-    node.dataset.playReadiness='development';
+    // This isolated beta branch admits deck setup only. The Play page keeps
+    // match creation unavailable until the independent engine gate passes.
+    node.disabled=game!=='mtg'||!result.eligible||node.dataset.desktopPlayEntry!=='practice';
+    node.dataset.playReadiness='setup-preview';
   }
   return result;
 }

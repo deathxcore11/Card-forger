@@ -1,6 +1,7 @@
-import {S} from './store.js';
+import {S,meta} from './store.js';
 import {esc} from './ui.js';
 import {actionIcon} from './icons.js';
+import {engineRoles} from './insights.js';
 
 // The deck preference keeps its existing keys. Collection/search retain their
 // own three views; every deck source shares these four presentations.
@@ -21,7 +22,82 @@ export function deckViewer(game,html,{controls=true}={}){
  // renderer on full-size art, including stacks. Its materials stay unchanged.
  return `<section class="deck-viewer${['gallery','stacks'].includes(mode)?' view-gallery':''}" data-deck-view="${mode}" data-game="${esc(game)}" aria-label="Deck cards">${controls?deckViewControl(game):''}${html}</section>`;
 }
-export const deckCardAttrs=(name,qty,zone='main')=>`data-deck-card data-deck-name="${esc(name)}" data-deck-qty="${esc(qty)}" data-deck-zone="${esc(zone)}"`;
+// Type metadata comes from the same loaded printing used for the card itself.
+// Unknown cards stay explicit rather than being guessed from their names.
+export function deckCardCategory(card){
+ const normalized=String(card?.category||card?.supertype||'');
+ const type=/^(?:Pokémon|Pokemon|Trainer|Energy|Monster|Spell|Trap)$/i.test(normalized)?normalized:String(card?.type_line||card?.typeLine||normalized||card?.type||card?.kind||'');
+ if (/^(?:Pokémon|Pokemon)$/i.test(type))return 'Pokémon';
+ if (/^Trainer$/i.test(type))return 'Trainers';
+ if (/^Energy$/i.test(type))return 'Energy';
+ if (/Monster/i.test(type))return 'Monsters';
+ if (/\bSpell\b/i.test(type))return 'Spells';
+ if (/\bTrap\b/i.test(type))return 'Traps';
+ const front=type.split(' // ')[0].split(/[—–]/)[0];
+ for(const [pattern,label] of [[/\bLand\b/i,'Lands'],[/\bCreature\b/i,'Creatures'],[/\bPlaneswalker\b/i,'Planeswalkers'],[/\bInstant\b/i,'Instants'],[/\bSorcery\b/i,'Sorceries'],[/\bArtifact\b/i,'Artifacts'],[/\bEnchantment\b/i,'Enchantments'],[/\bBattle\b/i,'Battles']])if(pattern.test(front))return label;
+ return 'Unresolved';
+}
+export function deckCardAttrs(name,qty,zone='main',card=null,category=''){
+ const loaded=card?.type_line||card?.typeLine||card?.category||card?.supertype||card?.type||card?.kind?card:meta(name)||card,group=category||deckCardCategory(loaded);
+ const roles=loaded?.type_line?engineRoles(loaded).filter(role=>role!=='Land'):[];
+ return `data-deck-card data-deck-name="${esc(name)}" data-deck-qty="${esc(qty)}" data-deck-zone="${esc(zone)}" data-deck-category="${esc(group)}" data-deck-roles="${esc(roles.join(','))}"`;
+}
+const originalDeckChildren=new WeakMap();
+const GROUP_ORDER=['Commander','Creatures','Planeswalkers','Instants','Sorceries','Artifacts','Enchantments','Battles','Lands','Pokémon','Trainers','Energy','Monsters','Spells','Traps','Unresolved'];
+function stackList(list){
+ if(originalDeckChildren.has(list))return;
+ // Back navigation restores serialized HTML, so recover the original order
+ // from each retained card rather than depending on an in-memory wrapper map.
+ if(list.querySelector(':scope > .deck-stack-group')){originalDeckChildren.set(list,[...list.querySelectorAll('[data-deck-card]')].sort((a,b)=>Number(a.dataset.deckOriginalIndex)-Number(b.dataset.deckOriginalIndex)));return;}
+ const original=[...list.childNodes],cards=[...list.querySelectorAll(':scope > [data-deck-card]')];
+ if(!cards.length)return;
+ originalDeckChildren.set(list,original);
+ cards.forEach((card,index)=>{card.dataset.deckOriginalIndex=String(index);});
+ const groups=new Map();
+ for(const card of cards){const category=card.dataset.deckCategory||'Unresolved';if(!groups.has(category))groups.set(category,[]);groups.get(category).push(card);}
+ const fragment=list.ownerDocument.createDocumentFragment();
+ let totalPiles=0;
+ for(const [category,rows] of [...groups].sort(([a],[b])=>GROUP_ORDER.indexOf(a)-GROUP_ORDER.indexOf(b))){
+  const section=list.ownerDocument.createElement('section'),heading=list.ownerDocument.createElement('h4'),columns=list.ownerDocument.createElement('div');
+  const count=rows.reduce((sum,card)=>sum+(Number(card.dataset.deckQty)||0),0);
+  section.dataset.deckStackGroup=category;section.dataset.deckCount=String(count);section.className='deck-stack-group';
+  const pileCount=Math.ceil(rows.length/6);totalPiles+=pileCount;
+  section.style.setProperty('--deck-stack-basis',`${pileCount*206-16}px`);section.style.setProperty('--deck-stack-small-basis',`${pileCount*158-10}px`);
+  heading.className='deck-stack-heading';heading.innerHTML=`<span>${esc(category)}</span><span class="deck-stack-count">${count}</span>`;
+  // Saved Magic lists already provide a collapsible type heading.
+  heading.hidden=groups.size===1&&!!list.parentElement?.matches('details.group')&&String(list.parentElement.querySelector(':scope > summary > span')?.textContent||'').trim().startsWith(category);
+  columns.className='deck-stack-columns';
+  for(let start=0;start<rows.length;start+=6){
+   const pile=list.ownerDocument.createElement('div'),batch=rows.slice(start,start+6);pile.className='deck-stack-pile';pile.style.setProperty('--deck-stack-size',String(batch.length));
+   batch.forEach((card,index)=>{
+    if(card.matches('button')&&!card.hasAttribute('aria-label'))card.setAttribute('aria-label',`${card.dataset.deckQty}× ${card.dataset.deckName}`);
+    card.style.setProperty('--deck-stack-index',String(index+1));
+    const roles=(card.dataset.deckRoles||'').split(',').filter(Boolean);
+    if(roles.length&&!card.querySelector('.deck-stack-roles')){const badge=list.ownerDocument.createElement('span');badge.className='deck-stack-roles';badge.textContent=roles.join(' · ');badge.setAttribute('aria-label','Roles: '+roles.join(', '));card.append(badge);}
+    pile.append(card);
+   });columns.append(pile);
+  }
+  section.append(heading,columns);fragment.append(section);
+ }
+ if(list.parentElement?.matches('details.group')){list.parentElement.style.setProperty('--deck-stack-basis',`${totalPiles*206-16}px`);list.parentElement.style.setProperty('--deck-stack-small-basis',`${totalPiles*158-10}px`);}
+ list.replaceChildren(fragment);
+}
+function stackSummary(viewer){
+ let summary=viewer.querySelector(':scope > .deck-stack-summary');
+ const counts=new Map();
+ for(const card of viewer.querySelectorAll('[data-deck-card]')){
+  if(card.dataset.deckZone==='side')continue;
+  for(const role of (card.dataset.deckRoles||'').split(',').filter(Boolean))counts.set(role,(counts.get(role)||0)+(Number(card.dataset.deckQty)||0));
+ }
+ if(!counts.size){summary?.remove();return;}
+ if(!summary){summary=viewer.ownerDocument.createElement('div');summary.className='deck-stack-summary';summary.setAttribute('aria-label','Main deck roles');const toolbar=viewer.querySelector(':scope > .deck-view-toolbar');viewer.insertBefore(summary,toolbar?toolbar.nextSibling:viewer.firstChild);}
+ summary.innerHTML=[...counts].map(([role,count])=>`<span>${esc(role)} <b>${count}</b></span>`).join('');
+}
+function unstackList(list){
+ const original=originalDeckChildren.get(list)||(list.querySelector(':scope > .deck-stack-group')?[...list.querySelectorAll('[data-deck-card]')].sort((a,b)=>Number(a.dataset.deckOriginalIndex)-Number(b.dataset.deckOriginalIndex)):null);
+ if(!original)return;
+ list.replaceChildren(...original);originalDeckChildren.delete(list);
+}
 
 // A layout change must not replace card nodes, selected checkboxes, disclosures
 // or the sheet. Snapshots restored by Back use today's saved preference too.
@@ -29,7 +105,8 @@ export function syncDeckViewers(root=globalThis.document){
  for(const viewer of root?.querySelectorAll?.('.deck-viewer')||[]){
   viewer.dataset.deckView=deckViewFor(viewer.dataset.game);
   viewer.classList.toggle('view-gallery',['gallery','stacks'].includes(viewer.dataset.deckView));
-  for(const list of viewer.querySelectorAll('[data-deck-list]'))list.style.setProperty('--deck-stack-rows',String(Math.max(1,Math.min(6,list.children.length))));
+  for(const list of viewer.querySelectorAll('[data-deck-list]')){if(viewer.dataset.deckView==='stacks')stackList(list);else unstackList(list);}
+  if(viewer.dataset.deckView==='stacks')stackSummary(viewer);
  }
  for(const group of root?.querySelectorAll?.('.deck-view-switch')||[]){
   const mode=deckViewFor(group.dataset.game);

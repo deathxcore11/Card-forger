@@ -1,0 +1,24 @@
+{
+  "baseCommit": "bbf01b5ca30c93762be3d1bf66041b0ff69ae541",
+  "packageTestCommands": 313,
+  "segments": [
+    {
+      "acceptedCommands": 72,
+      "stoppedFor": "missing test-deck-plan-fidelity.mjs"
+    },
+    {
+      "acceptedCommands": 71,
+      "stoppedFor": "missing existing APK fixture"
+    },
+    {
+      "acceptedCommands": 170,
+      "exitCode": 0
+    }
+  ],
+  "logSha256": {
+    "play-menu-full-suite-final.log": "b402337e173fd4aa7a6dbd096c2b5199bc8c893580a43038eeb58c61adb7dee9",
+    "play-menu-suite-remainder.log": "359d8eac90c81e1de7ac9b9483b177c186f1be072d9d0823f2c69107fd819d50",
+    "play-menu-suite-final-remainder.log": "1c8c957ebb8cd3ca7e467ba97ddfc3f56c89640591b7f34d7baf128e511088d1"
+  },
+  "limits": "Resumed aggregate execution, not one uninterrupted run. Final shared category caller sync followed by focused deck/product/handoff/preload and browser reruns. No production network, physical device, CPU strength or match support certificate."
+}

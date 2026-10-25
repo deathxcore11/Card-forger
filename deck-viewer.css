@@ -45,17 +45,65 @@
 .deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .pick-row > .pick-side { display:flex; justify-content:space-between; max-width:none; padding:0 6px 8px; }
 .deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) [data-deck-card]::after { content:attr(data-deck-qty) '×'; position:absolute; top:7px; right:7px; z-index:2; padding:3px 7px; border:1px solid #ffffff60; border-radius:7px; background:#141820e8; color:#fff; font-size:12px; font-weight:800; line-height:1.4; pointer-events:none; }
 
-/* Stacks scroll inside each group. DOM order and tab order remain identical;
-   raising the focused card exposes its original controls above the overlap. */
-.deck-viewer[data-deck-view="stacks"] [data-deck-list] { --deck-stack-height:380px; display:grid; grid-auto-flow:column; grid-template-columns:none; grid-auto-columns:190px; grid-template-rows:repeat(var(--deck-stack-rows,1),44px); align-items:start; gap:0 18px; padding:8px 8px calc(var(--deck-stack-height) - 44px + 12px); overflow:auto hidden; overscroll-behavior-inline:contain; scrollbar-width:thin; border:0; background:none; }
-.deck-viewer[data-deck-view="stacks"] [data-deck-card] { width:190px; height:var(--deck-stack-height); align-self:start; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); box-shadow:0 7px 16px -10px #000b; }
+/* Stacks use type sections and wrapping piles. Each pile ends at the card's
+   portrait edge; quantity controls sit on the art instead of a gray footer. */
+.deck-stack-roles,.deck-stack-summary { display:none; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-summary { display:flex; flex-wrap:wrap; gap:7px 16px; margin:0 0 18px; color:var(--muted); font-size:12px; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-summary b { color:var(--text); }
+.deck-viewer[data-deck-view="stacks"] [data-deck-list] { display:flex; flex-wrap:wrap; align-items:flex-start; gap:24px 18px; padding:8px 3px 12px; overflow:visible; border:0; background:none; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-group { flex:0 1 var(--deck-stack-basis,190px); min-width:min(168px,100%); max-width:100%; }
+.deck-viewer[data-deck-view="stacks"] #deckList { display:flex; flex-wrap:wrap; align-items:flex-start; gap:20px 18px; }
+.deck-viewer[data-deck-view="stacks"] #deckList > details.group { flex:0 1 var(--deck-stack-basis,190px); min-width:min(174px,100%); max-width:100%; margin:0; }
+.deck-viewer[data-deck-view="stacks"]:has(> details.group) { display:flex; flex-wrap:wrap; align-items:flex-start; gap:20px 18px; }
+.deck-viewer[data-deck-view="stacks"]:has(> details.group) > .deck-view-toolbar,
+.deck-viewer[data-deck-view="stacks"]:has(> details.group) > .deck-stack-summary { flex-basis:100%; }
+.deck-viewer[data-deck-view="stacks"] > details.group { flex:0 1 var(--deck-stack-basis,190px); min-width:min(174px,100%); max-width:100%; margin:0; }
+.deck-viewer[data-deck-view="stacks"] details.group > summary { min-width:0; flex-wrap:wrap; gap:5px; white-space:normal; }
+.deck-viewer[data-deck-view="stacks"] details.group > summary > span:first-child { min-width:0; overflow-wrap:anywhere; }
+.deck-viewer[data-deck-view="stacks"] details.group > summary > span.muted { display:none; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-heading { display:flex; align-items:center; gap:9px; margin:0 0 12px; font-size:15px; font-weight:750; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-heading[hidden] { display:none; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-count { display:inline-grid; place-items:center; min-width:26px; padding:2px 7px; border-radius:8px; background:var(--surface-2); color:var(--muted); font-size:12px; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-columns { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(168px,100%),1fr)); align-items:start; gap:20px 16px; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-pile { --deck-stack-step:38px; display:flex; flex-direction:column; align-items:stretch; min-width:0; }
+.deck-viewer[data-deck-view="stacks"] [data-deck-card] { flex:0 0 auto; width:100%; height:auto; aspect-ratio:63/88; min-height:0; gap:0; margin:0; align-self:stretch; border:0; border-radius:5% / 3.5%; background:none; box-shadow:0 7px 16px -10px #000b; isolation:isolate; content-visibility:visible; contain-intrinsic-size:none; }
+/* Natural flex height includes the final full portrait, even for one card and
+   offscreen piles. The overlap is card height minus the exposed title strip. */
+.deck-viewer[data-deck-view="stacks"] .deck-stack-pile > [data-deck-card] + [data-deck-card] { margin-top:calc(var(--deck-stack-step) - 139.68254%); }
 .deck-viewer[data-deck-view="stacks"] [data-deck-card]:hover { z-index:3; }
 .deck-viewer[data-deck-view="stacks"] [data-deck-card]:focus-within { z-index:4; }
-.deck-viewer[data-deck-view="stacks"] .lot.deck-row .own { display:none; }
-.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-side { margin-top:auto; }
-.deck-viewer[data-deck-view="stacks"] .deck-compact-copy > :not(b),
-.deck-viewer[data-deck-view="stacks"] .pick-main .deck-compact-copy > :not(b) { display:none; }
-.deck-viewer[data-deck-view="stacks"] .deck-compact-copy > b { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-art { margin:0; padding:0; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row :is(.lot-info,.art-price),
+.deck-viewer[data-deck-view="stacks"] .mini-row > :is(.ellip,.deck-compact-copy,.small),
+.deck-viewer[data-deck-view="stacks"] .pick-main > .deck-compact-copy,
+.deck-viewer[data-deck-view="stacks"] .pick-row > .pick-side { display:none; }
+.deck-viewer[data-deck-view="stacks"] .pick-main { gap:0; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-side { position:absolute; bottom:6px; right:6px; display:flex; width:auto; max-width:calc(100% - 12px); gap:4px; padding:3px; border:1px solid #ffffff35; border-radius:9px; background:#141820ed; color:#fff; opacity:0; pointer-events:none; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row:is(:hover,:focus-within) .lot-side,
+.deck-viewer[data-deck-view="stacks"] .deck-stack-pile > .lot.deck-row:last-child .lot-side { opacity:1; pointer-events:auto; }
+.deck-viewer[data-deck-view="stacks"] .lot-side .stepper { background:none; color:#fff; }
+.deck-viewer[data-deck-view="stacks"] .lot-side .stepper button { min-height:30px; min-width:30px; }
+.deck-viewer[data-deck-view="stacks"] .lot-side .link { color:#fff; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-roles { position:absolute; left:6px; bottom:7px; display:block; max-width:calc(100% - 12px); padding:3px 6px; border:1px solid #ffffff35; border-radius:6px; background:#141820e8; color:#fff; font-size:10px; line-height:1.3; font-weight:650; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .deck-stack-roles { bottom:47px; }
+.deck-viewer[data-deck-view="stacks"] [data-deck-card]::after { top:5px; right:5px; padding:1px 5px; font-size:11px; border-radius:5px; }
+/* Deck inspection has room for complete piles on desktop. Card-detail sheets
+   keep their existing width and layout when the deck viewer is absent. */
+@media(min-width:700px) {
+ dialog.sheet:has(.deck-viewer[data-deck-view="stacks"]) { width:calc(100% - 48px); max-width:1180px; }
+ #sheetBody:has(.deck-viewer[data-deck-view="stacks"]) { display:block; }
+ #sheetBody:has(.deck-viewer[data-deck-view="stacks"]) > .cs-hero.compact { position:relative; width:auto; height:190px; margin-inline:calc(-1 * var(--gutter)); }
+}
+@media(max-width:480px) {
+ .deck-viewer[data-deck-view="stacks"] .deck-stack-group,
+ .deck-viewer[data-deck-view="stacks"] #deckList > details.group,
+ .deck-viewer[data-deck-view="stacks"] > details.group { flex-basis:var(--deck-stack-small-basis,148px); min-width:min(128px,100%); }
+ .deck-viewer[data-deck-view="stacks"] [data-deck-list],
+ .deck-viewer[data-deck-view="stacks"] #deckList { column-gap:10px; }
+ .deck-viewer[data-deck-view="stacks"] .deck-stack-columns { grid-template-columns:repeat(auto-fill,minmax(min(128px,100%),1fr)); gap:18px 10px; }
+ .deck-viewer[data-deck-view="stacks"] .deck-stack-pile { --deck-stack-step:32px; }
+ .deck-viewer[data-deck-view="stacks"] .lot-side .stepper button { min-width:27px; }
+}
 
 /* Names only keeps editing controls and selected checks; it hides art and
    secondary metadata rather than generating another, divergent card list. */

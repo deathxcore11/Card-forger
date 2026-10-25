@@ -161,3 +161,38 @@ supported decks, usable player choices, stack responses, visible timer,
 legal bounded CPU decisions, saved recovery and a real terminal result.
 The board and complete human/CPU integration remain unfinished. Additional
 reference documents and passing source checks do not close that product gate.
+
+## October 24, 2026 — desktop account deck setup and import review
+
+Continued from remote `bbf01b5ca30c93762be3d1bf66041b0ff69ae541` and the local
+unfinished setup implementation. Current repository tree has no AGENTS.md.
+The owner clarified first beta delivery: complete 1v1 CPU practice with account
+profile and saved/imported decks; friend invitations/shared links follow stable
+1v1, while three/four-player Commander is a later feasibility decision.
+
+The Play branch now contains account-scoped saved-deck selection and clipboard
+import review through the existing profile, deck tiles and four deck views.
+The shared viewer JS/CSS and its category-metadata callers were verified against
+the current default branch; only those changes were selected, with no whole
+branch merge. The setup route is desktop Magic only; CPU match creation and
+Draft remain disabled. No production, APK, migration or paid build action.
+
+Fixed duplicate imported previews, stale preview after typing, and keyboard
+focus/caret restoration. Name lookup and imports reject late account results.
+16 import checks, 19 setup cases and seven menu/renderer cases pass (27 Node
+reported tests including the grouped import file). Browser checks pass in two
+themes at 1280/1440/1920 widths using the actual Play handlers and shared
+renderers with fixture account/data. The 69 engine contract tests still pass.
+See [setup checkpoint](play-setup-checkpoint.md) and its captured browser report.
+
+The corrected browser engine remains the gameplay blocker; preserved ninjutsu
+failures remain intact. Next: exact printing/finish resolution for retained
+import hints, supported-deck preflight, corrected runtime verification, then
+human choices/payment/mulligans, CPU, board/inspector/timer and result recovery.
+Setup alone is not a playable match or a narrowing of the later Casual/Draft
+scope. Do not publish this branch without separate release authorization.
+
+Broader regression outcome: all 313 package test commands completed across
+resumed runs after restoring missing verified baseline test dependencies and
+the unchanged existing APK fixture. Relevant shared-view and Play checks were
+rerun after the final metadata-caller sync. No APK build occurred.

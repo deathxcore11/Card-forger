@@ -1,0 +1,23 @@
+{
+  "app.js": "5a1024cfc1d28fb88503f6f2c21fad87d4ce635f13100f92f07b706fea0a558b",
+  "views.js": "7061cedfe37f96f882246a0c31401098f709e00cb49349654687d44857ad1d88",
+  "deck-viewer.js": "aee2ae1fd78926330b8bf57b94e3c6ef9086d0cf3b87b5f4f56e047331fdd526",
+  "deck-viewer.css": "2662d7afeb06227271d736c6751e2620376566fcba75e7865084d8617b5f311a",
+  "tcg.js": "89fa09bf8f87186637004eb29f691928fed418744e586079d0d8c2f88e7388ad",
+  "shared-deck-view.js": "492a817df0fe2c650bed1a3c5581a2bdc217642b720c9edc5f8349ac501fe66d",
+  "deck-experience.js": "d5d8bfc2308c93c4e5e89a2f04cc3ad69dd27e9cb29ae8a1effc303824e11a9b",
+  "desktop-play.js": "bb4d8228767682aeb74e3bb306f956425ffe92e412fb42a93d1fa3e407554216",
+  "game-navigation.js": "b2a8a79fa5501a42550ded849e425bf5e0e917605be89e1ca75188a2890843b1",
+  "index.html": "ff9cc4442b1767bf34639b72ebf7331a68f7cbbe008eacfa9c31f639a4c87c1e",
+  "sw.js": "60ecdd6a946bc746c74d2b3d560500ff4cfea116ab4851219e02c55cca3ff320",
+  "package.json": "74bb84dd99eae31d29a1c1bbf015c16012665f0641a77e770690b4e86a68fba2",
+  "play-setup.js": "4efde2c1523a59890ffbd285557992e05c383968cbda3bdbeb55b765b704d269",
+  "play-deck-import.js": "3bf31b969ebf948dbb31b17e0747a567d6c5c6c46f69e9a5a0304c4152136303",
+  "play-menu.js": "b1d15bb9735c5269d9e19d038789e16a6fb4d457b80a25980cffb58cede5afea",
+  "play-menu.css": "031ad2b20e09b5dc7a9324285ef619a0f5798f2a01ce51d9b9e1d9ed3d0224d3",
+  "test-play-setup.mjs": "e0d229c9bedfa72c4127b0ca204718bfbb681b01c4ec5f51da69972af91efc3f",
+  "test-play-deck-import.mjs": "3c40b019cabc6a1acf8d4a5694f717408c63a9a0be547ec5fecbe19f208a5a4e",
+  "test-play-menu.mjs": "fc400a652a6834094fa531b67a44a8176defb259e57d6c9ee74e320be5f9e48e",
+  "test-home-overview.mjs": "7ef078657c13c1d5fc00747d78eb3e152087f4b7d361e41f8b02042b5d386e9c",
+  "scripts/play-menu-browser.mjs": "bc4f3341e91bcc9c64eb2548164ebc940751aabb3df4c4e139e6dc9070ed4439"
+}
