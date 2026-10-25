@@ -1,0 +1,30 @@
+{
+  "profile": "/workspace/scratch/7779ccf725c5/test-results/recovery-checkpoints-final/profile-1792923030124",
+  "origin": "http://127.0.0.1:46115",
+  "coldReads": [
+    {
+      "revision": 2,
+      "result": null,
+      "recordSha256": "7af50fef6bc810e270e22ea71e3656886d28981379d472a070eef4b57bc43e8d",
+      "bytes": 459488
+    },
+    {
+      "revision": 101,
+      "result": null,
+      "recordSha256": "414ea8653b86de8e22e33d6e8832dfc9c25e3ae084eda70eb7e29d8d56f86ba4",
+      "bytes": 899889
+    },
+    {
+      "revision": 200,
+      "result": null,
+      "recordSha256": "d3c0847dc0da592a2b3e55efd61596a2f9a000928f0f4c27e5e904660fe0282c",
+      "bytes": 1801586
+    },
+    {
+      "revision": 214,
+      "result": null,
+      "recordSha256": "9b51224ee2b1a69be3857c280bddad1712667274d581f4f34926d58eb7a239e5",
+      "bytes": 1951149
+    }
+  ]
+}

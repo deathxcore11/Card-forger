@@ -1,0 +1,72 @@
+Opening configured candidate
+Browser launched {"profile":"/workspace/scratch/7779ccf725c5/test-results/recovery-checkpoints-final/profile-1792923030124","origin":"http://127.0.0.1:46115","offline":false,"resume":false}
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Opened configured candidate
+Initial controls {"decision":"MulliganDecision","choices":[{"token":"321bc474-5b08-4267-8f42-d0d22d63e633:0:0","label":"Keep hand","kind":"MulliganDecision","sourceId":null},{"token":"321bc474-5b08-4267-8f42-d0d22d63e633:0:2","label":"Take a mulligan","kind":"MulliganDecision","sourceId":null}],"busy":false,"error":null}
+Opening concurrent worker
+Concurrent worker resumed
+Mulligan accepted
+Pending bottom choice
+Browser launched {"profile":"/workspace/scratch/7779ccf725c5/test-results/recovery-checkpoints-final/profile-1792923030124","origin":"http://127.0.0.1:46115","offline":true,"resume":true}
+BEFORE ENGINE RESTORE {"revision":2,"result":null,"recordSha256":"7af50fef6bc810e270e22ea71e3656886d28981379d472a070eef4b57bc43e8d","bytes":459488}
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Cold browser resumed
+CHECKPOINT {"revision":101,"bytes":899889,"recordSha256":"414ea8653b86de8e22e33d6e8832dfc9c25e3ae084eda70eb7e29d8d56f86ba4"}
+Browser launched {"profile":"/workspace/scratch/7779ccf725c5/test-results/recovery-checkpoints-final/profile-1792923030124","origin":"http://127.0.0.1:46115","offline":true,"resume":true}
+BEFORE ENGINE RESTORE {"revision":101,"result":null,"recordSha256":"414ea8653b86de8e22e33d6e8832dfc9c25e3ae084eda70eb7e29d8d56f86ba4","bytes":899889}
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Human commands 50 revision 103
+CHECKPOINT {"revision":200,"bytes":1801586,"recordSha256":"d3c0847dc0da592a2b3e55efd61596a2f9a000928f0f4c27e5e904660fe0282c"}
+Browser launched {"profile":"/workspace/scratch/7779ccf725c5/test-results/recovery-checkpoints-final/profile-1792923030124","origin":"http://127.0.0.1:46115","offline":true,"resume":true}
+BEFORE ENGINE RESTORE {"revision":200,"result":null,"recordSha256":"d3c0847dc0da592a2b3e55efd61596a2f9a000928f0f4c27e5e904660fe0282c","bytes":1801586}
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Human commands 100 revision 206
+CHECKPOINT {"revision":301,"bytes":3057063,"recordSha256":"3a8229300468d02a260dbf3a9ead3e38a725cc28ababc40e6e97205c9804e409"}
+Browser launched {"profile":"/workspace/scratch/7779ccf725c5/test-results/recovery-checkpoints-final/profile-1792923030124","origin":"http://127.0.0.1:46115","offline":true,"resume":true}
+BEFORE ENGINE RESTORE {"revision":214,"result":null,"recordSha256":"9b51224ee2b1a69be3857c280bddad1712667274d581f4f34926d58eb7a239e5","bytes":1951149}
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Cold record changed before any engine restore
++ actual - expected
+
++ '9b51224ee2b1a69be3857c280bddad1712667274d581f4f34926d58eb7a239e5'
+- '3a8229300468d02a260dbf3a9ead3e38a725cc28ababc40e6e97205c9804e409'
+
+    at file:///workspace/scratch/7779ccf725c5/recovery-isolation/experiments/phase-engine/practice-crash-checkpoints-browser.mjs:43:430 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: '9b51224ee2b1a69be3857c280bddad1712667274d581f4f34926d58eb7a239e5',
+  expected: '3a8229300468d02a260dbf3a9ead3e38a725cc28ababc40e6e97205c9804e409',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.1

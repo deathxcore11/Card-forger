@@ -43,3 +43,13 @@ test('inconsistent saved clock refuses recovery',async()=>{
  const f=fixture();await f.make()(msg('create','c'));f.saved.clock.current.context.revision=9;
  assert.equal((await f.make('b')(msg('resume','r',0,'b'))).error,'CLOCK_CONTEXT_MISMATCH');assert.equal(f.count,0);
 });
+
+test('cached board status keeps a live countdown without renewing the deadline',async()=>{
+ const f=fixture(),h=f.make();await h(msg('create','c'));
+ f.now=10000;const first=await h(msg('status','first'));
+ f.now=30000;const later=await h(msg('status','later'));
+ assert.equal(first.result.clock.remainingMs,21000);
+ assert.equal(later.result.clock.remainingMs,1000);
+ assert.equal(first.result.clock.deadlineAt,later.result.clock.deadlineAt);
+ assert.equal(f.saved.revision,0);assert.equal(f.count,0);
+});

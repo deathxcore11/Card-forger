@@ -1,0 +1,22 @@
+Opening configured candidate
+Browser launched
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Opened configured candidate
+Initial controls {"decision":"MulliganDecision","choices":[{"token":"45c40a92-669e-472a-ae08-30714c799b9b:0:0","label":"Keep hand","kind":"MulliganDecision","sourceId":null},{"token":"45c40a92-669e-472a-ae08-30714c799b9b:0:2","label":"Take a mulligan","kind":"MulliganDecision","sourceId":null}],"busy":false,"error":null}
+Opening concurrent worker
+Concurrent worker resumed
+Mulligan accepted
+Pending bottom choice
+Browser launched
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Cold browser resumed

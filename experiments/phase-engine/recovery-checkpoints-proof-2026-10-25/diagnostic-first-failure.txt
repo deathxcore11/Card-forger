@@ -1,0 +1,32 @@
+Opening configured candidate
+Browser launched {"profile":"/workspace/scratch/7779ccf725c5/test-results/recovery-checkpoints/profile-1792922955635","origin":"http://127.0.0.1:33029","offline":false,"resume":false}
+App shell loaded
+BROWSER Loading {"stage":"download","completed":16777216,"total":37608099}
+BROWSER Loading {"stage":"download","completed":33554432,"total":37608099}
+BROWSER Loading {"stage":"download","completed":37608099,"total":37608099}
+BROWSER Loading {"stage":"rules","completed":1,"total":1}
+BROWSER Loading {"stage":"ready","completed":1,"total":1}
+Opened configured candidate
+Initial controls {"decision":"MulliganDecision","choices":[{"token":"656b8bf4-bc11-4123-a341-f967b99521c1:0:0","label":"Keep hand","kind":"MulliganDecision","sourceId":null},{"token":"656b8bf4-bc11-4123-a341-f967b99521c1:0:2","label":"Take a mulligan","kind":"MulliganDecision","sourceId":null}],"busy":false,"error":null}
+Opening concurrent worker
+Concurrent worker resumed
+Mulligan accepted
+Pending bottom choice
+Browser launched {"profile":"/workspace/scratch/7779ccf725c5/test-results/recovery-checkpoints/profile-1792922955635","origin":"http://127.0.0.1:33029","offline":true,"resume":true}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+page.goto: Download is starting
+Call log:
+[2m  - navigating to "http://127.0.0.1:33029/inspect", waiting until "load"[22m
+
+    at open (/workspace/scratch/7779ccf725c5/recovery-isolation/experiments/phase-engine/practice-crash-checkpoints-browser.mjs:24:529)
+    at async file:///workspace/scratch/7779ccf725c5/recovery-isolation/experiments/phase-engine/practice-crash-checkpoints-browser.mjs:38:129 {
+  log: [
+    '  - navigating to "http://127.0.0.1:33029/inspect", waiting until "load"'
+  ],
+  name: 'Error'
+}
+
+Node.js v24.22.1

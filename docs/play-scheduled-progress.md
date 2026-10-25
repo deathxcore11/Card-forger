@@ -1560,3 +1560,86 @@ and this separate revision-87 evidence. Repeated pregame and exact app-entry
 browser checks against that newer app/CSS; both pass. The app keeps its newer
 lazy player-mat creation behavior. Bumped only its existing private shell cache
 version for the changed pregame bytes. No old whole-branch overwrite.
+
+
+## October 25, 2026 — bounded projection caching and pre-engine rollback isolation
+
+Started at freshly verified remote 7ff5f30072e3015c6d971ee92d7c42d490ce6ea8,
+tree e07fc35724ccbcc651ba21ca9c24c6ff87a8c27b; recursive tree has no AGENTS.md.
+Compared the existing experiment modules to remote blob identities before edits.
+Read the required current handoff, engine evaluation, human-route proof,
+mechanics, timer and CPU-context requirements. Existing app/pregame/cache,
+original failures, corrected mechanics evidence and production are preserved.
+
+Implemented a journal-local board/choice projection cache for each accepted
+revision. The 250 ms countdown polls reuse that projection instead of calling
+the expensive engine summary again. Clock inspection remains live on every
+read. Engine mutation invalidates the cache, including rejected submissions;
+failed persistence clears it before rollback. Returned read projections are
+cloned so a caller cannot alter the next status. No durable schema, receipt,
+command identity, engine binary, timeout policy or CPU packet changes.
+The first new test caught a returned-object alias; corrected before final tests.
+No measured browser speedup or fix for persistence is claimed.
+
+Executed 186 Phase module tests plus 3 pregame tests: zero failures/skips/
+cancellations. New checks cover 20 repeated status polls using one engine
+projection, caller mutation isolation, cache invalidation after a move,
+terminal rejection/exact receipt replay, and live countdown without deadline
+renewal. Setup tests were not included in that count. Syntax checks pass.
+
+Reverified the retained delivery ZIP edb82685e8f71de64006da5f8cd188d738939c106ae19d67ad4281158cff513b
+and decompressed WASM a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee.
+No Rust build, new paid job, substituted binary or altered ninjutsu assertion.
+The existing loader verifies runtime/rules bytes during the browser run.
+
+New practice-crash-checkpoints-browser.mjs records explicit profile/origin,
+reads the whole saved record in a storage-only page BEFORE loading the engine,
+and compares compact whole-record SHA-256 digests. It retains normal game
+commands and adds crash checkpoints near accepted revisions 100/200/300.
+It uses the existing isolated process-group helper. No save reconstruction,
+replay repair or removed assertion. The old compact driver attempt was
+interrupted (exit 130) after pending-bottom restore; not a completed test.
+The first new diagnostic failed on an incorrect inspection-page MIME type;
+fixed that test server and repeated from a fresh profile. Both logs retained.
+
+Final actual-engine run FAILED, exit 1, with compact evidence instead of an
+enormous diff. Exact records survived SIGKILL/offline restart at revisions
+2, 101 and 200 (459488, 899889 and 1801586 bytes). The same configured game
+then acknowledged revision 301, 3057063 bytes, digest
+3a8229300468d02a260dbf3a9ead3e38a725cc28ababc40e6e97205c9804e409.
+The cold storage-only read BEFORE any engine restore returned revision 214,
+1951149 bytes, digest
+9b51224ee2b1a69be3857c280bddad1712667274d581f4f34926d58eb7a239e5.
+The cgroup oom_kill counter stayed 10 throughout this final run and the
+following storage probe. This reproduces rollback without a newly observed
+OOM and locates this discrepancy before rules-engine restoration. It does NOT
+establish the browser/storage/environment root cause or prove earlier OOMs
+were assertion-diff failures. Terminal/Commander/illegal-list/account-change
+tail did not execute in this failed checkpoint run.
+
+Followed with a serialized storage-only size probe:
+practice-crash-storage-large-browser.mjs uses the unchanged strict account
+storage and simulated journals with a 2 MiB engine string. All six SIGKILL/
+offline restarts pass at revisions 12/152/386 with records
+2133468/2534168/3204589 bytes, including exact terminal metadata and whole-record
+comparison. Consequently raw record size alone is not established as the cause.
+These repetitive synthetic payloads do not reproduce actual engine content,
+WASM memory use or the final failing game history.
+
+Evidence and exact source hashes:
+experiments/phase-engine/recovery-checkpoints-proof-2026-10-25/.
+The game profile/origin are retained in cold-reads.json for read-only follow-up
+while scratch survives. No full-game, power-loss, all-card or offline reliability
+certificate follows from the passing unit/storage checks.
+
+Next: isolate actual serialized game payload versus synthetic payload, short
+versus long-lived database connections, and the same real-origin record from
+worker versus window. Capture the pre-kill acknowledged payload locally before
+the next bounded checkpoint; do not reconstruct the missing revision afterward.
+Fail fast on the cold digest before loading the engine in a future diagnostic.
+Keep recovery blocked until an actual corrected candidate preserves complete
+matches and receipts. Then real eligible Standard/Commander decks, remaining
+choices/mandatory-timeout policy, calibrated Easy/Medium/Hard and signed-in
+owner flow still require gates. Existing release approval applies only after
+those pass. No production, APK, schema/migration, subscription/budget increase
+or external message changes occurred.

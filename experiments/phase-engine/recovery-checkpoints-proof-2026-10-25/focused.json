@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "tests": 186,
+  "failures": 0,
+  "skipped": 0,
+  "cancelled": 0,
+  "sourceSha256": {
+    "worker-journal.mjs": "5e31fe7dad15f5a59e58ad21e8c305d104c67b7277cb3d6041809556c1cd93f6",
+    "test-worker-journal.mjs": "075e66b5b5624c93e80d04b27cbf04dd4065102a8e7ff521b1a1916f5167af2a",
+    "test-worker-timer.mjs": "41ade15f21099718bb27bf49959e5733cf8b2476d30a700a8ec50066b6cd0552",
+    "practice-crash-checkpoints-browser.mjs": "07dcfbf1b9746de0a5ad51513828575107cfb6892b8565170d250f96b3e51b1e"
+  },
+  "pregameTests": 3,
+  "limits": "Focused module/contract checks. No broad card, CPU-strength, real-account or crash-recovery certificate."
+}

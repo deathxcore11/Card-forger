@@ -31,7 +31,10 @@ function validSave(s) {
 // never cross the boundary. Serialization prevents overlapping WASM mutations.
 export function createJournal({engine,storage,choose,version,epoch,timing=null}) {
  let clock=null;
- let current=null,queue=Promise.resolve(),poisoned=false;
+ let current=null,queue=Promise.resolve(),poisoned=false,projection=null;
+ // Only this serialized authority mutates the engine. Reuse its seat projection
+ // between accepted actions; countdown reads still inspect the live clock.
+ const view=revision=>{if(!projection||projection.revision!==revision)projection={revision,value:engine.summary(revision)};return projection.value;};
  const fingerprint=m=>{const parts=[m.op,m.revision??null,m.seed??null,m.first??null];if(m.choice!==undefined)parts.push(m.choice);if(m.submission!==undefined)parts.push(interactionSubmission(m.submission));if(m.command!==undefined)parts.push(humanCommand(m.command));return JSON.stringify(parts);};
  const clockContext=revision=>({...engine.clockContext(revision),matchId:timing.matchId,revision});
  const makeClock=saved=>createPriorityClock({...timing,saved});
@@ -39,7 +42,7 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
  const clockSummary=(revision,c=clock)=>timing?{clock:c.inspect(clockContext(revision))}:{};
  const outcomeSummary=rows=>typeof engine.drainOutcomes==='function'||rows!==undefined?{outcomes:structuredClone(rows||[])}:{};
  const nextOutcomes=revision=>typeof engine.drainOutcomes==='function'?{outcomes:appendRandomOutcomes(current?.outcomes||[],engine.drainOutcomes(),revision)}:{};
- const summary=()=>({...engine.summary(current.revision),revision:current.revision,...outcomeSummary(current.outcomes),...clockSummary(current.revision)});
+ const summary=()=>({...structuredClone(view(current.revision)),revision:current.revision,...outcomeSummary(current.outcomes),...clockSummary(current.revision)});
  async function execute(raw) {
   const m=packet(raw);if(m.epoch!==epoch)fail('STALE_SESSION');
   if(poisoned)fail('RECOVERY_REQUIRED');
@@ -73,7 +76,7 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
   if(prior){if(prior.fingerprint!==fp)fail('ID_COLLISION');return structuredClone(prior.response);}
   if(m.revision!==current.revision)fail('STALE_REVISION');
   if(current.revision>=20000)fail('ACTION_LIMIT');
-  if(engine.summary(current.revision).terminal)fail('GAME_OVER');
+  if(view(current.revision).terminal)fail('GAME_OVER');
   let actor,action,policyRng=current.policyRng;
   if(m.op==='tick'){
    if(!timing)fail('TIMER_UNAVAILABLE');
@@ -101,6 +104,7 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
    actor=legal.actor;policyRng=proposal.rng;
   }
   try {
+   projection=null;
    if(m.op==='respond'||m.op==='act'){
     const applied=m.op==='act'?engine.act(action.data):engine.respond(action.data);
     if(applied===false)return {rejected:true,reason:'ENGINE_REJECTED',...summary()};
@@ -110,12 +114,13 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
     history:[...current.history,{actor,action}],engine:engine.save(),receipts:{...current.receipts},...nextOutcomes(current.revision+1)};
    const nextClock=timing?armClock(next.revision,current.clock):null;
    if(timing)next.clock=nextClock.snapshot();
-   const response={...engine.summary(next.revision),revision:next.revision,...outcomeSummary(next.outcomes),...clockSummary(next.revision,nextClock)};
+   const response={...view(next.revision),revision:next.revision,...outcomeSummary(next.outcomes),...clockSummary(next.revision,nextClock)};
    Object.defineProperty(next.receipts,m.id,{value:{fingerprint:fp,response},enumerable:true,writable:true,configurable:true});
    // Compare-and-write prevents a second tab/worker overwriting this match.
    await storage.write(next,current.revision);
    current=next;clock=nextClock;return structuredClone(response);
   } catch(error) {
+   projection=null;
    try{engine.restore(current.engine);}catch{poisoned=true;}
    // A failed transaction or conflicting writer requires reloading the durable
    // record. No automatic resend and no claim that a timeout rolled back.

@@ -60,3 +60,26 @@ test('summary receives the accepted revision and cannot override it',async()=>{
  assert.equal((await h(msg('create','c'))).result.revision,0);
  assert.equal((await h(msg('step','a'))).result.revision,1);assert(revisions.includes(0));assert(revisions.includes(1));
 });
+
+// Status polling must not repeatedly rebuild expensive engine/viewer interaction
+// projections. Returning clones also keeps callers from editing the cached view.
+test('status reuses the accepted projection and a new action invalidates it',async()=>{
+ let state=0,durable=null,reads=0;
+ const engine={start(){},restore(s){state=Number(s);},save:()=>String(state),summary(){reads++;return {turn:state,terminal:null,surface:{cards:[{name:'Visible card'}]}};},legal:()=>({actor:0,actions:[{type:'PassPriority'}]}),apply(){state++;}};
+ const h=createJournal({engine,version:'cache-test',epoch:'one',choose:async()=>({index:0,rng:1}),storage:{read:async()=>durable,write:async s=>{durable=structuredClone(s);}}});
+ const first=await h(msg('create','c'));first.result.surface.cards[0].name='changed';
+ for(let i=0;i<20;i++){const reply=await h(msg('status','status-'+i));assert.equal(reply.result.surface.cards[0].name,'Visible card');assert.equal(reply.result.turn,0);}
+ assert.equal(reads,1);
+ const accepted=await h(msg('step','move'));assert.equal(accepted.result.turn,1);assert.equal(reads,2);
+ assert.deepEqual((await h(msg('step','move'))).result,accepted.result);assert.equal(reads,2);
+ await h(msg('status','after'));assert.equal(reads,2);
+});
+
+test('a newly terminal projection rejects another move and preserves its receipt',async()=>{
+ let state=0,durable=null,applies=0;
+ const h=createJournal({version:'terminal-cache',epoch:'one',choose:async()=>({index:0,rng:1}),storage:{read:async()=>durable,write:async s=>{durable=structuredClone(s);}},engine:{start(){},restore:s=>{state=Number(s);},save:()=>String(state),summary:()=>({terminal:state?{winner:0}:null}),legal:()=>({actor:0,actions:[{type:'PassPriority'}]}),apply(){state++;applies++;}}});
+ await h(msg('create','c'));const win=await h(msg('step','last'));
+ assert.deepEqual(win.result.terminal,{winner:0});
+ assert.equal((await h(msg('step','extra',1))).error,'GAME_OVER');
+ assert.deepEqual(await h(msg('step','last')),win);assert.equal(applies,1);
+});
