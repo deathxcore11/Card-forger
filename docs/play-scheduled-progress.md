@@ -352,3 +352,30 @@ Do not create another approval marker or automatically re-run paid builds.
 Only one attempt was triggered; no publication, deployment, APK or migration.
 Independent no-charge human-controls/CPU/recovery work remains available, so
 this build blocker does not establish that all useful development is blocked.
+
+## October 25, 2026 — response counter/recovery proof and approved retry
+
+Verified Play head `d52fdcb0912ef320e6c6ccdd736cf891cc590055` and complete
+instruction tree before creating an isolated, blob-verified experiment copy.
+Added a real Stifle response driver with unchanged upstream card definitions.
+Its Basalt untap control passes, including fresh-process restore of both stack
+entries and an identical accepted suffix/final state. Printed and Satoru-granted
+ninjutsu remain failing at the absent stack window on the original runtime.
+No assertion was removed or weakened. All 86 Node guards pass; the unchanged
+original mechanics suite still reports six passes and two ninjutsu failures.
+See [response checkpoint](play-ninjutsu-response-checkpoint.md) for exact
+reports, source hashes, commands and limitations.
+
+The owner corrected the Actions allowance and instructed continuation. Retried
+only approved run `40150756588`: attempt 2 / job `121043947174` started at
+2026-10-25T01:40:24Z on the Intel macOS runner. Checkout and Node setup passed;
+build/verification remains in progress at this checkpoint. The job uses
+`f1021d3`, not this new harness. No compiled runtime or corrected regression
+pass is claimed yet. Inspect this active run before any build work; do not
+launch another paid attempt or competing mutation. This checkpoint uses
+`[skip ci]` to avoid allocating unrelated hosted jobs while the approved proof
+uses the small account budget; its listed local checks actually ran.
+
+Next: capture the remote result/artifact and verify its source/runtime receipt,
+then execute this response suite on the corrected bytes if available. The
+actual playable CPU/board/choices/countdown/result milestone remains unfinished.

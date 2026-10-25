@@ -1,0 +1,99 @@
+{
+  "provenance": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "runtimeOrigin": "original-upstream-artifact",
+    "buildIdentity": "upstream-run-40129115223-artifact-12574954346",
+    "sourceCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "sourceTree": "3b2a30411991062847d46c2aebd8cee5df2fb4db",
+    "sourceDiffSha256": null,
+    "buildReceiptSha256": null,
+    "glue": "47c42e78d34eeaad37d74b8163e5319d0578ba0ee8bd3476cfb70131de6287c9",
+    "wasm": "6057521d851bb8544eaeea467f741b90cd2941aa5ba2fddb17e1bcc3d9933f8f",
+    "integrationFixtureGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "fixtureCardCount": 6137,
+    "loadedNames": [
+      "Head Games",
+      "Ninja of the Deep Hours",
+      "Moon-Circuit Hacker",
+      "Ornithopter",
+      "Island",
+      "Plains",
+      "Swamp",
+      "Mountain",
+      "Forest",
+      "Raise the Alarm",
+      "Krenko, Mob Boss",
+      "Parallel Lives",
+      "Doubling Season",
+      "Sprout Swarm",
+      "Basalt Monolith",
+      "Power Artifact",
+      "Lightning Bolt",
+      "Counterspell",
+      "Satoru Umezawa",
+      "Grizzly Bears",
+      "Stifle"
+    ],
+    "subsetSha256": "21dd3921672ab05b9057555fa98dee2616a0f4603cedf4b6bf3a550f328a29e7",
+    "subsetBytes": 164435
+  },
+  "runtime": "v24.22.1",
+  "setup": "Engineered persisted-state positions with 21 unchanged records from the hash-verified integration fixture. Subsequent actions are validated by the actual runtime.",
+  "cases": [
+    {
+      "name": "Positive control: Stifle counters Basalt Monolith untap",
+      "passed": true,
+      "setupSha256": "b49c4483b286cb0c7723ba6cee825385282ac17c43ebae15248e90bc5fd2546b",
+      "beforeResponse": {
+        "acceptedActions": 5,
+        "acceptedTraceSha256": "a661878d4bc0f857d2d696ff519156af7135fdaa5a793c1d153604ee06e04ee4",
+        "events": {
+          "PermanentTapped": 4,
+          "AbilityActivated": 5,
+          "ManaAdded": 4,
+          "ManaAbilityProduced": 4,
+          "TappedForMana": 4,
+          "StackPushed": 2,
+          "PriorityPassed": 1,
+          "BecomesTarget": 1,
+          "ZoneChanged": 1,
+          "CrimeCommitted": 1,
+          "SpellCast": 1,
+          "ManaExpended": 1
+        }
+      },
+      "afterResponse": {
+        "acceptedActions": 2,
+        "acceptedTraceSha256": "1b81c5c5d782af718f71307d7d25ec8667e3367dd5fd20257d70f52a03ba1e1d",
+        "events": {
+          "PriorityPassed": 1,
+          "SpellCountered": 1,
+          "EffectResolved": 1,
+          "ZoneChanged": 1,
+          "StackResolved": 1
+        }
+      },
+      "finalSignatureSha256": "e3cc9ee02874f4e54c5399638d7bdc44a5a691248653220934dc2c7fdfedf32b",
+      "freshProcessResponseRestoreExact": true
+    },
+    {
+      "name": "Stifle counters printed ninjutsu after paid return",
+      "passed": false,
+      "milliseconds": 445,
+      "error": "AssertionError [ERR_ASSERTION]: paid ninjutsu must await a real opponent response\n\n0 !== 1\n\n    at file:///workspace/scratch/04b6689e06e8/response-proof-slice/experiments/phase-engine/ninjutsu-response-engine.mjs:122:11"
+    },
+    {
+      "name": "Stifle counters Satoru-granted ninjutsu after returning Satoru",
+      "passed": false,
+      "milliseconds": 451,
+      "error": "AssertionError [ERR_ASSERTION]: paid ninjutsu must await a real opponent response\n\n0 !== 1\n\n    at file:///workspace/scratch/04b6689e06e8/response-proof-slice/experiments/phase-engine/ninjutsu-response-engine.mjs:122:11"
+    }
+  ],
+  "limits": "One ordinary-ability response control and selected printed/granted ninjutsu responses. Fresh Node process recovery, not browser offline or journal idempotency. No UI, engine adoption, CPU or all-card claim.",
+  "networkCalls": 0,
+  "sourceFiles": {
+    "mechanics-inputs.mjs": "66461978fed003c3931601beb8d752dcbadabc424df7e899ce789156e4a21874",
+    "mechanics-fixtures.mjs": "41376f6253f4fe6c5cc15cda917111e6f4bbb8c74886d5f5d7c566f37ef494e4",
+    "ninjutsu-response-engine.mjs": "7c8f8f4fcf34134ad36e3113b1cc1a25fd4e3c04994db46a768f4750ee208914"
+  }
+}

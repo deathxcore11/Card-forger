@@ -27,7 +27,11 @@ function receiptShape(receipt){
  assert.equal(receipt.integrationFixtureGzipSha256,INPUT_HASHES.integrationFixtureGzip,'local research builds must retain the pinned unchanged integration fixture');
  return receipt;
 }
-export async function loadMechanicsInputs(){
+export async function loadMechanicsInputs({cardNames=CARD_NAMES}={}){
+ assert(Array.isArray(cardNames)&&cardNames.length>0&&cardNames.length<=128,'research subset must contain 1–128 exact card names');
+ const loadedNames=[...cardNames];
+ assert(loadedNames.every(name=>typeof name==='string'&&name.length>0&&name.length<=200),'invalid research card name');
+ assert.equal(new Set(loadedNames.map(name=>name.toLowerCase())).size,loadedNames.length,'research subset must not repeat names');
  assert(process.env.CARDSTASHY_PHASE_PKG&&process.env.CARDSTASHY_PHASE_SOURCE,'Set exact CARDSTASHY_PHASE_PKG and CARDSTASHY_PHASE_SOURCE; see README.md.');
  const pkg=resolve(process.env.CARDSTASHY_PHASE_PKG),source=resolve(process.env.CARDSTASHY_PHASE_SOURCE);
  // No alternate-runtime bypass: a local build is admitted only by an explicit
@@ -59,19 +63,19 @@ export async function loadMechanicsInputs(){
  else{assert.equal(sha(glue),INPUT_HASHES.glue);assert.equal(sha(wasm),INPUT_HASHES.wasm);}
  assert.equal(sha(gzip),INPUT_HASHES.integrationFixtureGzip);
  const catalog=JSON.parse(gunzipSync(gzip));assert.equal(Object.keys(catalog).length,6137);
- const subset=Object.fromEntries(CARD_NAMES.map(name=>{const key=name.toLowerCase();assert(catalog[key],'missing upstream card '+name);return [key,catalog[key]];}));
+ const subset=Object.fromEntries(loadedNames.map(name=>{const key=name.toLowerCase();assert(Object.hasOwn(catalog,key),'missing upstream card '+name);return [key,catalog[key]];}));
  const cardsJson=JSON.stringify(subset);
  assert.equal(git(source,['rev-parse','HEAD']).trim(),sourceCommit,'source HEAD changed while mechanics inputs were loading');
  assert.equal(git(source,['status','--porcelain=v1','--untracked-files=all']).trim(),'','source checkout changed while mechanics inputs were loading');
  return {pkg,wasm,cardsJson,provenance:{upstreamCommit:PIN,runtimeOrigin:receipt?'local-research-build':'original-upstream-artifact',
   buildIdentity:receipt?receipt.buildIdentity:'upstream-run-40129115223-artifact-12574954346',sourceCommit,sourceTree,sourceDiffSha256,buildReceiptSha256:receiptSha256,
   glue:sha(glue),wasm:sha(wasm),integrationFixtureGzip:INPUT_HASHES.integrationFixtureGzip,
-  fixtureCardCount:6137,loadedNames:CARD_NAMES,subsetSha256:sha(cardsJson),subsetBytes:Buffer.byteLength(cardsJson)}};
+  fixtureCardCount:6137,loadedNames,subsetSha256:sha(cardsJson),subsetBytes:Buffer.byteLength(cardsJson)}};
 }
-export async function bootMechanics(){
- const inputs=await loadMechanicsInputs();let networkCalls=0;
+export async function bootMechanics(options){
+ const inputs=await loadMechanicsInputs(options);let networkCalls=0;
  globalThis.fetch=async()=>{networkCalls++;throw Error('Network forbidden in mechanics diagnostic.');};
  const engine=await import(pathToFileURL(resolve(inputs.pkg,'engine_wasm.js')));
- await engine.default({module_or_path:inputs.wasm});assert.equal(engine.load_card_database(inputs.cardsJson),CARD_NAMES.length);
+ await engine.default({module_or_path:inputs.wasm});assert.equal(engine.load_card_database(inputs.cardsJson),inputs.provenance.loadedNames.length);
  return {engine,provenance:inputs.provenance,networkCalls:()=>networkCalls};
 }
