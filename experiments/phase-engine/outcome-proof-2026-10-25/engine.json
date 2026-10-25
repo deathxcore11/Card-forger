@@ -1,0 +1,61 @@
+{
+  "passed": true,
+  "provenance": {
+    "upstreamCommit": "71ccd8fe1715c45fe9e9bd78d391bec5ac8a4234",
+    "runtimeOrigin": "local-research-build",
+    "buildIdentity": "cardstashy-ci-40153568000-1-ninjutsu-a49b8aa",
+    "sourceCommit": "5169f7fe03f93a6afe36fec767c3cda10120dcdd",
+    "sourceTree": "60fc8715ad91f5c91b81f8a8335e238c623ec957",
+    "sourceDiffSha256": "b8a5b0efb91b10d8930252bfe522a07e8ba95030436aa5b5419478a42a2cdb5d",
+    "buildReceiptSha256": "9c9e378fd2247f0a860f8f0cf4f2086464d2bf181af24ce7c02bd61161e69af2",
+    "glue": "7317b542201dea626776001e91f8d2fcbe92ae8108c9003da6c7ed41f59149cc",
+    "wasm": "a86578b23adcd26c38a68871e745305f3acb249158e1b424065cc6e6b6c3bfee",
+    "integrationFixtureGzip": "0dbc4d30f035ffc538bf8ae904dbfdc815e9bb53371c05797361b2b639ede2b9",
+    "fixtureCardCount": 6137,
+    "loadedNames": [
+      "Forest",
+      "Component Pouch",
+      "Tavern Swindler"
+    ],
+    "subsetSha256": "fc6bcf45abda5606117733f3e3b5ffab0f508ada645df019a82a9928dd4a396f",
+    "subsetBytes": 31589
+  },
+  "outcomes": [
+    {
+      "revision": 3,
+      "order": 0,
+      "outcome": {
+        "kind": "die",
+        "player": 0,
+        "sides": 20,
+        "result": 1
+      }
+    },
+    {
+      "revision": 6,
+      "order": 0,
+      "outcome": {
+        "kind": "coin",
+        "player": 0,
+        "won": true
+      }
+    }
+  ],
+  "life": 23,
+  "revision": 6,
+  "networkCalls": 0,
+  "checks": [
+    "real d20 ability through adapter and journal",
+    "real coin ability, exact win/loss life consequence",
+    "authorized outcome slice persisted with accepted engine save",
+    "restored timeline and RNG unchanged",
+    "lost-ack receipt replay does not repeat outcome or apply"
+  ],
+  "sourceSha256": {
+    "random-outcomes-engine.mjs": "c94504db8ad75e0e9eb95bebe167433b02fcd6f9cdff2331ef90fa0231d66974",
+    "random-outcomes.mjs": "1aa212c485c766caf1d80403f2413c22bb17194cbbfa54979a699a38ea2d12d0",
+    "match-authority.mjs": "8860d2e65a20b502a516d1cc90f9d8db8c645ddc9f1664eea879f14aea85df45",
+    "worker-journal.mjs": "568b1cdeb91e62c42ddd41157876c98378223922dce2dc1b34d81903a4a3c984"
+  },
+  "limits": "Two engineered Vintage positions using unchanged pinned real-card definitions. Generated candidate witnesses in this driver, not broad human legality, all roll replacements, pregame roll-offs, CPU, signed-in match or all-card coverage."
+}

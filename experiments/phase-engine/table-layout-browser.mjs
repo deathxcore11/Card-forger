@@ -1,6 +1,6 @@
 // Layout/accessibility projection fixture only. No engine/support evidence.
 import assert from 'node:assert/strict';import {readFile,writeFile,mkdir} from 'node:fs/promises';import {createServer} from 'node:http';import {join,resolve} from 'node:path';import {pathToFileURL} from 'node:url';import {createHash} from 'node:crypto';
-const routes=new Map();for(const file of ['match-table.mjs','match-table.css','card-stats.mjs'])routes.set('/'+file,await readFile(new URL(file,import.meta.url)));
+const routes=new Map();for(const file of ['match-table.mjs','match-table.css','card-stats.mjs','random-outcomes.mjs','protocol-fault.mjs'])routes.set('/'+file,await readFile(new URL(file,import.meta.url)));
 routes.set('/',Buffer.from(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="match-table.css"><style>body{margin:0}</style><main id="table"></main><script type="module">
 import {mountMatchTable} from './match-table.mjs';
 const cards=Array.from({length:44},(_,i)=>({id:i,known:true,name:i%3?'A card with a longer descriptive name':'Creature',owner:i<20?1:0,controller:i<20?1:0,zone:i<36?'Battlefield':'Hand',power:i%6,toughness:4,basePower:i%6,baseToughness:4,tapped:i%5===0,damage:1,counters:{'+1/+1':2},keywords:['Vigilance','Trample'],types:['Creature']}));

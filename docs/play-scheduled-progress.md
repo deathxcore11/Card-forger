@@ -1001,3 +1001,68 @@ passed frozen Standard/Commander context, 40-life Commander initialization,
 one-paint inspection coalescing, cancellation, single explicit engine concession
 under duplicate click, and cold offline terminal recovery with zero requests.
 Its simulated account/catalog/control-deck and concession limits still apply.
+
+## October 25, 2026 — durable rules-backed dice and coin results
+
+Continued from verified remote dc622d5c08f2d9f734317f929387773faefc664c,
+which includes the combined numeric-choice/player-mat work above. No applicable
+AGENTS.md was added. Kept all work isolated to the Play branch.
+
+Added random-outcomes.mjs and an adapter/journal display path for DieRolled,
+DieRollIgnored and CoinFlipped. Each accepted submission route passes relevant
+events through get_viewer_transition_snapshot_js for seat 0, then an explicit
+scalar-only whitelist. Unknown events, identities, raw legal actions and engine
+saves do not reach this display. Rejected submissions produce no displayed roll.
+The CPU packet is unchanged and gains no engine saves, future draws or events.
+
+The latest twelve authorized outcomes are stored in the existing atomic local
+match journal alongside the accepted engine state, revision and receipt. Resume
+validates the bounded ordered timeline; older saves without this optional field
+remain readable. Failed persistence restores the last engine checkpoint, clears
+pending outcomes and requires recovery. Duplicate/lost-ack receipts replay the
+same outcome and cannot reroll. No database version/migration/schema change.
+
+The bounded right inspector now shows Recent rolls & flips. Modified die values
+can exceed the natural face range; ignored natural rolls are labeled ignored.
+A coin reports the engine's won/lost result; it is never fabricated as heads or
+tails. Symbolic no-number rolls remain symbolic. The UI generates no independent
+randomness, roll command, cosmetic rule result, damage or game win/loss.
+
+Executed random-outcomes-engine.mjs with exact corrected runtime/source/receipt:
+Component Pouch's real activation rolled d20=1; Tavern Swindler's real activation
+won its flip and left the player at 23 life after its three-life cost. Both went
+through the production rules adapter and atomic journal. Restoring retained the
+same timeline/game RNG; replaying the last accepted receipt changed no engine
+state, timeline or durable record. Zero network requests. The first driver
+attempt looked for object_id on ActivateAbility; the actual payload is source_id.
+Corrected the test driver and reran; no engine/API/assertion was weakened.
+
+All 157 focused Phase Node guards and 49 shared setup/menu/opponent/art/context
+guards pass with zero failures/skips/cancellations. The 243-module offline
+inventory passes. Shared numeric/table browser checks pass explicit zero, range
+validation, duplicate confirmation, timer-only input/focus retention, modified
+d20=22 display, ignored d20=1 display and CPU coin-loss text. Those outcome rows
+are projection fixtures; actual accepted dice/coin actions are the separate
+runtime receipt. Current art/wiki/privacy-cache and six-width geometry probes
+also pass. Application-host recovery/concession probe passes on these bytes.
+
+These narrow checks do not finish die-replacement ordering/tied keep choices,
+coin replacements, pregame starting-player roll-offs, the complete no-stall
+mandatory timeout policy, broad human schemas or calibrated CPU difficulties.
+No tested-card name was added to account admission merely from a log projection.
+Actual eligible real Standard/Commander deck versions and a complete owner-facing
+account match are still required before public activation. PLAY_MATCH_RELEASE_READY
+remains false. Existing 30-second priority policy and original failing/corrected
+passing ninjutsu evidence remain intact. No production, APK, new paid build,
+subscription/budget change or external message. New exact receipts are under
+experiments/phase-engine/outcome-proof-2026-10-25/.
+
+Final complete-control browser repeat on this outcome-enabled byte set passed:
+187 human commands, 386 accepted actions, turn 22, winner seat 1; pending
+bottoming and terminal records recover cold offline with zero network requests.
+Atomic terminal result, concurrent-writer rejection, account-generation guards,
+exact source-row copies and Commander 40-life/command-zone initialization pass.
+The driver still uses the land-heavy Plains/Savannah Lions control and simulated
+accounts/printing rows. It does not certify a currently eligible competitive
+Standard deck or finish the public account route. Retained its full hashed
+receipt as complete-control-match.json, separate from the earlier byte sets.

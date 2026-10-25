@@ -3,6 +3,7 @@ import {createPriorityClock} from './priority-clock.mjs';
 import {humanCommand} from './human-command.mjs';
 import {interactionSubmission} from './interaction-surface.mjs';
 import {Fault,fail} from './protocol-fault.mjs';
+import {appendRandomOutcomes,validOutcomeTimeline} from './random-outcomes.mjs';
 export {Fault,fail} from './protocol-fault.mjs';
 export function packet(m) {
  if(!m||typeof m!=='object'||Array.isArray(m)||Object.keys(m).some(k=>!['v','epoch','id','op','revision','seed','first','choice','submission','command'].includes(k)))fail('BAD_REQUEST');
@@ -22,6 +23,7 @@ function validSave(s) {
   !Number.isInteger(s.policyRng)||s.policyRng<0||s.policyRng>0xffffffff||
   !Number.isInteger(s.seed)||s.seed<0||s.seed>0xffffffff||![0,1].includes(s.first)||
   typeof s.engine!=='string'||!s.engine.length||!Array.isArray(s.history)||s.history.length!==s.revision||!recordObject(s.receipts))return false;
+ if(Object.hasOwn(s,'outcomes')&&!validOutcomeTimeline(s.outcomes,s.revision))return false;
  if(!s.history.every(h=>recordObject(h)&&Number.isSafeInteger(h.actor)&&h.actor>=0&&recordObject(h.action)&&typeof h.action.type==='string'))return false;
  return Object.entries(s.receipts).every(([id,r])=>/^[-\w]{1,80}$/.test(id)&&recordObject(r)&&typeof r.fingerprint==='string'&&recordObject(r.response)&&Number.isSafeInteger(r.response.revision)&&r.response.revision>0&&r.response.revision<=s.revision);
 }
@@ -35,7 +37,9 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
  const makeClock=saved=>createPriorityClock({...timing,saved});
  const armClock=(revision,saved=null)=>{const c=makeClock(saved);if(c.arm(clockContext(revision)).state==='stale-clock')fail('CLOCK_CONTEXT_MISMATCH');return c;};
  const clockSummary=(revision,c=clock)=>timing?{clock:c.inspect(clockContext(revision))}:{};
- const summary=()=>({...engine.summary(current.revision),revision:current.revision,...clockSummary(current.revision)});
+ const outcomeSummary=rows=>typeof engine.drainOutcomes==='function'||rows!==undefined?{outcomes:structuredClone(rows||[])}:{};
+ const nextOutcomes=revision=>typeof engine.drainOutcomes==='function'?{outcomes:appendRandomOutcomes(current?.outcomes||[],engine.drainOutcomes(),revision)}:{};
+ const summary=()=>({...engine.summary(current.revision),revision:current.revision,...outcomeSummary(current.outcomes),...clockSummary(current.revision)});
  async function execute(raw) {
   const m=packet(raw);if(m.epoch!==epoch)fail('STALE_SESSION');
   if(poisoned)fail('RECOVERY_REQUIRED');
@@ -58,7 +62,7 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
    if(saved)fail('ALREADY_EXISTS');
    try{
     engine.start(m.seed,m.first);
-    const next={schema:1,version,seed:m.seed,first:m.first,revision:0,policyRng:0x63d34a91,history:[],receipts:{},engine:engine.save()};
+    const next={schema:1,version,seed:m.seed,first:m.first,revision:0,policyRng:0x63d34a91,history:[],receipts:{},engine:engine.save(),...nextOutcomes(0)};
     if(timing){clock=armClock(0);next.clock=clock.snapshot();}
     await storage.write(next,null);current=next;return summary();
    }catch(error){poisoned=true;throw error;}
@@ -103,10 +107,10 @@ export function createJournal({engine,storage,choose,version,epoch,timing=null})
     if(applied!==true)fail('INVALID_ENGINE_RESPONSE');
    }else engine.apply(actor,action);
    const next={...current,revision:current.revision+1,policyRng,
-    history:[...current.history,{actor,action}],engine:engine.save(),receipts:{...current.receipts}};
+    history:[...current.history,{actor,action}],engine:engine.save(),receipts:{...current.receipts},...nextOutcomes(current.revision+1)};
    const nextClock=timing?armClock(next.revision,current.clock):null;
    if(timing)next.clock=nextClock.snapshot();
-   const response={...engine.summary(next.revision),revision:next.revision,...clockSummary(next.revision,nextClock)};
+   const response={...engine.summary(next.revision),revision:next.revision,...outcomeSummary(next.outcomes),...clockSummary(next.revision,nextClock)};
    Object.defineProperty(next.receipts,m.id,{value:{fingerprint:fp,response},enumerable:true,writable:true,configurable:true});
    // Compare-and-write prevents a second tab/worker overwriting this match.
    await storage.write(next,current.revision);
