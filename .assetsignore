@@ -131,5 +131,3 @@ experiments/phase-engine/runtime/*
 !experiments/phase-engine/commander-projection.mjs
 !experiments/phase-engine/match-result.mjs
 !experiments/phase-engine/practice-result-history.mjs
-
-!experiments/phase-engine/compiled-card-support.mjs
