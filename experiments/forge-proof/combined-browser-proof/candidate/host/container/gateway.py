@@ -107,6 +107,9 @@ class Bridge:
 class Server(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
+    # Admit a burst covering all eight handler slots even while accept waits
+    # for its next scheduling turn. The active request limit remains eight.
+    request_queue_size = 16
 
     def __init__(self, address, bridge):
         self.bridge = bridge

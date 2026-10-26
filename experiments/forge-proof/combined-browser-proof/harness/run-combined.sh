@@ -43,9 +43,10 @@ JS
 }
 finish(){
  code=$?;trap - EXIT TERM INT
- cleanup_ok=true
- if ! timeout --signal=TERM --kill-after=3s 25s node "$HERE/local-oci/cleanup-owned.mjs" "$FORGE_COMBINED_WORK" > "$FORGE_COMBINED_WORK/private-cleanup.log" 2>&1;then cleanup_ok=false;code=1;fi
- if ! timeout --signal=TERM --kill-after=3s 15s node "$HERE/cleanup-image.mjs" "$FORGE_COMBINED_WORK/image" > "$FORGE_COMBINED_WORK/private-image-cleanup.log" 2>&1;then cleanup_ok=false;code=1;fi
+ cleanup_ok=true;container_cleanup_ok=true;image_cleanup_ok=true
+ if ! timeout --signal=TERM --kill-after=3s 25s node "$HERE/local-oci/cleanup-owned.mjs" "$FORGE_COMBINED_WORK" > "$FORGE_COMBINED_WORK/private-cleanup.log" 2>&1;then cleanup_ok=false;container_cleanup_ok=false;code=1;fi
+ if ! timeout --signal=TERM --kill-after=3s 15s node "$HERE/cleanup-image.mjs" "$FORGE_COMBINED_WORK/image" > "$FORGE_COMBINED_WORK/private-image-cleanup.log" 2>&1;then cleanup_ok=false;image_cleanup_ok=false;code=1;fi
+ printf '{"containersConfirmed":%s,"imageConfirmed":%s}\n' "$container_cleanup_ok" "$image_cleanup_ok" > "$FORGE_COMBINED_WORK/cleanup-outcomes.json"
  # Explicit bounded collector is the ONLY upload boundary. Never copy workroot,
  # OCI image layers/source, input/env files, runtime logs or cached response bodies.
  if ! timeout --signal=TERM --kill-after=2s 12s python3 "$HERE/publish-artifacts.py" "$FORGE_COMBINED_WORK" "$ARTIFACT" "$code" "$stage" "$cleanup_ok";then code=1;fi
@@ -59,6 +60,10 @@ for tool in docker node python3 timeout;do command -v "$tool" >/dev/null || { ec
 # A coherent procfs is a measured prerequisite, never inferred from CI branding.
 require_budget 22
 timeout --signal=TERM --kill-after=2s 20s bash "$HERE/run-cleanup-preflight.sh" > "$FORGE_COMBINED_WORK/private-cleanup-preflight.log" 2>&1
+stage=source-contracts
+require_budget 60
+timeout --signal=TERM --kill-after=5s 55s bash "$HERE/run-static-checks.sh" > "$FORGE_COMBINED_WORK/private-static-checks.log" 2>&1
+stage=setup
 # No system upgrades. Same pinned browser version as the successful existing proof.
 timeout --signal=TERM --kill-after=5s 45s npm install --prefix "$FORGE_BROWSER_TOOLS" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.62.1 > "$FORGE_COMBINED_WORK/private-browser-install.log" 2>&1
 timeout --signal=TERM --kill-after=5s 115s node "$FORGE_BROWSER_TOOLS/node_modules/playwright/cli.js" install --only-shell chromium >> "$FORGE_COMBINED_WORK/private-browser-install.log" 2>&1
@@ -69,9 +74,6 @@ timeout --signal=TERM --kill-after=1s 5s ldd "${shells[0]}" > "$FORGE_COMBINED_W
 stage=image-build-export-probe
 require_budget 900
 bash "$HERE/image-stages/build-and-probe.sh" "$FORGE_COMBINED_CANDIDATE_ROOT" "$FORGE_COMBINED_WORK/image" > "$FORGE_COMBINED_WORK/private-image-stages.log" 2>&1
-stage=source-contracts
-require_budget 60
-timeout --signal=TERM --kill-after=5s 55s bash "$HERE/run-static-checks.sh" > "$FORGE_COMBINED_WORK/private-static-checks.log" 2>&1
 stage=desktop
 require_budget 900
 timeout --signal=TERM --kill-after=35s 865s bash "$HERE/run-case.sh" desktop

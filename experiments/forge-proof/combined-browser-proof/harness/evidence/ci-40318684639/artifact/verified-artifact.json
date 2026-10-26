@@ -1,0 +1,10 @@
+{
+  "schema": "cardstashy.sanitized-artifact.v1",
+  "verified": true,
+  "result": "failed",
+  "files": {
+    "image-summary.json": "5afb844fe1b9e88d818c6b05551954f252590692a52cf22588b3c5239ff243bd",
+    "probe-summary.json": "08d2547031a66c7033a2973595b668b5b412bfb82efa5843f33e7e52060dfbfc",
+    "summary.json": "d1eac2b4e62a97f4f0fa21e4ff893d53991797a99a31f11dce880e5f5f091299"
+  }
+}

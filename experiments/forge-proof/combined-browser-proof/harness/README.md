@@ -8,6 +8,12 @@ The parent is the frozen final0640 candidate and prepared takeover publication.
 The historical short browser run at c4981097 does not validate this descendant.
 The original kit and its original manifests remain unchanged.
 
+The approved proof at cc35c3ad completed with FAIL in run 40318684639.
+Cleanup preflight and the actual same-image Medium initialization probe passed;
+source contracts and overall fallback cleanup did not. Both browser cases were
+NOT TESTED. This working descendant contains unpublished harness corrections.
+Read RUN-40318684639-REVIEW.md before any further publication or paid run.
+
 This descendant adds a bounded human payment assessment, separate from CPU
 strategy: AVAILABLE, PROVEN_UNAVAILABLE or UNKNOWN. UNKNOWN preserves priority;
 timeout cannot mean empty. Native casting remains authoritative. It covers life

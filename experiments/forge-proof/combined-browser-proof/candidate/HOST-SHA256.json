@@ -2,8 +2,9 @@
   "container/Dockerfile.template": "e3574caef65136f00313fce229ae69a87a138e8722805eb152090cccf7fb6f6f",
   "container/assemble.sh": "f7baa30be8c40e1191db33efcea36aad9aa49cb192f1f5a2be44744553c7c179",
   "container/bootstrap.py": "28be17cd8c59441bff35934086dbf6a0a0dd1a1125a9f0fe54939910c713754f",
-  "container/gateway.py": "1ad3a3a518b3dffb61380cac3104ed60144c3cdf2c016db9619a12d986d77131",
+  "container/gateway.py": "2488077064c78577e228a156501d03b0408202bf8d6638ea480c19df865dcfe2",
   "container/prepare_context.py": "395f128ecf2b8e1978909f3939d92a4e1b364a1754035438164daf70d8447eec",
+  "container/tests/test_admission_queue.py": "f9f15520c64a39a975e9ddb85612a00df20ed72a00a5d1c3c0f10a79897a01fd",
   "container/tests/test_hardening.py": "e2ccd3a67a27efc850c942356cc547e06c7ab5f329e8b315c390102f01470705",
   "container/tests/test_host001.py": "6d3f69d54fcf0da5a8b31f33b835c04e2c024b54bb8420195c4eb9be494deb52",
   "container/tests/test_probe_recovery.py": "f76ce7261bf97dbbdf3441d4d181de4452e4e477fff250502026548b29bb638a",
@@ -54,6 +55,6 @@
   "tests/test_bootstrap.py": "21be212d3cfb3f6f84211d433ed7b5afcd160570225e40f36101f2e654367ff9",
   "tests/test_compose_context.py": "a9a3504a22af82331f6786319ec0248ee264c964614a1adbf3341779dfac7ba4",
   "tests/test_docker_proof_client.py": "3ccd8bb446bc3e7ced8b9af4efdea6123d3eaedef395d970b3e8eb4159dbf387",
-  "tests/test_next_launcher.py": "45342b7dc5955a7eb2caa296077fae5b7a84f3d8bd6a07fc2a5519518a6a0787",
+  "tests/test_next_launcher.py": "a9256b1265dba44623bf4ef48958bfc7949f71a6e89aee80079e57b9a2be296a",
   "wrangler.jsonc": "60b40c5578fafe46cdbcc653aee98030317daabbc7df23d61ff04b3a80fdd970"
 }

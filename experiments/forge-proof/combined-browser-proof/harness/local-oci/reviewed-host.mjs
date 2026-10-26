@@ -1,6 +1,6 @@
 // LOCAL_TEST_NOT_DEPLOYABLE. Hash-pinned relocation, never an unverified plugin.
 import assert from 'node:assert/strict';import {readFile,lstat} from 'node:fs/promises';import path from 'node:path';import {pathToFileURL} from 'node:url';import {sha256} from './oci-identity.mjs';
-const expectedManifest='da0d89e2eca44418862ca029660b50c1535e1bb3883b41e32b3a50fe61ddc9fa';
+const expectedManifest='46bfdbb36ead010d7fdcf6019049f1da402cd22920749beab8d5109ba49fd37d';
 const candidateInput=process.env.FORGE_COMBINED_CANDIDATE_ROOT;
 assert(typeof candidateInput==='string'&&candidateInput.trim().length>0,'Explicit FORGE_COMBINED_CANDIDATE_ROOT is required');
 export const reviewedCandidateRoot=path.resolve(candidateInput);

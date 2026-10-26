@@ -11,7 +11,7 @@
     },
     "SHA256SUMS": {
       "bytes": 1355,
-      "sha256": "a23801eb7153808c3185bf933b69b122b93650f5a61f22c393824a90b7df88c4"
+      "sha256": "de9c96ada479a38f424b004fb3dee3445c2ad95dd75f750c507952bb306519fd"
     },
     "build-and-probe.mjs": {
       "bytes": 10849,
@@ -43,7 +43,7 @@
     },
     "pins.mjs": {
       "bytes": 1210,
-      "sha256": "817b8ea230a9115eee1c66f8e1bb0c36ecb42370edac10b353f38b2b49965191"
+      "sha256": "8f19bcd57a9cb55a4f454e4b51799973f3123a485b88ab618069a8b3a945a427"
     },
     "probe-image.mjs": {
       "bytes": 8146,
@@ -73,9 +73,9 @@
   "dependencies": {
     "candidate": "takeover/combined-recovery-candidate-20261026-0640",
     "nativeManifestSha256": "1bb177ec2b54840e0e26a3159e30ee75007bf1d5911798ceb9046df7852c1ca3",
-    "hostManifestSha256": "da0d89e2eca44418862ca029660b50c1535e1bb3883b41e32b3a50fe61ddc9fa",
-    "contextManifestSha256": "d6e293394d6a7e30aca37343a0d1996a58e983bab00cf84e113843d10699a5f7",
-    "localOciManifestSha256": "35785f1134a4da017b962eaf7535ad94844ccec2b4ac2221c2e0fc052f96cf9e"
+    "hostManifestSha256": "46bfdbb36ead010d7fdcf6019049f1da402cd22920749beab8d5109ba49fd37d",
+    "contextManifestSha256": "cb9a9fb42e4063c1fb3f823055540ca27d05528b0ece9b3b7fdf35959471c68a",
+    "localOciManifestSha256": "3c98eb812bbe7f117fd572f5bdb1ce00ea46c741ee6e1cacf9f1c8a36441645a"
   },
   "budgetsSeconds": {
     "build": 600,
@@ -114,7 +114,7 @@
     "missingIidMeans": "uncertain",
     "daemonPrecondition": "dedicated-disposable-CI-runner"
   },
-  "status": "human-affordability descendant; local validation pending; no image run",
+  "status": "unpublished post-run correction; new bounded HTTP backlog image context; no new run",
   "parentManifestSha256": "18da2cffcdf25f439df8b2a2eac5cfac546246e0a6abed3e359adc92de2be552",
   "parentTests": {
     "nodeGroups": 10,
@@ -138,5 +138,10 @@
       "runtimeIndexNativeOnlyFallback": "separately-tested",
       "testedLocalOciManifestSha256": "6266d0096c71b0c236da1b88b8e2340a9525252719b623a43f2a1f1a52463981"
     }
+  },
+  "previousApprovedRun": {
+    "commit": "cc35c3ad6d57dc053a2f69e85b389cff0b164c13",
+    "runId": 40318684639,
+    "overallResult": "FAIL"
   }
 }

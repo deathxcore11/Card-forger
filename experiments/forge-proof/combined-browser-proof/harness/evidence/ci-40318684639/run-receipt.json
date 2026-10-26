@@ -1,0 +1,38 @@
+{
+  "schema": "cardstashy.approved-proof-run.v1",
+  "runId": 40318684639,
+  "runUrl": "https://github.com/deathxcore11/Card-forger/actions/runs/40318684639",
+  "commit": "cc35c3ad6d57dc053a2f69e85b389cff0b164c13",
+  "tree": "17a2971f776276e1e2b143e01c477af1deb2121c",
+  "branch": "codex/forge-native-browser-proof-20261026",
+  "attempt": 1,
+  "status": "completed",
+  "conclusion": "failure",
+  "createdAt": "2026-10-26T11:55:45Z",
+  "completedBy": "2026-10-26T12:00:32Z",
+  "elapsedThroughFinalUpdateSeconds": 287,
+  "jobCapMinutes": 40,
+  "reservationUSD": 0.5,
+  "combinedConservativeReservationUSD": 5.5,
+  "combinedCapUSD": 20,
+  "actualCombinedBillingVerified": false,
+  "automaticRetries": 0,
+  "productionDeploymentAuthorized": false,
+  "optionalStatusCommentAuthorized": false,
+  "artifacts": [
+    {
+      "id": 12647853270,
+      "name": "forge-combined-40318684639-1",
+      "bytes": 3152,
+      "digest": "sha256:23e65cbcf2ea71e72b6966bf991cd8e1814275eb728cb8097ad94ff811f2a889",
+      "expiresAt": "2026-10-27T12:00:28Z"
+    }
+  ],
+  "artifactArchiveVerified": true,
+  "artifactMembersVerified": true,
+  "providerTiming": {
+    "runDurationMs": 287000,
+    "reportedUbuntuBillableMs": 0,
+    "actualInvoiceVerified": false
+  }
+}

@@ -15,7 +15,7 @@ export async function cleanupImage(root,{run=command}={}){
  if(ledger&&!id)return {confirmed:false,createdImage:null,buildOutcome:'uncertain'};
  assert(ledger,'Image ID without its pre-build job ownership ledger');
  const absent=async()=>{const r=await boundedRun(['image','ls','--all','--no-trunc','--quiet'],1024*1024);const lines=r.stdout.toString().trim().split(/\r?\n/).filter(Boolean);assert(lines.every(x=>/^sha256:[a-f0-9]{64}$/.test(x)),'Unexpected image listing');return !lines.includes(id);};
- const format='{ "Id":{{json .Id}},"source":{{json (index .Config.Labels "org.opencontainers.image.revision")}},"manifest":{{json (index .Config.Labels "org.cardstashy.native-manifest-sha256")}},"JobNonce":{{json (index .Config.Labels "io.cardstashy.local-test.job-nonce")}}';
+ const format='{ "Id":{{json .Id}},"source":{{json (index .Config.Labels "org.opencontainers.image.revision")}},"manifest":{{json (index .Config.Labels "org.cardstashy.native-manifest-sha256")}},"JobNonce":{{json (index .Config.Labels "io.cardstashy.local-test.job-nonce")}}}';
  let inspected;try{inspected=await boundedRun(['image','inspect',id,'--format',format],8192);}catch{return {confirmed:await absent(),createdImage:true,imageId:id};}
  const image=JSON.parse(inspected.stdout.toString());assertImageOwnership(ledger,image,id);assert(image.source===SOURCE&&image.manifest===MANIFEST,'Local image source mismatch');
  await boundedRun(['image','rm',id],8192);

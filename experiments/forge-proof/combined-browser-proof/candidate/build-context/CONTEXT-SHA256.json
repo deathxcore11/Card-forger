@@ -4,7 +4,7 @@
   "hosting/assemble.sh": "3706e1ca57ae695f2d88597e79786fd06b268865beed07e49943adbf2368cb0d",
   "hosting/bootstrap.py": "28be17cd8c59441bff35934086dbf6a0a0dd1a1125a9f0fe54939910c713754f",
   "hosting/checkpoint-files.json": "9640d45798b42dbee906d62bb9d636751109925b8a84e8bad16184e15d3abdf4",
-  "hosting/gateway.py": "1ad3a3a518b3dffb61380cac3104ed60144c3cdf2c016db9619a12d986d77131",
+  "hosting/gateway.py": "2488077064c78577e228a156501d03b0408202bf8d6638ea480c19df865dcfe2",
   "native/BASE-CANDIDATE.json": "8efcc09d4f3260904034aa1f2e1e9f9b8d66f1ad8aa3668c404a020b55d0dbbf",
   "native/CONTRACT.md": "3206da2ab12c8a826ff3ca7ce7852a32e82a90cfee232c7e1fe0d21c2e964462",
   "native/EXACT-INPUT.md": "f53243e1177f394cd233e8cf27d16320ce406c25af4a21f02ae4191ab05238ec",

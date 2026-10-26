@@ -57,9 +57,26 @@ class NextLauncherTests(unittest.TestCase):
   runtime,*_=self.fixture();os.environ.pop('HOST_MATCH_INPUT_PATH')
   with self.assertRaisesRegex(ValueError,'requires exact'):gateway.launch_command(runtime)
  def test_assembly_generates_attestation_in_image_and_retains_runtime_source(self):
-  docker=(HERE/'container/Dockerfile.template').read_text();assembly=(HERE/'container/assemble.sh').read_text();gateway_source=(HERE/'container/gateway.py').read_text()
+  docker=(HERE/'container/Dockerfile.template').read_text();assembly=(HERE/'container/assemble.sh').read_text()
   self.assertNotIn('COPY native/cpu/build-attestation',docker);self.assertIn('native/cpu/runtime-sha256.json',docker)
   self.assertLess(assembly.index('bash /opt/forge-proof/build-ai-overlay.sh'),assembly.index('javac -cp'))
   self.assertIn('CP="/opt/forge-proof/cpu/runtime-classes:$CP"',assembly)
-  self.assertIn('("forge", "decks", "cpu", "rules-data")',gateway_source)
+ def test_runtime_exposes_every_reviewed_asset_before_native_launch(self):
+  with tempfile.TemporaryDirectory() as temporary:
+   root=Path(temporary)/'runtime';distribution=Path(temporary)/'distribution'
+   expected={'forge','decks','cpu','rules-data','human'}
+   for name in expected:
+    directory=distribution/name;directory.mkdir(parents=True);(directory/'fixture.txt').write_text('synthetic '+name)
+   def paths(value):
+    return root if str(value)=='/run/cardstashy' else distribution if str(value)=='/opt/forge-proof' else Path(value)
+   class LaunchBoundary(Exception):pass
+   def inspect_before_launch(runtime):
+    self.assertEqual(runtime,root)
+    self.assertEqual({p.name for p in root.iterdir() if p.is_symlink()},expected)
+    for name in expected:
+     self.assertEqual((root/name).resolve(),distribution/name)
+     self.assertEqual((root/name/'fixture.txt').read_text(),'synthetic '+name)
+    raise LaunchBoundary()
+   with patch.object(gateway,'Path',paths),patch.object(gateway,'launch',inspect_before_launch),patch.object(gateway.signal,'signal'),patch.object(gateway.os,'umask'),patch.dict(os.environ,{'HOST_INTERNAL_TOKEN':'SYNTHETIC_RUNTIME_ROOT_TEST_CAPABILITY','HOST_ABSOLUTE_DEADLINE_MS':str(int(time.time()*1000)+60000)},clear=True):
+    with self.assertRaises(LaunchBoundary):gateway.main()
 if __name__=='__main__':unittest.main()

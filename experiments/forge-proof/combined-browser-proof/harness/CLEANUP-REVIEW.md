@@ -35,6 +35,11 @@ The two zombie-observation cases remain environment-blocked locally and are NOT
 accepted as passes. One unrelated HTTP trickle-header test timed out during the
 concurrent suite; its isolated unchanged rerun passed. The full suite remains a
 required real-run gate, not a claimed all-green local suite.
+After run 40318684639, repeated investigation identified a bounded listen-queue
+defect behind that intermittent HTTP failure. The local descendant adds a real
+eight-connection burst regression and sets a backlog of 16 while retaining eight
+active handlers and every existing timeout. See the run review for the exact
+negative/positive evidence; the earlier isolated pass was not treated as a fix.
 
 ## Why the proof environment differs, and how that is checked
 
@@ -43,15 +48,18 @@ describes the mismatch that results when a child inherits an ancestor proc mount
 The selected ubuntu-24.04 GitHub-hosted runner is a VM, and the runtime Docker
 command uses a new default PID namespace with no --pid=host, shared PID namespace,
 or bind-mounted /proc. These are reasons to expect coherent views, not evidence
-that this particular unexecuted image already passes.
+that an image passes without execution. Run 40318684639 subsequently measured
+coherence and passed all 11 preflight checks; its actual probe container also
+exited 0 and was removed. Overall fallback cleanup still failed separately.
+See RUN-40318684639-REVIEW.md for the unchanged evidence and local correction.
 
 run-combined.sh now runs run-cleanup-preflight.sh before installing a browser or
 building the image. It measures namespace consistency, then runs all four
 original reaping fixtures plus seven new guard checks. Missing results, errors,
 skips or failures fail the gate. An incoherent environment runs no image/browser
 case. The actual container gateway independently checks coherence at startup.
-The complete container test suite still runs unchanged in the source-contract
-stage. Every real allocation still requires graceful exit 0, no forced stop/OOM,
+The complete container test suite remains required unchanged in the source-contract
+stage, now before image construction. Every real allocation still requires graceful exit 0, no forced stop/OOM,
 exact image identity and confirmed removal/private-input cleanup.
 
 cleanup-preflight.json contains only an allowlisted aggregate. The artifact

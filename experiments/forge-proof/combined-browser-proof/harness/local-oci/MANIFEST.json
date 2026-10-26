@@ -1,6 +1,6 @@
 {
   "scope": "LOCAL_TEST_NOT_DEPLOYABLE",
-  "status": "human-affordability descendant; local validation pending; no image run",
+  "status": "unpublished post-run correction; new bounded HTTP backlog image context; no new run",
   "productionFilesChanged": false,
   "realImageBuilt": false,
   "realRuntimeRun": false,
@@ -9,7 +9,7 @@
     {
       "path": "README.md",
       "bytes": 10748,
-      "sha256": "0c9dc665ce51ac28667c2d8ecd5e906e12751cd65dff62280b71dd56b5bf46f5"
+      "sha256": "e79db03dc024716ba760f8179f1886b4c059de0f9120c9f2e8711c15e9e45fba"
     },
     {
       "path": "cleanup-owned.mjs",
@@ -49,7 +49,7 @@
     {
       "path": "reviewed-host.mjs",
       "bytes": 2132,
-      "sha256": "e11b0a7d8bc4e06983633fc9fbb9449a4c47a78904df8213df0769cc8cbf44e7"
+      "sha256": "374fc680ca897d2d7cb1c05690bda22b60d0350d22a1146ec2a1404c07efe346"
     },
     {
       "path": "schema.json",

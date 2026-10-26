@@ -8,6 +8,19 @@ assert stage in allowed_stages
 subprocess.run(['python3',str(HERE/'artifacts.py'),str(work/'raw'),str(out),str(code),stage],check=True,stdout=subprocess.DEVNULL)
 summary=json.loads((out/'summary.json').read_text());summary['scope']='LOCAL_TEST_NOT_DEPLOYABLE: actual same local OCI image; synthetic account/storage; no registry publication, Cloudflare deployment, real account or physical-device claim'
 summary['cleanupFallbackConfirmed']=cleanup
+cleanup_path=work/'cleanup-outcomes.json'
+cleanup_parts={'containersConfirmed':False,'imageConfirmed':False}
+if cleanup_path.is_file() and not cleanup_path.is_symlink() and cleanup_path.stat().st_size<=4096:
+ raw=json.loads(cleanup_path.read_text())
+ if isinstance(raw,dict):cleanup_parts={k:raw.get(k) is True for k in cleanup_parts}
+summary['cleanupFallback']=cleanup_parts
+if not all(cleanup_parts.values()):summary['cleanupFallbackConfirmed']=False;cleanup=False
+static_stages={'harness-node','artifact-python','collector-python','publisher-python','source-verification-python','relay-python','export-python','host-copy','host-node','host-python','container-python','complete'}
+static_path=work/'static-check-stage'
+summary['sourceContracts']='not-run'
+if static_path.is_file() and not static_path.is_symlink() and static_path.stat().st_size<=128:
+ raw=static_path.read_text().strip()
+ summary['sourceContracts']=raw if raw in static_stages else 'unknown'
 preflight_path=work/'cleanup-preflight.json'
 preflight={}
 if preflight_path.is_file() and not preflight_path.is_symlink() and preflight_path.stat().st_size<=4096:
@@ -65,7 +78,7 @@ asserted_runtime={'humanPrioritySourceSha256':'a51adddc0000ee80916fb290bb7e31514
 required_digest_fields=['humanPrioritySourceSha256','humanPriorityClassesSha256','humanPriorityBuildSha256','nativeBuildAttestationSha256','runtimeClassSetSha256','aiPatchsetSha256','selectedProfileSHA256','rulesManifestSHA256','humanDigest','opponentDigest']
 valid_probe=same_image and ci.get('nativeSourceSHA256')==cp.get('sourceSHA256')==expected_source and ci.get('nativeManifestSHA256')==cp.get('nativeManifestSHA256')==expected_manifest and all(sha(cp.get(k)) for k in required_digest_fields) and cp.get('policyVersion')=='forge-heuristic-medium-beta-v1' and cp.get('buildCompilerVersion') and cp.get('runtimeJavaVersion') and all(cp.get(k) is True for k in ['exactRosterVerified','cpuRulesRuntimeVerified','humanPriorityRuntimeVerified','privacyGatePassed','registeredRosterVerified','nativeRosterVerified'])
 life=cp.get('cleanup',{})
-valid_probe=bool(valid_probe and all(cp.get(k)==v for k,v in asserted_runtime.items()) and ci.get('contextManifestSHA256')=='d6e293394d6a7e30aca37343a0d1996a58e983bab00cf84e113843d10699a5f7' and ci.get('buildImage') and ci.get('runtimeImage') and life.get('confirmed') and life.get('privateInputRemoved') and life.get('removed') and life.get('forced') is False and life.get('starts')==life.get('destroys')==1 and life.get('status')=='exited' and life.get('exitCode')==0 and life.get('oomKilled') is False)
+valid_probe=bool(valid_probe and all(cp.get(k)==v for k,v in asserted_runtime.items()) and ci.get('contextManifestSHA256')=='cb9a9fb42e4063c1fb3f823055540ca27d05528b0ece9b3b7fdf35959471c68a' and ci.get('buildImage') and ci.get('runtimeImage') and life.get('confirmed') and life.get('privateInputRemoved') and life.get('removed') and life.get('forced') is False and life.get('starts')==life.get('destroys')==1 and life.get('status')=='exited' and life.get('exitCode')==0 and life.get('oomKilled') is False)
 browser_same_image=True
 for name in ['desktop','touch750']:
  p=out/name/'summary.json'
@@ -74,7 +87,7 @@ for name in ['desktop','touch750']:
  if lc.get('imageId')!=ci.get('imageId') or len(alloc)!=(2 if name=='desktop' else 1) or any(a.get('imageId')!=ci.get('imageId') or not a.get('confirmed') for a in alloc):browser_same_image=False
 summary['sameImageBrowserAllocationsVerified']=browser_same_image
 summary['sameImageProbeVerified']=valid_probe;summary['image']={k:ci.get(k) for k in ['result','imageId','ociManifestDigest']};summary['probe']={'result':cp.get('result'),'cleanupConfirmed':valid_probe}
-if not preflight_verified or not cleanup or not valid_probe or not browser_same_image or stage!='complete' or code!=0:summary['result']='failed'
+if not preflight_verified or not cleanup or summary['sourceContracts']!='complete' or not valid_probe or not browser_same_image or stage!='complete' or code!=0:summary['result']='failed'
 for name,data in [('image-summary.json',ci),('probe-summary.json',cp),('summary.json',summary)]:
  (out/name).write_text(json.dumps(data,indent=2)+'\n')
 for p in out.rglob('*'):
