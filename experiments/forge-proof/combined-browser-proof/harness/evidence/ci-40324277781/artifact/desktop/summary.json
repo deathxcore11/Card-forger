@@ -1,0 +1,277 @@
+{
+  "schema": "forge-existing-play-browser.v1",
+  "result": "passed",
+  "case": "saved-keen",
+  "scope": "LOCAL_TEST_NOT_DEPLOYABLE; synthetic account/storage; actual rendered Play controls",
+  "browser": "151.0.7922.34",
+  "viewport": {
+    "width": 1440,
+    "height": 1000,
+    "hasTouch": false
+  },
+  "checks": [
+    "real difficulty menu cycles Easy/Hard/Medium without allocating; only Medium native policy is exercised",
+    "existing Play menu selects concrete human and CPU decks through actual handlers",
+    "exact snapshots admitted by real host with native Smart policy",
+    "real native seven-card opening after existing setup",
+    "hand and both HUDs visible; compact canonical controls reachable; visible card images ready",
+    "real rendered land action reaches native battlefield",
+    "real native creature cast, Smart payment, creature-type choice and resolution",
+    "Smart / Full buttons reflect actual native acknowledgements",
+    "Exit cancellation returns to the unchanged native match",
+    "actual natural native result reaches dedicated immutable match result",
+    "explicit Rematch creates a new allocation/generation with exact decks and acknowledged native opening",
+    "explicit concession waits for native result and returns to existing Play",
+    "Home navigation after resource cleanup"
+  ],
+  "actions": 43,
+  "creates": 2,
+  "privacyChecks": 120,
+  "externalCredentialViolations": 0,
+  "unexpectedRequests": 0,
+  "terminal": {
+    "draw": false,
+    "winnerPlayerId": 1
+  },
+  "concession": {
+    "draw": false,
+    "winnerPlayerId": 1
+  },
+  "selectedDigests": {
+    "humanDeck": "858b8e6127d3749aeb8f57124246ef30a35ea390d2a758c9eefa9b76a53d72b8",
+    "opponentDeck": "7f6d2f7dc9b86b794c2a7fa1f3f7842265e095744deb7ad25f9f04a55c7fab4c"
+  },
+  "pageErrorCount": 0,
+  "observedErrorClassCounts": {},
+  "observation": {
+    "method": "fixture-forwarded-viewer-response-cache",
+    "intervalMs": 250,
+    "reads": 553,
+    "accepted": 256,
+    "lastHttpStatus": 200
+  },
+  "difficultySelections": [
+    "Easy",
+    "Hard",
+    "Medium"
+  ],
+  "naturalFinish": true,
+  "rematchVerified": true,
+  "visualChecks": [
+    {
+      "stage": "first-main",
+      "width": 1440,
+      "height": 1000,
+      "visibleHandCards": 7,
+      "imageCount": 9,
+      "imagesReady": 9,
+      "compact": true,
+      "hand": {
+        "x": 320,
+        "y": 703.875,
+        "width": 770,
+        "height": 280.125
+      },
+      "you": {
+        "x": 27,
+        "y": 745.4375,
+        "width": 284,
+        "height": 150.5625
+      },
+      "cpu": {
+        "x": 1129,
+        "y": 22,
+        "width": 284,
+        "height": 133.671875
+      },
+      "dock": {
+        "x": 1103,
+        "y": 698.421875,
+        "width": 310,
+        "height": 273.578125
+      },
+      "lifeVisible": [
+        true,
+        true
+      ],
+      "exposure": {
+        "hand": {
+          "visible": true,
+          "opacity": 1,
+          "areaRatio": 1,
+          "hits": 5
+        },
+        "you": {
+          "visible": true,
+          "opacity": 1,
+          "areaRatio": 1,
+          "hits": 5
+        },
+        "cpu": {
+          "visible": true,
+          "opacity": 1,
+          "areaRatio": 1,
+          "hits": 5
+        },
+        "dock": {
+          "visible": true,
+          "opacity": 1,
+          "areaRatio": 1,
+          "hits": 5
+        }
+      },
+      "controls": [
+        {
+          "x": 1116,
+          "y": 779,
+          "width": 58.3125,
+          "height": 44,
+          "receivesPointer": true
+        },
+        {
+          "x": 1180.3125,
+          "y": 779,
+          "width": 89.71875,
+          "height": 44,
+          "receivesPointer": true
+        },
+        {
+          "x": 1274.4375,
+          "y": 831,
+          "width": 43.5,
+          "height": 44,
+          "receivesPointer": true
+        },
+        {
+          "x": 1323.9375,
+          "y": 831,
+          "width": 76.0625,
+          "height": 44,
+          "receivesPointer": true
+        }
+      ]
+    },
+    {
+      "stage": "resolved",
+      "width": 1440,
+      "height": 1000,
+      "visibleHandCards": 4,
+      "imageCount": 10,
+      "imagesReady": 10,
+      "compact": true,
+      "hand": {
+        "x": 320,
+        "y": 703.875,
+        "width": 770,
+        "height": 280.125
+      },
+      "you": {
+        "x": 27,
+        "y": 745.4375,
+        "width": 284,
+        "height": 150.5625
+      },
+      "cpu": {
+        "x": 1129,
+        "y": 22,
+        "width": 284,
+        "height": 133.671875
+      },
+      "dock": {
+        "x": 1103,
+        "y": 742.421875,
+        "width": 310,
+        "height": 229.578125
+      },
+      "lifeVisible": [
+        true,
+        true
+      ],
+      "exposure": {
+        "hand": {
+          "visible": true,
+          "opacity": 1,
+          "areaRatio": 1,
+          "hits": 5
+        },
+        "you": {
+          "visible": true,
+          "opacity": 1,
+          "areaRatio": 1,
+          "hits": 5
+        },
+        "cpu": {
+          "visible": true,
+          "opacity": 1,
+          "areaRatio": 1,
+          "hits": 5
+        },
+        "dock": {
+          "visible": true,
+          "opacity": 1,
+          "areaRatio": 1,
+          "hits": 5
+        }
+      },
+      "controls": [
+        {
+          "x": 1116,
+          "y": 823,
+          "width": 58.3125,
+          "height": 44,
+          "receivesPointer": true
+        },
+        {
+          "x": 1180.3125,
+          "y": 823,
+          "width": 89.71875,
+          "height": 44,
+          "receivesPointer": true
+        },
+        {
+          "x": 1274.4375,
+          "y": 875,
+          "width": 43.5,
+          "height": 44,
+          "receivesPointer": true
+        },
+        {
+          "x": 1323.9375,
+          "y": 875,
+          "width": 76.0625,
+          "height": 44,
+          "receivesPointer": true
+        }
+      ]
+    }
+  ],
+  "cleanup": {
+    "confirmed": true,
+    "privateInputRemoved": true,
+    "starts": 2,
+    "destroys": 2,
+    "imageId": "sha256:4b30fbfb18176134217df46d0ff9e6b36d9123d0c57ed99dd50e2105bf75fdd4",
+    "allocations": [
+      {
+        "imageId": "sha256:4b30fbfb18176134217df46d0ff9e6b36d9123d0c57ed99dd50e2105bf75fdd4",
+        "confirmed": true,
+        "status": "exited",
+        "exitCode": 0,
+        "forced": false,
+        "oomKilled": false,
+        "removed": true,
+        "privateInputRemoved": true
+      },
+      {
+        "imageId": "sha256:4b30fbfb18176134217df46d0ff9e6b36d9123d0c57ed99dd50e2105bf75fdd4",
+        "confirmed": true,
+        "status": "exited",
+        "exitCode": 0,
+        "forced": false,
+        "oomKilled": false,
+        "removed": true,
+        "privateInputRemoved": true
+      }
+    ]
+  }
+}

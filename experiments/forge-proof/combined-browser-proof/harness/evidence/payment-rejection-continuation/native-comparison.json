@@ -1,0 +1,24 @@
+{
+  "schema": "cardstashy.native-payment-rejection-comparison.v1",
+  "layer": "local native human-controller fixtures; no browser or image acceptance",
+  "candidateBase": "f81df780835feb2533b1877108da3b70f50343ee",
+  "runtimeModifiedThisTask": false,
+  "sameFixtureSourceBothRuns": true,
+  "baseline": {
+    "pass": 0,
+    "total": 9,
+    "allPass": false
+  },
+  "candidate": {
+    "pass": 9,
+    "total": 9,
+    "allPass": true,
+    "duplicateRejectedRequests": 9,
+    "busyRejectedRequests": 9,
+    "allCasesOneStackSpellAndTwoTappedLands": true
+  },
+  "historicalTouchCauseProven": false,
+  "automaticReplayAdded": false,
+  "desktopBrowserAcceptanceThisTask": false,
+  "touchBrowserAcceptanceThisTask": false
+}

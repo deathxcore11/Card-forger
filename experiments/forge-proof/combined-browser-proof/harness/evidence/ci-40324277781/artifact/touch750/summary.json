@@ -1,0 +1,177 @@
+{
+  "schema": "forge-existing-play-browser.v1",
+  "result": "failed",
+  "case": "saved-keen",
+  "scope": "LOCAL_TEST_NOT_DEPLOYABLE; synthetic account/storage; actual rendered Play controls",
+  "browser": "151.0.7922.34",
+  "viewport": {
+    "width": 750,
+    "height": 832,
+    "hasTouch": true
+  },
+  "checks": [
+    "real difficulty menu cycles Easy/Hard/Medium without allocating; only Medium native policy is exercised",
+    "existing Play menu selects concrete human and CPU decks through actual handlers",
+    "exact snapshots admitted by real host with native Smart policy",
+    "real native seven-card opening after existing setup",
+    "hand and both HUDs visible; compact canonical controls reachable; visible card images ready",
+    "actual touch pan reaches rightmost card through native handler without sending an action",
+    "real rendered land action reaches native battlefield"
+  ],
+  "actions": 9,
+  "creates": 1,
+  "privacyChecks": 21,
+  "externalCredentialViolations": 0,
+  "unexpectedRequests": 0,
+  "terminal": null,
+  "concession": null,
+  "selectedDigests": {
+    "humanDeck": "858b8e6127d3749aeb8f57124246ef30a35ea390d2a758c9eefa9b76a53d72b8",
+    "opponentDeck": "7f6d2f7dc9b86b794c2a7fa1f3f7842265e095744deb7ad25f9f04a55c7fab4c"
+  },
+  "handPan": {
+    "overflow": true,
+    "before": {
+      "left": 0,
+      "max": 89
+    },
+    "after": {
+      "left": 89,
+      "max": 89
+    }
+  },
+  "pageErrorCount": 0,
+  "observedErrorClassCounts": {},
+  "observation": {
+    "method": "fixture-forwarded-viewer-response-cache",
+    "intervalMs": 250,
+    "reads": 176,
+    "accepted": 88,
+    "lastHttpStatus": 200
+  },
+  "difficultySelections": [
+    "Easy",
+    "Hard",
+    "Medium"
+  ],
+  "naturalFinish": false,
+  "rematchVerified": false,
+  "visualChecks": [
+    {
+      "stage": "first-main",
+      "width": 750,
+      "height": 832,
+      "visibleHandCards": 7,
+      "imageCount": 9,
+      "imagesReady": 9,
+      "compact": true,
+      "hand": {
+        "x": 248,
+        "y": 424,
+        "width": 494,
+        "height": 188
+      },
+      "you": {
+        "x": 14,
+        "y": 474,
+        "width": 224,
+        "height": 132
+      },
+      "cpu": {
+        "x": 512,
+        "y": 14,
+        "width": 224,
+        "height": 132
+      },
+      "dock": {
+        "x": 8,
+        "y": 618,
+        "width": 734,
+        "height": 156
+      },
+      "lifeVisible": [
+        true,
+        true
+      ],
+      "exposure": {
+        "hand": {
+          "visible": true,
+          "opacity": 1,
+          "areaRatio": 1,
+          "hits": 5
+        },
+        "you": {
+          "visible": true,
+          "opacity": 1,
+          "areaRatio": 1,
+          "hits": 5
+        },
+        "cpu": {
+          "visible": true,
+          "opacity": 1,
+          "areaRatio": 1,
+          "hits": 5
+        },
+        "dock": {
+          "visible": true,
+          "opacity": 1,
+          "areaRatio": 1,
+          "hits": 5
+        }
+      },
+      "controls": [
+        {
+          "x": 574.96875,
+          "y": 628,
+          "width": 58.3125,
+          "height": 44,
+          "receivesPointer": true
+        },
+        {
+          "x": 639.28125,
+          "y": 628,
+          "width": 89.71875,
+          "height": 44,
+          "receivesPointer": true
+        },
+        {
+          "x": 603.4375,
+          "y": 678,
+          "width": 43.5,
+          "height": 44,
+          "receivesPointer": true
+        },
+        {
+          "x": 652.9375,
+          "y": 678,
+          "width": 76.0625,
+          "height": 44,
+          "receivesPointer": true
+        }
+      ]
+    }
+  ],
+  "failure": {
+    "stage": "unknown",
+    "class": "AssertionError"
+  },
+  "cleanup": {
+    "confirmed": true,
+    "privateInputRemoved": true,
+    "starts": 1,
+    "destroys": 1,
+    "imageId": "sha256:4b30fbfb18176134217df46d0ff9e6b36d9123d0c57ed99dd50e2105bf75fdd4",
+    "allocations": [
+      {
+        "imageId": "sha256:4b30fbfb18176134217df46d0ff9e6b36d9123d0c57ed99dd50e2105bf75fdd4",
+        "confirmed": true,
+        "status": "exited",
+        "exitCode": 0,
+        "forced": false,
+        "oomKilled": false,
+        "removed": true,
+        "privateInputRemoved": true
+      }
+    ]
+  }
+}

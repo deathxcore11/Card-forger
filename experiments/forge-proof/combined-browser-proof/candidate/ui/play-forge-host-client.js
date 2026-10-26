@@ -5,6 +5,20 @@ import {forgeCpuPolicy} from './play-forge-cpu-policy.js';
 export const FORGE_REVISION='e5a0f8156da70ffc7866f923bed371c0111707cd';
 const SCHEMA='cardstashy.forge-proof.v1';
 const fail=code=>Object.assign(Error(code),{code});
+const ACTION_REJECTIONS=Object.freeze({
+ stale_revision:'The game has moved on. Review the current table before choosing again.',
+ stale_prompt:'That choice has changed. Review the current prompt before choosing again.',
+ native_engine_busy:'Forge is still completing your previous action. Wait for the table to update.',
+ native_input_changed:'The available action has changed. Review the current table before choosing again.',
+ native_dialog_requires_reply:'Complete the open choice before taking another action.',
+ ok_disabled:'That payment or confirmation is no longer available. Review the current prompt.',
+ cancel_disabled:'Cancel is no longer available for this choice. Review the current prompt.',
+ native_match_unavailable:'Forge cannot accept actions for this match right now.',
+ native_game_finished:'This match has finished. Wait for the result.',
+ native_concession_in_progress:'Forge is completing your concession. Wait for the result.',
+ exact_initialization_unverified:'The match is not ready to accept actions.',
+ native_action_rejected:'Forge did not accept that action. Review the current table before choosing again.',
+});
 export const forgeAccountKey=a=>JSON.stringify([a?.user?.id,a?.accountGeneration??a?.generation??null,!!a?.locked,!!a?.switching]);
 export async function exactDigest(value){
  const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
@@ -23,7 +37,7 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
  let allocation=null,creating=false,closed=false,closeRequested=false,submitting=false,blocked=false,error=null,terminal=null,nextReadAt=0,expectedViewer=null,knownPlayers=null;
  const current=()=>{const a=readAccount();if(forgeAccountKey(a)!==ownerKey||a.locked||a.switching)throw fail('ACCOUNT_CHANGED');};
  const status=()=>({blocked:blocked||closed,error,allocation:allocation?structuredClone(allocation):null,terminal:terminal?structuredClone(terminal):null});
- async function request(path,{method='GET',body,headers={}}={}){
+ async function request(path,{method='GET',body,headers={},expectedCommandId}={}){
   current();const token=await getAccessToken();current();if(path==='/api/play/matches'&&closeRequested)throw fail('MATCH_CLOSED');
   if(typeof token!=='string'||!token||token.length>8192||!/^[-A-Za-z0-9._]+$/.test(token))throw fail('AUTHENTICATION_REQUIRED');
   const controller=new AbortController();let timer;
@@ -38,7 +52,14 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
     const bytes=new Uint8Array(size);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length;}data=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
    }
    current();
-   if(!r.ok){const code=typeof data?.error==='string'&&/^[a-z0-9_]{1,100}$/.test(data.error)?data.error:'host_request_rejected';throw Object.assign(fail(code),{status:r.status,retryAfterMs:Math.max(1000,Math.min(30000,(Number(r.headers.get('Retry-After'))||1)*1000)),details:Array.isArray(data?.validation?.errors||data?.errors)?(data.validation?.errors||data.errors).filter(x=>typeof x==='string').slice(0,20).map(x=>x.slice(0,512)):[]});}
+   if(!r.ok){
+    const code=typeof data?.error==='string'&&/^[a-z0-9_]{1,100}$/.test(data.error)?data.error:'host_request_rejected';
+    if(expectedCommandId!==undefined&&(data?.state!==undefined||Object.hasOwn(ACTION_REJECTIONS,code))
+       &&(![400,409].includes(r.status)||data?.state!=='rejected'||data.commandId!==expectedCommandId))throw fail('HOST_COMMAND_RECEIPT_MISMATCH');
+    const rejection=fail(code);
+    if(expectedCommandId!==undefined&&data?.state==='rejected')rejection.message=Object.hasOwn(ACTION_REJECTIONS,code)?ACTION_REJECTIONS[code]:ACTION_REJECTIONS.native_action_rejected;
+    throw Object.assign(rejection,{status:r.status,retryAfterMs:Math.max(1000,Math.min(30000,(Number(r.headers.get('Retry-After'))||1)*1000)),details:Array.isArray(data?.validation?.errors||data?.errors)?(data.validation?.errors||data.errors).filter(x=>typeof x==='string').slice(0,20).map(x=>x.slice(0,512)):[]});
+   }
    return {status:r.status,data};
   })();
   try{return await Promise.race([work,new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(fail('HOST_REQUEST_TIMEOUT'));},timeoutMs);})]);}
@@ -83,7 +104,7 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
    if(!Number.isSafeInteger(action?.revision)||!['ok','cancel','card','player','stack','reply','concede','controlMode'].includes(action?.op))throw fail('INVALID_NATIVE_ACTION');
    if(action.op==='controlMode'&&(!['smart','full'].includes(action.value)||Object.keys(action).some(k=>!['revision','op','value'].includes(k))))throw fail('INVALID_NATIVE_CONTROL_MODE');
    const commandId=newId();submitting=true;
-   try{const {status:code,data}=await request('/api/play/matches/'+allocation.matchId+'/actions',{method:'POST',body:{commandId,generation:allocation.generation,action:structuredClone(action)}});
+   try{const {status:code,data}=await request('/api/play/matches/'+allocation.matchId+'/actions',{method:'POST',body:{commandId,generation:allocation.generation,action:structuredClone(action)},expectedCommandId:commandId});
     if(data?.commandId!==commandId||code!==202)throw fail('HOST_COMMAND_RECEIPT_MISMATCH');
     if(data.state==='pending_outcome_unknown'){blocked=true;error='ACTION_OUTCOME_UNKNOWN';throw fail(error);}
     if(data.state!=='accepted')throw fail('HOST_COMMAND_RECEIPT_MISMATCH');return data;

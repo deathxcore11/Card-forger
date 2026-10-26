@@ -1,0 +1,30 @@
+{
+  "schema": "cardstashy.host-alarm-port-merged.v1",
+  "baseCommit": "f17bbe490156499c0b0249d043260b815a9e4cc1",
+  "patchSha256": "0797148566fcdbd6a220981362c757929aefab100f711212b1ee3391e0bc43f6",
+  "conflictCheck": "PASS",
+  "baseHostInventoryFiles": 58,
+  "mergedHostInventoryFiles": 60,
+  "mergedHostExactlyMatchesSuppliedInventory": true,
+  "newerPaymentSourcesPreserved": true,
+  "hostNode": {
+    "command": "npm test",
+    "passed": 179,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "logSha256": "343c1782f68ad5655dc4c4c7c1267fd3f1c0a89e9f90dc6d26da8f1c5e2957ca"
+  },
+  "localWorkerdSQLite": {
+    "passed": 6,
+    "failed": 0,
+    "externalCalls": 0,
+    "actualSQLite": true,
+    "syntheticAccountAndMatchBinding": true
+  },
+  "browserAcceptance": false,
+  "liveAcceptance": false,
+  "newPaidRuns": 0,
+  "productionDeployment": false,
+  "createdAt": "2026-10-26T13:19:03.675091+00:00"
+}

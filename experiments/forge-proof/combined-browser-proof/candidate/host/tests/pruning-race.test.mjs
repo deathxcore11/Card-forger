@@ -16,6 +16,7 @@ class Storage {
   async put(key, value) { this.data.set(key, structuredClone(value)); }
   async delete(key) { return this.data.delete(key); }
   async setAlarm(at) { this.alarmAt = at; }
+  async getAlarm() { return this.alarmAt; }
   async list({ prefix }) {
     const snapshot = new Map([...this.data].filter(([key]) => key.startsWith(prefix))
       .map(([key, value]) => [key, structuredClone(value)]));

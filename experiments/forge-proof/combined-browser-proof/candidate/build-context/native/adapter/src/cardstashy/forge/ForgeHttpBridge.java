@@ -285,11 +285,17 @@ public final class ForgeHttpBridge implements IRemote {
             default -> { }
         }
         // Raw GameView, DeltaPacket, arbitrary events and private logs NEVER cross HTTP.
-        if(e.getMethod()==ProtocolMethod.setSelection || e.getMethod()==ProtocolMethod.updateButtons || e.getMethod()==ProtocolMethod.showPromptMessage || e.getMethod()==ProtocolMethod.flashIncorrectAction || e.getMethod()==ProtocolMethod.message || e.getMethod()==ProtocolMethod.showErrorDialog) publish();
+        // Reserve Smart payment before exposing this update to a concurrent HTTP reader.
+        // Publishing an enabled Auto button first creates a second, obsolete human action.
         maybeNativeAutoPay();
+        if(e.getMethod()==ProtocolMethod.setSelection || e.getMethod()==ProtocolMethod.updateButtons || e.getMethod()==ProtocolMethod.showPromptMessage || e.getMethod()==ProtocolMethod.flashIncorrectAction || e.getMethod()==ProtocolMethod.message || e.getMethod()==ProtocolMethod.showErrorDialog) publish();
         }
     }
     void clearSmartIntent(){smartIntentOrigin=null;smartIntentAbility=null;}
+    boolean nativePaymentPending(){
+        return controller!=null && controller.getInputProxy().getInput() instanceof forge.gamemodes.match.input.InputPayMana payment
+            && payment.isPaymentPending();
+    }
     void armSmartSpellIntent(forge.gamemodes.match.input.Input input){
         clearSmartIntent();
         if(failure==null&&controlMode.equals("smart")&&input instanceof forge.gamemodes.match.input.InputPassPriority priority){
@@ -548,7 +554,7 @@ public final class ForgeHttpBridge implements IRemote {
         // Re-stamp the immutable board evidence on every publication (including prompt-only updates).
         // Old snapshots retain their original revision and receipt; no live graph is read here.
         snapshot.put("visibility",obj("schema","cardstashy.forge-visibility.v1","forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"revision",publicationRevision,"cards",boardVisibility));
-        snapshot.putAll(obj("revision",publicationRevision,"status",failure!=null?"failed":(finished||Boolean.TRUE.equals(board.get("gameOver"))?"finished":exactAdmission!=null&&!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))?"initializing":"running"),"failure",failure,"message",message,"buttons",buttons,"inputType",input,"selection",select,"prompt",concessionRequested||pending==null?null:pending.dto,"busy",!(finished||Boolean.TRUE.equals(board.get("gameOver")))&&(concessionRequested||(pending!=null?pending.answer.isDone():(busy||commandInFlight||publishedInput==null||publishedInput instanceof forge.gamemodes.match.input.InputLockUI))),"lastActionError",lastActionError,"notification",notification,"controlMode",controlMode,"autoPassNoActions",effectiveAutoPass,"nativeAutoPayments",nativeAutoPayments,"canConcede",failure==null&&!finished&&!concessionRequested&&!Boolean.TRUE.equals(board.get("gameOver")),"concession",obj("requested",concessionRequested,"nativeConfirmed",nativeOutcomeConfirmed,"applied",concessionApplied)));
+        snapshot.putAll(obj("revision",publicationRevision,"status",failure!=null?"failed":(finished||Boolean.TRUE.equals(board.get("gameOver"))?"finished":exactAdmission!=null&&!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))?"initializing":"running"),"failure",failure,"message",message,"buttons",buttons,"inputType",input,"selection",select,"prompt",concessionRequested||pending==null?null:pending.dto,"busy",!(finished||Boolean.TRUE.equals(board.get("gameOver")))&&(concessionRequested||(pending!=null?pending.answer.isDone():(busy||commandInFlight||nativePaymentPending()||publishedInput==null||publishedInput instanceof forge.gamemodes.match.input.InputLockUI))),"lastActionError",lastActionError,"notification",notification,"controlMode",controlMode,"autoPassNoActions",effectiveAutoPass,"nativeAutoPayments",nativeAutoPayments,"canConcede",failure==null&&!finished&&!concessionRequested&&!Boolean.TRUE.equals(board.get("gameOver")),"concession",obj("requested",concessionRequested,"nativeConfirmed",nativeOutcomeConfirmed,"applied",concessionApplied)));
         published.set(snapshot);
     }}
     Integer winnerId(){if(!game.isGameOver()||game.getOutcome()==null)return null;for(Player p:game.getRegisteredPlayers())if(game.getOutcome().isWinner(p.getRegisteredPlayer()))return p.getId();return null;}
@@ -612,7 +618,7 @@ public final class ForgeHttpBridge implements IRemote {
                     }else if(op.equals("controlMode")){
                         String mode=exactString(body.get("value"),"value");
                         if(!Set.of("smart","full").contains(mode))throw new IllegalArgumentException("controlMode_must_be_smart_or_full");
-                        if(pending!=null||busy||commandInFlight){respond(x,409,obj("error","native_engine_busy"));return;}
+                        if(pending!=null||busy||commandInFlight||nativePaymentPending()){respond(x,409,obj("error","native_engine_busy"));return;}
                         final var modeInput=publishedInput;
                         final long modeGeneration=promptGeneration.get();
                         if(modeInput==null||modeInput instanceof forge.gamemodes.match.input.InputLockUI
@@ -631,10 +637,10 @@ public final class ForgeHttpBridge implements IRemote {
                     }else if(op.equals("reply")){
                         Pending p=pending;
                         if(p==null||p.answer.isDone()||exactInt(body.get("promptId"),"promptId")!=p.event.getId()){respond(x,409,obj("error","stale_prompt"));return;}
-                        Object answer=reply(p,body);busy=true;p.answer.complete(answer);
+                        Object answer=reply(p,body);busy=true;p.answer.complete(answer);publish();
                     }else{
                         if(pending!=null){respond(x,409,obj("error","native_dialog_requires_reply"));return;}
-                        if(busy||commandInFlight){respond(x,409,obj("error","native_engine_busy"));return;}
+                        if(busy||commandInFlight||nativePaymentPending()){respond(x,409,obj("error","native_engine_busy"));return;}
                         final var capturedInput=publishedInput;
                         final long capturedPromptGeneration=promptGeneration.get();
                         if(capturedInput==null||capturedInput!=controller.getInputProxy().getInput()||capturedInput instanceof forge.gamemodes.match.input.InputLockUI){respond(x,409,obj("error","native_input_changed"));return;}
@@ -657,6 +663,7 @@ public final class ForgeHttpBridge implements IRemote {
                         if(capturedInput instanceof forge.gamemodes.match.input.InputPassPriority
                             &&(op.equals("ok")||op.equals("cancel")))clearSmartIntent();
                         busy=true; commandInFlight=true; lastActionError=null;
+                        publish(); // the accepted command consumes this presentation before dispatch
                         SwingUtilities.invokeLater(()->{
                             try{
                                 if(concessionRequested||capturedInput!=controller.getInputProxy().getInput()||capturedPromptGeneration!=promptGeneration.get()||pending!=null){lastActionError="native_decision_changed";clearSmartIntent();return;}
@@ -666,8 +673,8 @@ public final class ForgeHttpBridge implements IRemote {
                                 commandInFlight=false;
                                 // Only native stable prompt callbacks or an explicit false selection result release busy.
                                 // The same Input identity can enqueue a later native confirmation, so identity alone is not enough.
-                                publish();
                                 maybeNativeAutoPay();
+                                publish();
                             }}
                         });
                     }

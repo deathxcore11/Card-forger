@@ -2,6 +2,7 @@
 // Host boundary only: no Magic rules. Bind to one match Durable Object storage.
 // A real container driver and the existing verified-account helper must be
 // supplied by integration. No default driver, credentials, or network startup.
+import { nativeActionRejection } from './action-rejection.mjs';
 export const FORGE_REVISION = 'e5a0f8156da70ffc7866f923bed371c0111707cd';
 export const NATIVE_SCHEMA = 'cardstashy.forge-proof.v1';
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -114,7 +115,9 @@ export async function verifyHostUser(request, { verifyBearer, origin }) {
 /**
  * Driver contract (not implemented here):
  * readExisting({expectedEpoch}) -> {epoch, snapshot}; NEVER start/restart.
- * submitExisting(action, {expectedEpoch}) -> {epoch, status}; no retries.
+ * submitExisting(action, {expectedEpoch, signal, onRejected}) -> {epoch, status, error?}; no retries.
+ * onRejected is optional: publish validated rejection headers before reading
+ * optional diagnostics so cancellation cannot erase a known outcome.
  * The driver MUST send X-Expected-Host-Epoch to the Python gateway; checking the
  * epoch only after submission could mutate a replacement JVM's opening hand.
  * destroyExisting({expectedEpoch}) -> {confirmed:true}; stop recorded process.
@@ -283,21 +286,29 @@ export class MatchAuthority {
       return { dispatch: true };
     });
     if (!reservation.dispatch) return reservation.error ? error(reservation.error, reservation.status) : json(reservation.receipt, reservation.status);
-    let native;
+    let native, confirmedRejection;
     try {
       request.signal.throwIfAborted();
-      native = await abortable(this.driver.submitExisting(structuredClone(body.action), { expectedEpoch: match.epoch, signal: request.signal }), request.signal);
+      native = await abortable(this.driver.submitExisting(structuredClone(body.action), { expectedEpoch: match.epoch, signal: request.signal,
+        onRejected: receipt => {
+          if (receipt?.epoch === match.epoch && [400, 409].includes(receipt.status))
+            confirmedRejection = { epoch: match.epoch, status: receipt.status, error: 'native_action_rejected' };
+        },
+      }), request.signal);
     }
     catch {
-      // Dispatch may already have succeeded. Persisted pending blocks all later
-      // actions and retries until explicit server-side reconciliation. No replay.
-      return json({ commandId: body.commandId, state: 'pending_outcome_unknown' }, 202);
+      // A cancelled diagnostic read cannot erase a confirmed epoch-bound
+      // rejection. Without that evidence dispatch may already have succeeded;
+      // preserve pending and block later actions. Neither path replays a POST.
+      if (confirmedRejection) native = confirmedRejection;
+      else return json({ commandId: body.commandId, state: 'pending_outcome_unknown' }, 202);
     }
     if (native?.epoch !== match.epoch || ![202, 400, 409].includes(native?.status)) {
       await this.interrupt('native_generation_or_receipt_mismatch');
       return error('native_generation_or_receipt_mismatch', 410);
     }
-    const receipt = { commandId: body.commandId, state: native.status === 202 ? 'accepted' : 'rejected' };
+    const receipt = { commandId: body.commandId, state: native.status === 202 ? 'accepted' : 'rejected',
+      ...(native.status === 202 ? {} : { error: nativeActionRejection(native.error) }) };
     await this.storage.transaction(async txn => {
       const stored = await txn.get(key);
       const current = await txn.get('match');

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Explicit sanitized evidence allowlist. Raw traces/logs/source are never copied."""
 import json, math, pathlib, shutil, sys, collections, re
+from payment_artifacts import payment_proof, action_event
 raw,out,code,stage=pathlib.Path(sys.argv[1]),pathlib.Path(sys.argv[2]),int(sys.argv[3]),sys.argv[4]
 out.mkdir(parents=True,exist_ok=True)
 assert not any(out.iterdir()), 'artifact output must begin empty'
@@ -8,9 +9,25 @@ summary={'schema':'forge-existing-play-ci.v1','result':'passed' if code==0 else 
 pngs={'setup.png','opening.png','resolved.png','terminal.png','complete.png','failure.png'}
 def bounded_number(v,low=0,high=10000):return type(v) in [int,float] and math.isfinite(v) and low<=v<=high
 def rectangle(v):return {k:v[k] for k in ['x','y','width','height']} if isinstance(v,dict) and all(bounded_number(v.get(k),-10000) for k in ['x','y','width','height']) else None
-stages={'startup','native startup','full native terminal','explicit rematch','confirm native concession','open Match menu','open exit confirmation','cancel exit confirmation','native Keep','rematch Keep','native land tap','native land click','native land ability','second native land','second native land ability','native creature tap','native creature click','native Full Control','native Smart','native declared attack','native required card selection','native reveal acknowledgement','native confirmation','native value'}
+diagnostic_allowlist=json.loads((pathlib.Path(__file__).resolve().parent/'action-diagnostics.json').read_text())
+stages=set(diagnostic_allowlist['stages'])|{'native '+v for v in diagnostic_allowlist['inputTypes']+diagnostic_allowlist['promptMethods']}
 def safe_stage(v):return v if isinstance(v,str) and v in stages else 'unknown'
-checks={'real native seven-card opening after existing setup', 'hand fits touch viewport; no horizontal pan required', 'explicit Rematch creates a new allocation/generation with exact decks and acknowledged native opening', 'explicit concession waits for native result and returns to existing Play', 'hand and both HUDs visible; compact canonical controls reachable; visible card images ready', 'existing Play menu selects concrete human and CPU decks through actual handlers', 'real rendered land action reaches native battlefield', 'actual natural native result reaches dedicated immutable match result', 'Home navigation after resource cleanup', 'actual touch pan reaches rightmost card through native handler without sending an action', 'real difficulty menu cycles Easy/Hard/Medium without allocating; only Medium native policy is exercised', 'Exit cancellation returns to the unchanged native match', 'Smart / Full buttons reflect actual native acknowledgements', 'exact snapshots admitted by real host with native Smart policy', 'real native creature cast, Smart payment, creature-type choice and resolution'}
+def action_diagnostic(v):
+ if not isinstance(v,dict):return None
+ def member(key,value,fallback='unknown'):return value if isinstance(value,str) and value in diagnostic_allowlist[key] else fallback
+ def number(value):return value if type(value) is int and 0<=value<=9007199254740991 else None
+ def digest(value):return value if isinstance(value,str) and re.fullmatch('[a-f0-9]{64}',value) else None
+ status=v.get('httpStatus');status=status if type(status) is int and 100<=status<=599 else None
+ command=digest(v.get('commandHash'));receipt_command=digest(v.get('receiptCommandHash'))
+ bound=command is not None and command==receipt_command
+ rejected=status in [400,409] and bound and v.get('state')=='rejected'
+ return {'stage':safe_stage(v.get('stage')),'inputType':member('inputTypes',v.get('inputType')),
+  **{key:number(v.get(key)) for key in ['decisionId','observedRevision','requestRevision','requestDecisionId']},
+  'operation':member('operations',v.get('operation')),
+  **{key:digest(v.get(key)) for key in ['commandHash','receiptCommandHash','generationHash']},
+  'httpStatus':status,'state':'rejected' if rejected else v.get('state') if status==202 and bound and v.get('state') in ['accepted','pending_outcome_unknown'] else 'unknown',
+  'reason':member('reasons',v.get('reason'),'native_action_rejected') if rejected else None}
+checks={'one Mimic stack entry and payment; rendered controls resume', 'real native seven-card opening after existing setup', 'hand fits touch viewport; no horizontal pan required', 'explicit Rematch creates a new allocation/generation with exact decks and acknowledged native opening', 'explicit concession waits for native result and returns to existing Play', 'hand and both HUDs visible; compact canonical controls reachable; visible card images ready', 'existing Play menu selects concrete human and CPU decks through actual handlers', 'real rendered land action reaches native battlefield', 'actual natural native result reaches dedicated immutable match result', 'Home navigation after resource cleanup', 'actual touch pan reaches rightmost card through native handler without sending an action', 'real difficulty menu cycles Easy/Hard/Medium without allocating; only Medium native policy is exercised', 'Exit cancellation returns to the unchanged native match', 'Smart / Full buttons reflect actual native acknowledgements', 'exact snapshots admitted by real host with native Smart policy', 'real native creature cast, Smart payment, creature-type choice and resolution'}
 
 def result_record(v):
  if not isinstance(v,dict) or type(v.get('draw')) is not bool:return None
@@ -87,6 +104,16 @@ for name in ['desktop','touch750']:
   clean['visualChecks']=visuals
   if len(visuals)!=2 or {v['stage'] for v in visuals}!={'first-main','resolved'} or any(v['imageCount']!=v['imagesReady'] or not v['imageCount'] for v in visuals):clean['result']='failed'
   if name=='desktop' and not(clean['naturalFinish'] and clean['rematchVerified'] and original.get('creates')==2):clean['result']='failed'
+  clean['paymentProof']=payment_proof(original.get('paymentProof'))
+  if not clean['paymentProof'] or clean['paymentProof']['result']!='passed':clean['result']='failed'
+  events=original.get('actionEvents')
+  if isinstance(events,list):clean['actionEvents']=[d for v in events[:256] if (d:=action_event(v)) is not None]
+  clean['actionEventsTruncated']=original.get('actionEventsTruncated') is True
+  trail=original.get('actionDiagnostics')
+  if isinstance(trail,list):clean['actionDiagnostics']=[d for v in trail[:64] if (d:=action_diagnostic(v)) is not None]
+  if 'actionRejection' in original:
+   clean['actionRejection']=action_diagnostic(original['actionRejection'])
+   clean['result']='failed'
   if 'failure' in original:
    error=original['failure'];clean['failure']={'stage':safe_stage(error.get('stage')),'class':error.get('name') if error.get('name') in ['Error','TimeoutError','AssertionError','TypeError'] else 'Error'}
   if 'failedAction' in original:

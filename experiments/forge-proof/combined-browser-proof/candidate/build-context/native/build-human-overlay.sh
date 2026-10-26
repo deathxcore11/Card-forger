@@ -11,8 +11,8 @@ python3 - "$HERE" <<'PY'
 import pathlib,sys,json,hashlib
 root=pathlib.Path(sys.argv[1])/'human'
 sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
-assert sha(root/'source-sha256.json')=='a51adddc0000ee80916fb290bb7e31514181b5373b033866bf43ad49cad64f9c'
-assert sha(root/'runtime-sha256.json')=='e22e7d45a8a7f2aee5bedc168d2ca6d500a7e5894797ee7418bfcbdb93e1ab69'
+assert sha(root/'source-sha256.json')=='808b643d01c0c8fe63344733725c77e8c504e1f566453386c6cbfc36c95e40bc'
+assert sha(root/'runtime-sha256.json')=='89975e8a8bff75923f977c28ebd8341990744205c07cc3a504509c7d7647c1ee'
 expected=json.loads((root/'source-sha256.json').read_text())
 actual={str(p.relative_to(root)):sha(p) for p in (root/'src').rglob('*') if p.is_file()}
 assert actual==expected,'Human source differs from reviewed source manifest'
@@ -21,7 +21,8 @@ PY
 mkdir -p "$HERE/human/runtime-classes"
 "$FORGE_JAVA_HOME/bin/javac" -cp "$FORGE_BASE_CP" -d "$HERE/human/runtime-classes" \
   "$HERE/human/src/forge/ai/AvailableActions.java" \
-  "$HERE/human/src/forge/ai/HumanActionAffordability.java"
+  "$HERE/human/src/forge/ai/HumanActionAffordability.java" \
+  "$HERE/human/src/forge/gamemodes/match/input/InputPayMana.java"
 python3 - "$HERE" "$FORGE_JAVA_HOME" <<'PY'
 import pathlib,sys,json,hashlib,subprocess,datetime
 here,jdk=map(pathlib.Path,sys.argv[1:]);root=here/'human'

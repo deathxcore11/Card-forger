@@ -11,7 +11,7 @@
     },
     "SHA256SUMS": {
       "bytes": 1355,
-      "sha256": "de9c96ada479a38f424b004fb3dee3445c2ad95dd75f750c507952bb306519fd"
+      "sha256": "f0ae039fec1022271e9f21b75bcee11f43437786e14691478d1784fc6a4845d2"
     },
     "build-and-probe.mjs": {
       "bytes": 10849,
@@ -31,7 +31,7 @@
     },
     "human-priority-contract.mjs": {
       "bytes": 784,
-      "sha256": "561d8ef68df3d4e57d2db7881f6f8cd8ce0fc407acff4ef163b5883f8e106b88"
+      "sha256": "0c11191e1adb7f1dee057436542379145c14de1bc6f7110645cdde242ed82d80"
     },
     "image-ownership.mjs": {
       "bytes": 2086,
@@ -43,7 +43,7 @@
     },
     "pins.mjs": {
       "bytes": 1210,
-      "sha256": "8f19bcd57a9cb55a4f454e4b51799973f3123a485b88ab618069a8b3a945a427"
+      "sha256": "ddb036730f4885289cdc6d1ad1a9f9337114b06b6e491b54cfe1cb6f4113341d"
     },
     "probe-image.mjs": {
       "bytes": 8146,
@@ -72,10 +72,10 @@
   },
   "dependencies": {
     "candidate": "takeover/combined-recovery-candidate-20261026-0640",
-    "nativeManifestSha256": "1bb177ec2b54840e0e26a3159e30ee75007bf1d5911798ceb9046df7852c1ca3",
-    "hostManifestSha256": "46bfdbb36ead010d7fdcf6019049f1da402cd22920749beab8d5109ba49fd37d",
-    "contextManifestSha256": "cb9a9fb42e4063c1fb3f823055540ca27d05528b0ece9b3b7fdf35959471c68a",
-    "localOciManifestSha256": "3c98eb812bbe7f117fd572f5bdb1ce00ea46c741ee6e1cacf9f1c8a36441645a"
+    "nativeManifestSha256": "b34eab6bd70a79452f6c4fb07ca4cf0273bcab21ed46c6f37669c58e0aff9f66",
+    "hostManifestSha256": "8bd6b5932a267c5916cc6a1900996060dac02d1f2ec9047d69506081da6c3f61",
+    "contextManifestSha256": "405c41f05443b7c91e1b643598079a76fbec8392939cc4eace6f1596c02d7396",
+    "localOciManifestSha256": "9f3d5466fc59144cfefe4fdb036e90275b25b7124538b53d091944420749063e"
   },
   "budgetsSeconds": {
     "build": 600,
@@ -114,8 +114,8 @@
     "missingIidMeans": "uncertain",
     "daemonPrecondition": "dedicated-disposable-CI-runner"
   },
-  "status": "unpublished post-run correction; new bounded HTTP backlog image context; no new run",
-  "parentManifestSha256": "18da2cffcdf25f439df8b2a2eac5cfac546246e0a6abed3e359adc92de2be552",
+  "status": "unpublished payment rejection diagnostics and regressions; no new image or browser run",
+  "parentManifestSha256": "3d197835403655443506f40c5f6501c02c35aab8814c495a41c41b05c3bffc41",
   "parentTests": {
     "nodeGroups": 10,
     "pythonCases": 5,

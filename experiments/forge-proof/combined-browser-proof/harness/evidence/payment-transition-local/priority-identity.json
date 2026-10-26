@@ -1,0 +1,21 @@
+{
+  "forgeRevision": "e5a0f8156da70ffc7866f923bed371c0111707cd",
+  "sourceSha256": "e9d0dffa304d5294c698ec8ef50713d7cedd5055f5b3f8507cdb5463c250ec66",
+  "compiledBridgeSha256": "ca2f4b6e1744d806868f5a9838d462651135051be4d82d55e7c9c53639ac6c09",
+  "jdk": "Temurin 21.0.13+9",
+  "overlay": true,
+  "overlayClasses": {
+    "forge/ai/AvailableActions.class": "d54e41ae64d51ad77394e3b1ca51154ba62bf43240a4065a3a82af29f3f90b7f",
+    "forge/ai/HumanActionAffordability$Budget.class": "5fc4aeacc9afa43e8a313bf1778b060e624475fbc5488f5c3c4653d3227ad77b",
+    "forge/ai/HumanActionAffordability.class": "f97651285c972b8675610a3a9d0098a869c2c13d6d2bfa2b32def2eece563283",
+    "forge/ai/HumanActionAffordability$Token.class": "a412332dbe6b4381a238c3f29ff897f55b487937ff8e6de6fdaa49c95cfa2cb0",
+    "forge/ai/HumanActionAffordability$Assessment.class": "7b4ae0ca9699b49cfe9c9b0932d9d2d1bb54721484469286dcc80f288a06f627",
+    "forge/ai/AvailableActions$ZoneScan.class": "c8d475b70152d07555c64b433e0cb9da6c5eea07eaa095e816a63f3e02487730",
+    "forge/ai/HumanActionAffordability$Uncertain.class": "512dc819ae9e1d4d260dd1e37c579dd0a6b82a1116579a7b7813a79a4d2f9a2d",
+    "forge/gamemodes/match/input/InputPayMana$1.class": "dab36f08c16c31ea5319f2f82353c75b5c0da102383663506803b9ed4ace08ad",
+    "forge/gamemodes/match/input/InputPayMana.class": "f7ad6cf89c79d415c8080ba37578a3659519e986c67b4809dd5816995de02144"
+  },
+  "exitCode": 0,
+  "layer": "local native fixture; not container/browser/deployment",
+  "humanRuntimeAttestationVerified": true
+}

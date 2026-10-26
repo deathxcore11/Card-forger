@@ -1,0 +1,12 @@
+{
+  "baseCommit": "f17bbe490156499c0b0249d043260b815a9e4cc1",
+  "zipSha256": "7433289637fd4cce2b9fce6b3f1e987ef55eea1979b684dd4ff52763f8117a0c",
+  "packageMembersVerified": 23,
+  "baseHostFilesVerified": 58,
+  "beforeHostSource": "2552aee9c48a90f1ca1a407ab466029c78626eaaedad2255705a1e4a462c063e",
+  "preservedNewerSources": {
+    "experiments/forge-proof/combined-browser-proof/candidate/build-context/native/adapter/src/cardstashy/forge/NativePaymentTransitionChecks.java": "4074a320a6092b28b319d4fa4a579d280306accb7e498367c84a00fe3229fada",
+    "experiments/forge-proof/combined-browser-proof/candidate/build-context/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java": "6e2a5004ee73e3c67d11e89ad5efb0d9112ece6ff2c52fa010235b048b219c43",
+    "experiments/forge-proof/combined-browser-proof/candidate/build-context/native/human/src/forge/gamemodes/match/input/InputPayMana.java": "b780a4f005b28099aace1ff9c8f811c0ddea464cc0cdec27ce7991c1f5be3365"
+  }
+}

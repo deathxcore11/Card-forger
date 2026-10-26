@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Existing-process transport only. No start, create, retry, or public URL API.
 import { abortable, boundedJSON } from './session-authority.mjs';
+import { nativeActionRejection } from './action-rejection.mjs';
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const transientStatus = status => [408, 429, 502, 503, 504].includes(status);
 const failure = (code, message, retryable = false, cause) => {
@@ -108,14 +109,27 @@ export class GatewayDriver {
     return { epoch: expectedEpoch, snapshot };
   }
 
-  async submitExisting(action, { expectedEpoch, signal }) {
+  async submitExisting(action, { expectedEpoch, signal, onRejected }) {
     // Never retry a possibly accepted POST. The authority reserves its command
     // receipt durably before calling this method and owns ambiguous outcomes.
+    signal = this.deadline(signal);
     const response = await this.request('/action', { expectedEpoch, action, signal });
     const status = response.status;
-    void response.body?.cancel().catch(() => {});
-    if (![202, 400, 409].includes(status)) throw new Error('native_action_outcome_unknown');
-    return { epoch: expectedEpoch, status };
+    if (status === 202 || ![400, 409].includes(status)) {
+      void response.body?.cancel().catch(() => {});
+      if (status !== 202) throw new Error('native_action_outcome_unknown');
+      return { epoch: expectedEpoch, status };
+    }
+    // Publish the known outcome before awaiting optional diagnostics. The
+    // authority's outer request deadline may expire while the body is read.
+    onRejected?.({ epoch: expectedEpoch, status, error: 'native_action_rejected' });
+    // The epoch-bound HTTP status already establishes rejection. A missing,
+    // malformed or stalled diagnostic body must not change it to an ambiguous
+    // dispatch or delay the queue beyond the original transport deadline.
+    let reason;
+    try { reason = (await boundedJSON(response, 1024, signal)).error; }
+    catch { void response.body?.cancel().catch(() => {}); }
+    return { epoch: expectedEpoch, status, error: nativeActionRejection(reason) };
   }
 
   async destroyExisting({ expectedEpoch, signal }) {

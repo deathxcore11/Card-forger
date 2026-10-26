@@ -139,7 +139,10 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
   try{
    await request('/action',{...payload,op,revision:expectedRevision});
    // Never replay an action automatically after network uncertainty or a stale reply.
-   awaitRevision=expectedRevision;draft=null;
+   // A concurrent poll may already have observed this action's advancement
+   // before its receipt arrived. Do not wait again for an already accepted
+   // revision: repeated snapshots are deliberately ignored by acceptState.
+   awaitRevision=lastAcceptedRevision>expectedRevision?null:expectedRevision;draft=null;
    await refresh();
   }catch(e){draft=null;awaitRevision=null;actionError=e.message;emit();try{await refresh();}catch{}actionError=e.message;}
   finally{sending=false;emit();}

@@ -11,7 +11,8 @@ class Storage {
   data = new Map(); tail = Promise.resolve();
   async get(key) { return structuredClone(this.data.get(key)); }
   async put(key, value) { this.data.set(key, structuredClone(value)); }
-  async setAlarm() {}
+  async setAlarm(at) { this.alarmAt = at; }
+  async getAlarm() { return this.alarmAt ?? null; }
   transaction(fn) { const p = this.tail.then(() => fn(this)); this.tail = p.catch(() => {}); return p; }
 }
 async function fixture(policy) {

@@ -16,8 +16,12 @@ for name,item in c['inputs'].items():
 for rel,inventory in [('host','HOST-SHA256.json'),('ui','UI-RUNTIME-SHA256.json'),('build-context','build-context/CONTEXT-SHA256.json')]:
  inv=json.loads((candidate/inventory).read_text())
  if rel=='ui':
-  parent=json.loads((candidate/'UI-SHA256.json').read_text())
-  assert inv and all(parent.get(k)==v for k,v in inv.items()), 'UI subset differs from frozen0640 parent'
+  source=json.loads((candidate/'UI-SHA256.json').read_text())
+  parent=json.loads((candidate/'UI-PARENT-SHA256.json').read_text())
+  changed=c['runtimeUIChangedPaths']
+  assert isinstance(changed,list) and len(set(changed))==len(changed), 'Invalid UI descendant change inventory'
+  assert source.keys()==parent.keys() and {k for k in source if source[k]!=parent[k]}==set(changed), 'UI changes differ from declared descendant scope'
+  assert inv and all(source.get(k)==v for k,v in inv.items()), 'UI subset differs from reviewed descendant inventory'
   for k in inv:
    parts=pathlib.PurePosixPath(k).parts
    assert not any(q in {'test-results','private-work','node_modules','.git'} for q in parts) and not k.endswith(('.log','.orig','.pyc','.class','.wasm','.bin','.zip','.tar','.gz','.apk')), 'Forbidden runtime UI artifact'
@@ -45,7 +49,7 @@ for record in m['files']:
  p=HERE/record['path'];assert p.is_file() and not p.is_symlink() and p.resolve().is_relative_to(HERE)
  assert len(p.read_bytes())==record['bytes'] and hashlib.sha256(p.read_bytes()).hexdigest()==record['sha256'],record['path']+' package hash mismatch'
 assert c['sourceIdentity']['forgeRevision']=='e5a0f8156da70ffc7866f923bed371c0111707cd'
-assert c['sourceIdentity']['nativeSourceSHA256']=='b817b4f24702e9929378f9211492d4cc6e445803f62ad0e6dbc12947e543303b'
+assert c['sourceIdentity']['nativeSourceSHA256']=='6e2a5004ee73e3c67d11e89ad5efb0d9112ece6ff2c52fa010235b048b219c43'
 assert c['sourceIdentity']['difficultyPolicyVersion']=='forge-heuristic-medium-beta-v1'
 assert c['localImageScope']=='LOCAL_TEST_NOT_DEPLOYABLE' and c['productionReleasePolicy'] is None
 print(json.dumps({'inputsVerified':len(c['inputs']),'packageFilesVerified':len(m['files']),'candidateRoot':str(candidate),'publicationAuthorized':False,'runAuthorized':False,'productionReleaseReady':False}))

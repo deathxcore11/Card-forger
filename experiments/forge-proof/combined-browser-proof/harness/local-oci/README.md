@@ -36,7 +36,7 @@ production constants, policy selection, transport digest and private bootstrap
 transport. Set `FORGE_COMBINED_CANDIDATE_ROOT` **before every package import**;
 missing or blank input fails closed. No sibling candidate is guessed. Only a
 candidate with the exact pinned host inventory is accepted.
-Pinned `HOST-SHA256.json`: `46bfdbb36ead010d7fdcf6019049f1da402cd22920749beab8d5109ba49fd37d`.
+Pinned `HOST-SHA256.json`: `8bd6b5932a267c5916cc6a1900996060dac02d1f2ec9047d69506081da6c3f61`.
 Exports include `reviewedHostRoot` and `bootstrapTransport` for the build probe.
 This environment path selects reviewed source location, never a production
 adapter mode.

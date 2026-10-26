@@ -1,18 +1,15 @@
-# Human-affordability descendant: same-image browser proof
+# Payment-rejection continuation: source candidate awaiting browser proof
 
 LOCAL_TEST_NOT_DEPLOYABLE. This is an isolated proof package, not a complete app
 or production release. Production rollback and the deliberately broken deployment
 paths in the proof branch must remain intact. Never merge that branch wholesale.
 
-The parent is the frozen final0640 candidate and prepared takeover publication.
-The historical short browser run at c4981097 does not validate this descendant.
-The original kit and its original manifests remain unchanged.
-
-The approved proof at cc35c3ad completed with FAIL in run 40318684639.
-Cleanup preflight and the actual same-image Medium initialization probe passed;
-source contracts and overall fallback cleanup did not. Both browser cases were
-NOT TESTED. This working descendant contains unpublished harness corrections.
-Read RUN-40318684639-REVIEW.md before any further publication or paid run.
+This continuation starts from the exact unpublished f81df780 commit, retaining
+the integrated hosting alarm patch and native payment correction. Last published
+proof: f17bbe49, run 40324277781. That run passed desktop and failed touch payment;
+it does not validate this descendant. See PAYMENT-REJECTION-REVIEW.md for current
+scope, evidence, source identities and remaining proof. No paid run or deployment
+is authorized here. Historical run evidence is retained byte-for-byte.
 
 This descendant adds a bounded human payment assessment, separate from CPU
 strategy: AVAILABLE, PROVEN_UNAVAILABLE or UNKNOWN. UNKNOWN preserves priority;

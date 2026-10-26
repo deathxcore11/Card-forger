@@ -18,6 +18,16 @@ const error = (code, status) => json({ error: code }, status,
 const publicAllocation = a => ({ matchId: a.matchId, generation: a.generation,
   deckDigests: a.deckDigests, expiresAt: a.expiresAt, forgeRevision: FORGE_REVISION, schema: NATIVE_SCHEMA });
 
+// A Durable Object has one alarm. Attempts and housekeeping may advance a
+// wakeup, but must not postpone an earlier cleanup. Transaction retries are
+// safe: this callback only reads and writes the alarm on the transaction.
+async function scheduleNoLater(storage, at) {
+  await storage.transaction(async txn => {
+    const current = await txn.getAlarm();
+    if (current === null || at < current) await txn.setAlarm(at);
+  });
+}
+
 // Byte and wall-time bound. A stalled authenticated upload cannot occupy a
 // match's serial queue, or block close/expiry cleanup indefinitely.
 export async function readJSONWithin(request, maximum, timeoutMs = 5000) {
@@ -85,7 +95,7 @@ export class AdmissionService {
     if (!trial.owners.includes(user.id)) return error('trial_not_authorized', 403);
     if (await limited(this.storage, 'attempt:' + user.id, [[60_000, 3], [3_600_000, 60]], this.now())) return error('create_attempt_rate_limit', 429);
     // Always alarm after attempts so rejected-user rate records are also pruned.
-    await this.storage.setAlarm(this.now() + 60_000);
+    await scheduleNoLater(this.storage, this.now() + 60_000);
     let input;
     try { input = await readJSONWithin(request, 131072); }
     catch (e) { return error(['body_too_large', 'body_timeout'].includes(e.message) ? e.message : 'invalid_json', e.message === 'body_too_large' ? 413 : e.message === 'body_timeout' ? 408 : 400); }
@@ -136,7 +146,9 @@ export class AdmissionService {
     if (!UUID_RE.test(matchId || '') || !UUID_RE.test(generation || '')) return false;
     const lease = (await this.storage.get('leases') || []).find(a => a.matchId === matchId && a.generation === generation);
     if (!lease) return false;
-    const proof = await this.env.FORGE_MATCHES.getByName(matchId).destructionProof(generation);
+    // Bound this caller's wait; a timeout is not remote cancellation or proof
+    // of destruction. A late result cannot resume this lease-release path.
+    const proof = await abortable(this.env.FORGE_MATCHES.getByName(matchId).destructionProof(generation), AbortSignal.timeout(5000));
     if (proof?.confirmed !== true || proof.generation !== generation) return false;
     const released = await this.ledger.releaseAfterDestruction({ matchId, generation, confirmed: true });
     if (released) await this.storage.delete('startup:' + matchId);
@@ -144,10 +156,13 @@ export class AdmissionService {
   }
   async alarm() {
     const leases = await this.storage.get('leases') || [];
+    // Persist a retry before remote work. One stalled match must not prevent
+    // another allocation from being reconciled or erase the next cleanup.
+    if (leases.length) await scheduleNoLater(this.storage, this.now() + 30_000);
     for (const allocation of leases) {
       // Reconcile only; never call begin/start, even if the original RPC was lost.
       try {
-        await this.env.FORGE_MATCHES.getByName(allocation.matchId).reconcile(allocation);
+        await abortable(this.env.FORGE_MATCHES.getByName(allocation.matchId).reconcile(allocation), AbortSignal.timeout(5000));
         await this.release(allocation.matchId, allocation.generation);
       } catch { /* occupied until confirmed; retain retry alarm */ }
     }
@@ -163,7 +178,7 @@ export class AdmissionService {
     const live = (await this.storage.get('leases') || []).length;
     const rates = (await this.storage.list({ prefix: 'attempt:' })).size;
     const receipts = (await this.storage.list({ prefix: 'create:' })).size;
-    if (live || rates || receipts) await this.storage.setAlarm(this.now() + (live ? 30_000 : 3_600_000));
+    if (live || rates || receipts) await scheduleNoLater(this.storage, this.now() + (live ? 30_000 : 3_600_000));
   }
 }
 

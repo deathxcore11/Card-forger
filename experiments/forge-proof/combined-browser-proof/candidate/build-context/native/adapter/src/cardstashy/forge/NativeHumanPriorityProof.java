@@ -9,8 +9,8 @@ import java.util.Map;
 
 /** Binds startup to the actually loaded human-only overlay and build receipt. */
 public final class NativeHumanPriorityProof {
-    public static final String SOURCE_MANIFEST = "a51adddc0000ee80916fb290bb7e31514181b5373b033866bf43ad49cad64f9c";
-    public static final String CLASS_MANIFEST = "e22e7d45a8a7f2aee5bedc168d2ca6d500a7e5894797ee7418bfcbdb93e1ab69";
+    public static final String SOURCE_MANIFEST = "808b643d01c0c8fe63344733725c77e8c504e1f566453386c6cbfc36c95e40bc";
+    public static final String CLASS_MANIFEST = "89975e8a8bff75923f977c28ebd8341990744205c07cc3a504509c7d7647c1ee";
     private NativeHumanPriorityProof() {}
 
     public static Map<String,Object> verify(String root) throws Exception {

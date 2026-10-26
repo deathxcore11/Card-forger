@@ -1,0 +1,25 @@
+{
+  "parentHumanSourceManifest": "a51adddc0000ee80916fb290bb7e31514181b5373b033866bf43ad49cad64f9c",
+  "parentHumanClassManifest": "e22e7d45a8a7f2aee5bedc168d2ca6d500a7e5894797ee7418bfcbdb93e1ab69",
+  "sourceManifest": "808b643d01c0c8fe63344733725c77e8c504e1f566453386c6cbfc36c95e40bc",
+  "classManifest": "89975e8a8bff75923f977c28ebd8341990744205c07cc3a504509c7d7647c1ee",
+  "sourceFiles": {
+    "src/forge/ai/AvailableActions.java": "ef030f50b12bdbd19922689bc122d8285bb4062e504443c415cd6a90aff74fa1",
+    "src/forge/ai/HumanActionAffordability.java": "0cc4ed27a36d83887c5c2788b2398d2bd386544f6cb13403a4189d1b98025baa",
+    "src/forge/gamemodes/match/input/InputPayMana.java": "b780a4f005b28099aace1ff9c8f811c0ddea464cc0cdec27ce7991c1f5be3365"
+  },
+  "classes": {
+    "forge/ai/AvailableActions$ZoneScan.class": "c8d475b70152d07555c64b433e0cb9da6c5eea07eaa095e816a63f3e02487730",
+    "forge/ai/AvailableActions.class": "d54e41ae64d51ad77394e3b1ca51154ba62bf43240a4065a3a82af29f3f90b7f",
+    "forge/ai/HumanActionAffordability$Assessment.class": "7b4ae0ca9699b49cfe9c9b0932d9d2d1bb54721484469286dcc80f288a06f627",
+    "forge/ai/HumanActionAffordability$Budget.class": "5fc4aeacc9afa43e8a313bf1778b060e624475fbc5488f5c3c4653d3227ad77b",
+    "forge/ai/HumanActionAffordability$Token.class": "a412332dbe6b4381a238c3f29ff897f55b487937ff8e6de6fdaa49c95cfa2cb0",
+    "forge/ai/HumanActionAffordability$Uncertain.class": "512dc819ae9e1d4d260dd1e37c579dd0a6b82a1116579a7b7813a79a4d2f9a2d",
+    "forge/ai/HumanActionAffordability.class": "f97651285c972b8675610a3a9d0098a869c2c13d6d2bfa2b32def2eece563283",
+    "forge/gamemodes/match/input/InputPayMana$1.class": "dab36f08c16c31ea5319f2f82353c75b5c0da102383663506803b9ed4ace08ad",
+    "forge/gamemodes/match/input/InputPayMana.class": "f7ad6cf89c79d415c8080ba37578a3659519e986c67b4809dd5816995de02144"
+  },
+  "previousAffordabilityClassesUnchanged": true,
+  "inputPaymentPatch": "7a7a8a1b0af29ea94eef0c4a10e31411277cc1d344e0a817949fd4ede047accf",
+  "actualImageAttestation": false
+}

@@ -1,0 +1,37 @@
+{
+  "schema": "cardstashy.merged-local-source-contracts.v1",
+  "command": "FORGE_COMBINED_WORK=<scratch> FORGE_COMBINED_CANDIDATE_ROOT=<candidate> bash harness/run-static-checks.sh",
+  "overall": "FAIL",
+  "failedStage": "container-python",
+  "harnessNode": {
+    "pass": 100,
+    "fail": 0
+  },
+  "harnessPython": {
+    "pass": 37,
+    "fail": 0
+  },
+  "hostNode": {
+    "pass": 179,
+    "fail": 0
+  },
+  "hostPython": {
+    "pass": 22,
+    "fail": 0
+  },
+  "containerPython": {
+    "pass": 46,
+    "fail": 2,
+    "failedTests": [
+      "test_stopped_zombie_is_not_a_live_descendant_but_is_reaped",
+      "test_unreapable_zombie_cannot_produce_success_or_unbounded_wait"
+    ]
+  },
+  "diagnosis": "Workspace procfs resolves ancestor PID-namespace IDs; inner process PID paths are absent. Native procfs guard remains enabled. Same unmodified tests passed in approved run40324277781, which is not acceptance of this new source.",
+  "fullSuiteGreen": false,
+  "logSha256": "01feead5c23645ea85b01c5d9a47285e778893e03d063fc3ca32ccb868a1a0a3",
+  "sourceInventoryGate": "PASS:21 inputs and98 harness files at this check",
+  "imageBrowserLiveAcceptance": false,
+  "newPaidRuns": 0,
+  "cleanupSourceAndTestsByteIdenticalToPublishedF17": true
+}

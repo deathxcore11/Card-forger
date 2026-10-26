@@ -23,6 +23,14 @@ CP="/opt/forge-proof/human/runtime-classes:$CP"
 javac -cp "$CP" -d /opt/forge-proof/adapter/classes \
   /opt/forge-proof/adapter/src/cardstashy/forge/*.java
 java -cp "$CP" cardstashy.forge.NativeHumanPriorityProof /opt/forge-proof
+# Exercise asynchronous native Auto/manual payment on the actual build-image
+# bytecode. This fixture is not a browser or full-match acceptance result.
+mkdir -p /tmp/native-payment-home
+timeout --signal=TERM --kill-after=5s 90s java -Xmx1g -XX:ActiveProcessorCount=2 \
+  -Djava.awt.headless=true -Dsentry.enabled=false -Duser.home=/tmp/native-payment-home \
+  -Dproof.root=/opt/forge-proof -cp "$CP" cardstashy.forge.NativePaymentTransitionChecks \
+  /opt/forge-proof/human/payment-transition-checks.json
+rm -rf /tmp/native-payment-home
 printf '%s' "$CP" > /opt/forge-proof/runtime-classpath.txt
 test -z "$(git status --short --untracked-files=no)"
 git rev-parse HEAD > /opt/forge-proof/notices/forge-revision.txt

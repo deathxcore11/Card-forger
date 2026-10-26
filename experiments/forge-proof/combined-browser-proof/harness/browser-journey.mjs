@@ -1,11 +1,15 @@
 // Real Chromium + actual existing Play handlers + actual host/Forge. All match
 // mutations originate in rendered controls. No force clicks, native fetch POST,
 // DOM state injection, hidden-hand lookup, invented legal list or synthetic win.
+import {readActionMetadata,safeActionStage,actionMetadata,actionEvent} from './action-diagnostics.mjs';
+import {createMimicPaymentProof} from './payment-proof.mjs';
 import {assertNativePrivacy,boundedTimeout} from './acceptance-contract.mjs';import {visualCheckpoint,waitVisibleCardImages} from './browser-visual-checks.mjs';
 import assert from 'node:assert/strict';import fs from 'node:fs/promises';import path from 'node:path';import {createRequire} from 'node:module';import {createHash} from 'node:crypto';
 const require=createRequire(path.join(process.env.FORGE_BROWSER_TOOLS,'package.json')),{chromium}=require('playwright');
 const base=process.env.FORGE_UI_ORIGIN;if(!base||!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))throw Error('Explicit loopback fixture origin required');
 const mode=process.env.FORGE_BROWSER_CASE||'saved-keen',touch=process.env.FORGE_TOUCH==='true',width=Number(process.env.FORGE_WIDTH||1440),height=Number(process.env.FORGE_HEIGHT||1000),full=process.env.FORGE_FULL_JOURNEY==='true';
+assert.equal(mode,'saved-keen','This proof pins the original saved-deck sequence');
+assert.deepEqual([width,height],touch?[750,832]:[1440,1000]);
 const caseBudget=full?855000:165000,externalDeadline=Number(process.env.FORGE_BROWSER_ABSOLUTE_DEADLINE_MS);
 if(!Number.isSafeInteger(externalDeadline)||externalDeadline<=Date.now())throw Error('Explicit outer browser case deadline required');
 const caseDeadline=Math.min(Date.now()+caseBudget,externalDeadline);
@@ -14,8 +18,13 @@ const naturalBudget=600000,expectedPolicy=process.env.FORGE_EXPECTED_POLICY_VERS
 const expectedSource=process.env.FORGE_EXPECTED_SOURCE_SHA256;if(!/^[0-9a-f]{64}$/.test(expectedSource||''))throw Error('Reviewed explicit native source hash required');
 const expectedDeckDigests={humanDeck:'858b8e6127d3749aeb8f57124246ef30a35ea390d2a758c9eefa9b76a53d72b8',opponentDeck:'7f6d2f7dc9b86b794c2a7fa1f3f7842265e095744deb7ad25f9f04a55c7fab4c'};
 const out=path.resolve(process.env.FORGE_BROWSER_OUT||'test-results/forge-existing-play');await fs.mkdir(out,{recursive:true});
-const report={schema:'forge-existing-play-browser.v1',result:'running',case:mode,scope:'isolated existing Play menu/actual app handlers with synthetic auth/cache provider; not whole-app boot or production persistence',browser:null,viewport:{width,height,hasTouch:touch},checks:[],actions:0,creates:0,privacyChecks:0,externalCredentialViolations:0,unexpectedRequests:0,terminal:null,difficultySelections:[],naturalFinish:false,rematchVerified:false,visualChecks:[],errors:[],errorDiagnostics:[],observation:{method:'fixture-forwarded-viewer-response-cache',intervalMs:250,reads:0,accepted:0,lastHttpStatus:null}};
-let concessionPosts=0;
+const report={schema:'forge-existing-play-browser.v1',result:'running',case:mode,scope:'isolated existing Play menu/actual app handlers with synthetic auth/cache provider; not whole-app boot or production persistence',browser:null,viewport:{width,height,hasTouch:touch},checks:[],actions:0,creates:0,privacyChecks:0,externalCredentialViolations:0,unexpectedRequests:0,terminal:null,difficultySelections:[],naturalFinish:false,rematchVerified:false,visualChecks:[],errors:[],errorDiagnostics:[],actionDiagnostics:[],actionEvents:[],scenario:{seed:20261025,sequence:'saved-keen-mimic-v1',opening:'keep-original-seven'},observation:{method:'fixture-forwarded-viewer-response-cache',intervalMs:250,reads:0,accepted:0,lastHttpStatus:null}};
+let concessionPosts=0,paymentProof=null,eventOrder=0;
+function recordActionEvent(event,metadata={}){
+ const entry=actionEvent({order:++eventOrder,event,...metadata});
+ if(report.actionEvents.length<256)report.actionEvents.push(entry);
+ else report.actionEventsTruncated=true;
+}
 let browser,page,latest=null,lastStage='startup',nativePosts=0,createBodies=[],terminals=[],snapshots=[],actionIds=new Set();
 const pause=ms=>new Promise(r=>setTimeout(r,ms)),check=n=>{report.checks.push(n);console.log('PASS '+n);},own=s=>s.players.find(p=>p.isViewer);
 const fixtureUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -54,7 +63,7 @@ async function observeDelivered(){
   const value=record.body;assert.equal(value?.matchId,id);assert.equal(value?.generation,record.generation);
   assert(record.httpStatus===200&&['running','finished'].includes(value.status)||record.httpStatus===202&&value.status==='initializing','Delivered host response was not a valid native state envelope');
   observationGeneration=record.generation;observationSequence=record.sequence;report.observation.accepted++;latest=value;
-  if(value.snapshot){assert.equal(value.snapshot.schema,'cardstashy.forge-proof.v1');assert.equal(value.snapshot.forgeRevision,'e5a0f8156da70ffc7866f923bed371c0111707cd');privacy(value.snapshot);snapshots.push(value.snapshot);if(snapshots.length>3)snapshots.shift();}
+  if(value.snapshot){assert.equal(value.snapshot.schema,'cardstashy.forge-proof.v1');assert.equal(value.snapshot.forgeRevision,'e5a0f8156da70ffc7866f923bed371c0111707cd');privacy(value.snapshot);recordActionEvent('viewer-state-observed',{revision:value.snapshot.revision,inputType:value.snapshot.inputType,decisionId:value.snapshot.prompt?.id,busy:value.snapshot.busy,generationHash:createHash('sha256').update(value.generation).digest('hex')});paymentProof?.observe(value.snapshot);snapshots.push(value.snapshot);if(snapshots.length>3)snapshots.shift();}
   if(value.status==='finished')assert(verifiedTerminal(value),'Delivered terminal lacks a verified native outcome');
   if(verifiedTerminal(value)&&!terminals.some(t=>t.matchId===value.matchId))terminals.push(value);
  })().catch(e=>{recordError('response-observer',e);throw e;}).finally(()=>{observationPending=null;});return observationPending;
@@ -86,12 +95,16 @@ async function openExit(){
  lastStage='open exit confirmation';await gesture(menu.locator('[data-focus-key=exit-match]'));
 }
 async function action(locator,label='native control'){
- lastStage=label;const old=latest?.snapshot?.revision,posts=nativePosts;
+ lastStage=label;const before=latest?.snapshot,old=before?.revision,posts=nativePosts;
  const [response,clicked]=await Promise.allSettled([page.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/actions')&&r.request().method()==='POST',{timeout:15000}),gesture(locator)]);
  if(response.status==='rejected'||clicked.status==='rejected'){
-  report.failedAction={stage:label,clickSettled:clicked.status,responseSettled:response.status,nativePosts:nativePosts-posts,reason:clicked.status==='rejected'?(/intercepts pointer events/.test(String(clicked.reason?.message))?'pointer-intercepted':'click-failed'):'native-post-timeout',geometry:await locator.evaluateAll(es=>{const el=es[0];if(!el)return {matches:0};const r=el.getBoundingClientRect(),h=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {matches:es.length,rect:{x:r.x,y:r.y,width:r.width,height:r.height},centerReceivesPointer:h===el||el.contains(h),hitCardId:h?.closest('[data-instance]')?.dataset.instance||null};}).catch(()=>null)};throw Error('Rendered action failed');
+  report.failedAction={stage:safeActionStage(label),clickSettled:clicked.status,responseSettled:response.status,nativePosts:nativePosts-posts,reason:clicked.status==='rejected'?(/intercepts pointer events/.test(String(clicked.reason?.message))?'pointer-intercepted':'click-failed'):'native-post-timeout',geometry:await locator.evaluateAll(es=>{const el=es[0];if(!el)return {matches:0};const r=el.getBoundingClientRect(),h=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {matches:es.length,rect:{x:r.x,y:r.y,width:r.width,height:r.height},centerReceivesPointer:h===el||el.contains(h)};}).catch(()=>null)};throw Error('Rendered action failed');
  }
- assert.equal(response.value.status(),202,'Host rejected rendered action');return ready(old);
+ const diagnostic=await readActionMetadata(response.value,{stage:label,inputType:before?.inputType,decisionId:before?.prompt?.id,observedRevision:old},{timeoutMs:boundedTimeout(1000,caseDeadline)});
+ recordActionEvent('action-receipt-read',diagnostic);
+ if(report.actionDiagnostics.length<64)report.actionDiagnostics.push(diagnostic);
+ if(response.value.status()!==202||diagnostic.state!=='accepted')report.actionRejection=diagnostic;
+ assert.equal(response.value.status(),202,'Host rejected rendered action');assert.equal(diagnostic.state,'accepted','Native action outcome is not confirmed');paymentProof?.receipt(diagnostic);return ready(old);
 }
 async function reply(p){
  assert.equal(p.supported,true,'Unadapted native prompt must stop visibly');
@@ -135,8 +148,9 @@ try{
  const context=await browser.newContext({viewport:{width,height},hasTouch:touch,isMobile:touch,serviceWorkers:'block',...(touch?{userAgent:'Mozilla/5.0 (Linux; Android 14; Pixel Fold) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'}:{})});
  await context.route('**/*',route=>{const req=route.request(),u=new URL(req.url()),h=req.headers(),local=u.origin===base,art=u.origin==='https://cards.scryfall.io'&&req.method()==='GET'&&req.resourceType()==='image';if(!local&&(h.authorization||h.cookie)){report.externalCredentialViolations++;return route.abort();}if(local||art)return route.continue();report.unexpectedRequests++;return route.abort();});
  page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>recordError('page',e));
- page.on('request',r=>{try{const u=new URL(r.url());if(u.origin!==base)return;bindObservedRequest(r);if(r.resourceType()==='script'){const file=u.pathname.split('/').pop();if(/^[A-Za-z0-9_-]+\.(?:js|mjs)$/.test(file))diagnosticScripts.add(file);}if(u.pathname==='/api/play/matches'&&r.method()==='POST'){report.creates++;createBodies.push(r.postDataJSON());}if(u.pathname.endsWith('/actions')&&r.method()==='POST'){const body=r.postDataJSON();nativePosts++;report.actions++;if(body.action?.op==='concede')concessionPosts++;assert(!actionIds.has(body.commandId),'A command was retried');actionIds.add(body.commandId);}}catch(e){recordError('request-observer',e);}});
+ page.on('request',r=>{try{const u=new URL(r.url());if(u.origin!==base)return;bindObservedRequest(r);if(r.resourceType()==='script'){const file=u.pathname.split('/').pop();if(/^[A-Za-z0-9_-]+\.(?:js|mjs)$/.test(file))diagnosticScripts.add(file);}if(u.pathname==='/api/play/matches'&&r.method()==='POST'){report.creates++;createBodies.push(r.postDataJSON());}if(u.pathname.endsWith('/actions')&&r.method()==='POST'){const body=r.postDataJSON();nativePosts++;report.actions++;recordActionEvent('action-submitted',actionMetadata({request:body,inputType:latest?.snapshot?.inputType,decisionId:latest?.snapshot?.prompt?.id,observedRevision:latest?.snapshot?.revision}));paymentProof?.request(body);if(body.action?.op==='concede')concessionPosts++;assert(!actionIds.has(body.commandId),'A command was retried');actionIds.add(body.commandId);}}catch(e){recordError('request-observer',e);}});
 
+ page.on('response',response=>{try{const u=new URL(response.url());if(u.origin===base&&response.request().method()==='GET'&&/^\/api\/play\/matches\/[^/]+$/.test(u.pathname))void observeDelivered().catch(()=>{});}catch(e){recordError('response-observer',e);}});
  await page.goto(base+'/forge-play-browser.html',{waitUntil:'networkidle'});await page.waitForFunction(()=>document.documentElement.dataset.fixtureReady==='true');
  const fixture=await (await fetch(base+'/fixture-decks.json')).json(),human=fixture.decks[0],cpu=fixture.decks[mode.includes('reign')?2:1];
  if(mode.startsWith('import')){await gesture(page.locator('#playImportDisclosure summary'));await page.locator('#playImportName').fill('Calling All Angels imported browser fixture');await page.locator('#playImportText').fill(fixture.angelsImport);await gesture(page.locator('[data-act=playImportPreview]'));await gesture(page.locator('[data-act=playImportUse]'));}else await gesture(page.locator(`[data-act=playSelectDeck][data-play-deck="${human.id}"]`));
@@ -165,12 +179,14 @@ try{
   const nextLand=own(s).zones.Hand.cards.find(c=>c.name==='Plains');assert(nextLand);s=await action(page.locator(`.play-match-hand [data-instance="${nextLand.id}"]`),'second native land');
   if(s.prompt){assert.equal(s.prompt.method,'getAbilityToPlay');await gesture(key('option-'+s.prompt.options[0].index));s=await action(key('confirm-prompt'),'second native land ability');}
   assert(own(s).zones.Battlefield.cards.some(c=>c.id===nextLand.id));const mimic=own(s).zones.Hand.cards.find(c=>c.name==='Metallic Mimic');assert(mimic,'Recorded exact opening cast line differs');
+  paymentProof=createMimicPaymentProof(s,mimic.id);
   s=await action(page.locator(`.play-match-hand [data-instance="${mimic.id}"]`),touch?'native creature tap':'native creature click');
   for(let i=0;i<30&&(!own(s).zones.Battlefield.cards.some(c=>c.id===mimic.id)||s.prompt);i++)s=await passive();
-  assert(own(s).zones.Battlefield.cards.some(c=>c.id===mimic.id),'Creature did not resolve through native casting and payment');report.visualChecks.push(await visualCheckpoint(page,{touch,deadline:caseDeadline,stage:'resolved'}));await page.screenshot({path:path.join(out,'resolved.png')});check('real native creature cast, Smart payment, creature-type choice and resolution');
+  assert(own(s).zones.Battlefield.cards.some(c=>c.id===mimic.id),'Creature did not resolve through native casting and payment');report.paymentProof=paymentProof.resolve(s);report.visualChecks.push(await visualCheckpoint(page,{touch,deadline:caseDeadline,stage:'resolved'}));await page.screenshot({path:path.join(out,'resolved.png')});check('real native creature cast, Smart payment, creature-type choice and resolution');
  }
 
  s=await action(key('mode-full'),'native Full Control');assert.equal(s.controlMode,'full');assert.equal(await key('mode-full').getAttribute('aria-pressed'),'true');s=await action(key('mode-smart'),'native Smart');assert.equal(s.controlMode,'smart');check('Smart / Full buttons reflect actual native acknowledgements');
+ report.paymentProof=paymentProof.finish(s);paymentProof=null;check('one Mimic stack entry and payment; rendered controls resume');
  await openExit();await page.getByRole('dialog',{name:'Concede native match'}).waitFor();lastStage='cancel exit confirmation';await gesture(page.getByRole('button',{name:'Keep playing',exact:true}));assert.equal(await page.getByRole('dialog',{name:'Concede native match'}).count(),0);check('Exit cancellation returns to the unchanged native match');
  if(full){
   lastStage='full native terminal';const end=Date.now()+boundedTimeout(naturalBudget,caseDeadline),beforeNaturalPosts=nativePosts;stateDeadline=end;
@@ -198,5 +214,5 @@ try{
  await gesture(page.locator('a.brand'));await page.getByRole('heading',{name:'Home',exact:true}).waitFor();assert.equal(new URL(page.url()).hash,'#home');check('Home navigation after resource cleanup');
  assert.equal(concessionPosts,1);if(full){assert.equal(report.naturalFinish,true);assert.equal(report.rematchVerified,true);assert.equal(report.creates,2);assert.equal(terminals.length,2);}
  assert.equal(report.externalCredentialViolations,0);assert.equal(report.unexpectedRequests,0);assert.deepEqual(report.errors,[]);report.result='passed';
-}catch(e){report.result='failed';report.failure={stage:lastStage,name:e.name,message:String(e.message).replace(/https?:\/\/\S+/g,'[url]').slice(0,240)};process.exitCode=1;}
+}catch(e){if(paymentProof)report.paymentProof=paymentProof.summary();report.result='failed';report.failure={stage:safeActionStage(lastStage),name:e.name};process.exitCode=1;}
 finally{await fs.writeFile(path.join(out,'summary.json'),JSON.stringify(report,null,2)+'\n');if(page)await page.screenshot({path:path.join(out,report.result==='passed'?'complete.png':'failure.png'),timeout:5000}).catch(()=>{});await browser?.close();observationToken=null;console.log(JSON.stringify(report));}

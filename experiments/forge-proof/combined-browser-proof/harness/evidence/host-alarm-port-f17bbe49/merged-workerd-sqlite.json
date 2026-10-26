@@ -1,0 +1,64 @@
+{
+  "schema": "cardstashy.local-workerd-alarm-review.v1",
+  "sourceSha256": "5a87ee7d16a684083c669cefd742612f0030c8e46a2afdbe7128b580b0f8fe00",
+  "versions": {
+    "wrangler": "4.152.0",
+    "miniflare": "5.20261019.2-beta",
+    "workerd": "1.20261019.1",
+    "esbuild": "0.28.2"
+  },
+  "cases": [
+    {
+      "case": "invalid-preserves-earlier",
+      "pass": true,
+      "backend": "workerd SQLite",
+      "providerCalls": 0,
+      "accountCalls": 0
+    },
+    {
+      "case": "new-wakeup",
+      "pass": true,
+      "backend": "workerd SQLite",
+      "providerCalls": 0,
+      "accountCalls": 0
+    },
+    {
+      "case": "advance-maintenance",
+      "pass": true,
+      "backend": "workerd SQLite",
+      "providerCalls": 0,
+      "accountCalls": 0
+    },
+    {
+      "case": "valid-preserves-equal",
+      "pass": true,
+      "backend": "workerd SQLite",
+      "providerCalls": 0,
+      "accountCalls": 0
+    },
+    {
+      "case": "transaction-rollback",
+      "pass": true,
+      "backend": "workerd SQLite",
+      "providerCalls": 0,
+      "accountCalls": 0
+    },
+    {
+      "case": "concurrent-maintenance-admission",
+      "pass": true,
+      "backend": "workerd SQLite",
+      "distinctFetchEvents": true,
+      "providerCalls": 0,
+      "accountCalls": 0
+    }
+  ],
+  "outboundCalls": 0,
+  "providerCalls": 0,
+  "accountCalls": 0,
+  "limitations": [
+    "Synthetic local verifier and match binding.",
+    "No provider, deployment, browser, gameplay or live account proof.",
+    "Maintenance interleaving uses distinct actual DO fetch events with a deterministic test pause.",
+    "Remote timeout behavior remains covered by the separate Node regression tests."
+  ]
+}

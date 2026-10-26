@@ -19,8 +19,9 @@ class Storage {
   async delete(k) { return this.data.delete(k); }
   async list({ prefix }) { return new Map([...this.data].filter(([k]) => k.startsWith(prefix)).map(([k, v]) => [k, structuredClone(v)])); }
   async setAlarm(t) { this.alarmAt = t; }
+  async getAlarm() { return this.alarmAt; }
   transaction(fn) {
-    const run = this.tail.then(async () => { const staged = new Storage(); staged.data = structuredClone(this.data); const result = await fn(staged); this.data = staged.data; return result; });
+    const run = this.tail.then(async () => { const staged = new Storage(); staged.data = structuredClone(this.data); staged.alarmAt = this.alarmAt; const result = await fn(staged); this.data = staged.data; this.alarmAt = staged.alarmAt; return result; });
     this.tail = run.catch(() => {}); return run;
   }
 }

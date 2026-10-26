@@ -1,0 +1,969 @@
+{
+  "schema": "cardstashy.contextual-smart-acceptance.v1",
+  "createdAt": "2026-10-26T13:19:15.940828009Z",
+  "engineRevision": "e5a0f8156da70ffc7866f923bed371c0111707cd",
+  "caseCount": 8,
+  "results": [
+    {
+      "case": 1,
+      "description": "Opponent upkeep/draw/main; only lands and sorcery-speed creature in human hand",
+      "observations": [
+        {
+          "label": "01-empty-UPKEEP",
+          "atUtc": "2026-10-26T13:19:11.377008948Z",
+          "phase": "UPKEEP",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 127.232047,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "01-empty-UPKEEP-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        },
+        {
+          "label": "01-empty-DRAW",
+          "atUtc": "2026-10-26T13:19:11.506012174Z",
+          "phase": "DRAW",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 111.245136,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "01-empty-DRAW-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        },
+        {
+          "label": "01-empty-MAIN1",
+          "atUtc": "2026-10-26T13:19:11.629575683Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 106.686701,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "01-empty-MAIN1-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": 2,
+      "description": "Affordable Murder (1BB), no creature permanent target",
+      "observations": [
+        {
+          "label": "02-murder-no-target",
+          "atUtc": "2026-10-26T13:19:11.766138432Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 121.582704,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "02-murder-no-target-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": 3,
+      "description": "Murder keeps human choice for own or opponent legal creature, regardless of strategic value",
+      "observations": [
+        {
+          "label": "03-murder-own-target",
+          "atUtc": "2026-10-26T13:19:12.627833400Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": true,
+          "nativeMayAutoPass": false,
+          "nativePriorityInputHeld": true,
+          "expectedPriorityInputHeld": true,
+          "observationMilliseconds": 847.761975,
+          "decisionReturnedWithoutAnswer": false,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "03-murder-own-target-state.json",
+          "actionableHumanCards": [
+            "Swamp",
+            "Swamp",
+            "Swamp",
+            "Murder",
+            "Grizzly Bears"
+          ],
+          "pass": true,
+          "cleanup": "one explicit harness native OK after observation"
+        },
+        {
+          "label": "03-murder-opponent-target",
+          "atUtc": "2026-10-26T13:19:12.776995794Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": true,
+          "nativeMayAutoPass": false,
+          "nativePriorityInputHeld": true,
+          "expectedPriorityInputHeld": true,
+          "observationMilliseconds": 132.031376,
+          "decisionReturnedWithoutAnswer": false,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "03-murder-opponent-target-state.json",
+          "actionableHumanCards": [
+            "Murder"
+          ],
+          "pass": true,
+          "cleanup": "one explicit harness native OK after observation"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": 4,
+      "description": "Counterspell sees spell on stack with payable UU; Murder requires battlefield creature, not creature spell",
+      "observations": [
+        {
+          "label": "04-counterspell-creature-spell",
+          "atUtc": "2026-10-26T13:19:12.926266376Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 1,
+          "nativeHasAvailableActions": true,
+          "nativeMayAutoPass": false,
+          "nativePriorityInputHeld": true,
+          "expectedPriorityInputHeld": true,
+          "observationMilliseconds": 121.240806,
+          "decisionReturnedWithoutAnswer": false,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "04-counterspell-creature-spell-state.json",
+          "actionableHumanCards": [
+            "Counterspell"
+          ],
+          "pass": true,
+          "cleanup": "one explicit harness native OK after observation"
+        },
+        {
+          "label": "04-counterspell-one-island",
+          "atUtc": "2026-10-26T13:19:13.044309101Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 1,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 105.785445,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "04-counterspell-one-island-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        },
+        {
+          "label": "04-counterspell-two-forests",
+          "atUtc": "2026-10-26T13:19:13.160420331Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 1,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 105.69847,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "04-counterspell-two-forests-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        },
+        {
+          "label": "04-murder-creature-spell-not-permanent",
+          "atUtc": "2026-10-26T13:19:13.278160262Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 1,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 105.700389,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "04-murder-creature-spell-not-permanent-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        },
+        {
+          "label": "04-counterspell-permanent-not-spell",
+          "atUtc": "2026-10-26T13:19:13.395811997Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 105.766904,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "04-counterspell-permanent-not-spell-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": 8,
+      "description": "Unrelated enter-the-battlefield replacements do not turn ordinary inability into UNKNOWN stops",
+      "observations": [
+        {
+          "label": "04b-one-island-unrelated-etb-replacement",
+          "atUtc": "2026-10-26T13:19:13.545332677Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 1,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 110.933776,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "04b-one-island-unrelated-etb-replacement-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        },
+        {
+          "label": "04b-two-forests-unrelated-etb-replacement",
+          "atUtc": "2026-10-26T13:19:13.676112880Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 1,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 110.889067,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "04b-two-forests-unrelated-etb-replacement-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": 5,
+      "description": "Human affordability separation: native life/alternate payments, prohibited/insufficient life, red mana, fixed taxes/reductions and complex-source uncertainty, board activation",
+      "observations": [
+        {
+          "label": "05-gut-shot-zero-mana",
+          "atUtc": "2026-10-26T13:19:13.797373679Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": true,
+          "nativeMayAutoPass": false,
+          "nativePriorityInputHeld": true,
+          "expectedPriorityInputHeld": true,
+          "observationMilliseconds": 116.441223,
+          "decisionReturnedWithoutAnswer": false,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "05-gut-shot-zero-mana-state.json",
+          "actionableHumanCards": [
+            "Gut Shot"
+          ],
+          "pass": true,
+          "cleanup": "one explicit harness native OK after observation"
+        },
+        {
+          "label": "05-gut-shot-full-control-native-cast-life-20",
+          "nativeCanPlay": true,
+          "nativeCanPayTwoLife": true,
+          "manaSources": 0,
+          "lifeBefore": 20,
+          "lifeAfter": 18,
+          "explicitActions": [
+            {
+              "prompt": "getAbilityToPlay",
+              "action": "explicit offered Gut Shot ability index 0"
+            },
+            {
+              "input": "forge.gamemodes.match.input.InputSelectTargets",
+              "action": "explicit target opponent player"
+            },
+            {
+              "input": "forge.gamemodes.match.input.InputPayManaOfCostPayment",
+              "action": "explicit select human life total to pay 2 life"
+            }
+          ],
+          "nativeCastCompleted": true,
+          "nativeStackNames": [
+            "Gut Shot"
+          ],
+          "nativeAutoPayments": 0,
+          "pass": true,
+          "cpuDecisionInvoked": false
+        },
+        {
+          "label": "05-pyromancer-zero-mana",
+          "atUtc": "2026-10-26T13:19:13.978476523Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": true,
+          "nativeMayAutoPass": false,
+          "nativePriorityInputHeld": true,
+          "expectedPriorityInputHeld": true,
+          "observationMilliseconds": 105.646242,
+          "decisionReturnedWithoutAnswer": false,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "05-pyromancer-zero-mana-state.json",
+          "actionableHumanCards": [
+            "Prodigal Pyromancer"
+          ],
+          "pass": true,
+          "cleanup": "one explicit harness native OK after observation"
+        },
+        {
+          "label": "05-gut-shot-exact-two-life",
+          "atUtc": "2026-10-26T13:19:14.104185507Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": true,
+          "nativeMayAutoPass": false,
+          "nativePriorityInputHeld": true,
+          "expectedPriorityInputHeld": true,
+          "observationMilliseconds": 117.560769,
+          "decisionReturnedWithoutAnswer": false,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "05-gut-shot-exact-two-life-state.json",
+          "actionableHumanCards": [
+            "Gut Shot"
+          ],
+          "pass": true,
+          "cleanup": "one explicit harness native OK after observation"
+        },
+        {
+          "label": "05-gut-shot-full-control-native-cast-life-2",
+          "nativeCanPlay": true,
+          "nativeCanPayTwoLife": true,
+          "manaSources": 0,
+          "lifeBefore": 2,
+          "lifeAfter": 0,
+          "explicitActions": [
+            {
+              "prompt": "getAbilityToPlay",
+              "action": "explicit offered Gut Shot ability index 0"
+            },
+            {
+              "input": "forge.gamemodes.match.input.InputSelectTargets",
+              "action": "explicit target opponent player"
+            },
+            {
+              "input": "forge.gamemodes.match.input.InputPayManaOfCostPayment",
+              "action": "explicit select human life total to pay 2 life"
+            }
+          ],
+          "nativeCastCompleted": true,
+          "nativeStackNames": [
+            "Gut Shot"
+          ],
+          "nativeAutoPayments": 0,
+          "pass": true,
+          "cpuDecisionInvoked": false
+        },
+        {
+          "label": "05-gut-shot-insufficient-life",
+          "atUtc": "2026-10-26T13:19:14.263868520Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 107.056026,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "05-gut-shot-insufficient-life-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        },
+        {
+          "label": "05-gut-shot-native-cannot-pay-life",
+          "atUtc": "2026-10-26T13:19:14.385341066Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 105.774045,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "05-gut-shot-native-cannot-pay-life-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        },
+        {
+          "label": "05-gut-shot-red-mana-at-one-life",
+          "atUtc": "2026-10-26T13:19:14.498705680Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": true,
+          "nativeMayAutoPass": false,
+          "nativePriorityInputHeld": true,
+          "expectedPriorityInputHeld": true,
+          "observationMilliseconds": 105.828191,
+          "decisionReturnedWithoutAnswer": false,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "05-gut-shot-red-mana-at-one-life-state.json",
+          "actionableHumanCards": [
+            "Gut Shot"
+          ],
+          "pass": true,
+          "cleanup": "one explicit harness native OK after observation"
+        },
+        {
+          "label": "05-gut-shot-red-mana-native-cast-life-1",
+          "nativeCanPlay": true,
+          "nativeCanPayTwoLife": false,
+          "manaSources": 1,
+          "lifeBefore": 1,
+          "lifeAfter": 1,
+          "explicitActions": [
+            {
+              "prompt": "getAbilityToPlay",
+              "action": "explicit offered Gut Shot ability index 0"
+            },
+            {
+              "input": "forge.gamemodes.match.input.InputSelectTargets",
+              "action": "explicit target opponent player"
+            },
+            {
+              "input": "forge.gamemodes.match.input.InputPayManaOfCostPayment",
+              "action": "explicit select Mountain mana ability"
+            },
+            {
+              "prompt": "getAbilityToPlay",
+              "action": "explicit offered Gut Shot ability index 0"
+            }
+          ],
+          "nativeCastCompleted": true,
+          "nativeStackNames": [
+            "Gut Shot"
+          ],
+          "nativeAutoPayments": 0,
+          "pass": true,
+          "cpuDecisionInvoked": false
+        },
+        {
+          "label": "05-gut-shot-taxed-no-mana",
+          "atUtc": "2026-10-26T13:19:14.716666535Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 115.968431,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "05-gut-shot-taxed-no-mana-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        },
+        {
+          "label": "05-force-of-will-free-alternate",
+          "atUtc": "2026-10-26T13:19:14.838881636Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 1,
+          "nativeHasAvailableActions": true,
+          "nativeMayAutoPass": false,
+          "nativePriorityInputHeld": true,
+          "expectedPriorityInputHeld": true,
+          "observationMilliseconds": 110.7998,
+          "decisionReturnedWithoutAnswer": false,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "05-force-of-will-free-alternate-state.json",
+          "actionableHumanCards": [
+            "Force of Will"
+          ],
+          "pass": true,
+          "cleanup": "one explicit harness native OK after observation"
+        },
+        {
+          "label": "05-gut-shot-tax-plus-life",
+          "atUtc": "2026-10-26T13:19:14.960137129Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": true,
+          "nativeMayAutoPass": false,
+          "nativePriorityInputHeld": true,
+          "expectedPriorityInputHeld": true,
+          "observationMilliseconds": 110.7187,
+          "decisionReturnedWithoutAnswer": false,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "05-gut-shot-tax-plus-life-state.json",
+          "actionableHumanCards": [
+            "Gut Shot"
+          ],
+          "pass": true,
+          "cleanup": "one explicit harness native OK after observation"
+        },
+        {
+          "label": "05-reduced-murder-own-target",
+          "atUtc": "2026-10-26T13:19:15.079656341Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": true,
+          "nativeMayAutoPass": false,
+          "nativePriorityInputHeld": true,
+          "expectedPriorityInputHeld": true,
+          "observationMilliseconds": 110.830699,
+          "decisionReturnedWithoutAnswer": false,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "05-reduced-murder-own-target-state.json",
+          "actionableHumanCards": [
+            "Murder"
+          ],
+          "pass": true,
+          "cleanup": "one explicit harness native OK after observation"
+        },
+        {
+          "label": "05-dismember-exact-four-life-generic",
+          "atUtc": "2026-10-26T13:19:15.193223670Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": true,
+          "nativeMayAutoPass": false,
+          "nativePriorityInputHeld": true,
+          "expectedPriorityInputHeld": true,
+          "observationMilliseconds": 105.692007,
+          "decisionReturnedWithoutAnswer": false,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "05-dismember-exact-four-life-generic-state.json",
+          "actionableHumanCards": [
+            "Dismember"
+          ],
+          "pass": true,
+          "cleanup": "one explicit harness native OK after observation"
+        },
+        {
+          "label": "05-dismember-insufficient-life-generic",
+          "atUtc": "2026-10-26T13:19:15.306710254Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 0,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": true,
+          "nativePriorityInputHeld": false,
+          "expectedPriorityInputHeld": false,
+          "observationMilliseconds": 106.543113,
+          "decisionReturnedWithoutAnswer": true,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "05-dismember-insufficient-life-generic-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "none"
+        },
+        {
+          "label": "05-filter-source-preserves-uncertainty",
+          "atUtc": "2026-10-26T13:19:15.448527263Z",
+          "phase": "MAIN1",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "smart",
+          "stackSize": 1,
+          "nativeHasAvailableActions": true,
+          "nativeMayAutoPass": false,
+          "nativePriorityInputHeld": true,
+          "expectedPriorityInputHeld": true,
+          "observationMilliseconds": 111.821287,
+          "decisionReturnedWithoutAnswer": false,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "05-filter-source-preserves-uncertainty-state.json",
+          "actionableHumanCards": [
+            "Counterspell"
+          ],
+          "pass": true,
+          "cleanup": "one explicit harness native OK after observation"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": 6,
+      "description": "FullControl preserves empty priority; Smart preserves mandatory discard; expired scan conservatively keeps opportunity",
+      "observations": [
+        {
+          "label": "06-full-no-action-upkeep",
+          "atUtc": "2026-10-26T13:19:15.574936802Z",
+          "phase": "UPKEEP",
+          "turn": 4,
+          "activeSeat": "opponent",
+          "prioritySeat": "human",
+          "controlMode": "full",
+          "stackSize": 0,
+          "nativeHasAvailableActions": false,
+          "nativeMayAutoPass": false,
+          "nativePriorityInputHeld": true,
+          "expectedPriorityInputHeld": true,
+          "observationMilliseconds": 108.068964,
+          "decisionReturnedWithoutAnswer": false,
+          "humanContinueActionsBeforeObservation": 0,
+          "cpuDecisionInvoked": false,
+          "snapshot": "06-full-no-action-upkeep-state.json",
+          "actionableHumanCards": [],
+          "pass": true,
+          "cleanup": "one explicit harness native OK after observation"
+        },
+        {
+          "label": "06-mandatory-discard",
+          "phase": "MAIN1",
+          "activeSeat": "opponent",
+          "choiceSeat": "human",
+          "nativeInput": "forge.player.PlayerControllerHuman$2",
+          "min": 1,
+          "max": 1,
+          "chosenBeforeAnswer": 0,
+          "returnedBeforeAnswer": false,
+          "observationMilliseconds": 200,
+          "pass": true,
+          "snapshot": "06-mandatory-discard-state.json",
+          "cpuDecisionInvoked": false
+        },
+        {
+          "label": "06-expired-scan-conservative-fallback",
+          "layer": "direct native collector plus native yield predicate; no priority input invoked",
+          "budgetMilliseconds": 0,
+          "nativeActionableNames": [
+            "Forest",
+            "Grizzly Bears"
+          ],
+          "nativeMayAutoPass": false,
+          "pass": true,
+          "interpretation": "unevaluated cards retain human opportunity rather than become falsely empty",
+          "cpuDecisionInvoked": false
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": 7,
+      "description": "Tri-state assessments repeated five times; native life/mana/tap-state preservation",
+      "observations": [
+        {
+          "label": "07-life-payment-proven",
+          "expected": "AVAILABLE",
+          "fiveAssessments": [
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE"
+          ],
+          "lifeManaAndTapStateUnchanged": true,
+          "pass": true
+        },
+        {
+          "label": "07-exact-life-proven",
+          "expected": "AVAILABLE",
+          "fiveAssessments": [
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE"
+          ],
+          "lifeManaAndTapStateUnchanged": true,
+          "pass": true
+        },
+        {
+          "label": "07-insufficient-life-proven",
+          "expected": "PROVEN_UNAVAILABLE",
+          "fiveAssessments": [
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE"
+          ],
+          "lifeManaAndTapStateUnchanged": true,
+          "pass": true
+        },
+        {
+          "label": "07-life-prohibition-proven",
+          "expected": "PROVEN_UNAVAILABLE",
+          "fiveAssessments": [
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE"
+          ],
+          "lifeManaAndTapStateUnchanged": true,
+          "pass": true
+        },
+        {
+          "label": "07-one-island-proven",
+          "expected": "PROVEN_UNAVAILABLE",
+          "fiveAssessments": [
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE"
+          ],
+          "lifeManaAndTapStateUnchanged": true,
+          "pass": true
+        },
+        {
+          "label": "07-two-forests-proven",
+          "expected": "PROVEN_UNAVAILABLE",
+          "fiveAssessments": [
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE"
+          ],
+          "lifeManaAndTapStateUnchanged": true,
+          "pass": true
+        },
+        {
+          "label": "07-two-islands-proven",
+          "expected": "AVAILABLE",
+          "fiveAssessments": [
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE"
+          ],
+          "lifeManaAndTapStateUnchanged": true,
+          "pass": true
+        },
+        {
+          "label": "07-unpayable-tax-proven",
+          "expected": "PROVEN_UNAVAILABLE",
+          "fiveAssessments": [
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE",
+            "PROVEN_UNAVAILABLE"
+          ],
+          "lifeManaAndTapStateUnchanged": true,
+          "pass": true
+        },
+        {
+          "label": "07-tax-plus-life-proven",
+          "expected": "AVAILABLE",
+          "fiveAssessments": [
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE"
+          ],
+          "lifeManaAndTapStateUnchanged": true,
+          "pass": true
+        },
+        {
+          "label": "07-reduced-cost-proven",
+          "expected": "AVAILABLE",
+          "fiveAssessments": [
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE"
+          ],
+          "lifeManaAndTapStateUnchanged": true,
+          "pass": true
+        },
+        {
+          "label": "07-filter-unknown-preserved",
+          "expected": "UNKNOWN",
+          "fiveAssessments": [
+            "UNKNOWN",
+            "UNKNOWN",
+            "UNKNOWN",
+            "UNKNOWN",
+            "UNKNOWN"
+          ],
+          "lifeManaAndTapStateUnchanged": true,
+          "pass": true
+        },
+        {
+          "label": "07-sol-ring-multimana",
+          "expected": "AVAILABLE",
+          "fiveAssessments": [
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE",
+            "AVAILABLE"
+          ],
+          "lifeManaAndTapStateUnchanged": true,
+          "pass": true
+        }
+      ],
+      "pass": true
+    }
+  ],
+  "allPass": true,
+  "layer": "local native state fixtures; exact bridge and overlay bytecode identified in paired IDENTITY.json; unchanged reviewed CPU classes",
+  "browserProof": false,
+  "fullMatchProof": false,
+  "cpuPolicyProof": false,
+  "explicitPhaseStops": "not exposed by current bridge action contract; FullControl override tested",
+  "hiddenOpponentIdentityRead": false,
+  "elapsedSeconds": 11.066878122
+}

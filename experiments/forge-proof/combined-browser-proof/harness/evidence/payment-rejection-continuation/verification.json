@@ -1,0 +1,74 @@
+{
+  "schema": "cardstashy.payment-rejection-continuation.verification.v1",
+  "baseCommit": "f81df780835feb2533b1877108da3b70f50343ee",
+  "evidenceLayer": "local native, synthetic transport/presentation, local SQLite; no new browser or image run",
+  "harnessNode": {
+    "pass": 135,
+    "fail": 0,
+    "skip": 0
+  },
+  "harnessPython": {
+    "pass": 41,
+    "fail": 0
+  },
+  "hostNode": {
+    "pass": 179,
+    "fail": 0
+  },
+  "hostPython": {
+    "pass": 22,
+    "fail": 0
+  },
+  "containerPython": {
+    "pass": 46,
+    "fail": 2,
+    "failedTests": [
+      "test_stopped_zombie_is_not_a_live_descendant_but_is_reaped",
+      "test_unreapable_zombie_cannot_produce_success_or_unbounded_wait"
+    ]
+  },
+  "localAggregate": "FAIL",
+  "cleanupSourceAndGatesUnchanged": true,
+  "cleanupReason": "Workspace procfs and process PID namespace differ; runtime guard fails closed. Tests not skipped.",
+  "paymentNative": {
+    "pass": 9,
+    "fail": 0,
+    "staleRejections": 9,
+    "busyRejections": 9,
+    "oneSpellAndTwoTappedLandsEach": true,
+    "prefenceBaselinePass": 0,
+    "prefenceBaselineFail": 9
+  },
+  "rejectionTransport": {
+    "baselinePass": 1,
+    "baselineFail": 17,
+    "candidatePass": 18,
+    "candidateFail": 0
+  },
+  "receiptOrder": {
+    "baselinePass": 5,
+    "baselineFail": 1,
+    "candidatePass": 6,
+    "candidateFail": 0
+  },
+  "rejectionDeadline": {
+    "pass": 5,
+    "fail": 0,
+    "negativeControlPass": 3,
+    "negativeControlFail": 2
+  },
+  "localWorkerdSQLite": {
+    "pass": 6,
+    "fail": 0,
+    "outboundCalls": 0,
+    "providerCalls": 0,
+    "accountCalls": 0
+  },
+  "historicalTouchCauseProven": false,
+  "newBrowserAcceptance": false,
+  "newImageAttested": false,
+  "paidRuns": 0,
+  "remoteWrites": 0,
+  "deployment": false,
+  "aggregateLogSha256": "fcc2c1e821187679cf7fc238aa9331f105d09dbde08db7ed62e2a6a8f0f10b33"
+}

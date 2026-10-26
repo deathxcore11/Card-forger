@@ -1,0 +1,11 @@
+{
+  "layer": "local native fixture; no browser, image, live or account acceptance",
+  "baseCommit": "f81df780835feb2533b1877108da3b70f50343ee",
+  "runtimeSourceUnchanged": true,
+  "runtimeSourceSha256": "6e2a5004ee73e3c67d11e89ad5efb0d9112ece6ff2c52fa010235b048b219c43",
+  "fixtureSourceSha256": "a3fd36c0748388d741219e938dd147be8888138001d96de2017c4e2f938ffc3b",
+  "bridgeClassSha256": "ca2f4b6e1744d806868f5a9838d462651135051be4d82d55e7c9c53639ac6c09",
+  "summarySha256": "124f31a2f55cfebd39f1c4d37b4278e6069057e693f9e31a235db260594c8899",
+  "automaticReplayAdded": false,
+  "nativeRulesOrRuntimeChanged": false
+}

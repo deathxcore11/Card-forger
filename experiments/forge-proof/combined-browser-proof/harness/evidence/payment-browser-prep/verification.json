@@ -1,0 +1,118 @@
+{
+  "schema": "cardstashy.payment-browser-preparation-review.v1",
+  "parentCommit": "159397245a695f4692bc876be4bcc6d05a2a38c5",
+  "testedSourceSHA256": {
+    "action-diagnostics.mjs": "c6857122e9de5fee330c8654ff914fb9ee52f2fb95bd75a27b1eb9d7987d4a9b",
+    "browser-journey.mjs": "28686165188a42418d3524ab2cb8f2755961474f170c813834f2cd5445ba3c62",
+    "payment-proof.mjs": "671c7d7a2f581a931b6f9b63ec4211037003273a0b7aae627542a0f4d87a895b",
+    "artifacts.py": "86bf2db91425c80fb5d45902267364a40da81bb3a953c0e927067edac243a451",
+    "payment_artifacts.py": "591282a98dbdc33dd1c6f67b750649705550221beeabc0d5dee9f0cd1f9f6fae",
+    "test-artifacts.py": "7050a943d01037ed628ced620709b3307fe44f8c312f29cee42cdbb3d4ae9bad",
+    "test-collector.py": "12e62c4c5a77d91ec72801cf627e4e3a627d7f2499c8d916c6687ce318e61d31",
+    "test-delivered-observer.mjs": "9af58173d0ff1c008795d1b8e9fa8397a06cd5f7270d4a6cc91b42d55206b681",
+    "test-payment-proof.mjs": "54861f8ebf716531cf49b578b0ea24fe92a61324c6670c6a0f6252aec036d20b"
+  },
+  "candidateSourceUnchangedFromParent": true,
+  "sourceManifests": {
+    "HOST-SHA256.json": "8bd6b5932a267c5916cc6a1900996060dac02d1f2ec9047d69506081da6c3f61",
+    "UI-SHA256.json": "f2a107d7a573c89a45f16e5e32205eb0dc8f0c89eee3399ab4fa44a519932c5f",
+    "UI-RUNTIME-SHA256.json": "95c89512d3c83c378aa1f971ad550f5d523b119b95ca6675d8ccad89478b8f96",
+    "build-context/CONTEXT-SHA256.json": "405c41f05443b7c91e1b643598079a76fbec8392939cc4eace6f1596c02d7396",
+    "native/SHA256SUMS": "b34eab6bd70a79452f6c4fb07ca4cf0273bcab21ed46c6f37669c58e0aff9f66"
+  },
+  "sourceInputsVerified": 23,
+  "harnessNode": {
+    "status": "PASS",
+    "passed": 147,
+    "failed": 0
+  },
+  "harnessPython": {
+    "status": "PASS",
+    "passed": 46,
+    "failed": 0
+  },
+  "hostNode": {
+    "status": "PASS",
+    "passed": 179,
+    "failed": 0
+  },
+  "hostPython": {
+    "status": "PASS",
+    "passed": 22,
+    "failed": 0
+  },
+  "localSQLite": {
+    "status": "PASS",
+    "passed": 6,
+    "failed": 0,
+    "outboundCalls": 0
+  },
+  "localNativePayment": {
+    "status": "PASS",
+    "passed": 9,
+    "failed": 0,
+    "staleRequestsRejected": 9,
+    "busyRequestsRejected": 9,
+    "additionalResourceChangesOnRejection": false,
+    "eachStackSize": 1,
+    "eachTappedLands": 2,
+    "bridgeClassSHA256": "ca2f4b6e1744d806868f5a9838d462651135051be4d82d55e7c9c53639ac6c09",
+    "classMatchesReviewedLocalRuntime": true,
+    "freshContainerImage": false
+  },
+  "containerPython": {
+    "status": "FAIL",
+    "passed": 46,
+    "failed": 2,
+    "failedTests": [
+      "test_stopped_zombie_is_not_a_live_descendant_but_is_reaped",
+      "test_unreapable_zombie_cannot_produce_success_or_unbounded_wait"
+    ],
+    "reason": "workspace procfs does not expose the matching PID namespace for actual zombie observations",
+    "testsRetained": true
+  },
+  "staticAggregate": {
+    "status": "FAIL",
+    "exitCode": 1,
+    "externalLimitSeconds": 55,
+    "finalAttemptTimedOut": false,
+    "earlierAttemptTimedOutAtContainerPython": true,
+    "earlierIsolatedContainerRerun": {
+      "passed": 46,
+      "failed": 2
+    }
+  },
+  "cleanupCIGate": {
+    "status": "NOT TESTED",
+    "requiredTests": 11,
+    "implementationAndMandatoryGateUnchanged": true
+  },
+  "freshImageAndSameImageProbe": {
+    "status": "NOT TESTED"
+  },
+  "desktopNaturalMatchAndRematch": {
+    "status": "NOT TESTED"
+  },
+  "wideTouchMimicPayment": {
+    "status": "NOT TESTED"
+  },
+  "finalContainerImageCleanup": {
+    "status": "NOT TESTED"
+  },
+  "liveAccountIntegration": {
+    "status": "NOT TESTED"
+  },
+  "productionDeployment": {
+    "status": "NOT TESTED"
+  },
+  "historicalTouchRejectionCauseProven": false,
+  "paidRunAuthorized": false,
+  "remotePublicationPerformed": false,
+  "productionDeploymentPerformed": false,
+  "notes": [
+    "A separate UI receipt/state ordering stall is reproduced and fixed in the unchanged parent.",
+    "Native fixtures use local previously reviewed runtime classes, not a fresh image.",
+    "Observer/event tests are synthetic boundary tests; no browser gameplay acceptance is claimed.",
+    "Source tests completed before this metadata append; the final inventory is verified separately."
+  ]
+}

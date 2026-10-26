@@ -1,6 +1,6 @@
 {
   "scope": "LOCAL_TEST_NOT_DEPLOYABLE",
-  "status": "unpublished post-run correction; new bounded HTTP backlog image context; no new run",
+  "status": "unpublished payment rejection diagnostics and regressions; no new image or browser run",
   "productionFilesChanged": false,
   "realImageBuilt": false,
   "realRuntimeRun": false,
@@ -9,7 +9,7 @@
     {
       "path": "README.md",
       "bytes": 10748,
-      "sha256": "e79db03dc024716ba760f8179f1886b4c059de0f9120c9f2e8711c15e9e45fba"
+      "sha256": "822b611ed8c6a6b3a54b5138c07ddea61ed6dcea0af8b5c1b37701100f93603f"
     },
     {
       "path": "cleanup-owned.mjs",
@@ -49,7 +49,7 @@
     {
       "path": "reviewed-host.mjs",
       "bytes": 2132,
-      "sha256": "374fc680ca897d2d7cb1c05690bda22b60d0350d22a1146ec2a1404c07efe346"
+      "sha256": "9aff02a74ffea33b9aeb9a0bd5d77b4abf34471b9d70b2c802881c1bd885c30d"
     },
     {
       "path": "schema.json",
@@ -59,12 +59,12 @@
     {
       "path": "test-fixtures.mjs",
       "bytes": 7465,
-      "sha256": "a0bc088ab37c92b59da7da25759bdaa33067b124d5d2ee1ff466bcedd6266aaa"
+      "sha256": "65914a364c64248a34a5081749b5840dbb542a5b7ea16a6108d0f8621ecf0dce"
     },
     {
       "path": "test-local-oci.mjs",
       "bytes": 13448,
-      "sha256": "420f48007871387fc340ecdf09b098ed9b00db98785752c9564dcbc9f7cbccd7"
+      "sha256": "400a3fb4ce25a5d16f6f89a5e06f677e48e3506848d558387d869ce75ae64f83"
     },
     {
       "path": "test-provider.mjs",
@@ -77,5 +77,5 @@
       "sha256": "67d5f7671009a09f42c07cd6093f7cc580d1a69ae9af71d466a383af32d0336f"
     }
   ],
-  "parentManifestSha256": "6266d0096c71b0c236da1b88b8e2340a9525252719b623a43f2a1f1a52463981"
+  "parentManifestSha256": "41503b0cbd2bc2ce0ef7e30ab31a0437ee8b808d867af1ac62e23e5c71bead84"
 }

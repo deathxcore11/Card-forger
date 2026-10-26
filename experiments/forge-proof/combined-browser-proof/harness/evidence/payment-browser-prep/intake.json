@@ -1,0 +1,11 @@
+{
+  "packageVerified": true,
+  "packageMembers": 17,
+  "changedFilesVerified": 46,
+  "commit": "159397245a695f4692bc876be4bcc6d05a2a38c5",
+  "parent": "f81df780835feb2533b1877108da3b70f50343ee",
+  "tree": "cbc8a69446393b583b0eafe2fd2f2d7751a873d0",
+  "bothPatchesReconstructExactTrees": true,
+  "workingTreeClean": true,
+  "incomingPackageSHA256": "2cbd287fa6d643124e5f78fc8188743e5dd188b7803eb415a7b783a0cd2af637"
+}

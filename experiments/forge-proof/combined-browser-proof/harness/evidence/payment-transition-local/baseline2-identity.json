@@ -1,0 +1,8 @@
+{
+  "baseline": true,
+  "exitCode": 1,
+  "bridgeClassSha256": "8a3185b2665f91faed434c24de7abcad59563cdb0bbed765cb81b4c809f5f43b",
+  "testSourceSha256": "4074a320a6092b28b319d4fa4a579d280306accb7e498367c84a00fe3229fada",
+  "forgeRevision": "e5a0f8156da70ffc7866f923bed371c0111707cd",
+  "actualImageAttestation": false
+}

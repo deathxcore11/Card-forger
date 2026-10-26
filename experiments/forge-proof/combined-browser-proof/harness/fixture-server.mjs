@@ -16,8 +16,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OWNER = '00000000-0000-4000-8000-000000000001';
 const BEARER = 'forge-browser-fixture-owner'; // synthetic test credential ONLY
 const observations = new FixtureObservationCache({ bearer: BEARER });
-const SOURCE_SHA='b817b4f24702e9929378f9211492d4cc6e445803f62ad0e6dbc12947e543303b';
-const HOST_MANIFEST_SHA='46bfdbb36ead010d7fdcf6019049f1da402cd22920749beab8d5109ba49fd37d';
+const SOURCE_SHA='6e2a5004ee73e3c67d11e89ad5efb0d9112ece6ff2c52fa010235b048b219c43';
+const HOST_MANIFEST_SHA='8bd6b5932a267c5916cc6a1900996060dac02d1f2ec9047d69506081da6c3f61';
 const args = {};
 for (let i = 2; i < process.argv.length; i += 2) {
   if (!/^--[a-z-]+$/.test(process.argv[i]) || !process.argv[i + 1]) throw Error('named fixture arguments required');

@@ -1,0 +1,28 @@
+{
+  "schema": "cardstashy.approved-proof-run.v1",
+  "runId": 40324277781,
+  "runUrl": "https://github.com/deathxcore11/Card-forger/actions/runs/40324277781",
+  "commit": "f17bbe490156499c0b0249d043260b815a9e4cc1",
+  "tree": "0d556814970c13fc482fa2b35e2e4be811c4c3d4",
+  "branch": "codex/forge-native-browser-proof-20261026",
+  "attempt": 1,
+  "status": "completed",
+  "conclusion": "failure",
+  "createdAt": "2026-10-26T12:39:58Z",
+  "completedBy": "2026-10-26T12:48:05Z",
+  "runDurationMs": 487000,
+  "jobCapMinutes": 40,
+  "reservationUSD": 0.5,
+  "combinedConservativeReservationsUSD": 6,
+  "combinedCapUSD": 20,
+  "actualCombinedBillingVerified": false,
+  "reportedUbuntuBillableMs": 0,
+  "automaticRetries": 0,
+  "productionDeploymentAuthorized": false,
+  "optionalStatusCommentAuthorized": false,
+  "artifact": {
+    "id": 12651485497,
+    "archiveSha256": "ad4990dbf1dfd7a889fdc11556e89282e32f70b1fad621353198098bd46297c6",
+    "archiveAndMembersVerified": true
+  }
+}

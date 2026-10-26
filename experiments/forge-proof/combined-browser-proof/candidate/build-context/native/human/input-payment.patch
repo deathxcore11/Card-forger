@@ -1,0 +1,17 @@
+--- a/forge-gui/src/main/java/forge/gamemodes/match/input/InputPayMana.java
++++ b/forge-gui/src/main/java/forge/gamemodes/match/input/InputPayMana.java
+@@ -48,7 +48,13 @@
+     private CardCollection autoPayManaSources = null;
+     private boolean autoPayManaSourcesKnown = false;
+ 
+-    private boolean locked = false;
++    // Read by the HTTP presentation thread; mutations remain owned by native payment.
++    private volatile boolean locked = false;
++
++    /** True while native mana activation/Auto is running, including its async game-thread work. */
++    public final boolean isPaymentPending() {
++        return locked;
++    }
+ 
+     protected InputPayMana(final PlayerControllerHuman controller, final SpellAbility saPaidFor0, final Player player0, final boolean effect) {
+         super(controller);
