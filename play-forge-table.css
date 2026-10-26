@@ -153,3 +153,86 @@
  :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-command-zone .play-match-card-wrap{width:62px;height:87px}
  :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-inspector{position:absolute;inset:6px 6px 6px auto;width:min(330px,calc(100% - 12px));max-height:none;margin:0;overflow:auto;overscroll-behavior:contain}
 }
+
+/* Desktop and wide tablet: each battlefield fits its own half of the table. The
+   piece size follows the zone height (creatures on one row, lands and other
+   permanents on the next), crowded rows scroll sideways instead of hiding a row
+   under the hand, and the CPU's creatures face yours across the centre line. */
+@media (min-width:901px) and (min-height:620px){
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-zone{container-type:size;overflow:hidden auto;scrollbar-width:thin}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-zone-groups{--play-piece:clamp(64px,calc((100cqh - 44px) / 1.76),150px);display:flex;flex-direction:row;flex-wrap:wrap;align-content:center;justify-content:center;gap:4px 22px;min-height:calc(100% - 20px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-lane{min-width:0;max-width:100%}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-lane>h3{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-lane[data-card-group=creatures]{flex:1 0 100%;display:flex;justify-content:center}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-card-row{flex-wrap:nowrap;justify-content:flex-start;max-width:100%;overflow:auto hidden;scrollbar-width:thin;padding:6px 8px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) [data-owner=you] .play-match-lane[data-card-group=creatures]{order:0}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) [data-owner=you] .play-match-lane:not([data-card-group=creatures]){order:1}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) [data-owner=cpu] .play-match-lane[data-card-group=creatures]{order:2}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) [data-owner=cpu] .play-match-lane:not([data-card-group=creatures]){order:0}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-lane:not([data-card-group=creatures]) .play-match-card-wrap[data-presentation=battlefield]{width:calc(var(--play-piece)*.74);height:calc(var(--play-piece)*.74)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-current-stats{font-size:clamp(15px,calc(var(--play-piece)*.16),23px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-card-name{font-size:clamp(10px,calc(var(--play-piece)*.085),13px)}
+}
+
+/* Identical permanents stack as one pile with a count. Every card is still its own
+   control with its own engine identity; any difference in state splits it out. */
+:where(body.practice-table-open) .play-match-card-wrap[data-pile-index]:not([data-pile-index="0"]){margin-left:calc(var(--play-piece) * -.78)}
+:where(body.practice-table-open) .play-match-lane:not([data-card-group=creatures]) .play-match-card-wrap[data-pile-index]:not([data-pile-index="0"]){margin-left:calc(var(--play-piece) * -.6)}
+:where(body.practice-table-open) .play-match-card-wrap[data-pile-tight=true]{margin-left:calc(var(--play-piece) * -.97)!important}
+:where(body.practice-table-open) .play-match-lane:not([data-card-group=creatures]) .play-match-card-wrap[data-pile-tight=true]{margin-left:calc(var(--play-piece) * -.72)!important}
+:where(body.practice-table-open) .play-match-card-wrap[data-pile-index]:not([data-pile-top=true]) :is(.play-match-card-name,.play-match-state-slot,.play-match-type,.play-match-keywords,.play-match-card-cue){visibility:hidden}
+:where(body.practice-table-open) .play-match-pile-count{position:absolute;left:-6px;top:34%;z-index:10;min-width:30px;padding:3px 8px;border-radius:999px;background:#dfc58e;color:#14232b;font:800 13px/1.2 'DM Sans',system-ui,sans-serif;text-align:center;box-shadow:0 3px 10px #0007;pointer-events:none}
+
+/* Table art. Every piece is framed in its own colors; tokens and cards without a
+   printing show a drawn crest; piles stack tight behind a count coin; the two
+   battlefields sit on a lit playmat that brightens for the player whose turn it is. */
+:where(.play-match-card[data-colors]) .play-match-piece-art{border:2px solid var(--frame-a);border-right-color:var(--frame-b);border-bottom-color:var(--frame-b);box-shadow:0 0 0 1px #000b,0 10px 22px #0008,0 0 16px color-mix(in srgb,var(--frame-a) 26%,transparent)}
+.play-drawn-art{display:grid;place-items:center;container-type:size;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--drawn-a) 38%,#fff 8%) 0,transparent 52%),linear-gradient(165deg,color-mix(in srgb,var(--drawn-a) 72%,#0b151b),color-mix(in srgb,var(--drawn-b) 48%,#050b0f))}
+.play-drawn-art:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(135deg,#ffffff0b 0 2px,transparent 2px 9px),radial-gradient(circle at 50% 120%,#0009,transparent 60%);pointer-events:none}
+.play-drawn-crest{position:relative;display:grid;place-items:center;width:min(46cqw,46cqh,84px);aspect-ratio:1;border-radius:50%;margin:0 0 12cqh;background:radial-gradient(circle at 34% 28%,#ffffff6b,transparent 52%),radial-gradient(circle,color-mix(in srgb,var(--drawn-a) 88%,#000),color-mix(in srgb,var(--drawn-b) 62%,#000));box-shadow:0 0 0 2px #f2dda6d0,0 0 0 4px #0b1419b0,0 0 22px color-mix(in srgb,var(--drawn-a) 55%,transparent),inset 0 -7px 12px #0007}
+.play-drawn-crest svg{width:60%;height:60%;fill:#fff7e3;color:#fff7e3;filter:drop-shadow(0 2px 2px #0009)}
+.play-drawn-art[data-tone=W] .play-drawn-crest svg{fill:#5d4920;color:#5d4920;filter:drop-shadow(0 1px 0 #fff8)}
+/* A drawn token says so with a dashed gold ring instead of a chip over its crest;
+   the chip stays for screen readers. A card without art keeps a solid ring. */
+.play-match-card[data-token=true] .play-drawn-crest{outline:1.5px dashed #f2dda6;outline-offset:4px}
+.play-match-card[data-token=true]:has(.play-drawn-art) .play-state-chip:not(.play-tapped-chip,.play-marked-damage,.play-counter){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.play-drawn-art.play-drawn-full{position:absolute;inset:0;border-radius:inherit;overflow:hidden;border:2px solid var(--drawn-a)}
+.play-drawn-art.play-drawn-full .play-drawn-crest{width:min(46cqw,40cqh,96px);margin:0 0 6cqh}
+
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-zone{border-radius:26px;background:radial-gradient(ellipse 62% 78% at 50% 100%,#3d6a6533,transparent 72%),repeating-linear-gradient(115deg,#ffffff04 0 1px,transparent 1px 6px),linear-gradient(180deg,#0f1f26cc,#132a30cc);box-shadow:inset 0 0 0 1px #c3d8df1f,inset 0 18px 40px #0005;transition:box-shadow .4s}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-zone[data-owner=cpu]{background:radial-gradient(ellipse 62% 78% at 50% 0%,#4b3f6b2e,transparent 72%),repeating-linear-gradient(65deg,#ffffff04 0 1px,transparent 1px 6px),linear-gradient(0deg,#0f1f26cc,#161f2fcc)}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-zone[data-owner=you]:before{content:'';position:absolute;top:-8px;left:12%;right:12%;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,#e5c88d,#fff1c9,#e5c88d,transparent);box-shadow:0 0 14px #e5c88d99;opacity:.55;pointer-events:none}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel):has(.play-match-seat[data-seat=you][data-active=true]) .play-match-zone[data-owner=you]{box-shadow:inset 0 0 0 1px #e5c88d55,inset 0 -26px 60px #e5c88d14,0 0 34px #e5c88d12}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel):has(.play-match-seat[data-seat=cpu][data-active=true]) .play-match-zone[data-owner=cpu]{box-shadow:inset 0 0 0 1px #a99be055,inset 0 26px 60px #a99be014,0 0 34px #a99be012}
+
+/* Rows space their own cards so a pile can overlap without the row gap pushing it apart. */
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-card-row{column-gap:0}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-card-wrap+.play-match-card-wrap{margin-left:16px}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-card-wrap[data-pile-index]:not([data-pile-index="0"]){margin-left:calc(var(--play-piece) * -.8)}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-lane:not([data-card-group=creatures]) .play-match-card-wrap[data-pile-index]:not([data-pile-index="0"]){margin-left:calc(var(--play-piece) * -.6)}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-card-wrap[data-pile-tight=true]{margin-left:calc(var(--play-piece) * -.965)!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-lane:not([data-card-group=creatures]) .play-match-card-wrap[data-pile-tight=true]{margin-left:calc(var(--play-piece) * -.72)!important}
+:where(body.practice-table-open) .play-match-card-wrap[data-pile-index]:not([data-pile-top=true]) :is(.play-drawn-crest,.play-match-inspect-card){visibility:hidden}
+:where(body.practice-table-open) .play-match-card-wrap[data-pile-index]:not([data-pile-top=true]) .play-match-piece-art{filter:brightness(.78)}
+:where(body.practice-table-open) .play-match-pile-count{left:auto;right:-8px;top:-8px;min-width:32px;padding:4px 8px;border:2px solid #fff3cf;background:radial-gradient(circle at 35% 30%,#fff2c6,#d9b463 60%,#a9822f);color:#2a1d05;font-size:13px;box-shadow:0 0 0 2px #0a1419,0 4px 12px #000a}
+
+/* Names wrap between words on at most two lines beside the stats, hyphenating only a
+   word too long for its line; long names step down a size and stat-less pieces use the full width. */
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-card-name{overflow-wrap:break-word;word-break:normal;hyphens:auto;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;letter-spacing:.01em;text-shadow:0 1px 3px #000,0 0 8px #000a}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-card[data-name-length=long] .play-match-card-name{font-size:clamp(9px,calc(var(--play-piece)*.078),12px)}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-card[data-name-length=word] .play-match-card-name{font-size:clamp(8px,calc(var(--play-piece)*.07),11px);letter-spacing:-.01em}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-card:not(:has(.play-current-stats)) .play-match-card-name{right:8px}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-current-stats{background:linear-gradient(180deg,#1b343c,#0b1a20);border:1px solid #e5c88d88;box-shadow:0 0 0 1px #000a,0 4px 12px #0007}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-piece-art{transition:transform .28s cubic-bezier(.2,.8,.2,1),filter .28s,box-shadow .28s,border-color .28s}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-card[data-combat=attacking]{transform:translateY(-12px)}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) [data-owner=cpu] .play-match-card[data-combat=attacking]{transform:translateY(12px)}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-card[data-combat=attacking] .play-match-piece-art{border-color:#ff8a6b;box-shadow:0 0 0 1px #000b,0 0 0 4px #ff6a4a40,0 0 26px #ff5a3a88,0 14px 26px #0009}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-card[data-combat=blocking] .play-match-piece-art{border-color:#8fc7ff;box-shadow:0 0 0 1px #000b,0 0 0 4px #6aaeff40,0 0 26px #5a9cff88,0 14px 26px #0009}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-card[data-action-cue]:not([data-action-cue=""]) .play-match-piece-art{animation:play-piece-ready 2.4s ease-in-out infinite}
+@keyframes play-piece-ready{50%{box-shadow:0 0 0 1px #000b,0 0 0 3px #e5c88d55,0 0 24px #e5c88d66,0 12px 24px #0008}}
+:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-hand .play-match-card[data-action-cue]:not([data-action-cue=""]){filter:drop-shadow(0 0 10px #e5c88d88)}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table .play-match-card .play-match-piece-art{animation:none!important;transition:none!important}}
+
+/* The CPU's hand shows backs only: a CardStashy back, never a face. */
+:where(body.practice-table-open) .play-match-opponent-fan .play-match-card-back{border:2px solid #c9a75a;background:radial-gradient(circle at 50% 50%,#f1d891 0 7%,#9a7a35 8% 10%,transparent 11%),radial-gradient(circle at 50% 50%,transparent 0 24%,#e9cf8a66 25% 27%,transparent 28%),conic-gradient(from 45deg at 50% 50%,#ffffff10 0 25%,transparent 0 50%,#ffffff10 0 75%,transparent 0),repeating-linear-gradient(45deg,#ffffff09 0 2px,transparent 2px 7px),linear-gradient(160deg,#22346a,#101a38 58%,#22113d);box-shadow:0 0 0 1px #0a1022,0 4px 10px #000a}
+:where(body.practice-table-open) .play-match-opponent-fan .play-match-card-back:after{inset:4px;border-color:#e9cf8a55;background:linear-gradient(115deg,transparent 40%,#ffffff18 50%,transparent 60%)}

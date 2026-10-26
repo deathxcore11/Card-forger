@@ -23,6 +23,13 @@ export function battlefieldGroups(cards){
  for(const card of cards){const types=card.known===true?card.types||[]:[];groups[types.includes('Creature')?0:types.includes('Land')?1:2].cards.push(card);}
  return groups.filter(group=>group.cards.length);
 }
+// Visually stacks permanents whose every visible detail matches, in first-seen order.
+// Each card keeps its own element and engine identity; a change of state splits it out.
+export function battlefieldPiles(cards){
+ const piles=new Map();
+ for(const c of cards){const key=c.known===true?JSON.stringify([c.name,c.controller,c.isToken,c.tapped,c.power,c.toughness,c.damage,c.counters||{},c.attacking,c.blocking,c.summoningSick,c.keywords||[],c.type,c.text,c.face,c.printing?.playArtwork?.card?.id||null]):'face-down:'+c.id;if(!piles.has(key))piles.set(key,[]);piles.get(key).push(c);}
+ return [...piles.values()];
+}
 export function playerStateEmblem(snapshot,seat){
  const view=snapshot?.status?.surface;
  if(!view)return {active:false,title:'Preparing match',phase:''};
@@ -108,7 +115,7 @@ export function cardActionCues(snapshot,instanceId){
  }
  return cues;
 }
-export function mountMatchTable(root,{session,profile={displayName:'You'},renderPlayerPortrait=()=>null,renderPlayerBackdrop=()=>null,renderMatchBackdrop=()=>null,format=null,resolveCard=()=>null,decorateCard=()=>{},decorateInspector=()=>{},renderOracleText=null,renderMatchContext=()=>null,allowConcede=false,title='CardStashy · Private rules test',mountEffects=()=>()=>{},onExit=()=>{}}){
+export function mountMatchTable(root,{session,profile={displayName:'You'},renderPlayerPortrait=()=>null,renderPlayerBackdrop=()=>null,renderMatchBackdrop=()=>null,format=null,resolveCard=()=>null,decorateCard=()=>{},decorateInspector=()=>{},renderOracleText=null,renderMatchContext=()=>null,allowConcede=false,title='CardStashy · Private rules test',mountEffects=()=>()=>{},onExit=()=>{},pileIdentical=false}){
  const disposeEffects=mountEffects(root),cardNodes=new Map(),bandDrafts=new Map();let bandRevision=null;let inspectorContent=null;let menu=null,exitOpen=false,advancedOpen=false,lastRevision=-1,inspectorHidden=false,detailsOpen=false,showAllCombatLines=false,focusedCombatCard=null;const log=[];let lastRenderKey=null,lastTurnKey=null,turnBanner=null,turnBannerStarted=0,linkLayer=null,boardLinks=[],combatSourceId=null,combatReplace=false,controlError='';let oneClickChoices=true;
  let previousHand=null,previousDraw=null;const newHandCards=new Map();
  // A closed/reset session must not retain detached card art or inspector content.
@@ -156,7 +163,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
    const openMenu=e=>{e.preventDefault();inspect(id);menu=id;render(session.snapshot());root.querySelector('[role="menu"] button')?.focus();};
    b.addEventListener('contextmenu',openMenu);b.addEventListener('keydown',e=>{if(e.key==='ContextMenu'||e.shiftKey&&e.key==='F10')openMenu(e);else if(e.key.toLowerCase()==='i'){e.preventDefault();inspect(id);}});cached={key,node:b,state};cardNodes.set(id,cached);
   }
-  cached.node.setAttribute('aria-pressed',String(id===selected&&!inspectorHidden));cached.node.dataset.tapped=String(c.tapped===true);const family=battlefieldPresentation(c);cached.node.dataset.family=family.kind;cached.node.setAttribute('aria-label',c.known?[c.name,creatureState(c)].filter(Boolean).join(' · '):'Face down');const text=JSON.stringify([cardStatView(c),c.types]);if(cached.statKey!==text){cached.state.replaceChildren(renderStats(c));cached.node.querySelector('.play-match-type')?.remove();if(presentation==='battlefield'&&c.known){const type=element('small',family.label,'play-match-type');cached.node.append(type);}cached.statKey=text;}return cached.node;
+  cached.node.setAttribute('aria-pressed',String(id===selected&&!inspectorHidden));cached.node.dataset.tapped=String(c.tapped===true);cached.node.dataset.combat=c.attacking===true?'attacking':c.blocking===true?'blocking':'none';const family=battlefieldPresentation(c);cached.node.dataset.family=family.kind;cached.node.setAttribute('aria-label',c.known?[c.name,creatureState(c)].filter(Boolean).join(' · '):'Face down');const text=JSON.stringify([cardStatView(c),c.types]);if(cached.statKey!==text){cached.state.replaceChildren(renderStats(c));cached.node.querySelector('.play-match-type')?.remove();if(presentation==='battlefield'&&c.known){const type=element('small',family.label,'play-match-type');cached.node.append(type);}cached.statKey=text;}return cached.node;
  }
  function render(snapshot){
   placement.reconcile();
@@ -204,7 +211,8 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
    const heading=element('div',undefined,'play-match-zone-heading');heading.append(element('h2',hand&&openingHand?'Your opening hand':title),element('span',String(cards.length),'play-match-zone-count'));if(hand)heading.append(element('span',openingHand?'Inspect any card. Then keep or mulligan below.':'Select a card to inspect','play-match-hand-hint'));section.append(heading);
    if(!cards.length){section.append(element('p',hand?'Your hand is empty':'No permanents on the battlefield','play-match-empty'));return section;}
    const groups=hand?[{key:'hand',cards}]:battlefieldGroups(cards);if(!hand&&groups.length===1)heading.querySelector('h2').textContent=title+' · '+groups[0].label;const rows=element('div',undefined,'play-match-zone-groups');
-   for(const group of groups){const lane=element('div',undefined,'play-match-lane');lane.dataset.cardGroup=group.key;if(!hand&&groups.length>1)lane.append(element('h3',`${group.label} · ${group.cards.length}`));const row=element('div',undefined,'play-match-card-row');if(hand){row.dataset.keepScroll='hand';row.tabIndex=0;row.setAttribute('aria-label','Cards in your hand');}for(const [index,c]of group.cards.entries()){const node=card(c);node.style.setProperty('--fan-angle',`${Math.max(-7,Math.min(7,(index-(group.cards.length-1)/2)*2))}deg`);row.append(node);}lane.append(row);rows.append(lane);}section.append(rows);return section;
+   for(const group of groups){const lane=element('div',undefined,'play-match-lane');lane.dataset.cardGroup=group.key;if(!hand&&groups.length>1)lane.append(element('h3',`${group.label} · ${group.cards.length}`));const row=element('div',undefined,'play-match-card-row');if(hand){row.dataset.keepScroll='hand';row.tabIndex=0;row.setAttribute('aria-label','Cards in your hand');}if(pileIdentical&&!hand){for(const pile of battlefieldPiles(group.cards))for(const [at,c]of pile.entries()){const node=card(c);if(pile.length>1){node.dataset.pileSize=String(pile.length);node.dataset.pileIndex=String(at);node.dataset.pileTight=String(at>0&&at<pile.length-5);if(at===pile.length-1){node.dataset.pileTop='true';node.append(element('span','×'+pile.length,'play-match-pile-count'));const b=node.querySelector('.play-match-card');b?.setAttribute('aria-label',b.getAttribute('aria-label')+` · top of ${pile.length} identical`);}}row.append(node);}}
+   else for(const [index,c]of group.cards.entries()){const node=card(c);node.style.setProperty('--fan-angle',`${Math.max(-7,Math.min(7,(index-(group.cards.length-1)/2)*2))}deg`);row.append(node);}lane.append(row);rows.append(lane);}section.append(rows);return section;
   }
   function seatPanel(player,name,own=false){
    const emblem=playerStateEmblem(snapshot,player.seat),panel=element('section',undefined,'play-match-seat');panel.dataset.active=String(emblem.active);panel.dataset.seat=own?'you':'cpu';panel.dataset.playerSeat=String(player.seat);panel.setAttribute('aria-label',own?'Your status':'CPU status');

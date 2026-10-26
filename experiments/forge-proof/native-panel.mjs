@@ -1,6 +1,24 @@
 import {optionLabel,optionCardId} from './forge-session.mjs';
 const OPTION_METHODS=new Set(['getChoices','getAbilityToPlay','chooseSingleEntityForEffect','chooseEntitiesForEffect','showOptionDialog','order']);
 export const isDescribedOption=value=>typeof value==='string'||typeof value==='number'||typeof value==='boolean'||!!(value&&value.hidden!==true&&value.card?.hidden!==true&&(value.name||value.description||value.text));
+// Player-facing names for Forge's generic OK/Cancel/Auto buttons. Presentation only:
+// the same native button operation is sent, and unfamiliar labels stay verbatim.
+const NEXT_STEP={UPKEEP:'Next: Draw',DRAW:'Next: Main phase',MAIN1:'Next: Combat',COMBAT_BEGIN:'Next: Attackers',COMBAT_DECLARE_ATTACKERS:'Next: Blockers',COMBAT_DECLARE_BLOCKERS:'Next: Damage',COMBAT_FIRST_STRIKE_DAMAGE:'Next: Damage',COMBAT_DAMAGE:'Next: End of combat',COMBAT_END:'Next: Second main',MAIN2:'Next: End step',END_OF_TURN:'Next: Cleanup'};
+export function nativeActionLabel(n,op,raw){
+ const label=String(raw??'').trim();
+ if(!/^(ok|auto|cancel|end turn)$/i.test(label))return label;
+ const mine=n?.players?.find(p=>p.id===n.viewer)?.zones?.Battlefield?.cards||[],count=key=>mine.filter(c=>c?.[key]===true).length,input=String(n?.inputType||'');
+ if(input==='InputPassPriority'){
+  if(op==='cancel')return /^end turn$/i.test(label)?'End turn':label;
+  if(n.stack?.length)return 'Pass · let it resolve';
+  return n.activePlayer===n.viewer?NEXT_STEP[n.phase]||'Pass priority':'Pass';
+ }
+ if(input==='InputAttack'&&op==='ok'){const k=count('attacking');return k?`Attack with ${k}`:'No attacks';}
+ if(input==='InputBlock'&&op==='ok'){const k=count('blocking');return k?`Confirm ${k} block${k===1?'':'s'}`:'No blocks';}
+ if(input.startsWith('InputPayMana')&&op==='ok'&&/^auto$/i.test(label))return 'Pay automatically';
+ if(input==='InputSelectTargets'&&op==='ok')return 'Confirm targets';
+ return label;
+}
 export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
  const doc=container.ownerDocument,s=snapshot,n=s.native;if(!n)return;
  const copy=(player,proof)=>presentation.hosted?player:proof;
@@ -18,10 +36,14 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  const compactStatus=!!statusLines&&!n.failure&&n.status!=='finished';panel.dataset.compactStatus=String(compactStatus);
  const yourTurn=n.activePlayer===n.viewer,opening=n.inputType==='InputConfirmMulligan',payment=String(n.inputType||'').startsWith('InputPayMana');
  const waitLabel=s.transportError?'Match update needs attention':n.busy===true?'Resolving game actions…':'Waiting for the table…';
- const playerTitle=compactStatus?`${yourTurn?'Your turn':'CPU turn'} · ${s.busy||s.transportError?waitLabel:n.priorityPlayer===n.viewer?(yourTurn?'You can act':'Your response'):'Waiting for CPU response'}`:opening?'Your opening hand':payment?'Pay mana':nativeMessage;
+ const lines=String(nativeMessage).split('\n').map(line=>line.trim()).filter(Boolean),selectionTitle={InputAttack:'Choose attackers',InputBlock:'Choose blockers',InputSelectTargets:'Choose targets'}[n.inputType];
+ // Engine bookkeeping between decisions is a status, not an instruction to the player.
+ const passive=!compactStatus&&!n.prompt&&!opening&&!payment&&!n.failure&&n.status!=='finished'&&(n.busy===true||n.inputType==='InputLockUI'||/^Priority: /.test(lines[0]||''));
+ const playerTitle=compactStatus?`${yourTurn?'Your turn':'CPU turn'} · ${s.busy||s.transportError?waitLabel:n.priorityPlayer===n.viewer?(yourTurn?'You can act':'Your response'):'Waiting for CPU response'}`:opening?'Your opening hand':payment?'Pay mana':passive?`${yourTurn?'Your turn':'CPU turn'} · ${s.transportError?waitLabel:yourTurn?'Resolving…':'CPU is playing'}`:selectionTitle||lines[0]||waitLabel;
+ const playerDetail=compactStatus||passive?[]:opening||payment?[nativeMessage]:selectionTitle?lines:lines.slice(1);
  const title=node('h2',presentation.hosted?playerTitle:compactStatus?(n.priorityPlayer===n.viewer?'Your priority':`Priority: ${statusLines[1]}`):nativeMessage);title.tabIndex=-1;title.dataset.nativeKey='decision-title';context.setAttribute('aria-live','polite');context.setAttribute('aria-atomic','true');context.append(title);
- if(compactStatus){const status=node('div',undefined,'forge-native-status');status.setAttribute('aria-label','Turn, phase and stack');for(const [label,text]of [['Turn',presentation.hosted?String(n.turn):statusLines[2]],['Phase',presentation.hosted?(phaseNames[n.phase]||statusLines[3]):statusLines[3]],['Stack',statusLines[4]]]){const value=node('span',`${label}: ${text}`);status.append(value);}context.append(status);}
- if(presentation.hosted&&(opening||payment))context.append(node('p',nativeMessage));
+ if(compactStatus||presentation.hosted&&!opening&&Number.isSafeInteger(n.turn)&&n.turn>0){const status=node('div',undefined,'forge-native-status');status.setAttribute('aria-label','Turn, phase and stack');const stack=n.stack?.length?`${n.stack.length} item${n.stack.length===1?'':'s'}`:'Empty';for(const [label,text]of [['Turn',presentation.hosted?String(n.turn):statusLines[2]],['Phase',presentation.hosted?(phaseNames[n.phase]||statusLines?.[3]||n.phase||'—'):statusLines[3]],['Stack',presentation.hosted?stack:statusLines[4]]]){const value=node('span',`${label}: ${text}`);status.append(value);}context.append(status);}
+ if(presentation.hosted)for(const line of playerDetail)context.append(node('p',line));
  panel.append(context);
  if(n.failure){panel.append(node('p',`Forge stopped: ${n.failure}`,'forge-diagnostic'));container.replaceChildren(panel);return;}
  if(n.status==='finished'){panel.append(node('p',n.draw===true?'Forge result: draw':n.winner?`Forge result: ${n.winner}`:'Forge reports that the game has finished.'));container.replaceChildren(panel);return;}
@@ -33,7 +55,8 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  if(n.notification?.message){const notice=node('p',`${n.notification.title||n.notification.method||'Forge'}: ${n.notification.message}`,'forge-diagnostic');notice.setAttribute('role','status');panel.append(notice);}
  if(n.lastActionError)panel.append(node('p',`Native action diagnostic: ${n.lastActionError}`,'forge-diagnostic'));
  if(s.transportError){const error=node('p',`Connection/action diagnostic: ${s.transportError}`,'forge-diagnostic');error.setAttribute('role','alert');panel.append(error,button('Refresh state (does not replay action)',()=>session.refresh(),false,'refresh'));}
- if(s.busy)panel.append(node('p',copy(waitLabel,'Waiting for Forge to resolve…'),'forge-native-wait'));
+ if(presentation.hosted&&passive&&!yourTurn&&!s.transportError)panel.append(node('p','Nothing to answer right now. The game moves on by itself.','forge-native-help'));
+ else if(s.busy)panel.append(node('p',copy(waitLabel,'Waiting for Forge to resolve…'),'forge-native-wait'));
  else if(presentation.hosted&&compactStatus&&n.controlMode==='smart'&&yourTurn)panel.append(node('p','Click or drag a card to play it. Mana is paid automatically; tap lands first to choose your mana.','forge-native-help'));
  if(presentation.hosted&&payment&&!s.busy)panel.append(node('p','Tap your mana sources, or use the offered payment button. Full Control keeps payment in your hands.','forge-native-help'));
  const p=n.prompt;
@@ -63,7 +86,12 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   }else panel.append(node('p',`Unsupported native dialog: ${p.method}. No reply sent.`,'forge-diagnostic'));
  }else{
   const buttons=n.buttons||{},actions=node('div',undefined,'forge-native-actions');actions.setAttribute('role','group');actions.setAttribute('aria-label',copy('Match actions','Native actions'));
-  for(const op of ['ok','cancel'])if(buttons[op]!==undefined)actions.append(button(String(buttons[op]||op),()=>session.nativeButton(op,n.revision),buttons[op+'Enabled']!==true,op));
+  for(const op of ['ok','cancel'])if(buttons[op]!==undefined){
+   const label=presentation.hosted?nativeActionLabel(n,op,buttons[op]):String(buttons[op]||op),enabled=buttons[op+'Enabled']===true;
+   // An unavailable Cancel/End turn is noise in the dock; an unavailable confirmation still shows what is pending.
+   if(presentation.hosted&&!enabled&&(op==='cancel'||!label))continue;
+   actions.append(button(label||op,()=>session.nativeButton(op,n.revision),!enabled,op));
+  }
   if(actions.childNodes.length)panel.append(actions);
   const refs=[...(n.selection?.cards||[]),...(n.selection?.targets||[]),...(n.selection?.actionable||[])],unique=new Map(refs.map(r=>[r.kind+':'+r.id,r]));
   if(unique.size){const selection=node('details'),summary=node('summary',`${presentation.hosted?'Highlighted choices':'Native selection guidance'} · ${unique.size}`);selection.append(summary,node('p',copy('You can select these cards or players here, or directly on the table.','These are Forge’s UI hints, not a complete legal-action list. The engine validates each click.')));
