@@ -9,7 +9,7 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
  const MAX_ROWS=2500,MAX_TEXT=100000,MAX_DECK_BYTES=2000000;
  let key=null,epoch=0,operation=0,owner=null,locked=false,account={},saved=[],selectedId=null,selectedImport=null,candidate=null,opponent=null,inspectedSeat='player',selectedKind=null,opponentSource=null,playStyle='practice',quickMatch=null,quickPlayerKey=null;
  let draft={name:'',text:'',format:''},importStatus='idle',error=null,warnings=[],importErrors=[],unresolved=[],busy=false;
- let match={format:'Commander',mode:'cpu',difficulty:'Medium'},browse={query:'',source:'yours'};
+ let match={format:'Commander',mode:'cpu',difficulty:'Medium',startingPlayer:'random'},browse={query:'',source:'yours'};
  const text=(v,max)=>typeof v==='string'&&v.length<=max?v:'';
  const identity=v=>(typeof v==='string'||typeof v==='number')&&String(v).length>0&&String(v).length<=160?String(v):null;
  function clone(value){
@@ -25,7 +25,7 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
   }
   check(result);if(new TextEncoder().encode(JSON.stringify(result)).length>MAX_DECK_BYTES)throw Error('Deck data exceeds the setup review limit.');return result;
  }
- function reset(){operation++;playStyle='practice';quickMatch=null;selectedId=null;selectedImport=null;candidate=null;opponent=null;inspectedSeat='player';selectedKind=null;opponentSource=null;draft={name:'',text:'',format:''};match={format:'Commander',mode:'cpu',difficulty:'Medium'};browse={query:'',source:'yours'};importStatus='idle';error=null;warnings=[];importErrors=[];unresolved=[];busy=false;}
+ function reset(){operation++;playStyle='practice';quickMatch=null;selectedId=null;selectedImport=null;candidate=null;opponent=null;inspectedSeat='player';selectedKind=null;opponentSource=null;draft={name:'',text:'',format:''};match={format:'Commander',mode:'cpu',difficulty:'Medium',startingPlayer:'random'};browse={query:'',source:'yours'};importStatus='idle';error=null;warnings=[];importErrors=[];unresolved=[];busy=false;}
  function sync(){
   let next;try{next=readAccount()||{};}catch{next={};}
   const nextOwner=identity(next.user?.id),nextLocked=Boolean(next.switching||next.locked||getLocked?.(next));
@@ -87,15 +87,15 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
  }
  function configure(partial){
   sync();
-  const allowed={format:['Standard','Commander','Modern'],mode:['cpu','friends'],difficulty:['Easy','Medium','Hard']};
-  if(!partial||Array.isArray(partial)||typeof partial!=='object'||Object.entries(partial).some(([k,v])=>!Object.hasOwn(allowed,k)||!allowed[k].includes(v))){error='Choose an available format, opponent and difficulty.';return value();}
+  const allowed={format:['Standard','Commander','Modern'],mode:['cpu','friends'],difficulty:['Easy','Medium','Hard'],startingPlayer:['random','first','second']};
+  if(!partial||Array.isArray(partial)||typeof partial!=='object'||Object.entries(partial).some(([k,v])=>!Object.hasOwn(allowed,k)||!allowed[k].includes(v))){error='Choose an available format, opponent and starting player.';return value();}
   if(partial.format&&partial.format!==match.format){
    operation++;selectedId=null;selectedImport=null;candidate=null;opponent=null;inspectedSeat='player';selectedKind=null;opponentSource=null;busy=false;importStatus='idle';warnings=[];importErrors=[];unresolved=[];
    draft={...draft,format:partial.format};
   }
   if(partial.mode==='friends')inspectedSeat='player';
   if(partial.difficulty&&partial.difficulty!==match.difficulty)retireQuick();
-  quickMatch=partial.format?null:quickMatch;match={...match,...partial};error=null;notify();return value();
+  quickMatch=partial.format?null:quickMatch;match={...match,...partial,...(playStyle==='quick'?{startingPlayer:'random'}:{})};error=null;notify();return value();
  }
  function searchDecks(query){sync();if(typeof query==='string'&&query.length<=160)browse={...browse,query};return value();}
  function setSource(source){sync();if(!['yours','precons','community','meta','random'].includes(source))throw Error('Unknown deck source.');browse={source,query:''};notify();return value();}
@@ -156,7 +156,7 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
  function clearImport(){sync();operation++;candidate=null;busy=false;importStatus='idle';error=null;warnings=[];importErrors=[];unresolved=[];notify();return value();}
  function clearSelection(seat='player'){sync();if(seat==='opponent'){opponent=null;opponentSource=null;quickMatch=null;}else{retireQuick();selectedId=null;selectedImport=null;selectedKind=null;}error=null;notify();return value();}
  function chooseOpponent(source){sync();if(!requireAccount())throw Error("Sign in before choosing an opponent.");const x=inspectDeck(source);if(x.issues.length||x.deck?.format!==match.format)throw Error("Choose a complete opponent list for the current format.");opponent=clone(x.deck);opponentSource=source.practiceBuild?'random':'import';inspectedSeat='opponent';notify();return value();}
- function setPlayStyle(style){sync();if(!['quick','practice'].includes(style))throw Error('Unknown play style.');playStyle=style;quickMatch=null;inspectedSeat='player';if(style==='quick'){opponent=null;opponentSource=null;}notify();return value();}
+ function setPlayStyle(style){sync();if(!['quick','practice'].includes(style))throw Error('Unknown play style.');playStyle=style;quickMatch=null;inspectedSeat='player';if(style==='quick'){opponent=null;opponentSource=null;match={...match,startingPlayer:'random'};}notify();return value();}
  function setQuickOpponent(result){sync();if(!requireAccount()||match.mode!=='cpu'||playStyle!=='quick'||result?.difficulty!==match.difficulty)throw Error('The matchup changed. Find a CPU deck again.');chooseOpponent(result.deck);opponentSource='quick';inspectedSeat='player';quickPlayerKey=JSON.stringify(value().selected);quickMatch={reason:String(result.reason||''),candidateCount:result.candidateCount,estimated:result.estimated,difficulty:result.difficulty};notify();return value();}
  function inspectSeat(seat){sync();if(!['player','opponent'].includes(seat))throw Error('Unknown seat.');inspectedSeat=seat;return value();}
  return {snapshot,reconcile,refresh:reconcile,selectDeck,chooseTemporary,chooseOpponent,setPlayStyle,setQuickOpponent,inspectSeat,configure,searchDecks,setSource,updateDraft,importPaste,importDraft:()=>{sync();return importPaste(draft.text,{name:draft.name,format:draft.format});},reviewImport,clearImport,clearSelection};

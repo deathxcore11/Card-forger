@@ -6,6 +6,7 @@ import { createForgePlayerMat } from './play-forge-player-mat.js';
 import { createForgeHostClient, exactDigest, FORGE_REVISION } from './play-forge-host-client.js';
 import { chooseQuickOpponent } from './play-quick-match.js';
 const OWNER='11111111-1111-4111-8111-111111111111', MATCH='22222222-2222-4222-8222-222222222222', GENERATION='33333333-3333-4333-8333-333333333333';
+const introStub=()=>({refreshArtwork(){},chooseStartingPlayer:async()=> 'random',status(){},reveal:async()=>false,destroy(){}});
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};};
 function dom(){
  const doc={defaultView:{addEventListener(){},removeEventListener(){}}};
@@ -37,7 +38,7 @@ test('artwork deadline ignores late responses; switching accounts invalidates ca
 });
 for(const format of ['Standard','Modern','Commander'])test('native launch sends unchanged '+format+' snapshots with the signed-in token after artwork',async()=>{
  const s=setup(format),before=structuredClone(s),events=[],requests=[],{root}=dom(),account={user:{id:OWNER},accountGeneration:1};
- const mat=createForgePlayerMat({root,readAccount:()=>account,readSetup:()=>s,getAccessToken:async()=>'account.token.value',lookup:()=>null,prepareArtwork:async()=>events.push('artwork'),
+ const mat=createForgePlayerMat({root,mountIntro:introStub,readAccount:()=>account,readSetup:()=>s,getAccessToken:async()=>'account.token.value',lookup:()=>null,prepareArtwork:async()=>events.push('artwork'),
   createClient:options=>createForgeHostClient({...options,fetchImpl:async(path,init)=>{
    requests.push({path,init});assert.equal(init.headers.Authorization,'Bearer account.token.value');
    if(init.method==='POST'){events.push('allocation');const sent=JSON.parse(init.body);assert.deepEqual(sent.humanDeck,before.selected);assert.deepEqual(sent.opponentDeck,before.opponent);assert.equal(sent.format,format);
@@ -48,7 +49,7 @@ for(const format of ['Standard','Modern','Commander'])test('native launch sends 
 });
 for(const cancel of ['account change','detach'])test(cancel+' during artwork prevents allocation',async()=>{
  const gate=deferred(),s=setup(),{root}=dom();let account={user:{id:OWNER},accountGeneration:1},creates=0;
- const mat=createForgePlayerMat({root,readAccount:()=>account,readSetup:()=>s,getAccessToken:async()=>'token',lookup:()=>null,prepareArtwork:()=>gate.promise,createClient:()=>{creates++;throw Error('unexpected allocation');}});
+ const mat=createForgePlayerMat({root,mountIntro:introStub,readAccount:()=>account,readSetup:()=>s,getAccessToken:async()=>'token',lookup:()=>null,prepareArtwork:()=>gate.promise,createClient:()=>{creates++;throw Error('unexpected allocation');}});
  const opening=mat.start();if(cancel==='detach')mat.detach();else account={...account,accountGeneration:2};gate.resolve();await assert.rejects(opening,/ACCOUNT_CHANGED/);assert.equal(creates,0);
 });
 test('account change while acquiring a token sends no request',async()=>{

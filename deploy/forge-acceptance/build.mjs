@@ -3,7 +3,7 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
-const files=['app.js','desktop-play.js','experiments/forge-proof/forge-session.mjs','experiments/forge-proof/forge-table.mjs','experiments/forge-proof/native-panel.mjs','experiments/phase-engine/match-table.css','experiments/phase-engine/match-table.mjs','play-cpu-options.js','play-deck-sources.js','play-forge-cpu-policy.js','play-forge-feature.js','play-forge-host-client.js','play-forge-artwork.js','play-forge-player-mat.js','play-forge-setup-review.js','play-forge-table.css','play-menu.css','play-menu.js','play-quick-match.js','play-setup.js'];
+const files=['app.js','desktop-play.js','experiments/forge-proof/forge-session.mjs','experiments/forge-proof/forge-table.mjs','experiments/forge-proof/native-panel.mjs','experiments/phase-engine/match-table.css','experiments/phase-engine/match-table.mjs','play-cpu-options.js','play-deck-sources.js','play-forge-cpu-policy.js','play-forge-feature.js','play-forge-host-client.js','play-forge-artwork.js','play-forge-player-mat.js','play-forge-pregame.js','play-forge-setup-review.js','play-forge-table.css','play-menu.css','play-menu.js','play-quick-match.js','play-setup.js'];
 // Include the reachable browser runtime modules that production's old asset
 // exclusion may not yet serve. Do not expose other experiment/server files.
 const visited=new Set(),pending=['app.js'];

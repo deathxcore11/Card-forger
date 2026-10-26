@@ -1572,7 +1572,7 @@ A.playStartCandidate=async()=>{
     lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
    playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,
     prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();}});
-   try{await playerMatHost.start();}catch(e){toast(e.code||e.message);}return;
+   try{await playerMatHost.start();}catch{/* The match screen presents the error and recovery action. */}return;
   }
   const cards=createPracticeCardPreparation({selectionKey:key,isCurrent:current,
    resolveNames:names=>resolveNames(names,()=>{},false,current),

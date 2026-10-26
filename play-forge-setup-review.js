@@ -5,7 +5,7 @@ export function forgeDeckSupport(deck){
  const invalid=!deck||!['Commander','Standard','Modern'].includes(deck.format)||!Array.isArray(deck.cards)||!deck.cards.length||!Array.isArray(deck.side===undefined?[]:deck.side)||!Array.isArray(deck.commanders===undefined?[]:deck.commanders)
   ||[...deck.cards,...(deck.side||[]),...(deck.commanders||[])].some(r=>typeof r?.name!=='string'||!r.name.trim()||r.name.length>512||/[\u0000-\u001f\u007f]/.test(r.name)||!Number.isSafeInteger(r.qty)||r.qty<1||r.qty>1000)
   ||deck.cards.length+(deck.side||[]).length+(deck.commanders||[]).length>2500||[...deck.cards,...(deck.side||[])].reduce((n,r)=>n+r.qty,0)>2500;
- return invalid?{status:'review',label:'List needs review',detail:'Choose a complete snapshot with valid rows, quantities and format.'}:{status:'native-pending',label:'Forge validation pending',detail:'This exact list will be checked by Forge when the match opens. Card support and legality have not been certified.',affected:[]};
+ return invalid?{status:'review',label:'List needs review',detail:'Choose a complete deck with valid card names, quantities and format.'}:{status:'native-pending',label:'Checked when you play',detail:'Your exact cards will be checked for format legality and game support before the match begins.',affected:[]};
 }
 export function reviewForgeSetup(setup,{allowMissingOpponent=false}={}){
  const reasons=[],profile=setup?.profile,match=setup?.match;

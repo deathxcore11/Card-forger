@@ -137,3 +137,38 @@ body .btn.touch-play-entry.decks-play-entry{flex:none;padding:10px 14px;backgrou
 .play-device-guard .btn{min-height:44px;margin:6px}
 @media(max-width:400px){.decks-play-row:has(.touch-play-entry:not([hidden]))>.seg button{padding-inline:4px;font-size:12px}body .btn.touch-play-entry.decks-play-entry{min-width:64px;padding-inline:10px}}
 @media(prefers-reduced-transparency:reduce){#homeToday .home-play-entry{background:#192333;backdrop-filter:none}body .btn.touch-play-entry.decks-play-entry{background:var(--surface);backdrop-filter:none}}
+
+/* Native play keeps the deck artwork and the next action in focus. */
+.play-menu--forge{gap:20px}
+.play-menu--forge .play-heading h1{font-size:clamp(30px,3vw,42px);line-height:1.1;letter-spacing:-.035em;margin:2px 0 0}
+.play-menu--forge .play-heading .eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.play-menu--forge .play-format{margin-left:auto;flex-wrap:wrap;padding:5px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--surface) 75%,transparent)}
+.play-menu--forge .play-format .btn{border-radius:999px;min-height:40px;padding-inline:17px}
+.play-menu--forge .play-format [aria-pressed=true]{background:linear-gradient(125deg,#e6c88433,#b39d6c12);border-color:#d4b77c80;box-shadow:inset 0 1px 0 #fff2;color:var(--text)}
+.play-menu--forge .play-match-bar{border-radius:22px;padding:16px 20px;background:linear-gradient(115deg,#839b8b0b,#d6bc7710),color-mix(in srgb,var(--surface) 88%,transparent)}
+.play-menu--forge .play-paths{padding:4px;border:1px solid var(--line);border-radius:14px;background:#0000000c}
+.play-menu--forge .play-paths .btn{border-radius:10px;border-color:transparent}
+.play-menu--forge .play-paths [aria-pressed=true]{border-color:#d4b77c55;box-shadow:0 3px 14px #0001}
+.play-mode-summary{display:flex;align-items:center;gap:10px;min-width:150px;margin-left:auto}
+.play-mode-summary>div{display:grid;gap:4px}
+.play-mode-summary strong{font-size:13px;color:var(--text);font-weight:650}
+.play-mode-summary span{font-size:11px;color:var(--muted)}
+.play-mode-summary .play-mode-orb{width:9px;height:9px;border-radius:50%;background:#b1c7b5;box-shadow:0 0 0 4px #a7c5ae12,0 0 18px #a7c5ae30;flex-shrink:0}
+.play-menu--forge .play-start{align-self:center}
+.play-menu--forge .play-start .btn{min-height:48px;border-radius:14px;padding-inline:24px;font-size:14px;font-weight:750;box-shadow:0 5px 20px #d8b76c16,inset 0 1px 0 #fff2}
+.play-menu--forge .play-start .btn:disabled{box-shadow:none}
+.play-menu--forge .play-matchup{gap:20px}
+.play-menu--forge .play-matchup-seat{min-height:175px;border-radius:20px;padding:22px;gap:8px;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.play-menu--forge .play-matchup-seat>img,.play-menu--forge .play-matchup-seat>.deck-artwork{opacity:.65}
+.play-menu--forge .play-matchup-seat:after{background:linear-gradient(90deg,#142126e8,#14212666),linear-gradient(0deg,#0d171bd9,transparent 80%)}
+.play-menu--forge .play-matchup-seat[aria-pressed=true]{border-color:#d4b77c88;box-shadow:inset 0 0 0 1px #d4b77c12,0 10px 30px #0002}
+.play-menu--forge .play-matchup-seat:hover{border-color:#d4b77c88;transform:translateY(-2px)}
+.play-menu--forge .play-matchup-seat:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.play-menu--forge .play-matchup-seat strong{font-size:clamp(20px,2vw,27px);font-weight:650;line-height:1.15;letter-spacing:-.025em;color:#f6f4ed}
+.play-menu--forge .play-matchup-seat small{color:#cbd7d2}
+.play-menu--forge .play-versus{display:grid;place-items:center;flex-shrink:0;width:42px;height:42px;border:1px solid #d4b77c44;border-radius:50%;font-size:11px;letter-spacing:.12em;color:var(--gold);background:radial-gradient(circle,#d4b77c12,transparent 75%)}
+.play-menu--forge .play-library,.play-menu--forge .play-inspector{border-radius:20px}
+@media(max-width:1199px){.play-menu--forge .play-mode-summary{display:none}}
+@media(max-width:800px){.play-menu--forge .play-heading{align-items:flex-start;gap:18px}.play-menu--forge .play-format{margin-left:0}.play-menu--forge .play-match-bar{padding:15px}.play-menu--forge .play-paths{flex:1}.play-menu--forge .play-start .btn{min-width:120px}.play-menu--forge .play-matchup-seat{min-height:145px;padding:18px}}
+@media(max-width:600px){.play-menu--forge .play-matchup{gap:10px}.play-menu--forge .play-versus{width:32px;height:32px;align-self:center}.play-menu--forge .play-format{width:100%;border-radius:16px}.play-menu--forge .play-format .btn{flex:1;padding-inline:8px}.play-menu--forge .play-paths{flex-basis:100%;gap:3px}.play-menu--forge .play-paths .btn{flex:1;font-size:12px;padding-inline:8px}.play-menu--forge .play-start{width:100%}.play-menu--forge .play-start .btn{width:100%}}
+@media(prefers-reduced-motion:reduce){.play-menu--forge .play-matchup-seat{transition:none}.play-menu--forge .play-matchup-seat:hover{transform:none}}

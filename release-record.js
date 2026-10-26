@@ -1,7 +1,6 @@
-// Published website-only release. Android remains the verified 0.6.0 APK with
-// its bundled 3.95.1 interface; web/APK alignment is tracked for the next hotfix.
+// Website gameplay release. Android remains on its existing package.
 export const RELEASE = Object.freeze({
- id:'web-4.0.5-choice-ui-android-0.6.0',date:'2026-10-25',webVersion:'4.0.5',
- changes:["Land-entry choices display the engine's descriptions and verified consequences. Clear two-option choices support one-click submission, with confirmation available under Controls.", "The hand adjusts its overlap to fit normal desktop widths while larger hands retain scrolling. Mandatory choices no longer show the Smart/Full Control switch.", "This is a choice-interface and hand-layout update. Smart-pass engine coverage and the blocked Commander lists are still unresolved. No unfinished card abilities were removed, no decks were substituted, and the rules engine is unchanged."],
+ id:'web-4.1.0-forge-play-android-0.6.0',date:'2026-10-26',webVersion:'4.1.0',
+ changes:["Play Magic against CPU using your saved or imported lists, precons, community decks and discovered decks in Standard, Modern or Commander. Forge checks both exact lists and runs the rules and opponent.", "One normal CPU opponent keeps setup simple. Quick Play chooses an opponent; Practice lets you select both decks. The matchup introduction leads into starting-player selection and Keep or Mulligan.", "Smart controls automatically pay ordinary mana costs and advance empty response windows. Manual tapping and Full Control remain available; targets, attacks, blocks and other choices stay yours.", "Keep the match page open: refresh and reconnect recovery are not available. Match history is not yet saved to your account. Host capacity is limited, and the selected cards must be supported by Forge. Android remains on its existing version."],
  android:Object.freeze({version:'0.6.0 beta',versionName:'0.6.0-beta',versionCode:13,interfaceVersion:'3.95.1',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.6.0.apk',bytes:24377384,sha256:'3bcae8a6b864b299b8cce58fae3d017b1ce6f9f0d375fc1671600d0c963bee75'})
 });

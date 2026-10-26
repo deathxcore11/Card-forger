@@ -71,16 +71,17 @@ export function draftBoardLinks(snapshot){
  if(['choose','select','sequence'].includes(o.type))return (pending.choiceIds||[]).flatMap(id=>{const to=endpoint(id);return to?[{from:{prompt:o.interactionId},to}]:[];});
  return [];
 }
-export function matchActivity({status,busy=false,error=null}={}){
+export function matchActivity({status,busy=false,error=null,native=null,transportError=null}={}){
  const view=status?.surface;
  if(status?.failure)return {actor:'none',label:'Match stopped'};
  if(status?.terminal)return {actor:'none',label:'Match finished'};
  if(error&&error!=='CHOICE_REJECTED')return {actor:'none',label:'Match stopped'};
  if(!view)return {actor:'none',label:'Opening match…'};
  const human=!!(view.awaitingHuman||view.canAct||view.interaction?.canSubmit);
- if(busy)return {actor:'none',label:human?'Resolving your action…':'CPU is thinking'};
+ if(transportError)return {actor:'none',label:'Match update needs attention'};
+ if(busy)return {actor:'none',label:native?.busy===true?'Resolving game actions…':'Waiting for the table…'};
  if(human){const kind=view.decision?.kind;return {actor:'you',label:kind==='Priority'?(view.stack?.length||view.activeSeat!==view.seat?'Your response':'You can act'):labels[kind]||matchPhaseLabel(kind)||'Your decision'};}
- return {actor:'cpu',label:'CPU is thinking'};
+ return {actor:'cpu',label:'Waiting for CPU'};
 }
 const actionNames={tapLandForMana:'Tap for mana',cancelCast:'Cancel casting',passPriority:'Pass priority',castSpell:'Cast spell',activateAbility:'Activate ability',mulliganDecision:'Opening hand'};
 const actionText=(c,kind)=>c.presentationUnavailable?'Choice details unavailable':c.label||c.surfaces.map(s=>s.type==='player'?`Player ${s.seat+1}`:s.type==='action'?(kind==='ManaPayment'&&s.code==='passPriority'?'Pay selected mana':actionNames[s.code]||s.code.replace(/([a-z])([A-Z])/g,'$1 $2')):s.type==='value'&&s.role==='abilityIndex'?`Ability ${Number(s.value)+1}`:s.type==='value'&&s.role==='paymentMode'?(s.value==='manual'?'Manual mana':'Automatic mana'):s.name||s.value||'').filter(Boolean).join(' · ')||'Choose';
@@ -234,7 +235,17 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
     for(const zone of ['Command','Graveyard','Exile']){const rows=view.cards.filter(c=>c.zone===zone&&c.owner===player.seat);const section=element('details');section.append(element('summary',`${zone==='Command'?'Command zone':zone} · ${rows.length}`));for(const c of rows)section.append(button(c.known?c.name:'Face down',()=>c.known&&inspect(c.id),{disabled:!c.known,key:`zone-card-${c.id}`}));body.append(section);}
    }zones.append(body);return zones;
   }
-  const opponent=view.players.find(p=>p.seat!==view.seat),you=view.players.find(p=>p.seat===view.seat),battlefields=element('div',undefined,'play-match-battlefields');battlefields.dataset.keepScroll='battlefields';
+  // This surface receives only the public count, never card objects or IDs.
+  function opponentHand(handCount){
+   const count=Number.isSafeInteger(handCount)&&handCount>=0?handCount:null,section=element('section',undefined,'play-match-opponent-hand');
+   const label=count===null?'CPU hand · count unavailable':`CPU hand · ${count} ${count===1?'card':'cards'}`;
+   section.setAttribute('aria-label',label);section.append(element('span',label,'play-match-opponent-hand-count'));
+   const fan=element('div',undefined,'play-match-opponent-fan');fan.setAttribute('aria-hidden','true');
+   const shown=Math.min(count||0,10);section.dataset.compact=String(count>10);
+   for(let i=0;i<shown;i++){const back=element('span',undefined,'play-match-card-back');back.style.setProperty('--back-angle',`${(i-(shown-1)/2)*2}deg`);fan.append(back);}
+   section.append(fan);return section;
+  }
+  const opponent=view.players.find(p=>p.seat!==view.seat),you=view.players.find(p=>p.seat===view.seat),battlefields=element('div',undefined,'play-match-battlefields');battlefields.dataset.keepScroll='battlefields';if(!openingHand)table.append(opponentHand(opponent.handCount));
   for(const own of [false,true]){const area=element('div',undefined,'play-match-seat-area');area.dataset.seat=own?'you':'cpu';const field=zone(own?'Your battlefield':'CPU battlefield',view.cards.filter(c=>c.zone==='Battlefield'&&(c.controller===view.seat)===own));field.dataset.keepScroll=own?'your-battlefield':'cpu-battlefield';area.append(field);battlefields.append(area);}
   const handArea=element('div',undefined,'play-match-hand-area');handArea.append(zone('Your hand',view.hand.map(id=>cardById.get(id)).filter(Boolean),{hand:true}));table.append(battlefields,handArea,seatPanel(opponent,'CPU',false),seatPanel(you,profile.displayName||'You',true));if(!openingHand&&format==='Commander'){for(const own of [false,true]){const commandCards=view.cards.filter(c=>c.zone==='Command'&&(c.owner===view.seat)===own);if(!commandCards.length)continue;const area=element('section',undefined,'play-command-zone');area.dataset.seat=own?'you':'cpu';area.setAttribute('aria-label',own?'Your command zone':'CPU command zone');area.append(element('strong',own?'Your command zone':'CPU command zone'));const row=element('div');for(const c of commandCards)row.append(card(c));area.append(row);table.append(area);}}if(!openingHand||view.revealedZones?.length)header.append(zonesMenu());
   const stack=element('section',undefined,'play-match-stack');stack.dataset.placementZone='stack';stack.append(element('h2',`Stack · ${view.stack.length}`));for(const entry of view.stack)stack.append(element('p',cardById.get(entry.source)?.name||'Ability or spell'));if(!view.stack.length)stack.append(element('p','No spells or abilities waiting','play-match-stack-empty'));if(!openingHand)rail.append(stack);

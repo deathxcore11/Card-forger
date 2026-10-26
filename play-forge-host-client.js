@@ -27,17 +27,21 @@ export async function exactDigest(value){
  const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
  return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(canonical(value)))))].map(n=>n.toString(16).padStart(2,'0')).join('');
 }
-export function exactForgeInput(setup){
+export function exactForgeInput(setup,{startingPlayer=setup?.match?.startingPlayer??'random'}={}){
  if(setup?.match?.mode!=='cpu'||!setup.selected||!setup.opponent||!['Commander','Standard','Modern'].includes(setup.match.format))throw fail('FORGE_SETUP_INCOMPLETE');
  const {difficultyPolicyVersion}=forgeCpuPolicy(setup.match.difficulty);
- // Keep both exact snapshots unchanged; only the selected native policy is bound.
- return structuredClone({format:setup.match.format,humanDeck:setup.selected,opponentDeck:setup.opponent,difficultyPolicyVersion});
+ const playStyle=setup.playStyle==='quick'?'quick':'practice';
+ if(!['random','first','second'].includes(startingPlayer))throw fail('FORGE_STARTING_PLAYER_INVALID');
+ if(playStyle==='quick')startingPlayer='random';
+ // Preserve both exact snapshots. The host binds the opening preference and
+ // Forge reports the actual starting player before the opening hand.
+ return structuredClone({format:setup.match.format,humanDeck:setup.selected,opponentDeck:setup.opponent,difficultyPolicyVersion,startingPlayer,playStyle});
 }
 export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=globalThis.fetch,timeoutMs=15000,newId=()=>crypto.randomUUID()}={}){
  if(typeof readAccount!=='function'||typeof getAccessToken!=='function'||typeof fetchImpl!=='function')throw fail('FORGE_HOST_READERS_REQUIRED');
  const owner=readAccount(),ownerKey=forgeAccountKey(owner);
  if(!UUID.test(owner?.user?.id||'')||owner.locked||owner.switching)throw fail('ACCOUNT_CHANGED');
- let allocation=null,creating=false,closed=false,closeRequested=false,submitting=false,blocked=false,error=null,terminal=null,nextReadAt=0,expectedViewer=null,knownPlayers=null;
+ let allocation=null,creating=false,closed=false,closeRequested=false,submitting=false,blocked=false,error=null,terminal=null,nextReadAt=0,expectedViewer=null,knownPlayers=null,requestedPregame=null,acceptedPregame=null;
  const current=()=>{const a=readAccount();if(forgeAccountKey(a)!==ownerKey||a.locked||a.switching)throw fail('ACCOUNT_CHANGED');};
  const status=()=>({blocked:blocked||closed,error,allocation:allocation?structuredClone(allocation):null,terminal:terminal?structuredClone(terminal):null});
  async function request(path,{method='GET',body,headers={},expectedCommandId}={}){
@@ -72,11 +76,17 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
  return {
   status,
   async create(input){
-   if(closed||creating||allocation)throw fail('MATCH_ALREADY_OPEN');creating=true;
+   if(closed||creating||allocation)throw fail('MATCH_ALREADY_OPEN');
    // JSON is the exact wire representation hashed by the server. No row sorting,
    // metadata stripping, commander movement, substituted cards or alias fallback.
-   const sent=JSON.parse(JSON.stringify(input));const [human,opponent]=await Promise.all([exactDigest(sent.humanDeck),exactDigest(sent.opponentDeck)]);
+   const sent=JSON.parse(JSON.stringify(input));
+   if(sent.startingPlayer!==undefined||sent.playStyle!==undefined){
+    if(!['random','first','second'].includes(sent.startingPlayer)||!['quick','practice'].includes(sent.playStyle)||sent.playStyle==='quick'&&sent.startingPlayer!=='random')throw fail('FORGE_STARTING_PLAYER_INVALID');
+   }
+   requestedPregame=sent.startingPlayer===undefined?null:{selection:sent.startingPlayer,playStyle:sent.playStyle};
+   creating=true;
    try{
+    const [human,opponent]=await Promise.all([exactDigest(sent.humanDeck),exactDigest(sent.opponentDeck)]);
     const {status:code,data}=await request('/api/play/matches',{method:'POST',body:sent,headers:{'Idempotency-Key':newId()}});
     if(code!==202||!UUID.test(data?.matchId||'')||!UUID.test(data?.generation||'')||data.schema!==SCHEMA||data.forgeRevision!==FORGE_REVISION||data.status!=='initializing'||data.deckDigests?.human!==human||data.deckDigests?.opponent!==opponent||!Number.isSafeInteger(data.expiresAt))throw fail('HOST_ALLOCATION_MISMATCH');
     allocation={matchId:data.matchId,generation:data.generation,expiresAt:data.expiresAt,deckDigests:data.deckDigests};if(closeRequested){await request('/api/play/matches/'+allocation.matchId,{method:'DELETE'});closed=true;throw fail('MATCH_CLOSED');}return structuredClone(allocation);
@@ -98,8 +108,16 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
      expectedViewer=terminalViewer;terminal=result;blocked=true;return {status:'finished',viewerId:terminalViewer,result:structuredClone(terminal)};
     }
     if(terminal)throw fail('INVALID_NATIVE_TERMINAL_RECEIPT');
-    const s=data.snapshot;if(code!==200||data.status!=='running'||s?.schema!==SCHEMA||s.forgeRevision!==FORGE_REVISION||!Number.isSafeInteger(s.revision)||!Number.isSafeInteger(s.viewer)||!Array.isArray(s.players)||s.players.filter(p=>p.isViewer&&p.id===s.viewer).length!==1)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');
-    if(expectedViewer!==null&&s.viewer!==expectedViewer)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');expectedViewer=s.viewer;knownPlayers=s.players.map(p=>p.id);return {status:'running',snapshot:s};
+    const s=data.snapshot;if(code!==200||data.status!=='running'||s?.schema!==SCHEMA||s.forgeRevision!==FORGE_REVISION||!Number.isSafeInteger(s.revision)||!Number.isSafeInteger(s.viewer)||!Array.isArray(s.players)||s.players.length!==2||s.players.some(p=>!Number.isSafeInteger(p?.id))||new Set(s.players.map(p=>p.id)).size!==2||s.players.filter(p=>p.isViewer).length!==1||s.players.filter(p=>p.isViewer&&p.id===s.viewer).length!==1)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');
+    if(expectedViewer!==null&&s.viewer!==expectedViewer)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');expectedViewer=s.viewer;knownPlayers=s.players.map(p=>p.id);
+    if(s.pregame!==undefined&&s.pregame!==null){
+     const p=s.pregame;
+     if(p.schema!=='cardstashy.forge-pregame.v1'||!Number.isSafeInteger(p.firstPlayerId)||!knownPlayers.includes(p.firstPlayerId)||!['random','first','second'].includes(p.selection)||!['quick','practice'].includes(p.playStyle)||p.playStyle==='quick'&&p.selection!=='random'||requestedPregame&&(p.selection!==requestedPregame.selection||p.playStyle!==requestedPregame.playStyle))throw fail('HOST_PREGAME_RECEIPT_MISMATCH');
+     const stable=JSON.stringify([p.firstPlayerId,p.selection,p.playStyle]);
+     if(acceptedPregame&&acceptedPregame!==stable)throw fail('HOST_PREGAME_RECEIPT_MISMATCH');
+     acceptedPregame=stable;
+    }else if(acceptedPregame)throw fail('HOST_PREGAME_RECEIPT_MISMATCH');
+    return {status:'running',snapshot:s};
    }catch(e){if([429,503].includes(e.status))nextReadAt=Date.now()+(e.retryAfterMs||1000);if(e.status===410||e.status===401||e.code==='ACCOUNT_CHANGED'||e.code?.includes('MISMATCH')||e.code==='INVALID_NATIVE_TERMINAL_RECEIPT'){blocked=true;error=e.code;}throw e;}
   },
   async submit(action){
