@@ -54,7 +54,7 @@ class DeployedAssetsTests(unittest.TestCase):
         for asset, info in expected.items():
             self.assertEqual(info["sha256"], verifier.sha256((REPO / asset).read_bytes()))
         self.assertEqual(expected["config.js"]["app_version"], json.loads((REPO / "package.json").read_text())["version"])
-        self.assertRegex(expected["sw.js"]["service_worker_cache"], r"^cardforge-shell-v\d+$")
+        self.assertRegex(expected["sw.js"]["service_worker_cache"], r"^cardforge-shell-(?:[a-z0-9]+-)*v\d+$")
 
     def test_markers_are_parsed_not_hardcoded(self):
         self.assertEqual(verifier.markers("config.js", b'export const APP_VERSION = "9.1.7";'), {"app_version": "9.1.7"})
@@ -107,6 +107,9 @@ class DeployedAssetsTests(unittest.TestCase):
         self.assertEqual(len(jobs), 6)
         self.assertEqual(jobs[0][0], verifier.HOSTS[0])
         self.assertFalse(any("/index.html" in row[0] for row in jobs))
+        module_jobs = verifier.jobs_for(verifier.HOSTS[0], ("downloads/index.html",), {"downloads/index.html": {}})
+        self.assertEqual(module_jobs[0][0], verifier.HOSTS[0] + "downloads/")
+        self.assertTrue(verifier.allowed_url(module_jobs[0][0]))
         ignored = set((REPO / ".assetsignore").read_text().splitlines())
         self.assertFalse(set(verifier.MODULES) & ignored)
         self.assertNotIn("pricefeed.js", verifier.MODULES)
