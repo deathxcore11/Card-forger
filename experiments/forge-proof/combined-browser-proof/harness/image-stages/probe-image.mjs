@@ -16,13 +16,22 @@ export function receiptOnlyState(state){
 }
 const headersOf=response=>Object.fromEntries(['x-host-epoch','x-host-native-source-sha256','x-host-native-manifest-sha256'].map(k=>[k,response.headers.get(k)]));
 async function json(response){const text=await response.text();assert(Buffer.byteLength(text)<=4*1024*1024,'Bounded native response required');return JSON.parse(text);}
+export function safeStartupObservation(state){
+ const status=['initializing','running','finished','failed'].includes(state?.status)?state.status:'unknown';
+ const failure=typeof state?.failure==='string'?state.failure:'';
+ let failureCategory=null;
+ if(status==='failed')failureCategory=failure.startsWith('exact_deck_initialization_')?'native_deck_admission_failed'
+  :failure.startsWith('native_start_rejected:')?'native_start_failed':'native_runtime_failed';
+ return {status,awaitingChoice:!!state?.prompt,nativeRosterVerified:state?.initialization?.nativeRosterVerified===true,
+  pregameCommitted:state?.pregame?.schema==='cardstashy.forge-pregame.v1'&&Number.isSafeInteger(state.pregame.firstPlayerId),failureCategory};
+}
 export async function probeImage({identity,input,privateRoot,nativeManifestBytes,providerFactory,signal,now=Date.now,wait=ms=>new Promise(r=>setTimeout(r,ms))}){
  assert(input.difficultyPolicyVersion===PINS.policyVersion,'Only explicit reviewed Medium-beta probe supported');
  const started=now(),deadline=started+180000,activeDeadline=started+120000,token=randomUUID()+randomUUID();
  const allocation={requestDigest:await digest(input),deckDigests:{human:await digest(input.humanDeck),opponent:await digest(input.opponentDeck)},expiresAt:deadline};
  const providerRoot=path.join(privateRoot,'probe-provider');await mkdir(providerRoot,{mode:0o700});
  const provider=providerFactory({identity,privateRoot:providerRoot,id:'probe-'+randomUUID()});
- let success=false,probe,inspect,artifacts,policy,errorCategory;
+ let success=false,probe,inspect,artifacts,policy,errorCategory,startupObservation=null;
  const ensure=()=>{signal?.throwIfAborted();if(now()>=activeDeadline)throw Error('bounded_probe_deadline');};
  try{
   const transport=bootstrapTransport({});provider.start(await transport.startOptions({internalToken:token,allocation,input}));
@@ -34,6 +43,15 @@ export async function probeImage({identity,input,privateRoot,nativeManifestBytes
    try{ready=await fetchExisting(new Request('http://host001.internal/ready',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(5000)}));}
    catch(error){if(signal?.aborted)throw error;await wait(250);continue;}
    epoch=ready.headers.get('x-host-epoch');const readyStatus=ready.status;await ready.body?.cancel();
+   if(readyStatus===503){
+    // Query privately so an explicit native failure is not disguised as a
+    // readiness timeout. Persist only this fixed-schema, card-free projection.
+    let pendingState;
+    try{const pending=await fetchExisting(new Request('http://host001.internal/state',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(5000)}));
+     if(pending.status===200)pendingState=await json(pending);else await pending.body?.cancel();
+    }catch(error){if(signal?.aborted)throw error;}
+    if(pendingState){startupObservation=safeStartupObservation(pendingState);if(startupObservation.failureCategory)throw Error(startupObservation.failureCategory);}
+   }
    if(readyStatus===200){
     assert(epoch,'Ready native instance lacks epoch');
     const stateResponse=await fetchExisting(new Request('http://host001.internal/state',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(5000)}));status=stateResponse.status;responseHeaders=headersOf(stateResponse);const state=await json(stateResponse);
@@ -50,7 +68,7 @@ export async function probeImage({identity,input,privateRoot,nativeManifestBytes
   let cleanupError;try{await provider.destroy();}catch(error){cleanupError=error;}
   const evidence=provider.evidence();
   try{assertProbeCleanup(evidence.cleanup,identity.dockerImageId,inspect?.Id??evidence.cleanup?.containerId);}catch(error){cleanupError??=error;}
-  await writeFile(path.join(privateRoot,'probe-summary.json'),JSON.stringify({schema:'cardstashy.local-oci-probe-summary.v1',scope:SCOPE,deployable:false,registryPublication:false,result:success&&!cleanupError?'passed':'failed',category:cleanupError?'cleanup-unconfirmed':errorCategory??null,policyVersion:PINS.policyVersion,elapsedSeconds:Math.ceil((now()-started)/1000),sameImageId:identity.dockerImageId,ociManifestDigest:identity.ociManifestDigest,sourceSHA256:PINS.nativeSourceSha256,nativeManifestSHA256:PINS.nativeManifestSha256,exactRosterVerified:success,cpuRulesRuntimeVerified:success,humanPriorityRuntimeVerified:success,humanPrioritySourceSha256:policy?probe.state.initialization.humanPriority.sourceManifestSha256:null,humanPriorityClassesSha256:policy?probe.state.initialization.humanPriority.classManifestSha256:null,humanPriorityBuildSha256:policy?probe.state.initialization.humanPriority.buildAttestationSha256:null,privacyGatePassed:success,nativeBuildAttestationSha256:policy?.nativeBuildAttestationSha256??null,buildCompilerVersion:policy?.buildCompilerVersion??null,runtimeJavaVersion:policy?.runtimeJavaVersion??null,runtimeClassSetSha256:policy?.runtimeClassSetSha256??null,aiPatchsetSha256:policy?.aiPatchsetSha256??null,selectedProfileSHA256:policy?probe.state.initialization.cpuPolicy.profileSha256:null,rulesManifestSHA256:policy?.rulesData?.manifestSha256??null,humanDigest:policy?probe.state.initialization.humanDigest:null,opponentDigest:policy?probe.state.initialization.opponentDigest:null,registeredRosterVerified:policy?probe.state.initialization.registeredRosterVerified:false,nativeRosterVerified:policy?probe.state.initialization.nativeRosterVerified:false,cleanup:evidence.cleanup??null,browserAcceptance:false},null,2)+'\n',{mode:0o600});
+  await writeFile(path.join(privateRoot,'probe-summary.json'),JSON.stringify({schema:'cardstashy.local-oci-probe-summary.v1',scope:SCOPE,deployable:false,registryPublication:false,result:success&&!cleanupError?'passed':'failed',category:cleanupError?'cleanup-unconfirmed':errorCategory??null,startupObservation,policyVersion:PINS.policyVersion,elapsedSeconds:Math.ceil((now()-started)/1000),sameImageId:identity.dockerImageId,ociManifestDigest:identity.ociManifestDigest,sourceSHA256:PINS.nativeSourceSha256,nativeManifestSHA256:PINS.nativeManifestSha256,exactRosterVerified:success,cpuRulesRuntimeVerified:success,humanPriorityRuntimeVerified:success,humanPrioritySourceSha256:policy?probe.state.initialization.humanPriority.sourceManifestSha256:null,humanPriorityClassesSha256:policy?probe.state.initialization.humanPriority.classManifestSha256:null,humanPriorityBuildSha256:policy?probe.state.initialization.humanPriority.buildAttestationSha256:null,privacyGatePassed:success,nativeBuildAttestationSha256:policy?.nativeBuildAttestationSha256??null,buildCompilerVersion:policy?.buildCompilerVersion??null,runtimeJavaVersion:policy?.runtimeJavaVersion??null,runtimeClassSetSha256:policy?.runtimeClassSetSha256??null,aiPatchsetSha256:policy?.aiPatchsetSha256??null,selectedProfileSHA256:policy?probe.state.initialization.cpuPolicy.profileSha256:null,rulesManifestSHA256:policy?.rulesData?.manifestSha256??null,humanDigest:policy?probe.state.initialization.humanDigest:null,opponentDigest:policy?probe.state.initialization.opponentDigest:null,registeredRosterVerified:policy?probe.state.initialization.registeredRosterVerified:false,nativeRosterVerified:policy?probe.state.initialization.nativeRosterVerified:false,cleanup:evidence.cleanup??null,browserAcceptance:false},null,2)+'\n',{mode:0o600});
   if(cleanupError)throw Error('Probe cleanup failed');
  }
  const cleanup=provider.evidence().cleanup;

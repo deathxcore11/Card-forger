@@ -84,6 +84,10 @@ public final class NativeDeckInput {
         if(source.has("errors")&&(!source.get("errors").isJsonArray()||!source.getAsJsonArray("errors").isEmpty()))throw fail("import_errors_require_review");
         if(source.has("companion")&&!source.get("companion").isJsonNull()&&!source.get("companion").getAsString().isEmpty())throw fail("companion_designation_not_supported");
         List<Row> cards=rows(source,"cards",false),side=rows(source,"side",true);
+        // Forge infers companions from Sideboard even without an explicit
+        // designation. Its setup move to Command is outside this release's exact
+        // roster contract, so reject the intact setup before starting either seat.
+        if(side.stream().anyMatch(row->row.card().getRules().hasStartOfKeyword("Companion:")))throw fail("companion_sideboard_setup_not_supported");
         if(cards.isEmpty())throw fail("empty_deck");
         if(cards.size()+side.size()+array(source,"commanders",true).size()>2500||java.util.stream.Stream.concat(cards.stream(),side.stream()).mapToInt(Row::qty).sum()>2500)throw fail("deck_transport_limit");
         List<JsonObject> declarations=new ArrayList<>();

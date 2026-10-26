@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {validateExactDeckInput} from '../src/vendor/host001/admission-ledger.mjs';
 import {verifyStartingPlayerReceipt} from '../src/native-adapter-next.mjs';
+import {nativeAdapter} from '../src/native-adapter.mjs';
 const deck={format:'Standard',cards:[{name:'Mountain',qty:60}],side:[],printing:'unchanged'};
 const input={format:'Standard',humanDeck:deck,opponentDeck:structuredClone(deck),difficultyPolicyVersion:'forge-heuristic-medium-beta-v1'};
 test('starting selection preserves exact deck snapshots and forbids nonrandom Quick Play',()=>{
@@ -21,4 +22,10 @@ test('native starting receipt is bound to selection, native players and projecti
     const changed={...pregame,...patch};assert.throws(()=>verifyStartingPlayerReceipt({...state,pregame:changed,initialization:{pregame:changed}},request),/native_starting_player_receipt_mismatch/);
   }
   assert.throws(()=>verifyStartingPlayerReceipt({...state,pregame:{...pregame,firstPlayerId:13}},request),/native_starting_player_receipt_mismatch/);
+});
+
+test('unsupported pre-toss setup is reported promptly with a bounded safe explanation',async()=>{
+  const errors=['This deck requires a setup choice before the coin toss. This version cannot handle that choice yet. Your deck was not changed.'];
+  const failure=await nativeAdapter({}).readStartupFailure({epoch:'epoch',internalToken:'private',fetchExisting:async()=>new Response(JSON.stringify({status:'failed',initialization:{failureCode:'unsupported_native_pregame_choice',errors}}),{headers:{'X-Host-Epoch':'epoch','Content-Type':'application/json'}})});
+  assert.deepEqual(failure,{code:'unsupported_native_pregame_choice',errors});
 });

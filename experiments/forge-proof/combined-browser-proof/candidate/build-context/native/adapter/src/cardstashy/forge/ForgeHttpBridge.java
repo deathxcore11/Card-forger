@@ -72,6 +72,9 @@ public final class ForgeHttpBridge implements IRemote {
     volatile forge.gamemodes.match.input.Input publishedInput;
     volatile String lastActionError;
     volatile String failure;
+    static final String UNSUPPORTED_PREGAME_CHOICE="unsupported_native_pregame_choice";
+    static final String UNSUPPORTED_PREGAME_MESSAGE="This deck requires a setup choice before the coin toss. This version cannot handle that choice yet. Your deck was not changed.";
+    volatile boolean unsupportedPregameChoice;
     volatile boolean concessionRequested, nativeOutcomeConfirmed, concessionApplied;
     volatile Thread concessionThread;
     final CompletableFuture<Void> concessionTerminal = new CompletableFuture<>();
@@ -209,6 +212,9 @@ public final class ForgeHttpBridge implements IRemote {
         GameRules rules=new GameRules(format.gameType);
         rules.setAppliedVariants(format.variants());
         rules.setGamesPerMatch(1);
+        // AI strategy advisories are retained in exactAdmission.seats.cpuWarnings.
+        // They are not rules choices and must not block the pregame toss.
+        if(startingPlayer!=null)rules.setWarnAboutAICards(false);
         rules.setAllowCheatShuffle(false);
         Match match=new Match(rules,List.of(human,ai),"CardStashy Forge proof");
         game=match.createGame();
@@ -367,6 +373,13 @@ public final class ForgeHttpBridge implements IRemote {
                 throw new IllegalStateException("unsupported_dialog_during_native_concession:"+e.getMethod());
             }
             return awaitConcession();
+        }
+        // A real setup decision cannot be serviced before the committed toss
+        // receipt. Fail explicitly instead of deadlocking readiness or inventing
+        // an answer. The optional AI strategy advisory is disabled in GameRules.
+        if(startingPlayer!=null&&pregame.isEmpty()){
+            unsupportedPregameChoice=true;
+            throw new IllegalStateException(UNSUPPORTED_PREGAME_CHOICE);
         }
         // Matches desktop CMatchUI.getAbilityToPlay with triggerEvent==null, using only native offered abilities.
         if(failure==null&&controlMode.equals("smart")&&e.getMethod()==ProtocolMethod.getAbilityToPlay){
@@ -551,12 +564,13 @@ public final class ForgeHttpBridge implements IRemote {
         Map<String,Object> snapshot=new LinkedHashMap<>(board);
         snapshot.putAll(obj("revision",publicationRevision,"status","failed","failure","native_match_failed","message","Native match stopped.","buttons",Map.of(),"inputType",null,"selection",obj("cards",List.of(),"targets",List.of(),"chosen",List.of(),"actionable",List.of(),"min",0,"max",0),"prompt",null,"busy",false,"lastActionError",null,"notification",Map.of(),"autoPassNoActions",false,"canConcede",false));
         snapshot.put("visibility",obj("schema","cardstashy.forge-visibility.v1","forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"revision",publicationRevision,"cards",List.of()));
+        if(unsupportedPregameChoice)snapshot.put("initialization",obj("supported",false,"failureCode",UNSUPPORTED_PREGAME_CHOICE,"errors",List.of(UNSUPPORTED_PREGAME_MESSAGE)));
         published.set(snapshot);
     }
     /** Bare asynchronous prompt/button notifications only overlay immutable projected data. */
     void publish() { synchronized(lock) {
-        if(board.isEmpty())return;
         if(failure!=null){publishFailure();return;}
+        if(board.isEmpty())return;
         publishedInput=controller.getInputProxy().getInput();
         String input=publishedInput==null?null:publishedInput.getClass().getSimpleName();
         Map<String,Object> select=obj("cards",refs(selection.cards()),"targets",refs(selection.targets()),"chosen",refs(selection.chosen()),"actionable",refs(selection.actionable()),"min",selection.min(),"max",selection.max());
@@ -567,6 +581,11 @@ public final class ForgeHttpBridge implements IRemote {
         // Old snapshots retain their original revision and receipt; no live graph is read here.
         snapshot.put("visibility",obj("schema","cardstashy.forge-visibility.v1","forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"revision",publicationRevision,"cards",boardVisibility));
         if(!pregame.isEmpty())snapshot.put("pregame",pregame);
+        if(exactAdmission!=null&&exactAdmission.opponent()!=null){
+            Object warnings=exactAdmission.opponent().report().get("cpuWarnings");
+            int count=warnings instanceof Collection<?> values?values.size():0;
+            if(count>0)snapshot.put("cpuWarnings",obj("count",count,"message","The CPU may play some cards in this deck imperfectly."));
+        }
         snapshot.putAll(obj("revision",publicationRevision,"status",failure!=null?"failed":(finished||Boolean.TRUE.equals(board.get("gameOver"))?"finished":exactAdmission!=null&&(!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))||startingPlayer!=null&&pregame.isEmpty())?"initializing":"running"),"failure",failure,"message",message,"buttons",buttons,"inputType",input,"selection",select,"prompt",concessionRequested||pending==null?null:pending.dto,"busy",!(finished||Boolean.TRUE.equals(board.get("gameOver")))&&(concessionRequested||(pending!=null?pending.answer.isDone():(busy||commandInFlight||nativePaymentPending()||publishedInput==null||publishedInput instanceof forge.gamemodes.match.input.InputLockUI))),"lastActionError",lastActionError,"notification",notification,"controlMode",controlMode,"autoPassNoActions",effectiveAutoPass,"nativeAutoPayments",nativeAutoPayments,"canConcede",failure==null&&!finished&&!concessionRequested&&!Boolean.TRUE.equals(board.get("gameOver")),"concession",obj("requested",concessionRequested,"nativeConfirmed",nativeOutcomeConfirmed,"applied",concessionApplied)));
         published.set(snapshot);
     }}

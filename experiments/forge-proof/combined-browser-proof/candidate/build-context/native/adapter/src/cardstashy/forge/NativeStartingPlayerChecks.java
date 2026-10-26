@@ -8,6 +8,8 @@ import forge.game.*;
 import forge.game.event.GameEventFlipCoin;
 import forge.game.event.GameEventGameStarted;
 import forge.game.player.*;
+import forge.gamemodes.net.event.GuiGameEvent;
+import forge.gamemodes.net.ProtocolMethod;
 import forge.gui.GuiBase;
 import forge.localinstance.properties.ForgePreferences.FPref;
 import forge.model.FModel;
@@ -25,6 +27,18 @@ public final class NativeStartingPlayerChecks {
         check(NativeStartingPlayer.parse(new JsonObject())==null,"legacy input unchanged");
         for(String bad:List.of("{\"startingPlayer\":\"first\"}","{\"playStyle\":\"practice\"}","{\"startingPlayer\":\"first\",\"playStyle\":\"quick\"}","{\"startingPlayer\":true,\"playStyle\":\"practice\"}","{\"startingPlayer\":\"later\",\"playStyle\":\"practice\"}")){
             boolean rejected=false;try{NativeStartingPlayer.parse(JsonParser.parseString(bad).getAsJsonObject());}catch(IllegalArgumentException e){rejected=true;}check(rejected,"invalid preference rejected");
+        }
+        ForgeHttpBridge blocked=new ForgeHttpBridge();blocked.startingPlayer=new NativeStartingPlayer("random","quick");
+        try{blocked.sendAndWait(new GuiGameEvent(ProtocolMethod.getChoices,"Required setup",1,1,List.of("one"),List.of(),null));throw new AssertionError("setup was autoanswered");}
+        catch(IllegalStateException expected){check(expected.getMessage().equals(ForgeHttpBridge.UNSUPPORTED_PREGAME_CHOICE),"pre-toss prompt fails explicitly");}
+        check(blocked.pending==null&&blocked.pregame.isEmpty(),"no pending answer or fake toss");
+        blocked.failure=ForgeHttpBridge.UNSUPPORTED_PREGAME_CHOICE;blocked.publish();
+        check(blocked.published.get().get("status").equals("failed"),"failure published before board exists");
+        check(((Map<?,?>)blocked.published.get().get("initialization")).get("failureCode").equals(ForgeHttpBridge.UNSUPPORTED_PREGAME_CHOICE),"safe setup error receipt");
+        JsonObject companion=JsonParser.parseString("{\"format\":\"Modern\",\"name\":\"Companion fixture\",\"cards\":[{\"name\":\"Mountain\",\"qty\":60}],\"side\":[{\"name\":\"Jegantha, the Wellspring\",\"qty\":1}]}").getAsJsonObject();
+        for(boolean cpu:List.of(false,true)){
+            try{NativeDeckInput.resolveSnapshot(companion,cpu);throw new AssertionError("unsupported companion setup admitted");}
+            catch(IllegalArgumentException expected){check(expected.getMessage().equals("companion_sideboard_setup_not_supported"),"both seats reject companion setup without edits");}
         }
         Method determine=GameAction.class.getDeclaredMethod("determineFirstTurnPlayer",GameOutcome.class);determine.setAccessible(true);
         Set<Boolean> randomHuman=new HashSet<>();int cases=0;

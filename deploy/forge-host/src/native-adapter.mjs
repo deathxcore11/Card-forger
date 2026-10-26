@@ -40,7 +40,7 @@ export function nativeAdapter(_env) {
       const state = await boundedJSON(response, 4 * 1024 * 1024, AbortSignal.timeout(5000));
       if (state.status !== 'failed') return null;
       const receipt = state.initialization;
-      return { code: 'native_exact_validation_rejected',
+      return { code: receipt?.failureCode === 'unsupported_native_pregame_choice' ? 'unsupported_native_pregame_choice' : 'native_exact_validation_rejected',
         errors: (Array.isArray(receipt?.errors) ? receipt.errors : ['native_initialization_failed'])
           .filter(value => typeof value === 'string').slice(0, 20).map(value => value.slice(0, 512)) };
     },

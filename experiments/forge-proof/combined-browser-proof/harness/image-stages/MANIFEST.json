@@ -11,7 +11,7 @@
     },
     "SHA256SUMS": {
       "bytes": 1550,
-      "sha256": "b77cb919b9d14ff092b56e03fc1a75adc54e0f81bc15e4a9ee26ec743cae7a66"
+      "sha256": "4dbc728083608e6d325b089757b66cd68b49387242b615a477768cb34cf8d918"
     },
     "build-and-probe.mjs": {
       "bytes": 10849,
@@ -43,11 +43,11 @@
     },
     "pins.mjs": {
       "bytes": 1210,
-      "sha256": "0be8bf6582b98a0cce4cb140c2bb1c2476e1e42c47b3fa07264634b3819d4c62"
+      "sha256": "e67e79ed1ed0dec3dd1f1427d832c7b21ca059e4de19f45dd1c2efc442f7fbb4"
     },
     "probe-image.mjs": {
-      "bytes": 8373,
-      "sha256": "d73d08740dae041d48ab1437c3095fe2f15d1a5976ae3e875af2a14af1f65807"
+      "bytes": 9828,
+      "sha256": "433703db5db449d4d9167433f04b8f0a59e19e35d43866cc6442ea3c4372439e"
     },
     "public-input.mjs": {
       "bytes": 1246,
@@ -70,20 +70,20 @@
       "sha256": "07a33d75b7baea12cc31873fa394f74072611755ed8a14e50962999fad8ba12e"
     },
     "test-probe-loader.mjs": {
-      "bytes": 11003,
-      "sha256": "d803e94f0e695777a2627548f262658e7444f216c92b1cfe1093c6e6645ba7af"
+      "bytes": 11925,
+      "sha256": "d9c001401408ed1f5d321de5f8bdda6bc9a11914ca7d09fcf15c9b0d23fdee90"
     },
     "test-starting-player-contract.mjs": {
-      "bytes": 1380,
-      "sha256": "035e5a3e82416b2d90a72da656f505d6ffdf5f9d529cd2e024d1a13ad7ac1578"
+      "bytes": 2023,
+      "sha256": "1c5ab32ffd2e3601e3f8345aa4c2b979596f991b449f6ad3712d83080691b240"
     }
   },
   "dependencies": {
     "candidate": "experiments/forge-proof/combined-browser-proof/candidate",
-    "nativeManifestSha256": "4d3b87d1ac7a9d9a6a5000b3e9d41a67d9458c61d878ac9afebee68356ba5269",
+    "nativeManifestSha256": "e883597dc9e4dcc811281a1e18cb5b0710f55745bb72c3b3ad898795176298a4",
     "hostManifestSha256": "10ea42bef4ec70828eefbc2195efc0edcaf28379bb383e28b697e23deff64466",
-    "contextManifestSha256": "ee574efaa36b7535e9d05d6f569ce199f335ff6ccb58e9c29aa0eef195376a60",
-    "localOciManifestSha256": "7cb3137794d59300ef5b7c2f03cbc99b6a05397fb96f7c12d70fdcae1c3a49f6"
+    "contextManifestSha256": "b70534c64f4f83f29d5f326efac20ad26374315f0755b549df749b0da1d5a791",
+    "localOciManifestSha256": "38cf4e055b3d581b99f3081118392ccb462e7329565c77861e7c64a681c3d795"
   },
   "budgetsSeconds": {
     "build": 600,
@@ -123,7 +123,7 @@
     "daemonPrecondition": "dedicated-disposable-CI-runner"
   },
   "status": "native starting-player descendant; actual image build/probe pending",
-  "parentManifestSha256": "3553fe6c22ee171974ad5fd839fdc9f954ce962a721ec103cca9db510d8b33b8",
+  "parentManifestSha256": "76f79ce41ef803a405e271eb3276508f086cbcd41bb9a19a02f14408281ee703",
   "parentTests": {
     "nodeGroups": 10,
     "pythonCases": 5,
