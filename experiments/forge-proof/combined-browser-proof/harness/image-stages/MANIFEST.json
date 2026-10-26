@@ -1,0 +1,142 @@
+{
+  "schema": "cardstashy.local-image-preparation-manifest.v1",
+  "scope": "LOCAL_TEST_NOT_DEPLOYABLE",
+  "executionStatus": "NOT_EXECUTED",
+  "registryPublication": false,
+  "productionChanges": false,
+  "files": {
+    "README.md": {
+      "bytes": 7720,
+      "sha256": "1146ffbbfd3bbdabae0323e4c3b981dd72b358ab87272acca77091f1b8f6a8f8"
+    },
+    "SHA256SUMS": {
+      "bytes": 1355,
+      "sha256": "a23801eb7153808c3185bf933b69b122b93650f5a61f22c393824a90b7df88c4"
+    },
+    "build-and-probe.mjs": {
+      "bytes": 10849,
+      "sha256": "2fdf5acc825f90c11fb2501fd2fbe3d16c32a3b699ab41bc382cf74e9e14c308"
+    },
+    "build-and-probe.sh": {
+      "bytes": 571,
+      "sha256": "08b2b74321660be9203b25829bce99105f9e48f65bc5916e9e9af7e35642253d"
+    },
+    "command.mjs": {
+      "bytes": 1989,
+      "sha256": "c346ab723b6f4c29782f8961c1226262226071ae15224f6e269b8d04f9fd0be8"
+    },
+    "export-docker-oci.py": {
+      "bytes": 4538,
+      "sha256": "e4a0316f15c64e2d1612f1523942826d3c3fd93b2708d1eed4be1815fe85b19b"
+    },
+    "human-priority-contract.mjs": {
+      "bytes": 784,
+      "sha256": "561d8ef68df3d4e57d2db7881f6f8cd8ce0fc407acff4ef163b5883f8e106b88"
+    },
+    "image-ownership.mjs": {
+      "bytes": 2086,
+      "sha256": "8d9435446df65ca3cdfd6f85576d7de0c117f42d4b6579f985ba5cf6e39ffba3"
+    },
+    "load-evidence.mjs": {
+      "bytes": 5597,
+      "sha256": "fa16f4f045d2566bc6bab88dc3b3426f97e57af8e1528f1ee21dbca75a942b9e"
+    },
+    "pins.mjs": {
+      "bytes": 1210,
+      "sha256": "817b8ea230a9115eee1c66f8e1bb0c36ecb42370edac10b353f38b2b49965191"
+    },
+    "probe-image.mjs": {
+      "bytes": 8146,
+      "sha256": "77ddadb7e213418fcce7dc0b6372178074f6eeb079a0c6980b72f389b8a2c61d"
+    },
+    "public-input.mjs": {
+      "bytes": 1204,
+      "sha256": "d08de7be1085ddb73bf57151323ccb8a847ef1055913226a123500bcb69d2006"
+    },
+    "test-export.py": {
+      "bytes": 2711,
+      "sha256": "6ab550e77c1ec49fc9d843f2eaa59389af6afeabe6cc9041a39dc0de69506c07"
+    },
+    "test-human-priority.mjs": {
+      "bytes": 1099,
+      "sha256": "f4264c61e867005cb7efc3ff365b810e87d8c4a103737c482a7f76c8bc7e8d3a"
+    },
+    "test-image-stages.mjs": {
+      "bytes": 5836,
+      "sha256": "07a33d75b7baea12cc31873fa394f74072611755ed8a14e50962999fad8ba12e"
+    },
+    "test-probe-loader.mjs": {
+      "bytes": 10839,
+      "sha256": "6d44ab6ef5b6d681c6e4f9189e308e099b55893b7a5f4ba2feeb071f7b397b1a"
+    }
+  },
+  "dependencies": {
+    "candidate": "takeover/combined-recovery-candidate-20261026-0640",
+    "nativeManifestSha256": "1bb177ec2b54840e0e26a3159e30ee75007bf1d5911798ceb9046df7852c1ca3",
+    "hostManifestSha256": "da0d89e2eca44418862ca029660b50c1535e1bb3883b41e32b3a50fe61ddc9fa",
+    "contextManifestSha256": "d6e293394d6a7e30aca37343a0d1996a58e983bab00cf84e113843d10699a5f7",
+    "localOciManifestSha256": "35785f1134a4da017b962eaf7535ad94844ccec2b4ac2221c2e0fc052f96cf9e"
+  },
+  "budgetsSeconds": {
+    "build": 600,
+    "export": 90,
+    "probe": 180,
+    "probeActive": 120,
+    "probeCleanupReserve": 60,
+    "loaderReverification": 120
+  },
+  "privateOutputs": [
+    "image-ownership.json",
+    "evidence-bundle.json",
+    "oci/",
+    "image.id",
+    "private-build.log",
+    "actual-probe-private.json",
+    "actual-probe-inspect.json",
+    "actual-probe-cleanup.json",
+    "actual-build-attestation.json",
+    "actual-runtime-index.json",
+    "native-SHA256SUMS",
+    "host-SHA256.json",
+    "image-source.java",
+    "image-checkpoint.json"
+  ],
+  "sanitizedOutputs": [
+    "image-summary.json",
+    "probe-summary.json"
+  ],
+  "exactBuildContextInventory": true,
+  "recursiveContextSymlinksRejected": true,
+  "uniqueImageOwnership": {
+    "ledgerCreatedBeforeBuild": true,
+    "nonceBits": 256,
+    "imageLabel": "io.cardstashy.local-test.job-nonce",
+    "missingIidMeans": "uncertain",
+    "daemonPrecondition": "dedicated-disposable-CI-runner"
+  },
+  "status": "human-affordability descendant; local validation pending; no image run",
+  "parentManifestSha256": "18da2cffcdf25f439df8b2a2eac5cfac546246e0a6abed3e359adc92de2be552",
+  "parentTests": {
+    "nodeGroups": 10,
+    "pythonCases": 5,
+    "result": "passed",
+    "evidenceKind": "static-and-synthetic-mocks-only",
+    "dockerBuildOrRun": false,
+    "isolatedRelocation": {
+      "result": "passed",
+      "nodeGroups": 10,
+      "pythonCases": 5,
+      "candidateFiles": {
+        "host": 56,
+        "buildContext": 44,
+        "native": 2,
+        "ui": 1
+      },
+      "old0620SiblingPresent": false,
+      "nativeCpuSiblingPresent": false,
+      "explicitReviewedRoot": true,
+      "runtimeIndexNativeOnlyFallback": "separately-tested",
+      "testedLocalOciManifestSha256": "6266d0096c71b0c236da1b88b8e2340a9525252719b623a43f2a1f1a52463981"
+    }
+  }
+}

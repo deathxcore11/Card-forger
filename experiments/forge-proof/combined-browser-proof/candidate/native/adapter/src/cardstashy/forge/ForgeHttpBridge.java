@@ -1,0 +1,693 @@
+package cardstashy.forge;
+
+import com.google.gson.*;
+import com.sun.net.httpserver.*;
+import forge.GuiDesktop;
+import forge.deck.Deck;
+import forge.deck.DeckSection;
+import forge.deck.io.DeckSerializer;
+import forge.game.*;
+import forge.game.card.CardView;
+import forge.game.player.*;
+import forge.game.spellability.*;
+import forge.game.zone.ZoneType;
+import forge.gamemodes.match.Selection;
+import forge.gamemodes.net.*;
+import forge.gamemodes.net.event.*;
+import forge.gui.GuiBase;
+import forge.gui.control.GameEventForwarder;
+import forge.gui.interfaces.IGuiGame;
+import forge.localinstance.properties.ForgePreferences.FPref;
+import forge.model.FModel;
+import forge.player.*;
+import forge.trackable.TrackableObject;
+import forge.util.MyRandom;
+import java.io.*;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
+import javax.swing.SwingUtilities;
+
+/** Local-only GPL-3.0-or-later proof adapter. Rules and decisions belong to Forge, not this transport. */
+public final class ForgeHttpBridge implements IRemote {
+    static final Gson JSON = new GsonBuilder().serializeNulls().create();
+    static final Set<String> DECK_ALIASES=Set.of("calling-all-angels","keen-engineering","reign-of-dragons");
+    String humanDeckAlias, aiDeckAlias;
+    String actualAiProfile;
+    NativeDeckAdmission.Admission exactAdmission;
+    BoundedHeuristicPolicy cpuPolicy;
+    int humanDeckCount=100,aiDeckCount=100;
+    static final String REV = "e5a0f8156da70ffc7866f923bed371c0111707cd";
+    final AtomicReference<Map<String,Object>> published = new AtomicReference<>(Map.of("status","initializing"));
+    final AtomicLong revision = new AtomicLong();
+    final AtomicLong promptGeneration = new AtomicLong();
+    Map<String,Object> board = Map.of();
+    // A presentation receipt, not a client-supplied capability. Forge still omits private identities.
+    List<Object> boardVisibility = List.of();
+    final Map<Integer,PlayerView> exposedPlayers = new ConcurrentHashMap<>();
+    final String token = UUID.randomUUID().toString();
+    final Object lock = new Object();
+    volatile Game game;
+    volatile PlayerControllerHuman controller;
+    volatile PlayerView viewer;
+    volatile ProtocolGuiGame gui;
+    volatile Pending pending;
+    volatile Selection selection = Selection.NONE;
+    volatile String message = "Starting native Forge";
+    volatile Map<String,Object> buttons = Map.of();
+    volatile Map<String,Object> notification = Map.of();
+    volatile boolean busy, finished, commandInFlight;
+    volatile String controlMode=System.getProperty("proof.controlMode","full");
+    volatile boolean effectiveAutoPass;
+    // Bounded Smart assistance applies only to an explicit priority card/ability intention.
+    // Optional/alternative native dialogs remain human decisions; Full prevents any automatic payment.
+    forge.gamemodes.match.input.Input smartIntentOrigin, autoPayAttemptInput;
+    SpellAbility smartIntentAbility;
+    volatile long nativeAutoPayments;
+    volatile forge.gamemodes.match.input.Input publishedInput;
+    volatile String lastActionError;
+    volatile String failure;
+    volatile boolean concessionRequested, nativeOutcomeConfirmed, concessionApplied;
+    volatile Thread concessionThread;
+    final CompletableFuture<Void> concessionTerminal = new CompletableFuture<>();
+    static final class NativeMatchEnded extends RuntimeException {
+        NativeMatchEnded(){super("native_match_ended",null,false,false);}
+    }
+    void recordFailure(Throwable t){
+        if(t instanceof NativeMatchEnded && nativeOutcomeConfirmed)return;
+        failure=t.getClass().getSimpleName()+": "+t.getMessage();t.printStackTrace();
+    }
+    Object awaitConcession(){
+        try{concessionTerminal.get();}catch(Exception e){throw new IllegalStateException("native_concession_not_confirmed",e);}
+        throw new NativeMatchEnded();
+    }
+    /** Uses the same native out-of-band controller boundary as Forge's network server.
+     * No fabricated dialog reply or winner: the future aborts only AFTER native GameOutcome. */
+    boolean invokeNativeConcession(){
+        // Game.setGameOver uses this same monitor. Do not overwrite its completed PlayerStatistics.
+        // concessionRequested already blocks bridge graph reads/queued commands before acquiring it.
+        synchronized(game){if(game.isGameOver())return false;controller.concede();return true;}
+    }
+    void requestConcession(){
+        concessionRequested=true;busy=true;selection=Selection.NONE;clearSmartIntent();promptGeneration.incrementAndGet();publish();
+        concessionThread=new Thread(()->{
+            try{
+                concessionApplied=invokeNativeConcession();
+                GameOutcome outcome=game.getOutcome();
+                if(!game.isGameOver()||outcome==null)throw new IllegalStateException("native_concession_no_outcome");
+                // Read terminal result fields only. Never walk the live game/card graph.
+                Integer winner=winnerId();String winnerName=outcome.getWinningLobbyPlayer()==null?null:outcome.getWinningLobbyPlayer().getName();
+                Pending canceled;
+                synchronized(lock){
+                    nativeOutcomeConfirmed=true;finished=true;busy=false;selection=Selection.NONE;
+                    Map<String,Object> terminal=new LinkedHashMap<>(board);
+                    terminal.putAll(obj("gameOver",true,"winner",winnerName,"winnerPlayerId",winner,"draw",outcome.isDraw(),"terminalBoardFrozen",true));board=terminal;
+                    canceled=pending;pending=null;publish();
+                }
+                concessionTerminal.complete(null);
+                if(canceled!=null)canceled.answer.completeExceptionally(new NativeMatchEnded());
+                System.out.println("NATIVE_CONCESSION_CONFIRMED winner="+winner+" draw="+outcome.isDraw());
+            }catch(Throwable t){recordFailure(t);concessionTerminal.completeExceptionally(t);synchronized(lock){if(pending!=null)pending.answer.completeExceptionally(t);publish();}}
+        },"forge-native-concede");
+        concessionThread.start();
+    }
+    final Map<Integer,CardView> exposedCards = new ConcurrentHashMap<>();
+    final Map<Integer,StackItemView> exposedStack = new ConcurrentHashMap<>();
+
+    static final class Pending {
+        final GuiGameEvent event;
+        final CompletableFuture<Object> answer = new CompletableFuture<>();
+        forge.gamemodes.match.input.Input originInput;
+        long generation;
+        final Map<String,Object> dto;
+        final List<?> options;
+        final int min, max;
+        Pending(GuiGameEvent event, Map<String,Object> dto, List<?> options, int min, int max) {
+            this.event=event; this.dto=dto; this.options=options; this.min=min; this.max=max;
+        }
+    }
+    static Map<String,Object> obj(Object... values) {
+        Map<String,Object> m=new LinkedHashMap<>();
+        for(int i=0;i<values.length;i+=2) m.put((String)values[i],values[i+1]);
+        return m;
+    }
+    static Integer id(TrackableObject o) { return o==null?null:o.getId(); }
+
+    public static void main(String[] args) throws Exception {
+        System.setProperty("java.awt.headless","true");
+        String root=System.getProperty("proof.root");
+        GuiBase.setInterface(new GuiDesktop() {
+            @Override public String getAssetsDir(){ return root+"/forge/forge-gui/"; }
+        });
+        FModel.initialize(null, prefs -> {
+            prefs.setPref(FPref.USE_SENTRY,false);
+            prefs.setPref(FPref.UI_ENABLE_AI_CHEATS,false);
+            prefs.setPref(FPref.UI_SHOW_ACTIONABLE_HIGHLIGHTS,true);
+            prefs.setPref(FPref.UI_SHOW_AUTOTAP_PREVIEW,true);
+            prefs.setPref(FPref.YIELD_AUTO_PASS_RESPECTS_INTERRUPTS,false);
+            prefs.setPref(FPref.PLAYER_NAME,"CardStashy");
+            prefs.setPref(FPref.DECKGEN_CARDBASED,false);
+            prefs.setPref(FPref.YIELD_AUTO_PASS_NO_ACTIONS,false);
+            prefs.setPref(FPref.YIELD_DECLINE_SCOPE_STACK_YIELD,"NEVER");
+            prefs.setPref(FPref.YIELD_DECLINE_SCOPE_NO_ACTIONS,"NEVER");
+            return null;
+        });
+        ForgeHttpBridge bridge=new ForgeHttpBridge();
+        int port=Integer.parseInt(System.getProperty("proof.port","8765"));
+        bridge.serve(port);
+        Files.writeString(Path.of(root,"adapter","connection.json"),JSON.toJson(obj("baseUrl","http://127.0.0.1:"+port,"token",bridge.token,"forgeRevision",REV)));
+        System.out.println("BRIDGE_LISTENING http://127.0.0.1:"+port+" (token in adapter/connection.json)");
+        Map<String,Object> humanPriorityProof;
+        try{humanPriorityProof=NativeHumanPriorityProof.verify(root);NativeCpuPolicyIntegration.install(root);}catch(Exception e){
+            bridge.failure="native_ai_startup_rejected:"+e.getMessage();bridge.published.set(obj("schema","cardstashy.forge-proof.v1","status","failed","failure",bridge.failure,"initialization",obj("supported",false,"legal",false,"errors",List.of(bridge.failure))));return;
+        }
+        String inputPath=System.getProperty("proof.matchInput");
+        if(inputPath!=null){
+            try{
+                bridge.exactAdmission=NativeDeckAdmission.loadBootstrap(Path.of(inputPath));
+                bridge.exactAdmission.receipt().put("humanPriority",humanPriorityProof);
+                if(!bridge.exactAdmission.admitted()){
+                    bridge.failure="exact_deck_initialization_not_admitted";
+                    bridge.published.set(obj("schema","cardstashy.forge-proof.v1","status","failed","failure",bridge.failure,"initialization",bridge.exactAdmission.receipt()));return;
+                }
+                bridge.cpuPolicy=NativeCpuPolicyIntegration.parse(bridge.exactAdmission.input().get("difficultyPolicyVersion").getAsString());
+                bridge.controlMode="smart";
+            }catch(Exception e){bridge.failure="exact_deck_initialization_rejected:"+e.getMessage();bridge.published.set(obj("schema","cardstashy.forge-proof.v1","status","failed","failure",bridge.failure,"initialization",obj("supported",false,"legal",false,"errors",List.of(e.getMessage()))));return;}
+        }else if(Boolean.getBoolean("proof.requireExact")){
+            bridge.failure="exact_deck_input_required";bridge.published.set(obj("schema","cardstashy.forge-proof.v1","status","failed","failure",bridge.failure));return;
+        }
+        try{
+            if(bridge.cpuPolicy==null)bridge.cpuPolicy=NativeCpuPolicyIntegration.parse(System.getProperty("proof.cpuPolicy",""));
+            bridge.start(root,Long.parseLong(System.getProperty("proof.seed","20261025")));
+        }catch(Exception e){bridge.failure="native_start_rejected:"+e.getMessage();if(bridge.exactAdmission!=null){bridge.exactAdmission.receipt().put("supported",false);bridge.exactAdmission.receipt().put("errors",List.of(bridge.failure));}bridge.published.set(obj("schema","cardstashy.forge-proof.v1","status","failed","failure",bridge.failure,"initialization",bridge.exactAdmission==null?null:bridge.exactAdmission.receipt()));}
+    }
+
+    void start(String root,long seed) {
+        MyRandom.setRandom(new Random(seed));
+        humanDeckAlias=System.getProperty("proof.humanDeck","calling-all-angels");
+        aiDeckAlias=System.getProperty("proof.aiDeck","keen-engineering");
+        Deck keen=exactAdmission==null?loadDeck(root,humanDeckAlias):exactAdmission.human().deck();
+        Deck reign=exactAdmission==null?loadDeck(root,aiDeckAlias):exactAdmission.opponent().deck();
+        if(exactAdmission!=null){humanDeckAlias=keen.getName();aiDeckAlias=reign.getName();}
+        NativeMatchFormat format=exactAdmission==null?NativeMatchFormat.Commander:NativeMatchFormat.parse(exactAdmission.input().get("format").getAsString());
+        humanDeckCount=keen.getMain().countAll()+NativeMatchFormat.count(keen,DeckSection.Commander);
+        aiDeckCount=reign.getMain().countAll()+NativeMatchFormat.count(reign,DeckSection.Commander);
+        RegisteredPlayer human=format.register(keen).setPlayer(new LobbyPlayerHuman("Human",0,0));
+        var aiLobby=cpuPolicy.createLobby("Forge AI — "+reign.getName());aiLobby.setAvatarIndex(1);
+        actualAiProfile=aiLobby.getAiProfile();
+        System.out.println("AI_PROFILE "+actualAiProfile);
+        RegisteredPlayer ai=format.register(reign).setPlayer(aiLobby);
+        if(exactAdmission!=null)NativeDeckAdmission.verifyRegistered(exactAdmission,human.getDeck(),ai.getDeck());
+        GameRules rules=new GameRules(format.gameType);
+        rules.setAppliedVariants(format.variants());
+        rules.setGamesPerMatch(1);
+        rules.setAllowCheatShuffle(false);
+        Match match=new Match(rules,List.of(human,ai),"CardStashy Forge proof");
+        game=match.createGame();
+        game.AI_FLAT_MONTE_CARLO=false;game.AI_FLAT_MONTE_CARLO_MAX=false;
+        for(Player p:game.getPlayers())if(p.getController() instanceof forge.ai.PlayerControllerAi aiController){
+            aiController.getAi().setFlatMonteCarloOverride(false);aiController.getAi().setFlatMonteCarloMaxOverride(false);aiController.getAi().setFlatMonteCarloAttackOverride(false);
+        }
+        NativeCpuPolicyIntegration.verifyRuntime(exactAdmission,cpuPolicy,game);
+        controller=(PlayerControllerHuman)game.getPlayers().get(0).getController();
+        viewer=controller.getPlayer().getView();
+        if(exactAdmission!=null)exactAdmission.receipt().put("viewerId",viewer.getId());
+        gui=new ProtocolGuiGame(this);
+        controller.setGui(gui);
+        gui.setGameView(game.getView());
+        gui.setOriginalGameController(viewer,controller);
+        if(!Set.of("smart","full").contains(controlMode))throw new IllegalArgumentException("controlMode must be smart or full");
+        applyControlMode();
+        game.subscribeToEvents(this);
+        GameEventForwarder forwarder=new GameEventForwarder(gui);
+        gui.setForwarder(forwarder);
+        game.subscribeToEvents(forwarder);
+        game.subscribeToEvents(controller.getYieldController());
+        controller.getInputQueue().addObserver(forwarder);
+        for(Player p:game.getPlayers())p.updateOpponentsForView();
+        new Thread(()-> {
+            try {
+                match.startGame(game);
+                if(concessionRequested)awaitConcession();
+                forwarder.flush();
+                finished=true;
+                refreshBoard(); publish();
+                System.out.println("BRIDGE_GAME_OVER "+game.getOutcome());
+            } catch(Throwable t) {
+                recordFailure(t);
+                publish();
+            }
+        },"forge-native-match").start();
+    }
+
+    @com.google.common.eventbus.Subscribe
+    public void onPhase(forge.game.event.GameEventTurnPhase event){
+        if(failure!=null){effectiveAutoPass=false;return;}
+        boolean ownMain=event.playerTurn()!=null&&event.playerTurn().getId()==viewer.getId()
+            &&(event.phase()==forge.game.phase.PhaseType.MAIN1||event.phase()==forge.game.phase.PhaseType.MAIN2);
+        effectiveAutoPass=failure==null&&controlMode.equals("smart")&&!ownMain;
+        controller.getYieldController().setPref(FPref.YIELD_AUTO_PASS_NO_ACTIONS,String.valueOf(effectiveAutoPass));
+    }
+    void applyControlMode(){
+        if(failure!=null){effectiveAutoPass=false;clearSmartIntent();autoPayAttemptInput=null;return;}
+        if(!controlMode.equals("smart"))clearSmartIntent();
+        var yc=controller.getYieldController();
+        yc.setPref(FPref.YIELD_AUTO_PASS_RESPECTS_INTERRUPTS,"false");
+        yc.clearActiveYieldAndDispatch();
+        for(PlayerView p:game.getView().getPlayers())for(var phase:forge.game.phase.PhaseType.values())yc.setSkipPhase(p,phase,false);
+        var ph=game.getPhaseHandler();
+        boolean ownMain=ph.getPlayerTurn()!=null&&ph.getPlayerTurn().getId()==viewer.getId()
+            &&(ph.getPhase()==forge.game.phase.PhaseType.MAIN1||ph.getPhase()==forge.game.phase.PhaseType.MAIN2);
+        effectiveAutoPass=failure==null&&controlMode.equals("smart")&&!ownMain;
+        yc.setPref(FPref.YIELD_AUTO_PASS_NO_ACTIONS,String.valueOf(effectiveAutoPass));
+    }
+    static Deck loadDeck(String root,String alias){
+        if(!DECK_ALIASES.contains(alias))throw new IllegalArgumentException("Unknown local precon alias: "+alias);
+        Deck deck=DeckSerializer.fromFile(new File(root+"/decks/"+alias+".dck"));
+        if(deck==null||deck.getCommanders().size()!=1||deck.getMain().countAll()+deck.getCommanders().size()!=100)
+            throw new IllegalStateException("Expected intact 100-card Commander precon: "+alias);
+        return deck;
+    }
+    @Override public void send(NetEvent event) {
+        if(!(event instanceof GuiGameEvent e)) return;
+        Object[] a=e.getObjects();
+        if(e.getMethod()==ProtocolMethod.setGameView||e.getMethod()==ProtocolMethod.applyDelta)refreshBoard();
+        synchronized(lock){ switch(e.getMethod()) {
+            case showPromptMessage -> message=(String)a[1];
+            case updateButtons -> { buttons=obj("ok",a[1],"cancel",a[2],"okEnabled",a[3],"cancelEnabled",a[4]); busy=false; }
+            case setSelection -> { selection=(Selection)a[0]; busy=false; }
+            case awaitNextInput -> { busy=true; }
+            case flashIncorrectAction -> { busy=false; }
+            case message,showErrorDialog -> {notification=obj("method",e.getMethod().name(),"message",a[0],"title",a.length>1?a[1]:null); busy=false;}
+            default -> { }
+        }
+        // Raw GameView, DeltaPacket, arbitrary events and private logs NEVER cross HTTP.
+        if(e.getMethod()==ProtocolMethod.setSelection || e.getMethod()==ProtocolMethod.updateButtons || e.getMethod()==ProtocolMethod.showPromptMessage || e.getMethod()==ProtocolMethod.flashIncorrectAction || e.getMethod()==ProtocolMethod.message || e.getMethod()==ProtocolMethod.showErrorDialog) publish();
+        maybeNativeAutoPay();
+        }
+    }
+    void clearSmartIntent(){smartIntentOrigin=null;smartIntentAbility=null;}
+    void armSmartSpellIntent(forge.gamemodes.match.input.Input input){
+        clearSmartIntent();
+        if(failure==null&&controlMode.equals("smart")&&input instanceof forge.gamemodes.match.input.InputPassPriority priority){
+            var chosen=priority.getChosenSa();
+            if(chosen!=null&&chosen.size()==1&&chosen.get(0).isSpell()){
+                smartIntentOrigin=input;smartIntentAbility=chosen.get(0);
+            }
+        }
+    }
+    static boolean directSpellCostMatches(SpellAbility intended,SpellAbility paid,boolean alreadyOnStack){
+        return intended!=null&&intended.isSpell()&&paid==intended&&!alreadyOnStack;
+    }
+    /** Use the exact enabled native Auto button once for the directly selected spell's initial cost. */
+    void maybeNativeAutoPay(){ synchronized(lock){
+        if(failure!=null||controller==null||concessionRequested)return;
+        final var input=controller.getInputProxy().getInput();
+        if(input instanceof forge.gamemodes.match.input.InputPassPriority && input!=smartIntentOrigin){
+            clearSmartIntent();
+        }
+        if(!controlMode.equals("smart")||smartIntentOrigin==null||pending!=null||commandInFlight
+            ||!(input instanceof forge.gamemodes.match.input.InputPayManaOfCostPayment)
+            ||input==autoPayAttemptInput||!Boolean.TRUE.equals(buttons.get("okEnabled")))return;
+        final SpellAbility paid=controller.getPlayer().getPaidForSA();
+        // Copies/alternate costs and nested or resolving effects deliberately remain manual.
+        boolean alreadyOnStack=false;
+        for(SpellAbilityStackInstance si:game.getStack())if(si.getSpellAbility()==paid){alreadyOnStack=true;break;}
+        if(!directSpellCostMatches(smartIntentAbility,paid,alreadyOnStack)){clearSmartIntent();return;}
+        final long generation=promptGeneration.get();
+        clearSmartIntent(); // consume BEFORE dispatch, so no later cost can inherit this intention
+        autoPayAttemptInput=input;
+        busy=true;commandInFlight=true;publish();
+        SwingUtilities.invokeLater(()->{
+            boolean invoked=false;
+            try{
+                if(failure==null&&!concessionRequested&&controlMode.equals("smart")&&pending==null&&controller.getPlayer().getPaidForSA()==paid
+                    &&input==controller.getInputProxy().getInput()&&generation==promptGeneration.get()){
+                    invoked=true;
+                    nativeAutoPayments++;
+                    System.out.println("NATIVE_AUTO_PAYMENT "+nativeAutoPayments);
+                    input.selectButtonOK();
+                }
+            }catch(Throwable t){recordFailure(t);}
+            finally{synchronized(lock){
+                // No native command ran: restoring this unchanged UI is a proven no-op, not an async completion guess.
+                if(failure==null&&!invoked&&input==controller.getInputProxy().getInput()&&pending==null&&generation==promptGeneration.get())busy=false;
+                commandInFlight=false;publish();
+            }}
+        });
+    }}
+    @Override public Object sendAndWait(IdentifiableNetEvent event) {
+        GuiGameEvent e=(GuiGameEvent)event;
+        if(concessionRequested){
+            // Native onPlayerLost can reveal face-down cards: this is display-only, no choice.
+            if(Thread.currentThread()==concessionThread){
+                Object[] a=e.getObjects();
+                if(e.getMethod()==ProtocolMethod.getChoices && Integer.valueOf(-1).equals(a[1]) && Integer.valueOf(-1).equals(a[2]))return List.of();
+                throw new IllegalStateException("unsupported_dialog_during_native_concession:"+e.getMethod());
+            }
+            return awaitConcession();
+        }
+        // Matches desktop CMatchUI.getAbilityToPlay with triggerEvent==null, using only native offered abilities.
+        if(failure==null&&controlMode.equals("smart")&&e.getMethod()==ProtocolMethod.getAbilityToPlay){
+            List<?> abilities=(List<?>)e.getObjects()[1];
+            if(abilities.isEmpty())return null;
+            if(abilities.size()==1){System.out.println("NATIVE_SINGLETON_ABILITY");return abilities.get(0);}
+        }
+        Pending p=makePending(e);
+        boolean terminalWait;
+        synchronized(lock){ terminalWait=concessionRequested;
+            if(!terminalWait){if(pending!=null&&!pending.answer.isDone())throw new IllegalStateException("Overlapping native dialog; refusing to replace pending input"); p.originInput=controller==null?null:controller.getInputProxy().getInput();p.generation=promptGeneration.incrementAndGet(); pending=p; busy=false; publish();}
+        }
+        if(terminalWait)return awaitConcession();
+        System.out.println("NATIVE_PROMPT "+e.getMethod()+" id="+e.getId());
+        Object result=null;boolean completed=false;
+        try { result=p.answer.get();completed=true;return result; }
+        catch(ExecutionException ex){if(ex.getCause() instanceof NativeMatchEnded ended)throw ended;throw new IllegalStateException("Native prompt interrupted",ex);} catch(InterruptedException ex){Thread.currentThread().interrupt();throw new IllegalStateException("Native prompt interrupted",ex);}
+        finally { synchronized(lock){
+            if(pending==p)pending=null;
+            boolean nativeCancel=completed&&((e.getMethod()==ProtocolMethod.getAbilityToPlay&&result==null)
+                ||(e.getMethod()==ProtocolMethod.showConfirmDialog&&Boolean.FALSE.equals(result)
+                   &&p.originInput instanceof forge.gamemodes.match.input.InputPassPriority));
+            boolean sameDecision=controller!=null&&p.originInput!=null
+                &&p.originInput==controller.getInputProxy().getInput()
+                &&p.generation==promptGeneration.get()&&pending==null
+                &&!(p.originInput instanceof forge.gamemodes.match.input.InputLockUI);
+            busy=!(nativeCancel&&sameDecision);
+            if(nativeCancel&&sameDecision)clearSmartIntent();
+            publish();
+        }}
+    }
+
+    Pending makePending(GuiGameEvent e) {
+        Object[] a=e.getObjects();
+        String kind=e.getMethod().name(), text=kind;
+        List<?> options=List.of(); int min=0,max=1; boolean supported=true;
+        switch(e.getMethod()) {
+            case getChoices -> {text=(String)a[0];min=(Integer)a[1];max=(Integer)a[2];options=(List<?>)a[3];}
+            case getAbilityToPlay -> {text="Choose an ability";min=0;options=(List<?>)a[1];}
+            case chooseSingleEntityForEffect -> {text=(String)a[0];min=(Boolean)a[3]?0:1;options=(List<?>)a[1];}
+            case chooseEntitiesForEffect -> {text=(String)a[0];options=(List<?>)a[1];min=(Integer)a[2];max=(Integer)a[3];}
+            case showOptionDialog -> {text=(String)a[0];options=(List<?>)a[3];min=1;}
+            case confirm -> {text=(String)a[1];options=(List<?>)a[3];}
+            case showConfirmDialog -> {text=(String)a[0];options=List.of(a[2],a[3]);}
+            case showInputDialog -> {text=(String)a[0];options=a[4]==null?List.of():(List<?>)a[4];}
+            case order -> {
+                text=a[0]+" — "+a[1];
+                List<Object> combined=new ArrayList<>((List<?>)a[4]);
+                if(a[5]!=null)combined.addAll((List<?>)a[5]);
+                options=combined;
+                int remainingMin=(Integer)a[2],remainingMax=(Integer)a[3];
+                supported=remainingMin>=0&&remainingMax>=remainingMin&&!Boolean.TRUE.equals(a[7]);
+                min=Math.max(0,combined.size()-remainingMax);max=combined.size()-remainingMin;
+                supported &= max>=min&&max<=combined.size();
+            }
+            default -> {supported=false;text="Native prompt not yet adapted: "+kind;}
+        }
+        boolean acknowledge=e.getMethod()==ProtocolMethod.getChoices&&min==-1&&max==-1;
+        if(acknowledge){min=0;max=0;}
+        List<Object> choices=new ArrayList<>();
+        for(int i=0;i<options.size();i++) {
+            Object value=options.get(i), encoded=safeChoice(value);
+            if(encoded==null&&e.getMethod()==ProtocolMethod.getChoices&&a[5] instanceof forge.util.FSerializableFunction<?,?> fn){
+                @SuppressWarnings("unchecked") var display=(forge.util.FSerializableFunction<Object,String>)fn;
+                encoded=display.apply(value);
+            }
+            if(encoded==null){supported=false;encoded=obj("kind","unsupported_choice_type");}
+            choices.add(obj("index",i,"value",encoded));
+        }
+        Map<String,Object> dto=obj("id",e.getId(),"method",kind,"message",text,"min",min,"max",max,"options",choices,"supported",supported);
+        if(e.getMethod()==ProtocolMethod.order){
+            int sourceCount=((List<?>)a[4]).size();
+            List<Integer> src=new ArrayList<>(),dst=new ArrayList<>();
+            for(int i=0;i<options.size();i++)if(i<sourceCount)src.add(i);else dst.add(i);
+            dto.put("ordered",true);dto.put("topLabel",a[1]);dto.put("remainingMin",a[2]);dto.put("remainingMax",a[3]);
+            dto.put("sourceIndexes",src);dto.put("destinationIndexes",dst);dto.put("rememberAllowed",a[8]);
+        }
+        dto.put("acknowledgeOnly",acknowledge);
+        dto.put("cancelable",e.getMethod()==ProtocolMethod.getAbilityToPlay);
+        if(e.getMethod()==ProtocolMethod.showInputDialog){dto.put("numeric",a[5]);dto.put("initialValue",a[3]);}
+        return new Pending(e,dto,options,min,max);
+    }
+
+    Object safeChoice(Object value) {
+        if(value instanceof CardView c) return card(c);
+        if(value instanceof forge.item.PaperCard pc)return obj("kind","paperCard","name",pc.getName(),"setCode",pc.getEdition());
+        if(value instanceof PlayerView p)return obj("kind","player","id",p.getId(),"name",p.getName());
+        if(value instanceof SpellAbilityView sa)return obj("kind","ability","id",sa.getId(),"description",sa.getDescription(),"card",card(sa.getHostCard()));
+        if(value instanceof forge.game.replacement.ReplacementEffectView re)return obj("kind","replacementEffect","id",re.getId(),"description",re.getDescription());
+        if(value instanceof String || value instanceof Number || value instanceof Boolean || value instanceof Enum<?>)return String.valueOf(value);
+        return null;
+    }
+    Map<String,Object> card(CardView c) {
+        boolean visible=viewer!=null&&c.canBeShownTo(viewer);
+        boolean face=visible&&c.canFaceDownBeShownTo(viewer);
+        Map<String,Object> m=obj("id",c.getId(),"zone",c.getZone()==null?null:c.getZone().name(),"owner",id(c.getOwner()),"controller",id(c.getController()),"hidden",!face);
+        // Opponent hidden hand/library identities are omitted entirely by zone projection below.
+        if(!visible)return m;
+        exposedCards.put(c.getId(),c);
+        m.put("tapped",c.isTapped()); m.put("attacking",c.isAttacking());m.put("blocking",c.isBlocking());
+        if(face){
+            var state=c.getCurrentState();
+            m.put("name",state.getName());m.put("setCode",state.getSetCode());m.put("imageKey",state.getImageKey(List.of(viewer)));m.put("type",state.getType().toString());m.put("manaCost",state.getManaCost().toString());
+            m.put("power",state.getPower());m.put("toughness",state.getToughness());m.put("text",c.getText());
+            m.put("counters",counters(c));m.put("token",c.isToken());m.put("commander",c.isCommander());m.put("damage",c.getDamage());m.put("summoningSick",c.isSick());
+        }
+        return m;
+    }
+    Map<String,Integer> counters(GameEntityView entity) {
+        Map<String,Integer> result=new LinkedHashMap<>();
+        if(entity.getCounters()!=null)for(var entry:entity.getCounters().entrySet())result.put(entry.getElement().toString(),entry.getCount());
+        return result;
+    }
+    Map<String,Integer> mana(PlayerView player) {
+        Map<String,Integer> result=new LinkedHashMap<>();
+        byte[] colors=forge.card.mana.ManaAtom.MANATYPES;String[] names={"W","U","B","R","G","C"};
+        for(int i=0;i<colors.length;i++)result.put(names[i],player.getMana(colors[i]));
+        return result;
+    }
+    List<Object> refs(Iterable<? extends TrackableObject> values) {
+        List<Object> out=new ArrayList<>();
+        if(values!=null)for(TrackableObject o:values){
+            if(o instanceof CardView c){if(exposedCards.containsKey(c.getId()))out.add(obj("kind","card","id",c.getId()));}
+            else if(o instanceof PlayerView p)out.add(obj("kind","player","id",p.getId()));
+            else if(o instanceof StackItemView s)out.add(obj("kind","stack","id",s.getId()));
+        }
+        return out;
+    }
+    /** Invoked only by Forge's sync state messages on its game thread or a blocked native input. */
+    void refreshBoard() { synchronized(lock) {
+        if(game==null||viewer==null||concessionRequested)return;
+        try {
+            if(exactAdmission!=null)NativeDeckAdmission.verifyInstantiatedWhenReady(exactAdmission,game);
+            GameView v=game.getView();
+            exposedCards.clear();exposedStack.clear();exposedPlayers.clear();
+            List<Object> players=new ArrayList<>(),stack=new ArrayList<>(),visibility=new ArrayList<>();
+            for(PlayerView p:v.getPlayers()) {
+                exposedPlayers.put(p.getId(),p);
+                Map<String,Object> zones=new LinkedHashMap<>();
+                for(ZoneType zone:List.of(ZoneType.Hand,ZoneType.Library,ZoneType.Battlefield,ZoneType.Graveyard,ZoneType.Exile,ZoneType.Command)){
+                    var cards=p.getCards(zone); List<Object> visible=new ArrayList<>();int count=0;
+                    if(cards!=null)for(CardView c:cards){
+                        count++;
+                        if(c.canBeShownTo(viewer)){
+                            Map<String,Object> row=card(c);visible.add(row);
+                            // Zone holder is taken from native enumeration, never row owner/controller.
+                            // Both predicates and exact native zone must agree before granting face visibility.
+                            if((zone==ZoneType.Hand||zone==ZoneType.Library)&&c.getZone()==zone&&c.canFaceDownBeShownTo(viewer)&&Boolean.FALSE.equals(row.get("hidden")))
+                                visibility.add(Map.copyOf(obj("id",c.getId(),"zone",zone.name(),"zoneHolder",p.getId())));
+                        }
+                    }
+                    zones.put(zone.name(),obj("count",count,"cards",visible));
+                }
+                players.add(obj("id",p.getId(),"name",p.getName(),"deckAlias",p.equals(viewer)?humanDeckAlias:aiDeckAlias,"deckCount",p.equals(viewer)?humanDeckCount:aiDeckCount,"life",p.getLife(),"isViewer",p.equals(viewer),"hasAvailableActions",p.hasAvailableActions(),"mana",mana(p),"counters",counters(p),"zones",zones));
+            }
+            if(v.getStack()!=null)for(StackItemView si:v.getStack()){
+                exposedStack.put(si.getId(),si);
+                stack.add(obj("id",si.getId(),"text",si.getText(),"source",si.getSourceCard()==null?null:card(si.getSourceCard()),"activatingPlayer",id(si.getActivatingPlayer()),"targets",refs(si.getTargetCards())));
+            }
+            board=obj("schema","cardstashy.forge-proof.v1","forgeRevision",REV,"viewer",viewer.getId(),"aiProfile",actualAiProfile,"match",obj("humanDeck",humanDeckAlias,"aiDeck",aiDeckAlias),"turn",v.getTurn(),"phase",v.getPhase()==null?null:v.getPhase().name(),"activePlayer",id(v.getPlayerTurn()),"priorityPlayer",game.getPhaseHandler().getPriorityPlayer()==null?null:game.getPhaseHandler().getPriorityPlayer().getId(),"players",players,"stack",stack,"gameOver",v.isGameOver(),"winner",v.isGameOver()?v.getWinningPlayerName():null,"winnerPlayerId",winnerId(),"draw",v.isGameOver()&&game.getOutcome()!=null&&game.getOutcome().isDraw());
+            boardVisibility=List.copyOf(visibility);
+        }catch(RuntimeException ex){failure="Projection failed: "+ex;ex.printStackTrace();}
+    }}
+    /** Failed matches must not renew a last-known reveal or retain card-bearing projection caches.
+     * This path reads immutable projected metadata only, never the live native game graph. */
+    @SuppressWarnings("unchecked")
+    void publishFailure() {
+        exposedCards.clear();exposedStack.clear();boardVisibility=List.of();selection=Selection.NONE;publishedInput=null;
+        message="Native match stopped.";buttons=Map.of();notification=Map.of();lastActionError=null;
+        effectiveAutoPass=false;clearSmartIntent();autoPayAttemptInput=null;
+        List<Object> players=new ArrayList<>();
+        for(Object value:(List<?>)board.getOrDefault("players",List.of())){
+            Map<String,Object> player=(Map<String,Object>)value,zones=new LinkedHashMap<>();
+            for(var entry:((Map<String,Object>)player.getOrDefault("zones",Map.of())).entrySet()){
+                Map<String,Object> zone=(Map<String,Object>)entry.getValue();
+                zones.put(entry.getKey(),obj("count",zone.get("count"),"cards",List.of()));
+            }
+            players.add(obj("id",player.get("id"),"name",player.get("name"),"life",player.get("life"),"isViewer",player.get("isViewer"),"zones",zones));
+        }
+        board=obj("schema",board.get("schema"),"forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"players",players,"stack",List.of(),"turn",board.get("turn"),"phase",board.get("phase"),"activePlayer",board.get("activePlayer"),"priorityPlayer",null,"gameOver",board.get("gameOver"));
+        long publicationRevision=revision.incrementAndGet();
+        Map<String,Object> snapshot=new LinkedHashMap<>(board);
+        snapshot.putAll(obj("revision",publicationRevision,"status","failed","failure","native_match_failed","message","Native match stopped.","buttons",Map.of(),"inputType",null,"selection",obj("cards",List.of(),"targets",List.of(),"chosen",List.of(),"actionable",List.of(),"min",0,"max",0),"prompt",null,"busy",false,"lastActionError",null,"notification",Map.of(),"autoPassNoActions",false,"canConcede",false));
+        snapshot.put("visibility",obj("schema","cardstashy.forge-visibility.v1","forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"revision",publicationRevision,"cards",List.of()));
+        published.set(snapshot);
+    }
+    /** Bare asynchronous prompt/button notifications only overlay immutable projected data. */
+    void publish() { synchronized(lock) {
+        if(board.isEmpty())return;
+        if(failure!=null){publishFailure();return;}
+        publishedInput=controller.getInputProxy().getInput();
+        String input=publishedInput==null?null:publishedInput.getClass().getSimpleName();
+        Map<String,Object> select=obj("cards",refs(selection.cards()),"targets",refs(selection.targets()),"chosen",refs(selection.chosen()),"actionable",refs(selection.actionable()),"min",selection.min(),"max",selection.max());
+        Map<String,Object> snapshot=new LinkedHashMap<>(board);
+        if(exactAdmission!=null)snapshot.put("initialization",new LinkedHashMap<>(exactAdmission.receipt()));
+        long publicationRevision=revision.incrementAndGet();
+        // Re-stamp the immutable board evidence on every publication (including prompt-only updates).
+        // Old snapshots retain their original revision and receipt; no live graph is read here.
+        snapshot.put("visibility",obj("schema","cardstashy.forge-visibility.v1","forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"revision",publicationRevision,"cards",boardVisibility));
+        snapshot.putAll(obj("revision",publicationRevision,"status",failure!=null?"failed":(finished||Boolean.TRUE.equals(board.get("gameOver"))?"finished":exactAdmission!=null&&!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))?"initializing":"running"),"failure",failure,"message",message,"buttons",buttons,"inputType",input,"selection",select,"prompt",concessionRequested||pending==null?null:pending.dto,"busy",!(finished||Boolean.TRUE.equals(board.get("gameOver")))&&(concessionRequested||(pending!=null?pending.answer.isDone():(busy||commandInFlight||publishedInput==null||publishedInput instanceof forge.gamemodes.match.input.InputLockUI))),"lastActionError",lastActionError,"notification",notification,"controlMode",controlMode,"autoPassNoActions",effectiveAutoPass,"nativeAutoPayments",nativeAutoPayments,"canConcede",failure==null&&!finished&&!concessionRequested&&!Boolean.TRUE.equals(board.get("gameOver")),"concession",obj("requested",concessionRequested,"nativeConfirmed",nativeOutcomeConfirmed,"applied",concessionApplied)));
+        published.set(snapshot);
+    }}
+    Integer winnerId(){if(!game.isGameOver()||game.getOutcome()==null)return null;for(Player p:game.getRegisteredPlayers())if(game.getOutcome().isWinner(p.getRegisteredPlayer()))return p.getId();return null;}
+
+    Object reply(Pending p,JsonObject body) {
+        String kind=p.event.getMethod().name();
+        if(!Boolean.TRUE.equals(p.dto.get("supported")))throw new IllegalArgumentException("unsupported_native_prompt:"+kind);
+        if(kind.equals("confirm")||kind.equals("showConfirmDialog"))return exactBoolean(body.get("value"),"value");
+        if(kind.equals("showInputDialog")) {
+            String value=exactString(body.get("value"),"value");
+            if(value.length()>200)throw new IllegalArgumentException("input_too_long");
+            if(Boolean.TRUE.equals(p.event.getObjects()[5])&&!value.matches("-?[0-9]+"))throw new IllegalArgumentException("numeric_input_required");
+            if(!p.options.isEmpty()&&!p.options.contains(value))throw new IllegalArgumentException("input_not_offered");
+            return value;
+        }
+        JsonArray indices=body.getAsJsonArray("indexes");
+        if(indices==null||indices.size()<p.min||indices.size()>p.max)throw new IllegalArgumentException("choice_count_out_of_range");
+        List<Object> values=new ArrayList<>(); Set<Integer> seen=new HashSet<>();
+        for(JsonElement x:indices){int i=exactInt(x,"choice");if(i<0||i>=p.options.size()||!seen.add(i))throw new IllegalArgumentException("choice_not_offered");values.add(p.options.get(i));}
+        return switch(p.event.getMethod()){
+            case getAbilityToPlay,chooseSingleEntityForEffect -> values.isEmpty()?null:values.get(0);
+            case showOptionDialog -> exactInt(indices.get(0),"choice");
+            case order -> {
+                boolean remember=body.has("remember")&&exactBoolean(body.get("remember"),"remember");
+                if(remember&&!Boolean.TRUE.equals(p.dto.get("rememberAllowed")))throw new IllegalArgumentException("remember_not_offered");
+                yield new IGuiGame.OrderResult<>(values,remember);
+            }
+            default -> values;
+        };
+    }
+
+    static String exactString(JsonElement e,String field){if(e==null||!e.isJsonPrimitive()||!e.getAsJsonPrimitive().isString())throw new IllegalArgumentException(field+"_must_be_string");return e.getAsString();}
+    static boolean exactBoolean(JsonElement e,String field){if(e==null||!e.isJsonPrimitive()||!e.getAsJsonPrimitive().isBoolean())throw new IllegalArgumentException(field+"_must_be_boolean");return e.getAsBoolean();}
+    static long exactLong(JsonElement e,String field){
+        if(e==null||!e.isJsonPrimitive()||!e.getAsJsonPrimitive().isNumber())throw new IllegalArgumentException(field+"_must_be_integer");
+        try{return e.getAsBigDecimal().longValueExact();}catch(ArithmeticException|NumberFormatException ex){throw new IllegalArgumentException(field+"_must_be_integer");}
+    }
+    static int exactInt(JsonElement e,String field){long n=exactLong(e,field);if(n<Integer.MIN_VALUE||n>Integer.MAX_VALUE)throw new IllegalArgumentException(field+"_out_of_range");return (int)n;}
+
+    void serve(int port)throws IOException {
+        HttpServer server=HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(),port),0);
+        server.setExecutor(Executors.newCachedThreadPool());
+        server.createContext("/health",x->respond(x,200,obj("ok",true,"engine","Forge","forgeRevision",REV)));
+        server.createContext("/state",x->{if(auth(x))respond(x,200,published.get());});
+        server.createContext("/action",x->{
+            if(!auth(x))return;
+            if(!x.getRequestMethod().equals("POST")){respond(x,405,obj("error","POST_required"));return;}
+            try {
+                byte[] bytes=x.getRequestBody().readNBytes(16385);if(bytes.length>16384)throw new IllegalArgumentException("body_too_large");
+                JsonObject body=JsonParser.parseString(new String(bytes,StandardCharsets.UTF_8)).getAsJsonObject();
+                synchronized(lock){
+                    if(exactLong(body.get("revision"),"revision")!=((Number)published.get().get("revision")).longValue()){respond(x,409,obj("error","stale_revision"));return;}
+                    if(exactAdmission!=null&&!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))){respond(x,409,obj("error","exact_initialization_unverified"));return;}
+                    if(failure!=null){respond(x,409,obj("error","native_match_unavailable"));return;}
+                    String op=exactString(body.get("op"),"op");
+                    if(concessionRequested){respond(x,409,obj("error",nativeOutcomeConfirmed?"native_game_finished":"native_concession_in_progress"));return;}
+                    if(finished||Boolean.TRUE.equals(board.get("gameOver"))){respond(x,409,obj("error","native_game_finished"));return;}
+                    if(op.equals("concede")){
+                        if(failure!=null||controller==null){respond(x,409,obj("error","native_match_unavailable"));return;}
+                        requestConcession();
+                    }else if(op.equals("controlMode")){
+                        String mode=exactString(body.get("value"),"value");
+                        if(!Set.of("smart","full").contains(mode))throw new IllegalArgumentException("controlMode_must_be_smart_or_full");
+                        if(pending!=null||busy||commandInFlight){respond(x,409,obj("error","native_engine_busy"));return;}
+                        final var modeInput=publishedInput;
+                        final long modeGeneration=promptGeneration.get();
+                        if(modeInput==null||modeInput instanceof forge.gamemodes.match.input.InputLockUI
+                            ||modeInput!=controller.getInputProxy().getInput()){respond(x,409,obj("error","native_input_changed"));return;}
+                        commandInFlight=true;publish();
+                        SwingUtilities.invokeLater(()->{
+                            try{
+                                if(concessionRequested||modeInput!=controller.getInputProxy().getInput()||modeGeneration!=promptGeneration.get()||pending!=null){
+                                    lastActionError="native_decision_changed";clearSmartIntent();return;
+                                }
+                                controlMode=mode;applyControlMode();
+                            }
+                            catch(Throwable t){recordFailure(t);}
+                            finally{synchronized(lock){commandInFlight=false;publish();}}
+                        });
+                    }else if(op.equals("reply")){
+                        Pending p=pending;
+                        if(p==null||p.answer.isDone()||exactInt(body.get("promptId"),"promptId")!=p.event.getId()){respond(x,409,obj("error","stale_prompt"));return;}
+                        Object answer=reply(p,body);busy=true;p.answer.complete(answer);
+                    }else{
+                        if(pending!=null){respond(x,409,obj("error","native_dialog_requires_reply"));return;}
+                        if(busy||commandInFlight){respond(x,409,obj("error","native_engine_busy"));return;}
+                        final var capturedInput=publishedInput;
+                        final long capturedPromptGeneration=promptGeneration.get();
+                        if(capturedInput==null||capturedInput!=controller.getInputProxy().getInput()||capturedInput instanceof forge.gamemodes.match.input.InputLockUI){respond(x,409,obj("error","native_input_changed"));return;}
+                        Runnable action;
+                        switch(op){
+                            case "ok" -> {if(!Boolean.TRUE.equals(buttons.get("okEnabled")))throw new IllegalArgumentException("ok_disabled");action=capturedInput::selectButtonOK;}
+                            case "cancel" -> {if(!Boolean.TRUE.equals(buttons.get("cancelEnabled")))throw new IllegalArgumentException("cancel_disabled");action=capturedInput::selectButtonCancel;}
+                            case "card" -> {int i=exactInt(body.get("id"),"id");CardView c=exposedCards.get(i);if(c==null)throw new IllegalArgumentException("card_not_visible");action=()->{
+                                boolean accepted=capturedInput.selectCard(controller.getCard(c),null,null);
+                                if(capturedInput instanceof forge.gamemodes.match.input.InputPassPriority){if(accepted)armSmartSpellIntent(capturedInput);else clearSmartIntent();}
+                                if(!accepted){synchronized(lock){busy=false;}}
+                            };}
+                            case "player" -> {int i=exactInt(body.get("id"),"id");PlayerView p=exposedPlayers.get(i);if(p==null)throw new IllegalArgumentException("player_not_offered");action=()->capturedInput.selectPlayer(game.getPlayer(p),null);}
+                            case "stack" -> {StackItemView s=exposedStack.get(exactInt(body.get("id"),"id"));if(s==null)throw new IllegalArgumentException("stack_item_not_offered");action=()->{for(SpellAbilityStackInstance si:game.getStack())if(si.getId()==s.getId()){
+                                boolean accepted=capturedInput.selectAbility(si.getSpellAbility());
+                                if(capturedInput instanceof forge.gamemodes.match.input.InputPassPriority){if(accepted)armSmartSpellIntent(capturedInput);else clearSmartIntent();}
+                                if(!accepted){synchronized(lock){busy=false;}}break;}};}
+                            default -> throw new IllegalArgumentException("unknown_operation");
+                        }
+                        if(capturedInput instanceof forge.gamemodes.match.input.InputPassPriority
+                            &&(op.equals("ok")||op.equals("cancel")))clearSmartIntent();
+                        busy=true; commandInFlight=true; lastActionError=null;
+                        SwingUtilities.invokeLater(()->{
+                            try{
+                                if(concessionRequested||capturedInput!=controller.getInputProxy().getInput()||capturedPromptGeneration!=promptGeneration.get()||pending!=null){lastActionError="native_decision_changed";clearSmartIntent();return;}
+                                action.run();
+                            }catch(Throwable t){recordFailure(t);}
+                            finally{ synchronized(lock){
+                                commandInFlight=false;
+                                // Only native stable prompt callbacks or an explicit false selection result release busy.
+                                // The same Input identity can enqueue a later native confirmation, so identity alone is not enough.
+                                publish();
+                                maybeNativeAutoPay();
+                            }}
+                        });
+                    }
+                    respond(x,202,obj("accepted",true));
+                }
+            }catch(Exception e){respond(x,400,obj("error",e.getMessage()==null?e.getClass().getSimpleName():e.getMessage()));}
+        });
+        server.start();
+    }
+    boolean auth(HttpExchange x)throws IOException {
+        String origin=x.getRequestHeaders().getFirst("Origin");
+        if(origin!=null&&!origin.matches("http://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?")){respond(x,403,obj("error","local_origin_required"));return false;}
+        if(origin!=null){x.getResponseHeaders().set("Access-Control-Allow-Origin",origin);x.getResponseHeaders().set("Vary","Origin");}
+        if(x.getRequestMethod().equals("OPTIONS")){x.getResponseHeaders().set("Access-Control-Allow-Headers","Authorization, Content-Type");x.getResponseHeaders().set("Access-Control-Allow-Methods","GET, POST, OPTIONS");x.sendResponseHeaders(204,-1);x.close();return false;}
+        if(!("Bearer "+token).equals(x.getRequestHeaders().getFirst("Authorization"))){respond(x,401,obj("error","local_token_required"));return false;}
+        return true;
+    }
+    void respond(HttpExchange x,int code,Object value)throws IOException {
+        byte[] bytes=JSON.toJson(value).getBytes(StandardCharsets.UTF_8);
+        x.getResponseHeaders().set("Content-Type","application/json; charset=utf-8");x.getResponseHeaders().set("Cache-Control","no-store");
+        x.sendResponseHeaders(code,bytes.length);x.getResponseBody().write(bytes);x.close();
+    }
+}

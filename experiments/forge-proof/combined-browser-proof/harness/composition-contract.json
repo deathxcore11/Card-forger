@@ -1,0 +1,123 @@
+{
+  "schema": "forge-combined-acceptance-inputs.v1",
+  "status": "source-bound-awaiting-root-approval",
+  "publicationAuthorized": false,
+  "runAuthorized": false,
+  "candidateRoot": "../candidate",
+  "localImageScope": "LOCAL_TEST_NOT_DEPLOYABLE",
+  "productionReleasePolicy": null,
+  "sourceIdentity": {
+    "forgeRevision": "e5a0f8156da70ffc7866f923bed371c0111707cd",
+    "nativeSourceSHA256": "b817b4f24702e9929378f9211492d4cc6e445803f62ad0e6dbc12947e543303b",
+    "difficultyPolicyVersion": "forge-heuristic-medium-beta-v1",
+    "imageBuiltOrDeployedByThisPackage": false
+  },
+  "inputs": {
+    "nativeDescendantManifest": {
+      "path": "${CANDIDATE}/native/SHA256SUMS",
+      "sha256": "1bb177ec2b54840e0e26a3159e30ee75007bf1d5911798ceb9046df7852c1ca3"
+    },
+    "nativeBridge": {
+      "path": "${CANDIDATE}/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java",
+      "sha256": "b817b4f24702e9929378f9211492d4cc6e445803f62ad0e6dbc12947e543303b"
+    },
+    "hostManifest": {
+      "path": "${CANDIDATE}/HOST-SHA256.json",
+      "sha256": "da0d89e2eca44418862ca029660b50c1535e1bb3883b41e32b3a50fe61ddc9fa"
+    },
+    "hostContextManifest": {
+      "path": "${CANDIDATE}/build-context/CONTEXT-SHA256.json",
+      "sha256": "d6e293394d6a7e30aca37343a0d1996a58e983bab00cf84e113843d10699a5f7"
+    },
+    "uiManifest": {
+      "path": "${CANDIDATE}/UI-SHA256.json",
+      "sha256": "ed181f25b23b3927a82dbcecd5d5741da9250360b1ac7cc4f876bf637d06ff83"
+    },
+    "productionReleasePolicy": {
+      "path": "${CANDIDATE}/host/src/release-policy.mjs",
+      "sha256": "405ec7aa47d2db1c405966022989eb07ed806157dcd30442f6cd0218fbe60fbf"
+    },
+    "frontendSession": {
+      "path": "${CANDIDATE}/ui/experiments/forge-proof/forge-session.mjs",
+      "sha256": "f726d82391fba3b5971f8a5e4c3a809776b04f7a23f49f6e45c087bc86d2979b"
+    },
+    "frontendTable": {
+      "path": "${CANDIDATE}/ui/experiments/phase-engine/match-table.mjs",
+      "sha256": "95e6f12c5f7454ea596d2b458e67dbbd671619783dd23561626946ea70c55524"
+    },
+    "compactPanel": {
+      "path": "${CANDIDATE}/ui/experiments/forge-proof/native-panel.mjs",
+      "sha256": "cbfe0d1f3ba290b7f98e4598a95d5f4eceaed8fbe8b8382aae5520a7fd266e65"
+    },
+    "compactCSS": {
+      "path": "${CANDIDATE}/ui/play-forge-table.css",
+      "sha256": "50fb366f635fc45170234f41ecae8cc42fee192cd5a5120c60e59f411dcbc90c"
+    },
+    "publicFixtureDecks": {
+      "path": "${CANDIDATE}/ui/fixture-decks.json",
+      "sha256": "5591e782b5b84218aaa53d4f673ab55a3907127953dafad658ca5e9873792f30"
+    },
+    "fixtureServer": {
+      "path": "${PACKAGE}/fixture-server.mjs",
+      "sha256": "f082498ac5ef35a431afcc57b8680da4b495f404a53b5a0bac2f505119f52a0e"
+    },
+    "browserDriver": {
+      "path": "${PACKAGE}/browser-journey.mjs",
+      "sha256": "097a35c8ba9924f918fa0770711f232e162fd9d3c8aa373a7077d006eec2227b"
+    },
+    "acceptanceContract": {
+      "path": "${PACKAGE}/acceptance-contract.mjs",
+      "sha256": "2a85638b77c779cd9ce6b46d34fe733bd8dffc0d491fdb7349bb943d715adb0e"
+    },
+    "visualChecks": {
+      "path": "${PACKAGE}/browser-visual-checks.mjs",
+      "sha256": "c3d149b62041439b119bfed4ce1e1d87a33fd84a7173d4c9349f5a1e755422ba"
+    },
+    "artifactSanitizer": {
+      "path": "${PACKAGE}/artifacts.py",
+      "sha256": "3f280dd7e6a3bd77a23e0863fb75039f36a6fb5f043e39ce5251130693b7abcb"
+    },
+    "lifecycleContract": {
+      "path": "${PACKAGE}/lifecycle-contract.mjs",
+      "sha256": "9ddfc71aedd3e9cdd8e16868a37d13f872e9df42324729f80c6b02abeb8b67d8"
+    },
+    "nativeVisibilityTest": {
+      "path": "${PACKAGE}/fixtures/NativeVisibilityChecks.java",
+      "sha256": "554cac835072c6e41ee4a6788c79107646782077259bbcd51ac7d82875ea6174"
+    },
+    "localOCIManifest": {
+      "path": "${PACKAGE}/local-oci/MANIFEST.json",
+      "sha256": "35785f1134a4da017b962eaf7535ad94844ccec2b4ac2221c2e0fc052f96cf9e"
+    },
+    "imageStagesManifest": {
+      "path": "${PACKAGE}/image-stages/MANIFEST.json",
+      "sha256": "20a339749656386b8a7ed33a1ddbbf92ecbb7b4046a7dc165a4d60d78b8c3acc"
+    },
+    "runtimeUISubset": {
+      "path": "${CANDIDATE}/UI-RUNTIME-SHA256.json",
+      "sha256": "25ad839dad2889f9836054bdaa4641e9dd741618bc40aa272d2c91076d9ba0e2"
+    }
+  },
+  "budget": {
+    "jobSeconds": 2400,
+    "reservationUSD": 0.5,
+    "computeUpperEstimateUSD": 0.24,
+    "executionApproved": false,
+    "proofStepSeconds": 2280,
+    "activeWorkSeconds": 2220,
+    "cleanupSeconds": 60,
+    "absoluteJobCutoffSeconds": 2340
+  },
+  "remainingGates": [
+    "Independent source review and root exact publication/workflow approval",
+    "Actual image compiler/runtime/export/readonly startup and same-image probe",
+    "Actual browser image readiness/geometry/natural terminal/rematch/cleanup",
+    "Separate authenticated registry publication and live acceptance not covered"
+  ],
+  "runtimeUIParent": "combined-recovery-candidate-20261026-0640",
+  "runtimeUIOnly": true,
+  "missingParentAssets": [
+    "deck-viewer.css",
+    "value-page.css"
+  ]
+}

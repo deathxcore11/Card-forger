@@ -1,0 +1,18 @@
+[
+  {
+    "path": "deck-viewer.css",
+    "sourceCommit": "7a91d7757ff1ac7e1d83a904a294b48a44ed1f32",
+    "gitBlob": "d0af9aa7169ec8651617f30d669674add9fdff7c",
+    "sha256": "2662d7afeb06227271d736c6751e2620376566fcba75e7865084d8617b5f311a",
+    "alsoMatchesProofBase": true,
+    "stub": false
+  },
+  {
+    "path": "value-page.css",
+    "sourceCommit": "7a91d7757ff1ac7e1d83a904a294b48a44ed1f32",
+    "gitBlob": "7b3633126189dfdda311cd7e9595d5d6057cd2a0",
+    "sha256": "4660814ec9ab21dfe8e3d88d79fba25385bfbbfdd44ef0de93e8ccb6bad2f8ba",
+    "alsoMatchesProofBase": true,
+    "stub": false
+  }
+]

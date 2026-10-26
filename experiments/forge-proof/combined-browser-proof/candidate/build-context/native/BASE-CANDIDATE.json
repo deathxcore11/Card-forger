@@ -1,0 +1,104 @@
+{
+  "schema": "cardstashy.native-descendant.v1",
+  "candidate": "combined-recovery-candidate-20261026-0620-native",
+  "directParent": {
+    "candidate": "review-candidate-20261026-0414-cpu",
+    "manifestSha256": "e149c83630f42bc28d5f7d6e3add9806159fe5ae2a7a0c6ca9ac64431884478d",
+    "bridgeSha256": "eb410e53025d1def32813646b3867ee7e558166e336be8589343117599298767"
+  },
+  "priorAncestry": {
+    "directParent": {
+      "candidate": "review-candidate-20261026-0334-combined",
+      "manifestSha256": "f220d107ffb20a7387290210098435f00a888ea4bf53699cf02887934b30e8d1",
+      "bridgeSha256": "032ada54a75fce4856400dc65e5456f13c8301dc0f815c4f330086ba6b34089e"
+    },
+    "aiParent": {
+      "candidate": "cpu-policy-work/heuristic-beta-candidate",
+      "manifestSha256": "baf9314ae74c0acfb070a7790042515578844febbcb75162f2175aa2fc883d81",
+      "patchSha256": "cd14c95185c4bfd44e90a809a6095f2027f23d102c1cf04464533ca545a0a4b1",
+      "runtimeClassSetSha256": "e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80"
+    },
+    "priorAncestors": {
+      "directParent": {
+        "candidate": "review-candidate-20261026-0320-concession",
+        "manifestSha256": "d93abd4918e191ed24b1168f5b24b0deb98c92e408887fb2192a8931b718ca78",
+        "bridgeSha256": "cf19c669746d140154c19a16d0628484b3d44b1457008768caea5e10661044e2"
+      },
+      "priorAncestors": [
+        {
+          "candidate": "review-candidate-20261026-0306-rules",
+          "manifestSha256": "74429e893cc31ae0ee6047321dfd5716c5b1c2fff7a33635ee2d548ede616b7d"
+        },
+        {
+          "candidate": "review-candidate-20261026-0228-formats-local",
+          "manifestSha256": "e5fd18772b6d2f00d35039ca7ed649f3f1f668a030fa8d783024963077f36cfb"
+        },
+        {
+          "candidate": "review-candidate-20261026-0146-exact",
+          "manifestSha256": "a5e7e38bb72b937936f7db7d1fcacb4a2196dddf6f103e90203d1d778aa43813"
+        }
+      ],
+      "retainedCapabilities": [
+        "cardstashy.match-input.v1",
+        "cardstashy.formats-three.v1",
+        "cardstashy.rules-data.v1",
+        "cardstashy.native-concession.v1",
+        "cardstashy.native-affordances.v1"
+      ],
+      "runtimeDeltaFromParent": [
+        "Pin two existing native affordance preferences true",
+        "Guard native concession under Game terminal monitor; report whether applied"
+      ],
+      "aiPolicy": "unchanged explicit Default; no modified AI or search policies included",
+      "nativeForgeSourceModified": false
+    },
+    "retainedCapabilities": [
+      "cardstashy.match-input.v1",
+      "cardstashy.formats-three.v1",
+      "cardstashy.rules-data.v1",
+      "cardstashy.native-concession.v1",
+      "cardstashy.native-affordances.v1",
+      "cardstashy.experimental-heuristic-cpu.v1"
+    ],
+    "runtimeDeltaFromParent": [
+      "Strict3 versioned beta CPU policy admission, no legacy Default mapping",
+      "Startup-only reviewed profile/class/build attestation and effective runtime verification",
+      "Isolated native AI patch overlay; original Forge source unchanged"
+    ],
+    "nativeAiModified": true,
+    "liveProductionAdmissionApproved": false,
+    "externalRuntimeCancellationStillRequired": true
+  },
+  "retainedCapabilities": [
+    "cardstashy.match-input.v1",
+    "cardstashy.formats-three.v1",
+    "cardstashy.rules-data.v1",
+    "cardstashy.native-concession.v1",
+    "cardstashy.native-affordances.v1",
+    "cardstashy.experimental-heuristic-cpu.v1"
+  ],
+  "addedCapabilities": [
+    "cardstashy.forge-visibility.v1"
+  ],
+  "runtimeDeltaFromParent": [
+    "Reviewed native visibility publication bridge only; CPU policy, native AI patch, reviewed class-set and dated rules assets unchanged"
+  ],
+  "visibilityOverlay": {
+    "manifestSha256": "8f8ca2c9bd61168bd9f4a3bfd4a04c958247e4f2f540d44b195a9ade15578633",
+    "patchSha256": "bec4e323af853fd4705d2d35893323f1ef9bcc37ab6e06a080bf0e56195c76df"
+  },
+  "nativeAiModified": true,
+  "upstreamForgeSourceModified": false,
+  "liveProductionAdmissionApproved": false,
+  "evidenceScope": "Source composition only; inherited EVIDENCE*.json are historical parent evidence, not new descendant test/image/browser receipts",
+  "externalRuntimeCancellationStillRequired": true,
+  "notClaimed": [
+    "one-shot reveal/search/order dialogs",
+    "library position/order",
+    "multiplayer",
+    "cancellation of already scheduled Forge-internal pass",
+    "queued-auto-payment failure race execution",
+    "browser or image acceptance",
+    "all requested precons supported"
+  ]
+}

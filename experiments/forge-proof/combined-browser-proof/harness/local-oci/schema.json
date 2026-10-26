@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LOCAL_TEST_NOT_DEPLOYABLE OCI evidence record (not a production configuration)",
+  "$comment": "Serialization is evidence only. Runtime APIs additionally require branded in-process objects produced by byte verification; JSON validation cannot authorize a run or select this path.",
+  "type": "object",
+  "required": ["schema", "scope", "deployable", "registryPublication", "image", "nativeManifestSha256", "nativeSourceSha256", "nativeBuildAttestationSha256"],
+  "properties": {
+    "schema": {"const": "cardstashy.local-oci-test-policy.v1"},
+    "scope": {"const": "LOCAL_TEST_NOT_DEPLOYABLE"},
+    "deployable": {"const": false},
+    "registryPublication": {"const": false},
+    "containerImage": false,
+    "image": {
+      "type": "object",
+      "required": ["schema", "scope", "deployable", "registryPublication", "ociManifestDigest", "dockerImageId", "layerDigests", "diffIds", "platform"],
+      "properties": {
+        "schema": {"const": "cardstashy.local-oci-test-identity.v1"},
+        "scope": {"const": "LOCAL_TEST_NOT_DEPLOYABLE"},
+        "deployable": {"const": false},
+        "registryPublication": {"const": false},
+        "ociManifestDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "dockerImageId": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "layerDigests": {"type": "array", "minItems": 1, "maxItems": 128, "items": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}},
+        "diffIds": {"type": "array", "minItems": 1, "maxItems": 128, "items": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}},
+        "platform": {"const": "linux/amd64"}
+      },
+      "additionalProperties": false
+    },
+    "engineRevision": {"const": "e5a0f8156da70ffc7866f923bed371c0111707cd"},
+    "nativeManifestSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nativeSourceSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nativeBuildAttestationSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "aiPatchsetSha256": {"const": "cd14c95185c4bfd44e90a809a6095f2027f23d102c1cf04464533ca545a0a4b1"},
+    "runtimeClassSetSha256": {"const": "e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80"},
+    "buildCompilerVersion": {"type": "string", "pattern": "^javac 21\\.[0-9]+\\.[0-9]+(?:\\S*)?$"},
+    "runtimeJavaVersion": {"type": "string", "pattern": "^21\\.", "maxLength": 128},
+    "rulesData": {"type": "object"}
+  },
+  "additionalProperties": false
+}

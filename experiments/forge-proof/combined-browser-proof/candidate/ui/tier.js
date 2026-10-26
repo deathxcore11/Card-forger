@@ -1,0 +1,64 @@
+// Card tiers: one colour scale for all three games, by market price so it means the same thing
+// everywhere: grey under $2, green $2–$10, blue $10–$50, purple $50–$200, gold $200–$1,000,
+// orange over $1,000.
+export const TIERS = [
+  { key: "t0", label: "Common", color: "#9aa3ad" },
+  { key: "t1", label: "Uncommon", color: "#4fd18b" },
+  { key: "t2", label: "Rare", color: "#4aa3ff" },
+  { key: "t3", label: "Epic", color: "#b46cff" },
+  { key: "t4", label: "Legendary", color: "#ffc93c" },
+  { key: "t5", label: "Grail", color: "#ff7a1a" },
+];
+
+// Upper limits of each band (inclusive): grey < $2, green ≤ $10, blue ≤ $50, purple ≤ $200,
+// gold ≤ $1,000, orange above.
+export const BANDS = [2, 10, 50, 200, 1000];
+export function priceTier(p) {
+  const v = Number(p);
+  if (!(v > 0)) return 0;
+  if (v < BANDS[0]) return 0;
+  let i = 1;
+  while (i < BANDS.length && v > BANDS[i]) i++;
+  return i;
+}
+
+// Printed rarity, read the way collectors rank it in each game.
+export function rarityTier(game, rarity) {
+  const r = String(rarity || "").toLowerCase();
+  if (!r) return 0;
+  if (game === "mtg") return { common: 0, uncommon: 1, rare: 2, mythic: 3, special: 3, bonus: 3 }[r] ?? 0;
+  if (game === "ygo") {
+    if (/secret|ultimate|ghost|starlight|collector|platinum|prismatic|quarter century|10000|gold|premium/.test(r)) return 4;
+    if (/ultra/.test(r)) return 3;
+    if (/super/.test(r)) return 2;
+    if (/rare/.test(r) && !/short print/.test(r)) return 1;
+    return 0;
+  }
+  // Pokémon
+  if (/secret|special illustration|hyper|rainbow|gold|crown|shiny ultra|mega hyper|black white rare/.test(r)) return 4;
+  if (/ultra|double|illustration|ace spec|radiant|amazing|shiny|full art|\bv\b|vmax|vstar|\bex\b|\bgx\b|prism|legend|break|lv\.x|trainer gallery/.test(r)) return 3;
+  if (/holo|rare/.test(r)) return 2;
+  if (/uncommon/.test(r)) return 1;
+  return 0;
+}
+
+// Price decides the tier. Printed rarity (rarityTier) is kept for labels and filters only.
+// No known price → no tier (no frame), never a misleading grey.
+export const NO_TIER = { key: "tn", label: "No price yet", color: "transparent" };
+export function tierOf(game, rarity, price) {
+  return Number(price) > 0 ? TIERS[priceTier(price)] : NO_TIER;
+}
+
+// Attributes for a card element: the tier class and its colour.
+export const tierAttrs = (t) => `data-tier="${t.key}" style="--tier:${t.color}"`;
+export const tierStyle = (t) => `--tier:${t.color}`;
+// A small gem with the tier name, for the corner of a card.
+export const tierGem = (t) => `<span class="tier-gem" title="${t.label} tier"><i aria-hidden="true"></i>${t.label}</span>`;
+
+// Printed-rarity decoration is separate from the price scale. Callers must prove
+// a single selected YGO printing before supplying its rarity; absence is neutral.
+export function ygoRarityFlair(rarity) {
+  const r=String(rarity||'').trim().toLowerCase();
+  if(!r || !/^(?:common|short print|normal parallel rare)$/.test(r) && !/rare/.test(r))return '';
+  return 'yr'+rarityTier('ygo',r);
+}

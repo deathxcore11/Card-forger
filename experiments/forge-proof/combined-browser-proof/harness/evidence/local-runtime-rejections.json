@@ -1,0 +1,23 @@
+[
+  {
+    "case": "old-classpath",
+    "expected": "reject",
+    "exitCode": 1,
+    "reason": "human_priority_runtime_bytecode_mismatch",
+    "pass": true
+  },
+  {
+    "case": "missing-attestation",
+    "expected": "reject",
+    "exitCode": 1,
+    "reason": "NoSuchFileException",
+    "pass": true
+  },
+  {
+    "case": "altered-attestation",
+    "expected": "reject",
+    "exitCode": 1,
+    "reason": "human_priority_build_attestation_mismatch",
+    "pass": true
+  }
+]

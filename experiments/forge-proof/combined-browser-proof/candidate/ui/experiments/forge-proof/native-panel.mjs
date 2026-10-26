@@ -1,0 +1,73 @@
+import {optionLabel,optionCardId} from './forge-session.mjs';
+const OPTION_METHODS=new Set(['getChoices','getAbilityToPlay','chooseSingleEntityForEffect','chooseEntitiesForEffect','showOptionDialog','order']);
+export const isDescribedOption=value=>typeof value==='string'||typeof value==='number'||typeof value==='boolean'||!!(value&&value.hidden!==true&&value.card?.hidden!==true&&(value.name||value.description||value.text));
+export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
+ const doc=container.ownerDocument,s=snapshot,n=s.native;if(!n)return;
+ const node=(tag,text,cls)=>{const e=doc.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
+ const run=fn=>()=>{try{const out=fn();if(out?.catch)out.catch(e=>onLocalError(e.message));}catch(e){onLocalError(e.message);}};
+ const button=(label,fn,disabled=false,key='')=>{const b=node('button',label);b.type='button';b.disabled=s.busy||disabled;if(key)b.dataset.nativeKey=key;b.addEventListener('click',run(fn));return b;};
+ const panel=node('section',undefined,'forge-native-panel');panel.dataset.nativePanel='true';panel.dataset.nativeRevision=String(n.revision);panel.setAttribute('aria-label','Native Forge decision');
+ if(!presentation.hosted)panel.append(node('small',`${presentation.label||'LOCAL FORGE PROOF'} · revision ${n.revision}`,'forge-proof-label'));
+ const deckLabel=alias=>({'keen-engineering':'Keen Engineering','reign-of-dragons':'Reign of Dragons','calling-all-angels':'Calling All Angels'}[alias]||alias);
+ const context=node('div',undefined,'forge-native-context'),nativeMessage=n.prompt?.message||n.message||'Waiting for Forge';
+ // Compact only the known passive status format. Any actual instruction or
+ // unfamiliar native message remains verbatim and immediately visible.
+ const statusLines=!n.prompt&&n.inputType==='InputPassPriority'&&typeof n.message==='string'?n.message.match(/^Priority: ([^\n]+)\nTurn: (\d+ \([^\n]+\))\nPhase: ([^\n]+)\nStack: ([^\n]+)$/):null;
+ const compactStatus=!!statusLines&&!n.failure&&n.status!=='finished';panel.dataset.compactStatus=String(compactStatus);
+ const title=node('h2',compactStatus?(n.priorityPlayer===n.viewer?'Your priority':`Priority: ${statusLines[1]}`):nativeMessage);context.setAttribute('aria-live','polite');context.setAttribute('aria-atomic','true');context.append(title);
+ if(compactStatus){const status=node('div',undefined,'forge-native-status');status.setAttribute('aria-label','Native turn, phase and stack');for(const [label,text]of [['Turn',statusLines[2]],['Phase',statusLines[3]],['Stack',statusLines[4]]]){const value=node('span',`${label}: ${text}`);status.append(value);}context.append(status);}panel.append(context);
+ if(n.failure){panel.append(node('p',`Forge stopped: ${n.failure}`,'forge-diagnostic'));container.replaceChildren(panel);return;}
+ if(n.status==='finished'){panel.append(node('p',n.draw===true?'Forge result: draw':n.winner?`Forge result: ${n.winner}`:'Forge reports that the game has finished.'));container.replaceChildren(panel);return;}
+ if(presentation.allowControlMode===true&&['smart','full'].includes(n.controlMode)){
+  const group=node('div',undefined,'forge-native-mode');group.setAttribute('role','group');group.setAttribute('aria-label','Native response mode');
+  for(const [value,label]of [['smart','Smart'],['full','Full Control']]){const b=button(label,()=>session.setControlMode(value),!!n.prompt||n.inputType==='InputLockUI',`mode-${value}`);b.setAttribute('aria-pressed',String(n.controlMode===value));group.append(b);}
+  group.title=n.controlMode==='smart'?'Native Smart assistance is active; required choices remain yours.':'Native Full Control is active; respond and pay through Forge prompts.';panel.append(group);
+ }
+ if(n.notification?.message){const notice=node('p',`${n.notification.title||n.notification.method||'Forge'}: ${n.notification.message}`,'forge-diagnostic');notice.setAttribute('role','status');panel.append(notice);}
+ if(n.lastActionError)panel.append(node('p',`Native action diagnostic: ${n.lastActionError}`,'forge-diagnostic'));
+ if(s.transportError){const error=node('p',`Connection/action diagnostic: ${s.transportError}`,'forge-diagnostic');error.setAttribute('role','alert');panel.append(error,button('Refresh state (does not replay action)',()=>session.refresh(),false,'refresh'));}
+ if(s.busy)panel.append(node('p','Waiting for Forge to resolve…','forge-native-wait'));
+ const p=n.prompt;
+ if(p){
+  if(p.supported!==true||p.method==='order'&&p.ordered!==true){panel.append(node('p','This native prompt is not yet adapted. No response has been invented or sent.','forge-diagnostic'));}
+  else if(['confirm','showConfirmDialog'].includes(p.method)){
+   const options=p.options||[];panel.append(button(optionLabel(options[0]?.value??'Confirm'),()=>session.replyValue(true),false,'reply-true'),button(optionLabel(options[1]?.value??'Decline'),()=>session.replyValue(false),false,'reply-false'));
+  }else if(p.method==='showInputDialog'){
+   const form=node('form'),label=node('label','Value requested by Forge');let input;
+   if(p.options?.length){input=node('select');input.append(node('option','Select an offered value'));input.firstChild.value='';for(const o of p.options){const option=node('option',optionLabel(o.value));option.value=String(o.value);input.append(option);}}
+   else{input=node('input');input.type=p.numeric?'number':'text';input.maxLength=200;input.autocomplete='off';if(p.numeric)input.step='1';}
+   input.required=true;input.disabled=s.busy;input.dataset.nativeKey='native-value';input.setAttribute('aria-label',p.message||'Forge input');label.append(input);form.append(label);
+   const submit=node('button','Submit native value');submit.type='submit';submit.disabled=s.busy;submit.dataset.nativeKey='submit-value';form.append(submit);form.addEventListener('submit',e=>{e.preventDefault();if(form.reportValidity())run(()=>session.replyValue(input.value))();});panel.append(form);
+  }else if(p.acknowledgeOnly===true&&p.method==='getChoices'){
+   const revealed=node('ul');for(const option of p.options||[])revealed.append(node('li',optionLabel(option.value)));panel.append(revealed,button('Acknowledge native reveal',()=>session.confirmPrompt(),false,'acknowledge-prompt'));
+  }else if(OPTION_METHODS.has(p.method)){
+   const indexes=s.nativeDraft?.revision===n.revision&&s.nativeDraft?.promptId===p.id?s.nativeDraft.indexes:[],options=p.options||[];
+   panel.append(node('p',p.method==='order'?`Choose the destination order. Leave ${p.remainingMin===p.remainingMax?p.remainingMin:p.remainingMin+'–'+p.remainingMax} in the source.`:`Choose ${p.min===p.max?p.min:`${p.min}–${p.max}`} native option${p.max===1?'':'s'}.`));
+   const list=node('div',undefined,'forge-native-options');
+   for(const o of options.filter(o=>p.method!=='order'||!indexes.includes(o.index))){const described=isDescribedOption(o.value),b=button(optionLabel(o.value),()=>session.selectPrompt(o.index),!described,`option-${o.index}`);b.setAttribute('aria-pressed',String(indexes.includes(o.index)));b.dataset.optionIndex=String(o.index);const cardId=optionCardId(o.value);if(cardId!==null)b.dataset.optionCard=String(cardId);if(!described)b.title='Native option details are unavailable; refusing an arbitrary reply.';list.append(b);}
+   if(p.method==='order')panel.append(node('strong',`Source · ${options.length-indexes.length}`));panel.append(list);
+   if(options.some(o=>!isDescribedOption(o.value)))panel.append(node('p','Some native options have no safe presentation. Those options remain disabled.','forge-diagnostic'));
+   if(p.method==='order'&&indexes.length){panel.append(node('strong',p.topLabel||'Destination order'));const order=node('ol');order.setAttribute('aria-label','Native selected order');for(const [at,index]of indexes.entries()){const row=node('li',optionLabel(options.find(o=>o.index===index)?.value));row.append(button('↑',()=>session.reorderPrompt(index,-1),at===0,`earlier-${index}`),button('↓',()=>session.reorderPrompt(index,1),at===indexes.length-1,`later-${index}`),button('Remove',()=>session.selectPrompt(index),false,`remove-${index}`));order.append(row);}panel.append(order);}
+   if(p.method==='order'&&p.rememberAllowed===true){const rememberLabel=node('label','Remember this order'),remember=node('input');remember.type='checkbox';remember.checked=s.nativeDraft?.remember===true;remember.disabled=s.busy;remember.dataset.nativeKey='remember-order';remember.addEventListener('change',run(()=>session.rememberPrompt(remember.checked)));rememberLabel.prepend(remember);panel.append(rememberLabel);}
+   const summary=node('p',indexes.length?`Selected: ${indexes.map(index=>optionLabel(options.find(o=>o.index===index)?.value)).join(' · ')}`:'Nothing selected');summary.className='forge-native-draft';panel.append(summary);
+   panel.append(button(indexes.length===0&&p.min===0?(p.cancelable?'Cancel native dialog':'Submit no selections'):'Confirm native choice',()=>session.confirmPrompt(),indexes.length<p.min||indexes.length>p.max,'confirm-prompt'),button('Clear draft',()=>session.clearPrompt(),false,'clear-prompt'));
+  }else panel.append(node('p',`Unsupported native dialog: ${p.method}. No reply sent.`,'forge-diagnostic'));
+ }else{
+  const buttons=n.buttons||{},actions=node('div',undefined,'forge-native-actions');actions.setAttribute('role','group');actions.setAttribute('aria-label','Native actions');
+  for(const op of ['ok','cancel'])if(buttons[op]!==undefined)actions.append(button(String(buttons[op]||op),()=>session.nativeButton(op,n.revision),buttons[op+'Enabled']!==true,op));
+  if(actions.childNodes.length)panel.append(actions);
+  const refs=[...(n.selection?.cards||[]),...(n.selection?.targets||[]),...(n.selection?.actionable||[])],unique=new Map(refs.map(r=>[r.kind+':'+r.id,r]));
+  if(unique.size){const selection=node('details'),summary=node('summary',`Native selection guidance · ${unique.size}`);selection.append(summary,node('p','These are Forge’s UI hints, not a complete legal-action list. The engine validates each click.'));
+   for(const r of unique.values()){const c=s.status.surface.cards.find(c=>c.id===r.id),player=n.players.find(p=>p.id===r.id),stack=n.stack.find(x=>x.id===r.id);const label=r.kind==='card'?(c?.known?c.name:c?'Face-down card':null):r.kind==='player'?player?.name:r.kind==='stack'?stack?.text:null;if(label)selection.append(button(label,()=>session.nativeSelect(r.kind,r.id,n.revision),false,`ref-${r.kind}-${r.id}`));}panel.append(selection);}
+  if(n.stack?.length){const stack=node('details');stack.append(node('summary',`Native stack · ${n.stack.length}`));for(const item of n.stack)stack.append(button(item.text||`Stack item ${item.id}`,()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`));panel.append(stack);}
+  const selected=s.status.surface.cards.find(c=>c.id===s.selected);if(selected)panel.append(button(`Send ${selected.known?selected.name:'card'} click to Forge`,()=>session.nativeSelect('card',selected.id,n.revision),false,'click-inspected'));
+ }
+ const details=node('details',undefined,'forge-native-diagnostics'),table=container.closest('.play-match-table'),detailsSummary=node('summary',presentation.hosted?'Match details':'Proof details');detailsSummary.dataset.nativeKey='native-details';details.dataset.keepOpen='native-details';details.open=table?.dataset.forgeDetailsOpen==='true';details.addEventListener('toggle',()=>{if(table)table.dataset.forgeDetailsOpen=String(details.open);});details.append(detailsSummary);
+ if(n.players.every(p=>p.deckAlias))details.append(node('p',n.players.map(p=>`${p.isViewer?'You':'Forge AI'}: ${deckLabel(p.deckAlias)}`).join(' vs ')));
+ if(presentation.policyLabel)details.append(node('p',presentation.policyLabel));
+ if(['smart','full'].includes(n.controlMode))details.append(node('p',n.controlMode==='smart'?'Native Smart assistance is active; required choices remain yours.':'Native Full Control is active; respond and pay through Forge prompts.'));
+ if(compactStatus)details.append(node('p',n.message));
+ if(p)details.append(node('p',`Native dialog: ${p.method} · ${p.id}`));
+ details.append(node('p','Click a card to send its native ID to Forge. Use its magnifier or I key to inspect. Drag a card onto your battlefield or this panel to send the same click. Player and stack choices use their native IDs. Unsupported dialogs stop visibly. Nothing here interprets card rules.'),node('p',`Native revision ${n.revision} · Engine input: ${n.inputType||'none'} · phase ${n.phase||'none'} · selected ${(n.selection?.chosen||[]).map(r=>r.kind+' '+r.id).join(', ')||'none'}`),node('p',presentation.hosted?'Session-only native match. Leaving closes its resources, not a concession. Interrupted matches cannot be resumed; no command is automatically retried.':'Temporary proof only — not the production Play backend. No automatic passing, auto-win, hidden-state policy, account changes, or reconnect guarantee.'));panel.append(details);
+ container.replaceChildren(panel);
+}

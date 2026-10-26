@@ -1,0 +1,132 @@
+/* Deck presentations share the original rows and card actions. These rules do
+   not apply to collection cards, card popups or their lighting materials. */
+.deck-viewer { min-width:0; }
+.deck-view-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin:16px 0 12px; }
+.deck-view-toolbar .view-switch { margin-left:auto; }
+.deck-view-switch button { min-height:38px; }
+.deck-view-switch button:focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
+.deck-viewer [data-deck-list] { min-width:0; }
+.deck-viewer [data-deck-card] { position:relative; min-width:0; }
+.deck-viewer [data-deck-card] :is(.lot-name,.deck-compact-copy,.ellip) { min-width:0; }
+.deck-viewer [data-deck-card]:focus-visible,
+.deck-viewer [data-deck-card]:has(:focus-visible) { outline:2px solid var(--gold); outline-offset:3px; }
+
+/* Detailed list: full portrait thumbnails alongside readable information. */
+.deck-viewer[data-deck-view="compact"] [data-deck-list] { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row { display:grid; grid-template-columns:58px minmax(0,1fr) auto; gap:10px; padding:8px; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-art { width:58px; height:81px; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-art > img { display:block; object-fit:contain; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-info { display:grid; width:auto; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-sub { display:flex; flex-wrap:wrap; white-space:normal; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-name { font-size:14px; white-space:normal; overflow-wrap:anywhere; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-side { display:grid; width:auto; padding:0; }
+.deck-viewer[data-deck-view="compact"] .lot.deck-row .stepper { transform:none; }
+.deck-viewer[data-deck-view="compact"] .mini-row > :is(.row-thumb,.mini-art,.img-missing) { width:60px; height:84px; object-fit:contain; flex:0 0 60px; border-radius:6px; }
+.deck-viewer[data-deck-view="compact"] .mini-row > .ellip { white-space:normal; overflow-wrap:anywhere; }
+
+/* Art grid: retain exact images, quantities, edits and selection controls. */
+.deck-viewer[data-deck-view="gallery"] [data-deck-list] { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:20px 14px; background:none; border:0; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) [data-deck-card] { display:flex; flex-direction:column; align-items:stretch; gap:8px; padding:0; text-align:left; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .lot-art { display:block; width:100%; height:auto; aspect-ratio:63/88; flex:none; border-radius:5% / 3.5%; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .lot-art > :is(img,.img-missing) { display:block; width:100%; height:100%; object-fit:contain; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .lot-info { display:grid; width:100%; padding:0 3px; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .lot-name { display:block; width:100%; font-size:13px; text-overflow:ellipsis; white-space:nowrap; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .lot-sub { display:none; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .lot-side { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; width:100%; gap:6px; padding:0 3px 5px; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot.deck-row .stepper { transform:none; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .mini-row > :is(.row-thumb,.mini-art,.img-missing) { display:block; width:100%; height:auto; aspect-ratio:63/88; object-fit:contain; border-radius:5% / 3.5%; flex:none; background:var(--surface-2); }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .mini-row > :is(.ellip,.deck-compact-copy,.small) { display:block; max-width:none; padding:0 6px; white-space:normal; overflow-wrap:anywhere; text-align:left; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .mini-row > .small { padding-bottom:8px; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .deck-compact-copy > b { font-size:13px; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .pick-main { display:flex; flex-direction:column; align-items:stretch; gap:8px; width:100%; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .pick-main > .deck-compact-art { display:block; width:100%; height:auto; aspect-ratio:63/88; object-fit:contain; flex:none; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .pick-main > .deck-compact-copy { padding:0 6px; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .pick-row > input { position:absolute; top:8px; left:8px; z-index:2; width:22px; height:22px; accent-color:var(--gold); }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .pick-row > .pick-side { display:flex; justify-content:space-between; max-width:none; padding:0 6px 8px; }
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) [data-deck-card]::after { content:attr(data-deck-qty) '×'; position:absolute; top:7px; right:7px; z-index:2; padding:3px 7px; border:1px solid #ffffff60; border-radius:7px; background:#141820e8; color:#fff; font-size:12px; font-weight:800; line-height:1.4; pointer-events:none; }
+
+/* Stacks use type sections and wrapping piles. Each pile ends at the card's
+   portrait edge; quantity controls sit on the art instead of a gray footer. */
+.deck-stack-roles,.deck-stack-summary { display:none; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-summary { display:flex; flex-wrap:wrap; gap:7px 16px; margin:0 0 18px; color:var(--muted); font-size:12px; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-summary b { color:var(--text); }
+.deck-viewer[data-deck-view="stacks"] [data-deck-list] { display:flex; flex-wrap:wrap; align-items:flex-start; gap:24px 18px; padding:8px 3px 12px; overflow:visible; border:0; background:none; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-group { flex:0 1 var(--deck-stack-basis,190px); min-width:min(168px,100%); max-width:100%; }
+.deck-viewer[data-deck-view="stacks"] #deckList { display:flex; flex-wrap:wrap; align-items:flex-start; gap:20px 18px; }
+.deck-viewer[data-deck-view="stacks"] #deckList > details.group { flex:0 1 var(--deck-stack-basis,190px); min-width:min(174px,100%); max-width:100%; margin:0; }
+.deck-viewer[data-deck-view="stacks"]:has(> details.group) { display:flex; flex-wrap:wrap; align-items:flex-start; gap:20px 18px; }
+.deck-viewer[data-deck-view="stacks"]:has(> details.group) > .deck-view-toolbar,
+.deck-viewer[data-deck-view="stacks"]:has(> details.group) > .deck-stack-summary { flex-basis:100%; }
+.deck-viewer[data-deck-view="stacks"] > details.group { flex:0 1 var(--deck-stack-basis,190px); min-width:min(174px,100%); max-width:100%; margin:0; }
+.deck-viewer[data-deck-view="stacks"] details.group > summary { min-width:0; flex-wrap:wrap; gap:5px; white-space:normal; }
+.deck-viewer[data-deck-view="stacks"] details.group > summary > span:first-child { min-width:0; overflow-wrap:anywhere; }
+.deck-viewer[data-deck-view="stacks"] details.group > summary > span.muted { display:none; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-heading { display:flex; align-items:center; gap:9px; margin:0 0 12px; font-size:15px; font-weight:750; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-heading[hidden] { display:none; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-count { display:inline-grid; place-items:center; min-width:26px; padding:2px 7px; border-radius:8px; background:var(--surface-2); color:var(--muted); font-size:12px; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-columns { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(168px,100%),1fr)); align-items:start; gap:20px 16px; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-pile { --deck-stack-step:38px; display:flex; flex-direction:column; align-items:stretch; min-width:0; }
+.deck-viewer[data-deck-view="stacks"] [data-deck-card] { flex:0 0 auto; width:100%; height:auto; aspect-ratio:63/88; min-height:0; gap:0; margin:0; align-self:stretch; border:0; border-radius:5% / 3.5%; background:none; box-shadow:0 7px 16px -10px #000b; isolation:isolate; content-visibility:visible; contain-intrinsic-size:none; }
+/* Natural flex height includes the final full portrait, even for one card and
+   offscreen piles. The overlap is card height minus the exposed title strip. */
+.deck-viewer[data-deck-view="stacks"] .deck-stack-pile > [data-deck-card] + [data-deck-card] { margin-top:calc(var(--deck-stack-step) - 139.68254%); }
+.deck-viewer[data-deck-view="stacks"] [data-deck-card]:hover { z-index:3; }
+.deck-viewer[data-deck-view="stacks"] [data-deck-card]:focus-within { z-index:4; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-art { margin:0; padding:0; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row :is(.lot-info,.art-price),
+.deck-viewer[data-deck-view="stacks"] .mini-row > :is(.ellip,.deck-compact-copy,.small),
+.deck-viewer[data-deck-view="stacks"] .pick-main > .deck-compact-copy,
+.deck-viewer[data-deck-view="stacks"] .pick-row > .pick-side { display:none; }
+.deck-viewer[data-deck-view="stacks"] .pick-main { gap:0; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-side { position:absolute; bottom:6px; right:6px; display:flex; width:auto; max-width:calc(100% - 12px); gap:4px; padding:3px; border:1px solid #ffffff35; border-radius:9px; background:#141820ed; color:#fff; opacity:0; pointer-events:none; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row:is(:hover,:focus-within) .lot-side,
+.deck-viewer[data-deck-view="stacks"] .deck-stack-pile > .lot.deck-row:last-child .lot-side { opacity:1; pointer-events:auto; }
+.deck-viewer[data-deck-view="stacks"] .lot-side .stepper { background:none; color:#fff; }
+.deck-viewer[data-deck-view="stacks"] .lot-side .stepper button { min-height:30px; min-width:30px; }
+.deck-viewer[data-deck-view="stacks"] .lot-side .link { color:#fff; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-roles { position:absolute; left:6px; bottom:7px; display:block; max-width:calc(100% - 12px); padding:3px 6px; border:1px solid #ffffff35; border-radius:6px; background:#141820e8; color:#fff; font-size:10px; line-height:1.3; font-weight:650; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .deck-stack-roles { bottom:47px; }
+.deck-viewer[data-deck-view="stacks"] [data-deck-card]::after { top:5px; right:5px; padding:1px 5px; font-size:11px; border-radius:5px; }
+/* Deck inspection has room for complete piles on desktop. Card-detail sheets
+   keep their existing width and layout when the deck viewer is absent. */
+@media(min-width:700px) {
+ dialog.sheet:has(.deck-viewer[data-deck-view="stacks"]) { width:calc(100% - 48px); max-width:1180px; }
+ #sheetBody:has(.deck-viewer[data-deck-view="stacks"]) { display:block; }
+ #sheetBody:has(.deck-viewer[data-deck-view="stacks"]) > .cs-hero.compact { position:relative; width:auto; height:190px; margin-inline:calc(-1 * var(--gutter)); }
+}
+@media(max-width:480px) {
+ .deck-viewer[data-deck-view="stacks"] .deck-stack-group,
+ .deck-viewer[data-deck-view="stacks"] #deckList > details.group,
+ .deck-viewer[data-deck-view="stacks"] > details.group { flex-basis:var(--deck-stack-small-basis,148px); min-width:min(128px,100%); }
+ .deck-viewer[data-deck-view="stacks"] [data-deck-list],
+ .deck-viewer[data-deck-view="stacks"] #deckList { column-gap:10px; }
+ .deck-viewer[data-deck-view="stacks"] .deck-stack-columns { grid-template-columns:repeat(auto-fill,minmax(min(128px,100%),1fr)); gap:18px 10px; }
+ .deck-viewer[data-deck-view="stacks"] .deck-stack-pile { --deck-stack-step:32px; }
+ .deck-viewer[data-deck-view="stacks"] .lot-side .stepper button { min-width:27px; }
+}
+
+/* Names only keeps editing controls and selected checks; it hides art and
+   secondary metadata rather than generating another, divergent card list. */
+.deck-viewer[data-deck-view="symbols"] [data-deck-list] { display:grid; grid-template-columns:minmax(0,1fr); gap:4px; }
+.deck-viewer[data-deck-view="symbols"] [data-deck-card] { min-height:44px; padding:10px; }
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row .lot-art,
+.deck-viewer[data-deck-view="symbols"] :is(.row-thumb,.mini-art,.deck-compact-art,.img-missing),
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row :is(.lot-sub,.own,.set-badge),
+.deck-viewer[data-deck-view="symbols"] .deck-compact-copy > :not(b),
+.deck-viewer[data-deck-view="symbols"] .mini-row > .small,
+.deck-viewer[data-deck-view="symbols"] .pick-side { display:none; }
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row .lot-info { display:block; }
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row .lot-name { display:block; width:100%; white-space:normal; overflow-wrap:anywhere; }
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row .lot-side { display:grid; width:auto; padding:0; }
+.deck-viewer[data-deck-view="symbols"] .lot.deck-row .stepper { transform:none; }
+.deck-viewer[data-deck-view="symbols"] .mini-row > .ellip { white-space:normal; overflow-wrap:anywhere; }
+.deck-viewer[data-deck-view="symbols"] .pick-main { min-width:0; }
+.deck-viewer[data-deck-view="symbols"] .deck-compact-copy > b { font-size:14px; }
+@media(max-width:480px) {
+ .deck-viewer[data-deck-view="gallery"] [data-deck-list] { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 10px; }
+ .deck-viewer[data-deck-view="compact"] .lot.deck-row { grid-template-columns:48px minmax(0,1fr) auto; gap:7px; padding:6px; }
+ .deck-viewer[data-deck-view="compact"] .lot.deck-row .lot-art { width:48px; height:67px; }
+ .deck-viewer[data-deck-view="compact"] .mini-row > :is(.row-thumb,.mini-art,.img-missing) { width:48px; height:67px; flex-basis:48px; }
+ .deck-viewer[data-deck-view="gallery"] .lot.deck-row .lot-side { flex-direction:column; align-items:flex-end; }
+}

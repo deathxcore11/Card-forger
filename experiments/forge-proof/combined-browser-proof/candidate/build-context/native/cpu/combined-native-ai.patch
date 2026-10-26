@@ -1,0 +1,234 @@
+--- a/forge-ai/src/main/java/forge/ai/PlayerControllerAi.java
++++ b/forge-ai/src/main/java/forge/ai/PlayerControllerAi.java
+@@ -1540,6 +1540,11 @@
+ 
+     @Override
+     public String chooseCardName(SpellAbility sa, Predicate<ICardFace> cpp, String valid, String message) {
++        // Do not use the opponent's private hand/library membership to name a card.
++        // Secret decklists: use currently lawful observations, not the actual unseen pool.
++        if ("MostProminentInHumanDeck".equals(sa.getParam("AILogic")) || !sa.hasParam("AILogic")) {
++            return ObservedCardNames.choose(player, cpp, !sa.hasParam("AILogic"));
++        }
+         if (sa.hasParam("AILogic")) {
+             CardCollectionView aiLibrary = player.getCardsIn(ZoneType.Library);
+             CardCollectionView oppLibrary = player.getStrongestOpponent().getCardsIn(ZoneType.Library);
+--- /dev/null
++++ b/forge-ai/src/main/java/forge/ai/ObservedCardNames.java
+@@ -0,0 +1,42 @@
++package forge.ai;
++
++import forge.StaticData;
++import forge.card.CardStateName;
++import forge.card.ICardFace;
++import forge.game.card.Card;
++import forge.game.player.Player;
++import java.util.Map;
++import java.util.TreeMap;
++import java.util.function.Predicate;
++
++/** Conservative opponent-name choice; assumes SECRET decklists, not a public deck manifest. */
++public final class ObservedCardNames {
++    private ObservedCardNames() { }
++
++    public static String choose(Player viewer, Predicate<ICardFace> allowed, boolean nonlandsOnly) {
++        Map<String,Integer> counts = new TreeMap<>();
++        for (Card card : viewer.getGame().getCardsInGame()) {
++            if (!card.getController().isOpponentOf(viewer)) continue;
++            // Membership/counts may be public, but do not inspect identity/type before checking BOTH permissions.
++            if (!card.getView().canBeShownTo(viewer.getView())
++                    || !card.getView().canFaceDownBeShownTo(viewer.getView())) continue;
++            String name = card.isFaceDown() ? card.getState(CardStateName.Original).getName() : card.getName();
++            ICardFace face = StaticData.instance().getCommonCards().getFaceByName(name);
++            if (face == null || !allowed.test(face) || (nonlandsOnly && face.getType().isLand())) continue;
++            counts.merge(name, 1, Integer::sum);
++        }
++        String best = ""; int count = 0;
++        for (Map.Entry<String,Integer> item : counts.entrySet()) {
++            if (item.getValue() > count) { best = item.getKey(); count = item.getValue(); }
++        }
++        if (!best.isEmpty()) return best;
++        // Legal global card dictionary is not opponent deck knowledge. Prefer the prior native fallback if legal.
++        ICardFace fallback = StaticData.instance().getCommonCards().getFaceByName("Morphling");
++        if (fallback != null && allowed.test(fallback)) return fallback.getName();
++        // A lazy cache can depend on which hidden deck cards were loaded. Use the COMPLETE public dictionary.
++        StaticData.instance().ensureAllCardsLoaded();
++        return StaticData.instance().getCommonCards().streamAllFaces()
++                .filter(allowed)
++                .map(ICardFace::getName).sorted().findFirst().orElse("");
++    }
++}
+--- a/forge-ai/src/main/java/forge/ai/ComputerUtilCard.java
++++ b/forge-ai/src/main/java/forge/ai/ComputerUtilCard.java
+@@ -1140,7 +1140,7 @@
+             final String logic = sa.getParam("AILogic");
+ 
+             if (logic.equals("MostProminentInHumanDeck")) {
+-                chosen.add(getMostProminentColor(CardLists.filterControlledBy(game.getCardsInGame(), opp), colorChoices));
++                chosen.add(getMostProminentColor(CardLists.filterControlledBy(VisibleAiCards.knownTo(ai, game.getCardsInGame()), opp), colorChoices));
+             } else if (logic.equals("MostProminentInComputerDeck")) {
+                 chosen.add(getMostProminentColor(CardLists.filterControlledBy(game.getCardsInGame(), ai), colorChoices));
+             } else if (logic.equals("MostProminentDualInComputerDeck")) {
+@@ -1148,11 +1148,11 @@
+                 chosen.add(prominence.get(0));
+                 chosen.add(prominence.get(1));
+             } else if (logic.equals("MostProminentInGame")) {
+-                chosen.add(getMostProminentColor(game.getCardsInGame(), colorChoices));
++                chosen.add(getMostProminentColor(VisibleAiCards.knownTo(ai, game.getCardsInGame()), colorChoices));
+             } else if (logic.equals("MostProminentHumanCreatures")) {
+-                CardCollectionView list = opp.getCreaturesInPlay();
++                CardCollectionView list = VisibleAiCards.knownTo(ai, opp.getCreaturesInPlay());
+                 if (list.isEmpty()) {
+-                    list = CardLists.filter(CardLists.filterControlledBy(game.getCardsInGame(), opp), CardPredicates.CREATURES);
++                    list = CardLists.filter(CardLists.filterControlledBy(VisibleAiCards.knownTo(ai, game.getCardsInGame()), opp), CardPredicates.CREATURES);
+                 }
+                 chosen.add(getMostProminentColor(list, colorChoices));
+             } else if (logic.equals("MostProminentComputerControls")) {
+@@ -1164,7 +1164,7 @@
+             } else if (logic.equals("MostProminentAttackers") && game.getPhaseHandler().inCombat()) {
+                 chosen.add(getMostProminentColor(game.getCombat().getAttackers(), colorChoices));
+             } else if (logic.equals("MostProminentInActivePlayerHand")) {
+-                chosen.add(getMostProminentColor(game.getPhaseHandler().getPlayerTurn().getCardsIn(ZoneType.Hand), colorChoices));
++                chosen.add(getMostProminentColor(VisibleAiCards.knownTo(ai, game.getPhaseHandler().getPlayerTurn().getCardsIn(ZoneType.Hand)), colorChoices));
+             } else if (logic.equals("MostProminentInComputerDeckButGreen")) {
+                 List<String> prominence = getColorByProminence(CardLists.filterControlledBy(game.getCardsInGame(), ai));
+                 if (prominence.get(0).equals(MagicColor.Constant.GREEN)) {
+--- a/forge-ai/src/main/java/forge/ai/ability/ChangeZoneAi.java
++++ b/forge-ai/src/main/java/forge/ai/ability/ChangeZoneAi.java
+@@ -1948,11 +1948,10 @@
+                 scanList.addAll(aiPlayer.getCardsIn(ZoneType.Library));
+                 scanList.addAll(aiPlayer.getCardsIn(ZoneType.Hand));
+             } else if (logic.endsWith("OppType")) {
+-                // this assumes that the deck list is known to the AI before the match starts,
+-                // so it's possible to figure out what remains in library/hand if you know what's
+-                // in graveyard, exile, etc.
+-                scanList.addAll(aiPlayer.getOpponents().getCardsIn(ZoneType.Library));
+-                scanList.addAll(aiPlayer.getOpponents().getCardsIn(ZoneType.Hand));
++                // Secret opponent decklists: infer preferences only from current lawful observations.
++                scanList.addAll(CardLists.filterControlledBy(
++                        forge.ai.VisibleAiCards.knownTo(aiPlayer, aiPlayer.getGame().getCardsInGame()),
++                        aiPlayer.getOpponents()));
+             }
+ 
+             if (logic.contains("NonLand")) {
+@@ -1961,7 +1960,7 @@
+ 
+             if (logic.contains("NonExiled")) {
+                 CardCollection exiledBy = new CardCollection();
+-                for (Card exiled : aiPlayer.getGame().getCardsIn(ZoneType.Exile)) {
++                for (Card exiled : forge.ai.VisibleAiCards.knownTo(aiPlayer, aiPlayer.getGame().getCardsIn(ZoneType.Exile))) {
+                     if (exiled.getExiledWith() != null && exiled.getExiledWith().getName().equals(host.getName())) {
+                         exiledBy.add(exiled);
+                     }
+--- a/forge-ai/src/main/java/forge/ai/ability/ClashAi.java
++++ b/forge-ai/src/main/java/forge/ai/ability/ClashAi.java
+@@ -74,7 +74,7 @@
+             for (Player p : options) {
+                 final Card oppTop = p.getCardsIn(ZoneType.Library).getFirst();
+                 // TODO add logic for SplitCards
+-                if (top.getCMC() > oppTop.getCMC()) {
++                if (forge.ai.VisibleAiCards.canKnow(ai, oppTop) && top.getCMC() > oppTop.getCMC()) {
+                     return p;
+                 }
+             }
+--- /dev/null
++++ b/forge-ai/src/main/java/forge/ai/VisibleAiCards.java
+@@ -0,0 +1,23 @@
++package forge.ai;
++
++import forge.game.card.Card;
++import forge.game.card.CardCollection;
++import forge.game.player.Player;
++
++/** Current lawful observations, not a hidden deck manifest or remembered private-zone membership. */
++public final class VisibleAiCards {
++    private VisibleAiCards() { }
++
++    public static boolean canKnow(final Player viewer, final Card card) {
++        return card.getView().canBeShownTo(viewer.getView())
++                && card.getView().canFaceDownBeShownTo(viewer.getView());
++    }
++
++    public static CardCollection knownTo(final Player viewer, final Iterable<Card> cards) {
++        final CardCollection known = new CardCollection();
++        for (final Card card : cards) {
++            if (canKnow(viewer, card)) known.add(card);
++        }
++        return known;
++    }
++}
+--- a/forge-ai/src/main/java/forge/ai/ability/CounterAi.java
++++ b/forge-ai/src/main/java/forge/ai/ability/CounterAi.java
+@@ -216,6 +216,11 @@
+             }
+         }
+ 
++        // Difficulty changes ordinary response propensity, not these observed immediate survival responses.
++        if (dontCounter && ObservedLethalCounterGuard.shouldCounter(ai, tgtSA)) {
++            dontCounter = false;
++        }
++
+         if (dontCounter) {
+             return new AiAbilityDecision(0, AiPlayDecision.CantPlayAi);
+         }
+--- /dev/null
++++ b/forge-ai/src/main/java/forge/ai/ObservedLethalCounterGuard.java
+@@ -0,0 +1,36 @@
++package forge.ai;
++
++import forge.game.ability.ApiType;
++import forge.game.card.Card;
++import forge.game.keyword.Keyword;
++import forge.game.phase.PhaseType;
++import forge.game.player.Player;
++import forge.game.spellability.SpellAbility;
++
++/** Narrow public-observation survival floor, independent of a profile's normal response probability. */
++public final class ObservedLethalCounterGuard {
++    private ObservedLethalCounterGuard() { }
++
++    public static boolean shouldCounter(Player ai, SpellAbility incoming) {
++        if (incoming == null || incoming.getActivatingPlayer() == null
++                || !incoming.getActivatingPlayer().isOpponentOf(ai) || ai.getLife() <= 0) return false;
++        Card card = incoming.getHostCard();
++        if (card == null || !card.getView().canBeShownTo(ai.getView())
++                || !card.getView().canFaceDownBeShownTo(ai.getView())) return false;
++
++        // Only literal public damage, not an arbitrary SVar calculation that could inspect private cards.
++        if (incoming.getApi() == ApiType.DealDamage && incoming.getTargets().contains(ai)) {
++            String amount = incoming.getParamOrDefault("NumDmg", "");
++            if (amount.matches("[0-9]+")) {
++                try { if (Long.parseLong(amount) >= ai.getLife()) return true; }
++                catch (NumberFormatException ignored) { /* no claim for an unrepresentable amount */ }
++            }
++        }
++
++        // Public, immediately lethal haste into an empty defending board. No copied game or hidden information.
++        return incoming.isSpell() && card.isCreature() && card.hasKeyword(Keyword.HASTE)
++                && ai.getGame().getPhaseHandler().is(PhaseType.MAIN1)
++                && ai.getGame().getPhaseHandler().getPlayerTurn() == incoming.getActivatingPlayer()
++                && ai.getCreaturesInPlay().isEmpty() && card.getNetPower() >= ai.getLife();
++    }
++}
+--- a/forge-ai/src/main/java/forge/ai/AiController.java
++++ b/forge-ai/src/main/java/forge/ai/AiController.java
+@@ -1633,6 +1633,20 @@
+             return false;
+         }
+ 
++        // Do not hide mana that may be needed to attack through a publicly known tax.
++        // Deliberately conservative: no cost/SVar evaluation or private-card inspection.
++        for (Card source : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
++            if (!VisibleAiCards.canKnow(player, source)) {
++                continue;
++            }
++            for (StaticAbility ability : source.getStaticAbilities()) {
++                if (ability.getMode().contains(StaticAbilityMode.CantAttackUnless)
++                        && ability.zonesCheck()) {
++                    return false;
++                }
++            }
++        }
++
+         if (!MyRandom.percentTrue(getIntProperty(AiProps.HOLD_LAND_DROP_FOR_MAIN2_IF_UNUSED))) {
+             // check against the chance specified in the profile
+             return false;

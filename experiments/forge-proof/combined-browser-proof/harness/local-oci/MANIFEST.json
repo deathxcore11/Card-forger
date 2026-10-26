@@ -1,0 +1,81 @@
+{
+  "scope": "LOCAL_TEST_NOT_DEPLOYABLE",
+  "status": "human-affordability descendant; local validation pending; no image run",
+  "productionFilesChanged": false,
+  "realImageBuilt": false,
+  "realRuntimeRun": false,
+  "realPolicyArtifactCreated": false,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 10748,
+      "sha256": "0c9dc665ce51ac28667c2d8ecd5e906e12751cd65dff62280b71dd56b5bf46f5"
+    },
+    {
+      "path": "cleanup-owned.mjs",
+      "bytes": 4300,
+      "sha256": "0a658dac5e45d4480bc56a74fcdec8c0a82e58f862edeb2d35eb865fdb7e4678"
+    },
+    {
+      "path": "docker-provider.mjs",
+      "bytes": 14816,
+      "sha256": "d51b4020def201ecc3b568978bfee6d8cb5b1514129fdfd4bc40f65daa606ec8"
+    },
+    {
+      "path": "extract-image-files.py",
+      "bytes": 881,
+      "sha256": "69502fc174d92333281b5a4b3f27eaac35d01b9b13d3959941b0214f169be4fb"
+    },
+    {
+      "path": "local-native-adapter.mjs",
+      "bytes": 2231,
+      "sha256": "48873c066d399a7f7a55c4ee8badcb31eb571b6fd75d5d8a2636656b886c2a91"
+    },
+    {
+      "path": "local-test-policy.mjs",
+      "bytes": 8813,
+      "sha256": "53e2ed7109b2a3f05d2785e017a4410cd8891a6ca10c9cd76c34c6c7a788fa46"
+    },
+    {
+      "path": "oci-identity.mjs",
+      "bytes": 6620,
+      "sha256": "bb7942ea4f063281488b6aadc0a277f9762504d9b98289679af76751059dd8b7"
+    },
+    {
+      "path": "relay-http.py",
+      "bytes": 2998,
+      "sha256": "37a03a3e076c6358d23e6c84ece22608b685ef3ce04c57c16a57b448d0191837"
+    },
+    {
+      "path": "reviewed-host.mjs",
+      "bytes": 2132,
+      "sha256": "e11b0a7d8bc4e06983633fc9fbb9449a4c47a78904df8213df0769cc8cbf44e7"
+    },
+    {
+      "path": "schema.json",
+      "bytes": 2534,
+      "sha256": "09a43a1360b16ae628e51a3014b3e2738a54a90296f22daa8d098453d98f9958"
+    },
+    {
+      "path": "test-fixtures.mjs",
+      "bytes": 7465,
+      "sha256": "a0bc088ab37c92b59da7da25759bdaa33067b124d5d2ee1ff466bcedd6266aaa"
+    },
+    {
+      "path": "test-local-oci.mjs",
+      "bytes": 13448,
+      "sha256": "420f48007871387fc340ecdf09b098ed9b00db98785752c9564dcbc9f7cbccd7"
+    },
+    {
+      "path": "test-provider.mjs",
+      "bytes": 14267,
+      "sha256": "1ea80a5e8cd046995a7b9f0515133d1b7be52b6175ccd5b144e4cab85fa0433a"
+    },
+    {
+      "path": "test-relay.py",
+      "bytes": 3501,
+      "sha256": "67d5f7671009a09f42c07cd6093f7cc580d1a69ae9af71d466a383af32d0336f"
+    }
+  ],
+  "parentManifestSha256": "6266d0096c71b0c236da1b88b8e2340a9525252719b623a43f2a1f1a52463981"
+}

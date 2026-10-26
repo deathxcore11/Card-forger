@@ -1,0 +1,38 @@
+{
+  "schema": "forge-play-browser-fixture.v1",
+  "base": "existing CardStashy 4.0.5",
+  "integrationPatchHash": "a5540a06b431e2ee60554c34e392d518baed9dbec92a1dbe8010e24a44081f17",
+  "handlerSourceHash": "00a45f3a9eee74f7ba2e35528c13172dfb2e14d61cb308df98b4f994ee621fbe",
+  "extractedHandlersHash": "d77a395d88dfe829f5bab5391cdf165054e5b8226bf93fad64e642cdfc0a09d8",
+  "wideEntry": true,
+  "widePatchHash": "81490bc6900d5a4679a8f05f9f3c7d79a171587e0678df17838e7fb03ad1f1e4",
+  "decks": [
+    {
+      "id": "deck-001:calling-all-angels",
+      "name": "Calling All Angels",
+      "cards": 100
+    },
+    {
+      "id": "existing-import-fixture",
+      "name": "Keen Engineering existing Play import",
+      "cards": 100
+    },
+    {
+      "id": "browser-fixture:reign-of-dragons",
+      "name": "Reign of Dragons",
+      "cards": 100
+    }
+  ],
+  "boundaries": [
+    "synthetic account/auth provider",
+    "preloaded public saved deck/cache fixtures",
+    "isolated Play shell; not full app boot or cloud persistence"
+  ],
+  "postMaterializerComposition": {
+    "cpuSelectionPatchSha256": "80f7dbb1d3167ab144f8f34a4bb95f92182a2cd478d5719bbb998fafaabb5174",
+    "handlerExtractionSourceSha256": "99ad0000447ebceff263c0bfd61c16d702a32cef429ccc20f6caa48cbbb4e327",
+    "handlerExtractionSegmentSha256": "866502fd9a1b4ee5707e0dea548c0be4f1cb7417cdf292e747da46d2f1bac3b1",
+    "generatedHandlerLogicManuallyChanged": false,
+    "modernMenuPatchSha256": "e5b7c1e017b3eedb14b9dba3523be360a7311b7ce9194786d78b7c3ea6fb7ebc"
+  }
+}

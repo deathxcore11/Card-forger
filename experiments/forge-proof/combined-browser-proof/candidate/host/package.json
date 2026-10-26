@@ -1,0 +1,17 @@
+{
+  "name": "cardstashy-forge-host",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs src/vendor/host001/tests/test-*.mjs",
+    "check": "node --check src/service-core.mjs && node --check src/worker.mjs && npm test",
+    "dry-run": "wrangler deploy --dry-run --outdir dist",
+    "deployment-ready": "node scripts/check-deployment-ready.mjs",
+    "test:bootstrap": "python3 -m unittest discover -s tests -p \"test_*.py\" -v",
+    "test:runtime": "node tests/runtime-smoke.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.152.0"
+  }
+}
