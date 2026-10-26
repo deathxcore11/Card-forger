@@ -119,6 +119,9 @@ export class AdmissionService {
       // occupied; global alarm reconciles it. Never repeat begin after uncertainty.
       await this.storage.put('startup:' + allocation.matchId, { generation: allocation.generation, phase: 'dispatching', at: this.now() });
       const startup = this.env.FORGE_MATCHES.getByName(allocation.matchId).begin(allocation, input)
+        // A start that failed has already destroyed its container. Release on the same
+        // trusted proof now, so starting again does not wait for the next reconcile.
+        .then(outcome => outcome?.status === 'interrupted' ? this.release(allocation.matchId, allocation.generation) : undefined)
         .catch(() => { /* uncertain: alarm queries recorded ID, never blind restart */ });
       // Return202 after durable admission, not after a120second JVM cold start.
       // waitUntil holds the ORIGINAL RPC only; it is never a retry mechanism.

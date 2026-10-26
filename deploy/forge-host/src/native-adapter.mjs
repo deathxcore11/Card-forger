@@ -27,11 +27,18 @@ export function nativeAdapter(_env) {
         await wait(250);
       }
       if (!ready) throw new Error('bootstrap_deadline');
-      const body = JSON.stringify({ input });
-      const response = await fetchExisting(request('/initialize', internalToken, { method: 'POST', body,
-        headers: { ...headers(internalToken), 'Content-Length': String(new TextEncoder().encode(body).length) } }));
+      // The runtime derives the length of a string body itself; a second, hand-set
+      // Content-Length is not sent alongside it.
+      const response = await fetchExisting(request('/initialize', internalToken, { method: 'POST', body: JSON.stringify({ input }) }));
+      if (response.status !== 204) {
+        // Name the launcher's own refusal (status and fixed code, never input) so the
+        // owner's error screen tells a transport, size or write failure apart.
+        let code = '';
+        try { code = String((await boundedJSON(response, 1024, AbortSignal.timeout(2000))).error || ''); }
+        catch { void response.body?.cancel().catch(() => {}); }
+        throw new Error('bootstrap_rejected_' + response.status + (/^[a-z0-9_]{1,64}$/.test(code) ? '_' + code : ''));
+      }
       await response.body?.cancel().catch(() => {});
-      if (response.status !== 204) throw new Error('bootstrap_rejected');
       // No replay after timeout or ambiguous receipt. The host closes this ID.
     },
     async readStartupFailure({ epoch, internalToken, fetchExisting }) {

@@ -5,6 +5,7 @@ from pathlib import Path
 import http.client
 import importlib.util
 import json
+import socket
 import tempfile
 import threading
 import unittest
@@ -143,8 +144,49 @@ class TransportTests(unittest.TestCase):
             self.assertEqual(self.request("POST", "/action", body, {"Content-Type": "application/json"})[0], 400)
         self.assertEqual(self.native.calls, [])
 
-    def test_chunked_action_is_rejected(self):
-        self.assertEqual(self.request("POST", "/action", b'{}', {"Transfer-Encoding": "chunked", "Content-Type": "application/json"})[0], 400)
+    def raw(self, head, body=b""):
+        with socket.create_connection(("127.0.0.1", self.proxy.server_port), timeout=2) as conn:
+            conn.sendall(("POST /action HTTP/1.1\r\nHost: host001.internal\r\nAuthorization: Bearer " + INTERNAL
+                          + "\r\nX-Expected-Host-Epoch: " + self.bridge.epoch + "\r\nContent-Type: application/json\r\n"
+                          + head + "\r\n").encode() + body)
+            data = b""
+            while chunk := conn.recv(65536):
+                data += chunk
+        status = int(data.split(b" ", 2)[1])
+        return status, json.loads(data.split(b"\r\n\r\n", 1)[1] or b"null")
+
+    def test_chunked_action_is_decoded_and_forwarded_byte_for_byte(self):
+        # The container runtime may forward a body of known size chunked.
+        parts = [b'{"revision":7,', b'"op":"reply","promptId":3,', b'"indexes":[2,0]}']
+        self.native.status = 202
+        self.native.body = b'{"accepted":true}'
+        conn = http.client.HTTPConnection("127.0.0.1", self.proxy.server_port, timeout=2)
+        try:
+            conn.request("POST", "/action", body=iter(parts), encode_chunked=True, headers={
+                "Authorization": "Bearer " + INTERNAL, "X-Expected-Host-Epoch": self.bridge.epoch,
+                "Content-Type": "application/json", "Transfer-Encoding": "chunked"})
+            self.assertEqual(conn.getresponse().status, 202)
+        finally:
+            conn.close()
+        self.assertEqual(self.native.calls[0][3], b"".join(parts))
+
+    def test_repeated_equal_length_is_one_body_and_conflicting_lengths_are_rejected(self):
+        body = b'{"revision":7,"op":"ok"}'
+        self.native.status = 202
+        self.native.body = b'{"accepted":true}'
+        self.assertEqual(self.raw(f"Content-Length: {len(body)}\r\nContent-Length: {len(body)}\r\n", body)[0], 202)
+        self.assertEqual(self.native.calls[0][3], body)
+        self.native.calls = []
+        self.assertEqual(self.raw(f"Content-Length: {len(body)}, {len(body) + 1}\r\n", body),
+                         (400, {"error": "explicit_content_length_required"}))
+        self.assertEqual(self.native.calls, [])
+
+    def test_malformed_unsupported_or_oversized_chunked_action_never_forwards(self):
+        self.assertEqual(self.raw("Transfer-Encoding: chunked\r\n", b"zz\r\n{}\r\n0\r\n\r\n"), (400, {"error": "malformed_chunk"}))
+        self.assertEqual(self.raw("Transfer-Encoding: gzip, chunked\r\n", b"2\r\n{}\r\n0\r\n\r\n"), (400, {"error": "unsupported_transfer_encoding"}))
+        big = gateway.MAX_BODY + 1
+        self.assertEqual(self.raw("Transfer-Encoding: chunked\r\n", f"{big:x}\r\n".encode()),
+                         (413, {"error": "body_too_large"}))
         self.assertEqual(self.native.calls, [])
 
     def test_readiness_is_redacted_and_does_not_keep_match_alive(self):

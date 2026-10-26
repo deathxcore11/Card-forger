@@ -143,6 +143,61 @@ class Server(ThreadingHTTPServer):
         pass
 
 
+def request_body(handler, maximum, deadline):
+    """One bounded request body. The container runtime may forward a body of known size
+    chunked, or repeat its length header; either way it is the same bytes. Returns the
+    body, or (status, code) for a malformed or oversized one. Raises TimeoutError."""
+    def wait():
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError()
+        handler.connection.settimeout(remaining)
+
+    def exactly(size):
+        data = bytearray()
+        while len(data) < size:
+            wait()
+            part = handler.rfile.read1(min(65536, size - len(data)))
+            if not part:
+                raise ValueError("incomplete_body")
+            data.extend(part)
+        return bytes(data)
+
+    def line():
+        wait()
+        value = handler.rfile.readline(1026)
+        if not value.endswith(b"\r\n"):
+            raise ValueError("malformed_chunk")
+        return value[:-2]
+
+    codings = [v.strip().lower() for raw in handler.headers.get_all("Transfer-Encoding", []) for v in raw.split(",") if v.strip()]
+    if codings:
+        if codings != ["chunked"]:
+            return 400, "unsupported_transfer_encoding"
+        data = bytearray()
+        while True:
+            size = line().split(b";", 1)[0].strip()
+            if not 0 < len(size) <= 8 or any(c not in b"0123456789abcdefABCDEF" for c in size):
+                raise ValueError("malformed_chunk")
+            size = int(size, 16)
+            if size == 0:
+                break
+            if len(data) + size > maximum:
+                return 413, "body_too_large"
+            data.extend(exactly(size))
+            if exactly(2) != b"\r\n":
+                raise ValueError("malformed_chunk")
+        while line():
+            pass  # trailers carry nothing this service reads
+        return bytes(data)
+    lengths = [v.strip() for raw in handler.headers.get_all("Content-Length", []) for v in raw.split(",")]
+    if not lengths or len(set(lengths)) != 1 or not lengths[0].isascii() or not lengths[0].isdigit():
+        return 400, "explicit_content_length_required"
+    if int(lengths[0]) > maximum:
+        return 413, "body_too_large"
+    return exactly(int(lengths[0]))
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "HOST001"
     sys_version = ""
@@ -196,20 +251,19 @@ class Handler(BaseHTTPRequestHandler):
             if len(epochs) != 1 or epochs[0] != bridge.epoch:
                 self.error(409, "native_generation_mismatch")
                 return
-            lengths = self.headers.get_all("Content-Length", [])
-            if self.headers.get("Transfer-Encoding") or len(lengths) != 1 or not lengths[0].isascii() or not lengths[0].isdigit():
-                self.error(400, "explicit_content_length_required")
-                return
-            size = int(lengths[0])
-            if size > MAX_BODY:
-                self.error(413, "body_too_large")
-                return
             if self.headers.get_content_type() != "application/json":
                 self.error(415, "json_required")
                 return
-            body = self.rfile.read(size)
-            if len(body) != size:
-                self.error(400, "incomplete_body")
+            try:
+                body = request_body(self, MAX_BODY, self.request_deadline)
+            except (TimeoutError, socket.timeout):
+                self.error(408, "body_timeout")
+                return
+            except ValueError as failure:
+                self.error(400, str(failure))
+                return
+            if isinstance(body, tuple):
+                self.error(*body)
                 return
             try:
                 if not isinstance(json.loads(body), dict):

@@ -20,6 +20,48 @@ GATEWAY = '/opt/host001/gateway.py'
 MAX_BYTES = 262144
 BOOT_DEADLINE = 120
 
+def request_body(handler, maximum, deadline):
+    """One bounded request body. The container runtime may forward a body of known size
+    chunked, or repeat its length header; either way it is the same bytes. Returns the
+    body, or (status, code) for a malformed or oversized one. Raises TimeoutError."""
+    def wait():
+        remaining = deadline - time.monotonic()
+        if remaining <= 0: raise TimeoutError()
+        handler.connection.settimeout(remaining)
+    def exactly(size):
+        data = bytearray()
+        while len(data) < size:
+            wait()
+            part = handler.rfile.read1(min(65536, size - len(data)))
+            if not part: raise ValueError('short_body')
+            data.extend(part)
+        return bytes(data)
+    def line():
+        wait()
+        value = handler.rfile.readline(1026)
+        if not value.endswith(b'\r\n'): raise ValueError('malformed_chunk')
+        return value[:-2]
+    codings = [v.strip().lower() for raw in handler.headers.get_all('Transfer-Encoding', []) for v in raw.split(',') if v.strip()]
+    if codings:
+        if codings != ['chunked']: return 400, 'unsupported_transfer_encoding'
+        data = bytearray()
+        while True:
+            size = line().split(b';', 1)[0].strip()
+            if not 0 < len(size) <= 8 or any(c not in b'0123456789abcdefABCDEF' for c in size): raise ValueError('malformed_chunk')
+            size = int(size, 16)
+            if size == 0: break
+            if len(data) + size > maximum: return 413, 'body_too_large'
+            data.extend(exactly(size))
+            if exactly(2) != b'\r\n': raise ValueError('malformed_chunk')
+        while line(): pass  # trailers carry nothing this service reads
+        if not data: return 400, 'empty_body'
+        return bytes(data)
+    lengths = [v.strip() for raw in handler.headers.get_all('Content-Length', []) for v in raw.split(',')]
+    if not lengths: return 411, 'content_length_required'
+    if len(set(lengths)) != 1 or not lengths[0].isascii() or not lengths[0].isdigit(): return 400, 'content_length_invalid'
+    if not 0 < int(lengths[0]) <= maximum: return 413, 'body_too_large'
+    return exactly(int(lengths[0]))
+
 class BootstrapServer(http.server.HTTPServer):
     allow_reuse_address = True
     def __init__(self, address, token, input_path=INPUT_PATH):
@@ -55,29 +97,16 @@ class BootstrapHandler(http.server.BaseHTTPRequestHandler):
         if self.path != '/bootstrap-ready': return self.reply(404)
         return self.reply(200, {'protocol': 'cardstashy.match-input.v1'})
     def do_POST(self):
-        if not self.allowed(): return self.reply(401)
-        if self.path != '/initialize': return self.reply(404)
-        if self.server.accepted: return self.reply(409)
-        if self.headers.get('Transfer-Encoding') is not None: return self.reply(400)
-        lengths = self.headers.get_all('Content-Length', [])
-        if len(lengths) != 1 or not lengths[0].isdigit(): return self.reply(411)
-        length = int(lengths[0])
-        if not 0 < length <= MAX_BYTES: return self.reply(413)
-        if self.headers.get('Content-Type', '').split(';')[0].strip().lower() != 'application/json': return self.reply(415)
+        if not self.allowed(): return self.reply(401, {'error': 'internal_authorization_required'})
+        if self.path != '/initialize': return self.reply(404, {'error': 'route_not_found'})
+        if self.server.accepted: return self.reply(409, {'error': 'already_initialized'})
+        if self.headers.get('Content-Type', '').split(';')[0].strip().lower() != 'application/json': return self.reply(415, {'error': 'json_required'})
         try:
             # Wall-clock cap, not just idle socket timeout: no slow-drip bootstrap.
-            deadline = min(self.server.deadline, time.monotonic() + 5)
-            self.connection.settimeout(max(0.001, deadline - time.monotonic()))
-            data = bytearray()
-            while len(data) < length:
-                remaining = deadline - time.monotonic()
-                if remaining <= 0: raise TimeoutError()
-                self.connection.settimeout(remaining)
-                part = self.rfile.read1(min(65536, length - len(data)))
-                if not part: raise ValueError('short_body')
-                data.extend(part)
+            data = request_body(self, MAX_BYTES, min(self.server.deadline, time.monotonic() + 5))
+            if isinstance(data, tuple): return self.reply(data[0], {'error': data[1]})
             body = json.loads(data.decode('utf-8'))
-            if not isinstance(body, dict) or set(body) != {'input'} or not isinstance(body['input'], dict): return self.reply(400)
+            if not isinstance(body, dict) or set(body) != {'input'} or not isinstance(body['input'], dict): return self.reply(400, {'error': 'input_object_required'})
             # Native owns snapshot interpretation. Never split commanders, alter
             # printings, or substitute defaults here. Exclusive write forbids reuse.
             fd = os.open(self.server.input_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o600)
@@ -87,9 +116,11 @@ class BootstrapHandler(http.server.BaseHTTPRequestHandler):
                 os.fsync(output.fileno())
             self.server.accepted = True
             self.reply(204)
-        except (TimeoutError, socket.timeout): self.reply(408)
-        except (ValueError, UnicodeError, FileExistsError): self.reply(400)
-        except OSError: self.reply(503)
+        except (TimeoutError, socket.timeout): self.reply(408, {'error': 'body_timeout'})
+        except FileExistsError: self.reply(400, {'error': 'input_already_present'})
+        except (ValueError, UnicodeError): self.reply(400, {'error': 'malformed_body'})
+        # Only the error class: never a path, input or capability.
+        except OSError as failure: self.reply(503, {'error': 'input_write_failed_' + type(failure).__name__.lower()})
     def do_DELETE(self): self.reply(405)
     def do_PUT(self): self.reply(405)
 

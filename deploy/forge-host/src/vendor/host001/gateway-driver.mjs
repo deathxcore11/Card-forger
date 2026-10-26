@@ -51,7 +51,6 @@ export class GatewayDriver {
       body = JSON.stringify(action);
       if (typeof body !== 'string' || new TextEncoder().encode(body).length > 16384) throw new TypeError('Native action size limit');
       headers['Content-Type'] = 'application/json';
-      headers['Content-Length'] = String(new TextEncoder().encode(body).length);
       headers['X-Expected-Host-Epoch'] = expectedEpoch;
     }
     // The URL is a private routing placeholder consumed by fetchExisting. The

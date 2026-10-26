@@ -271,6 +271,21 @@ test('invalid native initialization is never playable, budget remains charged, c
   assert.equal((await f.route(request('/api/play/matches/' + body.matchId, { method: 'GET' }))).status, 410);
   await f.admission.alarm(); assert.equal((await f.storage.get('leases')).length, 0); assert.equal((await f.storage.get('trial-budget')).reservations, 1);
 });
+test('a failed start frees the account slot and its runtime at once, without waiting for reconciliation', async () => {
+  const f = authenticatedFixture(); let refuse = true;
+  f.native.confirmInitialization = async ({ input: value, allocation }) => {
+    if (refuse) throw Error('bootstrap_rejected_411_content_length_required');
+    return { viewerId: 0, schema: NATIVE_SCHEMA, engineRevision: FORGE_REVISION, policyVersion: value.difficultyPolicyVersion, humanDigest: allocation.deckDigests.human, opponentDigest: allocation.deckDigests.opponent };
+  };
+  const failed = await f.create(); assert.equal(failed.response.status, 202);
+  assert.deepEqual(await f.storage.get('leases'), []);
+  const [entry] = (await f.storage.get('play-runtime-budget')).entries; assert(entry.runtimeMs < 60_000, 'failed start keeps only the runtime it held');
+  const stopped = await (await f.route(request('/api/play/matches/' + failed.body.matchId, { method: 'GET' }))).json();
+  assert.equal(stopped.failure, 'bootstrap_rejected_411_content_length_required');
+  refuse = false;
+  const again = await f.create({ headers: { 'Idempotency-Key': 'fixture_idempotency_0002' } });
+  assert.equal(again.response.status, 202); assert.equal(again.body.replay, false); assert.equal(f.calls.start, 2);
+});
 test('Modern snapshot travels unchanged to native validation, never relabeled to Commander', async () => {
   const f = fixture(); const value = input(); value.format = value.humanDeck.format = value.opponentDeck.format = 'Modern';
   assert.equal((await f.create({ body: value })).response.status, 202); assert.deepEqual(f.calls.verified[0], value);

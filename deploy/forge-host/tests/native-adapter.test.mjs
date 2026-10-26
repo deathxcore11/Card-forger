@@ -24,6 +24,23 @@ test('bootstrap preserves raw snapshot, sends initialization once and never retr
   } };
   await assert.rejects(f.adapter.bootstrapExisting(args)); assert.equal(posts, 1);
 });
+test('bootstrap refusal names the launcher status and fixed code; the runtime alone sets the length', async () => {
+  for (const [reply, expected] of [
+    [() => Response.json({ error: 'content_length_required' }, { status: 411 }), /^bootstrap_rejected_411_content_length_required$/],
+    [() => Response.json({ error: 'input_write_failed_permissionerror' }, { status: 503 }), /^bootstrap_rejected_503_input_write_failed_permissionerror$/],
+    [() => new Response('<html>provider error</html>', { status: 502, headers: { 'Content-Type': 'text/html' } }), /^bootstrap_rejected_502$/],
+    [() => Response.json({ error: 'Not a code: /run/cardstashy/match-input.json' }, { status: 400 }), /^bootstrap_rejected_400$/],
+  ]) {
+    const f = await fixture(); let sent = null;
+    const args = { ...f.args, deadline: 1000, now: () => 0, wait: async () => {}, fetchExisting: async request => {
+      if (request.method === 'GET') return Response.json({ protocol: 'cardstashy.match-input.v1' });
+      sent = request; return reply();
+    } };
+    await assert.rejects(f.adapter.bootstrapExisting(args), error => expected.test(error.message));
+    assert.equal(sent.headers.get('Content-Length'), null); assert.equal(sent.headers.get('Content-Type'), 'application/json');
+    assert.deepEqual(await sent.json(), { input });
+  }
+});
 test('native receipt must prove exact source, policy, both rosters and viewer before acceptance', async () => {
   for (const [key, value] of Object.entries({ supported: false, legal: false, registeredRosterVerified: false, nativeRosterVerified: false, viewerId: 1, humanDigest: 'c'.repeat(64), opponentDigest: 'c'.repeat(64), requestDigest: 'c'.repeat(64), policyVersion: 'easy', engineRevision: 'other', humanRosterDigest: null, schema: 'other', aiProfile: 'Cheat', errors: ['rejected'] })) {
     const f = await fixture(); f.receipt[key] = value; await assert.rejects(f.adapter.confirmInitialization(f.args), undefined, key);
