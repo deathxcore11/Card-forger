@@ -1,0 +1,1068 @@
+{
+  "generatedAt": "2026-10-25T23:59:07.040Z",
+  "source": "Scryfall cards/collection for fixed public Forge precons only",
+  "printingPolicy": "Public reference printing matched by exact card name; not a claim of matching a collection printing or the Forge imageKey.",
+  "decks": [
+    {
+      "name": "Keen Engineering",
+      "source": "decks/keen-engineering.dck",
+      "cards": [
+        {
+          "count": 1,
+          "name": "Sai, Master Thopterist",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Broodstar",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Kappa Cannoneer",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Master of Etherium",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Master Transmuter",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Research Thief",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Shimmer Dragon",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Thought Monitor",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Vedalken Archmage",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Darksteel Juggernaut",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Duplicant",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Graaz, Unstoppable Juggernaut",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Myr Battlesphere",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Psychosis Crawler",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Scrawling Crawler",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Steel Hellkite",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Steel Overseer",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Etherium Sculptor",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Memory Guardian",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Padeem, Consul of Innovation",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Whirler Rogue",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Chief of the Foundry",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Foundry Inspector",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Meteor Golem",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Myr Retriever",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Ornithopter of Paradise",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Palladium Myr",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Shimmer Myr",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Silver Myr",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Spire Golem",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Thopter Spy Network",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Fall from Favor",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Propaganda",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Misleading Signpost",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Thopter Fabricator",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Adaptive Omnitool",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Cultivator's Caravan",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Forsaken Monument",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Mazemind Tome",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Mind's Eye",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Nettlecyst",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Nevinyrral's Disk",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Skysovereign, Consul Flagship",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Tamiyo's Logbook",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Aether Spellbomb",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Arcane Signet",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Hedron Archive",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Ichor Wellspring",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Mind Stone",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Sol Ring",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Soul-Guide Lantern",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Thought Vessel",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Pull from Tomorrow",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Aetherize",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Counterspell",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Launch Mishap",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Negate",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Thirst for Knowledge",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "All Is Dust",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Thoughtcast",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "War Room",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Buried Ruin",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Darksteel Citadel",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Foundry of the Consuls",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Lonely Sandbar",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Remote Isle",
+          "set": "fdc"
+        },
+        {
+          "count": 17,
+          "name": "Island",
+          "set": "fdn"
+        },
+        {
+          "count": 17,
+          "name": "Island",
+          "set": "fdn"
+        }
+      ]
+    },
+    {
+      "name": "Reign of Dragons",
+      "source": "decks/reign-of-dragons.dck",
+      "cards": [
+        {
+          "count": 1,
+          "name": "Lathliss, Dragon Queen",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Atsushi, the Blazing Sky",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Dragonhawk, Fate's Tempest",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Dragonmaster Outcast",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Drakuseth, Maw of Flames",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Goddric, Cloaked Reveler",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Goldlust Triad",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Hellkite Charger",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Leyline Tyrant",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Minion of the Mighty",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Nogi, Draco-Zealot",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Parapet Thrasher",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Sarkhan, Dragon Ascendant",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Scourge of the Throne",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Scourge of Valkas",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Shivan Devastator",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Taurean Mauler",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Terror of Mount Velus",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Thunderbreak Regent",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Thundermane Dragon",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Tyrant's Familiar",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Utvara Hellkite",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Anger",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Dragonlord's Servant",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Dragonspeaker Shaman",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Firespitter Whelp",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Rapacious Dragon",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Skyline Despot",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Count on Luck",
+          "set": null
+        },
+        {
+          "count": 1,
+          "name": "Crucible of Fire",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Dragon Tempest",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "The Elder Dragon War",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Outpost Siege",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Warstorm Surge",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Bitter Reunion",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Breaching Dragonstorm",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Cursed Mirror",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Orb of Dragonkind",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Basilisk Collar",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Dragon's Hoard",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Carnelian Orb of Dragonkind",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Arcane Signet",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Commander's Sphere",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Dragonstorm Globe",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Fire Diamond",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Hazoret's Monument",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Herald's Horn",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Sol Ring",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Swiftfoot Boots",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Chaos Warp",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Magmaquake",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Spit Flame",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Abrade",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Breath Weapon",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Lightning Bolt",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Thrill of Possibility",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Unexpected Windfall",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Blasphemous Act",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Chain Reaction",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Chandra's Ignition",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Hit the Mother Lode",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Mana Geyser",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Bonders' Enclave",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Haven of the Spirit Dragon",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Spinerock Knoll",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "War Room",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Forgotten Cave",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Temple of the False God",
+          "set": "fdc"
+        },
+        {
+          "count": 16,
+          "name": "Mountain",
+          "set": "fdn"
+        },
+        {
+          "count": 16,
+          "name": "Mountain",
+          "set": "fdn"
+        }
+      ]
+    },
+    {
+      "name": "Calling All Angels",
+      "source": "forge/forge-gui/res/quest/commanderprecons/Calling All Angels [FDC] [2026].dck",
+      "cards": [
+        {
+          "count": 1,
+          "name": "Giada, Font of Hope",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Angel of the Ruins",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Angelic Field Marshal",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Angelic Sleuth",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Archangel of Tithes",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Bishop of Wings",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Emeria Shepherd",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Exemplar of Light",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Firemane Commando",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Herald of Eternal Dawn",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Herald of War",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Linvala, the Preserver",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Lyra Dawnbringer",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Merchant of Truth",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Metropolis Reformer",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Norn's Choirmaster",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Reya Dawnbringer",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Righteous Valkyrie",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Sephara, Sky's Blade",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Seraph of the Sword",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Serra Avenger",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Speaker of the Heavens",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Sunblast Angel",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Wojek Investigator",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Metallic Mimic",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Angel of Finality",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Angel of Vitality",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Dazzling Angel",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Inspiring Overseer",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Segovian Angel",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Starnheim Aspirant",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Thraben Watcher",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Vanguard Seraph",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Youthful Valkyrie",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Always Watching",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Angelic Destiny",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Court of Grace",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Grasp of Fate",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Search the Premises",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Endless Atlas",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Tome of Legends",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Vanquisher's Banner",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Arcane Signet",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Commander's Sphere",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Heraldic Banner",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Marble Diamond",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Mind Stone",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Patchwork Banner",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Sol Ring",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Swiftfoot Boots",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Fateful Absence",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Destroy Evil",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Invoke the Divine",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Swords to Plowshares",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Valorous Stance",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Austere Command",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Cleansing Nova",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Day of Judgment",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Cut a Deal",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Defy Death",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Exorcise",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Secret Rendezvous",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Bonders' Enclave",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "War Room",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Radiant Fountain",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Secluded Steppe",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Seraph Sanctuary",
+          "set": "fdc"
+        },
+        {
+          "count": 1,
+          "name": "Temple of the False God",
+          "set": "fdc"
+        },
+        {
+          "count": 16,
+          "name": "Plains",
+          "set": "fdn"
+        },
+        {
+          "count": 16,
+          "name": "Plains",
+          "set": "fdn"
+        }
+      ]
+    }
+  ],
+  "uniqueNames": 194,
+  "resolved": 194,
+  "missing": []
+}
