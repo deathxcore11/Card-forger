@@ -25,7 +25,7 @@ export const forgeDiagnostic=e=>[e?.code||e?.message||'HOST_SESSION_STOPPED',e?.
 export function forgeMatchError(error){
  const code=error?.code||error?.message;
  // The server ends an account's previous match when the same account starts a new one.
- if(error?.reason==='replaced')return 'This match ended because a new match was started on your account. No result was recorded for it.';
+ if(error?.reason==='replaced')return 'This match ended because a new match was started on your account (another tab or device). No result was recorded for it.';
  return ({
   authentication_required:'Sign in again, then return to Play to start your match.',
   AUTHENTICATION_REQUIRED:'Sign in again, then return to Play to start your match.',
@@ -86,7 +86,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  }
  function stopped(e){
   if(disposed)return;session?.close();warn(false);exitDialog?.remove();exitDialog=null;exitConfirm=null;publish({phase:e.code==='ACCOUNT_CHANGED'?'account-changed':'session-ended',error:e.code||'HOST_SESSION_STOPPED'});
-  message('Match interrupted',[e.code==='ACCOUNT_CHANGED'?'The signed-in account changed.':'The connection was interrupted or the match expired. A result was not confirmed.','Return to setup to start a new match.'],{diagnostic:e.code==='ACCOUNT_CHANGED'?null:forgeDiagnostic(e)});
+  message('Match interrupted',[e.code==='ACCOUNT_CHANGED'?'The signed-in account changed.':e.reason==='replaced'?forgeMatchError(e):'The connection was interrupted or the match expired. A result was not confirmed.','Return to setup to start a new match.'],{diagnostic:e.code==='ACCOUNT_CHANGED'?null:forgeDiagnostic(e)});
  }
  async function closeSession(){
   session?.close();warn(false);try{await client?.close();onClose();}catch(e){message('The table is still closing',['Try returning to setup again in a moment.']);publish({phase:'session-ended',error:e.code||'RESOURCE_CLEANUP_UNCONFIRMED'});}

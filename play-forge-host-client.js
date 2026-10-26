@@ -8,6 +8,8 @@ const SCHEMA='cardstashy.forge-proof.v1';
 // service route uses this prefix; the production module keeps the root route.
 const API_PREFIX=new URL(import.meta.url).pathname.startsWith('/__forge-acceptance/')?'/__forge-acceptance':'';
 const fail=code=>Object.assign(Error(code),{code});
+// Shown while the server settles an action whose reply was lost; the table unlocks by itself.
+const OUTCOME_PENDING='Checking whether your last action went through. The table will update in a moment.';
 const ACTION_REJECTIONS=Object.freeze({
  stale_revision:'The game has moved on. Review the current table before choosing again.',
  stale_prompt:'That choice has changed. Review the current prompt before choosing again.',
@@ -41,9 +43,9 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
  if(typeof readAccount!=='function'||typeof getAccessToken!=='function'||typeof fetchImpl!=='function')throw fail('FORGE_HOST_READERS_REQUIRED');
  const owner=readAccount(),ownerKey=forgeAccountKey(owner);
  if(!UUID.test(owner?.user?.id||'')||owner.locked||owner.switching)throw fail('ACCOUNT_CHANGED');
- let allocation=null,creating=false,closed=false,closeRequested=false,submitting=false,blocked=false,error=null,terminal=null,nextReadAt=0,expectedViewer=null,knownPlayers=null,requestedPregame=null,acceptedPregame=null,lastToken=null;
+ let allocation=null,creating=false,closed=false,closeRequested=false,submitting=false,blocked=false,unsettled=null,error=null,terminal=null,nextReadAt=0,expectedViewer=null,knownPlayers=null,requestedPregame=null,acceptedPregame=null,lastToken=null;
  const current=()=>{const a=readAccount();if(forgeAccountKey(a)!==ownerKey||a.locked||a.switching)throw fail('ACCOUNT_CHANGED');};
- const status=()=>({blocked:blocked||closed,error,allocation:allocation?structuredClone(allocation):null,terminal:terminal?structuredClone(terminal):null});
+ const status=()=>({blocked:blocked||closed||unsettled!==null,outcomePending:unsettled!==null,error,allocation:allocation?structuredClone(allocation):null,terminal:terminal?structuredClone(terminal):null});
  async function request(path,{method='GET',body,headers={},expectedCommandId}={}){
   current();const token=await getAccessToken();current();if(path==='/api/play/matches'&&closeRequested)throw fail('MATCH_CLOSED');
   if(typeof token!=='string'||!token||token.length>8192||!/^[-A-Za-z0-9._]+$/.test(token))throw fail('AUTHENTICATION_REQUIRED');
@@ -109,7 +111,10 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
      expectedViewer=terminalViewer;terminal=result;blocked=true;return {status:'finished',viewerId:terminalViewer,result:structuredClone(terminal)};
     }
     if(terminal)throw fail('INVALID_NATIVE_TERMINAL_RECEIPT');
-    const s=data.snapshot;if(code!==200||data.status!=='running'||s?.schema!==SCHEMA||s.forgeRevision!==FORGE_REVISION||!Number.isSafeInteger(s.revision)||!Number.isSafeInteger(s.viewer)||!Array.isArray(s.players)||s.players.length!==2||s.players.some(p=>!Number.isSafeInteger(p?.id))||new Set(s.players.map(p=>p.id)).size!==2||s.players.filter(p=>p.isViewer).length!==1||s.players.filter(p=>p.isViewer&&p.id===s.viewer).length!==1)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');
+    const s=data.snapshot;
+    // An action whose reply was lost is settled by the server: either the board moved past
+    // the revision it was built from, or the server released it. Only then may the next action go.
+    if(unsettled&&code===200&&data.status==='running'&&Number.isSafeInteger(s?.revision)&&(data.commandPending===false||s.revision!==unsettled.revision)){unsettled=null;if(error==='ACTION_OUTCOME_UNKNOWN')error=null;}if(code!==200||data.status!=='running'||s?.schema!==SCHEMA||s.forgeRevision!==FORGE_REVISION||!Number.isSafeInteger(s.revision)||!Number.isSafeInteger(s.viewer)||!Array.isArray(s.players)||s.players.length!==2||s.players.some(p=>!Number.isSafeInteger(p?.id))||new Set(s.players.map(p=>p.id)).size!==2||s.players.filter(p=>p.isViewer).length!==1||s.players.filter(p=>p.isViewer&&p.id===s.viewer).length!==1)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');
     if(expectedViewer!==null&&s.viewer!==expectedViewer)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');expectedViewer=s.viewer;knownPlayers=s.players.map(p=>p.id);
     if(s.pregame!==undefined&&s.pregame!==null){
      const p=s.pregame;
@@ -123,14 +128,21 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
   },
   async submit(action){
    if(!allocation||closed||blocked||submitting)throw fail(error||'MATCH_NOT_READY');
+   if(unsettled)throw Object.assign(fail('ACTION_OUTCOME_PENDING'),{message:OUTCOME_PENDING});
    if(!Number.isSafeInteger(action?.revision)||!['ok','cancel','card','player','stack','reply','concede','controlMode'].includes(action?.op))throw fail('INVALID_NATIVE_ACTION');
    if(action.op==='controlMode'&&(!['smart','full'].includes(action.value)||Object.keys(action).some(k=>!['revision','op','value'].includes(k))))throw fail('INVALID_NATIVE_CONTROL_MODE');
    const commandId=newId();submitting=true;
    try{const {status:code,data}=await request('/api/play/matches/'+allocation.matchId+'/actions',{method:'POST',body:{commandId,generation:allocation.generation,action:structuredClone(action)},expectedCommandId:commandId});
     if(data?.commandId!==commandId||code!==202)throw fail('HOST_COMMAND_RECEIPT_MISMATCH');
-    if(data.state==='pending_outcome_unknown'){blocked=true;error='ACTION_OUTCOME_UNKNOWN';throw fail(error);}
+    if(data.state==='pending_outcome_unknown'){unsettled={revision:action.revision};error='ACTION_OUTCOME_UNKNOWN';throw Object.assign(fail(error),{message:OUTCOME_PENDING});}
     if(data.state!=='accepted')throw fail('HOST_COMMAND_RECEIPT_MISMATCH');return data;
-   }catch(e){if(![400,409].includes(e.status)){blocked=true;error=e.code||'ACTION_OUTCOME_UNKNOWN';}throw e;}finally{submitting=false;}
+   }catch(e){
+    // 400/409 are recorded refusals and 429 is refused before any dispatch: nothing was applied.
+    // A lost reply waits for the server to settle it on the next state read; it is never resent.
+    if([401,410].includes(e.status)||e.code==='ACCOUNT_CHANGED'||e.code?.includes('MISMATCH')){blocked=true;error=e.code;}
+    else if(![400,409,429].includes(e.status)&&!unsettled){unsettled={revision:action.revision};error=e.code==='HOST_REQUEST_TIMEOUT'?'ACTION_OUTCOME_UNKNOWN':e.code||'ACTION_OUTCOME_UNKNOWN';try{e.message=OUTCOME_PENDING;}catch{}}
+    throw e;
+   }finally{submitting=false;}
   },
   async close(){
    if(closed)return;closeRequested=true;if(!allocation){if(!creating)closed=true;blocked=true;return;}blocked=true;
