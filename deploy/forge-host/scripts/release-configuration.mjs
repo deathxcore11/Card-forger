@@ -27,7 +27,7 @@ export function createReleaseConfiguration(template, release, main) {
   config.vars = {
     FORGE_PLAY_ACCESS: 'authenticated', FORGE_PLAY_ENABLED: 'true',
     FORGE_PLAY_MATCH_MS: '3600000', FORGE_PLAY_DAILY_RUNTIME_MS: '28800000',
-    FORGE_PLAY_DAILY_RESERVATIONS: '16',
+    FORGE_PLAY_DAILY_RESERVATIONS: '40',
     FORGE_CONTAINER_IMAGE: release.containerImage,
     FORGE_RELEASE_POLICY_JSON: JSON.stringify(release),
   };

@@ -77,3 +77,22 @@ test('confirmed release settles a failed start to the runtime it held, never abo
   }
   assert.equal(await reserveAdmissionBudget(storage, { ...allocation(NOW + 9), matchId: '00000000-0000-4000-8000-0000000000cc' }, policy, NOW + 9), null);
 });
+
+test('unsettleable entries from before settlement shipped keep their count but not an hour each', async () => {
+  const shipped = Date.parse('2026-10-26T21:02:00Z'), storage = store();
+  const policy = admissionPolicy({ ...enabled, FORGE_PLAY_DAILY_RESERVATIONS: '10' }, shipped + 60_000);
+  await storage.put('play-runtime-budget', { version: 1, entries: Array.from({ length: 8 }, (_, i) => ({ at: shipped - 3_600_000 + i * 60_000, runtimeMs: 3_607_000 })) });
+  const next = { ...allocation(shipped + 60_000), matchId: '00000000-0000-4000-8000-0000000000dd' };
+  assert.equal(await reserveAdmissionBudget(storage, next, policy, shipped + 60_000), null);
+  const entries = (await storage.get('play-runtime-budget')).entries;
+  assert.equal(entries.length, 9);
+  assert.deepEqual(entries.slice(0, 8).map(e => e.runtimeMs), Array(8).fill(7001));
+  assert.equal(entries[8].runtimeMs, 3_607_000);
+  // Legacy entries still count toward the daily start limit.
+  assert.equal(await reserveAdmissionBudget(storage, { ...allocation(shipped + 61_000), matchId: '00000000-0000-4000-8000-0000000000ee' }, policy, shipped + 61_000), null);
+  assert.deepEqual(await reserveAdmissionBudget(storage, { ...allocation(shipped + 62_000), matchId: '00000000-0000-4000-8000-0000000000ff' }, policy, shipped + 62_000), { status: 429, error: 'play_resource_budget_exhausted' });
+  // An entry recorded after settlement shipped is never discounted this way.
+  const later = store();
+  await later.put('play-runtime-budget', { version: 1, entries: Array.from({ length: 7 }, (_, i) => ({ at: shipped + i, runtimeMs: 3_607_000 })) });
+  assert.deepEqual(await reserveAdmissionBudget(later, { ...allocation(shipped + 60_000), matchId: '00000000-0000-4000-8000-0000000000dd' }, policy, shipped + 60_000), { status: 429, error: 'play_resource_budget_exhausted' });
+});

@@ -5,6 +5,10 @@ import { trialPolicy, reserveTrialBudget } from './trial.mjs';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const WINDOW_MS = 86_400_000;
 const TEARDOWN_MS = 7000;
+// Entries recorded before failed-start settlement shipped carry no match ID. Every
+// website start before then ended during startup within seconds, so those entries
+// keep counting as starts but no longer hold an hour of runtime each.
+const SETTLEMENT_SHIPPED_AT = Date.parse('2026-10-26T21:02:00Z');
 
 export function admissionPolicy(env, now) {
   const mode = env.FORGE_PLAY_ACCESS ?? 'trial';
@@ -46,7 +50,8 @@ export async function reserveAdmissionBudget(txn, allocation, policy, now) {
       || (e.matchId !== undefined && !UUID.test(e.matchId))))) {
     return { status: 503, error: 'play_runtime_budget_unavailable' };
   }
-  const entries = (saved?.entries ?? []).filter(e => e.at > now - WINDOW_MS);
+  const entries = (saved?.entries ?? []).filter(e => e.at > now - WINDOW_MS)
+    .map(e => e.matchId === undefined && e.at < SETTLEMENT_SHIPPED_AT ? { ...e, runtimeMs: Math.min(e.runtimeMs, TEARDOWN_MS + 1) } : e);
   const reserved = entries.reduce((sum, e) => sum + e.runtimeMs, 0);
   if (entries.length >= policy.maxReservations || reserved + charge > policy.runtimeBudgetMs) {
     return { status: 429, error: 'play_resource_budget_exhausted' };
