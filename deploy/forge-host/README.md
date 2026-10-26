@@ -14,7 +14,7 @@ are not refunded. This is a resource limit, not a card or deck restriction.
 
 `.github/workflows/forge-host-deploy.yml` runs the private deployment on the same
 Ubuntu 24.04 GitHub runner used by the passing Docker/browser proof. Publish the
-prepared changes on `codex/forge-account-host-20261026` with `[skip ci]` in the
+prepared changes on `codex/forge-github-host-prep-20261026` with `[skip ci]` in the
 commit message. Once its secret is configured, an intentional follow-up commit
 without the skip marker starts one job from the reviewed sources.
 No schedule, automatic retry, or pull-request deployment is enabled. A rerun
@@ -45,11 +45,11 @@ Easy/Hard gameplay and physical-device acceptance are not established by it.
 The source `wrangler.jsonc` deliberately contains an invalid image placeholder.
 The build generates a temporary exact-digest configuration only after its probe.
 The existing Cloudflare Builds trigger is diagnostic-only and must not be used
-to rebuild this image. The preparation commit uses `[skip ci]` so neither build
-system starts. Before activating GitHub deployment, retire only the private host's
-automatic diagnostic through a supported Builds control; preserve website and
-other branch build settings. An attempted branch exclusion returned HTTP 400 and
-did not change the trigger. The account-host website preview remains disabled.
+to rebuild this image. The preparation commit uses `[skip ci]` so no job starts.
+The dedicated GitHub preparation branch is not watched by that host trigger;
+its website preview `c73870cc386e414b877f63ee89e3f636` has `auto_build: false`.
+Activation therefore starts only the GitHub job. Production and the original
+account-host build settings remain unchanged. See `GITHUB-DEPLOYMENT-HANDOFF.md`.
 Do not deploy the source template or merge the proof branch's root configuration
 over the website configuration. The generated host can be disabled through its
 admission flag; existing leases still need normal cleanup. Record the actual

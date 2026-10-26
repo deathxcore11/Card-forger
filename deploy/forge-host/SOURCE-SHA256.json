@@ -1,6 +1,7 @@
 {
   ".gitignore": "4eba3982f700dc84c8d4ae3114af6a43ca54d1d61ab586aa90049875604f6b66",
-  "README.md": "c8a9a7d156153242f88f02b3cf985279ef8944c34d4005396f973a272033be26",
+  "GITHUB-DEPLOYMENT-HANDOFF.md": "bb0cb5cb1afb410e090bcb06f3f41e9ffb0d41b596b26a9ec2407eeed184ff77",
+  "README.md": "4a34657463110cb6e406ee0eed64bbaa9859ea0adb418d268a94e32aa1e8c981",
   "container/Dockerfile.template": "e3574caef65136f00313fce229ae69a87a138e8722805eb152090cccf7fb6f6f",
   "container/assemble.sh": "f7baa30be8c40e1191db33efcea36aad9aa49cb192f1f5a2be44744553c7c179",
   "container/bootstrap.py": "28be17cd8c59441bff35934086dbf6a0a0dd1a1125a9f0fe54939910c713754f",

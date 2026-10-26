@@ -4,7 +4,7 @@ name: Publish verified Forge host
 # without that marker starts one job after the Cloudflare secret exists.
 on:
   push:
-    branches: [codex/forge-account-host-20261026]
+    branches: [codex/forge-github-host-prep-20261026]
 
 permissions:
   contents: read
@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   publish-private-host:
-    if: github.repository == 'deathxcore11/Card-forger' && github.ref == 'refs/heads/codex/forge-account-host-20261026' && github.run_attempt == 1
+    if: github.repository == 'deathxcore11/Card-forger' && github.ref == 'refs/heads/codex/forge-github-host-prep-20261026' && github.run_attempt == 1
     runs-on: ubuntu-24.04
     timeout-minutes: 32
     env:
