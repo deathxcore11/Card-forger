@@ -41,7 +41,41 @@ async function sync(s){
 }
 async function next(old){let seen=null,since=0;state=await bounded(async()=>{const s=await get();if(s.revision!==seen){seen=s.revision;since=Date.now();}return s.revision!==old.revision&&!s.busy&&(s.status==='finished'||s.inputType!=='InputLockUI'||s.prompt)&&Date.now()-since>=100?s:null;});privacy(state);await sync(state);return state;}
 const key=k=>page.locator(`[data-native-panel] [data-native-key="${k}"]`);
-async function action(locator){const old=state;await sync(old);const response=page.waitForResponse(r=>r.url()===conn.baseUrl+'/action'&&r.request().method()==='POST',{timeout:15000});await locator.click();assert.equal((await response).status(),202,'Rendered action rejected by native engine');return next(old);}
+function clickFailureReason(error){
+  // Classify known Playwright actionability failures without retaining its raw
+  // call log, DOM text, URL, request headers, or arbitrary exception message.
+  const message=String(error?.message||'');
+  if(/intercepts pointer events/.test(message))return 'pointer-intercepted';
+  if(/outside of the viewport/.test(message))return 'outside-viewport';
+  if(/not visible/.test(message))return 'not-visible';
+  if(/not enabled/.test(message))return 'not-enabled';
+  if(/not stable/.test(message))return 'not-stable';
+  if(/detached/.test(message))return 'detached';
+  if(/strict mode violation/.test(message))return 'multiple-matching-controls';
+  return error?.name==='TimeoutError'?'click-timeout':'click-failed';
+}
+async function clickDiagnostics(locator){
+  return locator.evaluateAll(elements=>{
+    const el=elements[0];if(!el)return {matches:0};
+    const r=el.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2,hit=document.elementFromPoint(x,y);
+    const describe=node=>{if(!node)return null;const id=node.closest('.play-match-card[data-instance]')?.dataset.instance;return {tag:node.tagName,classes:[...node.classList].filter(c=>/^(play-|native-|forge-)[a-z0-9_-]{1,70}$/i.test(c)).slice(0,8),visibleCardId:/^\d+$/.test(id||'')?Number(id):null};};
+    return {matches:elements.length,control:describe(el),rect:{x:r.x,y:r.y,width:r.width,height:r.height},centerInViewport:x>=0&&y>=0&&x<innerWidth&&y<innerHeight,centerReceivesPointer:!!hit&&(hit===el||el.contains(hit)),centerHit:describe(hit)};
+  }).catch(()=>({unavailable:true}));
+}
+async function action(locator){
+  const old=state;await sync(old);const before=summary.actions;
+  // Attach rejection handlers to BOTH operations immediately. A failed click
+  // must not leave a later response timeout unhandled and kill the reporter.
+  const [response,click]=await Promise.allSettled([
+    page.waitForResponse(r=>r.url()===conn.baseUrl+'/action'&&r.request().method()==='POST',{timeout:15000}),
+    locator.click()
+  ]);
+  if(click.status==='rejected'||response.status==='rejected'){
+    summary.failedAction={stage:lastStage,reason:click.status==='rejected'?clickFailureReason(click.reason):'native-post-response-timeout',clickSettled:click.status,responseSettled:response.status,nativePosts:summary.actions-before,nativeBusy:old.busy===true,nativeInput:/^Input[A-Za-z0-9_]+$/.test(old.inputType||'')?old.inputType:null,control:await clickDiagnostics(locator)};
+    throw click.status==='rejected'?click.reason:response.reason;
+  }
+  assert.equal(response.value.status(),202,'Rendered action rejected by native engine');return next(old);
+}
 async function button(k){return action(key(k));}
 async function reply(p,{forceOne=false,testDraft=false}={}){
   assert.equal(p.supported,true,`Unsupported native prompt ${p.method}`);
@@ -162,13 +196,15 @@ try {
   summary.result='failed';summary.failedStage=lastStage;
   // Error objects can contain response bodies or token-bearing requests; do not
   // serialize arbitrary errors, page console logs, browser traces or snapshots.
-  summary.failureClass=error?.name||'Error';
-  console.error(`FAIL Forge browser proof at ${lastStage} (${summary.failureClass}); no whole-app pass claimed.`);
-  if(connected&&page)await page.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});
+  summary.failureClass=['Error','TimeoutError','AssertionError','TypeError'].includes(error?.name)?error.name:'Error';
+  console.error(`FAIL Forge browser proof at ${lastStage} (${summary.failureClass}${summary.failedAction?', '+summary.failedAction.reason:''}); no whole-app pass claimed.`);
+  // Persist before screenshot/cleanup, which can themselves fail or time out.
+  await fs.writeFile(path.join(out,'summary.json'),JSON.stringify(summary,null,2));
+  if(connected&&page)await page.screenshot({path:path.join(out,'failure.png'),timeout:5000}).catch(()=>{});
   process.exitCode=1;
 } finally {
   summary.inputs=[...observedInputs];summary.prompts=[...observedPrompts];
   summary.pageErrorCount=pageErrors.length;summary.externalCredentialViolations=externalCredentialViolations;summary.unexpectedRequests=unexpectedRequests;
   await fs.writeFile(path.join(out,'summary.json'),JSON.stringify(summary,null,2));
-  await browser?.close();
+  await browser?.close().catch(()=>{});
 }

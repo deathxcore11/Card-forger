@@ -63,18 +63,26 @@ set +e
 timeout --signal=TERM --kill-after=5s 330s node experiments/forge-proof/ci/browser-proof.mjs
 result=$?
 set -e
+# An abnormal Node exit/watchdog must still leave a sanitized failure record.
+# Never turn a missing browser report into a passing job.
+if [[ ! -f test-results/forge-browser-proof/artifact/summary.json && "$result" -eq 0 ]]; then result=1; fi
 # Strict allowlist; never upload connection.json, source trees, JVM logs, private
 # state snapshots, browser traces, HAR, videos, headers, cookies, or credentials.
-python3 - <<'PY'
+FORGE_BROWSER_EXIT="$result" python3 - <<'PY'
 import os,pathlib,json
 p=pathlib.Path('test-results/forge-browser-proof/artifact')
+report=p/'summary.json'
+if not report.is_file():
+    report.write_text(json.dumps({'schema':'forge-native-browser-proof.v1','scope':'isolated Forge browser proof; NOT whole-app acceptance','result':'failed','failedStage':'browser-process-ended-before-report','failureClass':'ProcessExit','processExitCode':int(os.environ['FORGE_BROWSER_EXIT'])},indent=2)+'\n')
 allowed={'summary.json','opening.png','unfolded.png','resolved.png','terminal.png','failure.png'}
 files=list(p.iterdir())
 assert files and all(f.is_file() and not f.is_symlink() and f.name in allowed for f in files)
 assert sum(f.stat().st_size for f in files)<=10*1024*1024
 assert (p/'summary.json').is_file()
-token=json.loads((pathlib.Path(os.environ['FORGE_PROOF_ROOT'])/'adapter/connection.json').read_text())['token'].encode()
-assert all(token not in f.read_bytes() for f in files)
+connection=pathlib.Path(os.environ['FORGE_PROOF_ROOT'])/'adapter/connection.json'
+if connection.is_file():
+    token=json.loads(connection.read_text())['token'].encode()
+    assert all(token not in f.read_bytes() for f in files)
 with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('upload_ready=true\n')
 PY
 exit "$result"
