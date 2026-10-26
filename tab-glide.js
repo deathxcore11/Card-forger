@@ -2,7 +2,7 @@
 // Views redraw their tab bars on every switch (sometimes twice while data loads), so each
 // bar's last move is remembered and a redrawn bar's pill carries on from where the old one
 // was in its slide, instead of jumping.
-const BARS = '.seg, .set-browser-quick';
+const BARS = '.seg, .set-browser-quick, nav.tabs';
 const SELECTED = ':scope > :is([aria-selected="true"], [aria-pressed="true"], .on)';
 const DURATION = 500; // matches the .glide transition in polish.css
 const moves = new Map();

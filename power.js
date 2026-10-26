@@ -282,7 +282,7 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
   const metaBox = m
     ? `<div class="meta-match ${strong ? "hit" : ""}">
         <div class="row between"><b>${strong ? "Matches" : "Closest tournament deck"}: ${esc(m.archetype)}</b><span class="chip ${m.sim >= 0.7 ? "ok" : ""}">${Math.round(m.sim * 100)}% same cards</span></div>
-        <p class="small muted">${m.lists} placing list${m.lists === 1 ? "" : "s"} · ${pct(m.share)} of the field · best finish <b>${placeText(m.bestRank)}</b>${m.deck.event ? ` · e.g. ${esc(m.deck.event)}${m.deck.place ? " (" + esc(m.deck.place) + ")" : ""}` : ""}${m.deck.url ? ` · <a href="${esc(m.deck.url)}" target="_blank" rel="noopener">list ↗</a>` : ""}</p>
+        <p class="small muted">${m.lists} placing list${m.lists === 1 ? "" : "s"} · ${pct(m.share)} of the field · best finish <b>${placeText(m.bestRank)}</b>${m.deck.event ? ` · e.g. ${esc(m.deck.event)}${m.deck.place ? " (" + esc(m.deck.place) + ")" : ""}` : ""}${m.deck.url ? ` · <a href="${esc(m.deck.url)}" target="_blank" rel="noopener">list</a>` : ""}</p>
         ${strong && m.missing.length ? `<p class="small"><b>Their list plays, yours doesn’t:</b> ${m.missing.slice(0, 8).map((x) => `<button class="link small" ${cardAct(x)}>${x.qty}× ${esc(x.name)}</button>`).join(", ")}</p>` : ""}
         ${strong && m.extra.length ? `<p class="small"><b>Yours only:</b> ${m.extra.slice(0, 8).map((x) => `${x.qty}× ${esc(x.name)}`).join(", ")}</p>` : ""}
         ${p.referenceDifference ? `<p class="small warn-text">${esc(p.referenceDifference)}</p>` : ""}
