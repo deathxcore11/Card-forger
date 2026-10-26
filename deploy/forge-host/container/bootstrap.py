@@ -2,10 +2,12 @@
 """Single-use private exact-input transport; no game, catalog, auth or deck model.
 
 Only the host's internal allocation capability authorizes initialization. Input is
-stored unchanged at a fixed server-owned path; the real Java adapter validates it.
+stored unchanged in a private directory this process creates; the real Java adapter
+validates it.
 The reviewed gateway enforces the exact-capable immutable adapter manifest before
 launch, so this cannot turn an old alias-only image into a purported exact match.
 """
+import errno
 import hmac
 import http.server
 import json
@@ -13,12 +15,30 @@ import os
 import pathlib
 import socket
 import sys
+import tempfile
 import time
 
-INPUT_PATH = pathlib.Path('/run/cardstashy/match-input.json')
+INPUT_NAME = 'match-input.json'
+# Where one match's private files may live, in order: the image's own directory,
+# then the standard writable locations. The container platform does not always let
+# the process write the image's directory (a live start was refused there).
+RUNTIME_PARENTS = ('/run/cardstashy', '/tmp', '/dev/shm', '/var/tmp')
 GATEWAY = '/opt/host001/gateway.py'
 MAX_BYTES = 262144
 BOOT_DEADLINE = 120
+
+def private_root(parents=RUNTIME_PARENTS):
+    """A new 0700 directory owned by this process for one match's files, in the first
+    location that allows it. If none does, a fixed code naming the first refusal and
+    this process's user, never a path."""
+    first = None
+    for parent in parents:
+        try:
+            return pathlib.Path(tempfile.mkdtemp(prefix='cardstashy-', dir=parent))
+        except OSError as failure:
+            first = first or failure
+    name = errno.errorcode.get(getattr(first, 'errno', None), 'unknown').lower()
+    return 'runtime_root_unavailable_' + name + '_u' + str(os.geteuid())
 
 def request_body(handler, maximum, deadline):
     """One bounded request body. The container runtime may forward a body of known size
@@ -64,10 +84,11 @@ def request_body(handler, maximum, deadline):
 
 class BootstrapServer(http.server.HTTPServer):
     allow_reuse_address = True
-    def __init__(self, address, token, input_path=INPUT_PATH):
+    def __init__(self, address, token, input_path, unavailable=None):
         super().__init__(address, BootstrapHandler)
         self.token = token
         self.input_path = input_path
+        self.unavailable = unavailable
         self.accepted = False
         self.deadline = time.monotonic() + BOOT_DEADLINE
         self.timeout = 0.5
@@ -107,6 +128,8 @@ class BootstrapHandler(http.server.BaseHTTPRequestHandler):
             if isinstance(data, tuple): return self.reply(data[0], {'error': data[1]})
             body = json.loads(data.decode('utf-8'))
             if not isinstance(body, dict) or set(body) != {'input'} or not isinstance(body['input'], dict): return self.reply(400, {'error': 'input_object_required'})
+            # The body is read first, so the refusal is not lost to a reset connection.
+            if self.server.input_path is None: return self.reply(503, {'error': self.server.unavailable})
             # Native owns snapshot interpretation. Never split commanders, alter
             # printings, or substitute defaults here. Exclusive write forbids reuse.
             fd = os.open(self.server.input_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o600)
@@ -128,15 +151,17 @@ def main():
     token = os.environ.get('HOST_INTERNAL_TOKEN', '')
     if len(token) < 32 or any(ord(c) < 33 or ord(c) > 126 for c in token):
         raise SystemExit('BOOTSTRAP_EXIT invalid_internal_capability')
-    if INPUT_PATH.exists() or not INPUT_PATH.parent.is_dir():
-        raise SystemExit('BOOTSTRAP_EXIT invalid_private_input_path')
     try:
         remaining = (int(os.environ.get('HOST_ABSOLUTE_DEADLINE_MS', '')) - time.time() * 1000) / 1000
     except ValueError:
         raise SystemExit('BOOTSTRAP_EXIT invalid_absolute_deadline')
     if not 0 < remaining <= 7200:
         raise SystemExit('BOOTSTRAP_EXIT invalid_absolute_deadline')
-    server = BootstrapServer(('0.0.0.0', 8080), token)
+    # A fresh directory cannot already hold input; if no location allows one, the
+    # launcher still answers so the host can show why initialization was refused.
+    root = private_root()
+    unavailable = root if isinstance(root, str) else None
+    server = BootstrapServer(('0.0.0.0', 8080), token, None if unavailable else root / INPUT_NAME, unavailable)
     server.deadline = min(server.deadline, time.monotonic() + remaining)
     try:
         while not server.accepted and time.monotonic() < server.deadline:
@@ -145,7 +170,11 @@ def main():
         server.server_close()
     if not server.accepted:
         raise SystemExit('BOOTSTRAP_EXIT initialization_timeout')
-    os.environ['HOST_MATCH_INPUT_PATH'] = str(INPUT_PATH)
+    os.environ['HOST_RUNTIME_ROOT'] = str(root)
+    os.environ['HOST_MATCH_INPUT_PATH'] = str(root / INPUT_NAME)
+    # The engine's working directory is its own private directory, as it was when
+    # that directory was the image's /run/cardstashy.
+    os.chdir(root)
     os.execv(sys.executable, [sys.executable, GATEWAY])
 
 if __name__ == '__main__':

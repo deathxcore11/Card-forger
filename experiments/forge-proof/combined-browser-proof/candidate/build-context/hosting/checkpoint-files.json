@@ -61,7 +61,7 @@
     "experiments/forge-proof/native/rules-data/current/manifest.json": "21707a19c7701be9a0a499264f73ef23374d4dd14d3848a6486110289706c28b",
     "experiments/forge-proof/native/rules-data/current/official-format-facts.json": "65789e094391071bd260c0c234a0a3969ab10534f6dc09bedeba630214e45171"
   },
-  "gatewaySha256": "dc1f7c66d0c95db6263de554b40b0e69f873bea13cf65ad72dee31e6798a0af5",
-  "bootstrapSha256": "24406f98dd719e29d1db7aed62707b858bb14ba74b7dfa3d47d99ab930d4a867",
+  "gatewaySha256": "1eb83465da68a2dcce3e6c09a140abaaa17b9b390f942694cd80a2e38a38a023",
+  "bootstrapSha256": "d8ab24977c93e0fa14cee07f5afe195385ad21f9dfb7c669b289017ac5b717de",
   "runtimeBuildAttestation": "must be generated and verified by actual BUILD_IMAGE JDK, then bound to tested immutable image"
 }

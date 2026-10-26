@@ -26,6 +26,22 @@ class NextLauncherTests(unittest.TestCase):
   self.assertEqual(gateway.VERIFIED_IMAGE_IDENTITY['nativeManifestSha256'],'a'*64)
   self.assertIn('-Dproof.requireCurrentRules=true',command);self.assertIn('-Dproof.requireExact=true',command)
   self.assertFalse(any('proof.humanDeck' in value or 'proof.aiDeck' in value for value in command))
+ def test_bootstrap_private_directory_is_the_only_other_input_location(self):
+  runtime,*_=self.fixture()
+  with tempfile.TemporaryDirectory() as parent:
+   own=Path(tempfile.mkdtemp(prefix='cardstashy-',dir=parent));(own/'match-input.json').write_text('{"input":{}}')
+   with patch.object(gateway,'RUNTIME_PARENTS',(parent,)),patch.dict(os.environ,{'HOST_RUNTIME_ROOT':str(own),'HOST_MATCH_INPUT_PATH':str(own/'match-input.json')}):
+    self.assertEqual(gateway.runtime_root(),own)
+    self.assertIn('-Dproof.matchInput='+str(own/'match-input.json'),gateway.launch_command(own))
+    os.environ['HOST_MATCH_INPUT_PATH']=str(runtime/'match-input.json')
+    with self.assertRaisesRegex(ValueError,'fixed server-owned path'):gateway.launch_command(own)
+    for bad in (str(Path(parent)/'other-name'),str(own)+'/../'+own.name,'relative/cardstashy-x',str(Path(parent).parent/own.name)):
+     os.environ['HOST_RUNTIME_ROOT']=bad
+     with self.assertRaisesRegex(ValueError,'private directory'):gateway.runtime_root()
+    os.environ['HOST_RUNTIME_ROOT']=str(own);own.chmod(0o750)
+    with self.assertRaisesRegex(ValueError,'private directory'):gateway.runtime_root()
+    own.chmod(0o700);link=Path(parent)/'cardstashy-link';link.symlink_to(own);os.environ['HOST_RUNTIME_ROOT']=str(link)
+    with self.assertRaisesRegex(ValueError,'private directory'):gateway.runtime_root()
  def test_missing_capability_rejects_before_launch(self):
   runtime,_,metadata,manifest=self.fixture();manifest['adapterCapabilities'].remove('cardstashy.experimental-heuristic-cpu.v1');metadata.write_text(json.dumps(manifest))
   with self.assertRaisesRegex(ValueError,'capabilities'):gateway.launch_command(runtime)

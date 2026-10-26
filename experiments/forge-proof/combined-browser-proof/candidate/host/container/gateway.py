@@ -15,6 +15,7 @@ import json
 import os
 import signal
 import socket
+import stat
 import subprocess
 import threading
 import time
@@ -30,6 +31,8 @@ STARTUP_TIMEOUT = 120
 PROBE_INTERVAL = 5
 ALIASES = {"calling-all-angels", "keen-engineering", "reign-of-dragons"}
 EXACT_INPUT_PATH = "/run/cardstashy/match-input.json"
+# Locations where the bootstrap may create this match's private directory.
+RUNTIME_PARENTS = ("/run/cardstashy", "/tmp", "/dev/shm", "/var/tmp")
 EXACT_CAPABILITY = "cardstashy.match-input.v1"
 ADAPTER_MANIFEST_PATH = "experiments/forge-proof/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java"
 FROZEN_0018_SHA256 = "77169ebedd4121ec655ee3aa2f77793bed016fff9068288b789ce27441c942e5"
@@ -421,6 +424,32 @@ def exact_lifetime_deadline():
     return time.monotonic() + remaining
 
 
+def runtime_root():
+    """This match's private directory: the one the bootstrap created and named, which
+    must be its own fresh 0700 directory in a known location, else the image's fixed
+    /run/cardstashy. Never a browser-selected path."""
+    value = os.environ.get("HOST_RUNTIME_ROOT")
+    if value is None:
+        return Path("/run/cardstashy")
+    root = Path(value)
+    try:
+        status = os.lstat(value)
+    except OSError:
+        status = None
+    if (not os.path.isabs(value) or os.path.normpath(value) != value
+            or os.path.dirname(value) not in RUNTIME_PARENTS or not os.path.basename(value).startswith("cardstashy-")
+            or status is None or not stat.S_ISDIR(status.st_mode) or status.st_uid != os.geteuid()
+            or status.st_mode & 0o077):
+        raise ValueError("Runtime root must be the bootstrap's private directory")
+    return root
+
+
+def exact_input_path():
+    if "HOST_RUNTIME_ROOT" not in os.environ:
+        return EXACT_INPUT_PATH
+    return str(runtime_root() / "match-input.json")
+
+
 def launch_command(root):
     global VERIFIED_IMAGE_IDENTITY
     if "HOST_MATCH_INPUT_PATH" not in os.environ:
@@ -429,7 +458,7 @@ def launch_command(root):
         exact_lifetime_deadline()
         # The server bootstrap owns this path. No browser-selected filesystem
         # path, runtime capability toggle, or fallback to a precon is allowed.
-        if os.environ["HOST_MATCH_INPUT_PATH"] != EXACT_INPUT_PATH:
+        if os.environ["HOST_MATCH_INPUT_PATH"] != exact_input_path():
             raise ValueError("Exact input requires the fixed server-owned path")
         manifest = json.loads(Path("/opt/host001/checkpoint-files.json").read_text())
         capabilities = manifest.get("adapterCapabilities", [])
@@ -439,7 +468,7 @@ def launch_command(root):
                 or expected == FROZEN_0018_SHA256 or not source.is_file() or source.is_symlink()
                 or hashlib.sha256(source.read_bytes()).hexdigest() != expected):
             raise ValueError("Reviewed exact-input adapter capability required")
-        match_input = Path(EXACT_INPUT_PATH)
+        match_input = Path(exact_input_path())
         if match_input.is_symlink() or not match_input.is_file() or not 0 < match_input.stat().st_size <= 262144:
             raise ValueError("Require a bounded regular exact-input file")
         required_capabilities = {"cardstashy.match-input.v1", "cardstashy.formats-three.v1",
@@ -460,7 +489,7 @@ def launch_command(root):
                 or native_manifest == "0" * 64):
             raise ValueError("Immutable native source-manifest identity required")
         VERIFIED_IMAGE_IDENTITY = {"nativeSourceSha256": expected, "nativeManifestSha256": native_manifest}
-        deck_arguments = [f"-Dproof.matchInput={EXACT_INPUT_PATH}", "-Dproof.requireExact=true",
+        deck_arguments = [f"-Dproof.matchInput={exact_input_path()}", "-Dproof.requireExact=true",
                           "-Dproof.requireCurrentRules=true"]
     else:
         human = os.environ.get("HOST_HUMAN_DECK", "calling-all-angels")
@@ -499,7 +528,7 @@ def main():
     internal_token = os.environ.pop("HOST_INTERNAL_TOKEN", "")
     if len(internal_token) < 32 or not internal_token.isascii() or any(c.isspace() for c in internal_token):
         raise ValueError("Require an injected internal capability of at least 32 ASCII non-space characters")
-    root = Path("/run/cardstashy")
+    root = runtime_root()
     for name in ("adapter", "home", "tmp"):
         (root / name).mkdir(parents=True, exist_ok=True)
     for name in ("forge", "decks", "cpu", "rules-data", "human"):

@@ -1,6 +1,7 @@
 import importlib.util
 import http.client
 import json
+import os
 from pathlib import Path
 import socket
 import tempfile
@@ -81,6 +82,18 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(self.raw('Transfer-Encoding: chunked\r\n', f'{big:x}\r\n'.encode()), (413, {'error': 'body_too_large'}))
         self.assertEqual(self.raw('Content-Length: 262145\r\n'), (413, {'error': 'body_too_large'}))
         self.assertFalse(self.path.exists())
+    def test_private_directory_falls_back_past_a_location_this_process_cannot_use(self):
+        # The image's own directory refused the live write; the next standard one is used.
+        refused = Path(self.temp.name) / 'image-directory-missing'
+        usable = Path(self.temp.name) / 'standard'; usable.mkdir()
+        root = bootstrap.private_root((str(refused), str(usable)))
+        self.assertEqual(root.parent, usable); self.assertTrue(root.name.startswith('cardstashy-'))
+        self.assertEqual(root.stat().st_mode & 0o777, 0o700); self.assertEqual(list(root.iterdir()), [])
+        self.assertEqual(bootstrap.private_root((str(refused), str(refused) + '-too')), 'runtime_root_unavailable_enoent_u' + str(os.geteuid()))
+    def test_no_usable_location_is_reported_after_the_body_is_read(self):
+        self.server.input_path, self.server.unavailable = None, 'runtime_root_unavailable_eacces_u10001'
+        self.assertEqual(self.raw('Content-Length: 12\r\n', b'{"input":{}}'), (503, {'error': 'runtime_root_unavailable_eacces_u10001'}))
+        self.assertFalse(self.server.accepted)
     def test_unwritable_input_location_is_named_without_its_path(self):
         self.server.input_path = Path(self.temp.name) / 'missing-directory' / 'match-input.json'
         status, value = self.raw('Content-Length: 12\r\n', b'{"input":{}}')
