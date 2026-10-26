@@ -26,7 +26,9 @@ def action_diagnostic(v):
   'operation':member('operations',v.get('operation')),
   **{key:digest(v.get(key)) for key in ['commandHash','receiptCommandHash','generationHash']},
   'httpStatus':status,'state':'rejected' if rejected else v.get('state') if status==202 and bound and v.get('state') in ['accepted','pending_outcome_unknown'] else 'unknown',
-  'reason':member('reasons',v.get('reason'),'native_action_rejected') if rejected else None}
+  'reason':member('reasons',v.get('reason'),'native_action_rejected') if rejected else None,
+  'bodyRead':v.get('bodyRead') if v.get('bodyRead') in ['parsed','unavailable','timeout','malformed','oversized'] else 'unknown',
+  'receiptSource':v.get('receiptSource') if v.get('receiptSource') in ['browser-response','fixture-forwarded-response'] else 'unknown'}
 checks={'one Mimic stack entry and payment; rendered controls resume', 'real native seven-card opening after existing setup', 'hand fits touch viewport; no horizontal pan required', 'explicit Rematch creates a new allocation/generation with exact decks and acknowledged native opening', 'explicit concession waits for native result and returns to existing Play', 'hand and both HUDs visible; compact canonical controls reachable; visible card images ready', 'existing Play menu selects concrete human and CPU decks through actual handlers', 'real rendered land action reaches native battlefield', 'actual natural native result reaches dedicated immutable match result', 'Home navigation after resource cleanup', 'actual touch pan reaches rightmost card through native handler without sending an action', 'real difficulty menu cycles Easy/Hard/Medium without allocating; only Medium native policy is exercised', 'Exit cancellation returns to the unchanged native match', 'Smart / Full buttons reflect actual native acknowledgements', 'exact snapshots admitted by real host with native Smart policy', 'real native creature cast, Smart payment, creature-type choice and resolution'}
 
 def result_record(v):

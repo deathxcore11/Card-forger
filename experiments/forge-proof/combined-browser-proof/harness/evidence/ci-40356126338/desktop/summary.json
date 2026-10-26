@@ -1,0 +1,152 @@
+{
+  "schema": "forge-existing-play-browser.v1",
+  "result": "failed",
+  "case": "saved-keen",
+  "scope": "LOCAL_TEST_NOT_DEPLOYABLE; synthetic account/storage; actual rendered Play controls",
+  "browser": "151.0.7922.34",
+  "viewport": {
+    "width": 1440,
+    "height": 1000,
+    "hasTouch": false
+  },
+  "checks": [
+    "real difficulty menu cycles Easy/Hard/Medium without allocating; only Medium native policy is exercised",
+    "existing Play menu selects concrete human and CPU decks through actual handlers",
+    "exact snapshots admitted by real host with native Smart policy"
+  ],
+  "actions": 1,
+  "creates": 1,
+  "privacyChecks": 1,
+  "externalCredentialViolations": 0,
+  "unexpectedRequests": 0,
+  "terminal": null,
+  "concession": null,
+  "selectedDigests": {
+    "humanDeck": "858b8e6127d3749aeb8f57124246ef30a35ea390d2a758c9eefa9b76a53d72b8",
+    "opponentDeck": "7f6d2f7dc9b86b794c2a7fa1f3f7842265e095744deb7ad25f9f04a55c7fab4c"
+  },
+  "pageErrorCount": 0,
+  "observedErrorClassCounts": {},
+  "observation": {
+    "method": "fixture-forwarded-viewer-response-cache",
+    "intervalMs": 250,
+    "reads": 116,
+    "accepted": 64,
+    "lastHttpStatus": 200
+  },
+  "difficultySelections": [
+    "Easy",
+    "Hard",
+    "Medium"
+  ],
+  "naturalFinish": false,
+  "rematchVerified": false,
+  "visualChecks": [],
+  "paymentProof": null,
+  "actionEvents": [
+    {
+      "order": 1,
+      "event": "viewer-state-observed",
+      "revision": 1,
+      "observedRevision": null,
+      "requestRevision": null,
+      "decisionId": 3,
+      "requestDecisionId": null,
+      "inputType": "unknown",
+      "operation": "unknown",
+      "busy": false,
+      "commandHash": null,
+      "generationHash": "5ec279466f0d6f4ec0b36c375b183a02b6765af6abca79d53922bdc06a1db7cb",
+      "state": "unknown",
+      "httpStatus": null
+    },
+    {
+      "order": 2,
+      "event": "action-submitted",
+      "revision": null,
+      "observedRevision": 1,
+      "requestRevision": 1,
+      "decisionId": 3,
+      "requestDecisionId": 3,
+      "inputType": "unknown",
+      "operation": "reply",
+      "busy": null,
+      "commandHash": "bf517c541ca2eef9a1c072e1d754eff276c128b18c3457d0e855723264a2d4d1",
+      "generationHash": "5ec279466f0d6f4ec0b36c375b183a02b6765af6abca79d53922bdc06a1db7cb",
+      "state": "unknown",
+      "httpStatus": null
+    },
+    {
+      "order": 3,
+      "event": "action-receipt-read",
+      "revision": null,
+      "observedRevision": 1,
+      "requestRevision": 1,
+      "decisionId": 3,
+      "requestDecisionId": 3,
+      "inputType": "unknown",
+      "operation": "reply",
+      "busy": null,
+      "commandHash": "bf517c541ca2eef9a1c072e1d754eff276c128b18c3457d0e855723264a2d4d1",
+      "generationHash": "5ec279466f0d6f4ec0b36c375b183a02b6765af6abca79d53922bdc06a1db7cb",
+      "state": "unknown",
+      "httpStatus": 202
+    }
+  ],
+  "actionEventsTruncated": false,
+  "actionDiagnostics": [
+    {
+      "stage": "native reveal acknowledgement",
+      "inputType": "unknown",
+      "decisionId": 3,
+      "observedRevision": 1,
+      "requestRevision": 1,
+      "requestDecisionId": 3,
+      "operation": "reply",
+      "commandHash": "bf517c541ca2eef9a1c072e1d754eff276c128b18c3457d0e855723264a2d4d1",
+      "receiptCommandHash": null,
+      "generationHash": "5ec279466f0d6f4ec0b36c375b183a02b6765af6abca79d53922bdc06a1db7cb",
+      "httpStatus": 202,
+      "state": "unknown",
+      "reason": null
+    }
+  ],
+  "actionRejection": {
+    "stage": "native reveal acknowledgement",
+    "inputType": "unknown",
+    "decisionId": 3,
+    "observedRevision": 1,
+    "requestRevision": 1,
+    "requestDecisionId": 3,
+    "operation": "reply",
+    "commandHash": "bf517c541ca2eef9a1c072e1d754eff276c128b18c3457d0e855723264a2d4d1",
+    "receiptCommandHash": null,
+    "generationHash": "5ec279466f0d6f4ec0b36c375b183a02b6765af6abca79d53922bdc06a1db7cb",
+    "httpStatus": 202,
+    "state": "unknown",
+    "reason": null
+  },
+  "failure": {
+    "stage": "native reveal acknowledgement",
+    "class": "AssertionError"
+  },
+  "cleanup": {
+    "confirmed": false,
+    "privateInputRemoved": false,
+    "starts": 1,
+    "destroys": 1,
+    "imageId": "sha256:757182cbc9e9dd39c437971c0e6e3e6e31f99099935e808be45138f97c640a5a",
+    "allocations": [
+      {
+        "imageId": "sha256:757182cbc9e9dd39c437971c0e6e3e6e31f99099935e808be45138f97c640a5a",
+        "confirmed": true,
+        "status": "exited",
+        "exitCode": 0,
+        "forced": false,
+        "oomKilled": false,
+        "removed": true,
+        "privateInputRemoved": true
+      }
+    ]
+  }
+}

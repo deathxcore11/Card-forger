@@ -2,6 +2,7 @@
 // mutations originate in rendered controls. No force clicks, native fetch POST,
 // DOM state injection, hidden-hand lookup, invented legal list or synthetic win.
 import {readActionMetadata,safeActionStage,actionMetadata,actionEvent} from './action-diagnostics.mjs';
+import {deliveredActionReceipt} from './receipt-observation.mjs';
 import {createMimicPaymentProof} from './payment-proof.mjs';
 import {assertNativePrivacy,boundedTimeout} from './acceptance-contract.mjs';import {visualCheckpoint,waitVisibleCardImages} from './browser-visual-checks.mjs';
 import assert from 'node:assert/strict';import fs from 'node:fs/promises';import path from 'node:path';import {createRequire} from 'node:module';import {createHash} from 'node:crypto';
@@ -100,7 +101,7 @@ async function action(locator,label='native control'){
  if(response.status==='rejected'||clicked.status==='rejected'){
   report.failedAction={stage:safeActionStage(label),clickSettled:clicked.status,responseSettled:response.status,nativePosts:nativePosts-posts,reason:clicked.status==='rejected'?(/intercepts pointer events/.test(String(clicked.reason?.message))?'pointer-intercepted':'click-failed'):'native-post-timeout',geometry:await locator.evaluateAll(es=>{const el=es[0];if(!el)return {matches:0};const r=el.getBoundingClientRect(),h=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {matches:es.length,rect:{x:r.x,y:r.y,width:r.width,height:r.height},centerReceivesPointer:h===el||el.contains(h)};}).catch(()=>null)};throw Error('Rendered action failed');
  }
- const diagnostic=await readActionMetadata(response.value,{stage:label,inputType:before?.inputType,decisionId:before?.prompt?.id,observedRevision:old},{timeoutMs:boundedTimeout(1000,caseDeadline)});
+ const diagnostic=await readActionMetadata(response.value,{stage:label,inputType:before?.inputType,decisionId:before?.prompt?.id,observedRevision:old},{timeoutMs:boundedTimeout(1000,caseDeadline),readDeliveredReceipt:({request,httpStatus})=>deliveredActionReceipt({base,token:observationToken,matchId:observationMatch,request,httpStatus,timeoutMs:boundedTimeout(1000,caseDeadline)})});
  recordActionEvent('action-receipt-read',diagnostic);
  if(report.actionDiagnostics.length<64)report.actionDiagnostics.push(diagnostic);
  if(response.value.status()!==202||diagnostic.state!=='accepted')report.actionRejection=diagnostic;

@@ -3,6 +3,7 @@
 import http from 'node:http';
 import {lifecycleEvidence} from './lifecycle-contract.mjs';
 import { FixtureObservationCache } from './observation.mjs';
+import { FixtureReceiptCache } from './receipt-observation.mjs';
 import { MemoryStorage } from './fixture-storage.mjs';
 import {loadEvidenceBundle} from './image-stages/load-evidence.mjs';
 import {createDockerContainer} from './local-oci/docker-provider.mjs';
@@ -17,6 +18,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OWNER = '00000000-0000-4000-8000-000000000001';
 const BEARER = 'forge-browser-fixture-owner'; // synthetic test credential ONLY
 const observations = new FixtureObservationCache({ bearer: BEARER });
+const actionReceipts = new FixtureReceiptCache({ bearer: BEARER, viewerObservations: observations });
 const SOURCE_SHA='6e2a5004ee73e3c67d11e89ad5efb0d9112ece6ff2c52fa010235b048b219c43';
 const HOST_MANIFEST_SHA='8bd6b5932a267c5916cc6a1900996060dac02d1f2ec9047d69506081da6c3f61';
 const args = {};
@@ -72,6 +74,10 @@ const server = http.createServer(async (req, res) => {
   try {
     if (closing || req.headers.host !== new URL(origin).host || req.headers.origin && req.headers.origin !== origin) { res.writeHead(403).end(); return; }
     const url = new URL(req.url, origin);
+    if (url.pathname.startsWith('/__fixture/receipts')) {
+      const observed = actionReceipts.observe({ method: req.method, url, headers: req.headers });
+      res.writeHead(observed.status, observed.headers).end(JSON.stringify(observed.body)); return;
+    }
     if (url.pathname.startsWith('/__fixture/observe')) {
       const observed = observations.observe({ method: req.method, url, headers: req.headers });
       res.writeHead(observed.status, observed.headers).end(JSON.stringify(observed.body)); return;
@@ -94,9 +100,11 @@ const server = http.createServer(async (req, res) => {
       const request = new Request(ORIGIN + url.pathname + url.search, { method: req.method, headers, ...(['POST'].includes(req.method) ? { body: Readable.toWeb(req), duplex: 'half' } : {}) });
       const response = await routeHostRequest(request, env, verifyBearer);
       const delivered = observations.capture({ method: req.method, url, headers: req.headers, httpStatus: response.status, response: res });
+      const deliveredReceipt = actionReceipts.capture({ method: req.method, url, headers: req.headers, httpStatus: response.status, response: res });
       res.writeHead(response.status, Object.fromEntries(response.headers));
-      if (response.body) for await (const chunk of Readable.fromWeb(response.body)) { res.write(chunk); delivered.chunk(chunk); }
+      if (response.body) for await (const chunk of Readable.fromWeb(response.body)) { res.write(chunk); delivered.chunk(chunk); deliveredReceipt.chunk(chunk); }
       delivered.complete();
+      deliveredReceipt.complete();
       res.end(); return;
     }
     if (!['GET', 'HEAD'].includes(req.method) || url.pathname.split('/').some(piece => piece.startsWith('.'))) { res.writeHead(404).end(); return; }

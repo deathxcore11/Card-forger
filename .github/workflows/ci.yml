@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      FORGE_COMBINED_REVIEWED_MANIFEST_SHA256: 905ecab51992c9b1a3a0a5cd552c5462554e1ea777cea721ed806dc18858c600
+      FORGE_COMBINED_REVIEWED_MANIFEST_SHA256: f12781e27a0a0796bdce2ffcbca4dc2872a7feddef110d19d1cd7eb757c51c39
       PYTHONDONTWRITEBYTECODE: '1'
       npm_config_update_notifier: 'false'
     steps:

@@ -59,11 +59,11 @@
     },
     "fixtureServer": {
       "path": "${PACKAGE}/fixture-server.mjs",
-      "sha256": "5ff875b86898c9786f373c523809a42a5359676e3b7406688c1c60196c452ec4"
+      "sha256": "45fdb887073fbf4239706fc6a11bd041e0996be6cb5eacc14cb4b600c16048d7"
     },
     "browserDriver": {
       "path": "${PACKAGE}/browser-journey.mjs",
-      "sha256": "28686165188a42418d3524ab2cb8f2755961474f170c813834f2cd5445ba3c62"
+      "sha256": "cbbaeb730b3bbe7502bccb0eb81fe6cba89665ac52d089b41f2c28e1285d7d36"
     },
     "acceptanceContract": {
       "path": "${PACKAGE}/acceptance-contract.mjs",
@@ -75,7 +75,7 @@
     },
     "artifactSanitizer": {
       "path": "${PACKAGE}/artifacts.py",
-      "sha256": "86bf2db91425c80fb5d45902267364a40da81bb3a953c0e927067edac243a451"
+      "sha256": "368385ee42d65a5aa924e6e1854a2d9c9e8582b9db085de6a13af06fb553f2f1"
     },
     "lifecycleContract": {
       "path": "${PACKAGE}/lifecycle-contract.mjs",

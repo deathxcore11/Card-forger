@@ -35,24 +35,31 @@ export function actionMetadata({stage,inputType,decisionId,observedRevision,http
   reason:rejected?member(allowed.reasons,receipt?.error,'native_action_rejected'):null,
  };
 }
-export async function readActionMetadata(response,context,{timeoutMs=1000}={}){
+export async function readActionMetadata(response,context,{timeoutMs=1000,readDeliveredReceipt}={}){
  // This observes the response to the one rendered action. It never sends or
  // retries a request. response.body() is Playwright's buffered observation of
  // the existing host's bounded receipt, not a streaming memory-limit boundary.
  // Missing, malformed, oversized or stalled receipt bodies
  // retain a generic classification under a separate bounded observation wait.
- let timer,body;
+ let timer,body,bodyRead='unavailable';
  try{
   body=await Promise.race([
    Promise.resolve().then(()=>response.body()),
-   new Promise(resolve=>{timer=setTimeout(()=>resolve(null),timeoutMs);}),
+   new Promise(resolve=>{timer=setTimeout(()=>{bodyRead='timeout';resolve(null);},timeoutMs);}),
   ]);
  }catch{}finally{clearTimeout(timer);}
  let receipt=null;
  if(body instanceof Uint8Array&&body.byteLength<=4096){
-  try{receipt=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(body));}catch{}
+  try{receipt=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(body));bodyRead='parsed';}catch{bodyRead='malformed';}
+ }else if(body instanceof Uint8Array){bodyRead='oversized';
  }
  let request=null;
  try{request=response.request().postDataJSON();}catch{}
- return actionMetadata({...context,httpStatus:response.status(),request,receipt});
+ let receiptSource=receipt?'browser-response':'unknown';
+ // Only observation failure permits the passive fallback. A readable mismatched
+ // or rejected receipt remains authoritative; it cannot be replaced by a pass.
+ if(receipt===null&&['unavailable','timeout'].includes(bodyRead)&&typeof readDeliveredReceipt==='function'){
+  try{receipt=await readDeliveredReceipt({request,httpStatus:response.status()});if(receipt)receiptSource='fixture-forwarded-response';}catch{}
+ }
+ return {...actionMetadata({...context,httpStatus:response.status(),request,receipt}),bodyRead,receiptSource};
 }
