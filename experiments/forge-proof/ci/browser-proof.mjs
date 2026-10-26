@@ -17,7 +17,25 @@ async function bounded(fn,ms=20000){const until=Date.now()+ms;let result;while(D
 const check=name=>{summary.checks.push(name);console.log(`PASS ${name}`);};
 const own=s=>s.players.find(p=>p.isViewer);
 async function get(){const r=await fetch(conn.baseUrl+'/state',{headers:{Authorization:'Bearer '+conn.token},signal:AbortSignal.timeout(3000)});assert.equal(r.status,200,'Native state request rejected');const s=await r.json();assert.equal(s.forgeRevision,revision);assert.equal(s.failure,null,'Native engine failure');if(s.inputType)observedInputs.add(s.inputType);if(s.prompt)observedPrompts.add(s.prompt.method);return s;}
-function privacy(s){assert.ok(s.players.every(p=>p.zones.Library.cards.length===0),'Library identities escaped');assert.equal(s.players.find(p=>!p.isViewer).zones.Hand.cards.length,0,'Opponent hand identities escaped');}
+function privacy(s){
+  // Native reveal acknowledgements may temporarily expose an exact card while
+  // it remains in a normally private zone (e.g. Adaptive Omnitool). This is not
+  // permission to expose its neighbours or preserve visibility after the prompt.
+  const p=s.prompt,reveals=p?.method==='getChoices'&&p.supported===true&&p.acknowledgeOnly===true&&p.min===0&&p.max===0
+    ?(p.options||[]).map(o=>o.value).filter(c=>c&&c.hidden===false&&Number.isSafeInteger(c.id)&&Number.isSafeInteger(c.owner)&&typeof c.name==='string'&&['Hand','Library'].includes(c.zone)):[];
+  for(const player of s.players)for(const zone of ['Library',...(!player.isViewer?['Hand']:[])]){
+    const cards=player.zones[zone].cards,ids=new Set();
+    for(const card of cards){
+      assert.equal(card.hidden,false,'Hidden identity escaped a private zone');
+      assert.equal(card.owner,player.id,'Private-zone owner mismatch');
+      assert.equal(card.zone,zone,'Private-zone label mismatch');
+      assert.ok(!ids.has(card.id),'Duplicate private-zone identity');ids.add(card.id);
+      const matches=reveals.filter(r=>r.id===card.id&&r.owner===player.id&&r.zone===zone);
+      assert.equal(matches.length,1,'Private identity lacks an exact current native reveal acknowledgement');
+      assert.deepEqual(card,matches[0],'Private-zone identity differs from the exact native revealed card');
+    }
+  }
+}
 async function sync(s){
   await page.waitForFunction(rev=>document.querySelector('[data-native-panel]')?.dataset.nativeRevision===String(rev),s.revision,{timeout:15000});
 }
