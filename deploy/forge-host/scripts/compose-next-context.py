@@ -4,7 +4,7 @@ import argparse,hashlib,json,re
 from pathlib import Path
 HERE=Path(__file__).resolve().parents[1]
 ENGINE='e5a0f8156da70ffc7866f923bed371c0111707cd'
-BOOTSTRAP='d8ab24977c93e0fa14cee07f5afe195385ad21f9dfb7c669b289017ac5b717de'
+BOOTSTRAP='ad5cf253323d2f088b24aabbe9c6cacd45787208a95f42787798e5d5ca0b12fd'
 CAPABILITIES=['cardstashy.match-input.v1','cardstashy.formats-three.v1','cardstashy.rules-data.v1','cardstashy.native-concession.v1','cardstashy.native-affordances.v1','cardstashy.experimental-heuristic-cpu.v1','cardstashy.forge-visibility.v1']
 REQUIRED_JAVA=['ForgeHttpBridge','NativeDeckInput','NativeDeckAdmission','NativeMatchFormat','NativeRulesData','BoundedHeuristicPolicy','NativeCpuPolicyIntegration','NativePatchsetProof']
 REQUIRED=['LICENSE','PROVENANCE.md','adapter/CONTRACT.md','EXACT-INPUT.md','RULES-DATA.md','EXPERIMENTAL-CPU.md','BASE-CANDIDATE.json','build-ai-overlay.sh','cpu/combined-native-ai.patch','cpu/runtime-sha256.json','rules-data/current/manifest.json','rules-data/current/cards.json','rules-data/current/official-format-facts.json']+[f'decks/{name}.dck' for name in ['calling-all-angels','keen-engineering','reign-of-dragons']]

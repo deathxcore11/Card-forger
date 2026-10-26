@@ -21,6 +21,15 @@ async function boundedText(response, maximum, signal) {
   for (const part of parts) { bytes.set(part, offset); offset += part.byteLength; }
   return new TextDecoder().decode(bytes);
 }
+// Whether the single-use launcher still waits for input. Any other answer, or none,
+// means it has gone (it took the input, or the container ended).
+async function launcherWaiting(fetchExisting, token) {
+  try {
+    const response = await fetchExisting(request('/bootstrap-ready', token));
+    if (response.status !== 200) { await response.body?.cancel().catch(() => {}); return false; }
+    return (await boundedJSON(response, 1024, AbortSignal.timeout(5000)))?.protocol === PROTOCOL;
+  } catch (failure) { if (failure?.containerExited || failure?.replaced) throw failure; return false; }
+}
 export function nativeAdapter(_env) {
   return {
     ready: true,
@@ -45,7 +54,18 @@ export function nativeAdapter(_env) {
       if (!ready) throw new Error('bootstrap_deadline');
       // The runtime derives the length of a string body itself; a second, hand-set
       // Content-Length is not sent alongside it.
-      const response = await fetchExisting(request('/initialize', internalToken, { method: 'POST', body: JSON.stringify({ input }) }));
+      let response;
+      try {
+        response = await fetchExisting(request('/initialize', internalToken, { method: 'POST', body: JSON.stringify({ input }) }));
+      } catch (failure) {
+        if (failure?.containerExited || failure?.replaced) throw failure;
+        // The reply was lost, not refused. The launcher takes input once and stops
+        // answering the moment it does, so one look tells which without sending the
+        // input again: still answering means it never took it. Gone, the ready and
+        // confirm steps prove by digest that the engine holds exactly this input.
+        if (await launcherWaiting(fetchExisting, internalToken)) throw new Error('bootstrap_input_not_taken ' + String(failure?.message || failure).slice(0, 60));
+        return;
+      }
       if (response.status !== 204) {
         // Name the launcher's own refusal (status and fixed code, never input) so the
         // owner's error screen tells a transport, size or write failure apart.

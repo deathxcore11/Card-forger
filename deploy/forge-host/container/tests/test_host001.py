@@ -117,6 +117,12 @@ class TransportTests(unittest.TestCase):
         for _ in range(2):
             self.assertEqual(self.request()[1]["X-Host-Epoch"], self.bridge.epoch)
 
+    def test_every_reply_says_the_connection_ends(self):
+        # A client that assumed keep-alive would send its next request (an action) into
+        # the socket this gateway closes after every reply, and lose it.
+        for args in ((), ("POST", "/action", b'{"revision":7,"op":"ok"}', {"Content-Type": "application/json"}), ("GET", "/state", None, None, False)):
+            self.assertEqual(self.request(*args)[1]["Connection"], "close")
+
     def test_stale_rejection_is_preserved_without_retry(self):
         self.native.status = 409
         self.native.body = b'{"error":"stale_revision"}'

@@ -31,6 +31,17 @@ class BootstrapTests(unittest.TestCase):
         conn.request(method, path, body=payload, headers=h)
         response = conn.getresponse(); status = response.status; value = response.read(); conn.close()
         return status, value
+    def test_every_reply_says_the_connection_ends(self):
+        # A client that assumed keep-alive would send its next request into the socket
+        # this launcher closes after every reply, and lose it.
+        for method, path, body, token in (('GET', '/bootstrap-ready', None, TOKEN), ('POST', '/initialize', {'input': {}}, 'wrong'),
+                                          ('POST', '/initialize', {'input': {'format': 'Commander'}}, TOKEN)):
+            conn = http.client.HTTPConnection('127.0.0.1', self.server.server_port, timeout=2)
+            conn.request(method, path, body=None if body is None else json.dumps(body).encode(),
+                         headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
+            response = conn.getresponse(); response.read(); conn.close()
+            self.assertEqual(response.getheader('Connection'), 'close', path)
+        self.assertTrue(self.path.exists())
     def test_no_account_credential_or_missing_capability_can_initialize(self):
         self.assertEqual(self.call('POST', '/initialize', {'input': {}}, token='account-bearer')[0], 401)
         self.assertFalse(self.path.exists())

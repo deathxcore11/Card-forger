@@ -24,6 +24,33 @@ test('bootstrap preserves raw snapshot, sends initialization once and never retr
   } };
   await assert.rejects(f.adapter.bootstrapExisting(args)); assert.equal(posts, 1);
 });
+test('a lost initialization reply is settled by one look at the launcher, never by sending the input again', async () => {
+  const lost = () => { throw TypeError('Network connection lost.'); };
+  for (const [name, afterPost, outcome] of [
+    ['launcher gone: it took the input, so startup goes on to prove it', lost, null],
+    ['the engine gateway answers in its place', () => Response.json({ error: 'route_not_found' }, { status: 404 }), null],
+    ['launcher still waiting: it never took the input', () => Response.json({ protocol: 'cardstashy.match-input.v1' }), /^bootstrap_input_not_taken Network connection lost\.$/],
+  ]) {
+    const f = await fixture(); let posts = 0, looks = 0;
+    const args = { ...f.args, deadline: 1000, now: () => 0, wait: async () => {}, fetchExisting: async request => {
+      if (request.method === 'POST') { posts++; lost(); }
+      if (!posts) return Response.json({ protocol: 'cardstashy.match-input.v1' });
+      looks++; return afterPost();
+    } };
+    if (outcome) await assert.rejects(f.adapter.bootstrapExisting(args), error => outcome.test(error.message), name);
+    else await f.adapter.bootstrapExisting(args);
+    assert.equal(posts, 1, name); assert.equal(looks, 1, name);
+  }
+});
+test('a container end or a replacement during initialization is reported as itself, without a look', async () => {
+  for (const failure of [Object.assign(Error('container_exited'), { containerExited: true }), Object.assign(Error('replaced_by_new_start'), { replaced: true })]) {
+    const f = await fixture(); let calls = 0;
+    const args = { ...f.args, deadline: 1000, now: () => 0, wait: async () => {}, fetchExisting: async request => {
+      calls++; if (request.method === 'GET') return Response.json({ protocol: 'cardstashy.match-input.v1' }); throw failure;
+    } };
+    await assert.rejects(f.adapter.bootstrapExisting(args), error => error === failure); assert.equal(calls, 2);
+  }
+});
 test('bootstrap refusal names the launcher status and fixed code, a platform reply by its first words; the runtime alone sets the length', async () => {
   for (const [reply, expected] of [
     [() => Response.json({ error: 'content_length_required' }, { status: 411 }), /^bootstrap_rejected_411_content_length_required$/],

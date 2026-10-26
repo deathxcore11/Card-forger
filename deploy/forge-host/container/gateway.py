@@ -226,6 +226,9 @@ class Handler(BaseHTTPRequestHandler):
             if value is not None:
                 self.send_header(header, value)
         self.send_header("Content-Length", str(len(data)))
+        # Every reply ends its connection. Said aloud, because a platform client that
+        # assumes keep-alive would otherwise send the next request into a closed socket.
+        self.send_header("Connection", "close")
         self.end_headers()
         self.wfile.write(data)
 

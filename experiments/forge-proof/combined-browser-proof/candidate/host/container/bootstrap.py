@@ -106,6 +106,9 @@ class BootstrapHandler(http.server.BaseHTTPRequestHandler):
         self.send_header('Content-Type', 'application/json')
         self.send_header('Cache-Control', 'no-store')
         self.send_header('Content-Length', str(len(body)))
+        # Every reply ends its connection. Said aloud, because a platform client that
+        # assumes keep-alive would otherwise send the next request into a closed socket.
+        self.send_header('Connection', 'close')
         self.end_headers()
         if body:
             self.wfile.write(body)
