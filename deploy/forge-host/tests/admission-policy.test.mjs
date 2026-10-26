@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { admissionPolicy, allowsAccount, reserveAdmissionBudget } from '../src/admission-policy.mjs';
+import { admissionPolicy, allowsAccount, reserveAdmissionBudget, settleAdmissionBudget } from '../src/admission-policy.mjs';
 
 const owner = '00000000-0000-4000-8000-000000000001';
 const NOW = 1_800_000_000_000;
@@ -57,4 +57,23 @@ test('invalid persisted accounting and backwards time fail closed without resett
     assert.deepEqual(await reserveAdmissionBudget(storage, allocation(), policy, NOW), { status: 503, error: 'play_runtime_budget_unavailable' });
     assert.deepEqual(await storage.get('play-runtime-budget'), saved);
   }
+});
+
+test('confirmed release settles a failed start to the runtime it held, never above its reservation', async () => {
+  const storage = store(); storage.transaction = async fn => fn(storage);
+  const policy = admissionPolicy(enabled, NOW), matchId = '00000000-0000-4000-8000-0000000000aa';
+  const failed = { ...allocation(NOW), matchId };
+  assert.equal(await reserveAdmissionBudget(storage, failed, policy, NOW), null);
+  assert.equal((await storage.get('play-runtime-budget')).entries[0].matchId, matchId);
+  assert.equal(await settleAdmissionBudget(storage, failed, NOW + 3000), true);
+  assert.equal((await storage.get('play-runtime-budget')).entries[0].runtimeMs, 10_000);
+  assert.equal(await settleAdmissionBudget(storage, failed, NOW + 9_000_000), false, 'a settled entry is never raised');
+  assert.equal(await settleAdmissionBudget(storage, { ...failed, matchId: '00000000-0000-4000-8000-0000000000bb' }, NOW), false);
+  // Eight failed starts no longer exhaust the eight-hour allowance.
+  for (let i = 1; i < 8; i++) {
+    const next = { ...allocation(NOW + i), matchId: '00000000-0000-4000-8000-00000000000' + i };
+    assert.equal(await reserveAdmissionBudget(storage, next, policy, NOW + i), null);
+    await settleAdmissionBudget(storage, next, NOW + i + 3000);
+  }
+  assert.equal(await reserveAdmissionBudget(storage, { ...allocation(NOW + 9), matchId: '00000000-0000-4000-8000-0000000000cc' }, policy, NOW + 9), null);
 });

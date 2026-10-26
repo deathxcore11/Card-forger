@@ -3,12 +3,13 @@
 import { MatchAuthority, GatewayDriver, verifyHostUser, boundedJSON,
   FORGE_REVISION, NATIVE_SCHEMA, digest, abortable } from './policy.mjs';
 import { ProvisionalAdmissionLedger } from './provisional-ledger.mjs';
-import { admissionPolicy, allowsAccount, reserveAdmissionBudget } from './admission-policy.mjs';
+import { admissionPolicy, allowsAccount, reserveAdmissionBudget, settleAdmissionBudget } from './admission-policy.mjs';
 export const ORIGIN = 'https://cardstashy.com';
 export const GLOBAL_NAME = 'forge-global-admission-v1';
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const UUID_RE = new RegExp('^' + UUID + '$', 'i');
 const MATCH_PATH = new RegExp('^/api/play/matches/(' + UUID + ')(/actions)?$', 'i');
+const startupFailure = failure => String(failure?.message || failure?.name || 'unknown').replace(/[^A-Za-z0-9 _.:-]/g, '').slice(0, 160) || 'unknown';
 const STARTUP_MS = 120_000, IDLE_MS = 600_000, RETAIN_MS = 86_400_000;
 const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...extra },
@@ -152,7 +153,10 @@ export class AdmissionService {
     const proof = await abortable(this.env.FORGE_MATCHES.getByName(matchId).destructionProof(generation), AbortSignal.timeout(5000));
     if (proof?.confirmed !== true || proof.generation !== generation) return false;
     const released = await this.ledger.releaseAfterDestruction({ matchId, generation, confirmed: true });
-    if (released) await this.storage.delete('startup:' + matchId);
+    if (released) {
+      await this.storage.delete('startup:' + matchId);
+      try { await settleAdmissionBudget(this.storage, lease, this.now()); } catch { /* the full reservation stays charged */ }
+    }
     return released;
   }
   async alarm() {
@@ -283,6 +287,9 @@ export class MatchService {
       await this.storage.setAlarm(Math.min(record.expiresAt, this.now() + IDLE_MS));
       return { status: 'running' };
     } catch (failure) {
+      // Keep a short, character-limited cause so the owner's error screen can tell a
+      // provider start failure from a readiness timeout. No stack, input or token.
+      try { record.failure = startupFailure(failure); await this.storage.put('allocation', record); } catch { /* cleanup still runs */ }
       await this.cleanup(record, failure.nativeRejected ? 'native_exact_validation_rejected' : 'startup_interrupted');
       return { status: 'interrupted' };
     }
@@ -366,7 +373,7 @@ export class MatchService {
     }
     if (record.status === 'initializing') return json({ ...publicAllocation(record), status: 'initializing' }, 202);
     if (record.status !== 'running') {
-      return json({ error: 'match_' + record.status, reason: record.reason || null, ...(record.validation ? { validation: record.validation } : {}) }, 410);
+      return json({ error: 'match_' + record.status, reason: record.reason || null, ...(record.failure ? { failure: record.failure } : {}), ...(record.validation ? { validation: record.validation } : {}) }, 410);
     }
     const windows = request.method === 'GET' ? [[1000, 4]] : [[1000, 10], [2000, 20]];
     if (await limited(this.storage, request.method === 'GET' ? 'poll-rate' : 'action-rate', windows, this.now())) return error('match_rate_limit', 429);

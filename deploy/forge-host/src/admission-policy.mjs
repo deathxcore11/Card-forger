@@ -29,8 +29,9 @@ export function allowsAccount(policy, ownerId) {
 }
 
 // Called inside the SAME storage transaction as the lease/idempotency receipt.
-// Reserve worst-case runtime before start. Rejections, closes and config edits do
-// not refund usage. A rolling window avoids a burst at the midnight boundary.
+// Reserve worst-case runtime before start. Config edits do not refund usage; once
+// the match's destruction is confirmed, settleAdmissionBudget lowers its entry to
+// the runtime actually held. A rolling window avoids a burst at midnight.
 export async function reserveAdmissionBudget(txn, allocation, policy, now) {
   if (policy?.mode === 'trial') return reserveTrialBudget(txn, allocation, policy, now);
   if (!allowsAccount(policy, allocation.ownerId)) return { status: 403, error: 'play_not_authorized' };
@@ -41,7 +42,8 @@ export async function reserveAdmissionBudget(txn, allocation, policy, now) {
   const saved = await txn.get('play-runtime-budget');
   if (saved && (saved.version !== 1 || !Array.isArray(saved.entries) || saved.entries.length > 100
     || saved.entries.some(e => !Number.isSafeInteger(e.at) || e.at < 0 || e.at > now
-      || !Number.isSafeInteger(e.runtimeMs) || e.runtimeMs <= TEARDOWN_MS || e.runtimeMs > 7_207_000))) {
+      || !Number.isSafeInteger(e.runtimeMs) || e.runtimeMs <= TEARDOWN_MS || e.runtimeMs > 7_207_000
+      || (e.matchId !== undefined && !UUID.test(e.matchId))))) {
     return { status: 503, error: 'play_runtime_budget_unavailable' };
   }
   const entries = (saved?.entries ?? []).filter(e => e.at > now - WINDOW_MS);
@@ -49,7 +51,25 @@ export async function reserveAdmissionBudget(txn, allocation, policy, now) {
   if (entries.length >= policy.maxReservations || reserved + charge > policy.runtimeBudgetMs) {
     return { status: 429, error: 'play_resource_budget_exhausted' };
   }
-  entries.push({ at: now, runtimeMs: charge });
+  entries.push({ at: now, runtimeMs: charge, matchId: allocation.matchId });
   await txn.put('play-runtime-budget', { version: 1, entries });
   return null;
+}
+
+// Called only after the match's destruction proof released its lease. A start that
+// failed, or a short match, keeps only the runtime it actually held plus teardown,
+// so failed starts cannot exhaust the rolling allowance. Never raises a charge.
+export async function settleAdmissionBudget(storage, lease, now) {
+  if (!UUID.test(lease?.matchId || '') || !Number.isSafeInteger(lease.createdAt) || !Number.isSafeInteger(now)) return false;
+  return storage.transaction(async txn => {
+    const saved = await txn.get('play-runtime-budget');
+    if (saved?.version !== 1 || !Array.isArray(saved.entries)) return false;
+    const entry = saved.entries.find(e => e.matchId === lease.matchId);
+    if (!entry) return false;
+    const held = Math.max(TEARDOWN_MS + 1, Math.min(entry.runtimeMs, now - lease.createdAt + TEARDOWN_MS));
+    if (held === entry.runtimeMs) return false;
+    entry.runtimeMs = held;
+    await txn.put('play-runtime-budget', saved);
+    return true;
+  });
 }
