@@ -40,7 +40,7 @@ export function themeSettings({document = globalThis.document, storage = storage
 export const normalizeSettingsTab = tab => tab === 'backup' ? 'recovery' : SETTINGS_TABS.some(([id]) => id === tab) ? tab : 'account';
 export function settingsTabs(tab) {
   tab = normalizeSettingsTab(tab);
-  return `<nav class="settings-tabs" role="tablist" aria-label="Settings sections" aria-orientation="horizontal">${SETTINGS_TABS.map(([id,label]) => `<button type="button" id="settingsTab-${id}" role="tab" aria-controls="settings-${id}" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}" data-act="settingsTab" data-id="${id}">${`<span class="settings-tab-icon" aria-hidden="true">${({account:ICON.sync,recovery:actionIcon("history"),info:ICON.search,app:actionIcon("brush")})[id]}</span><span>${label}</span>${id==='recovery'?releaseDot():''}`}</button>`).join('')}</nav>`;
+  return `<nav class="settings-tabs" role="tablist" aria-label="Settings sections" aria-orientation="horizontal">${SETTINGS_TABS.map(([id,label]) => `<button type="button" id="settingsTab-${id}" role="tab" aria-controls="settings-${id}" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}" data-act="settingsTab" data-id="${id}">${`<span class="settings-tab-icon" aria-hidden="true">${({account:actionIcon("profile"),recovery:actionIcon("backup"),info:actionIcon("help"),app:actionIcon("appearance")})[id]}</span><span>${label}</span>${id==='recovery'?releaseDot():''}`}</button>`).join('')}</nav>`;
 }
 export function activateSettingsTab(root, id) {
   const tab = normalizeSettingsTab(id);
