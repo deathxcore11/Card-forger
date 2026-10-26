@@ -100,5 +100,11 @@
     "source": "takeover/forge-host-local-fixture/manifest.json",
     "sha256": "02c3545ef3aea90ef3e989301440e1fcd073e0a1619a3de926d19296524745f5",
     "bytes": 1934
+  },
+  {
+    "path": "patches/browser-menu-exit.patch",
+    "source": "takeover/forge-play-browser-exit-overlay/menu-and-diagnostics.patch",
+    "sha256": "27c965d0c3df8010ba4be22aee724bd50c7a0c64e335d72f2e70f45638dd0910",
+    "bytes": 12867
   }
 ]

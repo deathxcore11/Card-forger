@@ -1,0 +1,65 @@
+--- a/browser-journey.mjs
++++ b/browser-journey.mjs
+@@ -6,7 +6,7 @@
+ const base=process.env.FORGE_UI_ORIGIN;if(!base||!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))throw Error('Explicit loopback fixture origin required');
+ const mode=process.env.FORGE_BROWSER_CASE||'saved-keen',touch=process.env.FORGE_TOUCH==='true',width=Number(process.env.FORGE_WIDTH||1440),height=Number(process.env.FORGE_HEIGHT||1000),full=process.env.FORGE_FULL_JOURNEY==='true';
+ const out=path.resolve(process.env.FORGE_BROWSER_OUT||'test-results/forge-existing-play');await fs.mkdir(out,{recursive:true});
+-const report={schema:'forge-existing-play-browser.v1',result:'running',case:mode,scope:'isolated existing Play menu/actual app handlers with synthetic auth/cache provider; not whole-app boot or production persistence',browser:null,viewport:{width,height,hasTouch:touch},checks:[],actions:0,creates:0,privacyChecks:0,externalCredentialViolations:0,unexpectedRequests:0,terminal:null,errors:[]};
++const report={schema:'forge-existing-play-browser.v1',result:'running',case:mode,scope:'isolated existing Play menu/actual app handlers with synthetic auth/cache provider; not whole-app boot or production persistence',browser:null,viewport:{width,height,hasTouch:touch},checks:[],actions:0,creates:0,privacyChecks:0,externalCredentialViolations:0,unexpectedRequests:0,terminal:null,errors:[],errorDiagnostics:[]};
+ let browser,page,latest=null,lastStage='startup',nativePosts=0,createBodies=[],terminals=[],snapshots=[],actionIds=new Set();
+ const pause=ms=>new Promise(r=>setTimeout(r,ms)),check=n=>{report.checks.push(n);console.log('PASS '+n);},own=s=>s.players.find(p=>p.isViewer);
+ async function until(fn,timeout=20000){const end=Date.now()+timeout;while(Date.now()<end){const value=await fn();if(value)return value;await pause(40);}throw Error('Bounded wait expired at '+lastStage);}
+@@ -18,6 +18,26 @@
+ async function ready(oldRevision=null,timeout=20000){return until(async()=>{if(verifiedTerminal(latest))return latest;const s=latest?.snapshot;if(!s||s.revision===oldRevision||s.busy||s.inputType==='InputLockUI'&&!s.prompt)return false;const rev=await page.locator('[data-native-panel]').getAttribute('data-native-revision').catch(()=>null);return rev===String(s.revision)?s:false;},timeout);}
+ const key=k=>page.locator(`[data-native-panel] [data-native-key="${k}"]`);
+ const gesture=locator=>touch?locator.tap():locator.click();
++const diagnosticScripts=new Set();
++// Bounded metadata only. Never persist exception messages, raw stacks or URLs.
++function recordError(source,error){
++ const name=['Error','TypeError','AssertionError','TimeoutError'].includes(error?.name)?error.name:'Other';report.errors.push(name);
++ const message=String(error?.message||'');
++ const category=/ResizeObserver loop/i.test(message)?'resize-observer-loop':/Maximum call stack/i.test(message)?'stack-limit':/is not defined/.test(message)?'not-defined':/is not a function/.test(message)?'not-function':/Cannot read properties of (null|undefined)|Cannot set properties of (null|undefined)/.test(message)?'null-property':error?.name==='SyntaxError'&&/JSON|Unexpected (token|end)/i.test(message)?'json-decode':error?.name==='AssertionError'?'assertion':/No resource with given identifier|No data found for resource|Response body is unavailable|Failed to get response body/i.test(message)?'response-body-unavailable':/Execution context was destroyed|Target page.*closed|Target closed/i.test(message)?'context-closed':/The user aborted|ERR_ABORTED|request aborted/i.test(message)?'aborted':/Failed to fetch|fetch failed|NetworkError|load failed/i.test(message)?'network-failure':'other';
++ let location;
++ for(const candidate of String(error?.stack||'').match(/https?:\/\/[^\s)]+/g)||[]){
++  const match=candidate.match(/^(.*):(\d+):(\d+)$/);if(!match)continue;
++  try{const url=new URL(match[1]),file=url.pathname.split('/').pop(),line=Number(match[2]),column=Number(match[3]);if(url.origin!==base||url.search||url.hash||!diagnosticScripts.has(file)||!Number.isSafeInteger(line)||!Number.isSafeInteger(column)||line<1||column<1||line>10000000||column>10000000)continue;location={file,line,column};break;}catch{}
++ }
++ const entry={source,class:name,category,...(location?{location}:{})},signature=JSON.stringify(entry),found=report.errorDiagnostics.find(x=>JSON.stringify({source:x.source,class:x.class,category:x.category,...(x.location?{location:x.location}:{})})===signature);
++ if(found)found.count++;else if(report.errorDiagnostics.length<20)report.errorDiagnostics.push({...entry,count:1});
++}
++async function openExit(){
++ lastStage='open Match menu';const menu=page.locator('details.play-match-menu');
++ if(!await menu.evaluate(el=>el.open))await gesture(menu.locator('summary'));
++ assert.equal(await menu.evaluate(el=>el.open),true,'Match menu did not open through its visible summary');
++ lastStage='open exit confirmation';await gesture(menu.locator('[data-focus-key=exit-match]'));
++}
+ async function action(locator,label='native control'){
+  lastStage=label;const old=latest?.snapshot?.revision,posts=nativePosts;
+  const [response,clicked]=await Promise.allSettled([page.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/actions')&&r.request().method()==='POST',{timeout:15000}),gesture(locator)]);
+@@ -66,9 +86,9 @@
+  browser=await chromium.launch({headless:true});report.browser=browser.version();
+  const context=await browser.newContext({viewport:{width,height},hasTouch:touch,isMobile:touch,serviceWorkers:'block',...(touch?{userAgent:'Mozilla/5.0 (Linux; Android 14; Pixel Fold) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'}:{})});
+  await context.route('**/*',route=>{const req=route.request(),u=new URL(req.url()),h=req.headers(),local=u.origin===base,art=u.origin==='https://cards.scryfall.io'&&req.method()==='GET'&&req.resourceType()==='image';if(!local&&(h.authorization||h.cookie)){report.externalCredentialViolations++;return route.abort();}if(local||art)return route.continue();report.unexpectedRequests++;return route.abort();});
+- page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>report.errors.push(e.name));
+- page.on('request',r=>{try{const u=new URL(r.url());if(u.origin!==base)return;if(u.pathname==='/api/play/matches'&&r.method()==='POST'){report.creates++;createBodies.push(r.postDataJSON());}if(u.pathname.endsWith('/actions')&&r.method()==='POST'){const body=r.postDataJSON();nativePosts++;report.actions++;assert(!actionIds.has(body.commandId),'A command was retried');actionIds.add(body.commandId);}}catch(e){report.errors.push(e.name);}});
+- page.on('response',async r=>{try{const u=new URL(r.url());if(u.origin!==base||r.request().method()!=='GET'||!/^\/api\/play\/matches\/[^/]+$/.test(u.pathname)||r.status()!==200)return;const value=await r.json();latest=value;if(value.snapshot){privacy(value.snapshot);snapshots.push(value.snapshot);if(snapshots.length>3)snapshots.shift();}if(verifiedTerminal(value)&&!terminals.some(t=>t.matchId===value.matchId))terminals.push(value);}catch(e){report.errors.push(e.name);}});
++ page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>recordError('page',e));
++ page.on('request',r=>{try{const u=new URL(r.url());if(u.origin!==base)return;if(r.resourceType()==='script'){const file=u.pathname.split('/').pop();if(/^[A-Za-z0-9_-]+\.(?:js|mjs)$/.test(file))diagnosticScripts.add(file);}if(u.pathname==='/api/play/matches'&&r.method()==='POST'){report.creates++;createBodies.push(r.postDataJSON());}if(u.pathname.endsWith('/actions')&&r.method()==='POST'){const body=r.postDataJSON();nativePosts++;report.actions++;assert(!actionIds.has(body.commandId),'A command was retried');actionIds.add(body.commandId);}}catch(e){recordError('request-observer',e);}});
++ page.on('response',async r=>{try{const u=new URL(r.url());if(u.origin!==base||r.request().method()!=='GET'||!/^\/api\/play\/matches\/[^/]+$/.test(u.pathname)||r.status()!==200)return;const value=await r.json();latest=value;if(value.snapshot){privacy(value.snapshot);snapshots.push(value.snapshot);if(snapshots.length>3)snapshots.shift();}if(verifiedTerminal(value)&&!terminals.some(t=>t.matchId===value.matchId))terminals.push(value);}catch(e){recordError('response-observer',e);}});
+  await page.goto(base+'/forge-play-browser.html',{waitUntil:'networkidle'});await page.waitForFunction(()=>document.documentElement.dataset.fixtureReady==='true');
+  const fixture=await (await fetch(base+'/fixture-decks.json')).json(),human=fixture.decks[0],cpu=fixture.decks[mode.includes('reign')?2:1];
+  if(mode.startsWith('import')){await gesture(page.locator('#playImportDisclosure summary'));await page.locator('#playImportName').fill('Calling All Angels imported browser fixture');await page.locator('#playImportText').fill(fixture.angelsImport);await gesture(page.locator('[data-act=playImportPreview]'));await gesture(page.locator('[data-act=playImportUse]'));}else await gesture(page.locator(`[data-act=playSelectDeck][data-play-deck="${human.id}"]`));
+@@ -98,11 +118,11 @@
+  }
+ 
+  s=await action(key('mode-full'),'native Full Control');assert.equal(s.controlMode,'full');assert.equal(await key('mode-full').getAttribute('aria-pressed'),'true');s=await action(key('mode-smart'),'native Smart');assert.equal(s.controlMode,'smart');check('Smart / Full buttons reflect actual native acknowledgements');
+- const exit=page.locator('[data-focus-key=exit-match]');await gesture(exit);await page.getByRole('dialog',{name:'Concede native match'}).waitFor();await gesture(page.getByRole('button',{name:'Keep playing',exact:true}));assert.equal(await page.getByRole('dialog',{name:'Concede native match'}).count(),0);check('Exit cancellation returns to the unchanged native match');
++ await openExit();await page.getByRole('dialog',{name:'Concede native match'}).waitFor();lastStage='cancel exit confirmation';await gesture(page.getByRole('button',{name:'Keep playing',exact:true}));assert.equal(await page.getByRole('dialog',{name:'Concede native match'}).count(),0);check('Exit cancellation returns to the unchanged native match');
+  if(full){lastStage='full native terminal';const end=Date.now()+720000;while(!verifiedTerminal(latest)&&Date.now()<end&&report.actions<1200)await passive();assert(verifiedTerminal(latest),'No verified native terminal outcome');report.terminal=latest.result;await page.getByRole('heading',{name:'Match finished',exact:true}).waitFor();await page.screenshot({path:path.join(out,'terminal.png')});check('actual native result reaches dedicated immutable match result');
+   latest=null;await gesture(page.getByRole('button',{name:'Rematch setup',exact:true}));s=await ready(null,140000);assert.equal(report.creates,2);assert.notEqual(latest.matchId,terminals[0].matchId);check('explicit Rematch creates a different allocation');if(s.inputType==='InputConfirm')s=await action(key('ok'),'rematch Play');if(s.inputType==='InputConfirmMulligan')s=await action(key('ok'),'rematch Keep');
+  }
+- await ready();await gesture(page.locator('[data-focus-key=exit-match]'));await gesture(page.getByRole('button',{name:'Concede and return',exact:true}));await until(()=>terminals.length>(full?1:0));report.concession=terminals.at(-1).result;assert.equal(report.concession.draw,false);assert.notEqual(report.concession.winnerPlayerId,snapshots.at(-1).viewer);await page.locator('#practicePlayerMat').waitFor({state:'detached'});assert.equal(await page.locator('#app').evaluate(e=>e.inert),false);assert.equal(await page.locator('[data-act=playStartCandidate]').isVisible(),true);check('explicit concession waits for native result and returns to existing Play');
++ await ready();await openExit();lastStage='confirm native concession';await gesture(page.getByRole('button',{name:'Concede and return',exact:true}));await until(()=>terminals.length>(full?1:0));report.concession=terminals.at(-1).result;assert.equal(report.concession.draw,false);assert.notEqual(report.concession.winnerPlayerId,snapshots.at(-1).viewer);await page.locator('#practicePlayerMat').waitFor({state:'detached'});assert.equal(await page.locator('#app').evaluate(e=>e.inert),false);assert.equal(await page.locator('[data-act=playStartCandidate]').isVisible(),true);check('explicit concession waits for native result and returns to existing Play');
+  await gesture(page.locator('a.brand'));await page.getByRole('heading',{name:'Home',exact:true}).waitFor();assert.equal(new URL(page.url()).hash,'#home');check('Home navigation after resource cleanup');
+  assert.equal(report.externalCredentialViolations,0);assert.equal(report.unexpectedRequests,0);assert.deepEqual(report.errors,[]);report.result='passed';
+ }catch(e){report.result='failed';report.failure={stage:lastStage,name:e.name,message:String(e.message).replace(/https?:\/\/\S+/g,'[url]').slice(0,240)};process.exitCode=1;}

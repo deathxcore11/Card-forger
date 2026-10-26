@@ -23,6 +23,8 @@ def patch(root, file):
 protected={str(p.relative_to(base)):sha(p) for p in base.rglob('*') if p.is_file()}
 shutil.copytree(base,takeover/'cardstashy',symlinks=False)
 browser=takeover/'forge-play-browser-proof';shutil.copytree(source/'browser',browser)
+patch(browser,source/'patches/browser-menu-exit.patch')
+assert sha(browser/'browser-journey.mjs')=='cac54a7761aa0e84aa12873c802ecf614757c072d09b3bfe768b515ba2d80399'
 inspector=takeover/'forge-inspector-fix-overlay'
 for rel in ['experiments/phase-engine/match-table.mjs','experiments/forge-proof/forge-table.mjs']:
     copy(base/rel,inspector/rel)

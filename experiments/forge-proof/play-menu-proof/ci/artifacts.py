@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Explicit sanitized evidence allowlist. Raw traces/logs/source are never copied."""
-import json, math, pathlib, shutil, sys
+import json, math, pathlib, shutil, sys, collections, re
 raw,out,code,stage=pathlib.Path(sys.argv[1]),pathlib.Path(sys.argv[2]),int(sys.argv[3]),sys.argv[4]
 out.mkdir(parents=True,exist_ok=True)
 assert not any(out.iterdir()), 'artifact output must begin empty'
@@ -16,6 +16,19 @@ for name in ['desktop','touch750']:
  if report.is_file() and not report.is_symlink():
   original=json.loads(report.read_text());clean={k:v for k,v in original.items() if k in safe_fields}
   clean['pageErrorCount']=len(original.get('errors',[]))
+  classes={'Error','TypeError','AssertionError','TimeoutError','ReferenceError','SyntaxError','SecurityError','DataCloneError','InvalidStateError','NotSupportedError','AbortError','Other'}
+  clean['observedErrorClassCounts']=dict(collections.Counter(n if n in classes else 'Other' for n in original.get('errors',[])))
+  diagnostics=[]
+  categories={'resize-observer-loop','stack-limit','not-defined','not-function','null-property','json-decode','assertion','response-body-unavailable','context-closed','aborted','network-failure','other'}
+  for value in original.get('errorDiagnostics',[])[:20]:
+   if not isinstance(value,dict) or value.get('source') not in {'page','response-observer','request-observer'}:continue
+   d={'source':value['source'],'class':value.get('class') if value.get('class') in classes else 'Other','category':value.get('category') if value.get('category') in categories else 'other'}
+   count=value.get('count');d['count']=count if type(count) is int and 0<count<=100000 else 1
+   loc=value.get('location')
+   if isinstance(loc,dict) and isinstance(loc.get('file'),str) and re.fullmatch(r'[A-Za-z0-9_.-]{1,100}\.(?:js|mjs)',loc['file']) and all(type(loc.get(k)) is int and 0<loc[k]<=10000000 for k in ['line','column']):
+    d['location']={k:loc[k] for k in ['file','line','column']}
+   diagnostics.append(d)
+  if diagnostics:clean['errorDiagnostics']=diagnostics
   if 'failure' in original:
    error=original['failure'];clean['failure']={'stage':str(error.get('stage','unknown'))[:80],'class':error.get('name') if error.get('name') in ['Error','TimeoutError','AssertionError','TypeError'] else 'Error'}
   if 'failedAction' in original:
