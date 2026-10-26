@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { ACCOUNT, WORKER, registryImageForProbe, createReleaseConfiguration } from './release-configuration.mjs';
+import { reportBuildFailure } from './report-build-failure.mjs';
 
 const host = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = path.resolve(host, '../..');
@@ -103,6 +104,7 @@ try {
     imageId: built.imageId, releasePolicySha256: sha(JSON.stringify(release)), nativeProbePassed: true,
     cleanupConfirmed, websiteChanged: false, realAccountGameplayVerified: false }));
 } catch (error) {
+  if (stage === 'native-image-build-and-probe') await reportBuildFailure(imageRoot);
   let apiCodes = [];
   try { apiCodes = [...(await readFile(path.join(work, `private-${stage}.log`), 'utf8')).matchAll(/\[code: (\d{1,8})\]/g)].map(x => x[1]).slice(0, 8); } catch {}
   console.error(JSON.stringify({ result: 'failed', stage, category: error?.name || 'Error',
