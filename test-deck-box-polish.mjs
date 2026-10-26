@@ -26,4 +26,11 @@ assert.match(css,/\.deck-box-case>img\{[^}]*opacity:\.9;box-shadow:/);
 assert.match(css,/\.deck-box\{[^}]*width:50px;height:54px/);
 assert.match(css,/@media\(max-width:600px\)\{\.deck-box\{width:42px;height:46px/);
 assert.match(css,/prefers-reduced-motion:no-preference/);
-console.log('Deck box polish: custom colors, art, fallback, dimensions and material rules pass.');
+// polish.css redraws the box as a card stack: no lid over the art, the cover fills its card,
+// and opening fans the back cards out beside it, below the cover.
+const polish = await readFile(new URL('./polish.css', import.meta.url), 'utf8');
+assert.match(polish,/\.deck-box-lid \{ display: none; \}/,'no lid covers the cover art');
+assert.match(polish,/\.deck-box \.deck-box-case > img \{\s*inset: 0; width: 100%; height: 100%;/,'cover art fills its card');
+assert.match(polish,/\.deck-box \.deck-box-cards \{ z-index: 1; \}/,'fanned cards stay behind the cover');
+assert.match(polish,/\.deck-box \.deck-box-case \{[^}]*z-index: 3;/,'cover stays on top');
+console.log('Deck box polish: custom colors, art, fallback, dimensions, material and card-stack rules pass.');

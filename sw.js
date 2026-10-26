@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v331-forge-live";
+const CACHE = "cardforge-shell-v333-forge-live";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",
@@ -38,6 +38,7 @@ const ASSETS = [
   "./experiments/phase-engine/cpu-legal-candidates.mjs",
 "./experiments/phase-engine/practice-session-record.mjs", "./experiments/phase-engine/turn-budget.mjs", "./experiments/phase-engine/card-placement.mjs", "./experiments/phase-engine/card-stats.mjs", "./experiments/phase-engine/random-outcomes.mjs", "./experiments/phase-engine/human-command.mjs", "./experiments/phase-engine/interaction-surface.mjs", "./experiments/phase-engine/match-authority.mjs", "./experiments/phase-engine/match-input.mjs", "./experiments/phase-engine/catalog-admission.mjs", "./experiments/phase-engine/match-session.mjs", "./experiments/phase-engine/match-table.mjs", "./experiments/phase-engine/practice-authority.mjs", "./experiments/phase-engine/practice-client.mjs", "./experiments/phase-engine/practice-coverage.mjs", "./experiments/phase-engine/practice-preflight.mjs", "./experiments/phase-engine/practice-flow.mjs", "./experiments/phase-engine/practice-presentation.mjs", "./experiments/phase-engine/practice-record.mjs", "./experiments/phase-engine/priority-clock.mjs", "./experiments/phase-engine/priority-scheduler.mjs", "./experiments/phase-engine/protocol-fault.mjs", "./experiments/phase-engine/runtime-assets.mjs", "./experiments/phase-engine/seat-surface.mjs", "./experiments/phase-engine/visible-cpu-policy.mjs", "./experiments/phase-engine/visible-policy-worker.mjs", "./experiments/phase-engine/worker-journal.mjs", "./experiments/phase-engine/match-table.css", "./play-menu.js", "./play-starter-deck.js", "./play-opponent-build.js", "./play-deck-import.js", "./play-deck-context.js", "./play-card-preparation.js", "./play-catalog-review.js", "./play-setup.js", "./play-player-mat.js", "./play-pregame.js", "./play-card-surface.js", "./play-surface-policy.js", "./play-menu.css", "./desktop-play.js", "./commander-evidence.js", "./commander-combos.js", "./game-changers.js",
   "./home-overview.css",
+  "./polish.css",
   "./deck-viewer.js",
   "./deck-viewer.css",
   "./deck-mechanic-plan.js", "./mtg-land-requirements.js", "./mtg-commander-conditions.js", "./mtg-primary-inputs.js", "./mtg-ability-endpoints.js", "./mtg-final-support.js", "./mtg-reference-construction.js", "./mtg-mana-sources.js", "./mtg-wiki-knowledge.js", "./mtg-wiki-client.js", "./mtg-wiki-ui.js", "./wiki-sources.js", "./game-wiki-knowledge.js", "./game-wiki-article.js", "./wiki-card-handoff.js", "./wiki-deck-handoff.js",
@@ -253,6 +254,8 @@ const ASSETS = [
   "./guide.js",
   "./pairing.js",
   "./icons.js",
+  "./tab-glide.js",
+  "./search-hints.js",
   "./zoom.js",
   "./scansession.js",
   "./scancam.js",

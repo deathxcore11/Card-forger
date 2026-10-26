@@ -147,6 +147,8 @@ import * as T from "./tcg.js";
 import { rulesPage, learnSheet } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
 import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
+import { startTabGlide } from "./tab-glide.js";
+import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
 import { initCloud, pauseLocalConflict, communityRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
@@ -6560,6 +6562,8 @@ function watchCollectionPrices() {
   } catch {}
 }
 async function boot() {
+  startTabGlide();
+  startSearchHints({ ownedNames: (g) => (g === "mtg" ? S.state.collection : S.state.tcg?.[g]?.collection || []).map((e) => e?.name) });
   setTimeout(watchCollectionPrices, 8000);
   // The reference catalog never holds up the first screen: on a slow connection the app opens
   // with saved cards and adds the catalog when it arrives.

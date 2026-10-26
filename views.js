@@ -410,7 +410,7 @@ export function cardSheet(c, ctx = {}) {
   return `<div class="sheet-head overlay">${S.ui.sheetBack ? `<button class="icon" data-act="sheetBack" aria-label="Back to deck idea">←</button>` : "<span></span>"}<button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="cs-banner"><div class="cs-hero mtg">${img(heroArt, name, "cs-art")}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(name)}</h2><p class="type-line">${esc(faces[face]?.type_line || typeText(shown))} ${detailOwnedSummary(i.owned)}</p></div>${manaCost(faces[face] || shown)}</div></div>
-  ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", `Versions${prints ? " · " + prints.length + (ctx.printsNext ? "+" : "") : ""}`], ["prices", "Prices"], ["rulings", "Rules & legality"]])}
+  ${cardTabs(tab, [["overview", "Overview", "info"], ["meta", "Meta", "trophy"], ["guide", "Play guide", "ideas"], ["versions", `Versions${prints ? " · " + prints.length + (ctx.printsNext ? "+" : "") : ""}`, "viewStacks"], ["prices", "Prices", "bag"], ["rulings", "Rules & legality", "book"]])}
   ${emblemChips("mtg", c)}
   <div class="cs-meta">
     ${(()=>{const st=S.ui.set,info=S.ui.sets.list.find(s=>s.code===shown.set)||(st.code===shown.set?st.info:null);return detailSetSummary({action:shown.set?`data-act="set" data-code="${esc(shown.set)}"`:'',identity:`${setIcon(shown.set, shown.rarity, 24)}<span><b>${esc(shown.set_name || (shown.set || "").toUpperCase())}${shown.set?' <span class="set-go">›</span>':''}</b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></span>`,progress:magicSetProgress(shown.set,info)});})()}
@@ -687,7 +687,7 @@ export function compareSheet() {
 export function collection() {
   const tab = S.ui.collTab;
   return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${S.ui.collTab === "cards" ? viewControl("mtg","collection")+selectionControl("mtg") : ""}<button class="icon" data-act="collMenu" aria-label="More collection actions">⋯</button></div></div>
-  ${segmented("collTab", tab === "wishlist" ? "cards" : tab, [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"]])}
+  ${segmented("collTab", tab === "wishlist" ? "cards" : tab, [["cards", "Cards", "cardStack"], ["binders", "Binders", "binder"], ["value", "Value", "history"]])}
   ${tab === "binders" ? binderShelf(S.state.collection.map(entry => { const c=magicOwnedCard(entry,S.state.printings?.[entry.printingId]); return {entry,card:c,image:cardImage(c),game:"mtg",owned:true}; }),"mtg",S.state.settings.binders || []) : tab === "value" ? collectionValueView() : collectionCards(tab === "wishlist")}`;
 }
 
@@ -816,7 +816,7 @@ export function decks() {
   const tab = S.ui.decksTab;
   return `<div class="page-head"><h1>Decks</h1><div class="head-actions"><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div></div>
   <div class="random-tools"><button class="btn ghost small" data-act="learnGame">How to play · keywords</button><button class="btn ghost small" data-act="tabletop">Tabletop · play together</button></div>
-  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="randomDeckOptions" data-home="1" aria-label="Random deck in any format">🎲 Random deck</button></div>
+  ${segmented("decksTab", tab, [["mine", "My decks", "decks"], ["ideas", "Ideas", "ideas"], ["inspiration", "Meta decks", "trophy"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="randomDeckOptions" data-home="1" aria-label="Random deck in any format">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView() : tab === "inspiration" ? inspirationView() : myDecks()}`;
 }
 

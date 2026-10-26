@@ -95,6 +95,8 @@ const ACTION = ICON;
 const LEAD = { "▲": "warn", "●": "stop", "⚔": "sword", "☠": "poison", "🎲": "random", "⚒": "build", "✧": "ideas", "🏆": "trophy", "⇄": "compare", "♡": "heart", "♥": "heartOn", "＋": "plus", "+": "plus", "↥": "import", "↓": "export", "⟳": "refresh", "↻": "flip", "⧉": "copy", "🔗": "link", "🖨": "print", "📷": "camera", "◈": "pack", "☆": "bookmark", "▦": "collection", "📖": "book", "◷": "history", "🛒": "bag", "⌕": "search", "☑": "pick", "⚠": "warn", "🖌": "brush", "✓": "check", "←": "back", "‹": "back", "▧": "scan" };
 const ALONE = { "◐": "dark", "▢": "frame", "✋": "hand", "☀": "glare", "◎": "focus", "✓": "check", "✕": "close", "⋯": "more", "−": "minus", "＋": "plus", "←": "back", "⟳": "refresh", "↻": "flip" };
 export const actionIcon = (name) => ACTION[name] || "";
+// An icon before a tab or button label; decorative, the text stays the name.
+export const labelIcon = (name) => ACTION[name] ? `<span class="label-ico" aria-hidden="true">${ACTION[name]}</span>` : "";
 // A lone symbol inside a button (quick tiles, icon buttons) maps like a leading one.
 for (const [k, v] of Object.entries(LEAD)) if (!ALONE[k] && k !== "+" && k !== "✓") ALONE[k] = v;
 const iconFor = (name) => ACTION[name];
