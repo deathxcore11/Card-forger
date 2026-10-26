@@ -842,7 +842,8 @@ function sheetScrolled() {
     head.firstElementChild?.after(t);
   }
   head.classList.toggle("scrolled", on);
-  body.style?.setProperty?.("--card-tabs-top",Math.max(0,on?head.getBoundingClientRect().bottom-body.getBoundingClientRect().top:0)+"px");
+  // Sticky offsets start at the padding edge, so the sheet's top padding comes off or content shows between header and rail.
+  body.style?.setProperty?.("--card-tabs-top",Math.max(0,on?head.getBoundingClientRect().bottom-body.getBoundingClientRect().top-(parseFloat(globalThis.getComputedStyle?.(body)?.paddingTop)||0):0)+"px");
   const rail=body.querySelector('.cs-tabs'),selected=rail?.querySelector('[aria-selected="true"]'),indicator=rail?.querySelector('.cs-tab-indicator');
   if(indicator&&selected){indicator.style.left=selected.offsetLeft+'px';indicator.style.width=selected.offsetWidth+'px';indicator.style.top=selected.offsetTop+'px';indicator.style.height=selected.offsetHeight+'px';rail.dataset.indicatorReady='true';}
 }
@@ -4971,7 +4972,7 @@ A.deckMenu = (t) => {
       ${contextAction('importDeck','import','Re-import / replace list')}
     </div></details>
     <div class="context-group context-danger">${contextAction('deckDelete','close','Delete deck',{danger:true})}</div>
-    ${d.source ? `<p class="context-source muted small">Source: ${esc(d.source.kind || "")} · ${esc(d.source.website || "")}${d.source.author ? " · by " + esc(d.source.author) : ""}${d.source.url ? ` · <a href="${esc(safeHref(d.source.url))}" target="_blank" rel="noopener noreferrer">original ↗</a>` : ""}</p>` : ""}</div>`,
+    ${d.source ? `<p class="context-source muted small">Source: ${esc(d.source.kind || "")} · ${esc(d.source.website || "")}${d.source.author ? " · by " + esc(d.source.author) : ""}${d.source.url ? ` · <a href="${esc(safeHref(d.source.url))}" target="_blank" rel="noopener noreferrer">original</a>` : ""}</p>` : ""}</div>`,
     { type: "deckMenu",id:d.id },
   );
 };

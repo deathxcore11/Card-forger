@@ -45,7 +45,8 @@ import { trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pric
 import { installNudge, installCardMarkup } from "./install.js";
 import {knownSetCount,setRowContent,setYearSections,setProgressMarkup,setCardFacets,filterSortSetCards} from './set-list-ui.js';
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
-import { ICON, actionIcon } from "./icons.js";
+import { ICON, actionIcon, labelIcon } from "./icons.js";
+import { searchEmblem } from "./home-search.js";
 import { tierOf, tierAttrs, tierStyle, tierGem } from "./tier.js";
 import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab } from "./importance.js";
 import { tileChrome } from "./tiles.js";
@@ -224,11 +225,12 @@ export function search() {
     f = db.filters,
     chips = mtgFilterChips(f),
     shown = db.results.filter((c) => (f.own === "owned" ? inv(c.name).owned > 0 : f.own === "missing" ? !inv(c.name).owned : true));
-  return `<div class="page-head"><h1>Search cards</h1>${viewControl("mtg","search")}<div class="search-tools"><button class="chip tool-chip" data-act="compareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">◈ Sets</button><button class="chip tool-chip" data-act="mtgWikiOpen" aria-label="Open Wiki">Wiki</button><button class="chip tool-chip" data-act="dbRandom" aria-label="Random card">🎲 Random</button></div></div>
-  <div class="searchbar search-query"><input id="dbTerm" type="search" data-suggest="mtg" value="${esc(db.term)}" placeholder="Card name, set + number (TRK 323), or “draw a card”" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch">${db.busy ? "Search again" : "Search"}</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI">${brandMark("assistant-button-mark")}<span>Ask</span></button></div>
+  return `<div class="page-head"><h1>Search cards</h1>${viewControl("mtg","search")}</div>
+  <div class="searchbar search-query"><input id="dbTerm" type="search" data-suggest="mtg" value="${esc(db.term)}" placeholder="Name, set + number, or text" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn search-go" data-act="dbSearch" aria-label="${db.busy ? "Search again" : "Search"}">${searchEmblem()}<span>${db.busy ? "Search again" : "Search"}</span></button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI">${brandMark("assistant-button-mark")}<span>Ask</span></button></div>
+  <div class="search-tools" aria-label="Search shortcuts"><button class="chip tool-chip" data-act="compareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">${actionIcon("sets")}<span>Sets</span></button><button class="chip tool-chip" data-act="mtgWikiOpen" aria-label="Open Wiki">${actionIcon("wiki")}<span>Wiki</span></button><button class="chip tool-chip" data-act="dbRandom" aria-label="Random card">${actionIcon("random")}<span>Random</span></button></div>
   ${chipRow(chips, "dbChip", "dbClear")}
   ${savedRow(savedSearches("mtg"), "dbSaved", "dbSavedDel")}
-  <details class="filters" id="magic-search-filters"><summary>Filters${chips.length ? ` · ${chips.length} on` : ""}</summary>
+  <details class="filters" id="magic-search-filters"><summary>${labelIcon("filter")}<span>Filters</span>${chips.length ? `<b class="filters-count">${chips.length}<span class="sr-only"> on</span></b>` : ""}<span class="filters-chev" aria-hidden="true">${actionIcon("chevron")}</span></summary>
     <p class="list-head">Color</p>
     <div class="filter-pips" role="group" aria-label="Card color">${[["W","White"],["U","Blue"],["B","Black"],["R","Red"],["G","Green"],["M","Multicolor"],["C","Colorless"]].map(([k,l])=>`<button class="filter-pip" data-act="dbColorChip" data-value="${k}" aria-pressed="${f.cardColor===k}" aria-label="${l}" title="${l}"><i class="pip pip-${k}">${k==="M"?"":k==="C"?"◇":""}</i></button>`).join("")}</div>
     <div class="grid2">
@@ -327,7 +329,7 @@ function mtgCardMeta(c) {
     loadAttrs: M.data && Date.now() - M.at < 12 * 3600e3 ? "" : `data-act="cardMetaLoad" data-key="mtg:${esc(fmt)}"`,
     loadLabel: `Load ${label} tournament results`,
     busy: M.busy,
-    extra: `<a class="btn ghost" href="https://edhrec.com/cards/${esc(slug)}" target="_blank" rel="noopener">Commander decks on EDHREC ↗</a>`,
+    extra: `<a class="btn ghost" href="https://edhrec.com/cards/${esc(slug)}" target="_blank" rel="noopener">Commander decks on EDHREC</a>`,
   }) + `<p class="foot">From the tournament results you’ve opened on Meta decks (${esc(usage.loaded.join(", ") || "none yet")}). Open other formats there to add them.</p>`;
 }
 
@@ -379,8 +381,8 @@ export function cardSheet(c, ctx = {}) {
     <div class="cs-secondary"><div class="chips">${roles.map((r) => `<span class="chip role-${r.toLowerCase()}">${r}</span>`).join("")}${c.edhrec_rank ? `<span class="chip">EDHREC #${Number(c.edhrec_rank).toLocaleString()}</span>` : ""}${c.reserved ? `<span class="chip">Reserved List</span>` : ""}${c.game_changer ? `<span class="chip warn">Game Changer</span>` : ""}</div>
     ${factBox(overviewFacts(c, prints), c.oracle_id || name)}
     <div class="links research"><span class="muted small">Research</span>
-      <a href="${esc(safeHref(c.scryfall_uri || "https://scryfall.com/search?q=" + encodeURIComponent(name)))}" target="_blank" rel="noopener">Scryfall ↗</a>
-      <a href="https://edhrec.com/cards/${esc(name.toLowerCase().split(" // ")[0].replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))}" target="_blank" rel="noopener">EDHREC ↗</a>
+      <a href="${esc(safeHref(c.scryfall_uri || "https://scryfall.com/search?q=" + encodeURIComponent(name)))}" target="_blank" rel="noopener">Scryfall</a>
+      <a href="https://edhrec.com/cards/${esc(name.toLowerCase().split(" // ")[0].replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))}" target="_blank" rel="noopener">EDHREC</a>
       <button class="link" data-act="cardPriceJump" data-target="sellers">Where to buy ›</button>
     </div></div>
     <section class="card-secondary-actions" aria-label="Collection and deck actions">
@@ -923,7 +925,7 @@ function inspirationView() {
   <div class="deck-grid">${refs
     .map((d) => {
       const t = comparisonTotals(rowsFor({ ...d, id: "reference:" + d.id }));
-      return `<article class="idea"><div class="idea-art">${img(coverOf(d), d.name)}<span class="chip dark">${esc(d.source?.kind || d.format)}</span></div><div class="idea-body"><b>${esc(d.name)}</b><small>${esc(d.commander || "")}${d.source?.author ? " · by " + esc(d.source.author) : ""}${d.source?.website ? " · " + esc(d.source.website) : ""}</small><div class="row between small"><span><b>${t.covered}</b>/${t.copies} owned</span><span>${usd(t.pricedGap, 0)} to finish</span></div>${bar(t.copies ? t.covered / t.copies : 0, "thin")}<div class="actions wrap"><button class="btn small" data-act="copyRef" data-id="${esc(d.id)}">Build my version</button>${d.source?.url ? `<a class="link small" href="${esc(safeHref(d.source.url))}" target="_blank" rel="noopener noreferrer">Original ↗</a>` : ""}<button class="link small" data-act="exportRef" data-id="${esc(d.id)}">Export</button><button class="link small danger" data-act="deleteRef" data-id="${esc(d.id)}">Remove</button></div></div></article>`;
+      return `<article class="idea"><div class="idea-art">${img(coverOf(d), d.name)}<span class="chip dark">${esc(d.source?.kind || d.format)}</span></div><div class="idea-body"><b>${esc(d.name)}</b><small>${esc(d.commander || "")}${d.source?.author ? " · by " + esc(d.source.author) : ""}${d.source?.website ? " · " + esc(d.source.website) : ""}</small><div class="row between small"><span><b>${t.covered}</b>/${t.copies} owned</span><span>${usd(t.pricedGap, 0)} to finish</span></div>${bar(t.copies ? t.covered / t.copies : 0, "thin")}<div class="actions wrap"><button class="btn small" data-act="copyRef" data-id="${esc(d.id)}">Build my version</button>${d.source?.url ? `<a class="link small" href="${esc(safeHref(d.source.url))}" target="_blank" rel="noopener noreferrer">Original</a>` : ""}<button class="link small" data-act="exportRef" data-id="${esc(d.id)}">Export</button><button class="link small danger" data-act="deleteRef" data-id="${esc(d.id)}">Remove</button></div></div></article>`;
     })
     .join("")}</div>
   <section class="panel"><h3>Precons</h3><p class="muted small">Find a preconstructed Commander deck by product name (MTGJSON), preview it against your collection, then save it.</p><div class="toolbar"><button class="btn ghost" data-act="loadPrecons" ${S.ui.precon.busy ? "disabled" : ""}>${S.ui.precon.index.length ? "Reload list" : "Load precon list"}</button>${S.ui.precon.index.length ? `<input type="search" value="${esc(S.ui.q.precon)}" placeholder="Product or deck name…" data-input="preconSearch">` : ""}</div>${S.ui.precon.msg ? `<p class="muted small">${esc(S.ui.precon.msg)}</p>` : ""}<div id="preconList">${preconList()}</div></section>`;
@@ -1061,7 +1063,7 @@ export function shareSheet(d, link = "") {
   <label class="field">About this deck <span class="muted small">(optional)</span><textarea id="shareAbout" rows="5" maxlength="1500" placeholder="How it wins, what to keep in an opening hand, weak spots, budget swaps…">${esc(d.about || "")}</textarea></label>
   <div class="note"><b>What’s shared:</b> deck name, commander, format, focus, budget, your note and the card list.<br><b>Never shared:</b> your collection, which cards you own, values or play log.</div>
   <button class="btn block" data-act="shareMake">${link ? "Update link" : "Create link"}</button>
-  ${link ? `<div class="share-link"><input id="shareLink" readonly value="${esc(link)}" aria-label="Share link"><div class="actions wrap"><button class="btn" data-act="shareCopy">Copy link</button>${typeof navigator !== "undefined" && navigator.share ? `<button class="btn ghost" data-act="shareNative">Share…</button>` : ""}<a class="btn ghost" href="${esc(safeHref(link))}" target="_blank" rel="noopener">Preview ↗</a></div><p class="foot">${link.length.toLocaleString()} characters. The link holds the list itself, so changes you make later need a new link.</p></div>` : ""}`;
+  ${link ? `<div class="share-link"><input id="shareLink" readonly value="${esc(link)}" aria-label="Share link"><div class="actions wrap"><button class="btn" data-act="shareCopy">Copy link</button>${typeof navigator !== "undefined" && navigator.share ? `<button class="btn ghost" data-act="shareNative">Share…</button>` : ""}<a class="btn ghost" href="${esc(safeHref(link))}" target="_blank" rel="noopener">Preview</a></div><p class="foot">${link.length.toLocaleString()} characters. The link holds the list itself, so changes you make later need a new link.</p></div>` : ""}`;
 }
 
 export function preconList() {
@@ -1088,7 +1090,7 @@ export function deckPage() {
     fm = formatOf(d),
     target = fm.size,
     tab = S.ui.deckTab,
-    tabs = [["cards", "Cards"], ["rules", "Rules"], ["engine", "Power"], ["matchups", "Matchups"], ["upgrade", "Upgrade lab"], ["versions", "Versions"], ["playtest", "Playtest"], ["shop", t.missing ? `Shop · ${t.missing}` : "Shop"]];
+    tabs = [["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["engine", "Power", "trophy"], ["matchups", "Matchups", "sword"], ["upgrade", "Upgrade lab", "build"], ["versions", "Versions", "viewStacks"], ["playtest", "Playtest", "random"], ["shop", t.missing ? `Shop · ${t.missing}` : "Shop", "bag"]];
   return `<section class="deck-hero">${img(coverOf(d), d.name, "hero-art")}<div class="hero-shade"></div>
     <div class="hero-body">
       <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button>${deckBoxMarkup(d,{images:d.cards.slice(0,3).map(r=>cardImage(meta(r.name))),open:true,button:true})}</div>
@@ -1104,7 +1106,7 @@ export function deckPage() {
     </div>
   </section>
   ${mainCopies < target ? `<div class="note warn">Incomplete draft: ${target - mainCopies} slots remain. Power is unavailable. The listed-card price does not include empty slots.${(d.buildDiagnostics?.warnings || []).slice(0, 2).map(w => `<p class="small">${esc(w)}</p>`).join("")}</div>` : ""}
-  <nav class="tabs" role="tablist">${tabs.map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${l}</button>`).join("")}</nav>
+  <nav class="tabs" role="tablist">${tabs.map(([id, l, icon]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${labelIcon(icon)}${l}</button>`).join("")}</nav>
   ${fm.commander && !canLead(meta(d.commander), fm) && tab !== "upgrade" ? `<button class="note warn block-note" data-act="deckTab" data-id="upgrade">⚠ No ${fm.commander === "planeswalker" ? "Oathbreaker" : "commander"} set — tap to choose one so colors and synergy are checked.</button>` : ""}
   <div class="deck-body" data-tab="${tab}">${{ rules: ()=>interactiveRules("mtg", {format:d.format}), cards: deckCards, engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: deckPlaytest, shop: deckShop }[tab](d, t)}</div>`;
 }
