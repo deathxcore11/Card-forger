@@ -29,7 +29,8 @@ public final class NativeDeckAdmission {
   List<String> errors=new ArrayList<>();NativeDeckInput.Resolution human=null,opponent=null;
   BoundedHeuristicPolicy selectedPolicy=null;Map<String,Object> cpuPolicy=null;String policyVersion=null;boolean policy=false,legal=false,nativeLegal=false,dataSupported=false;Map<String,Object> rulesData=null;String humanDigest=null,opponentDigest=null,requestDigest=null;
   try{
-   if(input==null||!input.keySet().equals(Set.of("format","humanDeck","opponentDeck","difficultyPolicyVersion")))throw new IllegalArgumentException("invalid_match_input");
+   if(input==null||!(input.keySet().equals(Set.of("format","humanDeck","opponentDeck","difficultyPolicyVersion"))||input.keySet().equals(Set.of("format","humanDeck","opponentDeck","difficultyPolicyVersion","startingPlayer","playStyle"))))throw new IllegalArgumentException("invalid_match_input");
+   NativeStartingPlayer.parse(input);
    NativeDeckInput.bounded(input,0,new int[]{0});
    requestDigest=NativeDeckInput.digest(input);humanDigest=NativeDeckInput.digest(input.get("humanDeck"));opponentDigest=NativeDeckInput.digest(input.get("opponentDeck"));
    policyVersion=NativeDeckInput.string(input.get("difficultyPolicyVersion"),"difficultyPolicyVersion",80);selectedPolicy=NativeCpuPolicyIntegration.parse(policyVersion);cpuPolicy=NativeCpuPolicyIntegration.receipt(selectedPolicy);policy=NativeMatchFormat.supported(NativeDeckInput.string(input.get("format"),"format",80));

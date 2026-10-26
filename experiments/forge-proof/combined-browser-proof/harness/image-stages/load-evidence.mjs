@@ -36,8 +36,12 @@ export async function loadEvidenceBundle(bundlePath,{serviceRoot,run=command,now
  const {input}=await publicMediumInput(bundle.publicFixture.path,bundle.publicFixture.sha256);probe.input=input;probe.allocation={requestDigest:await digest(input),deckDigests:{human:await digest(input.humanDeck),opponent:await digest(input.opponentDeck)}};
  assertProbeCleanup(JSON.parse(bytes.probeCleanup),identity.dockerImageId,probeInspect.Id);
  // Persisted probe state deliberately contains no board, hand, private snapshot,
- // token or environment. Only required initialization receipt metadata survives.
- assert(JSON.stringify(Object.keys(probe.state||{}).sort())===JSON.stringify(['forgeRevision','initialization','schema','status','viewer'].sort()),'Unallowlisted private probe state');
+ // token or environment. Only initialization metadata and public player IDs
+ // needed to verify the committed first-player event survive.
+ assert(JSON.stringify(Object.keys(probe.state||{}).sort())===JSON.stringify(['forgeRevision','initialization','schema','status','viewer','players','pregame'].sort()),'Unallowlisted private probe state');
+ assert(Array.isArray(probe.state.players)&&probe.state.players.length===2&&probe.state.players.every(player=>Object.keys(player).length===1&&Number.isSafeInteger(player.id)&&player.id>=0),'Unallowlisted probe player metadata');
+ const pregameKeys=['firstPlayerId','playStyle','schema','selection'].sort();
+ for(const pregame of [probe.state.pregame,probe.state.initialization?.pregame])assert(pregame&&JSON.stringify(Object.keys(pregame).sort())===JSON.stringify(pregameKeys),'Unallowlisted probe pregame metadata');
  const policy=await createLocalTestPolicy({identity,artifactContainerInspect:probeInspect,probeContainerInspect:probeInspect,reviewedManifestBytes:bytes.nativeManifest,reviewedManifestSha256:PINS.nativeManifestSha256,reviewedSourceSha256:PINS.nativeSourceSha256,imageSourceBytes:bytes.imageSource,imageCheckpointBytes:bytes.imageCheckpoint,buildAttestationBytes:bytes.buildAttestation,runtimeIndexBytes:bytes.runtimeIndex,probe,now});
  return {identity,policy,sourceIdentity:{nativeSourceSHA256:PINS.nativeSourceSha256,forgeRevision:PINS.forgeRevision,difficultyPolicyVersion:PINS.policyVersion}};
 }

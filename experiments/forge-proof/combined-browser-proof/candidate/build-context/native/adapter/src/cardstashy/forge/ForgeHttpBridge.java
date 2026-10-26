@@ -39,6 +39,8 @@ public final class ForgeHttpBridge implements IRemote {
     String actualAiProfile;
     NativeDeckAdmission.Admission exactAdmission;
     BoundedHeuristicPolicy cpuPolicy;
+    NativeStartingPlayer startingPlayer;
+    volatile Map<String,Object> pregame = Map.of();
     int humanDeckCount=100,aiDeckCount=100;
     static final String REV = "e5a0f8156da70ffc7866f923bed371c0111707cd";
     final AtomicReference<Map<String,Object>> published = new AtomicReference<>(Map.of("status","initializing"));
@@ -195,8 +197,11 @@ public final class ForgeHttpBridge implements IRemote {
         NativeMatchFormat format=exactAdmission==null?NativeMatchFormat.Commander:NativeMatchFormat.parse(exactAdmission.input().get("format").getAsString());
         humanDeckCount=keen.getMain().countAll()+NativeMatchFormat.count(keen,DeckSection.Commander);
         aiDeckCount=reign.getMain().countAll()+NativeMatchFormat.count(reign,DeckSection.Commander);
-        RegisteredPlayer human=format.register(keen).setPlayer(new LobbyPlayerHuman("Human",0,0));
-        var aiLobby=cpuPolicy.createLobby("Forge AI — "+reign.getName());aiLobby.setAvatarIndex(1);
+        startingPlayer=exactAdmission==null?null:NativeStartingPlayer.parse(exactAdmission.input());
+        RegisteredPlayer human=format.register(keen).setPlayer(startingPlayer==null?new LobbyPlayerHuman("Human",0,0):startingPlayer.humanLobby("Human"));
+        var aiLobby=cpuPolicy.createLobby("Forge AI — "+reign.getName());
+        if(startingPlayer!=null)aiLobby=startingPlayer.aiLobby(aiLobby);
+        aiLobby.setAvatarIndex(1);
         actualAiProfile=aiLobby.getAiProfile();
         System.out.println("AI_PROFILE "+actualAiProfile);
         RegisteredPlayer ai=format.register(reign).setPlayer(aiLobby);
@@ -241,6 +246,13 @@ public final class ForgeHttpBridge implements IRemote {
                 publish();
             }
         },"forge-native-match").start();
+    }
+
+    @com.google.common.eventbus.Subscribe
+    public void onGameStarted(forge.game.event.GameEventGameStarted event){
+        if(startingPlayer==null||event.firstTurn()==null||!pregame.isEmpty())return;
+        pregame=obj("schema","cardstashy.forge-pregame.v1","firstPlayerId",event.firstTurn().getId(),"selection",startingPlayer.selection(),"playStyle",startingPlayer.playStyle());
+        if(exactAdmission!=null)exactAdmission.receipt().put("pregame",pregame);
     }
 
     @com.google.common.eventbus.Subscribe
@@ -554,7 +566,8 @@ public final class ForgeHttpBridge implements IRemote {
         // Re-stamp the immutable board evidence on every publication (including prompt-only updates).
         // Old snapshots retain their original revision and receipt; no live graph is read here.
         snapshot.put("visibility",obj("schema","cardstashy.forge-visibility.v1","forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"revision",publicationRevision,"cards",boardVisibility));
-        snapshot.putAll(obj("revision",publicationRevision,"status",failure!=null?"failed":(finished||Boolean.TRUE.equals(board.get("gameOver"))?"finished":exactAdmission!=null&&!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))?"initializing":"running"),"failure",failure,"message",message,"buttons",buttons,"inputType",input,"selection",select,"prompt",concessionRequested||pending==null?null:pending.dto,"busy",!(finished||Boolean.TRUE.equals(board.get("gameOver")))&&(concessionRequested||(pending!=null?pending.answer.isDone():(busy||commandInFlight||nativePaymentPending()||publishedInput==null||publishedInput instanceof forge.gamemodes.match.input.InputLockUI))),"lastActionError",lastActionError,"notification",notification,"controlMode",controlMode,"autoPassNoActions",effectiveAutoPass,"nativeAutoPayments",nativeAutoPayments,"canConcede",failure==null&&!finished&&!concessionRequested&&!Boolean.TRUE.equals(board.get("gameOver")),"concession",obj("requested",concessionRequested,"nativeConfirmed",nativeOutcomeConfirmed,"applied",concessionApplied)));
+        if(!pregame.isEmpty())snapshot.put("pregame",pregame);
+        snapshot.putAll(obj("revision",publicationRevision,"status",failure!=null?"failed":(finished||Boolean.TRUE.equals(board.get("gameOver"))?"finished":exactAdmission!=null&&(!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))||startingPlayer!=null&&pregame.isEmpty())?"initializing":"running"),"failure",failure,"message",message,"buttons",buttons,"inputType",input,"selection",select,"prompt",concessionRequested||pending==null?null:pending.dto,"busy",!(finished||Boolean.TRUE.equals(board.get("gameOver")))&&(concessionRequested||(pending!=null?pending.answer.isDone():(busy||commandInFlight||nativePaymentPending()||publishedInput==null||publishedInput instanceof forge.gamemodes.match.input.InputLockUI))),"lastActionError",lastActionError,"notification",notification,"controlMode",controlMode,"autoPassNoActions",effectiveAutoPass,"nativeAutoPayments",nativeAutoPayments,"canConcede",failure==null&&!finished&&!concessionRequested&&!Boolean.TRUE.equals(board.get("gameOver")),"concession",obj("requested",concessionRequested,"nativeConfirmed",nativeOutcomeConfirmed,"applied",concessionApplied)));
         published.set(snapshot);
     }}
     Integer winnerId(){if(!game.isGameOver()||game.getOutcome()==null)return null;for(Player p:game.getRegisteredPlayers())if(game.getOutcome().isWinner(p.getRegisteredPlayer()))return p.getId();return null;}

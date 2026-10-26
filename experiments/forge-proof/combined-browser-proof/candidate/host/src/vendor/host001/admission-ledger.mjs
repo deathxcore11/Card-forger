@@ -9,10 +9,14 @@ const fail = code => { throw new TypeError(code); };
 const only = (value, allowed) => object(value) && Object.keys(value).every(key => allowed.includes(key));
 
 export function validateExactDeckInput(input) {
-  if (!only(input, ['format', 'humanDeck', 'opponentDeck', 'difficultyPolicyVersion'])
+  if (!only(input, ['format', 'humanDeck', 'opponentDeck', 'difficultyPolicyVersion', 'startingPlayer', 'playStyle'])
       || !['Commander', 'Standard', 'Modern'].includes(input.format)
       || typeof input.difficultyPolicyVersion !== 'string'
       || !/^[A-Za-z0-9._-]{1,80}$/.test(input.difficultyPolicyVersion)) fail('invalid_match_input');
+  if (input.startingPlayer !== undefined || input.playStyle !== undefined) {
+    if (!['random', 'first', 'second'].includes(input.startingPlayer) || !['quick', 'practice'].includes(input.playStyle)
+        || input.playStyle === 'quick' && input.startingPlayer !== 'random') fail('invalid_starting_player_selection');
+  }
   for (const role of ['humanDeck', 'opponentDeck']) {
     const deck = input[role];
     // Accept the EXISTING CardStashy saved/imported snapshot. cards includes

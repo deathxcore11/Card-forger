@@ -5,6 +5,7 @@ import {ENGINE_REVISION,AI_PATCHSET_VERSION,AI_PATCHSET_SHA256,AI_CLASS_SET_SHA2
 import {digest,NATIVE_SCHEMA} from './reviewed-host.mjs';
 import {SCOPE,sha256,assertSameContainerImage} from './oci-identity.mjs';
 import {assertHumanPriorityReceipt} from '../image-stages/human-priority-contract.mjs';
+import {assertStartingPlayerReceipt} from '../image-stages/starting-player-contract.mjs';
 const policies=new WeakSet();
 const sha=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value)&&!/^0+$/.test(value);
 const fail=code=>{throw Error(code);};
@@ -35,6 +36,7 @@ export async function verifyExactLocalInitialization({state,epoch,responseStatus
    ||!/^[a-f0-9]{64}$/.test(receipt.humanRosterDigest||'')||!/^[a-f0-9]{64}$/.test(receipt.opponentRosterDigest||'')
    ||!Array.isArray(receipt.errors)||receipt.errors.length!==0)fail('native_exact_validation_rejected');
  assertHumanPriorityReceipt(receipt);
+ assertStartingPlayerReceipt(state,input);
  verifyLocalPolicyReceipt(receipt,input,policy,identity,now);
  return {scope:SCOPE,deployable:false,verified:true};
 }

@@ -9,9 +9,10 @@ const initKeys=['schema','engineRevision','supported','legal','registeredRosterV
 const cpuKeys=['difficultyPolicyVersion','aiProfile','profileSha256','controlMode','forgeCommit','aiPatchsetVersion','aiPatchsetSha256','runtimeClassSetSha256','nativeBuildAttestationSha256','buildCompilerVersion','runtimeJavaVersion','runtimeBytecodeVerified','runtimeSettingsVerified','admissionAllowed','admissionScope','nativeAiModified','monteCarlo','legacySimulation','strictServiceLatencyProven','nativePriorityTimeoutSeconds','opponentDeckKnowledge','calibration'];
 const rulesKeys=['schema','mode','engineRevision','decksVerified','version','manifestSha256','indexSha256','sourceSha256','sourceUpdatedAt','asOfDate','validUntilExclusive'];
 const humanPriorityKeys=['schema','sourceManifestSha256','classManifestSha256','buildAttestationSha256','runtimeBytecodeVerified','assessment','uncertaintyPreservesPriority'];
+const pregameKeys=['schema','firstPlayerId','selection','playStyle'];
 export function receiptOnlyState(state){
  const pick=(value,keys)=>Object.fromEntries(keys.map(k=>[k,value?.[k]]));
- return {...pick(state,stateKeys),initialization:{...pick(state.initialization,initKeys),cpuPolicy:pick(state.initialization?.cpuPolicy,cpuKeys),rulesData:pick(state.initialization?.rulesData,rulesKeys),humanPriority:pick(state.initialization?.humanPriority,humanPriorityKeys)}};
+ return {...pick(state,stateKeys),players:(state.players||[]).map(player=>pick(player,['id'])),pregame:pick(state.pregame,pregameKeys),initialization:{...pick(state.initialization,initKeys),pregame:pick(state.initialization?.pregame,pregameKeys),cpuPolicy:pick(state.initialization?.cpuPolicy,cpuKeys),rulesData:pick(state.initialization?.rulesData,rulesKeys),humanPriority:pick(state.initialization?.humanPriority,humanPriorityKeys)}};
 }
 const headersOf=response=>Object.fromEntries(['x-host-epoch','x-host-native-source-sha256','x-host-native-manifest-sha256'].map(k=>[k,response.headers.get(k)]));
 async function json(response){const text=await response.text();assert(Buffer.byteLength(text)<=4*1024*1024,'Bounded native response required');return JSON.parse(text);}

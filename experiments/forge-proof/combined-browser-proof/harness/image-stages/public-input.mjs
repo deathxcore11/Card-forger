@@ -6,5 +6,5 @@ export async function publicMediumInput(file,expectedFileSha256){
  const fixtures=JSON.parse(bytes),humanDeck=fixtures.decks?.[0],opponentDeck=fixtures.decks?.[1];
  assert(sha256(JSON.stringify(humanDeck))===PINS.humanDeckSha256&&sha256(JSON.stringify(opponentDeck))===PINS.opponentDeckSha256,'Exact public browser deck digests changed');
  assert(humanDeck.format==='Commander'&&opponentDeck.format==='Commander','Unexpected exact fixture format');
- return {input:{format:'Commander',humanDeck,opponentDeck,difficultyPolicyVersion:PINS.policyVersion},reference:{path:await realpath(file),sha256:sha256(bytes)}};
+ return {input:{format:'Commander',humanDeck,opponentDeck,difficultyPolicyVersion:PINS.policyVersion,startingPlayer:'random',playStyle:'quick'},reference:{path:await realpath(file),sha256:sha256(bytes)}};
 }

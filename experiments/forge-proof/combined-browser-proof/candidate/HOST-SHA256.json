@@ -30,7 +30,7 @@
   "src/vendor/app/native-backend-contract.js": "284ee719870db9b414fe7bffdf24916ef0ae403c231eccd78a160d34bf1648f3",
   "src/vendor/app/native-service-policy.js": "2adaff8c58d227df547bd5550910e0a280bcbb644658ab10a00b8d6587a180b6",
   "src/vendor/host001/action-rejection.mjs": "a6aabd0193ed88b94e8dd2f533fa21a002adc6556a88953732f574ea95c3bc90",
-  "src/vendor/host001/admission-ledger.mjs": "e21b7b71029a7a45f2889373677e0cc2246d6ee9b7a765987f15250adb81a04e",
+  "src/vendor/host001/admission-ledger.mjs": "c03540ef183a42c6b8208fce96a85a02738cedf027efddc67f25c234cf622569",
   "src/vendor/host001/gateway-driver.mjs": "3fa47338663fded5eb0cf4d2bde6a1051bd9dde201e504ae98de2e4f831ecfdc",
   "src/vendor/host001/session-authority.mjs": "1af239e77cf3e9aa1f9763f77fbb390c9e5463bbcc0305b541bf983aee4b7988",
   "src/vendor/host001/tests/fixtures/existing-calling-all-angels.json": "2f727450068e6ef31fcb112aaa0782789e19ae12aeeead774d904675a21243e3",

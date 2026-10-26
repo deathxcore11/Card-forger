@@ -1,6 +1,6 @@
 {
   "scope": "LOCAL_TEST_NOT_DEPLOYABLE",
-  "status": "unpublished payment rejection diagnostics and regressions; no new image or browser run",
+  "status": "native starting-player descendant; actual image build/probe pending",
   "productionFilesChanged": false,
   "realImageBuilt": false,
   "realRuntimeRun": false,
@@ -33,8 +33,8 @@
     },
     {
       "path": "local-test-policy.mjs",
-      "bytes": 8813,
-      "sha256": "53e2ed7109b2a3f05d2785e017a4410cd8891a6ca10c9cd76c34c6c7a788fa46"
+      "bytes": 8946,
+      "sha256": "89b45a97888645be2ed6418975b7611fed21e04d04805cad450094efd8fb7917"
     },
     {
       "path": "oci-identity.mjs",
@@ -49,7 +49,7 @@
     {
       "path": "reviewed-host.mjs",
       "bytes": 2132,
-      "sha256": "9aff02a74ffea33b9aeb9a0bd5d77b4abf34471b9d70b2c802881c1bd885c30d"
+      "sha256": "9398f595f12c925ab4c77d153b38a49239b215f2df2eb6161fed4d7c9da0622a"
     },
     {
       "path": "schema.json",
@@ -77,5 +77,5 @@
       "sha256": "67d5f7671009a09f42c07cd6093f7cc580d1a69ae9af71d466a383af32d0336f"
     }
   ],
-  "parentManifestSha256": "41503b0cbd2bc2ce0ef7e30ab31a0437ee8b808d867af1ac62e23e5c71bead84"
+  "parentManifestSha256": "9f3d5466fc59144cfefe4fdb036e90275b25b7124538b53d091944420749063e"
 }

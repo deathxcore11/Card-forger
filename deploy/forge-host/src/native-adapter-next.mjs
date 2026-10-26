@@ -2,6 +2,16 @@
 import { nativeAdapter as existingTransport } from './native-adapter.mjs';
 import { boundedJSON, digest, FORGE_REVISION, NATIVE_SCHEMA } from './policy.mjs';
 import { selectedPolicy, validateReleasePolicy, verifyPolicyReceipt } from './release-policy.mjs';
+export function verifyStartingPlayerReceipt(state, input) {
+  if (input?.startingPlayer === undefined && input?.playStyle === undefined) return;
+  const pregame = state.initialization?.pregame;
+  if (pregame?.schema !== 'cardstashy.forge-pregame.v1' || pregame.selection !== input.startingPlayer
+    || pregame.playStyle !== input.playStyle || !Number.isSafeInteger(pregame.firstPlayerId) || pregame.firstPlayerId < 0
+    || !Array.isArray(state.players) || !state.players.some(player => player.id === pregame.firstPlayerId)
+    || JSON.stringify(state.pregame) !== JSON.stringify(pregame)) throw Error('native_starting_player_receipt_mismatch');
+  // Forge's event is authoritative. Native card rules may replace the requested
+  // first player; do not rewrite a legal event to match a browser preference.
+}
 export function nativeAdapter(env, { now = Date.now } = {}) {
   let release = null;
   try {
@@ -40,6 +50,7 @@ export function nativeAdapter(env, { now = Date.now } = {}) {
         || !/^[a-f0-9]{64}$/.test(receipt.humanRosterDigest || '') || !/^[a-f0-9]{64}$/.test(receipt.opponentRosterDigest || '')
         || !Array.isArray(receipt.errors) || receipt.errors.length !== 0) throw Error('native_exact_validation_rejected');
       verifyPolicyReceipt(receipt, input, release, configuredImage, now());
+      verifyStartingPlayerReceipt(state, input);
       return { ...receipt, schema: NATIVE_SCHEMA }; // existing MatchService strips initialization before browser projection
     },
   };

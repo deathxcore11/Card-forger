@@ -8,26 +8,26 @@
   "productionReleasePolicy": null,
   "sourceIdentity": {
     "forgeRevision": "e5a0f8156da70ffc7866f923bed371c0111707cd",
-    "nativeSourceSHA256": "6e2a5004ee73e3c67d11e89ad5efb0d9112ece6ff2c52fa010235b048b219c43",
+    "nativeSourceSHA256": "6886e484e36b65e2d5e8ac7feb0ff36f6304ddae7869de97cbfca6c8874ce285",
     "difficultyPolicyVersion": "forge-heuristic-medium-beta-v1",
     "imageBuiltOrDeployedByThisPackage": false
   },
   "inputs": {
     "nativeDescendantManifest": {
       "path": "${CANDIDATE}/native/SHA256SUMS",
-      "sha256": "b34eab6bd70a79452f6c4fb07ca4cf0273bcab21ed46c6f37669c58e0aff9f66"
+      "sha256": "4d3b87d1ac7a9d9a6a5000b3e9d41a67d9458c61d878ac9afebee68356ba5269"
     },
     "nativeBridge": {
       "path": "${CANDIDATE}/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java",
-      "sha256": "6e2a5004ee73e3c67d11e89ad5efb0d9112ece6ff2c52fa010235b048b219c43"
+      "sha256": "6886e484e36b65e2d5e8ac7feb0ff36f6304ddae7869de97cbfca6c8874ce285"
     },
     "hostManifest": {
       "path": "${CANDIDATE}/HOST-SHA256.json",
-      "sha256": "8bd6b5932a267c5916cc6a1900996060dac02d1f2ec9047d69506081da6c3f61"
+      "sha256": "10ea42bef4ec70828eefbc2195efc0edcaf28379bb383e28b697e23deff64466"
     },
     "hostContextManifest": {
       "path": "${CANDIDATE}/build-context/CONTEXT-SHA256.json",
-      "sha256": "405c41f05443b7c91e1b643598079a76fbec8392939cc4eace6f1596c02d7396"
+      "sha256": "ee574efaa36b7535e9d05d6f569ce199f335ff6ccb58e9c29aa0eef195376a60"
     },
     "uiManifest": {
       "path": "${CANDIDATE}/UI-SHA256.json",
@@ -59,7 +59,7 @@
     },
     "fixtureServer": {
       "path": "${PACKAGE}/fixture-server.mjs",
-      "sha256": "45fdb887073fbf4239706fc6a11bd041e0996be6cb5eacc14cb4b600c16048d7"
+      "sha256": "452c271dffcca143681381b993ee14dcf35a2a84a39e860508074a1efb67556a"
     },
     "browserDriver": {
       "path": "${PACKAGE}/browser-journey.mjs",
@@ -87,11 +87,11 @@
     },
     "localOCIManifest": {
       "path": "${PACKAGE}/local-oci/MANIFEST.json",
-      "sha256": "9f3d5466fc59144cfefe4fdb036e90275b25b7124538b53d091944420749063e"
+      "sha256": "7cb3137794d59300ef5b7c2f03cbc99b6a05397fb96f7c12d70fdcae1c3a49f6"
     },
     "imageStagesManifest": {
       "path": "${PACKAGE}/image-stages/MANIFEST.json",
-      "sha256": "3553fe6c22ee171974ad5fd839fdc9f954ce962a721ec103cca9db510d8b33b8"
+      "sha256": "76f79ce41ef803a405e271eb3276508f086cbcd41bb9a19a02f14408281ee703"
     },
     "runtimeUISubset": {
       "path": "${CANDIDATE}/UI-RUNTIME-SHA256.json",
