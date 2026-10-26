@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createForgeArtworkPreparation } from './play-forge-artwork.js';
-import { createForgePlayerMat, forgeDiagnostic } from './play-forge-player-mat.js';
+import { createForgePlayerMat, forgeDiagnostic, capturedForgeArtwork } from './play-forge-player-mat.js';
 import { createForgeHostClient, exactDigest, FORGE_REVISION } from './play-forge-host-client.js';
 import { chooseQuickOpponent } from './play-quick-match.js';
 const OWNER='11111111-1111-4111-8111-111111111111', MATCH='22222222-2222-4222-8222-222222222222', GENERATION='33333333-3333-4333-8333-333333333333';
@@ -98,4 +98,21 @@ test('Quick Play avoids your own list whenever another list exists',()=>{
  const reshaped={...structuredClone(player),id:undefined,name:'Precon copy',source:{kind:'precon'},cards:player.cards.map(r=>({name:r.name.toUpperCase(),qty:r.qty})).reverse()};
  assert.equal(chooseQuickOpponent({player,candidates:[reshaped,other],candidateEligible:()=>true,nativeValidationPending:true,estimate:d=>d===other?90:50}).deck.id,'other','same cards in another record is a mirror');
  assert.throws(()=>chooseQuickOpponent({player,candidates:[player],candidateEligible:()=>true,nativeValidationPending:true,estimate:()=>50}),/different deck/);
+});
+
+test('a Universes Within flavor name finds its printing by cost, type and stats, never by guess', () => {
+ const hydro={id:'e53115a4-8959-40f0-9a31-3a6f2b6cd8d4',name:'Hydro-Man, Fluid Felon',set:'spm',mana_cost:'{U}{U}',type_line:'Legendary Creature — Elemental Villain',power:'2',toughness:'2',finishes:['nonfoil'],image_uris:{normal:'https://cards.scryfall.io/normal/front/e/5/hydro.jpg'}};
+ const bear={id:'b0000000-0000-4000-8000-000000000001',name:'Grizzly Bears',set:'lea',mana_cost:'{1}{G}',type_line:'Creature — Bear',power:'2',toughness:'2',finishes:['nonfoil'],image_uris:{normal:'https://cards.scryfall.io/normal/front/b/0/bear.jpg'}};
+ const cards={[hydro.name]:hydro,[bear.name]:bear};
+ const deck=(name,rows)=>({id:name,name,format:'Commander',commander:rows[0].name,cards:rows,side:[]});
+ const base={selected:deck('Mine',[{name:'Grizzly Bears',qty:1}]),opponent:deck('CPU',[{name:'Hydro-Man, Fluid Felon',qty:1},{name:'Island',qty:99}])};
+ const art=capturedForgeArtwork(base,name=>cards[name]||null);
+ const belion={name:'Belion, the Parched',manaCost:'{U}{U}',type:'Legendary Creature - Elemental Villain',power:2,toughness:2,setCode:'SPM'};
+ assert.equal(art('Belion, the Parched',belion)?.card.id,hydro.id,'flavor-named commander gets its own printing');
+ assert.equal(art('Grizzly Bears',{name:'Grizzly Bears',manaCost:'{1}{G}',type:'Creature - Bear',power:2,toughness:2})?.card.id,bear.id,'exact names unchanged');
+ assert.equal(art('Belion, the Parched',{...belion,power:3}),null,'different stats are not the same card');
+ assert.equal(art('Unknown Token',{name:'Unknown Token',manaCost:'',type:'Token Creature - Bear',power:2,toughness:2}),null,'tokens never borrow deck art');
+ const twin={...hydro,id:'e53115a4-8959-40f0-9a31-000000000002',name:'Other Felon'};cards[twin.name]=twin;
+ const both=capturedForgeArtwork({...base,selected:deck('Mine',[{name:'Other Felon',qty:1}])},name=>cards[name]||null);
+ assert.equal(both('Belion, the Parched',belion),null,'two cards that fit means no art rather than the wrong art');
 });
