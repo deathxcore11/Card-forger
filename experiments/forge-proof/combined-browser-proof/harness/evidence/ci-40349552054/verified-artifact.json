@@ -1,0 +1,13 @@
+{
+  "schema": "cardstashy.sanitized-artifact.v1",
+  "verified": true,
+  "result": "failed",
+  "files": {
+    "desktop/failure.png": "4cada8ab76855cedaf4268206e344beefe718341ad813acbf7770d664dc101ec",
+    "desktop/setup.png": "37efbf9a665e9bfb515bac8b3c85c7e7ce687d7272f45a22052cedf08ccf5111",
+    "desktop/summary.json": "2290f47200e1e37b92833f2d6dc4943f4c05f6bcda29e7bdd5ed2dd39a6905d6",
+    "image-summary.json": "b070fa4b08b340dad398076b1bd407381788189eff5b47c7238e3c3da8526017",
+    "probe-summary.json": "a2af4c3d9b2ae699335d18b4dd9eba98e03c15752e25a86beb6b6377de2e1765",
+    "summary.json": "452024d0d8be1472ec60b3c6ad53ba4c5719e1a60cbc514a85ee07d35a11726c"
+  }
+}

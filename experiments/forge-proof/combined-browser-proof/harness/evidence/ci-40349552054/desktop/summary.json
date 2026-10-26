@@ -1,0 +1,57 @@
+{
+  "schema": "forge-existing-play-browser.v1",
+  "result": "failed",
+  "case": "saved-keen",
+  "scope": "LOCAL_TEST_NOT_DEPLOYABLE; synthetic account/storage; actual rendered Play controls",
+  "browser": "151.0.7922.34",
+  "viewport": {
+    "width": 1440,
+    "height": 1000,
+    "hasTouch": false
+  },
+  "checks": [
+    "real difficulty menu cycles Easy/Hard/Medium without allocating; only Medium native policy is exercised",
+    "existing Play menu selects concrete human and CPU decks through actual handlers"
+  ],
+  "actions": 0,
+  "creates": 1,
+  "privacyChecks": 0,
+  "externalCredentialViolations": 0,
+  "unexpectedRequests": 0,
+  "terminal": null,
+  "concession": null,
+  "selectedDigests": {},
+  "pageErrorCount": 0,
+  "observedErrorClassCounts": {},
+  "observation": {
+    "method": "fixture-forwarded-viewer-response-cache",
+    "intervalMs": 250,
+    "reads": 0,
+    "accepted": 0,
+    "lastHttpStatus": null
+  },
+  "difficultySelections": [
+    "Easy",
+    "Hard",
+    "Medium"
+  ],
+  "naturalFinish": false,
+  "rematchVerified": false,
+  "visualChecks": [],
+  "paymentProof": null,
+  "actionEvents": [],
+  "actionEventsTruncated": false,
+  "actionDiagnostics": [],
+  "failure": {
+    "stage": "native startup",
+    "class": "Error"
+  },
+  "cleanup": {
+    "confirmed": false,
+    "privateInputRemoved": false,
+    "starts": 0,
+    "destroys": 0,
+    "imageId": "sha256:11dbed97119ba2af37b716860ab7320588a5920654388244fd8e913a0e7eb819",
+    "allocations": []
+  }
+}

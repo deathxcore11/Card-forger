@@ -3,6 +3,7 @@
 import http from 'node:http';
 import {lifecycleEvidence} from './lifecycle-contract.mjs';
 import { FixtureObservationCache } from './observation.mjs';
+import { MemoryStorage } from './fixture-storage.mjs';
 import {loadEvidenceBundle} from './image-stages/load-evidence.mjs';
 import {createDockerContainer} from './local-oci/docker-provider.mjs';
 import {createLocalNativeAdapter} from './local-oci/local-native-adapter.mjs';
@@ -37,18 +38,6 @@ const { accountVerifier } = await import(pathToFileURL(path.join(serviceRoot, 's
 const { abortable } = await import(pathToFileURL(path.join(serviceRoot, 'src/policy.mjs')));
 const privateParent=await realpath(args['private-parent']);const privateRoot=await mkdtemp(path.join(privateParent,'forge-browser-provider-fixture-'));
 
-class MemoryStorage {
-  constructor() { this.data = new Map(); this.tail = Promise.resolve(); this.alarmAt = Infinity; this.alarming = false; }
-  async get(k) { return structuredClone(this.data.get(k)); }
-  async put(k, v) { this.data.set(k, structuredClone(v)); }
-  async delete(k) { return this.data.delete(k); }
-  async list({ prefix }) { return new Map([...this.data].filter(([k]) => k.startsWith(prefix)).map(([k, v]) => [k, structuredClone(v)])); }
-  async setAlarm(t) { this.alarmAt = t; }
-  transaction(fn) {
-    const run = this.tail.then(async () => { const staged = new MemoryStorage(); staged.data = structuredClone(this.data); const result = await fn(staged); this.data = staged.data; return result; });
-    this.tail = run.catch(() => {}); return run;
-  }
-}
 const work = new Set(), entries = new Map(), receipts = [], counters = { starts: 0, destroys: 0, nativeActions: {} };
 const waitUntil = promise => { work.add(promise); promise.finally(() => work.delete(promise)).catch(() => {}); };
 const deadline = Date.now() + lifetime;

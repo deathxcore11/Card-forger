@@ -1,17 +1,17 @@
 {
   "schema": "cardstashy.combined-browser-preparation.v1",
-  "revision": 7,
-  "previousRevisionManifestSHA256": "b8c9e0a55f9530579147f980e8898a4ab9a4ea9ecc7bf879a5ea8104d444f323",
+  "revision": 8,
+  "previousRevisionManifestSHA256": "8d963d6443143d7ba421d5ea8ee299735175f993fb7febec266e0288946f4abb",
   "scope": "LOCAL_TEST_NOT_DEPLOYABLE",
-  "status": "payment-browser-proof-prepared-awaiting-candidate-approval",
+  "status": "local-fixture-alarm-repair-awaiting-new-proof-approval",
   "executionAuthorized": false,
   "actualImageBuilt": false,
   "actualBrowserRun": false,
   "productionFilesChanged": false,
-  "candidateCheckpoint": "exact-mimic-payment-and-event-order-proof",
+  "candidateCheckpoint": "fixture-transactional-alarm-contract",
   "runtimeUISubsetSHA256": "95c89512d3c83c378aa1f971ad550f5d523b119b95ca6675d8ccad89478b8f96",
-  "fileCount": 120,
-  "totalBytes": 678041,
+  "fileCount": 132,
+  "totalBytes": 701452,
   "files": [
     {
       "path": "CLEANUP-REVIEW.md",
@@ -47,6 +47,11 @@
       "path": "RUN-40324277781-REVIEW.md",
       "bytes": 7050,
       "sha256": "9f0dfb4cf89edba485e5184045a1f128be82c2a0bdbc50c20f6cbb966bed99e0"
+    },
+    {
+      "path": "RUN-40349552054-REVIEW.md",
+      "bytes": 5586,
+      "sha256": "9c7bfaa91a46c64e0cf210da8a51ee525c6043b37d009e053fc2e4ebf4f1a78e"
     },
     {
       "path": "acceptance-contract.mjs",
@@ -100,8 +105,8 @@
     },
     {
       "path": "composition-contract.json",
-      "bytes": 5444,
-      "sha256": "19339187dbd27571dfacac08f344206731c46fe241c581592d59b96419c10723"
+      "bytes": 5606,
+      "sha256": "857113414613554d860e94ce067f6d6eeafa70c4b4d654b63785506a2887f952"
     },
     {
       "path": "evidence/ci-40318684639/artifact/image-summary.json",
@@ -157,6 +162,51 @@
       "path": "evidence/ci-40324277781/run-receipt.json",
       "bytes": 975,
       "sha256": "6e0e4bd9cdc6385455323d839862d3b7ff9d7e5d016c1537b5bc84b0f5b7c9d5"
+    },
+    {
+      "path": "evidence/ci-40349552054/README.txt",
+      "bytes": 599,
+      "sha256": "57dc9e008dc9ded52f2e44879ce32deb0c36ec4a85fb6718bdee409a0a9564f4"
+    },
+    {
+      "path": "evidence/ci-40349552054/desktop/summary.json",
+      "bytes": 1480,
+      "sha256": "2290f47200e1e37b92833f2d6dc4943f4c05f6bcda29e7bdd5ed2dd39a6905d6"
+    },
+    {
+      "path": "evidence/ci-40349552054/image-summary.json",
+      "bytes": 1290,
+      "sha256": "b070fa4b08b340dad398076b1bd407381788189eff5b47c7238e3c3da8526017"
+    },
+    {
+      "path": "evidence/ci-40349552054/local-repair-verification.json",
+      "bytes": 1052,
+      "sha256": "934fad93dced2b80df9e144a22586763a167f3f03f0a9a4d8db580cfa4f8b1f2"
+    },
+    {
+      "path": "evidence/ci-40349552054/local-startup-before-after.json",
+      "bytes": 1578,
+      "sha256": "09bab8bb6c66f852ba6733ba0a24cb81135a1846aa36d24a91d88b2105f5662f"
+    },
+    {
+      "path": "evidence/ci-40349552054/local-startup-reproduction.json",
+      "bytes": 1237,
+      "sha256": "1e5a5b23f211d1a499317a497de71bc05d91b15eb950f90e46f1b502b679bd56"
+    },
+    {
+      "path": "evidence/ci-40349552054/probe-summary.json",
+      "bytes": 2103,
+      "sha256": "a2af4c3d9b2ae699335d18b4dd9eba98e03c15752e25a86beb6b6377de2e1765"
+    },
+    {
+      "path": "evidence/ci-40349552054/summary.json",
+      "bytes": 1193,
+      "sha256": "452024d0d8be1472ec60b3c6ad53ba4c5719e1a60cbc514a85ee07d35a11726c"
+    },
+    {
+      "path": "evidence/ci-40349552054/verified-artifact.json",
+      "bytes": 670,
+      "sha256": "4cbad4eb4536308494d10a76b63a93c6002e3b67880545217e63508dd7868563"
     },
     {
       "path": "evidence/host-alarm-port-f17bbe49/intake-and-preservation.json",
@@ -290,8 +340,13 @@
     },
     {
       "path": "fixture-server.mjs",
-      "bytes": 12793,
-      "sha256": "8124e479486025e96b1911e3a0025467f67e01b3be869cb365bbe95300c988b2"
+      "bytes": 12076,
+      "sha256": "5ff875b86898c9786f373c523809a42a5359676e3b7406688c1c60196c452ec4"
+    },
+    {
+      "path": "fixture-storage.mjs",
+      "bytes": 1169,
+      "sha256": "79bc70b1fd562f84d478ddf485d6fa25c9d615edd244d7395535fa45d2efc870"
     },
     {
       "path": "fixtures/ContextualSmartChecks.java",
@@ -564,6 +619,11 @@
       "sha256": "9af58173d0ff1c008795d1b8e9fa8397a06cd5f7270d4a6cc91b42d55206b681"
     },
     {
+      "path": "test-fixture-storage.mjs",
+      "bytes": 6009,
+      "sha256": "7a3a1db44106486e91a2a1cf3c4934739e9c2423248064c51d2d7a0684a77778"
+    },
+    {
       "path": "test-lifecycle-contract.mjs",
       "bytes": 1457,
       "sha256": "2a65df62166a47004da914bbd398d07109df21f297862cf1dc3eec1d6e441bdf"
@@ -614,7 +674,8 @@
       "sha256": "edaee1371364c3e2f424cca8aecb4f09d85488d6223f2a3ac89a35f6483a7285"
     }
   ],
-  "parentCommit": "159397245a695f4692bc876be4bcc6d05a2a38c5",
+  "parentCommit": "4388f05fb2415c357c788e0d8c464f2e00b86f6e",
   "newRunAuthorized": false,
-  "previousApprovedRun": 40324277781
+  "previousApprovedRun": 40324277781,
+  "priorIdenticalRuntimeImageRun": 40349552054
 }

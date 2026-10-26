@@ -1,0 +1,39 @@
+{
+  "baseCommit": "4388f05fb2415c357c788e0d8c464f2e00b86f6e",
+  "testedSourceSHA256": {
+    "fixture-server.mjs": "5ff875b86898c9786f373c523809a42a5359676e3b7406688c1c60196c452ec4",
+    "fixture-storage.mjs": "79bc70b1fd562f84d478ddf485d6fa25c9d615edd244d7395535fa45d2efc870",
+    "test-fixture-storage.mjs": "7a3a1db44106486e91a2a1cf3c4934739e9c2423248064c51d2d7a0684a77778"
+  },
+  "harnessNode": {
+    "pass": 153,
+    "fail": 0
+  },
+  "harnessPython": {
+    "pass": 46,
+    "fail": 0
+  },
+  "hostingNode": {
+    "pass": 179,
+    "fail": 0
+  },
+  "hostingPython": {
+    "pass": 22,
+    "fail": 0
+  },
+  "containerPython": {
+    "pass": 46,
+    "fail": 2,
+    "failures": [
+      "test_stopped_zombie_is_not_a_live_descendant_but_is_reaped",
+      "test_unreapable_zombie_cannot_produce_success_or_unbounded_wait"
+    ]
+  },
+  "aggregateExitCode": 1,
+  "aggregateTimedOut": false,
+  "sourceRuntimeUnchanged": true,
+  "browserStartupAfterFix": "NOT TESTED",
+  "wideTouchAfterFix": "NOT TESTED",
+  "newPaidRun": false,
+  "productionDeployment": false
+}

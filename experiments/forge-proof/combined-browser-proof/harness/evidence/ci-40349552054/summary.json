@@ -1,0 +1,43 @@
+{
+  "schema": "forge-existing-play-ci.v1",
+  "result": "failed",
+  "processExitCode": 1,
+  "stage": "desktop",
+  "scope": "LOCAL_TEST_NOT_DEPLOYABLE: actual same local OCI image; synthetic account/storage; no registry publication, Cloudflare deployment, real account or physical-device claim",
+  "cases": {
+    "desktop": {
+      "result": "failed",
+      "cleanupConfirmed": false,
+      "actions": 0
+    },
+    "touch750": {
+      "result": "not-run"
+    }
+  },
+  "cleanupFallbackConfirmed": true,
+  "cleanupFallback": {
+    "containersConfirmed": true,
+    "imageConfirmed": true
+  },
+  "sourceContracts": "complete",
+  "cleanupPreflight": {
+    "result": "passed",
+    "procfsMatchesNamespace": true,
+    "testsRun": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "requiredTests": 11
+  },
+  "sameImageBrowserAllocationsVerified": false,
+  "sameImageProbeVerified": true,
+  "image": {
+    "result": "passed",
+    "imageId": "sha256:11dbed97119ba2af37b716860ab7320588a5920654388244fd8e913a0e7eb819",
+    "ociManifestDigest": "sha256:39821b7743a78e43375744266620deb6970dd361ca6e5d1da1a81dc4c416e652"
+  },
+  "probe": {
+    "result": "passed",
+    "cleanupConfirmed": true
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "schema": "cardstashy.fixture-startup-reproduction.v1",
+  "candidateCommit": "4388f05fb2415c357c788e0d8c464f2e00b86f6e",
+  "approvedEquivalentCommit": "ac29ee3077309a9bfab3c0f4b703a6d1bb7a7d62",
+  "tree": "3daefdc2e6c7406457ea339da2b0ad9f57586d6d",
+  "fixtureSourceSHA256": "8124e479486025e96b1911e3a0025467f67e01b3be869cb365bbe95300c988b2",
+  "hostSourceSHA256": "5a87ee7d16a684083c669cefd742612f0030c8e46a2afdbe7128b580b0f8fe00",
+  "layer": "Local HTTP reproduction with exact fixture handler/storage and actual host route; no browser, image, provider or gameplay",
+  "original": {
+    "httpStatus": 500,
+    "body": {
+      "error": "fixture_request_failed"
+    },
+    "errorClass": "TypeError",
+    "errorReason": "txn.getAlarm is not a function",
+    "transactionGetAlarmMissing": true,
+    "nativeReadyReads": 0,
+    "containerLookups": 0,
+    "observationsCaptured": 0,
+    "attemptRecorded": true,
+    "leaseCreated": false,
+    "alarmScheduled": false
+  },
+  "alarmSemantics": {
+    "getAlarmOnlyIsInsufficient": true,
+    "parentAlarmBefore": 1000,
+    "stagedRead": null,
+    "requestedCommittedAlarm": 500,
+    "parentAlarmAfter": 1000,
+    "siblingDataCommitted": true
+  },
+  "sourceEdited": false,
+  "paidRun": false
+}

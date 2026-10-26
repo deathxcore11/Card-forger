@@ -59,7 +59,7 @@
     },
     "fixtureServer": {
       "path": "${PACKAGE}/fixture-server.mjs",
-      "sha256": "8124e479486025e96b1911e3a0025467f67e01b3be869cb365bbe95300c988b2"
+      "sha256": "5ff875b86898c9786f373c523809a42a5359676e3b7406688c1c60196c452ec4"
     },
     "browserDriver": {
       "path": "${PACKAGE}/browser-journey.mjs",
@@ -104,6 +104,10 @@
     "paymentProof": {
       "path": "${PACKAGE}/payment-proof.mjs",
       "sha256": "671c7d7a2f581a931b6f9b63ec4211037003273a0b7aae627542a0f4d87a895b"
+    },
+    "fixtureStorage": {
+      "path": "${PACKAGE}/fixture-storage.mjs",
+      "sha256": "79bc70b1fd562f84d478ddf485d6fa25c9d615edd244d7395535fa45d2efc870"
     }
   },
   "budget": {
