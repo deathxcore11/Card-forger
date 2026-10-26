@@ -24,11 +24,13 @@ test('bootstrap preserves raw snapshot, sends initialization once and never retr
   } };
   await assert.rejects(f.adapter.bootstrapExisting(args)); assert.equal(posts, 1);
 });
-test('bootstrap refusal names the launcher status and fixed code; the runtime alone sets the length', async () => {
+test('bootstrap refusal names the launcher status and fixed code, a platform reply by its first words; the runtime alone sets the length', async () => {
   for (const [reply, expected] of [
     [() => Response.json({ error: 'content_length_required' }, { status: 411 }), /^bootstrap_rejected_411_content_length_required$/],
     [() => Response.json({ error: 'input_write_failed_permissionerror' }, { status: 503 }), /^bootstrap_rejected_503_input_write_failed_permissionerror$/],
-    [() => new Response('<html>provider error</html>', { status: 502, headers: { 'Content-Type': 'text/html' } }), /^bootstrap_rejected_502$/],
+    [() => new Response('<html>provider error</html>', { status: 502, headers: { 'Content-Type': 'text/html' } }), /^bootstrap_rejected_502 html provider error html$/],
+    [() => new Response('There is no Container instance available at this time.', { status: 503 }), /^bootstrap_rejected_503 There is no Container instance available at this time$/],
+    [() => new Response(null, { status: 503 }), /^bootstrap_rejected_503$/],
     [() => Response.json({ error: 'Not a code: /run/cardstashy/match-input.json' }, { status: 400 }), /^bootstrap_rejected_400$/],
   ]) {
     const f = await fixture(); let sent = null;

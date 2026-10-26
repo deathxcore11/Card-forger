@@ -9,7 +9,8 @@ export const GLOBAL_NAME = 'forge-global-admission-v1';
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const UUID_RE = new RegExp('^' + UUID + '$', 'i');
 const MATCH_PATH = new RegExp('^/api/play/matches/(' + UUID + ')(/actions)?$', 'i');
-const startupFailure = failure => String(failure?.message || failure?.name || 'unknown').replace(/[^A-Za-z0-9 _.:-]/g, '').slice(0, 160) || 'unknown';
+const safeText = text => String(text).replace(/[^A-Za-z0-9 _.:-]/g, '').replace(/ +/g, ' ').slice(0, 160) || 'unknown';
+const startupFailure = failure => safeText(failure?.message || failure?.name || 'unknown');
 const STARTUP_MS = 120_000, IDLE_MS = 600_000, RETAIN_MS = 86_400_000;
 const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...extra },
@@ -241,28 +242,44 @@ export class MatchService {
       startupDeadline: allocation.createdAt + STARTUP_MS, lastAuthorizedAt: this.now(), retainUntil: allocation.expiresAt + RETAIN_MS };
     await this.storage.put('allocation', record);
     await this.storage.setAlarm(record.startupDeadline);
+    // The startup step that failed, how far in, and how the container itself ended.
+    // Platform errors carry no step of their own; this names it on the owner's screen.
+    const began = this.now();
+    let step = 'options', exited = null, lastPoll = 'none';
+    const containerExited = () => exited && Object.assign(new Error('container_exited'), { containerExited: true });
     try {
       // The native bridge owns exact snapshot transport. Persisted initializing
       // means any crash before/after start is ambiguous and MUST NOT restart.
       const options = await this.native.startOptions({ input, allocation, internalToken: token });
       if (options?.enableInternet !== false || options?.env?.HOST_INTERNAL_TOKEN !== token || options?.env?.HOST_ABSOLUTE_DEADLINE_MS !== String(allocation.expiresAt)) throw new Error('unsafe_native_start_options');
+      step = 'start';
       if (this.container().running) throw new Error('unexpected_existing_container');
       this.container().start(options);
+      // Observe the container's own end (an exit code or a platform stop) without
+      // waiting on it, so a crash ends startup now instead of at the deadline.
+      let ended = null;
+      try { ended = typeof this.container().monitor === 'function' ? this.container().monitor() : null; } catch { /* not observable */ }
+      ended?.then?.(() => { exited = 'exit 0'; }, failure => { exited = startupFailure(failure).slice(0, 72); });
+      step = 'inactivity';
       await this.container().setInactivityTimeout(IDLE_MS);
       if (this.native.bootstrapExisting) {
+        step = 'bootstrap';
         await this.native.bootstrapExisting({ input, allocation, internalToken: token,
           deadline: record.startupDeadline, now: this.now, wait: this.wait,
-          fetchExisting: request => { if (!this.container().running) throw new Error('native_not_running'); return this.container().getTcpPort(8080).fetch(request); } });
+          fetchExisting: request => { const gone = containerExited(); if (gone) throw gone; if (!this.container().running) throw new Error('native_not_running'); return this.container().getTcpPort(8080).fetch(request); } });
       }
+      step = 'ready';
       let ready = false, validationFailure = null;
       while (this.now() < record.startupDeadline) {
-        if (!this.container().running) { await this.wait(250); continue; }
+        const gone = containerExited(); if (gone) throw gone;
+        if (!this.container().running) { lastPoll = 'not running'; await this.wait(250); continue; }
         try {
           const response = await this.container().getTcpPort(8080).fetch(new Request('http://host001.internal/ready', {
             headers: { Authorization: 'Bearer ' + token }, redirect: 'manual', signal: AbortSignal.timeout(5000),
           }));
           const epoch = response.headers.get('X-Host-Epoch');
           const ok = response.status === 200; await response.body?.cancel().catch(() => {});
+          lastPoll = 'ready ' + response.status;
           if (UUID_RE.test(epoch || '')) {
             record.epoch = epoch;
             if (ok) { ready = true; break; }
@@ -271,19 +288,21 @@ export class MatchService {
               if (validationFailure) break;
             }
           }
-        } catch { /* readiness polling is not a restart or command replay */ }
+        } catch (failure) { lastPoll = startupFailure(failure).slice(0, 72); /* readiness polling is not a restart or command replay */ }
         await this.wait(250);
       }
       if (validationFailure) {
         record.validation = validationFailure; await this.storage.put('allocation', record);
         throw Object.assign(new Error('native_exact_validation_rejected'), { nativeRejected: true });
       }
-      if (!ready) throw new Error('startup_deadline');
+      if (!ready) throw new Error('startup_deadline last ' + lastPoll);
+      step = 'confirm';
       // Must compare native accepted raw snapshot digests/policy against this
       // allocation, not merely observe /ready or a plausible opening hand.
       const initialized = await this.native.confirmInitialization({ allocation, input, epoch: record.epoch,
         internalToken: token, fetchExisting: r => this.container().getTcpPort(8080).fetch(r) });
       if (!Number.isSafeInteger(initialized?.viewerId) || initialized.viewerId < 0 || initialized.schema !== NATIVE_SCHEMA || initialized.engineRevision !== FORGE_REVISION || initialized.policyVersion !== input.difficultyPolicyVersion || initialized.humanDigest !== allocation.deckDigests.human || initialized.opponentDigest !== allocation.deckDigests.opponent) throw new Error('native_initialization_receipt_mismatch');
+      step = 'authority';
       record.status = 'running'; await this.storage.put('allocation', record);
       const authority = await this.authority(record);
       await authority.initialize({ ...allocation, epoch: record.epoch, viewerId: initialized.viewerId });
@@ -292,7 +311,11 @@ export class MatchService {
     } catch (failure) {
       // Keep a short, character-limited cause so the owner's error screen can tell a
       // provider start failure from a readiness timeout. No stack, input or token.
-      try { record.failure = startupFailure(failure); await this.storage.put('allocation', record); } catch { /* cleanup still runs */ }
+      try {
+        const seconds = ((this.now() - began) / 1000).toFixed(1);
+        record.failure = safeText('at ' + step + ' ' + seconds + 's: ' + startupFailure(failure) + (exited ? ' container ' + exited : ''));
+        await this.storage.put('allocation', record);
+      } catch { /* cleanup still runs */ }
       await this.cleanup(record, failure.nativeRejected ? 'native_exact_validation_rejected' : 'startup_interrupted');
       return { status: 'interrupted' };
     }

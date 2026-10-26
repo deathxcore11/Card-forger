@@ -5,6 +5,22 @@ const headers = token => ({ Authorization: 'Bearer ' + token, 'Content-Type': 'a
 const request = (path, token, init = {}) => new Request('http://host001.internal' + path, {
   headers: headers(token), redirect: 'manual', signal: AbortSignal.timeout(5000), ...init,
 });
+// At most `maximum` bytes of a reply as text; a longer or slower one is refused.
+async function boundedText(response, maximum, signal) {
+  const reader = response.body?.getReader();
+  if (!reader) return '';
+  const parts = []; let length = 0;
+  const stop = new Promise((_, reject) => signal.addEventListener('abort', () => reject(new Error('body_timeout')), { once: true }));
+  try {
+    for (;;) {
+      const { done, value } = await Promise.race([reader.read(), stop]); if (done) break;
+      length += value.byteLength; if (length > maximum) throw new Error('body_too_large'); parts.push(value);
+    }
+  } catch (failure) { void reader.cancel().catch(() => {}); throw failure; }
+  const bytes = new Uint8Array(length); let offset = 0;
+  for (const part of parts) { bytes.set(part, offset); offset += part.byteLength; }
+  return new TextDecoder().decode(bytes);
+}
 export function nativeAdapter(_env) {
   return {
     ready: true,
@@ -23,7 +39,7 @@ export function nativeAdapter(_env) {
             ready = true; break;
           }
           await response.body?.cancel().catch(() => {});
-        } catch { /* only retry readiness GET, never initialization POST */ }
+        } catch (failure) { if (failure?.containerExited) throw failure; /* only retry readiness GET, never initialization POST */ }
         await wait(250);
       }
       if (!ready) throw new Error('bootstrap_deadline');
@@ -33,10 +49,15 @@ export function nativeAdapter(_env) {
       if (response.status !== 204) {
         // Name the launcher's own refusal (status and fixed code, never input) so the
         // owner's error screen tells a transport, size or write failure apart.
-        let code = '';
-        try { code = String((await boundedJSON(response, 1024, AbortSignal.timeout(2000))).error || ''); }
-        catch { void response.body?.cancel().catch(() => {}); }
-        throw new Error('bootstrap_rejected_' + response.status + (/^[a-z0-9_]{1,64}$/.test(code) ? '_' + code : ''));
+        // A reply that is not the launcher's own names its first words instead, so a
+        // platform refusal reads as one rather than as the launcher's.
+        let code = '', words = '';
+        try {
+          const text = await boundedText(response, 1024, AbortSignal.timeout(2000));
+          try { code = String(JSON.parse(text)?.error || ''); }
+          catch { words = text.replace(/[^A-Za-z0-9 ]+/g, ' ').replace(/ +/g, ' ').trim().slice(0, 60); }
+        } catch { void response.body?.cancel().catch(() => {}); }
+        throw new Error('bootstrap_rejected_' + response.status + (/^[a-z0-9_]{1,64}$/.test(code) ? '_' + code : words ? ' ' + words : ''));
       }
       await response.body?.cancel().catch(() => {});
       // No replay after timeout or ambiguous receipt. The host closes this ID.

@@ -42,6 +42,7 @@ function fixture() {
       const container = { running: false, epoch, failStop: false, failRead: false,
         start(options) { calls.start++; this.running = true; assert.equal(options.enableInternet, false); },
         async setInactivityTimeout(ms) { assert.equal(ms, 600000); },
+        monitor() { return new Promise((resolve, reject) => { this.exit = { resolve, reject }; }); },
         async destroy() { calls.destroy++; assert.notEqual((await storage.get('allocation')).status, 'running'); if (this.failStop) throw Error('stop failed'); this.running = false; },
         getTcpPort(port) { calls.port++; assert.equal(port, 8080); return { fetch: async r => {
           assert(this.running, 'must never fetch stopped container'); assert(r.headers.get('Authorization').startsWith('Bearer fixture-internal'));
@@ -281,10 +282,31 @@ test('a failed start frees the account slot and its runtime at once, without wai
   assert.deepEqual(await f.storage.get('leases'), []);
   const [entry] = (await f.storage.get('play-runtime-budget')).entries; assert(entry.runtimeMs < 60_000, 'failed start keeps only the runtime it held');
   const stopped = await (await f.route(request('/api/play/matches/' + failed.body.matchId, { method: 'GET' }))).json();
-  assert.equal(stopped.failure, 'bootstrap_rejected_411_content_length_required');
+  assert.match(stopped.failure, /^at confirm \d+\.\ds: bootstrap_rejected_411_content_length_required$/);
   refuse = false;
   const again = await f.create({ headers: { 'Idempotency-Key': 'fixture_idempotency_0002' } });
   assert.equal(again.response.status, 202); assert.equal(again.body.replay, false); assert.equal(f.calls.start, 2);
+});
+test('a startup failure names its step, how long in, and how the container ended', async () => {
+  const f = authenticatedFixture(); let key = 0;
+  const latest = () => [...f.containers.values()].at(-1);
+  const stopped = async () => {
+    const created = await f.create({ headers: { 'Idempotency-Key': 'fixture_idempotency_000' + ++key } }); assert.equal(created.response.status, 202);
+    assert.deepEqual(await f.storage.get('leases'), []);
+    return (await f.route(request('/api/play/matches/' + created.body.matchId, { method: 'GET' }))).json();
+  };
+  // A platform error thrown by the one initialization request.
+  f.native.bootstrapExisting = async () => { throw Error('internal error; reference = abc123'); };
+  assert.equal((await stopped()).failure, 'at bootstrap 0.0s: internal error reference abc123');
+  // The container ends on its own: report it at once, not at the deadline.
+  f.native.bootstrapExisting = async () => { latest().exit.reject(Error('Container exited with unexpected exit code: 137')); };
+  const crashed = await stopped();
+  assert.equal(crashed.reason, 'startup_interrupted');
+  assert.equal(crashed.failure, 'at ready 0.0s: container_exited container Container exited with unexpected exit code: 137');
+  // A readiness deadline says what the last poll saw.
+  f.native.bootstrapExisting = async () => { latest().failRead = true; };
+  assert.equal((await stopped()).failure, 'at ready 120.0s: startup_deadline last unresponsive');
+  assert.equal(f.calls.start, 3); assert.equal(f.calls.destroy, 3);
 });
 test('Modern snapshot travels unchanged to native validation, never relabeled to Commander', async () => {
   const f = fixture(); const value = input(); value.format = value.humanDeck.format = value.opponentDeck.format = 'Modern';
