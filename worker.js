@@ -74,7 +74,10 @@ async function fetchMtgo(format, days) {
 async function fetchEdhtop16() {
   const r = await fetch(EDHTOP16_API, { method: "POST", headers: { ...UA, "Content-Type": "application/json" }, body: JSON.stringify(edhtop16Query()) });
   if (!r.ok) throw Error("EDHTop16 unavailable (" + r.status + ")");
-  return { ...normalizeEdhtop16(await r.json()), fetchedAt: new Date().toISOString() };
+  const body = await r.json();
+  // A refused query is an outage, not an empty month of tournaments.
+  if (!body?.data && Array.isArray(body?.errors)) throw Error("EDHTop16 refused the request: " + String(body.errors[0]?.message || body.errors[0] || "unknown").slice(0, 160));
+  return { ...normalizeEdhtop16(body), fetchedAt: new Date().toISOString() };
 }
 async function fetchMtg(env, format, days) {
   if (format === "EDH") {

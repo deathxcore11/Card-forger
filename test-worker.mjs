@@ -21,6 +21,7 @@ const store = new Map();
 globalThis.caches = { default: { match: async (r) => store.get(r.url)?.clone(), put: async (r, res) => void store.set(r.url, res.clone()) } };
 let calls = { topdeck: 0, mtgo: 0, edh: 0 },
   down = false,
+  edhRefused = false,
   lastBody = null;
 const day = new Date().toISOString().slice(0, 10);
 const mtgoEvent = JSON.stringify({ event_id: "1", description: "Pioneer Challenge 32", starttime: day + " 15:00:00.0", type: "TOURNAMENT", site_name: "pioneer-challenge-32-" + day + "1", player_count: { players: "60" }, standings: [{ loginid: "7", rank: "1" }], final_rank: [{ loginid: "7", rank: "1" }], winloss: [{ loginid: "7", wins: "7", losses: "1" }], decklists: [{ loginid: "7", player: "Ana", main_deck: [{ qty: "4", card_attributes: { card_name: "Thoughtseize", card_type: "SORCRY" } }, { qty: "4", card_attributes: { card_name: "Fable of the Mirror-Breaker", card_type: "ENCHMT" } }, { qty: "20", card_attributes: { card_name: "Swamp", card_type: "LAND  " } }], sideboard_deck: [] }] });
@@ -41,6 +42,7 @@ globalThis.fetch = async (url, init = {}) => {
   if (url.startsWith("https://www.mtgo.com/decklist/")) return new Response(`<script>window.MTGO.decklists.data = ${mtgoEvent};\n</script>`);
   if (url.startsWith("https://edhtop16.com/")) {
     calls.edh++;
+    if (edhRefused) return new Response(JSON.stringify({ errors: ["Only persisted queries are allowed in production. Plain text queries are disabled."] }));
     return new Response(JSON.stringify({ data: { commanders: { edges: [{ node: { name: "Kinnan, Bonder Prodigy", stats: { count: 100, topCuts: 30, metaShare: 0.03, conversionRate: 0.3 }, cards: [{ imageUrls: ["art.jpg"] }], entries: { edges: [{ node: { standing: 1, wins: 5, losses: 1, draws: 0, maindeck: [{ name: "Kinnan, Bonder Prodigy", type: "Creature" }, { name: "Sol Ring", type: "Artifact" }, { name: "Island", type: "Basic Land — Island" }], player: { name: "P" }, tournament: { name: "cEDH Open", TID: "c1", size: 64, tournamentDate: day } } }] } } }] } } }));
   }
   throw Error("unexpected " + url);
@@ -82,6 +84,14 @@ d = await (await get("/api/meta/mtg?format=Pioneer", noKey)).json();
 assert.equal(d.stale, true);
 assert.equal(d.decks.length, 1, "keeps showing the last good data during an outage");
 down = false;
+
+// A refused EDHTop16 query is an outage, not an empty month: the last good lists stay.
+for (const k of [...store.keys()]) if (k.includes("/fresh/")) store.delete(k);
+edhRefused = true;
+d = await (await get("/api/meta/mtg?format=EDH", noKey)).json();
+assert.equal(d.stale, true);
+assert.equal(d.decks[0].commander, "Kinnan, Bonder Prodigy");
+edhRefused = false;
 
 assert.equal((await get("/api/meta/mtg?format=Bogus", env)).status, 400);
 assert.equal((await get("/api/meta/mtg/coverage", noKey)).status, 503, "the TopDeck coverage report needs the key");
