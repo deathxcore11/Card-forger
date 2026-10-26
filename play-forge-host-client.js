@@ -66,7 +66,7 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
        &&(![400,409].includes(r.status)||data?.state!=='rejected'||data.commandId!==expectedCommandId))throw fail('HOST_COMMAND_RECEIPT_MISMATCH');
     const rejection=fail(code);
     if(expectedCommandId!==undefined&&data?.state==='rejected')rejection.message=Object.hasOwn(ACTION_REJECTIONS,code)?ACTION_REJECTIONS[code]:ACTION_REJECTIONS.native_action_rejected;
-    throw Object.assign(rejection,{status:r.status,...(typeof data?.reason==='string'&&/^[a-z0-9_]{1,100}$/.test(data.reason)?{reason:data.reason}:{}),retryAfterMs:Math.max(1000,Math.min(30000,(Number(r.headers.get('Retry-After'))||1)*1000)),details:Array.isArray(data?.validation?.errors||data?.errors)?(data.validation?.errors||data.errors).filter(x=>typeof x==='string').slice(0,20).map(x=>x.slice(0,512)):[]});
+    throw Object.assign(rejection,{status:r.status,...(typeof data?.reason==='string'&&/^[a-z0-9_]{1,100}$/.test(data.reason)?{reason:data.reason}:{}),...(typeof data?.failure==='string'&&/^[A-Za-z0-9 _.:-]{1,160}$/.test(data.failure)?{failure:data.failure}:{}),retryAfterMs:Math.max(1000,Math.min(30000,(Number(r.headers.get('Retry-After'))||1)*1000)),details:Array.isArray(data?.validation?.errors||data?.errors)?(data.validation?.errors||data.errors).filter(x=>typeof x==='string').slice(0,20).map(x=>x.slice(0,512)):[]});
    }
    return {status:r.status,data};
   })();

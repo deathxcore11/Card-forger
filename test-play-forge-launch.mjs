@@ -59,7 +59,7 @@ test('account change while acquiring a token sends no request',async()=>{
  account={...account,accountGeneration:2};gate.resolve('token');await assert.rejects(creating,/ACCOUNT_CHANGED/);assert.equal(requests,0);
 });
 test('native Quick Play picks the same opponent list across all three CPU policies',()=>{
- const player=setup('Modern').selected,candidates=[20,45,80].map(score=>({...structuredClone(player),cards:[{name:'List '+score,qty:60}],score}));
+ const player=setup('Modern').selected,candidates=[20,45,80].map(score=>({...structuredClone(player),id:'list-'+score,cards:[{name:'List '+score,qty:60}],score}));
  const selected=['Easy','Medium','Hard'].map(difficulty=>chooseQuickOpponent({player,candidates,difficulty,candidateEligible:()=>true,nativeValidationPending:true,estimate:d=>d.score??50}).deck);
  assert.deepEqual(selected[0],selected[1]);assert.deepEqual(selected[1],selected[2]);assert.equal(selected[0].score,45);
 });
@@ -89,10 +89,13 @@ test('the hosted table names its engine and website build',async()=>{
 test('stop diagnostics carry the safe server reason and status',()=>{
  assert.equal(forgeDiagnostic({code:'match_interrupted',reason:'startup_interrupted',status:410}),'match_interrupted · startup_interrupted · HTTP 410');
  assert.equal(forgeDiagnostic({code:'HOST_REQUEST_TIMEOUT'}),'HOST_REQUEST_TIMEOUT');
+ assert.equal(forgeDiagnostic({code:'match_interrupted',reason:'startup_interrupted',failure:'bootstrap_rejected',status:410}),'match_interrupted · startup_interrupted · bootstrap_rejected · HTTP 410');
 });
 test('Quick Play avoids your own list whenever another list exists',()=>{
  const player=setup('Modern').selected,copy={...structuredClone(player),id:'copy',name:'Copy'},other={...structuredClone(player),id:'other',cards:[{name:'Other',qty:60}]};
  const picked=chooseQuickOpponent({player,candidates:[player,copy,other],candidateEligible:()=>true,nativeValidationPending:true,estimate:d=>d===other?90:50});
  assert.equal(picked.deck.id,'other');assert.equal(picked.mirror,false);
- const only=chooseQuickOpponent({player,candidates:[player],candidateEligible:()=>true,nativeValidationPending:true,estimate:()=>50});assert.equal(only.mirror,true);
+ const reshaped={...structuredClone(player),id:undefined,name:'Precon copy',source:{kind:'precon'},cards:player.cards.map(r=>({name:r.name.toUpperCase(),qty:r.qty})).reverse()};
+ assert.equal(chooseQuickOpponent({player,candidates:[reshaped,other],candidateEligible:()=>true,nativeValidationPending:true,estimate:d=>d===other?90:50}).deck.id,'other','same cards in another record is a mirror');
+ assert.throws(()=>chooseQuickOpponent({player,candidates:[player],candidateEligible:()=>true,nativeValidationPending:true,estimate:()=>50}),/different deck/);
 });

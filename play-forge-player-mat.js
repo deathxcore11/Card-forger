@@ -21,7 +21,7 @@ export function capturedForgeArtwork(setup,lookup){
 }
 
 // Safe server codes only: the stop reason tells an engine failure from an expiry or a lost process.
-export const forgeDiagnostic=e=>[e?.code||e?.message||'HOST_SESSION_STOPPED',e?.reason,e?.status&&'HTTP '+e.status].filter(Boolean).join(' · ');
+export const forgeDiagnostic=e=>[e?.code||e?.message||'HOST_SESSION_STOPPED',e?.reason,e?.failure,e?.status&&'HTTP '+e.status].filter(Boolean).join(' · ');
 export function forgeMatchError(error){
  const code=error?.code||error?.message;
  return ({
