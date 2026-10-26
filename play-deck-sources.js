@@ -28,7 +28,7 @@ export function playDeckSupport(deck){
 }
 // The caller performs the normal account-scoped deck write only after Save deck.
 export function preparePlayDeckSave(deck,id){
- if(typeof id!=='string'||!id||!deck||!['Standard','Commander'].includes(deck.format)||typeof deck.name!=='string'||!deck.name.trim()||!Array.isArray(deck.cards)||!Array.isArray(deck.side||[])||[...deck.cards,...(deck.side||[])].some(r=>typeof r?.name!=='string'||!r.name.trim()||!Number.isSafeInteger(r.qty)||r.qty<1))throw Error('This list needs review before it can be saved.');
+ if(typeof id!=='string'||!id||!deck||!['Standard','Commander','Modern'].includes(deck.format)||typeof deck.name!=='string'||!deck.name.trim()||!Array.isArray(deck.cards)||!Array.isArray(deck.side||[])||[...deck.cards,...(deck.side||[])].some(r=>typeof r?.name!=='string'||!r.name.trim()||!Number.isSafeInteger(r.qty)||r.qty<1))throw Error('This list needs review before it can be saved.');
  const copy=clone(deck);copy.id=id;copy.locked=false;copy.versions=[];return copy;
 }
 export const playDeckSaveKey=deck=>JSON.stringify([deck?.name,deck?.format,deck?.commander,deck?.commanders||[],deck?.cards,deck?.side||[],deck?.referencePriceSelections||null,deck?.source||null]);

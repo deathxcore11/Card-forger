@@ -11,13 +11,16 @@ import {loadMtgBooster,mtgBoosterCards} from './mtg-boosters.js';
 // Booster pack photos trim to the pack itself wherever they appear.
 document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]'))trimPackArt(e.target);},true);
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
-import {syncDesktopPlayEntries} from './desktop-play.js';
+import {syncDesktopPlayEntries,playDeviceGuardText,watchPlayDeviceEligibility} from './desktop-play.js';
 import {createPlaySetup} from './play-setup.js';
+import {FORGE_PLAY_TEST_ENABLED} from './play-forge-feature.js';
+import {forgeDeckSupport} from './play-forge-setup-review.js';
 import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {createPlayerMat} from './play-player-mat.js';
 import {createPracticeCardPreparation} from './play-card-preparation.js';
+import {createForgeArtworkPreparation} from './play-forge-artwork.js';
 import {createPracticeCatalogReview} from './play-catalog-review.js';
 import {mountPracticePregame,resolvePracticePregame} from './play-pregame.js';
 import {packEligible} from './set-experience.js';
@@ -1085,6 +1088,7 @@ function render() {
   deckBoxTransitions.beforeRender();
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
   deckBoxTransitions.afterRender();
+  syncDesktopPlayEntries(g);
   restoreDisclosures(content,disclosureStates.get(disclosureKey));
   content.dataset.disclosureKey=disclosureKey;
   restoreSearchFocus(content,searchFocus);
@@ -1509,7 +1513,7 @@ A.playFindOpponent=async()=>{
  const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
  try{const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck),state.selected];
- const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
+ const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
 };
@@ -1545,7 +1549,7 @@ A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profil
 // pass. The account/table lifecycle below is testable independently of activation.
 const PLAY_MATCH_RELEASE_READY=true;
 let playerMatHost=null,playerMatRoot=null,practicePregame=null,playStarting=false;
-function closePlayerMat(){practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
+function closePlayerMat(){practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
 A.playStartCandidate=async()=>{
  if(!PLAY_MATCH_RELEASE_READY)return toast('Practice integration is still being verified.');
  if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
@@ -1560,6 +1564,16 @@ A.playStartCandidate=async()=>{
  const beginGame=async options=>{
   practicePregame?.destroy();practicePregame=null;
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
+  if(FORGE_PLAY_TEST_ENABLED){
+   if(!document.getElementById('forgeHostedTableStyles')){const css=document.createElement('link');css.id='forgeHostedTableStyles';css.rel='stylesheet';css.href='play-forge-table.css';document.head.append(css);}
+   const {createForgePlayerMat}=await import('./play-forge-player-mat.js');if(!current()||!playerMatRoot)return;
+   const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
+    resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
+    lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,
+    prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();}});
+   try{await playerMatHost.start();}catch(e){toast(e.code||e.message);}return;
+  }
   const cards=createPracticeCardPreparation({selectionKey:key,isCurrent:current,
    resolveNames:names=>resolveNames(names,()=>{},false,current),
    lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),
@@ -1567,7 +1581,8 @@ A.playStartCandidate=async()=>{
   playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:cards.prepare,reviewDecks:createPracticeCatalogReview({isCurrent:current,lookupNames:identifiers=>api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers})})}),lookup:cards.lookup,onClose:closePlayerMat,onSaveDeck:savePlayDeck,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();}});
   try{await playerMatHost.start(options);}catch(e){toast(e.message);}
  };
- if(source.playStyle==='quick')await beginGame(resolvePracticePregame('random'));
+ if(FORGE_PLAY_TEST_ENABLED)await beginGame({}); // Forge owns its opening decisions.
+ else if(source.playStyle==='quick')await beginGame(resolvePracticePregame('random'));
  else practicePregame=mountPracticePregame({root:playerMatRoot,renderDeckArtwork:deck=>{const art=document.createElement('div');art.className='play-pregame-art';art.innerHTML=V.deckArtwork(deck);return art;},readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),onCancel:closePlayerMat,onConfirm:beginGame});
  }finally{playStarting=false;}
 };
@@ -1577,11 +1592,12 @@ function playDeckPreview(deck) {
 }
 function renderPlayPage() {
   if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>Choose Magic in the game selector to prepare a CPU match.</p><a class="btn" href="#home">Return Home</a></section>';
-  if(!syncDesktopPlayEntries('mtg').eligible)return '<section class="empty"><h1>Play</h1><p>Use a supported desktop browser with a mouse or trackpad for Play. Your saved decks remain available in Decks.</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';
+  const device=syncDesktopPlayEntries('mtg');
+  if(!device.eligible)return '<section class="empty play-device-guard"><h1>Play</h1><p>'+esc(playDeviceGuardText(device))+'</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:(state.playStyle!=='quick'&&state.inspectedSeat==='opponent'?state.opponentSource==='saved'&&state.opponent?.id===deck.id:state.selectedSource==='saved'&&state.selected?.id===deck.id)}));}
   const inspected=state.match.mode==='cpu'&&state.inspectedSeat==='opponent'?state.opponent:state.selected;
-  return playMenuMarkup(state,{sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions(),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent)}});
+  return playMenuMarkup(state,{engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent)}});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
@@ -3721,9 +3737,13 @@ function paintHomeToday(g) {
     for (const attr of [...old.attributes]) old.removeAttribute(attr.name);
     for (const attr of [...fresh.attributes]) old.setAttribute(attr.name, attr.value);
     old.innerHTML = fresh.innerHTML;fresh.replaceWith(old);
+    const oldPlay=el.querySelector('[data-touch-play-entry]'),freshPlay=next.querySelector('[data-touch-play-entry]'),restorePlayFocus=oldPlay&&document.activeElement===oldPlay;
+    if(oldPlay&&freshPlay)freshPlay.replaceWith(oldPlay);
     for (const k of ["game", "dailyDate", "dailyId"]) el.dataset[k] = next.dataset[k];
     el.replaceChildren(...next.childNodes);delete el.dataset.painted;
+    if(restorePlayFocus)oldPlay.focus({preventScroll:true});
   }
+  syncDesktopPlayEntries(g);
   if (el.dataset.painted) return;el.dataset.painted = "1";
   const screen = navigationStamp(), key = h.id + "|" + h.date;
   dailyDetails(g, h).then(d => {
@@ -6543,6 +6563,11 @@ async function boot() {
   await navigate({game:latest?.game || T.game(),hash:normalizeRoute(location.hash),entry:latest || makeEntry(T.game(),normalizeRoute(location.hash),0),mode:"boot"});
   render();
   observeShellHeader();
+  watchPlayDeviceEligibility({game:T.game,onChange:()=>{
+    // A resize must not tear down a live match, pregame, account opening, or
+    // another route. Setup state remains in playSetup across the device guard.
+    if(!accountLocked&&!playStarting&&!playerMatRoot&&S.ui.view==='play'&&T.game()==='mtg')refreshPlayMenu();
+  }});
   let accountOpenedOnce=false;
   initCloud({
     accountFirst:true,

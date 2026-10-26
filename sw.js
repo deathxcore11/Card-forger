@@ -1,5 +1,15 @@
-const CACHE = "cardforge-shell-v324-choice-ui";
+const CACHE = "cardforge-shell-v325-forge-play";
 const ASSETS = [
+  "./play-forge-feature.js",
+  "./play-forge-cpu-policy.js",
+  "./play-forge-setup-review.js",
+  "./play-forge-host-client.js",
+  "./play-forge-artwork.js",
+  "./play-forge-player-mat.js",
+  "./play-forge-table.css",
+  "./experiments/forge-proof/forge-session.mjs",
+  "./experiments/forge-proof/forge-table.mjs",
+  "./experiments/forge-proof/native-panel.mjs",
   "./experiments/phase-engine/choice-presentation.mjs",
   "./play-card-support.js",
   "./experiments/phase-engine/shipped-response-proof.mjs",

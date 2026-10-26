@@ -7,6 +7,7 @@
   "compatibility_date": "2026-10-01",
   // Static files are served directly; worker.js handles cached images and the /api/meta/… routes.
   "main": "worker.js",
+  "services": [{ "binding": "FORGE_HOST", "service": "cardstashy-forge-host" }],
   // Daily refresh of Magic tournament data (TopDeck.gg). Add the API key once with:
   //   npx wrangler secret put TOPDECK_KEY   (or Workers → cardforge2 → Settings → Variables and Secrets)
   // Second trigger: record shared price history (needs the SUPABASE_SERVICE_KEY secret).

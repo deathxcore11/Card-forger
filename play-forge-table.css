@@ -1,0 +1,87 @@
+/* Native table additions only. No global page, layout or connection-form reset. */
+:where(body.practice-table-open) .forge-native-panel button{min-height:42px;border-radius:9px;padding:9px 12px;border:1px solid #dfc58e70;background:#203a40;color:#edf0e8;cursor:pointer}
+:where(body.practice-table-open) .forge-proof-label{font:600 10px/1.3 system-ui;letter-spacing:.13em;color:#dfc58e}
+:where(body.practice-table-open) .forge-native-panel{display:flex;flex-wrap:wrap;gap:8px;min-width:0}
+:where(body.practice-table-open) .forge-native-panel>*:not(button){width:100%;min-width:0}
+:where(body.practice-table-open) .forge-native-panel h2{font-size:17px;margin:4px 0 6px;white-space:pre-wrap;overflow-wrap:anywhere}
+:where(body.practice-table-open) .forge-native-panel p{margin:4px 0;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+:where(body.practice-table-open) .forge-native-panel button{font-size:12px;white-space:normal;overflow-wrap:anywhere}
+:where(body.practice-table-open) .forge-native-panel button:disabled{opacity:.45;cursor:default}
+:where(body.practice-table-open) .forge-native-panel button[aria-pressed=true]{background:#766344;border-color:#e3ce9d}
+:where(body.practice-table-open) .forge-native-options{display:grid;gap:5px;max-height:30dvh;overflow:auto}
+:where(body.practice-table-open) .forge-native-options button{text-align:left}
+:where(body.practice-table-open) .forge-native-panel form label{display:grid;gap:6px}
+:where(body.practice-table-open) .forge-native-panel input,:where(body.practice-table-open) .forge-native-panel select{width:100%;padding:8px;color:#edf0e8;background:#14232b;border:1px solid #c3d8df70;border-radius:6px}
+:where(body.practice-table-open) .forge-native-panel details{font-size:11px;margin-top:4px}
+:where(body.practice-table-open) .forge-native-panel details summary{cursor:pointer;padding:6px 0}
+:where(body.practice-table-open) .forge-native-panel ol{padding-left:24px}
+:where(body.practice-table-open) .forge-native-panel li button{min-height:32px;margin-left:5px}
+:where(body.practice-table-open) .forge-native-panel .forge-diagnostic{padding:8px;background:#7a3c2840;border:1px solid #f5b38460;border-radius:7px;color:#ffd3b8}
+:where(body.practice-table-open) .forge-native-draft{color:#dfc58e}
+:where(body.practice-table-open) .forge-native-wait{color:#c3d8df}
+:where(body.practice-table-open) .forge-art-note{font-size:11px;color:#c3d8df}
+:where(body.practice-table-open) .play-match-card[data-forge-hint=true]{outline:2px solid #c8d8b5;outline-offset:3px}
+:where(body.practice-table-open) .play-match-card[data-forge-chosen=true]{outline:3px solid #efcd79;outline-offset:4px}
+:where(body.practice-table-open) .forge-drag-ghost{position:fixed!important;pointer-events:none!important;z-index:1000;transform:translate(-50%,-50%) rotate(-6deg);opacity:.82;height:140px!important;max-width:110px!important}
+:where(body.practice-table-open) .forge-dragging [data-placement-zone=battlefield],:where(body.practice-table-open) .forge-dragging .forge-native-panel{outline:2px dashed #dfc58e;outline-offset:-4px}
+:where(body.practice-table-open) .forge-native-panel button:focus-visible{outline:3px solid #f5dba4;outline-offset:2px}
+:where(body.practice-table-open) .play-match-decisions:has(.forge-native-panel){max-height:47dvh;overflow:auto}
+:where(body.practice-table-open) .play-match-table[data-stage=opening] .play-match-decisions:has(.forge-native-panel){max-height:37dvh}
+:where(body.practice-table-open) .forge-native-mana{font:11px/1.4 system-ui;color:#dfc58e}
+:where(body.practice-table-open) .forge-native-panel input[type=checkbox]{width:auto;margin-right:8px;vertical-align:middle}
+
+/* Compact native context: the same acknowledged modes/actions, not a new rule
+   layer. Only deck/policy/debug prose is disclosed; decisions/errors stay live. */
+:where(body.practice-table-open) .play-match-decisions:has(.forge-native-panel){padding:12px;scrollbar-width:thin}
+:where(body.practice-table-open) .forge-native-panel{gap:8px}
+:where(body.practice-table-open) .forge-native-panel h2{font-size:16px;line-height:1.3;margin:0;font-weight:700}
+:where(body.practice-table-open) .forge-native-context{display:grid;gap:5px}
+:where(body.practice-table-open) .forge-native-status{display:flex;flex-wrap:wrap;gap:3px 10px;font-size:11px;line-height:1.4;color:#c8d8da}
+:where(body.practice-table-open) .forge-native-status>span{overflow-wrap:anywhere}
+:where(body.practice-table-open) .forge-native-panel .forge-native-mode,
+:where(body.practice-table-open) .forge-native-panel .forge-native-actions{display:flex;flex-wrap:wrap;gap:6px;width:auto;min-width:0}
+:where(body.practice-table-open) .forge-native-panel .forge-native-actions{margin-left:auto}
+:where(body.practice-table-open) .forge-native-panel button{min-height:44px;padding:8px 11px;line-height:1.3}
+:where(body.practice-table-open) .forge-native-mode button{padding-inline:10px}
+:where(body.practice-table-open) .forge-native-panel [data-native-key=ok]{border-color:#dfc58e;background:#d6bb83;color:#17282d;font-weight:700}
+:where(body.practice-table-open) .forge-native-panel .forge-native-diagnostics{margin-top:0}
+:where(body.practice-table-open) .forge-native-diagnostics>summary{color:#bed0d5;min-height:32px;padding-block:7px}
+:where(body.practice-table-open) .forge-native-diagnostics[open]{border-top:1px solid #c3d8df30;padding-top:4px}
+:where(body.practice-table-open) .forge-native-diagnostics p{margin:7px 0}
+
+/* The former <=900px layout stacked the entire mat in a vertical scroller.
+   A compact dock alone could not recover the off-screen hand and local HUD.
+   Wide-touch native matches now reserve their own hand/HUD strip, leaving the
+   two battlefield lanes independently scrollable. Desktop placement is intact. */
+@media (min-width:600px) and (max-width:900px) and (min-height:620px){
+ :where(body.practice-table-open) .play-match-table:has(.forge-native-panel){gap:6px;padding:8px;--play-hand:118px;--play-piece:112px}
+ :where(body.practice-table-open) .play-match-table:has(.forge-native-panel) .play-match-header{gap:6px;flex-wrap:nowrap}
+ :where(body.practice-table-open) .play-match-table:has(.forge-native-panel) .play-match-header>button,
+ :where(body.practice-table-open) .play-match-table:has(.forge-native-panel) .play-match-header>details>summary{min-height:44px;padding:12px 10px}
+ :where(body.practice-table-open) .play-match-table:has(.forge-native-panel) .play-match-decisions{padding:9px 12px;max-height:clamp(140px,calc(100dvh - 520px),320px)}
+ :where(body.practice-table-open) .forge-native-panel[data-compact-status=true]{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 12px}
+ :where(body.practice-table-open) .forge-native-panel[data-compact-status=true]>*{grid-column:1/-1}
+ :where(body.practice-table-open) .forge-native-panel[data-compact-status=true]>.forge-native-context{grid-column:1;grid-row:1}
+ :where(body.practice-table-open) .forge-native-panel[data-compact-status=true]>.forge-native-mode{grid-column:2;grid-row:1;justify-self:end}
+ :where(body.practice-table-open) .forge-native-panel[data-compact-status=true]>.forge-native-actions{grid-column:2;grid-row:2;justify-self:end}
+ :where(body.practice-table-open) .forge-native-panel[data-compact-status=true]>.forge-native-diagnostics:not([open]){grid-column:1;grid-row:2;align-self:end}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-main{overflow:hidden}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-mat{position:absolute;inset:0;display:block;padding:0;overflow:hidden}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-seat{position:absolute!important;inset:auto!important;width:224px;height:132px;min-height:132px;margin:0}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-player>strong{font-size:11px;line-height:1.3}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .forge-native-mana{position:absolute;top:45px;left:12px;right:12px;font-size:10px;line-height:1.3}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-seat[data-seat=cpu]{top:6px!important;right:6px!important}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-seat[data-seat=you]{bottom:6px!important;left:6px!important}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-hand-area{position:absolute;inset:auto 0 0 240px;height:188px;width:auto;margin:0}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields{position:absolute;inset:144px 6px 194px;display:flex;flex-direction:column;gap:6px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-seat-area{display:flex;min-height:0;margin:0;flex:1}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-zone{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:3px 6px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-zone-groups{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px 14px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-battlefields .play-match-card-row{gap:8px 14px;padding:4px 3px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-command-zone{position:absolute!important;inset:auto!important;width:94px;max-width:94px;margin:0;max-height:126px;overflow:auto;scrollbar-width:thin}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-command-zone[data-seat=cpu]{top:6px!important;left:10px!important}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-command-zone[data-seat=you]{bottom:144px!important;left:10px!important}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-command-zone>strong{font-size:10px;margin-bottom:3px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-command-zone .play-match-card-wrap{width:62px;height:87px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-inspector{position:absolute;inset:6px 6px 6px auto;width:min(330px,calc(100% - 12px));max-height:none;margin:0;overflow:auto;overscroll-behavior:contain}
+}

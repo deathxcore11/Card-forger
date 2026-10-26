@@ -13,6 +13,7 @@ supabase
 worker.js
 topdeck.js
 scripts
+deploy
 mtgmeta.js
 pricefeed.js
 community-feed-route.js
@@ -136,3 +137,8 @@ experiments/phase-engine/runtime/*
 !experiments/phase-engine/shipped-response-proof.mjs
 
 !experiments/phase-engine/choice-presentation.mjs
+!experiments/forge-proof/
+experiments/forge-proof/*
+!experiments/forge-proof/forge-session.mjs
+!experiments/forge-proof/forge-table.mjs
+!experiments/forge-proof/native-panel.mjs

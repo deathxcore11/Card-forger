@@ -2,10 +2,10 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {playMenuMarkup} from './play-menu.js';
 const setup=()=>({profile:{signedIn:true,ownerId:'owner',displayName:'Player'},match:{format:'Commander',mode:'cpu',difficulty:'Medium'},decks:[],draft:{},browse:{}});
-test('starter action explicitly discloses the format switch before committing',()=>{
- const state=setup(),before=structuredClone(state),html=playMenuMarkup(state);
- assert.match(html,/Play a tested Standard starter match/);assert.match(html,/changes the visible format to Standard/);assert.deepEqual(state,before);
- state.match.format='Standard';assert.match(playMenuMarkup(state),/>Play a tested starter match</);
+test('normal deck access does not add a starter funnel or change format on render',()=>{
+ const state=setup(),before=structuredClone(state),html=playMenuMarkup(state,{engine:'forge'});
+ assert.doesNotMatch(html,/playStarter|tested Standard starter match/);assert.match(html,/Your decks/);assert.deepEqual(state,before);
+ state.match.format='Standard';assert.doesNotMatch(playMenuMarkup(state,{engine:'forge'}),/playStarter|tested starter match/);
 });
 test('Friends changes the visible instructions and hides CPU-only controls',()=>{
  const state=setup();state.match.mode='friends';state.inspectedSeat='opponent';state.opponent={name:'CPU CANARY',cards:[]};
@@ -22,9 +22,9 @@ test('guest has a direct sign-in action and no false match-readiness promise',()
  assert.match(html,/>Sign in to play</);assert.match(html,/disabled[^>]*>Play CPU</);assert.match(html,/Keep this page open/);
 });
 
-test('Standard precons provide direct format and starter actions without changing format on render',()=>{
+test('Standard precons offer an explicit Commander switch and normal deck sources',()=>{
  const state=setup();state.match.format='Standard';state.browse.source='precons';const before=structuredClone(state),html=playMenuMarkup(state);
- assert.match(html,/data-act="playConfigure" data-play-option="format" data-play-value="Commander">Browse Commander precons/);assert.match(html,/Play a tested Standard starter match/);assert.doesNotMatch(html,/<details class="play-starter"/);assert.deepEqual(state,before);
+ assert.match(html,/data-act="playConfigure" data-play-option="format" data-play-value="Commander">Browse Commander precons/);assert.match(html,/Your decks, Community, Meta or Random/);assert.doesNotMatch(html,/playStarter|<details class="play-starter"/);assert.deepEqual(state,before);
 });
 test('support errors appear by the selected artwork before launch with expandable cards',()=>{
  const state=setup();state.match.format='Standard';state.selected={name:'Unsupported list',format:'Standard',cards:[{name:'Seasoned Cryomancer',qty:4},{name:'Forest',qty:56}],side:[]};state.opponent={name:'CPU',format:'Standard',cards:[{name:'Forest',qty:60}],side:[]};
