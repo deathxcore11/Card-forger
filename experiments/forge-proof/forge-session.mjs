@@ -5,6 +5,9 @@ const PHASES={UNTAP:'Untap',UPKEEP:'Upkeep',DRAW:'Draw',MAIN1:'PreCombatMain',CO
 const INPUTS={InputConfirmMulligan:'MulliganDecision',InputPassPriority:'Priority',InputAttack:'DeclareAttackers',InputBlock:'DeclareBlockers',InputPayMana:'ManaPayment'};
 const list=x=>Array.isArray(x)?x:[];
 const id=x=>Number.isSafeInteger(x);
+// Forge names a token's image after its script, which leads with the token's colors
+// (t:w_1_1_soldier, t:c_a_treasure_sac, t:wb_1_1_spirit_flying); c is colorless.
+export const tokenColors=key=>{const m=/^t:([wubrgc]{1,5})_/.exec(String(key||''));return m?[...new Set(m[1].replace(/c/g,'').toUpperCase())]:null;};
 export function localBridgeUrl(value){
  const url=new URL(value);
  if(url.protocol!=='http:'||!['127.0.0.1','localhost'].includes(url.hostname)||url.username||url.password||!['','/'].includes(url.pathname)||url.search||url.hash)throw Error('Use a loopback HTTP origin only, such as http://127.0.0.1:8765.');
@@ -62,6 +65,7 @@ export function projectForge(raw,{lookupArtwork=()=>null}={}){
   if(c.hidden!==false||typeof c.name!=='string'||!c.name)return;
   const types=typeof c.type==='string'?c.type.split(/\s+/).filter(t=>['Creature','Land','Artifact','Enchantment','Planeswalker','Battle','Instant','Sorcery'].includes(t)):[];
   const card={id:c.id,owner:seatById.get(c.owner),controller:seatById.get(c.controller),zone,known:true,name:c.name,types,type:c.type||'',manaCost:c.manaCost||'',text:c.text||'',power:c.power??null,toughness:c.toughness??null,tapped:c.tapped===true,attacking:c.attacking===true,blocking:c.blocking===true,isToken:c.token===true,commander:c.commander===true,damage:c.damage||0,summoningSick:c.summoningSick===true,counters:c.counters||{},keywords:list(c.keywords)};
+  if(card.isToken){const colors=tokenColors(c.imageKey);if(colors)card.tokenColors=colors;}
   if(privateZone){card.zoneHolder=seatById.get(holder);if(permitted)card.zoneVisibility='native-face-visible';}
   const artwork=lookupArtwork(card.name,c);if(artwork)card.printing={playArtwork:artwork};
   cards.set(c.id,card);
