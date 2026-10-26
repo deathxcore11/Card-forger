@@ -20,10 +20,13 @@ jobs:
     timeout-minutes: 20
     env:
       FORGE_REV: e5a0f8156da70ffc7866f923bed371c0111707cd
-      FORGE_PROOF_ROOT: ${{ runner.temp }}/forge-native-proof
-      FORGE_BROWSER_TOOLS: ${{ runner.temp }}/forge-browser-tools
-      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/forge-browser-binaries
     steps:
+      - name: Initialize runner-local proof paths
+        shell: bash
+        run: |
+          printf 'FORGE_PROOF_ROOT=%s/forge-native-proof\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'FORGE_BROWSER_TOOLS=%s/forge-browser-tools\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'PLAYWRIGHT_BROWSERS_PATH=%s/forge-browser-binaries\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Check out only this reviewed proof commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
