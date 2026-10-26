@@ -860,12 +860,12 @@ function ideasView() {
   }`;
 }
 
-// Recent tournament results through the site's Worker: Magic Online (constructed), EDHTop16 (Commander),
+// Recent tournament results through the site's Worker: Magic Online (constructed), MTGTop8 (Commander),
 // TopDeck.gg when a key is set. Matched against your cards.
 const scryArt = (name) => (name ? `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&format=image&version=art_crop` : "");
 const SOURCE_CREDIT = {
   "Magic Online (official decklists)": `Decklists from <a href="https://www.mtgo.com/decklists" target="_blank" rel="noopener">Magic Online</a> (Wizards of the Coast).`,
-  "EDHTop16 (competitive Commander)": `Data from <a href="https://edhtop16.com" target="_blank" rel="noopener">EDHTop16</a>, powered by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.`,
+  "MTGTop8 (competitive Commander)": `Results and decklists from <a href="https://www.mtgtop8.com/format?f=cEDH" target="_blank" rel="noopener">MTGTop8</a>; most events are reported through <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.`,
   "TopDeck.gg": `Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.`,
 };
 function tournamentPanel() {
@@ -887,7 +887,7 @@ function tournamentPanel() {
       c.challenges !== undefined
         ? `${c.challenges} Challenge${c.challenges === 1 ? "" : "s"} (${c.players.toLocaleString()} entries, ${c.challengeLists} ranked lists published)${c.leagues ? ` + ${c.leagueLists} League 5-0 lists from ${c.leagues} League${c.leagues === 1 ? "" : "s"} (field size not published)` : ""}`
         : `${c.events} event${c.events === 1 ? "" : "s"}${c.players ? ` · ${c.players.toLocaleString()} entries` : ""} · ${data.decks.length} published list${data.decks.length === 1 ? "" : "s"}`;
-    body = `<p class="evidence small">Tournament-backed · ${esc(label)} · ${edh ? "last month" : `last ${data.days} days`} · ${counts} · ${esc(data.source)} · updated ${esc(when)}${data.stale ? " · <span class=\"warn-text\">showing the last good data</span>" : ""}<br>${esc(data.shareNote || "Shares are of the published lists shown here — not overall popularity or win rate.")}${data.labelNote ? " " + esc(data.labelNote) : ""}</p>
+    body = `<p class="evidence small">Tournament-backed · ${esc(label)} · last ${data.days} days · ${counts} · ${esc(data.source)} · updated ${esc(when)}${data.stale ? " · <span class=\"warn-text\">showing the last good data</span>" : ""}<br>${esc(data.shareNote || "Shares are of the published lists shown here — not overall popularity or win rate.")}${data.labelNote ? " " + esc(data.labelNote) : ""}</p>
       ${
         data.decks.length || data.archetypes.length
           ? `<div class="section-head"><h2>${edh ? "Top commanders" : "Top decks right now"}</h2><button class="link small" data-act="mtgMetaReload">⟳ Refresh</button></div><div class="arch-grid">${data.archetypes

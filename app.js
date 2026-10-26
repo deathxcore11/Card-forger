@@ -5712,10 +5712,10 @@ A.mtgProven = (t) => {
     key: d.key,
     title: d.name,
     sub: `${esc(d.place)} · ${esc(d.event)} · ${d.players} players${d.player ? " · " + esc(d.player) : ""}${d.record ? " · " + esc(d.record) : ""}${d.date ? " · " + esc(d.date) : ""}`,
-    evidence: `Tournament-backed · ${esc(label)} · ${fmt === "EDH" ? "last month" : `last ${data.days} days`} · compared with ${data.decks.length} lists from ${data.coverage?.events || 0} events · ${esc(data.source)}`,
-    attribution: `${{ "Magic Online (official decklists)": `Decklist from <a href="https://www.mtgo.com/decklists" target="_blank" rel="noopener">Magic Online</a> (Wizards of the Coast).`, "EDHTop16 (competitive Commander)": `Data from <a href="https://edhtop16.com" target="_blank" rel="noopener">EDHTop16</a>, powered by TopDeck.gg.` }[data.source] || `Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.`} Prices are Scryfall’s TCGplayer estimates.`,
+    evidence: `Tournament-backed · ${esc(label)} · last ${data.days} days · compared with ${data.decks.length} lists from ${data.coverage?.events || 0} events · ${esc(data.source)}`,
+    attribution: `${{ "Magic Online (official decklists)": `Decklist from <a href="https://www.mtgo.com/decklists" target="_blank" rel="noopener">Magic Online</a> (Wizards of the Coast).`, "MTGTop8 (competitive Commander)": `Decklist from <a href="https://www.mtgtop8.com/format?f=cEDH" target="_blank" rel="noopener">MTGTop8</a>; most events are reported through TopDeck.gg.` }[data.source] || `Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.`} Prices are Scryfall’s TCGplayer estimates.`,
     sourceUrl: d.url || d.eventUrl,
-    sourceLabel: data.source.startsWith("Magic Online") ? "Magic Online event" : data.source.startsWith("EDHTop16") ? "Decklist" : "TopDeck.gg event",
+    sourceLabel: data.source.startsWith("Magic Online") ? "Magic Online event" : data.source.startsWith("MTGTop8") ? "MTGTop8 event" : "TopDeck.gg event",
     rowsFn: () => rowsOf(d),
     // The 15-card sideboard travels with the list (not in Commander, which has none).
     sideRowsFn: () => (fmt === "EDH" ? [] : (d.side || []).map((r) => ({ key: key(r.name), name: r.name, qty: r.qty, kind: kindOf(r.name), price: namePrice(meta(r.name), (finish) => priceOf(r.name, finish)), owned: Math.max(0, inv(r.name).owned - sumQty([...d.commanders, ...d.main].filter((m) => key(m.name) === key(r.name)))) }))),

@@ -11,7 +11,7 @@ export const COMMUNITY_TTL = 864e5;
 const RETENTION = 7 * COMMUNITY_TTL, KEY = 'cardforge-community-v3', LEGACY_KEY = 'cardforge-community-v2';
 const games = ['mtg', 'ptcg', 'ygo'], states = Object.create(null);
 const hosts = {
-  mtg: ['magic.wizards.com', 'www.magic.wizards.com', 'www.mtgo.com', 'mtgo.com', 'edhtop16.com', 'topdeck.gg', 'magic.gg', 'www.magic.gg', 'locator.wizards.com'],
+  mtg: ['magic.wizards.com', 'www.magic.wizards.com', 'www.mtgo.com', 'mtgo.com', 'www.mtgtop8.com', 'mtgtop8.com', 'topdeck.gg', 'magic.gg', 'www.magic.gg', 'locator.wizards.com'],
   ptcg: ['www.pokemon.com', 'pokemon.com', 'events.pokemon.com', 'www.serebii.net', 'www.pokeguardian.com', 'play.limitlesstcg.com', 'limitlesstcg.com'],
   ygo: ['www.yugioh-card.com', 'yugioh-card.com', 'ygorganization.com', 'ygoprodeck.com'],
 };
@@ -43,7 +43,7 @@ export function communitySlideUrl(game, slide) {
   if (slide?.kind === 'news' || (slide?.kind === 'event' && slide.sourceId)) return safeNewsArticle(slide.url, game, slide.sourceId, slide.kind);
   if (slide?.kind === 'event') {
     const url = safeCommunityUrl(slide.url, game);
-    try { return ['play.limitlesstcg.com', 'limitlesstcg.com', 'www.mtgo.com', 'mtgo.com', 'edhtop16.com', 'topdeck.gg'].includes(new URL(url).hostname) ? url : ''; } catch { return ''; }
+    try { return ['play.limitlesstcg.com', 'limitlesstcg.com', 'www.mtgo.com', 'mtgo.com', 'www.mtgtop8.com', 'mtgtop8.com', 'topdeck.gg'].includes(new URL(url).hostname) ? url : ''; } catch { return ''; }
   }
   return safeCommunityUrl(slide?.url, game);
 }
@@ -114,7 +114,7 @@ export function loadCommunity(game, { fetchImpl = globalThis.fetch, now = Date.n
 export function metaDeckSlides(game, M, metaKey, now = Date.now(), limit = 3) {
   const data = M?.data; if (!Array.isArray(data?.decks)) return [];
   const fetchedAt = stamp(data.fetchedAt) || stamp(M.at), stale = !!M.error || !!data.stale || !fetchedAt || now - Date.parse(fetchedAt) >= 12 * 3600e3;
-  const methodology = game === 'ptcg' ? 'Top 8 lists from recent Standard events on Limitless.' : game === 'ygo' ? 'Lists curated as Tournament Meta Decks by YGOPRODeck.' : /Magic Online|MTGO/i.test(data.source || '') ? 'Published Magic Online Challenge and 5–0 League lists; not a global popularity ranking.' : /EDHTop16/i.test(data.source || '') ? 'Competitive Commander tournament results from EDHTop16.' : 'Published tournament lists; not a global popularity ranking.';
+  const methodology = game === 'ptcg' ? 'Top 8 lists from recent Standard events on Limitless.' : game === 'ygo' ? 'Lists curated as Tournament Meta Decks by YGOPRODeck.' : /Magic Online|MTGO/i.test(data.source || '') ? 'Published Magic Online Challenge and 5–0 League lists; not a global popularity ranking.' : /MTGTop8/i.test(data.source || '') ? 'Top finishes at the largest recent competitive Commander events, from MTGTop8.' : 'Published tournament lists; not a global popularity ranking.';
   const seen = new Set();
   return curatedMetaDecks(data).slice(0, 100).filter(d => {
     if (!d?.key || seen.has(d.key)) return false; seen.add(d.key); return !!(safeCommunityUrl(d.url, game) || safeCommunityUrl(d.eventUrl, game));
@@ -142,10 +142,10 @@ export function communitySlides(game, { metaState: M, metaKey, format = 'Standar
   metaKey ||= game === 'mtg' ? `mtg:${format}` : game;
   M ||= readMetaState(metaKey);
   const info = COMMUNITY_LINKS[game], N = communityState(game), items = validItems([...(N.data?.items || []), ...editionStories(game, now)], game, now), news = items.filter(x => x.kind === 'news'), events = items.filter(x => x.kind === 'event').sort((a, b) => a.startsAt.localeCompare(b.startsAt)), decks = metaDeckSlides(game, M, metaKey, now), result = resultSlide(game, M, now);
-  const link = (category, title, summary, url = info[category]) => ({ id: `link:${game}:${category}`, game, kind: 'link', category, title, summary, url, source: category === 'decks' ? game === 'ptcg' ? 'Limitless' : game === 'ygo' ? 'YGOPRODeck' : format === 'EDH' ? 'EDHTop16' : 'Magic Online' : category === 'events' && game === 'ptcg' ? 'Pokémon' : info.source, publishedAt: '', fetchedAt: '', dateLabel: '', stale: false });
+  const link = (category, title, summary, url = info[category]) => ({ id: `link:${game}:${category}`, game, kind: 'link', category, title, summary, url, source: category === 'decks' ? game === 'ptcg' ? 'Limitless' : game === 'ygo' ? 'YGOPRODeck' : format === 'EDH' ? 'MTGTop8' : 'Magic Online' : category === 'events' && game === 'ptcg' ? 'Pokémon' : info.source, publishedAt: '', fetchedAt: '', dateLabel: '', stale: false });
   const newsLink = link('news', `${info.name} news`, N.error || N.data?.status === 'unavailable' ? 'Automatic headlines unavailable. Open the news source.' : 'Open the news source. This is a source link, not a fetched story.');
   const eventsLink = link('events', `Find ${info.name} events`, 'Browse the official event listings for dates, locations and registration.');
-  const deckLink = link('decks', 'Explore tournament decks', 'Open published tournament decklists at the source.', game === 'mtg' && format === 'EDH' ? 'https://edhtop16.com/' : info.decks);
+  const deckLink = link('decks', 'Explore tournament decks', 'Open published tournament decklists at the source.', game === 'mtg' && format === 'EDH' ? 'https://www.mtgtop8.com/format?f=cEDH' : info.decks);
   // Alternate subjects rather than stacking all news ahead of decks and events.
   return [news[0] || newsLink, decks[0] || deckLink, events[0] || result || eventsLink, ...news.slice(1, 4), ...decks.slice(1, 2), ...events.slice(1, 2), ...(game === 'ptcg' && !news.some(row => row.sourceId === 'serebii') && news.length ? [newsLink] : []), ...(events.length || result ? [eventsLink] : [])].filter(Boolean).slice(0, 9);
 }

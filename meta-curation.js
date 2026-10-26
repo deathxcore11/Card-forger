@@ -16,7 +16,9 @@ export function sourceDate(value) {
 function sourceUrl(value, game) {
   try {
     const u = new URL(value); if (u.protocol !== 'https:' || u.username || u.password || u.port || u.hash || /[\u0000-\u0020\\]|%2f|%5c|%2e/i.test(value)) return '';
-    const ok = game === 'ygo' ? u.hostname === 'ygoprodeck.com' && /^\/deck\/[a-zA-Z0-9-]+\/?$/.test(u.pathname) : game === 'ptcg' ? u.hostname === 'play.limitlesstcg.com' && /^\/tournament\/[a-zA-Z0-9_-]+\/player\/[^/]+\/decklist$/.test(u.pathname) : ['www.mtgo.com','mtgo.com'].includes(u.hostname) ? /^\/decklist\/[a-z0-9-]+$/.test(u.pathname) : u.hostname === 'topdeck.gg' ? /^\/event\/[a-zA-Z0-9_-]+$/.test(u.pathname) : u.hostname === 'edhtop16.com' && /^\/(?:tournament|commander)\//.test(u.pathname);
+    const ok = game === 'ygo' ? u.hostname === 'ygoprodeck.com' && /^\/deck\/[a-zA-Z0-9-]+\/?$/.test(u.pathname) : game === 'ptcg' ? u.hostname === 'play.limitlesstcg.com' && /^\/tournament\/[a-zA-Z0-9_-]+\/player\/[^/]+\/decklist$/.test(u.pathname) : ['www.mtgo.com','mtgo.com'].includes(u.hostname) ? /^\/decklist\/[a-z0-9-]+$/.test(u.pathname) : u.hostname === 'topdeck.gg' ? /^\/event\/[a-zA-Z0-9_-]+$/.test(u.pathname) : u.hostname === 'www.mtgtop8.com' && u.pathname === '/event';
+    // An MTGTop8 event or deck link is only its numeric event, optional deck and the cEDH format.
+    if (ok && u.hostname === 'www.mtgtop8.com') return /^\?e=\d{1,9}(?:&d=\d{1,9})?&f=cEDH$/.test(u.search) ? u.href : '';
     return ok && !u.search ? u.href : '';
   } catch { return ''; }
 }

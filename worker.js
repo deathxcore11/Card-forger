@@ -28,7 +28,7 @@ import {magicSetArtwork,packArtwork} from "./set-art.js";
 const CARD_BACKS={mtg:'https://backs.scryfall.io/normal/0/a/0aeebaf5-8c7d-4636-9e82-8c27447861f7.jpg',ptcg:'https://tcg.pokemon.com/assets/img/global/tcg-card-back-2x.jpg',ygo:'https://images.ygoprodeck.com/images/cards/back_high.jpg'};
 import { watchRoute, historyRoute, recordDailyPrices } from "./pricefeed.js";
 import { TOPDECK_API, TOPDECK_FORMATS, WARM_FORMATS, normalizeTopdeck, topdeckBody } from "./topdeck.js";
-import { MTGO_SLUGS, MTGO_INDEX, mtgoEventSlugs, parseMtgoEvent, normalizeMtgo, EDHTOP16_API, edhtop16Query, normalizeEdhtop16 } from "./mtgmeta.js";
+import { MTGO_SLUGS, MTGO_INDEX, mtgoEventSlugs, parseMtgoEvent, normalizeMtgo, MTGTOP8_FORMAT, mtgtop8Events, mtgtop8Pages, pickMtgtop8Events, mtgtop8EventUrl, parseMtgtop8Event, mtgtop8ExportUrl, parseMtgtop8Export, normalizeMtgtop8 } from "./mtgmeta.js";
 // Cloudflare Worker: serves the static site, plus a cached image route for
 // Yu-Gi-Oh! card art and Pokémon set/rarity symbols (from pokesymbols.com). Each image
 // is fetched once and kept in Cloudflare's cache for 30 days instead of being hotlinked.
@@ -62,7 +62,7 @@ const json = (body, status = 200, maxAge = 0) =>
 const mtgKey = (format, days, kind = "fresh") => new Request(`https://cardforge.cache/mtg/${kind}/${encodeURIComponent(format)}/${days}`);
 
 const UA = { "User-Agent": "CardStashy deck helper (cached, a few requests a day)" };
-// Keyless sources first: Magic Online's official decklists, EDHTop16 for Commander.
+// Keyless sources first: Magic Online's official decklists, MTGTop8 for Commander.
 async function fetchMtgo(format, days) {
   const idx = await fetch(MTGO_INDEX, { headers: UA });
   if (!idx.ok) throw Error("Magic Online decklists unavailable (" + idx.status + ")");
@@ -71,18 +71,64 @@ async function fetchMtgo(format, days) {
   const pages = await Promise.all(slugs.map((x) => fetch("https://www.mtgo.com/decklist/" + x.slug, { headers: UA }).then((r) => (r.ok ? r.text() : "")).then(parseMtgoEvent).catch(() => null)));
   return { ...normalizeMtgo(pages.filter(Boolean), { format, days }), fetchedAt: new Date().toISOString() };
 }
-async function fetchEdhtop16() {
-  const r = await fetch(EDHTOP16_API, { method: "POST", headers: { ...UA, "Content-Type": "application/json" }, body: JSON.stringify(edhtop16Query()) });
-  if (!r.ok) throw Error("EDHTop16 unavailable (" + r.status + ")");
-  const body = await r.json();
-  // A refused query is an outage, not an empty month of tournaments.
-  if (!body?.data && Array.isArray(body?.errors)) throw Error("EDHTop16 refused the request: " + String(body.errors[0]?.message || body.errors[0] || "unknown").slice(0, 160));
-  return { ...normalizeEdhtop16(body), fetchedAt: new Date().toISOString() };
+// MTGTop8 serves Latin-1 HTML. A reply that is not a page (an error or a bot check) is an
+// outage, so the last good lists stay instead of an empty month.
+async function mtgtop8Text(url, { page = true } = {}) {
+  const r = await fetch(url, { headers: UA });
+  if (!r.ok) throw Error("MTGTop8 unavailable (" + r.status + ")");
+  const type = r.headers.get("Content-Type") || "";
+  if (page ? !/text\/html/i.test(type) : !/text\/plain/i.test(type)) throw Error("MTGTop8 sent an unexpected reply");
+  return new TextDecoder(/utf-8/i.test(type) ? "utf-8" : "windows-1252").decode(await r.arrayBuffer());
+}
+// Deck lists never change once published: each is kept for a month and fetched once.
+const deckKey = (id) => new Request(`https://cardforge.cache/mtgtop8/deck/${encodeURIComponent(id)}`);
+const MTGTOP8_EVENTS = 8,
+  MTGTOP8_PLACES = 4,
+  MTGTOP8_NEW_LISTS = 40;
+async function fetchMtgtop8(days = 14) {
+  const first = await mtgtop8Text(MTGTOP8_FORMAT),
+    found = mtgtop8Events(first);
+  if (!found.length) throw Error("MTGTop8 listed no Commander events");
+  const more = mtgtop8Pages(first)[0];
+  if (more) found.push(...mtgtop8Events(await mtgtop8Text(more).catch(() => "")));
+  const picked = pickMtgtop8Events(found, { days, limit: MTGTOP8_EVENTS });
+  const events = (
+    await Promise.all(
+      picked.map((e) =>
+        mtgtop8Text(mtgtop8EventUrl(e.id))
+          .then((html) => ({ ...parseMtgtop8Event(html, e.id), name: e.name }))
+          .catch(() => null),
+      ),
+    )
+  )
+    .filter((e) => e && e.entries.length)
+    .map((e) => ({ ...e, date: e.date || picked.find((p) => p.id === e.id).date, entries: e.entries.filter((x) => x.rank <= MTGTOP8_PLACES) }));
+  const cache = caches.default,
+    lists = new Map();
+  let fetched = 0;
+  for (const e of events)
+    for (const { deckId } of e.entries) {
+      if (lists.has(deckId)) continue;
+      const hit = await cache.match(deckKey(deckId));
+      if (hit) {
+        lists.set(deckId, await hit.json());
+        continue;
+      }
+      if (fetched >= MTGTOP8_NEW_LISTS) continue;
+      fetched++;
+      const list = parseMtgtop8Export(await mtgtop8Text(mtgtop8ExportUrl(deckId), { page: false }).catch(() => ""));
+      if (!list) continue;
+      lists.set(deckId, list);
+      await cache.put(deckKey(deckId), json(list, 200, LAST_GOOD_TTL));
+    }
+  const data = normalizeMtgtop8(events, lists, { days });
+  if (!data.decks.length) throw Error("MTGTop8 returned no Commander lists");
+  return { ...data, fetchedAt: new Date().toISOString() };
 }
 async function fetchMtg(env, format, days) {
   if (format === "EDH") {
     try {
-      return await fetchEdhtop16();
+      return await fetchMtgtop8(Math.min(days, 14));
     } catch (e) {
       if (!env.TOPDECK_KEY) throw e;
     }
@@ -123,7 +169,7 @@ async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
 async function mtgRoute(url, env, ctx) {
   const days = [7, 14, 30, 60, 90].includes(Number(url.searchParams.get("days"))) ? Number(url.searchParams.get("days")) : 30;
   if (url.pathname === "/api/meta/mtg/coverage") {
-    if (!env.TOPDECK_KEY) return json({ error: "not_configured", message: "The TopDeck.gg coverage report needs the TOPDECK_KEY secret. Magic Online and EDHTop16 data work without it." }, 503);
+    if (!env.TOPDECK_KEY) return json({ error: "not_configured", message: "The TopDeck.gg coverage report needs the TOPDECK_KEY secret. Magic Online and MTGTop8 data work without it." }, 503);
     const rows = [];
     for (const f of WARM_FORMATS) {
       try {
