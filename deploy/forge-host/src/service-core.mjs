@@ -3,6 +3,7 @@
 import { MatchAuthority, GatewayDriver, verifyHostUser, boundedJSON,
   FORGE_REVISION, NATIVE_SCHEMA, digest, abortable } from './policy.mjs';
 import { ProvisionalAdmissionLedger } from './provisional-ledger.mjs';
+import { validateExactDeckInput } from './vendor/host001/admission-ledger.mjs';
 import { admissionPolicy, allowsAccount, reserveAdmissionBudget, settleAdmissionBudget } from './admission-policy.mjs';
 export const ORIGIN = 'https://cardstashy.com';
 export const GLOBAL_NAME = 'forge-global-admission-v1';
@@ -11,7 +12,8 @@ const UUID_RE = new RegExp('^' + UUID + '$', 'i');
 const MATCH_PATH = new RegExp('^/api/play/matches/(' + UUID + ')(/actions)?$', 'i');
 const safeText = text => String(text).replace(/[^A-Za-z0-9 _.:-]/g, '').replace(/ +/g, ' ').slice(0, 160) || 'unknown';
 const startupFailure = failure => safeText(failure?.message || failure?.name || 'unknown');
-const STARTUP_MS = 120_000, IDLE_MS = 600_000, RETAIN_MS = 86_400_000;
+const STARTUP_MS = 120_000, IDLE_MS = 600_000, RETAIN_MS = 86_400_000, REPLACE_MS = 20_000;
+const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{16,128}$/;
 const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...extra },
 });
@@ -107,9 +109,14 @@ export class AdmissionService {
     if (!this.native.ready) return error('exact_native_adapter_unavailable', 503);
     try { this.native.validateAdmissionInput?.(input); }
     catch { return error('unsupported_explicit_cpu_policy', 422); }
+    // Only a start that can actually be reserved may end the account's previous match.
+    const idempotencyKey = request.headers.get('Idempotency-Key');
+    try { validateExactDeckInput(input); } catch { return error('invalid_match_input', 400); }
+    if (!IDEMPOTENCY_KEY.test(idempotencyKey || '')) return error('invalid_match_input', 400);
+    await this.endPreviousMatch(user.id, idempotencyKey);
     let result;
     try { result = await this.ledger.reserveProvisional({ ownerId: user.id,
-      idempotencyKey: request.headers.get('Idempotency-Key'), input,
+      idempotencyKey, input,
       lifetimeMs: access.mode === 'trial' ? Math.min(access.matchMs, access.expiresAt - this.now()) : access.matchMs,
       reserveGuard: (txn, allocation) => reserveAdmissionBudget(txn, allocation, access, this.now()) }); }
     catch { return error('invalid_match_input', 400); }
@@ -133,6 +140,23 @@ export class AdmissionService {
       else await startup; // explicit local fixture contexts may omit waitUntil
     }
     return json({ ...publicAllocation(allocation), status: 'initializing', admissionState: 'provisional_native_validation_required', replay: result.replay }, 202);
+  }
+  // A new start ends the same account's previous match. Its lease is released only
+  // on that match's own destruction proof, like any close. If that proof is not
+  // available in time, the reservation below refuses as before
+  // (user_has_active_allocation); nothing is retried on the player's behalf.
+  async endPreviousMatch(ownerId, idempotencyKey) {
+    const previous = (await this.storage.get('leases') || []).filter(lease => lease.ownerId === ownerId);
+    if (!previous.length) return;
+    // A replayed create returns its own match; it must never end it.
+    const receipt = await this.storage.get('create:' + await digest({ ownerId, idempotencyKey }));
+    if (receipt && previous.some(lease => lease.matchId === receipt.allocation?.matchId && lease.generation === receipt.allocation?.generation)) return;
+    for (const lease of previous) {
+      try {
+        const ended = await abortable(this.env.FORGE_MATCHES.getByName(lease.matchId).endForNewStart(lease), AbortSignal.timeout(REPLACE_MS));
+        if (ended?.confirmed === true) await this.release(lease.matchId, lease.generation);
+      } catch { /* unconfirmed: the lease stays and the alarm keeps reconciling it */ }
+    }
   }
   // Private read-only namespace RPC for create202 -> first GET before begin has
   // persisted the per-match record. A UUID alone never establishes ownership.
@@ -198,6 +222,9 @@ export class MatchService {
     // Serialize external interactions as well as storage. A close cannot race a
     // readiness/start or a previously authenticated action in this isolate.
     this.tail = Promise.resolve();
+    // Generation a new start of the same account asked to end, seen by a start
+    // still opening in the serial queue.
+    this.replacing = null;
   }
   serial(fn) { const result = this.tail.then(fn); this.tail = result.catch(() => {}); return result; }
   container() { if (!this.ctx.container) throw new Error('container_binding_missing'); return this.ctx.container; }
@@ -247,12 +274,15 @@ export class MatchService {
     const began = this.now();
     let step = 'options', exited = null, lastPoll = 'none';
     const containerExited = () => exited && Object.assign(new Error('container_exited'), { containerExited: true });
+    const replaced = () => this.replacing === allocation.generation && Object.assign(new Error('replaced_by_new_start'), { replaced: true });
+    const stopIfReplaced = () => { const failure = replaced(); if (failure) throw failure; };
     try {
       // The native bridge owns exact snapshot transport. Persisted initializing
       // means any crash before/after start is ambiguous and MUST NOT restart.
       const options = await this.native.startOptions({ input, allocation, internalToken: token });
       if (options?.enableInternet !== false || options?.env?.HOST_INTERNAL_TOKEN !== token || options?.env?.HOST_ABSOLUTE_DEADLINE_MS !== String(allocation.expiresAt)) throw new Error('unsafe_native_start_options');
       step = 'start';
+      stopIfReplaced();
       if (this.container().running) throw new Error('unexpected_existing_container');
       this.container().start(options);
       // Observe the container's own end (an exit code or a platform stop) without
@@ -265,12 +295,13 @@ export class MatchService {
       if (this.native.bootstrapExisting) {
         step = 'bootstrap';
         await this.native.bootstrapExisting({ input, allocation, internalToken: token,
-          deadline: record.startupDeadline, now: this.now, wait: this.wait,
-          fetchExisting: request => { const gone = containerExited(); if (gone) throw gone; if (!this.container().running) throw new Error('native_not_running'); return this.container().getTcpPort(8080).fetch(request); } });
+          deadline: record.startupDeadline, now: this.now, wait: async ms => { stopIfReplaced(); await this.wait(ms); stopIfReplaced(); },
+          fetchExisting: request => { stopIfReplaced(); const gone = containerExited(); if (gone) throw gone; if (!this.container().running) throw new Error('native_not_running'); return this.container().getTcpPort(8080).fetch(request); } });
       }
       step = 'ready';
       let ready = false, validationFailure = null;
       while (this.now() < record.startupDeadline) {
+        stopIfReplaced();
         const gone = containerExited(); if (gone) throw gone;
         if (!this.container().running) { lastPoll = 'not running'; await this.wait(250); continue; }
         try {
@@ -296,12 +327,14 @@ export class MatchService {
         throw Object.assign(new Error('native_exact_validation_rejected'), { nativeRejected: true });
       }
       if (!ready) throw new Error('startup_deadline last ' + lastPoll);
+      stopIfReplaced();
       step = 'confirm';
       // Must compare native accepted raw snapshot digests/policy against this
       // allocation, not merely observe /ready or a plausible opening hand.
       const initialized = await this.native.confirmInitialization({ allocation, input, epoch: record.epoch,
         internalToken: token, fetchExisting: r => this.container().getTcpPort(8080).fetch(r) });
       if (!Number.isSafeInteger(initialized?.viewerId) || initialized.viewerId < 0 || initialized.schema !== NATIVE_SCHEMA || initialized.engineRevision !== FORGE_REVISION || initialized.policyVersion !== input.difficultyPolicyVersion || initialized.humanDigest !== allocation.deckDigests.human || initialized.opponentDigest !== allocation.deckDigests.opponent) throw new Error('native_initialization_receipt_mismatch');
+      stopIfReplaced();
       step = 'authority';
       record.status = 'running'; await this.storage.put('allocation', record);
       const authority = await this.authority(record);
@@ -316,7 +349,7 @@ export class MatchService {
         record.failure = safeText('at ' + step + ' ' + seconds + 's: ' + startupFailure(failure) + (exited ? ' container ' + exited : ''));
         await this.storage.put('allocation', record);
       } catch { /* cleanup still runs */ }
-      await this.cleanup(record, failure.nativeRejected ? 'native_exact_validation_rejected' : 'startup_interrupted');
+      await this.cleanup(record, failure.nativeRejected ? 'native_exact_validation_rejected' : failure.replaced ? 'replaced' : 'startup_interrupted');
       return { status: 'interrupted' };
     }
   }
@@ -439,6 +472,26 @@ export class MatchService {
       delete current.internalToken; await this.storage.put('allocation', current);
       return true;
     } catch { return false; }
+  }
+  // Private namespace-only RPC from admission for the same account's next start.
+  // The flag is set before queueing so a start still opening stops at its next
+  // check instead of holding the queue until its startup deadline.
+  endForNewStart(allocation) {
+    if (!UUID_RE.test(allocation?.matchId || '') || !UUID_RE.test(allocation?.generation || '') || !UUID_RE.test(allocation?.ownerId || '')) return Promise.resolve({ confirmed: false });
+    this.replacing = allocation.generation;
+    return this.serial(async () => {
+      let record = await this.storage.get('allocation');
+      if (!record) {
+        // Begin never ran here: a tombstone first, so a delayed begin cannot start it.
+        record = { ...allocation, status: 'interrupted', reason: 'replaced', lastAuthorizedAt: allocation.createdAt, retainUntil: this.now() + RETAIN_MS };
+        await this.storage.put('allocation', record);
+      }
+      if (record.generation !== allocation.generation || record.ownerId !== allocation.ownerId) return { confirmed: false };
+      if (await this.storage.get('destructionConfirmed') !== true) {
+        await this.cleanup(record, ['running', 'initializing'].includes(record.status) ? 'replaced' : record.reason || 'interrupted');
+      }
+      return { confirmed: await this.storage.get('destructionConfirmed') === true };
+    }).finally(() => { if (this.replacing === allocation.generation) this.replacing = null; });
   }
   destructionProof(generation) { return this.serial(async () => {
     const record = await this.storage.get('allocation');

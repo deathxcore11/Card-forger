@@ -131,16 +131,19 @@ test('replay and close do not refund or duplicate runtime charges; the next day 
   assert.equal((await f.create({ token: 'other' })).response.status, 202);
   assert.equal(f.calls.start, 2);
 });
-test('authenticated access retains one active match per account and two globally', async () => {
+test('authenticated access keeps one active match per account and two globally', async () => {
   const f = authenticatedFixture();
-  assert.equal((await f.create()).response.status, 202);
-  assert.equal((await f.create({ headers: { 'Idempotency-Key': 'new_authenticated_key' } })).response.status, 409);
+  const first = await f.create(); assert.equal(first.response.status, 202);
+  // A new start of the same account replaces its previous match instead of refusing.
+  const second = await f.create({ headers: { 'Idempotency-Key': 'new_authenticated_key' } });
+  assert.equal(second.response.status, 202); assert.notEqual(second.body.matchId, first.body.matchId);
+  assert.deepEqual((await f.storage.get('leases')).map(l => l.matchId), [second.body.matchId]);
   assert.equal((await f.create({ token: 'other' })).response.status, 202);
   const thirdResult = await f.create({ token: 'third' });
   assert.equal(thirdResult.response.status, 503);
   assert.equal(thirdResult.body.error, 'global_match_capacity');
-  assert.equal((await f.storage.get('play-runtime-budget')).entries.length, 2);
-  assert.equal(f.calls.start, 2);
+  assert.equal((await f.storage.get('play-runtime-budget')).entries.length, 3);
+  assert.equal(f.calls.start, 3);
 });
 test('default native adapter fails closed before reservation and any provider call', async () => {
   const f = fixture(); f.admission.native = { ready: false };
@@ -171,10 +174,85 @@ test('creation preserves existing snapshot metadata/commander count and replay n
   const changed = input(); changed.humanDeck.cards[0].qty = 2; assert.equal((await f.create({ body: changed })).response.status, 409);
 });
 test('one allocation per user, two globally; no provider startup after rejection', async () => {
-  const f = fixture(); await f.create();
-  assert.equal((await f.create({ headers: { 'Idempotency-Key': 'different_fixture_key' } })).response.status, 409);
+  const f = fixture(); const first = await f.create();
+  const second = await f.create({ headers: { 'Idempotency-Key': 'different_fixture_key' } });
+  assert.equal(second.response.status, 202); assert.equal(f.containers.get(first.body.matchId).running, false);
   assert.equal((await f.create({ token: 'other' })).response.status, 202);
-  assert.equal((await f.create({ token: 'third' })).response.status, 503); assert.equal(f.calls.start, 2);
+  assert.equal((await f.create({ token: 'third' })).response.status, 503); assert.equal(f.calls.start, 3);
+});
+test('a new start ends the same account\'s running match on its own destruction proof', async () => {
+  const f = fixture(); const first = await f.create(); const oldPath = '/api/play/matches/' + first.body.matchId;
+  assert.equal((await f.route(request(oldPath, { method: 'GET' }))).status, 200);
+  const next = await f.create({ headers: { 'Idempotency-Key': 'replacement_start_0001' } });
+  assert.equal(next.response.status, 202); assert.equal(f.calls.start, 2); assert.equal(f.calls.destroy, 1);
+  assert.equal(f.containers.get(first.body.matchId).running, false);
+  assert.deepEqual((await f.storage.get('leases')).map(l => l.matchId), [next.body.matchId]);
+  const old = await f.route(request(oldPath, { method: 'GET' })); assert.equal(old.status, 410);
+  assert.deepEqual(await old.json(), { error: 'match_interrupted', reason: 'replaced' });
+  // The replacement is still the owner's live match; another account is untouched.
+  assert.equal((await f.route(request('/api/play/matches/' + next.body.matchId, { method: 'GET' }))).status, 200);
+  assert.equal((await f.route(request(oldPath, { method: 'GET', token: 'other' }))).status, 404);
+});
+test('a replayed start returns its own match and never ends it', async () => {
+  const f = fixture(); const first = await f.create(); const replay = await f.create();
+  assert.equal(replay.body.matchId, first.body.matchId); assert.equal(replay.body.replay, true);
+  assert.equal(f.calls.destroy, 0); assert.equal(f.containers.get(first.body.matchId).running, true);
+});
+test('another account\'s start never ends someone else\'s match', async () => {
+  const f = fixture(); const mine = await f.create(); await f.create({ token: 'other' });
+  assert.equal(f.calls.destroy, 0); assert.equal(f.containers.get(mine.body.matchId).running, true);
+});
+test('an invalid start leaves the previous match running', async () => {
+  const f = fixture(); const first = await f.create();
+  const bad = input(); bad.humanDeck = null;
+  assert.equal((await f.create({ body: bad, headers: { 'Idempotency-Key': 'invalid_replacement_0001' } })).response.status, 400);
+  assert.equal((await f.create({ headers: { 'Idempotency-Key': 'short' } })).response.status, 400);
+  assert.equal(f.calls.destroy, 0); assert.equal(f.containers.get(first.body.matchId).running, true);
+  assert.equal((await f.storage.get('leases')).length, 1);
+});
+test('an unconfirmed end keeps the previous lease and refuses the new start without retrying', async () => {
+  const f = fixture(); const first = await f.create(); f.containers.get(first.body.matchId).failStop = true;
+  const blocked = await f.create({ headers: { 'Idempotency-Key': 'unconfirmed_replace_0001' } });
+  assert.equal(blocked.response.status, 409); assert.equal(blocked.body.error, 'user_has_active_allocation');
+  assert.equal(f.calls.start, 1); assert.deepEqual((await f.storage.get('leases')).map(l => l.matchId), [first.body.matchId]);
+  f.containers.get(first.body.matchId).failStop = false;
+  const next = await f.create({ headers: { 'Idempotency-Key': 'unconfirmed_replace_0002' } });
+  assert.equal(next.response.status, 202); assert.equal(f.calls.start, 2);
+});
+test('a start still opening is stopped by the next start instead of holding it until the deadline', async () => {
+  const f = fixture(); let opening = null;
+  f.admission.ctx.waitUntil = promise => { opening = promise; };
+  const first = await f.create(); const container = f.containers.get(first.body.matchId);
+  // Readiness never succeeds, so the first start keeps polling inside its serial queue.
+  container.failRead = true;
+  f.matches.get(first.body.matchId).wait = () => new Promise(resolve => setTimeout(resolve, 1));
+  await new Promise(resolve => setTimeout(resolve, 5));
+  assert.equal((await f.stores.get(first.body.matchId).get('allocation')).status, 'initializing');
+  const next = await f.create({ headers: { 'Idempotency-Key': 'opening_replace_0001' } });
+  assert.equal(next.response.status, 202);
+  assert.equal((await opening)?.status, undefined); // begin's own release found the lease already gone
+  const record = await f.stores.get(first.body.matchId).get('allocation');
+  assert.equal(record.status, 'interrupted'); assert.equal(record.reason, 'replaced');
+  assert.match(record.failure, /^at (?:ready|bootstrap) [0-9.]+s: replaced_by_new_start/);
+  assert.equal(container.running, false); assert.equal(f.calls.start, 2);
+  assert.deepEqual((await f.storage.get('leases')).map(l => l.matchId), [next.body.matchId]);
+});
+test('a previous lease whose begin never ran is tombstoned before it is released', async () => {
+  const f = fixture(); const lost = [];
+  const getByName = f.env.FORGE_MATCHES.getByName.bind(f.env.FORGE_MATCHES);
+  // The first begin RPC is lost in transit: it never reaches the match.
+  f.env.FORGE_MATCHES.getByName = id => { const match = getByName(id); if (!lost.length) { lost.push(id); return { ...match, begin: async () => undefined, endForNewStart: a => match.endForNewStart(a), destructionProof: g => match.destructionProof(g) }; } return match; };
+  const first = await f.create(); assert.equal(lost[0], first.body.matchId);
+  assert.equal(await f.stores.get(first.body.matchId).get('allocation'), undefined);
+  const next = await f.create({ headers: { 'Idempotency-Key': 'lost_begin_replace_0001' } });
+  assert.equal(next.response.status, 202); assert.equal(f.calls.start, 1);
+  const tomb = await f.stores.get(first.body.matchId).get('allocation');
+  assert.equal(tomb.status, 'interrupted'); assert.equal(tomb.reason, 'replaced');
+  assert.deepEqual((await f.storage.get('leases')).map(l => l.matchId), [next.body.matchId]);
+  // A begin that arrives late for the replaced lease finds the tombstone and never starts.
+  const lease = { matchId: tomb.matchId, generation: tomb.generation, ownerId: tomb.ownerId, deckDigests: tomb.deckDigests, requestDigest: tomb.requestDigest, createdAt: tomb.createdAt, expiresAt: tomb.expiresAt, admissionState: tomb.admissionState };
+  await assert.rejects(getByName(first.body.matchId).begin(lease, input()), /unreserved_allocation_or_changed_input/);
+  assert.equal(f.calls.start, 1); assert.equal(f.containers.get(first.body.matchId).running, false);
 });
 test('unknown/other-owner state returns same 404 with no container access', async () => {
   const f = fixture(); const { body } = await f.create(); const before = f.calls.port;
