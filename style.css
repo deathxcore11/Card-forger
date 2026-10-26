@@ -5181,3 +5181,8 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .scan-fix.is-open .scan-fix-toggle::after{transform:rotate(180deg)}
 .scan-fix .scan-lookup{margin:6px 0 10px;padding-top:0;border-top:0}
 @media (max-width:420px){.scan-finish{grid-template-columns:minmax(0,1fr) auto}.scan-finish-label{grid-column:1/-1}.scan-finish .scan-chips{grid-column:1}}
+
+/* Release notices stay outside an active match and never clear saved data. */
+.website-update-notice{position:fixed;z-index:10010;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:16px;width:max-content;max-width:calc(100vw - 32px);padding:14px 18px;background:#18222bf5;border:1px solid #e4bd5b80;box-shadow:0 12px 36px #0007;border-radius:16px;font-size:14px}
+.website-update-notice[hidden]{display:none}.website-update-notice .btn{flex-shrink:0;min-height:44px}
+@media(max-width:600px){.website-update-notice{flex-direction:column;align-items:stretch;gap:10px}}

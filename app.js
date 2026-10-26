@@ -13,16 +13,15 @@ document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]'
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
 import {syncDesktopPlayEntries,playDeviceGuardText,watchPlayDeviceEligibility} from './desktop-play.js';
 import {createPlaySetup} from './play-setup.js';
-import {FORGE_PLAY_TEST_ENABLED} from './play-forge-feature.js';
+// Coupled to this entry module: a stale feature-flag module must never select a different engine.
+const PLAY_WEB_BUILD='4.1.1';
+import {registerWebsiteUpdates} from './website-updates.js';
+let websiteUpdates=null;
 import {forgeDeckSupport} from './play-forge-setup-review.js';
 import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
-import {createPlayerMat} from './play-player-mat.js';
-import {createPracticeCardPreparation} from './play-card-preparation.js';
 import {createForgeArtworkPreparation} from './play-forge-artwork.js';
-import {createPracticeCatalogReview} from './play-catalog-review.js';
-import {mountPracticePregame,resolvePracticePregame} from './play-pregame.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -1513,7 +1512,7 @@ A.playFindOpponent=async()=>{
  const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
  try{const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck),state.selected];
- const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
+ const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true,estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
 };
@@ -1548,11 +1547,11 @@ A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profil
 // Product activation stays gated until the real-deck/pregame/difficulty gates
 // pass. The account/table lifecycle below is testable independently of activation.
 const PLAY_MATCH_RELEASE_READY=true;
-let playerMatHost=null,playerMatRoot=null,practicePregame=null,playStarting=false;
-function closePlayerMat(){practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
+let playerMatHost=null,playerMatRoot=null,playStarting=false;
+function closePlayerMat(){playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');websiteUpdates?.refresh();const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
 A.playStartCandidate=async()=>{
  if(!PLAY_MATCH_RELEASE_READY)return toast('Practice integration is still being verified.');
- if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
+ if(playStarting||playerMatHost||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
  playStarting=true;
  try{
  const initial=playSetup.snapshot();
@@ -1561,29 +1560,18 @@ A.playStartCandidate=async()=>{
  const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
  if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
- const beginGame=async options=>{
-  practicePregame?.destroy();practicePregame=null;
+ const beginGame=async()=>{
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
-  if(FORGE_PLAY_TEST_ENABLED){
    if(!document.getElementById('forgeHostedTableStyles')){const css=document.createElement('link');css.id='forgeHostedTableStyles';css.rel='stylesheet';css.href='play-forge-table.css';document.head.append(css);}
    const {createForgePlayerMat}=await import('./play-forge-player-mat.js');if(!current()||!playerMatRoot)return;
    const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
     resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
     lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
-   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,
+   playerMatHost=createForgePlayerMat({root:playerMatRoot,webBuild:PLAY_WEB_BUILD,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,
     prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();}});
-   try{await playerMatHost.start();}catch{/* The match screen presents the error and recovery action. */}return;
-  }
-  const cards=createPracticeCardPreparation({selectionKey:key,isCurrent:current,
-   resolveNames:names=>resolveNames(names,()=>{},false,current),
-   lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),
-   fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
-  playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:cards.prepare,reviewDecks:createPracticeCatalogReview({isCurrent:current,lookupNames:identifiers=>api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers})})}),lookup:cards.lookup,onClose:closePlayerMat,onSaveDeck:savePlayDeck,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();}});
-  try{await playerMatHost.start(options);}catch(e){toast(e.message);}
+   try{await playerMatHost.start();}catch{/* The native match screen owns the error. Never fall back to legacy rules. */}
  };
- if(FORGE_PLAY_TEST_ENABLED)await beginGame({}); // Forge owns its opening decisions.
- else if(source.playStyle==='quick')await beginGame(resolvePracticePregame('random'));
- else practicePregame=mountPracticePregame({root:playerMatRoot,renderDeckArtwork:deck=>{const art=document.createElement('div');art.className='play-pregame-art';art.innerHTML=V.deckArtwork(deck);return art;},readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),onCancel:closePlayerMat,onConfirm:beginGame});
+ await beginGame(); // All supported formats use the authenticated hosted Forge route.
  }finally{playStarting=false;}
 };
 function playDeckPreview(deck) {
@@ -1597,7 +1585,7 @@ function renderPlayPage() {
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:(state.playStyle!=='quick'&&state.inspectedSeat==='opponent'?state.opponentSource==='saved'&&state.opponent?.id===deck.id:state.selectedSource==='saved'&&state.selected?.id===deck.id)}));}
   const inspected=state.match.mode==='cpu'&&state.inspectedSeat==='opponent'?state.opponent:state.selected;
-  return playMenuMarkup(state,{engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent)}});
+  return playMenuMarkup(state,{engine:'forge',webBuild:PLAY_WEB_BUILD,sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:'forge'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent)}});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
@@ -6672,14 +6660,7 @@ async function boot() {
       render();
     }
   });
-  if ("serviceWorker" in navigator) {
-    // The app opens from its saved copy. A release that arrives in the first moments, before anything
-    // has been touched, is switched to straight away; otherwise it is used from the next open.
-    const updating = !!navigator.serviceWorker.controller, opened = Date.now();let touched = false;
-    for (const type of ["pointerdown", "keydown"]) addEventListener(type, () => { touched = true; }, { once: true, capture: true });
-    navigator.serviceWorker.addEventListener("controllerchange", () => { if (updating && !touched && Date.now() - opened < 12000 && !document.querySelector("dialog[open]")) location.reload(); });
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
-  }
+  websiteUpdates=registerWebsiteUpdates({window,document,version:PLAY_WEB_BUILD,isPlaying:()=>!!playerMatRoot});
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.
   // TCGplayer prices for printings Scryfall leaves unpriced arrive in the background.
   window.addEventListener("cf:tcg-prices", () => { refreshHomeValueGlance(); if (S.ui.sheetCtx?.type === "card" && $("#sheet").open) refreshSheet(); else if (S.ui.view !== "home") render(); });

@@ -1,5 +1,7 @@
-const CACHE = "cardforge-shell-v326-forge-live";
+const CACHE = "cardforge-shell-v327-forge-only";
+const WEB_VERSION = "4.1.1";
 const ASSETS = [
+  "./website-updates.js",
   "./play-forge-feature.js",
   "./play-forge-cpu-policy.js",
   "./play-forge-setup-review.js",
@@ -293,9 +295,12 @@ self.addEventListener("activate", (e) =>
             .map((k) => caches.delete(k)),
         ),
       )
-      .then(() => self.clients.claim()),
+      .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({type:'window'}))
+      .then(clients => { for(const client of clients)client.postMessage({type:'CARDSTASHY_RELEASE_READY',version:WEB_VERSION}); }),
   ),
 );
+self.addEventListener('message',e=>{if(e.data?.type==='CARDSTASHY_RELEASE_QUERY')e.source?.postMessage({type:'CARDSTASHY_RELEASE_READY',version:WEB_VERSION});});
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== self.location.origin) return;
@@ -338,6 +343,22 @@ self.addEventListener("fetch", (e) => {
   // The app's own scripts are versioned with this worker: they open from the saved copy at once (no
   // network round trip per module) and refresh in the background in case of a same-version fix.
   const appPage = e.request.mode === "navigate" && PAGES.has(url.pathname);
+  // Play's entry and adapters must not select last release's engine while a
+  // background refresh downloads the new one. Prefer current network bytes;
+  // the fully precached release remains available offline or on a stalled link.
+  const playEntry=/\/(?:app|config|release-record|website-updates)\.js$/.test(url.pathname)||/\/play-[^/]+\.js$/.test(url.pathname)||url.pathname.includes('/experiments/forge-proof/');
+  if(appPage||playEntry){
+    const key=appPage?'./index.html':url.pathname+url.search;
+    e.respondWith((async()=>{
+      const cache=await caches.open(CACHE),saved=await cache.match(key),controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),7000);
+      try{
+        const response=await fetch(new Request(e.request,{cache:'reload',signal:controller.signal}));
+        if(response.ok&&response.type==='basic'&&!response.redirected){await cache.put(key,response.clone());return response;}
+        return saved||response;
+      }catch{return saved||Response.error();}finally{clearTimeout(timer);}
+    })());return;
+  }
   if (appPage || (e.request.mode !== "navigate" && SHELL.has(url.pathname))) {
     const key = appPage ? "./index.html" : url.pathname;
     e.respondWith(
