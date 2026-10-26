@@ -1,0 +1,41 @@
+{
+  "scope": "same-origin acceptance mount; production root unchanged",
+  "sourceCommit": "a93ff540793d014947fec260d873eaa385ff7102",
+  "productionCommit": "7a91d7757ff1ac7e1d83a904a294b48a44ed1f32",
+  "url": "https://cardstashy.com/__forge-acceptance/#play",
+  "worker": "cardstashy-forge-acceptance",
+  "workerTag": "d042453d93dc42a4a77677996ad1e550",
+  "version": "20969f02-2f05-4449-8a92-1a1770634ac0",
+  "deployment": "d74a8b9a-083f-470e-982f-623660805127",
+  "routeId": "1c88d1a73aae4884a5394dcbe8937d04",
+  "route": "cardstashy.com/__forge-acceptance/*",
+  "bundleSha256": "5072c8735cd21bb6d7c7779b5beb63f2dec2e7b96d92a53e584941ee2eef3962",
+  "hostWorkerVersion": "737a8dd0-71c6-4f89-931e-928d5e330dcd",
+  "imageDigest": "sha256:28ee1b2306e44aa13ab9d3f7263bf87dffff16626ea63b4680d1d7a586e6ef62",
+  "imageBuildRun": 40377005373,
+  "verified": {
+    "browserLoaded": true,
+    "formatsVisible": [
+      "Standard",
+      "Commander",
+      "Modern"
+    ],
+    "defaultCpu": "Medium · Experimental beta",
+    "normalDeckSourcesVisible": true,
+    "privateHostServiceBinding": true,
+    "unsignedGameRequest": "authentication_required",
+    "workersDevEnabled": false,
+    "previewUrlsEnabled": false,
+    "focusedTestsPassed": 67
+  },
+  "notYetVerified": [
+    "signed-in existing-deck match",
+    "live CPU difficulty calibration",
+    "natural touch finish",
+    "physical device recovery"
+  ],
+  "unfinished": [
+    "persistent account-backed match and deck-version history"
+  ],
+  "actualChargesVerified": false
+}

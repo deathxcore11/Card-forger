@@ -40,8 +40,8 @@ second service worker. It does not change the main website or bypass host auth.
 Build with `node deploy/forge-acceptance/build.mjs`; compile its dedicated config
 with pinned Wrangler 4.152.0. The dry run passed (776.45 KiB / 229.75 KiB gzip).
 Only explicit UI overrides and reachable browser runtime modules are embedded.
-Rollback is removal of the exact acceptance path route. Deployment/readback and
-signed-in browser acceptance must be recorded separately after they occur.
+Rollback is removal of the exact acceptance path route. The acceptance mount was deployed and verified in the browser (see
+`evidence/deployment.json`). Signed-in gameplay remains unverified.
 
 Randall requested the first test without waiting for difficulty calibration.
 The policies are distinct: tactical/hold-unused-land chances are 10/0, 50/50
