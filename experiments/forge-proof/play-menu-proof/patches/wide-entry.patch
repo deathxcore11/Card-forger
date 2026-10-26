@@ -1,0 +1,483 @@
+--- a/desktop-play.js
++++ b/desktop-play.js
+@@ -1,23 +1,66 @@
+-// Conservative device admission for future desktop Play. No viewport-width
+-// heuristic, persistent fingerprint, game state, account access or network.
+-export function playDeviceEligibility({native=false,ua='',platform='',mobile,maxTouchPoints=0,anyFine=false,anyHover=false}={}) {
+-  if(native)return {eligible:false,reason:'native'};
+-  if(mobile===true||/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(ua))return {eligible:false,reason:'mobile'};
+-  if(platform==='MacIntel'&&maxTouchPoints>1)return {eligible:false,reason:'tablet'};
++// Entry admission only, not engine/deck readiness. Browser viewport + input
++// capabilities cannot identify a hinge, physical screen or folded/unfolded state.
++// The name stays compatible with desktop callers and their existing placement.
++export const PLAY_TOUCH_MIN_EDGE = 600;
++export function playDeviceEligibility({native=false,ua='',platform='',mobile,maxTouchPoints=0,anyFine=false,anyHover=false,anyCoarse=false,width=0,height=0}={}) {
++  if(native)return {eligible:false,reason:'native',entry:null};
++  const touch=Number.isFinite(maxTouchPoints)&&maxTouchPoints>0||anyCoarse===true;
++  const mobileDevice=mobile===true||/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(ua)||(platform==='MacIntel'&&maxTouchPoints>1);
++  if(mobileDevice){
++    // Known mobile/tablet web devices can discover Play even on their cover
++    // screen. The route explains the guard instead of promising phone gameplay.
++    if(!touch)return {eligible:false,reason:'uncertain',entry:null};
++    if(!/Chrome\/|CriOS\//i.test(ua)||/EdgA\/|OPR\/|SamsungBrowser\//i.test(ua))return {eligible:false,reason:'touch-browser',entry:'touch'};
++    if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return {eligible:false,reason:'viewport-unknown',entry:'touch'};
++    if(width<PLAY_TOUCH_MIN_EDGE||height<PLAY_TOUCH_MIN_EDGE)return {eligible:false,reason:'touch-space',entry:'touch'};
++    return {eligible:true,reason:'wide-touch-candidate',entry:'touch'};
++  }
++  // Preserve desktop admission: a narrow desktop window remains desktop, and
++  // adding touch to a desktop does not move its Play buttons onto Home/Decks.
+   const desktop=/Windows NT|Macintosh|X11|CrOS/i.test(ua);
+-  if(!desktop||!anyFine||!anyHover)return {eligible:false,reason:'uncertain'};
+-  return {eligible:true,reason:'desktop-candidate'};
++  if(!desktop||!anyFine||!anyHover)return {eligible:false,reason:'uncertain',entry:null};
++  return {eligible:true,reason:'desktop-candidate',entry:'desktop'};
++}
++export function readPlayDeviceEligibility(view=globalThis,root=view.document) {
++  let native=false;
++  try{native=!!view.Capacitor?.isNativePlatform?.();}catch{native=true;}
++  const n=view.navigator||{},matches=query=>{try{return !!view.matchMedia?.(query)?.matches;}catch{return false;}};
++  return playDeviceEligibility({native,ua:n.userAgent||'',platform:n.platform||'',mobile:n.userAgentData?.mobile,maxTouchPoints:n.maxTouchPoints||0,anyFine:matches('(any-pointer:fine)'),anyHover:matches('(any-hover:hover)'),anyCoarse:matches('(any-pointer:coarse)'),width:root?.documentElement?.clientWidth||view.innerWidth||0,height:root?.documentElement?.clientHeight||view.innerHeight||0});
++}
++export function playDeviceGuardText(result={}) {
++  if(result.reason==='native')return 'Play is being prepared for the web first. Android app play comes later. Your saved decks remain available in Decks.';
++  if(result.reason==='touch-space')return 'Play needs more room in this browser window. Open your inner screen or use a tablet in Chrome, with at least 600 CSS pixels of width and height. Regular narrow-phone play comes later. Your saved decks remain available in Decks.';
++  if(result.reason==='touch-browser')return 'For touch-screen Play, use Chrome on a spacious inner screen or tablet. Desktop browsers with a mouse or trackpad can also open Play. Your saved decks remain available in Decks.';
++  return 'Play needs a supported desktop browser with a mouse or trackpad, or Chrome on a spacious touch-screen browser window. This browser has not reported the required display and input capabilities. Your saved decks remain available in Decks.';
++}
++export function touchPlayEntryMarkup(location) {
++  if(!['home','decks'].includes(location))return '';
++  return `<button type="button" class="btn ghost touch-play-entry ${location}-play-entry" data-touch-play-entry="practice" data-act="go" data-to="#play" hidden disabled aria-label="Open Play menu"><span aria-hidden="true">▷</span> Play</button>`;
+ }
+ export function syncDesktopPlayEntries(game,root=globalThis.document,view=globalThis) {
+-  let native=false;
+-  try{native=!!view.Capacitor?.isNativePlatform?.();}catch{native=true;}
+-  const n=view.navigator||{},result=playDeviceEligibility({native,ua:n.userAgent||'',platform:n.platform||'',mobile:n.userAgentData?.mobile,maxTouchPoints:n.maxTouchPoints||0,anyFine:!!view.matchMedia?.('(any-pointer:fine)').matches,anyHover:!!view.matchMedia?.('(any-hover:hover)').matches});
++  const result=readPlayDeviceEligibility(view,root);
+   for(const node of root?.querySelectorAll?.('[data-desktop-play-entry]')||[]){
+-    node.hidden=game!=='mtg'||!result.eligible;
+-    // This isolated beta branch admits deck setup only. The Play page keeps
+-    // match creation unavailable until the independent engine gate passes.
+-    node.disabled=game!=='mtg'||!result.eligible||node.dataset.desktopPlayEntry!=='practice';
++    node.hidden=game!=='mtg'||result.entry!=='desktop'||!result.eligible;
++    node.disabled=node.hidden||node.dataset.desktopPlayEntry!=='practice';
+     node.dataset.playReadiness='cpu-beta';
++  }
++  for(const node of root?.querySelectorAll?.('[data-touch-play-entry]')||[]){
++    node.hidden=game!=='mtg'||result.entry!=='touch';
++    node.disabled=node.hidden||node.dataset.touchPlayEntry!=='practice';
++    node.dataset.playReadiness=result.eligible?'cpu-beta':'device-guard';
+   }
+   return result;
+ }
++// Refresh only when admission changes. No resize stores state, navigates, starts
++// a match or infers a physical fold. The app retains ownership of active games.
++export function watchPlayDeviceEligibility({game=()=> 'mtg',root=globalThis.document,view=globalThis,onChange=()=>{}}={}) {
++  let prior=syncDesktopPlayEntries(game(),root,view);
++  const update=()=>{
++    const next=syncDesktopPlayEntries(game(),root,view);
++    if(next.eligible!==prior.eligible||next.reason!==prior.reason||next.entry!==prior.entry){const old=prior;prior=next;onChange(next,old);}
++  };
++  view.addEventListener?.('resize',update,{passive:true});
++  const queries=['(any-pointer:fine)','(any-hover:hover)','(any-pointer:coarse)'].flatMap(query=>{try{return view.matchMedia?.(query)||[];}catch{return [];}});
++  for(const query of queries)query.addEventListener?.('change',update);
++  return ()=>{view.removeEventListener?.('resize',update);for(const query of queries)query.removeEventListener?.('change',update);};
++}
+--- a/app.js
++++ b/app.js
+@@ -11,7 +11,7 @@
+ // Booster pack photos trim to the pack itself wherever they appear.
+ document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]'))trimPackArt(e.target);},true);
+ import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
+-import {syncDesktopPlayEntries} from './desktop-play.js';
++import {syncDesktopPlayEntries,playDeviceGuardText,watchPlayDeviceEligibility} from './desktop-play.js';
+ import {createPlaySetup} from './play-setup.js';
+ import {parsePlayDeckImport} from './play-deck-import.js';
+ import {playMenuMarkup} from './play-menu.js';
+@@ -1085,6 +1085,7 @@
+   deckBoxTransitions.beforeRender();
+   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
+   deckBoxTransitions.afterRender();
++  syncDesktopPlayEntries(g);
+   restoreDisclosures(content,disclosureStates.get(disclosureKey));
+   content.dataset.disclosureKey=disclosureKey;
+   restoreSearchFocus(content,searchFocus);
+@@ -1545,7 +1546,7 @@
+ // pass. The account/table lifecycle below is testable independently of activation.
+ const PLAY_MATCH_RELEASE_READY=true;
+ let playerMatHost=null,playerMatRoot=null,practicePregame=null,playStarting=false;
+-function closePlayerMat(){practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
++function closePlayerMat(){practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
+ A.playStartCandidate=async()=>{
+  if(!PLAY_MATCH_RELEASE_READY)return toast('Practice integration is still being verified.');
+  if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
+@@ -1577,7 +1578,8 @@
+ }
+ function renderPlayPage() {
+   if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>Choose Magic in the game selector to prepare a CPU match.</p><a class="btn" href="#home">Return Home</a></section>';
+-  if(!syncDesktopPlayEntries('mtg').eligible)return '<section class="empty"><h1>Play</h1><p>Use a supported desktop browser with a mouse or trackpad for Play. Your saved decks remain available in Decks.</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';
++  const device=syncDesktopPlayEntries('mtg');
++  if(!device.eligible)return '<section class="empty play-device-guard"><h1>Play</h1><p>'+esc(playDeviceGuardText(device))+'</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';
+   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
+   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:(state.playStyle!=='quick'&&state.inspectedSeat==='opponent'?state.opponentSource==='saved'&&state.opponent?.id===deck.id:state.selectedSource==='saved'&&state.selected?.id===deck.id)}));}
+   const inspected=state.match.mode==='cpu'&&state.inspectedSeat==='opponent'?state.opponent:state.selected;
+@@ -3721,9 +3723,13 @@
+     for (const attr of [...old.attributes]) old.removeAttribute(attr.name);
+     for (const attr of [...fresh.attributes]) old.setAttribute(attr.name, attr.value);
+     old.innerHTML = fresh.innerHTML;fresh.replaceWith(old);
++    const oldPlay=el.querySelector('[data-touch-play-entry]'),freshPlay=next.querySelector('[data-touch-play-entry]'),restorePlayFocus=oldPlay&&document.activeElement===oldPlay;
++    if(oldPlay&&freshPlay)freshPlay.replaceWith(oldPlay);
+     for (const k of ["game", "dailyDate", "dailyId"]) el.dataset[k] = next.dataset[k];
+     el.replaceChildren(...next.childNodes);delete el.dataset.painted;
+-  }
++    if(restorePlayFocus)oldPlay.focus({preventScroll:true});
++  }
++  syncDesktopPlayEntries(g);
+   if (el.dataset.painted) return;el.dataset.painted = "1";
+   const screen = navigationStamp(), key = h.id + "|" + h.date;
+   dailyDetails(g, h).then(d => {
+@@ -6543,6 +6549,11 @@
+   await navigate({game:latest?.game || T.game(),hash:normalizeRoute(location.hash),entry:latest || makeEntry(T.game(),normalizeRoute(location.hash),0),mode:"boot"});
+   render();
+   observeShellHeader();
++  watchPlayDeviceEligibility({game:T.game,onChange:()=>{
++    // A resize must not tear down a live match, pregame, account opening, or
++    // another route. Setup state remains in playSetup across the device guard.
++    if(!accountLocked&&!playStarting&&!playerMatRoot&&S.ui.view==='play'&&T.game()==='mtg')refreshPlayMenu();
++  }});
+   let accountOpenedOnce=false;
+   initCloud({
+     accountFirst:true,
+--- a/tcg.js
++++ b/tcg.js
+@@ -1,3 +1,4 @@
++import {touchPlayEntryMarkup} from './desktop-play.js';
+ import {discoverCardMarkup} from './card-discovery.js';
+ import {setAtmosphere,packButton} from './set-experience.js';
+ import {setYgoReleaseLookup} from './ygo-foil-recipes.js';
+@@ -500,7 +501,7 @@
+ // printing/set and existing collectible pack action remain independent controls.
+ export function homeToday(g) {
+   const h=heroFor(g);if(!h)return '';
+-  return `<section class="home-today" id="homeToday" data-game="${g}" data-daily-date="${h.date}" data-daily-id="${esc(h.id)}"><span class="today-pack-slot"></span><div class="today-text"><button class="hh-credit" data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}" aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b><span class="hh-daily-arrow" aria-hidden="true">↗</span></button><div class="today-set" aria-live="polite"></div></div></section>`;
++  return `<section class="home-today" id="homeToday" data-game="${g}" data-daily-date="${h.date}" data-daily-id="${esc(h.id)}"><span class="today-pack-slot"></span><div class="today-text"><button class="hh-credit" data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}" aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b><span class="hh-daily-arrow" aria-hidden="true">↗</span></button><div class="today-set" aria-live="polite"></div>${g==='mtg'?touchPlayEntryMarkup('home'):''}</div></section>`;
+ }
+ // Cache only the server's shared selection. The old per-device v1 cache is
+ // deliberately ignored so everyone moves to the same midnight schedule.
+--- a/views.js
++++ b/views.js
+@@ -1,3 +1,4 @@
++import {touchPlayEntryMarkup} from './desktop-play.js';
+ import {deckViewer,deckCardAttrs} from './deck-viewer.js';
+ import {discoverCardMarkup} from './card-discovery.js';
+ import {versionsMarkup,releaseDot} from './release-status.js';
+@@ -816,7 +817,7 @@
+   const tab = S.ui.decksTab;
+   return `<div class="page-head"><h1>Decks</h1><div class="head-actions"><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div></div>
+   <div class="random-tools"><button class="btn ghost small" data-act="learnGame">How to play · keywords</button><button class="btn ghost small" data-act="tabletop">Tabletop · play together</button></div>
+-  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="randomDeckOptions" data-home="1" aria-label="Random deck in any format">🎲 Random deck</button></div>
++  <div class="decks-play-row">${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}${touchPlayEntryMarkup('decks')}</div><div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="randomDeckOptions" data-home="1" aria-label="Random deck in any format">🎲 Random deck</button></div>
+   ${tab === "ideas" ? ideasView() : tab === "inspiration" ? inspirationView() : myDecks()}`;
+ }
+ 
+--- a/play-menu.css
++++ b/play-menu.css
+@@ -120,3 +120,20 @@
+ /* Tall result history starts inside the scrollable viewport; short results stay centered. */
+ #practicePlayerMat.play-mat-result{justify-content:flex-start}
+ #practicePlayerMat.play-mat-result>.play-match-result{flex:0 0 auto;margin-block:auto}
++
++/* Touch web entry points share Home's daily art and the Decks pill row. The
++   existing desktop header/bottom entries and their DOM positions do not move. */
++.touch-play-entry[hidden]{display:none!important}
++.touch-play-entry{min-height:44px;min-width:70px;border-radius:999px;white-space:nowrap;font-weight:700;gap:6px}
++#homeToday .home-play-entry{justify-self:start;margin-top:10px;padding:10px 18px;color:#fff;border:1px solid #ffffff55;background:linear-gradient(125deg,#ffffff20,#ffffff09),#0a111b70;backdrop-filter:blur(14px) saturate(1.1);box-shadow:inset 0 1px 0 #ffffff18,0 4px 18px #0002}
++#homeToday .home-play-entry:hover{background-color:#1b283acc;border-color:#ffffff88;color:#fff}
++.decks-play-row{display:contents}
++.decks-play-row:has(.touch-play-entry:not([hidden])){display:flex;align-items:center;gap:8px;min-width:0;margin:12px 0}
++.decks-play-row:has(.touch-play-entry:not([hidden]))>.seg{flex:1;min-width:0;margin:0}
++.decks-play-row:has(.touch-play-entry:not([hidden]))>.seg button{min-height:44px;min-width:0}
++body .btn.touch-play-entry.decks-play-entry{flex:none;padding:10px 14px;background:color-mix(in srgb,var(--surface) 82%,transparent);border:1px solid var(--line);backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 #ffffff0c}
++.touch-play-entry:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
++.play-device-guard p{max-width:56ch;margin-inline:auto;line-height:1.6}
++.play-device-guard .btn{min-height:44px;margin:6px}
++@media(max-width:400px){.decks-play-row:has(.touch-play-entry:not([hidden]))>.seg button{padding-inline:4px;font-size:12px}body .btn.touch-play-entry.decks-play-entry{min-width:64px;padding-inline:10px}}
++@media(prefers-reduced-transparency:reduce){#homeToday .home-play-entry{background:#192333;backdrop-filter:none}body .btn.touch-play-entry.decks-play-entry{background:var(--surface);backdrop-filter:none}}
+--- /dev/null
++++ b/test-play-device-entry.mjs
+@@ -0,0 +1,65 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {readFileSync} from 'node:fs';
++import {playDeviceEligibility,readPlayDeviceEligibility,playDeviceGuardText,touchPlayEntryMarkup,PLAY_TOUCH_MIN_EDGE} from './desktop-play.js';
++const chrome='Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/141.0.0.0 Mobile Safari/537.36';
++const touch={ua:chrome,mobile:true,maxTouchPoints:5,anyCoarse:true};
++const desktop={ua:'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/141.0.0.0',platform:'Win32',anyFine:true,anyHover:true};
++
++test('desktop eligibility and entry placement do not depend on viewport width or touch',()=>{
++ for(const device of [desktop,{...desktop,width:390,height:480},{...desktop,maxTouchPoints:10,anyCoarse:true,width:674,height:842},{...desktop,ua:'Mozilla/5.0 (Macintosh; Intel Mac OS X) Safari/605.1.15',platform:'MacIntel'},{...desktop,ua:'Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0'}]){
++  const result=playDeviceEligibility(device);assert.equal(result.eligible,true);assert.equal(result.reason,'desktop-candidate');assert.equal(result.entry,'desktop');
++ }
++ assert.equal(playDeviceEligibility({...desktop,anyFine:false}).eligible,false);
++ assert.equal(playDeviceEligibility({...desktop,anyHover:false}).eligible,false);
++});
++
++test('spacious Chrome touch viewports admit setup in either orientation without a fold-state claim',()=>{
++ assert.equal(PLAY_TOUCH_MIN_EDGE,600);
++ for(const [width,height] of [[600,600],[674,842],[690,829],[842,674],[853,706],[768,1024],[1024,768],[1280,800]]){
++  const result=playDeviceEligibility({...touch,width,height});assert.equal(result.eligible,true,`${width}×${height}`);assert.equal(result.entry,'touch');assert.equal(result.reason,'wide-touch-candidate');assert.equal('folded' in result,false);
++ }
++ const ipad={ua:'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) CriOS/141.0.0.0 Mobile/15E148 Safari/604.1',platform:'MacIntel',maxTouchPoints:5,width:820,height:1180};
++ assert.equal(playDeviceEligibility(ipad).eligible,true);
++});
++
++test('narrow cover, portrait phone, landscape phone and split-screen show the device guard',()=>{
++ for(const [width,height] of [[344,882],[360,800],[390,844],[430,932],[844,390],[932,430],[599,900],[900,599]]){
++  const result=playDeviceEligibility({...touch,width,height});assert.equal(result.eligible,false,`${width}×${height}`);assert.equal(result.reason,'touch-space');assert.equal(result.entry,'touch');
++  assert.match(playDeviceGuardText(result),/Regular narrow-phone play comes later/);
++ }
++});
++
++test('missing dimensions, unreported input, unsupported browser and unknown devices fail closed',()=>{
++ for(const dims of [{},{width:0,height:900},{width:800,height:NaN},{width:Infinity,height:800}])assert.equal(playDeviceEligibility({...touch,...dims}).eligible,false);
++ assert.equal(playDeviceEligibility({ua:chrome,width:800,height:900}).eligible,false);
++ assert.equal(playDeviceEligibility({maxTouchPoints:5,width:800,height:900,anyFine:true,anyHover:true}).eligible,false);
++ for(const ua of ['Mozilla/5.0 (iPad) Version/18.0 Safari/605.1.15',chrome+' SamsungBrowser/27.0',chrome+' EdgA/141.0',chrome+' OPR/80.0'])assert.equal(playDeviceEligibility({...touch,ua,width:800,height:900}).reason,'touch-browser');
++ assert.equal(readPlayDeviceEligibility({navigator:{},matchMedia(){throw Error('unavailable');}}).eligible,false);
++});
++
++test('native Android remains guarded even with a wide touch screen or a desktop UA',()=>{
++ for(const device of [touch,desktop]){const result=playDeviceEligibility({...device,native:true,width:1400,height:1000});assert.equal(result.eligible,false);assert.equal(result.entry,null);assert.match(playDeviceGuardText(result),/Android app play comes later/);}
++ assert.equal(readPlayDeviceEligibility({navigator:{},Capacitor:{isNativePlatform(){throw Error('unknown native state');}}}).reason,'native');
++});
++
++test('read adapter uses layout CSS viewport, not physical screen or keyboard visual viewport',()=>{
++ const view={navigator:{userAgent:chrome,userAgentData:{mobile:true},maxTouchPoints:5},innerWidth:390,innerHeight:844,screen:{width:2208,height:1840},visualViewport:{width:800,height:250},matchMedia:()=>({matches:false})};
++ assert.equal(readPlayDeviceEligibility(view).eligible,false);
++ assert.equal(readPlayDeviceEligibility(view,{documentElement:{clientWidth:674,clientHeight:842}}).eligible,true);
++});
++
++test('both touch entries use existing navigation and cannot select or write a deck',()=>{
++ for(const location of ['home','decks']){
++  const html=touchPlayEntryMarkup(location);assert.match(html,/type="button"/);assert.match(html,/data-act="go" data-to="#play"/);assert.match(html,/hidden disabled/);assert.doesNotMatch(html,/playSelectDeck|activeDeck|data-play-deck|online|showcase/i);
++ }
++ assert.equal(touchPlayEntryMarkup('unknown'), '');
++});
++
++test('route guard is escaped, retains Home/Decks recovery, and does not evaluate account setup',()=>{
++ const app=readFileSync(new URL('./app.js',import.meta.url),'utf8');
++ const render=app.match(/function renderPlayPage\(\) \{[\s\S]*?\n\}/)[0];
++ const call=new Function('T','syncDesktopPlayEntries','playDeviceGuardText','esc',`return (${render});`)({game:()=> 'mtg'},()=>playDeviceEligibility({...touch,width:390,height:844}),playDeviceGuardText,x=>x.replaceAll('<','&lt;'));
++ const html=call();assert.match(html,/play-device-guard/);assert.match(html,/href="#decks"/);assert.match(html,/href="#home"/);assert.doesNotMatch(html,/disabled/);
++ assert.match(app,/if\(!accountLocked&&!playStarting&&!playerMatRoot&&S\.ui\.view==='play'&&T\.game\(\)==='mtg'\)refreshPlayMenu\(\)/);
++});
+--- /dev/null
++++ b/test-play-entry-dom.mjs
+@@ -0,0 +1,92 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {readFileSync} from 'node:fs';
++// Happy DOM is a test tool, not an application dependency. CI can resolve it
++// normally; isolated local executors can point this variable at its ESM entry.
++const {Window}=await import(process.env.CARDSTASHY_DOM_MODULE||'happy-dom');
++import {syncDesktopPlayEntries,watchPlayDeviceEligibility} from './desktop-play.js';
++import {homeToday,heroState,heroDate} from './tcg.js';
++import {decks} from './views.js';
++import {S,blank} from './store.js';
++const ua='Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/141.0.0.0 Mobile Safari/537.36';
++const desktopUA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/141.0.0.0';
++const source=readFileSync(new URL('./app.js',import.meta.url),'utf8');
++const shell=readFileSync(new URL('./index.html',import.meta.url),'utf8');
++function fixture({width=674,height=842,desktop=false,native=false}={}){
++ const w=new Window({url:'https://example.test/#home',width,height});
++ const d=w.document;d.body.innerHTML=shell.match(/<body[^>]*>([\s\S]*?)<!-- modulepreload:start -->/)[1];
++ const listeners=new Map(),media=new Map();
++ const view={document:d,innerWidth:width,innerHeight:height,navigator:{userAgent:desktop?desktopUA:ua,platform:desktop?'Win32':'Linux armv8l',maxTouchPoints:desktop?0:5,userAgentData:{mobile:!desktop}},Capacitor:{isNativePlatform:()=>native},matchMedia:q=>{
++  if(!media.has(q))media.set(q,{matches:desktop?q!=='(any-pointer:coarse)':q==='(any-pointer:coarse)',addEventListener:(_,fn)=>media.get(q).change=fn,removeEventListener:()=>delete media.get(q).change});return media.get(q);
++ },addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type)};
++ S.state=blank();S.catalog={};S.ui.decksTab='mine';
++ heroState.mtg={date:heroDate(),game:'mtg',id:'11111111-1111-1111-1111-111111111111',name:'Daily card',art:'https://cards.scryfall.io/art_crop/front/1/1/11111111-1111-1111-1111-111111111111.jpg'};
++ const content=d.querySelector('#content');content.innerHTML=`<div class="home-intro-content">${homeToday('mtg')}<div class="home-value-overview"></div></div>${decks()}`;
++ return {w,d,view,listeners,media,resize:(width,height)=>{view.innerWidth=width;view.innerHeight=height;listeners.get('resize')?.();}};
++}
++
++test('Home Play is in daily artwork; Decks Play is beside, not inside, existing tablist',()=>{
++ const f=fixture(),before=structuredClone(S.state);
++ const home=f.d.querySelector('#homeToday [data-touch-play-entry]'),deck=f.d.querySelector('.decks-play-row>[data-touch-play-entry]');
++ assert(home.closest('.today-text'));assert.equal(home.closest('button'),home);assert.equal(home.dataset.to,'#play');
++ assert(deck);assert.equal(deck.previousElementSibling.getAttribute('role'),'tablist');assert.equal(deck.closest('[role="tablist"]'),null);
++ assert.deepEqual([...deck.previousElementSibling.children].map(n=>n.textContent),['My decks','Ideas','Meta decks']);
++ assert.equal(f.d.querySelectorAll('[data-act="homeDailyCard"]').length,1);assert.equal(f.d.querySelectorAll('.today-pack-slot').length,1);
++ syncDesktopPlayEntries('mtg',f.d,f.view);assert(!home.hidden&&!home.disabled);assert(!deck.hidden&&!deck.disabled);assert.deepEqual(S.state,before);
++ assert(f.d.querySelector('#headerPlay').hidden);assert(f.d.querySelector('#bottomPlay').hidden);
++ f.w.happyDOM.abort();
++});
++
++test('desktop original header/bottom nodes retain exact parents, sibling order and destinations',()=>{
++ const f=fixture({desktop:true,width:1440,height:900}),nodes=['headerPlay','bottomPlay'].map(id=>f.d.getElementById(id));
++ const locations=nodes.map(node=>({parent:node.parentElement,previous:node.previousElementSibling,next:node.nextElementSibling,html:node.outerHTML}));
++ syncDesktopPlayEntries('mtg',f.d,f.view);syncDesktopPlayEntries('mtg',f.d,f.view);
++ nodes.forEach((node,i)=>{assert.equal(node.parentElement,locations[i].parent);assert.equal(node.previousElementSibling,locations[i].previous);assert.equal(node.nextElementSibling,locations[i].next);assert.equal(node.dataset.to,'#play');assert.equal(node.hidden,false);assert.equal(node.disabled,false);});
++ for(const n of f.d.querySelectorAll('[data-touch-play-entry]'))assert(n.hidden&&n.disabled);
++ f.w.happyDOM.abort();
++});
++
++test('narrow phones retain two explanatory entries, not a sixth bottom navigation item',()=>{
++ const f=fixture({width:390,height:844}),result=syncDesktopPlayEntries('mtg',f.d,f.view);
++ assert.equal(result.eligible,false);assert(f.d.querySelector('#bottomPlay').hidden);
++ for(const node of f.d.querySelectorAll('[data-touch-play-entry]')){assert.equal(node.hidden,false);assert.equal(node.disabled,false);assert.equal(node.dataset.playReadiness,'device-guard');}
++ // Dispatch through the unchanged delegated go contract; repeated clicks cannot
++ // select a saved deck or bypass renderPlayPage's route guard.
++ const before=JSON.stringify(S.state),routes=[];f.d.addEventListener('click',e=>{const t=e.target.closest('[data-act="go"]');if(t&&!t.disabled)routes.push(t.dataset.to);});
++ f.d.querySelector('.home-play-entry').click();f.d.querySelector('.decks-play-entry').click();assert.deepEqual(routes,['#play','#play']);assert.equal(JSON.stringify(S.state),before);
++ f.w.happyDOM.abort();
++});
++
++test('native, other card games and unknown browser capabilities hide every Play entry',()=>{
++ const f=fixture();for(const game of ['ptcg','ygo']){syncDesktopPlayEntries(game,f.d,f.view);for(const n of f.d.querySelectorAll('[data-touch-play-entry],[data-desktop-play-entry]'))assert(n.hidden&&n.disabled);}
++ f.view.Capacitor.isNativePlatform=()=>true;syncDesktopPlayEntries('mtg',f.d,f.view);for(const n of f.d.querySelectorAll('[data-touch-play-entry],[data-desktop-play-entry]'))assert(n.hidden&&n.disabled);
++ f.view.Capacitor.isNativePlatform=()=>false;f.view.navigator={};syncDesktopPlayEntries('mtg',f.d,f.view);for(const n of f.d.querySelectorAll('[data-touch-play-entry],[data-desktop-play-entry]'))assert(n.hidden&&n.disabled);
++ f.w.happyDOM.abort();
++});
++
++test('resize changes admission once per boundary without mutating account/deck state or history',()=>{
++ const f=fixture({width:390,height:844}),events=[],before=JSON.stringify(S.state),hash=f.w.location.hash;
++ const stop=watchPlayDeviceEligibility({game:()=> 'mtg',root:f.d,view:f.view,onChange:(next,old)=>events.push([next.reason,old.reason])});
++ f.resize(400,844);assert.equal(events.length,0);f.resize(674,842);assert.deepEqual(events,[['wide-touch-candidate','touch-space']]);f.resize(842,674);assert.equal(events.length,1);f.resize(842,390);assert.equal(events.length,2);
++ assert.equal(JSON.stringify(S.state),before);assert.equal(f.w.location.hash,hash);stop();f.resize(674,842);assert.equal(events.length,2);assert.equal(f.listeners.has('resize'),false);assert([...f.media.values()].every(q=>!q.change));
++ f.w.happyDOM.abort();
++});
++
++test('late daily-card arrival and day rollover keep Play available and preserve control identity',async()=>{
++ const f=fixture(),paintSource=source.match(/function paintHomeToday\(g\) \{[\s\S]*?\n\}/)[0];
++ const original=f.d.querySelector('.home-play-entry'),daily=f.d.querySelector('.hh-credit');syncDesktopPlayEntries('mtg',f.d,f.view);
++ const paint=new Function('S','T','$','document','syncDesktopPlayEntries','navigationStamp','navigationCurrent','dailyDetails','todaySetMarkup','todayPackMarkup',`return (${paintSource});`)({ui:{view:'home'}},{game:()=> 'mtg',heroFor:()=>heroState.mtg,homeToday},q=>f.d.querySelector(q),f.d,game=>syncDesktopPlayEntries(game,f.d,f.view),()=>1,()=>true,async()=>null,()=>'',()=>'');
++ original.focus();heroState.mtg={...heroState.mtg,id:'22222222-2222-2222-2222-222222222222',name:'Next daily card'};paint('mtg');
++ assert.equal(f.d.querySelector('.home-play-entry'),original);assert.equal(f.d.querySelector('.hh-credit'),daily);assert.equal(original.hidden,false);assert.equal(original.disabled,false);assert.equal(f.d.activeElement,original);
++ f.d.querySelector('#homeToday').remove();paint('mtg');assert.equal(f.d.querySelector('.home-play-entry').hidden,false);assert.equal(f.d.querySelectorAll('.home-play-entry').length,1);
++ await Promise.resolve();f.w.happyDOM.abort();
++});
++
++test('eligibility loss while a table is open does not destroy it; closing then refreshes the guard',()=>{
++ const f=fixture(),closeSource=source.match(/function closePlayerMat\(\)\{[^\n]+\}/)[0];
++ let destroyed=0,detached=0,removed=0,refreshes=0;
++ const make=new Function('document','S','T','syncDesktopPlayEntries','refreshPlayMenu','counters',`let accountLocked=false,practicePregame={destroy:counters.destroy},playerMatHost={detach:counters.detach},playerMatRoot={remove:counters.remove};return (${closeSource});`);
++ const close=make(f.d,{ui:{view:'play'}},{game:()=> 'mtg'},()=>({eligible:false}),()=>refreshes++,{destroy:()=>destroyed++,detach:()=>detached++,remove:()=>removed++});
++ assert.equal(refreshes,0);close();assert.deepEqual([destroyed,detached,removed,refreshes],[1,1,1,1]);assert.equal(f.d.getElementById('app').inert,false);
++ f.w.happyDOM.abort();
++});
+--- /dev/null
++++ b/experiments/play-entry/entry-browser.mjs
+@@ -0,0 +1,55 @@
++// Isolated UI fixture: real entry/menu markup and CSS, synthetic account state.
++// This is not an engine proof, physical fold detector, or real account journey.
++import assert from 'node:assert/strict';
++import {createServer} from 'node:http';
++import {readFile,mkdir,writeFile} from 'node:fs/promises';
++import {resolve,dirname,extname,join} from 'node:path';
++import {fileURLToPath} from 'node:url';
++const {chromium}=await import(process.env.CARDSTASHY_PLAYWRIGHT_MODULE||'playwright');
++const root=resolve(dirname(fileURLToPath(import.meta.url)),'../..'),out=resolve(process.env.CARDSTASHY_ENTRY_REPORT_DIR||join(root,'test-results/play-entry'));
++await mkdir(out,{recursive:true});
++const original=await readFile(join(root,'index.html'),'utf8');
++const css=[...original.matchAll(/<link rel="stylesheet" href="([^"/:]+)"\s*>/g)].map(x=>x[0]).join('\n');
++const header=original.match(/<header class="topbar">[\s\S]*?<\/header>/)[0],bottom=original.match(/<nav class="bottom-nav"[\s\S]*?<\/nav>/)[0];
++const html=`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">${css}<title>Play entry — synthetic UI fixture</title></head><body data-game="mtg"><div id="app" class="ready">${header}<main id="content"></main>${bottom}</div><script type="module">
++import {S,blank} from '/store.js';
++import {homeToday,homeHero,heroState,heroDate} from '/tcg.js';
++import {gameTabs} from '/home-ui.js';
++import {decks} from '/views.js';
++import {playMenuMarkup} from '/play-menu.js';
++import {syncDesktopPlayEntries,watchPlayDeviceEligibility,playDeviceGuardText} from '/desktop-play.js';
++S.state=blank();S.catalog={};S.ui.decksTab='mine';
++heroState.mtg={date:heroDate(),game:'mtg',id:'11111111-1111-1111-1111-111111111111',name:'Daily artwork fixture',art:'https://cards.scryfall.io/art_crop/front/1/1/11111111-1111-1111-1111-111111111111.jpg'};
++const selected={id:'chosen',name:'Retained selection',format:'Standard',cards:[],side:[]};
++const setup={profile:{signedIn:true,ownerId:'synthetic-owner',displayName:'Fixture player'},match:{format:'Standard',mode:'cpu',difficulty:'Medium'},decks:[],draft:{},browse:{},selected};
++document.querySelector('#gameTabs').innerHTML=gameTabs('mtg');
++const render=()=>{const route=location.hash.slice(1)||'home';document.body.dataset.view=route;const eligibility=syncDesktopPlayEntries('mtg');document.querySelector('#content').innerHTML=route==='home'?'<section class="home-intro">'+homeHero('mtg')+'<div class="home-intro-content">'+homeToday('mtg')+'</div></section>':route==='decks'?decks():eligibility.eligible?playMenuMarkup(setup,{matchReleaseReady:false}):'<section class="empty play-device-guard"><h1>Play</h1><p>'+playDeviceGuardText(eligibility)+'</p><a href="#decks">Open Decks</a><a href="#home">Home</a></section>';syncDesktopPlayEntries('mtg');};
++document.addEventListener('click',e=>{const b=e.target.closest('[data-act="go"]');if(b&&!b.disabled)location.hash=b.dataset.to;});
++window.addEventListener('hashchange',render);watchPlayDeviceEligibility({onChange:render});render();window.entryFixture={selected,setup};window.loaded=true;
++</script></body></html>`;
++const types={'.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png'};
++const server=createServer(async(req,res)=>{try{const path=new URL(req.url,'http://fixture').pathname;if(path==='/'){res.setHeader('Content-Type','text/html');res.end(html);return;}const file=resolve(root,'.'+path);if(!file.startsWith(root+'/')){res.writeHead(403);res.end();return;}const bytes=await readFile(file);res.setHeader('Content-Type',types[extname(file)]||'application/octet-stream');res.end(bytes);}catch{res.writeHead(404);res.end();}});
++await new Promise(r=>server.listen(0,'127.0.0.1',r));
++const url='http://127.0.0.1:'+server.address().port,report={kind:'synthetic-entry-ui',passed:false,cases:[],limits:'Actual app markup and CSS; synthetic state and hash navigation. Synthetic gradient stands in for daily artwork. No native engine, production account, actual fold hardware, Android APK or gameplay certification.'};
++let browser;
++try{
++ browser=await chromium.launch({headless:true,...(process.env.CARDSTASHY_CHROMIUM_PATH?{executablePath:process.env.CARDSTASHY_CHROMIUM_PATH}:{})});report.browser=browser.version();
++ for(const scenario of [{name:'desktop',width:1440,height:900},{name:'narrow-cover',width:390,height:844,touch:true,guard:true},{name:'inner-portrait',width:674,height:842,touch:true},{name:'inner-landscape',width:842,height:674,touch:true},{name:'tablet',width:1024,height:768,touch:true},{name:'phone-landscape',width:844,height:390,touch:true,guard:true}]){
++  const context=await browser.newContext({viewport:{width:scenario.width,height:scenario.height},hasTouch:!!scenario.touch,isMobile:!!scenario.touch,...(scenario.touch?{userAgent:'Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/141.0.0.0 Mobile Safari/537.36'}:{})});
++  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(String(e)));
++  await page.route('**/*',route=>route.request().url().startsWith(url)?route.continue():route.request().url().startsWith('https://cards.scryfall.io/art_crop/')?route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="600"><defs><linearGradient id="a"><stop stop-color="#194937"/><stop offset="1" stop-color="#594729"/></linearGradient></defs><rect width="1000" height="600" fill="url(#a)"/><circle cx="750" cy="160" r="180" fill="#b4a370" opacity=".3"/></svg>'}):route.abort());
++  await page.goto(url+'/#home');await page.waitForFunction(()=>window.loaded);
++  const measure=async()=>page.evaluate(()=>{const visible=n=>!!n&&n.getBoundingClientRect().width>0&&n.getBoundingClientRect().height>0;return {overflow:document.documentElement.scrollWidth>innerWidth+1,header:visible(document.querySelector('#headerPlay')),bottom:visible(document.querySelector('#bottomPlay')),home:visible(document.querySelector('.home-play-entry')),decks:visible(document.querySelector('.decks-play-entry')),targets:[...document.querySelectorAll('[data-touch-play-entry]')].filter(visible).every(n=>n.getBoundingClientRect().height>=44&&n.getBoundingClientRect().right<=innerWidth+1)};});
++  const home=await measure();assert.equal(home.overflow,false,scenario.name+' Home overflow');assert.equal(home.home,!!scenario.touch);assert(home.targets);await page.screenshot({path:join(out,scenario.name+'-home.png'),fullPage:true});
++  if(scenario.touch){assert.equal(home.header,false);assert.equal(home.bottom,false);await page.locator('.home-play-entry').click();}else await page.locator('#headerPlay').click();
++  await page.waitForFunction(()=>document.body.dataset.view==='play');assert.equal(await page.locator('.play-device-guard').count(),scenario.guard?1:0);assert.equal(await page.locator('.play-menu').count(),scenario.guard?0:1);
++  await page.goBack();await page.waitForFunction(()=>document.body.dataset.view==='home');await page.goForward();await page.waitForFunction(()=>document.body.dataset.view==='play');
++  await page.goto(url+'/#decks');await page.waitForFunction(()=>window.loaded);const decks=await measure();assert.equal(decks.overflow,false,scenario.name+' Decks overflow');assert.equal(decks.decks,!!scenario.touch);assert(decks.targets);await page.screenshot({path:join(out,scenario.name+'-decks.png'),fullPage:true});
++  if(scenario.touch){await page.locator('.decks-play-entry').click();await page.waitForFunction(()=>document.body.dataset.view==='play');assert.equal(await page.locator('.play-device-guard').count(),scenario.guard?1:0);}
++  if(scenario.name==='inner-portrait'){
++   await page.setViewportSize({width:390,height:844});await page.locator('.play-device-guard').waitFor();await page.setViewportSize({width:674,height:842});await page.locator('.play-menu').waitFor();assert.equal(await page.evaluate(()=>window.entryFixture.selected.name),'Retained selection');
++  }
++  assert.equal((await measure()).overflow,false,scenario.name+' Play overflow');assert.deepEqual(errors,[]);await page.screenshot({path:join(out,scenario.name+'.png'),fullPage:true});report.cases.push({scenario,home,decks,passed:true});await context.close();
++ }
++ report.passed=true;
++}catch(error){report.error=String(error.stack||error);throw error;}finally{await writeFile(join(out,'report.json'),JSON.stringify(report,null,2)+'\n');await browser?.close();await new Promise(r=>server.close(r));}
+--- /dev/null
++++ b/docs/wide-screen-entry-candidate/README.md
+@@ -0,0 +1,55 @@
++# Wide-screen web Play entries — isolated candidate
++
++This is a UI/admission overlay against the supplied CardStashy 4.0.5 fixture. It was not pushed, deployed, or activated, and does not certify engine or release readiness.
++
++## Scope
++
++- Desktop header and bottom-nav Play nodes stay exactly where they are; `index.html` is unchanged. Existing desktop eligibility remains independent of window size. Desktop touch hybrids retain desktop placement.
++- Known mobile/tablet web devices with reported touch input receive a rounded glass Play button inside Home's Card-of-the-Day artwork surface, plus a Play button adjacent to the Decks pills (outside their tablist). Other games and Android native APK do not receive these new entries.
++- Both buttons use existing `data-act="go" data-to="#play"` navigation. No new route, implicit active-deck selection, account access, collection write, save, scanner modification, or multiplayer action is introduced. Existing Play selections remain owned by `playSetup`; the Decks shelf has no existing selected-deck handoff to extend.
++- Spacious touch **Chrome candidates** require reported touch input and **both layout-viewport dimensions >=600 CSS pixels**. This admits common 674×842 / 690×829 inner-screen layouts and 768×1024 / 1024×768 tablet layouts, while rejecting narrow covers, phone landscape, and undersized split-screen windows. The browser does **not** reliably identify physical fold state; no hinge or fold-state inference is made.
++- Current desktop UA + fine-pointer + hover admission stays intact. Mobile native/unknown capability, missing dimensions, Safari/other unverified touch browsers remain guarded. The minimum is a conservative candidate policy, not physical-device or engine certification.
++- Narrow mobile entries open the same route with a readable explanation and Home/Decks recovery links. A resize rechecks admission but never starts/closes a live match, pregame, or account-opening flow. Closing a match after the viewport became too small restores the guard. Daily artwork refresh preserves the Play node and focused control.
++- The existing `PLAY_MATCH_RELEASE_READY` value and all engine/deck/card admission are untouched. This overlay must not be used as evidence that those gates passed. Shared Community Showcase / Play online is deliberately not added.
++
++## Files to integrate
++
++Application: `desktop-play.js`, `app.js`, `tcg.js`, `views.js`, `play-menu.css`.
++
++Tests: `test-play-device-entry.mjs`, `test-play-entry-dom.mjs`, `experiments/play-entry/entry-browser.mjs`.
++
++Merge the small `app.js` hunks rather than overwriting engine-integration work. The `closePlayerMat` hunk only refreshes the route guard after existing cleanup. No engine files, package/version, service worker or deployment workflow changed.
++
++## Verification
++
++Local isolated merged fixture: `../wide-screen-entry-fixture` (a copy of the supplied source plus this overlay; the original source is unchanged).
++
++```sh
++node --test test-play-device-entry.mjs
++CARDSTASHY_DOM_MODULE=file:///tmp/forge-proof-test-tools/node_modules/happy-dom/lib/index.js \
++  node --test test-play-entry-dom.mjs
++node --test test-play-menu.mjs test-play-quick-start.mjs test-play-deck-sources.mjs \
++  test-play-artwork-views.mjs test-play-turn-controls.mjs \
++  test-play-catalog-review.mjs test-play-release-contracts.mjs
++```
++
++Passed: **8 predicate/route tests**, **7 Happy DOM tests**, **45 focused existing Play tests**; changed JS syntax checks pass. Happy DOM 21.0.4 was already installed as isolated test tooling; no application dependency changed. The DOM test can resolve `happy-dom` normally when installed, or use the shown ESM path override.
++
++All **53 available pre-existing Play tests** were also run against both original and candidate: **51 pass / 2 fail identically**. The two pre-existing `test-play-journey-ui.mjs` failures require removed “tested starter match” UI. This overlay does not restore that obsolete starter path or edit those unrelated tests. This is not a clean full-suite pass. The complete package `npm test` is not represented by the partial supplied fixture.
++
++Local Chromium launch was blocked before rendering: with a writable user-data-dir it exits 134 with `socket() failed: Operation not permitted`. No browser layout pass, device screenshot or physical foldable certification is claimed.
++
++## Required browser follow-through
++
++On CI with Playwright + Chromium and the full repository CSS/assets:
++
++```sh
++node experiments/play-entry/entry-browser.mjs
++# Optional: CARDSTASHY_PLAYWRIGHT_MODULE=<ESM path>
++# Optional: CARDSTASHY_CHROMIUM_PATH=<installed browser executable>
++# Optional: CARDSTASHY_ENTRY_REPORT_DIR=<output directory>
++```
++
++This prepared (syntax-checked, **not executed**) runner exercises desktop, narrow cover, portrait/landscape inner-size, tablet, and phone-landscape viewports. It checks discoverability, 44px touch targets, horizontal overflow, shared route/guard, Back/Forward and resize restoration with a retained synthetic setup selection. It writes labeled synthetic-fixture Home/Decks/setup screenshots and a report under `test-results/play-entry`; the artwork is a synthetic gradient, not user-supplied artwork. It uses actual markup/CSS, not a real account or engine.
++
++Before release, visually inspect the real Home artwork + Decks pills in both themes, test real touch/pointer and browser zoom/address bars, fold/unfold with a live native-engine game, and run the existing engine release gates. These tests must not be described as APK, regular narrow-phone gameplay, or full physical-fold detection support.

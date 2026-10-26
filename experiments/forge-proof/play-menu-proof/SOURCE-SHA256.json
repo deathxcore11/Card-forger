@@ -1,0 +1,104 @@
+[
+  {
+    "path": "browser/materialize.mjs",
+    "source": "takeover/forge-play-browser-proof/materialize.mjs",
+    "sha256": "99ad0000447ebceff263c0bfd61c16d702a32cef429ccc20f6caa48cbbb4e327",
+    "bytes": 6813
+  },
+  {
+    "path": "browser/fixture-entry.mjs",
+    "source": "takeover/forge-play-browser-proof/fixture-entry.mjs",
+    "sha256": "2731bdef3475dea24b1e4874ca2e6dadab7143130c4721694c9518634c207320",
+    "bytes": 3707
+  },
+  {
+    "path": "browser/forge-play-browser.html",
+    "source": "takeover/forge-play-browser-proof/forge-play-browser.html",
+    "sha256": "6fca5caf89571cdcf5ec3819c2920ae198517315a16841085ae762f06dcc29d4",
+    "bytes": 689
+  },
+  {
+    "path": "browser/browser-journey.mjs",
+    "source": "takeover/forge-play-browser-proof/browser-journey.mjs",
+    "sha256": "dd4f81578dd5a9da61a95e2cabf006b7b8ef930a0a91d82a526a8954fc4cf8ed",
+    "bytes": 17672
+  },
+  {
+    "path": "browser/run-local-journey.sh",
+    "source": "takeover/forge-play-browser-proof/run-local-journey.sh",
+    "sha256": "5e6ed8c04fe392203327a0fecc84513ffe3f44cc12cac58cdc9da97007f8e77b",
+    "bytes": 1702
+  },
+  {
+    "path": "browser/README.md",
+    "source": "takeover/forge-play-browser-proof/README.md",
+    "sha256": "2eb15df2903a9b0d4ed944f7583c95f7bccd574d7ff5d9deef9879dcf4d48b0e",
+    "bytes": 4529
+  },
+  {
+    "path": "patches/integration.patch",
+    "source": "takeover/forge-play-integration-overlay/forge-play-integration.patch",
+    "sha256": "a5540a06b431e2ee60554c34e392d518baed9dbec92a1dbe8010e24a44081f17",
+    "bytes": 74001
+  },
+  {
+    "path": "patches/integration-sha256.json",
+    "source": "takeover/forge-play-integration-overlay/SHA256SUMS.json",
+    "sha256": "1271110f63fe7935ac935b976375446cc4e8be103b8445b97b643ff507e8f97f",
+    "bytes": 2869
+  },
+  {
+    "path": "patches/inspector.patch",
+    "source": "takeover/forge-inspector-fix-overlay/inspector-refresh.patch",
+    "sha256": "19b9e64cb4ad7f6d08715494f8485142cf9d5693a5ccb88843815b545b417724",
+    "bytes": 4870
+  },
+  {
+    "path": "patches/hand-fan.patch",
+    "source": "takeover/forge-land-hitfix-overlay/land-hitfix.patch",
+    "sha256": "720065a9f57053fa5f6c251e2819b7e7cbb351b068b0367f527112d47c8d7e87",
+    "bytes": 1915
+  },
+  {
+    "path": "patches/wide-entry.patch",
+    "source": "takeover/wide-screen-entry.patch",
+    "sha256": "81490bc6900d5a4679a8f05f9f3c7d79a171587e0678df17838e7fb03ad1f1e4",
+    "bytes": 47560
+  },
+  {
+    "path": "patches/rematch.patch",
+    "source": "takeover/forge-host-service-rematch/REMATCH.patch",
+    "sha256": "a484109b684ea0abb92c342b0c66cec54ccfa356df9511e79134ba655d2e6c0d",
+    "bytes": 24810
+  },
+  {
+    "path": "patches/rematch-manifest.json",
+    "source": "takeover/forge-host-service-rematch/manifest.json",
+    "sha256": "a3722f17a0f0fffc622bd86d591c27342fab1c2a11d02491380a94409022564d",
+    "bytes": 1265
+  },
+  {
+    "path": "fixture/server.mjs",
+    "source": "takeover/forge-host-local-fixture/server.mjs",
+    "sha256": "35bf358849748c9526cfcb2178a0e6dee624037c840dc48f8ccd36c35a37a904",
+    "bytes": 14764
+  },
+  {
+    "path": "fixture/prepare-runtime.py",
+    "source": "takeover/forge-host-local-fixture/prepare-runtime.py",
+    "sha256": "c5f25ba7c81c0d0fc35927f74254761625ed740839760d91e0cba9c2747884eb",
+    "bytes": 2395
+  },
+  {
+    "path": "fixture/runtime.py",
+    "source": "takeover/forge-host-local-fixture/runtime.py",
+    "sha256": "deebf6819f5f757bbec4c48d3a4928170dc53b6e839a84f9c249c4a28141c1b8",
+    "bytes": 3578
+  },
+  {
+    "path": "fixture/manifest.json",
+    "source": "takeover/forge-host-local-fixture/manifest.json",
+    "sha256": "02c3545ef3aea90ef3e989301440e1fcd073e0a1619a3de926d19296524745f5",
+    "bytes": 1934
+  }
+]

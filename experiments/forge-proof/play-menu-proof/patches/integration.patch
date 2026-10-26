@@ -1,0 +1,535 @@
+--- a/app.js
++++ b/app.js
+@@ -13,6 +13,8 @@
+ import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
+ import {syncDesktopPlayEntries} from './desktop-play.js';
+ import {createPlaySetup} from './play-setup.js';
++import {FORGE_PLAY_TEST_ENABLED} from './play-forge-feature.js';
++import {forgeDeckSupport} from './play-forge-setup-review.js';
+ import {parsePlayDeckImport} from './play-deck-import.js';
+ import {playMenuMarkup} from './play-menu.js';
+ import {createPracticeOpponentBuilder} from './play-opponent-build.js';
+@@ -1509,7 +1511,7 @@
+  const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
+  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
+  try{const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck),state.selected];
+- const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
++ const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
+  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
+  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
+ };
+@@ -1560,6 +1562,14 @@
+  const beginGame=async options=>{
+   practicePregame?.destroy();practicePregame=null;
+   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
++  if(FORGE_PLAY_TEST_ENABLED){
++   if(!document.getElementById('forgeHostedTableStyles')){const css=document.createElement('link');css.id='forgeHostedTableStyles';css.rel='stylesheet';css.href='play-forge-table.css';document.head.append(css);}
++   const {createForgePlayerMat}=await import('./play-forge-player-mat.js');if(!current()||!playerMatRoot)return;
++   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,testDefaultPolicy:true,
++    // Cache-only catalogue access: no per-hand/card network lookup during play.
++    lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();}});
++   try{await playerMatHost.start();}catch(e){toast(e.code||e.message);}return;
++  }
+   const cards=createPracticeCardPreparation({selectionKey:key,isCurrent:current,
+    resolveNames:names=>resolveNames(names,()=>{},false,current),
+    lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),
+@@ -1567,7 +1577,8 @@
+   playerMatHost=createPlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),prepareArtwork:cards.prepare,reviewDecks:createPracticeCatalogReview({isCurrent:current,lookupNames:identifiers=>api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers})})}),lookup:cards.lookup,onClose:closePlayerMat,onSaveDeck:savePlayDeck,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();}});
+   try{await playerMatHost.start(options);}catch(e){toast(e.message);}
+  };
+- if(source.playStyle==='quick')await beginGame(resolvePracticePregame('random'));
++ if(FORGE_PLAY_TEST_ENABLED)await beginGame({}); // Forge owns its opening decisions.
++ else if(source.playStyle==='quick')await beginGame(resolvePracticePregame('random'));
+  else practicePregame=mountPracticePregame({root:playerMatRoot,renderDeckArtwork:deck=>{const art=document.createElement('div');art.className='play-pregame-art';art.innerHTML=V.deckArtwork(deck);return art;},readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),onCancel:closePlayerMat,onConfirm:beginGame});
+  }finally{playStarting=false;}
+ };
+@@ -1581,7 +1592,7 @@
+   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
+   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:(state.playStyle!=='quick'&&state.inspectedSeat==='opponent'?state.opponentSource==='saved'&&state.opponent?.id===deck.id:state.selectedSource==='saved'&&state.selected?.id===deck.id)}));}
+   const inspected=state.match.mode==='cpu'&&state.inspectedSeat==='opponent'?state.opponent:state.selected;
+-  return playMenuMarkup(state,{sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions(),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent)}});
++  return playMenuMarkup(state,{engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions(),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent)}});
+ }
+ const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
+   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
+--- a/play-menu.js
++++ b/play-menu.js
+@@ -1,3 +1,4 @@
++import {forgeDeckSupport,reviewForgeSetup} from './play-forge-setup-review.js';
+ import {readCpuOptions} from './play-cpu-options.js';
+ import {brandMark} from './brand.js';
+ import {PLAY_DECK_SOURCES,playDeckSupport} from './play-deck-sources.js';
+@@ -10,7 +11,8 @@
+ function notices(items, title) {
+   return items?.length ? `<details class="note warn"><summary>${esc(title)} (${items.length})</summary><ul>${items.map(item => `<li>${esc(message(item))}</li>`).join('')}</ul></details>` : '';
+ }
+-export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(), deckPreview = '', importPreview = '', selectedArt = '', matchupArt = {}, opponentPreview = '', sourceEntries = {}, sourceArt = new Map(), sourceStatus = {}, savedCopy = null, savePending = false, cpuDifficulties = readCpuOptions(), quickStatus = {}, matchReleaseReady = false} = {}) {
++export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(), deckPreview = '', importPreview = '', selectedArt = '', matchupArt = {}, opponentPreview = '', sourceEntries = {}, sourceArt = new Map(), sourceStatus = {}, savedCopy = null, savePending = false, cpuDifficulties = readCpuOptions(), quickStatus = {}, matchReleaseReady = false, engine = 'phase'} = {}) {
++  const native=engine==='forge',deckSupport=native?forgeDeckSupport:playDeckSupport;
+   const p = state.profile || {}, draft = state.draft || {}, inspectedSeat=state.match?.mode==='cpu'&&state.inspectedSeat==='opponent'?'opponent':'player',selected = inspectedSeat==='opponent'?state.opponent:state.selected;
+   const match = state.match || {format:'Commander',mode:'cpu',difficulty:'Medium'}, query = state.browse?.query || '';
+   const signedIn = p.signedIn === true, importReady = ['review','ready'].includes(state.importStatus);
+@@ -19,20 +21,20 @@
+   const browserSeat=state.playStyle==='quick'&&match.mode==='cpu'?'player':inspectedSeat,browserSelected=browserSeat==='opponent'?state.opponent:state.selected;
+   const source=state.browse?.source||'yours',sourceLabel=PLAY_DECK_SOURCES.find(([key])=>key===source)?.[1]||'Your decks',seatLabel=browserSeat==='opponent'?'CPU':'you';
+   const chosen = d => (browserSeat==='opponent'?state.opponentSource:state.selectedSource) === 'saved' && browserSelected?.id === d.id;
+-  const selectedSupport=selected?playDeckSupport(selected):null;
++  const selectedSupport=selected?deckSupport(selected):null;
+   const external=(sourceEntries[source]||[]).filter(e=>[e.deck?.name,e.deck?.commander,e.detail].some(v=>String(v||'').toLowerCase().includes(query.toLowerCase().trim())));
+   const build=state.deckBuild||state.opponentBuild||{};
+-  const selectedIssues=[['Your deck',state.selected],['CPU deck',state.opponent]].filter(([,deck])=>deck).map(([label,deck])=>({...playDeckSupport(deck),seatLabel:label})).filter(s=>s.status!=='pool');
++  const selectedIssues=[['Your deck',state.selected],['CPU deck',state.opponent]].filter(([,deck])=>deck).map(([label,deck])=>({...deckSupport(deck),seatLabel:label})).filter(s=>native?s.status!=='native-pending':s.status!=='pool');
+   const supportProblem=match.mode==='cpu'&&selectedIssues.map(s=>s.seatLabel+': '+s.label).join(' ');
+-  const quick=state.playStyle==='quick'&&match.mode==='cpu',review=reviewPracticeSetup(quick&&!state.opponent?{...state,opponent:state.selected}:state),canStart=matchReleaseReady&&review.canLoad&&!quickStatus.busy&&!selectedIssues.length;
+-  const footerText=supportProblem||(quick?(quickStatus.error||review.reasons.join(' ')||state.quickMatch?.reason||(state.selected?'Play finds a CPU opponent and chooses who goes first. Your selected deck and format stay the same.':'Choose your deck to find a CPU opponent.')):match.mode==='friends'?'Friends matches are coming later. Choose Practice to play against the CPU.':review.reasons.join(' ')|| (matchReleaseReady?'The engine checks both exact lists before dealing.':'Practice launch is still being verified.'));
++  const quick=state.playStyle==='quick'&&match.mode==='cpu',review=native?reviewForgeSetup(state,{allowMissingOpponent:quick}):reviewPracticeSetup(quick&&!state.opponent?{...state,opponent:state.selected}:state),canStart=matchReleaseReady&&review.canLoad&&!quickStatus.busy&&!selectedIssues.length;
++  const footerText=native?(supportProblem||review.reasons.join(' ')||quickStatus.error||'Default CPU (test policy). Forge validates the exact selected decks on opening; the saved difficulty preference is not mapped to this policy.'):(supportProblem||(quick?(quickStatus.error||review.reasons.join(' ')||state.quickMatch?.reason||(state.selected?'Play finds a CPU opponent and chooses who goes first. Your selected deck and format stay the same.':'Choose your deck to find a CPU opponent.')):match.mode==='friends'?'Friends matches are coming later. Choose Practice to play against the CPU.':review.reasons.join(' ')|| (matchReleaseReady?'The engine checks both exact lists before dealing.':'Practice launch is still being verified.')));
+   const matchup=seat=>{const deck=seat==='player'?state.selected:state.opponent;return `<button class="play-matchup-seat" data-act="playInspectSeat" data-play-seat="${seat}" aria-label="Inspect ${seat==='player'?'your':'CPU'} deck">${matchupArt[seat]||''}<span>${seat==='player'?'YOU':'CPU'}</span><strong>${esc(deck?.name||(seat==='player'?'Choose your deck':'Choose CPU deck'))}</strong><small>${deck?`${esc(deck.format)} · ${count(deck.cards)} cards · Selected`:(seat==='opponent'&&quick?'Quick Play chooses this deck for you':'Choose a deck for this seat')}</small></button>`;};
+   const matchBar=`<footer class="panel play-match-bar" aria-label="Match setup">
+       <div class="play-profile">${avatarMarkup}<div><b>${esc(p.displayName || (signedIn ? 'Player' : 'Your player profile'))}</b>${p.username ? `<span class="small muted">@${esc(p.username)}</span>` : ''}<span class="small muted">${signedIn ? 'Your seat · 1v1' : 'Sign in to prepare your match'}</span></div></div>
+       <nav class="play-paths" aria-label="Play mode">${[['quick','Quick Play'],['practice','Practice'],['social','Social · Coming later']].map(([value,label])=>`<button class="btn ghost" data-act="playStyle" data-play-style="${value}" aria-pressed="${(match.mode==='friends'?'social':state.playStyle||'practice')===value}">${label}</button>`).join('')}</nav>
+       ${match.mode === 'cpu' ? `<label class="play-difficulty">Difficulty<select id="playDifficulty" data-change="playMatchOption" data-play-option="difficulty">${['Easy','Medium','Hard'].map(level => `<option value="${level}"${match.difficulty === level ? ' selected' : ''}${cpuDifficulties.includes(level)?'':' disabled'}>${level}${cpuDifficulties.includes(level)?'':' · Coming later'}</option>`).join('')}</select></label>` : '<p class="small muted play-friends-note">Private matches<br>Coming after CPU practice</p>'}
+       <div class="play-start"><button class="btn" data-act="playStartCandidate" ${canStart?'':'disabled'} aria-describedby="playMatchStatus">${match.mode === 'friends' ? 'Play with friends' : quickStatus.busy?'Finding a CPU deck…':quick?'Play':'Play CPU'}</button></div>
+-      <div id="playMatchStatus" class="small muted" role="status"><p>${esc(footerText)}</p>${quick&&state.quickMatch?`<p>${state.quickMatch.candidateCount} compatible list${state.quickMatch.candidateCount===1?'':'s'} considered · CPU piloting: ${esc(match.difficulty)}</p>`:''}${Object.entries(review.seats||{}).map(([seat,s])=>notices(s.unsupported,(seat==='player'?'Your deck':'CPU deck')+': card rules unavailable')).join('')}</div>
++      <div id="playMatchStatus" class="small muted" role="status"><p>${esc(footerText)}</p>${quick&&state.quickMatch?`<p>${state.quickMatch.candidateCount} compatible list${state.quickMatch.candidateCount===1?'':'s'} considered · ${native?'Default CPU (test policy)':`CPU piloting: ${esc(match.difficulty)}`}</p>`:''}${Object.entries(review.seats||{}).map(([seat,s])=>notices(s.unsupported,(seat==='player'?'Your deck':'CPU deck')+': card rules unavailable')).join('')}</div>
+       ${!signedIn?'<button class="btn" data-act="menu">Sign in to play</button>':''}
+       ${match.mode==='cpu'?'<p class="play-session-note small muted">Keep this page open: refreshing or leaving ends the match. In-game Exit asks before conceding.</p>':''}
+     </footer>`;
+@@ -57,7 +59,7 @@
+               <div role="status" aria-live="polite">${state.error ? `<p class="note warn">${esc(state.error)}</p>` : ''}${state.busy ? '<p class="muted">Matching card names…</p>' : state.importStatus === 'selected' ? '<p class="muted">List selected. Review it in Your deck.</p>' : importReady ? '<p class="muted">Review the entries, then choose Use this list.</p>' : ''}</div>
+               ${notices(state.warnings, 'Import notes')}${notices(state.unresolved, 'Unmatched cards')}
+               ${importReady && state.reviewDeck ? `<div class="play-import-review"><h3>Review imported list</h3><p class="muted small">${count(state.reviewDeck.cards)} cards${state.reviewDeck.side?.length ? ` · ${count(state.reviewDeck.side)} sideboard` : ''}</p>${importPreview}</div>` : ''}
+-            </div></details><p class="play-result-count small muted" role="status">${visible.length} of ${decks.length} ${esc(match.format)} decks</p>${visible.length?`<div class="deck-grid play-deck-choices">${visible.map(deck=>`<article class="play-deck-choice${chosen(deck)?' selected':''}">${deckTiles.get(deck.id)||`<button class="deck-tile" data-act="playSelectDeck" data-play-deck="${esc(deck.id)}" aria-pressed="${chosen(deck)}"><span class="tile-body"><b>${esc(deck.name)}</b><small>${esc(deck.format)}</small></span></button>`}<span class="play-deck-selection" aria-hidden="true">${chosen(deck)?'✓ Selected':'Choose deck'}</span></article>`).join('')}</div>`:`<div class="empty"><h3>${query?'No matching decks':'No '+esc(match.format)+' decks yet'}</h3><p>Paste a list or explore the other sources above.</p></div>`}`:'<div class="empty"><h3>Your decks, ready for the table</h3><p>Sign in to choose your saved lists.</p><button class="btn" data-act="menu">Sign in</button></div>'}`:`<div class="play-source-tools"><button class="btn ghost small" data-act="playLoadSource" ${sourceStatus.busy?'disabled':''}>${sourceStatus.busy?'Loading…':source==='precons'?'Load more precons':source==='community'?'Load shared decks':'Refresh Meta decks'}</button><span class="small muted" role="status">${esc(sourceStatus.message||'')}</span></div>${sourceStatus.error?`<p class="note warn" role="alert">${esc(sourceStatus.error)}</p>`:''}${external.length?`<div class="play-source-grid">${external.map(entry=>{const support=playDeckSupport(entry.deck),on=browserSelected?.id===entry.deck.id;return `<button class="play-source-card" data-act="playPickSourceDeck" data-play-entry="${esc(entry.key)}" aria-pressed="${on}" ${!signedIn?'disabled':''}>${sourceArt.get(entry.key)||'<span class="play-source-art-fallback" aria-hidden="true">✦</span>'}<span class="play-source-card-copy"><small>${esc(entry.detail)}</small><strong>${esc(entry.deck.name)}</strong><span>${count(entry.deck.cards)} cards · ${esc(entry.deck.format)}</span><span class="play-support" data-support="${support.status}">${esc(support.label)}</span><b>${on?'Selected':'Inspect & select'}</b></span></button>`;}).join('')}</div>`:`<div class="empty"><h3>No ${esc(sourceLabel.toLowerCase())} loaded for ${esc(match.format)}</h3><p>${source==='precons'&&match.format==='Standard'?'The precon catalog contains Commander lists. Browse those lists, or choose a Standard deck from Your decks, Community, Meta or Random.':'Load this source or try another deck source.'}</p>${source==='precons'&&match.format==='Standard'?'<div class="actions wrap"><button class="btn ghost" data-act="playConfigure" data-play-option="format" data-play-value="Commander">Browse Commander precons</button></div>':''}</div>`}${!signedIn?'<p class="note">Sign in to select a deck for the match.</p>':''}`}
++            </div></details><p class="play-result-count small muted" role="status">${visible.length} of ${decks.length} ${esc(match.format)} decks</p>${visible.length?`<div class="deck-grid play-deck-choices">${visible.map(deck=>`<article class="play-deck-choice${chosen(deck)?' selected':''}">${deckTiles.get(deck.id)||`<button class="deck-tile" data-act="playSelectDeck" data-play-deck="${esc(deck.id)}" aria-pressed="${chosen(deck)}"><span class="tile-body"><b>${esc(deck.name)}</b><small>${esc(deck.format)}</small></span></button>`}<span class="play-deck-selection" aria-hidden="true">${chosen(deck)?'✓ Selected':'Choose deck'}</span></article>`).join('')}</div>`:`<div class="empty"><h3>${query?'No matching decks':'No '+esc(match.format)+' decks yet'}</h3><p>Paste a list or explore the other sources above.</p></div>`}`:'<div class="empty"><h3>Your decks, ready for the table</h3><p>Sign in to choose your saved lists.</p><button class="btn" data-act="menu">Sign in</button></div>'}`:`<div class="play-source-tools"><button class="btn ghost small" data-act="playLoadSource" ${sourceStatus.busy?'disabled':''}>${sourceStatus.busy?'Loading…':source==='precons'?'Load more precons':source==='community'?'Load shared decks':'Refresh Meta decks'}</button><span class="small muted" role="status">${esc(sourceStatus.message||'')}</span></div>${sourceStatus.error?`<p class="note warn" role="alert">${esc(sourceStatus.error)}</p>`:''}${external.length?`<div class="play-source-grid">${external.map(entry=>{const support=deckSupport(entry.deck),on=browserSelected?.id===entry.deck.id;return `<button class="play-source-card" data-act="playPickSourceDeck" data-play-entry="${esc(entry.key)}" aria-pressed="${on}" ${!signedIn?'disabled':''}>${sourceArt.get(entry.key)||'<span class="play-source-art-fallback" aria-hidden="true">✦</span>'}<span class="play-source-card-copy"><small>${esc(entry.detail)}</small><strong>${esc(entry.deck.name)}</strong><span>${count(entry.deck.cards)} cards · ${esc(entry.deck.format)}</span><span class="play-support" data-support="${support.status}">${esc(support.label)}</span><b>${on?'Selected':'Inspect & select'}</b></span></button>`;}).join('')}</div>`:`<div class="empty"><h3>No ${esc(sourceLabel.toLowerCase())} loaded for ${esc(match.format)}</h3><p>${source==='precons'&&match.format==='Standard'?'The precon catalog contains Commander lists. Browse those lists, or choose a Standard deck from Your decks, Community, Meta or Random.':'Load this source or try another deck source.'}</p>${source==='precons'&&match.format==='Standard'?'<div class="actions wrap"><button class="btn ghost" data-act="playConfigure" data-play-option="format" data-play-value="Commander">Browse Commander precons</button></div>':''}</div>`}${!signedIn?'<p class="note">Sign in to select a deck for the match.</p>':''}`}
+         </div>
+       </section>
+       <aside class="panel play-inspector" aria-labelledby="playInspectorTitle">
+--- a/play-quick-match.js
++++ b/play-quick-match.js
+@@ -1,15 +1,16 @@
+ // Pick a CPU list for review. Matching is an estimate, never engine admission.
+ import {playDeckSupport} from './play-deck-sources.js';
+-export function chooseQuickOpponent({player,candidates=[],difficulty='Medium',estimate=()=>null,support=playDeckSupport}={}){
++export function chooseQuickOpponent({player,candidates=[],difficulty='Medium',estimate=()=>null,support=playDeckSupport,candidateEligible=null,nativeValidationPending=false}={}){
+  if(!['Easy','Medium','Hard'].includes(difficulty))throw Error('Choose a CPU difficulty.');
+- if(!player||support(player).status!=='pool')throw Error('Your selected deck needs play-support review before Quick Play.');
++ const eligible=candidateEligible||((deck)=>support(deck).status==='pool');
++ if(!player||!eligible(player))throw Error('Your selected deck needs play-support review before Quick Play.');
+  const listKey=deck=>JSON.stringify([deck.format,deck.commander||'',deck.commanders||[],deck.cards,deck.side||[]]);
+  const seen=new Set(),rows=[];
+- for(const entry of candidates){const deck=entry?.deck||entry;if(!deck||deck.format!==player.format)continue;const key=listKey(deck);if(seen.has(key)||support(deck).status!=='pool')continue;seen.add(key);let score=null;try{const n=estimate(deck);if(Number.isFinite(n)&&n>=0&&n<=100)score=n;}catch{}rows.push({deck,score,key});}
++ for(const entry of candidates){const deck=entry?.deck||entry;if(!deck||deck.format!==player.format)continue;const key=listKey(deck);if(seen.has(key)||!eligible(deck))continue;seen.add(key);let score=null;try{const n=estimate(deck);if(Number.isFinite(n)&&n>=0&&n<=100)score=n;}catch{}rows.push({deck,score,key});}
+  if(!rows.length)throw Error('No compatible CPU deck is available in this format yet. Choose another source in Practice.');
+  let own=null;try{const n=estimate(player);if(Number.isFinite(n)&&n>=0&&n<=100)own=n;}catch{}
+  const target=own===null?null:Math.max(0,Math.min(100,own+({Easy:-10,Medium:0,Hard:10}[difficulty])));
+  const rated=target===null?[]:rows.filter(r=>r.score!==null);const pool=rated.length?rated:rows;
+  if(rated.length)pool.sort((a,b)=>Math.abs(a.score-target)-Math.abs(b.score-target)||a.key.localeCompare(b.key));
+- const selected=pool[0],mirror=selected.key===listKey(player);return {deck:structuredClone(selected.deck),candidateCount:rows.length,estimated:!!rated.length,mirror,reason:(mirror?'CPU will use the same card list as you. ':'')+(rated.length?'Matched using existing deck estimates for '+difficulty+'. Estimates do not guarantee an even game.':'Matched from available supported lists. Deck-strength estimates are unavailable.'),difficulty};
++ const selected=pool[0],mirror=selected.key===listKey(player);return {deck:structuredClone(selected.deck),candidateCount:rows.length,estimated:!!rated.length,mirror,reason:(mirror?'CPU will use the same card list as you. ':'')+(nativeValidationPending?'Concrete list selected for native validation. '+(rated.length?'Existing deck-strength estimates guided this list choice; they do not set Forge CPU policy.':'Deck-strength estimates are unavailable.'):(rated.length?'Matched using existing deck estimates for '+difficulty+'. Estimates do not guarantee an even game.':'Matched from available supported lists. Deck-strength estimates are unavailable.')),difficulty};
+ }
+--- /dev/null
++++ b/play-forge-feature.js
+@@ -0,0 +1,4 @@
++// Isolated integration default: NOT production activation. Root may enable only
++// in a reviewed integration proof with an authorized host trial. Existing
++// Easy/Medium/Hard selection is not mapped to this explicitly labelled policy.
++export const FORGE_PLAY_TEST_ENABLED = false;
+--- /dev/null
++++ b/play-forge-host-client.js
+@@ -0,0 +1,93 @@
++// Same-origin host transport only. No local bridge credential, URL override,
++// persistence, automatic command retry, or card-provider request is supported.
++const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++export const FORGE_TEST_POLICY='forge-default-smart-v1';
++export const FORGE_REVISION='e5a0f8156da70ffc7866f923bed371c0111707cd';
++const SCHEMA='cardstashy.forge-proof.v1';
++const fail=code=>Object.assign(Error(code),{code});
++export const forgeAccountKey=a=>JSON.stringify([a?.user?.id,a?.accountGeneration??a?.generation??null,!!a?.locked,!!a?.switching]);
++export async function exactDigest(value){
++ const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
++ return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(canonical(value)))))].map(n=>n.toString(16).padStart(2,'0')).join('');
++}
++export function exactForgeInput(setup,{testDefaultPolicy=false}={}){
++ if(testDefaultPolicy!==true)throw fail('FORGE_DIFFICULTY_POLICY_NOT_READY');
++ if(setup?.match?.mode!=='cpu'||!setup.selected||!setup.opponent||!['Commander','Standard','Modern'].includes(setup.match.format))throw fail('FORGE_SETUP_INCOMPLETE');
++ // This explicit test policy is NOT a mapping of Easy/Medium/Hard. Those setup
++ // selections are left intact; activation waits for tested native policies.
++ return structuredClone({format:setup.match.format,humanDeck:setup.selected,opponentDeck:setup.opponent,difficultyPolicyVersion:FORGE_TEST_POLICY});
++}
++export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=globalThis.fetch,timeoutMs=15000,newId=()=>crypto.randomUUID()}={}){
++ if(typeof readAccount!=='function'||typeof getAccessToken!=='function'||typeof fetchImpl!=='function')throw fail('FORGE_HOST_READERS_REQUIRED');
++ const owner=readAccount(),ownerKey=forgeAccountKey(owner);
++ if(!UUID.test(owner?.user?.id||'')||owner.locked||owner.switching)throw fail('ACCOUNT_CHANGED');
++ let allocation=null,creating=false,closed=false,closeRequested=false,submitting=false,blocked=false,error=null,terminal=null,nextReadAt=0,expectedViewer=null,knownPlayers=null;
++ const current=()=>{const a=readAccount();if(forgeAccountKey(a)!==ownerKey||a.locked||a.switching)throw fail('ACCOUNT_CHANGED');};
++ const status=()=>({blocked:blocked||closed,error,allocation:allocation?structuredClone(allocation):null,terminal:terminal?structuredClone(terminal):null});
++ async function request(path,{method='GET',body,headers={}}={}){
++  current();const token=await getAccessToken();current();if(path==='/api/play/matches'&&closeRequested)throw fail('MATCH_CLOSED');
++  if(typeof token!=='string'||!token||token.length>8192||!/^[-A-Za-z0-9._]+$/.test(token))throw fail('AUTHENTICATION_REQUIRED');
++  const controller=new AbortController();let timer;
++  const work=(async()=>{
++   const r=await fetchImpl(path,{method,body:body===undefined?undefined:JSON.stringify(body),headers:{Accept:'application/json',Authorization:'Bearer '+token,...(body===undefined?{}:{'Content-Type':'application/json'}),...headers},credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',cache:'no-store',signal:controller.signal});
++   controller.signal.throwIfAborted();let data=null;if(r.status!==204){
++    const declared=Number(r.headers?.get('content-length'));if(declared>4*1024*1024)throw fail('HOST_RESPONSE_TOO_LARGE');
++    // Body remains under the same deadline as headers. No raw exception/body is logged.
++    const reader=r.body?.getReader();if(!reader)throw fail('HOST_RESPONSE_UNREADABLE');const parts=[];let size=0;const abortBody=()=>{void reader.cancel().catch(()=>{});};controller.signal.addEventListener('abort',abortBody,{once:true});
++    try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>4*1024*1024)throw fail('HOST_RESPONSE_TOO_LARGE');parts.push(value);}}
++    catch(e){void reader.cancel().catch(()=>{});throw e;}finally{controller.signal.removeEventListener('abort',abortBody);reader.releaseLock();}
++    const bytes=new Uint8Array(size);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length;}data=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
++   }
++   current();
++   if(!r.ok){const code=typeof data?.error==='string'&&/^[a-z0-9_]{1,100}$/.test(data.error)?data.error:'host_request_rejected';throw Object.assign(fail(code),{status:r.status,retryAfterMs:Math.max(1000,Math.min(30000,(Number(r.headers.get('Retry-After'))||1)*1000)),details:Array.isArray(data?.validation?.errors||data?.errors)?(data.validation?.errors||data.errors).filter(x=>typeof x==='string').slice(0,20).map(x=>x.slice(0,512)):[]});}
++   return {status:r.status,data};
++  })();
++  try{return await Promise.race([work,new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(fail('HOST_REQUEST_TIMEOUT'));},timeoutMs);})]);}
++  finally{clearTimeout(timer);}
++ }
++ const bind=data=>{if(data?.matchId!==allocation?.matchId||data?.generation!==allocation?.generation)throw fail('HOST_GENERATION_MISMATCH');};
++ return {
++  status,
++  async create(input){
++   if(closed||creating||allocation)throw fail('MATCH_ALREADY_OPEN');creating=true;
++   // JSON is the exact wire representation hashed by the server. No row sorting,
++   // metadata stripping, commander movement, substituted cards or alias fallback.
++   const sent=JSON.parse(JSON.stringify(input));const [human,opponent]=await Promise.all([exactDigest(sent.humanDeck),exactDigest(sent.opponentDeck)]);
++   try{
++    const {status:code,data}=await request('/api/play/matches',{method:'POST',body:sent,headers:{'Idempotency-Key':newId()}});
++    if(code!==202||!UUID.test(data?.matchId||'')||!UUID.test(data?.generation||'')||data.schema!==SCHEMA||data.forgeRevision!==FORGE_REVISION||data.status!=='initializing'||data.deckDigests?.human!==human||data.deckDigests?.opponent!==opponent||!Number.isSafeInteger(data.expiresAt))throw fail('HOST_ALLOCATION_MISMATCH');
++    allocation={matchId:data.matchId,generation:data.generation,expiresAt:data.expiresAt,deckDigests:data.deckDigests};if(closeRequested){await request('/api/play/matches/'+allocation.matchId,{method:'DELETE'});closed=true;throw fail('MATCH_CLOSED');}return structuredClone(allocation);
++   }catch(e){blocked=true;error=e.code||'MATCH_CREATION_OUTCOME_UNKNOWN';throw e;}finally{creating=false;}
++  },
++  async read(){
++   if(closed||!allocation)throw fail('MATCH_NOT_OPEN');
++   if(nextReadAt>Date.now())await new Promise(r=>setTimeout(r,nextReadAt-Date.now()));if(closed)throw fail('MATCH_NOT_OPEN');nextReadAt=Date.now()+300;
++   try{const {status:code,data}=await request('/api/play/matches/'+allocation.matchId);bind(data);
++    if(code===202&&data.status==='initializing')return {status:'initializing'};
++    if(code===200&&data.status==='finished'){
++     if(typeof data.result?.draw!=='boolean'||!data.result.draw&&(!Number.isSafeInteger(data.result?.winnerPlayerId)||knownPlayers&&!knownPlayers.includes(data.result.winnerPlayerId)))throw fail('INVALID_NATIVE_TERMINAL_RECEIPT');
++     terminal=structuredClone(data.result);blocked=true;return {status:'finished',result:structuredClone(terminal)};
++    }
++    const s=data.snapshot;if(code!==200||data.status!=='running'||s?.schema!==SCHEMA||s.forgeRevision!==FORGE_REVISION||!Number.isSafeInteger(s.revision)||!Number.isSafeInteger(s.viewer)||!Array.isArray(s.players)||s.players.filter(p=>p.isViewer&&p.id===s.viewer).length!==1)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');
++    if(expectedViewer!==null&&s.viewer!==expectedViewer)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');expectedViewer=s.viewer;knownPlayers=s.players.map(p=>p.id);return {status:'running',snapshot:s};
++   }catch(e){if([429,503].includes(e.status))nextReadAt=Date.now()+(e.retryAfterMs||1000);if(e.status===410||e.status===401||e.code==='ACCOUNT_CHANGED'||e.code?.includes('MISMATCH')||e.code==='INVALID_NATIVE_TERMINAL_RECEIPT'){blocked=true;error=e.code;}throw e;}
++  },
++  async submit(action){
++   if(!allocation||closed||blocked||submitting)throw fail(error||'MATCH_NOT_READY');
++   if(!Number.isSafeInteger(action?.revision)||!['ok','cancel','card','player','stack','reply','concede','controlMode'].includes(action?.op))throw fail('INVALID_NATIVE_ACTION');
++   if(action.op==='controlMode'&&(!['smart','full'].includes(action.value)||Object.keys(action).some(k=>!['revision','op','value'].includes(k))))throw fail('INVALID_NATIVE_CONTROL_MODE');
++   const commandId=newId();submitting=true;
++   try{const {status:code,data}=await request('/api/play/matches/'+allocation.matchId+'/actions',{method:'POST',body:{commandId,generation:allocation.generation,action:structuredClone(action)}});
++    if(data?.commandId!==commandId||code!==202)throw fail('HOST_COMMAND_RECEIPT_MISMATCH');
++    if(data.state==='pending_outcome_unknown'){blocked=true;error='ACTION_OUTCOME_UNKNOWN';throw fail(error);}
++    if(data.state!=='accepted')throw fail('HOST_COMMAND_RECEIPT_MISMATCH');return data;
++   }catch(e){if(![400,409].includes(e.status)){blocked=true;error=e.code||'ACTION_OUTCOME_UNKNOWN';}throw e;}finally{submitting=false;}
++  },
++  async close(){
++   if(closed)return;closeRequested=true;if(!allocation){if(!creating)closed=true;blocked=true;return;}blocked=true;
++   try{const {status:code}=await request('/api/play/matches/'+allocation.matchId,{method:'DELETE'});if(code!==204)throw fail('RESOURCE_CLEANUP_UNCONFIRMED');closed=true;error=null;}
++   catch(e){error=e.code||'RESOURCE_CLEANUP_UNCONFIRMED';throw e;}
++  },
++  detach(){closed=true;blocked=true;allocation=null;terminal=null;nextReadAt=0;expectedViewer=null;knownPlayers=null;},
++ };
++}
+--- /dev/null
++++ b/play-forge-player-mat.js
+@@ -0,0 +1,92 @@
++// Existing createPlaySetup snapshots and the existing table; no second picker,
++// rules engine, external artwork query, or persisted private match state.
++import {capturePracticeArtwork} from './play-card-surface.js';
++import {createForgeHostClient,exactForgeInput,forgeAccountKey} from './play-forge-host-client.js';
++import {createForgePresentationSession} from './experiments/forge-proof/forge-session.mjs';
++import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
++const selectionKey=s=>JSON.stringify([s?.profile?.ownerId,s?.selected,s?.opponent,s?.match]);
++export function capturedForgeArtwork(setup,lookup){
++ const rows=[setup.selected,setup.opponent].flatMap(deck=>{const d=capturePracticeArtwork(deck,lookup);return [...d.cards,...(d.side||[])];});
++ return (name,native)=>{
++  const options=rows.filter(r=>r.name===name&&r.playArtwork).map(r=>r.playArtwork);
++  const sameSet=options.filter(a=>a.card?.set?.toLowerCase()===native?.setCode?.toLowerCase());
++  const candidates=sameSet.length?sameSet:options,ids=new Set(candidates.map(a=>a.card.id));
++  // Native IDs do not map mixed selected printing copies yet. Refuse to invent
++  // that association; a unique catalogue reference is labelled as such in UI.
++  return ids.size===1?structuredClone(candidates[0]):null;
++ };
++}
++export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,lookup,testDefaultPolicy=false,onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,createClient=createForgeHostClient,mountTable=mountForgeTable,pollMs=500,wait=ms=>new Promise(r=>setTimeout(r,ms))}={}){
++ if(!root||[readAccount,readSetup,getAccessToken,lookup].some(f=>typeof f!=='function'))throw Error('FORGE_PLAYER_MAT_READERS_REQUIRED');
++ const doc=root.ownerDocument,view=doc.defaultView;
++ let generation=0,opening=false,client=null,session=null,table=null,last=null,warning=false,viewer=null,matchup=null,matchAccount=null,exitDialog=null,exitConfirm=null,exitSubmitting=false,disposed=false;
++ const node=(tag,text)=>{const n=doc.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
++ const beforeUnload=e=>{e.preventDefault();e.returnValue='';};
++ const warn=enabled=>{if(enabled===warning)return;warning=enabled;view[enabled?'addEventListener':'removeEventListener']('beforeunload',beforeUnload);};
++ const publish=value=>{last=value;onChange(structuredClone(value));};
++ function message(title,lines,{close=true}={}){
++  table?.destroy();table=null;root.replaceChildren();root.className='play-mat-message';const panel=node('section');panel.className='panel play-journey-message';const heading=node('h1',title);heading.tabIndex=-1;panel.append(heading);for(const line of lines)panel.append(node('p',line));
++  if(close){const b=node('button','Return to Play setup');b.type='button';b.className='btn';b.addEventListener('click',requestExit);panel.append(b);}root.append(panel);heading.focus();
++ }
++ function finish(result){
++  if(disposed)return;session?.close();warn(false);exitDialog?.remove();exitDialog=null;exitConfirm=null;
++  const title=result.draw?'Draw':viewer===null?`Native winner: player ${result.winnerPlayerId}`:result.winnerPlayerId===viewer?'You won':'CPU won';
++  publish({phase:'finished',result:structuredClone(result),deckDigests:client?.status().allocation?.deckDigests||null});message('Match finished',[title,'Forge supplied this result. The host retained the outcome, not a final board snapshot.','This session cannot be resumed. Return to setup to start a new match.','No persistent match history or statistics have been saved by this integration.']);
++  root.classList.add('play-mat-result');const panel=root.querySelector('section');panel.classList.add('play-match-result');
++  if(matchup){const decks=node('details');decks.append(node('summary','Exact deck snapshots used'));
++   for(const [seat,deck]of [['human',matchup.selected],['opponent',matchup.opponent]]){decks.append(node('h3',(seat==='human'?'Your deck: ':'CPU deck: ')+deck.name));const hash=client?.status().allocation?.deckDigests?.[seat];if(hash)decks.append(node('code','Snapshot SHA-256: '+hash));const list=node('ul');for(const row of deck.cards||[])list.append(node('li',`${row.qty} ${row.name}`));decks.append(list);if(deck.side?.length){decks.append(node('p','Sideboard'));for(const row of deck.side)decks.append(node('p',`${row.qty} ${row.name}`));}const metadata=node('details'),source=node('pre',JSON.stringify(deck,null,2));source.style.whiteSpace='pre-wrap';source.style.overflowWrap='anywhere';metadata.append(node('summary','Read-only snapshot metadata'),source);decks.append(metadata);}
++   panel.append(decks);
++  }
++  for(const [label,fn]of [['Rematch setup',onRematch],['Home',onHome]])if(fn){const b=node('button',label);b.type='button';b.className='btn ghost';b.addEventListener('click',fn);panel.append(b);}
++ }
++ function stopped(e){
++  if(disposed)return;session?.close();warn(false);exitDialog?.remove();exitDialog=null;exitConfirm=null;publish({phase:e.code==='ACCOUNT_CHANGED'?'account-changed':'session-ended',error:e.code||'HOST_SESSION_STOPPED'});
++  message('Native session stopped',[e.code==='ACCOUNT_CHANGED'?'The signed-in account changed.':'The session was interrupted or expired. No win or loss has been invented.','Return to setup to start a new match. The same match will not be restarted.']);
++ }
++ async function closeSession(){
++  session?.close();warn(false);try{await client?.close();onClose();}catch(e){message('Session cleanup is not confirmed',['The table is stopped. Try closing again; the server also has a bounded expiry.']);publish({phase:'session-ended',error:e.code||'RESOURCE_CLEANUP_UNCONFIRMED'});}
++ }
++ function updateExit(){if(exitConfirm){const s=session?.snapshot();exitConfirm.disabled=exitSubmitting||!!s?.busy||!!s?.native?.prompt||s?.native?.inputType==='InputLockUI';}}
++ function requestExit(){
++  if(disposed||exitDialog)return;
++  if(last?.phase==='finished'||last?.phase==='account-changed'){void closeSession();return;}
++  const canConcede=last?.phase==='playing'&&session&&!client.status().blocked;exitSubmitting=false;
++  const dialog=node('dialog');dialog.className='play-match-exit';dialog.setAttribute('aria-label',canConcede?'Concede native match':'Close native session');dialog.append(node('h2',canConcede?'Concede this match?':'Close this session?'),node('p',canConcede?'Confirming sends a real concession to Forge. The match result must be confirmed by the engine.':'This interrupted or unopened session cannot be resumed. Closing resources does not invent a win or loss.'));
++  const keep=node('button','Keep playing'),close=node('button',canConcede?'Concede and return':'Close and return');keep.type=close.type='button';keep.addEventListener('click',()=>{dialog.remove();exitDialog=null;});close.addEventListener('click',async()=>{
++   close.disabled=true;exitSubmitting=true;
++   if(canConcede){
++    try{await session.concede();const until=Date.now()+10000;while(last?.phase==='playing'&&Date.now()<until&&!client.status().blocked)await wait(100);if(last?.phase!=='finished')throw Error('NATIVE_CONCESSION_UNCONFIRMED');dialog.remove();exitDialog=null;await closeSession();}
++    catch{if(dialog.isConnected){dialog.append(node('p','Forge has not confirmed the ending. No loss has been invented. Keep the table open to inspect the current state.'));close.disabled=true;}}
++   }else{dialog.remove();exitDialog=null;generation++;await closeSession();}
++  });dialog.append(keep,close);dialog.addEventListener('cancel',e=>{e.preventDefault();dialog.remove();exitDialog=null;});doc.body.append(dialog);exitDialog=dialog;exitConfirm=canConcede?close:null;if(canConcede)dialog.append(node('p','Concession is available while Forge is awaiting your next action. Finish or cancel an open native choice first.'));updateExit();if(typeof dialog.showModal==='function')dialog.showModal();else dialog.open=true;keep.focus();
++ }
++ async function start(){
++  if(disposed||opening||client)throw Error('MATCH_ALREADY_OPEN');opening=true;const ticket=++generation,account=forgeAccountKey(readAccount()),setup=readSetup(),selection=selectionKey(setup);
++  matchAccount=account;
++  const current=()=>!disposed&&ticket===generation&&forgeAccountKey(readAccount())===account&&selectionKey(readSetup())===selection;
++  try{
++   matchup=structuredClone(setup);const input=exactForgeInput(setup,{testDefaultPolicy}),artwork=capturedForgeArtwork(setup,lookup);
++   if(!current()||setup.profile?.ownerId!==readAccount()?.user?.id)throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
++   client=createClient({readAccount,getAccessToken});
++   message('Opening native match…',['Default CPU (test policy). Your difficulty selection is unchanged; this test does not claim Easy, Medium or Hard.','Using your selected decks exactly. Forge validates their identities and legality.']);
++   await client.create(input);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
++   let state,deadline=Date.now()+125000;
++   while(current()&&Date.now()<deadline){try{state=await client.read();}catch(e){if(![429,503].includes(e.status))throw e;await wait(e.retryAfterMs||1000);continue;}if(state.status!=='initializing')break;await wait(pollMs);}
++   if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
++   if(state?.status==='finished'){finish(state.result);return last;}
++   if(state?.status!=='running')throw Error('HOST_STARTUP_TIMEOUT');viewer=state.snapshot.viewer;
++   session=createForgePresentationSession({lookupArtwork:artwork,pollMs,allowControlMode:true,transportStatus:()=>client.status(),request:async(path,body)=>{
++    if(body)return client.submit(body);
++    try{const next=await client.read();if(next.status==='finished'){finish(next.result);return null;}if(next.status!=='running')throw Error('HOST_SESSION_NOT_RUNNING');return next.snapshot;}
++    catch(e){if(e.status===410||e.status===401||e.code==='ACCOUNT_CHANGED')stopped(e);throw e;}
++   }});
++   session.acceptState(state.snapshot);session.subscribe(s=>{updateExit();if(!disposed&&ticket===generation&&last?.phase!=='finished')publish({phase:'playing',game:s});});
++   root.className='';table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:'CardStashy · Native Magic',onExit:requestExit,presentation:{hosted:true,policyLabel:'Default CPU (test policy)',allowControlMode:true}});warn(true);await session.start({readInitial:false});return last;
++  }catch(e){if(current()){session?.close();warn(false);message('Native match could not open',['Your selected lists are unchanged. '+(e.code||e.message),'No fallback deck or replacement engine was started.',...(e.details||[])]);publish({phase:'session-ended',error:e.code||e.message});}throw e;}
++  finally{opening=false;}
++ }
++ return {start,snapshot:()=>last?structuredClone(last):null,requestExit,
++  reconcile(){if(matchAccount&&forgeAccountKey(readAccount())!==matchAccount){client?.detach();stopped({code:'ACCOUNT_CHANGED'});return false;}return true;},
++  detach(){if(disposed)return;disposed=true;generation++;warn(false);session?.close();table?.destroy();table=null;exitDialog?.remove();exitDialog=null;void client?.close().catch(()=>{}).finally(()=>client?.detach());root.replaceChildren();last=null;},
++ };
++}
+--- /dev/null
++++ b/play-forge-setup-review.js
+@@ -0,0 +1,19 @@
++// Transport/readiness review only. Forge alone decides card support, identity,
++// construction legality and game rules after receiving both exact snapshots.
++export function forgeDeckSupport(deck){
++ const invalid=!deck||!['Commander','Standard','Modern'].includes(deck.format)||!Array.isArray(deck.cards)||!deck.cards.length||!Array.isArray(deck.side===undefined?[]:deck.side)||!Array.isArray(deck.commanders===undefined?[]:deck.commanders)
++  ||[...deck.cards,...(deck.side||[]),...(deck.commanders||[])].some(r=>typeof r?.name!=='string'||!r.name.trim()||r.name.length>512||/[\u0000-\u001f\u007f]/.test(r.name)||!Number.isSafeInteger(r.qty)||r.qty<1||r.qty>1000)
++  ||deck.cards.length+(deck.side||[]).length+(deck.commanders||[]).length>2500||[...deck.cards,...(deck.side||[])].reduce((n,r)=>n+r.qty,0)>2500;
++ return invalid?{status:'review',label:'List needs review',detail:'Choose a complete snapshot with valid rows, quantities and format.'}:{status:'native-pending',label:'Forge validation pending',detail:'This exact list will be checked by Forge when the match opens. Card support and legality have not been certified.',affected:[]};
++}
++export function reviewForgeSetup(setup,{allowMissingOpponent=false}={}){
++ const reasons=[],profile=setup?.profile,match=setup?.match;
++ if(profile?.signedIn!==true||!profile.ownerId||profile.locked)reasons.push('Sign in to the current account before starting.');
++ if(match?.mode!=='cpu')reasons.push('Private friend matches are not available.');
++ if(!['Commander','Standard','Modern'].includes(match?.format))reasons.push('Choose a supported match format.');
++ for(const [seat,label]of [['selected','your deck'],['opponent','the CPU deck']]){
++  const deck=setup?.[seat];if(!deck){if(seat!=='opponent'||!allowMissingOpponent)reasons.push('Choose '+label+' first.');continue;}
++  if(forgeDeckSupport(deck).status!=='native-pending'||deck.format!==match.format)reasons.push('Review '+label+' rows and format.');
++ }
++ return {canLoad:reasons.length===0,reasons,seats:null,construction:'pending-native',coverageVersion:'pending-native'};
++}
+--- /dev/null
++++ b/play-forge-table.css
+@@ -0,0 +1,31 @@
++/* Native table additions only. No global page, layout or connection-form reset. */
++:where(body.practice-table-open) .forge-native-panel button{min-height:42px;border-radius:9px;padding:9px 12px;border:1px solid #dfc58e70;background:#203a40;color:#edf0e8;cursor:pointer}
++:where(body.practice-table-open) .forge-proof-label{font:600 10px/1.3 system-ui;letter-spacing:.13em;color:#dfc58e}
++:where(body.practice-table-open) .forge-native-panel{display:flex;flex-wrap:wrap;gap:8px;min-width:0}
++:where(body.practice-table-open) .forge-native-panel>*:not(button){width:100%;min-width:0}
++:where(body.practice-table-open) .forge-native-panel h2{font-size:17px;margin:4px 0 6px;white-space:pre-wrap;overflow-wrap:anywhere}
++:where(body.practice-table-open) .forge-native-panel p{margin:4px 0;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}
++:where(body.practice-table-open) .forge-native-panel button{font-size:12px;white-space:normal;overflow-wrap:anywhere}
++:where(body.practice-table-open) .forge-native-panel button:disabled{opacity:.45;cursor:default}
++:where(body.practice-table-open) .forge-native-panel button[aria-pressed=true]{background:#766344;border-color:#e3ce9d}
++:where(body.practice-table-open) .forge-native-options{display:grid;gap:5px;max-height:30dvh;overflow:auto}
++:where(body.practice-table-open) .forge-native-options button{text-align:left}
++:where(body.practice-table-open) .forge-native-panel form label{display:grid;gap:6px}
++:where(body.practice-table-open) .forge-native-panel input,:where(body.practice-table-open) .forge-native-panel select{width:100%;padding:8px;color:#edf0e8;background:#14232b;border:1px solid #c3d8df70;border-radius:6px}
++:where(body.practice-table-open) .forge-native-panel details{font-size:11px;margin-top:4px}
++:where(body.practice-table-open) .forge-native-panel details summary{cursor:pointer;padding:6px 0}
++:where(body.practice-table-open) .forge-native-panel ol{padding-left:24px}
++:where(body.practice-table-open) .forge-native-panel li button{min-height:32px;margin-left:5px}
++:where(body.practice-table-open) .forge-native-panel .forge-diagnostic{padding:8px;background:#7a3c2840;border:1px solid #f5b38460;border-radius:7px;color:#ffd3b8}
++:where(body.practice-table-open) .forge-native-draft{color:#dfc58e}
++:where(body.practice-table-open) .forge-native-wait{color:#c3d8df}
++:where(body.practice-table-open) .forge-art-note{font-size:11px;color:#c3d8df}
++:where(body.practice-table-open) .play-match-card[data-forge-hint=true]{outline:2px solid #c8d8b5;outline-offset:3px}
++:where(body.practice-table-open) .play-match-card[data-forge-chosen=true]{outline:3px solid #efcd79;outline-offset:4px}
++:where(body.practice-table-open) .forge-drag-ghost{position:fixed!important;pointer-events:none!important;z-index:1000;transform:translate(-50%,-50%) rotate(-6deg);opacity:.82;height:140px!important;max-width:110px!important}
++:where(body.practice-table-open) .forge-dragging [data-placement-zone=battlefield],:where(body.practice-table-open) .forge-dragging .forge-native-panel{outline:2px dashed #dfc58e;outline-offset:-4px}
++:where(body.practice-table-open) .forge-native-panel button:focus-visible{outline:3px solid #f5dba4;outline-offset:2px}
++:where(body.practice-table-open) .play-match-decisions:has(.forge-native-panel){max-height:47dvh;overflow:auto}
++:where(body.practice-table-open) .play-match-table[data-stage=opening] .play-match-decisions:has(.forge-native-panel){max-height:37dvh}
++:where(body.practice-table-open) .forge-native-mana{font:11px/1.4 system-ui;color:#dfc58e}
++:where(body.practice-table-open) .forge-native-panel input[type=checkbox]{width:auto;margin-right:8px;vertical-align:middle}
+--- a/experiments/forge-proof/forge-session.mjs
++++ b/experiments/forge-proof/forge-session.mjs
+@@ -42,11 +42,21 @@
+  return {revision:raw.revision,terminal,outcomes:[],surface:{seat,players,cards:[...cards.values()],hand:[...cards.values()].filter(c=>c.zone==='Hand'&&c.owner===seat).map(c=>c.id),stack,turn:raw.turn??0,phase:PHASES[raw.phase]||raw.phase||'Opening hand',activeSeat:seatById.get(raw.activePlayer),prioritySeat:seatById.get(raw.priorityPlayer)??(human?seat:null),decision:{kind:terminal?'GameOver':raw.turn===0?'MulliganDecision':INPUTS[raw.inputType]||raw.prompt?.method||raw.inputType||'Forge decision'},awaitingHuman:human,canAct:human,choices:[],interaction:{canSubmit:false,opportunities:[]}}};
+ }
+ export function createForgeSession({baseUrl,token,fetchImpl=globalThis.fetch,pollMs=350,lookupArtwork=()=>null}={}){
+- const origin=localBridgeUrl(baseUrl);if(typeof token!=='string'||!token.trim())throw Error('Enter the local bridge token.');
++ const origin=localBridgeUrl(baseUrl);if(typeof token!=='string'||!token.trim())throw Error('Enter the local bridge token.'); async function request(path,body){
++  const response=await fetchImpl(origin+path,{method:body?'POST':'GET',mode:'cors',credentials:'omit',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer',headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
++  let data;try{data=await response.json();}catch{throw Error('Forge returned an unreadable response.');}
++  if(!response.ok){const e=Error(data.error||`Forge HTTP ${response.status}`);e.status=response.status;throw e;}return data;
++ }
++ return createForgePresentationSession({request,pollMs,lookupArtwork,onClose:()=>{token='';}});
++}
++// Transport injection keeps the local bearer boundary intact. The hosted client
++// supplies same-origin account requests, never a remote bridge URL or token.
++export function createForgePresentationSession({request,pollMs=350,lookupArtwork=()=>null,onClose=()=>{},allowControlMode=false,transportStatus=()=>({blocked:false,error:null})}={}){
++ if(typeof request!=='function')throw Error('FORGE_TRANSPORT_REQUIRED');
+  let native=null,status=null,selected=null,draft=null,error=null,actionError=null,sending=false,awaitRevision=null,closed=false,timer=null,refreshing=null;
+  const listeners=new Set();
+  const effectiveDraft=()=>draft||(native?.prompt?.method==='order'&&native.prompt.ordered===true?{revision:native.revision,promptId:native.prompt.id,indexes:[...list(native.prompt.destinationIndexes)],remember:false}:null);
+- const snapshot=()=>({status,selected,pending:null,busy:sending||awaitRevision!==null||!!native?.busy,error:null,clock:null,native,nativeDraft:effectiveDraft(),transportError:actionError||error});
++ const snapshot=()=>({status,selected,pending:null,busy:sending||awaitRevision!==null||!!native?.busy||transportStatus().blocked===true,error:null,clock:null,native,nativeDraft:effectiveDraft(),transportError:transportStatus().error||actionError||error});
+  const emit=()=>{for(const fn of listeners)fn(snapshot());};
+  const acceptState=next=>{
+   if(native&&next.revision<native.revision)return false;
+@@ -57,14 +67,10 @@
+   if(selected!==null&&!status?.surface.cards.some(c=>c.id===selected&&c.known))selected=null;
+   emit();return true;
+  };
+- async function request(path,body){
+-  const response=await fetchImpl(origin+path,{method:body?'POST':'GET',mode:'cors',credentials:'omit',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer',headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
+-  let data;try{data=await response.json();}catch{throw Error('Forge returned an unreadable response.');}
+-  if(!response.ok){const e=Error(data.error||`Forge HTTP ${response.status}`);e.status=response.status;throw e;}return data;
+- }
++
+  const refresh=()=>{
+   if(closed)return Promise.resolve();if(refreshing)return refreshing;
+-  refreshing=request('/state').then(next=>{error=null;acceptState(next);}).catch(e=>{error=e.message;emit();throw e;}).finally(()=>{refreshing=null;});return refreshing;
++  refreshing=request('/state').then(next=>{if(closed)return;error=null;if(next!==null)acceptState(next);}).catch(e=>{error=e.message;emit();throw e;}).finally(()=>{refreshing=null;});return refreshing;
+  };
+  async function send(op,payload={},expectedRevision=native?.revision){
+   if(closed||!status||snapshot().busy||native.failure||status.terminal)throw Error('MATCH_NOT_READY');
+@@ -75,7 +81,7 @@
+    // Never replay an action automatically after network uncertainty or a stale reply.
+    awaitRevision=expectedRevision;draft=null;
+    await refresh();
+-  }catch(e){draft=null;awaitRevision=null;try{await refresh();}catch{}actionError=e.message;}
++  }catch(e){draft=null;awaitRevision=null;actionError=e.message;emit();try{await refresh();}catch{}actionError=e.message;}
+   finally{sending=false;emit();}
+  }
+  const currentPrompt=()=>{const p=native?.prompt;if(!p||p.supported!==true)throw Error('Native prompt is not supported.');if(p.method==='order'){const options=list(p.options).map(o=>o.index),partition=[...list(p.sourceIndexes),...list(p.destinationIndexes)];if(p.ordered!==true||partition.length!==options.length||new Set(partition).size!==options.length||partition.some(i=>!options.includes(i)))throw Error('Native ordered-source/destination contract is unavailable.');}return p;};
+@@ -90,14 +96,15 @@
+   if(!known)throw Error('STALE_CHOICE');return send(kind,{id:nativeId},expectedRevision);
+  };
+  return {snapshot,acceptState,refresh,subscribe(fn){listeners.add(fn);fn(snapshot());return()=>listeners.delete(fn);},
+-  async start(){await refresh();const poll=async()=>{if(closed)return;try{await refresh();}catch{}if(!closed)timer=setTimeout(poll,pollMs);};timer=setTimeout(poll,pollMs);},
+-  close(){closed=true;clearTimeout(timer);token='';listeners.clear();},
++  async start({readInitial=true}={}){if(readInitial)await refresh();const poll=async()=>{if(closed)return;try{await refresh();}catch{}if(!closed)timer=setTimeout(poll,pollMs);};timer=setTimeout(poll,pollMs);},
++  close(){closed=true;clearTimeout(timer);listeners.clear();onClose();},
+   inspect(cardId){if(status?.surface.cards.some(c=>c.id===cardId&&c.known)){selected=cardId;emit();}},
+   nativeSelect,nativeButton(op,revision=native?.revision){if(native.prompt)throw Error('Use the native dialog.');if(!['ok','cancel'].includes(op)||native.buttons?.[op+'Enabled']!==true)throw Error('Native button is disabled.');return send(op,{},revision);},
+   selectPrompt,confirmPrompt,clearPrompt(){const p=currentPrompt();draft=p.method==='order'?{revision:native.revision,promptId:p.id,indexes:[],remember:false}:null;emit();},
+   rememberPrompt(value){const p=currentPrompt();if(p.method!=='order'||p.rememberAllowed!==true||typeof value!=='boolean')throw Error('Native remember choice not offered.');draft={...effectiveDraft(),remember:value};emit();},
+   reorderPrompt(index,direction){const p=currentPrompt();if(p.method!=='order'||p.ordered!==true||![1,-1].includes(direction))throw Error('Native order movement not offered.');const indexes=[...promptIndexes()],at=indexes.indexOf(index),to=at+direction;if(at<0||to<0||to>=indexes.length)return;[indexes[at],indexes[to]]=[indexes[to],indexes[at]];draft={...effectiveDraft(),indexes};emit();},
+   replyValue(value){const p=currentPrompt();return send('reply',{promptId:p.id,value});},
++  setControlMode(value){if(!allowControlMode||!['smart','full'].includes(value)||!['smart','full'].includes(native?.controlMode))throw Error('NATIVE_CONTROL_MODE_UNAVAILABLE');if(native.prompt||native.inputType==='InputLockUI')throw Error('MATCH_NOT_READY');return send('controlMode',{value});},
+   concede(){return send('concede');},
+   // No fake session rules or generic choose/cast fallback are exposed.
+  };
+--- a/experiments/forge-proof/forge-table.mjs
++++ b/experiments/forge-proof/forge-table.mjs
+@@ -3,25 +3,26 @@
+ import {practicePlayerPortrait} from '../../play-player-mat.js';
+ import {mountNativePanel} from './native-panel.mjs';
+ import {optionCardId} from './forge-session.mjs';
+-export function mountForgeTable(root,{session,onExit=()=>{}}){
++export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName:'You'},format='Commander',title='CardStashy · Local Forge proof',presentation={}}){
+  const doc=root.ownerDocument,win=doc.defaultView,hooks=practiceArtworkHooks();let localError='',panelKey='',drag=null,ghost=null,suppressUntil=0,closed=false,nativeValueDraft=null;
+- const table=mountMatchTable(root,{session,format:'Commander',profile:{displayName:'You'},title:'CardStashy · Local Forge proof',allowConcede:false,onExit,...hooks,
++ const table=mountMatchTable(root,{session,format,profile,title,allowConcede:false,onExit,...hooks,
+   resolveCard(card){const artwork=resolvePracticeArtwork(card);return {...artwork,oracleText:card.text};},
+   renderOracleText(text){const el=doc.createElement('p');el.textContent=text;el.className='play-match-rules';return el;},
+-  decorateInspector(panel,card){hooks.decorateInspector(panel,card);panel.querySelector('a[href^="#wiki/"]')?.remove();if(card.type){const type=doc.createElement('p');type.className='forge-current-type';type.setAttribute('aria-label','Current native type');type.textContent=card.type;panel.append(type);}const note=doc.createElement('p');note.className='forge-art-note';note.textContent=card.printing?'Artwork is a public reference printing. Rules text and current state above come from Forge.':'Native Forge text; artwork is not available for this card.';panel.append(note);},
+-  renderPlayerPortrait(own){return practicePlayerPortrait(doc,own,{displayName:'You'});},
++  decorateInspector(panel,card){hooks.decorateInspector(panel,card);panel.querySelector('a[href^="#wiki/"]')?.remove();if(card.type){const type=doc.createElement('p');type.className='forge-current-type';type.setAttribute('aria-label','Current native type');type.textContent=card.type;panel.append(type);}const note=doc.createElement('p');note.className='forge-art-note';note.textContent=card.printing?(presentation.hosted?'Catalogue artwork; exact per-instance printing may be unavailable. Current text, types and state come from Forge.':'Artwork is a public reference printing. Rules text and current state above come from Forge.'):'Native Forge text; artwork is not available for this card.';panel.append(note);},
++  renderPlayerPortrait(own){return practicePlayerPortrait(doc,own,profile);},
+   renderMatchBackdrop(){const box=doc.createElement('div');for(const c of session.snapshot().status?.surface.cards.filter(c=>c.commander)||[]){const url=resolvePracticeArtwork(c)?.artImageUrl;if(url){const img=doc.createElement('img');img.src=url;img.alt='';img.referrerPolicy='no-referrer';box.append(img);}}return box.childNodes.length?box:null;}
+  });
+  const fail=e=>{localError=e.message||String(e);panelKey='';enhance();};
+  const act=fn=>{try{const p=fn();if(p?.catch)p.catch(fail);}catch(e){fail(e);}};
+  function enhance(){
+   if(closed)return;const snap=session.snapshot(),n=snap.native;if(!snap.status||!n)return;
++  if(presentation.hosted){const exit=root.querySelector('[data-focus-key=exit-match]');if(exit&&exit.textContent!=='Return to Play setup')exit.textContent='Return to Play setup';}
+   const footer=root.querySelector('.play-match-decisions');if(!footer)return;
+   const key=JSON.stringify([n.revision,snap.busy,snap.nativeDraft,snap.transportError,snap.selected,localError]);
+   if(key!==panelKey||!footer.querySelector('[data-native-panel]')){
+    // Preserve local typed input/focus if an unrelated inspection redraws the board.
+    const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null,oldInput=footer.querySelector('[data-native-key=native-value]'),oldValue=oldInput?.value,oldRevision=footer.querySelector('[data-native-panel]')?.dataset.nativeRevision;
+-   mountNativePanel(footer,{session,snapshot:snap,onLocalError:message=>fail(Error(message))});panelKey=key;
++   mountNativePanel(footer,{session,snapshot:snap,onLocalError:message=>fail(Error(message)),presentation});panelKey=key;
+    if(localError){const e=doc.createElement('p');e.className='forge-diagnostic';e.textContent=localError;e.setAttribute('role','alert');footer.querySelector('[data-native-panel]')?.append(e);}
+    if(nativeValueDraft?.revision===n.revision&&nativeValueDraft?.promptId===n.prompt?.id){const input=footer.querySelector('[data-native-key=native-value]');if(input)input.value=nativeValueDraft.value;}else if(oldRevision===String(n.revision)&&oldValue!==undefined){const input=footer.querySelector('[data-native-key=native-value]');if(input)input.value=oldValue;}
+    if(focused)footer.querySelector(`[data-native-key="${CSS.escape(focused)}"]`)?.focus();
+--- a/experiments/forge-proof/native-panel.mjs
++++ b/experiments/forge-proof/native-panel.mjs
+@@ -1,18 +1,24 @@
+ import {optionLabel,optionCardId} from './forge-session.mjs';
+ const OPTION_METHODS=new Set(['getChoices','getAbilityToPlay','chooseSingleEntityForEffect','chooseEntitiesForEffect','showOptionDialog','order']);
+ export const isDescribedOption=value=>typeof value==='string'||typeof value==='number'||typeof value==='boolean'||!!(value&&value.hidden!==true&&value.card?.hidden!==true&&(value.name||value.description||value.text));
+-export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}}){
++export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
+  const doc=container.ownerDocument,s=snapshot,n=s.native;if(!n)return;
+  const node=(tag,text,cls)=>{const e=doc.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
+  const run=fn=>()=>{try{const out=fn();if(out?.catch)out.catch(e=>onLocalError(e.message));}catch(e){onLocalError(e.message);}};
+  const button=(label,fn,disabled=false,key='')=>{const b=node('button',label);b.type='button';b.disabled=s.busy||disabled;if(key)b.dataset.nativeKey=key;b.addEventListener('click',run(fn));return b;};
+  const panel=node('section',undefined,'forge-native-panel');panel.dataset.nativePanel='true';panel.dataset.nativeRevision=String(n.revision);panel.setAttribute('aria-label','Native Forge decision');
+- panel.append(node('small',`LOCAL FORGE PROOF · revision ${n.revision}`,'forge-proof-label'));
++ if(!presentation.hosted)panel.append(node('small',`${presentation.label||'LOCAL FORGE PROOF'} · revision ${n.revision}`,'forge-proof-label'));
+  const deckLabel=alias=>({'keen-engineering':'Keen Engineering','reign-of-dragons':'Reign of Dragons','calling-all-angels':'Calling All Angels'}[alias]||alias);
+  if(n.players.every(p=>p.deckAlias))panel.append(node('small',n.players.map(p=>`${p.isViewer?'You':'Forge AI'}: ${deckLabel(p.deckAlias)}`).join(' vs ')));
+  const title=node('h2',n.prompt?.message||n.message||'Waiting for Forge');title.setAttribute('aria-live','polite');panel.append(title);
++ if(presentation.policyLabel)panel.append(node('p',presentation.policyLabel));
+  if(n.failure){panel.append(node('p',`Forge stopped: ${n.failure}`,'forge-diagnostic'));container.replaceChildren(panel);return;}
+  if(n.status==='finished'){panel.append(node('p',n.draw===true?'Forge result: draw':n.winner?`Forge result: ${n.winner}`:'Forge reports that the game has finished.'));container.replaceChildren(panel);return;}
++ if(presentation.allowControlMode===true&&['smart','full'].includes(n.controlMode)){
++  const group=node('div');group.setAttribute('role','group');group.setAttribute('aria-label','Native response mode');
++  for(const [value,label]of [['smart','Smart'],['full','Full Control']]){const b=button(label,()=>session.setControlMode(value),!!n.prompt||n.inputType==='InputLockUI',`mode-${value}`);b.setAttribute('aria-pressed',String(n.controlMode===value));group.append(b);}
++  panel.append(group,node('small',n.controlMode==='smart'?'Native Smart assistance is active; required choices remain yours.':'Native Full Control is active; respond and pay through Forge prompts.'));
++ }
+  if(n.notification?.message){const notice=node('p',`${n.notification.title||n.notification.method||'Forge'}: ${n.notification.message}`,'forge-diagnostic');notice.setAttribute('role','status');panel.append(notice);}
+  if(n.lastActionError)panel.append(node('p',`Native action diagnostic: ${n.lastActionError}`,'forge-diagnostic'));
+  if(s.transportError){const error=node('p',`Connection/action diagnostic: ${s.transportError}`,'forge-diagnostic');error.setAttribute('role','alert');panel.append(error,button('Refresh state (does not replay action)',()=>session.refresh(),false,'refresh'));}
+@@ -52,6 +58,6 @@
+   if(n.stack?.length){const stack=node('details');stack.append(node('summary',`Native stack · ${n.stack.length}`));for(const item of n.stack)stack.append(button(item.text||`Stack item ${item.id}`,()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`));panel.append(stack);}
+   const selected=s.status.surface.cards.find(c=>c.id===s.selected);if(selected)panel.append(button(`Send ${selected.known?selected.name:'card'} click to Forge`,()=>session.nativeSelect('card',selected.id,n.revision),false,'click-inspected'));
+  }
+- const details=node('details',undefined,'forge-native-diagnostics');details.append(node('summary','Proof details & controls'),node('p','Click a card to send its native ID to Forge. Use its magnifier or I key to inspect. Drag a card onto your battlefield or this panel to send the same click. Player and stack choices use their native IDs. Unsupported dialogs stop visibly. Nothing here interprets card rules.'),node('p',`Engine input: ${n.inputType||'none'} · phase ${n.phase||'none'} · selected ${(n.selection?.chosen||[]).map(r=>r.kind+' '+r.id).join(', ')||'none'}`),node('p','Temporary proof only — not the production Play backend. No automatic passing, auto-win, hidden-state policy, account changes, or reconnect guarantee.'));panel.append(details);
++ const details=node('details',undefined,'forge-native-diagnostics');details.append(node('summary',presentation.hosted?'Match details & controls':'Proof details & controls'),node('p','Click a card to send its native ID to Forge. Use its magnifier or I key to inspect. Drag a card onto your battlefield or this panel to send the same click. Player and stack choices use their native IDs. Unsupported dialogs stop visibly. Nothing here interprets card rules.'),node('p',`Native revision ${n.revision} · Engine input: ${n.inputType||'none'} · phase ${n.phase||'none'} · selected ${(n.selection?.chosen||[]).map(r=>r.kind+' '+r.id).join(', ')||'none'}`),node('p',presentation.hosted?'Session-only native match. Leaving closes its resources, not a concession. Interrupted matches cannot be resumed; no command is automatically retried.':'Temporary proof only — not the production Play backend. No automatic passing, auto-win, hidden-state policy, account changes, or reconnect guarantee.'));panel.append(details);
+  container.replaceChildren(panel);
+ }
+--- a/test-play-quick-start.mjs
++++ b/test-play-quick-start.mjs
+@@ -5,7 +5,7 @@
+  let pairCalls=0,starts=0,pregames=0,first=null,release;
+  const element=()=>({id:'',inert:false,setAttribute(){},classList:{add(){},remove(){}},append(){},remove(){}}),app=element(),doc={getElementById:id=>id==='app'?app:id==='practiceTableStyles'?element():null,createElement:element,head:element(),body:element()};
+  const A={playFindOpponent:async()=>{pairCalls++;await new Promise(r=>release=r);if(matchResult){state.opponent={name:'CPU'};state.quickMatch={};}return matchResult;}};
+- const deps={A,PLAY_MATCH_RELEASE_READY:true,toast(){},T:{game:()=> 'mtg'},syncDesktopPlayEntries:()=>({eligible:true}),playSetup:{snapshot:()=>state},S:{ui:{view:route}},document:doc,readPlayAccount:()=>({}),cloudInfo:()=>({user:{id:'owner'}}),accountGeneration:1,accountLocked:false,createPracticeCardPreparation:()=>({prepare(){},lookup(){}}),key:x=>x,resolveNames(){},meta(){},api(){},createPlayerMat:()=>({start:async options=>{starts++;first=options.first;}}),createPracticeCatalogReview(){},savePlayDeck(){},closePlayerMat(){},go(){},V:{deckArtwork:()=>''},mountPracticePregame:()=>{pregames++;return {};},resolvePracticePregame:choice=>{assert.equal(choice,'random');return {seed:42,first:1};}};
++ const deps={A,FORGE_PLAY_TEST_ENABLED:false,PLAY_MATCH_RELEASE_READY:true,toast(){},T:{game:()=> 'mtg'},syncDesktopPlayEntries:()=>({eligible:true}),playSetup:{snapshot:()=>state},S:{ui:{view:route}},document:doc,readPlayAccount:()=>({}),cloudInfo:()=>({user:{id:'owner'}}),accountGeneration:1,accountLocked:false,createPracticeCardPreparation:()=>({prepare(){},lookup(){}}),key:x=>x,resolveNames(){},meta(){},api(){},createPlayerMat:()=>({start:async options=>{starts++;first=options.first;}}),createPracticeCatalogReview(){},savePlayDeck(){},closePlayerMat(){},go(){},V:{deckArtwork:()=>''},mountPracticePregame:()=>{pregames++;return {};},resolvePracticePregame:choice=>{assert.equal(choice,'random');return {seed:42,first:1};}};
+  new Function(...Object.keys(deps),'let playStarting=false,playerMatHost=null,practicePregame=null,playerMatRoot=null;'+source)(...Object.values(deps));
+  return {A,state,release:()=>release(),counts:()=>({pairCalls,starts,pregames,first})};
+ }

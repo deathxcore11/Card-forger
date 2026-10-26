@@ -1,66 +1,90 @@
-name: Isolated Forge exact container proof (DO NOT MERGE)
-# Proof branch only. Never merge this workflow or its root Wrangler guard.
+name: Isolated existing Play menu browser proof (DO NOT MERGE)
+
+# This replacement exists ONLY on the throwaway proof branch. It is not normal CI.
+# Never open a PR or merge this branch. Every mutation is to an ephemeral game.
 on:
   push:
     branches: [codex/forge-native-browser-proof-20261026]
+
 permissions:
   contents: read
+
 concurrency:
   group: isolated-forge-native-browser-proof
   cancel-in-progress: false
+
 jobs:
-  forge-container-proof:
+  forge-play-menu-proof:
     if: github.repository == 'deathxcore11/Card-forger' && github.ref == 'refs/heads/codex/forge-native-browser-proof-20261026'
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 20
+    env:
+      FORGE_REV: e5a0f8156da70ffc7866f923bed371c0111707cd
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Initialize runner-local proof paths
+        shell: bash
+        run: |
+          printf 'FORGE_PROOF_ROOT=%s/forge-native-proof\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'FORGE_BROWSER_TOOLS=%s/forge-browser-tools\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'PLAYWRIGHT_BROWSERS_PATH=%s/forge-browser-binaries\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Check out only this reviewed proof commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
           fetch-depth: 1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      - name: Set up Node without caches
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '22'
           package-manager-cache: false
-      - name: Verify root deployment guard
+      - name: Install the existing pinned Chromium harness
+        timeout-minutes: 4
         shell: bash
         run: |
-          python3 - <<'PY'
-          import json,pathlib
-          g=json.loads('\n'.join(l for l in pathlib.Path('wrangler.jsonc').read_text().splitlines() if not l.lstrip().startswith('//')))
-          assert g['main']=='__FORGE_BROWSER_PROOF_DO_NOT_DEPLOY__/intentionally-missing-worker.js'
-          assert g['assets']['directory']=='__FORGE_BROWSER_PROOF_DO_NOT_DEPLOY__/intentionally-missing-assets'
-          assert not pathlib.Path(g['main']).exists() and not pathlib.Path(g['assets']['directory']).exists()
-          assert g['workers_dev'] is False and g['preview_urls'] is False and g['previews']=={}
-          print('PASS deployment guard; no image push or deployment is part of this job')
-          PY
-      - name: Build once and prove exact deck startup in constrained offline container
-        id: proof
-        env:
-          FORGE_PROOF_REVIEWED_NATIVE_SHA256: 586511f3e9bf28a6918ef696ce614e50b5dbdf55c0b14d9a54f1fd89967aeddd
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd experiments/forge-proof/hosting/cloudflare
-          if ! bash scripts/docker-proof.sh; then
-            if test -f evidence/docker-proof/build.log; then
-              echo 'Public-source image build error summary (no runtime capability exists during image build):'
-              grep -Ei 'error|failed|timeout|cancelled' evidence/docker-proof/build.log | tail -n 40 | cut -c1-600 || true
-            fi
+          # Ubuntu's hosted image already contains browser libraries and fonts.
+          # Do not run apt upgrades or download unrelated font packs. Verify the
+          # pinned headless browser against this runner instead, failing closed.
+          timeout --signal=TERM --kill-after=5s 40s npm install --prefix "$FORGE_BROWSER_TOOLS" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.62.1
+          timeout --signal=TERM --kill-after=5s 150s node "$FORGE_BROWSER_TOOLS/node_modules/playwright/cli.js" install --only-shell chromium
+          mapfile -t shells < <(find "$PLAYWRIGHT_BROWSERS_PATH" -type f -name chrome-headless-shell)
+          test "${#shells[@]}" -eq 1
+          ldd "${shells[0]}" > "$RUNNER_TEMP/forge-chromium-libraries.txt"
+          if grep -q 'not found' "$RUNNER_TEMP/forge-chromium-libraries.txt"; then
+            echo 'Pinned Chromium requires missing runner libraries; no browser proof started.'
+            grep 'not found' "$RUNNER_TEMP/forge-chromium-libraries.txt"
             exit 1
           fi
-      - name: Retain bounded redacted proof results
-        if: always()
+          timeout --signal=TERM --kill-after=5s 30s node <<'JS'
+          const assert = require('node:assert/strict');
+          const path = require('node:path');
+          const { chromium } = require(path.join(process.env.FORGE_BROWSER_TOOLS, 'node_modules/playwright'));
+          (async () => {
+            const browser = await chromium.launch({ headless: true, timeout: 20000 });
+            try {
+              const page = await browser.newPage();
+              await page.route('**/*', route => route.abort());
+              await page.setContent('<button onclick="this.textContent=\'Clicked\'">Smoke control</button>');
+              await page.getByRole('button', { name: 'Smoke control', exact: true }).click({ timeout: 5000 });
+              assert.equal(await page.getByRole('button').textContent(), 'Clicked');
+              await page.evaluate(() => document.fonts.ready);
+              await page.screenshot({ path: path.join(process.env.RUNNER_TEMP, 'forge-chromium-smoke.png'), timeout: 5000 });
+              console.log('PASS pinned Chromium shared-library, launch, pointer-click and render smoke: ' + browser.version());
+            } finally { await browser.close(); }
+          })().catch(() => { console.error('FAIL pinned Chromium smoke; no game proof claimed.'); process.exitCode = 1; });
+          JS
+      - name: Build pinned Forge once and exercise existing Play in Chromium
+        id: proof
+        timeout-minutes: 14
+        run: bash experiments/forge-proof/play-menu-proof/ci/run.sh
+      - name: Retain only bounded sanitized proof evidence
+        if: ${{ always() && steps.proof.outputs.upload_ready == 'true' }}
+        timeout-minutes: 1
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: forge-exact-container-proof-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            experiments/forge-proof/hosting/cloudflare/evidence/docker-proof/native.json
-            experiments/forge-proof/hosting/cloudflare/evidence/docker-proof/image.txt
-            experiments/forge-proof/hosting/cloudflare/evidence/docker-proof/resources.json
-            experiments/forge-proof/hosting/cloudflare/evidence/docker-proof/stopped.txt
-            experiments/forge-proof/hosting/cloudflare/evidence/docker-proof/inputs.txt
+          name: forge-existing-play-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/forge-existing-play/artifact/
           retention-days: 1
-          if-no-files-found: warn
+          if-no-files-found: error
+          compression-level: 6
           include-hidden-files: false

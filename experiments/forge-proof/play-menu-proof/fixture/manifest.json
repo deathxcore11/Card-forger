@@ -1,0 +1,38 @@
+{
+  "kind": "LOCAL_TEST_ONLY",
+  "sourceFiles": {
+    "server.mjs": "35bf358849748c9526cfcb2178a0e6dee624037c840dc48f8ccd36c35a37a904",
+    "runtime.py": "deebf6819f5f757bbec4c48d3a4928170dc53b6e839a84f9c249c4a28141c1b8",
+    "prepare-runtime.py": "c5f25ba7c81c0d0fc35927f74254761625ed740839760d91e0cba9c2747884eb",
+    "smoke-client.mjs": "6189881aed94ae4b851ca15988f5ff0fdfe07737d7160e754f135fd2e5cc28ef",
+    "handshake.json": "aff2ea72380c0993c6c26aff2f9610e84d993f3d3168c37bd44c4d3c42b25131",
+    "shutdown.json": "2db88430f92b91c0fff07ad123ac0c0165b0dfdb1ef11eb2f94dd5d3fd4b58fb"
+  },
+  "nativeCandidate": "review-candidate-20261026-0146-exact",
+  "nativeSourceSha256": "586511f3e9bf28a6918ef696ce614e50b5dbdf55c0b14d9a54f1fd89967aeddd",
+  "gatewaySha256": "c15d29c16f6ad8ab259eeba07bd2a87ecf26caec00b66c10a5bc5b9174da0e52",
+  "mockedBoundaries": [
+    "synthetic account provider(no real Supabase record)",
+    "in-memory durable storage shim",
+    "local child-process provider (not Cloudflare, not Docker, no enforced network isolation)"
+  ],
+  "actualBoundaries": [
+    "existing Supabase bearer-verifier helper with synthetic transport",
+    "service-core/admission/authority/nativeAdapter",
+    "private bootstrap HTTP and exact input file",
+    "exact Java Forge JVM",
+    "reviewed Python gateway"
+  ],
+  "startupResponse": "tracked ctx.waitUntil and read-only owner202 projection",
+  "maximumServerLifetimeMs": 900000,
+  "defaultServerLifetimeMs": 600000,
+  "matchLifetimeMs": 180000,
+  "maximumReservations": 2,
+  "paths": {
+    "fixtureAccount": "/fixture-config.json",
+    "health": "/__fixture/health",
+    "redactedEvidence": "/__fixture/evidence (synthetic bearer required)"
+  },
+  "launcher": "node server.mjs --ui-root UI --service-root COMPOSED_SERVICE --proof-root FORGE_PROOF --native-root EXACT0146 --gateway REVIEWED_GATEWAY --bootstrap REVIEWED_BOOTSTRAP --lifetime-ms 600000",
+  "noPushOrDeploy": true
+}

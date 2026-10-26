@@ -1,0 +1,17 @@
+--- a/experiments/phase-engine/match-table.css
++++ b/experiments/phase-engine/match-table.css
+@@ -98,10 +98,11 @@
+ @media(prefers-reduced-motion:reduce){.play-match-card[data-new-card=true]{animation:none}}
+ /* Keep ordinary hands inside their central column while retaining full-size
+    faces. The old fixed negative margin plus rotated corners produced 12px of
+-   overflow for seven cards at 1366x1024. Only overlap tracks compress; a large
+-   hand still scrolls once each exposed track reaches its 44px minimum. */
++   overflow for seven cards at 1366x1024. Keep each face center exposed even
++   beside a raised neighbour; narrow/large hands scroll rather than compress
++   their native click targets under the next card. */
+ .play-match-table:not([data-stage=opening]) .play-match-hand .play-match-card-row{padding-inline:calc(var(--play-hand)*.17);scroll-padding-inline:calc(var(--play-hand)*.17);scrollbar-width:thin;scrollbar-color:#78969e65 transparent}
+-.play-match-table:not([data-stage=opening]) .play-match-hand .play-match-card-wrap{flex:1 1 calc(var(--play-hand)*.46);width:calc(var(--play-hand)*.46);min-width:44px;max-width:calc(var(--play-hand)*.46);transform-origin:calc(var(--play-hand)*.5) 100%}
++.play-match-table:not([data-stage=opening]) .play-match-hand .play-match-card-wrap{flex:0 0 calc(var(--play-hand)*.6);width:calc(var(--play-hand)*.6);min-width:calc(var(--play-hand)*.6);max-width:calc(var(--play-hand)*.6);transform-origin:calc(var(--play-hand)*.5) 100%}
+ .play-match-table:not([data-stage=opening]) .play-match-hand .play-match-card-wrap+.play-match-card-wrap{margin-left:0}
+ .play-match-table:not([data-stage=opening]) .play-match-hand .play-match-card-wrap:last-child{flex:0 0 var(--play-hand);width:var(--play-hand);min-width:var(--play-hand);max-width:var(--play-hand)}
+ .play-match-table:not([data-stage=opening]) .play-match-hand .play-match-card{width:var(--play-hand)}

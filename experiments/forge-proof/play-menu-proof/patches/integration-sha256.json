@@ -1,0 +1,74 @@
+[
+  {
+    "path": "app.js",
+    "sha256": "e4a23e71a7f8bde76590a3ff759a4b27d4302ffd9a52e1aeb897496fc1c5ad90",
+    "baselineSha256": "21608cd7fc6c75a1eb6830148e4419317a22075aa59a7e93e5c7cac74ea7af6c",
+    "baseline": "cardstashy/app.js"
+  },
+  {
+    "path": "play-menu.js",
+    "sha256": "9fdec23e1efe468818ac04af43429bc0287695c28ae1711c9cef1c001ada5efe",
+    "baselineSha256": "7ef653708e0d691d648d9f1164f608a9dff3bc2efba8fd966d58c6acaf01ebf9",
+    "baseline": "cardstashy/play-menu.js"
+  },
+  {
+    "path": "play-quick-match.js",
+    "sha256": "e40d5658ca82338243a04c42eb8f85f9b652357464aa151a23b8fc0da4b82080",
+    "baselineSha256": "6b7111c80e86219514bd132c02774135aee0be4a0b709444cbf7817ff37957d1",
+    "baseline": "cardstashy/play-quick-match.js"
+  },
+  {
+    "path": "play-forge-feature.js",
+    "sha256": "abaacb24be080df9ae66a1a4361bd5cdcfb6963b624d2a334e4b87a88d7aaa85",
+    "baselineSha256": null,
+    "baseline": null
+  },
+  {
+    "path": "play-forge-host-client.js",
+    "sha256": "cefa4cf5604127e42d08da5711a10406a227cdd8d55bef60ed90117f81818f81",
+    "baselineSha256": null,
+    "baseline": null
+  },
+  {
+    "path": "play-forge-player-mat.js",
+    "sha256": "07cf5e225de2022a57fd1f69d1b5a577e5091aabee9cd131e0e9ff2c3ab5564e",
+    "baselineSha256": null,
+    "baseline": null
+  },
+  {
+    "path": "play-forge-setup-review.js",
+    "sha256": "3e7437c7b0328dbd99bbec68e4e08d5182cb4545c8749c4b55906106eafe7ac1",
+    "baselineSha256": null,
+    "baseline": null
+  },
+  {
+    "path": "play-forge-table.css",
+    "sha256": "ff73fa2a5610338d9b79d71c2baf13fce07bc7d1436fe99b5396975fd0a5dde6",
+    "baselineSha256": null,
+    "baseline": null
+  },
+  {
+    "path": "experiments/forge-proof/forge-session.mjs",
+    "sha256": "63da415b3a928304ccbabadb9c1b0cff8dc0f599e06cbf7b9970d984c2b81bd8",
+    "baselineSha256": "29511535dedf49ea0eef054589a8423e6591da3dffae345288799a084ff71840",
+    "baseline": "cardstashy/experiments/forge-proof/forge-session.mjs"
+  },
+  {
+    "path": "experiments/forge-proof/forge-table.mjs",
+    "sha256": "f17afee4f2d947172db849aa498776b176d4d06a69fbb762d7c4d7a3cb400423",
+    "baselineSha256": "9e11f568f2391f65d619d00cb7649d2f79a1ea7352ef2af2de4f84f415fa79bc",
+    "baseline": "forge-inspector-fix-overlay/experiments/forge-proof/forge-table.mjs"
+  },
+  {
+    "path": "experiments/forge-proof/native-panel.mjs",
+    "sha256": "dda3fbccf8eaed725dbdbb38552cc11f74e852595066a622f230654f480e7366",
+    "baselineSha256": "9b8301e213b6e49ea061ccef7043be198db789b630e120fd4752adf8b5fcd438",
+    "baseline": "cardstashy/experiments/forge-proof/native-panel.mjs"
+  },
+  {
+    "path": "test-play-quick-start.mjs",
+    "sha256": "5117cbec583948c3ca9d72686c6ea266b93577bae8b46c9ac904f0d90e673265",
+    "baselineSha256": "cadda127c7be833e537a003aa7280c4fbd9e02d2fc5c20326b8cd47245b36b81",
+    "baseline": "cardstashy/test-play-quick-start.mjs"
+  }
+]

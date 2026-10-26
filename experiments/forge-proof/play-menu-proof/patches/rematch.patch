@@ -1,0 +1,304 @@
+--- a/src/service-core.mjs
++++ b/src/service-core.mjs
+@@ -108,10 +108,21 @@
+         .catch(() => { /* uncertain: alarm queries recorded ID, never blind restart */ });
+       // Return202 after durable admission, not after a120second JVM cold start.
+       // waitUntil holds the ORIGINAL RPC only; it is never a retry mechanism.
++      // DurableObjectState (not Worker ExecutionContext): compatibility_date
++      // >=2026-10-01 protects pending DO RPC/waitUntil I/O for up to15minutes.
++      // Deploy/runtime resets remain possible; durable alarms reconcile only.
+       if (typeof this.ctx.waitUntil === 'function') this.ctx.waitUntil(startup);
+       else await startup; // explicit local fixture contexts may omit waitUntil
+     }
+     return json({ ...publicAllocation(allocation), status: 'initializing', admissionState: 'provisional_native_validation_required', replay: result.replay }, 202);
++  }
++  // Private read-only namespace RPC for create202 -> first GET before begin has
++  // persisted the per-match record. A UUID alone never establishes ownership.
++  async pendingStatus(matchId, ownerId) {
++    if (!UUID_RE.test(matchId || '') || !UUID_RE.test(ownerId || '')) return null;
++    const lease = (await this.storage.get('leases') || [])
++      .find(value => value.matchId === matchId && value.ownerId === ownerId);
++    return lease ? { ...publicAllocation(lease), startupDeadline: lease.createdAt + STARTUP_MS } : null;
+   }
+   async verifyLease(allocation) {
+     const lease = (await this.storage.get('leases') || []).find(a => a.matchId === allocation?.matchId && a.generation === allocation?.generation);
+@@ -254,6 +265,30 @@
+     }
+   }
+   async fetch(request) {
++    if (request.method === 'GET') {
++      const route = MATCH_PATH.exec(new URL(request.url).pathname);
++      const record = await this.storage.get('allocation');
++      if (route && !route[2] && (!record || record.status === 'initializing')) {
++        const user = await verifyHostUser(request, { verifyBearer: this.verifyBearer, origin: ORIGIN });
++        if (!user) return error('authentication_required', 401);
++        let pending;
++        if (record) {
++          if (record.ownerId !== user.id || record.matchId !== route[1]) return error('match_not_found', 404);
++          pending = { ...publicAllocation(record), startupDeadline: record.startupDeadline };
++        } else {
++          try {
++            pending = await abortable(this.env.FORGE_ADMISSION.getByName(GLOBAL_NAME)
++              .pendingStatus(route[1], user.id), AbortSignal.timeout(5000));
++          } catch { return json({ error: 'match_status_temporarily_unavailable' }, 503, { 'Retry-After': '1' }); }
++          if (!pending) return error('match_not_found', 404);
++        }
++        // Read-only initialization projection must not queue behind120s begin.
++        // It neither invokes provider APIs nor changes/resumes an allocation.
++        if (this.now() >= pending.startupDeadline || this.now() >= pending.expiresAt) return error('match_startup_interrupted', 410);
++        const { startupDeadline, ...allocation } = pending;
++        return json({ ...allocation, status: 'initializing' }, 202);
++      }
++    }
+     if (request.method === 'POST') {
+       const user = await verifyHostUser(request, { verifyBearer: this.verifyBearer, origin: ORIGIN });
+       if (!user) return error('authentication_required', 401);
+@@ -264,7 +299,24 @@
+       catch (failure) { return error(failure.message === 'body_timeout' ? 'body_timeout' : 'invalid_json', failure.message === 'body_timeout' ? 408 : failure.message === 'body_too_large' ? 413 : 400); }
+       request = new Request(request.url, { method: request.method, headers: request.headers, body: JSON.stringify(body), redirect: 'manual' });
+     }
+-    return this.serial(() => this.handle(request));
++    const response = await this.serial(() => this.handle(request));
++    // This must stay OUTSIDE serial(): admission.release calls destructionProof
++    // back on this match, which itself needs the same serial queue. Await the
++    // bounded proof-based release before replying so an explicit Rematch can
++    // reserve immediately. A failed/uncertain RPC leaves alarm reconciliation.
++    if (response.ok) await this.releaseConfirmedTerminal();
++    return response;
++  }
++  async releaseConfirmedTerminal() {
++    const record = await this.storage.get('allocation');
++    if (!record || !['finished', 'closed'].includes(record.status)
++      || await this.storage.get('destructionConfirmed') !== true) return;
++    try {
++      // No caller-supplied proof flag. The admission service asks this recorded
++      // generation for trusted confirmation; never release just running=false.
++      await abortable(this.env.FORGE_ADMISSION.getByName(GLOBAL_NAME)
++        .release(record.matchId, record.generation), AbortSignal.timeout(5000));
++    } catch { /* cleanup remains confirmed; global alarm retries lease release */ }
+   }
+   async handle(request) {
+     const user = await verifyHostUser(request, { verifyBearer: this.verifyBearer, origin: ORIGIN });
+@@ -278,7 +330,12 @@
+     }
+     if (!(request.method === 'GET' && path === base) && !(request.method === 'POST' && path === base + '/actions')) return error('method_not_allowed', 405);
+     const terminal = await this.storage.get('match');
+-    if (request.method === 'GET' && terminal?.status === 'finished' && this.now() < record.retainUntil) return json({ matchId: record.matchId, generation: record.generation, status: 'finished', result: terminal.result });
++    if (request.method === 'GET' && terminal?.status === 'finished' && this.now() < record.retainUntil) {
++      // Also recover a crash after authority persisted the result but before
++      // wrapper cleanup. Keep the canonical result even if cleanup needs retry.
++      await this.cleanup(record, 'finished');
++      return json({ matchId: record.matchId, generation: record.generation, status: 'finished', result: terminal.result });
++    }
+     if (this.now() >= record.expiresAt || this.now() >= record.lastAuthorizedAt + IDLE_MS) {
+       await this.cleanup(record, 'expired'); return error('match_expired', 410);
+     }
+--- a/src/worker.mjs
++++ b/src/worker.mjs
+@@ -10,6 +10,7 @@
+   }
+   fetch(request) { return this.service.fetch(request); }
+   alarm() { return this.service.alarm(); }
++  pendingStatus(matchId, ownerId) { return this.service.pendingStatus(matchId, ownerId); }
+   verifyLease(allocation) { return this.service.verifyLease(allocation); }
+   release(matchId, generation) { return this.service.release(matchId, generation); }
+ }
+--- a/tests/service.test.mjs
++++ b/tests/service.test.mjs
+@@ -48,7 +48,7 @@
+           if (this.failRead) throw Error('unresponsive');
+           const headers = { 'Content-Type': 'application/json', 'X-Host-Epoch': this.epoch };
+           if (new URL(r.url).pathname === '/action') { calls.actions.push(await r.json()); return new Response('{}', { status: this.actionStatus || 202, headers }); }
+-          return new Response(JSON.stringify({ schema: NATIVE_SCHEMA, forgeRevision: FORGE_REVISION, viewer: 0, status: 'running', revision: 1, fixture: true }), { headers });
++          return new Response(JSON.stringify({ schema: NATIVE_SCHEMA, forgeRevision: FORGE_REVISION, viewer: 0, status: 'running', revision: 1, fixture: true, ...this.snapshot }), { headers });
+         } }; },
+       }; containers.set(id, container);
+       matches.set(id, new MatchService({ ctx: { storage, container }, env, verifyBearer, native, now: () => time, wait: async ms => { time += ms; }, newToken: () => 'fixture-internal-capability-12345678901234567890' }));
+@@ -112,7 +112,8 @@
+   assert.equal((await f.route(request(path, { method: 'DELETE' }))).status, 204);
+   const portBefore = f.calls.port; assert.equal((await f.route(request(path, { method: 'GET' }))).status, 410); assert.equal(f.calls.port, portBefore);
+   assert.equal(await f.admission.release(body.matchId, epoch), false);
+-  assert.equal(await f.admission.release(body.matchId, body.generation), true); assert.equal((await f.storage.get('leases')).length, 0);
++  assert.equal((await f.storage.get('leases')).length, 0); // already released before204
++  assert.equal(await f.admission.release(body.matchId, body.generation), false);
+   assert.equal(f.calls.start, 1);
+ });
+ test('unresponsive gateway does not prevent trusted instance destroy', async () => {
+@@ -155,10 +156,10 @@
+   const r = await f.route(request(path, { body: action })); assert.equal((await r.json()).state, 'pending_outcome_unknown');
+   c.failRead = false; assert.equal((await f.route(request(path, { body: action }))).status, 202); assert.equal(f.calls.actions.length, 0);
+ });
+-test('closed tombstone cannot be restarted even with the original still-held lease', async () => {
++test('closed tombstone cannot be restarted with the released original lease', async () => {
+   const f = fixture(); const { body } = await f.create(); const lease = (await f.storage.get('leases'))[0];
+   await f.route(request('/api/play/matches/' + body.matchId, { method: 'DELETE' }));
+-  await f.matches.get(body.matchId).begin(lease, input()); assert.equal(f.calls.start, 1);
++  await assert.rejects(f.matches.get(body.matchId).begin(lease, input()), /unreserved_allocation/); assert.equal(f.calls.start, 1);
+ });
+ test('trial disabled, missing allowlist, unknown owner and expired trial cannot reserve', async () => {
+   for (const env of [{ FORGE_TRIAL_ENABLED: 'false' }, { FORGE_TRIAL_OWNER_IDS: '' }, { FORGE_TRIAL_OWNER_IDS: other }, { FORGE_TRIAL_EXPIRES_AT: new Date(999).toISOString() }]) {
+@@ -211,7 +212,7 @@
+   const f = fixture(); const { body } = await f.create(); const lease = (await f.storage.get('leases'))[0];
+   await f.route(request('/api/play/matches/' + body.matchId, { method: 'DELETE' }));
+   const restored = new MatchService({ ctx: { storage: f.stores.get(body.matchId), container: f.containers.get(body.matchId) }, env: f.env, verifyBearer, native: f.native, now: () => 2000 });
+-  await restored.begin(lease, input()); assert.equal((await restored.fetch(request('/api/play/matches/' + body.matchId, { method: 'GET' }))).status, 410); assert.equal(f.calls.start, 1);
++  await assert.rejects(restored.begin(lease, input()), /unreserved_allocation/); assert.equal((await restored.fetch(request('/api/play/matches/' + body.matchId, { method: 'GET' }))).status, 410); assert.equal(f.calls.start, 1);
+ });
+ test('reviewed controlMode sends only real smart/full native action with dedup and generation fence', async () => {
+   const f = fixture(); const { body } = await f.create(); const path = '/api/play/matches/' + body.matchId + '/actions';
+@@ -252,3 +253,155 @@
+   assert.equal((await f.storage.get('leases')).length, 1); assert.equal((await f.storage.get('trial-budget')).reservations, 1);
+   release(); await Promise.all(work); f.env.FORGE_MATCHES.getByName = original;
+ });
++
++// Rematch integration uses real admission, authority and trusted release RPC;
++// only account/provider/native projection are explicit transport fixtures.
++test('successful close releases outside the match queue before explicit Rematch', async () => {
++  const f = fixture(); const first = await f.create(); const id = first.body.matchId;
++  const service = f.matches.get(id); const release = f.admission.release.bind(f.admission); let proofs = 0;
++  f.admission.release = async (matchId, generation) => {
++    const proof = await service.destructionProof(generation); proofs++;
++    assert.equal(proof.confirmed, true); return release(matchId, generation);
++  };
++  const response = await Promise.race([f.route(request('/api/play/matches/' + id, { method: 'DELETE' })),
++    new Promise((_, reject) => setTimeout(() => reject(Error('release callback deadlocked on match queue')), 500))]);
++  assert.equal(response.status, 204); assert.equal(proofs, 1); assert.equal((await f.storage.get('leases')).length, 0);
++  assert.equal(f.calls.start, 1); // cleanup must not create the next game
++  const next = await f.create({ headers: { 'Idempotency-Key': 'explicit_rematch_closed_0001' } });
++  assert.equal(next.response.status, 202); assert.notEqual(next.body.matchId, id); assert.equal(f.calls.start, 2);
++  assert.equal((await f.storage.get('trial-budget')).reservations, 2); // no cleanup refund
++});
++test('rules-provided finished result confirms cleanup and allows immediate explicit Rematch', async () => {
++  const f = fixture(); const first = await f.create(); const id = first.body.matchId;
++  f.containers.get(id).snapshot = { status: 'finished', draw: false, winnerPlayerId: 0 };
++  const response = await f.route(request('/api/play/matches/' + id, { method: 'GET' }));
++  assert.equal(response.status, 200); assert.deepEqual((await response.json()).result, { draw: false, winnerPlayerId: 0 });
++  assert.equal(f.containers.get(id).running, false); assert.equal((await f.storage.get('leases')).length, 0);
++  const next = await f.create({ headers: { 'Idempotency-Key': 'explicit_rematch_finished_0001' } });
++  assert.equal(next.response.status, 202); assert.notEqual(next.body.matchId, id); assert.equal(f.calls.start, 2);
++});
++test('persisted terminal result after eviction repairs skipped cleanup before release', async () => {
++  const f = fixture(); const first = await f.create(); const id = first.body.matchId; const storage = f.stores.get(id);
++  const match = await storage.get('match'); match.status = 'finished'; match.result = { draw: true, winnerPlayerId: null }; await storage.put('match', match);
++  assert.equal(f.containers.get(id).running, true);
++  const response = await f.route(request('/api/play/matches/' + id, { method: 'GET' }));
++  assert.equal(response.status, 200); assert.equal((await response.json()).result.draw, true);
++  assert.equal(f.calls.destroy, 1); assert.equal(f.containers.get(id).running, false); assert.equal((await f.storage.get('leases')).length, 0);
++});
++test('unconfirmed cleanup blocks Rematch for close and finished result until alarm succeeds', async () => {
++  for (const ended of [false, true]) {
++    const f = fixture(); const first = await f.create(); const id = first.body.matchId; const container = f.containers.get(id);
++    container.failStop = true;
++    if (ended) container.snapshot = { status: 'finished', draw: true, winnerPlayerId: null };
++    const response = await f.route(request('/api/play/matches/' + id, { method: ended ? 'GET' : 'DELETE' }));
++    assert.equal(response.status, ended ? 200 : 503); assert.equal((await f.storage.get('leases')).length, 1);
++    const blocked = await f.create({ headers: { 'Idempotency-Key': 'blocked_rematch_cleanup_0001' } });
++    assert.equal(blocked.response.status, 409); assert.equal(blocked.body.error, 'user_has_active_allocation'); assert.equal(f.calls.start, 1);
++    container.failStop = false; await f.admission.alarm();
++    assert.equal((await f.storage.get('leases')).length, 0); assert.equal(f.calls.start, 1);
++  }
++});
++test('raced duplicate close destroys once and old close cannot release a new generation', async () => {
++  const f = fixture(); const first = await f.create(); const path = '/api/play/matches/' + first.body.matchId;
++  const responses = await Promise.all([f.route(request(path, { method: 'DELETE' })), f.route(request(path, { method: 'DELETE' }))]);
++  assert.deepEqual(responses.map(r => r.status), [204, 204]); assert.equal(f.calls.destroy, 1); assert.equal((await f.storage.get('leases')).length, 0);
++  const next = await f.create({ headers: { 'Idempotency-Key': 'explicit_rematch_race_0001' } }); assert.equal(next.response.status, 202);
++  assert.equal((await f.route(request(path, { method: 'DELETE' }))).status, 204);
++  assert.equal((await f.storage.get('leases'))[0].matchId, next.body.matchId); assert.equal(f.calls.start, 2); assert.equal(f.calls.destroy, 1);
++});
++test('lease-release transport failure preserves cleanup response and alarm fallback', async () => {
++  const f = fixture(); const first = await f.create(); const release = f.admission.release.bind(f.admission);
++  f.admission.release = async () => { throw Error('fixture release RPC unavailable'); };
++  assert.equal((await f.route(request('/api/play/matches/' + first.body.matchId, { method: 'DELETE' }))).status, 204);
++  assert.equal(f.containers.get(first.body.matchId).running, false); assert.equal((await f.storage.get('leases')).length, 1);
++  const blocked = await f.create({ headers: { 'Idempotency-Key': 'blocked_rematch_release_0001' } }); assert.equal(blocked.response.status, 409);
++  f.admission.release = release; await f.admission.alarm(); assert.equal((await f.storage.get('leases')).length, 0);
++  const next = await f.create({ headers: { 'Idempotency-Key': 'explicit_rematch_retry_0001' } }); assert.equal(next.response.status, 202); assert.equal(f.calls.start, 2);
++});
++test('hung release is bounded outside the queue and does not restart or replay', async t => {
++  const f = fixture(); const first = await f.create(); const release = f.admission.release.bind(f.admission);
++  const timeout = AbortSignal.timeout.bind(AbortSignal);
++  t.mock.method(AbortSignal, 'timeout', ms => timeout(ms === 5000 ? 20 : ms));
++  f.admission.release = () => new Promise(() => {});
++  const response = await Promise.race([f.route(request('/api/play/matches/' + first.body.matchId, { method: 'DELETE' })),
++    new Promise((_, reject) => setTimeout(() => reject(Error('release exceeded bounded response')), 300))]);
++  assert.equal(response.status, 204); assert.equal((await f.storage.get('leases')).length, 1);
++  assert.equal((await f.matches.get(first.body.matchId).destructionProof(first.body.generation)).confirmed, true);
++  assert.equal(f.calls.start, 1); assert.equal(f.calls.actions.length, 0);
++  f.admission.release = release; await f.admission.alarm(); assert.equal((await f.storage.get('leases')).length, 0);
++});
++test('replaying original create after close returns its old receipt without auto-rematch', async () => {
++  const f = fixture(); const first = await f.create();
++  await f.route(request('/api/play/matches/' + first.body.matchId, { method: 'DELETE' }));
++  const replay = await f.create(); assert.equal(replay.body.replay, true); assert.equal(replay.body.matchId, first.body.matchId);
++  assert.equal(f.calls.start, 1); assert.equal((await f.storage.get('leases')).length, 0); assert.equal((await f.storage.get('trial-budget')).reservations, 1);
++});
++test('post-start eviction with abandoned caller reconciles durable initializing allocation without restart', async () => {
++  const f = fixture(); const original = f.env.FORGE_MATCHES.getByName; const background = [];
++  f.admission.ctx.waitUntil = promise => background.push(promise);
++  f.env.FORGE_MATCHES.getByName = id => {
++    const service = original(id);
++    return { ...service, begin: async allocation => {
++      const storage = f.stores.get(id);
++      await storage.put('allocation', { ...allocation, status: 'initializing', internalToken: 'fixture-internal-capability-before-eviction',
++        startupDeadline: allocation.createdAt + 120000, lastAuthorizedAt: allocation.createdAt, retainUntil: allocation.expiresAt + 86400000 });
++      await storage.setAlarm(allocation.createdAt + 120000);
++      f.containers.get(id).start({ enableInternet: false });
++      // Simulate runtime replacement after persisted start, not a clean finally.
++      throw Error('fixture caller/runtime abandoned startup');
++    } };
++  };
++  const first = await f.create(); assert.equal(first.response.status, 202); await Promise.all(background);
++  assert.equal(f.calls.start, 1); assert.equal((await f.storage.get('leases')).length, 1);
++  const lease = (await f.storage.get('leases'))[0];
++  f.env.FORGE_MATCHES.getByName = original;
++  const restored = new MatchService({ ctx: { storage: f.stores.get(first.body.matchId), container: f.containers.get(first.body.matchId) }, env: f.env, verifyBearer, native: f.native, now: () => 122000 });
++  f.matches.set(first.body.matchId, restored);
++  await restored.reconcile(lease); // same recorded instance only, no begin()
++  f.setTime(122000); await f.admission.alarm();
++  assert.equal(f.calls.start, 1); assert.equal(f.calls.destroy, 1); assert.equal((await f.storage.get('leases')).length, 0);
++  await assert.rejects(restored.begin(lease, input()), /invalid_or_expired_allocation/);
++  const replay = await f.create(); assert.equal(replay.body.matchId, first.body.matchId); assert.equal(replay.body.replay, true); assert.equal(f.calls.start, 1);
++});
++test('owner initialization GET is immediate and read-only while real begin queue is occupied', async () => {
++  const f = fixture(), work = []; f.admission.ctx.waitUntil = promise => work.push(promise);
++  const confirm = f.native.confirmInitialization; let finish; const gate = new Promise(resolve => { finish = resolve; });
++  f.native.confirmInitialization = async options => { await gate; return confirm(options); };
++  const first = await f.create(); const path = '/api/play/matches/' + first.body.matchId;
++  while (!(await f.stores.get(first.body.matchId).get('allocation'))) await new Promise(r => setTimeout(r, 1));
++  const before = f.calls.port;
++  const response = await Promise.race([f.route(request(path, { method: 'GET' })), new Promise((_, reject) => setTimeout(() => reject(Error('initialization GET queued behind begin')), 300))]);
++  assert.equal(response.status, 202); assert.equal((await response.json()).status, 'initializing'); assert.equal(f.calls.port, before);
++  assert.equal((await f.route(request(path, { method: 'GET', token: 'other' }))).status, 404);
++  finish(); await Promise.all(work); assert.equal((await f.route(request(path, { method: 'GET' }))).status, 200); assert.equal(f.calls.start, 1);
++});
++test('create202 before per-match persistence uses trusted owner lease, never404 or polling start', async () => {
++  const f = fixture(), work = []; f.admission.ctx.waitUntil = promise => work.push(promise);
++  const original = f.env.FORGE_MATCHES.getByName; let finish; const gate = new Promise(resolve => { finish = resolve; });
++  f.env.FORGE_MATCHES.getByName = id => { const service = original(id); return { begin: () => gate, fetch: request => service.fetch(request) }; };
++  const first = await f.create(); const path = '/api/play/matches/' + first.body.matchId;
++  assert.equal(await f.stores.get(first.body.matchId).get('allocation'), undefined);
++  const response = await f.route(request(path, { method: 'GET' })); const value = await response.json();
++  assert.equal(response.status, 202); assert.equal(value.matchId, first.body.matchId); assert.equal(value.generation, first.body.generation);
++  assert.equal(value.startupDeadline, undefined); assert.equal(value.ownerId, undefined);
++  assert.equal((await f.route(request(path, { method: 'GET', token: 'other' }))).status, 404);
++  assert.equal((await f.route(request('/api/play/matches/00000000-0000-4000-8000-000000000099', { method: 'GET' }))).status, 404);
++  assert.equal((await f.route(request(path, { method: 'GET', token: null }))).status, 401);
++  assert.equal(f.calls.start, 0); assert.equal(f.calls.port, 0); assert.equal(f.calls.destroy, 0);
++  f.setTime(122000); assert.equal((await f.route(request(path, { method: 'GET' }))).status, 410);
++  assert.equal(f.calls.start, 0); assert.equal(f.calls.destroy, 0); // alarm, not GET, owns cleanup
++  finish(); await Promise.all(work); f.env.FORGE_MATCHES.getByName = original; await f.admission.alarm();
++  assert.equal((await f.storage.get('leases')).length, 0); assert.equal(f.calls.start, 0);
++});
++test('pending lease lookup uncertainty is retryable503, never fabricated unknown or initialization', async () => {
++  const f = fixture(); f.admission.pendingStatus = async () => { throw Error('fixture admission unavailable'); };
++  const response = await f.route(request('/api/play/matches/00000000-0000-4000-8000-000000000099', { method: 'GET' }));
++  assert.equal(response.status, 503); assert.equal(response.headers.get('Retry-After'), '1'); assert.equal(f.calls.start, 0);
++});
++test('running state still waits for lifecycle queue and cannot use initialization bypass', async () => {
++  const f = fixture(); const first = await f.create(); const service = f.matches.get(first.body.matchId);
++  let finish; const gate = new Promise(resolve => { finish = resolve; }); const held = service.serial(() => gate); const before = f.calls.port;
++  let completed = false; const response = f.route(request('/api/play/matches/' + first.body.matchId, { method: 'GET' })).then(value => { completed = true; return value; });
++  await new Promise(r => setTimeout(r, 20)); assert.equal(completed, false); assert.equal(f.calls.port, before);
++  finish(); await held; assert.equal((await response).status, 200);
++});

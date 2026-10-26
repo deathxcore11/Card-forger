@@ -1,0 +1,25 @@
+{
+  "baseCandidateManifestSha256": "167615edf5c8b83d632791acf015cdefb0621bfae542dc60ed486029783de145",
+  "changes": {
+    "src/service-core.mjs": {
+      "before": "78be6a2b46f5062cf823706ba5037107d3d176030c27a002e7a6fb1ff5698114",
+      "after": "0eb6bad12d6273f5ad6fb423261bc519ad91f6604511e9a28861024db1b7667c"
+    },
+    "src/worker.mjs": {
+      "before": "d259fb54770a8fba9e83b177eda20f068a1d05063541a9af392ab632bc38c30e",
+      "after": "ec71ed64dfd7c5cbcfd1e5b0adca2707d4eae99568811655f2272b067471308a"
+    },
+    "tests/service.test.mjs": {
+      "before": "1d2b5b7e4e53bc8c47157f8a367cf07c8b485c5337497feb2e7651f32bfe82dc",
+      "after": "3894e8203da520e307208f68139f2ac74f8416b13eab63ae86876e4c9f68961c"
+    }
+  },
+  "nodeTestsPassed": 142,
+  "newIntegrationTests": 13,
+  "frozenDockerProofPackageChanged": false,
+  "releaseDeadlineMs": 5000,
+  "initializingRead": "owner-authenticated read-only202; missing per-match record requires trusted durable lease; unknown/otherowner404; lookup transport503 Retry-After1; no start or cleanup from fastpath",
+  "realLocalHTTPNativeHandshake": "PASS; fixture account/provider/storage only; native/bootstrap/gateway unchanged",
+  "CloudflareLifetimeProof": false,
+  "lifecycleSources": "lifecycle-contract.json"
+}
