@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { ACCOUNT, WORKER, registryImageForProbe, createReleaseConfiguration } from './release-configuration.mjs';
 
 const host = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -50,6 +51,11 @@ async function clean() {
   cleanupConfirmed = true;
 }
 try {
+  // Check the actual build capability before creating an image ownership ledger.
+  stage = 'builder-capability';
+  const capability = spawnSync(process.execPath, [path.join(host, 'scripts/check-builder.mjs')], { encoding: 'utf8', timeout: 15_000, maxBuffer: 32_768 });
+  process.stdout.write(capability.stdout || '');
+  if (capability.status !== 0) throw Error('builder_docker_unavailable');
   const inventory = await json(path.join(host, 'SOURCE-SHA256.json'));
   for (const [file, expected] of Object.entries(inventory)) {
     assert(!path.isAbsolute(file) && !file.split('/').includes('..'));
@@ -99,7 +105,8 @@ try {
 } catch (error) {
   let apiCodes = [];
   try { apiCodes = [...(await readFile(path.join(work, `private-${stage}.log`), 'utf8')).matchAll(/\[code: (\d{1,8})\]/g)].map(x => x[1]).slice(0, 8); } catch {}
-  console.error(JSON.stringify({ result: 'failed', stage, category: error?.name || 'Error', apiCodes, cleanupConfirmed, websiteChanged: false }));
+  console.error(JSON.stringify({ result: 'failed', stage, category: error?.name || 'Error',
+    reason: /^[a-z_]{1,100}$/.test(error?.message || '') ? error.message : null, apiCodes, cleanupConfirmed, websiteChanged: false }));
   process.exitCode = 1;
 } finally {
   if (!cleanupConfirmed) {
