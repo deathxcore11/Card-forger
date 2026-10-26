@@ -1,6 +1,15 @@
-# Play visual and interaction contract: pre-release audit
+# Play visual and interaction contract: release evidence and remaining work
 
-2026-10-26. This is a source review of the website release package based on candidate `3849e24` with current 4.1.0 edits and the pre-release host source available during review. Final website and host publication commits are pending integration's release record; the earlier host revision is not a certification of the forthcoming deployment. This document does not certify a live match, visual acceptance, or universal card support.
+2026-10-26. Website source `14c65637e4402f61cff95b54d0ced2412da4819d`, based on candidate `3849e24`; host source `8358a281f40677e6d824c0bb6dea7097f2c19e2e`. This source review and deployment receipt do not certify a complete live match, visual acceptance, or universal card support.
+
+## Deployment evidence
+
+- PASS: normal production branch fast-forwarded to website `14c65637`; Cloudflare build `9cc314f3-ef5d-4626-a0f8-aae86dfc324a` succeeded at 20:10:51 UTC. Worker version `0eef0537-cf20-4aa6-8daa-45955f58d782` is deployed at 100%.
+- PASS: domain `cardstashy.com` points to `cardforge2` production. The build explicitly uploaded the new app, index, Play menu, feature switch and service worker. `FORGE_HOST` points to the private Forge service; existing bindings and schedules are preserved.
+- PASS: host workflow `40391886971` passed the native image startup probe and cleanup. Worker version `5203d3a9-d42e-4406-aedb-cfac7695d934` and container image `sha256:0d5e48f9e6b57624ebd5b581d7265521b59afa369e17776f9c038d9a9147d8b6` are at 100%.
+- PASS, local native fixture only: exact Calling All Angels versus Keen Engineering reached the real mulligan prompt with both rosters verified and an authoritative starting-player receipt.
+- NOT TESTED: current-release browser appearance. The public browser showed the old cached setup after deployment, then its security policy blocked a further reload. No after-release screenshot has been claimed. A clean before-release screenshot was captured against the previous production interface.
+- NOT TESTED: signed-in account match. The browser was signed out. No complete match or live payment/response trace was performed.
 
 ## Reference decisions
 
