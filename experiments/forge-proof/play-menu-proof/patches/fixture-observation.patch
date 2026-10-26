@@ -1,0 +1,232 @@
+--- a/server.mjs
++++ b/server.mjs
+@@ -1,6 +1,7 @@
+ // LOCAL TEST ONLY. Mock account/provider/storage; actual service, bootstrap,
+ // gateway and Forge rules. Never import this file from a production Worker.
+ import http from 'node:http';
++import { FixtureObservationCache } from './observation.mjs';
+ import { spawn, execFile } from 'node:child_process';
+ import { promisify } from 'node:util';
+ import { mkdtemp, mkdir, readFile, realpath, rm, stat } from 'node:fs/promises';
+@@ -12,6 +13,7 @@
+ const HERE = path.dirname(fileURLToPath(import.meta.url));
+ const OWNER = '00000000-0000-4000-8000-000000000001';
+ const BEARER = 'forge-browser-fixture-owner'; // synthetic test credential ONLY
++const observations = new FixtureObservationCache({ bearer: BEARER });
+ const SOURCE_SHA = '586511f3e9bf28a6918ef696ce614e50b5dbdf55c0b14d9a54f1fd89967aeddd';
+ const GATEWAY_SHA = 'c15d29c16f6ad8ab259eeba07bd2a87ecf26caec00b66c10a5bc5b9174da0e52';
+ const args = {};
+@@ -142,6 +144,10 @@
+   try {
+     if (closing || req.headers.host !== new URL(origin).host || req.headers.origin && req.headers.origin !== origin) { res.writeHead(403).end(); return; }
+     const url = new URL(req.url, origin);
++    if (url.pathname.startsWith('/__fixture/observe')) {
++      const observed = observations.observe({ method: req.method, url, headers: req.headers });
++      res.writeHead(observed.status, observed.headers).end(JSON.stringify(observed.body)); return;
++    }
+     if (url.pathname === '/fixture-config.json' && req.method === 'GET') {
+       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }).end(JSON.stringify({ userId: OWNER, accessToken: BEARER, fixtureOnly: true })); return;
+     }
+@@ -159,8 +165,10 @@
+       if (req.headers.origin) headers.set('Origin', ORIGIN); // ONLY this local fixture boundary maps loopback
+       const request = new Request(ORIGIN + url.pathname + url.search, { method: req.method, headers, ...(['POST'].includes(req.method) ? { body: Readable.toWeb(req), duplex: 'half' } : {}) });
+       const response = await routeHostRequest(request, env, verifyBearer);
++      const delivered = observations.capture({ method: req.method, url, headers: req.headers, httpStatus: response.status, response: res });
+       res.writeHead(response.status, Object.fromEntries(response.headers));
+-      if (response.body) for await (const chunk of Readable.fromWeb(response.body)) res.write(chunk);
++      if (response.body) for await (const chunk of Readable.fromWeb(response.body)) { res.write(chunk); delivered.chunk(chunk); }
++      delivered.complete();
+       res.end(); return;
+     }
+     if (!['GET', 'HEAD'].includes(req.method) || url.pathname.split('/').some(piece => piece.startsWith('.'))) { res.writeHead(404).end(); return; }
+--- /dev/null
++++ b/observation.mjs
+@@ -0,0 +1,72 @@
++// LOCAL FIXTURE ONLY: passive copies of bytes already forwarded by the fixture.
++// No dependency on service-core, native transport, storage, timers or game rules.
++const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
++const MATCH = new RegExp('^/api/play/matches/(' + UUID + ')$');
++const OBSERVE = new RegExp('^/__fixture/observe/(' + UUID + ')$');
++const UUID_RE = new RegExp('^' + UUID + '$');
++const NO_CAPTURE = Object.freeze({ chunk() {}, complete() {} });
++const plain = value => value !== null && typeof value === 'object' && !Array.isArray(value);
++const headers = value => value instanceof Headers ? value : new Headers(value);
++const reply = (status, body) => ({ status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, body });
++export class FixtureObservationCache {
++  #records = new Map();
++  #sequence = 0;
++  constructor({ bearer, maximumRecords = 4, maximumBytes = 4 * 1024 * 1024 }) {
++    if (typeof bearer !== 'string' || !bearer || !Number.isInteger(maximumRecords) || maximumRecords < 1 || maximumRecords > 4
++      || !Number.isInteger(maximumBytes) || maximumBytes < 1 || maximumBytes > 4 * 1024 * 1024) throw TypeError('bounded fixture observation required');
++    this.authorization = 'Bearer ' + bearer; this.maximumRecords = maximumRecords; this.maximumBytes = maximumBytes;
++  }
++  capture({ method, url, headers: requestHeaders, httpStatus, response }) {
++    const target = new URL(url), route = MATCH.exec(target.pathname);
++    if (method !== 'GET' || !route || target.search || target.hash || headers(requestHeaders).get('Authorization') !== this.authorization) return NO_CAPTURE;
++    const matchId = route[1]; let chunks = [], length = 0, finished = false, complete = false, invalid = false, pending;
++    const commit = () => {
++      if (!finished || !complete || invalid || !pending) return;
++      const previous = this.#records.get(matchId);
++      // A late initial/pending/error response cannot erase the real retained
++      // outcome. DELETE is never captured; terminal survives its cleanup.
++      if (previous?.generation === pending.generation && previous.body.status === 'finished' && pending.body.status !== 'finished') { pending = null; return; }
++      this.#records.delete(matchId);
++      this.#records.set(matchId, { fixtureOnly: true, matchId, generation: pending.generation,
++        sequence: ++this.#sequence, httpStatus, body: pending.body });
++      pending = null;
++      while (this.#records.size > this.maximumRecords) this.#records.delete(this.#records.keys().next().value);
++    };
++    response.once('finish', () => { finished = true; commit(); });
++    response.once('close', () => { if (!finished) { invalid = true; chunks = []; pending = null; } });
++    response.once('error', () => { if (!finished) { invalid = true; chunks = []; pending = null; } });
++    return {
++      chunk: bytes => {
++        if (invalid || complete) return;
++        length += bytes.byteLength;
++        if (length > this.maximumBytes) { invalid = true; chunks = []; return; }
++        chunks.push(Buffer.from(bytes));
++      },
++      complete: () => {
++        if (invalid || complete) return; complete = true;
++        try {
++          const body = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks, length)));
++          chunks = [];
++          if (!plain(body) || body.matchId !== undefined && body.matchId !== matchId) return;
++          // For delivered transport errors without identity, reuse ONLY a
++          // generation previously established by this exact delivered route.
++          const generation = body.generation ?? this.#records.get(matchId)?.generation;
++          if (typeof generation !== 'string' || !UUID_RE.test(generation)) return;
++          pending = { generation, body }; commit();
++        } catch { invalid = true; chunks = []; }
++      },
++    };
++  }
++  observe({ method, url, headers: requestHeaders }) {
++    const incoming = headers(requestHeaders);
++    if (incoming.get('Authorization') !== this.authorization) return reply(401, { error: 'fixture_authorization_required' });
++    if (method !== 'GET') return reply(405, { error: 'fixture_observation_get_only' });
++    const target = new URL(url), route = OBSERVE.exec(target.pathname);
++    if (target.search || target.hash || [...incoming.keys()].some(key => /seat|viewer|player/i.test(key))) return reply(400, { error: 'fixture_view_selector_forbidden' });
++    if (!route) return reply(404, { error: 'fixture_observation_not_found' });
++    const matchId = route[1], expected = incoming.get('X-Fixture-Generation'), record = this.#records.get(matchId);
++    if (expected !== null && (!UUID_RE.test(expected) || !record || expected !== record.generation)) return reply(404, { error: 'fixture_generation_mismatch' });
++    if (!record) return reply(202, { fixtureOnly: true, matchId, status: 'waiting' });
++    return reply(200, structuredClone(record));
++  }
++}
+--- /dev/null
++++ b/test-observation.mjs
+@@ -0,0 +1,113 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { EventEmitter } from 'node:events';
++import http from 'node:http';
++import { FixtureObservationCache } from './observation.mjs';
++const TOKEN = 'synthetic-observer-test';
++const GEN = '00000000-0000-4000-8000-000000000001';
++const id = n => '00000000-0000-4000-8000-' + String(n).padStart(12, '0');
++const authorization = { Authorization: 'Bearer ' + TOKEN };
++const base = 'http://127.0.0.1';
++const body = (matchId = id(2), generation = GEN, status = 'running') => ({ matchId, generation, status,
++  ...(status === 'finished' ? { result: { draw: false, winnerPlayerId: 1 } } : { snapshot: { revision: 3, viewer: 0, players: [{ isViewer: false, zones: { Hand: { count: 7, cards: [] }, Library: { count: 92, cards: [] } } }] } }) });
++const read = (cache, matchId = id(2), options = {}) => cache.observe({ method: 'GET', url: base + '/__fixture/observe/' + matchId, headers: authorization, ...options });
++function delivery(cache, value, { method = 'GET', status = 200, matchId = value.matchId || id(2), headers = authorization, suffix = '' } = {}) {
++  const response = new EventEmitter();
++  const capture = cache.capture({ method, url: base + '/api/play/matches/' + matchId + suffix, headers, httpStatus: status, response });
++  const bytes = Buffer.from(JSON.stringify(value));
++  capture.chunk(bytes.subarray(0, 17)); capture.chunk(bytes.subarray(17)); capture.complete();
++  return { response, capture, bytes };
++}
++test('cache contains only exact complete JSON after response finish, never beforehand', () => {
++  const cache = new FixtureObservationCache({ bearer: TOKEN }), value = body();
++  const { response } = delivery(cache, value);
++  assert.equal(read(cache).status, 202);
++  response.emit('finish');
++  const result = read(cache); assert.equal(result.status, 200); assert.deepEqual(result.body.body, value);
++  assert.equal(result.body.httpStatus, 200); assert.equal(result.body.sequence, 1);
++  assert.deepEqual(result.body.body.snapshot.players[0].zones.Hand.cards, []);
++  result.body.body.snapshot.viewer = 999; assert.equal(read(cache).body.body.snapshot.viewer, 0);
++});
++test('unfinished/aborted/error stream cannot become evidence', () => {
++  for (const failure of ['close', 'error']) {
++    const cache = new FixtureObservationCache({ bearer: TOKEN }), value = body();
++    const { response } = delivery(cache, value); response.emit(failure, Error('fixture transport failure')); response.emit('finish');
++    assert.equal(read(cache).status, 202);
++  }
++  const cache = new FixtureObservationCache({ bearer: TOKEN }), response = new EventEmitter();
++  const capture = cache.capture({ method: 'GET', url: base + '/api/play/matches/' + id(2), headers: authorization, httpStatus: 200, response });
++  capture.chunk(Buffer.from('{"incomplete":')); response.emit('finish'); capture.complete(); assert.equal(read(cache).status, 202);
++});
++test('observer requires synthetic auth and rejects mutation, generation and seat selectors', () => {
++  const cache = new FixtureObservationCache({ bearer: TOKEN }); delivery(cache, body()).response.emit('finish');
++  for (const headers of [{}, { Authorization: 'Bearer wrong' }]) assert.equal(read(cache, id(2), { headers }).status, 401);
++  for (const method of ['POST', 'DELETE', 'PUT', 'HEAD']) assert.equal(read(cache, id(2), { method }).status, 405);
++  assert.equal(read(cache, id(2), { headers: { ...authorization, 'X-Fixture-Generation': id(99) } }).status, 404);
++  assert.equal(read(cache, id(2), { headers: { ...authorization, 'X-Fixture-Generation': GEN } }).status, 200);
++  assert.equal(read(cache, id(3), { headers: { ...authorization, 'X-Fixture-Generation': GEN } }).status, 404);
++  for (const field of ['seat', 'viewer', 'player', 'anything']) assert.equal(read(cache, id(2), { url: base + '/__fixture/observe/' + id(2) + '?' + field + '=1' }).status, 400);
++  for (const header of ['X-Seat', 'X-Fixture-Viewer', 'X-Player-Id']) assert.equal(read(cache, id(2), { headers: { ...authorization, [header]: '1' } }).status, 400);
++});
++test('POST/action/DELETE/private routes and wrong account cannot seed observations', () => {
++  for (const options of [{ method: 'POST' }, { method: 'DELETE' }, { suffix: '/actions' }, { suffix: '?viewer=1' }, { headers: {} }]) {
++    const cache = new FixtureObservationCache({ bearer: TOKEN }); delivery(cache, body(), options).response.emit('finish'); assert.equal(read(cache).status, 202);
++  }
++  const cache = new FixtureObservationCache({ bearer: TOKEN }), wrong = body(id(3));
++  delivery(cache, wrong, { matchId: id(2) }).response.emit('finish'); assert.equal(read(cache).status, 202);
++});
++test('four bounded records, no observation-induced eviction renewal, strictly increasing deliveries', () => {
++  const cache = new FixtureObservationCache({ bearer: TOKEN });
++  for (let n = 2; n <= 5; n++) delivery(cache, body(id(n))).response.emit('finish');
++  assert.equal(read(cache, id(2)).body.sequence, 1);
++  for (let i = 0; i < 20; i++) read(cache, id(2));
++  delivery(cache, body(id(6))).response.emit('finish');
++  assert.equal(read(cache, id(2)).status, 202); assert.equal(read(cache, id(6)).body.sequence, 5);
++  const bounded = new FixtureObservationCache({ bearer: TOKEN, maximumBytes: 64 });
++  delivery(bounded, body()).response.emit('finish'); assert.equal(read(bounded).status, 202);
++  assert.throws(() => new FixtureObservationCache({ bearer: TOKEN, maximumRecords: 5 }));
++  assert.throws(() => new FixtureObservationCache({ bearer: TOKEN, maximumBytes: 4194305 }));
++});
++test('generation replacement fences previous observer binding and keeps exact delivered errors', () => {
++  const cache = new FixtureObservationCache({ bearer: TOKEN }); delivery(cache, body()).response.emit('finish');
++  delivery(cache, { error: 'native_state_temporarily_unavailable' }, { status: 503 }).response.emit('finish');
++  assert.equal(read(cache).body.httpStatus, 503); assert.deepEqual(read(cache).body.body, { error: 'native_state_temporarily_unavailable' });
++  delivery(cache, body(id(2), id(9))).response.emit('finish');
++  assert.equal(read(cache, id(2), { headers: { ...authorization, 'X-Fixture-Generation': GEN } }).status, 404);
++  assert.equal(read(cache).body.generation, id(9));
++});
++test('terminal copy survives UI DELETE and late nonterminal/error delivery', () => {
++  const cache = new FixtureObservationCache({ bearer: TOKEN }); const terminal = body(id(2), GEN, 'finished');
++  delivery(cache, terminal).response.emit('finish'); const sequence = read(cache).body.sequence;
++  delivery(cache, {}, { method: 'DELETE', status: 204 }).response.emit('finish');
++  delivery(cache, body(id(2), GEN, 'initializing'), { status: 202 }).response.emit('finish');
++  delivery(cache, { error: 'match_closed' }, { status: 410 }).response.emit('finish');
++  assert.deepEqual(read(cache).body.body, terminal); assert.equal(read(cache).body.sequence, sequence);
++});
++test('actual HTTP observer polling performs no service/provider/storage work or idle renewal', async () => {
++  const cache = new FixtureObservationCache({ bearer: TOKEN });
++  const counters = { serviceReads: 0, actions: 0, storageReads: 0, storageWrites: 0, idleRenewals: 0 };
++  const allocation = { lastAuthorizedAt: 123456, generation: GEN };
++  let origin;
++  const server = http.createServer((request, response) => {
++    const url = new URL(request.url, origin);
++    if (url.pathname.startsWith('/__fixture/observe')) {
++      const result = cache.observe({ method: request.method, url, headers: request.headers });
++      response.writeHead(result.status, result.headers).end(JSON.stringify(result.body)); return;
++    }
++    counters.serviceReads++; counters.storageReads++; counters.storageWrites++; counters.idleRenewals++; allocation.lastAuthorizedAt++;
++    const bytes = Buffer.from(JSON.stringify(body()));
++    const delivered = cache.capture({ method: request.method, url, headers: request.headers, httpStatus: 200, response });
++    response.writeHead(200, { 'Content-Type': 'application/json' }); response.write(bytes); delivered.chunk(bytes); delivered.complete(); response.end();
++  });
++  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); origin = 'http://127.0.0.1:' + server.address().port;
++  try {
++    const publicResponse = await fetch(origin + '/api/play/matches/' + id(2), { headers: authorization }); const delivered = await publicResponse.json();
++    const before = structuredClone({ counters, allocation });
++    for (let i = 0; i < 12; i++) {
++      const response = await fetch(origin + '/__fixture/observe/' + id(2), { headers: { ...authorization, 'X-Fixture-Generation': GEN } });
++      assert.equal(response.status, 200); assert.deepEqual((await response.json()).body, delivered);
++    }
++    const denied = await fetch(origin + '/__fixture/observe/' + id(2), { method: 'POST', headers: authorization, body: '{"op":"concede"}' }); assert.equal(denied.status, 405);
++    assert.deepEqual({ counters, allocation }, before);
++  } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
++});

@@ -29,6 +29,16 @@ for name in ['desktop','touch750']:
     d['location']={k:loc[k] for k in ['file','line','column']}
    diagnostics.append(d)
   if diagnostics:clean['errorDiagnostics']=diagnostics
+  # Metadata only: never copy cached bodies, bearer, match IDs or generations.
+  observed=original.get('observation')
+  if isinstance(observed,dict) and observed.get('method')=='fixture-forwarded-viewer-response-cache' and type(observed.get('intervalMs')) is int and observed['intervalMs']==250:
+   safe_observation={'method':'fixture-forwarded-viewer-response-cache','intervalMs':250}
+   for key in ['reads','accepted']:
+    value=observed.get(key)
+    if type(value) is int and 0<=value<=100000:safe_observation[key]=value
+   value=observed.get('lastHttpStatus')
+   safe_observation['lastHttpStatus']=value if type(value) is int and 100<=value<=599 else None
+   clean['observation']=safe_observation
   if 'failure' in original:
    error=original['failure'];clean['failure']={'stage':str(error.get('stage','unknown'))[:80],'class':error.get('name') if error.get('name') in ['Error','TimeoutError','AssertionError','TypeError'] else 'Error'}
   if 'failedAction' in original:

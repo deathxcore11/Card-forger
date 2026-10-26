@@ -106,5 +106,23 @@
     "source": "takeover/forge-play-browser-exit-overlay/menu-and-diagnostics.patch",
     "sha256": "27c965d0c3df8010ba4be22aee724bd50c7a0c64e335d72f2e70f45638dd0910",
     "bytes": 12867
+  },
+  {
+    "path": "patches/browser-delivered-observer.patch",
+    "source": "takeover/forge-play-observation-overlay/browser/delivered-observer.patch",
+    "sha256": "afe33e6f7716703c9bfc8633212f5e3aed171f8cc23fe92efd151aaaeefc0552",
+    "bytes": 11958
+  },
+  {
+    "path": "patches/fixture-observation.patch",
+    "source": "takeover/forge-play-observation-overlay/fixture/OBSERVATION.patch",
+    "sha256": "35e8c38c660df2ff7c7eb184671cf4a670640c5a0303a69eb210d8c48e10231c",
+    "bytes": 17048
+  },
+  {
+    "path": "patches/fixture-observation-manifest.json",
+    "source": "takeover/forge-play-observation-overlay/fixture/MANIFEST.json",
+    "sha256": "270bd5b3533c434f8079037cb2b88b622c61a5ad42bd60996047b497126ed64e",
+    "bytes": 1825
   }
 ]

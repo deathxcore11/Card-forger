@@ -25,6 +25,8 @@ shutil.copytree(base,takeover/'cardstashy',symlinks=False)
 browser=takeover/'forge-play-browser-proof';shutil.copytree(source/'browser',browser)
 patch(browser,source/'patches/browser-menu-exit.patch')
 assert sha(browser/'browser-journey.mjs')=='cac54a7761aa0e84aa12873c802ecf614757c072d09b3bfe768b515ba2d80399'
+patch(browser,source/'patches/browser-delivered-observer.patch')
+assert sha(browser/'browser-journey.mjs')=='75e3222ddc84541ddd28104d74e18cf4baa5e0e1f01a65320eea0c3ca42f21be'
 inspector=takeover/'forge-inspector-fix-overlay'
 for rel in ['experiments/phase-engine/match-table.mjs','experiments/forge-proof/forge-table.mjs']:
     copy(base/rel,inspector/rel)
@@ -60,7 +62,13 @@ changes=json.loads((source/'patches/rematch-manifest.json').read_text())['change
 for rel,record in changes.items(): assert sha(service/rel)==record['before'],rel
 patch(service,source/'patches/rematch.patch')
 for rel,record in changes.items(): assert sha(service/rel)==record['after'],rel
-shutil.copytree(source/'fixture',takeover/'forge-host-local-fixture')
+fixture=takeover/'forge-host-local-fixture'
+shutil.copytree(source/'fixture',fixture)
+observation=json.loads((source/'patches/fixture-observation-manifest.json').read_text())
+assert sha(fixture/'server.mjs')==observation['baseServerSha256']
+patch(fixture,source/'patches/fixture-observation.patch')
+for rel,expected in observation['files'].items(): assert sha(fixture/rel)==expected,rel
+subprocess.run(['node','--test',str(fixture/'test-observation.mjs')],check=True,stdout=subprocess.DEVNULL)
 env={**os.environ,'FORGE_WIDE_ENTRY':str(takeover/'wide-screen-entry.patch')}
 subprocess.run(['node',str(browser/'materialize.mjs')],env=env,check=True,stdout=subprocess.DEVNULL)
 assert not (browser/'runtime').is_symlink()

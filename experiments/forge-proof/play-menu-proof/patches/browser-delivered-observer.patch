@@ -1,0 +1,78 @@
+--- a/browser-journey.mjs
++++ b/browser-journey.mjs
+@@ -6,10 +6,51 @@
+ const base=process.env.FORGE_UI_ORIGIN;if(!base||!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))throw Error('Explicit loopback fixture origin required');
+ const mode=process.env.FORGE_BROWSER_CASE||'saved-keen',touch=process.env.FORGE_TOUCH==='true',width=Number(process.env.FORGE_WIDTH||1440),height=Number(process.env.FORGE_HEIGHT||1000),full=process.env.FORGE_FULL_JOURNEY==='true';
+ const out=path.resolve(process.env.FORGE_BROWSER_OUT||'test-results/forge-existing-play');await fs.mkdir(out,{recursive:true});
+-const report={schema:'forge-existing-play-browser.v1',result:'running',case:mode,scope:'isolated existing Play menu/actual app handlers with synthetic auth/cache provider; not whole-app boot or production persistence',browser:null,viewport:{width,height,hasTouch:touch},checks:[],actions:0,creates:0,privacyChecks:0,externalCredentialViolations:0,unexpectedRequests:0,terminal:null,errors:[],errorDiagnostics:[]};
++const report={schema:'forge-existing-play-browser.v1',result:'running',case:mode,scope:'isolated existing Play menu/actual app handlers with synthetic auth/cache provider; not whole-app boot or production persistence',browser:null,viewport:{width,height,hasTouch:touch},checks:[],actions:0,creates:0,privacyChecks:0,externalCredentialViolations:0,unexpectedRequests:0,terminal:null,errors:[],errorDiagnostics:[],observation:{method:'fixture-forwarded-viewer-response-cache',intervalMs:250,reads:0,accepted:0,lastHttpStatus:null}};
+ let browser,page,latest=null,lastStage='startup',nativePosts=0,createBodies=[],terminals=[],snapshots=[],actionIds=new Set();
+ const pause=ms=>new Promise(r=>setTimeout(r,ms)),check=n=>{report.checks.push(n);console.log('PASS '+n);},own=s=>s.players.find(p=>p.isViewer);
+-async function until(fn,timeout=20000){const end=Date.now()+timeout;while(Date.now()<end){const value=await fn();if(value)return value;await pause(40);}throw Error('Bounded wait expired at '+lastStage);}
++const fixtureUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++let observationToken=null,observationMatch=null,observationGeneration=null,observationCreate=0,observationSequence=0,observationNextAt=0,observationPending=null;
++const observedMatches=new Set();
++function bindObservedRequest(request){
++ const u=new URL(request.url());if(u.origin!==base)return;
++ const id=u.pathname.match(/^\/api\/play\/matches\/([^/]+)$/)?.[1];
++ if(request.method()==='GET'&&id){
++  assert(fixtureUuid.test(id),'Invalid UI match identity');
++  if(report.creates>observationCreate&&!observedMatches.has(id)){
++   observationMatch=id;observationCreate=report.creates;observationGeneration=null;observationSequence=0;observationNextAt=0;latest=null;snapshots=[];observedMatches.add(id);
++  }else assert(observedMatches.has(id),'Unexpected UI match request');
++ }
++ if(request.method()==='POST'&&u.pathname===`/api/play/matches/${observationMatch}/actions`){
++  assert(observationGeneration,'A native action preceded its observed allocation');assert.equal(request.postDataJSON().generation,observationGeneration,'UI action generation differs from delivered viewer state');
++ }
++}
++// Read only a fixture's copy of the exact body already delivered to this UI.
++// This endpoint never calls the host/native state route or renews an idle timer.
++async function observeDelivered(){
++ if(!observationMatch||!observationToken||observationCreate!==report.creates)return;
++ if(observationPending)return observationPending;
++ if(Date.now()<observationNextAt)return;observationNextAt=Date.now()+250;
++ const id=observationMatch,generation=observationGeneration,sequence=observationSequence;
++ observationPending=(async()=>{
++  report.observation.reads++;
++  const r=await fetch(base+'/__fixture/observe/'+id,{headers:{Accept:'application/json',Authorization:'Bearer '+observationToken,...(generation?{'X-Fixture-Generation':generation}:{})},credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',cache:'no-store',signal:AbortSignal.timeout(5000)});
++  if(r.status===202&&!sequence)return;
++  assert.equal(r.status,200,'Fixture observation unavailable; no native receipt invented');const record=await r.json();
++  assert.equal(record.fixtureOnly,true);assert.equal(record.matchId,id);assert(fixtureUuid.test(record.generation),'Invalid delivered generation');if(generation)assert.equal(record.generation,generation);
++  assert(Number.isSafeInteger(record.sequence)&&record.sequence>0&&record.sequence>=sequence,'Delivered response sequence regressed');
++  if(id!==observationMatch)return; // A completed previous match cannot enter a new table.
++  if(record.sequence===observationSequence)return;
++  report.observation.lastHttpStatus=Number.isInteger(record.httpStatus)&&record.httpStatus>=100&&record.httpStatus<=599?record.httpStatus:null;
++  const value=record.body;assert.equal(value?.matchId,id);assert.equal(value?.generation,record.generation);
++  assert(record.httpStatus===200&&['running','finished'].includes(value.status)||record.httpStatus===202&&value.status==='initializing','Delivered host response was not a valid native state envelope');
++  observationGeneration=record.generation;observationSequence=record.sequence;report.observation.accepted++;latest=value;
++  if(value.snapshot){assert.equal(value.snapshot.schema,'cardstashy.forge-proof.v1');assert.equal(value.snapshot.forgeRevision,'e5a0f8156da70ffc7866f923bed371c0111707cd');privacy(value.snapshot);snapshots.push(value.snapshot);if(snapshots.length>3)snapshots.shift();}
++  if(value.status==='finished')assert(verifiedTerminal(value),'Delivered terminal lacks a verified native outcome');
++  if(verifiedTerminal(value)&&!terminals.some(t=>t.matchId===value.matchId))terminals.push(value);
++ })().catch(e=>{recordError('response-observer',e);throw e;}).finally(()=>{observationPending=null;});return observationPending;
++}
++async function until(fn,timeout=20000){const end=Date.now()+timeout;while(Date.now()<end){await observeDelivered();const value=await fn();if(value)return value;await pause(40);}throw Error('Bounded wait expired at '+lastStage);}
+ function privacy(s){
+  const p=s.prompt,reveals=p?.method==='getChoices'&&p.supported&&p.acknowledgeOnly&&p.min===0&&p.max===0?(p.options||[]).map(o=>o.value).filter(c=>c?.hidden===false&&['Hand','Library'].includes(c.zone)):[];
+  for(const player of s.players)for(const zone of ['Library',...(!player.isViewer?['Hand']:[])])for(const c of player.zones[zone].cards){assert.equal(c.hidden,false);assert.equal(c.owner,player.id);assert.equal(c.zone,zone);assert.deepEqual(reveals.filter(r=>r.id===c.id&&r.owner===c.owner&&r.zone===zone),[c],'Private identity must equal an exact current native reveal');}report.privacyChecks++;
+@@ -83,12 +124,13 @@
+  report.handPan={overflow:true,before,after};check('actual touch pan reaches rightmost card through native handler without sending an action');await cdp.detach();
+ }
+ try{
++ const configResponse=await fetch(base+'/fixture-config.json',{credentials:'omit',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(5000)});assert.equal(configResponse.status,200);const config=await configResponse.json();assert.equal(config.fixtureOnly,true);assert(fixtureUuid.test(config.userId));assert(typeof config.accessToken==='string'&&config.accessToken.length>0&&config.accessToken.length<=8192&&/^[-A-Za-z0-9._]+$/.test(config.accessToken));observationToken=config.accessToken;
+  browser=await chromium.launch({headless:true});report.browser=browser.version();
+  const context=await browser.newContext({viewport:{width,height},hasTouch:touch,isMobile:touch,serviceWorkers:'block',...(touch?{userAgent:'Mozilla/5.0 (Linux; Android 14; Pixel Fold) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'}:{})});
+  await context.route('**/*',route=>{const req=route.request(),u=new URL(req.url()),h=req.headers(),local=u.origin===base,art=u.origin==='https://cards.scryfall.io'&&req.method()==='GET'&&req.resourceType()==='image';if(!local&&(h.authorization||h.cookie)){report.externalCredentialViolations++;return route.abort();}if(local||art)return route.continue();report.unexpectedRequests++;return route.abort();});
+  page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>recordError('page',e));
+- page.on('request',r=>{try{const u=new URL(r.url());if(u.origin!==base)return;if(r.resourceType()==='script'){const file=u.pathname.split('/').pop();if(/^[A-Za-z0-9_-]+\.(?:js|mjs)$/.test(file))diagnosticScripts.add(file);}if(u.pathname==='/api/play/matches'&&r.method()==='POST'){report.creates++;createBodies.push(r.postDataJSON());}if(u.pathname.endsWith('/actions')&&r.method()==='POST'){const body=r.postDataJSON();nativePosts++;report.actions++;assert(!actionIds.has(body.commandId),'A command was retried');actionIds.add(body.commandId);}}catch(e){recordError('request-observer',e);}});
+- page.on('response',async r=>{try{const u=new URL(r.url());if(u.origin!==base||r.request().method()!=='GET'||!/^\/api\/play\/matches\/[^/]+$/.test(u.pathname)||r.status()!==200)return;const value=await r.json();latest=value;if(value.snapshot){privacy(value.snapshot);snapshots.push(value.snapshot);if(snapshots.length>3)snapshots.shift();}if(verifiedTerminal(value)&&!terminals.some(t=>t.matchId===value.matchId))terminals.push(value);}catch(e){recordError('response-observer',e);}});
++ page.on('request',r=>{try{const u=new URL(r.url());if(u.origin!==base)return;bindObservedRequest(r);if(r.resourceType()==='script'){const file=u.pathname.split('/').pop();if(/^[A-Za-z0-9_-]+\.(?:js|mjs)$/.test(file))diagnosticScripts.add(file);}if(u.pathname==='/api/play/matches'&&r.method()==='POST'){report.creates++;createBodies.push(r.postDataJSON());}if(u.pathname.endsWith('/actions')&&r.method()==='POST'){const body=r.postDataJSON();nativePosts++;report.actions++;assert(!actionIds.has(body.commandId),'A command was retried');actionIds.add(body.commandId);}}catch(e){recordError('request-observer',e);}});
++
+  await page.goto(base+'/forge-play-browser.html',{waitUntil:'networkidle'});await page.waitForFunction(()=>document.documentElement.dataset.fixtureReady==='true');
+  const fixture=await (await fetch(base+'/fixture-decks.json')).json(),human=fixture.decks[0],cpu=fixture.decks[mode.includes('reign')?2:1];
+  if(mode.startsWith('import')){await gesture(page.locator('#playImportDisclosure summary'));await page.locator('#playImportName').fill('Calling All Angels imported browser fixture');await page.locator('#playImportText').fill(fixture.angelsImport);await gesture(page.locator('[data-act=playImportPreview]'));await gesture(page.locator('[data-act=playImportUse]'));}else await gesture(page.locator(`[data-act=playSelectDeck][data-play-deck="${human.id}"]`));
+@@ -126,4 +168,4 @@
+  await gesture(page.locator('a.brand'));await page.getByRole('heading',{name:'Home',exact:true}).waitFor();assert.equal(new URL(page.url()).hash,'#home');check('Home navigation after resource cleanup');
+  assert.equal(report.externalCredentialViolations,0);assert.equal(report.unexpectedRequests,0);assert.deepEqual(report.errors,[]);report.result='passed';
+ }catch(e){report.result='failed';report.failure={stage:lastStage,name:e.name,message:String(e.message).replace(/https?:\/\/\S+/g,'[url]').slice(0,240)};process.exitCode=1;}
+-finally{await fs.writeFile(path.join(out,'summary.json'),JSON.stringify(report,null,2)+'\n');if(page)await page.screenshot({path:path.join(out,report.result==='passed'?'complete.png':'failure.png'),timeout:5000}).catch(()=>{});await browser?.close();console.log(JSON.stringify(report));}
++finally{await fs.writeFile(path.join(out,'summary.json'),JSON.stringify(report,null,2)+'\n');if(page)await page.screenshot({path:path.join(out,report.result==='passed'?'complete.png':'failure.png'),timeout:5000}).catch(()=>{});await browser?.close();observationToken=null;console.log(JSON.stringify(report));}

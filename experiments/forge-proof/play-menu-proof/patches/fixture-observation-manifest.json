@@ -1,0 +1,45 @@
+{
+  "scope": "LOCAL FIXTURE ONLY; passive exact browser response observation; no service/native/rules changes",
+  "baseServerSha256": "35bf358849748c9526cfcb2178a0e6dee624037c840dc48f8ccd36c35a37a904",
+  "files": {
+    "server.mjs": "ccfeba137430a66b49f1db695a651921f367ffe6a671e63c822d9a6e1e999a83",
+    "observation.mjs": "3199f6221adf1fc27b8ebab70ed2b841f8fad04930d7b9404af639058064522a",
+    "test-observation.mjs": "57f25283a8e76b5325f03b557395151f4d8ecb7e7809058997b304acd2ca272a",
+    "runtime.py": "deebf6819f5f757bbec4c48d3a4928170dc53b6e839a84f9c249c4a28141c1b8",
+    "prepare-runtime.py": "c5f25ba7c81c0d0fc35927f74254761625ed740839760d91e0cba9c2747884eb"
+  },
+  "unchangedHelpers": [
+    "runtime.py",
+    "prepare-runtime.py"
+  ],
+  "tests": {
+    "passed": 8,
+    "actualHTTPObserverSpies": true,
+    "realNativeRerun": false
+  },
+  "cache": {
+    "maximumRecords": 4,
+    "maximumSerializedBytesPerRecord": 4194304,
+    "commit": "only after response finish and complete valid JSON",
+    "generation": "actual delivered response or established same-route generation for delivered transport errors",
+    "terminalRetention": "same generation finished result survives DELETE and late nonterminal delivery",
+    "sideEffects": "no host/native reads, commands, allocation/storage writes, idle renewal, clocks or timers"
+  },
+  "endpoint": {
+    "path": "GET /__fixture/observe/{canonical UI match UUID}",
+    "auth": "same synthetic fixture bearer only",
+    "generationHeader": "optional X-Fixture-Generation; mandatory match if supplied",
+    "waitingBeforeBinding": 202,
+    "wrongGenerationOrUnknownBoundGeneration": 404,
+    "forbiddenSelectors": 400,
+    "nonGET": 405,
+    "payload": [
+      "fixtureOnly",
+      "matchId",
+      "generation",
+      "sequence",
+      "httpStatus",
+      "body"
+    ]
+  }
+}
