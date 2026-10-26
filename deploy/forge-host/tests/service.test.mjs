@@ -620,3 +620,59 @@ test('wrapper cleanup never certifies an indeterminate post-destroy process stat
     assert.equal((await f.storage.get('leases')).length, 0);
   }
 });
+test('a replacement the allowance would refuse leaves the current match running', async () => {
+  const f = authenticatedFixture(); f.env.FORGE_PLAY_DAILY_RESERVATIONS = '1';
+  const first = await f.create();
+  const refused = await f.create({ headers: { 'Idempotency-Key': 'over_allowance_replace_0001' } });
+  assert.equal(refused.response.status, 429); assert.equal(refused.body.error, 'play_resource_budget_exhausted');
+  assert.equal(f.calls.destroy, 0); assert.equal(f.containers.get(first.body.matchId).running, true);
+  assert.deepEqual((await f.storage.get('leases')).map(l => l.matchId), [first.body.matchId]);
+  assert.equal((await f.storage.get('play-runtime-budget')).entries.length, 1, 'the dry run wrote nothing');
+});
+test('the allowance check counts the ending match only for the runtime it actually held', async () => {
+  const f = authenticatedFixture();
+  Object.assign(f.env, { FORGE_PLAY_MATCH_MS: '120000', FORGE_PLAY_DAILY_RUNTIME_MS: '250000' });
+  const first = await f.create(); f.setTime(1000 + 10_000);
+  // Unsettled, the old reservation (127 s) plus a new one would exceed 250 s; settled it holds 17 s.
+  const next = await f.create({ headers: { 'Idempotency-Key': 'settled_allowance_0001' } });
+  assert.equal(next.response.status, 202); assert.equal(f.containers.get(first.body.matchId).running, false);
+  assert.deepEqual((await f.storage.get('play-runtime-budget')).entries.map(e => e.runtimeMs), [17_000, 127_000]);
+});
+test('re-sending an old start never ends the current match', async () => {
+  const f = fixture(); const a = await f.create({ headers: { 'Idempotency-Key': 'old_start_key_00001' } });
+  assert.equal((await f.route(request('/api/play/matches/' + a.body.matchId, { method: 'DELETE' }))).status, 204);
+  const b = await f.create({ headers: { 'Idempotency-Key': 'current_start_key_01' } }); assert.equal(b.response.status, 202);
+  const resent = await f.create({ headers: { 'Idempotency-Key': 'old_start_key_00001' } });
+  assert.equal(resent.body.matchId, a.body.matchId); assert.equal(resent.body.replay, true);
+  assert.equal(f.containers.get(b.body.matchId).running, true);
+  assert.deepEqual((await f.storage.get('leases')).map(l => l.matchId), [b.body.matchId]);
+});
+test('ending the previous match is bounded well inside the website start request', async () => {
+  assert.equal(new AdmissionService({ ctx: { storage: new Storage() }, env: {}, native: {} }).replaceMs, 8_000, 'production bound');
+  const f = fixture(); const first = await f.create();
+  const match = f.matches.get(first.body.matchId);
+  let stalled; match.endForNewStart = () => new Promise(resolve => { stalled = setTimeout(resolve, 60_000); }); // never confirms in time
+  f.admission.replaceMs = 50;
+  const started = Date.now();
+  const blocked = await f.create({ headers: { 'Idempotency-Key': 'bounded_replace_0001' } });
+  clearTimeout(stalled);
+  assert(Date.now() - started < 2_000, 'refused at the replacement bound, not when the match finally answers');
+  assert.equal(blocked.response.status, 409); assert.equal(blocked.body.error, 'user_has_active_allocation');
+  assert.equal(f.calls.start, 1);
+});
+test('a replacement aborts an opening start\'s request in flight instead of waiting for it', async () => {
+  const f = fixture(); let opening = null, hung = 0;
+  f.admission.ctx.waitUntil = promise => { opening = promise; };
+  const first = await f.create(); const container = f.containers.get(first.body.matchId), port = container.getTcpPort.bind(container);
+  // The engine never answers /ready: only an abort ends that request.
+  container.getTcpPort = n => ({ fetch: r => new URL(r.url).pathname === '/ready'
+    ? new Promise((_, reject) => { hung++; r.signal.addEventListener('abort', () => reject(r.signal.reason), { once: true }); })
+    : port(n).fetch(r) });
+  f.matches.get(first.body.matchId).wait = () => new Promise(resolve => setTimeout(resolve, 1));
+  await new Promise(resolve => setTimeout(resolve, 5)); assert(hung >= 1, 'a readiness request is in flight');
+  const started = Date.now();
+  const next = await f.create({ headers: { 'Idempotency-Key': 'abort_inflight_0001' } });
+  assert.equal(next.response.status, 202); assert(Date.now() - started < 2_000, 'not held by the in-flight request');
+  await opening;
+  assert.equal((await f.stores.get(first.body.matchId).get('allocation')).reason, 'replaced');
+});

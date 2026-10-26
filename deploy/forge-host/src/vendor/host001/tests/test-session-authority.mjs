@@ -141,6 +141,55 @@ test('ambiguous network failure persists pending and blocks retries and later co
   assert.equal((await f.storage.get('match')).pendingCommand, COMMAND);
 });
 
+test('a state read past the pending revision settles an unknown outcome without resending it', async () => {
+  const f = await fixture();
+  f.driver.submitExisting = async action => { f.calls.submit.push(action); throw Error('lost response after possible acceptance'); };
+  assert.equal((await (await f.authority.handle(actionRequest())).json()).state, 'pending_outcome_unknown');
+  f.snapshot.revision = 13; // the engine accepted it (or moved on): revision 12 can never apply again
+  const state = await f.authority.handle(request());
+  assert.equal(state.status, 200); assert.equal((await state.json()).commandPending, false);
+  assert.equal((await f.storage.get('match')).pendingCommand, null);
+  const replay = await f.authority.handle(actionRequest());
+  assert.equal(replay.status, 409); assert.deepEqual(await replay.json(), { commandId: COMMAND, state: 'outcome_settled_by_state' });
+  assert.equal(f.calls.submit.length, 1, 'the unknown command is never resent');
+  f.driver.submitExisting = async action => { f.calls.submit.push(action); return { epoch: EPOCH, status: 202 }; };
+  const next = await f.authority.handle(actionRequest({ commandId: 'fixture_command_0002', action: { ...ACTION, revision: 13 } }));
+  assert.equal(next.status, 202); assert.equal(f.calls.submit.length, 2);
+});
+
+test('an unknown outcome at an unchanged revision stays pending until it is too old to race a new command', async () => {
+  const f = await fixture();
+  f.driver.submitExisting = async action => { f.calls.submit.push(action); throw Error('gateway timeout'); };
+  await f.authority.handle(actionRequest());
+  f.setTime(1000 + 9999);
+  assert.equal((await (await f.authority.handle(request())).json()).commandPending, true);
+  assert.equal((await f.authority.handle(actionRequest({ commandId: 'fixture_command_0002' }))).status, 409);
+  f.setTime(1000 + 10000);
+  assert.equal((await (await f.authority.handle(request())).json()).commandPending, false);
+  f.driver.submitExisting = async action => { f.calls.submit.push(action); return { epoch: EPOCH, status: 202 }; };
+  // Same revision as the settled command: the engine applies at most one of them.
+  assert.equal((await f.authority.handle(actionRequest({ commandId: 'fixture_command_0003' }))).status, 202);
+  assert.deepEqual(f.calls.submit.map(a => a.revision), [12, 12]);
+});
+
+test('a failed state read never settles a pending command', async () => {
+  const f = await fixture();
+  f.driver.submitExisting = async action => { f.calls.submit.push(action); throw Error('gateway timeout'); };
+  await f.authority.handle(actionRequest());
+  f.setTime(1000 + 60000);
+  f.driver.readExisting = async () => { throw Object.assign(Error('read unavailable'), { code: 'HOST_STATE_READ_UNAVAILABLE', retryable: true }); };
+  assert.equal((await f.authority.handle(request())).status, 503);
+  assert.equal((await f.storage.get('match')).pendingCommand, COMMAND);
+});
+
+test('an accepted command leaves no pending command in the state reply', async () => {
+  const f = await fixture();
+  assert.equal((await f.authority.handle(actionRequest())).status, 202);
+  const match = await f.storage.get('match');
+  assert.equal(match.pendingCommand, null); assert.equal(match.pendingRevision, undefined); assert.equal(match.pendingAt, undefined);
+  assert.equal((await (await f.authority.handle(request())).json()).commandPending, false);
+});
+
 test('native stale rejection is retained and can be followed by a fresh command', async () => {
   const f = await fixture();
   f.driver.submitExisting = async action => { f.calls.submit.push(action); return { epoch: EPOCH, status: 409 }; };

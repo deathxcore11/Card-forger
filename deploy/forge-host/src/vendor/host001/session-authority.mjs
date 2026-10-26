@@ -7,6 +7,8 @@ export const FORGE_REVISION = 'e5a0f8156da70ffc7866f923bed371c0111707cd';
 export const NATIVE_SCHEMA = 'cardstashy.forge-proof.v1';
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const commandIdPattern = /^[A-Za-z0-9_-]{16,128}$/;
+// See settleUnknownOutcome. Longer than the engine gateway's 5 s forward bound.
+const UNKNOWN_OUTCOME_SETTLE_MS = 10000;
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
 });
@@ -249,9 +251,37 @@ export class MatchAuthority {
       // a guessed player zero. Retain it even when the first client GET is terminal.
       return json({ matchId: match.matchId, generation: match.generation, status: 'finished', viewerId: match.viewerId, result: committed.result });
     }
-    const current = await this.storage.get('match');
+    let current = await this.storage.get('match');
     if (current.status !== 'running') return error('match_' + current.status, 410);
-    return json({ matchId: match.matchId, generation: match.generation, status: 'running', snapshot });
+    if (current.pendingCommand) current = await this.settleUnknownOutcome(current, snapshot);
+    return json({ matchId: match.matchId, generation: match.generation, status: 'running', snapshot, commandPending: !!current.pendingCommand });
+  }
+
+  // A dispatch whose reply was lost (a timeout, a dropped connection) keeps its
+  // command pending, so later commands wait. Every native action carries the
+  // revision it was built from; the engine applies it only while that revision is
+  // current and publishes a new revision in the same locked step that accepts it.
+  // So at most one action per revision is ever applied. Once a state read shows
+  // the board past that revision, or the dispatch is older than
+  // UNKNOWN_OUTCOME_SETTLE_MS, the old command can no longer apply alongside a
+  // newer one: release it. Its outcome is whatever the board shows. Nothing is
+  // resent; the receipt says the outcome was settled by state, not accepted.
+  async settleUnknownOutcome(match, snapshot) {
+    const moved = Number.isSafeInteger(match.pendingRevision) && snapshot?.revision !== match.pendingRevision;
+    const aged = this.now() - (Number.isSafeInteger(match.pendingAt) ? match.pendingAt : 0) >= UNKNOWN_OUTCOME_SETTLE_MS;
+    if (!moved && !aged) return match;
+    return this.storage.transaction(async txn => {
+      const current = await txn.get('match');
+      if (!current.pendingCommand || current.pendingCommand !== match.pendingCommand) return current;
+      const key = 'command:' + current.pendingCommand;
+      const stored = await txn.get(key);
+      if (stored && stored.status === undefined) {
+        await txn.put(key, { ...stored, status: 409, receipt: { commandId: current.pendingCommand, state: 'outcome_settled_by_state' } });
+      }
+      current.pendingCommand = null; delete current.pendingRevision; delete current.pendingAt;
+      await txn.put('match', current);
+      return current;
+    });
   }
 
   async action(request, match) {
@@ -280,6 +310,8 @@ export class MatchAuthority {
       if (current.pendingCommand) return { status: 409, error: 'another_command_pending' };
       if (current.commandCount >= 20000) return { status: 429, error: 'command_receipt_limit' };
       current.pendingCommand = body.commandId;
+      current.pendingRevision = body.action.revision;
+      current.pendingAt = this.now();
       current.commandCount++;
       await txn.put('match', current);
       await txn.put(key, { hash, createdAt: this.now() });
@@ -314,7 +346,7 @@ export class MatchAuthority {
       const current = await txn.get('match');
       await txn.put(key, { ...stored, status: native.status, receipt });
       if (current.pendingCommand === body.commandId) {
-        current.pendingCommand = null;
+        current.pendingCommand = null; delete current.pendingRevision; delete current.pendingAt;
         await txn.put('match', current);
       }
     });

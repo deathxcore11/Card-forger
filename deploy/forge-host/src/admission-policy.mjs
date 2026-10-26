@@ -61,6 +61,9 @@ export async function reserveAdmissionBudget(txn, allocation, policy, now) {
   return null;
 }
 
+// The runtime an ended match keeps: what it actually held plus teardown, never more
+// than it reserved.
+const settledRuntime = (entry, lease, now) => Math.max(TEARDOWN_MS + 1, Math.min(entry.runtimeMs, now - lease.createdAt + TEARDOWN_MS));
 // Called only after the match's destruction proof released its lease. A start that
 // failed, or a short match, keeps only the runtime it actually held plus teardown,
 // so failed starts cannot exhaust the rolling allowance. Never raises a charge.
@@ -71,10 +74,23 @@ export async function settleAdmissionBudget(storage, lease, now) {
     if (saved?.version !== 1 || !Array.isArray(saved.entries)) return false;
     const entry = saved.entries.find(e => e.matchId === lease.matchId);
     if (!entry) return false;
-    const held = Math.max(TEARDOWN_MS + 1, Math.min(entry.runtimeMs, now - lease.createdAt + TEARDOWN_MS));
+    const held = settledRuntime(entry, lease, now);
     if (held === entry.runtimeMs) return false;
     entry.runtimeMs = held;
     await txn.put('play-runtime-budget', saved);
     return true;
   });
+}
+
+// For a dry run only: the allowance as it will be once these leases' matches have
+// ended and been settled. Callers must roll the transaction back.
+export async function settleLeasesForCheck(txn, leases, now) {
+  const saved = await txn.get('play-runtime-budget');
+  if (saved?.version !== 1 || !Array.isArray(saved.entries)) return;
+  for (const lease of leases) {
+    if (!UUID.test(lease?.matchId || '') || !Number.isSafeInteger(lease.createdAt)) continue;
+    const entry = saved.entries.find(e => e.matchId === lease.matchId);
+    if (entry) entry.runtimeMs = settledRuntime(entry, lease, now);
+  }
+  await txn.put('play-runtime-budget', saved);
 }

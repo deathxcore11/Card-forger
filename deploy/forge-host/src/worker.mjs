@@ -35,6 +35,8 @@ export class ForgeMatchContainer extends DurableObject {
   begin(allocation, input, admission) { return this.service.begin(allocation, input, admission); }
   reconcile(allocation) { return this.service.reconcile(allocation); }
   destructionProof(generation) { return this.service.destructionProof(generation); }
+  // The same account's next start ends this match on its own destruction proof.
+  endForNewStart(allocation) { return this.service.endForNewStart(allocation); }
 }
 export default {
   fetch(request, env) { return routeHostRequest(request, env, accountVerifier(env)); },

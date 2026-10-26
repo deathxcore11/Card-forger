@@ -4,7 +4,7 @@ import { MatchAuthority, GatewayDriver, verifyHostUser, boundedJSON,
   FORGE_REVISION, NATIVE_SCHEMA, digest, abortable } from './policy.mjs';
 import { ProvisionalAdmissionLedger } from './provisional-ledger.mjs';
 import { validateExactDeckInput } from './vendor/host001/admission-ledger.mjs';
-import { admissionPolicy, allowsAccount, reserveAdmissionBudget, settleAdmissionBudget } from './admission-policy.mjs';
+import { admissionPolicy, allowsAccount, reserveAdmissionBudget, settleAdmissionBudget, settleLeasesForCheck } from './admission-policy.mjs';
 export const ORIGIN = 'https://cardstashy.com';
 export const GLOBAL_NAME = 'forge-global-admission-v1';
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
@@ -12,7 +12,8 @@ const UUID_RE = new RegExp('^' + UUID + '$', 'i');
 const MATCH_PATH = new RegExp('^/api/play/matches/(' + UUID + ')(/actions)?$', 'i');
 const safeText = text => String(text).replace(/[^A-Za-z0-9 _.:-]/g, '').replace(/ +/g, ' ').slice(0, 160) || 'unknown';
 const startupFailure = failure => safeText(failure?.message || failure?.name || 'unknown');
-const STARTUP_MS = 120_000, IDLE_MS = 600_000, RETAIN_MS = 86_400_000, REPLACE_MS = 20_000;
+// Ending a previous match must finish well inside the website's 15 s start request.
+const STARTUP_MS = 120_000, IDLE_MS = 600_000, RETAIN_MS = 86_400_000, REPLACE_MS = 8_000;
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{16,128}$/;
 const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...extra },
@@ -85,8 +86,8 @@ async function limited(storage, key, windows, now) {
 }
 
 export class AdmissionService {
-  constructor({ ctx, env, verifyBearer, native, now = Date.now }) {
-    Object.assign(this, { ctx, env, verifyBearer, native, now });
+  constructor({ ctx, env, verifyBearer, native, now = Date.now, replaceMs = REPLACE_MS }) {
+    Object.assign(this, { ctx, env, verifyBearer, native, now, replaceMs });
     this.storage = ctx.storage;
     this.ledger = new ProvisionalAdmissionLedger({ storage: this.storage, now });
   }
@@ -113,12 +114,12 @@ export class AdmissionService {
     const idempotencyKey = request.headers.get('Idempotency-Key');
     try { validateExactDeckInput(input); } catch { return error('invalid_match_input', 400); }
     if (!IDEMPOTENCY_KEY.test(idempotencyKey || '')) return error('invalid_match_input', 400);
-    await this.endPreviousMatch(user.id, idempotencyKey);
+    const lifetimeMs = access.mode === 'trial' ? Math.min(access.matchMs, access.expiresAt - this.now()) : access.matchMs;
+    const reserveGuard = (txn, allocation) => reserveAdmissionBudget(txn, allocation, access, this.now());
+    const refused = await this.replacePreviousMatch({ ownerId: user.id, idempotencyKey, input, lifetimeMs, reserveGuard });
+    if (refused) return error(refused.error, refused.status);
     let result;
-    try { result = await this.ledger.reserveProvisional({ ownerId: user.id,
-      idempotencyKey, input,
-      lifetimeMs: access.mode === 'trial' ? Math.min(access.matchMs, access.expiresAt - this.now()) : access.matchMs,
-      reserveGuard: (txn, allocation) => reserveAdmissionBudget(txn, allocation, access, this.now()) }); }
+    try { result = await this.ledger.reserveProvisional({ ownerId: user.id, idempotencyKey, input, lifetimeMs, reserveGuard }); }
     catch { return error('invalid_match_input', 400); }
     if (!result.allocation) return error(result.error, result.status);
     const allocation = result.allocation;
@@ -141,22 +142,30 @@ export class AdmissionService {
     }
     return json({ ...publicAllocation(allocation), status: 'initializing', admissionState: 'provisional_native_validation_required', replay: result.replay }, 202);
   }
-  // A new start ends the same account's previous match. Its lease is released only
-  // on that match's own destruction proof, like any close. If that proof is not
-  // available in time, the reservation below refuses as before
-  // (user_has_active_allocation); nothing is retried on the player's behalf.
-  async endPreviousMatch(ownerId, idempotencyKey) {
+  // A new start ends the same account's previous match. First a dry run of the
+  // reservation, as if that match had already ended: a start that would be refused
+  // anyway (capacity, rate, allowance) leaves the current match running. Then each
+  // previous lease is released only on that match's own destruction proof, like any
+  // close, within REPLACE_MS. If that proof is not available in time, the
+  // reservation refuses as before (user_has_active_allocation); nothing is retried
+  // on the player's behalf. A replayed or reused Idempotency-Key never ends anything.
+  async replacePreviousMatch({ ownerId, idempotencyKey, input, lifetimeMs, reserveGuard }) {
     const previous = (await this.storage.get('leases') || []).filter(lease => lease.ownerId === ownerId);
-    if (!previous.length) return;
-    // A replayed create returns its own match; it must never end it.
-    const receipt = await this.storage.get('create:' + await digest({ ownerId, idempotencyKey }));
-    if (receipt && previous.some(lease => lease.matchId === receipt.allocation?.matchId && lease.generation === receipt.allocation?.generation)) return;
+    if (!previous.length) return null;
+    if (await this.storage.get('create:' + await digest({ ownerId, idempotencyKey }))) return null;
+    let refused;
+    try { refused = await this.ledger.checkReplacement({ ownerId, idempotencyKey, input, lifetimeMs, reserveGuard,
+      simulateEnded: (txn, leases) => settleLeasesForCheck(txn, leases, this.now()) }); }
+    catch { return { status: 400, error: 'invalid_match_input' }; }
+    if (refused) return refused;
+    const deadline = AbortSignal.timeout(this.replaceMs);
     for (const lease of previous) {
       try {
-        const ended = await abortable(this.env.FORGE_MATCHES.getByName(lease.matchId).endForNewStart(lease), AbortSignal.timeout(REPLACE_MS));
-        if (ended?.confirmed === true) await this.release(lease.matchId, lease.generation);
+        const ended = await abortable(this.env.FORGE_MATCHES.getByName(lease.matchId).endForNewStart(lease), deadline);
+        if (ended?.confirmed === true) await abortable(this.release(lease.matchId, lease.generation), deadline);
       } catch { /* unconfirmed: the lease stays and the alarm keeps reconciling it */ }
     }
+    return null;
   }
   // Private read-only namespace RPC for create202 -> first GET before begin has
   // persisted the per-match record. A UUID alone never establishes ownership.
@@ -225,6 +234,8 @@ export class MatchService {
     // Generation a new start of the same account asked to end, seen by a start
     // still opening in the serial queue.
     this.replacing = null;
+    // The start still opening here, so a replacement can also abort its in-flight requests.
+    this.opening = null;
   }
   serial(fn) { const result = this.tail.then(fn); this.tail = result.catch(() => {}); return result; }
   container() { if (!this.ctx.container) throw new Error('container_binding_missing'); return this.ctx.container; }
@@ -276,6 +287,8 @@ export class MatchService {
     const containerExited = () => exited && Object.assign(new Error('container_exited'), { containerExited: true });
     const replaced = () => this.replacing === allocation.generation && Object.assign(new Error('replaced_by_new_start'), { replaced: true });
     const stopIfReplaced = () => { const failure = replaced(); if (failure) throw failure; };
+    const stop = new AbortController(); this.opening = { generation: allocation.generation, stop };
+    const openFetch = request => this.container().getTcpPort(8080).fetch(new Request(request, { signal: AbortSignal.any([request.signal, stop.signal]) }));
     try {
       // The native bridge owns exact snapshot transport. Persisted initializing
       // means any crash before/after start is ambiguous and MUST NOT restart.
@@ -296,7 +309,7 @@ export class MatchService {
         step = 'bootstrap';
         await this.native.bootstrapExisting({ input, allocation, internalToken: token,
           deadline: record.startupDeadline, now: this.now, wait: async ms => { stopIfReplaced(); await this.wait(ms); stopIfReplaced(); },
-          fetchExisting: request => { stopIfReplaced(); const gone = containerExited(); if (gone) throw gone; if (!this.container().running) throw new Error('native_not_running'); return this.container().getTcpPort(8080).fetch(request); } });
+          fetchExisting: request => { stopIfReplaced(); const gone = containerExited(); if (gone) throw gone; if (!this.container().running) throw new Error('native_not_running'); return openFetch(request); } });
       }
       step = 'ready';
       let ready = false, validationFailure = null;
@@ -305,7 +318,7 @@ export class MatchService {
         const gone = containerExited(); if (gone) throw gone;
         if (!this.container().running) { lastPoll = 'not running'; await this.wait(250); continue; }
         try {
-          const response = await this.container().getTcpPort(8080).fetch(new Request('http://host001.internal/ready', {
+          const response = await openFetch(new Request('http://host001.internal/ready', {
             headers: { Authorization: 'Bearer ' + token }, redirect: 'manual', signal: AbortSignal.timeout(5000),
           }));
           const epoch = response.headers.get('X-Host-Epoch');
@@ -315,7 +328,7 @@ export class MatchService {
             record.epoch = epoch;
             if (ok) { ready = true; break; }
             if (this.native.readStartupFailure) {
-              validationFailure = await this.native.readStartupFailure({ epoch, internalToken: token, fetchExisting: r => this.container().getTcpPort(8080).fetch(r) });
+              validationFailure = await this.native.readStartupFailure({ epoch, internalToken: token, fetchExisting: openFetch });
               if (validationFailure) break;
             }
           }
@@ -332,7 +345,7 @@ export class MatchService {
       // Must compare native accepted raw snapshot digests/policy against this
       // allocation, not merely observe /ready or a plausible opening hand.
       const initialized = await this.native.confirmInitialization({ allocation, input, epoch: record.epoch,
-        internalToken: token, fetchExisting: r => this.container().getTcpPort(8080).fetch(r) });
+        internalToken: token, fetchExisting: openFetch });
       if (!Number.isSafeInteger(initialized?.viewerId) || initialized.viewerId < 0 || initialized.schema !== NATIVE_SCHEMA || initialized.engineRevision !== FORGE_REVISION || initialized.policyVersion !== input.difficultyPolicyVersion || initialized.humanDigest !== allocation.deckDigests.human || initialized.opponentDigest !== allocation.deckDigests.opponent) throw new Error('native_initialization_receipt_mismatch');
       stopIfReplaced();
       step = 'authority';
@@ -349,9 +362,9 @@ export class MatchService {
         record.failure = safeText('at ' + step + ' ' + seconds + 's: ' + startupFailure(failure) + (exited ? ' container ' + exited : ''));
         await this.storage.put('allocation', record);
       } catch { /* cleanup still runs */ }
-      await this.cleanup(record, failure.nativeRejected ? 'native_exact_validation_rejected' : failure.replaced ? 'replaced' : 'startup_interrupted');
+      await this.cleanup(record, failure.nativeRejected ? 'native_exact_validation_rejected' : failure.replaced || replaced() ? 'replaced' : 'startup_interrupted');
       return { status: 'interrupted' };
-    }
+    } finally { if (this.opening?.stop === stop) this.opening = null; }
   }
   async fetch(request) {
     if (request.method === 'GET') {
@@ -479,6 +492,7 @@ export class MatchService {
   endForNewStart(allocation) {
     if (!UUID_RE.test(allocation?.matchId || '') || !UUID_RE.test(allocation?.generation || '') || !UUID_RE.test(allocation?.ownerId || '')) return Promise.resolve({ confirmed: false });
     this.replacing = allocation.generation;
+    if (this.opening?.generation === allocation.generation) this.opening.stop.abort();
     return this.serial(async () => {
       let record = await this.storage.get('allocation');
       if (!record) {
