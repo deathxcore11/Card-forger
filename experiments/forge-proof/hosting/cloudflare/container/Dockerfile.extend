@@ -1,0 +1,6 @@
+# Local integration helper: base MUST be the reviewed exact-capable HOST image,
+# not the alias-only checkpoint. Supply a digest-pinned BASE_IMAGE explicitly.
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+COPY --chown=10001:10001 bootstrap.py /opt/host-service/bootstrap.py
+ENTRYPOINT ["python3", "/opt/host-service/bootstrap.py"]

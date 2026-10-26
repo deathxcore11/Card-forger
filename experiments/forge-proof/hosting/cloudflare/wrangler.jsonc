@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cardstashy-forge-host",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": false },
+  "vars": {
+    "FORGE_TRIAL_ENABLED": "false",
+    "FORGE_TRIAL_OWNER_IDS": "",
+    "FORGE_TRIAL_EXPIRES_AT": "",
+    "FORGE_TRIAL_MATCH_MS": "900000",
+    "FORGE_TRIAL_RUNTIME_BUDGET_MS": "3600000",
+    "FORGE_TRIAL_MAX_RESERVATIONS": "4"
+  },
+  "durable_objects": { "bindings": [
+    { "name": "FORGE_ADMISSION", "class_name": "ForgeAdmission" },
+    { "name": "FORGE_MATCHES", "class_name": "ForgeMatchContainer" }
+  ] },
+  "migrations": [{ "tag": "forge-host-v1", "new_sqlite_classes": ["ForgeAdmission", "ForgeMatchContainer"] }],
+  "containers": [{
+    "class_name": "ForgeMatchContainer",
+    "scheduling_policy": "default",
+    "image": "registry.cloudflare.com/REQUIRED_ACCOUNT/cardstashy-forge@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "instance_type": "standard-1",
+    "max_instances": 2,
+    "observability": { "enabled": false }
+  }]
+}

@@ -1,0 +1,1967 @@
+{
+  "input": {
+    "format": "Commander",
+    "humanDeck": {
+      "schema": 1,
+      "id": "deck-001:calling-all-angels",
+      "name": "Calling All Angels",
+      "format": "Commander",
+      "commander": "Giada, Font of Hope",
+      "cards": [
+        {
+          "name": "Giada, Font of Hope",
+          "qty": 1
+        },
+        {
+          "name": "Always Watching",
+          "qty": 1
+        },
+        {
+          "name": "Angel of the Ruins",
+          "qty": 1
+        },
+        {
+          "name": "Angelic Destiny",
+          "qty": 1
+        },
+        {
+          "name": "Angelic Field Marshal",
+          "qty": 1
+        },
+        {
+          "name": "Angelic Sleuth",
+          "qty": 1
+        },
+        {
+          "name": "Archangel of Tithes",
+          "qty": 1
+        },
+        {
+          "name": "Austere Command",
+          "qty": 1
+        },
+        {
+          "name": "Bishop of Wings",
+          "qty": 1
+        },
+        {
+          "name": "Cleansing Nova",
+          "qty": 1
+        },
+        {
+          "name": "Court of Grace",
+          "qty": 1
+        },
+        {
+          "name": "Day of Judgment",
+          "qty": 1
+        },
+        {
+          "name": "Emeria Shepherd",
+          "qty": 1
+        },
+        {
+          "name": "Exemplar of Light",
+          "qty": 1
+        },
+        {
+          "name": "Fateful Absence",
+          "qty": 1
+        },
+        {
+          "name": "Firemane Commando",
+          "qty": 1
+        },
+        {
+          "name": "Grasp of Fate",
+          "qty": 1
+        },
+        {
+          "name": "Herald of Eternal Dawn",
+          "qty": 1
+        },
+        {
+          "name": "Herald of War",
+          "qty": 1
+        },
+        {
+          "name": "Linvala, the Preserver",
+          "qty": 1
+        },
+        {
+          "name": "Lyra Dawnbringer",
+          "qty": 1
+        },
+        {
+          "name": "Merchant of Truth",
+          "qty": 1
+        },
+        {
+          "name": "Metropolis Reformer",
+          "qty": 1
+        },
+        {
+          "name": "Norn's Choirmaster",
+          "qty": 1
+        },
+        {
+          "name": "Reya Dawnbringer",
+          "qty": 1
+        },
+        {
+          "name": "Righteous Valkyrie",
+          "qty": 1
+        },
+        {
+          "name": "Search the Premises",
+          "qty": 1
+        },
+        {
+          "name": "Sephara, Sky's Blade",
+          "qty": 1
+        },
+        {
+          "name": "Seraph of the Sword",
+          "qty": 1
+        },
+        {
+          "name": "Serra Avenger",
+          "qty": 1
+        },
+        {
+          "name": "Speaker of the Heavens",
+          "qty": 1
+        },
+        {
+          "name": "Sunblast Angel",
+          "qty": 1
+        },
+        {
+          "name": "Wojek Investigator",
+          "qty": 1
+        },
+        {
+          "name": "Endless Atlas",
+          "qty": 1
+        },
+        {
+          "name": "Metallic Mimic",
+          "qty": 1
+        },
+        {
+          "name": "Tome of Legends",
+          "qty": 1
+        },
+        {
+          "name": "Vanquisher's Banner",
+          "qty": 1
+        },
+        {
+          "name": "Bonders' Enclave",
+          "qty": 1
+        },
+        {
+          "name": "War Room",
+          "qty": 1
+        },
+        {
+          "name": "Angel of Finality",
+          "qty": 1
+        },
+        {
+          "name": "Angel of Vitality",
+          "qty": 1
+        },
+        {
+          "name": "Cut a Deal",
+          "qty": 1
+        },
+        {
+          "name": "Dazzling Angel",
+          "qty": 1
+        },
+        {
+          "name": "Defy Death",
+          "qty": 1
+        },
+        {
+          "name": "Destroy Evil",
+          "qty": 1
+        },
+        {
+          "name": "Exorcise",
+          "qty": 1
+        },
+        {
+          "name": "Inspiring Overseer",
+          "qty": 1
+        },
+        {
+          "name": "Invoke the Divine",
+          "qty": 1
+        },
+        {
+          "name": "Secret Rendezvous",
+          "qty": 1
+        },
+        {
+          "name": "Segovian Angel",
+          "qty": 1
+        },
+        {
+          "name": "Starnheim Aspirant",
+          "qty": 1
+        },
+        {
+          "name": "Swords to Plowshares",
+          "qty": 1
+        },
+        {
+          "name": "Thraben Watcher",
+          "qty": 1
+        },
+        {
+          "name": "Valorous Stance",
+          "qty": 1
+        },
+        {
+          "name": "Vanguard Seraph",
+          "qty": 1
+        },
+        {
+          "name": "Youthful Valkyrie",
+          "qty": 1
+        },
+        {
+          "name": "Arcane Signet",
+          "qty": 1
+        },
+        {
+          "name": "Commander's Sphere",
+          "qty": 1
+        },
+        {
+          "name": "Heraldic Banner",
+          "qty": 1
+        },
+        {
+          "name": "Marble Diamond",
+          "qty": 1
+        },
+        {
+          "name": "Mind Stone",
+          "qty": 1
+        },
+        {
+          "name": "Patchwork Banner",
+          "qty": 1
+        },
+        {
+          "name": "Sol Ring",
+          "qty": 1
+        },
+        {
+          "name": "Swiftfoot Boots",
+          "qty": 1
+        },
+        {
+          "name": "Radiant Fountain",
+          "qty": 1
+        },
+        {
+          "name": "Secluded Steppe",
+          "qty": 1
+        },
+        {
+          "name": "Seraph Sanctuary",
+          "qty": 1
+        },
+        {
+          "name": "Temple of the False God",
+          "qty": 1
+        },
+        {
+          "name": "Plains",
+          "qty": 32
+        }
+      ],
+      "side": [],
+      "source": {
+        "url": "https://magic.wizards.com/en/news/announcements/foundations-commander-decklists",
+        "published": "2026-09-18",
+        "retrievedAt": "2026-10-25T16:12:50.942303+00:00",
+        "htmlSha256": "69123a084a09ceb302ec249bf2505d914b55a8da586534530b0bf91cb5e9beea",
+        "deckBlockSha256": "83dc127164785d30af9f8c7546b631a8d1c518500d6fc3068ec124246c86c374",
+        "deckBlock": "\nGiada, Font of Hope\nAlways Watching\nAngel of the Ruins\nAngelic Destiny\nAngelic Field Marshal\nAngelic Sleuth\nArchangel of Tithes\nAustere Command\nBishop of Wings\nCleansing Nova\nCourt of Grace\nDay of Judgment\nEmeria Shepherd\nExemplar of Light\nFateful Absence\nFiremane Commando\nGrasp of Fate\nHerald of Eternal Dawn\nHerald of War\nLinvala, the Preserver\nLyra Dawnbringer\nMerchant of Truth\nMetropolis Reformer\nNorn's Choirmaster\nReya Dawnbringer\nRighteous Valkyrie\nSearch the Premises\nSephara, Sky's Blade\nSeraph of the Sword\nSerra Avenger\nSpeaker of the Heavens\nSunblast Angel\nWojek Investigator\nEndless Atlas\nMetallic Mimic\nTome of Legends\nVanquisher's Banner\nBonders' Enclave\nWar Room\nAngel of Finality\nAngel of Vitality\nCut a Deal\nDazzling Angel\nDefy Death\nDestroy Evil\nExorcise\nInspiring Overseer\nInvoke the Divine\nSecret Rendezvous\nSegovian Angel\nStarnheim Aspirant\nSwords to Plowshares\nThraben Watcher\nValorous Stance\nVanguard Seraph\nYouthful Valkyrie\nArcane Signet\nCommander's Sphere\nHeraldic Banner\nMarble Diamond\nMind Stone\nPatchwork Banner\nSol Ring\nSwiftfoot Boots\nRadiant Fountain\nSecluded Steppe\nSeraph Sanctuary\nTemple of the False God\n32 Plains [4NC1X04a2UxpshllRsjFaL]\n",
+        "normalization": "Missing quantity means 1; remove only trailing Wizards image reference in square brackets. First listed card is the published face commander. All 100 cards retained.",
+        "pickerProvenance": "Official preconstructed list intended for the Precons source. Current account/picker availability is NOT TESTED; the MTGJSON index returned HTTP 403 in this environment."
+      }
+    },
+    "opponentDeck": {
+      "source": "Play deck text",
+      "rows": [
+        {
+          "name": "Sai, Master Thopterist",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "commander",
+          "line": 2,
+          "category": null,
+          "raw": {
+            "text": "1 Sai, Master Thopterist"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Broodstar",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 4,
+          "category": null,
+          "raw": {
+            "text": "1 Broodstar"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Kappa Cannoneer",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 5,
+          "category": null,
+          "raw": {
+            "text": "1 Kappa Cannoneer"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Master of Etherium",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 6,
+          "category": null,
+          "raw": {
+            "text": "1 Master of Etherium"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Master Transmuter",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 7,
+          "category": null,
+          "raw": {
+            "text": "1 Master Transmuter"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Research Thief",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 8,
+          "category": null,
+          "raw": {
+            "text": "1 Research Thief"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Shimmer Dragon",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 9,
+          "category": null,
+          "raw": {
+            "text": "1 Shimmer Dragon"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Thought Monitor",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 10,
+          "category": null,
+          "raw": {
+            "text": "1 Thought Monitor"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Vedalken Archmage",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 11,
+          "category": null,
+          "raw": {
+            "text": "1 Vedalken Archmage"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Darksteel Juggernaut",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 12,
+          "category": null,
+          "raw": {
+            "text": "1 Darksteel Juggernaut"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Duplicant",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 13,
+          "category": null,
+          "raw": {
+            "text": "1 Duplicant"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Graaz, Unstoppable Juggernaut",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 14,
+          "category": null,
+          "raw": {
+            "text": "1 Graaz, Unstoppable Juggernaut"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Myr Battlesphere",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 15,
+          "category": null,
+          "raw": {
+            "text": "1 Myr Battlesphere"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Psychosis Crawler",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 16,
+          "category": null,
+          "raw": {
+            "text": "1 Psychosis Crawler"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Scrawling Crawler",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 17,
+          "category": null,
+          "raw": {
+            "text": "1 Scrawling Crawler"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Steel Hellkite",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 18,
+          "category": null,
+          "raw": {
+            "text": "1 Steel Hellkite"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Steel Overseer",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 19,
+          "category": null,
+          "raw": {
+            "text": "1 Steel Overseer"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Etherium Sculptor",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 20,
+          "category": null,
+          "raw": {
+            "text": "1 Etherium Sculptor"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Memory Guardian",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 21,
+          "category": null,
+          "raw": {
+            "text": "1 Memory Guardian"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Padeem, Consul of Innovation",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 22,
+          "category": null,
+          "raw": {
+            "text": "1 Padeem, Consul of Innovation"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Whirler Rogue",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 23,
+          "category": null,
+          "raw": {
+            "text": "1 Whirler Rogue"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Chief of the Foundry",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 24,
+          "category": null,
+          "raw": {
+            "text": "1 Chief of the Foundry"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Foundry Inspector",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 25,
+          "category": null,
+          "raw": {
+            "text": "1 Foundry Inspector"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Meteor Golem",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 26,
+          "category": null,
+          "raw": {
+            "text": "1 Meteor Golem"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Myr Retriever",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 27,
+          "category": null,
+          "raw": {
+            "text": "1 Myr Retriever"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Ornithopter of Paradise",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 28,
+          "category": null,
+          "raw": {
+            "text": "1 Ornithopter of Paradise"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Palladium Myr",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 29,
+          "category": null,
+          "raw": {
+            "text": "1 Palladium Myr"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Shimmer Myr",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 30,
+          "category": null,
+          "raw": {
+            "text": "1 Shimmer Myr"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Silver Myr",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 31,
+          "category": null,
+          "raw": {
+            "text": "1 Silver Myr"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Spire Golem",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 32,
+          "category": null,
+          "raw": {
+            "text": "1 Spire Golem"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Thopter Spy Network",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 33,
+          "category": null,
+          "raw": {
+            "text": "1 Thopter Spy Network"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Fall from Favor",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 34,
+          "category": null,
+          "raw": {
+            "text": "1 Fall from Favor"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Propaganda",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 35,
+          "category": null,
+          "raw": {
+            "text": "1 Propaganda"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Misleading Signpost",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 36,
+          "category": null,
+          "raw": {
+            "text": "1 Misleading Signpost"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Thopter Fabricator",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 37,
+          "category": null,
+          "raw": {
+            "text": "1 Thopter Fabricator"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Adaptive Omnitool",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 38,
+          "category": null,
+          "raw": {
+            "text": "1 Adaptive Omnitool"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Cultivator's Caravan",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 39,
+          "category": null,
+          "raw": {
+            "text": "1 Cultivator's Caravan"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Forsaken Monument",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 40,
+          "category": null,
+          "raw": {
+            "text": "1 Forsaken Monument"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Mazemind Tome",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 41,
+          "category": null,
+          "raw": {
+            "text": "1 Mazemind Tome"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Mind's Eye",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 42,
+          "category": null,
+          "raw": {
+            "text": "1 Mind's Eye"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Nettlecyst",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 43,
+          "category": null,
+          "raw": {
+            "text": "1 Nettlecyst"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Nevinyrral's Disk",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 44,
+          "category": null,
+          "raw": {
+            "text": "1 Nevinyrral's Disk"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Skysovereign, Consul Flagship",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 45,
+          "category": null,
+          "raw": {
+            "text": "1 Skysovereign, Consul Flagship"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Tamiyo's Logbook",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 46,
+          "category": null,
+          "raw": {
+            "text": "1 Tamiyo's Logbook"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Aether Spellbomb",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 47,
+          "category": null,
+          "raw": {
+            "text": "1 Aether Spellbomb"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Arcane Signet",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 48,
+          "category": null,
+          "raw": {
+            "text": "1 Arcane Signet"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Hedron Archive",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 49,
+          "category": null,
+          "raw": {
+            "text": "1 Hedron Archive"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Ichor Wellspring",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 50,
+          "category": null,
+          "raw": {
+            "text": "1 Ichor Wellspring"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Mind Stone",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 51,
+          "category": null,
+          "raw": {
+            "text": "1 Mind Stone"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Sol Ring",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 52,
+          "category": null,
+          "raw": {
+            "text": "1 Sol Ring"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Soul-Guide Lantern",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 53,
+          "category": null,
+          "raw": {
+            "text": "1 Soul-Guide Lantern"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Thought Vessel",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 54,
+          "category": null,
+          "raw": {
+            "text": "1 Thought Vessel"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Pull from Tomorrow",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 55,
+          "category": null,
+          "raw": {
+            "text": "1 Pull from Tomorrow"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Aetherize",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 56,
+          "category": null,
+          "raw": {
+            "text": "1 Aetherize"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Counterspell",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 57,
+          "category": null,
+          "raw": {
+            "text": "1 Counterspell"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Launch Mishap",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 58,
+          "category": null,
+          "raw": {
+            "text": "1 Launch Mishap"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Negate",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 59,
+          "category": null,
+          "raw": {
+            "text": "1 Negate"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Thirst for Knowledge",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 60,
+          "category": null,
+          "raw": {
+            "text": "1 Thirst for Knowledge"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "All Is Dust",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 61,
+          "category": null,
+          "raw": {
+            "text": "1 All Is Dust"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Thoughtcast",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 62,
+          "category": null,
+          "raw": {
+            "text": "1 Thoughtcast"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "War Room",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 63,
+          "category": null,
+          "raw": {
+            "text": "1 War Room"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Buried Ruin",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 64,
+          "category": null,
+          "raw": {
+            "text": "1 Buried Ruin"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Darksteel Citadel",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 65,
+          "category": null,
+          "raw": {
+            "text": "1 Darksteel Citadel"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Foundry of the Consuls",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 66,
+          "category": null,
+          "raw": {
+            "text": "1 Foundry of the Consuls"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Lonely Sandbar",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 67,
+          "category": null,
+          "raw": {
+            "text": "1 Lonely Sandbar"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Remote Isle",
+          "qty": 1,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 68,
+          "category": null,
+          "raw": {
+            "text": "1 Remote Isle"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Island",
+          "qty": 17,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 69,
+          "category": null,
+          "raw": {
+            "text": "17 Island"
+          },
+          "nameVerified": false
+        },
+        {
+          "name": "Island",
+          "qty": 17,
+          "set": "",
+          "collectorNumber": "",
+          "finish": "nonfoil",
+          "section": "main",
+          "line": 70,
+          "category": null,
+          "raw": {
+            "text": "17 Island"
+          },
+          "nameVerified": false
+        }
+      ],
+      "cards": [
+        {
+          "name": "Sai, Master Thopterist",
+          "qty": 1
+        },
+        {
+          "name": "Broodstar",
+          "qty": 1
+        },
+        {
+          "name": "Kappa Cannoneer",
+          "qty": 1
+        },
+        {
+          "name": "Master of Etherium",
+          "qty": 1
+        },
+        {
+          "name": "Master Transmuter",
+          "qty": 1
+        },
+        {
+          "name": "Research Thief",
+          "qty": 1
+        },
+        {
+          "name": "Shimmer Dragon",
+          "qty": 1
+        },
+        {
+          "name": "Thought Monitor",
+          "qty": 1
+        },
+        {
+          "name": "Vedalken Archmage",
+          "qty": 1
+        },
+        {
+          "name": "Darksteel Juggernaut",
+          "qty": 1
+        },
+        {
+          "name": "Duplicant",
+          "qty": 1
+        },
+        {
+          "name": "Graaz, Unstoppable Juggernaut",
+          "qty": 1
+        },
+        {
+          "name": "Myr Battlesphere",
+          "qty": 1
+        },
+        {
+          "name": "Psychosis Crawler",
+          "qty": 1
+        },
+        {
+          "name": "Scrawling Crawler",
+          "qty": 1
+        },
+        {
+          "name": "Steel Hellkite",
+          "qty": 1
+        },
+        {
+          "name": "Steel Overseer",
+          "qty": 1
+        },
+        {
+          "name": "Etherium Sculptor",
+          "qty": 1
+        },
+        {
+          "name": "Memory Guardian",
+          "qty": 1
+        },
+        {
+          "name": "Padeem, Consul of Innovation",
+          "qty": 1
+        },
+        {
+          "name": "Whirler Rogue",
+          "qty": 1
+        },
+        {
+          "name": "Chief of the Foundry",
+          "qty": 1
+        },
+        {
+          "name": "Foundry Inspector",
+          "qty": 1
+        },
+        {
+          "name": "Meteor Golem",
+          "qty": 1
+        },
+        {
+          "name": "Myr Retriever",
+          "qty": 1
+        },
+        {
+          "name": "Ornithopter of Paradise",
+          "qty": 1
+        },
+        {
+          "name": "Palladium Myr",
+          "qty": 1
+        },
+        {
+          "name": "Shimmer Myr",
+          "qty": 1
+        },
+        {
+          "name": "Silver Myr",
+          "qty": 1
+        },
+        {
+          "name": "Spire Golem",
+          "qty": 1
+        },
+        {
+          "name": "Thopter Spy Network",
+          "qty": 1
+        },
+        {
+          "name": "Fall from Favor",
+          "qty": 1
+        },
+        {
+          "name": "Propaganda",
+          "qty": 1
+        },
+        {
+          "name": "Misleading Signpost",
+          "qty": 1
+        },
+        {
+          "name": "Thopter Fabricator",
+          "qty": 1
+        },
+        {
+          "name": "Adaptive Omnitool",
+          "qty": 1
+        },
+        {
+          "name": "Cultivator's Caravan",
+          "qty": 1
+        },
+        {
+          "name": "Forsaken Monument",
+          "qty": 1
+        },
+        {
+          "name": "Mazemind Tome",
+          "qty": 1
+        },
+        {
+          "name": "Mind's Eye",
+          "qty": 1
+        },
+        {
+          "name": "Nettlecyst",
+          "qty": 1
+        },
+        {
+          "name": "Nevinyrral's Disk",
+          "qty": 1
+        },
+        {
+          "name": "Skysovereign, Consul Flagship",
+          "qty": 1
+        },
+        {
+          "name": "Tamiyo's Logbook",
+          "qty": 1
+        },
+        {
+          "name": "Aether Spellbomb",
+          "qty": 1
+        },
+        {
+          "name": "Arcane Signet",
+          "qty": 1
+        },
+        {
+          "name": "Hedron Archive",
+          "qty": 1
+        },
+        {
+          "name": "Ichor Wellspring",
+          "qty": 1
+        },
+        {
+          "name": "Mind Stone",
+          "qty": 1
+        },
+        {
+          "name": "Sol Ring",
+          "qty": 1
+        },
+        {
+          "name": "Soul-Guide Lantern",
+          "qty": 1
+        },
+        {
+          "name": "Thought Vessel",
+          "qty": 1
+        },
+        {
+          "name": "Pull from Tomorrow",
+          "qty": 1
+        },
+        {
+          "name": "Aetherize",
+          "qty": 1
+        },
+        {
+          "name": "Counterspell",
+          "qty": 1
+        },
+        {
+          "name": "Launch Mishap",
+          "qty": 1
+        },
+        {
+          "name": "Negate",
+          "qty": 1
+        },
+        {
+          "name": "Thirst for Knowledge",
+          "qty": 1
+        },
+        {
+          "name": "All Is Dust",
+          "qty": 1
+        },
+        {
+          "name": "Thoughtcast",
+          "qty": 1
+        },
+        {
+          "name": "War Room",
+          "qty": 1
+        },
+        {
+          "name": "Buried Ruin",
+          "qty": 1
+        },
+        {
+          "name": "Darksteel Citadel",
+          "qty": 1
+        },
+        {
+          "name": "Foundry of the Consuls",
+          "qty": 1
+        },
+        {
+          "name": "Lonely Sandbar",
+          "qty": 1
+        },
+        {
+          "name": "Remote Isle",
+          "qty": 1
+        },
+        {
+          "name": "Island",
+          "qty": 34
+        }
+      ],
+      "side": [],
+      "commanders": [
+        {
+          "name": "Sai, Master Thopterist",
+          "qty": 1
+        }
+      ],
+      "commander": "Sai, Master Thopterist",
+      "excludedCards": [],
+      "excluded": 0,
+      "unresolved": [
+        {
+          "name": "Sai, Master Thopterist",
+          "qty": 1,
+          "section": "commander",
+          "line": 2
+        },
+        {
+          "name": "Broodstar",
+          "qty": 1,
+          "section": "main",
+          "line": 4
+        },
+        {
+          "name": "Kappa Cannoneer",
+          "qty": 1,
+          "section": "main",
+          "line": 5
+        },
+        {
+          "name": "Master of Etherium",
+          "qty": 1,
+          "section": "main",
+          "line": 6
+        },
+        {
+          "name": "Master Transmuter",
+          "qty": 1,
+          "section": "main",
+          "line": 7
+        },
+        {
+          "name": "Research Thief",
+          "qty": 1,
+          "section": "main",
+          "line": 8
+        },
+        {
+          "name": "Shimmer Dragon",
+          "qty": 1,
+          "section": "main",
+          "line": 9
+        },
+        {
+          "name": "Thought Monitor",
+          "qty": 1,
+          "section": "main",
+          "line": 10
+        },
+        {
+          "name": "Vedalken Archmage",
+          "qty": 1,
+          "section": "main",
+          "line": 11
+        },
+        {
+          "name": "Darksteel Juggernaut",
+          "qty": 1,
+          "section": "main",
+          "line": 12
+        },
+        {
+          "name": "Duplicant",
+          "qty": 1,
+          "section": "main",
+          "line": 13
+        },
+        {
+          "name": "Graaz, Unstoppable Juggernaut",
+          "qty": 1,
+          "section": "main",
+          "line": 14
+        },
+        {
+          "name": "Myr Battlesphere",
+          "qty": 1,
+          "section": "main",
+          "line": 15
+        },
+        {
+          "name": "Psychosis Crawler",
+          "qty": 1,
+          "section": "main",
+          "line": 16
+        },
+        {
+          "name": "Scrawling Crawler",
+          "qty": 1,
+          "section": "main",
+          "line": 17
+        },
+        {
+          "name": "Steel Hellkite",
+          "qty": 1,
+          "section": "main",
+          "line": 18
+        },
+        {
+          "name": "Steel Overseer",
+          "qty": 1,
+          "section": "main",
+          "line": 19
+        },
+        {
+          "name": "Etherium Sculptor",
+          "qty": 1,
+          "section": "main",
+          "line": 20
+        },
+        {
+          "name": "Memory Guardian",
+          "qty": 1,
+          "section": "main",
+          "line": 21
+        },
+        {
+          "name": "Padeem, Consul of Innovation",
+          "qty": 1,
+          "section": "main",
+          "line": 22
+        },
+        {
+          "name": "Whirler Rogue",
+          "qty": 1,
+          "section": "main",
+          "line": 23
+        },
+        {
+          "name": "Chief of the Foundry",
+          "qty": 1,
+          "section": "main",
+          "line": 24
+        },
+        {
+          "name": "Foundry Inspector",
+          "qty": 1,
+          "section": "main",
+          "line": 25
+        },
+        {
+          "name": "Meteor Golem",
+          "qty": 1,
+          "section": "main",
+          "line": 26
+        },
+        {
+          "name": "Myr Retriever",
+          "qty": 1,
+          "section": "main",
+          "line": 27
+        },
+        {
+          "name": "Ornithopter of Paradise",
+          "qty": 1,
+          "section": "main",
+          "line": 28
+        },
+        {
+          "name": "Palladium Myr",
+          "qty": 1,
+          "section": "main",
+          "line": 29
+        },
+        {
+          "name": "Shimmer Myr",
+          "qty": 1,
+          "section": "main",
+          "line": 30
+        },
+        {
+          "name": "Silver Myr",
+          "qty": 1,
+          "section": "main",
+          "line": 31
+        },
+        {
+          "name": "Spire Golem",
+          "qty": 1,
+          "section": "main",
+          "line": 32
+        },
+        {
+          "name": "Thopter Spy Network",
+          "qty": 1,
+          "section": "main",
+          "line": 33
+        },
+        {
+          "name": "Fall from Favor",
+          "qty": 1,
+          "section": "main",
+          "line": 34
+        },
+        {
+          "name": "Propaganda",
+          "qty": 1,
+          "section": "main",
+          "line": 35
+        },
+        {
+          "name": "Misleading Signpost",
+          "qty": 1,
+          "section": "main",
+          "line": 36
+        },
+        {
+          "name": "Thopter Fabricator",
+          "qty": 1,
+          "section": "main",
+          "line": 37
+        },
+        {
+          "name": "Adaptive Omnitool",
+          "qty": 1,
+          "section": "main",
+          "line": 38
+        },
+        {
+          "name": "Cultivator's Caravan",
+          "qty": 1,
+          "section": "main",
+          "line": 39
+        },
+        {
+          "name": "Forsaken Monument",
+          "qty": 1,
+          "section": "main",
+          "line": 40
+        },
+        {
+          "name": "Mazemind Tome",
+          "qty": 1,
+          "section": "main",
+          "line": 41
+        },
+        {
+          "name": "Mind's Eye",
+          "qty": 1,
+          "section": "main",
+          "line": 42
+        },
+        {
+          "name": "Nettlecyst",
+          "qty": 1,
+          "section": "main",
+          "line": 43
+        },
+        {
+          "name": "Nevinyrral's Disk",
+          "qty": 1,
+          "section": "main",
+          "line": 44
+        },
+        {
+          "name": "Skysovereign, Consul Flagship",
+          "qty": 1,
+          "section": "main",
+          "line": 45
+        },
+        {
+          "name": "Tamiyo's Logbook",
+          "qty": 1,
+          "section": "main",
+          "line": 46
+        },
+        {
+          "name": "Aether Spellbomb",
+          "qty": 1,
+          "section": "main",
+          "line": 47
+        },
+        {
+          "name": "Arcane Signet",
+          "qty": 1,
+          "section": "main",
+          "line": 48
+        },
+        {
+          "name": "Hedron Archive",
+          "qty": 1,
+          "section": "main",
+          "line": 49
+        },
+        {
+          "name": "Ichor Wellspring",
+          "qty": 1,
+          "section": "main",
+          "line": 50
+        },
+        {
+          "name": "Mind Stone",
+          "qty": 1,
+          "section": "main",
+          "line": 51
+        },
+        {
+          "name": "Sol Ring",
+          "qty": 1,
+          "section": "main",
+          "line": 52
+        },
+        {
+          "name": "Soul-Guide Lantern",
+          "qty": 1,
+          "section": "main",
+          "line": 53
+        },
+        {
+          "name": "Thought Vessel",
+          "qty": 1,
+          "section": "main",
+          "line": 54
+        },
+        {
+          "name": "Pull from Tomorrow",
+          "qty": 1,
+          "section": "main",
+          "line": 55
+        },
+        {
+          "name": "Aetherize",
+          "qty": 1,
+          "section": "main",
+          "line": 56
+        },
+        {
+          "name": "Counterspell",
+          "qty": 1,
+          "section": "main",
+          "line": 57
+        },
+        {
+          "name": "Launch Mishap",
+          "qty": 1,
+          "section": "main",
+          "line": 58
+        },
+        {
+          "name": "Negate",
+          "qty": 1,
+          "section": "main",
+          "line": 59
+        },
+        {
+          "name": "Thirst for Knowledge",
+          "qty": 1,
+          "section": "main",
+          "line": 60
+        },
+        {
+          "name": "All Is Dust",
+          "qty": 1,
+          "section": "main",
+          "line": 61
+        },
+        {
+          "name": "Thoughtcast",
+          "qty": 1,
+          "section": "main",
+          "line": 62
+        },
+        {
+          "name": "War Room",
+          "qty": 1,
+          "section": "main",
+          "line": 63
+        },
+        {
+          "name": "Buried Ruin",
+          "qty": 1,
+          "section": "main",
+          "line": 64
+        },
+        {
+          "name": "Darksteel Citadel",
+          "qty": 1,
+          "section": "main",
+          "line": 65
+        },
+        {
+          "name": "Foundry of the Consuls",
+          "qty": 1,
+          "section": "main",
+          "line": 66
+        },
+        {
+          "name": "Lonely Sandbar",
+          "qty": 1,
+          "section": "main",
+          "line": 67
+        },
+        {
+          "name": "Remote Isle",
+          "qty": 1,
+          "section": "main",
+          "line": 68
+        },
+        {
+          "name": "Island",
+          "qty": 17,
+          "section": "main",
+          "line": 69
+        },
+        {
+          "name": "Island",
+          "qty": 17,
+          "section": "main",
+          "line": 70
+        }
+      ],
+      "errors": [],
+      "warnings": [],
+      "mapping": {},
+      "total": 100,
+      "sideTotal": 0,
+      "categoryCounts": {},
+      "categories": [],
+      "counts": {
+        "main": 99,
+        "commanders": 1,
+        "side": 0,
+        "excluded": 0,
+        "all": 100
+      },
+      "normalizedText": "Commander\n1 Sai, Master Thopterist\nDeck\n1 Broodstar\n1 Kappa Cannoneer\n1 Master of Etherium\n1 Master Transmuter\n1 Research Thief\n1 Shimmer Dragon\n1 Thought Monitor\n1 Vedalken Archmage\n1 Darksteel Juggernaut\n1 Duplicant\n1 Graaz, Unstoppable Juggernaut\n1 Myr Battlesphere\n1 Psychosis Crawler\n1 Scrawling Crawler\n1 Steel Hellkite\n1 Steel Overseer\n1 Etherium Sculptor\n1 Memory Guardian\n1 Padeem, Consul of Innovation\n1 Whirler Rogue\n1 Chief of the Foundry\n1 Foundry Inspector\n1 Meteor Golem\n1 Myr Retriever\n1 Ornithopter of Paradise\n1 Palladium Myr\n1 Shimmer Myr\n1 Silver Myr\n1 Spire Golem\n1 Thopter Spy Network\n1 Fall from Favor\n1 Propaganda\n1 Misleading Signpost\n1 Thopter Fabricator\n1 Adaptive Omnitool\n1 Cultivator's Caravan\n1 Forsaken Monument\n1 Mazemind Tome\n1 Mind's Eye\n1 Nettlecyst\n1 Nevinyrral's Disk\n1 Skysovereign, Consul Flagship\n1 Tamiyo's Logbook\n1 Aether Spellbomb\n1 Arcane Signet\n1 Hedron Archive\n1 Ichor Wellspring\n1 Mind Stone\n1 Sol Ring\n1 Soul-Guide Lantern\n1 Thought Vessel\n1 Pull from Tomorrow\n1 Aetherize\n1 Counterspell\n1 Launch Mishap\n1 Negate\n1 Thirst for Knowledge\n1 All Is Dust\n1 Thoughtcast\n1 War Room\n1 Buried Ruin\n1 Darksteel Citadel\n1 Foundry of the Consuls\n1 Lonely Sandbar\n1 Remote Isle\n17 Island\n17 Island",
+      "id": "existing-import-fixture",
+      "name": "Keen Engineering existing Play import",
+      "format": "Commander"
+    },
+    "difficultyPolicyVersion": "forge-default-smart-v1"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "status": "local exact host candidate; not deployed",
+  "nodeTestsPassed": 129,
+  "pythonTestsPassed": 14,
+  "providerBundleDryRun": {
+    "wrangler": "4.152.0",
+    "passed": true,
+    "networkAttempts": 0
+  },
+  "localWorkerdSQLiteAuthTrialSmoke": "PASS; Supabase transport fixture only",
+  "fullLocalNativeChain": {
+    "result": "PASS",
+    "chain": "actual bootstrap HTTP -> private exact input file -> exact Java JVM -> actual Python gateway -> real host nativeAdapter + GatewayDriver",
+    "schema": "cardstashy.forge-proof.v1",
+    "policy": "forge-default-smart-v1",
+    "viewerId": 0,
+    "sourceDigestsMatch": true,
+    "registeredRosterVerified": true,
+    "nativeRosterVerified": true,
+    "nativeAction": "real_engine_offered_startup_reply_accepted_duplicate_rejected",
+    "nativeControlModeGuards": "stale409/invalid400/busy409",
+    "note": "Temporary local path/port substitutions; not Docker or Cloudflare runtime proof.",
+    "seconds": 6.268,
+    "jvmStopConfirmed": true,
+    "nativeSourceSha256": "586511f3e9bf28a6918ef696ce614e50b5dbdf55c0b14d9a54f1fd89967aeddd",
+    "exactInputRemovedWithPrivateRuntime": true
+  },
+  "dockerBuild": "NOT RUN (Docker unavailable here; script/proposed workflow only)",
+  "imagePush": "NOT RUN",
+  "deployment": "NOT RUN",
+  "nativeManifestSha256": "a5e7e38bb72b937936f7db7d1fcacb4a2196dddf6f103e90203d1d778aa43813",
+  "gatewaySha256": "c15d29c16f6ad8ab259eeba07bd2a87ecf26caec00b66c10a5bc5b9174da0e52",
+  "trialEnabled": false,
+  "dockerProofClientCriteria": "5 local fixture tests PASS: actual offered move required; missing/wrong capabilities and epochs rejected before dispatch; busy guard reported only after execution; accepted move and rejected duplicate both required. Not a Docker/native runtime result."
+}

@@ -1,0 +1,18 @@
+{
+  "native/LICENSE": "8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b",
+  "native/PROVENANCE.md": "2da5fbdabc0726d359a336125c4f70afc18f4611904dbbdeef71d69ff739d7ae",
+  "native/CONTRACT.md": "92a6782fb41841f565f05eea8d7dd60121560cd812f5813c85a57e713c8bb0ff",
+  "native/EXACT-INPUT.md": "741bef0787ceaad2b35cf1a17a6f302a309938490ef5be90abc3ca9057f34cf9",
+  "native/adapter/src/cardstashy/forge/ForgeHttpBridge.java": "586511f3e9bf28a6918ef696ce614e50b5dbdf55c0b14d9a54f1fd89967aeddd",
+  "native/adapter/src/cardstashy/forge/NativeDeckInput.java": "ce5e2398dc9c0a947f4e5a89f4f8b38eb67df9dd12cdef41468fb9854f69c18e",
+  "native/adapter/src/cardstashy/forge/NativeDeckAdmission.java": "90b8d6f46ade52b56ea66f2528c55dff1c5335c4989393195115345ea9abc196",
+  "native/decks/calling-all-angels.dck": "ecb827272a5a4bcf9a7603bd2796f72235164762c796cbc28f4a39c932295662",
+  "native/decks/keen-engineering.dck": "d2e9e9a49684f3472c401dfec0d8c9fc04690829e695c21e208337b4d7aa60f7",
+  "native/decks/reign-of-dragons.dck": "a16268be45e39f98b44cec06a7fa252803395319ae26c6d230dc12d1719ad7da",
+  "Dockerfile": "188dd44a3f509716a9c38fc625b43c1fcdf6da8e172800266c0766dc9cdda8b4",
+  "hosting/assemble.sh": "96fdc3143aa6be781e9180f186ce0ddd5eca97bb3abe291fe3d9ef876373de2b",
+  "hosting/gateway.py": "c15d29c16f6ad8ab259eeba07bd2a87ecf26caec00b66c10a5bc5b9174da0e52",
+  "hosting/bootstrap.py": "28be17cd8c59441bff35934086dbf6a0a0dd1a1125a9f0fe54939910c713754f",
+  "hosting/checkpoint-files.json": "5ed622c9cbbe468f43b6d07f61770ed70304f951317b2051ba34485821b3f0b6",
+  ".dockerignore": "22050b43f43a2d9f93d5b863f49b10b3e45c70dfce806512a9a3a9aca1246cd9"
+}

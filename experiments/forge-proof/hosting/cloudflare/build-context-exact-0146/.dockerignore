@@ -1,0 +1,8 @@
+**
+!Dockerfile
+!hosting/
+!hosting/**
+!native/
+!native/**
+**/__pycache__/**
+**/*.pyc

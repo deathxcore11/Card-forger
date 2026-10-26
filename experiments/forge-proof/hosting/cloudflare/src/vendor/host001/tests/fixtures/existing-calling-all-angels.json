@@ -1,0 +1,296 @@
+{
+  "schema": 1,
+  "id": "deck-001:calling-all-angels",
+  "name": "Calling All Angels",
+  "format": "Commander",
+  "commander": "Giada, Font of Hope",
+  "cards": [
+    {
+      "name": "Giada, Font of Hope",
+      "qty": 1
+    },
+    {
+      "name": "Always Watching",
+      "qty": 1
+    },
+    {
+      "name": "Angel of the Ruins",
+      "qty": 1
+    },
+    {
+      "name": "Angelic Destiny",
+      "qty": 1
+    },
+    {
+      "name": "Angelic Field Marshal",
+      "qty": 1
+    },
+    {
+      "name": "Angelic Sleuth",
+      "qty": 1
+    },
+    {
+      "name": "Archangel of Tithes",
+      "qty": 1
+    },
+    {
+      "name": "Austere Command",
+      "qty": 1
+    },
+    {
+      "name": "Bishop of Wings",
+      "qty": 1
+    },
+    {
+      "name": "Cleansing Nova",
+      "qty": 1
+    },
+    {
+      "name": "Court of Grace",
+      "qty": 1
+    },
+    {
+      "name": "Day of Judgment",
+      "qty": 1
+    },
+    {
+      "name": "Emeria Shepherd",
+      "qty": 1
+    },
+    {
+      "name": "Exemplar of Light",
+      "qty": 1
+    },
+    {
+      "name": "Fateful Absence",
+      "qty": 1
+    },
+    {
+      "name": "Firemane Commando",
+      "qty": 1
+    },
+    {
+      "name": "Grasp of Fate",
+      "qty": 1
+    },
+    {
+      "name": "Herald of Eternal Dawn",
+      "qty": 1
+    },
+    {
+      "name": "Herald of War",
+      "qty": 1
+    },
+    {
+      "name": "Linvala, the Preserver",
+      "qty": 1
+    },
+    {
+      "name": "Lyra Dawnbringer",
+      "qty": 1
+    },
+    {
+      "name": "Merchant of Truth",
+      "qty": 1
+    },
+    {
+      "name": "Metropolis Reformer",
+      "qty": 1
+    },
+    {
+      "name": "Norn's Choirmaster",
+      "qty": 1
+    },
+    {
+      "name": "Reya Dawnbringer",
+      "qty": 1
+    },
+    {
+      "name": "Righteous Valkyrie",
+      "qty": 1
+    },
+    {
+      "name": "Search the Premises",
+      "qty": 1
+    },
+    {
+      "name": "Sephara, Sky's Blade",
+      "qty": 1
+    },
+    {
+      "name": "Seraph of the Sword",
+      "qty": 1
+    },
+    {
+      "name": "Serra Avenger",
+      "qty": 1
+    },
+    {
+      "name": "Speaker of the Heavens",
+      "qty": 1
+    },
+    {
+      "name": "Sunblast Angel",
+      "qty": 1
+    },
+    {
+      "name": "Wojek Investigator",
+      "qty": 1
+    },
+    {
+      "name": "Endless Atlas",
+      "qty": 1
+    },
+    {
+      "name": "Metallic Mimic",
+      "qty": 1
+    },
+    {
+      "name": "Tome of Legends",
+      "qty": 1
+    },
+    {
+      "name": "Vanquisher's Banner",
+      "qty": 1
+    },
+    {
+      "name": "Bonders' Enclave",
+      "qty": 1
+    },
+    {
+      "name": "War Room",
+      "qty": 1
+    },
+    {
+      "name": "Angel of Finality",
+      "qty": 1
+    },
+    {
+      "name": "Angel of Vitality",
+      "qty": 1
+    },
+    {
+      "name": "Cut a Deal",
+      "qty": 1
+    },
+    {
+      "name": "Dazzling Angel",
+      "qty": 1
+    },
+    {
+      "name": "Defy Death",
+      "qty": 1
+    },
+    {
+      "name": "Destroy Evil",
+      "qty": 1
+    },
+    {
+      "name": "Exorcise",
+      "qty": 1
+    },
+    {
+      "name": "Inspiring Overseer",
+      "qty": 1
+    },
+    {
+      "name": "Invoke the Divine",
+      "qty": 1
+    },
+    {
+      "name": "Secret Rendezvous",
+      "qty": 1
+    },
+    {
+      "name": "Segovian Angel",
+      "qty": 1
+    },
+    {
+      "name": "Starnheim Aspirant",
+      "qty": 1
+    },
+    {
+      "name": "Swords to Plowshares",
+      "qty": 1
+    },
+    {
+      "name": "Thraben Watcher",
+      "qty": 1
+    },
+    {
+      "name": "Valorous Stance",
+      "qty": 1
+    },
+    {
+      "name": "Vanguard Seraph",
+      "qty": 1
+    },
+    {
+      "name": "Youthful Valkyrie",
+      "qty": 1
+    },
+    {
+      "name": "Arcane Signet",
+      "qty": 1
+    },
+    {
+      "name": "Commander's Sphere",
+      "qty": 1
+    },
+    {
+      "name": "Heraldic Banner",
+      "qty": 1
+    },
+    {
+      "name": "Marble Diamond",
+      "qty": 1
+    },
+    {
+      "name": "Mind Stone",
+      "qty": 1
+    },
+    {
+      "name": "Patchwork Banner",
+      "qty": 1
+    },
+    {
+      "name": "Sol Ring",
+      "qty": 1
+    },
+    {
+      "name": "Swiftfoot Boots",
+      "qty": 1
+    },
+    {
+      "name": "Radiant Fountain",
+      "qty": 1
+    },
+    {
+      "name": "Secluded Steppe",
+      "qty": 1
+    },
+    {
+      "name": "Seraph Sanctuary",
+      "qty": 1
+    },
+    {
+      "name": "Temple of the False God",
+      "qty": 1
+    },
+    {
+      "name": "Plains",
+      "qty": 32
+    }
+  ],
+  "side": [],
+  "source": {
+    "url": "https://magic.wizards.com/en/news/announcements/foundations-commander-decklists",
+    "published": "2026-09-18",
+    "retrievedAt": "2026-10-25T16:12:50.942303+00:00",
+    "htmlSha256": "69123a084a09ceb302ec249bf2505d914b55a8da586534530b0bf91cb5e9beea",
+    "deckBlockSha256": "83dc127164785d30af9f8c7546b631a8d1c518500d6fc3068ec124246c86c374",
+    "deckBlock": "\nGiada, Font of Hope\nAlways Watching\nAngel of the Ruins\nAngelic Destiny\nAngelic Field Marshal\nAngelic Sleuth\nArchangel of Tithes\nAustere Command\nBishop of Wings\nCleansing Nova\nCourt of Grace\nDay of Judgment\nEmeria Shepherd\nExemplar of Light\nFateful Absence\nFiremane Commando\nGrasp of Fate\nHerald of Eternal Dawn\nHerald of War\nLinvala, the Preserver\nLyra Dawnbringer\nMerchant of Truth\nMetropolis Reformer\nNorn's Choirmaster\nReya Dawnbringer\nRighteous Valkyrie\nSearch the Premises\nSephara, Sky's Blade\nSeraph of the Sword\nSerra Avenger\nSpeaker of the Heavens\nSunblast Angel\nWojek Investigator\nEndless Atlas\nMetallic Mimic\nTome of Legends\nVanquisher's Banner\nBonders' Enclave\nWar Room\nAngel of Finality\nAngel of Vitality\nCut a Deal\nDazzling Angel\nDefy Death\nDestroy Evil\nExorcise\nInspiring Overseer\nInvoke the Divine\nSecret Rendezvous\nSegovian Angel\nStarnheim Aspirant\nSwords to Plowshares\nThraben Watcher\nValorous Stance\nVanguard Seraph\nYouthful Valkyrie\nArcane Signet\nCommander's Sphere\nHeraldic Banner\nMarble Diamond\nMind Stone\nPatchwork Banner\nSol Ring\nSwiftfoot Boots\nRadiant Fountain\nSecluded Steppe\nSeraph Sanctuary\nTemple of the False God\n32 Plains [4NC1X04a2UxpshllRsjFaL]\n",
+    "normalization": "Missing quantity means 1; remove only trailing Wizards image reference in square brackets. First listed card is the published face commander. All 100 cards retained.",
+    "pickerProvenance": "Official preconstructed list intended for the Precons source. Current account/picker availability is NOT TESTED; the MTGJSON index returned HTTP 403 in this environment."
+  }
+}

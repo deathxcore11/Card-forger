@@ -16,6 +16,16 @@ This is a development checkpoint, not a release announcement. The user's finish 
 - The isolated frontend reuses CardStashy's actual table, inspector, art hooks and styling. Unit/DOM checks are separate from real Chromium acceptance. Read the CI result for the exact commit; do not infer PASS from this document.
 - Full/manual priority is the first browser proof mode. Smart defaults and Easy/Medium/Hard remain separate implementation and acceptance gates.
 
+## Verified checkpoint: 2026-10-26 01:49 UTC
+
+- Actual Chromium proof **PASS** at `00ad011381246b962898df91a3e270b070917489`, [run 40255449488](https://github.com/deathxcore11/Card-forger/actions/runs/40255449488). Unchanged Keen Engineering human seat against Reign of Dragons native Default CPU, Full Control: 184 rendered-control actions, native CPU win on turn 16, no concession, zero browser errors or unexpected credential/service requests. Land hit-target geometry and terminal-aware test synchronization repaired. This is not the production setup flow, Smart acceptance, arbitrary-deck support, three difficulties, or live deployment.
+- Separate reviewed Smart0058 native human-HTTP fixtures complete Calling All Angels versus Reign of Dragons. Angels versus Keen completion is pinned to preceding0050; do not silently relabel that evidence.
+- Exact saved/imported snapshot Commander candidate0146 now starts a real Forge JVM and checks registered and instantiated card rosters; independent bounded review passed, and the exact saved/imported HTTP match completed naturally on turn30. The complete existing-app browser journey is still pending. The app already has the deck builder and setup picker. Reuse its structured snapshots; commander designations identify copies already in cards[], not extra cards.
+- HOST-001 frozen archive `HOST-001-existing-snapshot-01` SHA256 `2d062b582f1779e56d538e59e25774ac19388d013564c56a4f30b3c4be40d467` was verified. Local integration adds bounded lifecycle/deadline/cleanup protections and one-JVM provisional initialization. Provisional capacity is NOT deck legality: native validation and exact receipt are mandatory before playable status. No separate always-running validator service.
+- Provider wrapper has local workerd/SQLite and boundary tests; real Docker image/resource and Cloudflare deployment remain unverified. Existing Workers Paid plan confirmed by owner screenshot; no upgrade purchased. Cloud browser currently redirects to Cloudflare sign-in.
+- Latest requested release formats are Standard, Modern and Commander. Modern transport syntax is not gameplay support. Four Star Trek Commander products are official, but Wizards' decklist page still marks all full contents unrevealed as checked October26; never fabricate those lists.
+- CPU Default is not three difficulties. Isolated CPU work has reproduced a native hidden-library naming leak and is testing a repair. Wider search fairness and difficulty strength are unproven.
+
 ## Ownership and boundaries
 
 1. Engine/adapter owner: `experiments/forge-proof/native/adapter/`. Forge owns game rules and CPU decisions. Translate canonical prompts without guessing option meanings or inventing defaults. Unknown prompt families fail visibly.
@@ -56,3 +66,7 @@ Agree on one owner before two contributors edit the same file. A handoff must gi
 ## Continuity
 
 Commit small coherent source changes. Attach focused test outcomes to the exact commit, and distinguish written / locally tested / browser tested / live verified. Preserve a known-good production rollback point. Never commit credentials, local capability files, private game saves or bulk investigation archives. This checkpoint's source and controlled public-deck tests are the reusable handoff; do not rely on a previous chat's temporary workspace.
+
+## Exact container proof checkpoint
+
+Current exact adapter source is frozen at `experiments/forge-proof/native-exact-0146/`; original `native/` remains the original browser-proof reference. The image context under `hosting/cloudflare/build-context-exact-0146/` copies hash-identical0146 source. One match container validates an unchanged existing app snapshot before admission. This checkpoint replaces only the isolated proof CI with a bounded offline Docker build/run, not a production deployment. No image is pushed, trial remains disabled, and full Standard/Modern/three-difficulty browser acceptance remains open.
