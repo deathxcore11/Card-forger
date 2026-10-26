@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createForgeArtworkPreparation } from './play-forge-artwork.js';
-import { createForgePlayerMat, forgeDiagnostic } from './play-forge-player-mat.js';
+import { createForgePlayerMat, forgeDiagnostic, forgeMatchError } from './play-forge-player-mat.js';
 import { createForgeHostClient, exactDigest, FORGE_REVISION } from './play-forge-host-client.js';
 import { chooseQuickOpponent } from './play-quick-match.js';
 const OWNER='11111111-1111-4111-8111-111111111111', MATCH='22222222-2222-4222-8222-222222222222', GENERATION='33333333-3333-4333-8333-333333333333';
@@ -98,4 +98,11 @@ test('Quick Play avoids your own list whenever another list exists',()=>{
  const reshaped={...structuredClone(player),id:undefined,name:'Precon copy',source:{kind:'precon'},cards:player.cards.map(r=>({name:r.name.toUpperCase(),qty:r.qty})).reverse()};
  assert.equal(chooseQuickOpponent({player,candidates:[reshaped,other],candidateEligible:()=>true,nativeValidationPending:true,estimate:d=>d===other?90:50}).deck.id,'other','same cards in another record is a mirror');
  assert.throws(()=>chooseQuickOpponent({player,candidates:[player],candidateEligible:()=>true,nativeValidationPending:true,estimate:()=>50}),/different deck/);
+});
+
+test('a match ended by a newer start on the same account says so, and other stops keep their messages', () => {
+ assert.match(forgeMatchError({code:'match_interrupted',reason:'replaced',status:410}),/new match was started on your account/);
+ assert.equal(forgeDiagnostic({code:'match_interrupted',reason:'replaced',status:410}),'match_interrupted · replaced · HTTP 410');
+ assert.match(forgeMatchError({code:'match_interrupted',reason:'startup_interrupted'}),/stopped unexpectedly/);
+ assert.match(forgeMatchError({code:'user_has_active_allocation'}),/still closing/);
 });
