@@ -611,7 +611,7 @@ async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY
     const effects=[hero,...hero.querySelectorAll('*')].filter(node=>node===hero||node===art||node===art?.querySelector('img')).map(node=>{
       const css=getComputedStyle(node);return {node:node.className,filter:css.filter,backdrop:css.backdropFilter,prefixedBackdrop:css.getPropertyValue('-webkit-backdrop-filter')};
     });
-    return {height:rect(header).height,headerArt:headerArt?rect(headerArt):null,art:a,box,arrow:rect(arrow),text,effects,
+    return {height:rect(header).height,headerArt:headerArt?rect(headerArt):null,art:a,box,arrow:arrow&&rect(arrow),text,effects,
       content:{left:box.left+parseFloat(c.paddingLeft),right:box.right-parseFloat(c.paddingRight),top:box.top+parseFloat(c.paddingTop),bottom:box.bottom-parseFloat(c.paddingBottom)}};
   });
   // This bound belongs to the normal fixtures, not every possible card name.
@@ -619,7 +619,7 @@ async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY
   if(compact)assert(size.height>=0 && size.height<200,`${game}: header has no oversized separate artwork block: ${JSON.stringify(size)}`);
   assert.equal(await page.locator('#homeToday .today-bg').count(),0,'daily art is not duplicated in a second panel');
   assert(size.box.height>=44 && size.box.width>=44,`${game}: exact daily identity keeps its touch target`);
-  assert(size.content.right+8<=size.arrow.left && size.arrow.right<=size.box.right,`${game}: text reserves space for the daily arrow`);
+  assert.equal(size.arrow,null,`${game}: the whole daily card is the button, with no extra arrow`);
   if(size.headerArt)assert(size.headerArt.width>=280 && size.headerArt.height>=280,`${game}: immersive artwork remains prominent`);
   if(size.art)assert(size.art.left<=size.box.left && size.art.right>=size.box.right,`${game}: daily action stays within the card's own artwork`);
   for(const [index,text] of size.text.entries()){
