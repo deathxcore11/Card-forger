@@ -1,75 +1,31 @@
-name: Same-image existing Play browser acceptance (DO NOT MERGE)
-
-# Throwaway proof branch only. Publishing a reviewed commit triggers ONE bounded
-# test job, not a deployment. No PR, merge, schedule, dispatch, retry or chaining.
+name: Browser action receipt reproduction (NO DEPLOY)
 on:
   push:
-    branches: [codex/forge-native-browser-proof-20261026]
-
+    branches: [codex/forge-receipt-diagnostic-20261026]
 permissions:
   contents: read
-
-concurrency:
-  group: isolated-forge-native-browser-proof
-  cancel-in-progress: false
-
 jobs:
-  forge-combined-browser-proof:
-    if: github.repository == 'deathxcore11/Card-forger' && github.ref == 'refs/heads/codex/forge-native-browser-proof-20261026'
+  receipt:
+    if: github.repository == 'deathxcore11/Card-forger'
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
-    env:
-      FORGE_COMBINED_REVIEWED_MANIFEST_SHA256: 905ecab51992c9b1a3a0a5cd552c5462554e1ea777cea721ed806dc18858c600
-      PYTHONDONTWRITEBYTECODE: '1'
-      npm_config_update_notifier: 'false'
+    timeout-minutes: 5
     steps:
-      - name: Reserve absolute cleanup and upload deadline
-        timeout-minutes: 1
-        shell: bash
-        run: printf 'FORGE_COMBINED_JOB_CUTOFF_MS=%s\n' "$(( $(date +%s%3N) + 2340000 ))" >> "$GITHUB_ENV"
-      - name: Check out only this reviewed proof commit
-        timeout-minutes: 1
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ github.sha }}
           persist-credentials: false
           fetch-depth: 1
-      - name: Set up Node without caches
-        timeout-minutes: 1
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '24'
           package-manager-cache: false
-      - name: Verify proof-only deployment guard and exact sources
-        timeout-minutes: 1
-        shell: bash
+      - name: Install pinned browser tools
+        timeout-minutes: 3
         run: |
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git hash-object wrangler.jsonc)" = dde65139e32bd455b645802cebf2abd1291300c7
-          python3 - <<'PY'
-          import json,pathlib
-          p=pathlib.Path('wrangler.jsonc');g=json.loads('\n'.join(l for l in p.read_text().splitlines() if not l.lstrip().startswith('//')))
-          assert g['main']=='__FORGE_BROWSER_PROOF_DO_NOT_DEPLOY__/intentionally-missing-worker.js'
-          assert g['assets']['directory']=='__FORGE_BROWSER_PROOF_DO_NOT_DEPLOY__/intentionally-missing-assets'
-          assert not pathlib.Path(g['main']).exists() and not pathlib.Path(g['assets']['directory']).exists()
-          assert g['workers_dev'] is False and g['preview_urls'] is False and g['previews']=={}
-          PY
-          printf 'FORGE_COMBINED_CANDIDATE_ROOT=%s/experiments/forge-proof/combined-browser-proof/candidate\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
-          export FORGE_COMBINED_CANDIDATE_ROOT="$GITHUB_WORKSPACE/experiments/forge-proof/combined-browser-proof/candidate"
-          python3 experiments/forge-proof/combined-browser-proof/harness/verify-inputs.py
-      - name: Build once and run bounded same-image probe and browser acceptance
-        id: proof
-        timeout-minutes: 38
-        shell: bash
-        run: bash experiments/forge-proof/combined-browser-proof/harness/run-combined.sh
-      - name: Retain only atomically verified sanitized evidence
-        if: ${{ always() && steps.proof.outputs.upload_ready == 'true' }}
+          mkdir -p "$RUNNER_TEMP/browser-tools"
+          npm install --prefix "$RUNNER_TEMP/browser-tools" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.62.1
+          node "$RUNNER_TEMP/browser-tools/node_modules/playwright/cli.js" install --only-shell chromium
+      - name: Run synthetic HTTP receipt reproduction
         timeout-minutes: 1
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        with:
-          name: forge-combined-${{ github.run_id }}-${{ github.run_attempt }}
-          path: test-results/forge-combined/artifact/
-          retention-days: 1
-          if-no-files-found: error
-          compression-level: 6
-          include-hidden-files: false
+        env:
+          FORGE_BROWSER_TOOLS: ${{ runner.temp }}/browser-tools
+        run: node diagnostics/reproduce-action-receipt.mjs
