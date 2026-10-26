@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createForgeArtworkPreparation } from './play-forge-artwork.js';
-import { createForgePlayerMat } from './play-forge-player-mat.js';
+import { createForgePlayerMat, forgeDiagnostic } from './play-forge-player-mat.js';
 import { createForgeHostClient, exactDigest, FORGE_REVISION } from './play-forge-host-client.js';
 import { chooseQuickOpponent } from './play-quick-match.js';
 const OWNER='11111111-1111-4111-8111-111111111111', MATCH='22222222-2222-4222-8222-222222222222', GENERATION='33333333-3333-4333-8333-333333333333';
@@ -68,7 +68,31 @@ test('real app handler takes the Forge branch and bypasses legacy pregame and ca
  source=source.replace("import('./play-forge-player-mat.js')",'loadForgeMat()');
  const {doc}=dom(),s=setup(),events=[];
  const forbidden=()=>{throw Error('legacy path entered');};
- const deps={A:{},FORGE_PLAY_TEST_ENABLED:true,PLAY_MATCH_RELEASE_READY:true,toast:forbidden,T:{game:()=> 'mtg'},syncDesktopPlayEntries:()=>({eligible:true}),playSetup:{snapshot:()=>s},S:{ui:{view:'play'},state:{printings:{}}},document:doc,readPlayAccount:()=>({user:{id:OWNER}}),cloudInfo:()=>({user:{id:OWNER}}),cloudAccessToken:async()=>'token',accountGeneration:1,accountLocked:false,key:x=>x,resolveNames(){},meta(){},api(){},createForgeArtworkPreparation,createPracticeCardPreparation:forbidden,createPlayerMat:forbidden,createPracticeCatalogReview:forbidden,savePlayDeck:forbidden,closePlayerMat(){},go(){},V:{deckArtwork:forbidden},mountPracticePregame:forbidden,resolvePracticePregame:forbidden,loadForgeMat:async()=>({createForgePlayerMat:options=>({start:async()=>{assert.deepEqual(options.readSetup(),s);assert.equal(await options.getAccessToken(),'token');assert.equal(typeof options.prepareArtwork,'function');events.push('native');}})})};
+ const deps={A:{},FORGE_PLAY_TEST_ENABLED:true,PLAY_MATCH_RELEASE_READY:true,playUpdates:{beforeMatch:async()=>false},toast:forbidden,T:{game:()=> 'mtg'},syncDesktopPlayEntries:()=>({eligible:true}),playSetup:{snapshot:()=>s},S:{ui:{view:'play'},state:{printings:{}}},document:doc,readPlayAccount:()=>({user:{id:OWNER}}),cloudInfo:()=>({user:{id:OWNER}}),cloudAccessToken:async()=>'token',accountGeneration:1,accountLocked:false,key:x=>x,resolveNames(){},meta(){},api(){},createForgeArtworkPreparation,createPracticeCardPreparation:forbidden,createPlayerMat:forbidden,createPracticeCatalogReview:forbidden,savePlayDeck:forbidden,closePlayerMat(){},go(){},V:{deckArtwork:forbidden},mountPracticePregame:forbidden,resolvePracticePregame:forbidden,loadForgeMat:async()=>({createForgePlayerMat:options=>({start:async()=>{assert.deepEqual(options.readSetup(),s);assert.equal(await options.getAccessToken(),'token');assert.equal(typeof options.prepareArtwork,'function');events.push('native');}})})};
  new Function(...Object.keys(deps),'let playStarting=false,playerMatHost=null,practicePregame=null,playerMatRoot=null;'+source)(...Object.values(deps));
  await deps.A.playStartCandidate();assert.deepEqual(events,['native']);
+});
+test('leaving the page releases an open server table with a request that outlives the page',async()=>{
+ const account={user:{id:OWNER},accountGeneration:1},requests=[],s=setup();
+ const client=createForgeHostClient({readAccount:()=>account,getAccessToken:async()=>'account.token.value',fetchImpl:async(path,init)=>{
+  requests.push({path,init});if(init.method==='POST'){const sent=JSON.parse(init.body);return Response.json({matchId:MATCH,generation:GENERATION,expiresAt:Date.now()+60000,deckDigests:{human:await exactDigest(sent.humanDeck),opponent:await exactDigest(sent.opponentDeck)},schema:'cardstashy.forge-proof.v1',forgeRevision:FORGE_REVISION,status:'initializing'},{status:202});}
+  return new Response(null,{status:204});}});
+ assert.equal(client.release(),false,'nothing to release before allocation');
+ await client.create({format:'Commander',humanDeck:s.selected,opponentDeck:s.opponent,difficultyPolicyVersion:'forge-medium-v1'});
+ assert.equal(client.release(),true);assert.equal(client.release(),false,'released once');
+ const sent=requests.at(-1);assert.equal(sent.path,'/api/play/matches/'+MATCH);assert.equal(sent.init.method,'DELETE');assert.equal(sent.init.keepalive,true);assert.equal(sent.init.headers.Authorization,'Bearer account.token.value');assert.equal(client.status().blocked,true);
+});
+test('the hosted table names its engine and website build',async()=>{
+ const src=readFileSync(new URL('./play-forge-player-mat.js',import.meta.url),'utf8');
+ assert.match(src,/root\.dataset\.engine='forge-hosted';root\.dataset\.build=APP_VERSION/);assert.match(src,/title:`CardStashy · Magic · \$\{APP_VERSION\}`/);assert.match(src,/addEventListener\?\.\('pagehide',pageHide\)/);
+});
+test('stop diagnostics carry the safe server reason and status',()=>{
+ assert.equal(forgeDiagnostic({code:'match_interrupted',reason:'startup_interrupted',status:410}),'match_interrupted · startup_interrupted · HTTP 410');
+ assert.equal(forgeDiagnostic({code:'HOST_REQUEST_TIMEOUT'}),'HOST_REQUEST_TIMEOUT');
+});
+test('Quick Play avoids your own list whenever another list exists',()=>{
+ const player=setup('Modern').selected,copy={...structuredClone(player),id:'copy',name:'Copy'},other={...structuredClone(player),id:'other',cards:[{name:'Other',qty:60}]};
+ const picked=chooseQuickOpponent({player,candidates:[player,copy,other],candidateEligible:()=>true,nativeValidationPending:true,estimate:d=>d===other?90:50});
+ assert.equal(picked.deck.id,'other');assert.equal(picked.mirror,false);
+ const only=chooseQuickOpponent({player,candidates:[player],candidateEligible:()=>true,nativeValidationPending:true,estimate:()=>50});assert.equal(only.mirror,true);
 });

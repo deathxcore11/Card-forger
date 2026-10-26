@@ -41,12 +41,13 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
  if(typeof readAccount!=='function'||typeof getAccessToken!=='function'||typeof fetchImpl!=='function')throw fail('FORGE_HOST_READERS_REQUIRED');
  const owner=readAccount(),ownerKey=forgeAccountKey(owner);
  if(!UUID.test(owner?.user?.id||'')||owner.locked||owner.switching)throw fail('ACCOUNT_CHANGED');
- let allocation=null,creating=false,closed=false,closeRequested=false,submitting=false,blocked=false,error=null,terminal=null,nextReadAt=0,expectedViewer=null,knownPlayers=null,requestedPregame=null,acceptedPregame=null;
+ let allocation=null,creating=false,closed=false,closeRequested=false,submitting=false,blocked=false,error=null,terminal=null,nextReadAt=0,expectedViewer=null,knownPlayers=null,requestedPregame=null,acceptedPregame=null,lastToken=null;
  const current=()=>{const a=readAccount();if(forgeAccountKey(a)!==ownerKey||a.locked||a.switching)throw fail('ACCOUNT_CHANGED');};
  const status=()=>({blocked:blocked||closed,error,allocation:allocation?structuredClone(allocation):null,terminal:terminal?structuredClone(terminal):null});
  async function request(path,{method='GET',body,headers={},expectedCommandId}={}){
   current();const token=await getAccessToken();current();if(path==='/api/play/matches'&&closeRequested)throw fail('MATCH_CLOSED');
   if(typeof token!=='string'||!token||token.length>8192||!/^[-A-Za-z0-9._]+$/.test(token))throw fail('AUTHENTICATION_REQUIRED');
+  lastToken=token;
   const controller=new AbortController();let timer;
   const work=(async()=>{
    const r=await fetchImpl(API_PREFIX+path,{method,body:body===undefined?undefined:JSON.stringify(body),headers:{Accept:'application/json',Authorization:'Bearer '+token,...(body===undefined?{}:{'Content-Type':'application/json'}),...headers},credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',cache:'no-store',signal:controller.signal});
@@ -65,7 +66,7 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
        &&(![400,409].includes(r.status)||data?.state!=='rejected'||data.commandId!==expectedCommandId))throw fail('HOST_COMMAND_RECEIPT_MISMATCH');
     const rejection=fail(code);
     if(expectedCommandId!==undefined&&data?.state==='rejected')rejection.message=Object.hasOwn(ACTION_REJECTIONS,code)?ACTION_REJECTIONS[code]:ACTION_REJECTIONS.native_action_rejected;
-    throw Object.assign(rejection,{status:r.status,retryAfterMs:Math.max(1000,Math.min(30000,(Number(r.headers.get('Retry-After'))||1)*1000)),details:Array.isArray(data?.validation?.errors||data?.errors)?(data.validation?.errors||data.errors).filter(x=>typeof x==='string').slice(0,20).map(x=>x.slice(0,512)):[]});
+    throw Object.assign(rejection,{status:r.status,...(typeof data?.reason==='string'&&/^[a-z0-9_]{1,100}$/.test(data.reason)?{reason:data.reason}:{}),retryAfterMs:Math.max(1000,Math.min(30000,(Number(r.headers.get('Retry-After'))||1)*1000)),details:Array.isArray(data?.validation?.errors||data?.errors)?(data.validation?.errors||data.errors).filter(x=>typeof x==='string').slice(0,20).map(x=>x.slice(0,512)):[]});
    }
    return {status:r.status,data};
   })();
@@ -135,6 +136,13 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
    if(closed)return;closeRequested=true;if(!allocation){if(!creating)closed=true;blocked=true;return;}blocked=true;
    try{const {status:code}=await request('/api/play/matches/'+allocation.matchId,{method:'DELETE'});if(code!==204)throw fail('RESOURCE_CLEANUP_UNCONFIRMED');closed=true;error=null;}
    catch(e){error=e.code||'RESOURCE_CLEANUP_UNCONFIRMED';throw e;}
+  },
+  // The page is going away: end the server table in a request that outlives the page, so the
+  // one-match-per-account limit does not refuse the next match. Synchronous; it never throws.
+  release(){
+   if(closed||!allocation||!lastToken)return false;const id=allocation.matchId;closed=true;blocked=true;
+   try{void Promise.resolve(fetchImpl(API_PREFIX+'/api/play/matches/'+id,{method:'DELETE',headers:{Accept:'application/json',Authorization:'Bearer '+lastToken},keepalive:true,credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',cache:'no-store'})).catch(()=>{});}catch{}
+   return true;
   },
   detach(){closed=true;blocked=true;allocation=null;terminal=null;nextReadAt=0;expectedViewer=null;knownPlayers=null;},
  };

@@ -19,6 +19,7 @@ import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {createPlayerMat} from './play-player-mat.js';
+import {createPlayUpdateGate} from './play-update-gate.js';
 import {createPracticeCardPreparation} from './play-card-preparation.js';
 import {createForgeArtworkPreparation} from './play-forge-artwork.js';
 import {createPracticeCatalogReview} from './play-catalog-review.js';
@@ -1512,7 +1513,7 @@ A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBu
 A.playFindOpponent=async()=>{
  const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
- try{const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck),state.selected];
+ try{const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck)];
  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
@@ -1550,6 +1551,7 @@ A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profil
 const PLAY_MATCH_RELEASE_READY=true;
 let playerMatHost=null,playerMatRoot=null,practicePregame=null,playStarting=false;
 function closePlayerMat(){practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
+const playUpdates=createPlayUpdateGate({checkRelease,notify:version=>toast(`Updating CardStashy${version==='replaced'?'':' to '+version} before your match. Your account and decks stay saved.`)});
 A.playStartCandidate=async()=>{
  if(!PLAY_MATCH_RELEASE_READY)return toast('Practice integration is still being verified.');
  if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
@@ -1559,6 +1561,7 @@ A.playStartCandidate=async()=>{
  if(initial.playStyle==='quick'&&initial.match.mode==='cpu'&&!initial.quickMatch){if(!await A.playFindOpponent())return;}
  if(T.game()!=='mtg'||S.ui.view!=='play'||!syncDesktopPlayEntries('mtg').eligible)return;
  const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
+ if(await playUpdates.beforeMatch())return; // The page reopens Play on the current release.
  if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
  const beginGame=async options=>{
@@ -6678,7 +6681,7 @@ async function boot() {
     const updating = !!navigator.serviceWorker.controller, opened = Date.now();let touched = false;
     for (const type of ["pointerdown", "keydown"]) addEventListener(type, () => { touched = true; }, { once: true, capture: true });
     navigator.serviceWorker.addEventListener("controllerchange", () => { if (updating && !touched && Date.now() - opened < 12000 && !document.querySelector("dialog[open]")) location.reload(); });
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch(() => {});
   }
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.
   // TCGplayer prices for printings Scryfall leaves unpriced arrive in the background.

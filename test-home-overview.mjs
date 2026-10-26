@@ -38,7 +38,7 @@ const desktop={ua:'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',platform:'Win32',a
 assert.equal(playDeviceEligibility(desktop).eligible,true);
 assert.equal(playDeviceEligibility({...desktop,maxTouchPoints:10}).eligible,true,'touch laptop is not excluded for touch alone');
 for(const patch of [{native:true},{mobile:true},{ua:'Mozilla/5.0 (Linux; Android 17) AppleWebKit desktop mode'},{ua:'Mozilla/5.0 (iPad)'},{ua:'Mozilla/5.0 (Macintosh)',platform:'MacIntel',maxTouchPoints:5},{anyFine:false},{anyHover:false},{ua:'Unknown browser'}])assert.equal(playDeviceEligibility({...desktop,...patch}).eligible,false,JSON.stringify(patch));
-const nodes=[{dataset:{desktopPlayEntry:'practice'},hidden:true,disabled:false},{dataset:{desktopPlayEntry:'draft'},hidden:true,disabled:false}],root={querySelectorAll:()=>nodes},view={navigator:{userAgent:desktop.ua,platform:'Win32'},matchMedia:()=>({matches:true})};
+const nodes=[{dataset:{desktopPlayEntry:'practice'},hidden:true,disabled:false},{dataset:{desktopPlayEntry:'draft'},hidden:true,disabled:false}],root={querySelectorAll:selector=>selector.includes('desktop')?nodes:[]},view={navigator:{userAgent:desktop.ua,platform:'Win32'},matchMedia:()=>({matches:true})};
 syncDesktopPlayEntries('mtg',root,view);for(const n of nodes){assert.equal(n.hidden,false);assert.equal(n.disabled,n.dataset.desktopPlayEntry!=='practice');assert.equal(n.dataset.playReadiness,'cpu-beta');}
 syncDesktopPlayEntries('ptcg',root,view);for(const n of nodes)assert.equal(n.hidden,true);
 syncDesktopPlayEntries('mtg',root,{...view,navigator:{userAgent:'Android',platform:'Linux'}});for(const n of nodes)assert.equal(n.hidden,true);

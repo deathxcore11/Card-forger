@@ -1,5 +1,6 @@
 // Existing createPlaySetup snapshots and the existing table; no second picker,
 // rules engine, external artwork query, or persisted private match state.
+import {APP_VERSION} from './config.js';
 import {capturePracticeArtwork} from './play-card-surface.js';
 import {forgeCpuPolicy} from './play-forge-cpu-policy.js';
 import {createForgeHostClient,exactForgeInput,forgeAccountKey} from './play-forge-host-client.js';
@@ -19,6 +20,8 @@ export function capturedForgeArtwork(setup,lookup){
  };
 }
 
+// Safe server codes only: the stop reason tells an engine failure from an expiry or a lost process.
+export const forgeDiagnostic=e=>[e?.code||e?.message||'HOST_SESSION_STOPPED',e?.reason,e?.status&&'HTTP '+e.status].filter(Boolean).join(' · ');
 export function forgeMatchError(error){
  const code=error?.code||error?.message;
  return ({
@@ -26,7 +29,9 @@ export function forgeMatchError(error){
   AUTHENTICATION_REQUIRED:'Sign in again, then return to Play to start your match.',
   ACCOUNT_CHANGED:'Your signed-in account changed. Return to setup to choose your decks again.',
   SELECTION_CHANGED:'Your account or deck selection changed. Return to setup and review your matchup.',
-  user_has_active_allocation:'You already have an active match. Close that match before starting another. If you left it, allow time for it to close.',
+  user_has_active_allocation:'Your previous match is still closing on the server. Wait about a minute, then start again.',
+  match_interrupted:'The table stopped unexpectedly. No result was recorded. Return to setup and start again.',
+  native_interrupted:'The table stopped unexpectedly. No result was recorded. Return to setup and start again.',
   global_match_capacity:'All match tables are currently in use. Try again when a table becomes available.',
   play_resource_budget_exhausted:'Play has reached its current hosting allowance. Please try again later.',
   create_attempt_rate_limit:'A few matches were requested close together. Wait a moment before trying again.',
@@ -51,6 +56,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  const node=(tag,text)=>{const n=doc.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
  const beforeUnload=e=>{e.preventDefault();e.returnValue='';};
  const warn=enabled=>{if(enabled===warning)return;warning=enabled;view[enabled?'addEventListener':'removeEventListener']('beforeunload',beforeUnload);};
+ // Closing or leaving the tab ends an open server table, including one whose start failed.
+ const pageHide=()=>{client?.release?.();};view?.addEventListener?.('pagehide',pageHide);
  // Retain the launched policy with every result/stat consumer; never reread a
  // newer setup preference to label an earlier match. No persistence is added.
  const publish=value=>{last={...value,...(matchPolicy?{matchContext:{format:matchup.match.format,difficulty:matchPolicy.difficulty,difficultyPolicyVersion:matchPolicy.difficultyPolicyVersion}}:{})};onChange(structuredClone(last));};
@@ -77,7 +84,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  }
  function stopped(e){
   if(disposed)return;session?.close();warn(false);exitDialog?.remove();exitDialog=null;exitConfirm=null;publish({phase:e.code==='ACCOUNT_CHANGED'?'account-changed':'session-ended',error:e.code||'HOST_SESSION_STOPPED'});
-  message('Match interrupted',[e.code==='ACCOUNT_CHANGED'?'The signed-in account changed.':'The connection was interrupted or the match expired. A result was not confirmed.','Return to setup to start a new match.']);
+  message('Match interrupted',[e.code==='ACCOUNT_CHANGED'?'The signed-in account changed.':'The connection was interrupted or the match expired. A result was not confirmed.','Return to setup to start a new match.'],{diagnostic:e.code==='ACCOUNT_CHANGED'?null:forgeDiagnostic(e)});
  }
  async function closeSession(){
   session?.close();warn(false);try{await client?.close();onClose();}catch(e){message('The table is still closing',['Try returning to setup again in a moment.']);publish({phase:'session-ended',error:e.code||'RESOURCE_CLEANUP_UNCONFIRMED'});}
@@ -101,6 +108,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   if(disposed||opening||client)throw Error('MATCH_ALREADY_OPEN');opening=true;const ticket=++generation,account=forgeAccountKey(readAccount()),setup=readSetup(),selection=selectionKey(setup);
   matchAccount=account;
   const current=()=>!disposed&&ticket===generation&&forgeAccountKey(readAccount())===account&&selectionKey(readSetup())===selection;
+  let requestedAt=null;
   try{
    matchup=structuredClone(setup);matchPolicy=forgeCpuPolicy(setup.match.difficulty);
    if(!current()||setup.profile?.ownerId!==readAccount()?.user?.id)throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
@@ -113,7 +121,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    const input=exactForgeInput(setup,{startingPlayer});
    client=createClient({readAccount,getAccessToken});
    intro.status('Preparing the table…');
-   await client.create(input);warn(true);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
+   requestedAt=Date.now();await client.create(input);warn(true);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
    let state,deadline=Date.now()+125000;
    while(current()&&Date.now()<deadline){
     try{state=await client.read();}catch(e){if(![429,503].includes(e.status))throw e;await wait(e.retryAfterMs||1000);continue;}
@@ -133,12 +141,13 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    }});
    await intro?.reveal(state.snapshot);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}intro?.destroy();intro=null;
    session.acceptState(state.snapshot);session.subscribe(s=>{updateExit();if(!disposed&&ticket===generation&&last?.phase!=='finished')publish({phase:'playing',game:s});});
-   root.className='';table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:'CardStashy · Magic',onExit:requestExit,presentation:{hosted:true,allowControlMode:true}});warn(true);await session.start({readInitial:false});return last;
-  }catch(e){if(current()){session?.close();warn(false);message('Your match could not start',[forgeMatchError(e),'Your selected decks are unchanged.',...(e.details||[])],{diagnostic:e.code||e.message});publish({phase:'session-ended',error:e.code||e.message});}throw e;}
+   // The engine and website build stay identifiable on screen and in diagnostics.
+   root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true}});warn(true);await session.start({readInitial:false});return last;
+  }catch(e){if(current()){session?.close();warn(false);message('Your match could not start',[forgeMatchError(e),'Your selected decks are unchanged.',...(e.details||[])],{diagnostic:forgeDiagnostic(e)+(requestedAt===null?'':` · ${Math.round((Date.now()-requestedAt)/1000)}s after the table was requested`)});publish({phase:'session-ended',error:e.code||e.message});}throw e;}
   finally{opening=false;}
  }
  return {start,snapshot:()=>last?structuredClone(last):null,requestExit,
   reconcile(){if(matchAccount&&forgeAccountKey(readAccount())!==matchAccount){client?.detach();stopped({code:'ACCOUNT_CHANGED'});return false;}return true;},
-  detach(){if(disposed)return;disposed=true;generation++;warn(false);session?.close();intro?.destroy();intro=null;table?.destroy();table=null;exitDialog?.remove();exitDialog=null;void client?.close().catch(()=>{}).finally(()=>client?.detach());root.replaceChildren();last=null;},
+  detach(){if(disposed)return;disposed=true;generation++;warn(false);view?.removeEventListener?.('pagehide',pageHide);session?.close();intro?.destroy();intro=null;table?.destroy();table=null;exitDialog?.remove();exitDialog=null;void client?.close().catch(()=>{}).finally(()=>client?.detach());root.replaceChildren();last=null;},
  };
 }
