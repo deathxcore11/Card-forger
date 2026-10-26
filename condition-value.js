@@ -88,7 +88,7 @@ export function conditionPriceHtml(price,entry={},quotes=[],lookup={}){
  const comparison=isManual&&quote?`<div class="condition-market-secondary"><b>${esc(quoteLabel(quote))} · ${usd(quote.price)}</b><small>${esc(quote.source||'Provider')} · ${esc(conditionQuoteTiming(quote))}.</small></div>`:'';
  const old=!quote&&lastKnownConditionQuote(entry,quotes);
  const lastKnownHtml=old?`<small class="condition-reference"><b>${usd(old.price)} · Last known condition price</b><br>${esc(old.source||'Provider')} · ${esc(conditionQuoteTiming(old))}. Not included as a current condition value.</small>`:'';
- const buy=lookup.buyLink?.direct?`<a class="btn ghost small" href="${esc(lookup.buyLink.url)}" target="_blank" rel="noopener noreferrer">Find this condition on TCGplayer ↗</a>`:'';
+ const buy=lookup.buyLink?.direct?`<a class="btn ghost small" href="${esc(lookup.buyLink.url)}" target="_blank" rel="noopener noreferrer">Find this condition on TCGplayer</a>`:'';
  const reference=amount(lookup.reference),showReference=!hasValue&&reference!==null;
  const referenceHtml=showReference?`<small class="condition-reference"><b>${usd(reference)} · ${esc(lookup.referenceLabel||'Reference price')}</b><br>This is a general market reference, not a verified ${esc(condition)} price for this copy.</small>`:'';
  const {timing,retryLabel}=conditionRetryFeedback(lookup);

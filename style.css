@@ -23,11 +23,6 @@
   --radius: 14px;
   --gutter: 16px;
   --nav-h: 64px;
-  /* Shared UI scale (docs/UI_SYSTEM.md). Use these instead of literal values. */
-  --r-xs: 6px; --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px; --r-pill: 999px;
-  --control-sm: 36px; --control-md: 44px; --control-lg: 48px;
-  --fs-caption: 11px; --fs-small: 13px; --fs-body: 15px; --fs-section: 19px; --fs-page: 28px;
-  --page-max: 1240px;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -116,11 +111,11 @@ body[data-view="deck"] #content { padding-top: 0; }
 /* ---------- controls ---------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  min-height: var(--control-md); padding: 0 16px; border-radius: var(--r-md); border: 1px solid transparent;
+  min-height: 42px; padding: 0 16px; border-radius: 11px; border: 1px solid transparent;
   background: var(--gold); color: var(--gold-ink); font-weight: 700; text-decoration: none; white-space: nowrap;
 }
 .btn.ghost { background: var(--surface-2); color: var(--text); border-color: var(--line); }
-.btn.small { min-height: var(--control-sm); padding: 0 12px; font-size: 13.5px; }
+.btn.small { min-height: 34px; padding: 0 12px; font-size: 13.5px; }
 .btn.block { width: 100%; margin-top: 10px; }
 .btn.danger, .link.danger, .menu-list .danger { color: var(--bad); }
 .btn:disabled { opacity: 0.45; cursor: default; }
@@ -130,8 +125,8 @@ body[data-view="deck"] #content { padding-top: 0; }
 .icon { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); font-size: 17px; }
 .icon.light { background: rgba(0, 0, 0, 0.45); border-color: rgba(255, 255, 255, 0.18); color: #fff; }
 input, select, textarea {
-  width: 100%; min-width: 0; min-height: var(--control-md); padding: 9px 12px;
-  border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface); color: var(--text);
+  width: 100%; min-width: 0; min-height: 42px; padding: 9px 12px;
+  border-radius: 11px; border: 1px solid var(--line); background: var(--surface); color: var(--text);
 }
 textarea { min-height: 120px; resize: vertical; font-size: 13.5px; }
 input[type="checkbox"] { width: 18px; height: 18px; min-height: 0; accent-color: var(--gold); flex: none; }
@@ -155,7 +150,7 @@ label.toggle { padding: 12px 0; border-bottom: 1px solid var(--line); margin-bot
 .toolbar select { width: auto; flex: 0 1 auto; }
 
 .seg { display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 3px; margin: 12px 0; }
-.seg button { flex: 1; border: 0; background: none; color: var(--muted); padding: 8px 6px; border-radius: var(--r-sm); font-weight: 700; font-size: 13.5px; }
+.seg button { flex: 1; border: 0; background: none; color: var(--muted); padding: 8px 6px; border-radius: 9px; font-weight: 700; font-size: 13.5px; }
 .seg button.on { background: var(--surface-2); color: var(--text); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
@@ -163,7 +158,7 @@ label.toggle { padding: 12px 0; border-bottom: 1px solid var(--line); margin-bot
 .chip.dark { background: rgba(0, 0, 0, 0.55); border-color: rgba(255, 255, 255, 0.15); color: #fff; }
 .chip.ok { color: var(--good); }
 .chip.warn { color: var(--warn); }
-.chip.pick { min-height: 32px; padding: 0 12px; font-size: 13px; }
+.chip.pick { padding: 7px 12px; font-size: 13px; }
 .chip.pick.on { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); }
 button.chip { cursor: pointer; }
 .tag { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 6px; }
@@ -4895,7 +4890,7 @@ dialog.sheet:has(.context-card),body.glass dialog.sheet:has(.context-card){max-w
 .today-pack>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.today-pack::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,#ffffff55 46%,transparent 62%);background-size:260% 100%;animation:today-sheen 4.2s ease-in-out infinite;pointer-events:none}
 .today-pack:hover,.today-pack:focus-visible{transform:rotate(0) translateY(-4px) scale(1.07)}.today-pack:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
 .today-text{display:grid;gap:6px;min-width:0}
-#homeToday .hh-credit{position:relative;display:grid;gap:3px;width:100%;min-height:44px;margin:0;padding:4px 40px 4px 0;border:0;border-radius:10px;background:none;color:#fff;font:inherit;text-align:left;white-space:normal;overflow-wrap:normal;word-break:normal;cursor:pointer;backdrop-filter:none;-webkit-backdrop-filter:none}
+#homeToday .hh-credit{position:relative;display:grid;gap:3px;width:100%;min-height:44px;margin:0;padding:4px 0;border:0;border-radius:10px;background:none;color:#fff;font:inherit;text-align:left;white-space:normal;overflow-wrap:normal;word-break:normal;cursor:pointer;backdrop-filter:none;-webkit-backdrop-filter:none}
 #homeToday .hh-credit>span:first-child{font-size:11px;font-weight:700;letter-spacing:.06em;line-height:1.4;color:var(--gold);overflow-wrap:normal}
 #homeToday .hh-credit b{font-size:clamp(19px,5vw,24px);line-height:1.15;overflow-wrap:break-word;word-break:normal;min-width:0;max-width:100%;text-shadow:0 2px 12px #000c}
 #homeToday .hh-daily-arrow{position:absolute;right:6px;top:50%;width:16px;transform:translateY(-50%);color:#ffffffb3}

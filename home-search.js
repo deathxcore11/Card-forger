@@ -2,6 +2,7 @@ import {aiOrb} from './ai-ui.js';
 import {esc,usd,cardImage} from './ui.js';
 import {presentationQuote} from './pricing-presentation.js';
 import {nameDistance} from './scan-signals.js';
+import {SEARCH_PROMPT} from './search-hints.js';
 
 export const homeQueries={};
 const key=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -25,7 +26,7 @@ export function homeResultRow(game,c,i){
  const image=game==='mtg'?cardImage(c):c.image||c.imageLarge||'';
  return `<button type="button" role="option" aria-selected="false" id="home-result-${i}" data-home-pick="${i}" class="lot home-result"><span class="lot-art">${image?`<img src="${esc(image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:'◇'}</span><span class="lot-info"><b class="lot-name">${esc(c.name)}</b><span class="lot-sub">${esc(set.filter(Boolean).join(' · ')||'Open for printing details')}</span></span><span class="lot-side"><b class="price">${value==null?'Price unavailable':usd(value)}</b><small>${value==null?'':esc(quote.label||'Reference quote')+' · USD'}</small></span></button>`;
 }
-export function homeSearchMarkup(game){return `<div class="home-search-wrap"><div class="home-search-pill"><span class="home-ai-label" id="home-search-label">Cards & answers</span><input id="homeQ" type="search" data-home-search="${game}" value="${esc(homeQueries[game]||'')}" placeholder="Find a card or ask a question…" maxlength="300" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="homeSearchResults" aria-label="Find cards or ask CardStashy" aria-describedby="home-search-label" autocomplete="off"><button class="home-search-submit" data-act="homeSearch" aria-label="Search cards">${searchEmblem()}</button></div><button class="home-ai-submit" data-act="homeAsk" aria-label="Ask CardStashy">${aiOrb()}</button></div>`;}
+export function homeSearchMarkup(game){return `<div class="home-search-wrap"><div class="home-search-pill"><span class="home-ai-label" id="home-search-label">Cards & answers</span><input id="homeQ" type="search" data-home-search="${game}" value="${esc(homeQueries[game]||'')}" placeholder="${SEARCH_PROMPT}" maxlength="300" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="homeSearchResults" aria-label="Find cards or ask CardStashy" aria-describedby="home-search-label" autocomplete="off"><button class="home-search-submit" data-act="homeSearch" aria-label="Search cards">${searchEmblem()}</button></div><button class="home-ai-submit" data-act="homeAsk" aria-label="Ask CardStashy">${aiOrb()}</button></div>`;}
 
 export function attachHomeSearch({game,lookup,open,submit}){
  let field=null,box=null,rows=[],active=-1,ticket=0,timer;

@@ -1,4 +1,5 @@
 import { tierOf } from "./tier.js";
+import { labelIcon } from "./icons.js";
 // Small HTML helpers shared by every screen.
 export const $ = (s, root = document) => root.querySelector(s);
 export const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -108,8 +109,8 @@ export function colorDots(c) {
 export const segmented = (name, current, items) =>
   `<div class="seg" role="tablist">${items
     .map(
-      ([id, label]) =>
-        `<button role="tab" aria-selected="${id === current}" class="${id === current ? "on" : ""}" data-act="${name}" data-id="${id}">${label}</button>`,
+      ([id, label, icon]) =>
+        `<button role="tab" aria-selected="${id === current}" class="${id === current ? "on" : ""}" data-act="${name}" data-id="${id}">${labelIcon(icon)}${label}</button>`,
     )
     .join("")}</div>`;
 

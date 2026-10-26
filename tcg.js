@@ -17,7 +17,7 @@ import {detailSetSummary,detailOwnedSummary,miniPrintingMarkup} from './card-det
 import {privateKey} from './account-scope.js';
 import {detailOwnedGroups,detailOwnedLots} from './quick-quantity.js';
 import {addCollectionEntry,addScannedEntry} from './collection-stack.js';
-import {homeSearchMarkup} from './home-search.js';
+import {homeSearchMarkup,searchEmblem} from './home-search.js';
 import {applyYgoSetPrices,ygoSetReference} from './ygo-set-prices.js';
 import {YGO_EDITION_NAMES,ygoPricePreview,ygoPurchaseReference,ygoPurchaseChecklist} from './ygo-price-selection.js';
 import {buyContext,compactPriceSummary,detailTabs,detailPanel,presentationQuote,quoteForContext,sellerModels} from "./pricing-presentation.js";
@@ -61,7 +61,7 @@ import { tileChrome } from "./tiles.js";
 import { S, uid, slim, meta as mtgDeckMeta } from "./store.js";
 import { esc, safeHref, usd, empty, bar, options, segmented, referencePrintingPills } from "./ui.js";
 import { GAMES, GAME_ICON, GAME_COLOR, GAME_IDS, blankGame, gameOf } from "./games.js";
-import { ICON, actionIcon } from "./icons.js";
+import { ICON, actionIcon, labelIcon } from "./icons.js";
 import { tcgCompareSheet } from "./tcgcompare.js";
 import { tradePanel } from "./trade.js";
 import { sharePayloadTcg, encodeShare } from "./share.js";
@@ -500,7 +500,7 @@ export function homeHero(g) {
 // printing/set and existing collectible pack action remain independent controls.
 export function homeToday(g) {
   const h=heroFor(g);if(!h)return '';
-  return `<section class="home-today" id="homeToday" data-game="${g}" data-daily-date="${h.date}" data-daily-id="${esc(h.id)}"><span class="today-pack-slot"></span><div class="today-text"><button class="hh-credit" data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}" aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b><span class="hh-daily-arrow" aria-hidden="true">↗</span></button><div class="today-set" aria-live="polite"></div></div></section>`;
+  return `<section class="home-today" id="homeToday" data-game="${g}" data-daily-date="${h.date}" data-daily-id="${esc(h.id)}"><span class="today-pack-slot"></span><div class="today-text"><button class="hh-credit" data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}" aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b></button><div class="today-set" aria-live="polite"></div></div></section>`;
 }
 // Cache only the server's shared selection. The old per-device v1 cache is
 // deliberately ignored so everyone moves to the same midnight schedule.
@@ -725,11 +725,12 @@ export function tcgSearch() {
       ...(U.sort !== defaultSearchSort(g) ? [["sort", `Sort: ${L(sorts, U.sort)}`]] : []),
     ],
     count = `${list.length.toLocaleString()} shown · ${loaded.length.toLocaleString()} loaded${Number.isFinite(U.total) ? ` · ${U.total.toLocaleString()} provider matches before local filters` : ""}`;
-  return `${U.discoveryNote?`<p class="note small" role="status">${esc(U.discoveryNote)}</p>`:""}<div class="page-head"><h1>Search cards</h1>${viewControl(g,"search")}<div class="search-tools"><button class="chip tool-chip" data-act="tCompareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">◈ Sets</button><button class="chip tool-chip" data-act="mtgWikiOpen" aria-label="Open Wiki">Wiki</button><button class="chip tool-chip" data-act="tRandomCard" aria-label="Random card">🎲 Random</button></div></div>
-  <div class="searchbar search-query"><input type="search" data-suggest="${g}" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Card name or code (BLZD-EN010)" : "Card name or set + number (PAL 45)"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off"><button class="btn" data-act="tSearch">${U.busy ? "Search again" : "Search"}</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI">${brandMark("assistant-button-mark")}<span>Ask</span></button></div>
+  return `${U.discoveryNote?`<p class="note small" role="status">${esc(U.discoveryNote)}</p>`:""}<div class="page-head"><h1>Search cards</h1>${viewControl(g,"search")}</div>
+  <div class="searchbar search-query"><input type="search" data-suggest="${g}" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Name or code (BLZD-EN010)" : "Card name or set + number"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off"><button class="btn search-go" data-act="tSearch" aria-label="${U.busy ? "Search again" : "Search"}">${searchEmblem()}<span>${U.busy ? "Search again" : "Search"}</span></button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI">${brandMark("assistant-button-mark")}<span>Ask</span></button></div>
+  <div class="search-tools" aria-label="Search shortcuts"><button class="chip tool-chip" data-act="tCompareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">${actionIcon("sets")}<span>Sets</span></button><button class="chip tool-chip" data-act="mtgWikiOpen" aria-label="Open Wiki">${actionIcon("wiki")}<span>Wiki</span></button><button class="chip tool-chip" data-act="tRandomCard" aria-label="Random card">${actionIcon("random")}<span>Random</span></button></div>
   ${chips.length ? `<div class="filter-chips" aria-label="Active filters">${chips.map(([k,l]) => `<button class="fchip" data-act="tChip" data-field="${esc(k)}" aria-label="Remove ${esc(l)}">${esc(l)} <span aria-hidden="true">×</span></button>`).join("")}<button class="link small" data-act="tClear">Clear all</button></div>` : ""}
   ${savedSearches(g).length ? `<div class="saved-searches"><span class="muted small">Saved:</span>${savedSearches(g).map((x,i) => `<span class="schip"><button data-act="tSaved" data-i="${i}">${esc(x.label)}</button><button data-act="tSavedDel" data-i="${i}" aria-label="Delete saved search ${esc(x.label)}">×</button></span>`).join("")}</div>` : ""}
-  <details class="filters" id="tcg-search-filters-${g}" data-detail-key="tcg-search-filters-${g}"><summary>Filters${chips.length ? ` · ${chips.length} on` : ""}</summary><div class="grid2">
+  <details class="filters" id="tcg-search-filters-${g}" data-detail-key="tcg-search-filters-${g}"><summary>${labelIcon("filter")}<span>Filters</span>${chips.length ? `<b class="filters-count">${chips.length}<span class="sr-only"> on</span></b>` : ""}<span class="filters-chev" aria-hidden="true">${actionIcon("chevron")}</span></summary><div class="grid2">
     <label>Show<select data-change="tOwnFilter">${options([["", "All cards"], ["owned", "Cards I own"], ["missing", "Cards I don’t own"]], U.own || "")}</select></label>
     ${filters}
     <label>${g === "ygo" ? "Format / card pool" : "Legal in"}<select data-change="tFilter" data-field="format">${options([["", "Any format"], ...formatsOf(g).map(x => [x.id, g === "ygo" ? ygoSearchFormatLabel(x) : x.name])], fid)}</select></label>
@@ -830,7 +831,7 @@ export function tcgCardSheet(c, sctx = {}) {
         ? `<div class="print-list"><div class="print on">
         <button class="print-main" data-act="tSet" data-id="${esc(c.set.id)}">${thumb}<span class="print-name">${pkSetSymbol(c.set)}<span class="ellip"><b>${esc(c.set.name)}</b><small>${esc((c.set.id || "").toUpperCase())} #${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""} · ${pkRarity(c.rarity)} ${esc(c.rarity || "")}</small></span></span></button>
         <span class="print-prices"><button class="pp buy" data-act="cardPriceJump" data-target="sellers">Buy</button><span class="pp"><small>reference</small>${usd(p.usd)}</span></span>
-      </div></div><div class="list compact">${pokemonVariantChoices(c,sctx.priceFinish).map(v => {const seller=versionSeller(v);return `<div class="variant-row">${variantArtThumb(c,v,`data-variant="${esc(v.key)}"`)}<div class="variant-copy"><b>${esc(v.label)}</b><small class="muted">${esc(variantArtwork(c,v).label)}</small><span>${v.usd == null ? "Price unavailable" : usd(v.usd)}</span></div><span class="variant-actions">${v.productId ? `<a class="link small" href="${esc(seller.url)}" target="_blank" rel="noopener noreferrer">${seller.direct?'Seller':'Search seller'} ↗</a>` : ""}${variantOwnControl(g, c, v)}</span></div>`;}).join("")}</div><p class="foot">Check the edition and finish on the seller's page before buying.</p><p class="foot">Pokémon reprints are separate cards with their own number. <button class="link small" data-act="tOtherPrintings" data-name="${esc(c.name)}">See every “${esc(c.name)}” →</button></p>`
+      </div></div><div class="list compact">${pokemonVariantChoices(c,sctx.priceFinish).map(v => {const seller=versionSeller(v);return `<div class="variant-row">${variantArtThumb(c,v,`data-variant="${esc(v.key)}"`)}<div class="variant-copy"><b>${esc(v.label)}</b><small class="muted">${esc(variantArtwork(c,v).label)}</small><span>${v.usd == null ? "Price unavailable" : usd(v.usd)}</span></div><span class="variant-actions">${v.productId ? `<a class="link small" href="${esc(seller.url)}" target="_blank" rel="noopener noreferrer">${seller.direct?'Seller':'Search seller'}</a>` : ""}${variantOwnControl(g, c, v)}</span></div>`;}).join("")}</div><p class="foot">Check the edition and finish on the seller's page before buying.</p><p class="foot">Pokémon reprints are separate cards with their own number. <button class="link small" data-act="tOtherPrintings" data-name="${esc(c.name)}">See every “${esc(c.name)}” →</button></p>`
         : "";
   const prices =
     g === "ptcg"
@@ -842,13 +843,13 @@ export function tcgCardSheet(c, sctx = {}) {
         ${(p.others || []).map(([k, v]) => `<div class="pt-row"><span class="pt-label">${esc(k)}</span><span><b>${usd(v)}</b></span></div>`).join("")}</div>
         <p class="small">Each printing has its own price — see <button class="link small" data-act="cardTab" data-tab="versions">Versions</button>.</p>`;
   const rulings = `<p class="small">${g === "ygo" ? "Konami publishes card rulings in its official database rather than as data, so they open there." : "Pokémon rulings are published by The Pokémon Company rather than as data, so they open there."}</p>
-    <div class="list compact">${RULES_LINKS[g].map(([l, u]) => `<a class="mini-row store" href="${esc(safeHref(u(c)))}" target="_blank" rel="noopener noreferrer"><span>${esc(l)}</span><span class="small">↗</span></a>`).join("")}</div>
+    <div class="list compact">${RULES_LINKS[g].map(([l, u]) => `<a class="mini-row store" href="${esc(safeHref(u(c)))}" target="_blank" rel="noopener noreferrer"><span>${esc(l)}</span></a>`).join("")}</div>
     <button class="btn ghost small" data-act="go" data-to="#rules">${esc(GAMES[g].short)} rules reference →</button>`;
   const legal = `${legalChips(g, c)}<p class="foot">${g === "ygo" ? "Forbidden = 0 copies, Limited = 1, Semi-Limited = 2, otherwise 3. Banlists from YGOPRODeck." : "Standard/Expanded legality from TCGdex; Gym Leader Challenge also bans Rule Box Pokémon."} <button class="link small" data-act="go" data-to="#rules">Banlists & format rules →</button></p>`;
   return `<div class="sheet-head overlay"><span></span><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="cs-banner ${!artworkSources(c, true).length && !heroSrc ? "no-art" : ""}"><div class="cs-hero ${g}">${g === "ptcg" ? pokemonArtCrop(c, "cs-art") : heroSrc ? `<img class="cs-art" src="${esc(heroSrc)}" alt="${esc(c.name)}" referrerpolicy="no-referrer" onerror="${heroFallback ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(heroFallback)}'}else ` : ""}this.remove()">` : ""}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(c.name)}</h2><p class="type-line">${esc(c.typeLine || "")} ${detailOwnedSummary(detailOwnedLots(g,ownedLots,c).reduce((n,e)=>n+Number(e.qty),0))}</p></div>${gameEmblems(c)}</div></div>
-  ${tabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", "Versions"], ["prices", "Prices"], ["rulings", "Rules & legality"]])}
+  ${tabs(tab, [["overview", "Overview", "info"], ["meta", "Meta", "trophy"], ["guide", "Play guide", "ideas"], ["versions", "Versions", "viewStacks"], ["prices", "Prices", "bag"], ["rulings", "Rules & legality", "book"]])}
   ${emblemChips(g, c)}
   <div class="cs-meta">
     ${tcgDetailSetSummary(c,sctx)}
@@ -980,7 +981,7 @@ export function trackTcgValue(g, v = collectionValue(g), s = S.state) {
 function tcgValueView(g) {
   const st = gs(g), v = collectionValue(g),
     rows = st.collection.map(entry => { const card=cardOf(g,entry.cardId); return {entry,card,unit:entryPrice(card,entry),valuation:entryValuation(card,entry)}; }),
-    tabs = segmented("tCollTab", "value", [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"]]);
+    tabs = segmented("tCollTab", "value", [["cards", "Cards", "cardStack"], ["binders", "Binders", "binder"], ["value", "Value", "history"]]);
   if (!st.collection.length && !st.valueHistory?.length) return `<div class="page-head"><h1>Collection</h1></div>${tabs}<section class="empty"><h3>No value to track yet</h3><p>Add cards to start recording your collection’s value over time.</p></section>${alertsPanel(g)}`;
   return `<div class="page-head"><h1>Collection</h1></div>${tabs}<div ${valuePageAttrs(g)}>
   ${valuePageOverview({game:g,value:v,history:st.valueHistory || [],rows})}
@@ -1015,9 +1016,9 @@ export function tcgCollection() {
    value:unit==null?null:unit*(x.w?1:x.e.qty),impact:x.c?impactScore(g,x.c):null,rarity:rarityOf(x),recent:Number.isFinite(Date.parse(x.e.addedAt))?Date.parse(x.e.addedAt):null};};
   rows.sort((a,b)=>compareCollectionRows(descriptor(a),descriptor(b),U.sort,U.direction));
   if (U.tab === "value") return tcgValueView(g);
-  if (U.tab === "binders") return `<div class="page-head"><h1>Collection</h1></div>${segmented("tCollTab","binders",[["cards","Cards"],["binders","Binders"],["value","Value"]])}${binderShelf(st.collection.map(entry=>({entry,card:cardOf(g,entry.cardId),image:cardOf(g,entry.cardId)?.variants?.find(v=>v.key===entry.variant)?.image || cardOf(g,entry.cardId)?.image || "",game:g})),g,S.state.settings.binders || [])}`;
+  if (U.tab === "binders") return `<div class="page-head"><h1>Collection</h1></div>${segmented("tCollTab","binders",[["cards","Cards","cardStack"],["binders","Binders","binder"],["value","Value","history"]])}${binderShelf(st.collection.map(entry=>({entry,card:cardOf(g,entry.cardId),image:cardOf(g,entry.cardId)?.variants?.find(v=>v.key===entry.variant)?.image || cardOf(g,entry.cardId)?.image || "",game:g})),g,S.state.settings.binders || [])}`;
   return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${viewControl(g,"collection")}${selectionControl(g)}</div></div>
-  ${segmented("tCollTab", "cards", [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"]])}
+  ${segmented("tCollTab", "cards", [["cards", "Cards", "cardStack"], ["binders", "Binders", "binder"], ["value", "Value", "history"]])}
   ${st.collection.length || wantRows.length ? `<div class="coll-summary"><button class="cs-value" data-act="tCollTab" data-id="value" aria-label="See collection value"><b data-count="${Math.round(v.total)}" data-money="1">${usd(v.total, 0)}</b><span>${v.copies} card${v.copies === 1 ? "" : "s"}${wantRows.length ? ` · ${wantRows.length} on wishlist` : ""}${Math.min(rows.length, U.limit || 120) < rows.length ? ` · showing ${Math.min(rows.length, U.limit || 120)} of ${rows.length}` : rows.length !== st.collection.length + wantRows.length ? ` · showing ${rows.length}` : ""}${v.unpriced ? ` · ${v.unpriced} unpriced` : ""}</span></button><button class="icon" data-act="tRefreshPrices" aria-label="Refresh prices">${actionIcon("refresh")}</button></div>` : ""}
   ${st.collection.length || wantRows.length ? `<div class="coll-tools"><div class="collection-primary-tools">${collectionSortControls(g,U.sort,U.direction)}<input type="search" value="${esc(U.q)}" placeholder="Search your cards" data-input="tCollQ" aria-label="Search collection"></div><div class="filter-pills"><select data-change="tCollSet" aria-label="Set">${options([["", "All sets"], ...setNames.map((x) => [x, x])], U.set)}</select><select data-change="tCollKind" data-field="kind" aria-label="Kind">${options([["", "All kinds"], ...kinds], U.kind)}</select>${rarities.length > 1 ? `<select data-change="tCollKind" data-field="rarity" aria-label="Rarity">${options([["", "All rarities"], ...rarities.map((x) => [x, x])], U.rarity)}</select>` : ""}${wantRows.length ? `<select data-change="tCollKind" data-field="show" aria-label="Show">${options([["all", "Owned + wishlist"], ["owned", "Owned"], ["wanted", `Wishlist · ${wantRows.length}`]], show)}</select>` : ""}</div></div>
   <div class="list display-list deal">${rows.slice(0,U.limit || 120)
@@ -1063,7 +1064,7 @@ export function tcgDecks() {
     tab = ["ideas", "inspiration"].includes(S.ui.decksTab) ? S.ui.decksTab : "mine";
   return `<div class="page-head"><h1>Decks</h1><div class="row"><button class="btn small" data-act="tImport">↥ Import</button><button class="btn ghost small" data-act="tNewDeck">＋ New</button></div></div>
   <div class="random-tools"><button class="btn ghost small" data-act="learnGame">How to play · keywords</button><button class="btn ghost small" data-act="tabletop">Tabletop · play together</button></div>
-  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}
+  ${segmented("decksTab", tab, [["mine", "My decks", "decks"], ["ideas", "Ideas", "ideas"], ["inspiration", "Meta decks", "trophy"]])}
   <div class="random-tools"><button class="btn ghost small" data-act="randomDeckOptions" data-home="1">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView(g) : tab === "inspiration" ? metaView(g) : st.decks.length ? `<div class="deck-grid">${st.decks.slice().reverse().map((d) => deckTile(g, d)).join("")}</div>` : empty("No decks yet", `Pick a format and start adding cards, build from cards you own in Ideas, or copy a tournament deck from Meta decks.`, `<button class="btn" data-act="decksTab" data-id="ideas">✧ Ideas from my cards</button><button class="btn ghost" data-act="decksTab" data-id="inspiration">🏆 Meta decks</button>`)}`;
 }
@@ -1351,7 +1352,7 @@ export function provenSheetHtml() {
   ${saveError?`<p class="note warn" role="alert">${esc(saveError)}</p>`:""}
   ${!proven.busy && spec.load && (proven.msg || incomplete || saveError) ? `<div class="actions"><button class="btn small" data-act="provenRetry">${spec.rows.some(r=>r.matchPending)?"Retry card matching":"Retry prices"}</button></div>` : ""}
   ${deckViewer(spec.g,body)}
-  <div class="actions wrap sheet-actions"><button class="btn" data-act="provenSave" ${saving || mode === "budget" && incomplete ? "disabled" : ""}>${saving?"Saving…":mode === "original" ? "Save original list" : mode === "budget" ? "Save adaptation" : "Save draft"}</button>${spec.sourceUrl ? `<a class="btn ghost" href="${esc(safeHref(spec.sourceUrl))}" target="_blank" rel="noopener noreferrer">${esc(spec.sourceLabel || "Source")} ↗</a>` : ""}${spec.extraActions || ""}</div>
+  <div class="actions wrap sheet-actions"><button class="btn" data-act="provenSave" ${saving || mode === "budget" && incomplete ? "disabled" : ""}>${saving?"Saving…":mode === "original" ? "Save original list" : mode === "budget" ? "Save adaptation" : "Save draft"}</button>${spec.sourceUrl ? `<a class="btn ghost" href="${esc(safeHref(spec.sourceUrl))}" target="_blank" rel="noopener noreferrer">${esc(spec.sourceLabel || "Source")}</a>` : ""}${spec.extraActions || ""}</div>
   ${spec.attribution ? `<p class="foot">${spec.attribution}</p>` : ""}`;
 }
 
@@ -1394,7 +1395,7 @@ export function tcgDeck(id) {
     <div class="hero-stats"><span><b>${zoneCount("main")}</b>${g === "ygo" ? "main" : "/60 cards"}</span><span><b>${s.total ? Math.round((s.owned / s.total) * 100) : 0}%</b>owned</span><span><b>${usd(s.buy, 0)}${s.unknown ? "+" : ""}</b>to finish${s.unknown ? " · some unpriced" : ""}</span>${s.total ? `<button data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"><b>${shown ?? "—"}</b>${shown == null ? "power unavailable" : "power"}</button>` : ""}</div>
     ${buildCheck && (!buildCheck.ready || !buildCheck.purchaseEstimateVerified || buildCheck.summoningReview.length) ? `<p class="small warn-text">${buildCheck.open ? `Incomplete draft: ${buildCheck.open} slots remain. ` : !buildCheck.legalChecked ? "Draft: deck checks still need review. " : buildCheck.missingRequiredSeeds.length ? `Draft: required build-around card missing: ${esc(buildCheck.missingRequiredSeeds.map(s => s.name).join(", "))}. ` : buildCheck.missingEnergy ? `Draft: ${buildCheck.missingEnergy} intended Energy copies are still missing. ` : !buildCheck.ready ? "Draft: the requested purchase budget is not verified. " : ""}${buildCheck.summoningReview.length ? `${buildCheck.coreRouteUnverified ? `${buildCheck.ready ? "Complete list" : "Draft"}, core route unverified` : `${buildCheck.ready ? "Complete list" : "Draft"} · Extra Deck summoning needs review`}. ${esc(buildCheck.summoningReview.map(x => x.explanation).join(" "))} ` : ""}${buildCheck.unpricedPurchaseCopies ? `Known purchase subtotal only; ${buildCheck.unpricedPurchaseCopies} missing copies are unpriced. Total purchase cost is unverified, not free.` : ""}</p>` : ""}
   </div></section>
-  <nav class="tabs" role="tablist">${[["cards", "Cards"], ["rules", "Rules"], ["insights", "Power"], ["matchups", "Matchups"], ["upgrade", "Upgrade lab"], ["playtest", "Playtest"], ["versions", "Versions"]].map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${l}</button>`).join("")}</nav>
+  <nav class="tabs" role="tablist">${[["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["insights", "Power", "trophy"], ["matchups", "Matchups", "sword"], ["upgrade", "Upgrade lab", "build"], ["playtest", "Playtest", "random"], ["versions", "Versions", "viewStacks"]].map(([id, l, icon]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${labelIcon(icon)}${l}</button>`).join("")}</nav>
   <div class="deck-body">${tab === "rules" ? interactiveRules(g, {format:d.format}) : tab === "insights" ? deckInsights(g, d, f, s) : tab === "matchups" ? deckMatchupsT(g, d, f) : tab === "upgrade" ? deckUpgradeTab(g, d, f, s) : tab === "playtest" ? deckPlaytest(g, d, f) : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
 }
 
@@ -3272,7 +3273,7 @@ export function registerTcg(c) {
       link = location.origin + location.pathname + "#shared/" + (await encodeShare(sharePayloadTcg(G, d, { author, about: d.about || "" })));
     openSheet(`<div class="sheet-head"><h2>Share this deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
       <p class="muted small">Anyone with the link sees the full list with card art, and how much of it they own. Your collection is never included.</p>
-      <div class="share-link"><input id="shareLink" readonly value="${esc(link)}" aria-label="Share link"><div class="actions wrap"><button class="btn" data-act="tShareCopy">Copy link</button>${navigator.share ? `<button class="btn ghost" data-act="tShareNative">Share…</button>` : ""}<a class="btn ghost" href="${esc(safeHref(link))}" target="_blank" rel="noopener">Preview ↗</a></div></div>`, { type: "tshare", link, name: d.name });
+      <div class="share-link"><input id="shareLink" readonly value="${esc(link)}" aria-label="Share link"><div class="actions wrap"><button class="btn" data-act="tShareCopy">Copy link</button>${navigator.share ? `<button class="btn ghost" data-act="tShareNative">Share…</button>` : ""}<a class="btn ghost" href="${esc(safeHref(link))}" target="_blank" rel="noopener">Preview</a></div></div>`, { type: "tshare", link, name: d.name });
   };
   A.tSharedBuild = async () => {
     const commit=captureCommit(),mutate=scopedMutate(commit);

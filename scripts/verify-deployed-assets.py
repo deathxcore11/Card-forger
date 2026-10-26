@@ -49,7 +49,7 @@ MODULES = (
     "scan-vision.js", "scansession.js", "tcg.js", "ptcg.js", "ui.js",
     "views.js", "confidence.js", "mtg-tcgprice.js", "style.css",
     "home-search.js", "app-info.js", "tabletop.js", "settings-dialog.js", "tour.js",
-    "home-ui.js", "home-overview.css", "play-menu.css", "ui-system.css", "deck-viewer.js", "deck-viewer.css", "home-deck-activity.js", "home-swipe.js", "game-navigation.js", "tour-scenes.js", "community-feed.js", "community-art.js", "community-sources.js", "community-edition.js",
+    "home-ui.js", "home-overview.css", "deck-viewer.js", "deck-viewer.css", "home-deck-activity.js", "home-swipe.js", "game-navigation.js", "tour-scenes.js", "community-feed.js", "community-art.js", "community-sources.js", "community-edition.js",
     "img/news/2026-10-19-magic-delay.webp", "img/news/2026-10-22-pokemon-rules.webp", "img/news/2026-10-19-ygo-list.webp",
     "ai-rules.js", "ai-rules-panel.js",
     "pricing-presentation.js", "workbench-ui.js", "artwork.js", "zoom.js", "pokemon-art.js", "meta.js",

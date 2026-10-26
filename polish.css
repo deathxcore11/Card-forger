@@ -1,0 +1,278 @@
+/* Tab bars: one rounded track, one glowing pill that glides to the selected tab (tab-glide.js).
+   The pill takes the game's color, so Magic is gold, Yu-Gi-Oh! violet and Pokémon red. */
+:root { --glide-ease: cubic-bezier(.32,.72,0,1); }
+:is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) {
+  --pill: linear-gradient(180deg, color-mix(in srgb, var(--gold) 78%, #fff 22%), var(--gold) 58%, color-mix(in srgb, var(--gold) 86%, #000 14%));
+  --pill-glow: 0 0 0 1px color-mix(in srgb, var(--gold) 65%, transparent), 0 6px 18px -6px color-mix(in srgb, var(--gold) 70%, transparent), 0 0 22px color-mix(in srgb, var(--gold) 22%, transparent), inset 0 1px 0 #ffffff70;
+  --track: color-mix(in srgb, var(--surface) 80%, #000 20%);
+}
+
+/* The track */
+:is(body, body.glass) :is(.seg, .set-browser-quick) {
+  position: relative; isolation: isolate; gap: 2px; padding: 4px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  background: color-mix(in srgb, var(--track) 90%, transparent);
+  box-shadow: inset 0 1px 3px #00000059, 0 1px 0 #ffffff0a;
+  backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
+}
+:is(body, body.glass) .cs-tabs {
+  padding: 4px; gap: 2px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  background: color-mix(in srgb, var(--track) 94%, transparent);
+  box-shadow: inset 0 1px 3px #00000059, 0 8px 24px -12px #000a;
+}
+
+/* Deck page tabs (Cards, Rules, Power…): the same track, kept sticky under the header. */
+:is(body, body.glass) nav.tabs {
+  margin: 12px 0; padding: 4px; gap: 2px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  background: color-mix(in srgb, var(--track) 92%, transparent);
+  box-shadow: inset 0 1px 3px #00000059, 0 8px 24px -12px #000a;
+  backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
+}
+nav.tabs > button { flex: none; padding: 8px 14px; white-space: nowrap; }
+
+/* The tabs */
+:is(.seg, .set-browser-quick, nav.tabs) > button, .cs-tabs > button {
+  position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 40px; border: 0; border-radius: 999px; background: transparent; box-shadow: none;
+  color: var(--muted); font-weight: 650; letter-spacing: -.01em; cursor: pointer;
+  transition: color .35s var(--glide-ease), transform .2s var(--glide-ease);
+}
+@media (hover: hover) { :is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) > button:not(.on):hover { color: var(--text); } }
+:is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) > :is(.on, [aria-selected="true"], [aria-pressed="true"]) { color: var(--gold-ink); animation: none; }
+:is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) > button:active { transform: scale(.96); }
+
+/* Until the pill is placed (or without script), the selected tab wears the pill itself. */
+:is(.seg, .set-browser-quick, nav.tabs):not([data-glide]) > :is(.on, [aria-selected="true"], [aria-pressed="true"]),
+.cs-tabs:not([data-indicator-ready]) > :is(.on, [aria-selected="true"]) { background: var(--pill); box-shadow: var(--pill-glow); }
+:is(.seg, .set-browser-quick, nav.tabs)[data-glide] > button,
+.cs-tabs[data-indicator-ready] > button { background: transparent !important; box-shadow: none !important; border-color: transparent !important; }
+
+/* The pill */
+:is(.seg, .set-browser-quick, nav.tabs) > .glide {
+  position: absolute; z-index: 0; left: 0; top: 0; pointer-events: none; border-radius: 999px;
+  background: var(--pill); box-shadow: var(--pill-glow);
+  transition: transform .5s var(--glide-ease), width .5s var(--glide-ease), height .5s var(--glide-ease);
+  will-change: transform;
+}
+.cs-tabs .cs-tab-indicator {
+  background: var(--pill); box-shadow: var(--pill-glow);
+  transition: left .5s var(--glide-ease), width .5s var(--glide-ease), top .3s var(--glide-ease), height .3s var(--glide-ease);
+}
+
+/* Tab icons */
+.label-ico { display: inline-flex; flex: none; }
+.label-ico .ico { width: 16px; height: 16px; stroke-width: 1.9; }
+:is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) > button:not(.on):not([aria-selected="true"]) .label-ico { opacity: .75; }
+
+/* Grid-style choice bars keep their squarer shape. */
+.am-sheet .am-scenario-choice .seg > .glide { border-radius: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.seg, .set-browser-quick, nav.tabs) > .glide, .cs-tabs .cs-tab-indicator { transition: none !important; }
+}
+
+/* Home deck cards: the whole card is the button. */
+.home-resume:has(.home-card-hit) { position: relative; cursor: pointer; }
+#content .home-resume .home-card-hit, .home-resume .home-card-hit {
+  position: absolute; inset: 0; z-index: 1; max-width: none; min-height: 0; padding: 0;
+  border: 0; border-radius: inherit; background: none; box-shadow: none; cursor: pointer;
+}
+.home-resume .home-resume-choose { position: relative; z-index: 2; }
+.home-resume:has(.home-card-hit:focus-visible) { outline: 2px solid var(--gold); outline-offset: 4px; }
+.home-personal-deck, section.home-resume:has(.home-card-hit) { transition: transform .35s var(--glide-ease), box-shadow .35s var(--glide-ease), border-color .35s; }
+@media (hover: hover) {
+  .home-personal-deck:hover, section.home-resume:has(.home-card-hit):not(.home-personal-resume > *):hover {
+    transform: translateY(-2px); box-shadow: 0 16px 36px -12px #000c; border-color: color-mix(in srgb, var(--gold) 38%, #ffffff26);
+  }
+}
+.home-personal-deck:active, section.home-resume:has(.home-card-hit):not(.home-personal-resume > *):active { transform: scale(.985); }
+@media (prefers-reduced-motion: reduce) { .home-personal-deck, section.home-resume { transition: none; transform: none !important; } }
+
+/* Deck box: the deck's cover card, full-bleed, with two of its cards stacked behind.
+   Opening fans the back cards out to either side; nothing ever sits on top of the cover art. */
+.deck-box { --db-w: 38px; --db-h: 53px; width: 50px; height: 54px; perspective: none; }
+.deck-box-control { --db-w: 44px; --db-h: 61px; width: 64px; height: 64px; }
+.deck-box-lid { display: none; }
+.deck-box :is(.deck-box-case, .deck-box-cards) {
+  position: absolute; inset: auto; top: 50%; left: 50%; width: var(--db-w); height: var(--db-h);
+  margin: calc(var(--db-h) / -2) 0 0 calc(var(--db-w) / -2);
+}
+.deck-box .deck-box-case {
+  border: 0; border-radius: 5px; overflow: hidden; z-index: 3;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--deck-box-color) 86%, white), var(--deck-box-color) 55%, color-mix(in srgb, var(--deck-box-color) 78%, black));
+  box-shadow: 0 0 0 1px #ffffff30, 0 8px 16px -6px #000c, 0 1px 2px #0007;
+  transition: transform .45s var(--glide-ease);
+}
+.deck-box .deck-box-case::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(155deg, #ffffff30, transparent 38%); box-shadow: inset 0 0 0 1px #ffffff22;
+}
+.deck-box .deck-box-case > img {
+  inset: 0; width: 100%; height: 100%; border-radius: 0; opacity: 1; box-shadow: none; object-position: 50% 22%;
+}
+.deck-box .deck-box-mark { font-size: 18px; }
+.deck-box .deck-box-cards { z-index: 1; }
+.deck-box .deck-box-cards > img {
+  border: 0; border-radius: 5px; transform-origin: 50% 90%;
+  box-shadow: 0 0 0 1px #ffffff26, 0 6px 12px -5px #000b;
+  transition: transform .45s var(--glide-ease);
+}
+/* The first fan card is the cover itself; the next two rest just behind it. */
+.deck-box .deck-box-cards > img:nth-child(1) { visibility: hidden; }
+.deck-box .deck-box-cards > img:nth-child(2) { transform: translateX(-3px) rotate(-5deg); }
+.deck-box .deck-box-cards > img:nth-child(3) { transform: translateX(3px) rotate(5deg); }
+.deck-box.is-open .deck-box-cards > img:nth-child(1),
+.deck-tile:is(:hover, :focus-visible) .deck-box-cards > img:nth-child(1) { transform: none; }
+.deck-box.is-open .deck-box-cards > img:nth-child(2),
+.deck-tile:is(:hover, :focus-visible) .deck-box-cards > img:nth-child(2) { transform: translateX(-13px) rotate(-13deg); }
+.deck-box.is-open .deck-box-cards > img:nth-child(3),
+.deck-tile:is(:hover, :focus-visible) .deck-box-cards > img:nth-child(3) { transform: translateX(13px) rotate(13deg); }
+.deck-box.is-open .deck-box-case,
+.deck-tile:is(:hover, :focus-visible) .deck-box-case { transform: translateY(-2px); }
+@media (max-width: 600px) {
+  .deck-box { --db-w: 33px; --db-h: 46px; width: 42px; height: 46px; }
+  .deck-box-control { --db-w: 40px; --db-h: 56px; width: 54px; height: 58px; }
+}
+@media (prefers-reduced-motion: reduce) { .deck-box :is(.deck-box-case, .deck-box-cards > img) { transition: none; } }
+
+/* Home search: the rotating hint fades between names and questions (search-hints.js). */
+input[data-home-search] { text-overflow: ellipsis; }
+input[data-home-search]::placeholder { transition: opacity .26s ease, transform .26s ease; }
+input[data-home-search].hint-out::placeholder { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { input[data-home-search]::placeholder { transition: none; } }
+
+/* Home: "Choose a deck" never breaks across two lines. */
+#content .home-resume .home-resume-choose { white-space: nowrap; }
+#wikiQ { text-overflow: ellipsis; }
+
+/* Deck stacks: a raised card never covers the −/+ of the card below it. Each card's visible
+   strip is tall enough for the bottom card's controls, and the controls sit above the card's
+   own badges. */
+.deck-viewer[data-deck-view="stacks"] .deck-stack-pile { --deck-stack-step: 48px; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-side { z-index: 5; bottom: 5px; right: 5px; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .deck-stack-roles { z-index: 4; }
+@media (max-width: 480px) {
+  .deck-viewer[data-deck-view="stacks"] .deck-stack-pile { --deck-stack-step: 44px; }
+  .deck-viewer[data-deck-view="stacks"] .lot-side .stepper button { min-height: 28px; }
+}
+
+/* Text links read as part of the app: the game color, no browser underline or arrow until hover. */
+:is(#content, #sheetBody) :is(a:not([class]), a.link, a.home-meta-original) {
+  color: var(--gold); text-decoration: none; font-weight: 650;
+}
+@media (hover: hover) {
+  :is(#content, #sheetBody) :is(a:not([class]), a.link, a.home-meta-original):hover { text-decoration: underline; text-underline-offset: 3px; }
+}
+:is(#content, #sheetBody) :is(a:not([class]), a.link, a.home-meta-original):focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 4px; }
+
+/* Search page: one capsule holds the field and its search button, with Ask beside it, built
+   from the same pieces as the Home search. The capsule is the row's ::before, laid over the
+   field and button columns, so the suggestion list still anchors to .search-query. */
+.searchbar.search-query {
+  --sq-h: 52px;
+  grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 0; align-items: center; margin: 14px 0 12px;
+}
+.searchbar.search-query::before {
+  content: ''; grid-area: 1 / 1 / 2 / 3; height: var(--sq-h); border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, var(--line));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, #fff 6%), var(--surface));
+  box-shadow: inset 0 1px 0 #ffffff0f, 0 12px 30px -16px #000d;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.searchbar.search-query:has(> input:focus)::before {
+  border-color: color-mix(in srgb, var(--gold) 80%, transparent);
+  box-shadow: inset 0 1px 0 #ffffff0f, 0 0 0 4px color-mix(in srgb, var(--gold) 16%, transparent), 0 12px 30px -16px #000d;
+}
+.searchbar.search-query > input {
+  grid-area: 1 / 1; height: var(--sq-h); min-height: 0; padding: 0 10px 0 18px; border-radius: 18px 0 0 18px;
+  border: 0 !important; background: transparent !important; box-shadow: none !important; outline: none !important;
+  color: var(--text); font-size: 16px; text-overflow: ellipsis;
+}
+.searchbar.search-query > input::placeholder { color: var(--muted); opacity: .85; }
+.searchbar.search-query > .search-go {
+  grid-area: 1 / 2; position: relative; display: grid; place-items: center; width: 40px; height: 40px; min-height: 0;
+  margin-right: 6px; padding: 0; border: 0; border-radius: 50%; background: var(--gold); color: var(--gold-ink);
+  box-shadow: inset 0 1px 0 #ffffff59, 0 6px 16px -6px color-mix(in srgb, var(--gold) 75%, transparent);
+  transition: transform .15s ease, filter .15s ease;
+}
+.searchbar.search-query > .search-go .search-emblem { width: 26px; height: 26px; --surface: var(--gold); }
+.searchbar.search-query > .search-go:active { transform: scale(.94); }
+.searchbar.search-query > .ask-launch {
+  grid-area: 1 / 3; width: var(--sq-h); height: var(--sq-h); min-height: 0; margin-left: 8px; padding: 0;
+  justify-content: center; gap: 0; border-radius: 50%;
+}
+.searchbar.search-query > .ask-launch .assistant-button-mark { width: 30px; height: 30px; }
+/* Phones show the two actions as symbols; their names stay for screen readers. */
+.searchbar.search-query > :is(.search-go, .ask-launch) > span {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+@media (hover: hover) { .searchbar.search-query > .search-go:hover { filter: brightness(1.08); } }
+@media (min-width: 600px) {
+  .searchbar.search-query > .search-go { display: inline-flex; align-items: center; gap: 6px; width: auto; padding: 0 16px 0 10px; border-radius: 999px; font-size: 14px; font-weight: 750; }
+  .searchbar.search-query > .search-go .search-emblem { width: 22px; height: 22px; }
+  .searchbar.search-query > .ask-launch { width: auto; gap: 8px; margin-left: 10px; padding: 0 20px 0 12px; border-radius: 999px; font-size: 15px; }
+  .searchbar.search-query > :is(.search-go, .ask-launch) > span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; font-size: inherit; }
+}
+:root[data-theme="light"] .searchbar.search-query::before {
+  background: #fff; border-color: color-mix(in srgb, var(--gold) 28%, var(--line)); box-shadow: 0 10px 28px -16px #24364b47;
+}
+
+/* Search shortcuts: small chips in one row under the field, each with its icon. */
+.search-tools { display: flex; gap: 8px; margin: 0 0 14px; padding: 1px 0; overflow-x: auto; scrollbar-width: none; }
+.search-tools::-webkit-scrollbar { display: none; }
+.search-tools > .tool-chip {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px;
+  padding: 0 14px 0 11px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+  background: color-mix(in srgb, var(--surface) 86%, transparent); box-shadow: inset 0 1px 0 #ffffff0a;
+  color: var(--text); font-size: 13px; font-weight: 650; white-space: nowrap;
+}
+.search-tools > .tool-chip > .ico { width: 16px; height: 16px; color: var(--gold); }
+@media (hover: hover) { .search-tools > .tool-chip:hover { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); } }
+@media (max-width: 420px) {
+  .search-tools { gap: 6px; }
+  .search-tools > .tool-chip { flex: 1 1 auto; padding: 0 9px; gap: 5px; }
+  .search-tools > .tool-chip > .ico { width: 15px; height: 15px; }
+}
+:root[data-theme="light"] .search-tools > .tool-chip { background: #fff; box-shadow: 0 1px 2px #24364b14; }
+
+/* Search filters: the disclosure reads as a control, with a count badge and a turning chevron
+   instead of the browser's triangle. */
+details.filters > summary {
+  list-style: none; display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 10px 0 12px;
+  border-radius: 999px; border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+  background: color-mix(in srgb, var(--surface) 86%, transparent); color: var(--text); font-size: 13px; font-weight: 650;
+}
+details.filters > summary::-webkit-details-marker { display: none; }
+details.filters > summary .label-ico .ico { width: 16px; height: 16px; color: var(--gold); }
+details.filters > summary .filters-count {
+  display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+  background: var(--gold); color: var(--gold-ink); font-size: 11.5px; font-weight: 800;
+}
+details.filters > summary .filters-chev { display: grid; place-items: center; color: var(--muted); transition: transform .25s var(--glide-ease); }
+details.filters > summary .filters-chev .ico { width: 14px; height: 14px; }
+details.filters[open] > summary .filters-chev { transform: rotate(180deg); }
+details.filters[open] > summary { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); margin-bottom: 10px; }
+:root[data-theme="light"] details.filters > summary { background: #fff; box-shadow: 0 1px 2px #24364b14; }
+
+/* Carried over from the separate UI audit: one selected tab in the phone nav, one font for the
+   three game names, Sets and Wiki as header links, no iOS zoom on fields, light-mode contrast. */
+.bottom-nav .nav-search > span { width: 52px; height: 32px; border: 0; border-radius: 16px; background: none; color: inherit; }
+.bottom-nav .nav-search .search-emblem { width: 26px; height: 26px; }
+.bottom-nav .nav-search > span::before { display: none; }
+.bottom-nav .nav-search.on > span { background: color-mix(in srgb, var(--gold) 16%, transparent); color: var(--gold); }
+.game-tabs .game-tab.game-tab-mtg { font-family: inherit; letter-spacing: normal; }
+body .topbar #desktopSearch > .header-sets {
+  padding: 6px 10px; border: 0; border-radius: 10px; background: none; box-shadow: none; color: var(--muted); font-size: 12px; font-weight: 600;
+}
+body .topbar #desktopSearch > .header-sets svg { display: none; }
+body .topbar #desktopSearch > .header-sets:is(:hover, .on) { color: var(--text); background: var(--surface-2); }
+@supports (-webkit-touch-callout: none) {
+  :is(#app, #sheet, #settingsDialog, .glass-select-menu) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) { font-size: 16px; }
+}
+:root[data-theme="light"] :is(.tile-chrome, .chip.dark, .icon.light, .hh-credit, .hero-body, .deck-hero, .community-art, .home-meta-card, .home-personal-deck, .home-today) { --warn: #f2c66d; }
+:root[data-theme="light"] body[data-view="home"] .home-intro #homeHero.no-art .hh-shade { display: none; }
+:root[data-theme="light"] #content .home-resume.home-resume-empty { background: var(--surface); border-color: var(--line); box-shadow: 0 8px 25px #23334d0d; }
+:root[data-theme="light"] #content .home-resume.home-resume-empty p:not(.eyebrow) { color: var(--muted); }
+body.glass .chip.dark:not(.on):not(.pick.on) { background-color: #0000008c; border-color: #ffffff26; box-shadow: none; }
