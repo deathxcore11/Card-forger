@@ -20,6 +20,7 @@ import {playMenuMarkup} from './play-menu.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {createPlayerMat} from './play-player-mat.js';
 import {createPlayUpdateGate} from './play-update-gate.js';
+import {constructedPrecon,constructedPreconCandidates} from './play-precon-formats.js';
 import {createPracticeCardPreparation} from './play-card-preparation.js';
 import {createForgeArtworkPreparation} from './play-forge-artwork.js';
 import {createPracticeCatalogReview} from './play-catalog-review.js';
@@ -1526,7 +1527,7 @@ A.playLoadSource=async()=>{
  const current=()=>currentPlaySources()===cache&&playSetup.snapshot().match.format===format;
  const jobStatus={busy:true,message:'Loading deck lists…'};cache.statuses[key]=jobStatus;refreshPlayMenu();
  try{
-  if(source==='precons'){await A.finderPrecons();if(current())cache.statuses[key].message=S.ui.finder.msg||'Precon catalog loaded.';}
+  if(source==='precons'){await A.finderPrecons(format);if(current())cache.statuses[key].message=S.ui.finder.msg||'Precon catalog loaded.';}
   else if(source==='meta'){const data=await loadMetaData('mtg:'+(format==='Commander'?'EDH':format),true);if(current())cache.statuses[key].message=[data.source,data.fetchedAt||''].filter(Boolean).join(' · ');}
   else{
    if(!state.profile.signedIn)throw Error('Sign in to load decks shared with you.');
@@ -3284,7 +3285,9 @@ A.finderMore = () => {
   render();
 };
 // Download the next 10 Commander precons from MTGJSON and keep just their card lists.
-A.finderPrecons = async () => {
+// Play's Standard/Modern tabs check the next 10 published 60-card products instead.
+A.finderPrecons = async (format) => {
+  if (format === "Standard" || format === "Modern") return loadConstructedPrecons(format);
   const commit=scopedCommit();
   const F = S.ui.finder,
     P = S.ui.precon;
@@ -3324,6 +3327,39 @@ A.finderPrecons = async () => {
     render();
   }
 };
+async function loadConstructedPrecons(format) {
+  const F = S.ui.finder, P = S.ui.precon;
+  if (F.busy) return;
+  F.busy = true;
+  F.msg = "Loading the precon list…";
+  try {
+    if (!P.index.length) {
+      const j = await fetchJSON("https://mtgjson.com/api/v5/DeckList.json");
+      P.index = (j.data || []).filter((d) => typeof d.fileName === "string" && typeof d.name === "string");
+    }
+    P.checked ||= new Set();
+    for (const p of F.precons) P.checked.add(p.file);
+    const next = constructedPreconCandidates(P.index, format, { checked: P.checked });
+    if (!next.length) { F.msg = `Every published ${format} precon has been checked.`; return; }
+    let found = 0, i = 0;
+    for (const d of next) {
+      F.msg = `Checking ${++i}/${next.length}: ${d.name}…`;
+      refreshPlayMenu();
+      try {
+        const deck = constructedPrecon(await fetchJSON("https://mtgjson.com/api/v5/decks/" + d.fileName.replace(/\.json$/, "") + ".json"), d);
+        P.checked.add(d.fileName);
+        if (deck) { F.precons.push(deck); if (deck.formats.includes(format)) found++; }
+      } catch {}
+    }
+    await resolveNames(F.precons.filter((p) => p.formats).flatMap((p) => [...p.cards, ...(p.side || [])].map((c) => c.name)));
+    await writeRecord(PRECON_RECORD, { at: new Date().toISOString(), decks: F.precons }).catch(() => {});
+    F.msg = `${found} of ${next.length} checked products are legal in ${format}`;
+  } catch (e) {
+    F.msg = "Couldn’t reach MTGJSON (" + e.message + ")";
+  } finally {
+    F.busy = false;
+  }
+}
 const preconCredit = (p) => sourceCredit({ url: "https://mtgjson.com/api/v5/decks/" + p.file, author: "Wizards of the Coast", kind: "MTGJSON precon", description: "Preconstructed deck list from MTGJSON." });
 async function makeMyVersion(base, source, label) {
   const d = withSnapshot({ id: uid(), name: base.name + " · my version", format: base.format || "Commander", commander: base.commander || "", strategy: base.strategy || "Auto", budget: base.budget ?? S.state.settings.budget ?? 25, locked: false, about: base.about || "", source, cards: base.cards.map((c) => ({ name: c.name, qty: c.qty })), versions: [] }, label);

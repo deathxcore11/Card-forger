@@ -22,9 +22,9 @@ test('guest has a direct sign-in action and no false match-readiness promise',()
  assert.match(html,/>Sign in to play</);assert.match(html,/disabled[^>]*>Play CPU</);assert.match(html,/Keep this page open/);
 });
 
-test('Standard precons offer an explicit Commander switch and normal deck sources',()=>{
+test('Standard precons explain the legal 60-card product check and keep normal deck sources',()=>{
  const state=setup();state.match.format='Standard';state.browse.source='precons';const before=structuredClone(state),html=playMenuMarkup(state);
- assert.match(html,/data-act="playConfigure" data-play-option="format" data-play-value="Commander">Browse Commander precons/);assert.match(html,/Your decks, Community, Meta or Random/);assert.doesNotMatch(html,/playStarter|<details class="play-starter"/);assert.deepEqual(state,before);
+ assert.match(html,/published 60-card products/);assert.match(html,/every card is legal in Standard/);assert.match(html,/data-act="playLoadSource"/);assert.doesNotMatch(html,/playStarter|<details class="play-starter"/);assert.deepEqual(state,before);
 });
 test('support errors appear by the selected artwork before launch with expandable cards',()=>{
  const state=setup();state.match.format='Standard';state.selected={name:'Unsupported list',format:'Standard',cards:[{name:'Seasoned Cryomancer',qty:4},{name:'Forest',qty:56}],side:[]};state.opponent={name:'CPU',format:'Standard',cards:[{name:'Forest',qty:60}],side:[]};

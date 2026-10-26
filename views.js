@@ -953,7 +953,7 @@ export function finderCandidates() {
   for (const d of S.state.references || [])
     out.push({ kind: "saved", id: d.id, deck: d, source: d.source?.kind === "Shared deck" ? `Shared by ${d.source.author || "a player"}` : d.source?.kind === "MTGJSON precon" ? "Precon" : d.source?.author ? `by ${d.source.author}` : "Saved deck" });
   const savedNames = new Set((S.state.references || []).map((d) => key(d.name)));
-  for (const p of S.ui.finder.precons) if (!savedNames.has(key(p.name))) out.push({ kind: "precon", id: p.file, deck: p, source: `Precon · ${p.released?.slice(0, 4) || ""}` });
+  for (const p of S.ui.finder.precons) if ((p.format || "Commander") === "Commander" && !savedNames.has(key(p.name))) out.push({ kind: "precon", id: p.file, deck: p, source: `Precon · ${p.released?.slice(0, 4) || ""}` });
   for (const x of out) {
     x.score = buildability(x.deck, avail, (n) => priceOf(n), basic);
     x.identity = meta(x.deck.commander)?.color_identity || [];
