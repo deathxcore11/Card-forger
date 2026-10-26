@@ -12,8 +12,25 @@ containers, one active match per account and a rolling eight-hour global runtime
 reservation budget bound the first hosting release. Failed/closed reservations
 are not refunded. This is a resource limit, not a card or deck restriction.
 
+`.github/workflows/forge-host-deploy.yml` runs the private deployment on the same
+Ubuntu 24.04 GitHub runner used by the passing Docker/browser proof. Publish the
+prepared changes on `codex/forge-account-host-20261026` with `[skip ci]` in the
+commit message. Once its secret is configured, an intentional follow-up commit
+without the skip marker starts one job from the reviewed sources.
+No schedule, automatic retry, or pull-request deployment is enabled. A rerun
+attempt is refused. The account ID is fixed in the workflow; the repository
+Actions secret `CLOUDFLARE_API_TOKEN` is required. It must be scoped to the intended
+Cloudflare account and allow private Worker deployment and Containers image
+publication. Never commit the token or send it through chat.
+
+The workflow stops before dependency installation or native compilation if the
+secret is absent, the account is wrong, or authenticated Worker/Containers reads
+fail. Those reads do not prove write permission: the actual push/deploy is still
+checked. GitHub's ephemeral runner runs one bounded build with a 32-minute job
+limit and the existing 25-minute driver deadline.
+
 `npm ci --ignore-scripts && node scripts/deploy-private-host.mjs` is the private
-Cloudflare build entrypoint. It verifies the frozen proof sources, reruns source
+deployment entrypoint. It verifies the frozen proof sources, reruns source
 and host checks, builds one image and probes that exact image. Publication binds
 the registry digest to that probed Docker config and validates the native
 compiler, class and rules receipts. Cleanup is required before deployment.
@@ -27,6 +44,12 @@ Easy/Hard gameplay and physical-device acceptance are not established by it.
 
 The source `wrangler.jsonc` deliberately contains an invalid image placeholder.
 The build generates a temporary exact-digest configuration only after its probe.
+The existing Cloudflare Builds trigger is diagnostic-only and must not be used
+to rebuild this image. The preparation commit uses `[skip ci]` so neither build
+system starts. Before activating GitHub deployment, retire only the private host's
+automatic diagnostic through a supported Builds control; preserve website and
+other branch build settings. An attempted branch exclusion returned HTTP 400 and
+did not change the trigger. The account-host website preview remains disabled.
 Do not deploy the source template or merge the proof branch's root configuration
 over the website configuration. The generated host can be disabled through its
 admission flag; existing leases still need normal cleanup. Record the actual

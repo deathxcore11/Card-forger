@@ -1,4 +1,4 @@
-// Runs only in the connected Cloudflare build. The website is not changed here.
+// Run on the reviewed Docker-capable GitHub runner. The website is not changed here.
 import assert from 'node:assert/strict';
 import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';

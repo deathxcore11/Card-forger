@@ -1,0 +1,24 @@
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+
+
+
+ ⛅️ wrangler 4.152.0
+────────────────────
+Total Upload: 80.03 KiB / gzip: 18.68 KiB
+Your Worker has access to the following bindings:
+Binding                                                      Resource                  
+env.FORGE_ADMISSION (ForgeAdmission)                         Durable Object            
+env.FORGE_MATCHES (ForgeMatchContainer)                      Durable Object            
+env.FORGE_TRIAL_ENABLED ("false")                            Environment Variable      
+env.FORGE_TRIAL_OWNER_IDS ("")                               Environment Variable      
+env.FORGE_TRIAL_EXPIRES_AT ("")                              Environment Variable      
+env.FORGE_TRIAL_MATCH_MS ("900000")                          Environment Variable      
+env.FORGE_TRIAL_RUNTIME_BUDGET_MS ("3600000")                Environment Variable      
+env.FORGE_TRIAL_MAX_RESERVATIONS ("4")                       Environment Variable      
+
+The following containers are available:
+- cardstashy-forge-host-forgematchcontainer (registry.cloudflare.com/REQUIRED_ACCOUNT/cardstashy-forge@sha256:0000000000000000000000000000000000000000000000000000000000000000)
+
+--dry-run: exiting now.
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md

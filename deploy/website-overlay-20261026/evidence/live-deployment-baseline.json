@@ -1,0 +1,111 @@
+{
+  "capturedAt": "2026-10-26",
+  "accountId": "463cf46936691d9c289153374d04c99e",
+  "zoneId": "02b5e6db9df5843b43b4cd2feeab65da",
+  "worker": "cardforge2",
+  "productionGitRevision": "7a91d7757ff1ac7e1d83a904a294b48a44ed1f32",
+  "activeDeployment": {
+    "id": "602581c1-3073-4596-8e97-9685913bfc52",
+    "source": "wrangler",
+    "strategy": "percentage",
+    "annotations": {
+      "workers/triggered_by": "deployment"
+    },
+    "versions": [
+      {
+        "version_id": "8c1bc546-59c0-4abb-afaa-f57cc74d1729",
+        "percentage": 100
+      }
+    ],
+    "created_on": "2026-10-25T23:29:52.583047Z"
+  },
+  "settings": {
+    "placement": {},
+    "compatibility_date": "2026-10-01",
+    "compatibility_flags": [],
+    "usage_model": "standard",
+    "tags": [],
+    "tail_consumers": [],
+    "logpush": false,
+    "annotations": {
+      "workers/triggered_by": "version_upload"
+    },
+    "bindings": [
+      {
+        "name": "AI_LIMITS_ENABLED",
+        "text": "false",
+        "type": "plain_text"
+      },
+      {
+        "class_name": "AiReviewLimits",
+        "name": "AI_REVIEW_LIMITS",
+        "namespace_id": "8584609c359c454bab4cf90e99347cb4",
+        "type": "durable_object_namespace"
+      },
+      {
+        "name": "ASSETS",
+        "type": "assets"
+      },
+      {
+        "name": "CONDITION_DAILY_LIMIT",
+        "text": "60",
+        "type": "plain_text"
+      },
+      {
+        "name": "CONDITION_MINUTE_LIMIT",
+        "text": "8",
+        "type": "plain_text"
+      },
+      {
+        "name": "CONDITION_MONTHLY_LIMIT",
+        "text": "900",
+        "type": "plain_text"
+      },
+      {
+        "name": "CONDITION_OWNER_ID",
+        "text": "94ea20a0-f250-4815-8391-de48dd14df98",
+        "type": "plain_text"
+      },
+      {
+        "class_name": "ConditionPriceCache",
+        "name": "CONDITION_PRICES",
+        "namespace_id": "93e7df12691b4d778c798c38a8290323",
+        "type": "durable_object_namespace"
+      },
+      {
+        "class_name": "DailyCards",
+        "name": "DAILY_CARDS",
+        "namespace_id": "3684945c781a4dcba8b2f3b12a1d0a32",
+        "type": "durable_object_namespace"
+      },
+      {
+        "name": "JUSTTCG_API_KEY",
+        "type": "secret_text"
+      },
+      {
+        "name": "OPENAI_API_KEY",
+        "type": "secret_text"
+      },
+      {
+        "name": "TCGPLAYER_WEB_TEST",
+        "text": "true",
+        "type": "plain_text"
+      }
+    ]
+  },
+  "routes": [],
+  "domains": [
+    {
+      "id": "1e8f7ba1bbb6c4c46f7168f8e44269efe9849e49",
+      "zone_id": "02b5e6db9df5843b43b4cd2feeab65da",
+      "zone_name": "cardstashy.com",
+      "hostname": "cardstashy.com",
+      "service": "cardforge2",
+      "environment": "production",
+      "cert_id": "3d5db7fe-c959-431b-9bad-2ff5106f06ab",
+      "previews_enabled": false,
+      "enabled": true
+    }
+  ],
+  "forgeContainerApplications": []
+}

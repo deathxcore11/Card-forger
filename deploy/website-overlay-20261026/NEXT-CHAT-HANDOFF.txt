@@ -1,0 +1,104 @@
+CARDSTASHY FORGE RECOVERY — PAUSED HANDOFF
+26 October 2026. Last working session stopped at the user's request.
+
+START HERE
+User requested a handoff, not another build. Do not interpret opening this file as permission to resume automatically. When Randall asks the next chat to continue, take over from this checkpoint. He has already authorized the required engineering work and spending; do not repeat old one-run approval questions. Actual combined billing remains unverified. Check for another active coder before modifying shared branches or deployment configuration.
+
+THE GOAL
+Use the existing CardStashy website and signed-in accounts. Pass unchanged saved, imported, precon, community and discovered decks to Forge in Standard, Modern and Commander. Forge owns rules and CPU decisions. No starter-only funnel, product deck allowlist, substituted decks, ignored abilities, or universal Oracle compiler. Provide exact identity/legality/runtime diagnostics. Fixed decks are regression fixtures, not the product boundary. Finish the website release before APK work. Full-account play, results/history, real device acceptance and deployment/rollback remain necessary.
+
+REPOSITORY AND LAST VERIFIED PRODUCTION
+Repository: https://github.com/deathxcore11/Card-forger
+Production branch: claude/edit-publish-github-bpm8zu
+Production commit: 7a91d7757ff1ac7e1d83a904a294b48a44ed1f32
+Production tree: 5996d6099c7b0bb507ede1bc967803130f1209fb
+Worker: cardforge2
+Worker tag: 9259ee72284c49f2b695d0dd2780b046
+Active version: 8c1bc546-59c0-4abb-afaa-f57cc74d1729 (100%)
+Deployment: 602581c1-3073-4596-8e97-9685913bfc52
+These are last verified values, not a fresh check at handoff time. No production deploy occurred in this recovery session. The current unpublished website candidate is NOT release ready.
+
+SUCCESSFUL BROWSER/PAYMENT PROOF — KEEP THIS EVIDENCE
+Branch: codex/forge-native-browser-proof-20261026
+Commit: ea5b2272348e9deb219f4f0360f202e0d6fdf49f
+Tree: 1cd4768d38fd0f0c5636c4449e41b5bbe6f1163e
+Run: https://github.com/deathxcore11/Card-forger/actions/runs/40360492632
+Job: 121704288729. Artifact: 12667654790.
+Artifact ZIP SHA-256: c7a43001ec696d92822fe8c02567ada00585230e40ef929369c1442c8f90364b
+Harness MANIFEST.json SHA-256: f12781e27a0a0796bdce2ffcbca4dc2872a7feddef110d19d1cd7eb757c51c39
+Verified evidence ZIP and its 14 member hashes. Desktop: 43 actions, natural match outcome, new rematch. Touch-emulated 750px: 13 actions, hand movement and cast/payment followed by concession. Each payment check: one cast, one payment, two lands tapped, spell on battlefield, controls resumed. Three game containers exited cleanly; native probe, startup alarms and cleanup passed. Medium Commander matchup: Calling All Angels vs Keen Engineering. This does NOT prove full website/account integration, Easy/Hard gameplay, natural touch finish, physical foldable, or every deck/card.
+Receipt repair is passive test observation only: bounded authenticated loopback fallback returns the exact already-delivered 202 receipt if Playwright cannot read its body. It does not repeat game actions or turn rejection into acceptance. Preserve those checks.
+Pinned upstream Forge: e5a0f8156da70ffc7866f923bed371c0111707cd
+Native source SHA-256: 6e2a5004ee73e3c67d11e89ad5efb0d9112ece6ff2c52fa010235b048b219c43
+Native manifest: b34eab6bd70a79452f6c4fb07ca4cf0273bcab21ed46c6f37669c58e0aff9f66
+Passing image identity and exact runtime receipts are in the verified artifact archive; use those values directly. No registry image was published by that proof.
+Rules data expires November 2, 2026; do not silently bypass freshness validation.
+
+PUBLISHED PRIVATE HOST SOURCE
+Branch: codex/forge-account-host-20261026
+Head: add03f7df680ccd85da8932978f3968abfb39c40
+Tree: 1839572813133cc46b6832fd68af5d8049f341f9
+Code: deploy/forge-host/
+Earlier commits: 1a3c3e12889d04844fef3ae5d2a87f41d505d936, 49a43a0bd40833f24871a16bcdbb4cac99c25f3e, 9e3b6ab6b996666e107900fbb1c113988a6d9253.
+This branch descends from the proof, so its ROOT wrangler.jsonc intentionally points at __FORGE_BROWSER_PROOF_DO_NOT_DEPLOY__/intentionally-missing-worker.js. NEVER copy/merge that root configuration over production. The actual host source is deploy/forge-host; the future website must be based on the production commit above.
+Private host tests: 189 passed. Frozen proof host suite: 179 passed. Harness: 160 Node and 46 Python checks passed after receipt repair. Authenticated SQLite alarm tests passed. Wrangler dry-run compiled private host; that is not a deployment.
+Account admission explicitly accepts verified nonanonymous signed-in owners, with no trial-owner allowlist. It keeps one active match per owner and two globally, bounded match duration and a rolling global reservation budget. Defaults: 1-hour match, 8 runtime-hours and 16 reservations per rolling 24 hours; cleanup time is reserved and spent reservations are not refunded. These are resource bounds, not deck restrictions.
+
+CLOUDFLARE — USE CONNECTOR; NO DASHBOARD LOGIN NEEDED
+Account: 463cf46936691d9c289153374d04c99e
+Zone: 02b5e6db9df5843b43b4cd2feeab65da (cardstashy.com)
+Cloudflare and GitHub connectors were authenticated and functional. Repeated Google sign-in in the remote dashboard is unnecessary for these API operations. Do not request passwords or expose tokens.
+Private Worker: cardstashy-forge-host
+Private tag: 24ddc39ea440486092dcd706ab8496a9
+It currently contains ONLY a bootstrap 503 response (forge_host_preparing). workers.dev and previews disabled, no public routes, no container application deployed, not bound into live website.
+Build trigger: ab7005c8-757e-4a69-9e11-8acffd7e20f4
+Source root: /deploy/forge-host; source branch: codex/forge-account-host-20261026
+Build command: npm ci --ignore-scripts --no-audit --no-fund
+CURRENT TEMPORARY DEPLOY COMMAND: node scripts/check-builder.mjs
+INTENDED FULL COMMAND: node scripts/deploy-private-host.mjs
+Do not call success of the temporary diagnostic a deployment. Restore the full command only after selecting and validating a working image-build route.
+Repo connection: 7554a88b-3bdb-46f5-ba0b-a56d16242938
+Server-stored Builds token UUID: 34d341fb-eeb0-476d-9f9c-464caaf0026f (identifier only; its secret was never retrieved).
+Automatic cardforge2 WEBSITE previews were disabled only for these three proof branches: native-browser-proof, receipt-diagnostic and account-host. Production automation and unrelated branches were untouched. A screenshot showing the intentionally missing entry point is that guard functioning, not evidence that live production changed.
+
+EXACT CURRENT HOST BUILD BLOCKER
+Latest capability-only run b0ea1201-30df-4e1b-80af-a3236c1cb05f, on add03f7, stopped failed at 17:30:37 UTC / 1:30:37 p.m. Eastern.
+Docker error: failed to connect to the docker API at unix:///opt/buildhome/.docker/xrd/docker.sock; check if the path is correct and if the daemon is running: dial unix /opt/buildhome/.docker/xrd/docker.sock: connect: no such file or directory
+DOCKER_HOST is configured. WRANGLER_DOCKER_HOST is not. No image build/game started in this diagnostic.
+Earlier host build history:
+  2d293ba5-c8ca-49b2-a807-dbfae24a9ce1 (1a3): all source checks passed, image stage failed almost immediately; original wrapper omitted useful diagnostics.
+  824ce102-cd29-4c1b-b3a9-7c62eaefdfe3 (49a): Docker info DID work (server 29.9.2). Native build ran about 252 seconds and then failed. Exact compilation error was not captured. Do not assume this failure had the same cause as the missing socket.
+  7d323bbb-8768-4dab-936a-fc793b0bd2f1 (9e3): Docker preflight failed; no image attempt.
+  b0ea1201... (add03): capability-only run captured missing socket above.
+All four had stopped at the last check. No new build should be triggered just to repeat this diagnostic.
+Next: determine a supported image-building route. GitHub Actions already proved it can build/run this native image. Prefer reusing that Docker-capable route with a secure registry handoff, or establish why Cloudflare's supported Docker route is not initialized for this build. Investigate Wrangler/Workers Builds documentation or source before changing paths. Do not invent credentials, remove source/probe/cleanup gates, or deploy an unverified tag. The previous 252-second compile failure remains unexplained and may recur even after the socket is fixed.
+The host driver checks inventory and frozen manifest, runs tests/procfs preflight, builds/probes, publishes a digest-pinned registry image, binds actual runtime/class receipts, confirms cleanup, compiles, then deploys only the private host. report-build-failure.mjs now emits bounded redacted PUBLIC build output; never print private runtime/probe state or credential files. SOURCE-SHA256.json must be updated after host source edits.
+
+UNPUBLISHED WEBSITE WORK — INCLUDED IN THIS ZIP
+ui-overlay/ contains 25 changed/new files relative to production 7a91d775. overlay-manifest.json records each baseline Git blob SHA and new SHA-256. There are no deletions. apply-overlay.py checks every base file and every overlay hash BEFORE writing anything. It does not commit, push or deploy.
+To restore: check out exact production 7a91d775, run python3 apply-overlay.py /absolute/path/to/checkout, then copy ONLY deploy/forge-host/ from published add03f7 into that checkout. Do not merge the host branch root. If production advanced, manually reconcile against the recorded baselines instead of force-applying.
+This WIP wires app.js to createForgePlayerMat with existing account/token readers and exact deck setup, routes /api/play/matches through a private FORGE_HOST service binding, includes native runtime assets in .assetsignore and the v325 service worker, exposes normal deck sources and Modern, and keeps native CPU difficulty from secretly choosing a stronger/weaker opponent list. It enables the Forge feature flag locally. Do NOT deploy while the host is the bootstrap 503.
+Latest focused UI run: node --test test-play*.mjs, 53 passed, 0 failed. Included log is evidence of this scope only. Some source-extraction tests explicitly set the Forge feature flag FALSE to preserve legacy-path checks; native full-app branch tests still need to be added. Updated stale starter-funnel assertions reflect intentional removal of that funnel.
+
+WHAT REMAINS UNFINISHED
+1. Build and publish a probed native image through a supported route, deploy the real private host, and verify its account/service connection.
+2. Add meaningful native app-launch tests: pass exact snapshots in all three formats; no legacy allowlist/pregame; token/account change and cancellation; native Quick Play strength unaffected by difficulty.
+3. Fix/verify artwork preparation for real decks. Current native mat captures cache-only metadata; fixtures had preloaded art, real imported decks may not. Any preparation must happen before allocation, cover both whole decks, respect account changes, preserve selected printings, and not gate legality on art availability or query individual hidden hand cards.
+4. Persistent account-backed results and deck-version history are NOT implemented. Native finish UI explicitly says history/statistics are not saved. Existing phase history is localStorage only. Do not claim it is durable account history. Preserve authoritative outcome/viewer binding; never invent a result on disconnect.
+5. Full website browser acceptance, real-account saved/imported/found deck journeys, chosen opponent and Quick Play, Easy/Hard real gameplay, natural touch match, physical unfolded Chrome and recovery remain untested.
+6. Before live changes: prepare a concrete deploy and rollback, verify current production/version, and complete the release gates. The user has authorized the goal; ask only for genuinely missing user-only access/data. A green fixture test is not full-account live acceptance.
+
+OLD WORKSPACE IF STILL PRESENT
+/workspace/scratch/4899f63b386f/release-work: reconstructed production files + WIP, NOT a complete Git checkout.
+/workspace/scratch/4899f63b386f/proof-work: frozen full ea5b227 proof; do not mutate.
+/workspace/scratch/4899f63b386f/Card-forger: sparse checkout at 5e2a7c02 with older WIP now mostly published on ea5/add03; do not blindly git add or treat it as latest. node_modules and __pycache__ are untracked.
+/workspace/scratch/4899f63b386f/local-evidence: logs and both proof artifact ZIPs; passing ZIP is forge-combined-40360492632-1.zip.
+/workspace/scratch/4899f63b386f/project_sources: four original handoff texts, useful historical requirements but superseded by the current Forge and broad-deck scope.
+No Docker locally; Java 17 locally vs pinned Java 21 in image. Local Playwright browser downloads were blocked; do not repeat that failed route without changed evidence.
+
+TOOLS / COORDINATION
+Use Cloudflare connector API and GitHub connector proactively. Read current relevant skills. No subagents were active; only delegate if the current user or applicable instructions explicitly authorize it. Existing connector operations cover file reads, Git trees/commits/refs, Actions evidence, Cloudflare build config/logs and Worker deployments. GitHub generic fetch is GET-only; do not assume secret-write or workflow-dispatch tools exist. Updating the account-host branch can trigger a Cloudflare build. Keep it paused until work is intentionally resumed.
+GitHub proof attempts visible: 15 plus one cheap diagnostic. Prior conservative reservation tally was $8/$20, not actual charges; the four later Cloudflare builds are separate and billing was not verified. Do not present that tally as a current balance or a new limit over the user's later authorization.
+
+HONEST RESTART STATUS
+Browser/payment fixture passed. Real website is unchanged. Private host code is published; runtime deployment is not complete. Website integration is preserved locally in this overlay. Do not restart from old 4388f05 or redo the already fixed fixture alarm/receipt work. Advance from this evidence and name the exact next blocker.

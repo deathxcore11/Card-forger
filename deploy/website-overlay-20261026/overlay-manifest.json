@@ -1,0 +1,180 @@
+{
+  "baseCommit": "7a91d7757ff1ac7e1d83a904a294b48a44ed1f32",
+  "files": [
+    {
+      "path": ".assetsignore",
+      "baselineGitSha": "24bf0bb6d40afe76a1e4b973992ec51c69380af2",
+      "gitSha": "c053dfc0b581d11e956fe5b29597c90f54356f2a",
+      "sha256": "82b713958f26c6744388fa6f2d2a4c1f4a498c0984ada9eacb3e6685fe9cd147",
+      "bytes": 3986
+    },
+    {
+      "path": "app.js",
+      "baselineGitSha": "a65ca4909577fa8b514afa77774ebf67a154168e",
+      "gitSha": "7a010b1c031faff1b1b240ebeecc895d0c42ff34",
+      "sha256": "00a45f3a9eee74f7ba2e35528c13172dfb2e14d61cb308df98b4f994ee621fbe",
+      "bytes": 428070
+    },
+    {
+      "path": "desktop-play.js",
+      "baselineGitSha": "190f54da8ee74d100afccbd7088e5ef9d08b999d",
+      "gitSha": "aba78445db9470a0e9117c4a36df85a95dcfe114",
+      "sha256": "489cc83e6a1294c6f0b6e6e40c1af468fef5da3b23291a05a2b92cbc064337c5",
+      "bytes": 5534
+    },
+    {
+      "path": "experiments/forge-proof/forge-session.mjs",
+      "baselineGitSha": null,
+      "gitSha": "8e7147d82c507f1b7a918694ab7999f178a48321",
+      "sha256": "2185556e5c02c1b592db278549b3f944113716f54f9d85b56185c69699587654",
+      "bytes": 17806
+    },
+    {
+      "path": "experiments/forge-proof/forge-table.mjs",
+      "baselineGitSha": null,
+      "gitSha": "6d0b1aa2e5b05a2cb17b003357e0dcdfcf9ac7cf",
+      "sha256": "f17afee4f2d947172db849aa498776b176d4d06a69fbb762d7c4d7a3cb400423",
+      "bytes": 8809
+    },
+    {
+      "path": "experiments/forge-proof/native-panel.mjs",
+      "baselineGitSha": null,
+      "gitSha": "edd22e542a03ee24fcee4971692539fb358adcd7",
+      "sha256": "cbfe0d1f3ba290b7f98e4598a95d5f4eceaed8fbe8b8382aae5520a7fd266e65",
+      "bytes": 13048
+    },
+    {
+      "path": "experiments/phase-engine/match-table.css",
+      "baselineGitSha": "7508f0089bad6784b03e90f1d5faf21588ac4a9e",
+      "gitSha": "d69ea479f53bffaa1b7a89f0adc9d47a84cde51a",
+      "sha256": "4ad62dbc2de39c1103bf11f4fb26f19dbc89123daa04db3b386355fe9b6775b9",
+      "bytes": 40266
+    },
+    {
+      "path": "experiments/phase-engine/match-table.mjs",
+      "baselineGitSha": "26ddd7d85010c14404a4b650619340f8979b220c",
+      "gitSha": "1010682bd21021eabb91265ce1926136779fc752",
+      "sha256": "95e6f12c5f7454ea596d2b458e67dbbd671619783dd23561626946ea70c55524",
+      "bytes": 64554
+    },
+    {
+      "path": "play-cpu-options.js",
+      "baselineGitSha": "b175b4a8f3d0eddd635adcf26ac3f76276c10534",
+      "gitSha": "273228e72389edc8210b66195f0dd4a878dcdcfb",
+      "sha256": "1b3097a604fb2d18946e655451f6e367f4b0f6229bb817767ee181cc8cfe31df",
+      "bytes": 619
+    },
+    {
+      "path": "play-deck-sources.js",
+      "baselineGitSha": "bf35201880f7efdb1544b9298c87c39d25518cf4",
+      "gitSha": "8bbefa70ea3da7de97f6aab55c3f95f87c02eb86",
+      "sha256": "46eed3fdd29d0442797b59d9ec82c1c21ad275b7b0d2d0e2f44582c56f683ab1",
+      "bytes": 6075
+    },
+    {
+      "path": "play-forge-cpu-policy.js",
+      "baselineGitSha": null,
+      "gitSha": "041964b9e759f190faaf5ee67a2edcfdc075f296",
+      "sha256": "092dd35567f87091a873ab4f467abfc252168daa4f94f70ef991557a6def7061",
+      "bytes": 871
+    },
+    {
+      "path": "play-forge-feature.js",
+      "baselineGitSha": null,
+      "gitSha": "2c0fcffb80fbb44670b81f9f9d3b84d5ea207a57",
+      "sha256": "09e9c2b2d8ff81249d4a66be354761254fdf04f551b7de992292ce115c522365",
+      "bytes": 120
+    },
+    {
+      "path": "play-forge-host-client.js",
+      "baselineGitSha": null,
+      "gitSha": "662e3b0995245547e421173e19e57e3dd1869a4d",
+      "sha256": "4afbb26fb1e1e83998621a544d4ff1e487dcc059755b51a45c65a3c8b594a062",
+      "bytes": 12180
+    },
+    {
+      "path": "play-forge-player-mat.js",
+      "baselineGitSha": null,
+      "gitSha": "17ad0ff9dd624bdcfcd2a8fd38e147e2675453cc",
+      "sha256": "39c64871de0733c6641622729e5f8b0520580bb946fe1af75c01adb135f4d33f",
+      "bytes": 12810
+    },
+    {
+      "path": "play-forge-setup-review.js",
+      "baselineGitSha": null,
+      "gitSha": "ffed572bff45b315047ad5cfaecfb0a18378a700",
+      "sha256": "7b2a9700ac732b8dbcdd363054444b08525ec47526c6f898a74902c2481189a2",
+      "bytes": 2208
+    },
+    {
+      "path": "play-forge-table.css",
+      "baselineGitSha": null,
+      "gitSha": "fccce81af75d20e66e81e31af01aa95d53cbfc57",
+      "sha256": "50fb366f635fc45170234f41ecae8cc42fee192cd5a5120c60e59f411dcbc90c",
+      "bytes": 10910
+    },
+    {
+      "path": "play-menu.css",
+      "baselineGitSha": "277286a34808df2aec8ed63f2f9b19e431312026",
+      "gitSha": "2c02a5a0f7e0af5862373363fed00a0891d882ce",
+      "sha256": "9db3fa498ff9e9aaf9c7c99180cebace66e392a566b6627e21b453a4af3b8767",
+      "bytes": 19445
+    },
+    {
+      "path": "play-menu.js",
+      "baselineGitSha": "5716dde646c51299fbb3227e3d0c218c3f1cbac1",
+      "gitSha": "f5d0b24f41050e82648dcdf20e41cc06b284c6d5",
+      "sha256": "cd4266d1a2f6903f74a8fe5d8626f4613c2d86546251095e066dae89d9eea863",
+      "bytes": 19773
+    },
+    {
+      "path": "play-quick-match.js",
+      "baselineGitSha": "a94018f1ef20e7a8b33656abd02cc74f399c1782",
+      "gitSha": "18a860ae5113612554a0fee33411a1f6e3c71adb",
+      "sha256": "d0a39b29eb8a7c9999991548c8b05404ae004b69536ce4b06a599d7851af7e5d",
+      "bytes": 2440
+    },
+    {
+      "path": "play-setup.js",
+      "baselineGitSha": "20a0b206bea9dc083af78645c65a7573db461235",
+      "gitSha": "3040f9fc48d3080849c41bec1a8381e5d6272373",
+      "sha256": "2dedc79ee7a4998ca0fd28ceae9658260d837d4ed17ef1fdd76489f3f3b105c8",
+      "bytes": 18162
+    },
+    {
+      "path": "sw.js",
+      "baselineGitSha": "5cfae4155e429501efb239d3eaac1a54d85f6249",
+      "gitSha": "22d95189f9d18f52e12de9425e257430e7b2a4a2",
+      "sha256": "e15f34e77d9db8e577599d3d34b0e1cf5baf810da7a36ee5fde49ff4a230d765",
+      "bytes": 14323
+    },
+    {
+      "path": "test-play-journey-ui.mjs",
+      "baselineGitSha": "5c57183c86185d4629ae6270c370644a9c6445b4",
+      "gitSha": "5f93cb81aa376068135896d177653e248ea9cb14",
+      "sha256": "b6025a0cade32150b122dc5a40b65271b99fa586631b115a5940d7f27a5de30b",
+      "bytes": 3304
+    },
+    {
+      "path": "test-play-quick-start.mjs",
+      "baselineGitSha": "026365a775d67953bb6d781ea83820e0cccc7c39",
+      "gitSha": "bac5f4ef72f4f5c8832523335e07b0d591686975",
+      "sha256": "5117cbec583948c3ca9d72686c6ea266b93577bae8b46c9ac904f0d90e673265",
+      "bytes": 3272
+    },
+    {
+      "path": "worker.js",
+      "baselineGitSha": "da7d3b54a173a0256340c7bee704be92f0d04e10",
+      "gitSha": "8a9fa44adf2aee656ea2a9299886c2f3c82b0c21",
+      "sha256": "28b312313a339a2ee72e15d82b3b2f66d7ec2ecb4e914366000a9267ca186d31",
+      "bytes": 22996
+    },
+    {
+      "path": "wrangler.jsonc",
+      "baselineGitSha": "dba3fa0e9a8ee9ce913ddfeb0311ea0cfb5d7f2b",
+      "gitSha": "0ccfd7198a95e3f47f30af7be84bc17f2783a7be",
+      "sha256": "8b6935431aa1288e36c6af9364e1767627c1f4dab6f0069135a1a3bb47484799",
+      "bytes": 2404
+    }
+  ]
+}
