@@ -39,7 +39,13 @@ function privacy(s){
 async function sync(s){
   await page.waitForFunction(rev=>document.querySelector('[data-native-panel]')?.dataset.nativeRevision===String(rev),s.revision,{timeout:15000});
 }
-async function next(old){let seen=null,since=0;state=await bounded(async()=>{const s=await get();if(s.revision!==seen){seen=s.revision;since=Date.now();}return s.revision!==old.revision&&!s.busy&&(s.status==='finished'||s.inputType!=='InputLockUI'||s.prompt)&&Date.now()-since>=100?s:null;});privacy(state);await sync(state);return state;}
+// Finished is an authoritative result, not another actionable input. The frozen
+// bridge may retain busy/InputLockUI after its native game outcome is published.
+function readyNativeState(s){
+  if(s.status==='finished')return s.gameOver===true&&(s.draw===true||(Number.isSafeInteger(s.winnerPlayerId)&&s.players.some(p=>p.id===s.winnerPlayerId)&&typeof s.winner==='string'&&s.winner.length>0));
+  return !s.busy&&(s.inputType!=='InputLockUI'||!!s.prompt);
+}
+async function next(old){let seen=null,since=0;state=await bounded(async()=>{const s=await get();if(s.revision!==seen){seen=s.revision;since=Date.now();}return s.revision!==old.revision&&readyNativeState(s)&&Date.now()-since>=100?s:null;});privacy(state);await sync(state);return state;}
 const key=k=>page.locator(`[data-native-panel] [data-native-key="${k}"]`);
 function clickFailureReason(error){
   // Classify known Playwright actionability failures without retaining its raw
