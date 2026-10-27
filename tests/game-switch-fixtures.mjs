@@ -4,6 +4,7 @@ import {RELEASE} from '../release-record.js';
 import assert from 'node:assert/strict';
 import {readdir, mkdir, writeFile, readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
+import {moduleGraph} from '../scripts/module-graph.mjs';
 import {validateWorkspace} from '../confidence.js';
 import {artworkSources} from '../artwork.js';
 import {pkCatalogueSymbolSources, pkRarity} from '../emblems.js';
@@ -227,8 +228,10 @@ export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 39
   const context = await browser.newContext({viewport: {width, height}, deviceScaleFactor: 1, hasTouch: true, reducedMotion, serviceWorkers: 'block', locale: 'en-US', timezoneId: 'UTC'});
   const page = await context.newPage(); page.setDefaultTimeout(8000); page.setDefaultNavigationTimeout(15000);
   const fixtures = makeGameSwitchFixtures(game,{carouselNews}), errors = [], unexpected = [], writes = [], requests = [], gates = [];
-  const staticPaths = new Set((await readdir(ROOT, {withFileTypes: true})).filter(d => d.isFile() && /\.(?:js|css|html|json|svg|png|ico|webmanifest)$/.test(d.name)).map(d => '/' + d.name));
+  const staticPaths = new Set((await readdir(ROOT, {withFileTypes: true})).filter(d => d.isFile() && /\.(?:m?js|css|html|json|svg|png|ico|webmanifest)$/.test(d.name)).map(d => '/' + d.name));
   for (const path of LOCAL_TAB_JPEGS) staticPaths.add(path);
+  // Startup modules outside the root (the Play engine under experiments/) are app files too.
+  for (const path of moduleGraph('app.js', ROOT)) staticPaths.add('/' + path);
   for (const dir of ['rulebooks', 'scanidx']) for (const d of await readdir(resolve(ROOT, dir), {withFileTypes: true})) if (d.isFile()) staticPaths.add('/' + dir + '/' + d.name);
   staticPaths.add('/');
   const images = new Set([...pokemonSymbolFixtureUrls(base),...Object.values(COMMUNITY_ILLUSTRATIONS).map(x=>new URL(x.url,base+'/').href)]);
