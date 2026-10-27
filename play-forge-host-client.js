@@ -114,7 +114,7 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
     const s=data.snapshot;
     // An action whose reply was lost is settled by the server: either the board moved past
     // the revision it was built from, or the server released it. Only then may the next action go.
-    if(unsettled&&code===200&&data.status==='running'&&Number.isSafeInteger(s?.revision)&&(data.commandPending===false||s.revision!==unsettled.revision)){unsettled=null;if(error==='ACTION_OUTCOME_UNKNOWN')error=null;}if(code!==200||data.status!=='running'||s?.schema!==SCHEMA||s.forgeRevision!==FORGE_REVISION||!Number.isSafeInteger(s.revision)||!Number.isSafeInteger(s.viewer)||!Array.isArray(s.players)||s.players.length!==2||s.players.some(p=>!Number.isSafeInteger(p?.id))||new Set(s.players.map(p=>p.id)).size!==2||s.players.filter(p=>p.isViewer).length!==1||s.players.filter(p=>p.isViewer&&p.id===s.viewer).length!==1)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');
+    if(unsettled&&code===200&&data.status==='running'&&Number.isSafeInteger(s?.revision)&&(data.commandPending===false||s.revision!==unsettled.revision)){unsettled=null;if(!blocked)error=null;}if(code!==200||data.status!=='running'||s?.schema!==SCHEMA||s.forgeRevision!==FORGE_REVISION||!Number.isSafeInteger(s.revision)||!Number.isSafeInteger(s.viewer)||!Array.isArray(s.players)||s.players.length!==2||s.players.some(p=>!Number.isSafeInteger(p?.id))||new Set(s.players.map(p=>p.id)).size!==2||s.players.filter(p=>p.isViewer).length!==1||s.players.filter(p=>p.isViewer&&p.id===s.viewer).length!==1)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');
     if(expectedViewer!==null&&s.viewer!==expectedViewer)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');expectedViewer=s.viewer;knownPlayers=s.players.map(p=>p.id);
     if(s.pregame!==undefined&&s.pregame!==null){
      const p=s.pregame;
@@ -137,10 +137,11 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
     if(data.state==='pending_outcome_unknown'){unsettled={revision:action.revision};error='ACTION_OUTCOME_UNKNOWN';throw Object.assign(fail(error),{message:OUTCOME_PENDING});}
     if(data.state!=='accepted')throw fail('HOST_COMMAND_RECEIPT_MISMATCH');return data;
    }catch(e){
-    // 400/409 are recorded refusals and 429 is refused before any dispatch: nothing was applied.
+    // 400/409 are recorded refusals and 429 is refused before any dispatch: nothing was applied,
+    // nor when the sign-in token was unusable and nothing was sent.
     // A lost reply waits for the server to settle it on the next state read; it is never resent.
     if([401,410].includes(e.status)||e.code==='ACCOUNT_CHANGED'||e.code?.includes('MISMATCH')){blocked=true;error=e.code;}
-    else if(![400,409,429].includes(e.status)&&!unsettled){unsettled={revision:action.revision};error=e.code==='HOST_REQUEST_TIMEOUT'?'ACTION_OUTCOME_UNKNOWN':e.code||'ACTION_OUTCOME_UNKNOWN';try{e.message=OUTCOME_PENDING;}catch{}}
+    else if(![400,409,429].includes(e.status)&&e.code!=='AUTHENTICATION_REQUIRED'&&!unsettled){unsettled={revision:action.revision};error=e.code==='HOST_REQUEST_TIMEOUT'?'ACTION_OUTCOME_UNKNOWN':e.code||'ACTION_OUTCOME_UNKNOWN';try{e.message=OUTCOME_PENDING;}catch{}}
     throw e;
    }finally{submitting=false;}
   },

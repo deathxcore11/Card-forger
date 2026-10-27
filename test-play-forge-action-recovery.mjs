@@ -66,3 +66,33 @@ test('an older server without the pending flag still unlocks once the board move
  f.states.push({snapshot:snapshot(5)});await f.client.read();assert.equal(f.client.status().outcomePending,true);
  f.states.push({snapshot:snapshot(6)});await f.client.read();assert.equal(f.client.status().outcomePending,false);
 });
+
+test('the table itself redraws unlocked when a lost action is settled without a new board',async()=>{
+ const {createForgePresentationSession}=await import('./experiments/forge-proof/forge-session.mjs');
+ const f=fixture();await open(f);
+ const board=revision=>({...snapshot(revision),turn:1,phase:'MAIN1',inputType:'InputPassPriority',priorityPlayer:0,activePlayer:0,buttons:{okEnabled:true},players:[{id:0,isViewer:true,zones:{}},{id:1,isViewer:false,zones:{}}]});
+ const session=createForgePresentationSession({allowControlMode:true,transportStatus:()=>f.client.status(),request:async(path,body)=>body?f.client.submit(body):(await f.client.read()).snapshot});
+ const shown=[];session.subscribe(s=>shown.push({busy:s.busy,error:s.transportError}));
+ session.acceptState(board(7));
+ f.actions.push(body=>Response.json({commandId:body.commandId,state:'pending_outcome_unknown'},{status:202}));
+ f.states.push({snapshot:board(7),commandPending:true});
+ await session.nativeButton('ok');
+ assert.equal(shown.at(-1).busy,true,'locked while the server settles it');
+ // The engine never took the action, so the board stays at revision 7 and only the server's release changes.
+ f.states.push({snapshot:board(7),commandPending:false});await session.refresh();
+ assert.deepEqual(shown.at(-1),{busy:false,error:null},'the last drawn table is unlocked, with no stale message');
+});
+
+test('a settled failure leaves no stale diagnostic, and an unusable sign-in token never locks the table',async()=>{
+ const f=fixture();await open(f);
+ f.actions.push(()=>Response.json({error:'body_timeout'},{status:408}));
+ await assert.rejects(f.client.submit({revision:3,op:'ok'}));assert.equal(f.client.status().outcomePending,true);
+ f.states.push({snapshot:snapshot(4),commandPending:false});await f.client.read();
+ assert.deepEqual([f.client.status().blocked,f.client.status().error],[false,null]);
+ const g=fixture();await open(g);let token='fixture.account.token';
+ const client=createForgeHostClient({readAccount:()=>({user:{id:OWNER},accountGeneration:1}),getAccessToken:async()=>token,fetchImpl:async(path,init)=>path==='/api/play/matches'?Response.json({matchId:MATCH,generation:GENERATION,expiresAt:Date.now()+60000,schema:SCHEMA,forgeRevision:FORGE_REVISION,status:'initializing',deckDigests:{human:await exactDigest(JSON.parse(init.body).humanDeck),opponent:await exactDigest(JSON.parse(init.body).opponentDeck)}},{status:202}):assert.fail('nothing is sent with an unusable token')});
+ await client.create({format:'Commander',humanDeck:deck,opponentDeck:deck,difficultyPolicyVersion:'forge-default-v1'});
+ token='';
+ await assert.rejects(client.submit({revision:2,op:'ok'}),e=>e.code==='AUTHENTICATION_REQUIRED');
+ assert.equal(client.status().outcomePending,false);assert.equal(client.status().blocked,false);
+});

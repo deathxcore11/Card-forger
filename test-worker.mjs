@@ -40,6 +40,7 @@ globalThis.fetch = async (url, init = {}) => {
     return new Response(`<a href="/decklist/pioneer-challenge-32-${day}1">x</a>`);
   }
   if (url.startsWith("https://www.mtgo.com/decklist/")) return new Response(`<script>window.MTGO.decklists.data = ${mtgoEvent};\n</script>`);
+  if (url === "https://api.scryfall.com/catalog/card-names") return new Response(JSON.stringify({ data: ["Sol Ring", "Lim-D\u00fbl's Vault", "Island"] }), { headers: { "Content-Type": "application/json" } });
   if (url.startsWith("https://www.mtgtop8.com/")) {
     // Latin-1 pages, as MTGTop8 sends them.
     const latin1 = (text, type = "text/html; charset=ISO-8859-1") => new Response(new Uint8Array([...text].map((c) => c.charCodeAt(0))), { headers: { "Content-Type": type } });
@@ -53,7 +54,7 @@ globalThis.fetch = async (url, init = {}) => {
       return latin1(`<div>64 players - ${dmy}</div>Source: <a target=_blank href=https://topdeck.gg/event/cedh-open>topdeck.gg</a><div style="width:42px;" align=center class=S14>1</div><a href=?e=7&d=70&f=cEDH>Kinnan</a><a class=player href=search?player=P>P</a><div style="width:42px;" align=center class=S14>2</div><a href=?e=7&d=71&f=cEDH>Broken</a><div style="width:42px;" align=center class=S14>5-8</div><a href=?e=7&d=72&f=cEDH>Not fetched</a>`);
     if (url === "https://www.mtgtop8.com/mtgo?d=70") {
       calls.exports++;
-      return latin1("1 Sol Ring\r\n1 Island\r\n97 Forest\r\n\r\nSideboard\r\n1 Kinnan, Bonder Prodigy\r\n", "text/plain;charset=ISO-8859-1");
+      return latin1("1 Lim-Dul's Vault\r\n1 Island\r\n97 Forest\r\n\r\nSideboard\r\n1 Kinnan, Bonder Prodigy\r\n", "text/plain;charset=ISO-8859-1");
     }
     if (url === "https://www.mtgtop8.com/mtgo?d=71") return latin1("1 Sol Ring\r\n", "text/plain;charset=ISO-8859-1");
   }
@@ -83,6 +84,7 @@ assert.equal(d.decks[0].url, "https://www.mtgtop8.com/event?e=7&d=70&f=cEDH");
 assert.deepEqual([d.coverage.events, d.coverage.topSlots, d.coverage.withList, d.coverage.missing], [1, 2, 1, 1], "precon-bracket events are skipped; only the top four are fetched");
 assert.ok(!d.decks[0].main.some((r) => r.name === "Kinnan, Bonder Prodigy"), "the commander isn't counted twice");
 assert.ok(d.decks[0].main.find((r) => r.name === "Forest").land);
+assert.ok(d.decks[0].main.some((r) => r.name === "Lim-D\u00fbl's Vault"), "accents MTGTop8 drops are restored from the real card names");
 await new Promise((res) => setTimeout(res, 10));
 await get("/api/meta/mtg?format=Pioneer", noKey);
 assert.equal(calls.mtgo, 1, "second request is served from cache");

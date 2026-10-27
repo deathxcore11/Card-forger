@@ -115,7 +115,11 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
  const listeners=new Set();
  const effectiveDraft=()=>draft||(native?.prompt?.method==='order'&&native.prompt.ordered===true?{revision:native.revision,promptId:native.prompt.id,indexes:[...list(native.prompt.destinationIndexes)],remember:false}:null);
  const snapshot=()=>({status,selected,pending:null,busy:sending||awaitRevision!==null||!!native?.busy||transportStatus().blocked===true,error:status?.failure?'NATIVE_PROJECTION_UNAVAILABLE':!status&&error?'FORGE_PROJECTION_UNAVAILABLE':null,clock:null,native,nativeDraft:effectiveDraft(),transportError:transportStatus().error||actionError||error});
- const emit=()=>{for(const fn of listeners)fn(snapshot());};
+ // The transport state last shown. A lost action settled without a new board changes only
+ // this, so it is redrawn on its own; otherwise the table would stay looking locked.
+ let shownTransport='';
+ const transportKey=()=>{const t=transportStatus();return (t.blocked===true)+'|'+(t.error||'');};
+ const emit=()=>{shownTransport=transportKey();for(const fn of listeners)fn(snapshot());};
  const clearPrivateState=()=>{native=null;status=null;selected=null;draft=null;awaitRevision=null;};
  const acceptState=next=>{
   if(closed)return false;
@@ -134,7 +138,7 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
 
  const refresh=()=>{
   if(closed)return Promise.resolve();if(refreshing)return refreshing;
-  refreshing=request('/state').then(next=>{if(closed)return;error=null;if(next!==null)acceptState(next);}).catch(e=>{if([401,410].includes(e.status)||e.code==='ACCOUNT_CHANGED'||e.code?.includes('MISMATCH')||e.code==='INVALID_NATIVE_TERMINAL_RECEIPT')clearPrivateState();error=e.message;emit();throw e;}).finally(()=>{refreshing=null;});return refreshing;
+  refreshing=request('/state').then(next=>{if(closed)return;error=null;if(next!==null)acceptState(next);if(transportKey()!==shownTransport){if(shownTransport.startsWith('true|')&&transportStatus().blocked!==true)actionError=null;emit();}}).catch(e=>{if([401,410].includes(e.status)||e.code==='ACCOUNT_CHANGED'||e.code?.includes('MISMATCH')||e.code==='INVALID_NATIVE_TERMINAL_RECEIPT')clearPrivateState();error=e.message;emit();throw e;}).finally(()=>{refreshing=null;});return refreshing;
  };
  async function send(op,payload={},expectedRevision=native?.revision){
   if(closed||!status||snapshot().busy||native.failure||status.failure||status.terminal)throw Error('MATCH_NOT_READY');

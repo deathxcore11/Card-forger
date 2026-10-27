@@ -1,7 +1,7 @@
 // MTGTop8 Commander parsers against excerpts of real pages (format list, event standings,
 // deck export), so a layout change shows up here before it empties the Commander meta.
 import assert from "node:assert/strict";
-import { mtgtop8Events, mtgtop8Pages, pickMtgtop8Events, parseMtgtop8Event, parseMtgtop8Export, normalizeMtgtop8 } from "./mtgmeta.js";
+import { accentRestorer, mtgtop8Events, mtgtop8Pages, pickMtgtop8Events, parseMtgtop8Event, parseMtgtop8Export, normalizeMtgtop8 } from "./mtgmeta.js";
 
 const formatPage = `<div class=w_title align=center>LAST MAJOR EVENTS</div><table border=0 class=Stable width=98% align=center>
 		<tr class=hover_tr>
@@ -56,4 +56,7 @@ assert.deepEqual([data.decks[0].name, data.decks[0].place, data.decks[0].cover, 
 assert.deepEqual([data.coverage.topSlots, data.coverage.withList, data.coverage.missing, data.coverage.players], [2, 1, 1, 93], "a standing without a list is counted, not invented");
 assert.deepEqual(data.archetypes.map((a) => [a.name, a.lists, a.share, a.best]), [["Thrasios, Triton Hero + Tymna the Weaver", 1, 1, "t8:92612:903502"]]);
 assert.equal(data.events[0].source, "https://topdeck.gg/event/steel-city-green-chile-slopper-tournament-series-i");
+const restore = accentRestorer(["Lim-D\u00fbl's Vault", "Sol Ring", "Barad-d\u00fbr"]);
+assert.deepEqual(parseMtgtop8Export("1 Lim-Dul's Vault\r\n1 Barad-dur\r\n97 Swamp\r\nSideboard\r\n1 Sol Ring\r\n", restore).main.map((r) => r.name), ["Lim-D\u00fbl's Vault", "Barad-d\u00fbr", "Swamp"]);
+assert.equal(restore("Island"), "Island", "a name with no accented twin is kept");
 console.log("PASS: MTGTop8 Commander parsers — events, standings, exports, normalized meta.");

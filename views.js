@@ -894,7 +894,7 @@ function tournamentPanel() {
               .slice(0, 8)
               .map((a) => {
                 const art = a.art || scryArt(a.cover);
-                return `<button class="arch ${art ? "has-art" : ""}" data-act="mtgProven" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}>${art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<span class="arch-icons"></span><b class="clamp2">${esc(a.name)}</b><small>${edh ? `${(a.share * 100).toFixed(1)}% of entries · ${a.conversion !== null ? Math.round(a.conversion * 100) + "% top-cut rate" : ""}` : `${a.lists} list${a.lists === 1 ? "" : "s"} · ${Math.round(a.share * 100)}%`}</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
+                return `<button class="arch ${art ? "has-art" : ""}" data-act="mtgProven" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}>${art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<span class="arch-icons"></span><b class="clamp2">${esc(a.name)}</b><small>${edh && Number.isFinite(a.conversion) ? `${(a.share * 100).toFixed(1)}% of entries · ${Math.round(a.conversion * 100)}% top-cut rate` : `${a.lists} list${a.lists === 1 ? "" : "s"} · ${Math.round(a.share * 100)}%`}</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
               })
               .join("")}</div>
       <div class="section-head"><h2>Recent top lists</h2></div><div class="list">${decks

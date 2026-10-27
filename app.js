@@ -5732,7 +5732,8 @@ A.mtgProven = (t) => {
     },
     save: async (rows, labelText) => {
       const commander = rows.find((r) => r.kind === "commander")?.name || "";
-      const deck = withSnapshot({ id: uid(), name: `${d.name} · ${labelText}`.slice(0, 100), format: appFormat, commander, strategy: "Auto", budget: S.state.settings.budget ?? 25, locked: false, cards: rows.map((r) => ({ name: r.name, qty: r.qty })), side: fmt === "EDH" ? [] : (d.side || []).map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: sourceCredit({ kind: labelText === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, website: "TopDeck.gg", url: d.eventUrl || d.url, description: `${d.place} at ${d.event} (${d.players} players).` }) }, labelText === "original" ? "From TopDeck.gg" : "Adapted from a tournament list");
+      const site = data.source.startsWith("MTGTop8") ? "MTGTop8" : data.source.startsWith("Magic Online") ? "Magic Online" : "TopDeck.gg";
+      const deck = withSnapshot({ id: uid(), name: `${d.name} · ${labelText}`.slice(0, 100), format: appFormat, commander, strategy: "Auto", budget: S.state.settings.budget ?? 25, locked: false, cards: rows.map((r) => ({ name: r.name, qty: r.qty })), side: fmt === "EDH" ? [] : (d.side || []).map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: sourceCredit({ kind: labelText === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, website: site, url: d.eventUrl || d.url, description: `${d.place} at ${d.event} (${d.players} players).` }) }, labelText === "original" ? `From ${site}` : "Adapted from a tournament list");
       await commit((s) => {
         s.decks.push(deck);
         s.activeDeck = deck.id;

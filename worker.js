@@ -28,7 +28,7 @@ import {magicSetArtwork,packArtwork} from "./set-art.js";
 const CARD_BACKS={mtg:'https://backs.scryfall.io/normal/0/a/0aeebaf5-8c7d-4636-9e82-8c27447861f7.jpg',ptcg:'https://tcg.pokemon.com/assets/img/global/tcg-card-back-2x.jpg',ygo:'https://images.ygoprodeck.com/images/cards/back_high.jpg'};
 import { watchRoute, historyRoute, recordDailyPrices } from "./pricefeed.js";
 import { TOPDECK_API, TOPDECK_FORMATS, WARM_FORMATS, normalizeTopdeck, topdeckBody } from "./topdeck.js";
-import { MTGO_SLUGS, MTGO_INDEX, mtgoEventSlugs, parseMtgoEvent, normalizeMtgo, MTGTOP8_FORMAT, mtgtop8Events, mtgtop8Pages, pickMtgtop8Events, mtgtop8EventUrl, parseMtgtop8Event, mtgtop8ExportUrl, parseMtgtop8Export, normalizeMtgtop8 } from "./mtgmeta.js";
+import { MTGO_SLUGS, MTGO_INDEX, mtgoEventSlugs, parseMtgoEvent, normalizeMtgo, MTGTOP8_FORMAT, mtgtop8Events, mtgtop8Pages, pickMtgtop8Events, mtgtop8EventUrl, parseMtgtop8Event, mtgtop8ExportUrl, parseMtgtop8Export, normalizeMtgtop8, accentRestorer } from "./mtgmeta.js";
 // Cloudflare Worker: serves the static site, plus a cached image route for
 // Yu-Gi-Oh! card art and Pokémon set/rarity symbols (from pokesymbols.com). Each image
 // is fetched once and kept in Cloudflare's cache for 30 days instead of being hotlinked.
@@ -82,6 +82,17 @@ async function mtgtop8Text(url, { page = true } = {}) {
 }
 // Deck lists never change once published: each is kept for a month and fetched once.
 const deckKey = (id) => new Request(`https://cardforge.cache/mtgtop8/deck/${encodeURIComponent(id)}`);
+// Accented card names (a few hundred), from Scryfall's list of every card name, kept a month.
+const ACCENTED_KEY = new Request("https://cardforge.cache/scryfall/accented-card-names");
+async function accentedCardNames() {
+  const hit = await caches.default.match(ACCENTED_KEY);
+  if (hit) return hit.json();
+  const r = await fetch("https://api.scryfall.com/catalog/card-names", { headers: { ...UA, Accept: "application/json" } });
+  if (!r.ok) throw Error("Scryfall card names unavailable (" + r.status + ")");
+  const names = ((await r.json())?.data || []).filter((n) => typeof n === "string" && /[^\x00-\x7f]/.test(n));
+  await caches.default.put(ACCENTED_KEY, json(names, 200, LAST_GOOD_TTL));
+  return names;
+}
 const MTGTOP8_EVENTS = 8,
   MTGTOP8_PLACES = 4,
   MTGTOP8_NEW_LISTS = 40;
@@ -104,7 +115,9 @@ async function fetchMtgtop8(days = 14) {
     .filter((e) => e && e.entries.length)
     .map((e) => ({ ...e, date: e.date || picked.find((p) => p.id === e.id).date, entries: e.entries.filter((x) => x.rank <= MTGTOP8_PLACES) }));
   const cache = caches.default,
-    lists = new Map();
+    lists = new Map(),
+    // Without the name list, lists still load; only accented names stay unaccented.
+    realName = accentRestorer(await accentedCardNames().catch(() => []));
   let fetched = 0;
   for (const e of events)
     for (const { deckId } of e.entries) {
@@ -116,7 +129,7 @@ async function fetchMtgtop8(days = 14) {
       }
       if (fetched >= MTGTOP8_NEW_LISTS) continue;
       fetched++;
-      const list = parseMtgtop8Export(await mtgtop8Text(mtgtop8ExportUrl(deckId), { page: false }).catch(() => ""));
+      const list = parseMtgtop8Export(await mtgtop8Text(mtgtop8ExportUrl(deckId), { page: false }).catch(() => ""), realName);
       if (!list) continue;
       lists.set(deckId, list);
       await cache.put(deckKey(deckId), json(list, 200, LAST_GOOD_TTL));

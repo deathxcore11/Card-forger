@@ -222,9 +222,17 @@ export function parseMtgtop8Event(html, id) {
 }
 
 const BASIC = /^(Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest)$|^Wastes$/;
+// MTGTop8 exports drop accents ("Lim-Dûl's Vault" arrives as "Lim-Dul's Vault"). Given every
+// real card name, this puts them back; a name with no accented twin is kept as it came.
+const unaccent = (s) => s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+export function accentRestorer(names) {
+  const real = new Map();
+  for (const n of names || []) if (typeof n === "string" && unaccent(n) !== n) real.set(unaccent(n), n);
+  return (name) => real.get(name) || name;
+}
 // A deck export: main deck, then "Sideboard" holding the commander(s). Only a legal-size
 // Commander list (one or two commanders, 100 cards) is accepted.
-export function parseMtgtop8Export(text) {
+export function parseMtgtop8Export(text, realName = (name) => name) {
   const main = [],
     commanders = [];
   let side = false;
@@ -236,7 +244,7 @@ export function parseMtgtop8Export(text) {
     }
     const m = /^(\d+)\s+(.+)$/.exec(line);
     if (!m) continue;
-    const name = m[2].includes("//") ? m[2] : m[2].replace(/\s*\/\s*/, " // ");
+    const name = realName(m[2].includes("//") ? m[2] : m[2].replace(/\s*\/\s*/, " // "));
     (side ? commanders : main).push({ qty: Number(m[1]), name, ...(side ? {} : { land: BASIC.test(name) }) });
   }
   const total = [...main, ...commanders].reduce((a, r) => a + r.qty, 0);
