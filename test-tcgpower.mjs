@@ -63,9 +63,9 @@ console.log("PASS: Pokémon deck page renders Power and Upgrade lab without data
 for (const g of ["ptcg", "ygo"]) { S.state.settings.game = g; assert.match(tcgImportSheet("deck"), /<h2>Import a deck<\/h2>[\s\S]*<select id="tImpFormat">/, g + " import sheet"); }
 // Pokémon deck rows read in play order: Pokémon, Trainers, Energy.
 S.state.settings.game = "ptcg";
-for (const [id, name, category] of [["e1", "Basic Grass Energy", "Energy"], ["p2", "Sprigatito", "Pokemon"], ["t1", "Nest Ball", "Trainer"]]) cache.ptcg[id] = { game: "ptcg", id, name, category, text: "", fetchedAt: new Date().toISOString(), prices: {}, image: "" };
-S.state.tcg.ptcg.decks.push({ id: "p2", name: "Order", format: "standard", zones: { main: ["e1", "p2", "t1"].map((cardId) => ({ cardId, name: cache.ptcg[cardId].name, qty: 1 })), extra: [], side: [] } });
+for (const [id, name, category] of [["e1", "Basic Grass Energy", "Energy"], ["p2", "Sprigatito", "Pokemon"], ["t1", "Nest Ball", "Trainer"], ["b1", "Brief Hit", undefined]]) cache.ptcg[id] = { game: "ptcg", id, name, category, text: "", fetchedAt: new Date().toISOString(), prices: {}, image: "" };
+S.state.tcg.ptcg.decks.push({ id: "p2", name: "Order", format: "standard", zones: { main: ["e1", "p2", "t1", "b1"].map((cardId) => ({ cardId, name: cache.ptcg[cardId].name, qty: 1 })), extra: [], side: [] } });
 S.ui.tdeckTab = { "ptcg:p2": "cards" };
 const order = [...tcgDeck("p2").matchAll(/<button class="lot-name"[^>]*>([^<]+)</g)].map((m) => m[1]);
-assert.deepEqual(order, ["Sprigatito", "Nest Ball", "Basic Grass Energy"]);
+assert.deepEqual(order, ["Brief Hit", "Sprigatito", "Nest Ball", "Basic Grass Energy"], "a record without its category yet leads, as unresolved rows always did");
 console.log("PASS: Pokémon and Yu-Gi-Oh! import sheets open; Pokémon deck rows read Pokémon, Trainers, Energy.");

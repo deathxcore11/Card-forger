@@ -386,9 +386,10 @@ export function ygoDeckFinishContext(g, card, selection, s = S.state) {
   const keys = new Set(gs(g, s).collection.filter(e => String(e.cardId) === String(card.id) && e.printing && e.rarity).map(e => e.printing + "::" + e.rarity));
   return keys.size === 1 ? { priceEdition: [...keys][0] } : {};
 }
-// Deck rows read in play order: Pokémon, Trainers, Energy; Monsters, Spells, Traps. Unresolved rows lead.
+// Deck rows read in play order: Pokémon, Trainers, Energy; Monsters, Spells, Traps. Unresolved rows
+// (no record, or a search hit without its category yet) lead.
 const CATEGORY_RANK = { Pokemon: 0, Trainer: 1, Energy: 2, Monster: 0, Spell: 1, Trap: 2, Skill: 3, Token: 4 };
-const categoryRank = (c) => !c ? -1 : CATEGORY_RANK[c.category] ?? 5;
+const categoryRank = (c) => CATEGORY_RANK[c?.category] ?? -1;
 function deckStats(g, d) {
   const m = ownedMap(g),
     used = new Map(),

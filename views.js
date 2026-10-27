@@ -1020,8 +1020,10 @@ export function sharedPage() {
     lands = p.counts.Lands,
     nonCmd = sumQty(d.cards.filter((c) => !fm.commander || key(c.name) !== key(d.commander))),
     odds = nonCmd >= 7 ? atLeastLands(nonCmd, lands, 7, 3) : null,
-    // The link carries the sideboard too; it is listed after the main deck groups.
+    // The link carries the sideboard too; it is listed after the main deck groups, and like the
+    // deck page it counts only copies the main deck has not already taken.
     side = aggregateCards(d.side || []),
+    mainQty = new Map(aggregateCards(d.cards).map((c) => [key(c.name), c.qty])),
     groups = {};
   for (const c of aggregateCards(d.cards)) {
     const m = meta(c.name),
@@ -1052,7 +1054,7 @@ export function sharedPage() {
     .map(([title, rows]) => `<p class="list-head">${title} <span class="muted">${sumQty(rows)}</span></p><div class="list compact">${rows
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((c) => {
-        const have = Math.min(c.qty, avail(c.name));
+        const have = Math.min(c.qty, Math.max(0, avail(c.name) - (title === "Sideboard" ? mainQty.get(key(c.name)) || 0 : 0)));
         return `<button class="mini-row" data-act="card" data-name="${esc(c.name)}"><span class="row ellip">${manaCost(meta(c.name))}<span class="ellip">${c.qty}× ${esc(c.name)}</span></span><span class="small ${S.state.collection.length ? (have >= c.qty ? "ok-text" : "warn-text") : "muted"}">${S.state.collection.length ? (have >= c.qty ? "owned" : "need " + (c.qty - have)) : usd(priceOf(c.name))}</span></button>`;
       })
       .join("")}</div>`)

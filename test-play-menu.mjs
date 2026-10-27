@@ -91,6 +91,9 @@ test('a shared Magic link lists its sideboard and every quantity',()=>{
  const html=sharedPage();
  assert.match(html,/<p class="list-head">Sideboard <span class="muted">2<\/span><\/p>[\s\S]*2× Negate/);
  assert.match(html,/1× Ironbark Golem/);
+ // Main and sideboard share one pool: 3 owned Negate cover the main deck's 3, so the sideboard copy is still needed.
+ S.state.collection=[{id:'n',name:'Negate',qty:3,condition:'Near Mint',language:'en',finish:'nonfoil'}];S.ui.shared.deck={...S.ui.shared.deck,cards:[{name:'Negate',qty:3},{name:'Island',qty:57}],side:[{name:'Negate',qty:1}]};
+ const pooled=sharedPage();assert.match(pooled,/3× Negate<\/span><\/span><span class="small ok-text">owned/);assert.match(pooled,/Sideboard[\s\S]*1× Negate<\/span><\/span><span class="small warn-text">need 1/);
  assert.match(html,/unofficial Fan Content permitted under the Fan Content Policy\. Not approved\/endorsed by Wizards\./,'strangers opening a link see the Fan Content notice');
 });
 
