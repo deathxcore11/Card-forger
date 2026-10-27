@@ -1,7 +1,7 @@
 // Play on tablets and unfolded foldables: who is admitted, who sees the bigger-screen
 // notice, and how a match waits while the screen is too small.
 import assert from 'node:assert/strict';
-import {playScreenFits,playDeviceEligibility,playDeviceGate,playScreenPauseApplies,readPlayDeviceEligibility,readPlayScreen,playTableSupported,createPlayScreenPause,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
+import {playScreenFits,playTyping,playDeviceEligibility,playDeviceGate,playScreenPauseApplies,readPlayDeviceEligibility,readPlayScreen,playTableSupported,createPlayScreenPause,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
 
 // Shortest side 600 CSS px or more, in either orientation.
 for(const [w,h] of [[820,1180],[1180,820],[884,1104],[1104,884],[744,1133],[1024,768],[600,600]])assert.equal(playScreenFits(w,h),true,`${w}x${h} fits`);
@@ -14,7 +14,18 @@ assert.deepEqual(playDeviceEligibility({...chromeTablet,width:820,height:1180}),
 assert.equal(playDeviceEligibility({...fold,width:1104,height:884}).eligible,true,'an unfolded fold plays in landscape');
 assert.equal(playDeviceEligibility({...fold,width:884,height:1104}).eligible,true,'an unfolded fold plays in portrait');
 for(const [w,h] of [[412,915],[915,412]])assert.deepEqual(playDeviceEligibility({...fold,width:w,height:h}),{eligible:false,reason:'touch-space',entry:'touch'},`a phone or cover screen at ${w}x${h} sees the notice`);
-assert.deepEqual(playDeviceGate({reason:'touch-space'}),{title:'Play needs a bigger screen',line:'Unfold your device, turn it sideways on a tablet, or use a computer.'});
+assert.deepEqual(playDeviceGate({reason:'touch-space'}),{title:'Play needs a bigger screen',line:'Unfold your device, or use a tablet or a computer.'});
+
+// A tablet held sideways loses height to the browser's bars; its screen still decides.
+assert.equal(playScreenFits(1024,560,{screenMin:640}),true,'Galaxy Tab S9 sideways with the address bar');
+assert.equal(playScreenFits(915,360,{screenMin:412}),false,'a phone held sideways stays gated');
+assert.equal(playScreenFits(500,900,{screenMin:800}),false,'a narrow split-screen window stays gated');
+// While a text field is in use only the width counts (an on-screen keyboard takes height).
+assert.equal(playScreenFits(928,420,{typing:true}),true);assert.equal(playScreenFits(412,300,{typing:true}),false);
+assert.equal(playTyping({tagName:'INPUT',type:'search'}),true);assert.equal(playTyping({tagName:'INPUT',type:'checkbox'}),false);assert.equal(playTyping({tagName:'TEXTAREA'}),true);assert.equal(playTyping({tagName:'BUTTON'}),false);assert.equal(playTyping(null),false);
+// Chrome on a large Android tablet asks for the desktop site: a desktop user agent with touch only.
+assert.equal(playDeviceEligibility({ua:'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',platform:'Linux x86_64',maxTouchPoints:10,anyCoarse:true,anyFine:false,anyHover:false,width:1280,height:720}).eligible,true,'desktop-site tablet plays');
+assert.equal(playDeviceEligibility({ua:'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',platform:'Win32',maxTouchPoints:10,anyCoarse:true,anyFine:true,anyHover:true,width:800,height:500}).entry,'desktop','a touch laptop with a trackpad stays a desktop');
 
 // Every current tablet browser plays; an old one is asked to update.
 const tabletUA={
@@ -46,7 +57,7 @@ for(const extra of [{CSS:undefined},{CSS:{supports:q=>q!=='container-type'}},{Po
  assert.deepEqual(result,{eligible:false,reason:'app-webview',entry:'touch'},'an old app WebView is asked to update');
  assert.deepEqual(playDeviceGate(result),{title:'Play needs a newer WebView',line:'Update Android System WebView from Google Play, then reopen the app.'});
 }
-// In the app the keyboard shrinks the WebView: typing keeps the size from before it opened.
+// In the app the keyboard shrinks the WebView too; while a text field is in use only the width counts, as on the web.
 {
  const view=appView(841,701),doc={documentElement:{clientWidth:841,clientHeight:701},activeElement:null},search={tagName:'INPUT',type:'search'};
  const size=(w,h,focus=null)=>{doc.documentElement.clientWidth=w;doc.documentElement.clientHeight=h;doc.activeElement=focus;return [readPlayDeviceEligibility(view,doc).eligible,readPlayScreen(view,doc).fits];};
@@ -56,8 +67,6 @@ for(const extra of [{CSS:undefined},{CSS:{supports:q=>q!=='container-type'}},{Po
  assert.deepEqual(size(841,400,{tagName:'BUTTON',type:'submit'}),[false,false],'a shorter window without a text field is gated');
  assert.deepEqual(size(841,701),[true,true]);
  assert.deepEqual(size(400,701,search),[false,false],'folding while typing is still gated');
- const web=tabletView(1180,820),webDoc={documentElement:{clientWidth:1180,clientHeight:820},activeElement:search};
- readPlayScreen(web,webDoc);webDoc.documentElement.clientHeight=500;assert.equal(readPlayScreen(web,webDoc).fits,false,'the website measures what the browser reports');
 }
 
 // The pause: starts when the screen stops fitting, resumes at once, ticks, and expires once.

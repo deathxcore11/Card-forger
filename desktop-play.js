@@ -6,26 +6,20 @@ export const PLAY_TOUCH_MIN_EDGE = 600;
 // unfolded foldables in either orientation. A phone fits in neither orientation
 // (held sideways its board is too small to read). Size alone decides: browsers
 // report no hinge or fold state.
-export function playScreenFits(width, height) {
+export function playScreenFits(width, height, {screenMin=0, typing=false}={}) {
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return null;
-  return Math.min(width,height)>=PLAY_TOUCH_MIN_EDGE;
+  // An on-screen keyboard only takes height, so while a text field is in use the width decides.
+  if(typing)return width>=PLAY_TOUCH_MIN_EDGE;
+  if(Math.min(width,height)>=PLAY_TOUCH_MIN_EDGE)return true;
+  // A tablet held sideways loses height to the browser's own bars; its screen still decides.
+  return screenMin>=PLAY_TOUCH_MIN_EDGE&&width>=PLAY_TOUCH_MIN_EDGE&&height>=520;
 }
-// In the app the on-screen keyboard shrinks the WebView itself (a browser keeps its layout
-// viewport), so while a text field has focus a shorter window of the same width keeps the
-// height it had before the keyboard opened.
-const appScreens=new WeakMap();
-function playViewport(view,root,native) {
-  const width=root?.documentElement?.clientWidth||view.innerWidth||0,height=root?.documentElement?.clientHeight||view.innerHeight||0;
-  if(native===undefined)try{native=!!view.Capacitor?.isNativePlatform?.();}catch{native=true;}
-  if(!native||Object(view)!==view)return {width,height};
-  const field=root?.activeElement,typing=!!field&&(field.isContentEditable===true||field.tagName==='TEXTAREA'||field.tagName==='INPUT'&&!/^(button|checkbox|radio|submit|reset|range|color|file|image)$/i.test(field.type||''));
-  const before=appScreens.get(view);
-  if(typing&&before?.width===width&&before.height>height)return before;
-  appScreens.set(view,{width,height});return {width,height};
-}
+const NOT_TEXT=new Set(['button','checkbox','radio','range','submit','reset','file','color','image','hidden']);
+export const playTyping=el=>!!el&&(el.isContentEditable===true||el.tagName==='TEXTAREA'||el.tagName==='INPUT'&&!NOT_TEXT.has(String(el.type||'text').toLowerCase()));
+const screenMinOf=view=>{try{return Math.min(Number(view.screen?.width)||0,Number(view.screen?.height)||0);}catch{return 0;}};
 export function readPlayScreen(view=globalThis,root=view.document) {
-  const {width,height}=playViewport(view,root);
-  return {width,height,fits:playScreenFits(width,height)};
+  const width=root?.documentElement?.clientWidth||view.innerWidth||0,height=root?.documentElement?.clientHeight||view.innerHeight||0;
+  return {width,height,fits:playScreenFits(width,height,{screenMin:screenMinOf(view),typing:playTyping(root?.activeElement)})};
 }
 // The table's layout needs container queries, :has() and pointer events. Every current
 // tablet browser has them (Chrome, Samsung Internet, Edge, Opera, Firefox, Safari);
@@ -33,20 +27,26 @@ export function readPlayScreen(view=globalThis,root=view.document) {
 export function playTableSupported(view=globalThis) {
   try{const css=view.CSS;return !!(css?.supports?.('container-type','size')&&css.supports('selector(:has(a))')&&typeof view.PointerEvent==='function');}catch{return false;}
 }
-export function playDeviceEligibility({native=false,ua='',platform='',mobile,maxTouchPoints=0,anyFine=false,anyHover=false,anyCoarse=false,width=0,height=0,tableSupported=true}={}) {
-  // The Android app takes the touch screen rules; an old WebView is asked to update.
-  if(native){if(tableSupported===false)return {eligible:false,reason:'app-webview',entry:'touch'};const fits=playScreenFits(width,height);return fits?{eligible:true,reason:'wide-touch-candidate',entry:'touch'}:{eligible:false,reason:fits===null?'viewport-unknown':'touch-space',entry:'touch'};}
+export function playDeviceEligibility({native=false,ua='',platform='',mobile,maxTouchPoints=0,anyFine=false,anyHover=false,anyCoarse=false,width=0,height=0,tableSupported=true,screenMin=0,typing=false}={}) {
   const touch=Number.isFinite(maxTouchPoints)&&maxTouchPoints>0||anyCoarse===true;
   const mobileDevice=mobile===true||/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(ua)||(platform==='MacIntel'&&maxTouchPoints>1);
+  const touchEntry=()=>{
+    if(tableSupported===false)return {eligible:false,reason:'touch-browser',entry:'touch'};
+    if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return {eligible:false,reason:'viewport-unknown',entry:'touch'};
+    if(!playScreenFits(width,height,{screenMin,typing}))return {eligible:false,reason:'touch-space',entry:'touch'};
+    return {eligible:true,reason:'wide-touch-candidate',entry:'touch'};
+  };
+  // The Android app takes the touch screen rules; an old WebView is asked to update.
+  if(native)return tableSupported===false?{eligible:false,reason:'app-webview',entry:'touch'}:touchEntry();
   if(mobileDevice){
     // Known mobile/tablet web devices can discover Play even on their cover
     // screen. The route explains the guard instead of promising phone gameplay.
     if(!touch)return {eligible:false,reason:'uncertain',entry:null};
-    if(tableSupported===false)return {eligible:false,reason:'touch-browser',entry:'touch'};
-    if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return {eligible:false,reason:'viewport-unknown',entry:'touch'};
-    if(!playScreenFits(width,height))return {eligible:false,reason:'touch-space',entry:'touch'};
-    return {eligible:true,reason:'wide-touch-candidate',entry:'touch'};
+    return touchEntry();
   }
+  // Chrome on a large Android tablet asks for the desktop site by default: a desktop
+  // user agent with touch as the only input. It plays by the touch rules.
+  if(touch&&!anyFine)return touchEntry();
   // Preserve desktop admission: a narrow desktop window remains desktop, and
   // adding touch to a desktop does not move its Play buttons onto Home/Decks.
   const desktop=/Windows NT|Macintosh|X11|CrOS/i.test(ua);
@@ -57,11 +57,11 @@ export function readPlayDeviceEligibility(view=globalThis,root=view.document) {
   let native=false;
   try{native=!!view.Capacitor?.isNativePlatform?.();}catch{native=true;}
   const n=view.navigator||{},matches=query=>{try{return !!view.matchMedia?.(query)?.matches;}catch{return false;}};
-  return playDeviceEligibility({native,ua:n.userAgent||'',platform:n.platform||'',mobile:n.userAgentData?.mobile,maxTouchPoints:n.maxTouchPoints||0,anyFine:matches('(any-pointer:fine)'),anyHover:matches('(any-hover:hover)'),anyCoarse:matches('(any-pointer:coarse)'),tableSupported:playTableSupported(view),...playViewport(view,root,native)});
+  return playDeviceEligibility({native,ua:n.userAgent||'',platform:n.platform||'',mobile:n.userAgentData?.mobile,maxTouchPoints:n.maxTouchPoints||0,anyFine:matches('(any-pointer:fine)'),anyHover:matches('(any-hover:hover)'),anyCoarse:matches('(any-pointer:coarse)'),tableSupported:playTableSupported(view),screenMin:screenMinOf(view),typing:playTyping(root?.activeElement),width:root?.documentElement?.clientWidth||view.innerWidth||0,height:root?.documentElement?.clientHeight||view.innerHeight||0});
 }
 // One title and one line per reason, shown in place of the start button.
 export function playDeviceGate(result={}) {
-  if(result.reason==='touch-space'||result.reason==='viewport-unknown')return {title:'Play needs a bigger screen',line:'Unfold your device, turn it sideways on a tablet, or use a computer.'};
+  if(result.reason==='touch-space'||result.reason==='viewport-unknown')return {title:'Play needs a bigger screen',line:'Unfold your device, or use a tablet or a computer.'};
   if(result.reason==='touch-browser')return {title:'Play needs a newer browser',line:'Update your browser, or open CardStashy in Chrome or Safari.'};
   if(result.reason==='app-webview')return {title:'Play needs a newer WebView',line:'Update Android System WebView from Google Play, then reopen the app.'};
   return {title:'Play isn’t available in this browser',line:'Use Chrome on a tablet or unfolded phone, or a computer with a mouse or trackpad.'};

@@ -106,8 +106,10 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  function unwatch(){unwatchScreen?.();unwatchScreen=null;screenPause?.destroy();screenPause=null;hidePause();}
  async function expireMatch(){
   if(disposed)return;
-  if(last?.phase==='playing'&&session&&!client?.status().blocked){try{await session.concede();return;}catch{/* fall through to closing the table */}}
-  generation++;intro?.destroy();intro=null;await closeSession();
+  // Concede first; if that is refused or the match is still running shortly after, close
+  // the table here and say why, rather than leaving a match that can no longer pause.
+  if(last?.phase==='playing'&&session&&!client?.status().blocked){try{await session.concede();await wait(1500);if(disposed||last?.phase!=='playing')return;}catch{/* fall through to closing the table */}}
+  generation++;intro?.destroy();intro=null;session?.close();warn(false);try{await client?.close();}catch{}
   message('Match ended',['The screen stayed too small for 5 minutes, so the match was closed. No win or loss was recorded.']);publish({phase:'session-ended',error:'SCREEN_TOO_SMALL'});
  }
  function message(title,lines,{close=true,diagnostic=null}={}){
