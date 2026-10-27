@@ -4,16 +4,16 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const src=readFileSync(new URL('./experiments/forge-proof/forge-table.mjs',import.meta.url),'utf8');
 const part=re=>{const m=src.match(re);assert(m,'forge-table.mjs changed shape: '+re);return m[0];};
-const handlers=[/\n const surfaceCard=.*/,/\n function showPeek\(el,pinned=false\)\{[\s\S]*?\n \}/,/\n function hidePeek\(\)\{.*/,/\n const peekCard=.*/,/\n const over=.*/,/\n const LISTED_INPUTS=.*/,/\n const previewOnly=\(card,snapshot\)=>\{[\s\S]*?\n \};/,/\n const click=e=>\{[\s\S]*?\n \};/].map(part).join('');
+const handlers=[/\n const surfaceCard=.*/,/\n function showPeek\(el,pinned=false\)\{[\s\S]*?\n \}/,/\n function hidePeek\(\)\{.*/,/\n function peekAction\(el\)\{[\s\S]*?\n \}/,/\n const peekCard=.*/,/\n const over=.*/,/\n const LISTED_INPUTS=.*/,/\n const previewOnly=\(card,snapshot,touch=false\)=>\{[\s\S]*?\n \};/,/\n const click=e=>\{[\s\S]*?\n \};/].map(part).join('');
 function table(native={inputType:'InputConfirmMulligan',prompt:null},{busy=false}={}){
- const timers=[],peek={id:'forge-peek-test',dataset:{open:'false'}},acted=[];
+ const timers=[],peek={id:'forge-peek-test',dataset:{open:'false'},querySelector:()=>null,setAttribute(){},append(){}},acted=[];
  const snapshot={busy,native,status:{surface:{cards:[{id:1,known:true,name:'Forest'},{id:2,known:true,name:'Island'}]}}};
- const deps={root:{contains:()=>true},peek,session:{snapshot:()=>snapshot,nativeSelect:(kind,id)=>acted.push([kind,id])},act(fn){if(native.inputType==='InputConfirmMulligan')throw Error('the opening hand selects nothing');fn();},openZone(){},drag:null,keywordReference:null,loadKeywordReference:()=>new Promise(()=>{}),peekHtml:()=>'',placePeek(){},
+ const deps={root:{contains:()=>true},peek,presentation:{hosted:true},doc:{createElement:()=>({dataset:{}})},session:{snapshot:()=>snapshot,nativeSelect:(kind,id)=>acted.push([kind,id])},act(fn){if(native.inputType==='InputConfirmMulligan')throw Error('the opening hand selects nothing');fn();},openZone(){},drag:null,keywordReference:null,loadKeywordReference:()=>new Promise(()=>{}),peekHtml:()=>'',placePeek(){},
   setTimeout:fn=>timers.push(fn),clearTimeout:id=>{if(id)timers[id-1]=null;}};
- const t=new Function(...Object.keys(deps),'let peekFor=null,peekPinned=false,peekTimer=0,peekKey=\'\',suppressUntil=0;'+handlers+';return {click,over,state:()=>({open:peek.dataset.open,for:peekFor,pinned:peekPinned})};')(...Object.values(deps));
- const event=target=>({target,pointerType:'mouse',preventDefault(){},stopImmediatePropagation(){}});
+ const t=new Function(...Object.keys(deps),'let peekFor=null,peekPinned=false,peekTimer=0,peekKey=\'\',suppressUntil=0,lastPointerType=\'mouse\';'+handlers+';return {click,over,state:()=>({open:peek.dataset.open,for:peekFor,pinned:peekPinned})};')(...Object.values(deps));
+ const event=(target,pointerType='mouse')=>({target,pointerType,preventDefault(){},stopImmediatePropagation(){}});
  const card=(id,hint={})=>{const el={dataset:{instance:String(id),forgeHint:String(!!hint.hint),forgeChosen:String(!!hint.chosen)},classList:{add(){},remove(){}},offsetWidth:0,closest:s=>s==='.play-match-card[data-instance]'?el:null,setAttribute(){},removeAttribute(){}};return el;};
- return {card,acted,click:el=>t.click(event(el)),over:el=>t.over(event(el)),state:t.state,flush(){for(let i=0;i<timers.length;i++){const fn=timers[i];timers[i]=null;fn?.();}}};
+ return {card,acted,click:(el,pointerType)=>t.click(event(el,pointerType)),over:el=>t.over(event(el)),state:t.state,flush(){for(let i=0;i<timers.length;i++){const fn=timers[i];timers[i]=null;fn?.();}}};
 }
 test('clicking the same hand card again closes its pinned preview',()=>{
  const t=table(),a=t.card(1),b=t.card(2);
@@ -44,4 +44,10 @@ test('where Forge lists no clickable cards, every click still goes to Forge',()=
 test('a busy table still previews a card but never sends one',()=>{
  const t=table({inputType:'InputPassPriority',prompt:null},{busy:true}),offered=t.card(2,{hint:true}),plain=t.card(1);
  t.click(offered);assert.deepEqual(t.acted,[]);t.click(plain);assert.equal(t.state().open,'true');
+});
+test('on touch, a tap while you hold priority opens the card instead of playing it; choices still pick',()=>{
+ const t=table({inputType:'InputPassPriority',prompt:null}),offered=t.card(2,{hint:true});
+ t.click(offered,'touch');assert.deepEqual(t.acted,[],'a touch tap on a playable card opens it');assert.deepEqual(t.state(),{open:'true',for:offered,pinned:true});
+ t.click(offered,'mouse');assert.deepEqual(t.acted,[['card',2]],'a mouse click still plays it');
+ for(const inputType of ['InputSelectTargets','InputAttack','InputBlock']){const c=table({inputType,prompt:null});c.click(c.card(5,{hint:true}),'touch');assert.deepEqual(c.acted,[['card',5]],inputType+': a touch tap picks');}
 });

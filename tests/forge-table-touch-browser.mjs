@@ -27,10 +27,13 @@ try{
    await sleep(50);await touch(end);await sleep(500);
    assert.deepEqual(await calls(),[],`${name}: the press that opened the preview plays nothing`);
    assert.equal(await peekOpen(),false,`${name}: the preview closes with its press`);
-   await tap(b);assert.deepEqual(await calls(),[['select','card',b.id]],`${name}: the next card tap reaches the game`);
+   // A tap opens the card; its Play button plays it.
+   await tap(b);assert.deepEqual(await calls(),[],`${name}: the next card tap opens the card`);assert(await peekOpen(),`${name}: the next card tap reaches the table`);
+   const play=await page.evaluate(()=>{const n=document.querySelector('.forge-peek [data-peek-play]');if(!n)return null;const r=n.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};});
+   assert(play,`${name}: the open card offers Play`);await tap(play);assert.deepEqual(await calls(),[['select','card',b.id]],`${name}: Play reaches the game`);
    await tap(dock);assert.deepEqual((await calls()).map(c=>c.slice(0,2)),[['button','ok']],`${name}: the next dock tap reaches the game`);
   }
-  console.log(`PASS ${viewport.width}x${viewport.height}: after a long press that stays, drifts or is taken by the browser, the next card and dock taps reach the game.`);
+  console.log(`PASS ${viewport.width}x${viewport.height}: after a long press that stays, drifts or is taken by the browser, the next card tap opens it, Play plays it and the dock tap reaches the game.`);
   await context.close();
  }
 }finally{await browser.close();await new Promise(r=>server.close(r));}

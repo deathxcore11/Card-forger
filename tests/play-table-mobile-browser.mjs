@@ -61,7 +61,22 @@ try{
   await page.touchscreen.tap(plain.x,plain.y);await sleep(300);
   assert.equal(await page.evaluate(()=>document.querySelector('.forge-peek')?.dataset.open),'false',`${name}: tapping it again closes the preview`);
   await page.touchscreen.tap(offered.x,offered.y);await sleep(300);
-  assert.deepEqual(await page.evaluate(()=>window.calls.splice(0)),[['select','card',offered.id]],`${name}: tapping a playable card plays it`);
+  assert.deepEqual(await page.evaluate(()=>window.calls.splice(0)),[],`${name}: tapping a playable card opens it without playing it`);
+  const play=await page.evaluate(()=>{const n=document.querySelector('.forge-peek[data-open=true] [data-peek-play]');if(!n)return null;const r=n.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,h:r.height,label:n.textContent};});
+  assert(play&&play.label==='Play'&&play.h>=44,`${name}: the open card offers a Play button ${JSON.stringify(play)}`);
+  assert(play.x>0&&play.x<width&&play.y>0&&play.y<height,`${name}: Play is on screen`);
+  await page.touchscreen.tap(play.x,play.y);await sleep(300);
+  assert.deepEqual(await page.evaluate(()=>window.calls.splice(0)),[['select','card',offered.id]],`${name}: Play plays the card`);
+  assert.equal(await page.evaluate(()=>document.querySelector('.forge-peek')?.dataset.open),'false',`${name}: the preview closes after Play`);
+  // A finger drag: up onto the board plays the card; back onto the hand plays nothing; the page never scrolls.
+  const cdp=await context.newCDPSession(page),touch=(type,pts=[])=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:pts.map(([x,y])=>({x,y}))});
+  const drag=async(from,dy,back=false)=>{await touch('touchStart',[[from.x,from.y]]);for(let i=1;i<=12;i++){await touch('touchMove',[[from.x+i,from.y+dy*i/12]]);await sleep(16);}
+   if(back)for(let i=11;i>=0;i--){await touch('touchMove',[[from.x+i,from.y+dy*i/12]]);await sleep(16);}await sleep(40);await touch('touchEnd');await sleep(350);};
+  await drag(offered,-Math.min(300,offered.y-120));
+  assert.deepEqual((await page.evaluate(()=>window.calls.splice(0))).map(c=>c.slice(0,3)),[['select','card',offered.id]],`${name}: dragging a card up out of the hand plays it`);
+  await drag(offered,-Math.min(300,offered.y-120),true);
+  assert.deepEqual(await page.evaluate(()=>window.calls.splice(0)),[],`${name}: dragging a card back onto the hand plays nothing`);
+  assert.deepEqual(await page.evaluate(()=>[scrollX,scrollY,document.querySelector('.forge-drag-ghost')===null]),[0,0,true],`${name}: no page scroll and no leftover drag image`);
   // The opening hand: every card whole and readable, Keep and Mulligan on screen.
   await open(page,'opening');
   const o=await page.evaluate(()=>({cards:[...document.querySelectorAll('.play-match-hand .play-match-card[data-instance]')].map(c=>{const r=c.getBoundingClientRect();return {l:r.left,t:r.top,r:r.right,b:r.bottom,w:r.width};}),
@@ -71,7 +86,7 @@ try{
   if(upright)assert(Math.min(...o.cards.map(c=>c.w))>=110,`${name}: opening cards are readable on an upright screen (${Math.round(Math.min(...o.cards.map(c=>c.w)))}px)`);
   for(const b of o.buttons.filter(b=>['ok','cancel'].includes(b.k)))assert(b.b<=height+1&&b.h>=44,`${name}: ${b.k} is on screen and a full target`);
   assert.deepEqual(errors,[],`${name}: no page errors`);
-  console.log(`PASS ${name} ${width}x${height}: complete table on screen, hand clear of the decision card, 44 px controls, tap to see a card, readable opening hand.`);
+  console.log(`PASS ${name} ${width}x${height}: complete table on screen, hand clear of the decision card, 44 px controls, tap opens a card with Play, finger drag plays, readable opening hand.`);
   await context.close();
  }
 }finally{await browser.close();await new Promise(r=>server.close(r));}

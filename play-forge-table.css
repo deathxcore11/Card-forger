@@ -689,6 +689,14 @@
  :where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-hand .play-match-card-wrap,:where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-hand .play-match-card-wrap:last-child{--w:min(calc((100vw - 36px - 42px) / 4),190px,calc((100dvh - 410px) / 2 / 1.394));flex:0 0 var(--w);width:var(--w);min-width:var(--w);max-width:var(--w);height:calc(var(--w)*1.394);margin:0;transform:none}
  :where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-hand .play-match-card{width:100%;height:100%}
 }
+:where(body.practice-table-open) .forge-peek[data-open=true][data-pinned=true]{pointer-events:auto}
+:where(body.practice-table-open) .forge-peek-play{display:block;width:100%;min-height:48px;margin-top:14px;padding:10px 16px;border:1px solid #f2d496;border-radius:12px;background:linear-gradient(180deg,#f2d496,#d6ad64);color:#1b1406;font:700 16px/1.2 'DM Sans',system-ui,sans-serif;cursor:pointer;box-shadow:0 8px 20px #0008}
+:where(body.practice-table-open) .forge-peek-play:focus-visible{outline:2px solid #fff;outline-offset:3px}
+:where(body.practice-table-open) .forge-peek .forge-peek-info:has(.forge-peek-play){max-height:none}
+/* Fingers drag a card out of your hand to play it, so your hand never hands the gesture
+   to the browser. On the board a sideways swipe still scrolls a crowded row. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card{touch-action:none}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-battlefields .play-match-card{touch-action:pan-x}
 /* A press and hold previews a card, so the browser's own long-press menu, text
    selection and image dragging never start on the table (iPad Safari shows them). */
 :where(body.practice-table-open) .play-match-table[data-forge-native] :is(.play-match-card,.play-match-card *,.play-command-zone,.play-match-opponent-fan),:where(body.practice-table-open) .forge-peek{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}

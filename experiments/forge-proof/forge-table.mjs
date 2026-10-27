@@ -25,7 +25,7 @@ function keywordHint(name,reference){
 export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName:'You'},format='Commander',title='CardStashy · Local Forge proof',presentation={}}){
  const doc=root.ownerDocument,win=doc.defaultView,hooks=practiceArtworkHooks();let localError='',panelKey='',drag=null,ghost=null,suppressUntil=0,closed=false,nativeValueDraft=null,openingFocused=false;
  const reducedMotion=()=>win.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
- const peek=doc.createElement('div');let peekFor=null,peekPinned=false,peekTimer=0,pressTimer=0,pressAt=null,pressShown=false,peekKey='';
+ const peek=doc.createElement('div');let peekFor=null,peekPinned=false,peekTimer=0,pressTimer=0,pressAt=null,pressShown=false,peekKey='',lastPointerType='mouse';
  let lastSeen=null,castTimer=0;const failedArt=new Set();const spotlit=new Set(),castShow=doc.createElement('div');castShow.className='forge-cast';castShow.setAttribute('aria-hidden','true');castShow.dataset.open='false';doc.body.append(castShow);
  const table=mountMatchTable(root,{session,format,profile,title,allowConcede:false,onExit,pileIdentical:presentation.hosted===true,...hooks,
   resolveCard(card){const artwork=resolvePracticeArtwork(card);return {...artwork,oracleText:card.text};},
@@ -276,13 +276,22 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  function showPeek(el,pinned=false){
   if(pinned)clearTimeout(peekTimer);const c=surfaceCard(el);if(!c?.known||drag?.active){hidePeek();return;}
   const keyNow=JSON.stringify([c.id,c.name,c.text,c.power,c.toughness,c.damage,c.counters,c.tapped,c.attacking,c.blocking,c.summoningSick,c.keywords,c.attachedTo,c.attachments,c.zone]);
-  const fill=reference=>{if(peekFor!==el)return;peek.innerHTML=peekHtml(c,reference);peekKey=keyNow;placePeek(el);};
+  const fill=reference=>{if(peekFor!==el)return;peek.innerHTML=peekHtml(c,reference);peekKey=keyNow;peekAction(el);placePeek(el);};
   if(peekFor&&peekFor!==el)peekFor.removeAttribute('aria-describedby');
   peekFor=el;peekPinned=pinned;el.setAttribute('aria-describedby',peek.id);
-  if(peekKey!==keyNow||peek.dataset.card!==String(c.id)){peek.dataset.card=String(c.id);fill(keywordReference&&typeof keywordReference.then!=='function'?keywordReference:null);loadKeywordReference().then(ref=>{if(peekFor===el&&peek.dataset.card===String(c.id)){peek.innerHTML=peekHtml(c,ref);placePeek(el);}});}else placePeek(el);
+  if(peekKey!==keyNow||peek.dataset.card!==String(c.id)){peek.dataset.card=String(c.id);fill(keywordReference&&typeof keywordReference.then!=='function'?keywordReference:null);loadKeywordReference().then(ref=>{if(peekFor===el&&peek.dataset.card===String(c.id)){peek.innerHTML=peekHtml(c,ref);peekAction(el);placePeek(el);}});}else{peekAction(el);}placePeek(el);
   peek.dataset.open='true';
  }
- function hidePeek(){clearTimeout(peekTimer);peek.dataset.open='false';peekFor?.removeAttribute('aria-describedby');peekFor=null;peekPinned=false;}
+ function hidePeek(){clearTimeout(peekTimer);peek.dataset.open='false';peek.dataset.pinned='false';peekFor?.removeAttribute('aria-describedby');peekFor=null;peekPinned=false;}
+ // A pinned preview of a card you can play or use right now offers that as one button.
+ function peekAction(el){
+  peek.querySelector('.forge-peek-play')?.remove();peek.dataset.pinned=String(peekPinned);peek.setAttribute('role',peekPinned?'dialog':'tooltip');
+  const n=session.snapshot().native;if(!peekPinned||!presentation.hosted||el.dataset.forgeHint!=='true'||n?.inputType!=='InputPassPriority'||n?.prompt)return;
+  const b=doc.createElement('button');b.type='button';b.className='forge-peek-play';b.dataset.peekPlay='true';b.textContent=el.closest('.play-match-hand')?'Play':'Use';
+  (peek.querySelector('.forge-peek-info')||peek).append(b);
+ }
+ peek.addEventListener('click',e=>{if(!e.target.closest?.('[data-peek-play]'))return;e.preventDefault();e.stopPropagation();const card=peekFor,s=session.snapshot();
+  if(!card||card.dataset.forgeHint!=='true'||s.busy){hidePeek();return;}const id=Number(card.dataset.instance);hidePeek();act(()=>session.nativeSelect('card',id));});
  const peekCard=e=>{const card=e.target.closest?.('.play-match-card[data-instance]');return card&&root.contains(card)&&!card.closest('.forge-drag-ghost')?card:null;};
  const over=e=>{if(e.pointerType==='touch'||peekPinned)return;const card=peekCard(e);if(!card)return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>showPeek(card),peekFor?40:240);};
  const out=e=>{if(e.pointerType==='touch'||peekPinned)return;const card=peekCard(e);if(!card||card.contains(e.relatedTarget))return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>{if(!peekPinned)hidePeek();},90);};
@@ -294,17 +303,20 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  // A click acts only on a card Forge offers. Where Forge has listed exactly what can be
  // clicked (priority, targets, a card choice), any other card opens its preview instead;
  // for other inputs (attacks, blocks, mana payment) every click still goes to Forge.
+ // On touch, a tap while you hold priority always opens the card; when you can play or use
+ // it, the preview carries that button, and dragging it up from your hand plays it.
  const LISTED_INPUTS=new Set(['InputPassPriority','InputSelectTargets']);
- const previewOnly=(card,snapshot)=>{
+ const previewOnly=(card,snapshot,touch=false)=>{
   const n=snapshot.native;if(!n||snapshot.status?.terminal||n.inputType==='InputLockUI')return true;
   if(n.inputType==='InputConfirmMulligan'&&!n.prompt)return true;
+  if(touch&&n.inputType==='InputPassPriority'&&!n.prompt)return true;
   if(card.dataset.forgeHint==='true'||card.dataset.forgeChosen==='true')return false;
   return !n.prompt&&(LISTED_INPUTS.has(n.inputType)||!n.inputType&&(n.selection?.cards?.length||0)>0);
  };
  const click=e=>{
   const pinned=peekPinned&&peekFor;if(peekPinned&&!e.target.closest?.('.forge-peek'))hidePeek();
   if(Date.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();return;}
-  const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot(),cardId=Number(card.dataset.instance);if(previewOnly(card,snapshot)){pinned===card?hidePeek():showPeek(card,true);}else if(!snapshot.busy){card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);act(()=>session.nativeSelect('card',cardId));}return;}
+  const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot(),cardId=Number(card.dataset.instance);if(previewOnly(card,snapshot,(e.pointerType||lastPointerType)==='touch')){pinned===card?hidePeek():showPeek(card,true);}else if(!snapshot.busy){card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);act(()=>session.nativeSelect('card',cardId));}return;}
   const player=e.target.closest?.('[data-player-seat]');if(player&&root.contains(player)){e.preventDefault();e.stopImmediatePropagation();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(player.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));return;}
   const zone=e.target.closest?.('.forge-zone-row button[data-zone]');if(zone&&root.contains(zone)){openZone(zone.closest('.forge-zone-row').dataset.seat,zone.dataset.zone);}
  };
@@ -316,7 +328,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   menu.querySelector('summary')?.focus();
  }
  const cancel=()=>{drag=null;ghost?.remove();ghost=null;root.classList.remove('forge-dragging');};
- const down=e=>{if(e.button!==0||e.isPrimary===false)return;const card=e.target.closest?.('.play-match-card[data-instance]'),s=session.snapshot();
+ const down=e=>{lastPointerType=e.pointerType||'mouse';if(e.button!==0||e.isPrimary===false)return;const card=e.target.closest?.('.play-match-card[data-instance]'),s=session.snapshot();
   if(card&&e.pointerType!=='mouse'){clearTimeout(pressTimer);pressAt={x:e.clientX,y:e.clientY,id:e.pointerId};pressShown=false;pressTimer=setTimeout(()=>{if(drag?.active)return;showPeek(card,true);pressShown=true;suppressUntil=Date.now()+60000;if(drag?.pointerId===e.pointerId)drag=null;},420);}
  if(!card||s.busy||s.native?.prompt||s.native?.inputType==='InputConfirmMulligan'||s.status?.terminal)return;drag={id:Number(card.dataset.instance),revision:s.status.revision,pointerId:e.pointerId,x:e.clientX,y:e.clientY,source:card,active:false};};
  // Drift cancels a press only before its preview opens; after that the press is kept so
