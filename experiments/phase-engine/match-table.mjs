@@ -5,7 +5,7 @@ import {bindCardPlacement,placementIntent} from './card-placement.mjs';
 import {validInteractionText,validInteractionRelations,validDamageAssignments} from './interaction-surface.mjs';
 import {cardStatView} from './card-stats.mjs';
 import {randomOutcomeText} from './random-outcomes.mjs';
-const labels={MulliganDecision:'Opening hand',Priority:'Your next move',ManaPayment:'Pay mana',TargetChoice:'Choose a target',DeclareAttackers:'Choose attackers',DeclareBlockers:'Choose blockers',AssignCombatDamage:'Assign combat damage',GameOver:'Match finished'};
+const labels={MulliganDecision:'Opening hand',Priority:'Your next move',ManaPayment:'Pay mana',TargetChoice:'Choose a target',DeclareAttackers:'Choose attackers',DeclareBlockers:'Choose blockers',AssignCombatDamage:'Assign combat damage',Choice:'Make a choice',Decision:'Your decision',GameOver:'Match finished'};
 const phaseNames={Untap:'Untap',Upkeep:'Upkeep',Draw:'Draw',PreCombatMain:'First main phase',BeginningOfCombat:'Beginning of combat',BeginCombat:'Beginning of combat',DeclareAttackers:'Combat · Attackers',DeclareBlockers:'Combat · Blockers',FirstStrikeDamage:'First-strike damage',CombatDamage:'Combat damage',EndCombat:'End of combat',EndOfCombat:'End of combat',PostCombatMain:'Second main phase',End:'End step',EndStep:'End step',Cleanup:'Cleanup'};
 export const matchPhaseLabel=phase=>phaseNames[phase]||String(phase||'').replace(/([a-z])([A-Z])/g,'$1 $2');
 // Display only the authority's versioned, visible Commander facts.
@@ -24,11 +24,20 @@ export function battlefieldGroups(cards){
  return groups.filter(group=>group.cards.length);
 }
 // Visually stacks permanents whose every visible detail matches, in first-seen order.
-// Each card keeps its own element and engine identity; a change of state splits it out.
+// Each card keeps its own element and engine identity; a change of state splits it out, and so
+// does anything attached to it, being attached, or a different attack target or blocked attacker.
 export function battlefieldPiles(cards){
  const piles=new Map();
- for(const c of cards){const key=c.known===true?JSON.stringify([c.name,c.controller,c.isToken,c.tapped,c.power,c.toughness,c.damage,c.counters||{},c.attacking,c.blocking,c.summoningSick,c.keywords||[],c.type,c.text,c.face,c.printing?.playArtwork?.card?.id||null]):'face-down:'+c.id;if(!piles.has(key))piles.set(key,[]);piles.get(key).push(c);}
+ for(const c of cards){const key=c.known===true?JSON.stringify([c.name,c.controller,c.isToken,c.tapped,c.power,c.toughness,c.damage,c.counters||{},c.attacking,c.blocking,c.summoningSick,c.keywords||[],c.type,c.text,c.face,c.printing?.playArtwork?.card?.id||null,c.attachedTo??null,c.attachments||[],c.attackTarget||null,c.blockingIds||[]]):'face-down:'+c.id;if(!piles.has(key))piles.set(key,[]);piles.get(key).push(c);}
  return [...piles.values()];
+}
+// Equipment and Auras sit tucked under the permanent they are attached to when both are in the
+// same battlefield list. Returns the cards still laid out on their own, and host id -> attachments.
+export function tuckAttachments(cards){
+ const byId=new Map(cards.map(c=>[c.id,c])),tucked=new Map(),loose=[];
+ for(const c of cards){const host=c.known===true&&Number.isSafeInteger(c.attachedTo)&&c.attachedTo!==c.id?byId.get(c.attachedTo):null;
+  if(host?.known===true&&!Number.isSafeInteger(host.attachedTo)){if(!tucked.has(host.id))tucked.set(host.id,[]);tucked.get(host.id).push(c);}else loose.push(c);}
+ return {loose,tucked};
 }
 export function playerStateEmblem(snapshot,seat){
  const view=snapshot?.status?.surface;
@@ -210,8 +219,12 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
    const section=element('section',undefined,'play-match-zone'+(hand?' play-match-hand':''));section.setAttribute('aria-label',title);if(!hand)section.dataset.owner=title==='Your battlefield'?'you':'cpu';if(title==='Your battlefield')section.dataset.placementZone='battlefield';
    const heading=element('div',undefined,'play-match-zone-heading');heading.append(element('h2',hand&&openingHand?'Your opening hand':title),element('span',String(cards.length),'play-match-zone-count'));if(hand)heading.append(element('span',openingHand?'Inspect any card. Then keep or mulligan below.':'Select a card to inspect','play-match-hand-hint'));section.append(heading);
    if(!cards.length){section.append(element('p',hand?'Your hand is empty':'No permanents on the battlefield','play-match-empty'));return section;}
-   const groups=hand?[{key:'hand',cards}]:battlefieldGroups(cards);if(!hand&&groups.length===1)heading.querySelector('h2').textContent=title+' · '+groups[0].label;const rows=element('div',undefined,'play-match-zone-groups');
-   for(const group of groups){const lane=element('div',undefined,'play-match-lane');lane.dataset.cardGroup=group.key;if(!hand&&groups.length>1)lane.append(element('h3',`${group.label} · ${group.cards.length}`));const row=element('div',undefined,'play-match-card-row');if(hand){row.dataset.keepScroll='hand';row.tabIndex=0;row.setAttribute('aria-label','Cards in your hand');}if(pileIdentical&&!hand){for(const pile of battlefieldPiles(group.cards))for(const [at,c]of pile.entries()){const node=card(c);if(pile.length>1){node.dataset.pileSize=String(pile.length);node.dataset.pileIndex=String(at);node.dataset.pileTight=String(at>0&&at<pile.length-5);if(at===pile.length-1){node.dataset.pileTop='true';node.append(element('span','×'+pile.length,'play-match-pile-count'));const b=node.querySelector('.play-match-card');b?.setAttribute('aria-label',b.getAttribute('aria-label')+` · top of ${pile.length} identical`);}}row.append(node);}}
+   const {loose,tucked}=!hand&&pileIdentical?tuckAttachments(cards):{loose:cards,tucked:new Map()};
+   const host=(c,node)=>{const under=tucked.get(c.id);if(!under?.length)return node;const group=element('span',undefined,'play-match-attach-group');group.dataset.attachCount=String(under.length);group.style.setProperty('--attach-n',String(under.length));
+    for(const [at,a]of under.entries()){const w=card(a);w.dataset.attached='true';w.style.setProperty('--attach-i',String(at));const b=w.querySelector('.play-match-card');b?.setAttribute('aria-label',b.getAttribute('aria-label')+` · attached to ${c.name}`);group.append(w);}
+    const b=node.querySelector('.play-match-card');b?.setAttribute('aria-label',b.getAttribute('aria-label')+` · with ${under.map(a=>a.name).join(', ')}`);group.append(node);return group;};
+   const groups=hand?[{key:'hand',cards}]:battlefieldGroups(loose);if(!hand&&groups.length===1)heading.querySelector('h2').textContent=title+' · '+groups[0].label;const rows=element('div',undefined,'play-match-zone-groups');
+   for(const group of groups){const lane=element('div',undefined,'play-match-lane');lane.dataset.cardGroup=group.key;if(!hand&&groups.length>1)lane.append(element('h3',`${group.label} · ${group.cards.length}`));const row=element('div',undefined,'play-match-card-row');if(hand){row.dataset.keepScroll='hand';row.tabIndex=0;row.setAttribute('aria-label','Cards in your hand');}if(pileIdentical&&!hand){for(const pile of battlefieldPiles(group.cards))for(const [at,c]of pile.entries()){const node=card(c);if(pile.length>1){node.dataset.pileSize=String(pile.length);node.dataset.pileIndex=String(at);node.dataset.pileTight=String(at>0&&at<pile.length-5);if(at===pile.length-1){node.dataset.pileTop='true';node.append(element('span','×'+pile.length,'play-match-pile-count'));const b=node.querySelector('.play-match-card');b?.setAttribute('aria-label',b.getAttribute('aria-label')+` · top of ${pile.length} identical`);}}row.append(host(c,node));}}
    else for(const [index,c]of group.cards.entries()){const node=card(c);node.style.setProperty('--fan-angle',`${Math.max(-7,Math.min(7,(index-(group.cards.length-1)/2)*2))}deg`);row.append(node);}lane.append(row);rows.append(lane);}section.append(rows);return section;
   }
   function seatPanel(player,name,own=false){

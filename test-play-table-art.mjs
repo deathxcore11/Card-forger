@@ -145,3 +145,32 @@ test('your hand is shown lands first, then spells by mana value, without changin
  assert.deepEqual(arenaHandOrder(hand).map(c=>c.id),[2,5,1,4,3,6],'lands keep their order, equal mana values keep Forge order, unknown cards go last');
  assert.deepEqual(hand,before,'the snapshot cards are not changed');
 });
+
+test('prompts speak plainly: payment names the cost, card and ability, never engine names or ids', async () => {
+  const { nativePayment, plainText } = await import('./experiments/forge-proof/native-panel.mjs');
+  const { nativeDecisionKind } = await import('./experiments/forge-proof/forge-session.mjs');
+  const food = { id: 204, known: true, zone: 'Battlefield', name: 'Food', text: '{2}, {T}, Sacrifice this token: You gain 3 life.' };
+  const n = { viewer: 1, inputType: 'InputPayManaOfCostPayment', message: 'Food Token (204) - {2}, {T}, Sacrifice this token: You gain 3 life.\nPay Mana Cost: {2}', payment: { remaining: '{2}', forCard: { kind: 'card', id: 204, name: 'Food Token' } }, players: [{ id: 1, mana: { R: 0 } }], selection: { actionable: [] } };
+  const p = nativePayment(n, [food]);
+  assert.equal(p.remaining, '{2}');
+  assert.equal(`${p.verb} ${p.name}`, 'Activate Food');
+  assert.equal(p.ability, food.text);
+  assert.equal(p.stuck, true, 'no mana to tap is said plainly');
+  assert.equal(nativePayment({ ...n, payment: undefined }, []).remaining, '{2}', 'older bridges: the cost is read from the message');
+  assert.equal(plainText('Food Token (204) - sacrifice'), 'Food Token - sacrifice');
+  assert.equal(nativeDecisionKind({ inputType: 'InputPayManaOfCostPayment' }), 'ManaPayment');
+  assert.equal(nativeDecisionKind({ inputType: 'InputSelectEntitiesFromList' }), 'Choice');
+  assert.equal(nativeDecisionKind({ inputType: 'InputSomethingNew' }), 'Decision');
+  assert.equal(nativeActionLabel({ viewer: 1, activePlayer: 1, phase: 'COMBAT_DECLARE_ATTACKERS', inputType: 'InputPassPriority', stack: [], players: [{ id: 1, zones: { Battlefield: { cards: [] } } }] }, 'ok', 'OK'), 'Next: Second main', 'no blockers step promised without attackers');
+});
+
+test('attachments tuck under their host, and differing attachments or combat never share a pile', async () => {
+  const { tuckAttachments } = await import('./experiments/phase-engine/match-table.mjs');
+  const giant = { id: 1, known: true, name: 'Hill Giant', attachments: [3] }, boots = { id: 3, known: true, name: 'Swiftfoot Boots', attachedTo: 1 }, rancor = { id: 4, known: true, name: 'Rancor', attachedTo: 99 };
+  const { loose, tucked } = tuckAttachments([giant, boots, rancor]);
+  assert.deepEqual(loose.map(c => c.id), [1, 4], 'a host elsewhere leaves the attachment in place');
+  assert.deepEqual(tucked.get(1).map(c => c.id), [3]);
+  const bear = id => ({ id, known: true, name: 'Bear', controller: 0, power: 2, toughness: 2, type: 'Creature' });
+  assert.equal(battlefieldPiles([bear(1), { ...bear(2), attachments: [9] }]).length, 2);
+  assert.equal(battlefieldPiles([{ ...bear(1), attacking: true, attackTarget: { kind: 'player', id: 1 } }, { ...bear(2), attacking: true, attackTarget: { kind: 'card', id: 7 } }]).length, 2);
+});

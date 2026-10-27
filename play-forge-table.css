@@ -304,7 +304,7 @@
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native]{--portrait-w:56px;--ob-gold:#d6ad64;--ob-gold-hi:#f2d496;--ob-panel:linear-gradient(180deg,#19191df2,#0e0e11f4);--ob-line:#d6ad6440;--ob-text:#eee6d4;--ob-muted:#a39b8a;--ob-play:#5cc8ff;--ob-target:#ff9d5c;--ob-chosen:#f3d27e;background:#0c0c0e url(assets/play/mat-obsidian-gold.webp) center/100% 100% no-repeat;color:var(--ob-text)}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-mat{background:radial-gradient(ellipse 70% 62% at 50% 50%,transparent 55%,#00000070 100%)}
 /* The table is #practicePlayerMat, whose page background outranks a class rule. */
-:where(body.practice-table-open) #practicePlayerMat.play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native]{background:#0c0c0e url(assets/play/mat-obsidian-gold.webp) center/100% 100% no-repeat}
+:where(body.practice-table-open) #practicePlayerMat.play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native]{background:#0c0c0e url(assets/play/mat-obsidian-arcane.webp) center/100% 100% no-repeat}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-backdrop,:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-battlefields .play-match-zone-heading{display:none}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-opponent-hand-count{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-opponent-fan .play-match-card-back{transform:none;flex:0 0 44px;width:44px;height:62px;margin-left:-10px;border-radius:5px}
@@ -907,3 +907,51 @@
 :where(body.practice-table-open) .forge-zone-search-actions button:disabled{opacity:.42}
 @media(max-height:600px){:where(body.practice-table-open) .forge-zone-search-dialog{gap:5px;padding:12px 18px}:where(body.practice-table-open) .forge-zone-search-cards{min-height:172px;padding:8px 4px 10px}:where(body.practice-table-open) .forge-zone-search-card{flex-basis:110px;width:110px;height:164px}:where(body.practice-table-open) .forge-zone-search-card img{height:150px}}
 @media(prefers-reduced-motion:reduce){:where(body.practice-table-open) .forge-zone-search-card{transition:none}}
+
+/* Prompts, combat drag, attachments, layout */
+/* Equipment and Auras tuck behind the permanent they are attached to, their name bars showing above it. */
+:where(body.practice-table-open) .play-match-attach-group{position:relative;display:inline-flex;flex:0 0 auto;align-items:center;align-self:stretch;height:100%;margin-right:calc(var(--attach-n,1)*9px)}
+:where(body.practice-table-open) .play-match-attach-group>.play-match-card-wrap[data-attached]{position:absolute;left:0;top:50%;z-index:0;transform:translate(calc(9px + var(--attach-i,0)*9px),calc(-50% - 13px - var(--attach-i,0)*9px));filter:brightness(.82) saturate(.9);transition:filter .15s}
+:where(body.practice-table-open) .play-match-attach-group>.play-match-card-wrap[data-attached]:hover{filter:none;z-index:2}
+:where(body.practice-table-open) .play-match-attach-group>.play-match-card-wrap:not([data-attached]){position:relative;z-index:1;transform:translateY(4px)}
+:where(body.practice-table-open) .play-match-attach-group>.play-match-card-wrap:not([data-attached]) .play-match-card{box-shadow:0 0 0 1px #d8b46a99,0 8px 18px #000b}
+/* While a creature is dragged in combat, what it could block or attack is lit; the one under the finger glows. */
+:where(body.practice-table-open) .play-match-table[data-forge-drag-mode] [data-forge-drop]{outline:2px dashed #f0d48a;outline-offset:3px;border-radius:10px}
+:where(body.practice-table-open) .play-match-table[data-forge-drag-mode] [data-forge-drop=over]{outline-style:solid;outline-width:3px;box-shadow:0 0 0 6px #f0d48a40,0 0 28px #f0d48aaa}
+:where(body.practice-table-open) .play-match-table[data-forge-drag-mode=block] .play-match-battlefields [data-placement-zone=battlefield],:where(body.practice-table-open) .play-match-table[data-forge-drag-mode] .forge-native-panel{outline:0!important}
+/* Whose move it is, at a glance: the dock's edge is gold for yours, grey while the CPU or Forge works. */
+:where(body.practice-table-open) .forge-native-panel[data-actor]{border-left:3px solid transparent;transition:border-color .2s}
+:where(body.practice-table-open) .forge-native-panel[data-actor=you]{border-left-color:#e3bb68}
+:where(body.practice-table-open) .forge-native-panel[data-actor=cpu]{border-left-color:#7d8796}
+/* Payment lines draw mana symbols inline. */
+:where(body.practice-table-open) .forge-native-panel h2 .ms,:where(body.practice-table-open) .forge-native-detail .ms{width:1.05em;height:1.05em;vertical-align:-.15em;margin:0 1px}
+/* Zone names stay readable under their counts. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row span{display:block!important;font-size:9.5px;letter-spacing:0;text-transform:none;text-overflow:clip}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row button{grid-template-rows:auto auto;align-content:center;min-height:44px}
+/* A bigger board: pieces grow into the space they have, up to a larger cap, and on touch screens
+   they fit the width too instead of running off the edge of a lane. */
+@media (min-width:901px) and (min-height:400px),(min-width:600px) and (min-height:600px){
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone-groups{--play-piece:clamp(48px,max(min(var(--fit-h1),var(--fit-c1),var(--fit-o)),min(var(--fit-h2),var(--fit-c2),var(--fit-o))),190px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-command-zone .play-match-card-wrap{width:clamp(72px,6vw,112px);height:calc(clamp(72px,6vw,112px)*1.394)}
+}
+@media (hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:400px){
+ /* Creatures take one row when it fits, or two rows when one would make them too small. */
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone-groups{--fit-h1:calc((100cqh - 24px)*.55);--fit-h2:calc((100cqh*.6 - 22px) / 1.8);--fit-c1:calc((100cqw - 40px - var(--fit-cg,0px)) / var(--fit-cu,1));--fit-c2:calc((100cqw - 40px - var(--fit-cg,0px) / 2) / (var(--fit-cu,1) / 2 + .6));--fit-o:calc((100cqw - 56px - var(--fit-og,0px)) / var(--fit-ou,1) * 1.6);--play-piece:clamp(56px,max(min(var(--fit-h1),var(--fit-c1),var(--fit-o)),min(var(--fit-h2),var(--fit-c2),var(--fit-o))),168px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-lane[data-card-group=creatures] .play-match-card-row{flex-wrap:wrap;align-content:center;row-gap:8px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-command-zone .play-match-card-wrap{width:66px;height:92px}
+}
+/* The seam between the two battlefields takes the table's violet-to-teal light. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone[data-owner=you]:before{background:linear-gradient(90deg,transparent,#8f7cff88 30%,#c9c2ff 50%,#5fd4e088 70%,transparent)}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone[data-owner=you]:after{border-color:#b3a8ffcc}
+@media (hover:hover) and (min-width:600px) and (min-height:600px) and (max-aspect-ratio:23/20){
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-command-zone .play-match-card-wrap{width:64px;height:89px}
+}
+/* Board sequences: mana streams, arrival rings, damage numbers. Purely decorative; reduced motion skips them in script. */
+:where(body) .forge-fx{position:fixed;inset:0;pointer-events:none;z-index:900;overflow:hidden}
+:where(body) .forge-fx-mana{position:absolute;left:-7px;top:-7px;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle,#fff 0 22%,var(--tint,#e3bb68) 45%,transparent 72%);box-shadow:0 0 12px 4px color-mix(in srgb,var(--tint,#e3bb68) 70%,transparent);will-change:transform,opacity}
+:where(body.practice-table-open) .forge-fx-ring{position:absolute;inset:-3px;border-radius:12px;pointer-events:none;z-index:5;border:2px solid var(--tint,#f0d48a);box-shadow:0 0 18px 2px color-mix(in srgb,var(--tint,#f0d48a) 60%,transparent)}
+:where(body.practice-table-open) .forge-fx-ring[data-kind=creature]{border-color:#f2d496;box-shadow:0 0 26px 6px #f2d49688}
+:where(body.practice-table-open) .forge-fx-ring[data-kind=hit]{border-color:#ff7a5a;box-shadow:0 0 24px 6px #ff5a3a99}
+:where(body.practice-table-open) .forge-fx-ring[data-kind=attach]{border-color:#b9a6ff;box-shadow:0 0 22px 4px #9f8cff88}
+:where(body) .forge-fx-number{position:absolute;font:800 26px/1 'DM Sans',system-ui,sans-serif;color:#ffd2c4;text-shadow:0 2px 0 #7a1608,0 0 14px #ff4a2a;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){:where(body) .forge-fx{display:none}}
