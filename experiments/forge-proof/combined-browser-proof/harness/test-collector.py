@@ -3,7 +3,7 @@
 import importlib.util,json,pathlib,subprocess,tempfile,unittest
 HERE=pathlib.Path(__file__).resolve().parent
 spec=importlib.util.spec_from_file_location('artifact_test',HERE/'test-artifacts.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
-S='f51b33606da19cc361ae456e968d78c2dd8b41d73e7f7bf88a1e2d125f493d76';M='16acf7bd27c6ec4c75dd0dff6a38ab97e901e39b8113817107eb123dac9a1f01'
+S='eb7dc914eaaa85636b133477c052de0c5bd30a6f4789fad190955e5f105c8969';M='18e485dd4042ec8b0b01eaaf5b02ea8a0915b571311e40a8e4ffb365c9216599'
 class Collector(unittest.TestCase):
  def run_fixture(self,alter=lambda image,probe:None,preflight_ok=True,source_stage='complete',cleanup_parts=None):
   with tempfile.TemporaryDirectory(prefix='combined-collector-test-') as tmp:
@@ -17,10 +17,10 @@ class Collector(unittest.TestCase):
     (p/'summary.json').write_text(json.dumps(d));(p/'lifecycle.json').write_text(json.dumps(m.lifecycle(n)))
     for png in ['setup.png','opening.png','resolved.png','complete.png']+(['terminal.png'] if n==2 else []):(p/png).write_bytes(m.PNG)
    common={'scope':'LOCAL_TEST_NOT_DEPLOYABLE','deployable':False,'registryPublication':False,'result':'passed','ociManifestDigest':'sha256:'+'2'*64,'rawState':m.CANARY,'token':m.CANARY}
-   image={**common,'schema':'cardstashy.local-oci-build-summary.v1','contextManifestSHA256':'b58277489050476a5e211b4a73501688c2e1a0c8e5fbbe1b4770ac6dd0239683','buildImage':'maven:3.9.11-eclipse-temurin-21@sha256:463a1849665463254b2dd56e3a5b316f1596bc93d0571065c06ea05bb48ab8f4','runtimeImage':'eclipse-temurin:21-jre-jammy@sha256:8ecbec1f32912979c15b86aaf98f7082a77d318a7f92af3d9fe2c0fd2723df10','imageId':'sha256:'+'1'*64,'nativeSourceSHA256':S,'nativeManifestSHA256':M}
+   image={**common,'schema':'cardstashy.local-oci-build-summary.v1','contextManifestSHA256':'e63230c6d025cfa97bb842691cb5758d6b4923a06da801700f1168167926b81d','buildImage':'maven:3.9.11-eclipse-temurin-21@sha256:463a1849665463254b2dd56e3a5b316f1596bc93d0571065c06ea05bb48ab8f4','runtimeImage':'eclipse-temurin:21-jre-jammy@sha256:8ecbec1f32912979c15b86aaf98f7082a77d318a7f92af3d9fe2c0fd2723df10','imageId':'sha256:'+'1'*64,'nativeSourceSHA256':S,'nativeManifestSHA256':M}
    probe={**common,'schema':'cardstashy.local-oci-probe-summary.v1','sameImageId':image['imageId'],'sourceSHA256':S,'nativeManifestSHA256':M,'policyVersion':'forge-heuristic-medium-beta-v1','buildCompilerVersion':'javac 21.0.9','runtimeJavaVersion':'21.0.9+10',**{k:'3'*64 for k in ['nativeBuildAttestationSha256','runtimeClassSetSha256','aiPatchsetSha256','selectedProfileSHA256','rulesManifestSHA256','humanDigest','opponentDigest']},**{k:True for k in ['exactRosterVerified','cpuRulesRuntimeVerified','privacyGatePassed','registeredRosterVerified','nativeRosterVerified']},'cleanup':{'confirmed':True,'privateInputRemoved':True,'removed':True,'forced':False,'starts':1,'destroys':1,'exitCode':0,'status':'exited','oomKilled':False,'rawEnv':m.CANARY}}
    probe.update(runtimeClassSetSha256='e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80',aiPatchsetSha256='cd14c95185c4bfd44e90a809a6095f2027f23d102c1cf04464533ca545a0a4b1',selectedProfileSHA256='d77ec318868fcdb8fe1dce8d8c2df336fe26d54e13b51f7aab13d259bdf70330',rulesManifestSHA256='2b770c2d129849e534577d4ab8f3b236c21b9e2e80f2afef5c12af7c3f2c9d11')
-   probe.update(humanPriorityRuntimeVerified=True,humanPrioritySourceSha256='808b643d01c0c8fe63344733725c77e8c504e1f566453386c6cbfc36c95e40bc',humanPriorityClassesSha256='89975e8a8bff75923f977c28ebd8341990744205c07cc3a504509c7d7647c1ee',humanPriorityBuildSha256='8'*64)
+   probe.update(humanPriorityRuntimeVerified=True,humanPrioritySourceSha256='23b9220fb5fe8646ab3784a2e19c6c43d968dabed719bc8c59c88f00cc26350c',humanPriorityClassesSha256='61ad2c7b314ce2d091f96f1fb89dfffc1e7c6634058a019e49978904b660570e',humanPriorityBuildSha256='8'*64)
    alter(image,probe)
    (imageDir/'image-summary.json').write_text(json.dumps(image));(imageDir/'probe-summary.json').write_text(json.dumps(probe))
    r=subprocess.run(['python3',str(HERE/'collect-combined.py'),str(root),str(out),'0','complete','true'],capture_output=True,text=True)

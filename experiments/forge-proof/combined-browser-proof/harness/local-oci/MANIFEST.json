@@ -59,12 +59,12 @@
     {
       "path": "test-fixtures.mjs",
       "bytes": 7465,
-      "sha256": "9e2b4db354b3f7132f1b926236ce36874d990abc3828ffc29297dfe72ec4845b"
+      "sha256": "187ee352b90dff64252855838a9941487157ee574537388e95ed432bb0f5927e"
     },
     {
       "path": "test-local-oci.mjs",
       "bytes": 13448,
-      "sha256": "5bf9b361bcd1eb12b80e4824303f9bd6b72242acfad79f6e82a60c55749753c5"
+      "sha256": "2abc2041408cfa9c4a9ffdc714b89eb0d5d6774b5ef37f880f406aab2e8a2dde"
     },
     {
       "path": "test-provider.mjs",
