@@ -2,6 +2,18 @@
 // capabilities cannot identify a hinge, physical screen or folded/unfolded state.
 // The name stays compatible with desktop callers and their existing placement.
 export const PLAY_TOUCH_MIN_EDGE = 600;
+// The table fits when its shortest side has room, or when a short landscape screen
+// (a phone or foldable held sideways, a laptop at 200%) is wide enough for the
+// compact layout. Size alone decides: browsers report no hinge or fold state.
+export const PLAY_COMPACT_MIN_WIDTH = 901, PLAY_COMPACT_MIN_HEIGHT = 400;
+export function playScreenFits(width, height) {
+  if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return null;
+  return Math.min(width,height)>=PLAY_TOUCH_MIN_EDGE||width>=PLAY_COMPACT_MIN_WIDTH&&height>=PLAY_COMPACT_MIN_HEIGHT;
+}
+export function readPlayScreen(view=globalThis,root=view.document) {
+  const width=root?.documentElement?.clientWidth||view.innerWidth||0,height=root?.documentElement?.clientHeight||view.innerHeight||0;
+  return {width,height,fits:playScreenFits(width,height)};
+}
 export function playDeviceEligibility({native=false,ua='',platform='',mobile,maxTouchPoints=0,anyFine=false,anyHover=false,anyCoarse=false,width=0,height=0}={}) {
   if(native)return {eligible:false,reason:'native',entry:null};
   const touch=Number.isFinite(maxTouchPoints)&&maxTouchPoints>0||anyCoarse===true;
@@ -12,7 +24,7 @@ export function playDeviceEligibility({native=false,ua='',platform='',mobile,max
     if(!touch)return {eligible:false,reason:'uncertain',entry:null};
     if(!/Chrome\/|CriOS\//i.test(ua)||/EdgA\/|OPR\/|SamsungBrowser\//i.test(ua))return {eligible:false,reason:'touch-browser',entry:'touch'};
     if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return {eligible:false,reason:'viewport-unknown',entry:'touch'};
-    if(width<PLAY_TOUCH_MIN_EDGE||height<PLAY_TOUCH_MIN_EDGE)return {eligible:false,reason:'touch-space',entry:'touch'};
+    if(!playScreenFits(width,height))return {eligible:false,reason:'touch-space',entry:'touch'};
     return {eligible:true,reason:'wide-touch-candidate',entry:'touch'};
   }
   // Preserve desktop admission: a narrow desktop window remains desktop, and
@@ -27,22 +39,26 @@ export function readPlayDeviceEligibility(view=globalThis,root=view.document) {
   const n=view.navigator||{},matches=query=>{try{return !!view.matchMedia?.(query)?.matches;}catch{return false;}};
   return playDeviceEligibility({native,ua:n.userAgent||'',platform:n.platform||'',mobile:n.userAgentData?.mobile,maxTouchPoints:n.maxTouchPoints||0,anyFine:matches('(any-pointer:fine)'),anyHover:matches('(any-hover:hover)'),anyCoarse:matches('(any-pointer:coarse)'),width:root?.documentElement?.clientWidth||view.innerWidth||0,height:root?.documentElement?.clientHeight||view.innerHeight||0});
 }
-export function playDeviceGuardText(result={}) {
-  if(result.reason==='native')return 'Play is being prepared for the web first. Android app play comes later. Your saved decks remain available in Decks.';
-  if(result.reason==='touch-space')return 'Play needs more room in this browser window. Open your inner screen or use a tablet in Chrome, with at least 600 CSS pixels of width and height. Regular narrow-phone play comes later. Your saved decks remain available in Decks.';
-  if(result.reason==='touch-browser')return 'For touch-screen Play, use Chrome on a spacious inner screen or tablet. Desktop browsers with a mouse or trackpad can also open Play. Your saved decks remain available in Decks.';
-  return 'Play needs a supported desktop browser with a mouse or trackpad, or Chrome on a spacious touch-screen browser window. This browser has not reported the required display and input capabilities. Your saved decks remain available in Decks.';
+// One title and one line per reason, shown in place of the start button.
+export function playDeviceGate(result={}) {
+  if(result.reason==='native')return {title:'Play is coming to the app',line:'Play in the Android app is coming with its next update.'};
+  if(result.reason==='touch-space'||result.reason==='viewport-unknown')return {title:'Play needs a bigger screen',line:'Unfold your device, turn it sideways on a tablet, or use a computer.'};
+  if(result.reason==='touch-browser')return {title:'Play needs Chrome on this device',line:'Open CardStashy in Chrome, or use a computer.'};
+  return {title:'Play isn’t available in this browser',line:'Use Chrome on a tablet or unfolded phone, or a computer with a mouse or trackpad.'};
 }
+export function playDeviceGuardText(result={}) {const gate=playDeviceGate(result);return `${gate.title}. ${gate.line}`;}
 export function touchPlayEntryMarkup(location) {
   if(!['home','decks'].includes(location))return '';
   return `<button type="button" class="btn ghost touch-play-entry ${location}-play-entry" data-touch-play-entry="practice" data-act="go" data-to="#play" hidden disabled aria-label="Open Play menu"><span aria-hidden="true">▷</span> Play</button>`;
 }
 export function syncDesktopPlayEntries(game,root=globalThis.document,view=globalThis) {
   const result=readPlayDeviceEligibility(view,root);
+  // Header and phone-nav Play: desktops that pass admission, and every touch device,
+  // where Play opens the menu and explains a screen that is too small instead.
   for(const node of root?.querySelectorAll?.('[data-desktop-play-entry]')||[]){
-    node.hidden=game!=='mtg'||result.entry!=='desktop'||!result.eligible;
+    node.hidden=game!=='mtg'||!(result.entry==='desktop'&&result.eligible||result.entry==='touch');
     node.disabled=node.hidden||node.dataset.desktopPlayEntry!=='practice';
-    node.dataset.playReadiness='cpu-beta';
+    node.dataset.playReadiness=result.eligible?'cpu-beta':'device-guard';
   }
   for(const node of root?.querySelectorAll?.('[data-touch-play-entry]')||[]){
     node.hidden=game!=='mtg'||result.entry!=='touch';
@@ -59,8 +75,39 @@ export function watchPlayDeviceEligibility({game=()=> 'mtg',root=globalThis.docu
     const next=syncDesktopPlayEntries(game(),root,view);
     if(next.eligible!==prior.eligible||next.reason!==prior.reason||next.entry!==prior.entry){const old=prior;prior=next;onChange(next,old);}
   };
-  view.addEventListener?.('resize',update,{passive:true});
+  const unwatch=watchPlayScreen(view,update);
   const queries=['(any-pointer:fine)','(any-hover:hover)','(any-pointer:coarse)'].flatMap(query=>{try{return view.matchMedia?.(query)||[];}catch{return [];}});
   for(const query of queries)query.addEventListener?.('change',update);
-  return ()=>{view.removeEventListener?.('resize',update);for(const query of queries)query.removeEventListener?.('change',update);};
+  return ()=>{unwatch();for(const query of queries)query.removeEventListener?.('change',update);};
+}
+// Window resizes, rotation and on-screen keyboard or zoom changes all report here.
+export function watchPlayScreen(view=globalThis,onChange=()=>{}) {
+  const visual=view.visualViewport;
+  view.addEventListener?.('resize',onChange,{passive:true});view.addEventListener?.('orientationchange',onChange);visual?.addEventListener?.('resize',onChange);
+  return ()=>{view.removeEventListener?.('resize',onChange);view.removeEventListener?.('orientationchange',onChange);visual?.removeEventListener?.('resize',onChange);};
+}
+// While a match is open on a screen that has become too small, the match waits for
+// the player. Nothing is sent to the server unless the screen stays too small for
+// the whole limit, when onExpire ends the match. A screen that fits again resumes
+// immediately. Unknown sizes count as fitting.
+export const PLAY_SMALL_SCREEN_LIMIT_MS = 5*60*1000;
+export function createPlayScreenPause({limitMs=PLAY_SMALL_SCREEN_LIMIT_MS,now=()=>Date.now(),setTimer=(fn,ms)=>setTimeout(fn,ms),clearTimer=id=>clearTimeout(id),onPause=()=>{},onResume=()=>{},onTick=()=>{},onExpire=()=>{}}={}) {
+  let since=null,timer=null,ended=false;
+  const stop=()=>{if(timer!==null)clearTimer(timer);timer=null;};
+  const tick=()=>{
+    timer=null;if(since===null||ended)return;
+    const left=Math.max(0,limitMs-(now()-since));
+    if(left<=0){ended=true;since=null;onExpire();return;}
+    onTick(left);timer=setTimer(tick,Math.min(1000,left));
+  };
+  return {
+    update(fits){
+      if(ended)return;
+      if(fits===false&&since===null){since=now();onPause(limitMs);tick();}
+      else if(fits!==false&&since!==null){since=null;stop();onResume();}
+    },
+    get paused(){return since!==null;},
+    get ended(){return ended;},
+    destroy(){ended=true;since=null;stop();},
+  };
 }
