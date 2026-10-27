@@ -1,6 +1,7 @@
 // Live Forge table (fixture board, no transport) on real tablet and foldable screen
-// sizes: everything a player needs is on screen, nothing covers your hand, every control
-// is a full touch target, and tapping a card you can't act on shows it larger.
+// sizes: everything a player needs is on screen, the board takes the height, nothing
+// covers your hand or your permanents, every control is a full touch target, and tapping
+// a card you can't act on shows it larger.
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
@@ -12,7 +13,7 @@ const server=createServer(async(req,res)=>{try{const file=resolve(root,'.'+new U
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch();
 const UA='Mozilla/5.0 (Linux; Android 15; SM-F956U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
 // CSS viewports of real devices, both ways round for the foldables.
-const DEVICES=[['Galaxy Z Fold 6',928,1004],['Galaxy Z Fold 6 sideways',1004,928],['Galaxy Z Fold 7',984,1016],['Pixel Fold',841,701],['Pixel 9 Pro Fold',791,820],
+const DEVICES=[['Galaxy Z Fold 8 Ultra',884,830],['Galaxy Z Fold 8 Ultra sideways',982,729],['Galaxy Z Fold 6',928,1004],['Galaxy Z Fold 6 sideways',1004,928],['Galaxy Z Fold 7',984,1016],['Pixel Fold',841,701],['Pixel 9 Pro Fold',791,820],
  ['iPad',768,1024],['iPad Pro 11',834,1194],['Galaxy Tab S9',640,1024],['Nexus 7',600,960],['Tablet sideways',1180,820],['Galaxy Tab S9 sideways with the browser bar',1024,560]];
 const open=async(page,state)=>{await page.goto(base+'/experiments/forge-proof/table-fixture.html?state='+state);await page.waitForFunction(()=>document.body.dataset.fixtureReady==='true');
  // Let the arrival animations finish so sizes are the settled ones.
@@ -32,7 +33,12 @@ try{
    const dock=box('.play-match-decisions');
    const targets=[...document.querySelectorAll('.play-match-header>button,.play-match-header>details>summary,.forge-native-panel button,.forge-zone-row button')].filter(visible).map(e=>({label:(e.textContent||'').trim().slice(0,24),h:e.getBoundingClientRect().height,w:e.getBoundingClientRect().width}));
    const pieces=[...document.querySelectorAll('.play-match-battlefields .play-match-card[data-instance]')].map(c=>c.getBoundingClientRect().width);
-   return {boxes,dock,handTop:Math.min(...hand.map(r=>r.top)),handBottom:Math.max(...hand.map(r=>r.bottom)),handLeft:Math.min(...hand.map(r=>r.left)),handRight:Math.max(...hand.map(r=>r.right)),
+   // Each of your permanents is reachable: the point at its centre hits that piece, not the hand or a panel.
+   // (A crowded row scrolls sideways; only pieces scrolled into the board's view are checked.)
+   const view=document.querySelector('.play-match-battlefields').getBoundingClientRect();
+   const covered=[...document.querySelectorAll('.play-match-battlefields .play-match-zone[data-owner=you] .play-match-card[data-instance]')].filter(c=>{const r=c.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;if(x<view.left||x>view.right)return false;const hit=document.elementFromPoint(x,y);return !hit||hit.closest('.play-match-hand,.play-match-decisions,.play-match-seat,.forge-zone-row,.forge-mana-panel');}).map(c=>c.dataset.instance);
+   const halves=[...document.querySelectorAll('.play-match-battlefields .play-match-zone')].map(z=>z.getBoundingClientRect().height);
+   return {covered,halves,boxes,dock,handTop:Math.min(...hand.map(r=>r.top)),handBottom:Math.max(...hand.map(r=>r.bottom)),handLeft:Math.min(...hand.map(r=>r.left)),handRight:Math.max(...hand.map(r=>r.right)),
     magnifiers:[...document.querySelectorAll('.play-match-inspect-card')].filter(visible).length,targets,minPiece:Math.min(...pieces),overflow:document.documentElement.scrollWidth-innerWidth};
   });
   for(const [k,b] of Object.entries(m.boxes)){assert(b,`${name}: ${k} is shown`);assert(b.l>=-1&&b.t>=-1&&b.r<=width+1&&b.b<=height+1,`${name}: ${k} is fully on screen ${JSON.stringify(b)}`);}
@@ -42,10 +48,13 @@ try{
   // Offline the fixture has no Scryfall type lines, so every permanent shares one row: the
   // worst case. With real card types (a live match) pieces are about twice this size.
   assert(m.minPiece>=50,`${name}: board pieces stay readable (${Math.round(m.minPiece)}px)`);
-  // The decision card never covers your hand: below it on upright screens, beside it on wide ones.
+  // The hand is tucked along the bottom edge beside the decision card and never covers your
+  // permanents; each half of the board keeps real height.
   const upright=width/height<=1.15;
-  if(upright)assert(m.handBottom<=m.dock.t+2,`${name}: the hand sits above the decision card (${Math.round(m.handBottom)} > ${Math.round(m.dock.t)})`);
-  else assert(m.handRight<=m.dock.l+2,`${name}: the hand sits beside the decision card`);
+  assert(m.handRight<=m.dock.l+2,`${name}: the hand sits beside the decision card (${Math.round(m.handRight)} > ${Math.round(m.dock.l)})`);
+  assert(m.handTop>=m.boxes.board.b-12,`${name}: the hand starts below the board (${Math.round(m.handTop)} < ${Math.round(m.boxes.board.b)})`);
+  assert.deepEqual(m.covered,[],`${name}: none of your permanents is under the hand or a panel`);
+  assert(Math.min(...m.halves)>=height*(height<650?.22:.25),`${name}: each half of the board keeps its height (${m.halves.map(Math.round)})`);
   // Tapping a card Forge does not offer shows it larger; tapping one it offers plays it.
   await page.evaluate(()=>{window.calls=[];const s=window.fixture.session;s.nativeSelect=(...a)=>{window.calls.push(['select',...a]);return Promise.resolve();};});
   // A point where the card itself is on top (piles and the hand fan overlap their neighbours).
@@ -86,7 +95,7 @@ try{
   if(upright)assert(Math.min(...o.cards.map(c=>c.w))>=110,`${name}: opening cards are readable on an upright screen (${Math.round(Math.min(...o.cards.map(c=>c.w)))}px)`);
   for(const b of o.buttons.filter(b=>['ok','cancel'].includes(b.k)))assert(b.b<=height+1&&b.h>=44,`${name}: ${b.k} is on screen and a full target`);
   assert.deepEqual(errors,[],`${name}: no page errors`);
-  console.log(`PASS ${name} ${width}x${height}: complete table on screen, hand clear of the decision card, 44 px controls, tap opens a card with Play, finger drag plays, readable opening hand.`);
+  console.log(`PASS ${name} ${width}x${height}: complete table on screen, board-first with the hand tucked beside the decision card, 44 px controls, tap opens a card with Play, finger drag plays, readable opening hand.`);
   await context.close();
  }
 }finally{await browser.close();await new Promise(r=>server.close(r));}

@@ -61,13 +61,21 @@ if (STATE === 'dense') {
   BASE.cpu.battlefield.push(['Talrand, Sky Summoner'], ['Delver of Secrets'], ['Snapcaster Mage'], ['Frost Titan'], ['Phantasmal Image'], ...Array.from({length: 3}, () => ['Island']), ['Command Tower'], ['Fellwar Stone']);
 }
 if (STATE === 'discard') BASE.you.hand.push('Shock');
+// The owner's real early board: the CPU went first and played a land; you played Forest
+// and Many Partings made a Food token.
+if (STATE === 'early') {
+  Object.assign(BASE.you, {battlefield: [['Forest'], ['Food', {token: true, imageKey: 't:c_a_food_sac', type: 'Token Artifact — Food', text: '{2}, {T}, Sacrifice this token: You gain 3 life.'}]],
+    hand: ['Mountain', 'Legion Warboss', 'Mountain', 'Rampant Growth', "Witch's Mark", "Krenko's Command"], graveyard: ['Many Partings'], command: ['Chishiro, the Shattered Blade']});
+  Object.assign(BASE.cpu, {battlefield: [['Volcanic Island']], hand: 5, graveyard: [], exile: [], command: ['Kenrith, the Returned King']});
+}
 if (STATE === 'attack') { BASE.you.battlefield[0][1] = {attacking: true}; BASE.you.battlefield[2][1] = {attacking: true}; }
 
 // Real card data and art from Scryfall, by name; a missing card falls back to a drawn crest.
 const names = [...new Set([
   ...BASE.you.battlefield.map(([n]) => n), ...BASE.you.hand, ...BASE.you.graveyard, ...BASE.you.exile, ...BASE.you.command,
   ...BASE.cpu.battlefield.map(([n]) => n), ...BASE.cpu.graveyard, ...BASE.cpu.exile, ...BASE.cpu.command,
-].filter(n => n !== 'Goblin'))];
+  ...(STATE === 'search' ? ['Forest', 'Mountain', 'Island', 'Plains', 'Swamp', 'Wastes'] : []),
+].filter(n => n !== 'Goblin' && n !== 'Food'))];
 const scry = new Map();
 try {
   for (let i = 0; i < names.length; i += 70) {
@@ -82,14 +90,14 @@ const stat = v => v === null || v === undefined ? null : /^-?\d+$/.test(String(v
 let nextId = 100;
 const nativeCard = (name, zone, owner, opts = {}) => {
   const c = scry.get(name), f = face(c);
-  const token = opts.token === true;
+  const token = opts.token === true, creature = token && !opts.type;
   return {
     id: nextId++, owner, controller: owner, zone, hidden: false, name,
-    type: token ? 'Token Creature — Goblin' : (c?.type_line || f.type_line || ''),
-    manaCost: token ? '' : (c?.mana_cost ?? f.mana_cost ?? ''), text: token ? 'Haste' : (c?.oracle_text ?? f.oracle_text ?? ''),
-    power: token ? 1 : stat(c?.power ?? f.power), toughness: token ? 1 : stat(c?.toughness ?? f.toughness),
+    type: token ? opts.type || 'Token Creature — Goblin' : (c?.type_line || f.type_line || ''),
+    manaCost: token ? '' : (c?.mana_cost ?? f.mana_cost ?? ''), text: token ? opts.text || 'Haste' : (c?.oracle_text ?? f.oracle_text ?? ''),
+    power: creature ? 1 : token ? null : stat(c?.power ?? f.power), toughness: creature ? 1 : token ? null : stat(c?.toughness ?? f.toughness),
     tapped: !!opts.tapped, attacking: !!opts.attacking, blocking: !!opts.blocking, token, commander: zone === 'Command',
-    damage: opts.damage || 0, summoningSick: !!opts.sick, counters: opts.counters || {}, keywords: token ? ['Haste'] : (c?.keywords || []),
+    damage: opts.damage || 0, summoningSick: !!opts.sick, counters: opts.counters || {}, keywords: creature ? ['Haste'] : token ? [] : (c?.keywords || []),
     setCode: c?.set || '', imageKey: opts.imageKey || '',
   };
 };
@@ -106,6 +114,7 @@ const ref = c => ({kind: 'card', id: c.id});
 const byName = (zone, name) => zone.cards.filter(c => c.name === name);
 
 const yourTurn = STATE !== 'cpu';
+const turn = STATE === 'early' ? 2 : 5;
 const phase = STATE === 'attack' ? 'COMBAT_DECLARE_ATTACKERS' : 'MAIN1';
 const inputType = {targets: 'InputSelectTargets', attack: 'InputAttack', cpu: 'InputPassPriority', discard: '', opening: 'InputConfirmMulligan'}[STATE] ?? 'InputPassPriority';
 const castable = ['Lightning Bolt', 'Monastery Swiftspear', 'Play with Fire', 'Skewer the Critics', 'Forest', 'Llanowar Elves'];
@@ -126,7 +135,11 @@ const message = {
   attack: 'Declare attackers.',
   opening: 'Keep this hand or mulligan?',
   discard: 'Cleanup Phase\nSelect 1 card(s) to discard to bring your hand down to the maximum of 7 cards.',
-}[STATE] || `Priority: ${yourTurn ? 'idw011' : 'CPU'}\nTurn: 5 (${yourTurn ? 'idw011' : 'CPU'})\nPhase: Main phase 1\nStack: Empty`;
+}[STATE] || `Priority: ${yourTurn ? 'idw011' : 'CPU'}\nTurn: ${turn} (${yourTurn ? 'idw011' : 'CPU'})\nPhase: Main phase 1\nStack: Empty`;
+// A library search the way Forge offers it: one option per eligible card.
+const prompt = STATE === 'search' ? {id: 'fixture-many-partings', supported: true, method: 'chooseSingleEntityForEffect', min: 0, max: 1, cancelable: true,
+  message: 'Many Partings (63) - Search your library for a basic land card, reveal it, put it into your hand, then shuffle. Create a Food token.\nSelect a card from your library',
+  options: ['Forest', 'Forest', 'Mountain', 'Mountain', 'Mountain', 'Island', 'Plains', 'Swamp', 'Forest', 'Mountain', 'Wastes', 'Forest'].map((name, index) => ({index, value: {...nativeCard(name, 'Library', YOU), kind: 'card'}}))} : null;
 const stackCard = STATE === 'targets' ? nativeCard('Counterspell', 'Stack', CPU) : null;
 const native = {
   schema: 'cardstashy.forge-proof.v1', revision: 7, viewer: YOU, status: 'running', busy: false,
@@ -134,8 +147,8 @@ const native = {
     {id: YOU, name: 'idw011', life: 40, isViewer: true, mana: {W: 0, U: 0, B: 0, R: STATE === 'targets' ? 0 : 2, G: 0, C: 0}, zones: youZones},
     {id: CPU, name: 'CPU', life: 38, isViewer: false, mana: {W: 0, U: 0, B: 0, R: 0, G: 0, C: 0}, zones: cpuZones},
   ],
-  stack: stackCard ? [{id: 990, text: 'Counterspell — Counter target spell.', source: stackCard, activatingPlayer: CPU}] : [], turn: 5, phase, activePlayer: yourTurn ? YOU : CPU, priorityPlayer: yourTurn ? YOU : CPU,
-  inputType, prompt: null, message, controlMode: 'smart', notification: {}, lastActionError: null,
+  stack: stackCard ? [{id: 990, text: 'Counterspell — Counter target spell.', source: stackCard, activatingPlayer: CPU}] : [], turn, phase, activePlayer: yourTurn ? YOU : CPU, priorityPlayer: yourTurn ? YOU : CPU,
+  inputType: prompt ? '' : inputType, prompt, message, controlMode: 'smart', notification: {}, lastActionError: null,
   buttons: STATE === 'opening' ? {ok: 'Keep', okEnabled: true, cancel: 'Mulligan', cancelEnabled: true}
     : STATE === 'discard' ? {ok: 'OK', okEnabled: false, cancel: '', cancelEnabled: false}
     : STATE === 'targets' ? {ok: 'OK', okEnabled: true, cancel: 'Cancel', cancelEnabled: true}

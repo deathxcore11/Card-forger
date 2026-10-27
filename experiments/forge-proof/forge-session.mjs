@@ -171,6 +171,16 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
   close(){if(closed)return;closed=true;clearTimeout(timer);clearPrivateState();error=null;actionError=null;emit();listeners.clear();onClose();},
   inspect(cardId){if(status?.surface.cards.some(c=>c.id===cardId&&c.known)){selected=cardId;emit();}},
   nativeSelect,nativeButton(op,revision=native?.revision){if(native.prompt)throw Error('Use the native dialog.');if(!['ok','cancel'].includes(op)||native.buttons?.[op+'Enabled']!==true)throw Error('Native button is disabled.');return send(op,{},revision);},
+  // Dialog options are a separate engine-authored visibility contract. Resolve
+  // artwork only for a visible card in the current offered option, never by
+  // looking through private zone containers or accepting a caller's card name.
+  promptCardArtwork(index,revision=native?.revision){
+   if(revision!==native?.revision||native?.prompt?.supported!==true)return null;
+   const option=list(native.prompt.options).find(o=>o.index===index),card=option?.value?.card||option?.value;
+   if(optionCardId(option?.value)===null)return null;
+   const artwork=lookupArtwork(card.name,card);
+   return {id:card.id,name:card.name,known:true,zone:card.zone,...(artwork?{printing:{playArtwork:artwork}}:{})};
+  },
   selectPrompt,confirmPrompt,clearPrompt(){const p=currentPrompt();draft=p.method==='order'?{revision:native.revision,promptId:p.id,indexes:[],remember:false}:null;emit();},
   rememberPrompt(value){const p=currentPrompt();if(p.method!=='order'||p.rememberAllowed!==true||typeof value!=='boolean')throw Error('Native remember choice not offered.');draft={...effectiveDraft(),remember:value};emit();},
   reorderPrompt(index,direction){const p=currentPrompt();if(p.method!=='order'||p.ordered!==true||![1,-1].includes(direction))throw Error('Native order movement not offered.');const indexes=[...promptIndexes()],at=indexes.indexOf(index),to=at+direction;if(at<0||to<0||to>=indexes.length)return;[indexes[at],indexes[to]]=[indexes[to],indexes[at]];draft={...effectiveDraft(),indexes};emit();},

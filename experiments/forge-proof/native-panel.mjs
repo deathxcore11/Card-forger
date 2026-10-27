@@ -1,5 +1,33 @@
 import {optionLabel,optionCardId} from './forge-session.mjs';
 const OPTION_METHODS=new Set(['getChoices','getAbilityToPlay','chooseSingleEntityForEffect','chooseEntitiesForEffect','showOptionDialog','order']);
+const SEARCH_ZONES=new Set(['Library','Graveyard','Exile']);
+// Only current engine-offered choices enter the picker. Do not enumerate a zone:
+// a visible library can include cards which the current search cannot select.
+export function nativeZoneSearch(snapshot){
+ const n=snapshot?.native,p=n?.prompt,cards=snapshot?.status?.surface?.cards||[],byId=new Map(cards.map(c=>[c.id,c]));
+ if(!n||n.failure||n.status==='finished')return null;
+ if(p){
+  if(p.supported!==true||p.acknowledgeOnly===true||!['getChoices','chooseSingleEntityForEffect','chooseEntitiesForEffect'].includes(p.method)||!p.options?.length)return null;
+  const choices=p.options.map(o=>{const value=o.value?.card||o.value,cardId=optionCardId(o.value),surface=byId.get(cardId),zone=value?.zone||surface?.zone;return {key:`option-${o.index}`,index:o.index,cardId,zone,card:surface?.known===true?surface:null,name:optionLabel(o.value),visible:cardId!==null,value};});
+  if(!choices.every(c=>SEARCH_ZONES.has(c.zone)))return null;
+  return {kind:'prompt',choices,zones:[...new Set(choices.map(c=>c.zone))],min:p.min,max:p.max};
+ }
+ // Actionable graveyard spells during priority are not a search. Mixed board /
+ // player target choices stay on the table so the overlay cannot hide a target.
+ if(!/^InputSelect/.test(n.inputType||''))return null;
+ const refs=[...(n.selection?.cards||[]),...(n.selection?.targets||[])],unique=[...new Map(refs.map(r=>[`${r.kind}:${r.id}`,r])).values()];
+ if(!unique.length||unique.some(r=>r.kind!=='card'))return null;
+ const choices=unique.map(r=>{const card=byId.get(r.id);return {key:`ref-card-${r.id}`,cardId:r.id,zone:card?.zone,card:card?.known===true?card:null,name:card?.known===true?card.name:'Face-down card',visible:card?.known===true};});
+ if(!choices.every(c=>SEARCH_ZONES.has(c.zone)))return null;
+ return {kind:'selection',choices,zones:[...new Set(choices.map(c=>c.zone))],min:n.selection?.min,max:n.selection?.max};
+}
+function searchImage(card){
+ if(card?.known!==true)return null;
+ const art=card.printing?.playArtwork?.card,face=art?.card_faces?.find(f=>f.name===card.name)||art?.card_faces?.[0];
+ const url=art?.image_uris?.normal||art?.image_uris?.large||face?.image_uris?.normal||face?.image_uris?.large;
+ // Artwork is catalog metadata, not executable HTML or an engine identity.
+ return typeof url==='string'&&(/^https?:\/\//i.test(url)||/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(url))?url:null;
+}
 export const isDescribedOption=value=>typeof value==='string'||typeof value==='number'||typeof value==='boolean'||!!(value&&value.hidden!==true&&value.card?.hidden!==true&&(value.name||value.description||value.text));
 // True when the open prompt leaves the player no reply: the panel below shows a diagnostic
 // instead of controls (unadapted method, unordered order, or too few presentable options).
@@ -43,6 +71,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  const run=fn=>()=>{try{const out=fn();if(out?.catch)out.catch(e=>onLocalError(e.message));}catch(e){onLocalError(e.message);}};
  const button=(label,fn,disabled=false,key='')=>{const b=node('button',label);b.type='button';b.disabled=s.busy||disabled;if(key)b.dataset.nativeKey=key;b.addEventListener('click',run(fn));return b;};
  const panel=node('section',undefined,'forge-native-panel');panel.dataset.nativePanel='true';panel.dataset.nativeRevision=String(n.revision);panel.setAttribute('aria-label',copy('Your match decision','Native Forge decision'));
+ const zoneSearch=presentation.hosted?nativeZoneSearch(s):null;
  if(!presentation.hosted)panel.append(node('small',`${presentation.label||'LOCAL FORGE PROOF'} · revision ${n.revision}`,'forge-proof-label'));
  const deckLabel=alias=>({'keen-engineering':'Keen Engineering','reign-of-dragons':'Reign of Dragons','calling-all-angels':'Calling All Angels'}[alias]||alias);
  const context=node('div',undefined,'forge-native-context'),nativeMessage=n.prompt?.message||n.message||'Waiting for Forge';
@@ -57,8 +86,8 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  const discard=presentation.hosted&&!n.prompt&&n.selection?.cards?.length>0&&/\bdiscard\b/i.test(String(n.message||'')),discardCount=Number.isSafeInteger(n.selection?.max)&&n.selection.max>0?n.selection.max:Number(String(n.message||'').match(/select (\d+) card/i)?.[1])||null;
  // Engine bookkeeping between decisions is a status, not an instruction to the player.
  const passive=!compactStatus&&!n.prompt&&!opening&&!payment&&!n.failure&&n.status!=='finished'&&(n.busy===true||n.inputType==='InputLockUI'||/^Priority: /.test(lines[0]||''));
- const playerTitle=compactStatus?`${yourTurn?'Your turn':'CPU turn'} · ${s.busy||s.transportError?waitLabel:n.priorityPlayer===n.viewer?(yourTurn?'You can act':'Your response'):'Waiting for CPU response'}`:opening?(presentation.hosted?'Keep this hand?':'Your opening hand'):payment?'Pay mana':passive?`${yourTurn?'Your turn':'CPU turn'} · ${s.transportError?waitLabel:yourTurn?'Resolving…':'CPU is playing'}`:discard?(discardCount?`Choose ${discardCount} card${discardCount===1?'':'s'} to discard`:'Choose cards to discard'):selectionTitle||lines[0]||waitLabel;
- const playerDetail=compactStatus||passive||discard&&discardCount?[]:discard?lines.slice(1):opening?(presentation.hosted?lines.filter(line=>!/^keep (this|your) hand or mulligan\??$/i.test(line)):[nativeMessage]):payment?[nativeMessage]:selectionTitle?lines:lines.slice(1);
+ const playerTitle=zoneSearch?`Choose ${zoneSearch.max===1?'a card':'cards'} · ${zoneSearch.zones.join(' / ')}`:compactStatus?`${yourTurn?'Your turn':'CPU turn'} · ${s.busy||s.transportError?waitLabel:n.priorityPlayer===n.viewer?(yourTurn?'You can act':'Your response'):'Waiting for CPU response'}`:opening?(presentation.hosted?'Keep this hand?':'Your opening hand'):payment?'Pay mana':passive?`${yourTurn?'Your turn':'CPU turn'} · ${s.transportError?waitLabel:yourTurn?'Resolving…':'CPU is playing'}`:discard?(discardCount?`Choose ${discardCount} card${discardCount===1?'':'s'} to discard`:'Choose cards to discard'):selectionTitle||lines[0]||waitLabel;
+ const playerDetail=zoneSearch||compactStatus||passive||discard&&discardCount?[]:discard?lines.slice(1):opening?(presentation.hosted?lines.filter(line=>!/^keep (this|your) hand or mulligan\??$/i.test(line)):[nativeMessage]):payment?[nativeMessage]:selectionTitle?lines:lines.slice(1);
  const title=node('h2',presentation.hosted?playerTitle:compactStatus?(n.priorityPlayer===n.viewer?'Your priority':`Priority: ${statusLines[1]}`):nativeMessage);
  // The table shows whose turn it is large and who may act on its own line; the
  // heading's text (and what a screen reader hears) is unchanged.
@@ -82,7 +111,44 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  // The table shows the state itself; the hosted panel adds no instructions.
  if(!presentation.hosted&&s.busy)panel.append(node('p','Waiting for Forge to resolve…','forge-native-wait'));
  const p=n.prompt;
- if(p){
+ if(zoneSearch){
+  const wasOpen=!!container.querySelector?.('.forge-zone-search-dialog');
+  const overlay=node('div',undefined,'forge-zone-search'),dialog=node('section',undefined,'forge-zone-search-dialog');
+  dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label',`${zoneSearch.zones.join(' / ')} card selection`);
+  const heading=node('h2',lines[0]||`Choose from ${zoneSearch.zones.join(' / ')}`);heading.tabIndex=-1;heading.dataset.nativeKey='zone-search-title';dialog.append(heading);
+  if(lines.length>1)dialog.append(node('p',lines.slice(1).join('\n'),'forge-zone-search-instruction'));
+  dialog.append(node('p',`Choose from the ${zoneSearch.choices.length} card${zoneSearch.choices.length===1?'':'s'} offered by this effect.`,'forge-zone-search-hint'));
+  const selected=zoneSearch.kind==='prompt'?(s.nativeDraft?.revision===n.revision&&s.nativeDraft?.promptId===p.id?s.nativeDraft.indexes:[]):(n.selection?.chosen||[]).filter(r=>r.kind==='card').map(r=>r.id);
+  const expectedRevision=n.revision,expectedPromptId=p?.id;
+  const currentPrompt=fn=>()=>{const latest=session.snapshot();if(latest.native?.revision!==expectedRevision||latest.native?.prompt?.id!==expectedPromptId)throw Error('STALE_CHOICE');return fn();};
+  const row=node('div',undefined,'forge-zone-search-cards');row.setAttribute('role','group');row.setAttribute('aria-label','Eligible cards');
+  for(const choice of zoneSearch.choices){
+   const chosen=selected.includes(zoneSearch.kind==='prompt'?choice.index:choice.cardId),pick=zoneSearch.kind==='prompt'?currentPrompt(()=>session.selectPrompt(choice.index)):()=>session.nativeSelect('card',choice.cardId,n.revision);
+   const b=button('',pick,!choice.visible,choice.key);b.className='forge-zone-search-card';b.setAttribute('aria-pressed',String(chosen));b.setAttribute('aria-label',`${choice.name} · ${choice.zone}${chosen?' · selected':''}`);
+   b.dataset.searchCard=String(choice.cardId??'');
+   const projected=choice.card||(choice.visible&&zoneSearch.kind==='prompt'?session.promptCardArtwork?.(choice.index,n.revision):null),imageUrl=searchImage(projected);
+   if(imageUrl){const image=node('img');image.src=imageUrl;image.alt='';image.loading='lazy';image.decoding='async';image.referrerPolicy='no-referrer';image.addEventListener('error',()=>{image.hidden=true;b.dataset.artUnavailable='true';},{once:true});b.append(image);}
+   else b.dataset.artUnavailable='true';
+   const caption=node('span',choice.name,'forge-zone-search-name');b.append(caption,node('span',chosen?'Selected':choice.zone,'forge-zone-search-state'));row.append(b);
+  }
+  dialog.append(row);
+  const summary=node('p',selected.length?`${selected.length} selected`:'No card selected','forge-zone-search-summary');summary.setAttribute('role','status');dialog.append(summary);
+  const actions=node('div',undefined,'forge-zone-search-actions');let cancel=null;
+  if(zoneSearch.kind==='prompt'){
+   actions.append(button('Confirm selection',currentPrompt(()=>session.confirmPrompt()),selected.length<p.min||selected.length>p.max,'confirm-prompt'));
+   if(p.min===0){cancel=currentPrompt(()=>{session.clearPrompt();return session.confirmPrompt();});actions.append(button(p.cancelable?'Cancel':'Choose none',cancel,false,'skip-search'));}
+   if(selected.length)actions.append(button('Clear selection',currentPrompt(()=>session.clearPrompt()),false,'clear-prompt'));
+  }else{
+   const buttons=n.buttons||{};
+   if(buttons.ok!==undefined)actions.append(button('Confirm selection',()=>session.nativeButton('ok',n.revision),buttons.okEnabled!==true,'ok'));
+   if(buttons.cancel!==undefined&&buttons.cancelEnabled===true){cancel=()=>session.nativeButton('cancel',n.revision);actions.append(button(nativeActionLabel(n,'cancel',buttons.cancel)||'Cancel',cancel,false,'cancel'));}
+  }
+  dialog.append(actions);overlay.append(dialog);panel.append(overlay);
+  // Keep keyboard navigation inside the choice. Escape declines only if Forge
+  // supplied that operation; clicking the backdrop never invents a cancellation.
+  dialog.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();if(cancel)run(cancel)();return;}if(e.key!=='Tab')return;const items=[...dialog.querySelectorAll('button:not(:disabled)')];if(!items.length){e.preventDefault();heading.focus();return;}const first=items[0],last=items.at(-1);if(e.shiftKey&&(doc.activeElement===first||doc.activeElement===heading)){e.preventDefault();last.focus();}else if(!e.shiftKey&&(doc.activeElement===last||!dialog.contains(doc.activeElement))){e.preventDefault();first.focus();}});
+  if(!wasOpen)queueMicrotask(()=>{if(dialog.isConnected)heading.focus({preventScroll:true});});
+ }else if(p){
   if(p.supported!==true||p.method==='order'&&p.ordered!==true){panel.append(node('p','This native prompt is not yet adapted. No response has been invented or sent.','forge-diagnostic'));}
   else if(['confirm','showConfirmDialog'].includes(p.method)){
    const options=p.options||[];panel.append(button(optionLabel(options[0]?.value??'Confirm'),()=>session.replyValue(true),false,'reply-true'),button(optionLabel(options[1]?.value??'Decline'),()=>session.replyValue(false),false,'reply-false'));

@@ -3,6 +3,7 @@ import {practiceArtworkHooks,resolvePracticeArtwork} from '../../play-card-surfa
 import {practicePlayerPortrait} from '../../play-player-mat.js';
 import {mountNativePanel} from './native-panel.mjs';
 import {optionCardId} from './forge-session.mjs';
+import {CpuActionPlaybackQueue,createPlaybackSession} from './cpu-action-playback.mjs';
 import {drawnArtwork,frameTone,surfaceColors} from '../../play-token-art.js';
 import {sym,symbolName,symbolText,manaCost,esc} from '../../ui.js';
 // Outline icons from the CardStashy UI packet (24-unit grid, currentColor).
@@ -23,11 +24,13 @@ function keywordHint(name,reference){
  return sentence.length>170?sentence.slice(0,167).replace(/\s+\S*$/,'')+'\u2026':sentence;
 }
 export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName:'You'},format='Commander',title='CardStashy · Local Forge proof',presentation={}}){
+ const authority=session;let displayed=authority.snapshot(),playbackBusy=false,activeBeat=null;
+ session=createPlaybackSession(authority,{displayed:()=>displayed,busy:()=>playbackBusy});
  const doc=root.ownerDocument,win=doc.defaultView,hooks=practiceArtworkHooks();let localError='',panelKey='',drag=null,ghost=null,suppressUntil=0,closed=false,nativeValueDraft=null,openingFocused=false;
  const reducedMotion=()=>win.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  let dockObserver=null,dockObserved=null;
  const peek=doc.createElement('div');let peekFor=null,peekPinned=false,peekTimer=0,pressTimer=0,pressAt=null,pressShown=false,peekKey='',lastPointerType='mouse';
- let lastSeen=null,castTimer=0;const failedArt=new Set();const spotlit=new Set(),castShow=doc.createElement('div');castShow.className='forge-cast';castShow.setAttribute('aria-hidden','true');castShow.dataset.open='false';doc.body.append(castShow);
+ const failedArt=new Set(),castShow=doc.createElement('div');castShow.className='forge-cast';castShow.setAttribute('role','status');castShow.setAttribute('aria-live','polite');castShow.dataset.open='false';doc.body.append(castShow);
  const table=mountMatchTable(root,{session,format,profile,title,allowConcede:false,onExit,pileIdentical:presentation.hosted===true,...hooks,
   resolveCard(card){const artwork=resolvePracticeArtwork(card);return {...artwork,oracleText:card.text};},
   // Frame every piece in its own colors; tokens and cards without a printing get a drawn crest instead of an empty tile.
@@ -37,7 +40,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   renderPlayerPortrait(own){return practicePlayerPortrait(doc,own,profile);},
   renderMatchBackdrop(){const box=doc.createElement('div');for(const c of session.snapshot().status?.surface.cards.filter(c=>c.commander)||[]){const url=resolvePracticeArtwork(c)?.artImageUrl;if(url){const img=doc.createElement('img');img.src=url;img.alt='';img.referrerPolicy='no-referrer';box.append(img);}}return box.childNodes.length?box:null;}
  });
- const fail=e=>{localError=e.message||String(e);panelKey='';enhance();};
+ const fail=e=>{if(e?.message==='MATCH_NOT_READY'&&playbackBusy){playback.flush();return;}localError=e.message||String(e);panelKey='';enhance();};
  const act=fn=>{try{const p=fn();if(p?.catch)p.catch(fail);}catch(e){fail(e);}};
  function enhance(){
   if(closed)return;const snap=session.snapshot(),n=snap.native;if(!snap.status||!n)return;
@@ -109,7 +112,20 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
    const dock=root.querySelector('.play-match-decisions'),mine=manaEntries(nativePlayer(surface.seat)),poolKey=mine.map(([c,a])=>c+a).join(',');
    let pool=dock?.querySelector('.forge-mana-panel');
    if(dock&&!pool){pool=doc.createElement('section');pool.className='forge-mana-panel';dock.prepend(pool);}
-   if(pool&&pool.dataset.pool!==poolKey){pool.dataset.pool=poolKey;pool.hidden=!mine.some(([,a])=>a>0);pool.setAttribute('aria-label',manaLabel(mine));const amount=c=>mine.find(([k])=>k===c)?.[1]||0;pool.innerHTML=`<h3 aria-hidden="true">Floating mana</h3><div aria-hidden="true">${MANA_ORDER.map(c=>`<span data-zero="${amount(c)===0}">${sym(c)}<b>${amount(c)}</b></span>`).join('')}</div>`;}
+   const ownPlayer=nativePlayer(surface.seat),untappedLands=surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===surface.seat&&c.known&&c.types?.includes('Land')&&!c.tapped).length;
+   const used=ownPlayer?.landsPlayedThisTurn,allowed=ownPlayer?.landPlaysAllowed,hasLandCount=Number.isSafeInteger(used)&&used>=0&&Number.isSafeInteger(allowed)&&allowed>=used;
+   const fullPoolKey=poolKey+'|'+untappedLands+'|'+(hasLandCount?used+'/'+allowed:'');
+   if(pool&&pool.dataset.pool!==fullPoolKey){pool.dataset.pool=fullPoolKey;pool.hidden=!mine.some(([,a])=>a>0);pool.setAttribute('aria-label',manaLabel(mine)+`; ${untappedLands} untapped lands`+(hasLandCount?`; land plays used ${used} of ${allowed}`:''));const amount=c=>mine.find(([k])=>k===c)?.[1]||0;pool.innerHTML=`<h3>Floating mana</h3><div aria-hidden="true">${MANA_ORDER.map(c=>`<span data-zero="${amount(c)===0}">${sym(c)}<b>${amount(c)}</b></span>`).join('')}</div><p class="forge-mana-sources">Untapped lands <b>${untappedLands}</b>${hasLandCount?`<span class="forge-land-drop">Land plays <b>${used}/${allowed}</b></span>`:''}</p>`;}
+   // Basic land subtypes grant these mana abilities. Mana colours are never inferred
+   // from frame colour, artwork, colour identity, or a guessed Oracle sentence.
+   const landColors={Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'};
+   for(const el of root.querySelectorAll('.play-match-card[data-presentation=battlefield]')){
+    const card=surface.cards.find(c=>c.id===Number(el.dataset.instance));
+    const colors=card?.known&&card.types?.includes('Land')?Object.entries(landColors).filter(([type])=>new RegExp('\\b'+type+'\\b').test(card.type||'')).map(([,color])=>color):[];
+    let badge=el.querySelector('.forge-land-colors');if(!colors.length){badge?.remove();continue;}
+    if(!badge){badge=doc.createElement('span');badge.className='forge-land-colors';el.append(badge);}
+    const key=colors.join('');if(badge.dataset.colors!==key){badge.dataset.colors=key;badge.setAttribute('aria-label','Basic land types can produce '+colors.map(symbolName).join(' or '));badge.innerHTML=colors.map(c=>`<span class="forge-land-color" data-color="${c}" aria-hidden="true">${c}</span>`).join('');}
+   }
    // Each battlefield sizes its pieces so its creature row and its row of other
    // permanents both fit across: widths in piece units plus fixed gaps in pixels.
    for(const zone of root.querySelectorAll('.play-match-battlefields .play-match-zone')){
@@ -140,33 +156,21 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
    else if(el.dataset.presentation==='battlefield'){moved++;w.animate([{opacity:0,transform:'translateY(-14px) scale(.86)'},{opacity:1,transform:'none'}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)'});}
   }
  };
- // The CPU's moves can arrive together. Show them one beat at a time, the way a person
- // plays: lands, then taps, then each spell shown large, then what arrives, then life.
- // Purely visual and never longer than a few seconds: every card is already where
- // Forge put it, and nothing waits on this.
- const seenState=surface=>({cards:new Map(surface.cards.map(c=>[c.id,{zone:c.zone,tapped:c.tapped}])),stack:new Set((surface.stack||[]).map(x=>x.id)),life:new Map(surface.players.map(p=>[p.seat,p.life]))});
- function spotlight(c,delay){
-  const art=resolvePracticeArtwork(c);if(!art?.imageUrl||spotlit.has(c.id))return;spotlit.add(c.id);
-  setTimeout(()=>{if(closed)return;castShow.innerHTML=`<figure><img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async"></figure><p><span>CPU</span>${esc(c.name)}</p>`;castShow.dataset.open='true';clearTimeout(castTimer);castTimer=setTimeout(()=>{castShow.dataset.open='false';},1250);},delay);
+ // Hold the previous accepted board while a meaningful observed update is announced.
+ // Only projected public cards reach this queue; it cannot recover events omitted by a poll.
+ function showPlaybackBeat(beat){
+  activeBeat=beat;const mat=root.querySelector('.play-match-mat');
+  if(beat.kind==='phase'){
+   const banner=doc.createElement('div');banner.className='forge-playback-status';banner.setAttribute('role','status');banner.textContent=beat.label;mat?.append(banner);
+  }else if(beat.card){
+   const c=beat.card,art=resolvePracticeArtwork(c);
+   castShow.innerHTML=`<figure>${art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:''}</figure><p><span>${esc(beat.label)}</span><strong>${esc(c.name)}</strong></p>${beat.text?`<div class="forge-cast-text">${symbolText(beat.text)}</div>`:''}`;
+   if(!art?.imageUrl)castShow.querySelector('figure').append(drawnArtwork(doc,c,surfaceColors(c)));
+   castShow.dataset.open='true';castShow.dataset.kind=beat.kind;
+  }
+  queueArrows();
  }
- function paceCpu(surface){
-  const prev=lastSeen;lastSeen=seenState(surface);if(!prev||!presentation.hosted||reducedMotion())return;
-  const cpu=surface.players.find(p=>p.seat!==surface.seat)?.seat,node=id=>root.querySelector(`.play-match-card[data-instance="${id}"]`);
-  const arrived=surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===cpu&&prev.cards.get(c.id)?.zone!=='Battlefield');
-  const lands=arrived.filter(c=>/\bLand\b/.test(c.type||'')),others=arrived.filter(c=>!lands.includes(c));
-  const tapped=surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===cpu&&c.tapped&&prev.cards.get(c.id)?.zone==='Battlefield'&&prev.cards.get(c.id).tapped===false);
-  const cast=(surface.stack||[]).filter(x=>x.controller===cpu&&!prev.stack.has(x.id)).map(x=>surface.cards.find(c=>c.id===x.source)).filter(c=>c?.known&&!spotlit.has(c.id));
-  const shown=[...cast,...others.filter(c=>c.known&&!c.isToken&&!spotlit.has(c.id))];
-  const lifeChanged=surface.players.filter(p=>prev.life.has(p.seat)&&prev.life.get(p.seat)!==p.life);
-  const beats=lands.length+(tapped.length?1:0)+shown.length*2+others.length;if(!beats&&!lifeChanged.length)return;
-  const beat=Math.max(240,Math.min(480,2600/Math.max(1,beats)));let t=0;
-  const reveal=c=>{const w=node(c.id)?.closest('.play-match-card-wrap');if(!w)return;for(const a of w.getAnimations())a.cancel();w.animate([{opacity:0,transform:'translateY(-18px) scale(.9)'},{opacity:1,transform:'none'}],{duration:380,delay:t,easing:'cubic-bezier(.2,.8,.2,1)',fill:'backwards'});t+=beat;};
-  for(const c of lands)reveal(c);
-  if(tapped.length){for(const c of tapped){const el=node(c.id);if(el)el.animate([{transform:'none',filter:'none'},{transform:'rotate(12deg) scale(.95)',filter:'saturate(.5) brightness(.72)'}],{duration:320,delay:t,easing:'cubic-bezier(.2,.8,.2,1)',fill:'backwards'});}t+=beat;}
-  for(const c of shown){spotlight(c,t);t+=beat*2;}
-  for(const c of others)reveal(c);
-  for(const p of lifeChanged){const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`),life=seat?.querySelector('.play-match-life strong');if(!seat||!life)continue;const delta=p.life-prev.life.get(p.seat),badge=doc.createElement('span');badge.className='forge-life-delta';badge.dataset.dir=delta<0?'down':'up';badge.textContent=(delta>0?'+':'\u2212')+Math.abs(delta);badge.setAttribute('aria-hidden','true');seat.append(badge);badge.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(-4px)',offset:.25},{opacity:1,transform:'translateY(-10px)',offset:.75},{opacity:0,transform:'translateY(-18px)'}],{duration:1300,delay:t,fill:'both'}).finished.then(()=>badge.remove(),()=>badge.remove());life.animate([{transform:'scale(1)'},{transform:'scale(1.22)',color:delta<0?'#ff9a8a':'#8fe7a3',offset:.35},{transform:'scale(1)'}],{duration:700,delay:t});}
- }
+ function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';root.querySelector('.forge-playback-status')?.remove();queueArrows();}
  // Arrows, Arena style: attackers to whom they attack, blockers to what they block, and
  // a spell or ability to the targets you have chosen. Only relations the state makes
  // certain are drawn: an attack goes to the player unless they also control something
@@ -195,10 +199,11 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   // A spell or ability on the stack points from its line in the decision card to its
   // targets, when Forge names them.
   for(const item of n.stack||[])for(const r of Array.isArray(item.targets)?item.targets:[]){const to=r?.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r?.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'stack',id:item.id},to});}
+  if(activeBeat)for(const r of activeBeat.targets||[]){const to=r.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'spotlight'},to});}
   return out;
  }
  function anchorRect(ref){
-  const el=ref.kind==='seat'?root.querySelector(`.play-match-seat[data-player-seat="${ref.seat}"]`):ref.kind==='stack'?root.querySelector(`[data-native-key="stack-${ref.id}"]`):root.querySelector(`.play-match-card[data-instance="${ref.id}"]`);
+  const el=ref.kind==='spotlight'?castShow:ref.kind==='seat'?root.querySelector(`.play-match-seat[data-player-seat="${ref.seat}"]`):ref.kind==='stack'?root.querySelector(`[data-native-key="stack-${ref.id}"]`):root.querySelector(`.play-match-card[data-instance="${ref.id}"]`);
   const box=el&&(el.closest('.play-match-card-wrap')||el).getBoundingClientRect();return box&&box.width>0?box:null;
  }
  function drawArrows(){
@@ -215,14 +220,16 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  }
  const queueArrows=()=>{if(!arrowFrame)arrowFrame=win.requestAnimationFrame(drawArrows);};
  win.addEventListener('resize',queueArrows);
- const unsub=session.subscribe(s=>{
+ function renderAccepted(s,blocked=false){
+  const lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
   const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null;
   const before=presentation.hosted?positions():null;
-  localError='';table.render(s);enhance();
+  localError='';table.render(session.snapshot());enhance();
   // The stylesheet scopes the Forge table by this attribute. It changes only when the
   // native panel comes or goes, unlike a :has() test that rechecks the whole table each redraw.
   root.toggleAttribute('data-forge-native',!!root.querySelector('.forge-native-panel'));
-  if(before)glide(before);if(s.status?.surface)paceCpu(s.status.surface);
+  if(before&&!blocked)glide(before);
+  if(presentation.hosted&&!reducedMotion())for(const p of s.status?.surface?.players||[]){const was=lifeBefore.get(p.seat);if(was===undefined||was===p.life)continue;const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`),life=seat?.querySelector('.play-match-life strong');if(!seat||!life)continue;const delta=p.life-was,badge=doc.createElement('span');badge.className='forge-life-delta';badge.dataset.dir=delta<0?'down':'up';badge.textContent=(delta>0?'+':'\u2212')+Math.abs(delta);badge.setAttribute('aria-hidden','true');seat.append(badge);badge.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(-4px)',offset:.25},{opacity:1,transform:'translateY(-10px)',offset:.75},{opacity:0,transform:'translateY(-18px)'}],{duration:1300,fill:'both'}).finished.then(()=>badge.remove(),()=>badge.remove());life.animate([{transform:'scale(1)'},{transform:'scale(1.22)',color:delta<0?'#ff9a8a':'#8fe7a3',offset:.35},{transform:'scale(1)'}],{duration:700});}
   if(peekFor){if(!peekFor.isConnected||!surfaceCard(peekFor)?.known)hidePeek();else showPeek(peekFor,peekPinned);}
   // Arrows follow cards that glide or reveal in place.
   queueArrows();setTimeout(queueArrows,420);setTimeout(queueArrows,900);
@@ -230,7 +237,9 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   else if(presentation.hosted&&!openingFocused&&s.native?.inputType==='InputConfirmMulligan'){
    openingFocused=true;root.querySelector('[data-native-key=decision-title]')?.focus({preventScroll:true});
   }
- });
+ }
+ const playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,reducedMotion});
+ const unsub=authority.subscribe(s=>{if(presentation.hosted)playback.push(s);else renderAccepted(s);});
 
  // Card preview, Arena style: the whole card beside the one you point at, and what it
  // does right now beside that. Hover with a mouse, press and hold on touch, click or
@@ -350,5 +359,5 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  const pressCancel=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}cancel();};
  const key=e=>{if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
  root.addEventListener('click',click,true);root.addEventListener('pointerdown',down);doc.addEventListener('pointermove',move,{passive:false});doc.addEventListener('pointerup',up);doc.addEventListener('pointercancel',pressCancel);doc.addEventListener('keydown',key);win.addEventListener('blur',cancel);
- return {destroy(){closed=true;dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);clearTimeout(castTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);win.removeEventListener('resize',queueArrows);peek.remove();castShow.remove();arrows.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;playback.destroy();dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);win.removeEventListener('resize',queueArrows);peek.remove();castShow.remove();arrows.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
