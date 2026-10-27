@@ -49,7 +49,7 @@ MODULES = (
     "scan-vision.js", "scansession.js", "tcg.js", "ptcg.js", "ui.js",
     "views.js", "confidence.js", "mtg-tcgprice.js", "style.css",
     "home-search.js", "app-info.js", "tabletop.js", "settings-dialog.js", "tour.js",
-    "home-ui.js", "home-overview.css", "deck-viewer.js", "deck-viewer.css", "home-deck-activity.js", "home-swipe.js", "game-navigation.js", "tour-scenes.js", "community-feed.js", "community-art.js", "community-sources.js", "community-edition.js",
+    "home-ui.js", "home-overview.css", "play-menu.css", "polish.css", "deck-viewer.js", "deck-viewer.css", "home-deck-activity.js", "home-swipe.js", "game-navigation.js", "tour-scenes.js", "community-feed.js", "community-art.js", "community-sources.js", "community-edition.js",
     "img/news/2026-10-19-magic-delay.webp", "img/news/2026-10-22-pokemon-rules.webp", "img/news/2026-10-19-ygo-list.webp",
     "ai-rules.js", "ai-rules-panel.js",
     "pricing-presentation.js", "workbench-ui.js", "artwork.js", "zoom.js", "pokemon-art.js", "meta.js",
@@ -131,12 +131,18 @@ def load_expected(repo):
     return expected
 
 
+def public_path(asset):
+    # Cloudflare's default HTML handling serves each index.html at its folder
+    # URL and redirects .../index.html. Verify the actual URL without redirects.
+    return asset[:-len("index.html")] if asset == "index.html" or asset.endswith("/index.html") else asset
+
+
 def allowed_url(url):
     parsed = urlsplit(url)
     return (
         parsed.scheme == "https"
         and parsed.netloc in {urlsplit(host).netloc for host in HOSTS}
-        and parsed.path in {"/", *("/" + name for name in KEY_ASSETS + MODULES)}
+        and parsed.path in {"/", *("/" + name for name in KEY_ASSETS + MODULES), *("/" + public_path(name) for name in KEY_ASSETS + MODULES)}
         and not parsed.fragment
         and (not parsed.query or re.fullmatch(r"_releasecheck=[a-zA-Z0-9-]+", parsed.query) is not None)
     )
@@ -193,9 +199,7 @@ def fetch(job):
 
 
 def jobs_for(host, assets, expected, nonce=None):
-    # Cloudflare's default HTML handling serves index.html at the canonical /
-    # and redirects /index.html. Verify the actual entry URL without redirects.
-    paths = [("" if asset == "index.html" else asset, asset) for asset in assets]
+    paths = [(public_path(asset), asset) for asset in assets]
     jobs = []
     for path, asset in paths:
         jobs.append((host + path, asset, expected[asset]))
