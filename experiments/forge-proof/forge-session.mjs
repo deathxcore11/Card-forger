@@ -50,6 +50,11 @@ export function projectForge(raw,{lookupArtwork=()=>null}={}){
  const failed=raw.status==='failed'||!!raw.failure;
  const cards=new Map(),grants=visibilityGrants(raw,seatById),rows=[],seen=new Map(),conflicts=new Set();
  const zones=new Set(['Hand','Library','Battlefield','Graveyard','Exile','Command']);
+ // Bridges with the 4.2.7 adapter patch list each visible card's current keywords (omitted
+ // when it has none) and always send dayNight. Older bridges send neither, so keywords stay
+ // unknown (null) and the table falls back to keyword-only lines of the rules text.
+ const keywordsReported=Object.hasOwn(raw,'dayNight');
+ const keywordList=k=>Array.isArray(k)?k.filter(x=>typeof x==='string'||typeof x?.text==='string').slice(0,40).map(x=>typeof x==='string'?x:{keyword:typeof x.keyword==='string'?x.keyword:null,text:x.text}):keywordsReported?[]:null;
  // Determine duplicate/conflicting IDs before any identity or artwork lookup.
  for(const p of raw.players)for(const [zone,z]of Object.entries(p.zones||{}))for(const c of list(z?.cards)){
   if(!c||!id(c.id))continue;
@@ -71,7 +76,7 @@ export function projectForge(raw,{lookupArtwork=()=>null}={}){
   if(c.hidden===true){cards.set(c.id,{id:c.id,owner:seatById.get(c.owner),controller:seatById.get(c.controller),zone,known:false,tapped:c.tapped===true});return;}
   if(c.hidden!==false||typeof c.name!=='string'||!c.name)return;
   const types=typeof c.type==='string'?c.type.split(/\s+/).filter(t=>['Creature','Land','Artifact','Enchantment','Planeswalker','Battle','Instant','Sorcery'].includes(t)):[];
-  const card={id:c.id,owner:seatById.get(c.owner),controller:seatById.get(c.controller),zone,known:true,name:c.name,types,type:c.type||'',manaCost:c.manaCost||'',text:c.text||'',power:c.power??null,toughness:c.toughness??null,tapped:c.tapped===true,attacking:c.attacking===true,blocking:c.blocking===true,isToken:c.token===true,commander:c.commander===true,damage:c.damage||0,summoningSick:c.summoningSick===true,counters:c.counters||{},keywords:list(c.keywords),attachedTo:Number.isSafeInteger(c.attachedTo)?c.attachedTo:null,attachments:list(c.attachments).filter(Number.isSafeInteger),attackTarget:['player','card'].includes(c.attackTarget?.kind)&&Number.isSafeInteger(c.attackTarget?.id)?{kind:c.attackTarget.kind,id:c.attackTarget.id}:null,blockingIds:list(c.blockingIds).filter(Number.isSafeInteger)};
+  const card={id:c.id,owner:seatById.get(c.owner),controller:seatById.get(c.controller),zone,known:true,name:c.name,types,type:c.type||'',manaCost:c.manaCost||'',text:c.text||'',power:c.power??null,toughness:c.toughness??null,tapped:c.tapped===true,attacking:c.attacking===true,blocking:c.blocking===true,isToken:c.token===true,commander:c.commander===true,damage:c.damage||0,summoningSick:c.summoningSick===true,counters:c.counters||{},keywords:keywordList(c.keywords),crew:Number.isSafeInteger(c.crew)&&c.crew>=0?c.crew:null,attachedTo:Number.isSafeInteger(c.attachedTo)?c.attachedTo:null,attachments:list(c.attachments).filter(Number.isSafeInteger),attackTarget:['player','card'].includes(c.attackTarget?.kind)&&Number.isSafeInteger(c.attackTarget?.id)?{kind:c.attackTarget.kind,id:c.attackTarget.id}:null,blockingIds:list(c.blockingIds).filter(Number.isSafeInteger)};
   if(card.isToken){const colors=tokenColors(c.imageKey);if(colors)card.tokenColors=colors;}
   if(privateZone){card.zoneHolder=seatById.get(holder);if(permitted)card.zoneVisibility='native-face-visible';}
   const artwork=lookupArtwork(card.name,c);if(artwork)card.printing={playArtwork:artwork};
@@ -79,7 +84,8 @@ export function projectForge(raw,{lookupArtwork=()=>null}={}){
  };
  for(const {c,zone,holder}of rows)addCard(c,zone,holder);
  const count=n=>id(n)&&n>=0?n:0;
- const players=raw.players.map((p,seat)=>({seat,nativeId:p.id,name:p.name,life:p.life,handCount:count(p.zones?.Hand?.count),libraryCount:count(p.zones?.Library?.count)}));
+ const playerCounters=c=>Object.fromEntries(Object.entries(c&&typeof c==='object'?c:{}).filter(([k,v])=>typeof k==='string'&&k.length<=40&&Number.isSafeInteger(v)&&v>0));
+ const players=raw.players.map((p,seat)=>({seat,nativeId:p.id,name:p.name,life:p.life,handCount:count(p.zones?.Hand?.count),libraryCount:count(p.zones?.Library?.count),counters:playerCounters(p.counters)}));
  const stack=list(raw.stack).map(s=>{if(s.source&&!cards.has(s.source.id)&&s.source.zone==='Stack')addCard(s.source);return {id:s.id,source:cards.has(s.source?.id)?s.source.id:null,text:s.text||'',controller:seatById.get(s.activatingPlayer)};});
  const revealedZones=[];
  for(const p of players)for(const zone of ['Hand','Library']){

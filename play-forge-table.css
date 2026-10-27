@@ -926,3 +926,68 @@
 @keyframes forge-activity-pulse{50%{opacity:.35}}
 @media(max-width:560px){:where(body.practice-table-open) .forge-activity{max-width:44vw;font-size:11px;padding:6px 10px 6px 22px}:where(body.practice-table-open) .forge-activity::before{left:9px;top:11px}}
 @media(prefers-reduced-motion:reduce){:where(body.practice-table-open) .forge-activity::before{animation:none!important}}
+/* Battlefield icons and states (CardStashy battlefield icon kit, 4.2.7). Decoration around
+   the real card art, drawn from the accepted Forge snapshot; it never takes a tap. Corner:
+   tapped, summoning sick, attached, commander, then "usable now". Top centre: attacking or
+   blocking. Left rail: up to three keywords (two and "+N" when there are more). Right rail:
+   counters. Bottom: damage beside the P/T, loyalty or defense plaque, crew, attachments. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-battlefields .play-match-card{--cs-b:clamp(15px,calc(var(--play-piece,96px)*.17),24px)}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-battlefields .play-match-card>.cs-tile-layer{container-type:size}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-tile-layer{--cs-b:clamp(13px,min(calc((100cqh - var(--nh,18px) - 18px) / 3.6),calc(var(--play-piece,96px)*.17)),24px)}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-tile-layer{position:absolute;inset:0;pointer-events:none;z-index:4;font:700 10px/1 'DM Sans',system-ui,sans-serif}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-tile-layer>*{position:absolute;display:flex;gap:2px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-badge{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:var(--cs-b);height:var(--cs-b);padding:0 calc(var(--cs-b)*.12);border:1px solid #d6ad64b8;border-radius:999px;background:#101114eb;color:#f2d496;box-shadow:0 1px 4px #000c;box-sizing:border-box}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-badge .cs-icon{width:calc(var(--cs-b)*.72);height:calc(var(--cs-b)*.72);flex:none}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-badge b{font-size:calc(var(--cs-b)*.52);line-height:1;color:#fff;font-variant-numeric:tabular-nums}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-corner{top:calc(var(--nh,18px) + 6px);left:5px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-ready{border-color:#7fd6f0;color:#9be6ff;box-shadow:0 0 8px #5cc8f080,0 1px 4px #000c}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-state-summoning-sick{color:#c9c2ff;border-color:#a99cf0aa}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-combat{top:calc(var(--nh,18px) + 4px);left:50%;transform:translateX(-50%)}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-combat-attacking{border-color:#ff9d5c;color:#ffb27a;box-shadow:0 0 10px #ff8a3d99,0 1px 4px #000c}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-combat-blocking{border-color:#7fb8ff;color:#a8ceff;box-shadow:0 0 10px #5a9cff99,0 1px 4px #000c}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-keywords{top:calc(var(--nh,18px) + var(--cs-b) + 9px);left:5px;flex-direction:column}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-tile-layer:not(:has(.cs-corner))>.cs-keywords{top:calc(var(--nh,18px) + 6px)}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-counters{top:calc(var(--nh,18px) + 6px);right:5px;flex-direction:column;align-items:flex-end}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-tile-layer[data-rail-row]>.cs-counters{top:auto;bottom:var(--cs-floor,30px);flex-direction:row-reverse;align-items:center}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-more{color:#fff;border-style:dashed}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-counter-p1p1{border-color:#5fd08a;color:#8ff0b0}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-counter-m1m1{border-color:#ef6b5e;color:#ff9a8f}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-counter-shield{border-color:#6fd8f0;color:#a6ecff}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-counter-stun{border-color:#f0c35a;color:#ffd98a}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-counter-finality{border-color:#b0a4c8;color:#d8cff0}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-counter-generic b{font-size:calc(var(--cs-b)*.45)}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-plaque{right:6px;bottom:6px;align-items:center;gap:3px;padding:2px 7px 2px 4px;border:1px solid #d6ad64c0;border-radius:7px;background:#111114f2;color:#f2d496;box-shadow:0 0 0 1px #000a,0 4px 12px #0009}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-plaque .cs-icon{width:calc(var(--cs-b)*.8);height:calc(var(--cs-b)*.8)}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-plaque b{color:#fff;font-size:clamp(11px,calc(var(--play-piece,96px)*.15),20px)}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-badge.cs-damage{border-color:#ff8a7d;background:#a8322af2;color:#fff}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-damage-marks{left:22%;right:22%;top:30%;bottom:30%;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40' fill='none' stroke='%23ff6b5e' stroke-width='3' stroke-linecap='round' opacity='.85'%3E%3Cpath d='M14 4 8 18l8 6-6 14M30 2l-6 16 8 6-6 14M46 4l-6 14 8 6-6 14'/%3E%3C/svg%3E") center/contain no-repeat;opacity:.75}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-crew,:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-attachments{left:5px;bottom:6px;align-items:center}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-crew{gap:2px;padding:1px 6px 1px 3px;border:1px solid #d6ad64b8;border-radius:999px;background:#101114eb;color:#f2d496}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-crew .cs-icon{width:calc(var(--cs-b)*.7);height:calc(var(--cs-b)*.7)}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-crew b{color:#fff;font-size:calc(var(--cs-b)*.55)}
+/* The badges replace the older text chips on the board; the preview keeps every detail. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-battlefields :is(.play-tapped-chip,.play-marked-damage,.play-counter,.play-match-keywords){display:none!important}
+/* Basic-land colour pips move to the bottom-left corner, clear of the state corner. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-battlefields .forge-land-colors{top:auto;bottom:6px;left:6px}
+/* Keyword looks: flying casts a deeper shadow and floats gently, hexproof gets a blue
+   sheen, indestructible a gold edge; summoning sickness softens the art. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-flying]{box-shadow:0 0 0 1px #000d,0 16px 26px #000c}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-flying] .play-match-piece-art{animation:cs-hover 3.2s ease-in-out infinite}
+@keyframes cs-hover{50%{translate:0 -2px}}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-hexproof] .play-match-piece-art:after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#5fb8ff2e,transparent 45%,#5fb8ff22);pointer-events:none}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-indestructible]{outline:1.5px solid #e8c56fcc;outline-offset:-1px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-sick] .play-match-piece-art img{filter:saturate(.72) brightness(.9)}
+/* Power and toughness above the printed card read green, below it red. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-current-stats[data-shift-p=up] b:first-of-type,:where(body.practice-table-open) .play-match-table[data-forge-native] .play-current-stats[data-shift-t=up] b:last-of-type{color:#8ff0b0}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-current-stats[data-shift-p=down] b:first-of-type,:where(body.practice-table-open) .play-match-table[data-forge-native] .play-current-stats[data-shift-t=down] b:last-of-type{color:#ff9a8f}
+/* Player counters sit on the seat's shoulder. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-player-counters{position:absolute;left:6px;bottom:4px;display:flex;gap:3px;z-index:3;--cs-b:20px;pointer-events:none}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-player-poison{border-color:#7fd06a;color:#a8f08f}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-player-energy{border-color:#f0d35a;color:#ffe48a}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-zone-icon{width:18px;height:18px}
+/* The preview shows each icon beside its meaning. */
+:where(body.practice-table-open) .forge-peek-chip{display:inline-flex;align-items:center;gap:4px}
+:where(body.practice-table-open) .forge-peek .forge-peek-icon{width:14px;height:14px;flex:none;vertical-align:-2px}
+:where(body.practice-table-open) .forge-peek-keywords b .forge-peek-icon{margin-right:5px}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-flying] .play-match-piece-art{animation:none}}
+@media (forced-colors:active){:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-badge{forced-color-adjust:none;border-color:CanvasText;color:CanvasText;background:Canvas}}
