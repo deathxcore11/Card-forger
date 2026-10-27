@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-cpu-playback-v344";
+const CACHE = "cardforge-shell-play-prompts-v345";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",
