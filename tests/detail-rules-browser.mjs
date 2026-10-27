@@ -219,7 +219,7 @@ async function wikiPageFlow(app,game='mtg'){
   const rows=(body.daily?[topic]:title.toUpperCase()===prefix?(game==='mtg'?['Lifelink','Life gain','Lifedrain']:[topic]):[title]).map(title=>({source:source(title),extract:excerpt}));
   return route.fulfill({json:{game,status:'available',source:rows[0].source,extract:excerpt,results:rows,dailyDateUTC:'2026-10-17',image:null,imageUnavailableReason:'rights-unverified'}});
  });
- await navigate(page,'#search');assert.equal(await page.locator('.bottom-nav [data-nav]').count(),5,'Wiki does not add a sixth mobile navigation item');
+ await navigate(page,'#search');assert.equal(await page.locator('.bottom-nav [data-nav]:not([data-nav="play"])').count(),5,'Wiki does not add a sixth mobile navigation item');
  for(const width of (game==='mtg'?[320,390,1440]:[390])){
   await page.setViewportSize({width,height:1000});
   const launch=width>=1200?page.locator('#desktopSearch .header-wiki'):page.locator('#content [aria-label="Open Wiki"]');await launch.click();await page.waitForFunction(()=>location.hash==='#wiki'&&document.body.dataset.view==='wiki');
