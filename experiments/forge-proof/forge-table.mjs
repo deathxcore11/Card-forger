@@ -3,7 +3,7 @@ import {practiceArtworkHooks,resolvePracticeArtwork} from '../../play-card-surfa
 import {practicePlayerPortrait} from '../../play-player-mat.js';
 import {mountNativePanel} from './native-panel.mjs';
 import {optionCardId} from './forge-session.mjs';
-import {CpuActionPlaybackQueue,createPlaybackSession} from './cpu-action-playback.mjs';
+import {CpuActionPlaybackQueue,createPlaybackSession,tableActivity} from './cpu-action-playback.mjs';
 import {drawnArtwork,frameTone,surfaceColors} from '../../play-token-art.js';
 import {sym,symbolName,symbolText,manaCost,esc} from '../../ui.js';
 // Outline icons from the CardStashy UI packet (24-unit grid, currentColor).
@@ -31,6 +31,8 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  let dockObserver=null,dockObserved=null;
  const peek=doc.createElement('div');let peekFor=null,peekPinned=false,peekTimer=0,pressTimer=0,pressAt=null,pressShown=false,peekKey='',lastPointerType='mouse';
  const failedArt=new Set(),castShow=doc.createElement('div');castShow.className='forge-cast';castShow.setAttribute('role','status');castShow.setAttribute('aria-live','polite');castShow.dataset.open='false';doc.body.append(castShow);
+ // Whose move it is and what just happened, from the accepted state and the playback alone.
+ const activity=doc.createElement('div');activity.className='forge-activity';activity.setAttribute('role','status');activity.setAttribute('aria-live','polite');activity.hidden=true;doc.body.append(activity);let playback=null;
  const table=mountMatchTable(root,{session,format,profile,title,allowConcede:false,onExit,pileIdentical:presentation.hosted===true,...hooks,
   resolveCard(card){const artwork=resolvePracticeArtwork(card);return {...artwork,oracleText:card.text};},
   // Frame every piece in its own colors; tokens and cards without a printing get a drawn crest instead of an empty tile.
@@ -160,17 +162,28 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  // Only projected public cards reach this queue; it cannot recover events omitted by a poll.
  function showPlaybackBeat(beat){
   activeBeat=beat;const mat=root.querySelector('.play-match-mat');
+  // Over a decision the story is told in the activity line and the stack's arrows; a spotlight
+  // there would cover the very prompt it explains.
+  if(playback?.overlay){updateActivity();return;}
   if(beat.kind==='phase'){
-   const banner=doc.createElement('div');banner.className='forge-playback-status';banner.setAttribute('role','status');banner.textContent=beat.label;mat?.append(banner);
+   const banner=doc.createElement('div');banner.className='forge-playback-status';banner.setAttribute('role','status');banner.textContent=beat.label;if(beat.tone)banner.dataset.tone=beat.tone;mat?.append(banner);
   }else if(beat.card){
    const c=beat.card,art=resolvePracticeArtwork(c);
    castShow.innerHTML=`<figure>${art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:''}</figure><p><span>${esc(beat.label)}</span><strong>${esc(c.name)}</strong></p>${beat.text?`<div class="forge-cast-text">${symbolText(beat.text)}</div>`:''}`;
    if(!art?.imageUrl)castShow.querySelector('figure').append(drawnArtwork(doc,c,surfaceColors(c)));
    castShow.dataset.open='true';castShow.dataset.kind=beat.kind;
   }
-  queueArrows();
+  queueArrows();updateActivity();
  }
- function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';root.querySelector('.forge-playback-status')?.remove();queueArrows();}
+ function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
+ let activityKey='';
+ function updateActivity(){
+  const a=presentation.hosted&&root.dataset.stage==='match'&&playback?tableActivity(displayed,{beat:activeBeat,overlay:playback.overlay,recent:playback.recent}):null;
+  const key=a?`${a.kind}|${a.label}|${a.detail}`:'';if(key===activityKey)return;activityKey=key;
+  activity.hidden=!a;if(!a)return;
+  activity.dataset.kind=a.kind;activity.innerHTML=`<strong>${esc(a.label)}</strong>${a.detail?`<span>${esc(a.detail)}</span>`:''}`;
+  activity.title=playback.recent.join('\n');
+ }
  // Arrows, Arena style: attackers to whom they attack, blockers to what they block, and
  // a spell or ability to the targets you have chosen. Only relations the state makes
  // certain are drawn: an attack goes to the player unless they also control something
@@ -199,7 +212,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   // A spell or ability on the stack points from its line in the decision card to its
   // targets, when Forge names them.
   for(const item of n.stack||[])for(const r of Array.isArray(item.targets)?item.targets:[]){const to=r?.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r?.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'stack',id:item.id},to});}
-  if(activeBeat)for(const r of activeBeat.targets||[]){const to=r.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'spotlight'},to});}
+  if(activeBeat&&castShow.dataset.open==='true')for(const r of activeBeat.targets||[]){const to=r.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'spotlight'},to});}
   return out;
  }
  function anchorRect(ref){
@@ -238,6 +251,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   else if(presentation.hosted&&!openingFocused&&s.native?.inputType==='InputConfirmMulligan'){
    openingFocused=true;root.querySelector('[data-native-key=decision-title]')?.focus({preventScroll:true});
   }
+  updateActivity();
   if(!blocked)autoPassOwnStack(s);
  }
  // Smart, the way Arena plays: once your own spell or ability is on top of the stack and
@@ -251,8 +265,10 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   const key=`${n.revision}:${top.id}:${n.stack.length}`;if(autoPassed===key)return;autoPassed=key;
   act(()=>session.nativeButton('ok',n.revision));
  }
- const playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,reducedMotion});
- const skipPlayback=e=>{if(!playbackBusy||e.button>0)return;suppressUntil=Date.now()+400;playback.flush();};
+ playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,reducedMotion});
+ // A tap skips held playback. Playback over a decision never holds the board, so a tap there
+ // only clears the spotlight and goes on to whatever was tapped.
+ const skipPlayback=e=>{if(!playback.running||e.button>0)return;if(playback.overlay){playback.stop();return;}suppressUntil=Date.now()+400;playback.flush();};
  root.addEventListener('pointerdown',skipPlayback,true);
  const unsub=authority.subscribe(s=>{if(presentation.hosted)playback.push(s);else renderAccepted(s);});
 
@@ -374,5 +390,5 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  const pressCancel=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}cancel();};
  const key=e=>{if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
  root.addEventListener('click',click,true);root.addEventListener('pointerdown',down);doc.addEventListener('pointermove',move,{passive:false});doc.addEventListener('pointerup',up);doc.addEventListener('pointercancel',pressCancel);doc.addEventListener('keydown',key);win.addEventListener('blur',cancel);
- return {destroy(){closed=true;playback.destroy();root.removeEventListener('pointerdown',skipPlayback,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);win.removeEventListener('resize',queueArrows);peek.remove();castShow.remove();arrows.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;playback.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);win.removeEventListener('resize',queueArrows);peek.remove();castShow.remove();arrows.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
