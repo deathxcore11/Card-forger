@@ -725,6 +725,12 @@
 }
 
 
+/* Each player's battlefield stays inside its own half on every layout. The phone-era
+   180 px zone minimum let the CPU's half grow past the gold centre line on near-square
+   windows, so its lands were drawn on your side. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone{min-height:0}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-seat-area{min-height:0;overflow:hidden}
+
 /* Touch tablets and unfolded foldables: the battlefield owns four bounded tracks. A zone must never
    inherit the phone layout's 180px minimum and escape its half of the table. Rows
    scroll horizontally when crowded; they never grow through the hand tray. */
