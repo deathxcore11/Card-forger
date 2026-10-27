@@ -1618,7 +1618,9 @@ A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu(
 A.playClearSelection=()=>{cancelPlayBuilds();playSetup.clearSelection(playSetup.snapshot().inspectedSeat);refreshPlayMenu();};
 A.playConfigure=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};playSetup.configure({[t.dataset.playOption]:t.dataset.playValue});refreshPlayMenu();document.querySelector(`[data-act="playConfigure"][aria-pressed="true"]`)?.focus({preventScroll:true});};
 C.playMatchOption=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};const key=t.dataset.playOption,value=t.value;playSetup.configure({[key]:value});refreshPlayMenu();document.querySelector(`[data-play-option="${key}"]${key==='mode'?':checked':''}`)?.focus({preventScroll:true});};
-I.playDeckSearch=t=>{const start=t.selectionStart,end=t.selectionEnd;playSetup.searchDecks(t.value);refreshPlayMenu();const field=document.getElementById('playDeckSearch');field?.focus({preventScroll:true});try{field?.setSelectionRange(start,end);}catch{}};
+// Keyboards that compose a word (Gboard, Samsung) search when the word is done; redrawing
+// the field mid-word would repeat the letters.
+I.playDeckSearch=(t,e)=>{if(e?.isComposing)return;const start=t.selectionStart,end=t.selectionEnd;playSetup.searchDecks(t.value);refreshPlayMenu();const field=document.getElementById('playDeckSearch');field?.focus({preventScroll:true});try{field?.setSelectionRange(start,end);}catch{}};
 A.playInspectCard=t=>A.card({dataset:{name:t.dataset.name,readOnly:'true'}});
 I.playImportDraft=C.playImportDraft=t=>{
   const before=playSetup.snapshot();
@@ -2845,6 +2847,7 @@ A.resetOnboarding=async()=>{
 if(!await ask('Reset guide history? Only tutorials will reset. Your cards, decks, account and preferences stay saved.'))return;resetOnboarding();introPending=true;toast('Guides reset. The introduction will return on Home when you finish your current task.');};
 A.helpOpen=t=>{const id=t?.dataset?.id||'start';if(!INFO_TOPICS.some(x=>x.id===id))return;S.ui.settingsTab='info';settingsPopup.open();A.settingsTab({dataset:{id:'info'}});const topic=document.getElementById('info-'+id);if(topic){topic.hidden=false;topic.open=true;topic.querySelector('summary')?.focus();topic.scrollIntoView({block:'nearest'});}};
 A.infoGo=t=>{const topic=INFO_TOPICS.find(x=>x.id===t.dataset.id);if(!topic)return;if(topic.id==='tabletop')return A.tabletop();if(topic.route==='#settings')return A.settingsTab({dataset:{id:'account'}});settingsPopup.close();go(topic.route);};
+document.addEventListener('compositionend',e=>{if(e.target?.id==='playDeckSearch')I.playDeckSearch(e.target);});
 document.addEventListener('input',e=>{if(e.target.matches?.('#signupPassword,#resetPassword'))syncPasswordRules(e.target,e.target.closest('.account')||document);});
 document.addEventListener('input',e=>{if(e.target.id!=='infoQuery')return;const matches=new Set(findInfo(e.target.value).map(t=>t.id)),root=e.target.closest('.info-centre');root.querySelectorAll('[data-info-topic]').forEach(n=>n.hidden=!matches.has(n.dataset.infoTopic));root.querySelector('#infoCount').textContent=matches.size+' topics';root.querySelector('.info-empty').hidden=matches.size>0;});
 // Ask AI: the in-app assistant. Its tools are the app's own functions, run here on the device.

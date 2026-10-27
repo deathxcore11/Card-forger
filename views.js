@@ -819,7 +819,7 @@ export function decks() {
   const tab = S.ui.decksTab;
   return `<div class="page-head"><h1>Decks</h1><div class="head-actions"><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div></div>
   <div class="random-tools"><button class="btn ghost small" data-act="learnGame">How to play · keywords</button><button class="btn ghost small" data-act="tabletop">Tabletop · play together</button></div>
-  <div class="decks-play-row">${segmented("decksTab", tab, [["mine", "My decks", "decks"], ["ideas", "Ideas", "ideas"], ["inspiration", "Meta decks", "trophy"]])}</div><div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="randomDeckOptions" data-home="1" aria-label="Random deck in any format">🎲 Random deck</button></div>
+  ${segmented("decksTab", tab, [["mine", "My decks", "decks"], ["ideas", "Ideas", "ideas"], ["inspiration", "Meta decks", "trophy"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="randomDeckOptions" data-home="1" aria-label="Random deck in any format">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView() : tab === "inspiration" ? inspirationView() : myDecks()}`;
 }
 

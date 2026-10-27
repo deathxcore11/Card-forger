@@ -13,7 +13,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.
 const UA='Mozilla/5.0 (Linux; Android 15; SM-F956U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
 // CSS viewports of real devices, both ways round for the foldables.
 const DEVICES=[['Galaxy Z Fold 6',928,1004],['Galaxy Z Fold 6 sideways',1004,928],['Galaxy Z Fold 7',984,1016],['Pixel Fold',841,701],['Pixel 9 Pro Fold',791,820],
- ['iPad',768,1024],['iPad Pro 11',834,1194],['Galaxy Tab S9',640,1024],['Nexus 7',600,960],['Tablet sideways',1180,820]];
+ ['iPad',768,1024],['iPad Pro 11',834,1194],['Galaxy Tab S9',640,1024],['Nexus 7',600,960],['Tablet sideways',1180,820],['Galaxy Tab S9 sideways with the browser bar',1024,560]];
 const open=async(page,state)=>{await page.goto(base+'/experiments/forge-proof/table-fixture.html?state='+state);await page.waitForFunction(()=>document.body.dataset.fixtureReady==='true');
  // Let the arrival animations finish so sizes are the settled ones.
  await page.waitForFunction(()=>document.getAnimations().every(a=>a.playState!=='running'||a.effect?.getTiming().iterations===Infinity));await sleep(300);};

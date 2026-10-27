@@ -123,27 +123,13 @@ body.practice-table-open{overflow:hidden}#practicePlayerMat{position:fixed;inset
 
 /* Touch web entry points share Home's daily art and the Decks pill row. The
    existing desktop header/bottom entries and their DOM positions do not move. */
-.touch-play-entry[hidden]{display:none!important}
-.touch-play-entry{min-height:44px;min-width:70px;border-radius:999px;white-space:nowrap;font-weight:700;gap:6px}
-#homeToday .home-play-entry{justify-self:start;margin-top:10px;padding:10px 18px;color:#fff;border:1px solid #ffffff55;background:linear-gradient(125deg,#ffffff20,#ffffff09),#0a111b70;backdrop-filter:blur(14px) saturate(1.1);box-shadow:inset 0 1px 0 #ffffff18,0 4px 18px #0002}
-#homeToday .home-play-entry:hover{background-color:#1b283acc;border-color:#ffffff88;color:#fff}
-/* Light theme fades the daily shade to a pale surface behind the pill; keep its white label readable. */
-:root[data-theme="light"] #homeToday .home-play-entry{background:#0a111bd9}
-:root[data-theme="light"] #homeToday .home-play-entry:hover{background:#1b283a}
-/* A real box everywhere (not display:contents), so the tabs keep their page-enter animation. */
-.decks-play-row{display:flex;align-items:center;gap:8px;min-width:0;margin:12px 0}
-.decks-play-row>.seg{flex:1;min-width:0;margin:0}
-.decks-play-row:has(.touch-play-entry:not([hidden]))>.seg button{min-height:44px;min-width:0}
-body .btn.touch-play-entry.decks-play-entry{flex:none;padding:10px 14px;background:color-mix(in srgb,var(--surface) 82%,transparent);border:1px solid var(--line);backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 #ffffff0c}
-.touch-play-entry:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
 .play-device-guard{display:grid;justify-items:center;gap:10px;width:min(420px,calc(100% - 32px));margin:clamp(32px,10vh,96px) auto;padding:30px 24px 24px;border:1px solid #d6ad6466;border-radius:20px;background:linear-gradient(180deg,#ffffff0d,transparent 30%),linear-gradient(180deg,#1b1b1ff5,#0e0e11f7);box-shadow:0 22px 54px #000c;text-align:center;color:#ece4d3}
 .play-device-guard-icon{display:grid;place-items:center;width:58px;height:58px;border:1.5px solid #d6ad64;border-radius:50%;color:#f2d496;box-shadow:0 0 26px #d6ad6438}
 .play-device-guard-icon svg{width:30px;height:30px}
 .play-device-guard h1{margin:4px 0 0;font:700 22px/1.2 Cinzel,Georgia,serif;letter-spacing:.03em;color:#fbf3df}
 .play-device-guard p{max-width:40ch;margin:0 auto 6px;font:500 14px/1.5 'DM Sans',system-ui,sans-serif;color:#cfc6b3}
 .play-device-guard .btn{min-height:44px;margin:4px}
-@media(max-width:400px){.decks-play-row:has(.touch-play-entry:not([hidden]))>.seg button{padding-inline:4px;font-size:12px}.decks-play-row:has(.touch-play-entry:not([hidden]))>.seg .label-ico{display:none}body .btn.touch-play-entry.decks-play-entry{min-width:64px;padding-inline:10px}}
-@media(prefers-reduced-transparency:reduce){#homeToday .home-play-entry{background:#192333;backdrop-filter:none}body .btn.touch-play-entry.decks-play-entry{background:var(--surface);backdrop-filter:none}}
+@media (max-height:520px){.play-device-guard{margin:12px auto;padding:14px 18px;gap:4px}.play-device-guard-icon{display:none}.play-device-guard h1{font-size:18px}.play-device-guard p{margin-bottom:2px}}
 
 /* Native play keeps the deck artwork and the next action in focus. */
 .play-menu--forge{gap:20px}

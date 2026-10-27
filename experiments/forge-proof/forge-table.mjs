@@ -25,6 +25,7 @@ function keywordHint(name,reference){
 export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName:'You'},format='Commander',title='CardStashy · Local Forge proof',presentation={}}){
  const doc=root.ownerDocument,win=doc.defaultView,hooks=practiceArtworkHooks();let localError='',panelKey='',drag=null,ghost=null,suppressUntil=0,closed=false,nativeValueDraft=null,openingFocused=false;
  const reducedMotion=()=>win.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+ let dockObserver=null,dockObserved=null;
  const peek=doc.createElement('div');let peekFor=null,peekPinned=false,peekTimer=0,pressTimer=0,pressAt=null,pressShown=false,peekKey='',lastPointerType='mouse';
  let lastSeen=null,castTimer=0;const failedArt=new Set();const spotlit=new Set(),castShow=doc.createElement('div');castShow.className='forge-cast';castShow.setAttribute('aria-hidden','true');castShow.dataset.open='false';doc.body.append(castShow);
  const table=mountMatchTable(root,{session,format,profile,title,allowConcede:false,onExit,pileIdentical:presentation.hosted===true,...hooks,
@@ -85,6 +86,8 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   if(presentation.hosted&&root.dataset.stage!=='match')for(const el of root.querySelectorAll('.forge-zone-row,.forge-mana-panel'))el.remove();
   if(presentation.hosted&&root.dataset.stage==='match'){
    const mat=root.querySelector('.play-match-mat');
+   // Upright tablets size the space above the decision card from its real height (it grows with the stack).
+   const dockEl=root.querySelector('.play-match-decisions');if(dockEl!==dockObserved){dockObserver?.disconnect();dockObserved=dockEl;if(dockEl&&typeof ResizeObserver==='function'){dockObserver??=new ResizeObserver(([entry])=>{const h=Math.ceil(entry?.borderBoxSize?.[0]?.blockSize??entry?.contentRect.height??0);if(root.style.getPropertyValue('--dock-live')!==h+'px')root.style.setProperty('--dock-live',h+'px');});dockObserver.observe(dockEl);}}
    // Upright tablets set your hand beside your commander's card instead of under it.
    const yourCommander=String(!!root.querySelector('.play-command-zone[data-seat=you]'));if(root.dataset.yourCommander!==yourCommander)root.dataset.yourCommander=yourCommander;
    // Each player's public zone counts sit beside their portrait; a count opens that list in the Zones menu.
@@ -286,11 +289,13 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  // A pinned preview of a card you can play or use right now offers that as one button.
  function peekAction(el){
   peek.querySelector('.forge-peek-play')?.remove();peek.dataset.pinned=String(peekPinned);peek.setAttribute('role',peekPinned?'dialog':'tooltip');
-  const n=session.snapshot().native;if(!peekPinned||!presentation.hosted||el.dataset.forgeHint!=='true'||n?.inputType!=='InputPassPriority'||n?.prompt)return;
+  // A press-and-hold preview closes when the finger lifts, so it never offers a button.
+  const n=session.snapshot().native;if(!peekPinned||pressAt||!presentation.hosted||el.dataset.forgeHint!=='true'||n?.inputType!=='InputPassPriority'||n?.prompt)return;
   const b=doc.createElement('button');b.type='button';b.className='forge-peek-play';b.dataset.peekPlay='true';b.textContent=el.closest('.play-match-hand')?'Play':'Use';
   (peek.querySelector('.forge-peek-info')||peek).append(b);
  }
- peek.addEventListener('click',e=>{if(!e.target.closest?.('[data-peek-play]'))return;e.preventDefault();e.stopPropagation();const card=peekFor,s=session.snapshot();
+ // Tapping the open card closes it; its Play button plays it.
+ peek.addEventListener('click',e=>{if(!e.target.closest?.('[data-peek-play]')){hidePeek();return;}e.preventDefault();e.stopPropagation();const card=peekFor,s=session.snapshot();
   if(!card||card.dataset.forgeHint!=='true'||s.busy){hidePeek();return;}const id=Number(card.dataset.instance);hidePeek();act(()=>session.nativeSelect('card',id));});
  const peekCard=e=>{const card=e.target.closest?.('.play-match-card[data-instance]');return card&&root.contains(card)&&!card.closest('.forge-drag-ghost')?card:null;};
  const over=e=>{if(e.pointerType==='touch'||peekPinned)return;const card=peekCard(e);if(!card)return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>showPeek(card),peekFor?40:240);};
@@ -345,5 +350,5 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  const pressCancel=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}cancel();};
  const key=e=>{if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
  root.addEventListener('click',click,true);root.addEventListener('pointerdown',down);doc.addEventListener('pointermove',move,{passive:false});doc.addEventListener('pointerup',up);doc.addEventListener('pointercancel',pressCancel);doc.addEventListener('keydown',key);win.addEventListener('blur',cancel);
- return {destroy(){closed=true;unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);clearTimeout(castTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);win.removeEventListener('resize',queueArrows);peek.remove();castShow.remove();arrows.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);clearTimeout(castTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);win.removeEventListener('resize',queueArrows);peek.remove();castShow.remove();arrows.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
