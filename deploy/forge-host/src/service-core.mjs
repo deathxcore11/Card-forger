@@ -117,7 +117,7 @@ export class AdmissionService {
     const lifetimeMs = access.mode === 'trial' ? Math.min(access.matchMs, access.expiresAt - this.now()) : access.matchMs;
     const reserveGuard = (txn, allocation) => reserveAdmissionBudget(txn, allocation, access, this.now());
     const refused = await this.replacePreviousMatch({ ownerId: user.id, idempotencyKey, input, lifetimeMs, reserveGuard });
-    if (refused) return error(refused.error, refused.status);
+    if (refused) return refused.retryAfter ? json({ error: refused.error }, refused.status, { 'Retry-After': String(refused.retryAfter) }) : error(refused.error, refused.status);
     let result;
     try { result = await this.ledger.reserveProvisional({ ownerId: user.id, idempotencyKey, input, lifetimeMs, reserveGuard }); }
     catch { return error('invalid_match_input', 400); }
@@ -146,8 +146,9 @@ export class AdmissionService {
   // reservation, as if that match had already ended: a start that would be refused
   // anyway (capacity, rate, allowance) leaves the current match running. Then each
   // previous lease is released only on that match's own destruction proof, like any
-  // close, within REPLACE_MS. If that proof is not available in time, the
-  // reservation refuses as before (user_has_active_allocation); nothing is retried
+  // close, within REPLACE_MS. An end that was asked for but not proven in time may
+  // still finish, so the start is refused as previous_match_ending (try again in a few
+  // seconds), never as an active match the player could return to; nothing is retried
   // on the player's behalf. A replayed or reused Idempotency-Key never ends anything.
   async replacePreviousMatch({ ownerId, idempotencyKey, input, lifetimeMs, reserveGuard }) {
     const previous = (await this.storage.get('leases') || []).filter(lease => lease.ownerId === ownerId);
@@ -155,7 +156,9 @@ export class AdmissionService {
     if (await this.storage.get('create:' + await digest({ ownerId, idempotencyKey }))) return null;
     let refused;
     try { refused = await this.ledger.checkReplacement({ ownerId, idempotencyKey, input, lifetimeMs, reserveGuard,
-      simulateEnded: (txn, leases) => settleLeasesForCheck(txn, leases, this.now()) }); }
+      // Settled as late as the real release can happen, so the check is never more
+      // lenient than the reservation that follows it.
+      simulateEnded: (txn, leases) => settleLeasesForCheck(txn, leases, this.now() + this.replaceMs) }); }
     catch { return { status: 400, error: 'invalid_match_input' }; }
     if (refused) return refused;
     const deadline = AbortSignal.timeout(this.replaceMs);
@@ -165,7 +168,8 @@ export class AdmissionService {
         if (ended?.confirmed === true) await abortable(this.release(lease.matchId, lease.generation), deadline);
       } catch { /* unconfirmed: the lease stays and the alarm keeps reconciling it */ }
     }
-    return null;
+    const held = (await this.storage.get('leases') || []).some(l => previous.some(p => p.matchId === l.matchId && p.generation === l.generation));
+    return held ? { status: 503, error: 'previous_match_ending', retryAfter: 5 } : null;
   }
   // Private read-only namespace RPC for create202 -> first GET before begin has
   // persisted the per-match record. A UUID alone never establishes ownership.

@@ -21,14 +21,22 @@ async function boundedText(response, maximum, signal) {
   for (const part of parts) { bytes.set(part, offset); offset += part.byteLength; }
   return new TextDecoder().decode(bytes);
 }
-// Whether the single-use launcher still waits for input. Any other answer, or none,
-// means it has gone (it took the input, or the container ended).
-async function launcherWaiting(fetchExisting, token) {
-  try {
-    const response = await fetchExisting(request('/bootstrap-ready', token));
-    if (response.status !== 200) { await response.body?.cancel().catch(() => {}); return false; }
-    return (await boundedJSON(response, 1024, AbortSignal.timeout(5000)))?.protocol === PROTOCOL;
-  } catch (failure) { if (failure?.containerExited || failure?.replaced) throw failure; return false; }
+// Whether the single-use launcher still waits for input. A reply from anything else
+// means it has gone (it took the input; the engine answers in its place). A lost look
+// is asked again for a few seconds, since the fault that lost the input may last a
+// moment; only then is it taken as gone, and the ready step finds out. Looks carry no
+// input, so asking again never sends the match twice.
+async function launcherWaiting(fetchExisting, token, now, wait, bound = 3000) {
+  const until = now() + bound;
+  for (;;) {
+    try {
+      const response = await fetchExisting(request('/bootstrap-ready', token));
+      if (response.status !== 200) { await response.body?.cancel().catch(() => {}); return false; }
+      return (await boundedJSON(response, 1024, AbortSignal.timeout(5000)))?.protocol === PROTOCOL;
+    } catch (failure) { if (failure?.containerExited || failure?.replaced) throw failure; }
+    if (now() >= until) return false;
+    await wait(250);
+  }
 }
 export function nativeAdapter(_env) {
   return {
@@ -60,10 +68,10 @@ export function nativeAdapter(_env) {
       } catch (failure) {
         if (failure?.containerExited || failure?.replaced) throw failure;
         // The reply was lost, not refused. The launcher takes input once and stops
-        // answering the moment it does, so one look tells which without sending the
+        // answering the moment it does, so a look tells which without sending the
         // input again: still answering means it never took it. Gone, the ready and
         // confirm steps prove by digest that the engine holds exactly this input.
-        if (await launcherWaiting(fetchExisting, internalToken)) throw new Error('bootstrap_input_not_taken ' + String(failure?.message || failure).slice(0, 60));
+        if (await launcherWaiting(fetchExisting, internalToken, now, wait)) throw new Error('bootstrap_input_not_taken ' + String(failure?.message || failure).slice(0, 60));
         return;
       }
       if (response.status !== 204) {

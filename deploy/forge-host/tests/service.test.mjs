@@ -210,10 +210,12 @@ test('an invalid start leaves the previous match running', async () => {
   assert.equal(f.calls.destroy, 0); assert.equal(f.containers.get(first.body.matchId).running, true);
   assert.equal((await f.storage.get('leases')).length, 1);
 });
-test('an unconfirmed end keeps the previous lease and refuses the new start without retrying', async () => {
+test('an unconfirmed end keeps the previous lease and refuses the new start as still ending, without retrying', async () => {
   const f = fixture(); const first = await f.create(); f.containers.get(first.body.matchId).failStop = true;
   const blocked = await f.create({ headers: { 'Idempotency-Key': 'unconfirmed_replace_0001' } });
-  assert.equal(blocked.response.status, 409); assert.equal(blocked.body.error, 'user_has_active_allocation');
+  // The old match was told to end and may still finish ending, so it is not offered back as active.
+  assert.equal(blocked.response.status, 503); assert.equal(blocked.body.error, 'previous_match_ending'); assert.equal(blocked.response.headers.get('Retry-After'), '5');
+  assert.equal((await f.stores.get(first.body.matchId).get('allocation')).reason, 'replaced');
   assert.equal(f.calls.start, 1); assert.deepEqual((await f.storage.get('leases')).map(l => l.matchId), [first.body.matchId]);
   f.containers.get(first.body.matchId).failStop = false;
   const next = await f.create({ headers: { 'Idempotency-Key': 'unconfirmed_replace_0002' } });
@@ -493,7 +495,7 @@ test('unconfirmed cleanup blocks Rematch for close and finished result until ala
     const response = await f.route(request('/api/play/matches/' + id, { method: ended ? 'GET' : 'DELETE' }));
     assert.equal(response.status, ended ? 200 : 503); assert.equal((await f.storage.get('leases')).length, 1);
     const blocked = await f.create({ headers: { 'Idempotency-Key': 'blocked_rematch_cleanup_0001' } });
-    assert.equal(blocked.response.status, 409); assert.equal(blocked.body.error, 'user_has_active_allocation'); assert.equal(f.calls.start, 1);
+    assert.equal(blocked.response.status, 503); assert.equal(blocked.body.error, 'previous_match_ending'); assert.equal(f.calls.start, 1);
     container.failStop = false; await f.admission.alarm();
     assert.equal((await f.storage.get('leases')).length, 0); assert.equal(f.calls.start, 1);
   }
@@ -511,7 +513,7 @@ test('lease-release transport failure preserves cleanup response and alarm fallb
   f.admission.release = async () => { throw Error('fixture release RPC unavailable'); };
   assert.equal((await f.route(request('/api/play/matches/' + first.body.matchId, { method: 'DELETE' }))).status, 204);
   assert.equal(f.containers.get(first.body.matchId).running, false); assert.equal((await f.storage.get('leases')).length, 1);
-  const blocked = await f.create({ headers: { 'Idempotency-Key': 'blocked_rematch_release_0001' } }); assert.equal(blocked.response.status, 409);
+  const blocked = await f.create({ headers: { 'Idempotency-Key': 'blocked_rematch_release_0001' } }); assert.equal(blocked.response.status, 503); assert.equal(blocked.body.error, 'previous_match_ending');
   f.admission.release = release; await f.admission.alarm(); assert.equal((await f.storage.get('leases')).length, 0);
   const next = await f.create({ headers: { 'Idempotency-Key': 'explicit_rematch_retry_0001' } }); assert.equal(next.response.status, 202); assert.equal(f.calls.start, 2);
 });
@@ -657,7 +659,7 @@ test('ending the previous match is bounded well inside the website start request
   const blocked = await f.create({ headers: { 'Idempotency-Key': 'bounded_replace_0001' } });
   clearTimeout(stalled);
   assert(Date.now() - started < 2_000, 'refused at the replacement bound, not when the match finally answers');
-  assert.equal(blocked.response.status, 409); assert.equal(blocked.body.error, 'user_has_active_allocation');
+  assert.equal(blocked.response.status, 503); assert.equal(blocked.body.error, 'previous_match_ending');
   assert.equal(f.calls.start, 1);
 });
 test('a replacement aborts an opening start\'s request in flight instead of waiting for it', async () => {

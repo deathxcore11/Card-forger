@@ -31,16 +31,29 @@ test('a lost initialization reply is settled by one look at the launcher, never 
     ['the engine gateway answers in its place', () => Response.json({ error: 'route_not_found' }, { status: 404 }), null],
     ['launcher still waiting: it never took the input', () => Response.json({ protocol: 'cardstashy.match-input.v1' }), /^bootstrap_input_not_taken Network connection lost\.$/],
   ]) {
-    const f = await fixture(); let posts = 0, looks = 0;
-    const args = { ...f.args, deadline: 1000, now: () => 0, wait: async () => {}, fetchExisting: async request => {
+    const f = await fixture(); let posts = 0, looks = 0, clock = 0;
+    const args = { ...f.args, deadline: 100000, now: () => clock, wait: async ms => { clock += ms; }, fetchExisting: async request => {
       if (request.method === 'POST') { posts++; lost(); }
       if (!posts) return Response.json({ protocol: 'cardstashy.match-input.v1' });
       looks++; return afterPost();
     } };
     if (outcome) await assert.rejects(f.adapter.bootstrapExisting(args), error => outcome.test(error.message), name);
     else await f.adapter.bootstrapExisting(args);
-    assert.equal(posts, 1, name); assert.equal(looks, 1, name);
+    assert.equal(posts, 1, name);
+    // A lost look is asked again for about 3 s; an answer settles it at once.
+    if (afterPost === lost) { assert.ok(looks > 1 && clock >= 3000 && clock <= 3500, name); } else assert.equal(looks, 1, name);
   }
+});
+test('a look lost to the same brief fault is asked again, so a launcher still waiting is reported at once', async () => {
+  const f = await fixture(); let posts = 0, looks = 0, clock = 0;
+  const args = { ...f.args, deadline: 100000, now: () => clock, wait: async ms => { clock += ms; }, fetchExisting: async request => {
+    if (request.method === 'POST') { posts++; throw TypeError('Network connection lost.'); }
+    if (!posts) return Response.json({ protocol: 'cardstashy.match-input.v1' });
+    if (++looks < 3) throw TypeError('Network connection lost.');
+    return Response.json({ protocol: 'cardstashy.match-input.v1' });
+  } };
+  await assert.rejects(f.adapter.bootstrapExisting(args), /^Error: bootstrap_input_not_taken/);
+  assert.equal(posts, 1); assert.equal(looks, 3); assert.ok(clock < 1000);
 });
 test('a container end or a replacement during initialization is reported as itself, without a look', async () => {
   for (const failure of [Object.assign(Error('container_exited'), { containerExited: true }), Object.assign(Error('replaced_by_new_start'), { replaced: true })]) {
