@@ -1232,3 +1232,11 @@
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient[data-turn=cpu]>i:is([data-corner=bl],[data-corner=br]){opacity:.16}
 @keyframes cs-fog{0%{transform:translate(0,0) scale(1)}50%{transform:translate(2.5vmax,-1.5vmax) scale(1.06)}100%{transform:translate(-2vmax,2vmax) scale(.96)}}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i{animation:none;transition:none}}
+/* 4.3.0 Foils on the battlefield: a slow holographic sheen that only moves a transform, so the
+   compositor carries it. Hand cards keep the app's own foil; etched stays plain on the table. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-cs-foil]{isolation:isolate}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-cs-foil]>.cs-foil{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;
+ background:linear-gradient(115deg,transparent 0%,transparent 36%,#ff7ad966 41%,#ffe98a80 45.5%,#8affd88c 50%,#7ac4ff80 54.5%,#c98aff66 59%,transparent 64%,transparent 100%);background-size:260% 100%;
+ mix-blend-mode:screen;opacity:.7;transform:translateZ(0);animation:cs-foil-sheen 7s ease-in-out infinite;will-change:background-position}
+@keyframes cs-foil-sheen{0%{background-position:105% 0}45%,100%{background-position:-5% 0}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-cs-foil]>.cs-foil{animation:none;background-position:50% 0;opacity:.45}}
