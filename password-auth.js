@@ -1,7 +1,16 @@
 // Passwords go only to Supabase Auth. Never persist them in app state or logs.
 export const validEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+// Rules for a new or changed password. Existing passwords still log in unchanged.
+export const PASSWORD_RULES = Object.freeze([
+  ["length", "At least 8 characters", p => p.length >= 8],
+  ["capital", "A capital letter", p => /\p{Lu}/u.test(p)],
+  ["number", "A number", p => /\p{Nd}/u.test(p)],
+]);
+export const passwordRuleState = password => PASSWORD_RULES.map(([id, label, test]) => ({ id, label, ok: typeof password === "string" && test(password) }));
 export function validateNewPassword(password, confirm) {
   if (typeof password !== "string" || password.length < 8) throw Error("Use a password with at least 8 characters.");
+  if (!/\p{Lu}/u.test(password)) throw Error("Add a capital letter to your password.");
+  if (!/\p{Nd}/u.test(password)) throw Error("Add a number to your password.");
   if (password !== confirm) throw Error("The passwords don’t match.");
 }
 export function authError(error) {
