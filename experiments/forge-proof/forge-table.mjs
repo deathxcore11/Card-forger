@@ -123,6 +123,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    if(Array.isArray(presentation.tracker)&&presentation.tracker.length)renderTracker(surface,mat);
    // One turn statement: the dock says whose move it is; this track on the divider says where the turn is.
    renderPhaseTrack(surface,mat);
+   renderCombatLine(n,surface);
    // The history button carries the stack size as a badge.
    const history=root.querySelector('.play-match-header>[data-focus-key=table-details]'),stackCount=n.stack?.length?String(n.stack.length):'';if(history&&(history.dataset.count||'')!==stackCount){if(stackCount)history.dataset.count=stackCount;else delete history.dataset.count;}
    // Smart, Full Control and auto-pay are small emblems under your name, the way Arena keeps them by your portrait.
@@ -253,6 +254,22 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const ring=doc.createElement('span');ring.className='forge-fx-ring';ring.dataset.kind=kind;if(tint)ring.style.setProperty('--tint',tint);w.append(ring);
   ring.animate([{opacity:.9,transform:'scale(.92)'},{opacity:0,transform:'scale(1.18)'}],{duration:kind==='land'?380:520,easing:'ease-out'}).finished.then(()=>ring.remove(),()=>ring.remove());
  }
+ // One motion scale for the table, tunable in one place: press, move, land, lunge.
+ const MOTION={press:120,move:220,land:360,lunge:500,stagger:140};
+ let strikeEnd=0;
+ function strike(el,to,{face=false,delay=0}={}){
+  const w=el?.closest('.play-match-card-wrap'),r=rectOf(el),t=rectOf(to);if(!w||!r||!t)return;
+  // The battlefields clip their overflow; let the striker leave its lane for the flight.
+  const ms=MOTION.lunge+140;root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+delay+ms);
+  setTimeout(()=>{if(Date.now()>=strikeEnd-20)delete root.dataset.csStriking;},delay+ms+40);
+  const reach=face?.8:.5,dx=(t.left+t.width/2-(r.left+r.width/2))*reach,dy=(t.top+t.height/2-(r.top+r.height/2))*reach,tilt=Math.max(-10,Math.min(10,dx/30));
+  setTimeout(()=>{if(!w.isConnected)return;w.dataset.csStriker='true';
+   w.animate([{transform:'none',easing:'cubic-bezier(.2,.8,.3,1)'},{transform:`translate(${-dx*.05}px,${-dy*.05+6}px) scale(1.04)`,offset:.22,easing:'cubic-bezier(.55,0,.85,.35)'},{transform:`translate(${dx}px,${dy}px) scale(1.14) rotate(${tilt}deg)`,offset:.52,easing:'ease-out'},{transform:`translate(${dx*.9}px,${dy*.9}px) scale(1.1) rotate(${tilt*.6}deg)`,offset:.62,easing:'cubic-bezier(.45,0,.2,1)'},{transform:'none'}],{duration:ms}).finished.then(()=>delete w.dataset.csStriker,()=>delete w.dataset.csStriker);
+   setTimeout(()=>{if(!to.isConnected)return;pulse(to,face?'face':'hit');
+    const target=to.closest('.play-match-seat')||to.closest('.play-match-card-wrap')||to;target.animate([{transform:'none'},{transform:`translate(${dx>0?5:-5}px,${dy>0?5:-5}px)`,offset:.2},{transform:`translate(${dx>0?-3:3}px,${dy>0?-2:2}px)`,offset:.5},{transform:'none'}],{duration:MOTION.land,easing:'ease-out'});
+    if(face){target.classList.remove('cs-face-hit');void target.offsetWidth;target.classList.add('cs-face-hit');setTimeout(()=>target.classList.remove('cs-face-hit'),700);}},ms*.52);
+  },delay);
+ }
  function popNumber(el,text,kind){
   const r=rectOf(el);if(!r)return;const n=doc.createElement('span');n.className='forge-fx-number';n.dataset.kind=kind;n.textContent=text;fx.append(n);
   n.style.left=`${r.left+r.width/2}px`;n.style.top=`${r.top+r.height*.35}px`;
@@ -279,11 +296,15 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const lifeLost=b.players.some(p=>p.life<(a.players.find(x=>x.seat===p.seat)?.life??p.life));
   const combat=/Damage$/.test(String(b.phase||''))||/Damage$/.test(String(a.phase||''));
   if(combat&&(damaged.length||lifeLost)){
-   for(const c of a.cards.filter(c=>c.attacking&&b.cards.some(x=>x.id===c.id))){const el=cardEl(c.id),w=el?.closest('.play-match-card-wrap'),r=rectOf(el);if(!w||!r)continue;
-    const t=c.attackTarget?.kind==='card'?rectOf(cardEl(c.attackTarget.id)):rectOf(root.querySelector(`.play-match-seat[data-player-seat="${b.players.find(p=>p.nativeId===c.attackTarget?.id)?.seat??b.players.find(p=>p.seat!==c.controller)?.seat}"]`));
-    const dx=t?(t.left+t.width/2-(r.left+r.width/2))*.12:0,dy=t?(t.top+t.height/2-(r.top+r.height/2))*.12:c.controller===b.seat?-14:14;
-    w.animate([{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(1.04)`,offset:.35},{transform:'none'}],{duration:420,easing:'cubic-bezier(.3,.1,.3,1)'});}
-   damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){popNumber(el,`−${c.damage-(was.get(c.id)?.damage||0)}`,'damage');pulse(el,'hit');}},180+i*60));
+   // Arena's strike: an unblocked attacker flies at the defending player's portrait and hits it;
+   // a blocked one crashes into its blocker. Both spring back to their place.
+   const blockerOf=new Map();for(const c of [...a.cards,...b.cards])for(const id of c.blockingIds||[])if(!blockerOf.has(id))blockerOf.set(id,c.id);
+   let struck=0;
+   for(const c of a.cards.filter(c=>c.attacking&&b.cards.some(x=>x.id===c.id))){const el=cardEl(c.id);if(!el)continue;
+    const seat=root.querySelector(`.play-match-seat[data-player-seat="${b.players.find(p=>p.nativeId===c.attackTarget?.id)?.seat??b.players.find(p=>p.seat!==c.controller)?.seat}"]`);
+    const blocker=blockerOf.has(c.id)?cardEl(blockerOf.get(c.id)):null,to=blocker||(c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seat);
+    strike(el,to,{face:!blocker&&to===seat,delay:struck++*MOTION.stagger});}
+   damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){popNumber(el,`−${c.damage-(was.get(c.id)?.damage||0)}`,'damage');pulse(el,'hit');}},MOTION.lunge*.7+i*60));
   }
   // 3b. Declared: a new attacker surges forward toward what it attacks and settles; a new blocker
   // steps across to meet its attacker with a blue shield flash. Arrows then hold the pairing.
@@ -410,6 +431,16 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  }
  // Engine and transport codes in plain words; a refusal Forge explains stays as Forge said it.
  const plainError=msg=>/ordered-source|order/i.test(msg)&&/unavailable|not supported/i.test(msg)?'These can\u2019t be reordered here yet, so they\u2019ll resolve in the default order.':/contract is unavailable|is not supported/i.test(msg)?'That choice isn\u2019t available on this table yet.':msg==='MATCH_NOT_READY'?'One moment, the table is catching up.':msg==='STALE_CHOICE'?'That choice ran out. Try again.':/^(CHOICE_INCOMPLETE)$/.test(msg)?'Pick everything this asks for first.':msg==='CHOICE_FULL'?'You\u2019ve already picked the most allowed.':msg;
+ // Arena's combat line: while you choose attackers or blockers, a gold line runs across the
+ // middle of the board with the question on it and a running count.
+ function renderCombatLine(n,surface){
+  const zone=root.querySelector('.play-match-battlefields .play-match-zone[data-owner=you]'),mode=n.inputType==='InputAttack'?'attack':n.inputType==='InputBlock'?'block':'';
+  let line=root.querySelector(':scope .forge-combat-line');if(!mode||!zone){line?.remove();return;}
+  const mine=surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===surface.seat),k=mode==='attack'?mine.filter(c=>c.attacking).length:mine.filter(c=>c.blockingIds?.length||c.blocking).length;
+  const key=`${mode}|${k}`;if(!line){line=doc.createElement('div');line.className='forge-combat-line';line.setAttribute('aria-hidden','true');root.querySelector('.play-match-mat')?.append(line);}
+  if(line.dataset.key!==key){line.dataset.key=key;line.dataset.mode=mode;line.innerHTML=`<i></i><span><b>${mode==='attack'?'Choose attackers':'Choose blockers'}</b><small>${k?`${k} ${mode==='attack'?'attacking':'blocking'}`:mode==='attack'?'Tap or drag a creature':'Tap your creature, then its attacker'}</small></span><i></i>`;}
+  const r=zone.getBoundingClientRect(),v=`${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}`;if(line.dataset.at!==v){line.dataset.at=v;line.style.left=Math.round(r.left)+'px';line.style.top=Math.round(r.top)+'px';line.style.width=Math.round(r.width)+'px';}
+ }
  const PHASE_STEPS=[['Upkeep',['Untap','Upkeep']],['Draw',['Draw']],['Main',['PreCombatMain']],['Combat',['BeginningOfCombat','DeclareAttackers','DeclareBlockers','FirstStrikeDamage','CombatDamage','EndCombat']],['Main 2',['PostCombatMain']],['End',['End','Cleanup']]];
  function renderPhaseTrack(surface,mat){
   if(!mat)return;let track=mat.querySelector(':scope>.forge-phase-track');

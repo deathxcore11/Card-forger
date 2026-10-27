@@ -1334,3 +1334,26 @@
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-zone-row button>span{font-size:12px;color:#d8d0bf}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-mana-sources{font-size:12px}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-phase-track li>i{transition:none}}
+
+/* 4.3.0 Arena attack. The combat line runs across the middle of the board while you choose
+   attackers or blockers; strikes fly at the portrait (or the blocker) and hit it. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line{position:fixed;z-index:31;display:flex;align-items:center;gap:12px;height:0;pointer-events:none;translate:0 -1px;animation:cs-line-in .36s cubic-bezier(.2,.8,.2,1)}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line>i{flex:1;height:3px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--cs-line,#f2c46f) 30%,var(--cs-line,#f2c46f));box-shadow:0 0 10px var(--cs-line,#f2c46f),0 0 22px color-mix(in srgb,var(--cs-line,#f2c46f) 50%,transparent)}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line>i:last-child{background:linear-gradient(270deg,transparent,var(--cs-line,#f2c46f) 30%,var(--cs-line,#f2c46f))}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line>span{display:grid;justify-items:center;gap:1px;padding:5px 16px 6px;border:1px solid color-mix(in srgb,var(--cs-line,#f2c46f) 70%,transparent);border-radius:999px;background:#120e08cc;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 0 18px color-mix(in srgb,var(--cs-line,#f2c46f) 40%,transparent),0 8px 20px #0008;translate:0 0}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line b{font:700 15px/1.1 Cinzel,Georgia,serif;letter-spacing:.06em;color:#fff1cf;white-space:nowrap}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line small{font:600 12px/1.2 'DM Sans',system-ui,sans-serif;color:#e6d6b0;white-space:nowrap}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line[data-mode=block]{--cs-line:#8fc4ff}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line[data-mode=block] b{color:#e6f1ff}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line[data-mode=block] small{color:#c4d8f2}
+@keyframes cs-line-in{from{opacity:0;scale:.6 1}to{opacity:1;scale:1 1}}
+:where(body.practice-table-open) .play-match-table[data-forge-native][data-cs-striking] :is(.play-match-zone,.play-match-seat-area){overflow:visible!important}
+:where(body.practice-table-open) .play-match-table[data-forge-native][data-cs-striking] .play-match-seat-area{position:relative;z-index:4}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card-wrap[data-cs-striker]{position:relative;z-index:80}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card-wrap[data-cs-striker] .play-match-card{box-shadow:0 0 0 2px #ffb070,0 0 34px 8px #ff6a3a99,0 24px 40px #000c}
+:where(body.practice-table-open) .forge-fx-ring[data-kind=face]{border-color:#ff5a3a;border-width:3px;box-shadow:0 0 34px 10px #ff3a2aaa,inset 0 0 24px #ff3a2a88}
+:where(body.practice-table-open) .play-match-seat.cs-face-hit::after{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at 30% 50%,#ff4a2acc,#ff4a2a33 60%,transparent 80%);pointer-events:none;animation:cs-face-flash .7s ease-out forwards}
+:where(body.practice-table-open) .play-match-seat.cs-face-hit .play-match-life strong{animation:cs-life-hit .7s ease-out}
+@keyframes cs-face-flash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
+@keyframes cs-life-hit{0%{color:inherit;scale:1}15%{color:#ff7a66;scale:1.22}100%{color:inherit;scale:1}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line{animation:none}}
