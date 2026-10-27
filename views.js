@@ -132,13 +132,14 @@ function mtgNext(d, copies) {
   if (!d) return ""; // Discovery is the shared art-led section above.
   const t = totalsFor(d),
     f = formatOf(d),
+    main = sumQty(d.cards),
     r = deckReview(d, S.catalog, S.state.collection, S.state.decks);
   return nextCard({
     eyebrow: "Continue your deck",
     title: esc(d.name),
     art: coverOf(d),
-    stats: [[`${t.copies}/${f.size}`, f.name], [`${t.missing}`, "missing copies"], [`${usd(t.pricedGap, 0)}${t.unpriced ? "+" : ""}`, "to finish"], [r.length ? `${r.length}` : "✓", r.length ? "to review" : "reviewed"]],
-    text: r.length ? `Next: ${esc(r[0].title)}` : t.missing ? "Nothing to review — get the missing copies to finish." : t.copies < f.size ? `${f.size - t.copies} slots still open.` : "Complete. Playtest it or start another.",
+    stats: [[`${main}/${f.size}`, f.name], [`${t.missing}`, "missing copies"], [`${usd(t.pricedGap, 0)}${t.unpriced ? "+" : ""}`, "to finish"], [r.length ? `${r.length}` : "✓", r.length ? "to review" : "reviewed"]],
+    text: r.length ? `Next: ${esc(r[0].title)}` : t.missing ? "Nothing to review — get the missing copies to finish." : main < f.size ? `${f.size - main} slots still open.` : "Complete. Playtest it or start another.",
     actions: `<button class="btn" data-act="go" data-to="#deck/${esc(d.id)}/cards">Open deck</button>${t.missing ? `<button class="btn ghost" data-act="go" data-to="#deck/${esc(d.id)}/shop">Shop missing</button>` : ""}`,
   });
 }
@@ -171,14 +172,14 @@ export function refreshDeckScores(root) {
 }
 
 export function deckTile(d, wide = false, {playSelection = null} = {}) {
-  // A planned deck and its missing copies share one existing per-name USD
-  // resolution (including selected/cheapest known printings), main deck only.
-  const rows = rowsFor(d), t = comparisonTotals(rows),
+  // Owned, value and to-finish cover the physical pool (main and sideboard share
+  // copies); the size line counts the main deck against the format, like the deck page.
+  const rows = rowsFor(d), t = comparisonTotals(rows), main = sumQty(d.cards), side = sumQty(d.side || []),
     v = rows.reduce((a, r) => ({ total: a.total + (r.price ?? 0) * r.qty, unpriced: a.unpriced + (r.price == null ? r.qty : 0) }), { total: 0, unpriced: 0 }),
     valueAmount = v.unpriced && v.unpriced === t.copies ? "—" : usd(v.total, 0),
     valueLabel = v.unpriced ? `${v.unpriced === t.copies ? "value unavailable" : "known deck subtotal"} · ${v.unpriced} unpriced` : "value",
     gapAmount = t.unpriced && t.unpriced === t.missing ? "—" : usd(t.pricedGap, 0),
-    gapLabel = t.unpriced ? `${t.unpriced === t.missing ? "cost unavailable" : "known purchase subtotal"} · ${t.unpriced} unpriced` : t.copies < formatOf(d).size ? "for listed cards" : "to finish",
+    gapLabel = t.unpriced ? `${t.unpriced === t.missing ? "cost unavailable" : "known purchase subtotal"} · ${t.unpriced} unpriced` : main < formatOf(d).size ? "for listed cards" : "to finish",
     cover = coverOf(d),
     target = formatOf(d).size,
     owned = t.copies ? t.covered / t.copies : 0;
@@ -188,7 +189,7 @@ export function deckTile(d, wide = false, {playSelection = null} = {}) {
     <span class="tile-top"><span class="deck-format-stack"><span class="chip dark">${esc(formatOf(d).name)}</span>${deckBoxMarkup(d,{images:d.cards.slice(0,3).map(r=>cardImage(meta(r.name)))})}</span>${colorDots(meta(d.commander))}</span>
     <span class="tile-body">
       <b>${esc(d.name)}</b>
-      <small>${esc(formatOf(d).commander ? d.commander || "No commander yet" : mtgPower(d).plan)} · ${t.copies}/${target}</small>
+      <small>${esc(formatOf(d).commander ? d.commander || "No commander yet" : mtgPower(d).plan)} · ${main}/${target}${side ? ` · ${side} sideboard` : ""}</small>
       <span class="tile-stats"><span data-deck-score="${esc(d.id)}">${powerChip(mtgPower(d))}</span><span><em>${Math.round(owned * 100)}%</em> owned</span><span><em>${valueAmount}</em> ${valueLabel}</span>${t.missing ? `<span><em>${gapAmount}</em> ${gapLabel}</span>` : ""}</span>
       ${bar(owned, "thin")}
     </span>
@@ -1019,6 +1020,8 @@ export function sharedPage() {
     lands = p.counts.Lands,
     nonCmd = sumQty(d.cards.filter((c) => !fm.commander || key(c.name) !== key(d.commander))),
     odds = nonCmd >= 7 ? atLeastLands(nonCmd, lands, 7, 3) : null,
+    // The link carries the sideboard too; it is listed after the main deck groups.
+    side = aggregateCards(d.side || []),
     groups = {};
   for (const c of aggregateCards(d.cards)) {
     const m = meta(c.name),
@@ -1039,19 +1042,18 @@ export function sharedPage() {
     <p class="foot">Counts only your free copies${sc.skipped ? ` and assumes you have the ${sc.skipped} basic lands (change this under Decks → Find decks)` : ""}. The person who shared this can’t see your collection, and their link doesn’t include theirs.</p></section>
   <section class="panel"><h3>Automated checks</h3>
     <ul class="checks">
-      <li class="${rules.length ? "bad-text" : "ok-text"}">${rules.length ? `● ${rules.length} checks outstanding${rules.length > 1 ? "s" : ""}: ${esc(rules.slice(0, 3).map((i) => i.text).join(" "))}` : "✓ Card count, colors, legality and copy limits pass"}</li>
+      <li class="${rules.length ? "bad-text" : "ok-text"}">${rules.length ? `● ${rules.length} check${rules.length === 1 ? "" : "s"} outstanding: ${esc(rules.slice(0, 3).map((i) => i.text).join(" "))}` : "✓ Card count, colors, legality and copy limits pass"}</li>
       <li>Lands <b>${lands}</b> · ramp <b>${p.counts.Ramp}</b> · draw <b>${p.counts.Draw}</b> · removal <b>${p.counts.Removal}</b> · average mana value <b>${p.avg === null ? "—" : p.avg.toFixed(2)}</b></li>
       ${odds !== null ? `<li>${pct(odds)} of opening hands have 3+ lands</li>` : ""}
       ${g ? `<li>Test games: ${pct(g.landsBy4)} hit 4 lands by turn 4${g.commander ? ` · commander on curve ${pct(g.commander.onCurve ?? 0)}` : ""}</li>` : ""}
       ${br ? `<li>Bracket estimate <b>${br.bracket} · ${esc(br.name)}</b>${br.reasons.length ? ` (${esc(br.reasons.join(", "))})` : ""}</li>` : ""}
     </ul><p class="foot">Calculated by CardStashy from the list and card text — simulations and estimates, not win rates.</p></section>
-  <section class="panel"><h3>Full list</h3>${order
-    .filter((t) => groups[t])
-    .map((t) => `<p class="list-head">${t === "Sorcerys" ? "Sorceries" : t} <span class="muted">${sumQty(groups[t])}</span></p><div class="list compact">${groups[t]
+  <section class="panel"><h3>Full list</h3>${[...order.filter((t) => groups[t]).map((t) => [t === "Sorcerys" ? "Sorceries" : t, groups[t]]), ...(side.length ? [["Sideboard", side]] : [])]
+    .map(([title, rows]) => `<p class="list-head">${title} <span class="muted">${sumQty(rows)}</span></p><div class="list compact">${rows
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((c) => {
         const have = Math.min(c.qty, avail(c.name));
-        return `<button class="mini-row" data-act="card" data-name="${esc(c.name)}"><span class="row ellip">${manaCost(meta(c.name))}<span class="ellip">${c.qty > 1 ? c.qty + "× " : ""}${esc(c.name)}</span></span><span class="small ${S.state.collection.length ? (have >= c.qty ? "ok-text" : "warn-text") : "muted"}">${S.state.collection.length ? (have >= c.qty ? "owned" : "need " + (c.qty - have)) : usd(priceOf(c.name))}</span></button>`;
+        return `<button class="mini-row" data-act="card" data-name="${esc(c.name)}"><span class="row ellip">${manaCost(meta(c.name))}<span class="ellip">${c.qty}× ${esc(c.name)}</span></span><span class="small ${S.state.collection.length ? (have >= c.qty ? "ok-text" : "warn-text") : "muted"}">${S.state.collection.length ? (have >= c.qty ? "owned" : "need " + (c.qty - have)) : usd(priceOf(c.name))}</span></button>`;
       })
       .join("")}</div>`)
     .join("")}</section>`;

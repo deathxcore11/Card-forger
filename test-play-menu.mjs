@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {playMenuMarkup} from './play-menu.js';
 import {S,blank} from './store.js';
-import {deckList,deckArtwork,deckTile} from './views.js';
+import {deckList,deckArtwork,deckTile,decks,sharedPage} from './views.js';
 import {deckViewer} from './deck-viewer.js';
 import {routeSegments,gameSwitchRoute} from './game-navigation.js';
 import {readFileSync} from 'node:fs';
@@ -79,5 +79,16 @@ test('malformed selected rows cannot crash artwork rendering and shared tiles re
  S.state=blank();S.catalog={};assert.equal(deckArtwork({name:'Broken',cards:[null]}),'');
  const d={id:'one',name:'A deck',format:'Standard',cards:[{name:'Island',qty:60}],side:[]};
  assert.match(deckTile(d),/data-act="go" data-to="#deck\/one"/);
+ // Decks carries the touch Play entry beside its tabs (hidden until touch admission shows it).
+ assert.match(decks(),/<div class="decks-play-row"><div class="seg"[\s\S]*?<\/div><button[^>]*data-touch-play-entry="practice"[^>]*hidden disabled/);
  assert.match(deckTile(d,false,{playSelection:true}),/data-act="playSelectDeck" data-play-deck="one" aria-pressed="true"/);
+ // The size line counts the main deck against the format; the sideboard is named beside it.
+ assert.match(deckTile({...d,id:'two',cards:[{name:'Island',qty:50}],side:[{name:'Island',qty:5}]}),/· 50\/60 · 5 sideboard<\/small>/);
+});
+
+test('a shared Magic link lists its sideboard and every quantity',()=>{
+ S.state=blank();S.catalog={};S.ui.shared={deck:{name:'Shared',format:'Standard',cards:[{name:'Island',qty:4},{name:'Ironbark Golem',qty:1}],side:[{name:'Negate',qty:2}],budget:null},error:''};
+ const html=sharedPage();
+ assert.match(html,/<p class="list-head">Sideboard <span class="muted">2<\/span><\/p>[\s\S]*2× Negate/);
+ assert.match(html,/1× Ironbark Golem/);
 });

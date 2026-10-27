@@ -393,6 +393,7 @@ function deckStats(g, d) {
   let total = 0,
     buy = 0,
     unknown = 0,
+    unpriced = 0,
     owned = 0,
     value = 0;
   for (const zone of ["main", "extra", "side"])
@@ -409,10 +410,11 @@ function deckStats(g, d) {
       owned += got;
       const need = r.qty - got;
       if (p !== null) value += p * r.qty;
+      else unpriced += r.qty;
       if (need) p === null ? (unknown += need) : (buy += p * need);
       rows.push({ zone, r: {...r,name:r.name||c?.name||r.cardId}, c, need, got, purchaseReference });
     }
-  return { total, owned, buy, unknown, value, rows };
+  return { total, owned, buy, unknown, unpriced, value, rows };
 }
 
 /* ---------- shared pieces ---------- */
@@ -641,7 +643,13 @@ function deckTile(g, d) {
     issues = SOURCES[g].validate(d, (id) => cardOf(g, id), f),
     main = (d.zones.main || []).reduce((a, r) => a + r.qty, 0),
     owned = s.total ? s.owned / s.total : 0,
-    pw = s.total ? tcgPower(g, d, f, (id) => cardOf(g, id)) : null;
+    pw = s.total ? tcgPower(g, d, f, (id) => cardOf(g, id)) : null,
+    missing = s.total - s.owned,
+    // Unknown prices read as unknown, never as $0 (the same wording as the Magic tile).
+    valueAmount = s.unpriced && s.unpriced === s.total ? "—" : usd(s.value, 0),
+    valueLabel = s.unpriced ? `${s.unpriced === s.total ? "value unavailable" : "known deck subtotal"} · ${s.unpriced} unpriced` : "value",
+    buyAmount = s.unknown && s.unknown === missing ? "—" : usd(s.buy, 0),
+    buyLabel = s.unknown ? `${s.unknown === missing ? "cost unavailable" : "known purchase subtotal"} · ${s.unknown} unpriced` : "to finish";
   // Same art tile as Magic decks: card art, format chip, power, owned, value, cost to finish.
   return `<button class="deck-tile tcg-tile tile-${g}" data-act="go" data-to="#tdeck/${esc(d.id)}">
     <span class="tile-art">${g === "ygo" && cover ? ygoCropArt(cover) : g === "ptcg" && cover ? pokemonArtCrop(cover, "tile-pk") : imgTag(cover, "tile-card-art", true)}</span>
@@ -650,7 +658,7 @@ function deckTile(g, d) {
     <span class="tile-body">
       <b>${esc(d.name)}</b>
       <small>${esc(pw?.plan || GAMES[g].short)} · ${main}${g === "ygo" ? " main" : "/60"}</small>
-      <span class="tile-stats">${pw ? powerChip(pw) : ""}<span><em>${Math.round(owned * 100)}%</em> owned</span><span><em>${usd(s.value, 0)}</em> value</span>${s.total - s.owned ? `<span><em>${usd(s.buy, 0)}</em> to finish</span>` : ""}</span>
+      <span class="tile-stats">${pw ? powerChip(pw) : ""}<span><em>${Math.round(owned * 100)}%</em> owned</span><span><em>${valueAmount}</em> ${valueLabel}</span>${missing ? `<span><em>${buyAmount}</em> ${buyLabel}</span>` : ""}</span>
       ${bar(owned, "thin")}
     </span>
   </button>`;

@@ -32,6 +32,9 @@ M.at = Date.now();
 
 let html = tcgDecks();
 assert.match(html, /deck-tile tcg-tile tile-ygo/, "same art tile style as Magic");
+// No exact edition quote is known for this list: the tile says so instead of printing $0.
+assert.match(html, /—<\/em> value unavailable · 40 unpriced/);
+assert.doesNotMatch(html, /\$0<\/em> (?:value|to finish)/);
 assert.match(html, /power-chip/);
 S.ui.tdeckTab = { "ygo:y1": "insights" };
 html = tcgDeck("y1");
