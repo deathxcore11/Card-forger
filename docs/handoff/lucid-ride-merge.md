@@ -84,6 +84,7 @@ Later commits on the branch:
 | `fceefd8` | Shared sideboard counts the shared pool; uncategorised rows still lead (review follow-up) |
 | `7c67910` | Home Play pill readable in light theme; Decks tabs keep their animation and one-line labels (review follow-up) |
 | `cd21bf6` | Service worker never saves other pages or `no-store` replies, so the Android sign-in return and its one-time code are never stored (review follow-up). Checked in Chromium: on 4.2.4, after the sign-in return, the offline app opened as "Returning to the app"; here it opens as CardStashy |
+| `9917561` | Focus clearance moved from the page root onto focused content controls, so tabbing or typing inside the sticky header, buy bar and tray no longer jumps the page (review follow-up). Tab probe: 0 hidden focus stops, 0 page jumps |
 
 ## Test status
 
@@ -102,7 +103,7 @@ Later commits on the branch:
 | tilt | Its first step reproduces an old bug against a 3.92 baseline file; that step no longer reproduces in this Chromium. Pre-existing on 4.2.4 |
 
 - **Review:** an independent review of every change, with each finding checked by a second
-  reviewer, ran against the branch. Its findings so far are fixed in `fceefd8`, `7c67910` and `cd21bf6`.
+  reviewer, ran against the branch. All 10 findings it confirmed are fixed (`97c8ce4`, `fceefd8`, `7c67910`, `cd21bf6` and the focus-clearance commit).
 
 ## Publisher: CI is red for a reason no test fixes
 
