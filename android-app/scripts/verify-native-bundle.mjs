@@ -13,7 +13,7 @@ for(const file of bundle.files){
  if(bytes.length!==file.bytes||createHash('sha256').update(bytes).digest('hex')!==file.sha256)throw Error('Manifest mismatch: '+file.path);
  const packaged=await readFile(path.join('android/app/src/main/assets/public',file.path));
  if(!bytes.equals(packaged))throw Error('Stale Android asset: '+file.path);
- if(file.path.endsWith('.js'))for(const item of parse(bytes.toString())[0])if(item.specifier?.startsWith('.')){await access(path.join(root,'www',path.dirname(file.path),item.specifier.split('?')[0]));imports++;}
+ if(/\.m?js$/.test(file.path))for(const item of parse(bytes.toString())[0])if(item.specifier?.startsWith('.')){await access(path.join(root,'www',path.dirname(file.path),item.specifier.split('?')[0]));imports++;}
 }
 const app=await readFile('www/app.js','utf8'),entry=await readFile('www/native-entry.js','utf8'),html=await readFile('www/index.html','utf8');
 if(!app.includes('!globalThis.CARDSTASHY_NATIVE && "serviceWorker" in navigator'))throw Error('Native SW guard missing');

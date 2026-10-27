@@ -37,8 +37,18 @@ for (const game of ['mtg', 'ptcg', 'ygo']) extras.push(`scanidx/${game}.bin`, `s
 for (const name of ['collection', 'power', 'decks', 'ask', 'find']) for (const ext of ['webm', 'jpg']) extras.push(`tour/${name}.${ext}`);
 // Real Magic booster sheets load from /data/mtg-boosters/<set>.json; the app ships them so packs open offline.
 for (const file of await readdir(path.join(source, 'data/mtg-boosters')).catch(() => [])) if (/^[a-z0-9]{2,8}\.json$|^index\.json$/.test(file)) extras.push(`data/mtg-boosters/${file}`);
-const ignored = (await readFile(path.join(source, '.assetsignore'), 'utf8')).split('\n').map(x => x.trim()).filter(x => x && !x.startsWith('#'));
-const banned = file => /(^|\/)(\.|node_modules|tests?|scripts|review|supabase)(\/|$)/.test(file) || /(^|\/)(\.env|\.dev\.vars)/.test(file) || /\.(mjs|zip|patch|bundle|log)$/.test(file) || ['worker.js', 'sw.js', 'wrangler.jsonc', 'package.json'].includes(file) || ignored.includes(file);
+// Only files the website itself serves: .assetsignore is gitignore syntax (last matching rule wins,
+// nothing under an ignored directory is served), so .mjs ships only where a ! rule publishes it.
+const rules = (await readFile(path.join(source, '.assetsignore'), 'utf8')).split('\n').map(x => x.trim()).filter(x => x && !x.startsWith('#')).map(line => {
+  if (/\*\*|\[|\\/.test(line)) throw Error(`Unsupported .assetsignore rule; review native packaging: ${line}`);
+  const body = line.replace(/^!/, '').replace(/\/$/, ''), glob = body.replace(/^\//, '').replace(/[.+^${}()|]/g, '\\$&').replace(/\*/g, '[^/]*').replace(/\?/g, '[^/]');
+  return { negate: line.startsWith('!'), dir: line.endsWith('/'), test: new RegExp(body.includes('/') ? `^${glob}$` : `(^|/)${glob}$`) };
+});
+const ignoredEntry = (entry, dir) => rules.reduce((ignored, rule) => (!rule.dir || dir) && rule.test.test(entry) ? !rule.negate : ignored, false);
+const served = file => file.split('/').every((_, i, parts) => !ignoredEntry(parts.slice(0, i + 1).join('/'), i < parts.length - 1));
+// The Play engine runtime (~55 MB of WASM and card rules) stays on the website; the app's Play entry
+// is web-only (desktop-play.js treats the native app as ineligible), so it is never needed here.
+const banned = file => /(^|\/)(\.|node_modules|tests?|scripts|review|supabase)(\/|$)/.test(file) || /(^|\/)(\.env|\.dev\.vars)/.test(file) || /\.(zip|patch|bundle|log)$/.test(file) || ['worker.js', 'sw.js', 'wrangler.jsonc', 'package.json'].includes(file) || file.startsWith('experiments/phase-engine/runtime/') || !served(file);
 const allowed = new Set();
 const queue = [...seeds, ...extras];
 while (queue.length) {
@@ -50,10 +60,12 @@ while (queue.length) {
   const info = await stat(path.join(source, file));
   if (!info.isFile()) throw Error(`Expected an explicit file: ${file}`);
   allowed.add(file);
-  if (file.endsWith('.js')) {
+  if (/\.m?js$/.test(file)) {
     const code = await readFile(path.join(source, file), 'utf8');
     const [imports] = parse(code);
     for (const item of imports) if (item.specifier?.startsWith('.')) queue.push(path.posix.join(path.posix.dirname(file), item.specifier));
+    // Module workers and scripts addressed as new URL('./x.mjs', import.meta.url).
+    for (const match of code.matchAll(/new URL\(\s*(['"])(\.{1,2}\/[^'"]+\.m?js)\1\s*,\s*import\.meta\.url\s*\)/g)) queue.push(path.posix.join(path.posix.dirname(file), match[2]));
   }
   if (file.endsWith('.css')) {
     const code = await readFile(path.join(source, file), 'utf8');

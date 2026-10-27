@@ -30,6 +30,9 @@ npm ci
 # Pin the website files to the commit being released. List any website file added since the last
 # release as an extra argument (new files are not in the previous manifest).
 node scripts/rebaseline-source.mjs /path/to/Card-forger <commit> [new-file.js ...]
+# To find new files: with Card-forger checked out at <commit>, CARDSTASHY_SOURCE=/path/to/Card-forger
+# npm run build:web lists every file the app needs in bundle-manifest.json sourceFiles; rebaseline
+# again with the ones missing from shared-source-manifest.json.
 # In android/app/build.gradle raise versionCode (must be higher than the published one) and versionName.
 npm run build:web
 npx cap sync android
