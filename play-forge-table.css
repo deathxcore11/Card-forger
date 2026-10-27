@@ -1049,3 +1049,32 @@
 /* What stops a card being played right now, said before the click: in its preview, and on the hand card under the pointer or focus. */
 :where(body.practice-table-open) .forge-peek .forge-peek-blocked{margin:8px 0 0;padding:6px 9px;border:1px solid #ff9a7a55;border-radius:8px;background:#ff6a4a14;color:#ffc9b8;font:600 12.5px/1.3 'DM Sans',system-ui,sans-serif}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card[data-forge-blocked]:is(:hover,:focus-visible)::after{content:attr(data-forge-blocked);position:absolute;left:50%;bottom:8px;transform:translateX(-50%);max-width:92%;padding:3px 8px;border-radius:999px;background:#140d0be8;border:1px solid #ff9a7a77;color:#ffd4c6;font:700 11px/1.2 'DM Sans',system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;z-index:4}
+
+/* 4.3.0 battlefield emblems. Summoning sickness: cooled art, a slow violet haze, rising
+   z's and a pulsing moon emblem; it ends with one gold flash. The commander wears a gold
+   crown emblem, a gilded edge and a slow shine. The state-corner copies of both hide. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-battlefields :is(.cs-state-summoning-sick,.cs-state-commander){display:none}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-sick] .play-match-piece-art img{filter:saturate(.45) brightness(.74) hue-rotate(-8deg);transition:filter .5s}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-sick] .play-match-piece-art{overflow:hidden}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-sick] .play-match-piece-art:before{content:'';position:absolute;inset:-30%;z-index:1;pointer-events:none;mix-blend-mode:screen;background:radial-gradient(40% 30% at 30% 60%,#8f7dff55,transparent 70%),radial-gradient(35% 28% at 70% 40%,#6fb6ff40,transparent 70%),radial-gradient(30% 25% at 50% 80%,#b48cff44,transparent 70%);animation:cs-sick-haze 6s ease-in-out infinite alternate}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-sick]{outline:1.5px solid #a99cf0aa;outline-offset:-1px;animation:cs-sick-edge 2.6s ease-in-out infinite}
+:where(body.practice-table-open) .cs-emblem{position:absolute;left:6px;bottom:6px;z-index:4;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;box-shadow:0 2px 8px #000c;pointer-events:none}
+:where(body.practice-table-open) .cs-emblem>svg{width:13px;height:13px;fill:currentColor}
+:where(body.practice-table-open) .cs-emblem-sick{color:#f1edff;background:radial-gradient(circle at 35% 30%,#9d8cff,#4b3bb0);border:1.5px solid #d9d2ff;animation:cs-sick-emblem 2.6s ease-in-out infinite}
+:where(body.practice-table-open) .cs-emblem-commander{color:#2a1e06;background:radial-gradient(circle at 35% 30%,#ffe7a8,#c9922f);border:1.5px solid #fff2c9}
+:where(body.practice-table-open) .play-match-card[data-kw-sick][data-kw-commander] .cs-emblem-sick{left:34px}
+:where(body.practice-table-open) .cs-zzz{position:absolute;left:18px;bottom:20px;width:34px;height:44px}
+:where(body.practice-table-open) .cs-zzz i{position:absolute;left:0;bottom:0;font:800 17px/1 'DM Sans',system-ui,sans-serif;font-style:normal;color:#efeaff;text-shadow:0 0 6px #8f7dff,0 0 14px #8f7dff,0 1px 2px #000;opacity:0;animation:cs-sick-z 2.7s ease-in infinite}
+:where(body.practice-table-open) .cs-zzz i:nth-child(2){animation-delay:.9s;font-size:14px}
+:where(body.practice-table-open) .cs-zzz i:nth-child(3){animation-delay:1.8s;font-size:11px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-commander]{box-shadow:0 0 0 2px #e8b95b,0 0 0 4px #0b0d12,0 0 22px #e8b95b55,0 10px 22px #000a}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-commander]:not([data-kw-sick]) .play-match-piece-art:before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(115deg,transparent 35%,#fff3cf33 50%,transparent 65%);background-size:250% 100%;animation:cs-commander-sheen 5s ease-in-out infinite}
+:where(body.practice-table-open) .play-match-card.cs-woke{animation:cs-woke .7s cubic-bezier(.2,.8,.2,1)}
+:where(body.practice-table-open) .play-match-card.cs-woke .play-match-piece-art{box-shadow:0 0 0 2px #ffe3a0,0 0 26px #e8b95b99}
+@keyframes cs-sick-haze{from{transform:translate(-6%,4%) rotate(0)}to{transform:translate(6%,-4%) rotate(8deg)}}
+@keyframes cs-sick-edge{50%{outline-color:#d4cbffee}}
+@keyframes cs-sick-emblem{50%{box-shadow:0 0 0 5px #8f7dff33,0 2px 8px #000c}}
+@keyframes cs-sick-z{0%{opacity:0;transform:translate(0,0) scale(.7)}20%{opacity:1}100%{opacity:0;transform:translate(14px,-30px) scale(1.15)}}
+@keyframes cs-commander-sheen{0%,60%{background-position:120% 0}100%{background-position:-120% 0}}
+@keyframes cs-woke{40%{transform:translateY(-6px) scale(1.04)}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) :is(.play-match-card[data-kw-sick],.play-match-card[data-kw-sick] .play-match-piece-art:before,.cs-emblem-sick,.play-match-card[data-kw-commander] .play-match-piece-art:before,.play-match-card.cs-woke){animation:none!important}:where(body.practice-table-open) .cs-zzz i{animation:none;opacity:.85}:where(body.practice-table-open) .cs-zzz i:nth-child(2){transform:translate(7px,-12px)}:where(body.practice-table-open) .cs-zzz i:nth-child(3){transform:translate(14px,-24px)}}

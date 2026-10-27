@@ -12,6 +12,8 @@ import {sym,symbolName,symbolText,manaCost,esc} from '../../ui.js';
 const ZONE_ICONS={Library:'M6 3h14v16H6zM3 6v16h14M10 7h6M10 11h6',Graveyard:'M6 20V9a6 6 0 0 1 12 0v11M3 20h18M9 10h6M12 7v7',Exile:'m12 2 10 10-10 10L2 12zM8 12h14M17 7l5 5-5 5',Command:'M3 6l5 5 4-8 4 8 5-5-2 14H5zM5 16h14'};
 // Short enough to read in full on a phone; the button's label still names the whole zone.
 const ZONE_LABELS={Library:'Library',Graveyard:'Grave',Exile:'Exile',Command:'Cmdr'};
+const SICK_EMBLEM='<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span class="cs-zzz"><i>z</i><i>z</i><i>z</i></span>';
+const COMMANDER_EMBLEM='<svg viewBox="0 0 24 24"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/></svg>';
 const outlineIcon=d=>`<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
 const MANA_ORDER=['W','U','B','R','G','C'];
 // Plain-language reminders for the keywords players meet most. Anything else falls back
@@ -142,7 +144,11 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
     const card=byId.get(Number(el.dataset.instance)),b=tileBadges(card,{actionable:actionable.has(card?.id),cardsById:byId}),html=tileLayerHtml(b);
     let layer=el.querySelector(':scope>.cs-tile-layer');
     if(!html){layer?.remove();}else{if(!layer){layer=doc.createElement('span');layer.className='cs-tile-layer';layer.setAttribute('aria-hidden','true');el.append(layer);}if(layer.dataset.html!==html){layer.dataset.html=html;layer.innerHTML=html;}}
-    for(const flag of ['flying','hexproof','indestructible','sick'])el.toggleAttribute('data-kw-'+flag,!!b?.flags?.[flag]);
+    const wasSick=el.hasAttribute('data-kw-sick');
+    for(const flag of ['flying','hexproof','indestructible','sick','commander'])el.toggleAttribute('data-kw-'+flag,!!b?.flags?.[flag]);
+    // Summoning sickness and commander emblems; a short gold flash when a creature can attack.
+    for(const [flag,cls,html] of [['sick','cs-emblem-sick',SICK_EMBLEM],['commander','cs-emblem-commander',COMMANDER_EMBLEM]]){let node=el.querySelector(':scope>.'+cls);if(!b?.flags?.[flag]){node?.remove();continue;}if(!node){node=doc.createElement('span');node.className='cs-emblem '+cls;node.setAttribute('aria-hidden','true');node.innerHTML=html;el.append(node);}}
+    if(wasSick&&!b?.flags?.sick&&card?.zone==='Battlefield'){el.classList.remove('cs-woke');void el.offsetWidth;el.classList.add('cs-woke');setTimeout(()=>el.classList.remove('cs-woke'),800);}
     const summary=badgeSummary(b),label=el.getAttribute('aria-label')||'';if(summary&&!label.endsWith(summary))el.setAttribute('aria-label',`${label} \u00b7 ${summary}`);
     // Power and toughness read green above the printed card and red below it.
     const stats=el.querySelector('.play-current-stats'),printed=card?.known&&stats?printedStat(card):null;

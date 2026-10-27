@@ -92,7 +92,7 @@ export function tileBadges(card,{actionable=false,cardsById=new Map()}={}){
   crew:types.includes('Artifact')&&/\bVehicle\b/.test(card.type||'')?crewValue(card):null,
   attachments:attached.map(c=>({id:c.id,name:c.name,kind:kind(c)})),
   compact:!creature,
-  flags:{flying:iconic.some(k=>k.key==='flying'),hexproof:iconic.some(k=>k.key==='hexproof'),indestructible:iconic.some(k=>k.key==='indestructible'),sick:creature&&card.summoningSick===true,damaged:Number.isSafeInteger(card.damage)&&card.damage>0},
+  flags:{flying:iconic.some(k=>k.key==='flying'),hexproof:iconic.some(k=>k.key==='hexproof'),indestructible:iconic.some(k=>k.key==='indestructible'),sick:creature&&card.summoningSick===true&&!iconic.some(k=>k.key==='haste'),commander:card.commander===true,damaged:Number.isSafeInteger(card.damage)&&card.damage>0},
  };
 }
 
