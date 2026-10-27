@@ -127,13 +127,14 @@ const message = {
   opening: 'Keep this hand or mulligan?',
   discard: 'Cleanup Phase\nSelect 1 card(s) to discard to bring your hand down to the maximum of 7 cards.',
 }[STATE] || `Priority: ${yourTurn ? 'idw011' : 'CPU'}\nTurn: 5 (${yourTurn ? 'idw011' : 'CPU'})\nPhase: Main phase 1\nStack: Empty`;
+const stackCard = STATE === 'targets' ? nativeCard('Counterspell', 'Stack', CPU) : null;
 const native = {
   schema: 'cardstashy.forge-proof.v1', revision: 7, viewer: YOU, status: 'running', busy: false,
   players: [
     {id: YOU, name: 'idw011', life: 40, isViewer: true, mana: {W: 0, U: 0, B: 0, R: STATE === 'targets' ? 0 : 2, G: 0, C: 0}, zones: youZones},
     {id: CPU, name: 'CPU', life: 38, isViewer: false, mana: {W: 0, U: 0, B: 0, R: 0, G: 0, C: 0}, zones: cpuZones},
   ],
-  stack: [], turn: 5, phase, activePlayer: yourTurn ? YOU : CPU, priorityPlayer: yourTurn ? YOU : CPU,
+  stack: stackCard ? [{id: 990, text: 'Counterspell — Counter target spell.', source: stackCard, activatingPlayer: CPU}] : [], turn: 5, phase, activePlayer: yourTurn ? YOU : CPU, priorityPlayer: yourTurn ? YOU : CPU,
   inputType, prompt: null, message, controlMode: 'smart', notification: {}, lastActionError: null,
   buttons: STATE === 'opening' ? {ok: 'Keep', okEnabled: true, cancel: 'Mulligan', cancelEnabled: true}
     : STATE === 'discard' ? {ok: 'OK', okEnabled: false, cancel: '', cancelEnabled: false}
