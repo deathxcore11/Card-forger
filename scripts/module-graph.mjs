@@ -1,5 +1,6 @@
 // Every module app.js loads up front (static imports, followed through), for <link rel="modulepreload">.
 import fs from "node:fs";
+import path from "node:path";
 export function moduleGraph(entry = "app.js", dir = ".") {
   const seen = new Set();
   const walk = (f) => {
@@ -7,8 +8,10 @@ export function moduleGraph(entry = "app.js", dir = ".") {
     seen.add(f);
     let s;
     try { s = fs.readFileSync(`${dir}/${f}`, "utf8"); } catch { return; }
-    for (const m of s.matchAll(/^\s*import\s[^;]*?from\s*["']\.\/([^"']+)["']/gm)) walk(m[1]);
-    for (const m of s.matchAll(/^\s*import\s*["']\.\/([^"']+)["']/gm)) walk(m[1]);
+    // Specifiers resolve against the importing file, not the site root.
+    const dep = (spec) => walk(path.posix.normalize(path.posix.join(path.posix.dirname(f), spec)));
+    for (const m of s.matchAll(/^\s*import\s[^;]*?from\s*["'](\.\.?\/[^"']+)["']/gm)) dep(m[1]);
+    for (const m of s.matchAll(/^\s*import\s*["'](\.\.?\/[^"']+)["']/gm)) dep(m[1]);
   };
   walk(entry);
   return [...seen];

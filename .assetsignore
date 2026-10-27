@@ -74,11 +74,7 @@ experiments
 ai-matchup-route.js
 *.map
 
-# Future game admission is not loaded by the website-only release.
-desktop-play.js
-
 # Only the reviewed browser Play modules and immutable runtime are public.
-!desktop-play.js
 !experiments/
 experiments/*
 !experiments/phase-engine/

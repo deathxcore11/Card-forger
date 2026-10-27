@@ -23,6 +23,14 @@ HOSTS = ("https://cardstashy.com/", "https://cardforge2.deathxcore11.workers.dev
 KEY_ASSETS = ("index.html", "config.js", "sw.js")
 MODULES = (
     "experiments/phase-engine/compiled-card-support.mjs",
+    # Startup modules app.js reaches through Play and the 4.1.6 shell (scripts/module-graph.mjs).
+    "desktop-play.js", "play-setup.js", "play-forge-feature.js", "play-forge-setup-review.js", "play-forge-cpu-policy.js",
+    "play-deck-import.js", "play-menu.js", "play-cpu-options.js", "play-deck-sources.js", "play-card-support.js",
+    "play-opponent-build.js", "play-player-mat.js", "play-card-surface.js", "play-deck-context.js", "play-update-gate.js",
+    "play-precon-formats.js", "play-card-preparation.js", "play-forge-artwork.js", "play-catalog-review.js", "play-pregame.js",
+    "play-quick-match.js", "commander-evidence.js", "commander-combos.js", "game-changers.js", "search-hints.js", "tab-glide.js",
+    "experiments/phase-engine/catalog-admission.mjs", "experiments/phase-engine/cpu-difficulty-config.mjs",
+    "experiments/phase-engine/match-input.mjs", "experiments/phase-engine/practice-preflight.mjs",
     "deck-mechanic-plan.js", "mtg-land-requirements.js", "mtg-commander-conditions.js", "mtg-primary-inputs.js", "mtg-ability-endpoints.js", "mtg-final-support.js", "mtg-reference-construction.js", "mtg-mana-sources.js", "mtg-wiki-knowledge.js", "mtg-wiki-client.js", "mtg-wiki-ui.js", "wiki-sources.js", "game-wiki-knowledge.js", "game-wiki-article.js", "wiki-card-handoff.js", "wiki-deck-handoff.js",
     "deck-construction.js", "deck-pipeline.js", "deck-experience.js", "deck-preferences.js", "deck-seeds.js",
     "deck-strategy-plan.js", "mtg-combo-packages.js",

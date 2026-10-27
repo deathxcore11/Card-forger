@@ -53,5 +53,6 @@ export function startSearchHints({ ownedNames = () => [], root = document } = {}
   root.addEventListener('focusin', (e) => { if (e.target.matches?.('input[data-home-search]')) e.target.placeholder = SEARCH_PROMPT; });
   clearInterval(timer);
   timer = setInterval(tick, EVERY);
+  timer?.unref?.(); // a Node test process may exit; no-op in browsers
   return { stop: () => clearInterval(timer) };
 }
