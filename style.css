@@ -4310,6 +4310,12 @@ dialog.action-tour{inset:0;width:100%;height:100%;max-width:none;max-height:none
 @media(min-width:900px){:where(#content):has(.sticky-bar) :focus{scroll-margin-bottom:84px}}
 :where(#content) :is(.tabs,.sticky-bar,.sticky-summary,.batch-tray) :focus{scroll-margin:0}
 .wiki-article-section{scroll-margin-top:calc(var(--shell-header-height,0px) + 8px)}
+/* Windows High Contrast drops the backgrounds that mark the current page and tab; mark them with a
+   system-colour outline instead. */
+@media (forced-colors:active){
+ :is(.bottom-nav,.top-nav) [data-nav].on,
+ :is(.seg,.set-browser-quick,nav.tabs,.cs-tabs,[role="tablist"]) > :is(.on,[aria-selected="true"],[aria-pressed="true"]){outline:2px solid Highlight;outline-offset:-2px}
+}
 @media(min-width:900px) and (max-width:1199px){.topbar{grid-template-columns:auto minmax(0,1fr) auto}.topbar>.game-tabs{grid-column:2;grid-row:1}.topbar>button.icon{grid-column:3;grid-row:1}.topbar>.save-status{display:none}.brand-home .brand-wordmark{display:none}.brand-home .brand-home-label{display:inline!important}}
 @media(min-width:1200px){.topbar{grid-template-columns:auto minmax(260px,340px) minmax(260px,1fr) auto;gap:8px 18px}.topbar>.brand{grid-column:1;grid-row:1}.topbar>.game-tabs{grid-column:2;grid-row:1}.topbar>#desktopSearch{grid-column:3;grid-row:1;width:100%;min-width:0}.topbar>button.icon{grid-column:4;grid-row:1}.topbar>.top-nav{grid-column:2 / 4;grid-row:2;display:flex;justify-content:center}.topbar>.save-status{grid-column:1;grid-row:2;justify-self:start;font-size:10px;max-width:190px}.topbar .home-search-wrap{max-width:none}.topbar .home-search-pill{min-height:54px;border-radius:18px}.topbar .home-search-pill input{padding:22px 8px 8px 16px;font-size:14px}.topbar .home-ai-label{top:7px;left:16px;font-size:8px}.topbar .home-search-submit{height:40px;width:40px}.bottom-nav{display:none}#content{padding-bottom:48px}#homeHero.home-art-header .hh-body{padding-top:65px;padding-bottom:34px}#homeHero.home-art-header{min-height:320px}}
 @media(prefers-reduced-motion:reduce){.search-emblem-cards,.bottom-nav .nav-search>span:before{animation:none}}
