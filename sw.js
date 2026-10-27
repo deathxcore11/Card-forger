@@ -360,8 +360,10 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   // Network first, but a stalled connection falls back to the saved copy after a few seconds,
-  // so the app always opens (the fresh copy still updates the cache when it arrives).
-  const key = e.request.mode === "navigate" ? "./index.html" : e.request;
+  // so the app always opens (the fresh copy still updates the cache when it arrives). Only the
+  // app page above is saved as the start page; other pages (account deletion, the Android
+  // sign-in return, review pages) keep their own entry and never replace it.
+  const key = e.request;
   e.respondWith(
     new Promise((resolve) => {
       let done = false;

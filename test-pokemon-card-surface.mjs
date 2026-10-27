@@ -27,7 +27,7 @@ console.log('PASS: Pokémon natural-ratio collection geometry, scoped quiet Cele
 // Installed-shell upgrade: precache the corrected CSS, retire only old shell
 // caches, and keep the network-first stylesheet path for already-open clients.
 const sw=readFileSync('sw.js','utf8'),events={},added=[],removed=[],put=[];
-const currentCache=sw.match(/const CACHE = "([^"]+)"/)[1],previousCache=currentCache.replace(/\d+$/,n=>String(Number(n)-1));
+const currentCache=sw.match(/const CACHE = "([^"]+)"/)[1],previousCache='cardforge-shell-previous-release'; // any older shell name, digits or not
 const cached={addAll:async paths=>added.push(...paths),put:async(...args)=>put.push(args)};
 const waits=[];let claimed=false;
 vm.runInNewContext(sw,{self:{location:{origin:'https://fixture.test'},clients:{claim:async()=>{claimed=true;}},addEventListener:(name,fn)=>events[name]=fn},caches:{open:async key=>{assert.equal(key,currentCache);return cached;},keys:async()=>[previousCache,currentCache,'personal-data'],delete:async key=>removed.push(key),match:async()=>new Response('old-css')},fetch:async()=>new Response('corrected-five-pixel-css'),URL,Response,setTimeout:()=>0,Promise});
@@ -35,6 +35,9 @@ events.install({waitUntil:p=>waits.push(p)});await Promise.all(waits);assert(add
 events.activate({waitUntil:p=>waits.push(p)});await Promise.all(waits);assert.deepEqual(removed,[previousCache]);assert(claimed);
 let response;events.fetch({request:{url:'https://fixture.test/style.css',method:'GET',mode:'cors'},respondWith:p=>response=p});
 assert.equal(await (await response).text(),'corrected-five-pixel-css');assert.equal(put.length,1);
+// Visiting another page (account deletion) saves it under its own address, never as the app's start page.
+const otherPage={url:'https://fixture.test/delete-account.html',method:'GET',mode:'navigate'};let pageResponse;events.fetch({request:otherPage,respondWith:p=>pageResponse=p});await pageResponse;await new Promise(r=>setImmediate(r));
+assert.equal(put.length,2);assert.equal(put[1][0],otherPage,'a non-app page never replaces ./index.html');
 console.log('PASS: installed shell precaches corrected stylesheet, retires only obsolete shell cache, and serves fresh network CSS.');
 
 // One frame everywhere: the outer corner is the card's own corner plus the 5px band, as on the card page.
