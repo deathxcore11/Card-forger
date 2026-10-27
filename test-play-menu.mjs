@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {playMenuMarkup} from './play-menu.js';
 import {S,blank} from './store.js';
-import {deckList,deckArtwork,deckTile,decks,sharedPage} from './views.js';
+import {deckList,deckArtwork,deckTile,decks,sharedPage,settings} from './views.js';
 import {deckViewer} from './deck-viewer.js';
 import {routeSegments,gameSwitchRoute} from './game-navigation.js';
 import {readFileSync} from 'node:fs';
@@ -91,4 +91,11 @@ test('a shared Magic link lists its sideboard and every quantity',()=>{
  const html=sharedPage();
  assert.match(html,/<p class="list-head">Sideboard <span class="muted">2<\/span><\/p>[\s\S]*2× Negate/);
  assert.match(html,/1× Ironbark Golem/);
+ assert.match(html,/unofficial Fan Content permitted under the Fan Content Policy\. Not approved\/endorsed by Wizards\./,'strangers opening a link see the Fan Content notice');
+});
+
+test('Settings › Info shows the Fan Content notice without opening anything',()=>{
+ S.state=blank();S.ui.settingsTab='info';
+ const info=settings().split('id="settings-info"')[1];
+ assert.match(info.replace(/<details[\s\S]*?<\/details>/g,''),/unofficial Fan Content permitted under the Fan Content Policy\. Not approved\/endorsed by Wizards\. Portions of the materials used are property of Wizards of the Coast\. &copy;Wizards of the Coast LLC\./);
 });
