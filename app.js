@@ -1625,6 +1625,7 @@ const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   render();
   for(const [key,top]of scrolls){const node=document.querySelector(`[data-play-scroll="${key}"]`);if(node)node.scrollTop=top;}
   const disclosure=document.getElementById('playImportDisclosure');if(disclosure&&importOpen!==undefined)disclosure.open=importOpen;
+  if(disclosure)document.querySelector('.play-paste-pill')?.setAttribute('aria-expanded',String(disclosure.open));
 }};
 function focusNextPlaySelection(){const state=playSetup.snapshot();const target=state.match.mode==='cpu'&&state.playStyle!=='quick'&&state.selected&&!state.opponent?document.querySelector('[data-act="playInspectSeat"][data-play-seat="opponent"]'):document.getElementById('playSelectedTitle');target?.focus({preventScroll:true});}
 A.playSelectDeck=t=>{cancelPlayBuilds();playSetup.selectDeck(t.dataset.playDeck,playSetup.snapshot().playStyle==='quick'?'player':playSetup.snapshot().inspectedSeat);refreshPlayMenu();focusNextPlaySelection();};
@@ -1632,6 +1633,7 @@ A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu(
 A.playClearSelection=()=>{cancelPlayBuilds();playSetup.clearSelection(playSetup.snapshot().inspectedSeat);refreshPlayMenu();};
 // Play vs CPU from a deck page: Quick Play with this saved deck in its own format.
 A.deckPlayCpu=t=>{const d=deckById(t.dataset.id);if(!d)return;cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};if(['Standard','Commander','Modern'].includes(d.format))playSetup.configure({format:d.format,mode:'cpu'});playSetup.setPlayStyle('quick');playSetup.selectDeck(d.id,'player');go('#play');};
+A.playTogglePaste=t=>{const d=document.getElementById('playImportDisclosure');if(!d)return;d.open=!d.open;t.setAttribute('aria-expanded',String(d.open));if(d.open){d.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});document.getElementById('playImportText')?.focus({preventScroll:true});}};
 A.playConfigure=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};playSetup.configure({[t.dataset.playOption]:t.dataset.playValue});refreshPlayMenu();document.querySelector(`[data-act="playConfigure"][aria-pressed="true"]`)?.focus({preventScroll:true});};
 C.playMatchOption=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};const key=t.dataset.playOption,value=t.value;playSetup.configure({[key]:value});refreshPlayMenu();document.querySelector(`[data-play-option="${key}"]${key==='mode'?':checked':''}`)?.focus({preventScroll:true});};
 // Keyboards that compose a word (Gboard, Samsung) search when the word is done; redrawing
