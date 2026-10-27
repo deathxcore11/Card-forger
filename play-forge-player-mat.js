@@ -6,6 +6,7 @@ import {forgeCpuPolicy} from './play-forge-cpu-policy.js';
 import {createForgeHostClient,exactForgeInput,forgeAccountKey} from './play-forge-host-client.js';
 import {createForgePresentationSession} from './experiments/forge-proof/forge-session.mjs';
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
+import {nativePromptUnanswerable} from './experiments/forge-proof/native-panel.mjs';
 import {mountForgeMatchIntro,forgeStartingPlayer} from './play-forge-pregame.js';
 const selectionKey=s=>JSON.stringify([s?.profile?.ownerId,s?.selected,s?.opponent,s?.match]);
 // Forge may name a Universes Beyond card by its Universes Within flavor name
@@ -104,8 +105,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  async function closeSession(){
   session?.close();warn(false);try{await client?.close();onClose();}catch(e){message('The table is still closing',['Try returning to setup again in a moment.']);publish({phase:'session-ended',error:e.code||'RESOURCE_CLEANUP_UNCONFIRMED'});}
  }
- // A prompt the table cannot answer yet (the panel says 'not yet adapted') must not trap the player: Concede stays open.
- function updateExit(){if(exitConfirm){const s=session?.snapshot(),p=s?.native?.prompt,stuck=!!p&&(p.supported!==true||p.method==='order'&&p.ordered!==true);exitConfirm.disabled=exitSubmitting||!!s?.busy||!stuck&&(!!p||s?.native?.inputType==='InputLockUI');}}
+ // A prompt the table cannot answer (the panel shows a diagnostic instead of controls) must not trap the player: Concede stays open.
+ function updateExit(){if(exitConfirm){const s=session?.snapshot(),p=s?.native?.prompt,stuck=nativePromptUnanswerable(p);exitConfirm.disabled=exitSubmitting||!!s?.busy||!stuck&&(!!p||s?.native?.inputType==='InputLockUI');}}
  function requestExit(){
   if(disposed||exitDialog)return;
   if(['finished','account-changed','session-ended'].includes(last?.phase)){void closeSession();return;}

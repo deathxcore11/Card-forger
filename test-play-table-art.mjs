@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { glyphFor, manaColors, surfaceColors, frameTone } from './play-token-art.js';
 import { tokenColors } from './experiments/forge-proof/forge-session.mjs';
 import { battlefieldPiles } from './experiments/phase-engine/match-table.mjs';
-import { nativeActionLabel } from './experiments/forge-proof/native-panel.mjs';
+import { nativeActionLabel, nativePromptUnanswerable } from './experiments/forge-proof/native-panel.mjs';
 
 test('token crests follow the type line, most specific kind first', () => {
   assert.equal(glyphFor('Token Artifact — Treasure'), 'gem');
@@ -60,3 +60,28 @@ test("Forge's generic buttons are named for what they do; other labels stay verb
   assert.equal(nativeActionLabel(n({ inputType: 'InputSelectTargets' }), 'ok', 'OK'), 'Confirm targets');
   assert.equal(nativeActionLabel(n({ inputType: 'InputConfirmMulligan' }), 'ok', 'Keep'), 'Keep');
 });
+
+// Concede stays available exactly when the native panel can offer no reply.
+{
+ const card = (id, hidden = false) => ({ value: { kind: 'card', id, hidden, ...(hidden ? {} : { name: 'Card ' + id }) }, index: id });
+ const stuck = [
+  { method: 'assignCombatDamage', supported: false },
+  { method: 'order', supported: true },
+  { method: 'order', supported: true, ordered: false },
+  { method: 'order', supported: false, ordered: true },
+  { method: 'chooseSingleEntityForEffect', supported: true, min: 1, max: 1, options: [card(1, true), card(2, true)] },
+  { method: 'chooseColor', supported: true },
+ ];
+ const answerable = [
+  null,
+  { method: 'confirm', supported: true, options: [{ value: 'Yes' }, { value: 'No' }] },
+  { method: 'showInputDialog', supported: true },
+  { method: 'getChoices', supported: true, acknowledgeOnly: true },
+  { method: 'order', supported: true, ordered: true, min: 0, options: [card(1)] },
+  { method: 'chooseSingleEntityForEffect', supported: true, min: 1, max: 1, options: [card(1, true), card(2)] },
+  { method: 'chooseEntitiesForEffect', supported: true, min: 0, max: 2, options: [card(1, true)] },
+ ];
+ for (const p of stuck) assert.equal(nativePromptUnanswerable(p), true, JSON.stringify(p));
+ for (const p of answerable) assert.equal(nativePromptUnanswerable(p), false, JSON.stringify(p));
+ console.log('PASS: Concede opens only for native prompts the panel cannot answer.');
+}

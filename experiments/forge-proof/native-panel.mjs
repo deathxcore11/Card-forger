@@ -1,6 +1,15 @@
 import {optionLabel,optionCardId} from './forge-session.mjs';
 const OPTION_METHODS=new Set(['getChoices','getAbilityToPlay','chooseSingleEntityForEffect','chooseEntitiesForEffect','showOptionDialog','order']);
 export const isDescribedOption=value=>typeof value==='string'||typeof value==='number'||typeof value==='boolean'||!!(value&&value.hidden!==true&&value.card?.hidden!==true&&(value.name||value.description||value.text));
+// True when the open prompt leaves the player no reply: the panel below shows a diagnostic
+// instead of controls (unadapted method, unordered order, or too few presentable options).
+export function nativePromptUnanswerable(p){
+ if(!p)return false;
+ if(p.supported!==true||p.method==='order'&&p.ordered!==true)return true;
+ if(['confirm','showConfirmDialog','showInputDialog'].includes(p.method)||p.acknowledgeOnly===true&&p.method==='getChoices')return false;
+ if(OPTION_METHODS.has(p.method))return (p.options||[]).filter(o=>isDescribedOption(o.value)).length<(p.min||0);
+ return true;
+}
 // Player-facing names for Forge's generic OK/Cancel/Auto buttons. Presentation only:
 // the same native button operation is sent, and unfamiliar labels stay verbatim.
 const NEXT_STEP={UPKEEP:'Next: Draw',DRAW:'Next: Main phase',MAIN1:'Next: Combat',COMBAT_BEGIN:'Next: Attackers',COMBAT_DECLARE_ATTACKERS:'Next: Blockers',COMBAT_DECLARE_BLOCKERS:'Next: Damage',COMBAT_FIRST_STRIKE_DAMAGE:'Next: Damage',COMBAT_DAMAGE:'Next: End of combat',COMBAT_END:'Next: Second main',MAIN2:'Next: End step',END_OF_TURN:'Next: Cleanup'};
