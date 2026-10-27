@@ -246,6 +246,10 @@
 :where(body.practice-table-open) .play-match-opponent-fan .play-match-card-back{border:2px solid #c9a75a;background:radial-gradient(circle at 50% 50%,#f1d891 0 7%,#9a7a35 8% 10%,transparent 11%),radial-gradient(circle at 50% 50%,transparent 0 24%,#e9cf8a66 25% 27%,transparent 28%),conic-gradient(from 45deg at 50% 50%,#ffffff10 0 25%,transparent 0 50%,#ffffff10 0 75%,transparent 0),repeating-linear-gradient(45deg,#ffffff09 0 2px,transparent 2px 7px),linear-gradient(160deg,#22346a,#101a38 58%,#22113d);box-shadow:0 0 0 1px #0a1022,0 4px 10px #000a}
 :where(body.practice-table-open) .play-match-opponent-fan .play-match-card-back:after{inset:4px;border-color:#e9cf8a55;background:linear-gradient(115deg,transparent 40%,#ffffff18 50%,transparent 60%)}
 
+/* Zone counts and the mana panel belong to the Obsidian layout below; any other
+   layout keeps its own zones menu and seat mana instead. */
+:where(body.practice-table-open) :is(.forge-zone-row,.forge-mana-panel){display:none}
+
 /* Obsidian table (desktop and wide tablet). A dark stone mat with a gold border;
    the opponent across the top, you at the bottom, the board centred between two
    slim columns: identities and zones on the left and right edges, floating mana and
@@ -352,7 +356,7 @@
 
  /* Right column: floating mana, then the decision card with one clear next step. */
  :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-decisions,:where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .play-match-decisions[data-complex=true]{right:var(--edge);bottom:var(--edge);width:var(--hud);max-height:calc(100dvh - var(--seat-h) - 230px);padding:0;border:0;border-radius:0;background:none;box-shadow:none;backdrop-filter:none;overflow:hidden auto;display:flex;flex-direction:column;gap:10px;scrollbar-width:none}
- :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .forge-mana-panel{flex-shrink:0;padding:11px 14px 12px;border:1px solid var(--ob-line);border-radius:14px;background:var(--ob-panel)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .forge-mana-panel{display:block;flex-shrink:0;padding:11px 14px 12px;border:1px solid var(--ob-line);border-radius:14px;background:var(--ob-panel)}
  :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .forge-mana-panel h3{margin:0 0 9px;font:600 10px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--ob-muted)}
  :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .forge-mana-panel>div{display:flex;justify-content:space-between}
  :where(body.practice-table-open) .play-match-table[data-stage=match]:has(.forge-native-panel) .forge-mana-panel span{display:grid;justify-items:center;gap:5px;font:700 13px/1 'DM Sans',system-ui,sans-serif;color:#fff}

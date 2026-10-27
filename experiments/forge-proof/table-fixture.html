@@ -107,7 +107,7 @@ const byName = (zone, name) => zone.cards.filter(c => c.name === name);
 
 const yourTurn = STATE !== 'cpu';
 const phase = STATE === 'attack' ? 'COMBAT_DECLARE_ATTACKERS' : 'MAIN1';
-const inputType = {targets: 'InputSelectTargets', attack: 'InputAttack', cpu: 'InputPassPriority', discard: ''}[STATE] ?? 'InputPassPriority';
+const inputType = {targets: 'InputSelectTargets', attack: 'InputAttack', cpu: 'InputPassPriority', discard: '', opening: 'InputConfirmMulligan'}[STATE] ?? 'InputPassPriority';
 const castable = ['Lightning Bolt', 'Monastery Swiftspear', 'Play with Fire', 'Skewer the Critics', 'Forest', 'Llanowar Elves'];
 const selection = {cards: [], targets: [], chosen: [], actionable: []};
 if (STATE === 'main' || STATE === 'dense') {
@@ -124,6 +124,7 @@ if (STATE === 'main' || STATE === 'dense') {
 const message = {
   targets: 'Select targets for Lightning Bolt\nChoose any target.',
   attack: 'Declare attackers.',
+  opening: 'Keep this hand or mulligan?',
   discard: 'Cleanup Phase\nSelect 1 card(s) to discard to bring your hand down to the maximum of 7 cards.',
 }[STATE] || `Priority: ${yourTurn ? 'idw011' : 'CPU'}\nTurn: 5 (${yourTurn ? 'idw011' : 'CPU'})\nPhase: Main phase 1\nStack: Empty`;
 const native = {
@@ -134,7 +135,8 @@ const native = {
   ],
   stack: [], turn: 5, phase, activePlayer: yourTurn ? YOU : CPU, priorityPlayer: yourTurn ? YOU : CPU,
   inputType, prompt: null, message, controlMode: 'smart', notification: {}, lastActionError: null,
-  buttons: STATE === 'discard' ? {ok: 'OK', okEnabled: false, cancel: '', cancelEnabled: false}
+  buttons: STATE === 'opening' ? {ok: 'Keep', okEnabled: true, cancel: 'Mulligan', cancelEnabled: true}
+    : STATE === 'discard' ? {ok: 'OK', okEnabled: false, cancel: '', cancelEnabled: false}
     : STATE === 'targets' ? {ok: 'OK', okEnabled: true, cancel: 'Cancel', cancelEnabled: true}
     : STATE === 'attack' ? {ok: 'OK', okEnabled: true, cancel: 'Cancel', cancelEnabled: false}
     : yourTurn ? {ok: 'OK', okEnabled: true, cancel: 'End turn', cancelEnabled: true} : {},

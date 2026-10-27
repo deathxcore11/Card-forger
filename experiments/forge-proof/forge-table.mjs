@@ -57,7 +57,9 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
    const key=live.map(([c,a])=>c+a).join(',');if(live.length&&!mana){mana=doc.createElement('div');mana.className='forge-native-mana';el.querySelector('.play-match-player')?.append(mana);}
    if(mana&&mana.dataset.pool!==key){mana.dataset.pool=key;mana.setAttribute('aria-label',manaLabel(entries));mana.hidden=!live.length;mana.innerHTML=live.map(([c,a])=>`<span class="forge-mana-chip">${MANA_ORDER.includes(c)?sym(c):c}<b>${a}</b></span>`).join('');}
   }
-  if(presentation.hosted){
+  // Table extras exist only during the match itself, never on the opening hand.
+  if(presentation.hosted&&root.dataset.stage!=='match')for(const el of root.querySelectorAll('.forge-zone-row,.forge-mana-panel'))el.remove();
+  if(presentation.hosted&&root.dataset.stage==='match'){
    const mat=root.querySelector('.play-match-mat');
    // Each player's public zone counts sit beside their portrait; a count opens that list in the Zones menu.
    for(const p of surface.players){
