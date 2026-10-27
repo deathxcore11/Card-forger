@@ -362,15 +362,16 @@ self.addEventListener("fetch", (e) => {
   // Network first, but a stalled connection falls back to the saved copy after a few seconds,
   // so the app always opens (the fresh copy still updates the cache when it arrives). Only the
   // app page above is saved as the start page; other pages (account deletion, the Android
-  // sign-in return, review pages) keep their own entry and never replace it.
-  const key = e.request;
+  // sign-in return with its one-time code, review pages) are never saved, and neither is any
+  // response marked no-store.
+  const key = e.request, keep = (r) => r.ok && e.request.mode !== "navigate" && !/no-store/i.test(r.headers.get("cache-control") || "");
   e.respondWith(
     new Promise((resolve) => {
       let done = false;
       const finish = (r) => { if (!done && r) { done = true; resolve(r); } };
       const saved = () => caches.match(key);
       const net = fetch(e.request).then((r) => {
-        if (r.ok) { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(key, copy)); }
+        if (keep(r)) { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(key, copy)); }
         return r;
       });
       net.then(finish, () => saved().then((hit) => finish(hit || Response.error())));

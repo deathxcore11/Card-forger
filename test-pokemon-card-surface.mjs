@@ -37,7 +37,7 @@ let response;events.fetch({request:{url:'https://fixture.test/style.css',method:
 assert.equal(await (await response).text(),'corrected-five-pixel-css');assert.equal(put.length,1);
 // Visiting another page (account deletion) saves it under its own address, never as the app's start page.
 const otherPage={url:'https://fixture.test/delete-account.html',method:'GET',mode:'navigate'};let pageResponse;events.fetch({request:otherPage,respondWith:p=>pageResponse=p});await pageResponse;await new Promise(r=>setImmediate(r));
-assert.equal(put.length,2);assert.equal(put[1][0],otherPage,'a non-app page never replaces ./index.html');
+assert.equal(put.length,1,'a non-app page (account deletion, the sign-in return with its one-time code) is never saved, so it cannot replace ./index.html');
 console.log('PASS: installed shell precaches corrected stylesheet, retires only obsolete shell cache, and serves fresh network CSS.');
 
 // One frame everywhere: the outer corner is the card's own corner plus the 5px band, as on the card page.
