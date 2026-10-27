@@ -1,6 +1,6 @@
 --- a/experiments/forge-proof/combined-browser-proof/candidate/build-context/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java
 +++ b/experiments/forge-proof/combined-browser-proof/candidate/build-context/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java
-@@ -282,6 +282,21 @@
+@@ -282,6 +282,105 @@
              default -> false;
          };
      }
@@ -19,10 +19,94 @@
 +    @com.google.common.eventbus.Subscribe public void onCpuCast(forge.game.event.GameEventSpellAbilityCast e){if(e.si()!=null&&!e.si().isTrigger())paceCpu(e.si().getActivatingPlayer());}
 +    @com.google.common.eventbus.Subscribe public void onCpuAttack(forge.game.event.GameEventAttackersDeclared e){if(!e.attackersMap().isEmpty())paceCpu(e.player());}
 +    @com.google.common.eventbus.Subscribe public void onCpuBlock(forge.game.event.GameEventBlockersDeclared e){if(e.blockers().values().stream().anyMatch(m->!m.isEmpty()))paceCpu(e.defendingPlayer());}
++    // What happened, in order, so the table can replay what lands between two polls:
++    // draws, land plays, casts and abilities, resolutions, zone moves, attacks, blocks,
++    // damage, life, counters and attachments. Viewer-safe: a card is listed only when the
++    // viewer may see it where it is now, and named only when its face is visible, so a
++    // CPU draw or a card going to a hidden hand carries no identity. Read-only.
++    static final int EVENT_LOG_SIZE=96;
++    final Object eventLock=new Object();
++    final ArrayDeque<Map<String,Object>> eventLog=new ArrayDeque<>();
++    long eventSeq=0;
++    void logEvent(String type,Object... values){
++        if(viewer==null||game==null||failure!=null||concessionRequested)return;
++        var ph=game.getPhaseHandler();
++        Map<String,Object> e=obj("seq",0L,"type",type,"turn",ph.getTurn(),"phase",ph.getPhase()==null?null:ph.getPhase().name());
++        e.putAll(obj(values));
++        synchronized(eventLock){e.put("seq",++eventSeq);eventLog.addLast(e);while(eventLog.size()>EVENT_LOG_SIZE)eventLog.removeFirst();}
++    }
++    Map<String,Object> eventsView(boolean withItems){
++        synchronized(eventLock){return obj("schema","cardstashy.forge-events.v1","latest",eventSeq,"items",withItems?new ArrayList<>(eventLog):List.of());}
++    }
++    Map<String,Object> cardRef(CardView c){
++        if(c==null||viewer==null||!c.canBeShownTo(viewer))return null;
++        Map<String,Object> m=obj("kind","card","id",c.getId());
++        if(c.canFaceDownBeShownTo(viewer)&&c.getCurrentState()!=null)m.put("name",c.getCurrentState().getName());
++        return m;
++    }
++    Map<String,Object> entityRef(Object o){
++        if(o instanceof PlayerView p)return obj("kind","player","id",p.getId());
++        if(o instanceof CardView c)return cardRef(c);
++        if(o instanceof StackItemView si)return obj("kind","stack","id",si.getId());
++        return null;
++    }
++    List<Object> entityRefs(Iterable<?> values){
++        List<Object> out=new ArrayList<>();
++        if(values!=null)for(Object o:values){var r=entityRef(o);if(r!=null)out.add(r);}
++        return out;
++    }
++    @com.google.common.eventbus.Subscribe public void logTurn(forge.game.event.GameEventTurnBegan e){logEvent("turn","player",id(e.turnOwner()),"number",e.turnNumber());}
++    @com.google.common.eventbus.Subscribe public void logZone(forge.game.event.GameEventCardChangeZone e){
++        if(e.card()==null)return;
++        logEvent("zone","card",cardRef(e.card()),"from",e.from()==null?null:e.from().zoneType().name(),"to",e.to()==null?null:e.to().zoneType().name(),
++            "player",e.to()!=null?id(e.to().player()):e.from()!=null?id(e.from().player()):null,"token",e.card().isToken());
++    }
++    @com.google.common.eventbus.Subscribe public void logLand(forge.game.event.GameEventLandPlayed e){logEvent("land","player",id(e.player()),"card",cardRef(e.land()));}
++    @com.google.common.eventbus.Subscribe public void logCast(forge.game.event.GameEventSpellAbilityCast e){
++        var si=e.si();if(si==null)return;
++        logEvent(si.isTrigger()?"trigger":si.isAbility()?"ability":"cast","player",id(si.getActivatingPlayer()),"stackId",si.getId(),"source",cardRef(si.getSourceCard()),"targets",entityRefs(stackTargets(si)));
++    }
++    @com.google.common.eventbus.Subscribe public void logResolve(forge.game.event.GameEventSpellResolved e){
++        logEvent("resolve","source",e.spell()==null?null:cardRef(e.spell().getHostCard()),"fizzled",e.hasFizzled());
++    }
++    @com.google.common.eventbus.Subscribe public void logAttack(forge.game.event.GameEventAttackersDeclared e){
++        List<Object> attackers=new ArrayList<>();
++        for(var entry:e.attackersMap().entries()){var a=cardRef(entry.getValue());if(a!=null){a.put("target",entityRef(entry.getKey()));attackers.add(a);}}
++        if(!attackers.isEmpty())logEvent("attack","player",id(e.player()),"attackers",attackers);
++    }
++    @com.google.common.eventbus.Subscribe public void logBlock(forge.game.event.GameEventBlockersDeclared e){
++        // Forge lists an unblocked attacker as its own blocker; only real blocks are kept.
++        List<Object> blocks=new ArrayList<>();
++        for(var byDefender:e.blockers().values())for(var entry:byDefender.entries()){
++            if(entry.getKey()==null||entry.getValue()==null||entry.getKey().getId()==entry.getValue().getId())continue;
++            var b=cardRef(entry.getValue());var a=cardRef(entry.getKey());
++            if(b!=null&&a!=null){b.put("blocking",a.get("id"));blocks.add(b);}
++        }
++        if(!blocks.isEmpty())logEvent("block","player",id(e.defendingPlayer()),"blockers",blocks);
++    }
++    @com.google.common.eventbus.Subscribe public void logCardDamage(forge.game.event.GameEventCardDamaged e){
++        var target=cardRef(e.card());if(target==null)return;
++        logEvent("damage","target",target,"source",cardRef(e.source()),"amount",e.amount(),"kind",e.type()==null?null:e.type().name());
++    }
++    @com.google.common.eventbus.Subscribe public void logPlayerDamage(forge.game.event.GameEventPlayerDamaged e){
++        logEvent("damage","target",entityRef(e.target()),"source",cardRef(e.source()),"amount",e.amount(),"combat",e.combat(),"infect",e.infect());
++    }
++    @com.google.common.eventbus.Subscribe public void logLife(forge.game.event.GameEventPlayerLivesChanged e){logEvent("life","player",id(e.player()),"from",e.oldLives(),"to",e.newLives());}
++    @com.google.common.eventbus.Subscribe public void logCounters(forge.game.event.GameEventCardCounters e){
++        var c=cardRef(e.card());if(c==null||e.type()==null)return;
++        logEvent("counters","card",c,"counter",e.type().toString(),"from",e.oldValue(),"to",e.newValue());
++    }
++    @com.google.common.eventbus.Subscribe public void logAttach(forge.game.event.GameEventCardAttachment e){
++        var c=cardRef(e.equipment());if(c==null)return;
++        logEvent("attach","card",c,"from",entityRef(e.oldEntity()),"to",entityRef(e.newTarget()));
++    }
++    @com.google.common.eventbus.Subscribe public void logMulligan(forge.game.event.GameEventMulligan e){logEvent("mulligan","player",id(e.player()));}
++    @com.google.common.eventbus.Subscribe public void logShuffle(forge.game.event.GameEventShuffle e){logEvent("shuffle","player",id(e.player()));}
++    @com.google.common.eventbus.Subscribe public void logDayNight(forge.game.event.GameEventDayTimeChanged e){logEvent("dayNight","value",e.daytime()?"day":"night");}
      void applyControlMode(){
          if(failure!=null){effectiveAutoPass=false;clearSmartIntent();autoPayAttemptInput=null;return;}
          if(!controlMode.equals("smart"))clearSmartIntent();
-@@ -497,14 +512,56 @@
+@@ -497,14 +596,57 @@
          if(!visible)return m;
          exposedCards.put(c.getId(),c);
          m.put("tapped",c.isTapped()); m.put("attacking",c.isAttacking());m.put("blocking",c.isBlocking());
@@ -51,16 +135,17 @@
 +            for(CardView a:c.getAttachedCards())if(a.canBeShownTo(viewer))attached.add(a.getId());
 +            if(!attached.isEmpty())m.put("attachments",attached);
 +            // Keywords the card has right now, printed or granted, as Forge titles them
-+            // ("Flying", "Ward {2}", "Protection from red", "Crew 3"). Projection only.
-+            List<Map<String,Object>> keywords=new ArrayList<>();Set<String> seenKeywords=new HashSet<>();
++            // ("Flying", "Ward {2}", "Protection from red", "Crew 3"). Always sent on a
++            // visible face, [] when it has none, so the table never falls back to rules text.
++            List<String> keywords=new ArrayList<>();Set<String> seenKeywords=new HashSet<>();
 +            var kws=state.getKeywords();
 +            if(kws!=null)for(var k:kws){
 +                if(k==null||k.keyword()==null||k.keyword()==forge.game.keyword.Keyword.UNDEFINED)continue;
 +                String title=k.title();if(title==null||title.isBlank()||!seenKeywords.add(title))continue;
-+                keywords.add(obj("keyword",k.keyword().name(),"text",title));
++                keywords.add(title);
 +                if(k.keyword()==forge.game.keyword.Keyword.CREW){var crew=java.util.regex.Pattern.compile("(\\d+)").matcher(title);if(crew.find())m.put("crew",Integer.parseInt(crew.group(1)));}
 +            }
-+            if(!keywords.isEmpty())m.put("keywords",keywords);
++            m.put("keywords",keywords);
 +            if(state.getType().hasSubtype("Class"))m.put("classLevel",c.getClassLevel());
 +            if(c.isRingBearer())m.put("ringBearer",true);
 +            // Commander tax: two more for each earlier cast from the command zone.
@@ -79,7 +164,7 @@
      Map<String,Integer> counters(GameEntityView entity) {
          Map<String,Integer> result=new LinkedHashMap<>();
          if(entity.getCounters()!=null)for(var entry:entity.getCounters().entrySet())result.put(entry.getElement().toString(),entry.getCount());
-@@ -516,6 +573,14 @@
+@@ -516,6 +658,14 @@
          for(int i=0;i<colors.length;i++)result.put(names[i],player.getMana(colors[i]));
          return result;
      }
@@ -94,7 +179,7 @@
      List<Object> refs(Iterable<? extends TrackableObject> values) {
          List<Object> out=new ArrayList<>();
          if(values!=null)for(TrackableObject o:values){
-@@ -550,13 +615,13 @@
+@@ -550,13 +700,13 @@
                      }
                      zones.put(zone.name(),obj("count",count,"cards",visible));
                  }
@@ -111,7 +196,32 @@
              boardVisibility=List.copyOf(visibility);
          }catch(RuntimeException ex){failure="Projection failed: "+ex;ex.printStackTrace();}
      }}
-@@ -647,7 +712,7 @@
+@@ -581,6 +731,7 @@
+         Map<String,Object> snapshot=new LinkedHashMap<>(board);
+         snapshot.putAll(obj("revision",publicationRevision,"status","failed","failure","native_match_failed","message","Native match stopped.","buttons",Map.of(),"inputType",null,"selection",obj("cards",List.of(),"targets",List.of(),"chosen",List.of(),"actionable",List.of(),"min",0,"max",0),"prompt",null,"busy",false,"lastActionError",null,"notification",Map.of(),"autoPassNoActions",false,"canConcede",false));
+         snapshot.put("visibility",obj("schema","cardstashy.forge-visibility.v1","forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"revision",publicationRevision,"cards",List.of()));
++        snapshot.put("events",eventsView(false));
+         if(unsupportedPregameChoice)snapshot.put("initialization",obj("supported",false,"failureCode",UNSUPPORTED_PREGAME_CHOICE,"errors",List.of(UNSUPPORTED_PREGAME_MESSAGE)));
+         published.set(snapshot);
+     }
+@@ -598,6 +749,16 @@
+         // Old snapshots retain their original revision and receipt; no live graph is read here.
+         snapshot.put("visibility",obj("schema","cardstashy.forge-visibility.v1","forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"revision",publicationRevision,"cards",boardVisibility));
+         if(!pregame.isEmpty())snapshot.put("pregame",pregame);
++        snapshot.put("events",eventsView(true));
++        // Manual payment: what is still owed and for which card (the payable sources are
++        // selection.actionable; sources Auto would tap are listed there twice).
++        if(publishedInput instanceof forge.gamemodes.match.input.InputPayMana){
++            try{
++                SpellAbility paidFor=controller.getPlayer().getPaidForSA();
++                var owed=paidFor==null?null:paidFor.getManaCostBeingPaid();
++                if(owed!=null)snapshot.put("payment",obj("remaining",owed.toString(),"forCard",paidFor.getHostCard()==null?null:cardRef(paidFor.getHostCard().getView())));
++            }catch(RuntimeException ignored){}
++        }
+         if(exactAdmission!=null&&exactAdmission.opponent()!=null){
+             Object warnings=exactAdmission.opponent().report().get("cpuWarnings");
+             int count=warnings instanceof Collection<?> values?values.size():0;
+@@ -647,7 +808,7 @@
          HttpServer server=HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(),port),0);
          server.setExecutor(Executors.newCachedThreadPool());
          server.createContext("/health",x->respond(x,200,obj("ok",true,"engine","Forge","forgeRevision",REV)));
@@ -122,7 +232,7 @@
              if(!x.getRequestMethod().equals("POST")){respond(x,405,obj("error","POST_required"));return;}
 --- a/experiments/forge-proof/combined-browser-proof/candidate/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java
 +++ b/experiments/forge-proof/combined-browser-proof/candidate/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java
-@@ -282,6 +282,21 @@
+@@ -282,6 +282,105 @@
              default -> false;
          };
      }
@@ -141,10 +251,94 @@
 +    @com.google.common.eventbus.Subscribe public void onCpuCast(forge.game.event.GameEventSpellAbilityCast e){if(e.si()!=null&&!e.si().isTrigger())paceCpu(e.si().getActivatingPlayer());}
 +    @com.google.common.eventbus.Subscribe public void onCpuAttack(forge.game.event.GameEventAttackersDeclared e){if(!e.attackersMap().isEmpty())paceCpu(e.player());}
 +    @com.google.common.eventbus.Subscribe public void onCpuBlock(forge.game.event.GameEventBlockersDeclared e){if(e.blockers().values().stream().anyMatch(m->!m.isEmpty()))paceCpu(e.defendingPlayer());}
++    // What happened, in order, so the table can replay what lands between two polls:
++    // draws, land plays, casts and abilities, resolutions, zone moves, attacks, blocks,
++    // damage, life, counters and attachments. Viewer-safe: a card is listed only when the
++    // viewer may see it where it is now, and named only when its face is visible, so a
++    // CPU draw or a card going to a hidden hand carries no identity. Read-only.
++    static final int EVENT_LOG_SIZE=96;
++    final Object eventLock=new Object();
++    final ArrayDeque<Map<String,Object>> eventLog=new ArrayDeque<>();
++    long eventSeq=0;
++    void logEvent(String type,Object... values){
++        if(viewer==null||game==null||failure!=null||concessionRequested)return;
++        var ph=game.getPhaseHandler();
++        Map<String,Object> e=obj("seq",0L,"type",type,"turn",ph.getTurn(),"phase",ph.getPhase()==null?null:ph.getPhase().name());
++        e.putAll(obj(values));
++        synchronized(eventLock){e.put("seq",++eventSeq);eventLog.addLast(e);while(eventLog.size()>EVENT_LOG_SIZE)eventLog.removeFirst();}
++    }
++    Map<String,Object> eventsView(boolean withItems){
++        synchronized(eventLock){return obj("schema","cardstashy.forge-events.v1","latest",eventSeq,"items",withItems?new ArrayList<>(eventLog):List.of());}
++    }
++    Map<String,Object> cardRef(CardView c){
++        if(c==null||viewer==null||!c.canBeShownTo(viewer))return null;
++        Map<String,Object> m=obj("kind","card","id",c.getId());
++        if(c.canFaceDownBeShownTo(viewer)&&c.getCurrentState()!=null)m.put("name",c.getCurrentState().getName());
++        return m;
++    }
++    Map<String,Object> entityRef(Object o){
++        if(o instanceof PlayerView p)return obj("kind","player","id",p.getId());
++        if(o instanceof CardView c)return cardRef(c);
++        if(o instanceof StackItemView si)return obj("kind","stack","id",si.getId());
++        return null;
++    }
++    List<Object> entityRefs(Iterable<?> values){
++        List<Object> out=new ArrayList<>();
++        if(values!=null)for(Object o:values){var r=entityRef(o);if(r!=null)out.add(r);}
++        return out;
++    }
++    @com.google.common.eventbus.Subscribe public void logTurn(forge.game.event.GameEventTurnBegan e){logEvent("turn","player",id(e.turnOwner()),"number",e.turnNumber());}
++    @com.google.common.eventbus.Subscribe public void logZone(forge.game.event.GameEventCardChangeZone e){
++        if(e.card()==null)return;
++        logEvent("zone","card",cardRef(e.card()),"from",e.from()==null?null:e.from().zoneType().name(),"to",e.to()==null?null:e.to().zoneType().name(),
++            "player",e.to()!=null?id(e.to().player()):e.from()!=null?id(e.from().player()):null,"token",e.card().isToken());
++    }
++    @com.google.common.eventbus.Subscribe public void logLand(forge.game.event.GameEventLandPlayed e){logEvent("land","player",id(e.player()),"card",cardRef(e.land()));}
++    @com.google.common.eventbus.Subscribe public void logCast(forge.game.event.GameEventSpellAbilityCast e){
++        var si=e.si();if(si==null)return;
++        logEvent(si.isTrigger()?"trigger":si.isAbility()?"ability":"cast","player",id(si.getActivatingPlayer()),"stackId",si.getId(),"source",cardRef(si.getSourceCard()),"targets",entityRefs(stackTargets(si)));
++    }
++    @com.google.common.eventbus.Subscribe public void logResolve(forge.game.event.GameEventSpellResolved e){
++        logEvent("resolve","source",e.spell()==null?null:cardRef(e.spell().getHostCard()),"fizzled",e.hasFizzled());
++    }
++    @com.google.common.eventbus.Subscribe public void logAttack(forge.game.event.GameEventAttackersDeclared e){
++        List<Object> attackers=new ArrayList<>();
++        for(var entry:e.attackersMap().entries()){var a=cardRef(entry.getValue());if(a!=null){a.put("target",entityRef(entry.getKey()));attackers.add(a);}}
++        if(!attackers.isEmpty())logEvent("attack","player",id(e.player()),"attackers",attackers);
++    }
++    @com.google.common.eventbus.Subscribe public void logBlock(forge.game.event.GameEventBlockersDeclared e){
++        // Forge lists an unblocked attacker as its own blocker; only real blocks are kept.
++        List<Object> blocks=new ArrayList<>();
++        for(var byDefender:e.blockers().values())for(var entry:byDefender.entries()){
++            if(entry.getKey()==null||entry.getValue()==null||entry.getKey().getId()==entry.getValue().getId())continue;
++            var b=cardRef(entry.getValue());var a=cardRef(entry.getKey());
++            if(b!=null&&a!=null){b.put("blocking",a.get("id"));blocks.add(b);}
++        }
++        if(!blocks.isEmpty())logEvent("block","player",id(e.defendingPlayer()),"blockers",blocks);
++    }
++    @com.google.common.eventbus.Subscribe public void logCardDamage(forge.game.event.GameEventCardDamaged e){
++        var target=cardRef(e.card());if(target==null)return;
++        logEvent("damage","target",target,"source",cardRef(e.source()),"amount",e.amount(),"kind",e.type()==null?null:e.type().name());
++    }
++    @com.google.common.eventbus.Subscribe public void logPlayerDamage(forge.game.event.GameEventPlayerDamaged e){
++        logEvent("damage","target",entityRef(e.target()),"source",cardRef(e.source()),"amount",e.amount(),"combat",e.combat(),"infect",e.infect());
++    }
++    @com.google.common.eventbus.Subscribe public void logLife(forge.game.event.GameEventPlayerLivesChanged e){logEvent("life","player",id(e.player()),"from",e.oldLives(),"to",e.newLives());}
++    @com.google.common.eventbus.Subscribe public void logCounters(forge.game.event.GameEventCardCounters e){
++        var c=cardRef(e.card());if(c==null||e.type()==null)return;
++        logEvent("counters","card",c,"counter",e.type().toString(),"from",e.oldValue(),"to",e.newValue());
++    }
++    @com.google.common.eventbus.Subscribe public void logAttach(forge.game.event.GameEventCardAttachment e){
++        var c=cardRef(e.equipment());if(c==null)return;
++        logEvent("attach","card",c,"from",entityRef(e.oldEntity()),"to",entityRef(e.newTarget()));
++    }
++    @com.google.common.eventbus.Subscribe public void logMulligan(forge.game.event.GameEventMulligan e){logEvent("mulligan","player",id(e.player()));}
++    @com.google.common.eventbus.Subscribe public void logShuffle(forge.game.event.GameEventShuffle e){logEvent("shuffle","player",id(e.player()));}
++    @com.google.common.eventbus.Subscribe public void logDayNight(forge.game.event.GameEventDayTimeChanged e){logEvent("dayNight","value",e.daytime()?"day":"night");}
      void applyControlMode(){
          if(failure!=null){effectiveAutoPass=false;clearSmartIntent();autoPayAttemptInput=null;return;}
          if(!controlMode.equals("smart"))clearSmartIntent();
-@@ -497,14 +512,56 @@
+@@ -497,14 +596,57 @@
          if(!visible)return m;
          exposedCards.put(c.getId(),c);
          m.put("tapped",c.isTapped()); m.put("attacking",c.isAttacking());m.put("blocking",c.isBlocking());
@@ -173,16 +367,17 @@
 +            for(CardView a:c.getAttachedCards())if(a.canBeShownTo(viewer))attached.add(a.getId());
 +            if(!attached.isEmpty())m.put("attachments",attached);
 +            // Keywords the card has right now, printed or granted, as Forge titles them
-+            // ("Flying", "Ward {2}", "Protection from red", "Crew 3"). Projection only.
-+            List<Map<String,Object>> keywords=new ArrayList<>();Set<String> seenKeywords=new HashSet<>();
++            // ("Flying", "Ward {2}", "Protection from red", "Crew 3"). Always sent on a
++            // visible face, [] when it has none, so the table never falls back to rules text.
++            List<String> keywords=new ArrayList<>();Set<String> seenKeywords=new HashSet<>();
 +            var kws=state.getKeywords();
 +            if(kws!=null)for(var k:kws){
 +                if(k==null||k.keyword()==null||k.keyword()==forge.game.keyword.Keyword.UNDEFINED)continue;
 +                String title=k.title();if(title==null||title.isBlank()||!seenKeywords.add(title))continue;
-+                keywords.add(obj("keyword",k.keyword().name(),"text",title));
++                keywords.add(title);
 +                if(k.keyword()==forge.game.keyword.Keyword.CREW){var crew=java.util.regex.Pattern.compile("(\\d+)").matcher(title);if(crew.find())m.put("crew",Integer.parseInt(crew.group(1)));}
 +            }
-+            if(!keywords.isEmpty())m.put("keywords",keywords);
++            m.put("keywords",keywords);
 +            if(state.getType().hasSubtype("Class"))m.put("classLevel",c.getClassLevel());
 +            if(c.isRingBearer())m.put("ringBearer",true);
 +            // Commander tax: two more for each earlier cast from the command zone.
@@ -201,7 +396,7 @@
      Map<String,Integer> counters(GameEntityView entity) {
          Map<String,Integer> result=new LinkedHashMap<>();
          if(entity.getCounters()!=null)for(var entry:entity.getCounters().entrySet())result.put(entry.getElement().toString(),entry.getCount());
-@@ -516,6 +573,14 @@
+@@ -516,6 +658,14 @@
          for(int i=0;i<colors.length;i++)result.put(names[i],player.getMana(colors[i]));
          return result;
      }
@@ -216,7 +411,7 @@
      List<Object> refs(Iterable<? extends TrackableObject> values) {
          List<Object> out=new ArrayList<>();
          if(values!=null)for(TrackableObject o:values){
-@@ -550,13 +615,13 @@
+@@ -550,13 +700,13 @@
                      }
                      zones.put(zone.name(),obj("count",count,"cards",visible));
                  }
@@ -233,7 +428,32 @@
              boardVisibility=List.copyOf(visibility);
          }catch(RuntimeException ex){failure="Projection failed: "+ex;ex.printStackTrace();}
      }}
-@@ -647,7 +712,7 @@
+@@ -581,6 +731,7 @@
+         Map<String,Object> snapshot=new LinkedHashMap<>(board);
+         snapshot.putAll(obj("revision",publicationRevision,"status","failed","failure","native_match_failed","message","Native match stopped.","buttons",Map.of(),"inputType",null,"selection",obj("cards",List.of(),"targets",List.of(),"chosen",List.of(),"actionable",List.of(),"min",0,"max",0),"prompt",null,"busy",false,"lastActionError",null,"notification",Map.of(),"autoPassNoActions",false,"canConcede",false));
+         snapshot.put("visibility",obj("schema","cardstashy.forge-visibility.v1","forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"revision",publicationRevision,"cards",List.of()));
++        snapshot.put("events",eventsView(false));
+         if(unsupportedPregameChoice)snapshot.put("initialization",obj("supported",false,"failureCode",UNSUPPORTED_PREGAME_CHOICE,"errors",List.of(UNSUPPORTED_PREGAME_MESSAGE)));
+         published.set(snapshot);
+     }
+@@ -598,6 +749,16 @@
+         // Old snapshots retain their original revision and receipt; no live graph is read here.
+         snapshot.put("visibility",obj("schema","cardstashy.forge-visibility.v1","forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"revision",publicationRevision,"cards",boardVisibility));
+         if(!pregame.isEmpty())snapshot.put("pregame",pregame);
++        snapshot.put("events",eventsView(true));
++        // Manual payment: what is still owed and for which card (the payable sources are
++        // selection.actionable; sources Auto would tap are listed there twice).
++        if(publishedInput instanceof forge.gamemodes.match.input.InputPayMana){
++            try{
++                SpellAbility paidFor=controller.getPlayer().getPaidForSA();
++                var owed=paidFor==null?null:paidFor.getManaCostBeingPaid();
++                if(owed!=null)snapshot.put("payment",obj("remaining",owed.toString(),"forCard",paidFor.getHostCard()==null?null:cardRef(paidFor.getHostCard().getView())));
++            }catch(RuntimeException ignored){}
++        }
+         if(exactAdmission!=null&&exactAdmission.opponent()!=null){
+             Object warnings=exactAdmission.opponent().report().get("cpuWarnings");
+             int count=warnings instanceof Collection<?> values?values.size():0;
+@@ -647,7 +808,7 @@
          HttpServer server=HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(),port),0);
          server.setExecutor(Executors.newCachedThreadPool());
          server.createContext("/health",x->respond(x,200,obj("ok",true,"engine","Forge","forgeRevision",REV)));

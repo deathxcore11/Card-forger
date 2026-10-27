@@ -1,10 +1,10 @@
-# Forge engine handoff: pacing, attachments, arrows, battlefield fields, faster JIT
+# Forge engine handoff: pacing, attachments, arrows, battlefield fields, event log, faster JIT
 
 **Use `forge-adapter-427.patch`.** It holds everything in `forge-adapter-play.patch` plus
 the battlefield fields below, for both bridge copies. It was checked against the host branch
 at `cf5f7df` (C1-only JIT, deployed 27 Oct). Both copies there are byte-identical
 (`f51b3360…`), and after the patch both hash to
-`4d3d2607d5c2aec7bc764ad15ffcc33242f1e061dac050d07939beb232e8501e`, the exact source played
+`eb643c046ed778f6f0c91f80a32db40ef540bcd52259884e49a61f2135eb77bf`, the exact source played
 in the proof games. `forge-adapter-play.patch` is kept only for history.
 
 For whoever rebuilds the Forge host (`codex/forge-github-host-prep-20261026`).
@@ -37,7 +37,7 @@ sent only on face-up cards the viewer may see, as before.
 
 | Field | Where | Meaning |
 |---|---|---|
-| `keywords` | card | `[{keyword, text}]`. Keywords the card has right now, printed or granted, with Forge's full title: `"Ward {2}"`, `"Ward—Pay 2 life."`, `"Crew 3"`, `"Equip {1}"`, `"Protection from red"`. `keyword` is Forge's enum name (`WARD`, `CREW`, …). Duplicate titles are dropped; omitted when empty. |
+| `keywords` | card | Array of strings: the keywords the card has right now, printed or granted, with Forge's own titles (`"Flying"`, `"Ward {2}"`, `"Ward—Pay 2 life."`, `"Crew 3"`, `"Equip {1}"`, `"Dash {2}{R}"`, `"Protection from red"`). Always present on a visible face, `[]` when there are none, so the table never falls back to reading rules text. Duplicates are dropped. This is the format 4.2.7 reads. |
 | `crew` | card | The crew number on vehicles (`3` for "Crew 3"). |
 | `classLevel` | card | The current level of a Class enchantment (1 to 3). |
 | `ringBearer` | card | `true` on its controller's Ring-bearer. |
@@ -52,12 +52,48 @@ Example (trimmed):
  "players":[{"id":0,"designations":{"monarch":true,"initiative":false,"citysBlessing":true,"ringTemptations":1,"ringBearer":77},
    "zones":{"Battlefield":{"cards":[
      {"id":12,"name":"Krenko, Mob Boss","commanderCasts":1,"commanderTax":2,
-      "keywords":[{"keyword":"WARD","text":"Ward—Pay 2 life."}]},
+      "keywords":["Ward—Pay 2 life."]},
      {"id":40,"name":"Skysovereign, Consul Flagship","crew":3,
-      "keywords":[{"keyword":"FLYING","text":"Flying"},{"keyword":"CREW","text":"Crew 3"}]},
-     {"id":55,"name":"Artist's Talent","classLevel":1},
-     {"id":77,"name":"Hexing Squelcher","ringBearer":true}]}}}]}
+      "keywords":["Flying","Crew 3"]},
+     {"id":55,"name":"Artist's Talent","classLevel":1,"keywords":[]},
+     {"id":77,"name":"Hexing Squelcher","ringBearer":true,"keywords":["Ward—Pay 2 life.","Trample"]}]}}}]}
 ```
+
+### Event log and payment (in `forge-adapter-427.patch` only)
+
+A snapshot alone skips whatever happens between two polls, so every `/state` now also carries
+the last 96 things that happened, in order. The table can replay them (the CPU's land, its
+spell and targets, the resolution, the attack, damage and life) and keep a history.
+
+```json
+"events":{"schema":"cardstashy.forge-events.v1","latest":88,"items":[
+ {"seq":86,"type":"attack","turn":8,"phase":"COMBAT_DECLARE_ATTACKERS","player":1,
+  "attackers":[{"kind":"card","id":201,"name":"Sai, Master Thopterist","target":{"kind":"player","id":0}}]},
+ {"seq":87,"type":"damage","turn":8,"phase":"COMBAT_DAMAGE","target":{"kind":"player","id":0},
+  "source":{"kind":"card","id":201,"name":"Sai, Master Thopterist"},"amount":1,"combat":true,"infect":false},
+ {"seq":88,"type":"life","turn":8,"phase":"COMBAT_DAMAGE","player":0,"from":40,"to":39}]}
+```
+
+- Every item has `seq` (1, 2, 3, … with no reuse), `type`, `turn` and `phase`. `latest` is the newest `seq`.
+  If the first item's `seq` is more than one past the last one the table saw, it missed some:
+  fall back to the snapshot for those.
+- Types: `turn` (player, number); `zone` (card, from, to, player, token); `land` (player, card);
+  `cast`, `ability`, `trigger` (player, stackId, source, targets); `resolve` (source, fizzled);
+  `attack` (player, attackers with `target`); `block` (player, blockers with `blocking`, the
+  attacker's id); `damage` (target, source, amount, then `kind` for cards or `combat`/`infect`
+  for players); `life` (player, from, to); `counters` (card, counter, from, to; Forge enum names
+  such as `P1P1`); `attach` (card, from, to); `mulligan`, `shuffle` (player); `dayNight` (value).
+- Card references are `{kind:"card", id, name}`. A card is listed only when the viewer may see it
+  where it is now, and named only when its face is visible. A CPU draw is
+  `{"type":"zone","from":"Library","to":"Hand","player":1}` with no card. Players are
+  `{kind:"player", id}`; stack items are `{kind:"stack", id}`.
+- Forge reports a resolving permanent's move (`zone` Stack → Battlefield) just before `resolve`.
+  A countered spell has a `zone` Stack → Graveyard and no `resolve`.
+- A failed match publishes `items: []`.
+- Review status: proven in the five live games above; an independent code review was started and stopped early to save usage. Worth one more review pass before the host deploys it.
+
+`payment` appears while a mana payment waits: `{"remaining":"{2}{R}","forCard":{"kind":"card","id":82,"name":"Fiery Inscription"}}`.
+The payable sources are already in `selection.actionable`, and the ones Auto would tap are listed twice.
 
 ### `forge-gateway-jit.patch` (launcher, Python)
 
@@ -79,6 +115,7 @@ The engine was built from Forge `e5a0f8156da70ffc7866f923bed371c0111707cd`. The 
 | `attackTarget` seen live | Savannah Lions, Kemba and a Cat token: `{kind:'player', id:0}` |
 | Stack targets seen live | equip abilities `[{kind:'card', id:201}]`; CPU Swords to Plowshares `[{kind:'card', id:211}]` |
 | `blockingIds` | Seen live (27 Oct, 427 patch): CPU Sai, Thopter and Myr tokens block with `[84]`, `[51]`, `[54]`; the player's Harvesttide Infiltrator blocks with `[108]` |
+| Event log (5 Commander games, 27 Oct) | 25 to 260 events per game, 0 sequence gaps. All 98 CPU draws had no identity; all 64 of the player's draws were named; 0 cards entering the CPU's hand or library were identified. 7 block declarations, each against a real attacker that turn. Counters seen as `P1P1` and `PAGE`. `payment.remaining` seen as `{R}`, `{2}`, `{2}{R}`, `{3}{R}` |
 | Battlefield fields seen live (9 Commander games, 27 Oct) | Keywords incl. granted (Hexing Squelcher gives Krenko `Ward—Pay 2 life.`), `Ward {2}`, `Crew 1`/`Crew 3`, `Dash {2}{R}`, `Daybound`; `crew` 1 and 3; `classLevel` 1 (Cool but Rude, Artist's Talent, Blacksmith's Talent); `ringBearer` and `designations.ringBearer`/`ringTemptations 1`; `commanderCasts 1`/`commanderTax 2` for both commanders, kept after the commander returns to the command zone; `monarch` and `initiative` for both players; `citysBlessing`; `dayNight` `day`. `night` uses Forge's `Game.isNight()`, the mirror of `isDay()` |
 
 AppCDS gave no gain because the classpath uses `target/classes` folders; it would need the classes jarred first.
