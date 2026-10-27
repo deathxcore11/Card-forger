@@ -3719,6 +3719,8 @@ body[data-view="scan"] #app:has(.scan-workspace.is-camera) > #content {
 #app .scan-workspace.is-camera {position:relative;display:flex;flex-direction:column;flex:1 1 0;min-height:0;width:100%;max-width:none;margin:0;}
 #app .scan-workspace.is-camera > .scan-toolbar {position:absolute;z-index:5;top:12px;left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right));margin:0;padding:6px 8px 6px 14px;border:1px solid #ffffff20;border-radius:20px;background:#15181fbf;backdrop-filter:blur(16px);color:#fff;}
 #app .scan-workspace.is-camera > .scan-toolbar .scan-auto-game {color:#d4d7df;}
+/* Icon buttons keep their own surface, so their glyph follows the theme like the Photo button, not the overlay's white. */
+#app .scan-workspace.is-camera > .scan-toolbar .icon {color:var(--text);}
 #app .scan-workspace.is-camera > .scan-panel {position:relative;display:flex;flex-direction:column;flex:1 1 0;min-height:0;max-height:none;border:0;border-radius:0;background:var(--surface);}
 #app .scan-workspace.is-camera .cam-wrap {flex:1 1 0;height:auto;min-height:0;max-height:none;border-radius:0;margin:0;}
 #app .scan-workspace.is-camera .cam-wrap::after {content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(transparent 65%,#080b12b8);}
@@ -4298,6 +4300,10 @@ dialog.action-tour{inset:0;width:100%;height:100%;max-width:none;max-height:none
 @keyframes search-cards-breathe{50%{transform:rotate(-6deg) translateY(-1px)}}@keyframes search-rim{to{background-position:250% 0}}
 #desktopSearch[hidden]{display:none!important}#homeSearchDock:empty{display:none}
 @media(max-width:1199px){.topbar>.top-nav{display:none}.bottom-nav{display:grid}#content{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 28px)}}
+/* Keyboard focus and in-page jumps stop clear of the sticky header, the bottom nav and the deck's buy bar (WCAG 2.4.11). */
+html{scroll-padding-top:calc(var(--shell-header-height,0px) + 8px)}
+@media(max-width:1199px){html{scroll-padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px)}}
+html:has(#content .sticky-bar){scroll-padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 84px)}
 @media(min-width:900px) and (max-width:1199px){.topbar{grid-template-columns:auto minmax(0,1fr) auto}.topbar>.game-tabs{grid-column:2;grid-row:1}.topbar>button.icon{grid-column:3;grid-row:1}.topbar>.save-status{display:none}.brand-home .brand-wordmark{display:none}.brand-home .brand-home-label{display:inline!important}}
 @media(min-width:1200px){.topbar{grid-template-columns:auto minmax(260px,340px) minmax(260px,1fr) auto;gap:8px 18px}.topbar>.brand{grid-column:1;grid-row:1}.topbar>.game-tabs{grid-column:2;grid-row:1}.topbar>#desktopSearch{grid-column:3;grid-row:1;width:100%;min-width:0}.topbar>button.icon{grid-column:4;grid-row:1}.topbar>.top-nav{grid-column:2 / 4;grid-row:2;display:flex;justify-content:center}.topbar>.save-status{grid-column:1;grid-row:2;justify-self:start;font-size:10px;max-width:190px}.topbar .home-search-wrap{max-width:none}.topbar .home-search-pill{min-height:54px;border-radius:18px}.topbar .home-search-pill input{padding:22px 8px 8px 16px;font-size:14px}.topbar .home-ai-label{top:7px;left:16px;font-size:8px}.topbar .home-search-submit{height:40px;width:40px}.bottom-nav{display:none}#content{padding-bottom:48px}#homeHero.home-art-header .hh-body{padding-top:65px;padding-bottom:34px}#homeHero.home-art-header{min-height:320px}}
 @media(prefers-reduced-motion:reduce){.search-emblem-cards,.bottom-nav .nav-search>span:before{animation:none}}
