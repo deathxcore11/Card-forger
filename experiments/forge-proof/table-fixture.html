@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CardStashy · Play table fixture</title>
+<!-- Development fixture only (not deployed; see .assetsignore). Mounts the live
+     Forge table with a fixed native snapshot so layout changes can be compared
+     on the same board. No transport, account or rules logic is involved. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="../../community-curation.css">
+<link rel="stylesheet" href="../../magic-matchups.css">
+<link rel="stylesheet" href="../../settings-theme.css">
+<link rel="stylesheet" href="../../aura.css">
+<link rel="stylesheet" href="../../collection-display.css">
+<link rel="stylesheet" href="../../finish-effects.css">
+<link rel="stylesheet" href="../../sets-ui.css">
+<link rel="stylesheet" href="../../printing-picker.css">
+<link rel="stylesheet" href="../../game-tabs.css">
+<link rel="stylesheet" href="../../brand-motion.css">
+<link rel="stylesheet" href="../../home-overview.css">
+<link rel="stylesheet" href="../../deck-viewer.css">
+<link rel="stylesheet" href="../../play-menu.css">
+<link rel="stylesheet" href="../../polish.css">
+<!-- Loaded by app.js when a match opens, in this order. -->
+<link rel="stylesheet" id="practiceTableStyles" href="../phase-engine/match-table.css">
+<link rel="stylesheet" id="forgeHostedTableStyles" href="../../play-forge-table.css">
+</head>
+<body class="glass practice-table-open" data-view="play" data-game="mtg">
+<main id="practicePlayerMat" aria-label="Practice player mat" data-engine="forge-hosted"></main>
+<script type="module">
+import {mountForgeTable} from './forge-table.mjs';
+import {createForgePresentationSession} from './forge-session.mjs';
+
+const params = new URLSearchParams(location.search);
+const STATE = params.get('state') || 'main';
+const YOU = 1, CPU = 2;
+
+// Board contents per player. [name, options] — options: tapped, attacking, blocking, damage, token, imageKey, counters, sick.
+const BASE = {
+  you: {
+    battlefield: [['Hill Giant'], ['Grizzly Bears'], ['Goblin Guide'], ['Mountain'], ['Mountain', {tapped: true}], ['Mountain'], ['Forest'], ['Forest'], ['Arcane Signet']],
+    hand: ['Lightning Bolt', 'Monastery Swiftspear', 'Play with Fire', 'Skewer the Critics', 'Path to Exile', 'Forest', 'Llanowar Elves'],
+    graveyard: ['Shock', 'Lava Spike', 'Rampant Growth'],
+    exile: [],
+    command: ['Klothys, God of Destiny'],
+  },
+  cpu: {
+    battlefield: [['Island'], ['Island', {tapped: true}], ['Island'], ['Grizzly Bears'], ['Hill Giant'], ['Sol Ring']],
+    hand: 7,
+    graveyard: ['Counterspell', 'Opt', 'Brainstorm', 'Ponder'],
+    exile: ['Swords to Plowshares'],
+    command: ['Talrand, Sky Summoner'],
+  },
+};
+if (STATE === 'dense') {
+  BASE.you.battlefield.push(['Llanowar Elves'], ['Elvish Mystic'], ['Fyndhorn Elves', {sick: true}], ['Craterhoof Behemoth'], ['Krenko, Tin Street Kingpin', {counters: {P1P1: 2}}], ['Ghalta, Primal Hunger', {damage: 3}],
+    ...Array.from({length: 4}, () => ['Goblin', {token: true, imageKey: 't:r_1_1_goblin_haste'}]),
+    ...Array.from({length: 4}, () => ['Mountain']), ...Array.from({length: 3}, () => ['Forest', {tapped: true}]), ['Sol Ring'], ['Mind Stone']);
+  BASE.cpu.battlefield.push(['Talrand, Sky Summoner'], ['Delver of Secrets'], ['Snapcaster Mage'], ['Frost Titan'], ['Phantasmal Image'], ...Array.from({length: 3}, () => ['Island']), ['Command Tower'], ['Fellwar Stone']);
+}
+if (STATE === 'discard') BASE.you.hand.push('Shock');
+if (STATE === 'attack') { BASE.you.battlefield[0][1] = {attacking: true}; BASE.you.battlefield[2][1] = {attacking: true}; }
+
+// Real card data and art from Scryfall, by name; a missing card falls back to a drawn crest.
+const names = [...new Set([
+  ...BASE.you.battlefield.map(([n]) => n), ...BASE.you.hand, ...BASE.you.graveyard, ...BASE.you.exile, ...BASE.you.command,
+  ...BASE.cpu.battlefield.map(([n]) => n), ...BASE.cpu.graveyard, ...BASE.cpu.exile, ...BASE.cpu.command,
+].filter(n => n !== 'Goblin'))];
+const scry = new Map();
+try {
+  for (let i = 0; i < names.length; i += 70) {
+    const r = await fetch('https://api.scryfall.com/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({identifiers: names.slice(i, i + 70).map(name => ({name}))})});
+    for (const c of (await r.json()).data || []) scry.set(c.name, c);
+  }
+} catch (e) { console.warn('Scryfall unavailable; fixture uses drawn crests', e); }
+const face = c => c?.card_faces?.[0] || c || {};
+// Forge reports numeric P/T; Scryfall strings such as "*" stay text.
+const stat = v => v === null || v === undefined ? null : /^-?\d+$/.test(String(v)) ? Number(v) : v;
+
+let nextId = 100;
+const nativeCard = (name, zone, owner, opts = {}) => {
+  const c = scry.get(name), f = face(c);
+  const token = opts.token === true;
+  return {
+    id: nextId++, owner, controller: owner, zone, hidden: false, name,
+    type: token ? 'Token Creature — Goblin' : (c?.type_line || f.type_line || ''),
+    manaCost: token ? '' : (c?.mana_cost ?? f.mana_cost ?? ''), text: token ? 'Haste' : (c?.oracle_text ?? f.oracle_text ?? ''),
+    power: token ? 1 : stat(c?.power ?? f.power), toughness: token ? 1 : stat(c?.toughness ?? f.toughness),
+    tapped: !!opts.tapped, attacking: !!opts.attacking, blocking: !!opts.blocking, token, commander: zone === 'Command',
+    damage: opts.damage || 0, summoningSick: !!opts.sick, counters: opts.counters || {}, keywords: token ? ['Haste'] : (c?.keywords || []),
+    setCode: c?.set || '', imageKey: opts.imageKey || '',
+  };
+};
+const zoneOf = (side, owner) => ({
+  Hand: typeof side.hand === 'number' ? {count: side.hand, cards: []} : {count: side.hand.length, cards: side.hand.map(n => nativeCard(n, 'Hand', owner))},
+  Library: {count: 81, cards: []},
+  Battlefield: {cards: side.battlefield.map(([n, o]) => nativeCard(n, 'Battlefield', owner, o))},
+  Graveyard: {cards: side.graveyard.map(n => nativeCard(n, 'Graveyard', owner))},
+  Exile: {cards: side.exile.map(n => nativeCard(n, 'Exile', owner))},
+  Command: {cards: side.command.map(n => nativeCard(n, 'Command', owner))},
+});
+const youZones = zoneOf(BASE.you, YOU), cpuZones = zoneOf(BASE.cpu, CPU);
+const ref = c => ({kind: 'card', id: c.id});
+const byName = (zone, name) => zone.cards.filter(c => c.name === name);
+
+const yourTurn = STATE !== 'cpu';
+const phase = STATE === 'attack' ? 'COMBAT_DECLARE_ATTACKERS' : 'MAIN1';
+const inputType = {targets: 'InputSelectTargets', attack: 'InputAttack', cpu: 'InputPassPriority', discard: '', opening: 'InputConfirmMulligan'}[STATE] ?? 'InputPassPriority';
+const castable = ['Lightning Bolt', 'Monastery Swiftspear', 'Play with Fire', 'Skewer the Critics', 'Forest', 'Llanowar Elves'];
+const selection = {cards: [], targets: [], chosen: [], actionable: []};
+if (STATE === 'main' || STATE === 'dense') {
+  selection.actionable = [...youZones.Hand.cards.filter(c => castable.includes(c.name)), ...byName(youZones.Battlefield, 'Arcane Signet')].map(ref);
+} else if (STATE === 'targets') {
+  selection.targets = [...cpuZones.Battlefield.cards.filter(c => /Creature/.test(c.type)), ...youZones.Battlefield.cards.filter(c => /Creature/.test(c.type))].map(ref);
+  selection.targets.push({kind: 'player', id: CPU}, {kind: 'player', id: YOU});
+  selection.chosen = [ref(byName(cpuZones.Battlefield, 'Hill Giant')[0])];
+} else if (STATE === 'discard') {
+  Object.assign(selection, {cards: youZones.Hand.cards.map(ref), min: 1, max: 1});
+} else if (STATE === 'attack') {
+  selection.cards = youZones.Battlefield.cards.filter(c => /Creature/.test(c.type)).map(ref);
+}
+const message = {
+  targets: 'Select targets for Lightning Bolt\nChoose any target.',
+  attack: 'Declare attackers.',
+  opening: 'Keep this hand or mulligan?',
+  discard: 'Cleanup Phase\nSelect 1 card(s) to discard to bring your hand down to the maximum of 7 cards.',
+}[STATE] || `Priority: ${yourTurn ? 'idw011' : 'CPU'}\nTurn: 5 (${yourTurn ? 'idw011' : 'CPU'})\nPhase: Main phase 1\nStack: Empty`;
+const stackCard = STATE === 'targets' ? nativeCard('Counterspell', 'Stack', CPU) : null;
+const native = {
+  schema: 'cardstashy.forge-proof.v1', revision: 7, viewer: YOU, status: 'running', busy: false,
+  players: [
+    {id: YOU, name: 'idw011', life: 40, isViewer: true, mana: {W: 0, U: 0, B: 0, R: STATE === 'targets' ? 0 : 2, G: 0, C: 0}, zones: youZones},
+    {id: CPU, name: 'CPU', life: 38, isViewer: false, mana: {W: 0, U: 0, B: 0, R: 0, G: 0, C: 0}, zones: cpuZones},
+  ],
+  stack: stackCard ? [{id: 990, text: 'Counterspell — Counter target spell.', source: stackCard, activatingPlayer: CPU}] : [], turn: 5, phase, activePlayer: yourTurn ? YOU : CPU, priorityPlayer: yourTurn ? YOU : CPU,
+  inputType, prompt: null, message, controlMode: 'smart', notification: {}, lastActionError: null,
+  buttons: STATE === 'opening' ? {ok: 'Keep', okEnabled: true, cancel: 'Mulligan', cancelEnabled: true}
+    : STATE === 'discard' ? {ok: 'OK', okEnabled: false, cancel: '', cancelEnabled: false}
+    : STATE === 'targets' ? {ok: 'OK', okEnabled: true, cancel: 'Cancel', cancelEnabled: true}
+    : STATE === 'attack' ? {ok: 'OK', okEnabled: true, cancel: 'Cancel', cancelEnabled: false}
+    : yourTurn ? {ok: 'OK', okEnabled: true, cancel: 'End turn', cancelEnabled: true} : {},
+  selection,
+};
+
+const lookupArtwork = name => { const c = scry.get(name); return c ? {card: Object.freeze(c), finish: null, source: 'existing-catalog-printing', badges: []} : null; };
+const session = createForgePresentationSession({lookupArtwork, allowControlMode: true, request: async (path, body) => {
+  if (body) { console.info('fixture action (not sent)', body); throw Object.assign(Error('Fixture: actions are not sent'), {status: 400}); }
+  return null;
+}});
+session.acceptState(native);
+const avatar = scry.get('Klothys, God of Destiny')?.image_uris?.art_crop || '';
+const root = document.getElementById('practicePlayerMat');
+window.fixture = {session, native, table: mountForgeTable(root, {session, profile: {displayName: 'idw011', username: 'idw011', avatarUrl: avatar}, format: 'Commander', title: 'CardStashy · Magic · fixture', onExit() {}, presentation: {hosted: true, allowControlMode: true}})};
+document.body.dataset.fixtureReady = 'true';
+</script>
+</body>
+</html>

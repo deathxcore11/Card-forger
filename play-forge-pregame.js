@@ -26,6 +26,12 @@ export function forgeDeckBackdrop(deck,lookup){
  return null;
 }
 
+// Choice icons share the packet's outline style (24-unit grid, currentColor).
+const START_ICONS={
+ random:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5.5"/><path d="m12 8.8 1 2.1 2.2.3-1.6 1.5.4 2.2-2-1.1-2 1.1.4-2.2-1.6-1.5 2.2-.3z"/></svg>',
+ first:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>',
+ second:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/></svg>',
+};
 export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{},wait=ms=>new Promise(resolve=>setTimeout(resolve,ms)),isCurrent=()=>true}={}){
  const doc=root.ownerDocument,view=doc.defaultView,profile=setup.profile||{};
  const node=(tag,text,cls)=>{const el=doc.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;};
@@ -34,7 +40,7 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
  stage.setAttribute('aria-label','Your matchup');
  const format=node('p',`${setup.match.format} · ${setup.playStyle==='quick'?'Quick Play':'Practice'}`,'forge-intro-eyebrow');
  const heading=node('h1','A new match awaits');heading.tabIndex=-1;
- header.append(format,heading,node('p','Your deck. Your decisions.','forge-intro-subtitle'));
+ header.append(format,heading);
  const versus=node('div',undefined,'forge-intro-versus'),seats=[];
  for(const [own,deck]of [[true,setup.selected],[false,setup.opponent]]){
   const seat=node('section',undefined,'forge-intro-seat '+(own?'forge-intro-you':'forge-intro-cpu'));
@@ -62,10 +68,10 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
    pendingChoice=resolve;
    const chooser=node('section',undefined,'forge-intro-toss forge-intro-choice');chooser.setAttribute('aria-label','Choose who plays first');
    const title=node('h2','How will you begin?');title.tabIndex=-1;
-   chooser.append(node('p','PRACTICE','forge-intro-eyebrow'),title,node('p','Choose your starting position for this game.'));
+   chooser.append(node('p','PRACTICE','forge-intro-eyebrow'),title);
    const options=node('div',undefined,'forge-intro-start-options');
    for(const [value,label,detail]of [['random','Flip a coin','Let chance choose'],['first','Play first','Take the first turn'],['second','Play second','Let the CPU begin']]){
-    const button=node('button');button.type='button';button.append(node('strong',label),node('span',detail));
+    const button=node('button'),icon=node('span',undefined,'forge-intro-option-icon');button.type='button';button.setAttribute('data-choice',value);icon.setAttribute('aria-hidden','true');icon.innerHTML=START_ICONS[value];button.append(icon,node('strong',label),node('span',detail));
     button.addEventListener('click',()=>{if(closed||!isCurrent()||!pendingChoice)return;const done=pendingChoice;pendingChoice=null;chooser.remove();done(value);});options.append(button);
    }
    const back=node('button','Return to setup','btn ghost forge-intro-cancel');back.type='button';back.addEventListener('click',()=>{if(!closed)onCancel();});
@@ -79,7 +85,13 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
   const rulesChanged=result.selection==='first'&&!result.ownFirst||result.selection==='second'&&result.ownFirst;
   const reduced=view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
   const curtain=node('section',undefined,'forge-intro-toss');curtain.setAttribute('role','status');curtain.setAttribute('aria-live','polite');
-  const coin=node('div',result.ownFirst?'YOU':'CPU','forge-intro-coin');coin.setAttribute('aria-hidden','true');
+  // A two-faced coin: your profile picture on one side, the CPU deck's art on the
+  // other. It lands on the side Forge already committed; it never decides anything.
+  const coin=node('div',undefined,'forge-intro-coin'),body=node('div',undefined,'forge-coin-body'),you=node('span',undefined,'forge-coin-face forge-coin-you'),cpu=node('span',undefined,'forge-coin-face forge-coin-cpu');
+  coin.setAttribute('aria-hidden','true');coin.setAttribute('data-result',result.ownFirst?'you':'cpu');
+  you.innerHTML=profileAvatar(profile.avatarArt,{display_name:profile.displayName,username:profile.username,avatar_url:profile.avatarUrl});you.append(node('b','YOU'));
+  const cpuArt=forgeDeckBackdrop(setup.opponent,lookup);if(cpuArt){const img=node('img');img.src=cpuArt;img.alt='';img.referrerPolicy='no-referrer';cpu.append(img);}cpu.append(node('b','CPU'));
+  body.append(you,cpu);coin.append(body);
   const label=node('p',result.selection==='random'?'Flipping the coin…':'Starting player','forge-intro-eyebrow');
   const outcome=node('h2',result.ownFirst?'You play first':'CPU plays first');outcome.hidden=!reduced;
   curtain.append(label,coin,outcome,node('p',rulesChanged?'Card rules determined the starting player. Your opening hand is next.':'Your opening hand is next.'));stage.append(curtain);
@@ -87,7 +99,7 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
   if(!reduced&&result.selection==='random')curtain.classList.add('is-flipping');
   await wait(reduced?200:result.selection==='random'?950:250);
   if(closed||!isCurrent())return false;
-  curtain.classList.remove('is-flipping');outcome.hidden=false;label.textContent=result.selection==='random'?'Coin toss complete':'Starting player';
+  curtain.classList.remove('is-flipping');curtain.classList.add('is-landed');outcome.hidden=false;label.textContent=result.selection==='random'?'Coin toss complete':'Starting player';
   await wait(reduced?350:850);
   return !closed&&isCurrent();
  };

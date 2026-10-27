@@ -90,7 +90,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   const outcome=result.draw?'draw':viewer===null?null:result.winnerPlayerId===viewer?'win':'loss';
   const title=outcome==='draw'?'Draw':outcome==='win'?'You won':outcome==='loss'?'CPU won':'Your result is not yet identified';
   publish({phase:'finished',result:structuredClone(result),viewerId:viewer,outcome,endingReason:'unclassified-engine-terminal',deckDigests:client?.status().allocation?.deckDigests||null});message('Match finished',[title,...(outcome===null?[`Forge reported winner player ${result.winnerPlayerId}, but this receipt does not identify your seat. No win or loss has been assigned.`]:[]),'This match has ended. Return to setup whenever you are ready for another game.','Results are not yet saved to your account.']);
-  root.classList.add('play-mat-result');const panel=root.querySelector('section');panel.classList.add('play-match-result');
+  root.classList.add('play-mat-result');const panel=root.querySelector('section');panel.classList.add('play-match-result');panel.setAttribute('data-outcome',outcome||'unknown');
   if(matchup){const decks=node('details');decks.append(node('summary','Exact deck snapshots used'));
    for(const [seat,deck]of [['human',matchup.selected],['opponent',matchup.opponent]]){decks.append(node('h3',(seat==='human'?'Your deck: ':'CPU deck: ')+deck.name));const hash=client?.status().allocation?.deckDigests?.[seat];if(hash)decks.append(node('code','Snapshot SHA-256: '+hash));const list=node('ul');for(const row of deck.cards||[])list.append(node('li',`${row.qty} ${row.name}`));decks.append(list);if(deck.side?.length){decks.append(node('p','Sideboard'));for(const row of deck.side)decks.append(node('p',`${row.qty} ${row.name}`));}const metadata=node('details'),source=node('pre',JSON.stringify(deck,null,2));source.style.whiteSpace='pre-wrap';source.style.overflowWrap='anywhere';metadata.append(node('summary','Read-only snapshot metadata'),source);decks.append(metadata);}
    panel.append(decks);
@@ -110,14 +110,14 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   if(['finished','account-changed','session-ended'].includes(last?.phase)){void closeSession();return;}
   if(!session&&!client?.status().allocation){generation++;intro?.destroy();intro=null;void closeSession();return;}
   const canConcede=last?.phase==='playing'&&session&&!client.status().blocked;exitSubmitting=false;
-  const dialog=node('dialog');dialog.className='play-match-exit';dialog.setAttribute('aria-label',canConcede?'Concede native match':'Close native session');dialog.append(node('h2',canConcede?'Concede this match?':'Close this session?'),node('p',canConcede?'Confirming sends a real concession to Forge. The match result must be confirmed by the engine.':'This interrupted or unopened session cannot be resumed. Closing resources does not invent a win or loss.'));
+  const dialog=node('dialog');dialog.className='play-match-exit';dialog.setAttribute('aria-label',canConcede?'Concede native match':'Close native session');dialog.append(node('h2',canConcede?'Concede this match?':'Close this session?'),node('p',canConcede?'The game ends as a loss once Forge confirms it.':'This session can’t be resumed. No win or loss is recorded.'));
   const keep=node('button','Keep playing'),close=node('button',canConcede?'Concede and return':'Close and return');keep.type=close.type='button';keep.addEventListener('click',()=>{dialog.remove();exitDialog=null;});close.addEventListener('click',async()=>{
    close.disabled=true;exitSubmitting=true;
    if(canConcede){
     try{await session.concede();const until=Date.now()+10000;while(last?.phase==='playing'&&Date.now()<until&&!client.status().blocked)await wait(100);if(last?.phase!=='finished')throw Error('NATIVE_CONCESSION_UNCONFIRMED');dialog.remove();exitDialog=null;await closeSession();}
-    catch{if(dialog.isConnected){dialog.append(node('p','Forge has not confirmed the ending. No loss has been invented. Keep the table open to inspect the current state.'));close.disabled=true;}}
+    catch{if(dialog.isConnected){const note=node('p','Forge hasn’t confirmed the concession, so no result was recorded. Keep playing and try again.');note.className='play-exit-note';dialog.append(note);close.disabled=true;}}
    }else{dialog.remove();exitDialog=null;generation++;await closeSession();}
-  });dialog.append(keep,close);dialog.addEventListener('cancel',e=>{e.preventDefault();dialog.remove();exitDialog=null;});doc.body.append(dialog);exitDialog=dialog;exitConfirm=canConcede?close:null;if(canConcede)dialog.append(node('p','Concession is available while Forge is awaiting your next action. Finish or cancel an open native choice first.'));updateExit();if(typeof dialog.showModal==='function')dialog.showModal();else dialog.open=true;keep.focus();
+  });dialog.append(keep,close);dialog.addEventListener('cancel',e=>{e.preventDefault();dialog.remove();exitDialog=null;});doc.body.append(dialog);exitDialog=dialog;exitConfirm=canConcede?close:null;if(canConcede){const hint=node('p','Finish your current choice first.');hint.className='play-exit-hint';dialog.append(hint);}updateExit();if(typeof dialog.showModal==='function')dialog.showModal();else dialog.open=true;keep.focus();
  }
  async function start(){
   if(disposed||opening||client)throw Error('MATCH_ALREADY_OPEN');opening=true;const ticket=++generation,account=forgeAccountKey(readAccount()),setup=readSetup(),selection=selectionKey(setup);
@@ -128,9 +128,13 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    matchup=structuredClone(setup);matchPolicy=forgeCpuPolicy(setup.match.difficulty);
    if(!current()||setup.profile?.ownerId!==readAccount()?.user?.id)throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
    intro=mountIntro({root,setup,lookup,onCancel:requestExit,wait,isCurrent:current});
-   await prepareArtwork(setup,{isCurrent:current});
+   // Card art is needed only once the table opens, so it loads while the server starts
+   // the match instead of before it. The matchup waits briefly so cached deck art shows.
+   // Art is read only once its preparation has finished; before that the lookup refuses.
+   const preparing=Promise.resolve().then(()=>prepareArtwork(setup,{isCurrent:current}));preparing.then(()=>{try{if(current())intro?.refreshArtwork();}catch{/* the matchup keeps its placeholder */}},()=>{});
+   await Promise.race([preparing,wait(1200)]);
    if(!current())throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
-   const artwork=capturedForgeArtwork(setup,lookup);intro.refreshArtwork();await intro.showMatchup?.();
+   await intro.showMatchup?.();
    const startingPlayer=await intro.chooseStartingPlayer();
    if(!current()||startingPlayer===null)throw Object.assign(Error('SELECTION_CHANGED'),{code:'SELECTION_CHANGED'});
    const input=exactForgeInput(setup,{startingPlayer});
@@ -148,6 +152,10 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
    if(state?.status==='finished'){finish(state.result,state.viewerId);return last;}
    if(state?.status!=='running')throw Error('HOST_STARTUP_TIMEOUT');viewer=state.snapshot.viewer;
+   // The table's art is frozen from the finished preparation, as before the overlap.
+   try{await preparing;}catch(e){await client.close().catch(()=>{});throw e;}
+   if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
+   const artwork=capturedForgeArtwork(setup,lookup);
    if(!forgeStartingPlayer(state.snapshot))throw Object.assign(Error('STARTING_PLAYER_UNCONFIRMED'),{code:'STARTING_PLAYER_UNCONFIRMED'});
    session=createForgePresentationSession({lookupArtwork:artwork,pollMs,allowControlMode:true,transportStatus:()=>client.status(),request:async(path,body)=>{
     if(body)return client.submit(body);
