@@ -270,7 +270,7 @@ const server = createServer(async (req, res) => {
     // Disable account initialization at its supported configuration boundary.
     // App rendering, routing, persistence, event handlers and CSS remain real.
     if (path === '/config.js') body = Buffer.from(body.toString().replace(/key:\s*"[^"]*"/, 'key: ""'));
-    res.setHeader('Content-Type', ({ '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' })[extname(file)] || 'application/octet-stream');
+    res.setHeader('Content-Type', ({ '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' })[extname(file)] || 'application/octet-stream');
     res.end(body);
   } catch { res.writeHead(404); res.end('Fixture server: not found'); }
 });

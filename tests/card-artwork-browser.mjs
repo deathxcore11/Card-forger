@@ -55,7 +55,7 @@ const server=createServer(async(req,res)=>{
   if(url.pathname.startsWith('/img/')){res.writeHead(404).end();return;}
   const path=resolve(root,'.'+decodeURIComponent(url.pathname));
   if(!path.startsWith(root)){res.writeHead(403).end();return;}
-  const body=await readFile(path),type={'.js':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png'}[extname(path)]||'application/octet-stream';
+  const body=await readFile(path),type={'.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png'}[extname(path)]||'application/octet-stream';
   res.writeHead(200,{'Content-Type':type}).end(body);
  }catch{res.writeHead(404).end();}
 });

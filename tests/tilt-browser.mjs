@@ -25,7 +25,7 @@ const fixture=old=>`<!doctype html><meta name="viewport" content="width=device-w
 const server=createServer(async(req,res)=>{try{
  const u=new URL(req.url,'http://localhost');if(u.pathname==='/__fixture'){res.setHeader('Content-Type','text/html');return res.end(fixture(u.searchParams.has('old')));}
  if(u.pathname==='/__old-feel.js'){res.setHeader('Content-Type','text/javascript');return res.end(execFileSync('git',['show',baseline+':feel.js']));}
- const file=resolve(root,'.'+u.pathname);if(!file.startsWith(root+'/'))throw Error();res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css'})[extname(file)]||'text/plain');res.end(await readFile(file));
+ const file=resolve(root,'.'+u.pathname);if(!file.startsWith(root+'/'))throw Error();res.setHeader('Content-Type',({'.js':'text/javascript','.mjs':'text/javascript','.css':'text/css'})[extname(file)]||'text/plain');res.end(await readFile(file));
 }catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch();
 // Only the sensor fixtures own a deterministic motion queue. Native rendering

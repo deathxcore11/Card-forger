@@ -7,7 +7,7 @@ import {resolve,extname,sep} from 'node:path';
 import {YGO_NAME_BOX} from '../ygo-name-foil.js';
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Browser execution is hosted-only.');
 const {chromium}=await import('playwright'),root=resolve('.'),out='test-results/ygo-name-foil';await mkdir(out,{recursive:true});
-const types={'.html':'text/html','.css':'text/css','.js':'text/javascript','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg'};
+const types={'.html':'text/html','.css':'text/css','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg'};
 const server=createServer(async(req,res)=>{try{const path=resolve(root,'.'+decodeURIComponent(new URL(req.url,'http://localhost').pathname));if(!path.startsWith(root+sep)){res.writeHead(403);return res.end();}const bytes=await readFile(path);res.writeHead(200,{'Content-Type':types[extname(path)]||'application/octet-stream','Cache-Control':'no-store'});res.end(bytes);}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
 const CASES={'ygo-abyss-ultra':{name:true,art:true},'ygo-omega-secret':{name:true,art:true},'ygo-gamma-rare':{name:true,art:false},'ygo-gamma-super':{name:false,art:true}};

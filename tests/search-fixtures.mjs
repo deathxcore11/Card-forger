@@ -142,7 +142,7 @@ export async function validateSearchFixtures(){
  assert.equal(providerFixture(new URL('https://unmapped.example.invalid')),undefined);assert.match(SVG,/NOT REAL CARD ART/);
  return 'PASS: Search fixtures validate exact IDs, condition/private-value sentinels, overlapping pages, empty-page continuation, suffix/pocket exclusion, same-code canonical releases, unknown edition/finish and fail-closed routing. No browser, server, screenshot or provider call started.';
 }
-const MIME={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json','.gz':'application/gzip'};
+const MIME={'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json','.gz':'application/gzip'};
 export async function startServer(){
  assert(process.env.GITHUB_ACTIONS==='true'||process.env.CARDSTASHY_LOCAL_BROWSER==='1','Use hosted CI or explicitly enabled local synthetic browser QA.');
  const server=createServer(async(req,res)=>{try{const path=decodeURIComponent(new URL(req.url,'http://local').pathname),file=resolve(ROOT,'.'+(path==='/'?'/index.html':path));if(!file.startsWith(ROOT+'/')||!['GET','HEAD'].includes(req.method))throw Error('Denied');let body=await readFile(file);if(path==='/config.js')body=Buffer.from(body.toString().replace(/key:\s*"[^"]*"/,'key: ""'));res.setHeader('Content-Type',MIME[extname(file)]||'application/octet-stream');res.end(body);}catch{res.writeHead(404);res.end('Synthetic fixture: not found');}});
