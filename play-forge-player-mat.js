@@ -128,9 +128,13 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    matchup=structuredClone(setup);matchPolicy=forgeCpuPolicy(setup.match.difficulty);
    if(!current()||setup.profile?.ownerId!==readAccount()?.user?.id)throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
    intro=mountIntro({root,setup,lookup,onCancel:requestExit,wait,isCurrent:current});
-   await prepareArtwork(setup,{isCurrent:current});
+   // Card art is needed only once the table opens, so it loads while the server starts
+   // the match instead of before it. The matchup waits briefly so cached deck art shows.
+   // Art is read only once its preparation has finished; before that the lookup refuses.
+   const preparing=Promise.resolve().then(()=>prepareArtwork(setup,{isCurrent:current}));preparing.then(()=>{try{if(current())intro?.refreshArtwork();}catch{/* the matchup keeps its placeholder */}},()=>{});
+   await Promise.race([preparing,wait(1200)]);
    if(!current())throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
-   const artwork=capturedForgeArtwork(setup,lookup);intro.refreshArtwork();await intro.showMatchup?.();
+   await intro.showMatchup?.();
    const startingPlayer=await intro.chooseStartingPlayer();
    if(!current()||startingPlayer===null)throw Object.assign(Error('SELECTION_CHANGED'),{code:'SELECTION_CHANGED'});
    const input=exactForgeInput(setup,{startingPlayer});
@@ -148,6 +152,10 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
    if(state?.status==='finished'){finish(state.result,state.viewerId);return last;}
    if(state?.status!=='running')throw Error('HOST_STARTUP_TIMEOUT');viewer=state.snapshot.viewer;
+   // The table's art is frozen from the finished preparation, as before the overlap.
+   try{await preparing;}catch(e){await client.close().catch(()=>{});throw e;}
+   if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
+   const artwork=capturedForgeArtwork(setup,lookup);
    if(!forgeStartingPlayer(state.snapshot))throw Object.assign(Error('STARTING_PLAYER_UNCONFIRMED'),{code:'STARTING_PLAYER_UNCONFIRMED'});
    session=createForgePresentationSession({lookupArtwork:artwork,pollMs,allowControlMode:true,transportStatus:()=>client.status(),request:async(path,body)=>{
     if(body)return client.submit(body);

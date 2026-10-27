@@ -47,6 +47,20 @@ for(const format of ['Standard','Modern','Commander'])test('native launch sends 
   }})});
  const result=await mat.start();assert.deepEqual(events,['artwork','allocation']);assert.equal(requests.length,2);assert.deepEqual(s,before);assert.equal(result.outcome,'win');assert.equal(result.viewerId,1);
 });
+test('the table request does not wait for card art, and art is never read before it is ready',async()=>{
+ const gate=deferred(),s=setup(),events=[],{root}=dom(),account={user:{id:OWNER},accountGeneration:1};let prepared=false;
+ const lookup=()=>{if(!prepared)throw Error('FORGE_ARTWORK_NOT_PREPARED');return null;};
+ const mat=createForgePlayerMat({root,mountIntro:introStub,readAccount:()=>account,readSetup:()=>s,getAccessToken:async()=>'token',lookup,wait:async()=>{},
+  prepareArtwork:async()=>{events.push('artwork started');await gate.promise;prepared=true;events.push('artwork ready');},
+  createClient:options=>createForgeHostClient({...options,fetchImpl:async(path,init)=>{
+   if(init.method==='POST'){events.push('allocation');const sent=JSON.parse(init.body);
+    return Response.json({matchId:MATCH,generation:GENERATION,expiresAt:Date.now()+60000,deckDigests:{human:await exactDigest(sent.humanDeck),opponent:await exactDigest(sent.opponentDeck)},schema:'cardstashy.forge-proof.v1',forgeRevision:FORGE_REVISION,status:'initializing'},{status:202});}
+   return Response.json({matchId:MATCH,generation:GENERATION,status:'finished',viewerId:1,result:{draw:false,winnerPlayerId:1}});
+  }})});
+ const result=await mat.start();
+ assert.deepEqual(events,['artwork started','allocation'],'the server starts the match while art is still loading');assert.equal(result.outcome,'win');
+ gate.resolve();await new Promise(r=>setTimeout(r,0));assert.deepEqual(events,['artwork started','allocation','artwork ready']);
+});
 for(const cancel of ['account change','detach'])test(cancel+' during artwork prevents allocation',async()=>{
  const gate=deferred(),s=setup(),{root}=dom();let account={user:{id:OWNER},accountGeneration:1},creates=0;
  const mat=createForgePlayerMat({root,mountIntro:introStub,readAccount:()=>account,readSetup:()=>s,getAccessToken:async()=>'token',lookup:()=>null,prepareArtwork:()=>gate.promise,createClient:()=>{creates++;throw Error('unexpected allocation');}});

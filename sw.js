@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-play-table-obsidian-v337";
+const CACHE = "cardforge-shell-play-faster-table-v338";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",
