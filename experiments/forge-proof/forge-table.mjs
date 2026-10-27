@@ -237,6 +237,18 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   else if(presentation.hosted&&!openingFocused&&s.native?.inputType==='InputConfirmMulligan'){
    openingFocused=true;root.querySelector('[data-native-key=decision-title]')?.focus({preventScroll:true});
   }
+  if(!blocked)autoPassOwnStack(s);
+ }
+ // Smart, the way Arena plays: once your own spell or ability is on top of the stack and
+ // priority is back with you, pass it for you so it resolves (the CPU may still respond).
+ // One pass per stack state; Full Control keeps the stop. Forge still decides everything.
+ let autoPassed='';
+ function autoPassOwnStack(s){
+  const n=s?.native,top=n?.stack?.[0];
+  if(!presentation.hosted||!n||!top||n.controlMode!=='smart'||s.busy||s.transportError||n.prompt||n.failure||n.status!=='running'&&n.status!==undefined
+   ||n.inputType!=='InputPassPriority'||n.priorityPlayer!==n.viewer||top.activatingPlayer!==n.viewer||n.buttons?.okEnabled!==true)return;
+  const key=`${n.revision}:${top.id}:${n.stack.length}`;if(autoPassed===key)return;autoPassed=key;
+  act(()=>session.nativeButton('ok',n.revision));
  }
  const playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,reducedMotion});
  const unsub=authority.subscribe(s=>{if(presentation.hosted)playback.push(s);else renderAccepted(s);});

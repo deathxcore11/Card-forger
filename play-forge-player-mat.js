@@ -159,9 +159,10 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   matchAccount=account;
   const current=()=>!disposed&&ticket===generation&&forgeAccountKey(readAccount())===account&&selectionKey(readSetup())===selection;
   let requestedAt=null,ticker=null,artReady=false;startupMs=null;
-  // While the server starts the match: the honest stage, the seconds so far and, after a
-  // while, one calm line. The counter stops when the table opens or the start ends.
-  const tick=()=>{if(requestedAt===null||!intro)return;const seconds=Math.max(0,Math.floor((now()-requestedAt)/1000));intro.elapsed?.(`${seconds} s`);if(seconds>=25)intro.note?.('First matches after an update can take a little longer.');};
+  // While the server starts the match: the honest stage, the seconds so far and a line
+  // saying it can take a minute (then why, after 25 s). It all stops when the table opens
+  // or the start ends.
+  const tick=()=>{if(requestedAt===null||!intro)return;const seconds=Math.max(0,Math.floor((now()-requestedAt)/1000));intro.elapsed?.(`${seconds} s`);intro.note?.(seconds>=25?'Still setting up. The first match after an update takes longer.':'Setting up a table can take up to a minute. Keep this page open.');};
   const stopTicker=()=>{if(ticker!==null)view?.clearInterval?.(ticker);ticker=null;intro?.elapsed?.('');intro?.note?.('');};
   try{
    matchup=structuredClone(setup);matchPolicy=forgeCpuPolicy(setup.match.difficulty);

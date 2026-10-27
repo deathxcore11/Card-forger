@@ -137,3 +137,11 @@ test('order prompts never show an unbounded side as -1', () => {
   assert.equal(orderRemainder({ remainingMin: 1, remainingMax: -1 }), ' Leave at least 1 in the source.');
   assert.equal(orderRemainder({ remainingMin: -1, remainingMax: 2 }), ' Leave 0–2 in the source.');
 });
+test('your hand is shown lands first, then spells by mana value, without changing any card',async()=>{
+ const {manaValue,arenaHandOrder}=await import('./experiments/forge-proof/forge-session.mjs');
+ assert.deepEqual(['{2}{R}{R}','{X}{G}','{2/W}{U}','{W/P}','','{G/U}{G/U}'].map(manaValue),[4,1,3,1,0,2]);
+ const hand=[{id:1,known:true,types:['Instant'],manaCost:'{R}'},{id:2,known:true,types:['Land'],manaCost:''},{id:3,known:true,types:['Creature'],manaCost:'{3}{G}'},{id:4,known:true,types:['Creature'],manaCost:'{G}'},{id:5,known:true,types:['Land'],manaCost:''},{id:6,known:false}];
+ const before=structuredClone(hand);
+ assert.deepEqual(arenaHandOrder(hand).map(c=>c.id),[2,5,1,4,3,6],'lands keep their order, equal mana values keep Forge order, unknown cards go last');
+ assert.deepEqual(hand,before,'the snapshot cards are not changed');
+});

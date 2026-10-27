@@ -153,7 +153,9 @@ test('while the server starts the match the intro shows the stage and the second
  assert.deepEqual(calls.find(c=>c[0]==='status'),['status','Starting the rules engine…']);
  const seconds=calls.filter(c=>c[0]==='elapsed'&&c[1]).map(c=>c[1]);
  assert.equal(seconds[0],'0 s');assert.ok(seconds.includes('12 s')&&seconds.includes('29 s'),'the counter follows the clock');
- assert.equal(calls.filter(c=>c[0]==='note'&&c[1]).length>0&&calls.find(c=>c[0]==='note'&&c[1])[1],'First matches after an update can take a little longer.');
- assert.ok(calls.findIndex(c=>c[0]==='note'&&c[1])>calls.findIndex(c=>c[0]==='elapsed'&&c[1]==='25 s'),'the calm line waits 25 seconds');
+ const notes=calls.filter(c=>c[0]==='note'&&c[1]).map(c=>c[1]);
+ assert.equal(notes[0],'Setting up a table can take up to a minute. Keep this page open.','the wait is announced from the first second');
+ const later=calls.findIndex(c=>c[0]==='note'&&c[1]==='Still setting up. The first match after an update takes longer.');
+ assert.ok(later>calls.findIndex(c=>c[0]==='elapsed'&&c[1]==='25 s'),'the longer-wait line comes after 25 seconds');
  assert.equal(tickFn,null,'no timer is left running once the start ends');
 });

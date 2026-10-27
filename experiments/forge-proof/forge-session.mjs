@@ -13,6 +13,13 @@ export function localBridgeUrl(value){
  if(url.protocol!=='http:'||!['127.0.0.1','localhost'].includes(url.hostname)||url.username||url.password||!['','/'].includes(url.pathname)||url.search||url.hash)throw Error('Use a loopback HTTP origin only, such as http://127.0.0.1:8765.');
  return url.origin;
 }
+// Your hand reads like Arena's: lands first, then spells by mana value, lowest first;
+// equal cards keep Forge's order. Presentation only: every action still names the card.
+export function manaValue(cost){
+ let total=0;for(const [,sym] of String(cost||'').matchAll(/\{([^}]+)\}/g)){if(/^\d+$/.test(sym))total+=Number(sym);else if(/^[XYZ]$/.test(sym))continue;else{const two=sym.match(/^(\d+)\//);total+=two?Number(two[1]):1;}}
+ return total;
+}
+export const arenaHandOrder=cards=>cards.map((c,i)=>({c,i,land:c.known&&c.types?.includes('Land')?0:1,mv:c.known?manaValue(c.manaCost):Infinity})).sort((a,b)=>a.land-b.land||a.mv-b.mv||a.i-b.i).map(x=>x.c);
 export function optionLabel(value){
  if(value===null||value===undefined)return 'Unlabelled native option';
  if(['string','number','boolean'].includes(typeof value))return String(value);
@@ -82,7 +89,7 @@ export function projectForge(raw,{lookupArtwork=()=>null}={}){
  }
  const terminal=raw.status==='finished'?{winner:seatById.get(raw.winnerPlayerId)??players.find(p=>p.name===raw.winner)?.seat??null,reason:'engine-terminal'}:null;
  const human=!raw.busy&&!terminal&&!failed;
- return {revision:raw.revision,terminal,failure:failed?'NATIVE_PROJECTION_UNAVAILABLE':null,outcomes:[],surface:{seat,players,cards:[...cards.values()],hand:[...cards.values()].filter(c=>c.zone==='Hand'&&c.zoneHolder===seat).map(c=>c.id),revealedZones,stack,turn:raw.turn??0,phase:PHASES[raw.phase]||raw.phase||'Opening hand',activeSeat:seatById.get(raw.activePlayer),prioritySeat:seatById.get(raw.priorityPlayer)??(human?seat:null),decision:{kind:failed?'ProjectionUnavailable':terminal?'GameOver':raw.turn===0?'MulliganDecision':INPUTS[raw.inputType]||raw.prompt?.method||raw.inputType||'Forge decision'},awaitingHuman:human,canAct:human,choices:[],interaction:{canSubmit:false,opportunities:[]}}};
+ return {revision:raw.revision,terminal,failure:failed?'NATIVE_PROJECTION_UNAVAILABLE':null,outcomes:[],surface:{seat,players,cards:[...cards.values()],hand:arenaHandOrder([...cards.values()].filter(c=>c.zone==='Hand'&&c.zoneHolder===seat)).map(c=>c.id),revealedZones,stack,turn:raw.turn??0,phase:PHASES[raw.phase]||raw.phase||'Opening hand',activeSeat:seatById.get(raw.activePlayer),prioritySeat:seatById.get(raw.priorityPlayer)??(human?seat:null),decision:{kind:failed?'ProjectionUnavailable':terminal?'GameOver':raw.turn===0?'MulliganDecision':INPUTS[raw.inputType]||raw.prompt?.method||raw.inputType||'Forge decision'},awaitingHuman:human,canAct:human,choices:[],interaction:{canSubmit:false,opportunities:[]}}};
 }
 // Retain only current projected card representations in the native presentation
 // cache too. Invalid receipts must not merely hide a face while storing it here.
