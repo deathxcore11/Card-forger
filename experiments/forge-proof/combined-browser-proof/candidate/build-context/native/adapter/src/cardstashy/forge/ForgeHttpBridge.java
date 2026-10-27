@@ -226,7 +226,13 @@ public final class ForgeHttpBridge implements IRemote {
         controller=(PlayerControllerHuman)game.getPlayers().get(0).getController();
         viewer=controller.getPlayer().getView();
         if(exactAdmission!=null)exactAdmission.receipt().put("viewerId",viewer.getId());
-        gui=new ProtocolGuiGame(this);
+        // Forge's network GUI never reports a skipped phase, so the yield controller's
+        // phase stops would be ignored. Read them from the controller that owns them.
+        gui=new ProtocolGuiGame(this){
+            @Override public boolean isUiSetToSkipPhase(PlayerView turnPlayer, forge.game.phase.PhaseType phase){
+                return controller!=null&&turnPlayer!=null&&controller.getYieldController().isSkippingPhase(turnPlayer,phase);
+            }
+        };
         controller.setGui(gui);
         gui.setGameView(game.getView());
         gui.setOriginalGameController(viewer,controller);
@@ -269,13 +275,24 @@ public final class ForgeHttpBridge implements IRemote {
         effectiveAutoPass=failure==null&&controlMode.equals("smart")&&!ownMain;
         controller.getYieldController().setPref(FPref.YIELD_AUTO_PASS_NO_ACTIONS,String.valueOf(effectiveAutoPass));
     }
+    static boolean smartStop(boolean ownTurn, forge.game.phase.PhaseType phase){
+        return switch(phase){
+            case MAIN1, MAIN2 -> ownTurn;
+            case COMBAT_DECLARE_ATTACKERS, COMBAT_DECLARE_BLOCKERS -> true;
+            default -> false;
+        };
+    }
     void applyControlMode(){
         if(failure!=null){effectiveAutoPass=false;clearSmartIntent();autoPayAttemptInput=null;return;}
         if(!controlMode.equals("smart"))clearSmartIntent();
         var yc=controller.getYieldController();
         yc.setPref(FPref.YIELD_AUTO_PASS_RESPECTS_INTERRUPTS,"false");
         yc.clearActiveYieldAndDispatch();
-        for(PlayerView p:game.getView().getPlayers())for(var phase:forge.game.phase.PhaseType.values())yc.setSkipPhase(p,phase,false);
+        // Smart follows MTG Arena: with an empty stack, priority is passed for you except
+        // in your main phases and in combat after attackers or blockers are declared.
+        // Anything on the stack still stops you when you can respond; Full Control stops everywhere.
+        for(PlayerView p:game.getView().getPlayers())for(var phase:forge.game.phase.PhaseType.values())
+            yc.setSkipPhase(p,phase,controlMode.equals("smart")&&!smartStop(p.getId()==viewer.getId(),phase));
         var ph=game.getPhaseHandler();
         boolean ownMain=ph.getPlayerTurn()!=null&&ph.getPlayerTurn().getId()==viewer.getId()
             &&(ph.getPhase()==forge.game.phase.PhaseType.MAIN1||ph.getPhase()==forge.game.phase.PhaseType.MAIN2);
