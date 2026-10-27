@@ -193,7 +193,9 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  }else if(p){
   if(p.supported!==true||p.method==='order'&&p.ordered!==true){panel.append(node('p','This native prompt is not yet adapted. No response has been invented or sent.','forge-diagnostic'));}
   else if(['confirm','showConfirmDialog'].includes(p.method)){
-   const options=p.options||[];panel.append(button(optionLabel(options[0]?.value??'Confirm'),()=>session.replyValue(true),false,'reply-true'),button(optionLabel(options[1]?.value??'Decline'),()=>session.replyValue(false),false,'reply-false'));
+   const options=p.options||[],named=presentation.hosted?session.promptNamedCard?.(n.revision):null,url=searchImage(named);
+   if(url){const figure=node('figure',undefined,'forge-native-card'),image=node('img');image.src=url;image.alt=named.name;image.decoding='async';image.referrerPolicy='no-referrer';image.addEventListener('error',()=>figure.remove(),{once:true});figure.append(image);panel.append(figure);}
+   const choices=node('div',undefined,'forge-native-confirm');choices.append(button(optionLabel(options[0]?.value??'Confirm'),()=>session.replyValue(true),false,'reply-true'),button(optionLabel(options[1]?.value??'Decline'),()=>session.replyValue(false),false,'reply-false'));panel.append(choices);
   }else if(p.method==='showInputDialog'){
    const form=node('form'),label=node('label','Value requested by Forge');let input;
    if(p.options?.length){input=node('select');input.append(node('option','Select an offered value'));input.firstChild.value='';for(const o of p.options){const option=node('option',optionLabel(o.value));option.value=String(o.value);input.append(option);}}

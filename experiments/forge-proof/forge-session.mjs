@@ -29,6 +29,8 @@ export function manaValue(cost){
  return total;
 }
 export const arenaHandOrder=cards=>cards.map((c,i)=>({c,i,land:c.known&&c.types?.includes('Land')?0:1,mv:c.known?manaValue(c.manaCost):Infinity})).sort((a,b)=>a.land-b.land||a.mv-b.mv||a.i-b.i).map(x=>x.c);
+// Forge appends bookkeeping such as "[Phase: CardStashy]" to some stack descriptions.
+export const stackText=t=>String(t||'').replace(/\s*\[Phase: [^\]]*\]/g,'').trim();
 export function optionLabel(value){
  if(value===null||value===undefined)return 'Unlabelled native option';
  if(['string','number','boolean'].includes(typeof value))return String(value);
@@ -95,7 +97,7 @@ export function projectForge(raw,{lookupArtwork=()=>null}={}){
  const count=n=>id(n)&&n>=0?n:0;
  const playerCounters=c=>Object.fromEntries(Object.entries(c&&typeof c==='object'?c:{}).filter(([k,v])=>typeof k==='string'&&k.length<=40&&Number.isSafeInteger(v)&&v>0));
  const players=raw.players.map((p,seat)=>({seat,nativeId:p.id,name:p.name,life:p.life,handCount:count(p.zones?.Hand?.count),libraryCount:count(p.zones?.Library?.count),counters:playerCounters(p.counters)}));
- const stack=list(raw.stack).map(s=>{if(s.source&&!cards.has(s.source.id)&&s.source.zone==='Stack')addCard(s.source);return {id:s.id,source:cards.has(s.source?.id)?s.source.id:null,text:s.text||'',controller:seatById.get(s.activatingPlayer)};});
+ const stack=list(raw.stack).map(s=>{if(s.source&&!cards.has(s.source.id)&&s.source.zone==='Stack')addCard(s.source);return {id:s.id,source:cards.has(s.source?.id)?s.source.id:null,text:stackText(s.text),controller:seatById.get(s.activatingPlayer)};});
  const revealedZones=[];
  for(const p of players)for(const zone of ['Hand','Library']){
   if(zone==='Hand'&&p.seat===seat)continue;
@@ -117,6 +119,7 @@ function retainProjectedNative(next,projection){
   return visible.known?c:{id:c.id,owner:c.owner,controller:c.controller,zone,hidden:true,tapped:c.tapped===true};
  };
  for(const p of copy.players){const holder=view.players.find(v=>v.nativeId===p.id)?.seat;for(const [zone,z]of Object.entries(p.zones||{}))if(z&&typeof z==='object')z.cards=list(z.cards).map(c=>row(c,zone,holder)).filter(Boolean);}
+ for(const entry of list(copy.stack)){if(typeof entry.text==='string')entry.text=stackText(entry.text);}
  for(const entry of list(copy.stack))if(entry.source){const c=current.get(entry.source.id);entry.source=row(entry.source,entry.source.zone,c?.zoneHolder??null);}
  if(projection.failure)Object.assign(copy,{status:'failed',failure:'native_match_failed',message:'Native match stopped.',prompt:null,stack:[],selection:{cards:[],targets:[],chosen:[],actionable:[]},buttons:{},notification:{},lastActionError:null,autoPassNoActions:false});
  return copy;
@@ -146,7 +149,11 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
  const acceptState=next=>{
   if(closed)return false;
   if(boundViewer!==null&&next?.viewer!==boundViewer){clearPrivateState();error='Forge viewer identity changed.';emit();throw Error(error);}
-  if(id(next?.revision)&&next.revision<=lastAcceptedRevision)return false;
+  if(id(next?.revision)&&next.revision<lastAcceptedRevision)return false;
+  // A snapshot at the same revision is normally a repeat. Forge can still finish working without
+  // a new revision (busy clears and a payment step opens), so a change of busy, input or prompt
+  // is taken; otherwise the table would sit on "applying your play" with no Cancel.
+  if(id(next?.revision)&&next.revision===lastAcceptedRevision&&!(native&&((native.busy===true)!==(next.busy===true)||(native.inputType||'')!==(next.inputType||'')||(native.prompt?.id??null)!==(next.prompt?.id??null))))return false;
   let projection;
   try{projection=projectForge(next,{lookupArtwork});}catch(e){clearPrivateState();error=e.message;emit();throw e;}
   if(!projection)return false;
@@ -202,6 +209,15 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
    if(optionCardId(option?.value)===null)return null;
    const artwork=lookupArtwork(card.name,card);
    return {id:card.id,name:card.name,known:true,zone:card.zone,...(artwork?{printing:{playArtwork:artwork}}:{})};
+  },
+  // A yes/no question about one card ("Put Liliana the Faultless on the top of library or
+  // graveyard?") names that card in Forge's own prompt; show its catalogue art. Only a name the
+  // current prompt states is looked up, never a hidden zone.
+  promptNamedCard(revision=native?.revision){
+   const p=native?.prompt;if(revision!==native?.revision||p?.supported!==true)return null;
+   const text=String(p.message||native.message||''),m=/\bput (.+?) (?:on(?:to)? (?:the )?(?:top|bottom)|in(?:to)? (?:your |its owner's )?(?:graveyard|hand|library))/i.exec(text);
+   const name=m?.[1]?.replace(/ \(\d+\)$/,'').trim();if(!name||name.length>80)return null;
+   const artwork=lookupArtwork(name,{name});return artwork?{name,known:true,printing:{playArtwork:artwork}}:null;
   },
   selectPrompt,confirmPrompt,clearPrompt(){const p=currentPrompt();draft=p.method==='order'?{revision:native.revision,promptId:p.id,indexes:[],remember:false}:null;emit();},
   rememberPrompt(value){const p=currentPrompt();if(p.method!=='order'||p.rememberAllowed!==true||typeof value!=='boolean')throw Error('Native remember choice not offered.');draft={...effectiveDraft(),remember:value};emit();},

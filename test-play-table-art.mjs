@@ -174,3 +174,26 @@ test('attachments tuck under their host, and differing attachments or combat nev
   assert.equal(battlefieldPiles([bear(1), { ...bear(2), attachments: [9] }]).length, 2);
   assert.equal(battlefieldPiles([{ ...bear(1), attacking: true, attackTarget: { kind: 'player', id: 1 } }, { ...bear(2), attacking: true, attackTarget: { kind: 'card', id: 7 } }]).length, 2);
 });
+
+test('a surveil prompt shows the named card, and stack text drops Forge bookkeeping', async () => {
+  const { createForgePresentationSession, stackText } = await import('./experiments/forge-proof/forge-session.mjs');
+  assert.equal(stackText('surveil 1. Put that card into your hand. [Phase: CardStashy]'), 'surveil 1. Put that card into your hand.');
+  const art = { card: { id: 'x', name: 'Liliana the Faultless', image_uris: { normal: 'https://cards.scryfall.io/normal/x.jpg' } } };
+  const session = createForgePresentationSession({ request: async () => null, lookupArtwork: name => name === 'Liliana the Faultless' ? art : null });
+  const players = [{ id: 1, name: 'You', isViewer: true, life: 20, zones: {} }, { id: 2, name: 'CPU', isViewer: false, life: 20, zones: {} }];
+  session.acceptState({ schema: 'cardstashy.forge-proof.v1', revision: 3, viewer: 1, status: 'running', turn: 3, players, stack: [], prompt: { id: 'p', supported: true, method: 'confirm', message: 'Liliana the Faultless\nPut Liliana the Faultless on the top of library or graveyard?', options: [{ index: 0, value: 'Library' }, { index: 1, value: 'Graveyard' }] } });
+  assert.equal(session.promptNamedCard().name, 'Liliana the Faultless');
+  assert.equal(session.promptNamedCard().printing.playArtwork, art);
+});
+
+test('a payment step that opens without a new revision still reaches the table', async () => {
+  const { createForgePresentationSession } = await import('./experiments/forge-proof/forge-session.mjs');
+  const session = createForgePresentationSession({ request: async () => null });
+  const players = [{ id: 1, name: 'You', isViewer: true, life: 20, zones: {} }, { id: 2, name: 'CPU', isViewer: false, life: 20, zones: {} }];
+  const base = { schema: 'cardstashy.forge-proof.v1', revision: 5, viewer: 1, status: 'running', turn: 2, players, stack: [] };
+  assert.equal(session.acceptState({ ...base, busy: true, inputType: 'InputLockUI' }), true);
+  assert.equal(session.acceptState({ ...base, busy: true, inputType: 'InputLockUI' }), false, 'a plain repeat is ignored');
+  assert.equal(session.acceptState({ ...base, busy: false, inputType: 'InputPayManaOfCostPayment', buttons: { cancel: 'Cancel', cancelEnabled: true } }), true, 'Forge finished working: the payment with Cancel is shown');
+  assert.equal(session.snapshot().native.buttons.cancelEnabled, true);
+  assert.equal(session.acceptState({ ...base, revision: 4 }), false, 'older revisions stay ignored');
+});

@@ -1038,3 +1038,14 @@
 :where(body.practice-table-open) .forge-fx-ring[data-kind=attach]{border-color:#b9a6ff;box-shadow:0 0 22px 4px #9f8cff88}
 :where(body) .forge-fx-number{position:absolute;font:800 26px/1 'DM Sans',system-ui,sans-serif;color:#ffd2c4;text-shadow:0 2px 0 #7a1608,0 0 14px #ff4a2a;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){:where(body) .forge-fx{display:none}}
+/* A yes/no prompt about one card (surveil, scry 1, "put it into your hand?") shows that card large. */
+:where(body.practice-table-open) .forge-native-panel .forge-native-card{margin:4px auto 10px;width:min(200px,72%);aspect-ratio:488/680;border-radius:4.75%/3.5%;overflow:hidden;box-shadow:0 0 0 1px #d6ad6466,0 14px 30px #000c,0 0 26px #8f7cff33;animation:forge-card-in .32s cubic-bezier(.2,.8,.2,1) both}
+:where(body.practice-table-open) .forge-native-panel .forge-native-card img{display:block;width:100%;height:100%;object-fit:cover}
+:where(body.practice-table-open) .forge-native-panel .forge-native-confirm{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+:where(body.practice-table-open) .forge-native-panel .forge-native-confirm button{min-height:44px}
+@keyframes forge-card-in{from{opacity:0;transform:translateY(8px) scale(.94)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .forge-native-panel .forge-native-card{animation:none}}
+@media (max-height:720px){:where(body.practice-table-open) .forge-native-panel .forge-native-card{width:min(132px,52%)}}
+/* What stops a card being played right now, said before the click: in its preview, and on the hand card under the pointer or focus. */
+:where(body.practice-table-open) .forge-peek .forge-peek-blocked{margin:8px 0 0;padding:6px 9px;border:1px solid #ff9a7a55;border-radius:8px;background:#ff6a4a14;color:#ffc9b8;font:600 12.5px/1.3 'DM Sans',system-ui,sans-serif}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card[data-forge-blocked]:is(:hover,:focus-visible)::after{content:attr(data-forge-blocked);position:absolute;left:50%;bottom:8px;transform:translateX(-50%);max-width:92%;padding:3px 8px;border-radius:999px;background:#140d0be8;border:1px solid #ff9a7a77;color:#ffd4c6;font:700 11px/1.2 'DM Sans',system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;z-index:4}

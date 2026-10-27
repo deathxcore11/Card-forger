@@ -423,7 +423,9 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  function hidePeek(){clearTimeout(peekTimer);peek.dataset.open='false';peek.dataset.pinned='false';peekFor?.removeAttribute('aria-describedby');peekFor=null;peekPinned=false;}
  // A pinned preview of a card you can play or use right now offers that as one button.
  function peekAction(el){
-  peek.querySelector('.forge-peek-play')?.remove();peek.dataset.pinned=String(peekPinned);peek.setAttribute('role',peekPinned?'dialog':'tooltip');
+  peek.querySelector('.forge-peek-play')?.remove();peek.querySelector('.forge-peek-blocked')?.remove();peek.dataset.pinned=String(peekPinned);
+  // Why Forge would not let you play or use it right now ("Need 2 mana"), before you try.
+  if(el.dataset.forgeBlocked){const why=doc.createElement('p');why.className='forge-peek-blocked';why.setAttribute('role','note');why.textContent=el.dataset.forgeBlocked;(peek.querySelector('.forge-peek-info')||peek).append(why);}peek.setAttribute('role',peekPinned?'dialog':'tooltip');
   // A press-and-hold preview closes when the finger lifts, so it never offers a button.
   const n=session.snapshot().native;if(!peekPinned||pressAt||!presentation.hosted||el.dataset.forgeHint!=='true'||n?.inputType!=='InputPassPriority'||n?.prompt)return;
   const b=doc.createElement('button');b.type='button';b.className='forge-peek-play';b.dataset.peekPlay='true';b.textContent=el.closest('.play-match-hand')?'Play':'Use';
