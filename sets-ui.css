@@ -61,6 +61,8 @@
 .set-browser-quick>button{flex:1 0 auto;min-width:0;min-height:42px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:8px 12px;white-space:nowrap;overflow-wrap:normal;word-break:normal}
 .set-browser-quick>button.on{color:var(--text);border-color:color-mix(in srgb,var(--gold) 42%,var(--line));background:var(--surface)}
 .set-browser-quick>button:focus-visible,.set-browser-summary button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+/* The shared tab track (polish.css) sets 40px tabs; release families keep their 42px touch target. */
+:is(body,body.glass) .set-browser-quick>button{min-height:42px}
 .set-browser-facets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;min-width:0}
 .set-browser-facets>label{display:grid;gap:6px;min-width:0;color:var(--muted);font-size:11px}
 .set-browser-facets select,.set-browser-facets .glass-select{width:100%;min-width:0;max-width:100%;min-height:44px}
