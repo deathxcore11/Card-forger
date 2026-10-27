@@ -29,6 +29,9 @@ try{
   const geo=await card.evaluate((n,box)=>{const i=n.querySelector('img').getBoundingClientRect(),c=n.querySelector('canvas.finish-name-foil').getBoundingClientRect();return {img:{x:i.x,y:i.y,w:i.width,h:i.height},canvas:{x:c.x,y:c.y,w:c.width,h:c.height},expect:{x:i.x+box[0]*i.width,y:i.y+box[1]*i.height,w:(box[2]-box[0])*i.width,h:(box[3]-box[1])*i.height}};},YGO_NAME_BOX);
   for(const k of ['x','y','w','h'])assert(Math.abs(geo.canvas[k]-geo.expect[k])<1,`${key}: canvas sits on the name bar (${k})`);
   await page.waitForLoadState('networkidle');
+  // The art foil analyses its image off the main thread and stays plain until its first draw. Capture
+  // only once it has drawn (or fallen back to CSS), or the art appearing reads as a name-foil change.
+  await page.waitForFunction(()=>{const o=document.querySelector('.card .finish-overlay');return !o.classList.contains('rarity-gl')||o.querySelector('canvas.finish-rarity-gl')?.hidden===false;});
   await page.screenshot({path:`${out}/${key}-complete.png`,animations:'disabled'});
   const clip={x:geo.img.x,y:geo.img.y,width:geo.img.w,height:geo.img.h};
   // Keep the WebGL surface composited in both captures. Visibility toggles can
