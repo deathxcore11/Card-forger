@@ -302,10 +302,9 @@ export function previewImport(parsed, collection, hash, history = []) {
 export function applyImport(collection, preview, mode, sourceKey, createId) {
   if (!["replace-source", "append", "replace-all"].includes(mode))
     throw Error("Invalid import mode.");
-  if (preview.repeated && mode === "append")
-    throw Error(
-      "This exact file was already imported. Use Replace this source instead of adding its quantities again.",
-    );
+  // A repeated file is only warned about in the preview: importing the same cards
+  // again on purpose is allowed. Accidental double submits are stopped by the
+  // per-attempt key in the import handler, not by the file's contents.
   const lotList = preview.lots.filter((e) => e.include !== false);
   if (!lotList.length) throw Error("No rows selected.");
   const imported = lotList.map((e) => ({
