@@ -5,11 +5,11 @@ const SEARCH_ZONES=new Set(['Library','Graveyard','Exile']);
 // a visible library can include cards which the current search cannot select.
 export function nativeZoneSearch(snapshot){
  const n=snapshot?.native,p=n?.prompt,cards=snapshot?.status?.surface?.cards||[],byId=new Map(cards.map(c=>[c.id,c]));
- if(!n||n.failure||n.status==='finished')return null;
+ if(!n||n.failure||n.status==='finished'||snapshot.transportError)return null;
  if(p){
-  if(p.supported!==true||p.acknowledgeOnly===true||!['getChoices','chooseSingleEntityForEffect','chooseEntitiesForEffect'].includes(p.method)||!p.options?.length)return null;
+  if(nativePromptUnanswerable(p)||p.supported!==true||p.acknowledgeOnly===true||!['getChoices','chooseSingleEntityForEffect','chooseEntitiesForEffect'].includes(p.method)||!p.options?.length)return null;
   const choices=p.options.map(o=>{const value=o.value?.card||o.value,cardId=optionCardId(o.value),surface=byId.get(cardId),zone=value?.zone||surface?.zone;return {key:`option-${o.index}`,index:o.index,cardId,zone,card:surface?.known===true?surface:null,name:optionLabel(o.value),visible:cardId!==null,value};});
-  if(!choices.every(c=>SEARCH_ZONES.has(c.zone)))return null;
+  if(!choices.every(c=>SEARCH_ZONES.has(c.zone))||!choices.some(c=>c.visible))return null;
   return {kind:'prompt',choices,zones:[...new Set(choices.map(c=>c.zone))],min:p.min,max:p.max};
  }
  // Actionable graveyard spells during priority are not a search. Mixed board /
@@ -18,7 +18,7 @@ export function nativeZoneSearch(snapshot){
  const refs=[...(n.selection?.cards||[]),...(n.selection?.targets||[])],unique=[...new Map(refs.map(r=>[`${r.kind}:${r.id}`,r])).values()];
  if(!unique.length||unique.some(r=>r.kind!=='card'))return null;
  const choices=unique.map(r=>{const card=byId.get(r.id);return {key:`ref-card-${r.id}`,cardId:r.id,zone:card?.zone,card:card?.known===true?card:null,name:card?.known===true?card.name:'Face-down card',visible:card?.known===true};});
- if(!choices.every(c=>SEARCH_ZONES.has(c.zone)))return null;
+ if(!choices.every(c=>SEARCH_ZONES.has(c.zone))||!choices.some(c=>c.visible))return null;
  return {kind:'selection',choices,zones:[...new Set(choices.map(c=>c.zone))],min:n.selection?.min,max:n.selection?.max};
 }
 function searchImage(card){
@@ -71,7 +71,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  const run=fn=>()=>{try{const out=fn();if(out?.catch)out.catch(e=>onLocalError(e.message));}catch(e){onLocalError(e.message);}};
  const button=(label,fn,disabled=false,key='')=>{const b=node('button',label);b.type='button';b.disabled=s.busy||disabled;if(key)b.dataset.nativeKey=key;b.addEventListener('click',run(fn));return b;};
  const panel=node('section',undefined,'forge-native-panel');panel.dataset.nativePanel='true';panel.dataset.nativeRevision=String(n.revision);panel.setAttribute('aria-label',copy('Your match decision','Native Forge decision'));
- const zoneSearch=presentation.hosted?nativeZoneSearch(s):null;
+ const zoneSearch=presentation.hosted?nativeZoneSearch(s):null;let keepStripLeft=0;
  if(!presentation.hosted)panel.append(node('small',`${presentation.label||'LOCAL FORGE PROOF'} · revision ${n.revision}`,'forge-proof-label'));
  const deckLabel=alias=>({'keen-engineering':'Keen Engineering','reign-of-dragons':'Reign of Dragons','calling-all-angels':'Calling All Angels'}[alias]||alias);
  const context=node('div',undefined,'forge-native-context'),nativeMessage=n.prompt?.message||n.message||'Waiting for Forge';
@@ -112,7 +112,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  if(!presentation.hosted&&s.busy)panel.append(node('p','Waiting for Forge to resolve…','forge-native-wait'));
  const p=n.prompt;
  if(zoneSearch){
-  const wasOpen=!!container.querySelector?.('.forge-zone-search-dialog');
+  const wasOpen=!!container.querySelector?.('.forge-zone-search-dialog');keepStripLeft=wasOpen?container.querySelector('.forge-zone-search-cards')?.scrollLeft||0:0;
   const overlay=node('div',undefined,'forge-zone-search'),dialog=node('section',undefined,'forge-zone-search-dialog');
   dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label',`${zoneSearch.zones.join(' / ')} card selection`);
   const heading=node('h2',lines[0]||`Choose from ${zoneSearch.zones.join(' / ')}`);heading.tabIndex=-1;heading.dataset.nativeKey='zone-search-title';dialog.append(heading);
@@ -143,10 +143,13 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    if(buttons.ok!==undefined)actions.append(button('Confirm selection',()=>session.nativeButton('ok',n.revision),buttons.okEnabled!==true,'ok'));
    if(buttons.cancel!==undefined&&buttons.cancelEnabled===true){cancel=()=>session.nativeButton('cancel',n.revision);actions.append(button(nativeActionLabel(n,'cancel',buttons.cancel)||'Cancel',cancel,false,'cancel'));}
   }
+  if(n.notification?.message){const notice=node('p',`${n.notification.title||n.notification.method||'Forge'}: ${n.notification.message}`,'forge-diagnostic');notice.setAttribute('role','status');dialog.append(notice);}
+  if(n.lastActionError){const refused=node('p',`Forge did not accept that: ${n.lastActionError}`,'forge-diagnostic');refused.setAttribute('role','alert');dialog.append(refused);}
+  if(s.busy)dialog.append(node('p','Forge is updating the choice…','forge-zone-search-hint'));
   dialog.append(actions);overlay.append(dialog);panel.append(overlay);
-  // Keep keyboard navigation inside the choice. Escape declines only if Forge
-  // supplied that operation; clicking the backdrop never invents a cancellation.
-  dialog.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();if(cancel)run(cancel)();return;}if(e.key!=='Tab')return;const items=[...dialog.querySelectorAll('button:not(:disabled)')];if(!items.length){e.preventDefault();heading.focus();return;}const first=items[0],last=items.at(-1);if(e.shiftKey&&(doc.activeElement===first||doc.activeElement===heading)){e.preventDefault();last.focus();}else if(!e.shiftKey&&(doc.activeElement===last||!dialog.contains(doc.activeElement))){e.preventDefault();first.focus();}});
+  // Keep keyboard navigation inside the choice. Escape only moves focus to the decline
+  // button (a second, explicit press answers); the backdrop never invents a cancellation.
+  dialog.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();(dialog.querySelector('[data-native-key=skip-search],[data-native-key=cancel]')||heading).focus();return;}if(e.key!=='Tab')return;const items=[...dialog.querySelectorAll('button:not(:disabled)')];if(!items.length){e.preventDefault();heading.focus();return;}const first=items[0],last=items.at(-1);if(e.shiftKey&&(doc.activeElement===first||doc.activeElement===heading)){e.preventDefault();last.focus();}else if(!e.shiftKey&&(doc.activeElement===last||!dialog.contains(doc.activeElement))){e.preventDefault();first.focus();}});
   if(!wasOpen)queueMicrotask(()=>{if(dialog.isConnected)heading.focus({preventScroll:true});});
  }else if(p){
   if(p.supported!==true||p.method==='order'&&p.ordered!==true){panel.append(node('p','This native prompt is not yet adapted. No response has been invented or sent.','forge-diagnostic'));}
@@ -191,7 +194,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   if(n.stack?.length){const stack=presentation.hosted?node('section',undefined,'forge-native-stack'):node('details');stack.append(node(presentation.hosted?'h3':'summary',presentation.hosted?'On the stack':`Native stack · ${n.stack.length}`));if(presentation.hosted)stack.setAttribute('aria-label','On the stack');for(const item of n.stack)stack.append(button(item.text||`Stack item ${item.id}`,()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`));panel.append(stack);}
   const selected=presentation.hosted?null:s.status.surface.cards.find(c=>c.id===s.selected);if(selected)panel.append(button(copy(`Select ${selected.known?selected.name:'card'}`,`Send ${selected.known?selected.name:'card'} click to Forge`),()=>session.nativeSelect('card',selected.id,n.revision),false,'click-inspected'));
  }
- if(presentation.hosted){container.replaceChildren(panel);return;}
+ if(presentation.hosted){container.replaceChildren(panel);if(keepStripLeft){const strip=panel.querySelector('.forge-zone-search-cards');if(strip)strip.scrollLeft=keepStripLeft;}return;}
  const details=node('details',undefined,'forge-native-diagnostics'),table=container.closest('.play-match-table'),detailsSummary=node('summary',presentation.hosted?'Match details':'Proof details');detailsSummary.dataset.nativeKey='native-details';details.dataset.keepOpen='native-details';details.open=table?.dataset.forgeDetailsOpen==='true';details.addEventListener('toggle',()=>{if(table)table.dataset.forgeDetailsOpen=String(details.open);});details.append(detailsSummary);
  if(n.players.every(p=>p.deckAlias))details.append(node('p',n.players.map(p=>`${p.isViewer?'You':'Forge AI'}: ${deckLabel(p.deckAlias)}`).join(' vs ')));
  if(presentation.policyLabel)details.append(node('p',presentation.policyLabel));

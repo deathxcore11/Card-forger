@@ -30,15 +30,20 @@ export function cpuPlaybackBeats(before, after) {
   const nativeItem=after.native?.stack?.find(s=>s.id===item.id);
   beats.push({kind:'spell',label:'CPU · SPELL / ABILITY',card,stackId:item.id,text:item.text||card.text||'',targets:(nativeItem?.targets||[]).filter(t=>t&&['card','player'].includes(t.kind)&&Number.isSafeInteger(t.id)),duration:1100});shown.add(card.id);
  }
+ // Lands and new permanents get a beat each, but tokens arrive with the board, and at most
+ // three arrivals are shown: a token swarm never holds the table.
+ let arrivals=0;
  for(const card of b.cards){
-  if(!card.known||card.controller!==cpu||card.zone!=='Battlefield'||oldCards.get(card.id)?.zone==='Battlefield'||shown.has(card.id))continue;
+  if(!card.known||card.isToken||card.controller!==cpu||card.zone!=='Battlefield'||oldCards.get(card.id)?.zone==='Battlefield'||shown.has(card.id)||arrivals>=3)continue;
   // A source that was on the preceding stack has already had its spotlight.
   if(a.stack.some(s=>s.source===card.id))continue;
   const land=card.types?.includes('Land')||/\bLand\b/.test(card.type||'');
-  beats.push({kind:land?'land':'arrival',label:land?'CPU · LAND PLAYED':'CPU · ENTERED BATTLEFIELD',card,text:card.text||'',targets:[],duration:land?700:850});
+  arrivals++;beats.push({kind:land?'land':'arrival',label:land?'CPU · LAND PLAYED':'CPU · ENTERED BATTLEFIELD',card,text:card.text||'',targets:[],duration:land?700:850});
  }
  if(banner&&b.activeSeat===b.seat)beats.push(banner);
- return beats;
+ // One update never plays for more than about 2.6 s; longer runs speed up.
+ const total=beats.reduce((t,x)=>t+x.duration,0),scale=total>2600?2600/total:1;
+ return scale<1?beats.map(x=>({...x,duration:Math.max(350,Math.round(x.duration*scale))})):beats;
 }
 
 export class CpuActionPlaybackQueue {
@@ -65,7 +70,7 @@ export class CpuActionPlaybackQueue {
    if(this.closed)return;this.clear();
    const beat=beats[index++];
    if(!beat){this.timer=null;this.running=false;this.current=next;this.present(next,this.pending.length>0);this.advance();return;}
-   this.beat(beat,next);this.timer=this.schedule(step,this.reducedMotion()?250:beat.duration);
+   this.beat(beat,next);this.timer=this.schedule(step,this.reducedMotion()?250:this.pending.length?Math.round(beat.duration/2):beat.duration);
   };step();
  }
  flush(snapshot=this.latest){this.cancel(this.timer);this.timer=null;this.pending=[];this.running=false;this.clear();this.current=snapshot;if(snapshot)this.present(snapshot,false);}
