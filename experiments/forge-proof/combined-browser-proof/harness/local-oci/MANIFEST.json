@@ -49,7 +49,7 @@
     {
       "path": "reviewed-host.mjs",
       "bytes": 2132,
-      "sha256": "097f9d5458ab83354a3d6c8a578f38297e1791c95f2d2b3d7c25dd440723575b"
+      "sha256": "c163c7d14b4fb1df37e93d31612dc47ad5bd5bb6a32b04bc8f9c709cc474355d"
     },
     {
       "path": "schema.json",
@@ -64,7 +64,7 @@
     {
       "path": "test-local-oci.mjs",
       "bytes": 13448,
-      "sha256": "2abc2041408cfa9c4a9ffdc714b89eb0d5d6774b5ef37f880f406aab2e8a2dde"
+      "sha256": "19fa41e1aa0644ed0aa1e5121e5585b176a4ce260b577fe088c8e2c6888c2f3e"
     },
     {
       "path": "test-provider.mjs",

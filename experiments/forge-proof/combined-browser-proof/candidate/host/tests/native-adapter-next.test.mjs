@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { nativeAdapter } from '../src/native-adapter-next.mjs';
 import { digest, FORGE_REVISION, NATIVE_SCHEMA } from '../src/policy.mjs';
 import { AI_PATCHSET_SHA256, AI_CLASS_SET_SHA256, EXPECTED_RULES } from '../src/release-policy.mjs';
-const epoch='00000000-0000-4000-8000-000000000099', image='registry.cloudflare.com/FIXTURE/next@sha256:'+'a'.repeat(64), now=()=>Date.parse('2026-10-27T04:00:00Z');
+const epoch='00000000-0000-4000-8000-000000000099', image='registry.cloudflare.com/FIXTURE/next@sha256:'+'a'.repeat(64), now=()=>Date.parse('2026-10-28T04:00:00Z');
 async function fixture(tier='easy') {
   const receipt=JSON.parse(await readFile(new URL('./fixtures/'+tier+'-receipt.json',import.meta.url),'utf8')).initialization;
   // Explicit transport fixture, NOT a new native/game result.
@@ -21,7 +21,7 @@ test('next adapter binds all3 explicit policies and preserves existing source/ro
  for(const tier of ['easy','medium','hard']){const f=await fixture(tier);assert.equal(f.adapter.ready,true);const r=await f.adapter.confirmInitialization(f.options);assert.equal(r.policyVersion,f.options.input.difficultyPolicyVersion);assert.equal(r.schema,NATIVE_SCHEMA);assert.equal(f.reads(),1);const start=await f.adapter.startOptions(f.options);assert.equal(start.enableInternet,false);assert.equal(start.env.HOST_ABSOLUTE_DEADLINE_MS,String(f.options.allocation.expiresAt));}
 });
 test('missing image configuration and stale rules disable next adapter without reads',async()=>{
- assert.equal(nativeAdapter({},{now}).ready,false);const f=await fixture();assert.equal(nativeAdapter(f.env,{now:()=>Date.parse('2026-11-03T00:00:00Z')}).ready,false);
+ assert.equal(nativeAdapter({},{now}).ready,false);const f=await fixture();assert.equal(nativeAdapter(f.env,{now:()=>Date.parse('2026-11-04T00:00:00Z')}).ready,false);
  await assert.rejects(nativeAdapter({},{now}).confirmInitialization(f.options),/unbound/);assert.equal(f.reads(),0);
 });
 test('oldDefault/unknown policy rejects before bootstrap/native read, never mapped to Medium',async()=>{

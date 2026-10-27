@@ -1,9 +1,9 @@
 {
   ".dockerignore": "22050b43f43a2d9f93d5b863f49b10b3e45c70dfce806512a9a3a9aca1246cd9",
-  "Dockerfile": "748533c1b81f0643b97b66163a0ae6d61657f6652b466b14443aa4d10b151f1c",
+  "Dockerfile": "a9a864c2846018cc3528b74258a3024b915dc83f0bef75555508f2dbd3b8359a",
   "hosting/assemble.sh": "47d7a9f00139860417f91fc816f52117e8b6d8d2760d1be17cb2beb0e6a2c5dc",
   "hosting/bootstrap.py": "ad5cf253323d2f088b24aabbe9c6cacd45787208a95f42787798e5d5ca0b12fd",
-  "hosting/checkpoint-files.json": "5dcb3bab59dd179a9669767fb5603ca849b480b332054deac5326d6c47043ded",
+  "hosting/checkpoint-files.json": "c333d6b7a43848b4f3798cd711283daa6165285255868e4db10822bfcb264278",
   "hosting/gateway.py": "78772da07078ca7259c92a69ddb242a2719b28d65010a7ff4e473e6525aec079",
   "native/BASE-CANDIDATE.json": "8efcc09d4f3260904034aa1f2e1e9f9b8d66f1ad8aa3668c404a020b55d0dbbf",
   "native/CONTRACT.md": "3206da2ab12c8a826ff3ca7ce7852a32e82a90cfee232c7e1fe0d21c2e964462",
@@ -50,7 +50,7 @@
   "native/human/src/forge/ai/AvailableActions.java": "ef030f50b12bdbd19922689bc122d8285bb4062e504443c415cd6a90aff74fa1",
   "native/human/src/forge/ai/HumanActionAffordability.java": "b851c3e64696289079c51109f51c925ce141c53ddab651fcdfb9050d695373ac",
   "native/human/src/forge/gamemodes/match/input/InputPayMana.java": "b780a4f005b28099aace1ff9c8f811c0ddea464cc0cdec27ce7991c1f5be3365",
-  "native/rules-data/current/cards.json": "1903d046e5f6b98b3393c522e933144413f17cb8bfbbb8b90fe3616de74758fb",
-  "native/rules-data/current/manifest.json": "2b770c2d129849e534577d4ab8f3b236c21b9e2e80f2afef5c12af7c3f2c9d11",
-  "native/rules-data/current/official-format-facts.json": "c8b1dd5843a7312a11924eb623771e1208a96c5134f6c26857d47b318cbdfd7c"
+  "native/rules-data/current/cards.json": "26baf849dfbb177b2ea6ce807ce518006f5b634599c45a8c55483302eb5ad1fe",
+  "native/rules-data/current/manifest.json": "374282d37829bf78913508db7d2e7f85e3c85e2c9bf282e4c72e196fec8621c1",
+  "native/rules-data/current/official-format-facts.json": "97005c10913252558ed4093645fbd7a2cec6f60c6c1dfaf12b848aa9da07d8ce"
 }

@@ -91,7 +91,7 @@
     {
       "path": "cleanup-image.mjs",
       "bytes": 2967,
-      "sha256": "c31634a4c82ca3921d16845427b61f4ffaefd4d89121831dbedd0a957bf4ab16"
+      "sha256": "8ab73b1f44d106f8a54fd36b76e7e338e03efbb8247375c3d19d76fa78085895"
     },
     {
       "path": "cleanup-preflight.py",
@@ -101,7 +101,7 @@
     {
       "path": "collect-combined.py",
       "bytes": 10399,
-      "sha256": "ff05bdf4ae13be08f690800e9a09e9785462fe9953131e20b9fb96bf94ef7812"
+      "sha256": "b35973257fcbdce46e3b33f6a876d3c54f6e952aae2ed8d064c42aaf147c45bb"
     },
     {
       "path": "combined-driver.patch",
@@ -111,7 +111,7 @@
     {
       "path": "composition-contract.json",
       "bytes": 5606,
-      "sha256": "1d044f35b3f26cc9ac75397e9ff0d4e304d566fc187c272615afb5561f58dee5"
+      "sha256": "fba04901c9a4c900d031be19e7d5d06f44dd6d2e9dad15af86659e7021f50b5a"
     },
     {
       "path": "evidence/ci-40318684639/artifact/image-summary.json",
@@ -371,7 +371,7 @@
     {
       "path": "fixture-server.mjs",
       "bytes": 12720,
-      "sha256": "e567e05296bdef099f71ead97a613a6c80591ba3f67acf2a0fc4134b4172f61e"
+      "sha256": "9188101b566e3451c621638be345eb62e9675995abdf3857f8d9afc0c827510d"
     },
     {
       "path": "fixture-storage.mjs",
@@ -421,7 +421,7 @@
     {
       "path": "image-stages/MANIFEST.json",
       "bytes": 5201,
-      "sha256": "dbea3875084e1b4d6f226a4afaa73bc2c2991d1732dcd7014f358cc53aa57d08"
+      "sha256": "1e789e449c68c8e31649e9b2bc81a40a6dbf715e640a0f73c4f2d56e1c0f8fec"
     },
     {
       "path": "image-stages/README.md",
@@ -431,7 +431,7 @@
     {
       "path": "image-stages/SHA256SUMS",
       "bytes": 1550,
-      "sha256": "5fbfb40be8bf4a747ed3b9ad2258f3b029c07b10cc9dca83359b5b67c9e51916"
+      "sha256": "f4a32b363881352dfc8196f8d74089ff61b53a261911caf312a6ef1b5200ecd1"
     },
     {
       "path": "image-stages/build-and-probe.mjs",
@@ -471,7 +471,7 @@
     {
       "path": "image-stages/pins.mjs",
       "bytes": 1210,
-      "sha256": "e7e81f7f8f041c87ae12913888019bb28bb5e452f4abb15d1966c61514d55414"
+      "sha256": "0eb11983113b27b681c3e6cd4d22503354a4845fa0a83606c96bd2be7b683cd4"
     },
     {
       "path": "image-stages/probe-image.mjs",
@@ -521,7 +521,7 @@
     {
       "path": "local-oci/MANIFEST.json",
       "bytes": 2491,
-      "sha256": "760e2b3f7e19de06cc78e87f810fa3c65194348f36f971a3c321321a187d7a06"
+      "sha256": "120f862b0e31c2f26ea76047bd3096fdc28e9427bd9a898549254d351a6bb08b"
     },
     {
       "path": "local-oci/README.md",
@@ -566,7 +566,7 @@
     {
       "path": "local-oci/reviewed-host.mjs",
       "bytes": 2132,
-      "sha256": "097f9d5458ab83354a3d6c8a578f38297e1791c95f2d2b3d7c25dd440723575b"
+      "sha256": "c163c7d14b4fb1df37e93d31612dc47ad5bd5bb6a32b04bc8f9c709cc474355d"
     },
     {
       "path": "local-oci/schema.json",
@@ -581,7 +581,7 @@
     {
       "path": "local-oci/test-local-oci.mjs",
       "bytes": 13448,
-      "sha256": "2abc2041408cfa9c4a9ffdc714b89eb0d5d6774b5ef37f880f406aab2e8a2dde"
+      "sha256": "19fa41e1aa0644ed0aa1e5121e5585b176a4ce260b577fe088c8e2c6888c2f3e"
     },
     {
       "path": "local-oci/test-provider.mjs",
@@ -656,12 +656,12 @@
     {
       "path": "test-cleanup-image.mjs",
       "bytes": 3614,
-      "sha256": "04fa7335c11f19b26e8e31f4308de76bc625e46b76d00981940835f28d6faae8"
+      "sha256": "096f996364cd62bd8d86f52bb153e7b9c69023c0d773d777585854de366bae9a"
     },
     {
       "path": "test-collector.py",
       "bytes": 6328,
-      "sha256": "2a21b9d1d6cee8b7c11e7419e8054c62692cd435f263af39120d6dbdccfe0b52"
+      "sha256": "1f23bc0c28b56c110e367624ad7e54db2db93cf5c3f5bc6bbfdd8761f5c59143"
     },
     {
       "path": "test-delivered-observer.mjs",
