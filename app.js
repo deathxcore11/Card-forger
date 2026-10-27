@@ -4638,7 +4638,7 @@ function drawImport() {
   $("#impApply").disabled = impBusy || !sel.length || sel.some((e) => !e.name);
   $("#impApply").textContent = `Import ${sumQty(sel)} cards`;
   $("#impPreview").innerHTML = `<p class="small"><b>${impDraft.total}</b> copies · ${impDraft.lots.length} rows${impDraft.errors.length ? ` · <span class="warn-text">${impDraft.errors.length} lines skipped</span> <button class="link small" data-act="impErrors">download</button>` : ""} · ${esc(impDraft.source)}</p>
-  ${impDraft.repeated ? `<div class="note warn">You imported this exact file before. Use “Replace earlier import” so cards aren’t counted twice.</div>` : ""}
+  ${impDraft.repeated ? `<div class="note warn">You imported this exact file before. Importing again adds these cards a second time. Use “Replace earlier import” if they’re the same physical cards.</div>` : ""}
   ${impDraft.overlappingLots ? `<div class="note warn">${impDraft.overlappingLots} rows match cards already in your collection — they may be the same physical cards.</div>` : ""}
   <div class="actions"><button class="btn ghost small" data-act="impVerify" ${impBusy ? "disabled" : ""}>${impBusy ? "Checking…" : "Check names & printings"}</button></div>
   <div class="list compact">${impDraft.lots
