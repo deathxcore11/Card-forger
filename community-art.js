@@ -7,7 +7,7 @@ import { esc } from './ui.js';
 import { safeNewsImage, safeNewsArticle } from './community-sources.js';
 
 const SOURCE_HOSTS = {
-  mtg: ['magic.wizards.com', 'www.magic.wizards.com', 'www.mtgo.com', 'mtgo.com', 'edhtop16.com', 'topdeck.gg', 'magic.gg', 'www.magic.gg', 'locator.wizards.com'],
+  mtg: ['magic.wizards.com', 'www.magic.wizards.com', 'www.mtgo.com', 'mtgo.com', 'www.mtgtop8.com', 'mtgtop8.com', 'topdeck.gg', 'magic.gg', 'www.magic.gg', 'locator.wizards.com'],
   ptcg: ['www.pokemon.com', 'pokemon.com', 'events.pokemon.com', 'www.serebii.net', 'www.pokeguardian.com', 'play.limitlesstcg.com', 'limitlesstcg.com'],
   ygo: ['www.yugioh-card.com', 'yugioh-card.com', 'ygorganization.com', 'ygoprodeck.com'],
 };

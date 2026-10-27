@@ -8,10 +8,23 @@ import {createForgePresentationSession} from './experiments/forge-proof/forge-se
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {mountForgeMatchIntro,forgeStartingPlayer} from './play-forge-pregame.js';
 const selectionKey=s=>JSON.stringify([s?.profile?.ownerId,s?.selected,s?.opponent,s?.match]);
+// Forge may name a Universes Beyond card by its Universes Within flavor name
+// (Hydro-Man, Fluid Felon plays as "Belion, the Parched"), which no printing
+// carries. Such a card is matched by its printed cost, type line and power/
+// toughness instead, and only when exactly one captured card fits.
+const nativeType=t=>String(t||'').replace(/\s+[—–-]\s+/g,' - ').replace(/\s+/g,' ').trim().toLowerCase();
+const nativeCost=c=>!c||c==='no cost'?'':String(c);
+function sameCardFace(card,native){
+ const face=card?.card_faces?.[0]&&!card.mana_cost?card.card_faces[0]:card;
+ if(!face||nativeCost(native?.manaCost)!==(face.mana_cost||'')||nativeType(native?.type)!==nativeType(face.type_line))return false;
+ if(face.power===undefined)return true;
+ return String(native?.power)===String(face.power)&&String(native?.toughness)===String(face.toughness);
+}
 export function capturedForgeArtwork(setup,lookup){
  const rows=[setup.selected,setup.opponent].flatMap(deck=>{const d=capturePracticeArtwork(deck,lookup);return [...d.cards,...(d.side||[])];});
  return (name,native)=>{
-  const options=rows.filter(r=>r.name===name&&r.playArtwork).map(r=>r.playArtwork);
+  let options=rows.filter(r=>r.name===name&&r.playArtwork).map(r=>r.playArtwork);
+  if(!options.length&&native&&!rows.some(r=>r.name===name))options=rows.filter(r=>r.playArtwork&&sameCardFace(r.playArtwork.card,native)).map(r=>r.playArtwork);
   const sameSet=options.filter(a=>a.card?.set?.toLowerCase()===native?.setCode?.toLowerCase());
   const candidates=sameSet.length?sameSet:options,ids=new Set(candidates.map(a=>a.card.id));
   // Native IDs do not map mixed selected printing copies yet. Refuse to invent
@@ -24,6 +37,8 @@ export function capturedForgeArtwork(setup,lookup){
 export const forgeDiagnostic=e=>[e?.code||e?.message||'HOST_SESSION_STOPPED',e?.reason,e?.failure,e?.status&&'HTTP '+e.status].filter(Boolean).join(' · ');
 export function forgeMatchError(error){
  const code=error?.code||error?.message;
+ // The server ends an account's previous match when the same account starts a new one.
+ if(error?.reason==='replaced')return 'This match ended because a new match was started on your account (another tab or device). No result was recorded for it.';
  return ({
   authentication_required:'Sign in again, then return to Play to start your match.',
   AUTHENTICATION_REQUIRED:'Sign in again, then return to Play to start your match.',
@@ -84,7 +99,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  }
  function stopped(e){
   if(disposed)return;session?.close();warn(false);exitDialog?.remove();exitDialog=null;exitConfirm=null;publish({phase:e.code==='ACCOUNT_CHANGED'?'account-changed':'session-ended',error:e.code||'HOST_SESSION_STOPPED'});
-  message('Match interrupted',[e.code==='ACCOUNT_CHANGED'?'The signed-in account changed.':'The connection was interrupted or the match expired. A result was not confirmed.','Return to setup to start a new match.'],{diagnostic:e.code==='ACCOUNT_CHANGED'?null:forgeDiagnostic(e)});
+  message('Match interrupted',[e.code==='ACCOUNT_CHANGED'?'The signed-in account changed.':e.reason==='replaced'?forgeMatchError(e):'The connection was interrupted or the match expired. A result was not confirmed.','Return to setup to start a new match.'],{diagnostic:e.code==='ACCOUNT_CHANGED'?null:forgeDiagnostic(e)});
  }
  async function closeSession(){
   session?.close();warn(false);try{await client?.close();onClose();}catch(e){message('The table is still closing',['Try returning to setup again in a moment.']);publish({phase:'session-ended',error:e.code||'RESOURCE_CLEANUP_UNCONFIRMED'});}

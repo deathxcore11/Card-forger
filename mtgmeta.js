@@ -1,7 +1,7 @@
 // Magic tournament results without an API key, for the Cloudflare Worker.
 //   · Constructed formats: Wizards' official Magic Online decklists (mtgo.com/decklists) —
 //     Challenges (ranked, with standings) and Leagues (5-0 lists).
-//   · Commander: EDHTop16 (edhtop16.com), competitive Commander results with full decklists.
+//   · Commander: MTGTop8 (mtgtop8.com), competitive Commander results with full decklists.
 // Neither allows cross-site browser calls, so the Worker fetches them a few times a day and
 // caches the result. Pure functions here are shared with the tests.
 
@@ -162,61 +162,140 @@ export function normalizeMtgo(events, { format, days }) {
   return { game: "mtg", format, days, source: "Magic Online (official decklists)", sourceUrl: "https://www.mtgo.com/decklists", labelNote: "Deck names come from each list’s key cards (MTGO doesn’t label archetypes).", events: evs.sort((a, b) => b.date.localeCompare(a.date)), decks, archetypes: groupShare(decks), coverage: cov };
 }
 
-/* ---------- Commander: EDHTop16 ---------- */
+/* ---------- Commander: MTGTop8 ---------- */
+// MTGTop8 collects competitive Commander results (most from TopDeck.gg) with full lists.
+// Its pages are Latin-1 HTML; the Worker decodes them before these parsers see them.
 
-export const EDHTOP16_API = "https://edhtop16.com/api/graphql";
-export const edhtop16Query = (n = 12) => ({
-  query: `{ commanders(first: ${n}, sortBy: TOP_CUTS, timePeriod: ONE_MONTH, minEntries: 0) { edges { node { name colorId stats(filters:{timePeriod: ONE_MONTH}) { count topCuts metaShare conversionRate } cards { name imageUrls } entries(first: 2, sortBy: TOP, filters:{timePeriod: ONE_MONTH, maxStanding: 8, minEventSize: 32}) { edges { node { standing wins losses draws decklist maindeck { name type } player { name } tournament { name TID size tournamentDate topCut } } } } } } } }`,
-});
+export const MTGTOP8 = "https://www.mtgtop8.com";
+export const MTGTOP8_FORMAT = MTGTOP8 + "/format?f=cEDH";
+export const mtgtop8EventUrl = (id) => `${MTGTOP8}/event?e=${id}&f=cEDH`;
+export const mtgtop8ExportUrl = (deckId) => `${MTGTOP8}/mtgo?d=${deckId}`;
+const dmy = (s) => {
+  const m = /^(\d\d)\/(\d\d)\/(\d\d)$/.exec(s || "");
+  return m ? `20${m[3]}-${m[2]}-${m[1]}` : "";
+};
+const unhtml = (s) => String(s || "").replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+// Precon and power-bracket events are not competitive Commander.
+const casualEvent = (name) => /\bbracket\s*[1-4]\b|\bprecon|\bcasual\b/i.test(name);
 
-export function normalizeEdhtop16(json, { days = 30 } = {}) {
+// Events on a cEDH format page: id, name, date and weight (a major event's big star counts 4).
+export function mtgtop8Events(html) {
+  const out = [];
+  for (const [, row] of String(html).matchAll(/<tr class=hover_tr>([\s\S]*?)<\/tr>/g)) {
+    const link = /href=event\?e=(\d+)&f=cEDH>([^<]*)<\/a>/.exec(row),
+      date = dmy(/class=S12>(\d\d\/\d\d\/\d\d)</.exec(row)?.[1]);
+    if (!link || !date) continue;
+    const big = (row.match(/bigstar\.png/g) || []).length;
+    out.push({ id: link[1], name: unhtml(link[2]), date, stars: (row.match(/star\.png/g) || []).length - big + big * 4 });
+  }
+  return out;
+}
+// The format page's further pages of events, as absolute URLs, in page order.
+export const mtgtop8Pages = (html) => [...new Set([...String(html).matchAll(/href=\?f=cEDH&meta=(\d+)&cp=(\d+)/g)].sort((a, b) => a[2] - b[2]).map((m) => `${MTGTOP8_FORMAT}&meta=${m[1]}&cp=${m[2]}`))];
+
+// The weightiest recent competitive events, once each.
+export function pickMtgtop8Events(events, { now = Date.now(), days = 14, limit = 8 } = {}) {
+  const seen = new Set();
+  return events
+    .filter((e) => {
+      const t = Date.parse(e.date);
+      if (seen.has(e.id) || !Number.isFinite(t) || t > now + 864e5 || now - t > days * 864e5 || casualEvent(e.name)) return false;
+      seen.add(e.id);
+      return true;
+    })
+    .sort((a, b) => b.stars - a.stars || b.date.localeCompare(a.date))
+    .slice(0, limit);
+}
+
+// One event page: field size, date, original source and the standings with deck ids.
+export function parseMtgtop8Event(html, id) {
+  const t = String(html),
+    head = /(\d+) players - (\d\d\/\d\d\/\d\d)/.exec(t),
+    entries = [];
+  for (const part of t.split('<div style="width:42px;" align=center class=S14>').slice(1)) {
+    const placing = part.slice(0, part.indexOf("<")).trim(),
+      deck = /href=\?e=(\d+)&d=(\d+)&f=cEDH>([^<]*)<\/a>/.exec(part);
+    if (!deck || deck[1] !== String(id) || !/^\d+(-\d+)?$/.test(placing)) continue;
+    entries.push({ placing, rank: parseInt(placing, 10), deckId: deck[2], commander: unhtml(deck[3]), player: unhtml(/class=player href=[^>]*>([^<]*)<\/a>/.exec(part)?.[1]) });
+  }
+  return { id: String(id), players: Number(head?.[1]) || 0, date: dmy(head?.[2]), source: /Source: <a[^>]*href=(https:\/\/[^\s>]+)/.exec(t)?.[1] || "", entries };
+}
+
+const BASIC = /^(Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest)$|^Wastes$/;
+// MTGTop8 exports drop accents ("Lim-Dûl's Vault" arrives as "Lim-Dul's Vault"). Given every
+// real card name, this puts them back; a name with no accented twin is kept as it came.
+const unaccent = (s) => s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+export function accentRestorer(names) {
+  const real = new Map();
+  for (const n of names || []) if (typeof n === "string" && unaccent(n) !== n) real.set(unaccent(n), n);
+  return (name) => real.get(name) || name;
+}
+// A deck export: main deck, then "Sideboard" holding the commander(s). Only a legal-size
+// Commander list (one or two commanders, 100 cards) is accepted.
+export function parseMtgtop8Export(text, realName = (name) => name) {
+  const main = [],
+    commanders = [];
+  let side = false;
+  for (const raw of String(text).split(/\r?\n/)) {
+    const line = raw.trim();
+    if (/^sideboard$/i.test(line)) {
+      side = true;
+      continue;
+    }
+    const m = /^(\d+)\s+(.+)$/.exec(line);
+    if (!m) continue;
+    const name = realName(m[2].includes("//") ? m[2] : m[2].replace(/\s*\/\s*/, " // "));
+    (side ? commanders : main).push({ qty: Number(m[1]), name, ...(side ? {} : { land: BASIC.test(name) }) });
+  }
+  const total = [...main, ...commanders].reduce((a, r) => a + r.qty, 0);
+  return commanders.length >= 1 && commanders.length <= 2 && commanders.every((c) => c.qty === 1) && total === 100 ? { commanders, main } : null;
+}
+
+const MTGTOP8_PLACE = (placing, rank) => (placing === "1" ? "1st" : placing === "2" ? "2nd" : placeLabel(rank));
+// Events (parsed pages with their format-page names) and deck lists by id, in the shape every
+// meta view uses. A standing without a usable list is counted, never invented.
+export function normalizeMtgtop8(events, lists, { days = 14 } = {}) {
   const decks = [],
-    archetypes = [],
-    evs = new Map(),
+    evs = [],
     cov = { events: 0, players: 0, topSlots: 0, withList: 0, structured: 0, linkOnly: 0, missing: 0 };
-  for (const { node: c } of json?.data?.commanders?.edges || []) {
-    const parts = c.name.split(" / "),
-      art = c.cards?.[0]?.imageUrls?.[0] || "";
-    let best = null;
-    for (const { node: e } of c.entries?.edges || []) {
-      const t = e.tournament || {};
-      if (t.TID && !evs.has(t.TID)) evs.set(t.TID, { id: t.TID, name: t.name, date: String(t.tournamentDate || "").slice(0, 10), players: t.size || 0, url: `https://edhtop16.com/tournament/${encodeURIComponent(t.TID)}` });
+  for (const ev of events) {
+    const eventUrl = mtgtop8EventUrl(ev.id);
+    evs.push({ id: ev.id, name: ev.name, date: ev.date, players: ev.players, url: eventUrl, source: ev.source || "" });
+    for (const e of ev.entries) {
       cov.topSlots++;
-      const main = (e.maindeck || []).filter((x) => x?.name && !parts.includes(x.name));
-      if (!main.length) {
-        if (e.decklist) cov.linkOnly++;
-        else cov.missing++;
+      const list = lists.get(e.deckId);
+      if (!list) {
+        cov.missing++;
         continue;
       }
       cov.withList++;
       cov.structured++;
-      const d = {
-        key: `edh:${t.TID}:${e.standing}:${c.name}`,
-        name: c.name,
-        archetype: c.name,
-        commander: c.name,
-        event: t.name || "cEDH tournament",
-        eventId: t.TID,
-        date: String(t.tournamentDate || "").slice(0, 10),
-        players: t.size || 0,
-        rank: e.standing || 99,
-        place: placeLabel(e.standing || 99),
-        player: e.player?.name || "",
-        record: [e.wins, e.losses].every((x) => typeof x === "number") ? `${e.wins}-${e.losses}${e.draws ? "-" + e.draws : ""}` : "",
-        commanders: parts.map((name) => ({ qty: 1, name })),
-        main: main.map((x) => ({ qty: 1, name: x.name, land: /Land/.test(x.type || "") })),
+      const name = list.commanders.map((c) => c.name).join(" + ");
+      decks.push({
+        key: `t8:${ev.id}:${e.deckId}`,
+        name,
+        archetype: name,
+        commander: name,
+        event: ev.name || "cEDH tournament",
+        eventId: ev.id,
+        date: ev.date,
+        players: ev.players,
+        rank: e.rank,
+        place: MTGTOP8_PLACE(e.placing, e.rank),
+        player: e.player,
+        record: "",
+        commanders: list.commanders,
+        main: list.main,
         side: [],
-        cover: parts[0],
-        art,
-        url: e.decklist || `https://edhtop16.com/commander/${encodeURIComponent(c.name)}`,
-        eventUrl: evs.get(t.TID)?.url || "",
-      };
-      decks.push(d);
-      if (!best || d.rank < best.rank) best = d;
+        cover: list.commanders[0].name,
+        art: "",
+        url: `${MTGTOP8}/event?e=${ev.id}&d=${e.deckId}&f=cEDH`,
+        eventUrl,
+      });
     }
-    archetypes.push({ name: c.name, lists: c.stats?.topCuts || 0, entries: c.stats?.count || 0, share: c.stats?.metaShare || 0, conversion: c.stats?.conversionRate ?? null, best: best?.key || "", cover: parts[0], art });
   }
-  cov.events = evs.size;
-  cov.players = [...evs.values()].reduce((a, e) => a + e.players, 0);
-  return { game: "mtg", format: "EDH", days, source: "EDHTop16 (competitive Commander)", sourceUrl: "https://edhtop16.com", shareNote: "Share of all entries at tracked cEDH events in the last month; top-cut rate = top cuts ÷ entries.", events: [...evs.values()].sort((a, b) => b.date.localeCompare(a.date)), decks: decks.sort((a, b) => a.rank - b.rank || b.date.localeCompare(a.date)), archetypes, coverage: cov };
+  cov.events = evs.length;
+  cov.players = evs.reduce((a, e) => a + e.players, 0);
+  decks.sort((a, b) => a.rank - b.rank || b.date.localeCompare(a.date));
+  return { game: "mtg", format: "EDH", days, source: "MTGTop8 (competitive Commander)", sourceUrl: MTGTOP8_FORMAT, shareNote: "Share of the top finishes listed here, from the largest recent cEDH events.", events: evs.sort((a, b) => b.date.localeCompare(a.date)), decks, archetypes: groupShare(decks), coverage: cov };
 }

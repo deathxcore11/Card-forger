@@ -1,4 +1,4 @@
-// The Worker's /api/meta/mtg route with every source stubbed: Magic Online and EDHTop16 work
+// The Worker's /api/meta/mtg route with every source stubbed: Magic Online and MTGTop8 work
 // without a key; TopDeck covers the rest when TOPDECK_KEY is set. Cache, outages, bad formats.
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
@@ -19,7 +19,7 @@ import {readFileSync} from "node:fs";
 
 const store = new Map();
 globalThis.caches = { default: { match: async (r) => store.get(r.url)?.clone(), put: async (r, res) => void store.set(r.url, res.clone()) } };
-let calls = { topdeck: 0, mtgo: 0, edh: 0 },
+let calls = { topdeck: 0, mtgo: 0, edh: 0, exports: 0 },
   down = false,
   edhRefused = false,
   lastBody = null;
@@ -40,10 +40,23 @@ globalThis.fetch = async (url, init = {}) => {
     return new Response(`<a href="/decklist/pioneer-challenge-32-${day}1">x</a>`);
   }
   if (url.startsWith("https://www.mtgo.com/decklist/")) return new Response(`<script>window.MTGO.decklists.data = ${mtgoEvent};\n</script>`);
-  if (url.startsWith("https://edhtop16.com/")) {
-    calls.edh++;
-    if (edhRefused) return new Response(JSON.stringify({ errors: ["Only persisted queries are allowed in production. Plain text queries are disabled."] }));
-    return new Response(JSON.stringify({ data: { commanders: { edges: [{ node: { name: "Kinnan, Bonder Prodigy", stats: { count: 100, topCuts: 30, metaShare: 0.03, conversionRate: 0.3 }, cards: [{ imageUrls: ["art.jpg"] }], entries: { edges: [{ node: { standing: 1, wins: 5, losses: 1, draws: 0, maindeck: [{ name: "Kinnan, Bonder Prodigy", type: "Creature" }, { name: "Sol Ring", type: "Artifact" }, { name: "Island", type: "Basic Land — Island" }], player: { name: "P" }, tournament: { name: "cEDH Open", TID: "c1", size: 64, tournamentDate: day } } }] } } }] } } }));
+  if (url === "https://api.scryfall.com/catalog/card-names") return new Response(JSON.stringify({ data: ["Sol Ring", "Lim-D\u00fbl's Vault", "Island"] }), { headers: { "Content-Type": "application/json" } });
+  if (url.startsWith("https://www.mtgtop8.com/")) {
+    // Latin-1 pages, as MTGTop8 sends them.
+    const latin1 = (text, type = "text/html; charset=ISO-8859-1") => new Response(new Uint8Array([...text].map((c) => c.charCodeAt(0))), { headers: { "Content-Type": type } });
+    const dmy = day.slice(8, 10) + "/" + day.slice(5, 7) + "/" + day.slice(2, 4);
+    if (url === "https://www.mtgtop8.com/format?f=cEDH") {
+      calls.edh++;
+      if (edhRefused) return new Response("<html>Just a moment...</html>", { status: 403, headers: { "Content-Type": "text/html" } });
+      return latin1(`<tr class=hover_tr><td width=70% class=S14><a href=event?e=7&f=cEDH>cEDH Open Palacio de Red\xf3n</a></td><td><img src=/graph/bigstar.png height=20></td><td align=right width=12% class=S12>${dmy}</td></tr><tr class=hover_tr><td><a href=event?e=8&f=cEDH>Bracket 3 Commander Tournament</a></td><td><img src=/graph/star.png></td><td class=S12>${dmy}</td></tr>`);
+    }
+    if (url === "https://www.mtgtop8.com/event?e=7&f=cEDH")
+      return latin1(`<div>64 players - ${dmy}</div>Source: <a target=_blank href=https://topdeck.gg/event/cedh-open>topdeck.gg</a><div style="width:42px;" align=center class=S14>1</div><a href=?e=7&d=70&f=cEDH>Kinnan</a><a class=player href=search?player=P>P</a><div style="width:42px;" align=center class=S14>2</div><a href=?e=7&d=71&f=cEDH>Broken</a><div style="width:42px;" align=center class=S14>5-8</div><a href=?e=7&d=72&f=cEDH>Not fetched</a>`);
+    if (url === "https://www.mtgtop8.com/mtgo?d=70") {
+      calls.exports++;
+      return latin1("1 Lim-Dul's Vault\r\n1 Island\r\n97 Forest\r\n\r\nSideboard\r\n1 Kinnan, Bonder Prodigy\r\n", "text/plain;charset=ISO-8859-1");
+    }
+    if (url === "https://www.mtgtop8.com/mtgo?d=71") return latin1("1 Sol Ring\r\n", "text/plain;charset=ISO-8859-1");
   }
   throw Error("unexpected " + url);
 };
@@ -61,9 +74,17 @@ assert.equal(d.decks[0].record, "7-1");
 assert.match(d.decks[0].name, /Fable of the Mirror-Breaker|Thoughtseize/, "named by its key cards");
 assert.ok(d.decks[0].main.find((r) => r.name === "Swamp").land);
 d = await (await get("/api/meta/mtg?format=EDH", noKey)).json();
+assert.equal(d.source, "MTGTop8 (competitive Commander)");
 assert.equal(d.archetypes[0].name, "Kinnan, Bonder Prodigy");
+assert.equal(d.decks.length, 1, "a list that is not a legal 100-card Commander deck is left out, not guessed");
 assert.equal(d.decks[0].commander, "Kinnan, Bonder Prodigy");
+assert.equal(d.decks[0].event, "cEDH Open Palacio de Red\u00f3n", "Latin-1 pages are decoded");
+assert.deepEqual([d.decks[0].place, d.decks[0].players, d.decks[0].player], ["1st", 64, "P"]);
+assert.equal(d.decks[0].url, "https://www.mtgtop8.com/event?e=7&d=70&f=cEDH");
+assert.deepEqual([d.coverage.events, d.coverage.topSlots, d.coverage.withList, d.coverage.missing], [1, 2, 1, 1], "precon-bracket events are skipped; only the top four are fetched");
 assert.ok(!d.decks[0].main.some((r) => r.name === "Kinnan, Bonder Prodigy"), "the commander isn't counted twice");
+assert.ok(d.decks[0].main.find((r) => r.name === "Forest").land);
+assert.ok(d.decks[0].main.some((r) => r.name === "Lim-D\u00fbl's Vault"), "accents MTGTop8 drops are restored from the real card names");
 await new Promise((res) => setTimeout(res, 10));
 await get("/api/meta/mtg?format=Pioneer", noKey);
 assert.equal(calls.mtgo, 1, "second request is served from cache");
@@ -85,7 +106,12 @@ assert.equal(d.stale, true);
 assert.equal(d.decks.length, 1, "keeps showing the last good data during an outage");
 down = false;
 
-// A refused EDHTop16 query is an outage, not an empty month: the last good lists stay.
+// A deck list is fetched once: the next refresh reads it from the cache.
+for (const k of [...store.keys()]) if (k.includes("/fresh/")) store.delete(k);
+await get("/api/meta/mtg?format=EDH", noKey);
+assert.equal(calls.exports, 1, "published lists are cached, not fetched again");
+
+// A bot check or outage at MTGTop8 is an outage, not an empty month: the last good lists stay.
 for (const k of [...store.keys()]) if (k.includes("/fresh/")) store.delete(k);
 edhRefused = true;
 d = await (await get("/api/meta/mtg?format=EDH", noKey)).json();
@@ -96,7 +122,7 @@ edhRefused = false;
 assert.equal((await get("/api/meta/mtg?format=Bogus", env)).status, 400);
 assert.equal((await get("/api/meta/mtg/coverage", noKey)).status, 503, "the TopDeck coverage report needs the key");
 assert.equal(await get("/index.html", env).then((x) => x.text()), "asset", "other paths still serve the site");
-console.log("PASS: Worker Magic meta — Magic Online and EDHTop16 without a key, TopDeck fallback with it, cache, stale fallback, format check.");
+console.log("PASS: Worker Magic meta — Magic Online and MTGTop8 without a key, TopDeck fallback with it, cache, stale fallback, format check.");
 
 // Google Lens upload goes through the Worker (Lens rejects cross-site posts).
 {
