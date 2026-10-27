@@ -137,7 +137,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  panel.append(context);
  if(n.failure){panel.append(node('p',`Forge stopped: ${n.failure}`,'forge-diagnostic'));container.replaceChildren(panel);return;}
  if(n.status==='finished'){panel.append(node('p',n.draw===true?'Forge result: draw':n.winner?`Forge result: ${n.winner}`:'Forge reports that the game has finished.'));container.replaceChildren(panel);return;}
- if(presentation.allowControlMode===true&&['smart','full'].includes(n.controlMode)){
+ if(presentation.allowControlMode===true&&presentation.controlsOnSeat!==true&&['smart','full'].includes(n.controlMode)){
   const group=node('div',undefined,'forge-native-mode');group.setAttribute('role','group');group.setAttribute('aria-label',copy('Response controls','Native response mode'));
   for(const [value,label]of [['smart','Smart'],['full','Full Control']]){const b=button(label,()=>session.setControlMode(value),!!n.prompt||n.inputType==='InputLockUI',`mode-${value}`);b.setAttribute('aria-pressed',String(n.controlMode===value));group.append(b);}
   group.title=n.controlMode==='smart'?'Automatic mana and passing empty response windows. Targets and required choices remain yours.':'Choose each response and mana payment yourself.';panel.append(group);
@@ -222,7 +222,10 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const label=presentation.hosted?nativeActionLabel(n,op,buttons[op]):String(buttons[op]||op),enabled=buttons[op+'Enabled']===true;
    // An unavailable Cancel/End turn is noise in the dock; an unavailable confirmation still shows what is pending.
    if(presentation.hosted&&!enabled&&(op==='cancel'||!label))continue;
-   actions.append(button(label||op,()=>session.nativeButton(op,n.revision),!enabled,op));
+   const action=button(label||op,()=>session.nativeButton(op,n.revision),!enabled,op);
+   // The hosted dock says just "Next"; the step it moves to stays in its name and tooltip.
+   if(presentation.hosted&&presentation.shortNext===true&&/^Next: /.test(label)){action.textContent='Next';action.setAttribute('aria-label',label);action.title=label.replace(/^Next: /,'Next step: ');}
+   actions.append(action);
   }
   if(actions.childNodes.length)panel.append(actions);
   const refs=[...(n.selection?.cards||[]),...(n.selection?.targets||[]),...(n.selection?.actionable||[])],unique=new Map(refs.map(r=>[r.kind+':'+r.id,r]));
