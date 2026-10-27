@@ -66,5 +66,6 @@
   :root .game-tabs .game-tab { color:ButtonText!important; background:ButtonFace!important; border-color:ButtonText!important; text-shadow:none; }
   /* The browser paints a Canvas backplate behind text in forced colours, which hid the white HighlightText name. */
   :root .game-tabs .game-tab[aria-selected="true"] { forced-color-adjust:none; color:HighlightText!important; background:Highlight!important; border-color:Highlight!important; }
-  :root .game-tabs .game-tab[aria-selected="true"] :is(.game-tab-name,.game-tab-mark,.game-mark) { color:HighlightText; fill:currentColor; -webkit-text-fill-color:HighlightText; }
+  :root .game-tabs .game-tab[aria-selected="true"] :is(.game-tab-name,.game-tab-mark,.game-mark) { color:HighlightText; -webkit-text-fill-color:HighlightText; }
+  :root .game-tabs .game-tab[aria-selected="true"]:focus-visible { outline-color:HighlightText; }
 }
