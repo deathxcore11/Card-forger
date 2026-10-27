@@ -8,10 +8,23 @@ import {createForgePresentationSession} from './experiments/forge-proof/forge-se
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {mountForgeMatchIntro,forgeStartingPlayer} from './play-forge-pregame.js';
 const selectionKey=s=>JSON.stringify([s?.profile?.ownerId,s?.selected,s?.opponent,s?.match]);
+// Forge may name a Universes Beyond card by its Universes Within flavor name
+// (Hydro-Man, Fluid Felon plays as "Belion, the Parched"), which no printing
+// carries. Such a card is matched by its printed cost, type line and power/
+// toughness instead, and only when exactly one captured card fits.
+const nativeType=t=>String(t||'').replace(/\s+[—–-]\s+/g,' - ').replace(/\s+/g,' ').trim().toLowerCase();
+const nativeCost=c=>!c||c==='no cost'?'':String(c);
+function sameCardFace(card,native){
+ const face=card?.card_faces?.[0]&&!card.mana_cost?card.card_faces[0]:card;
+ if(!face||nativeCost(native?.manaCost)!==(face.mana_cost||'')||nativeType(native?.type)!==nativeType(face.type_line))return false;
+ if(face.power===undefined)return true;
+ return String(native?.power)===String(face.power)&&String(native?.toughness)===String(face.toughness);
+}
 export function capturedForgeArtwork(setup,lookup){
  const rows=[setup.selected,setup.opponent].flatMap(deck=>{const d=capturePracticeArtwork(deck,lookup);return [...d.cards,...(d.side||[])];});
  return (name,native)=>{
-  const options=rows.filter(r=>r.name===name&&r.playArtwork).map(r=>r.playArtwork);
+  let options=rows.filter(r=>r.name===name&&r.playArtwork).map(r=>r.playArtwork);
+  if(!options.length&&native&&!rows.some(r=>r.name===name))options=rows.filter(r=>r.playArtwork&&sameCardFace(r.playArtwork.card,native)).map(r=>r.playArtwork);
   const sameSet=options.filter(a=>a.card?.set?.toLowerCase()===native?.setCode?.toLowerCase());
   const candidates=sameSet.length?sameSet:options,ids=new Set(candidates.map(a=>a.card.id));
   // Native IDs do not map mixed selected printing copies yet. Refuse to invent
