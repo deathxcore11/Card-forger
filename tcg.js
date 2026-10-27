@@ -386,6 +386,9 @@ export function ygoDeckFinishContext(g, card, selection, s = S.state) {
   const keys = new Set(gs(g, s).collection.filter(e => String(e.cardId) === String(card.id) && e.printing && e.rarity).map(e => e.printing + "::" + e.rarity));
   return keys.size === 1 ? { priceEdition: [...keys][0] } : {};
 }
+// Deck rows read in play order: Pokémon, Trainers, Energy; Monsters, Spells, Traps. Unresolved rows lead.
+const CATEGORY_RANK = { Pokemon: 0, Trainer: 1, Energy: 2, Monster: 0, Spell: 1, Trap: 2, Skill: 3, Token: 4 };
+const categoryRank = (c) => !c ? -1 : CATEGORY_RANK[c.category] ?? 5;
 function deckStats(g, d) {
   const m = ownedMap(g),
     used = new Map(),
@@ -1255,7 +1258,7 @@ function metaView(g) {
   <div class="chips wrap">${top.map((t) => `<button class="chip" ${g === "ygo" ? `data-act="tCard" data-id="${esc(t.id)}"` : `data-act="tOtherPrintings" data-name="${esc(t.name)}"`}>${esc(t.name)} <span class="muted">${Math.round(t.pct)}%</span></button>`).join("")}</div>
   <div class="section-head"><h2>Recent top lists</h2></div>
   <div class="list">${data.decks.slice(0, 40).map((d) => metaDeckRow(g, d, m)).join("")}</div>
-  <p class="foot">${g === "ygo" ? "Lists from YGOPRODeck’s Tournament Meta Decks (WCQ Regionals, YCS and more)." : "Top 8 lists from recent ${esc(label)} events on Limitless."} “Owned” matches your collection${g === "ptcg" ? " by card name; basic Energy counts as owned" : ""}.</p></section>`;
+  <p class="foot">${g === "ygo" ? "Lists from YGOPRODeck’s Tournament Meta Decks (WCQ Regionals, YCS and more)." : `Top 8 lists from recent ${esc(label)} events on Limitless.`} “Owned” matches your collection${g === "ptcg" ? " by card name; basic Energy counts as owned" : ""}.</p></section>`;
 }
 
 /* ---------- closest proven deck (shared by all three games) ---------- */
@@ -1450,7 +1453,7 @@ function deckCardsTab(g, d, f, s, issues) {
       return `<div class="section-head"><h2>${label} <span class="muted small">${zoneCount(z)} · ${rule}</span></h2></div>${
         rows.length
           ? `<div class="list display-list" data-deck-list>${rows
-              .sort((a, b) => (a.c?.category || "").localeCompare(b.c?.category || "") || String(a.r.name||a.c?.name||a.r.cardId||"").localeCompare(String(b.r.name||b.c?.name||b.r.cardId||"")))
+              .sort((a, b) => categoryRank(a.c) - categoryRank(b.c) || String(a.r.name||a.c?.name||a.r.cardId||"").localeCompare(String(b.r.name||b.c?.name||b.r.cardId||"")))
               .map(({ r, c, need, purchaseReference }) => {
                 const lim = c ? SOURCES[g].limit(c, f) : 3;
                 const t = tcgTier(c), actionRow = g === "ygo" && r.ygoPurchaseSelection ? `data-row-index="${(d.zones[z]||[]).findIndex(x=>x.cardId===r.cardId&&x.ygoPurchaseSelection===r.ygoPurchaseSelection)}" data-purchase-identity="${esc(JSON.stringify(r.ygoPurchaseSelection))}"` : "";
@@ -1679,7 +1682,7 @@ export function tcgNewDeckSheet(format="") {
   <button class="btn block" data-act="tNewDeckSave">Create deck</button>`;
 }
 
-export function tcgImportSheet(mode = "deck") {
+export function tcgImportSheet(mode = "deck", format = "") {
   const g = game();
   return `<div class="sheet-head"><h2>${mode === "deck" ? "Import a deck" : "Paste cards you own"}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <p class="muted small">${g === "ygo" ? (mode === "deck" ? "Upload or paste a .ydk file (YGOPRODeck, EDOPro, Master Duel tools), or a list like “3 Ash Blossom & Joyous Spring”." : "One card per line: “3 Dark Magician”. Card names must match exactly.") : "Paste a Pokémon TCG Live list (“4 Pikachu ex SVI 63”), a TCGdex id (“2 sv03.5-025”), or names only (“4 Nest Ball”). Set and collector numbers are matched exactly; unmatched printings stop the import. Names alone do not identify a specific printing."}</p>

@@ -2,7 +2,7 @@
 // placing lists of the same archetype, and power on saved versions.
 import assert from "node:assert/strict";
 import { S, blank } from "./store.js";
-import { cache, tcgDeck, tcgDecks, metaState } from "./tcg.js";
+import { cache, tcgDeck, tcgDecks, metaState, tcgImportSheet } from "./tcg.js";
 import { blankGame } from "./games.js";
 import { archetypeUpgrades } from "./deckpower.js";
 
@@ -58,3 +58,14 @@ assert.match(tcgDeck("p1"), /Upgrade lab/);
 S.ui.tdeckTab = { "ptcg:p1": "insights" };
 assert.match(tcgDeck("p1"), /Deck Power/);
 console.log("PASS: Pokémon deck page renders Power and Upgrade lab without data.");
+
+// Decks › Import opens in both games (an undeclared format used to throw before the sheet rendered).
+for (const g of ["ptcg", "ygo"]) { S.state.settings.game = g; assert.match(tcgImportSheet("deck"), /<h2>Import a deck<\/h2>[\s\S]*<select id="tImpFormat">/, g + " import sheet"); }
+// Pokémon deck rows read in play order: Pokémon, Trainers, Energy.
+S.state.settings.game = "ptcg";
+for (const [id, name, category] of [["e1", "Basic Grass Energy", "Energy"], ["p2", "Sprigatito", "Pokemon"], ["t1", "Nest Ball", "Trainer"]]) cache.ptcg[id] = { game: "ptcg", id, name, category, text: "", fetchedAt: new Date().toISOString(), prices: {}, image: "" };
+S.state.tcg.ptcg.decks.push({ id: "p2", name: "Order", format: "standard", zones: { main: ["e1", "p2", "t1"].map((cardId) => ({ cardId, name: cache.ptcg[cardId].name, qty: 1 })), extra: [], side: [] } });
+S.ui.tdeckTab = { "ptcg:p2": "cards" };
+const order = [...tcgDeck("p2").matchAll(/<button class="lot-name"[^>]*>([^<]+)</g)].map((m) => m[1]);
+assert.deepEqual(order, ["Sprigatito", "Nest Ball", "Basic Grass Energy"]);
+console.log("PASS: Pokémon and Yu-Gi-Oh! import sheets open; Pokémon deck rows read Pokémon, Trainers, Energy.");
