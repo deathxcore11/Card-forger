@@ -11,8 +11,8 @@ python3 - "$HERE" <<'PY'
 import pathlib,sys,json,hashlib
 root=pathlib.Path(sys.argv[1])/'human'
 sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
-assert sha(root/'source-sha256.json')=='808b643d01c0c8fe63344733725c77e8c504e1f566453386c6cbfc36c95e40bc'
-assert sha(root/'runtime-sha256.json')=='89975e8a8bff75923f977c28ebd8341990744205c07cc3a504509c7d7647c1ee'
+assert sha(root/'source-sha256.json')=='23b9220fb5fe8646ab3784a2e19c6c43d968dabed719bc8c59c88f00cc26350c'
+assert sha(root/'runtime-sha256.json')=='61ad2c7b314ce2d091f96f1fb89dfffc1e7c6634058a019e49978904b660570e'
 expected=json.loads((root/'source-sha256.json').read_text())
 actual={str(p.relative_to(root)):sha(p) for p in (root/'src').rglob('*') if p.is_file()}
 assert actual==expected,'Human source differs from reviewed source manifest'

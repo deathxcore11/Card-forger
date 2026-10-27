@@ -63,9 +63,14 @@ public final class ForgeHttpBridge implements IRemote {
     volatile Map<String,Object> notification = Map.of();
     volatile boolean busy, finished, commandInFlight;
     volatile String controlMode=System.getProperty("proof.controlMode","full");
+    // Auto-pay is its own switch: a player can keep automatic mana payment and still
+    // hold priority (Full Control). Until the autoPay action is used, it follows the
+    // control mode as before (Smart pays, Full doesn't); choosing a mode resets it.
+    volatile Boolean autoPayChoice;
+    boolean autoPay(){Boolean choice=autoPayChoice;return choice!=null?choice:controlMode.equals("smart");}
     volatile boolean effectiveAutoPass;
     // Bounded Smart assistance applies only to an explicit priority card/ability intention.
-    // Optional/alternative native dialogs remain human decisions; Full prevents any automatic payment.
+    // Optional/alternative native dialogs remain human decisions; autoPay off prevents any automatic payment.
     forge.gamemodes.match.input.Input smartIntentOrigin, autoPayAttemptInput;
     SpellAbility smartIntentAbility;
     volatile long nativeAutoPayments;
@@ -274,17 +279,131 @@ public final class ForgeHttpBridge implements IRemote {
             &&(event.phase()==forge.game.phase.PhaseType.MAIN1||event.phase()==forge.game.phase.PhaseType.MAIN2);
         effectiveAutoPass=failure==null&&controlMode.equals("smart")&&!ownMain;
         controller.getYieldController().setPref(FPref.YIELD_AUTO_PASS_NO_ACTIONS,String.valueOf(effectiveAutoPass));
+        if(event.phase()==forge.game.phase.PhaseType.COMBAT_BEGIN)setCombatStops(false);
     }
-    static boolean smartStop(boolean ownTurn, forge.game.phase.PhaseType phase){
+    static boolean smartStop(boolean ownTurn, forge.game.phase.PhaseType phase, boolean attackers){
         return switch(phase){
             case MAIN1, MAIN2 -> ownTurn;
-            case COMBAT_DECLARE_ATTACKERS, COMBAT_DECLARE_BLOCKERS -> true;
+            // Forge already skips blockers and damage when nobody attacks.
+            case COMBAT_DECLARE_ATTACKERS -> attackers;
+            case COMBAT_DECLARE_BLOCKERS -> true;
             default -> false;
         };
     }
+    // Smart has no stop in a combat where nothing attacks: each combat starts without the
+    // declare-attackers stop, and it comes back only once real attackers are declared.
+    // Forge fires both events on the game thread before anyone gets priority in that step.
+    volatile boolean combatHasAttackers;
+    void setCombatStops(boolean attackers){
+        combatHasAttackers=attackers;
+        if(controller==null||game==null||failure!=null)return;
+        var yc=controller.getYieldController();
+        for(PlayerView p:game.getView().getPlayers())
+            yc.setSkipPhase(p,forge.game.phase.PhaseType.COMBAT_DECLARE_ATTACKERS,controlMode.equals("smart")&&!attackers);
+    }
+    @com.google.common.eventbus.Subscribe public void smartCombat(forge.game.event.GameEventAttackersDeclared e){setCombatStops(!e.attackersMap().isEmpty());}
+    // A watched CPU turn shows each visible action on its own, like a person playing:
+    // land, spell or ability, attackers, blockers. Triggers, the player's own turn and
+    // an unwatched table are never slowed. 0 turns pacing off.
+    static final long CPU_STEP_PAUSE_MS=Long.getLong("cardstashy.cpuStepPauseMs",650L);
+    volatile long lastStatePollNanos=System.nanoTime();
+    void paceCpu(PlayerView actor){
+        if(CPU_STEP_PAUSE_MS<=0||actor==null||viewer==null||actor.getId()==viewer.getId()||failure!=null||concessionRequested||finished)return;
+        if(System.nanoTime()-lastStatePollNanos>3_000_000_000L)return;
+        refreshBoard();publish();
+        try{Thread.sleep(CPU_STEP_PAUSE_MS);}catch(InterruptedException e){Thread.currentThread().interrupt();}
+    }
+    @com.google.common.eventbus.Subscribe public void onCpuLand(forge.game.event.GameEventLandPlayed e){paceCpu(e.player());}
+    @com.google.common.eventbus.Subscribe public void onCpuCast(forge.game.event.GameEventSpellAbilityCast e){if(e.si()!=null&&!e.si().isTrigger())paceCpu(e.si().getActivatingPlayer());}
+    @com.google.common.eventbus.Subscribe public void onCpuAttack(forge.game.event.GameEventAttackersDeclared e){if(!e.attackersMap().isEmpty())paceCpu(e.player());}
+    @com.google.common.eventbus.Subscribe public void onCpuBlock(forge.game.event.GameEventBlockersDeclared e){if(e.blockers().values().stream().anyMatch(m->!m.isEmpty()))paceCpu(e.defendingPlayer());}
+    // What happened, in order, so the table can replay what lands between two polls:
+    // draws, land plays, casts and abilities, resolutions, zone moves, attacks, blocks,
+    // damage, life, counters and attachments. Viewer-safe: a card is listed only when the
+    // viewer may see it where it is now, and named only when its face is visible, so a
+    // CPU draw or a card going to a hidden hand carries no identity. Read-only.
+    static final int EVENT_LOG_SIZE=96;
+    final Object eventLock=new Object();
+    final ArrayDeque<Map<String,Object>> eventLog=new ArrayDeque<>();
+    long eventSeq=0;
+    void logEvent(String type,Object... values){
+        if(viewer==null||game==null||failure!=null||concessionRequested)return;
+        var ph=game.getPhaseHandler();
+        Map<String,Object> e=obj("seq",0L,"type",type,"turn",ph.getTurn(),"phase",ph.getPhase()==null?null:ph.getPhase().name());
+        e.putAll(obj(values));
+        synchronized(eventLock){e.put("seq",++eventSeq);eventLog.addLast(e);while(eventLog.size()>EVENT_LOG_SIZE)eventLog.removeFirst();}
+    }
+    Map<String,Object> eventsView(boolean withItems){
+        synchronized(eventLock){return obj("schema","cardstashy.forge-events.v1","latest",eventSeq,"items",withItems?new ArrayList<>(eventLog):List.of());}
+    }
+    Map<String,Object> cardRef(CardView c){
+        if(c==null||viewer==null||!c.canBeShownTo(viewer))return null;
+        Map<String,Object> m=obj("kind","card","id",c.getId());
+        if(c.canFaceDownBeShownTo(viewer)&&c.getCurrentState()!=null)m.put("name",c.getCurrentState().getName());
+        return m;
+    }
+    Map<String,Object> entityRef(Object o){
+        if(o instanceof PlayerView p)return obj("kind","player","id",p.getId());
+        if(o instanceof CardView c)return cardRef(c);
+        if(o instanceof StackItemView si)return obj("kind","stack","id",si.getId());
+        return null;
+    }
+    List<Object> entityRefs(Iterable<?> values){
+        List<Object> out=new ArrayList<>();
+        if(values!=null)for(Object o:values){var r=entityRef(o);if(r!=null)out.add(r);}
+        return out;
+    }
+    @com.google.common.eventbus.Subscribe public void logTurn(forge.game.event.GameEventTurnBegan e){logEvent("turn","player",id(e.turnOwner()),"number",e.turnNumber());}
+    @com.google.common.eventbus.Subscribe public void logZone(forge.game.event.GameEventCardChangeZone e){
+        if(e.card()==null)return;
+        logEvent("zone","card",cardRef(e.card()),"from",e.from()==null?null:e.from().zoneType().name(),"to",e.to()==null?null:e.to().zoneType().name(),
+            "player",e.to()!=null?id(e.to().player()):e.from()!=null?id(e.from().player()):null,"token",e.card().isToken());
+    }
+    @com.google.common.eventbus.Subscribe public void logLand(forge.game.event.GameEventLandPlayed e){logEvent("land","player",id(e.player()),"card",cardRef(e.land()));}
+    @com.google.common.eventbus.Subscribe public void logCast(forge.game.event.GameEventSpellAbilityCast e){
+        var si=e.si();if(si==null)return;
+        logEvent(si.isTrigger()?"trigger":si.isAbility()?"ability":"cast","player",id(si.getActivatingPlayer()),"stackId",si.getId(),"source",cardRef(si.getSourceCard()),"targets",entityRefs(stackTargets(si)));
+    }
+    @com.google.common.eventbus.Subscribe public void logResolve(forge.game.event.GameEventSpellResolved e){
+        logEvent("resolve","source",e.spell()==null?null:cardRef(e.spell().getHostCard()),"fizzled",e.hasFizzled());
+    }
+    @com.google.common.eventbus.Subscribe public void logAttack(forge.game.event.GameEventAttackersDeclared e){
+        List<Object> attackers=new ArrayList<>();
+        for(var entry:e.attackersMap().entries()){var a=cardRef(entry.getValue());if(a!=null){a.put("target",entityRef(entry.getKey()));attackers.add(a);}}
+        if(!attackers.isEmpty())logEvent("attack","player",id(e.player()),"attackers",attackers);
+    }
+    @com.google.common.eventbus.Subscribe public void logBlock(forge.game.event.GameEventBlockersDeclared e){
+        // Forge lists an unblocked attacker as its own blocker; only real blocks are kept.
+        List<Object> blocks=new ArrayList<>();
+        for(var byDefender:e.blockers().values())for(var entry:byDefender.entries()){
+            if(entry.getKey()==null||entry.getValue()==null||entry.getKey().getId()==entry.getValue().getId())continue;
+            var b=cardRef(entry.getValue());var a=cardRef(entry.getKey());
+            if(b!=null&&a!=null){b.put("blocking",a.get("id"));blocks.add(b);}
+        }
+        if(!blocks.isEmpty())logEvent("block","player",id(e.defendingPlayer()),"blockers",blocks);
+    }
+    @com.google.common.eventbus.Subscribe public void logCardDamage(forge.game.event.GameEventCardDamaged e){
+        var target=cardRef(e.card());if(target==null)return;
+        logEvent("damage","target",target,"source",cardRef(e.source()),"amount",e.amount(),"kind",e.type()==null?null:e.type().name());
+    }
+    @com.google.common.eventbus.Subscribe public void logPlayerDamage(forge.game.event.GameEventPlayerDamaged e){
+        logEvent("damage","target",entityRef(e.target()),"source",cardRef(e.source()),"amount",e.amount(),"combat",e.combat(),"infect",e.infect());
+    }
+    @com.google.common.eventbus.Subscribe public void logLife(forge.game.event.GameEventPlayerLivesChanged e){logEvent("life","player",id(e.player()),"from",e.oldLives(),"to",e.newLives());}
+    @com.google.common.eventbus.Subscribe public void logCounters(forge.game.event.GameEventCardCounters e){
+        var c=cardRef(e.card());if(c==null||e.type()==null)return;
+        logEvent("counters","card",c,"counter",e.type().toString(),"from",e.oldValue(),"to",e.newValue());
+    }
+    @com.google.common.eventbus.Subscribe public void logAttach(forge.game.event.GameEventCardAttachment e){
+        var c=cardRef(e.equipment());if(c==null)return;
+        logEvent("attach","card",c,"from",entityRef(e.oldEntity()),"to",entityRef(e.newTarget()));
+    }
+    @com.google.common.eventbus.Subscribe public void logMulligan(forge.game.event.GameEventMulligan e){logEvent("mulligan","player",id(e.player()));}
+    @com.google.common.eventbus.Subscribe public void logShuffle(forge.game.event.GameEventShuffle e){logEvent("shuffle","player",id(e.player()));}
+    @com.google.common.eventbus.Subscribe public void logDayNight(forge.game.event.GameEventDayTimeChanged e){logEvent("dayNight","value",e.daytime()?"day":"night");}
     void applyControlMode(){
         if(failure!=null){effectiveAutoPass=false;clearSmartIntent();autoPayAttemptInput=null;return;}
-        if(!controlMode.equals("smart"))clearSmartIntent();
+        if(!autoPay())clearSmartIntent();
         var yc=controller.getYieldController();
         yc.setPref(FPref.YIELD_AUTO_PASS_RESPECTS_INTERRUPTS,"false");
         yc.clearActiveYieldAndDispatch();
@@ -292,7 +411,7 @@ public final class ForgeHttpBridge implements IRemote {
         // in your main phases and in combat after attackers or blockers are declared.
         // Anything on the stack still stops you when you can respond; Full Control stops everywhere.
         for(PlayerView p:game.getView().getPlayers())for(var phase:forge.game.phase.PhaseType.values())
-            yc.setSkipPhase(p,phase,controlMode.equals("smart")&&!smartStop(p.getId()==viewer.getId(),phase));
+            yc.setSkipPhase(p,phase,controlMode.equals("smart")&&!smartStop(p.getId()==viewer.getId(),phase,combatHasAttackers));
         var ph=game.getPhaseHandler();
         boolean ownMain=ph.getPlayerTurn()!=null&&ph.getPlayerTurn().getId()==viewer.getId()
             &&(ph.getPhase()==forge.game.phase.PhaseType.MAIN1||ph.getPhase()==forge.game.phase.PhaseType.MAIN2);
@@ -310,6 +429,10 @@ public final class ForgeHttpBridge implements IRemote {
         if(!(event instanceof GuiGameEvent e)) return;
         Object[] a=e.getObjects();
         if(e.getMethod()==ProtocolMethod.setGameView||e.getMethod()==ProtocolMethod.applyDelta)refreshBoard();
+        // Forge skips a selection equal to the last one (often none), so the prompt's
+        // buttons and message also mark a new priority input.
+        if(e.getMethod()==ProtocolMethod.setSelection)noteBlocked((Selection)a[0]);
+        else if(e.getMethod()==ProtocolMethod.updateButtons||e.getMethod()==ProtocolMethod.showPromptMessage)noteBlocked(selection);
         synchronized(lock){ switch(e.getMethod()) {
             case showPromptMessage -> message=(String)a[1];
             case updateButtons -> { buttons=obj("ok",a[1],"cancel",a[2],"okEnabled",a[3],"cancelEnabled",a[4]); busy=false; }
@@ -327,13 +450,65 @@ public final class ForgeHttpBridge implements IRemote {
         }
     }
     void clearSmartIntent(){smartIntentOrigin=null;smartIntentAbility=null;}
+    // Trustworthy glow. selection.actionable is what can be finished now (the human
+    // overlay proves the cost can be paid), so only those cards glow. A card with an
+    // ability that can't be used now is listed in selection.blocked with the reason,
+    // so the table can say why it doesn't glow. Read only while the game thread waits
+    // on this priority prompt, on the player's own cards, within a small time budget.
+    static final long BLOCKED_BUDGET_MS=Long.getLong("cardstashy.blockedBudgetMs",150L);
+    volatile forge.gamemodes.match.input.Input blockedInput;
+    volatile List<Map<String,Object>> blocked=List.of();
+    void noteBlocked(Selection sel){
+        var input=controller==null?null:controller.getInputProxy().getInput();
+        if(!(input instanceof forge.gamemodes.match.input.InputPassPriority)||failure!=null||concessionRequested||game==null){blockedInput=null;blocked=List.of();return;}
+        if(input==blockedInput)return;
+        List<Map<String,Object>> out=new ArrayList<>();
+        try{
+            Player p=controller.getPlayer();Set<Integer> glowing=new HashSet<>();
+            for(CardView c:sel.actionable())glowing.add(c.getId());
+            long deadline=System.nanoTime()+BLOCKED_BUDGET_MS*1_000_000L;
+            p.runWithController(()->{
+                for(ZoneType zone:List.of(ZoneType.Hand,ZoneType.Battlefield,ZoneType.Command,ZoneType.Flashback))for(var c:p.getCardsIn(zone)){
+                    if(System.nanoTime()>=deadline)return;
+                    if(glowing.contains(c.getId()))continue;
+                    String reason=blockedReason(c,p,deadline);
+                    if(reason!=null)out.add(obj("kind","card","id",c.getId(),"reason",reason));
+                }
+            },new forge.ai.PlayerControllerAi(game,p,p.getOriginalLobbyPlayer()));
+        }catch(RuntimeException ignored){out.clear();}
+        blocked=List.copyOf(out);blockedInput=input;
+    }
+    /** Why none of this card's abilities can be used now, or null when one can or the reason is unclear. */
+    static String blockedReason(forge.game.card.Card c,Player p,long deadline){
+        String best=null;int rank=0;
+        // Forge drops abilities it can't use now from its list; the card's own ones say why.
+        List<SpellAbility> all=new ArrayList<>(c.getAllPossibleAbilities(p,false));
+        for(SpellAbility sa:c.getSpellAbilities())if(!all.contains(sa)){sa.setActivatingPlayer(p);all.add(sa);}
+        for(SpellAbility sa:all){
+            if(sa.isManaAbility()||c.isInPlay()&&(sa.isSpell()||sa.isLandAbility()))continue;
+            if(!c.isInPlay()&&!sa.isSpell()&&!sa.isLandAbility())continue;
+            String reason;int r;
+            if(!sa.canPlay()){
+                boolean sorcerySpeed=sa.isSpell()||sa.isLandAbility()?!sa.withFlash(c,p):sa.getRestrictions().isSorcerySpeed();
+                if(sa.isLandAbility()&&p.canCastSorcery()){reason="Land already played";r=2;}
+                else if(sorcerySpeed&&!p.canCastSorcery()){reason="Wrong timing";r=1;}
+                else continue;
+            }else if(!forge.ai.ComputerUtilAbility.isFullyTargetable(sa)){reason="No legal target";r=3;}
+            else if(forge.ai.HumanActionAffordability.assess(sa,p,deadline)==forge.ai.HumanActionAffordability.Assessment.PROVEN_UNAVAILABLE){
+                int need=sa.getPayCosts()==null?0:sa.getPayCosts().getTotalMana().getCMC();
+                reason=need>0?"Need "+need+" mana":"Can't pay the cost";r=4;
+            }else return null; // usable now, or not provably blocked: no reason
+            if(r>rank){best=reason;rank=r;}
+        }
+        return best;
+    }
     boolean nativePaymentPending(){
         return controller!=null && controller.getInputProxy().getInput() instanceof forge.gamemodes.match.input.InputPayMana payment
             && payment.isPaymentPending();
     }
     void armSmartSpellIntent(forge.gamemodes.match.input.Input input){
         clearSmartIntent();
-        if(failure==null&&controlMode.equals("smart")&&input instanceof forge.gamemodes.match.input.InputPassPriority priority){
+        if(failure==null&&autoPay()&&input instanceof forge.gamemodes.match.input.InputPassPriority priority){
             var chosen=priority.getChosenSa();
             if(chosen!=null&&chosen.size()==1&&chosen.get(0).isSpell()){
                 smartIntentOrigin=input;smartIntentAbility=chosen.get(0);
@@ -350,7 +525,7 @@ public final class ForgeHttpBridge implements IRemote {
         if(input instanceof forge.gamemodes.match.input.InputPassPriority && input!=smartIntentOrigin){
             clearSmartIntent();
         }
-        if(!controlMode.equals("smart")||smartIntentOrigin==null||pending!=null||commandInFlight
+        if(!autoPay()||smartIntentOrigin==null||pending!=null||commandInFlight
             ||!(input instanceof forge.gamemodes.match.input.InputPayManaOfCostPayment)
             ||input==autoPayAttemptInput||!Boolean.TRUE.equals(buttons.get("okEnabled")))return;
         final SpellAbility paid=controller.getPlayer().getPaidForSA();
@@ -365,7 +540,7 @@ public final class ForgeHttpBridge implements IRemote {
         SwingUtilities.invokeLater(()->{
             boolean invoked=false;
             try{
-                if(failure==null&&!concessionRequested&&controlMode.equals("smart")&&pending==null&&controller.getPlayer().getPaidForSA()==paid
+                if(failure==null&&!concessionRequested&&autoPay()&&pending==null&&controller.getPlayer().getPaidForSA()==paid
                     &&input==controller.getInputProxy().getInput()&&generation==promptGeneration.get()){
                     invoked=true;
                     nativeAutoPayments++;
@@ -497,13 +672,56 @@ public final class ForgeHttpBridge implements IRemote {
         if(!visible)return m;
         exposedCards.put(c.getId(),c);
         m.put("tapped",c.isTapped()); m.put("attacking",c.isAttacking());m.put("blocking",c.isBlocking());
+        // Combat arrows: whom an attacker attacks, and which attackers a blocker blocks.
+        var combat=game==null?null:game.getView().getCombat();
+        if(combat!=null&&c.isAttacking()){
+            var defender=combat.getDefender(c);
+            if(defender instanceof PlayerView p)m.put("attackTarget",obj("kind","player","id",p.getId()));
+            else if(defender instanceof CardView d&&d.canBeShownTo(viewer))m.put("attackTarget",obj("kind","card","id",d.getId()));
+        }
+        if(combat!=null&&c.isBlocking()){
+            List<Integer> blocked=new ArrayList<>();
+            for(CardView attacker:combat.getAttackers())if(attacker.canBeShownTo(viewer)&&combat.getBlockers(attacker).contains(c))blocked.add(attacker.getId());
+            if(!blocked.isEmpty())m.put("blockingIds",blocked);
+        }
         if(face){
             var state=c.getCurrentState();
             m.put("name",state.getName());m.put("setCode",state.getSetCode());m.put("imageKey",state.getImageKey(List.of(viewer)));m.put("type",state.getType().toString());m.put("manaCost",state.getManaCost().toString());
             m.put("power",state.getPower());m.put("toughness",state.getToughness());m.put("text",c.getText());
             m.put("counters",counters(c));m.put("token",c.isToken());m.put("commander",c.isCommander());m.put("damage",c.getDamage());m.put("summoningSick",c.isSick());
+            // Auras and Equipment: what this card is attached to, and what is attached to it.
+            // Only cards the viewer may see are named; the rest stay out of the snapshot.
+            CardView host=c.getAttachedTo();
+            if(host!=null&&host.canBeShownTo(viewer))m.put("attachedTo",host.getId());
+            List<Integer> attached=new ArrayList<>();
+            for(CardView a:c.getAttachedCards())if(a.canBeShownTo(viewer))attached.add(a.getId());
+            if(!attached.isEmpty())m.put("attachments",attached);
+            // Keywords the card has right now, printed or granted, as Forge titles them
+            // ("Flying", "Ward {2}", "Protection from red", "Crew 3"). Always sent on a
+            // visible face, [] when it has none, so the table never falls back to rules text.
+            List<String> keywords=new ArrayList<>();Set<String> seenKeywords=new HashSet<>();
+            var kws=state.getKeywords();
+            if(kws!=null)for(var k:kws){
+                if(k==null||k.keyword()==null||k.keyword()==forge.game.keyword.Keyword.UNDEFINED)continue;
+                String title=k.title();if(title==null||title.isBlank()||!seenKeywords.add(title))continue;
+                keywords.add(title);
+                if(k.keyword()==forge.game.keyword.Keyword.CREW){var crew=java.util.regex.Pattern.compile("(\\d+)").matcher(title);if(crew.find())m.put("crew",Integer.parseInt(crew.group(1)));}
+            }
+            m.put("keywords",keywords);
+            if(state.getType().hasSubtype("Class"))m.put("classLevel",c.getClassLevel());
+            if(c.isRingBearer())m.put("ringBearer",true);
+            // Commander tax: two more for each earlier cast from the command zone.
+            if(c.isCommander()&&c.getOwner()!=null){int casts=c.getOwner().getCommanderCast(c);m.put("commanderCasts",casts);m.put("commanderTax",2*casts);}
         }
         return m;
+    }
+    // Player designations Forge tracks on the game or the player. Projection only.
+    Map<String,Object> designations(PlayerView view){
+        Player p=game==null?null:game.getPlayer(view);
+        if(p==null)return obj();
+        forge.game.card.Card bearer=p.getRingBearer();
+        return obj("monarch",game.getMonarch()==p,"initiative",game.getHasInitiative()==p,"citysBlessing",p.hasBlessing(),
+            "ringTemptations",p.getNumRingTemptedYou(),"ringBearer",bearer==null||!bearer.getView().canBeShownTo(viewer)?null:bearer.getId());
     }
     Map<String,Integer> counters(GameEntityView entity) {
         Map<String,Integer> result=new LinkedHashMap<>();
@@ -515,6 +733,20 @@ public final class ForgeHttpBridge implements IRemote {
         byte[] colors=forge.card.mana.ManaAtom.MANATYPES;String[] names={"W","U","B","R","G","C"};
         for(int i=0;i<colors.length;i++)result.put(names[i],player.getMana(colors[i]));
         return result;
+    }
+    /** Every target of a stack item: cards, players and other stack items. */
+    static List<TrackableObject> stackTargets(StackItemView si){
+        List<TrackableObject> all=new ArrayList<>();
+        if(si.getTargetCards()!=null)for(CardView c:si.getTargetCards())all.add(c);
+        if(si.getTargetPlayers()!=null)for(PlayerView p:si.getTargetPlayers())all.add(p);
+        if(si.getTargetStackItems()!=null)for(StackItemView t:si.getTargetStackItems())all.add(t);
+        return all;
+    }
+    List<Object> blockedRefs(){
+        if(publishedInput==null||publishedInput!=blockedInput)return List.of();
+        List<Object> out=new ArrayList<>();
+        for(var b:blocked)if(exposedCards.containsKey((Integer)b.get("id")))out.add(b);
+        return out;
     }
     List<Object> refs(Iterable<? extends TrackableObject> values) {
         List<Object> out=new ArrayList<>();
@@ -550,13 +782,13 @@ public final class ForgeHttpBridge implements IRemote {
                     }
                     zones.put(zone.name(),obj("count",count,"cards",visible));
                 }
-                players.add(obj("id",p.getId(),"name",p.getName(),"deckAlias",p.equals(viewer)?humanDeckAlias:aiDeckAlias,"deckCount",p.equals(viewer)?humanDeckCount:aiDeckCount,"life",p.getLife(),"isViewer",p.equals(viewer),"hasAvailableActions",p.hasAvailableActions(),"mana",mana(p),"counters",counters(p),"zones",zones));
+                players.add(obj("id",p.getId(),"name",p.getName(),"deckAlias",p.equals(viewer)?humanDeckAlias:aiDeckAlias,"deckCount",p.equals(viewer)?humanDeckCount:aiDeckCount,"life",p.getLife(),"isViewer",p.equals(viewer),"hasAvailableActions",p.hasAvailableActions(),"mana",mana(p),"counters",counters(p),"designations",designations(p),"zones",zones));
             }
             if(v.getStack()!=null)for(StackItemView si:v.getStack()){
                 exposedStack.put(si.getId(),si);
-                stack.add(obj("id",si.getId(),"text",si.getText(),"source",si.getSourceCard()==null?null:card(si.getSourceCard()),"activatingPlayer",id(si.getActivatingPlayer()),"targets",refs(si.getTargetCards())));
+                stack.add(obj("id",si.getId(),"text",si.getText(),"source",si.getSourceCard()==null?null:card(si.getSourceCard()),"activatingPlayer",id(si.getActivatingPlayer()),"targets",refs(stackTargets(si))));
             }
-            board=obj("schema","cardstashy.forge-proof.v1","forgeRevision",REV,"viewer",viewer.getId(),"aiProfile",actualAiProfile,"match",obj("humanDeck",humanDeckAlias,"aiDeck",aiDeckAlias),"turn",v.getTurn(),"phase",v.getPhase()==null?null:v.getPhase().name(),"activePlayer",id(v.getPlayerTurn()),"priorityPlayer",game.getPhaseHandler().getPriorityPlayer()==null?null:game.getPhaseHandler().getPriorityPlayer().getId(),"players",players,"stack",stack,"gameOver",v.isGameOver(),"winner",v.isGameOver()?v.getWinningPlayerName():null,"winnerPlayerId",winnerId(),"draw",v.isGameOver()&&game.getOutcome()!=null&&game.getOutcome().isDraw());
+            board=obj("schema","cardstashy.forge-proof.v1","forgeRevision",REV,"viewer",viewer.getId(),"aiProfile",actualAiProfile,"match",obj("humanDeck",humanDeckAlias,"aiDeck",aiDeckAlias),"turn",v.getTurn(),"phase",v.getPhase()==null?null:v.getPhase().name(),"activePlayer",id(v.getPlayerTurn()),"priorityPlayer",game.getPhaseHandler().getPriorityPlayer()==null?null:game.getPhaseHandler().getPriorityPlayer().getId(),"players",players,"stack",stack,"dayNight",game.isDay()?"day":game.isNight()?"night":null,"gameOver",v.isGameOver(),"winner",v.isGameOver()?v.getWinningPlayerName():null,"winnerPlayerId",winnerId(),"draw",v.isGameOver()&&game.getOutcome()!=null&&game.getOutcome().isDraw());
             boardVisibility=List.copyOf(visibility);
         }catch(RuntimeException ex){failure="Projection failed: "+ex;ex.printStackTrace();}
     }}
@@ -579,8 +811,9 @@ public final class ForgeHttpBridge implements IRemote {
         board=obj("schema",board.get("schema"),"forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"players",players,"stack",List.of(),"turn",board.get("turn"),"phase",board.get("phase"),"activePlayer",board.get("activePlayer"),"priorityPlayer",null,"gameOver",board.get("gameOver"));
         long publicationRevision=revision.incrementAndGet();
         Map<String,Object> snapshot=new LinkedHashMap<>(board);
-        snapshot.putAll(obj("revision",publicationRevision,"status","failed","failure","native_match_failed","message","Native match stopped.","buttons",Map.of(),"inputType",null,"selection",obj("cards",List.of(),"targets",List.of(),"chosen",List.of(),"actionable",List.of(),"min",0,"max",0),"prompt",null,"busy",false,"lastActionError",null,"notification",Map.of(),"autoPassNoActions",false,"canConcede",false));
+        snapshot.putAll(obj("revision",publicationRevision,"status","failed","failure","native_match_failed","message","Native match stopped.","buttons",Map.of(),"inputType",null,"selection",obj("cards",List.of(),"targets",List.of(),"chosen",List.of(),"actionable",List.of(),"blocked",List.of(),"min",0,"max",0),"prompt",null,"busy",false,"lastActionError",null,"notification",Map.of(),"autoPay",false,"autoPassNoActions",false,"canConcede",false));
         snapshot.put("visibility",obj("schema","cardstashy.forge-visibility.v1","forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"revision",publicationRevision,"cards",List.of()));
+        snapshot.put("events",eventsView(false));
         if(unsupportedPregameChoice)snapshot.put("initialization",obj("supported",false,"failureCode",UNSUPPORTED_PREGAME_CHOICE,"errors",List.of(UNSUPPORTED_PREGAME_MESSAGE)));
         published.set(snapshot);
     }
@@ -590,7 +823,7 @@ public final class ForgeHttpBridge implements IRemote {
         if(board.isEmpty())return;
         publishedInput=controller.getInputProxy().getInput();
         String input=publishedInput==null?null:publishedInput.getClass().getSimpleName();
-        Map<String,Object> select=obj("cards",refs(selection.cards()),"targets",refs(selection.targets()),"chosen",refs(selection.chosen()),"actionable",refs(selection.actionable()),"min",selection.min(),"max",selection.max());
+        Map<String,Object> select=obj("cards",refs(selection.cards()),"targets",refs(selection.targets()),"chosen",refs(selection.chosen()),"actionable",refs(selection.actionable()),"blocked",blockedRefs(),"min",selection.min(),"max",selection.max());
         Map<String,Object> snapshot=new LinkedHashMap<>(board);
         if(exactAdmission!=null)snapshot.put("initialization",new LinkedHashMap<>(exactAdmission.receipt()));
         long publicationRevision=revision.incrementAndGet();
@@ -598,12 +831,22 @@ public final class ForgeHttpBridge implements IRemote {
         // Old snapshots retain their original revision and receipt; no live graph is read here.
         snapshot.put("visibility",obj("schema","cardstashy.forge-visibility.v1","forgeRevision",board.get("forgeRevision"),"viewer",board.get("viewer"),"revision",publicationRevision,"cards",boardVisibility));
         if(!pregame.isEmpty())snapshot.put("pregame",pregame);
+        snapshot.put("events",eventsView(true));
+        // Manual payment: what is still owed and for which card (the payable sources are
+        // selection.actionable; sources Auto would tap are listed there twice).
+        if(publishedInput instanceof forge.gamemodes.match.input.InputPayMana){
+            try{
+                SpellAbility paidFor=controller.getPlayer().getPaidForSA();
+                var owed=paidFor==null?null:paidFor.getManaCostBeingPaid();
+                if(owed!=null)snapshot.put("payment",obj("remaining",owed.toString(),"forCard",paidFor.getHostCard()==null?null:cardRef(paidFor.getHostCard().getView())));
+            }catch(RuntimeException ignored){}
+        }
         if(exactAdmission!=null&&exactAdmission.opponent()!=null){
             Object warnings=exactAdmission.opponent().report().get("cpuWarnings");
             int count=warnings instanceof Collection<?> values?values.size():0;
             if(count>0)snapshot.put("cpuWarnings",obj("count",count,"message","The CPU may play some cards in this deck imperfectly."));
         }
-        snapshot.putAll(obj("revision",publicationRevision,"status",failure!=null?"failed":(finished||Boolean.TRUE.equals(board.get("gameOver"))?"finished":exactAdmission!=null&&(!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))||startingPlayer!=null&&pregame.isEmpty())?"initializing":"running"),"failure",failure,"message",message,"buttons",buttons,"inputType",input,"selection",select,"prompt",concessionRequested||pending==null?null:pending.dto,"busy",!(finished||Boolean.TRUE.equals(board.get("gameOver")))&&(concessionRequested||(pending!=null?pending.answer.isDone():(busy||commandInFlight||nativePaymentPending()||publishedInput==null||publishedInput instanceof forge.gamemodes.match.input.InputLockUI))),"lastActionError",lastActionError,"notification",notification,"controlMode",controlMode,"autoPassNoActions",effectiveAutoPass,"nativeAutoPayments",nativeAutoPayments,"canConcede",failure==null&&!finished&&!concessionRequested&&!Boolean.TRUE.equals(board.get("gameOver")),"concession",obj("requested",concessionRequested,"nativeConfirmed",nativeOutcomeConfirmed,"applied",concessionApplied)));
+        snapshot.putAll(obj("revision",publicationRevision,"status",failure!=null?"failed":(finished||Boolean.TRUE.equals(board.get("gameOver"))?"finished":exactAdmission!=null&&(!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))||startingPlayer!=null&&pregame.isEmpty())?"initializing":"running"),"failure",failure,"message",message,"buttons",buttons,"inputType",input,"selection",select,"prompt",concessionRequested||pending==null?null:pending.dto,"busy",!(finished||Boolean.TRUE.equals(board.get("gameOver")))&&(concessionRequested||(pending!=null?pending.answer.isDone():(busy||commandInFlight||nativePaymentPending()||publishedInput==null||publishedInput instanceof forge.gamemodes.match.input.InputLockUI))),"lastActionError",lastActionError,"notification",notification,"controlMode",controlMode,"autoPay",autoPay(),"autoPassNoActions",effectiveAutoPass,"nativeAutoPayments",nativeAutoPayments,"canConcede",failure==null&&!finished&&!concessionRequested&&!Boolean.TRUE.equals(board.get("gameOver")),"concession",obj("requested",concessionRequested,"nativeConfirmed",nativeOutcomeConfirmed,"applied",concessionApplied)));
         published.set(snapshot);
     }}
     Integer winnerId(){if(!game.isGameOver()||game.getOutcome()==null)return null;for(Player p:game.getRegisteredPlayers())if(game.getOutcome().isWinner(p.getRegisteredPlayer()))return p.getId();return null;}
@@ -647,7 +890,7 @@ public final class ForgeHttpBridge implements IRemote {
         HttpServer server=HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(),port),0);
         server.setExecutor(Executors.newCachedThreadPool());
         server.createContext("/health",x->respond(x,200,obj("ok",true,"engine","Forge","forgeRevision",REV)));
-        server.createContext("/state",x->{if(auth(x))respond(x,200,published.get());});
+        server.createContext("/state",x->{if(auth(x)){lastStatePollNanos=System.nanoTime();respond(x,200,published.get());}});
         server.createContext("/action",x->{
             if(!auth(x))return;
             if(!x.getRequestMethod().equals("POST")){respond(x,405,obj("error","POST_required"));return;}
@@ -678,11 +921,18 @@ public final class ForgeHttpBridge implements IRemote {
                                 if(concessionRequested||modeInput!=controller.getInputProxy().getInput()||modeGeneration!=promptGeneration.get()||pending!=null){
                                     lastActionError="native_decision_changed";clearSmartIntent();return;
                                 }
-                                controlMode=mode;applyControlMode();
+                                controlMode=mode;autoPayChoice=null;applyControlMode();
                             }
                             catch(Throwable t){recordFailure(t);}
                             finally{synchronized(lock){commandInFlight=false;publish();}}
                         });
+                    }else if(op.equals("autoPay")){
+                        // Only decides whether a later cast's first cost is paid for you; no
+                        // native command runs, so it applies at once. Turning it off drops a
+                        // spell intention that has not reached its payment yet.
+                        autoPayChoice=exactBoolean(body.get("value"),"value");
+                        if(!autoPayChoice)clearSmartIntent();
+                        publish();
                     }else if(op.equals("reply")){
                         Pending p=pending;
                         if(p==null||p.answer.isDone()||exactInt(body.get("promptId"),"promptId")!=p.event.getId()){respond(x,409,obj("error","stale_prompt"));return;}

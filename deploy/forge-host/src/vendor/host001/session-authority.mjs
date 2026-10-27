@@ -291,8 +291,10 @@ export class MatchAuthority {
     if (Object.keys(body).some(key => !['commandId', 'generation', 'action'].includes(key))
         || !commandIdPattern.test(body.commandId || '') || body.generation !== match.generation
         || !plainObject(body.action) || !Number.isSafeInteger(body.action.revision) || body.action.revision < 0
-        || !['ok', 'cancel', 'card', 'player', 'stack', 'reply', 'concede', 'controlMode'].includes(body.action.op)
+        || !['ok', 'cancel', 'card', 'player', 'stack', 'reply', 'concede', 'controlMode', 'autoPay'].includes(body.action.op)
         || (body.action.op === 'controlMode' && (!['smart', 'full'].includes(body.action.value)
+          || Object.keys(body.action).some(key => !['revision', 'op', 'value'].includes(key))))
+        || (body.action.op === 'autoPay' && (typeof body.action.value !== 'boolean'
           || Object.keys(body.action).some(key => !['revision', 'op', 'value'].includes(key))))
         || new TextEncoder().encode(JSON.stringify(body.action)).length > 16384) return error('invalid_command_envelope', 400);
     // Clone the parsed JSON once; canonical hashing never changes the action

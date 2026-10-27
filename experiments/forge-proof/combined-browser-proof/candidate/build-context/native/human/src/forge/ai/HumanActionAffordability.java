@@ -9,8 +9,23 @@ import forge.game.card.CardCollection;
 import forge.game.card.CardCopyService;
 import forge.game.cost.Cost;
 import forge.game.cost.CostAdjustment;
+import forge.game.cost.CostCollectEvidence;
+import forge.game.cost.CostDiscard;
+import forge.game.cost.CostExert;
+import forge.game.cost.CostExile;
+import forge.game.cost.CostMill;
+import forge.game.cost.CostPart;
 import forge.game.cost.CostPartMana;
+import forge.game.cost.CostPayEnergy;
+import forge.game.cost.CostPayLife;
+import forge.game.cost.CostPutCounter;
+import forge.game.cost.CostRemoveAnyCounter;
+import forge.game.cost.CostRemoveCounter;
+import forge.game.cost.CostReturn;
+import forge.game.cost.CostReveal;
+import forge.game.cost.CostSacrifice;
 import forge.game.cost.CostTap;
+import forge.game.cost.CostTapType;
 import forge.game.keyword.Keyword;
 import forge.game.mana.Mana;
 import forge.game.mana.ManaCostBeingPaid;
@@ -37,6 +52,11 @@ public final class HumanActionAffordability {
     private static final Set<ReplacementType> RESOURCE_REPLACEMENTS = Set.of(
         ReplacementType.ProduceMana, ReplacementType.LoseMana, ReplacementType.PayLife,
         ReplacementType.LifeReduced, ReplacementType.Tap, ReplacementType.Untap);
+    private static final Set<Class<? extends CostPart>> MANA_NEUTRAL_PARTS = Set.of(
+        CostSacrifice.class, CostExile.class, CostDiscard.class, CostPayLife.class,
+        CostRemoveCounter.class, CostRemoveAnyCounter.class, CostPutCounter.class,
+        CostReturn.class, CostReveal.class, CostTapType.class, CostMill.class,
+        CostExert.class, CostCollectEvidence.class, CostPayEnergy.class);
     private record Token(byte color, boolean snow) {}
     private static final class Uncertain extends RuntimeException {}
     private static final class Budget {
@@ -104,7 +124,17 @@ public final class HumanActionAffordability {
         // Native enumeration has already checked nonmana feasibility. When mana
         // remains, shared sacrifice/life/discard resources need joint planning.
         if (mana.isPaid()) return Assessment.AVAILABLE;
-        if (cost.getCostParts().stream().anyMatch(p -> !(p instanceof CostPartMana) && !(p instanceof CostTap))) return Assessment.UNKNOWN;
+        // The listed other parts (sacrifice, life, discard, counters, tapping other
+        // permanents) never add mana, so dropping them only enlarges the resources.
+        // If even that relaxed model cannot pay the mana, the action is unavailable
+        // (Food with no untapped mana). If it can, joint planning is still needed,
+        // so the answer stays UNKNOWN. Any other part keeps the old UNKNOWN.
+        boolean manaAndTapOnly = true;
+        for (CostPart part : cost.getCostParts()) {
+            if (part instanceof CostPartMana || part instanceof CostTap) continue;
+            if (!MANA_NEUTRAL_PARTS.contains(part.getClass())) return Assessment.UNKNOWN;
+            manaAndTapOnly = false;
+        }
         for (ManaCostShard shard : mana.getUnpaidShards()) {
             if (shard.isOr2Generic() || shard == ManaCostShard.COLORED_X) return Assessment.UNKNOWN;
         }
@@ -156,7 +186,8 @@ public final class HumanActionAffordability {
         }
         if (groups.size() > 32 || floating.size() > 64) return Assessment.UNKNOWN;
         boolean paid = chooseSources(0, groups, floating, mana, matrix, player, sa, budget);
-        return paid ? Assessment.AVAILABLE : unknownSource ? Assessment.UNKNOWN : Assessment.PROVEN_UNAVAILABLE;
+        if (paid) return manaAndTapOnly ? Assessment.AVAILABLE : Assessment.UNKNOWN;
+        return unknownSource ? Assessment.UNKNOWN : Assessment.PROVEN_UNAVAILABLE;
     }
 
     private static boolean chooseSources(int index, List<List<List<Token>>> groups, List<Token> tokens,

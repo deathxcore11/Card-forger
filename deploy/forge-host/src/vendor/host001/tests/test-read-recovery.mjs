@@ -288,6 +288,29 @@ test('controlMode rejects missing/invalid values and extra inner fields before d
   }
 });
 
+test('autoPay transport forwards exact boolean requests and rejects anything else', async () => {
+  for (const value of [true, false]) {
+    const f = await fixture(); let received;
+    f.state.response = async request => {
+      received = await request.json();
+      return new Response('{}', { status: 202, headers: { 'X-Host-Epoch': EPOCH } });
+    };
+    const action = { revision: 12, op: 'autoPay', value };
+    assert.equal((await post(f, 'auto_pay_fixture_01', action)).status, 202);
+    assert.deepEqual(received, action);
+  }
+  for (const action of [
+    { revision: 12, op: 'autoPay' },
+    { revision: 12, op: 'autoPay', value: 'true' },
+    { revision: 12, op: 'autoPay', value: 1 },
+    { revision: 12, op: 'autoPay', value: true, viewer: 1 },
+  ]) {
+    const f = await fixture();
+    assert.equal((await post(f, 'auto_pay_invalid_01', action)).status, 400);
+    assert.equal(f.state.submits, 0);
+  }
+});
+
 test('unsupported native controlMode stays a native rejection, not invented support', async () => {
   const f = await fixture();
   f.state.response = () => new Response('{}', { status: 400, headers: { 'X-Host-Epoch': EPOCH } });

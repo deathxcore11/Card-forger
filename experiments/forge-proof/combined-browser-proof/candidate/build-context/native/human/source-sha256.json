@@ -1,5 +1,5 @@
 {
   "src/forge/ai/AvailableActions.java": "ef030f50b12bdbd19922689bc122d8285bb4062e504443c415cd6a90aff74fa1",
-  "src/forge/ai/HumanActionAffordability.java": "0cc4ed27a36d83887c5c2788b2398d2bd386544f6cb13403a4189d1b98025baa",
+  "src/forge/ai/HumanActionAffordability.java": "b851c3e64696289079c51109f51c925ce141c53ddab651fcdfb9050d695373ac",
   "src/forge/gamemodes/match/input/InputPayMana.java": "b780a4f005b28099aace1ff9c8f811c0ddea464cc0cdec27ce7991c1f5be3365"
 }
