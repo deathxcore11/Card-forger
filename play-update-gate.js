@@ -1,9 +1,10 @@
 // A match must run the website release the server currently publishes. An open tab keeps the
 // scripts it loaded, so before a new match a newer release is installed and the Play page reopened.
 // Account, decks and collection storage are untouched; an active match is never reloaded.
+// The Android app keeps the scripts it shipped with, so there a newer published app is installed first.
 const KEY='cardstashy-play-update-attempt-v1';
 const session=()=>{try{return globalThis.sessionStorage;}catch{return null;}};
-export function createPlayUpdateGate({checkRelease,serviceWorker=globalThis.navigator?.serviceWorker,reload=()=>location.reload(),setHash=hash=>{location.hash=hash;},store=session(),wait=ms=>new Promise(r=>setTimeout(r,ms)),native=()=>!!globalThis.CARDSTASHY_NATIVE,notify=()=>{}}={}){
+export function createPlayUpdateGate({checkRelease,serviceWorker=globalThis.navigator?.serviceWorker,reload=()=>location.reload(),setHash=hash=>{location.hash=hash;},store=session(),wait=ms=>new Promise(r=>setTimeout(r,ms)),native=()=>!!globalThis.CARDSTASHY_NATIVE,notify=()=>{},notifyApp=()=>{}}={}){
  let replaced=false;
  // A new service worker took control after this page loaded: the scripts in memory are older.
  // A first visit gains its first controller without any older scripts, so that does not count.
@@ -17,10 +18,11 @@ export function createPlayUpdateGate({checkRelease,serviceWorker=globalThis.navi
   for(let i=0;i<40&&!replaced&&(registration?.installing||registration?.waiting);i++)await wait(250);
  }
  return {
-  // Resolves true when the page is being reopened on the newer release; the caller stops there.
+  // Resolves true when the page is being reopened on the newer release, or the app must be updated
+  // first; the caller stops there.
   async beforeMatch(){
-   if(native())return false;
    let state=null;try{state=await checkRelease();}catch{}
+   if(native()){if(state?.update!==true)return false;notifyApp(state.release);return true;}
    if(state?.update!==true&&!replaced)return false;
    const version=state?.update===true&&state.release?.webVersion||'replaced';
    // One attempt per release per tab: a provider cache still serving the old worker must not loop.

@@ -1554,7 +1554,8 @@ A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profil
 const PLAY_MATCH_RELEASE_READY=true;
 let playerMatHost=null,playerMatRoot=null,practicePregame=null,playStarting=false;
 function closePlayerMat(){practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
-const playUpdates=createPlayUpdateGate({checkRelease,notify:version=>toast(`Updating CardStashy${version==='replaced'?'':' to '+version} before your match. Your account and decks stay saved.`)});
+const playUpdates=createPlayUpdateGate({checkRelease,notify:version=>toast(`Updating CardStashy${version==='replaced'?'':' to '+version} before your match. Your account and decks stay saved.`),
+ notifyApp:()=>{S.ui.settingsTab='info';settingsPopup.open();A.settingsTab({dataset:{id:'info'}});toast('Update the app to play. A newer CardStashy app is out; your account and decks stay saved.');}});
 A.playStartCandidate=async()=>{
  if(!PLAY_MATCH_RELEASE_READY)return toast('Practice integration is still being verified.');
  if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;

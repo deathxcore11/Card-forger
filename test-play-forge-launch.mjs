@@ -96,6 +96,22 @@ test('leaving the page releases an open server table with a request that outlive
  assert.equal(client.release(),true);assert.equal(client.release(),false,'released once');
  const sent=requests.at(-1);assert.equal(sent.path,'/api/play/matches/'+MATCH);assert.equal(sent.init.method,'DELETE');assert.equal(sent.init.keepalive,true);assert.equal(sent.init.headers.Authorization,'Bearer account.token.value');assert.equal(client.status().blocked,true);
 });
+test('a table from another Forge revision is ended, and the app asks for its update',async()=>{
+ const account={user:{id:OWNER},accountGeneration:1},s=setup();
+ for(const [reply,deleted] of [[{forgeRevision:'0'.repeat(40)},true],[{schema:'cardstashy.forge-proof.v2'},true],[{matchId:'not-a-match'},false]]){
+  const requests=[];
+  const client=createForgeHostClient({readAccount:()=>account,getAccessToken:async()=>'account.token.value',fetchImpl:async(path,init)=>{
+   requests.push([init.method,path]);if(init.method==='POST'){const sent=JSON.parse(init.body);return Response.json({matchId:MATCH,generation:GENERATION,expiresAt:Date.now()+60000,deckDigests:{human:await exactDigest(sent.humanDeck),opponent:await exactDigest(sent.opponentDeck)},schema:'cardstashy.forge-proof.v1',forgeRevision:FORGE_REVISION,status:'initializing',...reply},{status:202});}
+   return new Response(null,{status:204});}});
+  await assert.rejects(client.create({format:'Commander',humanDeck:s.selected,opponentDeck:s.opponent,difficultyPolicyVersion:'forge-medium-v1'}),/HOST_ALLOCATION_MISMATCH/);
+  assert.deepEqual(requests,[['POST','/api/play/matches'],...(deleted?[['DELETE','/api/play/matches/'+MATCH]]:[])],JSON.stringify(reply));
+  await client.close();assert.equal(requests.length,deleted?2:1,'nothing else is sent');
+ }
+ const web=forgeMatchError({code:'HOST_ALLOCATION_MISMATCH'});assert.doesNotMatch(web,/Update the app/);
+ const native=globalThis.CARDSTASHY_NATIVE;globalThis.CARDSTASHY_NATIVE={platform:'android'};
+ try{for(const code of ['HOST_ALLOCATION_MISMATCH','HOST_NATIVE_PROJECTION_MISMATCH'])assert.match(forgeMatchError({code}),/Update the app from Settings/);assert.equal(forgeMatchError({code:'user_has_active_allocation'}),forgeMatchError({code:'user_has_active_allocation',status:409}));}
+ finally{globalThis.CARDSTASHY_NATIVE=native;}
+});
 test('the hosted table names its engine and website build',async()=>{
  const src=readFileSync(new URL('./play-forge-player-mat.js',import.meta.url),'utf8');
  assert.match(src,/root\.dataset\.engine='forge-hosted';root\.dataset\.build=APP_VERSION/);assert.match(src,/title:`CardStashy · Magic · \$\{APP_VERSION\}`/);assert.match(src,/addEventListener\?\.\('pagehide',pageHide\)/);

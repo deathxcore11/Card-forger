@@ -91,7 +91,11 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
    try{
     const [human,opponent]=await Promise.all([exactDigest(sent.humanDeck),exactDigest(sent.opponentDeck)]);
     const {status:code,data}=await request('/api/play/matches',{method:'POST',body:sent,headers:{'Idempotency-Key':newId()}});
-    if(code!==202||!UUID.test(data?.matchId||'')||!UUID.test(data?.generation||'')||data.schema!==SCHEMA||data.forgeRevision!==FORGE_REVISION||data.status!=='initializing'||data.deckDigests?.human!==human||data.deckDigests?.opponent!==opponent||!Number.isSafeInteger(data.expiresAt))throw fail('HOST_ALLOCATION_MISMATCH');
+    if(code!==202||!UUID.test(data?.matchId||'')||!UUID.test(data?.generation||'')||data.schema!==SCHEMA||data.forgeRevision!==FORGE_REVISION||data.status!=='initializing'||data.deckDigests?.human!==human||data.deckDigests?.opponent!==opponent||!Number.isSafeInteger(data.expiresAt)){
+     // A table this client cannot use (another Forge revision or schema) still holds the account's one match: end it.
+     if(code===202&&UUID.test(data?.matchId||''))await request('/api/play/matches/'+data.matchId,{method:'DELETE'}).catch(()=>{});
+     throw fail('HOST_ALLOCATION_MISMATCH');
+    }
     allocation={matchId:data.matchId,generation:data.generation,expiresAt:data.expiresAt,deckDigests:data.deckDigests};if(closeRequested){await request('/api/play/matches/'+allocation.matchId,{method:'DELETE'});closed=true;throw fail('MATCH_CLOSED');}return structuredClone(allocation);
    }catch(e){blocked=true;error=e.code||'MATCH_CREATION_OUTCOME_UNKNOWN';throw e;}finally{creating=false;}
   },

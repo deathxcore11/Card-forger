@@ -74,5 +74,11 @@ Then, in the website repo:
    It must print `"releaseApproved": true`. Run `npm test` too.
 4. Ship the website and the APK in the same merge.
 
+Play runs on the hosted Forge server, and the app keeps the Play client it was built with: it opens a
+match only when its `FORGE_REVISION` and schema match the server's. So any change to the Forge host's
+revision, its match or snapshot schema, or the `/api/play` routes ships as a release with a new APK
+(new versionCode in `release-record.js`), at the same time as the host. An app older than the published
+APK asks for the update before each match; without a new APK, every installed app stops opening matches.
+
 Keep the copy of this folder in the repo in step with what was built: copy back any changed
 native source or `android/app/build.gradle` version.

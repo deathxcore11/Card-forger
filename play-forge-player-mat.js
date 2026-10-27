@@ -39,6 +39,8 @@ export function capturedForgeArtwork(setup,lookup){
 export const forgeDiagnostic=e=>[e?.code||e?.message||'HOST_SESSION_STOPPED',e?.reason,e?.failure,e?.status&&'HTTP '+e.status].filter(Boolean).join(' · ');
 export function forgeMatchError(error){
  const code=error?.code||error?.message;
+ // The app keeps the Play client it shipped with; a server that moved on needs the newer app.
+ if(globalThis.CARDSTASHY_NATIVE&&/^HOST_(ALLOCATION|NATIVE_PROJECTION)_MISMATCH$/.test(code))return 'This version of the app no longer matches the Play server. Update the app from Settings, then start again.';
  // The server ends an account's previous match when the same account starts a new one.
  if(error?.reason==='replaced')return 'This match ended because a new match was started on your account (another tab or device). No result was recorded for it.';
  return ({
