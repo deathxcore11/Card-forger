@@ -10,8 +10,21 @@ export function playScreenFits(width, height) {
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return null;
   return Math.min(width,height)>=PLAY_TOUCH_MIN_EDGE;
 }
-export function readPlayScreen(view=globalThis,root=view.document) {
+// In the app the on-screen keyboard shrinks the WebView itself (a browser keeps its layout
+// viewport), so while a text field has focus a shorter window of the same width keeps the
+// height it had before the keyboard opened.
+const appScreens=new WeakMap();
+function playViewport(view,root,native) {
   const width=root?.documentElement?.clientWidth||view.innerWidth||0,height=root?.documentElement?.clientHeight||view.innerHeight||0;
+  if(native===undefined)try{native=!!view.Capacitor?.isNativePlatform?.();}catch{native=true;}
+  if(!native||Object(view)!==view)return {width,height};
+  const field=root?.activeElement,typing=!!field&&(field.isContentEditable===true||field.tagName==='TEXTAREA'||field.tagName==='INPUT'&&!/^(button|checkbox|radio|submit|reset|range|color|file|image)$/i.test(field.type||''));
+  const before=appScreens.get(view);
+  if(typing&&before?.width===width&&before.height>height)return before;
+  appScreens.set(view,{width,height});return {width,height};
+}
+export function readPlayScreen(view=globalThis,root=view.document) {
+  const {width,height}=playViewport(view,root);
   return {width,height,fits:playScreenFits(width,height)};
 }
 // The table's layout needs container queries, :has() and pointer events. Every current
@@ -44,7 +57,7 @@ export function readPlayDeviceEligibility(view=globalThis,root=view.document) {
   let native=false;
   try{native=!!view.Capacitor?.isNativePlatform?.();}catch{native=true;}
   const n=view.navigator||{},matches=query=>{try{return !!view.matchMedia?.(query)?.matches;}catch{return false;}};
-  return playDeviceEligibility({native,ua:n.userAgent||'',platform:n.platform||'',mobile:n.userAgentData?.mobile,maxTouchPoints:n.maxTouchPoints||0,anyFine:matches('(any-pointer:fine)'),anyHover:matches('(any-hover:hover)'),anyCoarse:matches('(any-pointer:coarse)'),tableSupported:playTableSupported(view),width:root?.documentElement?.clientWidth||view.innerWidth||0,height:root?.documentElement?.clientHeight||view.innerHeight||0});
+  return playDeviceEligibility({native,ua:n.userAgent||'',platform:n.platform||'',mobile:n.userAgentData?.mobile,maxTouchPoints:n.maxTouchPoints||0,anyFine:matches('(any-pointer:fine)'),anyHover:matches('(any-hover:hover)'),anyCoarse:matches('(any-pointer:coarse)'),tableSupported:playTableSupported(view),...playViewport(view,root,native)});
 }
 // One title and one line per reason, shown in place of the start button.
 export function playDeviceGate(result={}) {

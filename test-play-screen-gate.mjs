@@ -1,7 +1,7 @@
 // Play on tablets and unfolded foldables: who is admitted, who sees the bigger-screen
 // notice, and how a match waits while the screen is too small.
 import assert from 'node:assert/strict';
-import {playScreenFits,playDeviceEligibility,playDeviceGate,playScreenPauseApplies,readPlayDeviceEligibility,playTableSupported,createPlayScreenPause,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
+import {playScreenFits,playDeviceEligibility,playDeviceGate,playScreenPauseApplies,readPlayDeviceEligibility,readPlayScreen,playTableSupported,createPlayScreenPause,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
 
 // Shortest side 600 CSS px or more, in either orientation.
 for(const [w,h] of [[820,1180],[1180,820],[884,1104],[1104,884],[744,1133],[1024,768],[600,600]])assert.equal(playScreenFits(w,h),true,`${w}x${h} fits`);
@@ -45,6 +45,19 @@ for(const extra of [{CSS:undefined},{CSS:{supports:q=>q!=='container-type'}},{Po
  const result=readPlayDeviceEligibility(appView(1104,884,extra),{});
  assert.deepEqual(result,{eligible:false,reason:'app-webview',entry:'touch'},'an old app WebView is asked to update');
  assert.deepEqual(playDeviceGate(result),{title:'Play needs a newer WebView',line:'Update Android System WebView from Google Play, then reopen the app.'});
+}
+// In the app the keyboard shrinks the WebView: typing keeps the size from before it opened.
+{
+ const view=appView(841,701),doc={documentElement:{clientWidth:841,clientHeight:701},activeElement:null},search={tagName:'INPUT',type:'search'};
+ const size=(w,h,focus=null)=>{doc.documentElement.clientWidth=w;doc.documentElement.clientHeight=h;doc.activeElement=focus;return [readPlayDeviceEligibility(view,doc).eligible,readPlayScreen(view,doc).fits];};
+ assert.deepEqual(size(841,701),[true,true]);
+ assert.deepEqual(size(841,400,search),[true,true],'the keyboard opening over the deck search does not gate Play');
+ assert.deepEqual(size(841,701,search),[true,true]);
+ assert.deepEqual(size(841,400,{tagName:'BUTTON',type:'submit'}),[false,false],'a shorter window without a text field is gated');
+ assert.deepEqual(size(841,701),[true,true]);
+ assert.deepEqual(size(400,701,search),[false,false],'folding while typing is still gated');
+ const web=tabletView(1180,820),webDoc={documentElement:{clientWidth:1180,clientHeight:820},activeElement:search};
+ readPlayScreen(web,webDoc);webDoc.documentElement.clientHeight=500;assert.equal(readPlayScreen(web,webDoc).fits,false,'the website measures what the browser reports');
 }
 
 // The pause: starts when the screen stops fitting, resumes at once, ticks, and expires once.
