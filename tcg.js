@@ -1,4 +1,5 @@
 import {discoverCardMarkup} from './card-discovery.js';
+import {touchPlayEntryMarkup} from './desktop-play.js';
 import {setAtmosphere,packButton} from './set-experience.js';
 import {setYgoReleaseLookup} from './ygo-foil-recipes.js';
 import {normalizeSeeds} from './deck-seeds.js';
@@ -500,7 +501,7 @@ export function homeHero(g) {
 // printing/set and existing collectible pack action remain independent controls.
 export function homeToday(g) {
   const h=heroFor(g);if(!h)return '';
-  return `<section class="home-today" id="homeToday" data-game="${g}" data-daily-date="${h.date}" data-daily-id="${esc(h.id)}"><span class="today-pack-slot"></span><div class="today-text"><button class="hh-credit" data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}" aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b></button><div class="today-set" aria-live="polite"></div></div></section>`;
+  return `<section class="home-today" id="homeToday" data-game="${g}" data-daily-date="${h.date}" data-daily-id="${esc(h.id)}"><span class="today-pack-slot"></span><div class="today-text"><button class="hh-credit" data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}" aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b></button><div class="today-set" aria-live="polite"></div>${touchPlayEntryMarkup("home")}</div></section>`;
 }
 // Cache only the server's shared selection. The old per-device v1 cache is
 // deliberately ignored so everyone moves to the same midnight schedule.
