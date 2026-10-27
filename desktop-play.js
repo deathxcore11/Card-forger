@@ -14,7 +14,13 @@ export function readPlayScreen(view=globalThis,root=view.document) {
   const width=root?.documentElement?.clientWidth||view.innerWidth||0,height=root?.documentElement?.clientHeight||view.innerHeight||0;
   return {width,height,fits:playScreenFits(width,height)};
 }
-export function playDeviceEligibility({native=false,ua='',platform='',mobile,maxTouchPoints=0,anyFine=false,anyHover=false,anyCoarse=false,width=0,height=0}={}) {
+// The table's layout needs container queries, :has() and pointer events. Every current
+// tablet browser has them (Chrome, Samsung Internet, Edge, Opera, Firefox, Safari);
+// an older one is asked to update instead of getting a broken table.
+export function playTableSupported(view=globalThis) {
+  try{const css=view.CSS;return !!(css?.supports?.('container-type','size')&&css.supports('selector(:has(a))')&&typeof view.PointerEvent==='function');}catch{return false;}
+}
+export function playDeviceEligibility({native=false,ua='',platform='',mobile,maxTouchPoints=0,anyFine=false,anyHover=false,anyCoarse=false,width=0,height=0,tableSupported=true}={}) {
   if(native)return {eligible:false,reason:'native',entry:null};
   const touch=Number.isFinite(maxTouchPoints)&&maxTouchPoints>0||anyCoarse===true;
   const mobileDevice=mobile===true||/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(ua)||(platform==='MacIntel'&&maxTouchPoints>1);
@@ -22,7 +28,7 @@ export function playDeviceEligibility({native=false,ua='',platform='',mobile,max
     // Known mobile/tablet web devices can discover Play even on their cover
     // screen. The route explains the guard instead of promising phone gameplay.
     if(!touch)return {eligible:false,reason:'uncertain',entry:null};
-    if(!/Chrome\/|CriOS\//i.test(ua)||/EdgA\/|OPR\/|SamsungBrowser\//i.test(ua))return {eligible:false,reason:'touch-browser',entry:'touch'};
+    if(tableSupported===false)return {eligible:false,reason:'touch-browser',entry:'touch'};
     if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return {eligible:false,reason:'viewport-unknown',entry:'touch'};
     if(!playScreenFits(width,height))return {eligible:false,reason:'touch-space',entry:'touch'};
     return {eligible:true,reason:'wide-touch-candidate',entry:'touch'};
@@ -37,13 +43,13 @@ export function readPlayDeviceEligibility(view=globalThis,root=view.document) {
   let native=false;
   try{native=!!view.Capacitor?.isNativePlatform?.();}catch{native=true;}
   const n=view.navigator||{},matches=query=>{try{return !!view.matchMedia?.(query)?.matches;}catch{return false;}};
-  return playDeviceEligibility({native,ua:n.userAgent||'',platform:n.platform||'',mobile:n.userAgentData?.mobile,maxTouchPoints:n.maxTouchPoints||0,anyFine:matches('(any-pointer:fine)'),anyHover:matches('(any-hover:hover)'),anyCoarse:matches('(any-pointer:coarse)'),width:root?.documentElement?.clientWidth||view.innerWidth||0,height:root?.documentElement?.clientHeight||view.innerHeight||0});
+  return playDeviceEligibility({native,ua:n.userAgent||'',platform:n.platform||'',mobile:n.userAgentData?.mobile,maxTouchPoints:n.maxTouchPoints||0,anyFine:matches('(any-pointer:fine)'),anyHover:matches('(any-hover:hover)'),anyCoarse:matches('(any-pointer:coarse)'),tableSupported:playTableSupported(view),width:root?.documentElement?.clientWidth||view.innerWidth||0,height:root?.documentElement?.clientHeight||view.innerHeight||0});
 }
 // One title and one line per reason, shown in place of the start button.
 export function playDeviceGate(result={}) {
   if(result.reason==='native')return {title:'Play is coming to the app',line:'Play in the Android app is coming with its next update.'};
   if(result.reason==='touch-space'||result.reason==='viewport-unknown')return {title:'Play needs a bigger screen',line:'Unfold your device, turn it sideways on a tablet, or use a computer.'};
-  if(result.reason==='touch-browser')return {title:'Play needs Chrome on this device',line:'Open CardStashy in Chrome, or use a computer.'};
+  if(result.reason==='touch-browser')return {title:'Play needs a newer browser',line:'Update your browser, or open CardStashy in Chrome or Safari.'};
   return {title:'Play isn’t available in this browser',line:'Use Chrome on a tablet or unfolded phone, or a computer with a mouse or trackpad.'};
 }
 export function playDeviceGuardText(result={}) {const gate=playDeviceGate(result);return `${gate.title}. ${gate.line}`;}

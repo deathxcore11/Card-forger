@@ -59,7 +59,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   // and what you have already picked. Forge still validates every click.
   const discarding=!n.prompt&&choices.size>0&&/\bdiscard\b/i.test(String(n.message||''));
   const role=id=>chosen.has(id)?'chosen':targets.has(id)?'target':choices.has(id)?(discarding?'discard':'choice'):actionable.has(id)?'playable':'';
-  for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));el.dataset.forgeChosen=String(chosen.has(cardId));if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'Click to play or select this card. Drag it up onto the table to play. Use the magnifier or press I to inspect.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
+  for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));el.dataset.forgeChosen=String(chosen.has(cardId));if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
   const surface=snap.status.surface,nativePlayer=seat=>n.players.find(p=>p.id===surface.players.find(p=>p.seat===seat)?.nativeId);
   // Floating mana is the native pool only, never untapped lands or potential production.
   const manaEntries=player=>Object.entries(player?.mana||{}).map(([color,amount])=>[String(color).toUpperCase(),Number(amount)||0]);
@@ -85,6 +85,8 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   if(presentation.hosted&&root.dataset.stage!=='match')for(const el of root.querySelectorAll('.forge-zone-row,.forge-mana-panel'))el.remove();
   if(presentation.hosted&&root.dataset.stage==='match'){
    const mat=root.querySelector('.play-match-mat');
+   // Upright tablets set your hand beside your commander's card instead of under it.
+   const yourCommander=String(!!root.querySelector('.play-command-zone[data-seat=you]'));if(root.dataset.yourCommander!==yourCommander)root.dataset.yourCommander=yourCommander;
    // Each player's public zone counts sit beside their portrait; a count opens that list in the Zones menu.
    for(const p of surface.players){
     const own=p.seat===surface.seat,count=zone=>surface.cards.filter(c=>c.zone===zone&&c.owner===p.seat).length;
@@ -228,8 +230,8 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  });
 
  // Card preview, Arena style: the whole card beside the one you point at, and what it
- // does right now beside that. Hover with a mouse, press and hold on touch, or use the
- // magnifier / I to pin it. It only reads the current native state.
+ // does right now beside that. Hover with a mouse, press and hold on touch, click or
+ // tap a card you can't act on, or press I. It only reads the current native state.
  peek.className='forge-peek';peek.id=`forge-peek-${Date.now().toString(36)}`;peek.setAttribute('role','tooltip');peek.dataset.open='false';doc.body.append(peek);
  const surfaceCard=el=>session.snapshot().status?.surface.cards.find(c=>c.id===Number(el?.dataset.instance))||null;
  function peekHtml(c,reference){
@@ -289,11 +291,20 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  // Arrows are drawn in viewport coordinates, so a scrolling lane moves the cards under them.
  const reflow=()=>{if(peekFor)hidePeek();queueArrows();};
  root.addEventListener('pointerover',over);root.addEventListener('pointerout',out);root.addEventListener('contextmenu',contextMenu,true);root.addEventListener('keydown',peekKeys,true);win.addEventListener('resize',reflow);root.addEventListener('scroll',reflow,true);
+ // A click acts only on a card Forge offers. Where Forge has listed exactly what can be
+ // clicked (priority, targets, a card choice), any other card opens its preview instead;
+ // for other inputs (attacks, blocks, mana payment) every click still goes to Forge.
+ const LISTED_INPUTS=new Set(['InputPassPriority','InputSelectTargets']);
+ const previewOnly=(card,snapshot)=>{
+  const n=snapshot.native;if(!n||snapshot.status?.terminal||n.inputType==='InputLockUI')return true;
+  if(n.inputType==='InputConfirmMulligan'&&!n.prompt)return true;
+  if(card.dataset.forgeHint==='true'||card.dataset.forgeChosen==='true')return false;
+  return !n.prompt&&(LISTED_INPUTS.has(n.inputType)||!n.inputType&&(n.selection?.cards?.length||0)>0);
+ };
  const click=e=>{
-  const magnifier=e.target.closest?.('.play-match-inspect-card');if(magnifier&&root.contains(magnifier)){e.preventDefault();e.stopImmediatePropagation();const card=magnifier.closest('.play-match-card-wrap')?.querySelector('.play-match-card[data-instance]');if(card)peekFor===card&&peekPinned?hidePeek():showPeek(card,true);return;}
   const pinned=peekPinned&&peekFor;if(peekPinned&&!e.target.closest?.('.forge-peek'))hidePeek();
   if(Date.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();return;}
-  const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot();if(snapshot.busy)return;const cardId=Number(card.dataset.instance);if(snapshot.native?.inputType==='InputConfirmMulligan'&&!snapshot.native.prompt){pinned===card?hidePeek():showPeek(card,true);}else{card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);act(()=>session.nativeSelect('card',cardId));}return;}
+  const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot(),cardId=Number(card.dataset.instance);if(previewOnly(card,snapshot)){pinned===card?hidePeek():showPeek(card,true);}else if(!snapshot.busy){card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);act(()=>session.nativeSelect('card',cardId));}return;}
   const player=e.target.closest?.('[data-player-seat]');if(player&&root.contains(player)){e.preventDefault();e.stopImmediatePropagation();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(player.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));return;}
   const zone=e.target.closest?.('.forge-zone-row button[data-zone]');if(zone&&root.contains(zone)){openZone(zone.closest('.forge-zone-row').dataset.seat,zone.dataset.zone);}
  };

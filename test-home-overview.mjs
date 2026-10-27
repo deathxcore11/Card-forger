@@ -48,7 +48,7 @@ syncDesktopPlayEntries('mtg',root,{...view,navigator:{userAgent:'Android',platfo
 syncDesktopPlayEntries('mtg',root,{...view,Capacitor:{isNativePlatform:()=>true}});for(const n of nodes)assert.equal(n.hidden,true);
 // A wide Chrome tablet is admitted through the touch entries and the nav Play.
 const touchNodes=[{dataset:{touchPlayEntry:'practice'},hidden:true,disabled:true}],tabletRoot={querySelectorAll:selector=>selector.includes('touch')?touchNodes:selector.includes('desktop')?nodes:[],documentElement:{clientWidth:820,clientHeight:1180}};
-const tablet={navigator:{userAgent:'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',platform:'Linux armv8l',maxTouchPoints:10},matchMedia:query=>({matches:query.includes('coarse')})};
+const tablet={navigator:{userAgent:'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',platform:'Linux armv8l',maxTouchPoints:10},matchMedia:query=>({matches:query.includes('coarse')}),CSS:{supports:()=>true},PointerEvent:function(){}};
 assert.equal(syncDesktopPlayEntries('mtg',tabletRoot,tablet).eligible,true);
 assert.deepEqual(touchNodes.map(n=>[n.hidden,n.disabled,n.dataset.playReadiness]),[[false,false,'cpu-beta']]);for(const n of nodes){assert.equal(n.hidden,false);assert.equal(n.dataset.playReadiness,'cpu-beta');}
 // A narrow phone still sees the entry; the Play route explains the space guard.

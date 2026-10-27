@@ -1,7 +1,7 @@
 // Play on tablets and unfolded foldables: who is admitted, who sees the bigger-screen
 // notice, and how a match waits while the screen is too small.
 import assert from 'node:assert/strict';
-import {playScreenFits,playDeviceEligibility,playDeviceGate,playScreenPauseApplies,createPlayScreenPause,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
+import {playScreenFits,playDeviceEligibility,playDeviceGate,playScreenPauseApplies,playTableSupported,createPlayScreenPause,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
 
 // Shortest side 600 CSS px or more, in either orientation.
 for(const [w,h] of [[820,1180],[1180,820],[884,1104],[1104,884],[744,1133],[1024,768],[600,600]])assert.equal(playScreenFits(w,h),true,`${w}x${h} fits`);
@@ -16,9 +16,23 @@ assert.equal(playDeviceEligibility({...fold,width:884,height:1104}).eligible,tru
 for(const [w,h] of [[412,915],[915,412]])assert.deepEqual(playDeviceEligibility({...fold,width:w,height:h}),{eligible:false,reason:'touch-space',entry:'touch'},`a phone or cover screen at ${w}x${h} sees the notice`);
 assert.deepEqual(playDeviceGate({reason:'touch-space'}),{title:'Play needs a bigger screen',line:'Unfold your device, turn it sideways on a tablet, or use a computer.'});
 
+// Every current tablet browser plays; an old one is asked to update.
+const tabletUA={
+ 'Samsung Internet':'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/27.0 Chrome/125.0.0.0 Safari/537.36',
+ 'Edge':'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 EdgA/141.0.0.0',
+ 'Firefox':'Mozilla/5.0 (Android 14; Mobile; rv:131.0) Gecko/131.0 Firefox/131.0',
+ 'Chrome on iPad':'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/141.0 Mobile/15E148 Safari/604.1'};
+for(const [name,ua] of Object.entries(tabletUA))assert.equal(playDeviceEligibility({ua,platform:'Linux armv8l',maxTouchPoints:10,anyCoarse:true,width:820,height:1180}).eligible,true,name+' plays on a tablet');
+assert.equal(playDeviceEligibility({ua:'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',platform:'MacIntel',maxTouchPoints:5,anyCoarse:true,width:834,height:1194}).eligible,true,'Safari on iPad plays');
+assert.deepEqual(playDeviceEligibility({...chromeTablet,width:820,height:1180,tableSupported:false}),{eligible:false,reason:'touch-browser',entry:'touch'});
+assert.equal(playDeviceGate({reason:'touch-browser'}).title,'Play needs a newer browser');
+assert.equal(playTableSupported({CSS:{supports:()=>true},PointerEvent:function(){}}),true);
+assert.equal(playTableSupported({CSS:{supports:q=>q!=='selector(:has(a))'},PointerEvent:function(){}}),false,'no :has() support');
+assert.equal(playTableSupported({}),false,'no CSS.supports at all');
+
 // A desktop is admitted at any window size or zoom and never pauses; touch devices pause.
 const desktopView=(width,height)=>({navigator:{userAgent:'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',platform:'Win32',maxTouchPoints:0},matchMedia:q=>({matches:/fine|hover/.test(q)}),innerWidth:width,innerHeight:height});
-const tabletView=(width,height)=>({navigator:{userAgent:chromeTablet.ua,platform:chromeTablet.platform,maxTouchPoints:10},matchMedia:q=>({matches:/coarse/.test(q)}),innerWidth:width,innerHeight:height});
+const tabletView=(width,height)=>({navigator:{userAgent:chromeTablet.ua,platform:chromeTablet.platform,maxTouchPoints:10},matchMedia:q=>({matches:/coarse/.test(q)}),CSS:{supports:()=>true},PointerEvent:function(){},innerWidth:width,innerHeight:height});
 for(const [w,h] of [[850,580],[683,384],[1920,1080]])assert.equal(playScreenPauseApplies(desktopView(w,h),{}),false,`a desktop at ${w}x${h} never pauses`);
 for(const [w,h] of [[820,1180],[412,915]])assert.equal(playScreenPauseApplies(tabletView(w,h),{}),true,`a touch device at ${w}x${h} can pause`);
 assert.equal(playScreenPauseApplies({Capacitor:{isNativePlatform:()=>true},navigator:{},matchMedia:()=>({matches:false})},{}),false,'the Android app does not run Play yet');
@@ -41,4 +55,4 @@ assert.equal(playScreenPauseApplies({Capacitor:{isNativePlatform:()=>true},navig
  quiet.update(false);quiet.destroy();advance(5000);assert.deepEqual(events,[],'a destroyed pause never expires');
 }
 assert.equal(PLAY_SMALL_SCREEN_LIMIT_MS,5*60*1000);
-console.log('PASS: tablets and unfolded foldables play in both orientations, phones see the notice, desktops never pause, and the pause resumes, ticks and expires once.');
+console.log('PASS: tablets and unfolded foldables play in both orientations in every current browser, phones see the notice, desktops never pause, and the pause resumes, ticks and expires once.');
