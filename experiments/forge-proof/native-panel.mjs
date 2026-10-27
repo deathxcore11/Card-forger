@@ -231,7 +231,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const confirm=button(copy('Confirm','Confirm amounts'),()=>{const sent=[...amounts];assignDrafts.delete(p.id);return session.replyAmounts(sent);},false,'confirm-assign');
    function sync(){const used=amounts.reduce((t,a)=>t+a,0);rows.forEach((r,i)=>{r.value.textContent=String(amounts[i]);r.less.disabled=s.busy||amounts[i]<=0;r.more.disabled=s.busy||amounts[i]>=shape.caps[i]||used>=shape.amount;});total.textContent=used===shape.amount?'All assigned':`${shape.amount-used} left to assign`;confirm.disabled=s.busy||used!==shape.amount;}
    sync();box.append(total);const actions=node('div',undefined,'forge-native-confirm');actions.append(confirm);
-   if(combat&&shape.maySkip)actions.append(button('Skip',()=>{assignDrafts.delete(p.id);return session.skipAssign();},false,'skip-assign'));
+   if(combat&&shape.maySkip)actions.append(button('Do this one later',()=>{assignDrafts.delete(p.id);return session.skipAssign();},false,'skip-assign'));
    box.append(actions);panel.append(box);
   }else if(p.method==='showInputDialog'){
    const form=node('form'),label=node('label','Value requested by Forge');let input;
