@@ -4296,7 +4296,7 @@ dialog.action-tour{inset:0;width:100%;height:100%;max-width:none;max-height:none
 .brand-home{min-height:48px;border:1px solid transparent;border-radius:18px;padding:4px 10px 4px 4px;flex:none}.brand-home.on{background:color-mix(in srgb,var(--game-color) 10%,transparent);border-color:color-mix(in srgb,var(--game-color) 30%,transparent)}.brand-home:focus-visible{outline:2px solid var(--gold);outline-offset:3px}.brand-home .brand-home-label{display:none}.bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:1100px){.brand-home .brand-wordmark{display:none}.brand-home .brand-home-label{display:inline!important;font-size:13px;letter-spacing:0}.brand-home{gap:6px;margin-right:auto}.brand-home .mark{width:36px;height:36px}}
 /* Phone and tablet: five actions, with a quiet animated search emblem. */
-.bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr))}.bottom-nav .nav-search>span{position:relative;height:38px;width:58px;border:1px solid color-mix(in srgb,var(--game-color) 50%,#ffffff20);background:color-mix(in srgb,var(--game-color) 12%,var(--surface));border-radius:20px;color:var(--gold)}.search-emblem{width:34px;height:34px}.search-emblem-cards{transform-origin:20px 20px;animation:search-cards-breathe 8s ease-in-out infinite}.bottom-nav .nav-search>span:before{content:'';position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:linear-gradient(110deg,transparent 15%,var(--game-color) 40%,#6fdbe7 50%,var(--game-color) 60%,transparent 85%);background-size:250% 100%;mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude;pointer-events:none;animation:search-rim 12s linear infinite}.community-hub-title{margin-bottom:28px}.community-hub-title h1{font-size:clamp(28px,4vw,42px);margin:8px 0 12px}.community-hub-title .actions{margin-top:18px}.community-hub .home-meta{margin:24px 0}.community-hub .home-community{margin-top:28px}.community-hub>.foot{margin-top:24px}
+.bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr))}.bottom-nav .nav-search>span{position:relative;height:38px;width:58px;border:1px solid color-mix(in srgb,var(--game-color) 50%,#ffffff20);background:color-mix(in srgb,var(--game-color) 12%,var(--surface));border-radius:20px;color:var(--gold)}.search-emblem{width:34px;height:34px}.search-emblem-cards{transform-origin:20px 20px;animation:search-cards-breathe 8s ease-in-out infinite}.bottom-nav .nav-search>span:before{content:'';position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:linear-gradient(110deg,transparent 15%,var(--game-color) 40%,#6fdbe7 50%,var(--game-color) 60%,transparent 85%);background-size:250% 100%;mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude;pointer-events:none;animation:search-rim 12s linear infinite}.community-hub-title{margin-bottom:28px}.community-hub-title h1{font-size:clamp(28px,4vw,42px);margin:8px 0 12px}.community-hub-title .actions{margin-top:18px}.community-hub .home-meta{margin:24px 0}.community-hub .home-community{margin-top:28px}.community-hub>.foot{margin-top:24px}
 @keyframes search-cards-breathe{50%{transform:rotate(-6deg) translateY(-1px)}}@keyframes search-rim{to{background-position:250% 0}}
 #desktopSearch[hidden]{display:none!important}#homeSearchDock:empty{display:none}
 @media(max-width:1199px){.topbar>.top-nav{display:none}.bottom-nav{display:grid}#content{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 28px)}}
@@ -4313,7 +4313,6 @@ dialog.action-tour{inset:0;width:100%;height:100%;max-width:none;max-height:none
 @media(min-width:900px) and (max-width:1199px){.topbar{grid-template-columns:auto minmax(0,1fr) auto}.topbar>.game-tabs{grid-column:2;grid-row:1}.topbar>button.icon{grid-column:3;grid-row:1}.topbar>.save-status{display:none}.brand-home .brand-wordmark{display:none}.brand-home .brand-home-label{display:inline!important}}
 @media(min-width:1200px){.topbar{grid-template-columns:auto minmax(260px,340px) minmax(260px,1fr) auto;gap:8px 18px}.topbar>.brand{grid-column:1;grid-row:1}.topbar>.game-tabs{grid-column:2;grid-row:1}.topbar>#desktopSearch{grid-column:3;grid-row:1;width:100%;min-width:0}.topbar>button.icon{grid-column:4;grid-row:1}.topbar>.top-nav{grid-column:2 / 4;grid-row:2;display:flex;justify-content:center}.topbar>.save-status{grid-column:1;grid-row:2;justify-self:start;font-size:10px;max-width:190px}.topbar .home-search-wrap{max-width:none}.topbar .home-search-pill{min-height:54px;border-radius:18px}.topbar .home-search-pill input{padding:22px 8px 8px 16px;font-size:14px}.topbar .home-ai-label{top:7px;left:16px;font-size:8px}.topbar .home-search-submit{height:40px;width:40px}.bottom-nav{display:none}#content{padding-bottom:48px}#homeHero.home-art-header .hh-body{padding-top:65px;padding-bottom:34px}#homeHero.home-art-header{min-height:320px}}
 @media(prefers-reduced-motion:reduce){.search-emblem-cards,.bottom-nav .nav-search>span:before{animation:none}}
-:is(.bottom-nav,.top-nav) [data-nav="community"]:disabled{opacity:.38;color:var(--muted);cursor:default;background:none}
 
 .set-grid .grid-meta{min-width:0;gap:8px;align-items:start}.set-grid .grid-meta>span:last-child{flex-shrink:0;font-variant-numeric:tabular-nums}.set-coverage-note{font-size:12px;line-height:1.6;max-width:80ch}
 
@@ -4341,8 +4340,6 @@ body[data-view="scan"] #content:has(.scan-workspace.is-live) > .context-guide{di
  .topbar > .save-status{display:none}
 }
 /* The full Community label fits the narrowest 64px navigation target. */
-.bottom-nav [data-nav="community"]{letter-spacing:-.035em}
-@media(max-width:359px){.bottom-nav [data-nav="community"]{letter-spacing:-.075em}}
 
 /* One reachable header row on phones and tablets. The selected game's name
    stays visible; the other games retain their distinct symbols and full labels. */
@@ -5057,7 +5054,7 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .settings-page .password-toggle{color:var(--gold)}
 .settings-group-title{font-size:1rem;margin:24px 0 12px;letter-spacing:0}
 .settings-group-title:first-child{margin-top:4px}
-[data-nav="community"]{position:relative}
+
 .community-request-badge,.account-sync-notice{position:absolute;top:0;right:3px;min-width:20px;min-height:20px;display:grid;place-items:center;border-radius:999px;background:var(--gold);color:#16131b;font:700 12px/1.4 sans-serif;padding:1px 5px}
 #content :is(.home-meta-card,.home-community .community-feature) .community-art .community-art-credit{display:none}
 #content :is(.home-meta-card,.home-community .community-feature) .community-art[data-art-state="ready"] .community-art-credit{display:block}

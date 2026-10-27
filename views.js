@@ -16,9 +16,9 @@ import {finishEffectsOn} from './finish-preview.js';
 import {finishAttrs,finishPreview} from './finish-preview.js';
 import {deckBoxMarkup} from './deck-box.js';
 import {detailSetSummary,detailOwnedSummary,miniPrintingMarkup} from './card-detail-extras.js';
-import {passwordField} from './auth-form.js';
+import {passwordField,passwordRules} from './auth-form.js';
 import {detailOwnedGroups} from './quick-quantity.js';
-import {profileAvatar,profilePhotoControl} from './profile-art.js';
+import {profileArt,profileAvatar,profilePhotoControl} from './profile-art.js';
 import {infoPanel} from './app-info.js';
 import {buyContext,compactPriceSummary,selectedFinish,detailTabs,detailPanel} from "./pricing-presentation.js";
 import { homeValue, homeEdition, homeDeckShelf } from "./home-ui.js";
@@ -1752,7 +1752,7 @@ export function signedOutAccount(a, mode = "login", photo = "") {
   <div id="auth-signup" class="auth-pane" role="tabpanel" aria-labelledby="authTab-signup" ${selected === "signup" ? "" : "hidden"}>
     <form data-auth-action="createAccount">
     <label class="field">Email address<input id="signupEmail" name="email" required type="email" autocomplete="email" placeholder="you@example.com" aria-label="Account email address"></label>
-    <label class="field">Password${passwordField('<input id="signupPassword" name="password" required type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters">','password')}</label>
+    <label class="field">Password${passwordField('<input id="signupPassword" name="password" required type="password" autocomplete="new-password" minlength="8" placeholder="Create a password">','password')}</label>${passwordRules('signupPassword')}
     <label class="field">Confirm password${passwordField('<input id="signupConfirm" name="password_confirmation" required type="password" autocomplete="new-password" placeholder="Enter it again">','confirmation password')}</label>
     <button class="btn block" type="submit">Create account</button></form><p class="foot">${a.providers.confirmationRequired===false ? "Create your account, then start syncing." : "Check your email to finish creating your account."}</p>${a.providers.confirmationRequired===false ? "" : `<button class="link small" type="button" data-act="resendConfirm">Didn’t get the email? Resend confirmation email</button>`}
   </div>
@@ -1769,17 +1769,22 @@ export function accountPanel() {
   if (!a.ready)
     return `<section class="panel account"><h3>Account</h3><p class="muted small">${a.status.state === "error" ? esc(a.status.msg) : "Connecting…"}</p></section>`;
   if (a.recoveringPassword && a.user)
-    return `<section class="panel account"><h3>Choose a new password</h3><p class="muted small">Your reset link was accepted. Set a password for your CardStashy account.</p><label class="field">New password${passwordField('<input id="resetPassword" type="password" autocomplete="new-password" minlength="8">','new password')}</label><label class="field">Confirm password${passwordField('<input id="resetConfirm" type="password" autocomplete="new-password" data-enter="finishPasswordReset">','confirmation password')}</label><button class="btn block" data-act="finishPasswordReset">Save new password</button><button class="link small" data-act="signOut">Cancel and sign out</button></section>`;
+    return `<section class="panel account"><h3>Choose a new password</h3><p class="muted small">Your reset link was accepted. Set a password for your CardStashy account.</p><label class="field">New password${passwordField('<input id="resetPassword" type="password" autocomplete="new-password" minlength="8">','new password')}</label>${passwordRules('resetPassword')}<label class="field">Confirm password${passwordField('<input id="resetConfirm" type="password" autocomplete="new-password" data-enter="finishPasswordReset">','confirmation password')}</label><button class="btn block" data-act="finishPasswordReset">Save new password</button><button class="link small" data-act="signOut">Cancel and sign out</button></section>`;
   if (!a.user) return signedOutAccount(a, S.ui.authMode || "login", photo);
   const pr = a.profile || {},
     st = a.status,
     label = { synced: "Synced", syncing: "Syncing…", error: "Sync paused", decide: "Needs your decision", offline: "Offline — will sync when you’re back online", local: "Account sync not confirmed" }[st.state] || "Account sync not confirmed";
-  return `<section class="panel account"><div class="account-head">${profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,pr)}<div><b>${esc(pr.username || pr.display_name || "Collector")}</b><small class="muted">${esc(a.user.email || "")}</small></div></div>
+  const header = profileArt(a.art?.header || S.state.settings.profileHeader) || profileArt(a.art?.avatar || S.state.settings.cardAvatar),
+    requests = S.ui.communityRequests || 0, friends = S.ui.communityFriends;
+  return `<section class="panel account"><div class="account-hub">
+      <div class="account-hub-banner" aria-hidden="true">${header ? `<img src="${esc(header.image)}" alt="" onerror="this.hidden=true">` : ""}</div>
+      <div class="account-hub-identity"><span class="account-hub-avatar">${profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,pr)}</span><div><b>${esc(pr.username || pr.display_name || "Collector")}</b><small>${esc(a.user.email || "")}</small><span class="account-hub-privacy">Visible to friends only</span></div></div>
+      <div class="account-hub-actions"><button class="btn small" data-act="myCommunity">My profile</button><button class="btn ghost small" data-act="friendsOpen">Friends${Number.isFinite(friends) ? ` <span class="account-hub-num">${friends}</span>` : ""}</button><button class="btn ghost small" data-act="friendRequests">Requests${requests ? ` <span class="account-inline-count">${requests}</span>` : ""}</button><button class="btn ghost small" data-act="addFriend">Add friend</button></div>
+    </div>
     <div class="sync-line ${st.state}"><span><b>${label}</b>${st.state === "synced" && st.at ? ` · ${esc(when(st.at))}` : ""}</span><button class="btn ghost small" data-act="syncNow">Sync now</button></div>
     ${st.state === "error" && st.msg ? `<p class="small bad-text">${esc(st.msg)} Your cards are still saved on this device.</p>` : ""}
     ${a.pending ? `<button class="btn block" data-act="syncDecide">Choose which copy to keep</button>` : ""}
-    <div class="actions wrap"><button class="btn small" data-act="myCommunity">My profile</button><button class="btn ghost small" data-act="addFriend">Add friend</button><button class="btn ghost small" data-act="friendRequests">Friend requests${S.ui.communityRequests?` <span class="account-inline-count">${S.ui.communityRequests}</span>`:''}</button></div>
-    <details><summary class="small"><b>Profile</b></summary>${photo}<button class="btn ghost small" data-act="profileHeader">Choose profile header</button>
+    <details class="account-hub-edit"><summary class="small"><b>Edit profile</b></summary>${photo}<button class="btn ghost small" data-act="profileHeader">Choose profile header</button>
       <label class="field">Username <span class="muted small">Your displayed player name. Friends can search for it.</span><input id="pfUser" minlength="3" maxlength="30" required autocomplete="nickname" value="${esc(pr.username || "")}" placeholder="letters, numbers, _"></label>
       <label class="field">Bio<textarea id="pfBio" rows="2" maxlength="500">${esc(pr.bio || "")}</textarea></label>
       <button class="btn small" data-act="saveProfile">Save profile</button>

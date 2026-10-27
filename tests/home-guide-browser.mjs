@@ -14,8 +14,8 @@ try{
    const original=await inventorySnapshot(page);
    await page.locator('.brand-home').click();await page.waitForFunction(()=>document.body.dataset.view==='home');
    assert.equal(await page.locator('[data-nav="home"]').count(),1);assert.equal(await page.locator('.brand-home').getAttribute('aria-current'),'page');
-   assert.deepEqual(await page.locator('.bottom-nav [data-nav]:not([data-nav="play"])').evaluateAll(nodes=>nodes.map(n=>n.dataset.nav)),['community','collection','search','decks','scan']);
-   assert(await page.locator('.bottom-nav [data-nav="community"]').isEnabled());
+   assert.deepEqual(await page.locator('.bottom-nav [data-nav]').evaluateAll(nodes=>nodes.map(n=>n.dataset.nav)),['play','collection','search','decks','scan']);
+   assert.equal(await page.locator('[data-nav="community"]').count(),0,'Profile and friends open from the avatar');
    for(const width of [320,390,768,1024,1440,2560,390]){
     await page.setViewportSize({width,height:1000});await page.waitForFunction(w=>document.querySelector('#homeQ')?.closest(w>=1200?'#desktopSearch':'#homeSearchDock'),width);
     assert.equal(await page.locator('#homeQ').count(),1);await page.locator('#homeQ').fill('Alpha');

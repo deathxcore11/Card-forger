@@ -97,7 +97,7 @@ import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,reme
 import {syncDeckViewers,deckViewer} from './deck-viewer.js';
 import {modeFor,registerWorkbench,quoteModel,recordQuote} from "./workbench-ui.js";
 import { locationPicker, rememberLocation, chooseLocation } from "./collection-locations.js";
-import { captureAuthFields, restoreAuthFields, authFeedback, togglePassword } from "./auth-form.js";
+import { captureAuthFields, restoreAuthFields, authFeedback, togglePassword, syncPasswordRules } from "./auth-form.js";
 import { formatUpgrades, applyFormatSwap } from "./format-upgrades.js";
 import { cutToTarget } from "./deck-safety.js";
 import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn, binderFavorites, binderCoverState, coverImages, MAX_FAVORITES } from "./binders.js";
@@ -233,7 +233,6 @@ function decorateShell() {
   for (const b of $$(".bottom-nav [data-nav]")) {
     const span = b.querySelector("span");
     if(span&&b.dataset.nav==="search")span.innerHTML=searchEmblem();
-    else if(span&&b.dataset.nav==="community")span.innerHTML='<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v1"/></svg>';
     else if (span && ICON[b.dataset.nav]) span.innerHTML = ICON[b.dataset.nav];
   }
   const gear = $('.topbar [data-act="menu"]');
@@ -1104,7 +1103,7 @@ function render() {
   if(introPending)setTimeout(safeIntro,100);
   restoreSectionTabRail(content,priorSectionRail);
   if (ui.view === "home") refreshHomeCommunity(g, content).catch(() => {});
-  if(!cloudInfo().user)restoreAuthFields(document,authFields);
+  if(!cloudInfo().user){restoreAuthFields(document,authFields);for(const field of document.querySelectorAll('#signupPassword,#resetPassword'))syncPasswordRules(field,document);}
   for(const {id,value} of profileFields){const field=$("#"+id);if(field)field.value=value;}
   const displayArea=["deck","tdeck"].includes(ui.view)?"deck":ui.view === "search"?"search":ui.view === "set"?"set":ui.view === "collection" && (g === "mtg" ? ui.collTab === "wishlist" : T.ui(g).coll.tab === "wishlist")?"wishlist":ui.view === "collection" && (g === "mtg" ? ui.collTab === "cards" : !T.ui(g).coll.tab || T.ui(g).coll.tab === "cards")?"collection":null;
   $("#content").className=displayArea ? "view-"+modeFor(g,displayArea) : "";
@@ -1600,7 +1599,7 @@ function playDeckPreview(deck) {
 function renderPlayPage() {
   if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>Choose Magic in the game selector to prepare a CPU match.</p><a class="btn" href="#home">Return Home</a></section>';
   const device=syncDesktopPlayEntries('mtg');
-  if(!device.eligible){const gate=playDeviceGate(device);return '<section class="empty play-device-guard"><span class="play-device-guard-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/><path d="M12 7v10"/></svg></span><h1>'+esc(gate.title)+'</h1><p>'+esc(gate.line)+'</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';}
+  if(!device.eligible){const gate=playDeviceGate(device);return '<section class="empty play-device-guard"><span class="play-device-guard-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="9" height="16" rx="1.6"/><path d="M13.5 5.4 20.2 3.6a.8.8 0 0 1 1 .8v15.2a.8.8 0 0 1-1 .8l-6.7-1.8z"/><path d="M5.5 12h3m-1.3-1.5L8.7 12l-1.5 1.5"/></svg></span><h1>'+esc(gate.title)+'</h1><p>'+esc(gate.line)+'</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';}
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:(state.playStyle!=='quick'&&state.inspectedSeat==='opponent'?state.opponentSource==='saved'&&state.opponent?.id===deck.id:state.selectedSource==='saved'&&state.selected?.id===deck.id)}));}
   const inspected=state.match.mode==='cpu'&&state.inspectedSeat==='opponent'?state.opponent:state.selected;
@@ -2511,11 +2510,13 @@ A.muUndo = async (t) => {
 };
 let settingsBaseState=null;
 const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div class="settings-brand-lockup">${brandMark("settings-brand-mark")}<div><p class="eyebrow">CARDSTASHY <span class="settings-scope">· ALL GAMES</span></p><h2 id="settingsDialogTitle">Settings</h2></div></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(normalizeSettingsTab(S.ui.settingsTab)==='recovery'){storageDetail();void renderRecoverySnapshots();}},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state||S.ui.view==='community')render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
-A.menu = () => settingsPopup.open();
+// The avatar is the account hub: profile, friends and sign-in open first.
+A.menu = () => {S.ui.settingsTab='account';settingsPopup.open();if(!accountLocked&&cloudInfo().user)void community.refresh();};
 A.addFriend=()=>community.add();
 A.friendRequests=()=>community.requests();
 A.blockedAccounts=()=>community.blocks();
 A.myCommunity=()=>community.mine();
+A.friendsOpen=()=>community.friends();
 A.closeSettings = () => settingsPopup.close();
 
 /* =========================================================
@@ -2844,6 +2845,7 @@ A.resetOnboarding=async()=>{
 if(!await ask('Reset guide history? Only tutorials will reset. Your cards, decks, account and preferences stay saved.'))return;resetOnboarding();introPending=true;toast('Guides reset. The introduction will return on Home when you finish your current task.');};
 A.helpOpen=t=>{const id=t?.dataset?.id||'start';if(!INFO_TOPICS.some(x=>x.id===id))return;S.ui.settingsTab='info';settingsPopup.open();A.settingsTab({dataset:{id:'info'}});const topic=document.getElementById('info-'+id);if(topic){topic.hidden=false;topic.open=true;topic.querySelector('summary')?.focus();topic.scrollIntoView({block:'nearest'});}};
 A.infoGo=t=>{const topic=INFO_TOPICS.find(x=>x.id===t.dataset.id);if(!topic)return;if(topic.id==='tabletop')return A.tabletop();if(topic.route==='#settings')return A.settingsTab({dataset:{id:'account'}});settingsPopup.close();go(topic.route);};
+document.addEventListener('input',e=>{if(e.target.matches?.('#signupPassword,#resetPassword'))syncPasswordRules(e.target,e.target.closest('.account')||document);});
 document.addEventListener('input',e=>{if(e.target.id!=='infoQuery')return;const matches=new Set(findInfo(e.target.value).map(t=>t.id)),root=e.target.closest('.info-centre');root.querySelectorAll('[data-info-topic]').forEach(n=>n.hidden=!matches.has(n.dataset.infoTopic));root.querySelector('#infoCount').textContent=matches.size+' topics';root.querySelector('.info-empty').hidden=matches.size>0;});
 // Ask AI: the in-app assistant. Its tools are the app's own functions, run here on the device.
 let askTools = null;
@@ -3571,13 +3573,8 @@ const deckBoxTransitions=createDeckBoxTransitions();
 function refreshProfileAvatar(){
  const button=document.querySelector('.topbar [data-act="menu"]');if(!button)return;
  const a=cloudInfo(),requests=accountLocked?0:(S.ui.communityRequests||0),important=!accountLocked&&a.user&&(a.pending||a.status.state==='error');
- for(const nav of document.querySelectorAll('[data-nav="community"]')){
-  nav.querySelector('.community-request-badge')?.remove();
-  nav.setAttribute('aria-label',`Community${requests?`, ${requests} pending friend request${requests===1?'':'s'}`:''}`);
-  if(requests)nav.insertAdjacentHTML('beforeend',`<span class="community-request-badge" aria-hidden="true">${requests>99?'99+':requests}</span>`);
- }
- const html=(accountLocked ? profileAvatar(null,{}) : profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,a.profile||{}))+releaseDot()+(important?'<span class="account-sync-notice" aria-hidden="true">!</span>':'');
- button.setAttribute('aria-label',`Profile and settings${releaseState().unread?', unread release notes':''}${important?', account saving needs attention':''}`);
+ const html=(accountLocked ? profileAvatar(null,{}) : profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,a.profile||{}))+releaseDot()+(important?'<span class="account-sync-notice" aria-hidden="true">!</span>':'')+(requests?`<span class="account-notice-badge" aria-hidden="true">${requests>99?'99+':requests}</span>`:'');
+ button.setAttribute('aria-label',`Profile and settings${requests?`, ${requests} pending friend request${requests===1?'':'s'}`:''}${releaseState().unread?', unread release notes':''}${important?', account saving needs attention':''}`);
  if(button.innerHTML!==html)button.innerHTML=html;
  button.classList.add('profile-menu');button.title='Profile & settings';
 }
@@ -3594,7 +3591,7 @@ const artworkSaved=()=>{refreshProfileAvatar();settingsPopup.refresh();void comm
 const profilePicker=createProfileArtPicker({lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar,save:value=>saveProfileArtwork('avatar',value),onSaved:artworkSaved});
 const headerPicker=createProfileArtPicker({purpose:'header',lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.header||community.data?.art?.header||S.state.settings.profileHeader,save:value=>saveProfileArtwork('header',value),onSaved:artworkSaved});
 const community=createCommunity({account:cloudInfo,request:communityRequest,rerender:render,active:()=>S.ui.view==='community',localArt:()=>({avatar:S.state.settings.cardAvatar,header:S.state.settings.profileHeader}),toast,
- onChange:data=>{S.ui.communityRequests=incomingRequestCount(data);refreshProfileAvatar();if(settingsPopup.isOpen)settingsPopup.refresh();},
+ onChange:data=>{S.ui.communityRequests=incomingRequestCount(data);S.ui.communityFriends=data?(data.people||[]).filter(p=>p.relationship==='accepted').length:null;refreshProfileAvatar();if(settingsPopup.isOpen)settingsPopup.refresh();},
  copyDeck:async item=>{const generation=accountGeneration,owner=cloudInfo().user?.id;if(accountLocked||!owner)throw Error('Sign in before saving a deck.');const d=sharedDeckCopy(item,uid());await commit(state=>{(item.game==='mtg'?state:state.tcg[item.game]).decks.push(d);},{enrich:false,guard:()=>{if(accountLocked||generation!==accountGeneration||cloudInfo().user?.id!==owner)throw Error('Your account changed. Please try again.');return true;}});},
  editItem:async item=>{const generation=accountGeneration;if(accountLocked)return;await navigate({game:item.game,hash:item.kind==='binder'?'#collection':item.game==='mtg'?'#deck/'+item.key.slice(('deck:'+item.game+':').length)+'/cards':'#tdeck/'+item.key.slice(('deck:'+item.game+':').length),mode:'push'});if(generation!==accountGeneration||T.game()!==item.game)return;if(item.kind==='binder')A.editBinder({dataset:{binder:item.key.slice(7)}});},
  chooseArt:kind=>(kind==='header'?headerPicker:profilePicker).open(),editProfile:()=>{community.close();S.ui.settingsTab='account';settingsPopup.open();},signIn:()=>{S.ui.settingsTab='account';S.ui.authMode='login';S.ui.authFeedback=null;settingsPopup.open();document.querySelector('#signEmail')?.focus({preventScroll:true});},

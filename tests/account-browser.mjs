@@ -42,10 +42,10 @@ try{
   assert.equal(await page.locator('.topbar #saveStatus').count(),0,'Sync status is confined to Account settings');
   assert.equal(await page.locator('#settingsDialog [data-act="syncNow"]').count(),1);
   assert.equal(await page.locator('#pfName').count(),0,'There is one player-name field');
-  assert.match(await page.locator('.account-head').innerText(),/account_b/);
+  assert.match(await page.locator('.account-hub-identity').innerText(),/account_b/);
   await page.locator('#pfUser').evaluate(n=>n.closest('details').open=true);
   await page.locator('#pfUser').fill('player_b');await page.locator('[data-act="saveProfile"]').click();
-  await page.waitForFunction(()=>document.querySelector('.account-head b')?.textContent==='player_b');
+  await page.waitForFunction(()=>document.querySelector('.account-hub-identity b')?.textContent==='player_b');
   assert.equal(await page.evaluate(()=>window.__accountFixture.model.profiles.B.display_name),'player_b');
   const underlying=await page.evaluate(()=>location.hash);
   await page.locator('[data-act="myCommunity"]').click();await page.locator('.community-dialog .community-profile-card').waitFor();
@@ -60,7 +60,7 @@ try{
   assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.writes),[]);
   const backup=await page.evaluate(async()=>{const r=await import('/storage.js');return r.readRecord('cardstashy-before-account-isolation-v1');});assert.deepEqual(backup.state.collection,a.collection,'legacy cards are preserved exactly as stored');assert.deepEqual(backup.state.settings.cardAvatar,a.settings.cardAvatar,'legacy artwork is preserved');
   await page.waitForFunction(async()=>!!(await import('/cloud.js')).cloudInfo().pending);await later(page);
-  await page.locator('[data-nav="community"]:visible').first().click();await page.locator('.community-layout[aria-busy="false"]').waitFor();
+  await page.evaluate(()=>{location.hash='#community';});await page.locator('.community-layout[aria-busy="false"]').waitFor();
   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.community-page',`signed-in Community ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-community-account-${width}`);}
   assert.match(await page.locator('.community-avatar-open img').getAttribute('src'),/Gengar-A/,'Community renders the current account avatar');
   assert.equal(await page.locator('[data-community-panel="friends"]').count(),1);assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.writes),[]);
@@ -71,7 +71,7 @@ try{
   await page.locator('[data-community-kind="binder"]').click();assert.equal(await page.locator('.community-share-choices [data-community-preview="binder:profile-binder"]').count(),1);
   await page.locator('[data-community-filter]').fill('no match');assert.equal(await page.locator('.community-share-choices [data-community-preview]').count(),0);await page.locator('[data-community-filter]').fill('');
   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.community-dialog',`sharing picker ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-community-sharing-${width}`);}
-  await page.locator('[data-community-close]').click();assert.equal(await page.locator('[data-nav="community"]:visible .community-request-badge').first().textContent(),'1');assert.equal(await page.locator('.topbar .account-count').count(),0);
+  await page.locator('[data-community-close]').click();assert.equal(await page.locator('.topbar [data-act="menu"] .account-notice-badge').textContent(),'1');assert.match(await page.locator('.topbar [data-act="menu"]').getAttribute('aria-label'),/1 pending friend request/);assert.equal(await page.locator('.topbar .account-count').count(),0);
   await page.locator('[data-community-panel="friends"]').click();await page.locator('[data-community-panel="add"]').click();await page.locator('[data-community-search]').waitFor();
   for(const query of ['C@example.invalid','friend_c']){
    await page.locator('[data-community-search] input').fill(query);await page.locator('[data-community-search] button').click();
@@ -79,7 +79,7 @@ try{
    assert.match(await page.locator('[data-community-found]').innerText(),/friend_c/);
   }
   await page.locator('[data-community-close]').click();
-  await page.locator('[data-community-requests]').click();await page.locator('[data-community-action="accept"]').click();await page.locator('[data-friends-content]').getByText('No pending requests.',{exact:true}).waitFor();assert.equal(await page.locator('[data-nav="community"] .community-request-badge').count(),0);await page.locator('[data-community-close]').click();
+  await page.locator('[data-community-requests]').click();await page.locator('[data-community-action="accept"]').click();await page.locator('[data-friends-content]').getByText('No pending requests.',{exact:true}).waitFor();assert.equal(await page.locator('.topbar [data-act="menu"] .account-notice-badge').count(),0);await page.locator('[data-community-close]').click();
   const ownerSnapshot=await page.evaluate(()=>JSON.stringify(window.__accountFixture.model.items.C));const myCards=await page.evaluate(()=>JSON.stringify(window.__uiTestState.state.collection));
   await page.locator('[data-community-person="C"]').click();await page.locator('[data-community-item="binder:friend-binder"]').waitFor();assert.equal(await page.locator('.community-dialog [data-community-source]').count(),0,'friend has no edit controls');
   await page.locator('[data-community-item="binder:friend-binder"]').click();await page.locator('#sheet .stash-open-book').waitFor();

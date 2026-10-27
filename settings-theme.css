@@ -223,3 +223,29 @@
 
 /* A tab's icon and label are decoration: taps and clicks always land on the tab itself. */
 .settings-tabs [role="tab"]>*{pointer-events:none}
+
+/* Account hub: the profile card that opens from the avatar. */
+.account-hub {position:relative;margin:-20px -20px 16px;border-radius:18px 18px 0 0;overflow:hidden;border-bottom:1px solid color-mix(in srgb,var(--gold) 26%,var(--line));background:linear-gradient(180deg,transparent 0,var(--surface) 96px);}
+.account-hub-banner {position:relative;height:96px;background:radial-gradient(120% 140% at 15% 0,color-mix(in srgb,var(--gold) 26%,transparent),transparent 60%),var(--surface-2);}
+.account-hub-banner img {display:block;width:100%;height:100%;object-fit:cover;object-position:center 28%;}
+.account-hub-banner::after {content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,var(--surface));}
+.account-hub-identity {display:flex;align-items:flex-end;gap:14px;margin-top:-44px;padding:0 20px;position:relative;}
+.account-hub-avatar {flex:none;display:grid;border-radius:50%;}
+.account-hub-avatar .profile-avatar {width:84px;height:84px;box-shadow:0 0 0 3px var(--surface),0 0 0 4px color-mix(in srgb,var(--gold) 55%,transparent),0 10px 24px #0007;}
+.account-hub-identity>div {display:grid;min-width:0;padding-bottom:4px;}
+.account-hub-identity b {font-size:20px;line-height:1.2;letter-spacing:-.02em;overflow-wrap:anywhere;}
+.account-hub-identity small {color:var(--muted);font-size:12px;overflow-wrap:anywhere;}
+.account-hub-privacy {justify-self:start;margin-top:6px;padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.02em;color:var(--gold);background:color-mix(in srgb,var(--gold) 12%,transparent);border:1px solid color-mix(in srgb,var(--gold) 30%,transparent);}
+.account-hub-actions {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:16px 20px 18px;}
+.account-hub-actions .btn {min-height:44px;justify-content:center;gap:6px;}
+.account-hub-num {color:var(--muted);font-weight:600;}
+.account-hub-edit {margin-top:12px;}
+@media (max-width:520px) {.account-hub-actions {grid-template-columns:repeat(2,minmax(0,1fr));}.account-hub-avatar .profile-avatar {width:72px;height:72px;}.account-hub-identity {margin-top:-36px;}}
+/* New-password checklist: each rule fills in gold as it is met. */
+.password-rules {list-style:none;display:flex;flex-wrap:wrap;gap:6px 14px;margin:-4px 0 14px;padding:0;font-size:12px;color:var(--muted);}
+.password-rules li {display:flex;align-items:center;gap:6px;transition:color .2s;}
+.password-rules li>span {width:14px;height:14px;flex:none;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--muted) 70%,transparent);display:grid;place-items:center;transition:background .2s,border-color .2s;}
+.password-rules li[data-ok="true"] {color:var(--text);}
+.password-rules li[data-ok="true"]>span {background:var(--gold);border-color:var(--gold);}
+.password-rules li[data-ok="true"]>span::after {content:"";width:6px;height:3px;border:solid #171310;border-width:0 0 1.6px 1.6px;transform:translateY(-1px) rotate(-45deg);}
+@media (prefers-reduced-motion:reduce) {.password-rules li,.password-rules li>span {transition:none;}}
