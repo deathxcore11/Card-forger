@@ -1,0 +1,88 @@
+--- a/experiments/forge-proof/combined-browser-proof/candidate/build-context/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java
++++ b/experiments/forge-proof/combined-browser-proof/candidate/build-context/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java
+@@ -282,6 +282,21 @@
+             default -> false;
+         };
+     }
++    // A watched CPU turn shows each visible action on its own, like a person playing:
++    // land, spell or ability, attackers, blockers. Triggers, the player's own turn and
++    // an unwatched table are never slowed. 0 turns pacing off.
++    static final long CPU_STEP_PAUSE_MS=Long.getLong("cardstashy.cpuStepPauseMs",650L);
++    volatile long lastStatePollNanos=System.nanoTime();
++    void paceCpu(PlayerView actor){
++        if(CPU_STEP_PAUSE_MS<=0||actor==null||viewer==null||actor.getId()==viewer.getId()||failure!=null||concessionRequested||finished)return;
++        if(System.nanoTime()-lastStatePollNanos>3_000_000_000L)return;
++        refreshBoard();publish();
++        try{Thread.sleep(CPU_STEP_PAUSE_MS);}catch(InterruptedException e){Thread.currentThread().interrupt();}
++    }
++    @com.google.common.eventbus.Subscribe public void onCpuLand(forge.game.event.GameEventLandPlayed e){paceCpu(e.player());}
++    @com.google.common.eventbus.Subscribe public void onCpuCast(forge.game.event.GameEventSpellAbilityCast e){if(e.si()!=null&&!e.si().isTrigger())paceCpu(e.si().getActivatingPlayer());}
++    @com.google.common.eventbus.Subscribe public void onCpuAttack(forge.game.event.GameEventAttackersDeclared e){if(!e.attackersMap().isEmpty())paceCpu(e.player());}
++    @com.google.common.eventbus.Subscribe public void onCpuBlock(forge.game.event.GameEventBlockersDeclared e){if(e.blockers().values().stream().anyMatch(m->!m.isEmpty()))paceCpu(e.defendingPlayer());}
+     void applyControlMode(){
+         if(failure!=null){effectiveAutoPass=false;clearSmartIntent();autoPayAttemptInput=null;return;}
+         if(!controlMode.equals("smart"))clearSmartIntent();
+@@ -497,11 +512,30 @@
+         if(!visible)return m;
+         exposedCards.put(c.getId(),c);
+         m.put("tapped",c.isTapped()); m.put("attacking",c.isAttacking());m.put("blocking",c.isBlocking());
++        // Combat arrows: whom an attacker attacks, and which attackers a blocker blocks.
++        var combat=game==null?null:game.getView().getCombat();
++        if(combat!=null&&c.isAttacking()){
++            var defender=combat.getDefender(c);
++            if(defender instanceof PlayerView p)m.put("attackTarget",obj("kind","player","id",p.getId()));
++            else if(defender instanceof CardView d&&d.canBeShownTo(viewer))m.put("attackTarget",obj("kind","card","id",d.getId()));
++        }
++        if(combat!=null&&c.isBlocking()){
++            List<Integer> blocked=new ArrayList<>();
++            for(CardView attacker:combat.getAttackers())if(attacker.canBeShownTo(viewer)&&combat.getBlockers(attacker).contains(c))blocked.add(attacker.getId());
++            if(!blocked.isEmpty())m.put("blockingIds",blocked);
++        }
+         if(face){
+             var state=c.getCurrentState();
+             m.put("name",state.getName());m.put("setCode",state.getSetCode());m.put("imageKey",state.getImageKey(List.of(viewer)));m.put("type",state.getType().toString());m.put("manaCost",state.getManaCost().toString());
+             m.put("power",state.getPower());m.put("toughness",state.getToughness());m.put("text",c.getText());
+             m.put("counters",counters(c));m.put("token",c.isToken());m.put("commander",c.isCommander());m.put("damage",c.getDamage());m.put("summoningSick",c.isSick());
++            // Auras and Equipment: what this card is attached to, and what is attached to it.
++            // Only cards the viewer may see are named; the rest stay out of the snapshot.
++            CardView host=c.getAttachedTo();
++            if(host!=null&&host.canBeShownTo(viewer))m.put("attachedTo",host.getId());
++            List<Integer> attached=new ArrayList<>();
++            for(CardView a:c.getAttachedCards())if(a.canBeShownTo(viewer))attached.add(a.getId());
++            if(!attached.isEmpty())m.put("attachments",attached);
+         }
+         return m;
+     }
+@@ -516,6 +550,14 @@
+         for(int i=0;i<colors.length;i++)result.put(names[i],player.getMana(colors[i]));
+         return result;
+     }
++    /** Every target of a stack item: cards, players and other stack items. */
++    static List<TrackableObject> stackTargets(StackItemView si){
++        List<TrackableObject> all=new ArrayList<>();
++        if(si.getTargetCards()!=null)for(CardView c:si.getTargetCards())all.add(c);
++        if(si.getTargetPlayers()!=null)for(PlayerView p:si.getTargetPlayers())all.add(p);
++        if(si.getTargetStackItems()!=null)for(StackItemView t:si.getTargetStackItems())all.add(t);
++        return all;
++    }
+     List<Object> refs(Iterable<? extends TrackableObject> values) {
+         List<Object> out=new ArrayList<>();
+         if(values!=null)for(TrackableObject o:values){
+@@ -554,7 +596,7 @@
+             }
+             if(v.getStack()!=null)for(StackItemView si:v.getStack()){
+                 exposedStack.put(si.getId(),si);
+-                stack.add(obj("id",si.getId(),"text",si.getText(),"source",si.getSourceCard()==null?null:card(si.getSourceCard()),"activatingPlayer",id(si.getActivatingPlayer()),"targets",refs(si.getTargetCards())));
++                stack.add(obj("id",si.getId(),"text",si.getText(),"source",si.getSourceCard()==null?null:card(si.getSourceCard()),"activatingPlayer",id(si.getActivatingPlayer()),"targets",refs(stackTargets(si))));
+             }
+             board=obj("schema","cardstashy.forge-proof.v1","forgeRevision",REV,"viewer",viewer.getId(),"aiProfile",actualAiProfile,"match",obj("humanDeck",humanDeckAlias,"aiDeck",aiDeckAlias),"turn",v.getTurn(),"phase",v.getPhase()==null?null:v.getPhase().name(),"activePlayer",id(v.getPlayerTurn()),"priorityPlayer",game.getPhaseHandler().getPriorityPlayer()==null?null:game.getPhaseHandler().getPriorityPlayer().getId(),"players",players,"stack",stack,"gameOver",v.isGameOver(),"winner",v.isGameOver()?v.getWinningPlayerName():null,"winnerPlayerId",winnerId(),"draw",v.isGameOver()&&game.getOutcome()!=null&&game.getOutcome().isDraw());
+             boardVisibility=List.copyOf(visibility);
+@@ -647,7 +689,7 @@
+         HttpServer server=HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(),port),0);
+         server.setExecutor(Executors.newCachedThreadPool());
+         server.createContext("/health",x->respond(x,200,obj("ok",true,"engine","Forge","forgeRevision",REV)));
+-        server.createContext("/state",x->{if(auth(x))respond(x,200,published.get());});
++        server.createContext("/state",x->{if(auth(x)){lastStatePollNanos=System.nanoTime();respond(x,200,published.get());}});
+         server.createContext("/action",x->{
+             if(!auth(x))return;
+             if(!x.getRequestMethod().equals("POST")){respond(x,405,obj("error","POST_required"));return;}
