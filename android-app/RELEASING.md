@@ -22,6 +22,14 @@ Node.js 22+, JDK 21, Android SDK platform 36 and build-tools 35.0.0 (Gradle wrap
 
 ## One release (website version X, app versionCode N)
 
+The APK bundles the website's `release-record.js`, and the release gate compares it byte for byte,
+ignoring only the `android` entry's `bytes` and `sha256`. So first commit, in the website repo, the
+release itself: website version X (`package.json`, `config.js`) and its final `release-record.js`
+(id, date, changes, `webVersion` X and the `android` entry's version, versionName, versionCode N,
+interfaceVersion X, package and the new APK's href), leaving the previous `bytes` and `sha256` in place.
+That commit is the `<commit>` pinned below. Changing anything else in the record after the build
+means rebuilding and re-signing.
+
 Work on a copy of this folder, so generated files stay out of the repo:
 
 ```sh
@@ -54,8 +62,8 @@ Then, in the website repo:
    `downloads/cardstashy-android-beta-<version>.apk` (remove the previous APK; older download links
    redirect to the current one).
 2. Update `downloads/cardstashy-android-beta-<version>.apk.sha256`, `downloads/cardstashy-android-beta-<version>.json`
-   (versionName, versionCode, bytes, sha256, appSource commit) and the `android` entry in `release-record.js`
-   (version, versionCode, interfaceVersion = website version, href, bytes, sha256).
+   (versionName, versionCode, bytes, sha256, appSource commit) and only `bytes` and `sha256` of the `android`
+   entry in `release-record.js` (everything else in it was committed before the build).
 3. Verify. This checks the signing certificate, package, version and that the app's built-in website files
    match this release, byte for byte:
 
