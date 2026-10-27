@@ -5,7 +5,7 @@
   "container/Dockerfile.template": "e3574caef65136f00313fce229ae69a87a138e8722805eb152090cccf7fb6f6f",
   "container/assemble.sh": "f7baa30be8c40e1191db33efcea36aad9aa49cb192f1f5a2be44744553c7c179",
   "container/bootstrap.py": "ad5cf253323d2f088b24aabbe9c6cacd45787208a95f42787798e5d5ca0b12fd",
-  "container/gateway.py": "d210358d28a1e2082b62858e5951edc4f965b9939f74cf43667ebfcaee68c0c6",
+  "container/gateway.py": "78772da07078ca7259c92a69ddb242a2719b28d65010a7ff4e473e6525aec079",
   "container/prepare_context.py": "395f128ecf2b8e1978909f3939d92a4e1b364a1754035438164daf70d8447eec",
   "container/tests/test_admission_queue.py": "f9f15520c64a39a975e9ddb85612a00df20ed72a00a5d1c3c0f10a79897a01fd",
   "container/tests/test_hardening.py": "e2ccd3a67a27efc850c942356cc547e06c7ab5f329e8b315c390102f01470705",
@@ -22,7 +22,7 @@
   "scripts/compose-exact-context.py": "24fb7bb4f4b1d66c744caf8d6c60de3d9ece2a1fcac2fcedc048134cc31aeac8",
   "scripts/compose-next-context.py": "56a4acc42aa5b23352cbb98f76e17aa016fda629ad3c9b5bba66b66c27b375d0",
   "scripts/create-release-policy.mjs": "ed49937d148d7488287712759f8f3669ff956b545493c6687f8845760fb659d5",
-  "scripts/deploy-private-host.mjs": "51ce3e3847f60bd7abd4f07e2555941c4e67b48071fb168d00a296dcb8376e6e",
+  "scripts/deploy-private-host.mjs": "af8382ff5b3c6521809d9c8b29907a0f5396d51436f3abf9e1029c28068d0a63",
   "scripts/docker-proof-client.py": "73dc6366ec4b9a6cefe713dc317775cb56bb551ee7fd1ef2c375bdfafbe3dca2",
   "scripts/refresh-rules-data.py": "0c59e455018a1c280f92e63ae8088fd48f8104c413582a6473cf20ca35aab0f5",
   "scripts/release-configuration.mjs": "2eb687b149aa9059f136f5577a01c0aa04bfd053cbc184870a93bf20c52eab9a",
@@ -74,7 +74,7 @@
   "tests/test_bootstrap.py": "92bc5b0c244e40b7090e85ab75ab1649504c916c88fbb8d00c663fe0d8500965",
   "tests/test_compose_context.py": "a9a3504a22af82331f6786319ec0248ee264c964614a1adbf3341779dfac7ba4",
   "tests/test_docker_proof_client.py": "3ccd8bb446bc3e7ced8b9af4efdea6123d3eaedef395d970b3e8eb4159dbf387",
-  "tests/test_next_launcher.py": "f93e5ff163a09dd86fd1c3e4e36cc79631daf03106b4a8aac4d1b66ec4827421",
+  "tests/test_next_launcher.py": "9817b5c7ef6f4039b1d8a296eb8fea672c731852979e05df205fd34c8146d4b4",
   "tests/worker-rpc-surface.test.mjs": "c4d4a7250db51301133f6dabf444ff74d5a0ac91930c28098ac49084d96aa907",
   "wrangler.jsonc": "60b40c5578fafe46cdbcc653aee98030317daabbc7df23d61ff04b3a80fdd970"
 }

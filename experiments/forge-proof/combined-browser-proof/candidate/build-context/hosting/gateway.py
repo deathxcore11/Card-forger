@@ -509,6 +509,9 @@ def launch_command(root):
                "-XX:MaxMetaspaceSize=384m", "-XX:CompressedClassSpaceSize=128m",
                "-XX:ReservedCodeCacheSize=128m", "-XX:MaxDirectMemorySize=256m",
                "-XX:ActiveProcessorCount=1", "-XX:+ExitOnOutOfMemoryError",
+               # One core: the optimizing JIT competes with the game itself. C1 only gives a
+               # faster start and faster play with identical rules decisions.
+               "-XX:TieredStopAtLevel=1",
                "-Djava.awt.headless=true", "-Dsentry.enabled=false",
                f"-Duser.home={root}/home", f"-Djava.io.tmpdir={root}/tmp",
                f"-Dproof.root={root}", f"-Dproof.port={NATIVE_PORT}",

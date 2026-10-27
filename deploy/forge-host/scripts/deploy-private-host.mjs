@@ -63,7 +63,7 @@ try {
     assert.equal(sha(await readFile(path.join(host, file))), expected, 'Host source changed: ' + file);
   }
   const manifest = await readFile(path.join(harness, 'MANIFEST.json'));
-  assert.equal(sha(manifest), '15375f7c0c4193dd3e65247c4809c398d855e0833b2b39423fc0557493aa0a81');
+  assert.equal(sha(manifest), '4cfe01e754056ecd3f0e4f7d3c5181b6125f1278c363c5a270c7bb515f9553e4');
   process.env.FORGE_COMBINED_WORK = work;
   process.env.FORGE_COMBINED_REVIEWED_MANIFEST_SHA256 = sha(manifest);
   await run('source-inventory', 'python3', [path.join(harness, 'verify-inputs.py')]);

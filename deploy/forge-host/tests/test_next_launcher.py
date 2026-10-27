@@ -25,6 +25,8 @@ class NextLauncherTests(unittest.TestCase):
   runtime,*_=self.fixture();command=gateway.launch_command(runtime)
   self.assertEqual(gateway.VERIFIED_IMAGE_IDENTITY['nativeManifestSha256'],'a'*64)
   self.assertIn('-Dproof.requireCurrentRules=true',command);self.assertIn('-Dproof.requireExact=true',command)
+  # One core: C1 only starts the engine and plays faster with the same decisions.
+  self.assertIn('-XX:TieredStopAtLevel=1',command)
   self.assertFalse(any('proof.humanDeck' in value or 'proof.aiDeck' in value for value in command))
  def test_bootstrap_private_directory_is_the_only_other_input_location(self):
   runtime,*_=self.fixture()
