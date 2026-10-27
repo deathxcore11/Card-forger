@@ -59,7 +59,8 @@ const MTG_TTL = 60 * 60 * 12,
   LAST_GOOD_TTL = 60 * 60 * 24 * 30;
 const json = (body, status = 200, maxAge = 0) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": maxAge ? `public, max-age=${maxAge}` : "no-store" } });
-const mtgKey = (format, days, kind = "fresh") => new Request(`https://cardforge.cache/mtg/${kind}/${encodeURIComponent(format)}/${days}`);
+// Commander moved from EDHTop16 to MTGTop8: its own key, so no location serves the old empty month.
+const mtgKey = (format, days, kind = "fresh") => new Request(`https://cardforge.cache/mtg/${kind}/${encodeURIComponent(format)}${format === "EDH" ? "-mtgtop8" : ""}/${days}`);
 
 const UA = { "User-Agent": "CardStashy deck helper (cached, a few requests a day)" };
 // Keyless sources first: Magic Online's official decklists, MTGTop8 for Commander.
