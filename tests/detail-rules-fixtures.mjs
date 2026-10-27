@@ -313,6 +313,8 @@ export function auditedSetFamilyControl(control){
 }
 export async function noOverflow(page,scope,label,settleFinite=false,collectionAudit=null){
  const result=await page.evaluate(async({scope,settleFinite})=>{
+  // Measure what a person can see: after a viewport change, the first painted frame.
+  if(typeof requestAnimationFrame==='function')await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
   // Resolve current scopes in this page task, not remote handles. Finite motion
   // may legitimately finish on a replaced node; reacquire and settle the new
   // scope too, without ever retrying a failed geometry assertion.

@@ -20,7 +20,7 @@ function current(move) {
   return { x: mix(move.from.x, move.to.x), y: mix(move.from.y, move.to.y), w: mix(move.from.w, move.to.w), h: mix(move.from.h, move.to.h) };
 }
 
-function place(bar, force) {
+function place(bar, force, instant) {
   const on = bar.querySelector(SELECTED);
   let pill = bar.querySelector(':scope > .glide');
   if (!on) { pill?.remove(); delete bar.dataset.glide; return; }
@@ -36,7 +36,12 @@ function place(bar, force) {
   }
   const set = (r) => { pill.style.transform = `translate(${r.x}px, ${r.y}px)`; pill.style.width = r.w + 'px'; pill.style.height = r.h + 'px'; };
   const elapsed = move ? now() - move.at : Infinity;
-  if (move && same(move.to, to) && elapsed < DURATION) {
+  if (instant && !fresh) {
+    // A resized or re-laid-out window moves the tab, not the selection: the pill stays
+    // on it at once instead of sliding, so it never hangs past a narrowed track.
+    pill.style.transition = 'none'; pill.style.transitionDuration = ''; set(to); void pill.offsetWidth; pill.style.transition = '';
+    moves.set(key, { from: to, to, at: 0 });
+  } else if (move && same(move.to, to) && elapsed < DURATION) {
     // Same destination as the slide already under way: finish it, don't restart it.
     if (fresh) {
       pill.style.transition = 'none'; set(current(move)); void pill.offsetWidth;
@@ -57,11 +62,12 @@ function place(bar, force) {
 
 export function startTabGlide(root = document) {
   if (!root?.body || typeof MutationObserver === 'undefined') return;
-  let frame = 0, force = false;
-  const run = () => { frame = 0; for (const bar of root.querySelectorAll(BARS)) place(bar, force); force = false; };
-  const schedule = (all) => { force ||= all; if (!frame) frame = requestAnimationFrame(run); };
+  let frame = 0, force = false, instant = false;
+  const run = () => { frame = 0; for (const bar of root.querySelectorAll(BARS)) place(bar, force, instant); force = false; instant = false; };
+  const schedule = (all, snap = false) => { force ||= all; instant ||= snap; if (!frame) frame = requestAnimationFrame(run); };
   new MutationObserver(() => schedule(false)).observe(root.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'aria-selected', 'aria-pressed'] });
-  addEventListener('resize', () => schedule(true));
-  root.fonts?.ready?.then(() => schedule(true));
+  // Resize moves every pill in the same frame, before anything reads the narrowed layout.
+  addEventListener('resize', () => { if (frame) cancelAnimationFrame(frame); force = true; instant = true; run(); });
+  root.fonts?.ready?.then(() => schedule(true, true));
   schedule(true);
 }
