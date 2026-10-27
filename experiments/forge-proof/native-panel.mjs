@@ -129,11 +129,13 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  // Mana symbols draw as symbols where the table provides them; the text stays the fallback.
  const symbols=typeof presentation.symbolText==='function'&&presentation.hosted?presentation.symbolText:null;
  if(symbols&&payment&&paying?.remaining){title.setAttribute('aria-label',playerTitle);title.innerHTML=symbols(playerTitle);}
+ const hostedOrder=presentation.hosted&&n.prompt?.method==='order'&&n.prompt?.supported===true&&n.prompt?.ordered===true;
+ if(hostedOrder){title.textContent=/simultaneous|trigger/i.test(String(n.prompt.message||nativeMessage))?'Order your triggers':'Choose an order';title.removeAttribute('aria-label');}
  title.tabIndex=-1;title.dataset.nativeKey='decision-title';context.setAttribute('aria-live','polite');context.setAttribute('aria-atomic','true');context.append(title);
  if(presentation.hosted&&!opening&&Number.isSafeInteger(n.turn)&&n.turn>0){const status=node('p',[`Turn ${n.turn}`,phaseNames[n.phase]||statusLines?.[3]||null].filter(Boolean).join(' · '),'forge-native-status');status.setAttribute('aria-label','Turn and phase');context.append(status);}
  else if(compactStatus){const status=node('div',undefined,'forge-native-status');status.setAttribute('aria-label','Turn, phase and stack');const stack=n.stack?.length?`${n.stack.length} item${n.stack.length===1?'':'s'}`:'Empty';for(const [label,text]of [['Turn',presentation.hosted?String(n.turn):statusLines[2]],['Phase',presentation.hosted?(phaseNames[n.phase]||statusLines?.[3]||n.phase||'—'):statusLines[3]],['Stack',presentation.hosted?stack:statusLines[4]]]){const value=node('span',`${label}: ${text}`);status.append(value);}context.append(status);}
  // Forge's supporting lines (a few at most), never one that only repeats the title.
- if(presentation.hosted)for(const line of playerDetail.filter(line=>!/^(declare (attackers|blockers)|choose any target)\.?$/i.test(line)).slice(0,3)){const p=node('p',line,'forge-native-detail');if(symbols&&payment)p.innerHTML=symbols(line);context.append(p);}
+ if(presentation.hosted&&!hostedOrder)for(const line of playerDetail.filter(line=>!/^(declare (attackers|blockers)|choose any target)\.?$/i.test(line)).slice(0,3)){const p=node('p',line,'forge-native-detail');if(symbols&&payment)p.innerHTML=symbols(line);context.append(p);}
  panel.append(context);
  if(n.failure){panel.append(node('p',`Forge stopped: ${n.failure}`,'forge-diagnostic'));container.replaceChildren(panel);return;}
  if(n.status==='finished'){panel.append(node('p',n.draw===true?'Forge result: draw':n.winner?`Forge result: ${n.winner}`:'Forge reports that the game has finished.'));container.replaceChildren(panel);return;}
@@ -206,15 +208,34 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const revealed=node('ul');for(const option of p.options||[])revealed.append(node('li',optionLabel(option.value)));panel.append(revealed,button(copy('Continue','Acknowledge native reveal'),()=>session.confirmPrompt(),false,'acknowledge-prompt'));
   }else if(OPTION_METHODS.has(p.method)){
    const indexes=s.nativeDraft?.revision===n.revision&&s.nativeDraft?.promptId===p.id?s.nativeDraft.indexes:[],options=p.options||[];
+   if(hostedOrder){
+    // Arena-style: each choice is its source card; tap them in order, tap again to take one back.
+    const cards=s.status?.surface?.cards||[],clean=t=>String(t||'').replace(/\s*\[[^\]]*\]/g,'').trim();
+    const sourceOf=o=>{const id=optionCardId(o.value);let c=id!==null?cards.find(c=>c.id===id):null;if(!c){const m=/\[[^\]]*?:\s*([^\]]+?)\s*\((\d+)\)\]/.exec(optionLabel(o.value));if(m)c=cards.find(c=>c.id===Number(m[2]))||cards.find(c=>c.known&&c.name===m[1]);}return c||null;};
+    panel.append(node('p',`Tap them in order. 1 ${/resolve/i.test(p.topLabel||'')?'resolves first':`is ${String(p.topLabel||'first').toLowerCase()}`}.${orderRemainder(p)}`,'forge-order-hint'));
+    const grid=node('div',undefined,'forge-order-cards');
+    for(const o of options){
+     const at=indexes.indexOf(o.index),source=sourceOf(o),label=optionLabel(o.value),text=clean(label),described=isDescribedOption(o.value);
+     const tile=button('',()=>session.selectPrompt(o.index),!described,`option-${o.index}`);tile.className='forge-order-card';tile.dataset.optionIndex=String(o.index);tile.setAttribute('aria-pressed',String(at>=0));tile.setAttribute('aria-label',`${at>=0?`${at+1}: `:''}${source?.known?source.name+' · ':''}${text}`);tile.title=text;
+     const badge=node('span',at>=0?String(at+1):'','forge-order-num');const url=searchImage(source);
+     const art=url?node('img'):node('span',source?.known?source.name:'?','forge-order-noart');if(url){art.src=url;art.alt='';art.decoding='async';art.referrerPolicy='no-referrer';}
+     const cap=node('span',undefined,'forge-order-cap');cap.append(node('b',source?.known?source.name:text),node('small',source?.known?text:''));
+     tile.append(badge,art,cap);grid.append(tile);
+    }
+    panel.append(grid);
+   }else{
    panel.append(node('p',p.method==='order'?`Choose the destination order.${orderRemainder(p)}`:`Choose ${p.min===p.max?p.min:`${p.min}–${p.max}`} ${presentation.hosted?'':'native '}option${p.max===1?'':'s'}.`));
    const list=node('div',undefined,'forge-native-options');
    for(const o of options.filter(o=>p.method!=='order'||!indexes.includes(o.index))){const described=isDescribedOption(o.value),b=button(optionLabel(o.value),()=>session.selectPrompt(o.index),!described,`option-${o.index}`);b.setAttribute('aria-pressed',String(indexes.includes(o.index)));b.dataset.optionIndex=String(o.index);const cardId=optionCardId(o.value);if(cardId!==null)b.dataset.optionCard=String(cardId);if(!described)b.title='Native option details are unavailable; refusing an arbitrary reply.';list.append(b);}
    if(p.method==='order')panel.append(node('strong',`Source · ${options.length-indexes.length}`));panel.append(list);
    if(options.some(o=>!isDescribedOption(o.value)))panel.append(node('p','Some native options have no safe presentation. Those options remain disabled.','forge-diagnostic'));
    if(p.method==='order'&&indexes.length){panel.append(node('strong',p.topLabel||'Destination order'));const order=node('ol');order.setAttribute('aria-label','Native selected order');for(const [at,index]of indexes.entries()){const row=node('li',optionLabel(options.find(o=>o.index===index)?.value));row.append(button('↑',()=>session.reorderPrompt(index,-1),at===0,`earlier-${index}`),button('↓',()=>session.reorderPrompt(index,1),at===indexes.length-1,`later-${index}`),button('Remove',()=>session.selectPrompt(index),false,`remove-${index}`));order.append(row);}panel.append(order);}
+   }
    if(p.method==='order'&&p.rememberAllowed===true){const rememberLabel=node('label','Remember this order'),remember=node('input');remember.type='checkbox';remember.checked=s.nativeDraft?.remember===true;remember.disabled=s.busy;remember.dataset.nativeKey='remember-order';remember.addEventListener('change',run(()=>session.rememberPrompt(remember.checked)));rememberLabel.prepend(remember);panel.append(rememberLabel);}
+   if(hostedOrder){const actions=node('div',undefined,'forge-order-actions');actions.append(button('Reset',()=>session.clearPrompt(),!indexes.length,'clear-prompt'),button('Done',()=>session.confirmPrompt(),indexes.length<p.min||indexes.length>p.max,'confirm-prompt'));panel.append(actions);}else{
    const summary=node('p',indexes.length?`Selected: ${indexes.map(index=>optionLabel(options.find(o=>o.index===index)?.value)).join(' · ')}`:'Nothing selected');summary.className='forge-native-draft';panel.append(summary);
    panel.append(button(indexes.length===0&&p.min===0?(p.cancelable?copy('Cancel','Cancel native dialog'):copy('Choose none','Submit no selections')):copy('Confirm choice','Confirm native choice'),()=>session.confirmPrompt(),indexes.length<p.min||indexes.length>p.max,'confirm-prompt'),button(copy('Clear selection','Clear draft'),()=>session.clearPrompt(),false,'clear-prompt'));
+   }
   }else panel.append(node('p',`Unsupported native dialog: ${p.method}. No reply sent.`,'forge-diagnostic'));
  }else{
   const buttons=n.buttons||{},actions=node('div',undefined,'forge-native-actions');actions.setAttribute('role','group');actions.setAttribute('aria-label',copy('Match actions','Native actions'));

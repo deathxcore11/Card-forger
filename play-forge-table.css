@@ -1134,3 +1134,27 @@
 :where(body.practice-table-open) .forge-peek[data-docked=true] .forge-peek-info{width:var(--peek-w);max-width:var(--peek-w);padding:8px 10px;max-height:90px;overflow:hidden}
 :where(body.practice-table-open) .forge-peek[data-docked=true] .forge-peek-info:not(:has(.forge-peek-state,.forge-peek-blocked,.forge-peek-attached)){display:none}
 :where(body.practice-table-open) .forge-peek[data-docked=true] .forge-peek-card[data-art=image]~.forge-peek-info :is(header,.forge-peek-type,.forge-peek-rules,.forge-peek-keywords){display:none}
+/* Ordering triggers (or cards) is a card picker in the middle of the table, as in Arena:
+   the board dims, each choice is its source card, numbers show the order. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-decisions:has(.forge-order-cards){position:fixed;left:50%;top:50%;translate:-50% -52%;width:min(760px,92vw);max-height:88dvh;z-index:2400;overflow:visible}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-decisions:has(.forge-order-cards)>.forge-mana-panel{display:none}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-decisions .forge-native-panel:has(.forge-order-cards){display:grid;justify-items:center;gap:14px;padding:22px 24px 20px;border-radius:20px;background:#0d1016f2;border:1px solid #d6ad6444;box-shadow:0 0 0 100vmax #05060ab8,0 30px 70px #000d;animation:cs-hud-pop .26s cubic-bezier(.2,.8,.2,1)}
+:where(body.practice-table-open) .forge-native-panel:has(.forge-order-cards) h2{font:700 24px/1.15 Cinzel,Georgia,serif;letter-spacing:.04em;color:#f4d78f;white-space:nowrap;text-align:center}
+:where(body.practice-table-open) .forge-native-panel .forge-order-hint{margin:0;color:#cfd4dc;font-size:14px;text-align:center}
+:where(body.practice-table-open) .forge-native-panel .forge-order-cards{display:flex;flex-wrap:wrap;justify-content:center;gap:22px;padding:14px 4px 4px;max-height:62dvh;overflow:auto}
+:where(body.practice-table-open) .forge-native-panel .forge-order-card{position:relative;width:clamp(130px,18vw,190px);min-height:0;padding:0;border:0;background:none;display:grid;gap:8px;color:#eef0f4;text-align:center;transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+:where(body.practice-table-open) .forge-native-panel .forge-order-card:hover:not(:disabled){transform:translateY(-6px)}
+:where(body.practice-table-open) .forge-native-panel .forge-order-card>img,:where(body.practice-table-open) .forge-native-panel .forge-order-noart{width:100%;aspect-ratio:488/680;border-radius:4.75%/3.5%;object-fit:cover;box-shadow:0 18px 40px #000c;transition:box-shadow .2s}
+:where(body.practice-table-open) .forge-native-panel .forge-order-noart{display:grid;place-items:center;padding:12px;background:linear-gradient(160deg,#232833,#12151c);border:1px solid #ffffff22;font:700 14px/1.2 Spectral,Georgia,serif}
+:where(body.practice-table-open) .forge-native-panel .forge-order-card[aria-pressed=true]>:is(img,.forge-order-noart){box-shadow:0 0 0 2px #e8b95b,0 0 26px #e8b95b77,0 18px 40px #000c}
+:where(body.practice-table-open) .forge-native-panel .forge-order-num{position:absolute;top:-12px;left:-12px;z-index:2;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:800 16px/1 'DM Sans',system-ui,sans-serif;background:#0f1117e6;border:1.5px dashed #ffffff55;color:transparent}
+:where(body.practice-table-open) .forge-native-panel .forge-order-card[aria-pressed=true] .forge-order-num{background:linear-gradient(180deg,#f6dc9a,#d9a64a);border:0;color:#1b1406;animation:cs-order-pop .3s cubic-bezier(.3,1.6,.5,1)}
+:where(body.practice-table-open) .forge-native-panel .forge-order-cap{display:grid;gap:2px;min-width:0}
+:where(body.practice-table-open) .forge-native-panel .forge-order-cap b{font:700 14px/1.2 'DM Sans',system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:where(body.practice-table-open) .forge-native-panel .forge-order-cap small{font-size:12px;line-height:1.3;color:#9aa2b1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+:where(body.practice-table-open) .forge-native-panel .forge-order-actions{display:flex;gap:10px;justify-content:center;width:100%}
+:where(body.practice-table-open) .forge-native-panel .forge-order-actions>[data-native-key=confirm-prompt]{min-width:160px;min-height:46px;border-radius:23px;font-weight:800;font-size:16px}
+:where(body.practice-table-open) .forge-native-panel .forge-order-actions>[data-native-key=clear-prompt]{min-height:46px;border-radius:23px;padding-inline:22px}
+:where(body.practice-table-open) .forge-native-panel:has(.forge-order-cards)>label{font-size:13px;color:#cfd4dc}
+@keyframes cs-order-pop{from{transform:scale(.4)}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .forge-native-panel :is(.forge-order-card,.forge-order-num),:where(body.practice-table-open) .forge-native-panel:has(.forge-order-cards){animation:none;transition:none}}
