@@ -1,6 +1,7 @@
 // Aura reads only artwork already mounted by the app. It never resolves cards,
 // fetches provider data, changes a printing, or writes collection/account state.
-export const AURA_CARD = '[data-act="card"], [data-act="tCard"], [data-ask-show][data-kind="card"]';
+// Deck tiles share the same logic: hovering a deck shows its cover art.
+export const AURA_CARD = '[data-act="card"], [data-act="tCard"], [data-ask-show][data-kind="card"], .deck-tile, .play-source-card';
 export function imageIn(node) {
   const image = node?.matches?.('img') ? node : node?.querySelector?.('img');
   return image && !image.hidden && !image.closest('[hidden]') ? image : null;

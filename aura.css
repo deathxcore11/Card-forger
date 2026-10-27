@@ -4,7 +4,7 @@
 :root[data-theme="aura"] body #app { position:relative; z-index:1; }
 :root[data-theme="aura"] body #ambient .amb-art { display:block; visibility:hidden; opacity:1; filter:blur(38px) saturate(.62); transition:none; }
 :root[data-theme="aura"] body #ambient.aura-fallback .amb-art { visibility:visible; }
-:root[data-theme="aura"] body #ambient::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg,rgba(15,17,21,.80),rgba(15,17,21,.86) 65%,rgba(15,17,21,.9)); }
+:root[data-theme="aura"] body #ambient::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg,rgba(15,17,21,.70),rgba(15,17,21,.77) 65%,rgba(15,17,21,.84)); }
 :root[data-theme="aura"] .aura-art { position:absolute; inset:-12%; width:124%; height:124%; max-width:none; filter:blur(38px) saturate(.62); opacity:0; transition:opacity 1000ms ease; animation:aura-drift 22s ease-in-out infinite alternate; transform:translate(-.4%,.3%) scale(1.015); }
 :root[data-theme="aura"] .aura-art.on { opacity:1; }
 :root[data-theme="aura"] .aura-paused .aura-art { animation-play-state:paused; }

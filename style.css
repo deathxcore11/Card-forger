@@ -1570,8 +1570,8 @@ body.glass #ambient::after { content: ""; position: absolute; inset: 0;
     linear-gradient(180deg, rgba(10, 12, 16, 0.35), rgba(10, 12, 16, 0.78) 60%, rgba(10, 12, 16, 0.92)); }
 body.glass #app { position: relative; z-index: 1; }
 body.glass {
-  --glass: color-mix(in srgb, var(--surface) 58%, transparent);
-  --glass-2: color-mix(in srgb, var(--surface-2) 62%, transparent);
+  --glass: color-mix(in srgb, var(--surface) 46%, transparent);
+  --glass-2: color-mix(in srgb, var(--surface-2) 52%, transparent);
   --glass-line: rgba(255, 255, 255, 0.09);
   --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(255, 255, 255, 0.025);
   background: var(--bg);
@@ -1592,10 +1592,10 @@ body.glass .game-choice[aria-pressed="true"] { background: linear-gradient(110de
 /* Header, nav and sheets: real frosted glass. */
 body.glass .topbar { background: rgba(12, 14, 19, 0.45); backdrop-filter: blur(20px) saturate(1.5); }
 body.glass .bottom-nav { background: rgba(12, 14, 19, 0.55); backdrop-filter: blur(22px) saturate(1.5); }
-body.glass dialog.sheet { background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 120px), rgba(18, 20, 26, 0.72); backdrop-filter: blur(28px) saturate(1.4); border: 1px solid var(--glass-line); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 -20px 60px rgba(0, 0, 0, 0.45); }
+body.glass dialog.sheet { background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 120px), rgba(18, 20, 26, 0.6); backdrop-filter: blur(28px) saturate(1.4); border: 1px solid var(--glass-line); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 -20px 60px rgba(0, 0, 0, 0.45); }
 body.glass dialog.sheet::backdrop { background: rgba(4, 5, 8, 0.45); backdrop-filter: blur(3px); }
 /* The sheet title bar stays readable over scrolled content: frosted, edge to edge. */
-body.glass .sheet-head:not(.overlay) { background: rgba(18, 20, 26, 0.95); backdrop-filter: blur(20px) saturate(1.3); -webkit-backdrop-filter: blur(20px) saturate(1.3); margin-left: calc(var(--gutter) * -1); margin-right: calc(var(--gutter) * -1); padding-left: var(--gutter); padding-right: var(--gutter); border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+body.glass .sheet-head:not(.overlay) { background: rgba(18, 20, 26, 0.8); backdrop-filter: blur(20px) saturate(1.3); -webkit-backdrop-filter: blur(20px) saturate(1.3); margin-left: calc(var(--gutter) * -1); margin-right: calc(var(--gutter) * -1); padding-left: var(--gutter); padding-right: var(--gutter); border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
 body.glass .sheet-head.overlay.scrolled { background: rgba(18, 20, 26, 0.7); backdrop-filter: blur(20px); }
 body.glass .cs-tabs { background: transparent; }
 /* Home hero blends into the backdrop instead of ending in a hard edge. */
@@ -5198,3 +5198,8 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .scan-fix.is-open .scan-fix-toggle::after{transform:rotate(180deg)}
 .scan-fix .scan-lookup{margin:6px 0 10px;padding-top:0;border-top:0}
 @media (max-width:420px){.scan-finish{grid-template-columns:minmax(0,1fr) auto}.scan-finish-label{grid-column:1/-1}.scan-finish .scan-chips{grid-column:1}}
+/* A header chosen from a whole card (no art crop, e.g. Pokémon or Yu-Gi-Oh!) zooms past the frame
+   so only the illustration fills the banner, with soft edges into the profile. */
+.community-profile-header{overflow:hidden}
+.community-profile-header--card>img{transform:scale(1.32);transform-origin:50% 30%;object-position:50% 26%}
+.community-profile-header:before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,#0000004d,transparent 18%,transparent 82%,#0000004d)}
