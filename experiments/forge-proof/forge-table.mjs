@@ -286,7 +286,8 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  const out=e=>{if(e.pointerType==='touch'||peekPinned)return;const card=peekCard(e);if(!card||card.contains(e.relatedTarget))return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>{if(!peekPinned)hidePeek();},90);};
  const contextMenu=e=>{const card=peekCard(e);if(!card)return;e.preventDefault();e.stopImmediatePropagation();if(e.pointerType!=='touch'&&!pressAt)peekFor===card&&peekPinned?hidePeek():showPeek(card,true);};
  const peekKeys=e=>{const card=peekCard(e);if(card&&(e.key==='i'||e.key==='I')&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();e.stopImmediatePropagation();peekFor===card&&peekPinned?hidePeek():showPeek(card,true);return;}if(e.key==='Escape'&&peekFor){hidePeek();}};
- const reflow=()=>{if(peekFor)hidePeek();};
+ // Arrows are drawn in viewport coordinates, so a scrolling lane moves the cards under them.
+ const reflow=()=>{if(peekFor)hidePeek();queueArrows();};
  root.addEventListener('pointerover',over);root.addEventListener('pointerout',out);root.addEventListener('contextmenu',contextMenu,true);root.addEventListener('keydown',peekKeys,true);win.addEventListener('resize',reflow);root.addEventListener('scroll',reflow,true);
  const click=e=>{
   const magnifier=e.target.closest?.('.play-match-inspect-card');if(magnifier&&root.contains(magnifier)){e.preventDefault();e.stopImmediatePropagation();const card=magnifier.closest('.play-match-card-wrap')?.querySelector('.play-match-card[data-instance]');if(card)peekFor===card&&peekPinned?hidePeek():showPeek(card,true);return;}

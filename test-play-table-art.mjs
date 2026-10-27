@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { glyphFor, manaColors, surfaceColors, frameTone } from './play-token-art.js';
 import { tokenColors } from './experiments/forge-proof/forge-session.mjs';
 import { battlefieldPiles } from './experiments/phase-engine/match-table.mjs';
@@ -88,4 +89,12 @@ test('a highlighted card the table does not draw (flashback, cards playable from
   drawn.push({ dataset: { instance: '116' } }, { dataset: { instance: '120' } });
   mountNativePanel(container, { session, snapshot, presentation: { hosted: true } });
   assert.equal(all(container).some(e => e.dataset.nativeKey?.startsWith('ref-') || e.textContent === 'In other zones'), false);
+});
+
+test('combat and target arrows are redrawn when a lane under them scrolls', () => {
+  const src = readFileSync(new URL('./experiments/forge-proof/forge-table.mjs', import.meta.url), 'utf8');
+  const handler = src.match(/const reflow=\(\)=>\{([^\n]*?)\};/)?.[1];
+  assert.match(handler, /\bqueueArrows\(\)/, 'arrows sit in a fixed overlay drawn from viewport positions');
+  assert.match(src, /root\.addEventListener\('scroll',reflow,true\)/);
+  assert.match(src, /root\.removeEventListener\('scroll',reflow,true\)/);
 });
