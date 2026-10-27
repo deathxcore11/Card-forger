@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CardStashy · Play screens fixture</title>
+<!-- Development fixture only (not deployed; see .assetsignore). Renders the real
+     Play menu markup, match introduction, coin flip and out-of-match screens with
+     sample decks so their styling can be compared. Nothing is sent anywhere. -->
+<script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get('theme')||'dark';</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&family=Cinzel:wght@600;700&display=swap">
+<link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="../../community-curation.css">
+<link rel="stylesheet" href="../../magic-matchups.css">
+<link rel="stylesheet" href="../../settings-theme.css">
+<link rel="stylesheet" href="../../aura.css">
+<link rel="stylesheet" href="../../collection-display.css">
+<link rel="stylesheet" href="../../finish-effects.css">
+<link rel="stylesheet" href="../../sets-ui.css">
+<link rel="stylesheet" href="../../printing-picker.css">
+<link rel="stylesheet" href="../../game-tabs.css">
+<link rel="stylesheet" href="../../brand-motion.css">
+<link rel="stylesheet" href="../../home-overview.css">
+<link rel="stylesheet" href="../../deck-viewer.css">
+<link rel="stylesheet" href="../../play-menu.css">
+<link rel="stylesheet" href="../../polish.css">
+<link rel="stylesheet" id="practiceTableStyles" href="../phase-engine/match-table.css">
+<link rel="stylesheet" id="forgeHostedTableStyles" href="../../play-forge-table.css">
+</head>
+<body class="glass" data-view="play" data-game="mtg">
+<main id="content"></main>
+<main id="practicePlayerMat" hidden></main>
+<script type="module">
+import {playMenuMarkup} from '../../play-menu.js';
+import {mountForgeMatchIntro} from '../../play-forge-pregame.js';
+import {createForgePlayerMat} from '../../play-forge-player-mat.js';
+import {profileAvatar} from '../../profile-art.js';
+import {img} from '../../ui.js';
+
+const params = new URLSearchParams(location.search);
+const SCREEN = params.get('screen') || 'menu';
+const decks = {
+  you: {id: 'd-you', name: 'Klothys Lands', format: 'Commander', commander: 'Klothys, God of Destiny', cards: [{qty: 1, name: 'Klothys, God of Destiny'}, {qty: 1, name: 'Llanowar Elves'}, {qty: 1, name: 'Lightning Bolt'}, {qty: 1, name: 'Sol Ring'}, {qty: 36, name: 'Forest'}, {qty: 60, name: 'Mountain'}]},
+  cpu: {id: 'd-cpu', name: 'Talrand Spellslinger', format: 'Commander', commander: 'Talrand, Sky Summoner', cards: [{qty: 1, name: 'Talrand, Sky Summoner'}, {qty: 1, name: 'Counterspell'}, {qty: 1, name: 'Brainstorm'}, {qty: 97, name: 'Island'}]},
+  more: [
+    {id: 'd-3', name: 'Krenko Goblin Rush', format: 'Commander', commander: 'Krenko, Tin Street Kingpin', cards: [{qty: 1, name: 'Krenko, Tin Street Kingpin'}, {qty: 99, name: 'Mountain'}]},
+    {id: 'd-4', name: 'Ghalta Stompy', format: 'Commander', commander: 'Ghalta, Primal Hunger', cards: [{qty: 1, name: 'Ghalta, Primal Hunger'}, {qty: 99, name: 'Forest'}]},
+    {id: 'd-5', name: 'Frost Titan Control', format: 'Commander', commander: 'Frost Titan', cards: [{qty: 1, name: 'Frost Titan'}, {qty: 99, name: 'Island'}]},
+  ],
+};
+const names = [...new Set([decks.you, decks.cpu, ...decks.more].map(d => d.commander))];
+const scry = new Map();
+try {
+  const r = await fetch('https://api.scryfall.com/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({identifiers: names.map(name => ({name}))})});
+  for (const c of (await r.json()).data || []) scry.set(c.name, c);
+} catch (e) { console.warn('Scryfall unavailable', e); }
+const lookup = name => scry.get(name) || null;
+const artOf = d => lookup(d?.commander)?.image_uris?.art_crop || '';
+const avatarUrl = artOf(decks.you);
+const profile = {signedIn: true, displayName: 'idw011', username: 'idw011', avatarUrl, ownerId: 'u1'};
+const tile = (d, on) => `<button class="deck-tile" data-act="playSelectDeck" data-play-deck="${d.id}" aria-pressed="${on}" aria-label="Select ${d.name}"><span class="tile-art">${img(artOf(d), d.name)}</span><span class="tile-shade"></span><span class="tile-top"><span class="deck-format-stack"><span class="chip dark">Commander</span></span></span><span class="tile-body"><b>${d.name}</b><small>${d.commander} · 100/100</small></span></button>`;
+const content = document.getElementById('content'), mat = document.getElementById('practicePlayerMat');
+const setup = {profile, selected: decks.you, opponent: decks.cpu, match: {format: 'Commander', mode: 'cpu', difficulty: 'Medium'}, playStyle: params.get('style') || 'quick'};
+
+if (SCREEN === 'menu') {
+  const all = [decks.you, decks.cpu, ...decks.more], tiles = new Map(all.map(d => [d.id, tile(d, d.id === decks.you.id)]));
+  const state = {profile, match: setup.match, playStyle: params.get('style') || 'quick', decks: all.map(d => ({...d, valid: true})), selected: decks.you, opponent: params.get('style') === 'practice' ? decks.cpu : null, selectedSource: 'saved', opponentSource: 'saved', browse: {source: 'yours', query: ''}, inspectedSeat: 'player', draft: {}};
+  content.innerHTML = playMenuMarkup(state, {engine: 'forge', matchReleaseReady: true, avatarMarkup: profileAvatar(null, {display_name: profile.displayName, username: profile.username, avatar_url: avatarUrl}), deckTiles: tiles, selectedArt: img(artOf(decks.you), ''), matchupArt: {player: img(artOf(decks.you), ''), opponent: state.opponent ? img(artOf(decks.cpu), '') : ''}, deckPreview: '<div class="deck-viewer"><p class="muted small">100 cards · Klothys, God of Destiny</p></div>'});
+} else if (['intro', 'choice', 'flip', 'landed'].includes(SCREEN)) {
+  document.body.classList.add('practice-table-open'); content.hidden = true; mat.hidden = false;
+  const own = params.get('first') !== 'cpu';
+  const holdAfter = SCREEN === 'flip' ? 0 : SCREEN === 'landed' ? 1 : 99;
+  let calls = 0;
+  const wait = ms => new Promise(resolve => { if (calls++ >= holdAfter && ['flip', 'landed'].includes(SCREEN)) return; setTimeout(resolve, ms); });
+  const intro = mountForgeMatchIntro({root: mat, setup: {...setup, playStyle: SCREEN === 'choice' ? 'practice' : setup.playStyle}, lookup, wait: SCREEN === 'intro' || SCREEN === 'choice' ? (ms => new Promise(r => setTimeout(r, ms))) : wait});
+  intro.refreshArtwork();
+  window.intro = intro;
+  if (SCREEN === 'choice') intro.chooseStartingPlayer();
+  if (SCREEN === 'flip' || SCREEN === 'landed') {
+    const snapshot = {viewer: 1, players: [{id: 1, isViewer: true}, {id: 2, isViewer: false}], pregame: {schema: 'cardstashy.forge-pregame.v1', selection: 'random', playStyle: 'quick', firstPlayerId: own ? 1 : 2}};
+    intro.reveal(snapshot);
+  }
+} else if (['failed', 'result', 'interrupted'].includes(SCREEN)) {
+  document.body.classList.add('practice-table-open'); content.hidden = true; mat.hidden = false;
+  const account = {user: {id: 'u1'}};
+  const createClient = () => ({
+    async create() { if (SCREEN === 'failed') throw Object.assign(Error('global_match_capacity'), {code: 'global_match_capacity'}); },
+    async read() { return SCREEN === 'result' ? {status: 'finished', result: {winnerPlayerId: params.get('won') === 'no' ? 2 : 1}, viewerId: 1} : (() => { throw Object.assign(Error('HOST_SESSION_STOPPED'), {status: 410, code: 'HOST_SESSION_STOPPED', reason: 'expired'}); })(); },
+    status() { return {allocation: {deckDigests: {human: 'a1b2c3', opponent: 'd4e5f6'}}, blocked: false}; },
+    async close() {}, detach() {}, release() {}, async submit() {},
+  });
+  const playerMat = createForgePlayerMat({root: mat, readAccount: () => account, readSetup: () => setup, getAccessToken: async () => 't', lookup, createClient, onHome() {}, onRematch() {}, wait: ms => new Promise(r => setTimeout(r, Math.min(ms, 20)))});
+  playerMat.start().catch(() => {});
+} else if (SCREEN === 'exit') {
+  document.body.classList.add('practice-table-open'); content.hidden = true; mat.hidden = false;
+  mat.innerHTML = '<div style="position:absolute;inset:0;background:#0c0c0e url(../../assets/play/mat-obsidian-gold.webp) center/100% 100%"></div>';
+  // Same markup as play-forge-player-mat.js requestExit() for a match in progress.
+  const dialog = document.createElement('dialog'); dialog.className = 'play-match-exit'; dialog.setAttribute('aria-label', 'Concede native match');
+  const add = (tag, text) => { const n = document.createElement(tag); n.textContent = text; dialog.append(n); return n; };
+  add('h2', 'Concede this match?'); add('p', 'The game ends as a loss once Forge confirms it.');
+  const keep = add('button', 'Keep playing'), close = add('button', 'Concede and return'); keep.type = close.type = 'button';
+  close.disabled = params.get('busy') === '1';
+  add('p', 'Finish your current choice first.').className = 'play-exit-hint';
+  document.body.append(dialog); dialog.showModal(); keep.focus();
+}
+setTimeout(() => { document.body.dataset.fixtureReady = 'true'; }, 50);
+</script>
+</body>
+</html>
