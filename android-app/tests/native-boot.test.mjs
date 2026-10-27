@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const root = path.resolve(import.meta.dirname, '..');
 // The Android bridge (native-bridge.js) only carries messages. Without @capacitor/core the
@@ -60,4 +61,16 @@ test('the top bar and pop-ups stay clear of the status bar', async () => {
     assert.ok((await readFile(path.join(root, 'shared-source', name === 'pack' ? 'sets-ui.css' : 'style.css'), 'utf8')).includes(`.${name}-dialog`), `${name} dialog still exists`);
   }
   assert.ok(site.indexOf('var(--safe-area-inset-top, 0px)') > 0, 'website env() insets also read the injected values');
+});
+// Play's engine runtime (~55 MB) stays on the website and its Forge host is not a native service, so the
+// app relies on desktop-play.js keeping Play closed natively; only the Play modules the website serves ship.
+test('Play stays web-only: its entry is closed in the app and its engine runtime is not packaged', async () => {
+  const { readPlayDeviceEligibility, playDeviceGuardText } = await import(pathToFileURL(path.join(root, 'www/desktop-play.js')));
+  const view = { Capacitor: { isNativePlatform: () => true }, navigator: { userAgent: 'Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0.0.0', maxTouchPoints: 0 }, matchMedia: () => ({ matches: true }) };
+  const result = readPlayDeviceEligibility(view, { documentElement: { clientWidth: 1600, clientHeight: 1000 } });
+  assert.deepEqual([result.eligible, result.reason], [false, 'native']);
+  assert.match(playDeviceGuardText(result), /Android app/);
+  const experiments = JSON.parse(await readFile(path.join(root, 'bundle-manifest.json'), 'utf8')).files.map(file => file.path).filter(file => file.startsWith('experiments/'));
+  assert.ok(experiments.includes('experiments/forge-proof/forge-session.mjs'));
+  for (const file of experiments) assert.match(file, /^experiments\/(phase-engine|forge-proof)\/(?!test-)[a-z-]+\.(mjs|css)$/);
 });
