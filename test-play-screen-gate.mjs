@@ -1,7 +1,7 @@
 // Play on tablets and unfolded foldables: who is admitted, who sees the bigger-screen
 // notice, and how a match waits while the screen is too small.
 import assert from 'node:assert/strict';
-import {playScreenFits,playDeviceEligibility,playDeviceGate,playScreenPauseApplies,playTableSupported,createPlayScreenPause,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
+import {playScreenFits,playDeviceEligibility,playDeviceGate,playScreenPauseApplies,readPlayDeviceEligibility,playTableSupported,createPlayScreenPause,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
 
 // Shortest side 600 CSS px or more, in either orientation.
 for(const [w,h] of [[820,1180],[1180,820],[884,1104],[1104,884],[744,1133],[1024,768],[600,600]])assert.equal(playScreenFits(w,h),true,`${w}x${h} fits`);
@@ -35,7 +35,17 @@ const desktopView=(width,height)=>({navigator:{userAgent:'Mozilla/5.0 (Windows N
 const tabletView=(width,height)=>({navigator:{userAgent:chromeTablet.ua,platform:chromeTablet.platform,maxTouchPoints:10},matchMedia:q=>({matches:/coarse/.test(q)}),CSS:{supports:()=>true},PointerEvent:function(){},innerWidth:width,innerHeight:height});
 for(const [w,h] of [[850,580],[683,384],[1920,1080]])assert.equal(playScreenPauseApplies(desktopView(w,h),{}),false,`a desktop at ${w}x${h} never pauses`);
 for(const [w,h] of [[820,1180],[412,915]])assert.equal(playScreenPauseApplies(tabletView(w,h),{}),true,`a touch device at ${w}x${h} can pause`);
-assert.equal(playScreenPauseApplies({Capacitor:{isNativePlatform:()=>true},navigator:{},matchMedia:()=>({matches:false})},{}),false,'the Android app does not run Play yet');
+// The Android app takes the touch rules: phones are gated both ways, a match can pause, and
+// a WebView without the table's CSS is asked to update instead of getting a broken table.
+const appView=(width,height,extra={})=>({Capacitor:{isNativePlatform:()=>true},navigator:{userAgent:'Mozilla/5.0 (Linux; Android 15; SM-F956U Build/AP3A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/141.0.0.0 Mobile Safari/537.36',maxTouchPoints:10},matchMedia:q=>({matches:/coarse/.test(q)}),CSS:{supports:()=>true},PointerEvent:function(){},innerWidth:width,innerHeight:height,...extra});
+for(const [w,h] of [[884,1104],[1104,884],[820,1180]])assert.deepEqual(readPlayDeviceEligibility(appView(w,h),{}),{eligible:true,reason:'wide-touch-candidate',entry:'touch'},`the app plays at ${w}x${h}`);
+for(const [w,h] of [[412,915],[915,412],[1280,599]])assert.deepEqual(readPlayDeviceEligibility(appView(w,h),{}),{eligible:false,reason:'touch-space',entry:'touch'},`the app sees the notice at ${w}x${h}`);
+for(const [w,h] of [[1104,884],[412,915]])assert.equal(playScreenPauseApplies(appView(w,h),{}),true,`the app at ${w}x${h} can pause`);
+for(const extra of [{CSS:undefined},{CSS:{supports:q=>q!=='container-type'}},{PointerEvent:undefined}]){
+ const result=readPlayDeviceEligibility(appView(1104,884,extra),{});
+ assert.deepEqual(result,{eligible:false,reason:'app-webview',entry:'touch'},'an old app WebView is asked to update');
+ assert.deepEqual(playDeviceGate(result),{title:'Play needs a newer WebView',line:'Update Android System WebView from Google Play, then reopen the app.'});
+}
 
 // The pause: starts when the screen stops fitting, resumes at once, ticks, and expires once.
 {
@@ -55,4 +65,4 @@ assert.equal(playScreenPauseApplies({Capacitor:{isNativePlatform:()=>true},navig
  quiet.update(false);quiet.destroy();advance(5000);assert.deepEqual(events,[],'a destroyed pause never expires');
 }
 assert.equal(PLAY_SMALL_SCREEN_LIMIT_MS,5*60*1000);
-console.log('PASS: tablets and unfolded foldables play in both orientations in every current browser, phones see the notice, desktops never pause, and the pause resumes, ticks and expires once.');
+console.log('PASS: tablets and unfolded foldables play in both orientations in every current browser and the Android app, phones see the notice, desktops never pause, and the pause resumes, ticks and expires once.');

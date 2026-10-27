@@ -21,7 +21,8 @@ export function playTableSupported(view=globalThis) {
   try{const css=view.CSS;return !!(css?.supports?.('container-type','size')&&css.supports('selector(:has(a))')&&typeof view.PointerEvent==='function');}catch{return false;}
 }
 export function playDeviceEligibility({native=false,ua='',platform='',mobile,maxTouchPoints=0,anyFine=false,anyHover=false,anyCoarse=false,width=0,height=0,tableSupported=true}={}) {
-  if(native)return {eligible:false,reason:'native',entry:null};
+  // The Android app takes the touch screen rules; an old WebView is asked to update.
+  if(native){if(tableSupported===false)return {eligible:false,reason:'app-webview',entry:'touch'};const fits=playScreenFits(width,height);return fits?{eligible:true,reason:'wide-touch-candidate',entry:'touch'}:{eligible:false,reason:fits===null?'viewport-unknown':'touch-space',entry:'touch'};}
   const touch=Number.isFinite(maxTouchPoints)&&maxTouchPoints>0||anyCoarse===true;
   const mobileDevice=mobile===true||/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(ua)||(platform==='MacIntel'&&maxTouchPoints>1);
   if(mobileDevice){
@@ -47,9 +48,9 @@ export function readPlayDeviceEligibility(view=globalThis,root=view.document) {
 }
 // One title and one line per reason, shown in place of the start button.
 export function playDeviceGate(result={}) {
-  if(result.reason==='native')return {title:'Play is coming to the app',line:'Play in the Android app is coming with its next update.'};
   if(result.reason==='touch-space'||result.reason==='viewport-unknown')return {title:'Play needs a bigger screen',line:'Unfold your device, turn it sideways on a tablet, or use a computer.'};
   if(result.reason==='touch-browser')return {title:'Play needs a newer browser',line:'Update your browser, or open CardStashy in Chrome or Safari.'};
+  if(result.reason==='app-webview')return {title:'Play needs a newer WebView',line:'Update Android System WebView from Google Play, then reopen the app.'};
   return {title:'Play isn’t available in this browser',line:'Use Chrome on a tablet or unfolded phone, or a computer with a mouse or trackpad.'};
 }
 export function playDeviceGuardText(result={}) {const gate=playDeviceGate(result);return `${gate.title}. ${gate.line}`;}

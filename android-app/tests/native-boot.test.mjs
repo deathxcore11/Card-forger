@@ -62,14 +62,23 @@ test('the top bar and pop-ups stay clear of the status bar', async () => {
   }
   assert.ok(site.indexOf('var(--safe-area-inset-top, 0px)') > 0, 'website env() insets also read the injected values');
 });
-// Play's engine runtime (~55 MB) stays on the website and its Forge host is not a native service, so the
-// app relies on desktop-play.js keeping Play closed natively; only the Play modules the website serves ship.
-test('Play stays web-only: its entry is closed in the app and its engine runtime is not packaged', async () => {
+// Play's engine runtime (~55 MB) stays on the website: the app's Play, like the website's, runs Forge on
+// the hosted server. The app admits Play by the website's touch screen rules; only the Play modules ship.
+test('Play opens in the app on a big enough screen and its engine runtime is not packaged', async () => {
   const { readPlayDeviceEligibility, playDeviceGuardText } = await import(pathToFileURL(path.join(root, 'www/desktop-play.js')));
-  const view = { Capacitor: { isNativePlatform: () => true }, navigator: { userAgent: 'Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0.0.0', maxTouchPoints: 0 }, matchMedia: () => ({ matches: true }) };
-  const result = readPlayDeviceEligibility(view, { documentElement: { clientWidth: 1600, clientHeight: 1000 } });
-  assert.deepEqual([result.eligible, result.reason], [false, 'native']);
-  assert.match(playDeviceGuardText(result), /Android app/);
+  const view = { Capacitor: { isNativePlatform: () => true }, navigator: { userAgent: 'Mozilla/5.0 (Linux; Android 15; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0.0.0 Safari/537.36', maxTouchPoints: 5 }, matchMedia: () => ({ matches: false }), CSS: { supports: () => true }, PointerEvent: function () {} };
+  const screen = (clientWidth, clientHeight) => readPlayDeviceEligibility(view, { documentElement: { clientWidth, clientHeight } });
+  for (const [width, height] of [[900, 700], [1600, 1000], [673, 841], [800, 1280]]) assert.deepEqual(screen(width, height), { eligible: true, reason: 'wide-touch-candidate', entry: 'touch' }, width + 'x' + height);
+  for (const [width, height] of [[400, 800], [412, 915], [915, 412], [1280, 599], [599, 1000], [0, 0]]) {
+    const result = screen(width, height);
+    assert.deepEqual([result.eligible, result.entry], [false, 'touch'], width + 'x' + height);
+    assert.match(playDeviceGuardText(result), /^Play needs a bigger screen\./);
+  }
+  // No user-agent check in the app's WebView, but one without the table's CSS is asked to update.
+  assert.equal(readPlayDeviceEligibility({ ...view, navigator: { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)', maxTouchPoints: 0 } }, { documentElement: { clientWidth: 1600, clientHeight: 1000 } }).eligible, true);
+  const old = readPlayDeviceEligibility({ ...view, CSS: { supports: query => query !== 'selector(:has(a))' } }, { documentElement: { clientWidth: 1600, clientHeight: 1000 } });
+  assert.deepEqual(old, { eligible: false, reason: 'app-webview', entry: 'touch' });
+  assert.match(playDeviceGuardText(old), /^Play needs a newer WebView\. Update Android System WebView/);
   const experiments = JSON.parse(await readFile(path.join(root, 'bundle-manifest.json'), 'utf8')).files.map(file => file.path).filter(file => file.startsWith('experiments/'));
   assert.ok(experiments.includes('experiments/forge-proof/forge-session.mjs'));
   for (const file of experiments) assert.match(file, /^experiments\/(phase-engine|forge-proof)\/(?!test-)[a-z-]+\.(mjs|css)$/);

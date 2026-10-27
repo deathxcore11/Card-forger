@@ -7,7 +7,7 @@ import {blankGame,GAME_IDS} from './games.js';
 import {homeDeckShelf} from './home-ui.js';
 import {home} from './views.js';
 import {tcgHome,heroState,heroDate} from './tcg.js';
-import {playDeviceEligibility,syncDesktopPlayEntries} from './desktop-play.js';
+import {playDeviceEligibility,playDeviceGate,syncDesktopPlayEntries} from './desktop-play.js';
 const old=S.state,oldFetch=globalThis.fetch,originalHeroes=structuredClone(heroState);
 globalThis.fetch=()=>{throw Error('Home presentation must not fetch or build a deck');};
 try{
@@ -45,7 +45,13 @@ syncDesktopPlayEntries('mtg',root,view);for(const n of nodes){assert.equal(n.hid
 syncDesktopPlayEntries('ptcg',root,view);for(const n of nodes)assert.equal(n.hidden,true);
 // Phones keep the nav Play (it took Community's place); the Play route explains the guard.
 syncDesktopPlayEntries('mtg',root,{...view,navigator:{userAgent:'Android',platform:'Linux'}});for(const n of nodes){assert.equal(n.hidden,false);assert.equal(n.dataset.playReadiness,'device-guard');}
-syncDesktopPlayEntries('mtg',root,{...view,Capacitor:{isNativePlatform:()=>true}});for(const n of nodes)assert.equal(n.hidden,true);
+// The Android app follows the touch rules: nav Play shows, and the screen size alone admits it.
+syncDesktopPlayEntries('mtg',root,{...view,Capacitor:{isNativePlatform:()=>true}});for(const n of nodes){assert.equal(n.hidden,false);assert.equal(n.dataset.playReadiness,'device-guard');}
+for(const [width,height,eligible] of [[900,700,true],[1280,800,true],[400,800,false],[800,400,false],[915,412,false],[1280,599,false],[599,1000,false]])assert.deepEqual(playDeviceEligibility({...desktop,native:true,width,height}),{eligible,reason:eligible?'wide-touch-candidate':'touch-space',entry:'touch'},width+'x'+height);
+assert.equal(playDeviceGate(playDeviceEligibility({native:true,width:400,height:800})).title,'Play needs a bigger screen');
+assert.deepEqual(playDeviceEligibility({native:true,width:1280,height:800,tableSupported:false}),{eligible:false,reason:'app-webview',entry:'touch'},'an old WebView is asked to update');
+assert.equal(playDeviceGate({reason:'app-webview'}).title,'Play needs a newer WebView');
+assert.deepEqual(playDeviceEligibility({native:true,ua:'Mozilla/5.0 (Linux; Android 15; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0.0.0 Mobile Safari/537.36',maxTouchPoints:5,width:0,height:0}),{eligible:false,reason:'viewport-unknown',entry:'touch'});
 // A wide Chrome tablet is admitted through the touch entries and the nav Play.
 const touchNodes=[{dataset:{touchPlayEntry:'practice'},hidden:true,disabled:true}],tabletRoot={querySelectorAll:selector=>selector.includes('touch')?touchNodes:selector.includes('desktop')?nodes:[],documentElement:{clientWidth:820,clientHeight:1180}};
 const tablet={navigator:{userAgent:'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',platform:'Linux armv8l',maxTouchPoints:10},matchMedia:query=>({matches:query.includes('coarse')}),CSS:{supports:()=>true},PointerEvent:function(){}};
@@ -54,4 +60,4 @@ assert.deepEqual(touchNodes.map(n=>[n.hidden,n.disabled,n.dataset.playReadiness]
 // A narrow phone still sees the entry; the Play route explains the space guard.
 syncDesktopPlayEntries('mtg',{...tabletRoot,documentElement:{clientWidth:390,clientHeight:844}},tablet);assert.deepEqual(touchNodes.map(n=>[n.hidden,n.dataset.playReadiness]),[[false,'device-guard']]);
 syncDesktopPlayEntries('ptcg',tabletRoot,tablet);assert.equal(touchNodes[0].hidden,true);
-console.log('PASS: Home order and ownership stay unchanged; desktop Magic Practice entry is admitted; touch devices get the nav Play and wide Chrome tablets are admitted; other games, native and Draft stay unavailable.');
+console.log('PASS: Home order and ownership stay unchanged; desktop Magic Practice entry is admitted; touch devices get the nav Play and wide Chrome tablets are admitted; the Android app follows the touch screen rules; other games and Draft stay unavailable.');
