@@ -3902,7 +3902,7 @@ export function registerTcg(c) {
         });
       };
       load = async (status) => {
-        const need = [...new Set(meta.decks.flatMap((x) => [...x.main, ...x.extra]))].filter((id) => needsCardRefresh("ygo", cardOf("ygo", id)) || price(cardOf("ygo", id)) == null);
+        const need = [...new Set([...meta.decks.flatMap((x) => [...x.main, ...x.extra]), ...(d.side || [])])].filter((id) => needsCardRefresh("ygo", cardOf("ygo", id)) || price(cardOf("ygo", id)) == null);
         if (need.length) {
           status(`Loading ${need.length} cards…`);
           (await SOURCES.ygo.byIds(need)).forEach(remember);
@@ -3914,6 +3914,12 @@ export function registerTcg(c) {
         const savingSheet = S.ui.sheetCtx;
         const zones = { main: [], extra: [], side: [] };
         for (const r of rows) zones[r.zone === "extra" ? "extra" : "main"].push({ cardId: r.key, name: r.name, qty: r.qty });
+        // The original tournament list keeps its Side Deck; adaptations rebuild only Main and Extra.
+        if (label === "original") {
+          const side = new Map();
+          for (const id of d.side || []) side.set(id, (side.get(id) || 0) + 1);
+          for (const [id, qty] of side) zones.side.push({ cardId: id, name: cardOf("ygo", id)?.name || "Card " + id, qty });
+        }
         const deck = { id: uid(), name: `${d.name} · ${label}`.slice(0, 100), format: "tcg", zones, createdAt: new Date().toISOString(), source: { kind: label === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, url: d.url } };
         await mutate((st) => st.decks.push(deck), { msg: `Saved “${deck.name}”.` });
         if (g() === G && S.ui.sheetCtx === savingSheet) {

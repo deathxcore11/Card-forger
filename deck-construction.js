@@ -176,7 +176,9 @@ export function inspectDeckPlan(request,rows,deck={},{includeFinalSupport=true}=
   }
  }
  if(request.seedCards?.some(c=>!rows.some(r=>r.qty>0&&r.zone!=='side'&&key(r.card?.name)===key(c.name))))issues.push('A required build-around card is missing from its playable deck section.');
- if(request.seedOrigin!=='automatic'&&request.seedCard&&!main.some(r=>r.qty>0&&key(r.card?.name)===key(request.seedCard.name)))issues.push(`The required build-around ${request.seedCard.name} is missing.`);
+ // Extra Deck monsters (Fusion, Synchro, Xyz, Link) are checked in the Extra Deck; everything else in the Main Deck.
+ const seedZoneOk=r=>request.game==='ygo'&&r.card?.extra?r.zone==='extra':r.zone!=='extra'&&r.zone!=='side';
+ if(request.seedOrigin!=='automatic'&&request.seedCard&&!rows.some(r=>r.qty>0&&seedZoneOk(r)&&key(r.card?.name)===key(request.seedCard.name)))issues.push(`The required build-around ${request.seedCard.name} is missing.`);
  for(const name of request.required_cards||[])if(!names.has(key(name))&&(request.game==='mtg'||!rows.some(r=>key(r.card?.name)===key(name))))issues.push(`Required card ${name} is missing.`);
  for(const name of request.excluded_cards||[])if(rows.some(r=>key(r.card?.name)===key(name)))issues.push(`Excluded card ${name} was selected.`);
  const analysisRows=main.map(r=>({...r,c:r.card}));
