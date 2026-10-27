@@ -29,12 +29,30 @@ function searchImage(card){
  return typeof url==='string'&&(/^https?:\/\//i.test(url)||/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(url))?url:null;
 }
 export const isDescribedOption=value=>typeof value==='string'||typeof value==='number'||typeof value==='boolean'||!!(value&&value.hidden!==true&&value.card?.hidden!==true&&(value.name||value.description||value.text));
+const ASSIGN_METHODS=new Set(['assignCombatDamage','assignGenericAmount']);
+// The bridge's division contract: a total to split, and per option a lethal mark (combat) or a cap.
+function assignShape(p){
+ const a=p?.assign,options=p?.options||[];if(!a||!Number.isSafeInteger(a.amount)||a.amount<0||!options.length)return null;
+ const caps=options.map((o,i)=>Number.isSafeInteger(a.maxima?.[i])&&a.maxima[i]>=0?a.maxima[i]:a.amount);
+ const lethal=options.map((o,i)=>Number.isSafeInteger(a.lethal?.[i])?a.lethal[i]:null);
+ return {amount:a.amount,caps,lethal,defender:Number.isSafeInteger(a.defenderIndex)?a.defenderIndex:null,label:typeof a.label==='string'?a.label:'',maySkip:a.maySkip===true,atLeastOne:a.atLeastOne===true};
+}
+// A starting split the player can adjust: blockers get lethal in order, the rest goes on the last
+// option that can hold it. Forge validates the final numbers either way.
+export function assignStart(p){
+ const shape=assignShape(p);if(!shape)return null;let left=shape.amount;const out=shape.caps.map(()=>0);
+ if(p.method==='assignCombatDamage'){for(const [i,l]of shape.lethal.entries()){if(i===shape.defender||l===null||!left)continue;const g=Math.min(l,left);out[i]=g;left-=g;}}
+ else if(shape.atLeastOne)for(const i of out.keys()){if(!left)break;if(shape.caps[i]>0){out[i]=1;left--;}}
+ for(let i=out.length-1;i>=0&&left>0;i--){if(p.method==='assignCombatDamage'&&i===shape.defender&&shape.lethal.some((l,k)=>k!==i&&l!==null&&out[k]<l))continue;const room=shape.caps[i]-out[i],g=Math.min(room,left);out[i]+=g;left-=g;}
+ return out;
+}
 // True when the open prompt leaves the player no reply: the panel below shows a diagnostic
 // instead of controls (unadapted method, unordered order, or too few presentable options).
 export function nativePromptUnanswerable(p){
  if(!p)return false;
  if(p.supported!==true||p.method==='order'&&p.ordered!==true)return true;
  if(['confirm','showConfirmDialog','showInputDialog'].includes(p.method)||p.acknowledgeOnly===true&&p.method==='getChoices')return false;
+ if(ASSIGN_METHODS.has(p.method))return !assignShape(p);
  if(OPTION_METHODS.has(p.method))return (p.options||[]).filter(o=>isDescribedOption(o.value)).length<(p.min||0);
  return true;
 }
@@ -95,6 +113,8 @@ export function nativeActionLabel(n,op,raw){
  if(input==='InputSelectTargets'&&op==='ok')return 'Confirm targets';
  return label;
 }
+// Splits in progress, by prompt, so a redraw keeps what the player has entered.
+const assignDrafts=new Map();
 export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
  const doc=container.ownerDocument,s=snapshot,n=s.native;if(!n)return;
  const copy=(player,proof)=>presentation.hosted?player:proof;
@@ -196,6 +216,23 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const options=p.options||[],named=presentation.hosted?session.promptNamedCard?.(n.revision):null,url=searchImage(named);
    if(url){const figure=node('figure',undefined,'forge-native-card'),image=node('img');image.src=url;image.alt=named.name;image.decoding='async';image.referrerPolicy='no-referrer';image.addEventListener('error',()=>figure.remove(),{once:true});figure.append(image);panel.append(figure);}
    const choices=node('div',undefined,'forge-native-confirm');choices.append(button(optionLabel(options[0]?.value??'Confirm'),()=>session.replyValue(true),false,'reply-true'),button(optionLabel(options[1]?.value??'Decline'),()=>session.replyValue(false),false,'reply-false'));panel.append(choices);
+  }else if(ASSIGN_METHODS.has(p.method)){
+   const shape=assignShape(p),options=p.options||[],combat=p.method==='assignCombatDamage';
+   if(assignDrafts.size>20)assignDrafts.clear();const amounts=assignDrafts.get(p.id)||assignStart(p);assignDrafts.set(p.id,amounts);
+   const box=node('div',undefined,'forge-native-assign'),total=node('p','','forge-native-assign-total');total.setAttribute('role','status');
+   box.append(node('p',combat?`Divide ${shape.amount} combat damage.${shape.defender!==null?' Each blocker needs lethal damage before any can go to the player.':''}`:`Divide ${shape.amount}${shape.label?' '+shape.label:''}.`,'forge-native-detail'));
+   const rows=options.map((o,i)=>{
+    const row=node('div',undefined,'forge-native-assign-row'),name=node('span',optionLabel(o.value),'forge-native-assign-name'),value=node('b',String(amounts[i]));
+    const hint=combat&&shape.lethal[i]!==null?node('small',`lethal ${shape.lethal[i]}`):shape.caps[i]<shape.amount?node('small',`up to ${shape.caps[i]}`):null;
+    const less=button('−',()=>{if(amounts[i]>0){amounts[i]--;sync();}},false,`assign-less-${i}`),more=button('+',()=>{if(amounts[i]<shape.caps[i]&&amounts.reduce((t,a)=>t+a,0)<shape.amount){amounts[i]++;sync();}},false,`assign-more-${i}`);
+    less.setAttribute('aria-label',`Less to ${optionLabel(o.value)}`);more.setAttribute('aria-label',`More to ${optionLabel(o.value)}`);
+    if(hint)name.append(' ',hint);row.append(name,less,value,more);if(optionCardId(o.value)!==null)row.dataset.optionCard=String(optionCardId(o.value));box.append(row);return {value,less,more};
+   });
+   const confirm=button(copy('Confirm','Confirm amounts'),()=>{const sent=[...amounts];assignDrafts.delete(p.id);return session.replyAmounts(sent);},false,'confirm-assign');
+   function sync(){const used=amounts.reduce((t,a)=>t+a,0);rows.forEach((r,i)=>{r.value.textContent=String(amounts[i]);r.less.disabled=s.busy||amounts[i]<=0;r.more.disabled=s.busy||amounts[i]>=shape.caps[i]||used>=shape.amount;});total.textContent=used===shape.amount?'All assigned':`${shape.amount-used} left to assign`;confirm.disabled=s.busy||used!==shape.amount;}
+   sync();box.append(total);const actions=node('div',undefined,'forge-native-confirm');actions.append(confirm);
+   if(combat&&shape.maySkip)actions.append(button('Skip',()=>{assignDrafts.delete(p.id);return session.skipAssign();},false,'skip-assign'));
+   box.append(actions);panel.append(box);
   }else if(p.method==='showInputDialog'){
    const form=node('form'),label=node('label','Value requested by Forge');let input;
    if(p.options?.length){input=node('select');input.append(node('option','Select an offered value'));input.firstChild.value='';for(const o of p.options){const option=node('option',optionLabel(o.value));option.value=String(o.value);input.append(option);}}

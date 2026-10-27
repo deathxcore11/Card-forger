@@ -197,3 +197,14 @@ test('a payment step that opens without a new revision still reaches the table',
   assert.equal(session.snapshot().native.buttons.cancelEnabled, true);
   assert.equal(session.acceptState({ ...base, revision: 4 }), false, 'older revisions stay ignored');
 });
+
+test('divided damage starts from a legal split and sends one number per option', async () => {
+  const { assignStart, nativePromptUnanswerable } = await import('./experiments/forge-proof/native-panel.mjs');
+  const opt = (i, name) => ({ index: i, value: { kind: 'card', id: 10 + i, hidden: false, name } });
+  const trample = { id: 'a', supported: true, method: 'assignCombatDamage', options: [opt(0, 'Bear'), opt(1, 'Elf'), { index: 2, value: { kind: 'player', id: 2, name: 'CPU' } }], assign: { amount: 6, lethal: [2, 1, null], defenderIndex: 2, maySkip: false } };
+  assert.equal(nativePromptUnanswerable(trample), false, 'the dock answers it instead of showing only Concede');
+  assert.deepEqual(assignStart(trample), [2, 1, 3], 'lethal to each blocker first, the rest tramples over');
+  const bolt = { id: 'b', supported: true, method: 'assignGenericAmount', options: [opt(0, 'Bear'), opt(1, 'Elf')], assign: { amount: 3, maxima: [3, 3], atLeastOne: true } };
+  assert.deepEqual(assignStart(bolt), [1, 2]);
+  assert.equal(nativePromptUnanswerable({ ...bolt, assign: undefined }), true, 'without the division contract it is not guessed');
+});
