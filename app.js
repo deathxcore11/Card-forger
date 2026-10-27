@@ -11,7 +11,7 @@ import {loadMtgBooster,mtgBoosterCards} from './mtg-boosters.js';
 // Booster pack photos trim to the pack itself wherever they appear.
 document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]'))trimPackArt(e.target);},true);
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
-import {syncDesktopPlayEntries,playDeviceGuardText,watchPlayDeviceEligibility} from './desktop-play.js';
+import {syncDesktopPlayEntries,playDeviceGate,watchPlayDeviceEligibility} from './desktop-play.js';
 import {createPlaySetup} from './play-setup.js';
 import {FORGE_PLAY_TEST_ENABLED} from './play-forge-feature.js';
 import {forgeDeckSupport} from './play-forge-setup-review.js';
@@ -1600,7 +1600,7 @@ function playDeckPreview(deck) {
 function renderPlayPage() {
   if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>Choose Magic in the game selector to prepare a CPU match.</p><a class="btn" href="#home">Return Home</a></section>';
   const device=syncDesktopPlayEntries('mtg');
-  if(!device.eligible)return '<section class="empty play-device-guard"><h1>Play</h1><p>'+esc(playDeviceGuardText(device))+'</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';
+  if(!device.eligible){const gate=playDeviceGate(device);return '<section class="empty play-device-guard"><span class="play-device-guard-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/><path d="M12 7v10"/></svg></span><h1>'+esc(gate.title)+'</h1><p>'+esc(gate.line)+'</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';}
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:(state.playStyle!=='quick'&&state.inspectedSeat==='opponent'?state.opponentSource==='saved'&&state.opponent?.id===deck.id:state.selectedSource==='saved'&&state.selected?.id===deck.id)}));}
   const inspected=state.match.mode==='cpu'&&state.inspectedSeat==='opponent'?state.opponent:state.selected;

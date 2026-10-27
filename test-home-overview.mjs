@@ -43,13 +43,15 @@ for(const patch of [{native:true},{mobile:true},{ua:'Mozilla/5.0 (Linux; Android
 const nodes=[{dataset:{desktopPlayEntry:'practice'},hidden:true,disabled:false},{dataset:{desktopPlayEntry:'draft'},hidden:true,disabled:false}],root={querySelectorAll:selector=>selector.includes('desktop')?nodes:[]},view={navigator:{userAgent:desktop.ua,platform:'Win32'},matchMedia:()=>({matches:true})};
 syncDesktopPlayEntries('mtg',root,view);for(const n of nodes){assert.equal(n.hidden,false);assert.equal(n.disabled,n.dataset.desktopPlayEntry!=='practice');assert.equal(n.dataset.playReadiness,'cpu-beta');}
 syncDesktopPlayEntries('ptcg',root,view);for(const n of nodes)assert.equal(n.hidden,true);
-syncDesktopPlayEntries('mtg',root,{...view,navigator:{userAgent:'Android',platform:'Linux'}});for(const n of nodes)assert.equal(n.hidden,true);
-// A wide Chrome tablet is admitted through the touch entries; the desktop header/bottom entries stay hidden.
+// Phones keep the nav Play (it took Community's place); the Play route explains the guard.
+syncDesktopPlayEntries('mtg',root,{...view,navigator:{userAgent:'Android',platform:'Linux'}});for(const n of nodes){assert.equal(n.hidden,false);assert.equal(n.dataset.playReadiness,'device-guard');}
+syncDesktopPlayEntries('mtg',root,{...view,Capacitor:{isNativePlatform:()=>true}});for(const n of nodes)assert.equal(n.hidden,true);
+// A wide Chrome tablet is admitted through the touch entries and the nav Play.
 const touchNodes=[{dataset:{touchPlayEntry:'practice'},hidden:true,disabled:true}],tabletRoot={querySelectorAll:selector=>selector.includes('touch')?touchNodes:selector.includes('desktop')?nodes:[],documentElement:{clientWidth:820,clientHeight:1180}};
 const tablet={navigator:{userAgent:'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',platform:'Linux armv8l',maxTouchPoints:10},matchMedia:query=>({matches:query.includes('coarse')})};
 assert.equal(syncDesktopPlayEntries('mtg',tabletRoot,tablet).eligible,true);
-assert.deepEqual(touchNodes.map(n=>[n.hidden,n.disabled,n.dataset.playReadiness]),[[false,false,'cpu-beta']]);for(const n of nodes)assert.equal(n.hidden,true);
+assert.deepEqual(touchNodes.map(n=>[n.hidden,n.disabled,n.dataset.playReadiness]),[[false,false,'cpu-beta']]);for(const n of nodes){assert.equal(n.hidden,false);assert.equal(n.dataset.playReadiness,'cpu-beta');}
 // A narrow phone still sees the entry; the Play route explains the space guard.
 syncDesktopPlayEntries('mtg',{...tabletRoot,documentElement:{clientWidth:390,clientHeight:844}},tablet);assert.deepEqual(touchNodes.map(n=>[n.hidden,n.dataset.playReadiness]),[[false,'device-guard']]);
 syncDesktopPlayEntries('ptcg',tabletRoot,tablet);assert.equal(touchNodes[0].hidden,true);
-console.log('PASS: Home order and ownership stay unchanged; desktop Magic Practice entry is admitted; wide Chrome tablets get the touch entry; other games, native and Draft stay unavailable.');
+console.log('PASS: Home order and ownership stay unchanged; desktop Magic Practice entry is admitted; touch devices get the nav Play and wide Chrome tablets are admitted; other games, native and Draft stay unavailable.');

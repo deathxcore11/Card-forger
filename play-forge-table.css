@@ -623,3 +623,15 @@
 :where(body.practice-table-open) .play-match-card.forge-pressed{animation:forge-press .42s ease-out}
 @keyframes forge-press{0%{filter:brightness(1.45);outline:3px solid #f2d496cc;outline-offset:2px}100%{filter:none;outline:3px solid #f2d49600;outline-offset:8px}}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .forge-arrow{animation:none;stroke-dasharray:none}:where(body.practice-table-open) .play-match-card.forge-pressed{animation:none}}
+
+/* A screen too small for the table (a folded phone): the match waits under this notice.
+   It sits on the page above the table, which is inert while it shows. */
+.play-screen-pause{position:fixed;inset:0;z-index:2700;display:grid;place-items:center;padding:24px;background:#0b0b0dcc;backdrop-filter:blur(14px) saturate(.9);animation:play-screen-pause-in .25s ease-out both}
+.play-screen-pause-card{display:grid;justify-items:center;gap:10px;width:min(360px,100%);padding:28px 24px 24px;border:1px solid #d6ad6466;border-radius:20px;background:linear-gradient(180deg,#ffffff0d,transparent 30%),linear-gradient(180deg,#1b1b1ff5,#0e0e11f7);box-shadow:0 26px 60px #000d;text-align:center;color:#ece4d3}
+.play-screen-pause-icon{display:grid;place-items:center;width:58px;height:58px;border:1.5px solid #d6ad64;border-radius:50%;color:#f2d496;box-shadow:0 0 26px #d6ad6438}
+.play-screen-pause-icon svg{width:30px;height:30px}
+.play-screen-pause h2{margin:6px 0 0;font:700 21px/1.2 Cinzel,Georgia,serif;letter-spacing:.03em;color:#fbf3df;outline:none}
+.play-screen-pause p{margin:0;font:500 14px/1.45 'DM Sans',system-ui,sans-serif;color:#cfc6b3}
+.play-screen-pause .play-screen-pause-left{font-weight:700;letter-spacing:.06em;color:#f2d496}
+@keyframes play-screen-pause-in{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.play-screen-pause{animation:none}}

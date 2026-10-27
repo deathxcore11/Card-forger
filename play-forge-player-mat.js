@@ -8,6 +8,7 @@ import {createForgePresentationSession} from './experiments/forge-proof/forge-se
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {nativePromptUnanswerable} from './experiments/forge-proof/native-panel.mjs';
 import {mountForgeMatchIntro,forgeStartingPlayer} from './play-forge-pregame.js';
+import {createPlayScreenPause,readPlayScreen,watchPlayScreen,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
 const selectionKey=s=>JSON.stringify([s?.profile?.ownerId,s?.selected,s?.opponent,s?.match]);
 // Forge may name a Universes Beyond card by its Universes Within flavor name
 // (Hydro-Man, Fluid Felon plays as "Belion, the Parched"), which no printing
@@ -76,7 +77,37 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  const pageHide=()=>{client?.release?.();};view?.addEventListener?.('pagehide',pageHide);
  // Retain the launched policy with every result/stat consumer; never reread a
  // newer setup preference to label an earlier match. No persistence is added.
- const publish=value=>{last={...value,...(matchPolicy?{matchContext:{format:matchup.match.format,difficulty:matchPolicy.difficulty,difficultyPolicyVersion:matchPolicy.difficultyPolicyVersion}}:{})};onChange(structuredClone(last));};
+ const publish=value=>{if(['finished','session-ended','account-changed'].includes(value?.phase))unwatch();last={...value,...(matchPolicy?{matchContext:{format:matchup.match.format,difficulty:matchPolicy.difficulty,difficultyPolicyVersion:matchPolicy.difficultyPolicyVersion}}:{})};onChange(structuredClone(last));};
+ // A screen that becomes too small (a folded phone) pauses the open match instead of
+ // ending it: the table waits under a notice and keeps reading the server, so the match
+ // stays alive. Only if the screen stays too small for the whole limit does the match
+ // end, through the same concession as the exit dialog. This never calls client.close()
+ // or the pagehide release, and never retries a start or resends an action.
+ let screenPause=null,unwatchScreen=null,pauseCard=null;
+ const minutes=ms=>{const s=Math.ceil(ms/1000);return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;};
+ function showPause(){
+  if(pauseCard||disposed)return;pauseCard=node('section');pauseCard.className='play-screen-pause';pauseCard.setAttribute('role','alertdialog');pauseCard.setAttribute('aria-modal','true');pauseCard.setAttribute('aria-labelledby','playScreenPauseTitle');
+  const card=node('div');card.className='play-screen-pause-card';const icon=node('span');icon.className='play-screen-pause-icon';icon.setAttribute('aria-hidden','true');icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/><path d="M12 7v10"/></svg>';
+  const title=node('h2','Unfold to keep playing');title.id='playScreenPauseTitle';title.tabIndex=-1;const line=node('p','Your match is waiting. It ends if the screen stays this small for 5 minutes.'),left=node('p');left.className='play-screen-pause-left';left.setAttribute('aria-live','off');
+  card.append(icon,title,line,left);pauseCard.append(card);
+  // The table redraws its own children on every update, so the notice sits on the page and the table itself is made inert.
+  root.inert=true;doc.body.append(pauseCard);title.focus({preventScroll:true});
+ }
+ function hidePause(){if(!pauseCard)return;pauseCard.remove();pauseCard=null;root.inert=false;}
+ function watchScreen(){
+  if(screenPause||disposed)return;
+  screenPause=createPlayScreenPause({limitMs:PLAY_SMALL_SCREEN_LIMIT_MS,onPause:showPause,onResume:hidePause,
+   onTick:left=>{const el=pauseCard?.querySelector('.play-screen-pause-left');if(el)el.textContent=`${minutes(left)} left`;},
+   onExpire:()=>{hidePause();void expireMatch();}});
+  unwatchScreen=watchPlayScreen(view,()=>screenPause?.update(readPlayScreen(view,doc).fits));screenPause.update(readPlayScreen(view,doc).fits);
+ }
+ function unwatch(){unwatchScreen?.();unwatchScreen=null;screenPause?.destroy();screenPause=null;hidePause();}
+ async function expireMatch(){
+  if(disposed)return;
+  if(last?.phase==='playing'&&session&&!client?.status().blocked){try{await session.concede();return;}catch{/* fall through to closing the table */}}
+  generation++;intro?.destroy();intro=null;await closeSession();
+  message('Match ended',['The screen stayed too small for 5 minutes, so the match was closed. No win or loss was recorded.']);publish({phase:'session-ended',error:'SCREEN_TOO_SMALL'});
+ }
  function message(title,lines,{close=true,diagnostic=null}={}){
   intro?.destroy();intro=null;table?.destroy();table=null;root.replaceChildren();root.className='play-mat-message';const panel=node('section');panel.className='panel play-journey-message';const heading=node('h1',title);heading.tabIndex=-1;panel.append(heading);for(const line of lines)panel.append(node('p',line));
   if(diagnostic){const details=node('details');details.append(node('summary','Technical details'),node('code',diagnostic));panel.append(details);}
@@ -129,7 +160,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   try{
    matchup=structuredClone(setup);matchPolicy=forgeCpuPolicy(setup.match.difficulty);
    if(!current()||setup.profile?.ownerId!==readAccount()?.user?.id)throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
-   intro=mountIntro({root,setup,lookup,onCancel:requestExit,wait,isCurrent:current});
+   intro=mountIntro({root,setup,lookup,onCancel:requestExit,wait,isCurrent:current});watchScreen();
    // Card art is needed only once the table opens, so it loads while the server starts
    // the match instead of before it. The matchup waits briefly so cached deck art shows.
    // Art is read only once its preparation has finished; before that the lookup refuses.
@@ -173,6 +204,6 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  }
  return {start,snapshot:()=>last?structuredClone(last):null,requestExit,
   reconcile(){if(matchAccount&&forgeAccountKey(readAccount())!==matchAccount){client?.detach();stopped({code:'ACCOUNT_CHANGED'});return false;}return true;},
-  detach(){if(disposed)return;disposed=true;generation++;warn(false);view?.removeEventListener?.('pagehide',pageHide);session?.close();intro?.destroy();intro=null;table?.destroy();table=null;exitDialog?.remove();exitDialog=null;void client?.close().catch(()=>{}).finally(()=>client?.detach());root.replaceChildren();last=null;},
+  detach(){if(disposed)return;unwatch();disposed=true;generation++;warn(false);view?.removeEventListener?.('pagehide',pageHide);session?.close();intro?.destroy();intro=null;table?.destroy();table=null;exitDialog?.remove();exitDialog=null;void client?.close().catch(()=>{}).finally(()=>client?.detach());root.replaceChildren();last=null;},
  };
 }
