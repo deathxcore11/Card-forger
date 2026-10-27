@@ -8,7 +8,7 @@ import {createForgePresentationSession} from './experiments/forge-proof/forge-se
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {nativePromptUnanswerable} from './experiments/forge-proof/native-panel.mjs';
 import {mountForgeMatchIntro,forgeStartingPlayer} from './play-forge-pregame.js';
-import {createPlayScreenPause,readPlayScreen,watchPlayScreen,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
+import {createPlayScreenPause,playScreenPauseApplies,readPlayScreen,watchPlayScreen,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
 const selectionKey=s=>JSON.stringify([s?.profile?.ownerId,s?.selected,s?.opponent,s?.match]);
 // Forge may name a Universes Beyond card by its Universes Within flavor name
 // (Hydro-Man, Fluid Felon plays as "Belion, the Parched"), which no printing
@@ -95,7 +95,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  }
  function hidePause(){if(!pauseCard)return;pauseCard.remove();pauseCard=null;root.inert=false;}
  function watchScreen(){
-  if(screenPause||disposed)return;
+  if(screenPause||disposed||!playScreenPauseApplies(view,doc))return;
   screenPause=createPlayScreenPause({limitMs:PLAY_SMALL_SCREEN_LIMIT_MS,onPause:showPause,onResume:hidePause,
    onTick:left=>{const el=pauseCard?.querySelector('.play-screen-pause-left');if(el)el.textContent=`${minutes(left)} left`;},
    onExpire:()=>{hidePause();void expireMatch();}});

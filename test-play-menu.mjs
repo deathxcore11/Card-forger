@@ -79,8 +79,8 @@ test('malformed selected rows cannot crash artwork rendering and shared tiles re
  S.state=blank();S.catalog={};assert.equal(deckArtwork({name:'Broken',cards:[null]}),'');
  const d={id:'one',name:'A deck',format:'Standard',cards:[{name:'Island',qty:60}],side:[]};
  assert.match(deckTile(d),/data-act="go" data-to="#deck\/one"/);
- // Decks carries the touch Play entry beside its tabs (hidden until touch admission shows it).
- assert.match(decks(),/<div class="decks-play-row"><div class="seg"[\s\S]*?<\/div><button[^>]*data-touch-play-entry="practice"[^>]*hidden disabled/);
+ // Play lives in the main nav on every device, so Decks carries no second Play entry.
+ assert.doesNotMatch(decks(),/data-touch-play-entry/);
  assert.match(deckTile(d,false,{playSelection:true}),/data-act="playSelectDeck" data-play-deck="one" aria-pressed="true"/);
  // The size line counts the main deck against the format; the sideboard is named beside it.
  assert.match(deckTile({...d,id:'two',cards:[{name:'Island',qty:50}],side:[{name:'Island',qty:5}]}),/· 50\/60 · 5 sideboard<\/small>/);

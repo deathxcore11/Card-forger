@@ -2,13 +2,13 @@
 // capabilities cannot identify a hinge, physical screen or folded/unfolded state.
 // The name stays compatible with desktop callers and their existing placement.
 export const PLAY_TOUCH_MIN_EDGE = 600;
-// The table fits when its shortest side has room, or when a short landscape screen
-// (a phone or foldable held sideways, a laptop at 200%) is wide enough for the
-// compact layout. Size alone decides: browsers report no hinge or fold state.
-export const PLAY_COMPACT_MIN_WIDTH = 901, PLAY_COMPACT_MIN_HEIGHT = 400;
+// On touch devices the table fits when its shortest side has room: tablets and
+// unfolded foldables in either orientation. A phone fits in neither orientation
+// (held sideways its board is too small to read). Size alone decides: browsers
+// report no hinge or fold state.
 export function playScreenFits(width, height) {
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return null;
-  return Math.min(width,height)>=PLAY_TOUCH_MIN_EDGE||width>=PLAY_COMPACT_MIN_WIDTH&&height>=PLAY_COMPACT_MIN_HEIGHT;
+  return Math.min(width,height)>=PLAY_TOUCH_MIN_EDGE;
 }
 export function readPlayScreen(view=globalThis,root=view.document) {
   const width=root?.documentElement?.clientWidth||view.innerWidth||0,height=root?.documentElement?.clientHeight||view.innerHeight||0;
@@ -91,6 +91,8 @@ export function watchPlayScreen(view=globalThis,onChange=()=>{}) {
 // the whole limit, when onExpire ends the match. A screen that fits again resumes
 // immediately. Unknown sizes count as fitting.
 export const PLAY_SMALL_SCREEN_LIMIT_MS = 5*60*1000;
+// Only phones and tablets fold. A desktop window of any size or zoom never pauses.
+export function playScreenPauseApplies(view=globalThis,root=view.document) {return readPlayDeviceEligibility(view,root).entry==='touch';}
 export function createPlayScreenPause({limitMs=PLAY_SMALL_SCREEN_LIMIT_MS,now=()=>Date.now(),setTimer=(fn,ms)=>setTimeout(fn,ms),clearTimer=id=>clearTimeout(id),onPause=()=>{},onResume=()=>{},onTick=()=>{},onExpire=()=>{}}={}) {
   let since=null,timer=null,ended=false;
   const stop=()=>{if(timer!==null)clearTimer(timer);timer=null;};

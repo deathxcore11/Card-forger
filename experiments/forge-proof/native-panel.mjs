@@ -13,6 +13,13 @@ export function nativePromptUnanswerable(p){
 // Player-facing names for Forge's generic OK/Cancel/Auto buttons. Presentation only:
 // the same native button operation is sent, and unfamiliar labels stay verbatim.
 const NEXT_STEP={UPKEEP:'Next: Draw',DRAW:'Next: Main phase',MAIN1:'Next: Combat',COMBAT_BEGIN:'Next: Attackers',COMBAT_DECLARE_ATTACKERS:'Next: Blockers',COMBAT_DECLARE_BLOCKERS:'Next: Damage',COMBAT_FIRST_STRIKE_DAMAGE:'Next: Damage',COMBAT_DAMAGE:'Next: End of combat',COMBAT_END:'Next: Second main',MAIN2:'Next: End step',END_OF_TURN:'Next: Cleanup'};
+// Forge reports an unbounded side of the order as -1; never show it as a number.
+export function orderRemainder(p){
+ const lo=Number.isInteger(p?.remainingMin)&&p.remainingMin>=0?p.remainingMin:null,hi=Number.isInteger(p?.remainingMax)&&p.remainingMax>=0?p.remainingMax:null;
+ if(lo===null&&hi===null)return '';
+ if(hi===null)return lo?` Leave at least ${lo} in the source.`:'';
+ return ` Leave ${(lo??0)===hi?hi:`${lo??0}–${hi}`} in the source.`;
+}
 export function nativeActionLabel(n,op,raw){
  const label=String(raw??'').trim();
  if(!/^(ok|auto|cancel|end turn)$/i.test(label))return label;
@@ -89,7 +96,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const revealed=node('ul');for(const option of p.options||[])revealed.append(node('li',optionLabel(option.value)));panel.append(revealed,button(copy('Continue','Acknowledge native reveal'),()=>session.confirmPrompt(),false,'acknowledge-prompt'));
   }else if(OPTION_METHODS.has(p.method)){
    const indexes=s.nativeDraft?.revision===n.revision&&s.nativeDraft?.promptId===p.id?s.nativeDraft.indexes:[],options=p.options||[];
-   panel.append(node('p',p.method==='order'?`Choose the destination order. Leave ${p.remainingMin===p.remainingMax?p.remainingMin:p.remainingMin+'–'+p.remainingMax} in the source.`:`Choose ${p.min===p.max?p.min:`${p.min}–${p.max}`} ${presentation.hosted?'':'native '}option${p.max===1?'':'s'}.`));
+   panel.append(node('p',p.method==='order'?`Choose the destination order.${orderRemainder(p)}`:`Choose ${p.min===p.max?p.min:`${p.min}–${p.max}`} ${presentation.hosted?'':'native '}option${p.max===1?'':'s'}.`));
    const list=node('div',undefined,'forge-native-options');
    for(const o of options.filter(o=>p.method!=='order'||!indexes.includes(o.index))){const described=isDescribedOption(o.value),b=button(optionLabel(o.value),()=>session.selectPrompt(o.index),!described,`option-${o.index}`);b.setAttribute('aria-pressed',String(indexes.includes(o.index)));b.dataset.optionIndex=String(o.index);const cardId=optionCardId(o.value);if(cardId!==null)b.dataset.optionCard=String(cardId);if(!described)b.title='Native option details are unavailable; refusing an arbitrary reply.';list.append(b);}
    if(p.method==='order')panel.append(node('strong',`Source · ${options.length-indexes.length}`));panel.append(list);

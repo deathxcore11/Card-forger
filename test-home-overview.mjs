@@ -26,8 +26,8 @@ try{
     const page=game==='mtg'?home():tcgHome();
     const daily=page.indexOf('id="homeToday"'),value=page.indexOf('data-home-value='),decks=page.indexOf('data-home-decks='),meta=page.indexOf('data-home-meta='),news=page.indexOf('home-editorial');
     assert(daily>=0&&daily<value&&value<decks&&decks<meta&&meta<news,'daily → value → saved decks → Community Meta → News');
-    // The touch Play entry sits in the daily section, hidden until touch admission shows it.
-    assert.match(page.slice(daily,value),/data-touch-play-entry="practice"[^>]*hidden disabled/);
+    // Play lives in the main nav on every device, so Home carries no second Play entry.
+    assert.doesNotMatch(page,/data-touch-play-entry/);
     assert.equal((page.match(/id="homeHero"/g)||[]).length,1);assert.doesNotMatch(page,/today-bg/,'no second daily artwork');
     assert.equal((page.match(/data-act="homeDailyCard"/g)||[]).length,1);
     state.decks=[];const empty=homeDeckShelf(game);assert.match(empty,/No saved decks yet/);assert.equal((empty.match(/data-home-personal-deck=/g)||[]).length,0);

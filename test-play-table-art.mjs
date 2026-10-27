@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { glyphFor, manaColors, surfaceColors, frameTone } from './play-token-art.js';
 import { tokenColors } from './experiments/forge-proof/forge-session.mjs';
 import { battlefieldPiles } from './experiments/phase-engine/match-table.mjs';
-import { nativeActionLabel, nativePromptUnanswerable, mountNativePanel } from './experiments/forge-proof/native-panel.mjs';
+import { nativeActionLabel, nativePromptUnanswerable, mountNativePanel, orderRemainder } from './experiments/forge-proof/native-panel.mjs';
 
 test('token crests follow the type line, most specific kind first', () => {
   assert.equal(glyphFor('Token Artifact — Treasure'), 'gem');
@@ -128,4 +128,12 @@ test('reduced motion keeps the turn banner hidden, since only its animation fade
   const shown = css.match(/^([^{}\n]*\.play-match-turn-banner)\{[^}]*display:flex[^}]*animation:forge-turn-banner/m);
   assert.ok(shown, 'the Forge table shows the turn banner and fades it with forge-turn-banner');
   assert.ok(css.indexOf(`@media (prefers-reduced-motion:reduce){${shown[1]}{display:none}}`) > shown.index);
+});
+
+test('order prompts never show an unbounded side as -1', () => {
+  assert.equal(orderRemainder({ remainingMin: -1, remainingMax: -1 }), '');
+  assert.equal(orderRemainder({ remainingMin: 2, remainingMax: 2 }), ' Leave 2 in the source.');
+  assert.equal(orderRemainder({ remainingMin: 0, remainingMax: 3 }), ' Leave 0–3 in the source.');
+  assert.equal(orderRemainder({ remainingMin: 1, remainingMax: -1 }), ' Leave at least 1 in the source.');
+  assert.equal(orderRemainder({ remainingMin: -1, remainingMax: 2 }), ' Leave 0–2 in the source.');
 });
