@@ -607,3 +607,19 @@
    already lists the stack), so it cannot cover the CPU panel while you choose targets. */
 :where(body.practice-table-open) .play-match-table:has(.forge-native-panel):not(:has([data-focus-key=table-details][aria-pressed=true])) .play-match-inspector{display:none!important}
 :where(body.practice-table-open) .play-match-table:has(.forge-native-panel):not(:has([data-focus-key=table-details][aria-pressed=true])) .play-match-main[data-details=true] .play-match-mat{right:0}
+
+/* Arrows: attack red, block blue, target gold. They sit above the board, never take
+   clicks, and flow gently toward what they point at. */
+:where(body.practice-table-open) .forge-arrows{position:fixed;inset:0;z-index:2400;width:100vw;height:100dvh;overflow:visible;pointer-events:none}
+:where(body.practice-table-open) .forge-arrow{fill:none;stroke-width:4.5;stroke-linecap:round;stroke-dasharray:14 9;animation:forge-arrow-flow 1.1s linear infinite}
+:where(body.practice-table-open) .forge-arrow[data-kind=attack]{stroke:#ff6a4a;filter:drop-shadow(0 0 6px #ff5a3aaa)}
+:where(body.practice-table-open) .forge-arrow[data-kind=block]{stroke:#6aaeff;filter:drop-shadow(0 0 6px #5a9cffaa)}
+:where(body.practice-table-open) .forge-arrow[data-kind=target]{stroke:#f3d27e;filter:drop-shadow(0 0 6px #f3d27eaa)}
+:where(body.practice-table-open) .forge-head-attack{fill:#ff6a4a}
+:where(body.practice-table-open) .forge-head-block{fill:#6aaeff}
+:where(body.practice-table-open) .forge-head-target{fill:#f3d27e}
+@keyframes forge-arrow-flow{to{stroke-dashoffset:-23}}
+/* A clicked card answers at once with a short gold flash while Forge decides. */
+:where(body.practice-table-open) .play-match-card.forge-pressed{animation:forge-press .42s ease-out}
+@keyframes forge-press{0%{filter:brightness(1.45);outline:3px solid #f2d496cc;outline-offset:2px}100%{filter:none;outline:3px solid #f2d49600;outline-offset:8px}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .forge-arrow{animation:none;stroke-dasharray:none}:where(body.practice-table-open) .play-match-card.forge-pressed{animation:none}}
