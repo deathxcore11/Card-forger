@@ -205,9 +205,15 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // A gentle arc: cards further from the middle of the hand sit a little lower.
    // The count lets the hand tighten its spacing only when it would not fit.
    const hand=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')],handRow=root.querySelector('.play-match-hand .play-match-card-row');if(handRow&&handRow.style.getPropertyValue('--hand-count')!==String(hand.length))handRow.style.setProperty('--hand-count',String(hand.length));hand.forEach((w,i)=>{const lift=Math.abs(i-(hand.length-1)/2);const v=`${Math.min(Math.round(lift*lift*2.2),22)}px`;if(w.style.getPropertyValue('--arc-drop')!==v)w.style.setProperty('--arc-drop',v);});
+   // Past eight cards a toggle lays the whole hand out in two rows, so a big hand never overlaps into a mis-tap.
+   const handArea=root.querySelector('.play-match-hand-area');let fan=handArea?.querySelector(':scope>.forge-hand-expand');
+   if(hand.length>8&&handArea){if(!fan){fan=doc.createElement('button');fan.type='button';fan.className='forge-hand-expand';fan.dataset.nativeKey='hand-expand';fan.addEventListener('click',()=>{root.dataset.handExpanded=String(root.dataset.handExpanded!=='true');paintFan();});handArea.append(fan);}
+    const cols=String(Math.ceil(hand.length/2));if(root.style.getPropertyValue('--hand-cols')!==cols)root.style.setProperty('--hand-cols',cols);paintFan();}
+   else{fan?.remove();if(root.dataset.handExpanded)delete root.dataset.handExpanded;}
   }
 
  }
+ function paintFan(){const fan=root.querySelector('.forge-hand-expand');if(!fan)return;const open=root.dataset.handExpanded==='true',count=root.querySelectorAll('.play-match-hand .play-match-card-wrap').length,label=open?'Close hand':`View full hand (${count})`;if(fan.textContent!==label)fan.textContent=label;fan.setAttribute('aria-pressed',String(open));}
  const saveInput=e=>{if(e.target.dataset?.nativeKey==='native-value'){const n=session.snapshot().native;nativeValueDraft={revision:n.revision,promptId:n.prompt?.id,value:e.target.value};}};
  root.addEventListener('input',saveInput);root.addEventListener('change',saveInput);
  const observer=new MutationObserver(()=>enhance());observer.observe(root,{childList:true,subtree:true});
