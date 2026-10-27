@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "version": "4.2.5",
-  "commit": "b682eada8f6e5d90ac934433f9c977c56e88c336",
-  "tree": "5d7a235ad6193698659767a3e4f110e3e98821eb",
+  "commit": "fa4e5648964d074c4289767e4f4c2d6291ad3585",
+  "tree": "8f83db353b73c96f95d3b39d5dee608b1d52194c",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -98,8 +98,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 431568,
-      "sha256": "830c98d862019df347d4dfa171c2c5f42f8d0a937ba6080e90be0a51e669a89e"
+      "bytes": 431547,
+      "sha256": "12d04f7a96139b0c31726a0281a2930dcd6dbded7df6144b43bfdfd4a3fb9c5a"
     },
     {
       "path": "artwork.js",
@@ -2324,7 +2324,7 @@
     {
       "path": "release-record.js",
       "bytes": 1130,
-      "sha256": "623ad098466fd7c356f62808076ca1da1117a8ee95fd2fdc4d9db2fd0f039ef3"
+      "sha256": "4c515889c46b2312600a1d07ba31b86fd78dff506cb978f091ab6bd695cd851c"
     },
     {
       "path": "release-status.js",
@@ -2573,8 +2573,8 @@
     },
     {
       "path": "settings-theme.css",
-      "bytes": 26709,
-      "sha256": "5a34427f0aa968e9701cf2574205e86a3154898a31ee72bfdb312cf96dfcd8e0"
+      "bytes": 26717,
+      "sha256": "da5013f8b9a9756b9de17cd29ec4b1af1bcb2b29c0c954ba21d2e74c4ee751d1"
     },
     {
       "path": "settings-theme.js",
