@@ -48,6 +48,35 @@ export function orderRemainder(p){
  if(hi===null)return lo?` Leave at least ${lo} in the source.`:'';
  return ` Leave ${(lo??0)===hi?hi:`${lo??0}–${hi}`} in the source.`;
 }
+// Forge tags card names with their engine id ("Food Token (204)"); players never need that number.
+export const plainText=line=>String(line??'').replace(/ \(\d+\)(?=[\s,.:;!?)]|$)/g,'').trim();
+// A mana payment in plain words: what is still owed, for which card, and what it does.
+// `payment` comes from newer bridges; older ones only say "Pay Mana Cost: {2}" in the message.
+const costText=v=>typeof v==='string'&&/^(\{[^{}\s]{1,8}\})+$/.test(v.trim())?v.trim():null;
+export function nativePayment(n,cards=[]){
+ if(!String(n?.inputType||'').startsWith('InputPayMana'))return null;
+ const lines=String(n.message||'').split('\n').map(plainText).filter(Boolean),owedLine=lines.find(line=>/^pay mana cost:/i.test(line));
+ const remaining=costText(n.payment?.remaining)||costText(owedLine?.replace(/^pay mana cost:/i,''));
+ const ref=n.payment?.forCard?.kind==='card'&&Number.isSafeInteger(n.payment.forCard.id)?n.payment.forCard:null,card=ref?cards.find(c=>c.id===ref.id&&c.known):null;
+ const name=card?.name||(typeof ref?.name==='string'&&ref.name.trim()?ref.name.trim():null);
+ let verb=null,ability=null;
+ if(card?.zone==='Battlefield'){
+  // Name the ability only when the card has exactly one activated ability with a mana cost.
+  verb='Activate';const abilities=String(card.text||'').split(/\n+/).map(line=>line.trim()).filter(line=>/^[^:"“]*\{[^}]+\}[^:"“]*:/.test(line));if(abilities.length===1)ability=abilities[0];
+ }else if(card&&['Stack','Hand','Command','Graveyard','Exile'].includes(card.zone))verb='Cast';
+ const detail=lines.filter(line=>line!==owedLine&&!/^\(?click (on|a)\b/i.test(line)&&line!==name&&line!==ability&&!/^input\w+$/i.test(line));
+ // Nothing left to tap and nothing floating: say so instead of leaving the player to wonder.
+ const pool=Object.values(n.players?.find(p=>p.id===n.viewer)?.mana||{}).some(v=>Number(v)>0),sources=(n.selection?.actionable||[]).length>0;
+ if(remaining&&!pool&&!sources)detail.unshift('You have no untapped mana to pay this. Cancel to back out.');
+ return {remaining,name,verb,ability,detail,stuck:remaining!==null&&!pool&&!sources};
+}
+// Whose move it is right now, said plainly: yours, the CPU's, or nobody's while Forge resolves.
+export function nativeDecisionActor(s){
+ const n=s?.native;if(!n||n.failure||n.status==='finished')return 'none';
+ if(s.busy||s.transportError||n.busy===true||n.inputType==='InputLockUI')return 'none';
+ const b=n.buttons||{};
+ return n.prompt||b.okEnabled===true||b.cancelEnabled===true||n.selection?.cards?.length||n.selection?.targets?.length||n.priorityPlayer===n.viewer?'you':'cpu';
+}
 export function nativeActionLabel(n,op,raw){
  const label=String(raw??'').trim();
  if(!/^(ok|auto|cancel|end turn)$/i.test(label))return label;
@@ -55,6 +84,9 @@ export function nativeActionLabel(n,op,raw){
  if(input==='InputPassPriority'){
   if(op==='cancel')return /^end turn$/i.test(label)?'End turn':label;
   if(n.stack?.length)return 'Pass · let it resolve';
+  // With nobody attacking, the rest of combat is skipped: never promise a blockers step.
+  const attacking=(n.players||[]).some(p=>(p.zones?.Battlefield?.cards||[]).some(c=>c?.attacking===true));
+  if(!attacking&&['COMBAT_DECLARE_ATTACKERS','COMBAT_DECLARE_BLOCKERS','COMBAT_FIRST_STRIKE_DAMAGE','COMBAT_DAMAGE'].includes(n.phase))return n.activePlayer===n.viewer?'Next: Second main':'Pass';
   return n.activePlayer===n.viewer?NEXT_STEP[n.phase]||'Pass priority':'Pass';
  }
  if(input==='InputAttack'&&op==='ok'){const k=count('attacking');return k?`Attack with ${k}`:'No attacks';}
@@ -79,24 +111,29 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  // unfamiliar native message remains verbatim and immediately visible.
  const statusLines=!n.prompt&&n.inputType==='InputPassPriority'&&typeof n.message==='string'?n.message.match(/^Priority: ([^\n]+)\nTurn: (\d+ \([^\n]+\))\nPhase: ([^\n]+)\nStack: ([^\n]+)$/):null;
  const compactStatus=!!statusLines&&!n.failure&&n.status!=='finished';panel.dataset.compactStatus=String(compactStatus);
- const yourTurn=n.activePlayer===n.viewer,opening=n.inputType==='InputConfirmMulligan',payment=String(n.inputType||'').startsWith('InputPayMana');
+ const yourTurn=n.activePlayer===n.viewer,opening=n.inputType==='InputConfirmMulligan',payment=String(n.inputType||'').startsWith('InputPayMana'),paying=payment?nativePayment(n,s.status?.surface?.cards||[]):null;
  const waitLabel=s.transportError?'Match update needs attention':n.busy===true?'Resolving game actions…':'Waiting for the table…';
- const lines=String(nativeMessage).split('\n').map(line=>line.trim()).filter(Boolean),selectionTitle={InputAttack:'Choose attackers',InputBlock:'Choose blockers',InputSelectTargets:'Choose targets'}[n.inputType];
+ const lines=String(nativeMessage).split('\n').map(line=>presentation.hosted?plainText(line):line.trim()).filter(Boolean),selectionTitle={InputAttack:'Choose attackers',InputBlock:'Choose blockers',InputSelectTargets:'Choose targets'}[n.inputType];
  // Cleanup discard arrives as a card selection with no prompt; name it plainly.
  const discard=presentation.hosted&&!n.prompt&&n.selection?.cards?.length>0&&/\bdiscard\b/i.test(String(n.message||'')),discardCount=Number.isSafeInteger(n.selection?.max)&&n.selection.max>0?n.selection.max:Number(String(n.message||'').match(/select (\d+) card/i)?.[1])||null;
  // Engine bookkeeping between decisions is a status, not an instruction to the player.
  const passive=!compactStatus&&!n.prompt&&!opening&&!payment&&!n.failure&&n.status!=='finished'&&(n.busy===true||n.inputType==='InputLockUI'||/^Priority: /.test(lines[0]||''));
- const playerTitle=zoneSearch?`Choose ${zoneSearch.max===1?'a card':'cards'} · ${zoneSearch.zones.join(' / ')}`:compactStatus?`${yourTurn?'Your turn':'CPU turn'} · ${s.busy||s.transportError?waitLabel:n.priorityPlayer===n.viewer?(yourTurn?'You can act':'Your response'):'Waiting for CPU response'}`:opening?(presentation.hosted?'Keep this hand?':'Your opening hand'):payment?'Pay mana':passive?`${yourTurn?'Your turn':'CPU turn'} · ${s.transportError?waitLabel:yourTurn?'Resolving…':'CPU is playing'}`:discard?(discardCount?`Choose ${discardCount} card${discardCount===1?'':'s'} to discard`:'Choose cards to discard'):selectionTitle||lines[0]||waitLabel;
- const playerDetail=zoneSearch||compactStatus||passive||discard&&discardCount?[]:discard?lines.slice(1):opening?(presentation.hosted?lines.filter(line=>!/^keep (this|your) hand or mulligan\??$/i.test(line)):[nativeMessage]):payment?[nativeMessage]:selectionTitle?lines:lines.slice(1);
+ const playerTitle=zoneSearch?`Choose ${zoneSearch.max===1?'a card':'cards'} · ${zoneSearch.zones.join(' / ')}`:compactStatus?`${yourTurn?'Your turn':'CPU turn'} · ${s.busy||s.transportError?waitLabel:n.priorityPlayer===n.viewer?(yourTurn?'You can act':'Your response'):'Waiting for CPU response'}`:opening?(presentation.hosted?'Keep this hand?':'Your opening hand'):payment?(paying?.remaining?`Pay ${paying.remaining}`:'Pay mana'):passive?`${yourTurn?'Your turn':'CPU turn'} · ${s.transportError?waitLabel:yourTurn?'Resolving…':'CPU is playing'}`:discard?(discardCount?`Choose ${discardCount} card${discardCount===1?'':'s'} to discard`:'Choose cards to discard'):selectionTitle||lines[0]||waitLabel;
+ const playerDetail=zoneSearch||compactStatus||passive||discard&&discardCount?[]:discard?lines.slice(1):opening?(presentation.hosted?lines.filter(line=>!/^keep (this|your) hand or mulligan\??$/i.test(line)):[nativeMessage]):payment?(presentation.hosted?[paying.verb&&paying.name?`${paying.verb} ${paying.name}`:paying.name,paying.ability,...paying.detail].filter(Boolean):[nativeMessage]):selectionTitle?lines:lines.slice(1);
+ // The dock's edge shows whose move it is; the table's activity line says it in words.
+ panel.dataset.actor=nativeDecisionActor(s);
  const title=node('h2',presentation.hosted?playerTitle:compactStatus?(n.priorityPlayer===n.viewer?'Your priority':`Priority: ${statusLines[1]}`):nativeMessage);
  // The table shows whose turn it is large and who may act on its own line; the
  // heading's text (and what a screen reader hears) is unchanged.
  if(presentation.hosted&&playerTitle.includes(' · ')){const [turn,...rest]=playerTitle.split(' · ');title.replaceChildren(node('span',turn),node('span',' · ','forge-native-sep'),node('span',rest.join(' · '),'forge-native-response'));}
+ // Mana symbols draw as symbols where the table provides them; the text stays the fallback.
+ const symbols=typeof presentation.symbolText==='function'&&presentation.hosted?presentation.symbolText:null;
+ if(symbols&&payment&&paying?.remaining){title.setAttribute('aria-label',playerTitle);title.innerHTML=symbols(playerTitle);}
  title.tabIndex=-1;title.dataset.nativeKey='decision-title';context.setAttribute('aria-live','polite');context.setAttribute('aria-atomic','true');context.append(title);
  if(presentation.hosted&&!opening&&Number.isSafeInteger(n.turn)&&n.turn>0){const status=node('p',[`Turn ${n.turn}`,phaseNames[n.phase]||statusLines?.[3]||null].filter(Boolean).join(' · '),'forge-native-status');status.setAttribute('aria-label','Turn and phase');context.append(status);}
  else if(compactStatus){const status=node('div',undefined,'forge-native-status');status.setAttribute('aria-label','Turn, phase and stack');const stack=n.stack?.length?`${n.stack.length} item${n.stack.length===1?'':'s'}`:'Empty';for(const [label,text]of [['Turn',presentation.hosted?String(n.turn):statusLines[2]],['Phase',presentation.hosted?(phaseNames[n.phase]||statusLines?.[3]||n.phase||'—'):statusLines[3]],['Stack',presentation.hosted?stack:statusLines[4]]]){const value=node('span',`${label}: ${text}`);status.append(value);}context.append(status);}
  // Forge's supporting lines (a few at most), never one that only repeats the title.
- if(presentation.hosted)for(const line of playerDetail.filter(line=>!/^(declare (attackers|blockers)|choose any target)\.?$/i.test(line)).slice(0,3))context.append(node('p',line,'forge-native-detail'));
+ if(presentation.hosted)for(const line of playerDetail.filter(line=>!/^(declare (attackers|blockers)|choose any target)\.?$/i.test(line)).slice(0,3)){const p=node('p',line,'forge-native-detail');if(symbols&&payment)p.innerHTML=symbols(line);context.append(p);}
  panel.append(context);
  if(n.failure){panel.append(node('p',`Forge stopped: ${n.failure}`,'forge-diagnostic'));container.replaceChildren(panel);return;}
  if(n.status==='finished'){panel.append(node('p',n.draw===true?'Forge result: draw':n.winner?`Forge result: ${n.winner}`:'Forge reports that the game has finished.'));container.replaceChildren(panel);return;}

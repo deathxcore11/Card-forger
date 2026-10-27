@@ -2,7 +2,16 @@
 export const SCHEMA='cardstashy.forge-proof.v1';
 export const VISIBILITY_SCHEMA='cardstashy.forge-visibility.v1';
 const PHASES={UNTAP:'Untap',UPKEEP:'Upkeep',DRAW:'Draw',MAIN1:'PreCombatMain',COMBAT_BEGIN:'BeginningOfCombat',COMBAT_DECLARE_ATTACKERS:'DeclareAttackers',COMBAT_DECLARE_BLOCKERS:'DeclareBlockers',COMBAT_FIRST_STRIKE_DAMAGE:'FirstStrikeDamage',COMBAT_DAMAGE:'CombatDamage',COMBAT_END:'EndCombat',MAIN2:'PostCombatMain',END_OF_TURN:'End',CLEANUP:'Cleanup'};
-const INPUTS={InputConfirmMulligan:'MulliganDecision',InputPassPriority:'Priority',InputAttack:'DeclareAttackers',InputBlock:'DeclareBlockers',InputPayMana:'ManaPayment'};
+const INPUTS={InputConfirmMulligan:'MulliganDecision',InputPassPriority:'Priority',InputAttack:'DeclareAttackers',InputBlock:'DeclareBlockers',InputSelectTargets:'TargetChoice'};
+// What the player is being asked, by meaning. Forge's input class names (InputPayManaOfCostPayment,
+// InputSelectEntitiesFromList, a dialog method) never reach the screen or the history.
+export function nativeDecisionKind(raw){
+ const input=String(raw?.inputType||'');
+ if(INPUTS[input])return INPUTS[input];
+ if(input.startsWith('InputPayMana'))return 'ManaPayment';
+ if(raw?.prompt||input.startsWith('InputSelect')||input.startsWith('InputConfirm'))return 'Choice';
+ return 'Decision';
+}
 const list=x=>Array.isArray(x)?x:[];
 const id=x=>Number.isSafeInteger(x);
 // Forge names a token's image after its script, which leads with the token's colors
@@ -95,7 +104,7 @@ export function projectForge(raw,{lookupArtwork=()=>null}={}){
  }
  const terminal=raw.status==='finished'?{winner:seatById.get(raw.winnerPlayerId)??players.find(p=>p.name===raw.winner)?.seat??null,reason:'engine-terminal'}:null;
  const human=!raw.busy&&!terminal&&!failed;
- return {revision:raw.revision,terminal,failure:failed?'NATIVE_PROJECTION_UNAVAILABLE':null,outcomes:[],surface:{seat,players,cards:[...cards.values()],hand:arenaHandOrder([...cards.values()].filter(c=>c.zone==='Hand'&&c.zoneHolder===seat)).map(c=>c.id),revealedZones,stack,turn:raw.turn??0,phase:PHASES[raw.phase]||raw.phase||'Opening hand',activeSeat:seatById.get(raw.activePlayer),prioritySeat:seatById.get(raw.priorityPlayer)??(human?seat:null),decision:{kind:failed?'ProjectionUnavailable':terminal?'GameOver':raw.turn===0?'MulliganDecision':INPUTS[raw.inputType]||raw.prompt?.method||raw.inputType||'Forge decision'},awaitingHuman:human,canAct:human,choices:[],interaction:{canSubmit:false,opportunities:[]}}};
+ return {revision:raw.revision,terminal,failure:failed?'NATIVE_PROJECTION_UNAVAILABLE':null,outcomes:[],surface:{seat,players,cards:[...cards.values()],hand:arenaHandOrder([...cards.values()].filter(c=>c.zone==='Hand'&&c.zoneHolder===seat)).map(c=>c.id),revealedZones,stack,turn:raw.turn??0,phase:PHASES[raw.phase]||raw.phase||'Opening hand',activeSeat:seatById.get(raw.activePlayer),prioritySeat:seatById.get(raw.priorityPlayer)??(human?seat:null),decision:{kind:failed?'ProjectionUnavailable':terminal?'GameOver':raw.turn===0?'MulliganDecision':nativeDecisionKind(raw)},awaitingHuman:human,canAct:human,choices:[],interaction:{canSubmit:false,opportunities:[]}}};
 }
 // Retain only current projected card representations in the native presentation
 // cache too. Invalid receipts must not merely hide a face while storing it here.

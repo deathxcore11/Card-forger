@@ -63,7 +63,7 @@ if (STATE === 'dense') {
 if (STATE === 'discard') BASE.you.hand.push('Shock');
 // The owner's real early board: the CPU went first and played a land; you played Forest
 // and Many Partings made a Food token.
-if (STATE === 'early') {
+if (STATE === 'early' || STATE === 'pay') {
   Object.assign(BASE.you, {battlefield: [['Forest'], ['Food', {token: true, imageKey: 't:c_a_food_sac', type: 'Token Artifact — Food', text: '{2}, {T}, Sacrifice this token: You gain 3 life.'}]],
     hand: ['Mountain', 'Legion Warboss', 'Mountain', 'Rampant Growth', "Witch's Mark", "Krenko's Command"], graveyard: ['Many Partings'], command: ['Chishiro, the Shattered Blade']});
   Object.assign(BASE.cpu, {battlefield: [['Volcanic Island']], hand: 5, graveyard: [], exile: [], command: ['Kenrith, the Returned King']});
@@ -89,6 +89,9 @@ if (STATE === 'badges') {
     ['Darksteel Colossus', {text: 'Trample, indestructible', power: 11, toughness: 11, tapped: true}],
     ['Island', {type: 'Basic Land \u2014 Island'}], ['Island', {type: 'Basic Land \u2014 Island'}]], counters: {ENERGY: 2}});
 }
+// Equipment and an Aura on your creatures (tucked under their hosts), and the CPU attacking you.
+if (STATE === 'attach') BASE.you.battlefield.push(['Swiftfoot Boots', {attachedTo: 'Hill Giant'}], ['Rancor', {attachedTo: 'Goblin Guide'}], ['Grizzly Bears']);
+if (STATE === 'block') { BASE.cpu.battlefield[3][1] = {attacking: true}; BASE.cpu.battlefield[4][1] = {attacking: true}; }
 
 // Real card data and art from Scryfall, by name; a missing card falls back to a drawn crest.
 const names = [...new Set([
@@ -137,13 +140,21 @@ for (const side of [[BASE.you, youZones], [BASE.cpu, cpuZones]]) side[0].battlef
   if (!o?.attachTo) return; const card = side[1].Battlefield.cards[i], host = side[1].Battlefield.cards.find(c => c.name === o.attachTo);
   if (host) { card.attachedTo = host.id; host.attachments = [...(host.attachments || []), card.id]; }
 });
+// Link attachments to their hosts by name, both ways, the way the bridge reports them.
+for (const zones of [youZones, cpuZones]) for (const c of zones.Battlefield.cards) {
+  const want = [...BASE.you.battlefield, ...BASE.cpu.battlefield].find(([n, o]) => n === c.name && o?.attachedTo)?.[1]?.attachedTo;
+  const host = want && zones.Battlefield.cards.find(h => h.name === want && !h.attachments?.length);
+  if (host) { c.attachedTo = host.id; host.attachments = [c.id]; }
+}
+for (const c of cpuZones.Battlefield.cards) if (c.attacking) c.attackTarget = {kind: 'player', id: YOU};
+for (const c of youZones.Battlefield.cards) if (c.attacking) c.attackTarget = {kind: 'player', id: CPU};
 const ref = c => ({kind: 'card', id: c.id});
 const byName = (zone, name) => zone.cards.filter(c => c.name === name);
 
-const yourTurn = STATE !== 'cpu';
+const yourTurn = STATE !== 'cpu' && STATE !== 'block';
 const turn = STATE === 'early' ? 2 : 5;
-const phase = STATE === 'attack' ? 'COMBAT_DECLARE_ATTACKERS' : 'MAIN1';
-const inputType = {targets: 'InputSelectTargets', attack: 'InputAttack', cpu: 'InputPassPriority', discard: '', opening: 'InputConfirmMulligan'}[STATE] ?? 'InputPassPriority';
+const phase = STATE === 'attack' ? 'COMBAT_DECLARE_ATTACKERS' : STATE === 'block' ? 'COMBAT_DECLARE_BLOCKERS' : 'MAIN1';
+const inputType = {targets: 'InputSelectTargets', attack: 'InputAttack', block: 'InputBlock', cpu: 'InputPassPriority', discard: '', opening: 'InputConfirmMulligan', pay: 'InputPayManaOfCostPayment'}[STATE] ?? 'InputPassPriority';
 const castable = ['Lightning Bolt', 'Monastery Swiftspear', 'Play with Fire', 'Skewer the Critics', 'Forest', 'Llanowar Elves'];
 const selection = {cards: [], targets: [], chosen: [], actionable: []};
 if (STATE === 'main' || STATE === 'dense') {
@@ -154,12 +165,18 @@ if (STATE === 'main' || STATE === 'dense') {
   selection.chosen = [ref(byName(cpuZones.Battlefield, 'Hill Giant')[0])];
 } else if (STATE === 'discard') {
   Object.assign(selection, {cards: youZones.Hand.cards.map(ref), min: 1, max: 1});
+} else if (STATE === 'pay') {
+  selection.actionable = [];
+} else if (STATE === 'block') {
+  selection.cards = youZones.Battlefield.cards.filter(c => /Creature/.test(c.type)).map(ref);
 } else if (STATE === 'attack') {
   selection.cards = youZones.Battlefield.cards.filter(c => /Creature/.test(c.type)).map(ref);
 }
 const message = {
   targets: 'Select targets for Lightning Bolt\nChoose any target.',
   attack: 'Declare attackers.',
+  block: 'Declare blockers.',
+  pay: 'Food Token (204) - {2}, {T}, Sacrifice this token: You gain 3 life.\nPay Mana Cost: {2}',
   opening: 'Keep this hand or mulligan?',
   discard: 'Cleanup Phase\nSelect 1 card(s) to discard to bring your hand down to the maximum of 7 cards.',
 }[STATE] || `Priority: ${yourTurn ? 'idw011' : 'CPU'}\nTurn: ${turn} (${yourTurn ? 'idw011' : 'CPU'})\nPhase: Main phase 1\nStack: Empty`;
@@ -171,7 +188,7 @@ const stackCard = STATE === 'targets' ? nativeCard('Counterspell', 'Stack', CPU)
 const native = {
   schema: 'cardstashy.forge-proof.v1', revision: 7, viewer: YOU, status: 'running', busy: false,
   players: [
-    {id: YOU, name: 'idw011', life: 40, isViewer: true, counters: BASE.you.counters || {}, mana: {W: 0, U: 0, B: 0, R: STATE === 'targets' ? 0 : 2, G: 0, C: 0}, zones: youZones},
+    {id: YOU, name: 'idw011', life: 40, isViewer: true, counters: BASE.you.counters || {}, mana: {W: 0, U: 0, B: 0, R: ['targets', 'pay'].includes(STATE) ? 0 : 2, G: 0, C: 0}, zones: youZones},
     {id: CPU, name: 'CPU', life: 38, isViewer: false, counters: BASE.cpu.counters || {}, mana: {W: 0, U: 0, B: 0, R: 0, G: 0, C: 0}, zones: cpuZones},
   ],
   stack: stackCard ? [{id: 990, text: 'Counterspell — Counter target spell.', source: stackCard, activatingPlayer: CPU}] : [], turn, phase, activePlayer: yourTurn ? YOU : CPU, priorityPlayer: yourTurn ? YOU : CPU,
@@ -180,8 +197,11 @@ const native = {
     : STATE === 'discard' ? {ok: 'OK', okEnabled: false, cancel: '', cancelEnabled: false}
     : STATE === 'targets' ? {ok: 'OK', okEnabled: true, cancel: 'Cancel', cancelEnabled: true}
     : STATE === 'attack' ? {ok: 'OK', okEnabled: true, cancel: 'Cancel', cancelEnabled: false}
+    : STATE === 'block' ? {ok: 'OK', okEnabled: true, cancel: '', cancelEnabled: false}
+    : STATE === 'pay' ? {ok: 'Auto', okEnabled: false, cancel: 'Cancel', cancelEnabled: true}
     : yourTurn ? {ok: 'OK', okEnabled: true, cancel: 'End turn', cancelEnabled: true} : {},
   selection,
+  ...(STATE === 'pay' ? {payment: {remaining: '{2}', forCard: {kind: 'card', id: byName(youZones.Battlefield, 'Food')[0].id, name: 'Food Token'}}} : {}),
 };
 
 const lookupArtwork = name => { const c = scry.get(name); return c ? {card: Object.freeze(c), finish: null, source: 'existing-catalog-printing', badges: []} : null; };

@@ -10,6 +10,8 @@ import {drawnArtwork,frameTone,surfaceColors} from '../../play-token-art.js';
 import {sym,symbolName,symbolText,manaCost,esc} from '../../ui.js';
 // Outline icons from the CardStashy UI packet (24-unit grid, currentColor).
 const ZONE_ICONS={Library:'M6 3h14v16H6zM3 6v16h14M10 7h6M10 11h6',Graveyard:'M6 20V9a6 6 0 0 1 12 0v11M3 20h18M9 10h6M12 7v7',Exile:'m12 2 10 10-10 10L2 12zM8 12h14M17 7l5 5-5 5',Command:'M3 6l5 5 4-8 4 8 5-5-2 14H5zM5 16h14'};
+// Short enough to read in full on a phone; the button's label still names the whole zone.
+const ZONE_LABELS={Library:'Library',Graveyard:'Grave',Exile:'Exile',Command:'Cmdr'};
 const outlineIcon=d=>`<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
 const MANA_ORDER=['W','U','B','R','G','C'];
 // Plain-language reminders for the keywords players meet most. Anything else falls back
@@ -44,6 +46,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   renderPlayerPortrait(own){return practicePlayerPortrait(doc,own,profile);},
   renderMatchBackdrop(){const box=doc.createElement('div');for(const c of session.snapshot().status?.surface.cards.filter(c=>c.commander)||[]){const url=resolvePracticeArtwork(c)?.artImageUrl;if(url){const img=doc.createElement('img');img.src=url;img.alt='';img.referrerPolicy='no-referrer';box.append(img);}}return box.childNodes.length?box:null;}
  });
+ const panelPresentation={...presentation,symbolText};
  const fail=e=>{if(e?.message==='MATCH_NOT_READY'&&playbackBusy){playback.flush();return;}localError=e.message||String(e);panelKey='';enhance();};
  const act=fn=>{try{const p=fn();if(p?.catch)p.catch(fail);}catch(e){fail(e);}};
  let railFrame=0;
@@ -55,7 +58,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   if(key!==panelKey||!footer.querySelector('[data-native-panel]')){
    // Preserve local typed input/focus if an unrelated inspection redraws the board.
    const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null,oldInput=footer.querySelector('[data-native-key=native-value]'),oldValue=oldInput?.value,oldRevision=footer.querySelector('[data-native-panel]')?.dataset.nativeRevision;
-   mountNativePanel(footer,{session,snapshot:snap,onLocalError:message=>fail(Error(message)),presentation});panelKey=key;
+   mountNativePanel(footer,{session,snapshot:snap,onLocalError:message=>fail(Error(message)),presentation:panelPresentation});panelKey=key;
    if(localError){const e=doc.createElement('p');e.className='forge-diagnostic';e.textContent=localError;e.setAttribute('role','alert');const picker=footer.querySelector('.forge-zone-search-actions');if(picker)picker.before(e);else footer.querySelector('[data-native-panel]')?.append(e);}
    if(nativeValueDraft?.revision===n.revision&&nativeValueDraft?.promptId===n.prompt?.id){const input=footer.querySelector('[data-native-key=native-value]');if(input)input.value=nativeValueDraft.value;}else if(oldRevision===String(n.revision)&&oldValue!==undefined){const input=footer.querySelector('[data-native-key=native-value]');if(input)input.value=oldValue;}
    if(focused)footer.querySelector(`[data-native-key="${CSS.escape(focused)}"]`)?.focus();
@@ -104,7 +107,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
     const counts=[['Library',p.libraryCount],['Graveyard',count('Graveyard')],['Exile',count('Exile')],['Command',count('Command')]],key=counts.map(c=>c[1]).join(',');
     let row=mat?.querySelector(`.forge-zone-row[data-seat="${own?'you':'cpu'}"]`);
     if(mat&&!row){row=doc.createElement('nav');row.className='forge-zone-row';row.dataset.seat=own?'you':'cpu';row.setAttribute('aria-label',own?'Your zones':'CPU zones');mat.append(row);}
-    if(row&&row.dataset.counts!==key){row.dataset.counts=key;row.replaceChildren(...counts.map(([zone,value])=>{const b=doc.createElement('button');b.type='button';b.dataset.zone=zone;b.dataset.nativeKey=`zone-${own?'you':'cpu'}-${zone}`;b.setAttribute('aria-label',`${own?'Your':'CPU'} ${zone.toLowerCase()}: ${value}`);b.innerHTML=`${boardIcon('zone-'+zone.toLowerCase(),'cs-icon cs-zone-icon')||outlineIcon(ZONE_ICONS[zone])}<span>${zone}</span><b>${value}</b>`;return b;}));}
+    if(row&&row.dataset.counts!==key){row.dataset.counts=key;row.replaceChildren(...counts.map(([zone,value])=>{const b=doc.createElement('button');b.type='button';b.dataset.zone=zone;b.dataset.nativeKey=`zone-${own?'you':'cpu'}-${zone}`;b.setAttribute('aria-label',`${own?'Your':'CPU'} ${zone.toLowerCase()}: ${value}`);b.innerHTML=`${boardIcon('zone-'+zone.toLowerCase(),'cs-icon cs-zone-icon')||outlineIcon(ZONE_ICONS[zone])}<span>${ZONE_LABELS[zone]}</span><b>${value}</b>`;return b;}));}
    }
    // The CPU has no profile picture; its commander's art becomes its portrait.
    const cpuBadge=root.querySelector('.play-match-seat[data-seat=cpu] .play-match-profile-badge');
@@ -152,7 +155,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
    for(const zone of root.querySelectorAll('.play-match-battlefields .play-match-zone')){
     const rows={c:[0,0],o:[0,0]};let otherLanes=0;
     for(const lane of zone.querySelectorAll('.play-match-lane')){const creature=lane.dataset.cardGroup==='creatures',row=creature?rows.c:rows.o,w=creature?1.18:.98;if(!creature&&otherLanes++)row[1]+=22;let first=true;
-     for(const wrap of lane.querySelectorAll('.play-match-card-wrap')){const pile=wrap.dataset.pileIndex&&wrap.dataset.pileIndex!=='0';if(pile)row[0]+=w-(wrap.dataset.pileTight==='true'?(creature?1.12:.92):(creature?.94:.76));else{row[0]+=w;if(!first)row[1]+=16;}first=false;}}
+     for(const wrap of lane.querySelectorAll('.play-match-card-wrap:not([data-attached])')){const pile=wrap.dataset.pileIndex&&wrap.dataset.pileIndex!=='0';if(pile)row[0]+=w-(wrap.dataset.pileTight==='true'?(creature?1.12:.92):(creature?.94:.76));else{row[0]+=w;if(!first)row[1]+=16;}first=false;}}
     const fit=`${Math.max(1,rows.c[0]).toFixed(2)},${rows.c[1]},${Math.max(1,rows.o[0]).toFixed(2)},${rows.o[1]}`;
     if(zone.dataset.fit!==fit){zone.dataset.fit=fit;const [cu,cg,ou,og]=fit.split(',');zone.style.setProperty('--fit-cu',cu);zone.style.setProperty('--fit-cg',cg+'px');zone.style.setProperty('--fit-ou',ou);zone.style.setProperty('--fit-og',og+'px');}
    }
@@ -178,6 +181,62 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
    else if(el.dataset.presentation==='battlefield'){moved++;w.animate([{opacity:0,transform:'translateY(-14px) scale(.86)'},{opacity:1,transform:'none'}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)'});}
   }
  };
+ // Four short sequences that explain ordinary play, drawn only from what Forge accepted between two
+ // boards: mana flowing from the sources that tapped to the spell they paid for, a permanent settling
+ // onto the battlefield, combat damage landing, and an Equipment or Aura joining its host. Each one
+ // reads where a card actually is now; nothing is invented, no face-down card is named, and reduced
+ // motion turns them all off. Timings are starting points to tune on a real Fold.
+ const MANA_TINT={W:'#f4ecc8',U:'#6fb7ff',B:'#b48ad8',R:'#ff7a52',G:'#5fd37e',C:'#cfd3da'};
+ const fx=doc.createElement('div');fx.className='forge-fx';fx.setAttribute('aria-hidden','true');doc.body.append(fx);
+ const rectOf=el=>{const b=el&&(el.closest('.play-match-card-wrap')||el).getBoundingClientRect();return b&&b.width>0?b:null;};
+ const cardEl=id=>root.querySelector(`.play-match-card[data-instance="${id}"]`);
+ const sourceTint=c=>{if(!c?.known)return MANA_TINT.C;const basic=Object.entries({Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'}).find(([t])=>new RegExp('\\b'+t+'\\b').test(c.type||''));if(basic)return MANA_TINT[basic[1]];const pip=/\{([WUBRG])\}/.exec(c.text||'');return MANA_TINT[pip?.[1]]||'#e3bb68';};
+ function stream(from,to,tint,delay){
+  const a=rectOf(from),b=to&&(to.getBoundingClientRect?.()||to);if(!a||!b?.width)return;
+  const dot=doc.createElement('span');dot.className='forge-fx-mana';dot.style.setProperty('--tint',tint);fx.append(dot);
+  const x0=a.left+a.width/2,y0=a.top+a.height/2,x1=b.left+b.width/2,y1=b.top+b.height/2,mx=(x0+x1)/2-(y1-y0)*.18,my=(y0+y1)/2+(x1-x0)*.18;
+  dot.animate([{transform:`translate(${x0}px,${y0}px) scale(.6)`,opacity:0},{transform:`translate(${mx}px,${my}px) scale(1.15)`,opacity:1,offset:.45},{transform:`translate(${x1}px,${y1}px) scale(.4)`,opacity:0}],{duration:520,delay,easing:'cubic-bezier(.3,.1,.3,1)',fill:'both'}).finished.then(()=>dot.remove(),()=>dot.remove());
+ }
+ function pulse(el,kind,tint){
+  const w=el&&(el.closest('.play-match-card-wrap')||el);if(!w)return;
+  const ring=doc.createElement('span');ring.className='forge-fx-ring';ring.dataset.kind=kind;if(tint)ring.style.setProperty('--tint',tint);w.append(ring);
+  ring.animate([{opacity:.9,transform:'scale(.92)'},{opacity:0,transform:'scale(1.18)'}],{duration:kind==='land'?380:520,easing:'ease-out'}).finished.then(()=>ring.remove(),()=>ring.remove());
+ }
+ function popNumber(el,text,kind){
+  const r=rectOf(el);if(!r)return;const n=doc.createElement('span');n.className='forge-fx-number';n.dataset.kind=kind;n.textContent=text;fx.append(n);
+  n.style.left=`${r.left+r.width/2}px`;n.style.top=`${r.top+r.height*.35}px`;
+  n.animate([{opacity:0,transform:'translate(-50%,6px) scale(.7)'},{opacity:1,transform:'translate(-50%,-6px) scale(1.15)',offset:.25},{opacity:1,transform:'translate(-50%,-14px) scale(1)',offset:.7},{opacity:0,transform:'translate(-50%,-24px)'}],{duration:1100,fill:'both'}).finished.then(()=>n.remove(),()=>n.remove());
+ }
+ function boardEffects(prev,next,before){
+  const a=prev?.status?.surface,b=next?.status?.surface;if(!a||!b||!presentation.hosted||reducedMotion()||root.dataset.stage!=='match')return;
+  const was=new Map(a.cards.map(c=>[c.id,c])),onField=c=>c.zone==='Battlefield';
+  // 1. Mana payment: sources that just tapped send their mana to the spell or ability that appeared
+  // on the stack (or, while paying, to the dock that holds the payment).
+  const tapped=b.cards.filter(c=>onField(c)&&c.tapped&&was.get(c.id)?.zone==='Battlefield'&&was.get(c.id)?.tapped===false&&!c.attacking);
+  const oldStack=new Set((prev.native?.stack||[]).map(x=>x.id)),fresh=(next.native?.stack||[]).find(x=>!oldStack.has(x.id));
+  const sink=fresh&&root.querySelector(`[data-native-key="stack-${fresh.id}"]`)||(String(next.native?.inputType||'').startsWith('InputPayMana')?root.querySelector('.play-match-decisions'):null)||(fresh?castShow.dataset.open==='true'&&castShow:null);
+  if(sink&&tapped.length&&tapped.length<=8)tapped.forEach((c,i)=>{const el=cardEl(c.id);pulse(el,'tap',sourceTint(c));stream(el,sink,sourceTint(c),i*70);});
+  // 2. Arrival: a permanent that is new to the battlefield settles with a ring (lands in their colour).
+  // Tokens arriving together get one ring each at most six, so a swarm reads as one arrival.
+  let rings=0;for(const c of b.cards){if(!onField(c)||was.get(c.id)?.zone==='Battlefield'||rings>=6)continue;const el=cardEl(c.id);if(!el)continue;rings++;const land=c.known&&c.types?.includes('Land');
+   setTimeout(()=>{if(el.isConnected)pulse(el,land?'land':c.known&&c.types?.includes('Creature')?'creature':'permanent',land?sourceTint(c):null);},land?300:420);}
+  // 3. Combat impact: damage newly marked on a creature pops as a number where it lands; attackers
+  // that dealt it lean in toward what they attacked. Life totals already count on the seats.
+  const damaged=b.cards.filter(c=>onField(c)&&c.known&&(c.damage||0)>(was.get(c.id)?.damage||0)&&was.get(c.id)?.zone==='Battlefield');
+  const lifeLost=b.players.some(p=>p.life<(a.players.find(x=>x.seat===p.seat)?.life??p.life));
+  const combat=/Damage$/.test(String(b.phase||''))||/Damage$/.test(String(a.phase||''));
+  if(combat&&(damaged.length||lifeLost)){
+   for(const c of a.cards.filter(c=>c.attacking&&b.cards.some(x=>x.id===c.id))){const el=cardEl(c.id),w=el?.closest('.play-match-card-wrap'),r=rectOf(el);if(!w||!r)continue;
+    const t=c.attackTarget?.kind==='card'?rectOf(cardEl(c.attackTarget.id)):rectOf(root.querySelector(`.play-match-seat[data-player-seat="${b.players.find(p=>p.nativeId===c.attackTarget?.id)?.seat??b.players.find(p=>p.seat!==c.controller)?.seat}"]`));
+    const dx=t?(t.left+t.width/2-(r.left+r.width/2))*.12:0,dy=t?(t.top+t.height/2-(r.top+r.height/2))*.12:c.controller===b.seat?-14:14;
+    w.animate([{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(1.04)`,offset:.35},{transform:'none'}],{duration:420,easing:'cubic-bezier(.3,.1,.3,1)'});}
+   damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){popNumber(el,`−${c.damage-(was.get(c.id)?.damage||0)}`,'damage');pulse(el,'hit');}},180+i*60));
+  }
+  // 4. Attach: an Equipment or Aura that joined a host glides there (the card glide does the travel);
+  // the host's stats flash so the change it brings is noticed.
+  for(const c of b.cards){if(!onField(c)||!Number.isSafeInteger(c.attachedTo)||was.get(c.id)?.attachedTo===c.attachedTo)continue;const host=cardEl(c.attachedTo);if(!host)continue;
+   setTimeout(()=>{if(!host.isConnected)return;pulse(host,'attach');host.querySelector('.play-current-stats')?.animate([{transform:'scale(1)'},{transform:'scale(1.25)',filter:'brightness(1.6)',offset:.4},{transform:'scale(1)'}],{duration:600});},380);}
+ }
  // Hold the previous accepted board while a meaningful observed update is announced.
  // Only projected public cards reach this queue; it cannot recover events omitted by a poll.
  function showPlaybackBeat(beat){
@@ -265,7 +324,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  const queueRails=()=>{if(!railFrame)railFrame=win.requestAnimationFrame(fitRails);};
  win.addEventListener('resize',queueRails);
  function renderAccepted(s,blocked=false){
-  const lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
+  const previous=displayed,lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
   const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null;
   const before=presentation.hosted?positions():null;
   localError='';table.render(session.snapshot());enhance();
@@ -273,8 +332,10 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   // native panel comes or goes, unlike a :has() test that rechecks the whole table each redraw.
   root.toggleAttribute('data-forge-native',!!root.querySelector('.forge-native-panel'));
   doc.body.toggleAttribute('data-forge-search',!!root.querySelector('.forge-zone-search'));
-  if(before&&!blocked)glide(before);
+  if(before&&!blocked){glide(before);boardEffects(previous,s,before);}
   if(presentation.hosted&&!reducedMotion())for(const p of s.status?.surface?.players||[]){const was=lifeBefore.get(p.seat);if(was===undefined||was===p.life)continue;const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`),life=seat?.querySelector('.play-match-life strong');if(!seat||!life)continue;const delta=p.life-was,badge=doc.createElement('span');badge.className='forge-life-delta';badge.dataset.dir=delta<0?'down':'up';badge.textContent=(delta>0?'+':'\u2212')+Math.abs(delta);badge.setAttribute('aria-hidden','true');seat.append(badge);badge.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(-4px)',offset:.25},{opacity:1,transform:'translateY(-10px)',offset:.75},{opacity:0,transform:'translateY(-18px)'}],{duration:1300,fill:'both'}).finished.then(()=>badge.remove(),()=>badge.remove());life.animate([{transform:'scale(1)'},{transform:'scale(1.22)',color:delta<0?'#ff9a8a':'#8fe7a3',offset:.35},{transform:'scale(1)'}],{duration:700});}
+  // A redraw that replaced the card's element keeps its open preview on the new one.
+  if(peekFor&&!peekFor.isConnected){const again=root.querySelector(`.play-match-card[data-instance="${CSS.escape(peekFor.dataset.instance||'')}"]`);if(again){peekFor.removeAttribute('aria-describedby');peekFor=again;}}
   if(peekFor){if(!peekFor.isConnected||!surfaceCard(peekFor)?.known)hidePeek();else showPeek(peekFor,peekPinned);}
   // Arrows follow cards that glide or reveal in place.
   queueArrows();setTimeout(queueArrows,420);setTimeout(queueArrows,900);
@@ -283,6 +344,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
    openingFocused=true;root.querySelector('[data-native-key=decision-title]')?.focus({preventScroll:true});
   }
   updateActivity();
+  if(drag?.active)markDrops();
   if(!blocked)autoPassOwnStack(s);
  }
  // Smart, the way Arena plays: once your own spell or ability is on top of the stack and
@@ -405,23 +467,61 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   for(let el=heading?.nextElementSibling;el&&el.tagName!=='H3';el=el.nextElementSibling)if(el.tagName==='DETAILS'&&el.querySelector('summary')?.textContent.startsWith(zone==='Command'?'Command zone':zone)){el.open=true;el.querySelector('summary')?.focus();return;}
   menu.querySelector('summary')?.focus();
  }
- const cancel=()=>{drag=null;ghost?.remove();ghost=null;root.classList.remove('forge-dragging');};
+ // Combat by drag, the way Arena does it: a blocker dropped on an attacker blocks it, and an
+ // attacker dropped on a player or planeswalker attacks it. While you drag, what you could drop
+ // on is lit; Forge still judges the pairing, and tapping one card then the other still works.
+ function combatDrops(cardId){
+  const s=session.snapshot(),n=s.native,surface=s.status?.surface;if(!n||n.prompt||!surface)return null;
+  const card=surface.cards.find(c=>c.id===cardId);
+  if(!card?.known||card.zone!=='Battlefield'||card.controller!==surface.seat||!card.types?.includes('Creature'))return null;
+  const opponent=surface.players.find(p=>p.seat!==surface.seat);if(!opponent)return null;
+  if(n.inputType==='InputBlock'&&!card.attacking){const attackers=surface.cards.filter(c=>c.zone==='Battlefield'&&c.attacking&&c.controller===opponent.seat);return attackers.length?{mode:'block',targets:attackers.map(a=>({kind:'card',id:a.id}))}:null;}
+  if(n.inputType==='InputAttack')return {mode:'attack',targets:[{kind:'player',seat:opponent.seat,nativeId:opponent.nativeId},...surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===opponent.seat&&/\b(Planeswalker|Battle)\b/.test(c.type||'')).map(c=>({kind:'card',id:c.id}))]};
+  return null;
+ }
+ const dropElement=t=>t.kind==='player'?root.querySelector(`.play-match-seat[data-player-seat="${t.seat}"]`):root.querySelector(`.play-match-card[data-instance="${t.id}"]`);
+ // Re-applied after every redraw, so a board update during a drag keeps the lit targets.
+ function markDrops(){
+  for(const el of root.querySelectorAll('[data-forge-drop]'))el.removeAttribute('data-forge-drop');
+  if(!drag?.active||!drag.combat){delete root.dataset.forgeDragMode;return;}
+  root.dataset.forgeDragMode=drag.combat.mode;
+  for(const t of drag.combat.targets){const el=dropElement(t);if(el)el.dataset.forgeDrop=drag.over===t?'over':'true';}
+ }
+ const dropTargetAt=(x,y)=>{if(!drag?.combat)return null;const hit=doc.elementFromPoint(x,y);if(!hit)return null;return drag.combat.targets.find(t=>{const el=dropElement(t);return el&&(el===hit||el.contains(hit)||(el.closest('.play-match-card-wrap')||el).contains(hit));})||null;};
+ // Waits until the table is ready for the next click of a two-click pairing.
+ const settled=(ms=4000)=>new Promise(resolve=>{let off=null,timer=0;const done=ok=>{clearTimeout(timer);off?.();resolve(ok);};const check=s=>{if(!s.busy&&!playbackBusy)done(true);};off=authority.subscribe(check);timer=setTimeout(()=>done(false),ms);});
+ async function dropCombat(plan,cardId,target){
+  const s=session.snapshot(),card=s.status?.surface.cards.find(c=>c.id===cardId),input=s.native?.inputType;if(!card)return;
+  if(plan.mode==='block'){
+   if(card.blockingIds?.includes(target.id))return;
+   await session.nativeSelect('card',target.id);
+  }else{
+   const same=card.attacking&&card.attackTarget&&(target.kind==='player'?card.attackTarget.kind==='player'&&card.attackTarget.id===target.nativeId:card.attackTarget.kind==='card'&&card.attackTarget.id===target.id);
+   if(same)return;
+   await (target.kind==='player'?session.nativeSelect('player',target.nativeId):session.nativeSelect('card',target.id));
+  }
+  // The second click only when Forge took the first and is still asking the same question.
+  if(!await settled())return;
+  const now=session.snapshot();if(now.native?.lastActionError||now.native?.inputType!==input||now.native?.prompt||!now.status?.surface.cards.some(c=>c.id===cardId))return;
+  await session.nativeSelect('card',cardId);
+ }
+ const cancel=()=>{drag=null;ghost?.remove();ghost=null;root.classList.remove('forge-dragging');markDrops();};
  const down=e=>{lastPointerType=e.pointerType||'mouse';if(e.button!==0||e.isPrimary===false)return;const card=e.target.closest?.('.play-match-card[data-instance]'),s=session.snapshot();
   if(card&&e.pointerType!=='mouse'){clearTimeout(pressTimer);pressAt={x:e.clientX,y:e.clientY,id:e.pointerId};pressShown=false;pressTimer=setTimeout(()=>{if(drag?.active)return;showPeek(card,true);pressShown=true;suppressUntil=Date.now()+60000;if(drag?.pointerId===e.pointerId)drag=null;},420);}
  if(!card||s.busy||s.native?.prompt||s.native?.inputType==='InputConfirmMulligan'||s.status?.terminal)return;drag={id:Number(card.dataset.instance),revision:s.status.revision,pointerId:e.pointerId,x:e.clientX,y:e.clientY,source:card,active:false};};
  // Drift cancels a press only before its preview opens; after that the press is kept so
  // its release or cancel still ends the 60 s click guard.
  const move=e=>{if(pressAt?.id===e.pointerId&&!pressShown&&Math.hypot(e.clientX-pressAt.x,e.clientY-pressAt.y)>8){clearTimeout(pressTimer);pressAt=null;}
-  if(!drag||drag.pointerId!==e.pointerId)return;if(peekFor&&drag.active)hidePeek();if(drag.revision!==session.snapshot().status?.revision){cancel();return;}if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>8)drag.active=true;if(!drag.active)return;if(e.cancelable)e.preventDefault();if(!ghost){ghost=drag.source.cloneNode(true);ghost.removeAttribute('data-instance');ghost.classList.add('forge-drag-ghost');ghost.setAttribute('aria-hidden','true');ghost.setAttribute('inert','');ghost.style.width=drag.source.getBoundingClientRect().width+'px';root.append(ghost);root.classList.add('forge-dragging');}ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';};
+  if(!drag||drag.pointerId!==e.pointerId)return;if(peekFor&&drag.active)hidePeek();if(drag.revision!==session.snapshot().status?.revision&&!session.snapshot().status?.surface.cards.some(c=>c.id===drag.id)){cancel();return;}if(!drag.active&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>8){drag.active=true;drag.combat=combatDrops(drag.id);}if(!drag.active)return;if(e.cancelable)e.preventDefault();if(!ghost){ghost=drag.source.cloneNode(true);ghost.removeAttribute('data-instance');ghost.classList.add('forge-drag-ghost');ghost.setAttribute('aria-hidden','true');ghost.setAttribute('inert','');ghost.style.width=drag.source.getBoundingClientRect().width+'px';root.append(ghost);root.classList.add('forge-dragging');}ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';if(drag.combat){const over=dropTargetAt(e.clientX,e.clientY);if(over!==drag.over||!root.querySelector('[data-forge-drop]')){drag.over=over;markDrops();}}};
  // Like Arena, a card dragged out of your hand plays when released anywhere above
  // the hand; Forge decides where it goes. Other drags keep their drop targets.
  const up=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;if(pressShown){pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}}
-  if(!drag||drag.pointerId!==e.pointerId)return;const pending=drag,target=doc.elementFromPoint(e.clientX,e.clientY)?.closest('[data-placement-zone=battlefield],.forge-native-panel'),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top,fromHand=!!pending.source.closest('.play-match-hand'),overHand=!!doc.elementFromPoint(e.clientX,e.clientY)?.closest('.play-match-hand-area'),aboveHand=presentation.hosted&&fromHand&&handTop!==undefined&&e.clientY<handTop&&!overHand;if(pending.active)suppressUntil=Date.now()+300;cancel();if(pending.active&&(target&&root.contains(target)||aboveHand))act(()=>session.nativeSelect('card',pending.id,pending.revision));};
+  if(!drag||drag.pointerId!==e.pointerId)return;const pending=drag,target=doc.elementFromPoint(e.clientX,e.clientY)?.closest('[data-placement-zone=battlefield],.forge-native-panel'),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top,fromHand=!!pending.source.closest('.play-match-hand'),overHand=!!doc.elementFromPoint(e.clientX,e.clientY)?.closest('.play-match-hand-area'),aboveHand=presentation.hosted&&fromHand&&handTop!==undefined&&e.clientY<handTop&&!overHand;if(pending.active)suppressUntil=Date.now()+300;const combatTarget=pending.active?dropTargetAt(e.clientX,e.clientY):null;cancel();if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(pending.active&&(target&&root.contains(target)||aboveHand)){const now=session.snapshot().status?.revision;act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));}};
  // A press that the browser takes over (a scroll, a system gesture) ends the preview and its click guard.
  // A long press's 60 s click guard ends with that press even when a redraw, scroll or
  // resize already closed its preview; otherwise the table would ignore taps for a minute.
  const pressCancel=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}cancel();};
  const key=e=>{if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
  root.addEventListener('click',click,true);root.addEventListener('pointerdown',down);doc.addEventListener('pointermove',move,{passive:false});doc.addEventListener('pointerup',up);doc.addEventListener('pointercancel',pressCancel);doc.addEventListener('keydown',key);win.addEventListener('blur',cancel);
- return {destroy(){closed=true;playback.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;playback.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
