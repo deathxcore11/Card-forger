@@ -58,8 +58,11 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
  const footer=node('footer',undefined,'forge-intro-footer'),steps=node('ol',undefined,'forge-intro-steps');
  for(const [i,label]of ['Matchup','First player','Opening hand'].entries()){const step=node('li',label);if(i===0)step.setAttribute('aria-current','step');steps.append(step);}
  const status=node('p','Preparing your match…','forge-intro-status');status.setAttribute('role','status');
+ // Seconds since the table was requested: shown, never announced (the stage above is).
+ const elapsed=node('span','','forge-intro-elapsed');elapsed.setAttribute('aria-hidden','true');elapsed.hidden=true;
+ const note=node('p','','forge-intro-note');note.hidden=true;
  const cancel=node('button','Return to setup','btn ghost forge-intro-cancel');cancel.type='button';cancel.addEventListener('click',()=>{if(!closed)onCancel();});
- footer.append(steps,status,cancel);stage.append(header,versus,footer);root.className='play-mat-message play-forge-intro';root.replaceChildren(stage);
+ footer.append(steps,status,elapsed,note,cancel);stage.append(header,versus,footer);root.className='play-mat-message play-forge-intro';root.replaceChildren(stage);
  const refreshArtwork=()=>{if(closed)return;for(const {deck,artwork}of seats){const url=forgeDeckBackdrop(deck,lookup);if(!url)continue;const img=node('img');img.src=url;img.alt='';img.referrerPolicy='no-referrer';img.addEventListener('error',()=>img.remove(),{once:true});artwork.replaceChildren(img);}};
  const chooseStartingPlayer=()=>{
   if(closed||!isCurrent())return Promise.resolve(null);
@@ -104,5 +107,7 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
   return !closed&&isCurrent();
  };
  heading.focus();
- return {refreshArtwork,async showMatchup(){if(closed||!isCurrent())return;status.textContent='Your matchup is ready.';await wait(view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches?150:750);},chooseStartingPlayer,reveal,status(text){if(!closed)status.textContent=text;},destroy(){if(closed)return;closed=true;pendingChoice?.(null);pendingChoice=null;stage.remove();}};
+ return {refreshArtwork,async showMatchup(){if(closed||!isCurrent())return;status.textContent='Your matchup is ready.';await wait(view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches?150:750);},chooseStartingPlayer,reveal,status(text){if(!closed)status.textContent=text;},
+  elapsed(text){if(closed)return;elapsed.hidden=!text;elapsed.textContent=text||'';},
+  note(text){if(closed)return;note.hidden=!text;note.textContent=text||'';},destroy(){if(closed)return;closed=true;pendingChoice?.(null);pendingChoice=null;stage.remove();}};
 }

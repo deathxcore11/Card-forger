@@ -68,10 +68,10 @@ export function forgeMatchError(error){
  })[code]||'The game could not open this match. Review any card or format details below, then return to setup.';
 }
 
-export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,lookup,prepareArtwork=async()=>{},onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,createClient=createForgeHostClient,mountTable=mountForgeTable,mountIntro=mountForgeMatchIntro,pollMs=500,wait=ms=>new Promise(r=>setTimeout(r,ms))}={}){
+export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,lookup,prepareArtwork=async()=>{},onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,createClient=createForgeHostClient,mountTable=mountForgeTable,mountIntro=mountForgeMatchIntro,pollMs=500,wait=ms=>new Promise(r=>setTimeout(r,ms)),now=()=>Date.now()}={}){
  if(!root||[readAccount,readSetup,getAccessToken,lookup].some(f=>typeof f!=='function'))throw Error('FORGE_PLAYER_MAT_READERS_REQUIRED');
  const doc=root.ownerDocument,view=doc.defaultView;
- let generation=0,opening=false,client=null,session=null,table=null,last=null,warning=false,viewer=null,matchup=null,matchPolicy=null,matchAccount=null,intro=null,exitDialog=null,exitConfirm=null,exitSubmitting=false,disposed=false;
+ let generation=0,opening=false,startupMs=null,client=null,session=null,table=null,last=null,warning=false,viewer=null,matchup=null,matchPolicy=null,matchAccount=null,intro=null,exitDialog=null,exitConfirm=null,exitSubmitting=false,disposed=false;
  const node=(tag,text)=>{const n=doc.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
  const beforeUnload=e=>{e.preventDefault();e.returnValue='';};
  const warn=enabled=>{if(enabled===warning)return;warning=enabled;view[enabled?'addEventListener':'removeEventListener']('beforeunload',beforeUnload);};
@@ -79,7 +79,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  const pageHide=()=>{client?.release?.();};view?.addEventListener?.('pagehide',pageHide);
  // Retain the launched policy with every result/stat consumer; never reread a
  // newer setup preference to label an earlier match. No persistence is added.
- const publish=value=>{if(['finished','session-ended','account-changed'].includes(value?.phase))unwatch();last={...value,...(matchPolicy?{matchContext:{format:matchup.match.format,difficulty:matchPolicy.difficulty,difficultyPolicyVersion:matchPolicy.difficultyPolicyVersion}}:{})};onChange(structuredClone(last));};
+ const publish=value=>{if(['finished','session-ended','account-changed'].includes(value?.phase))unwatch();last={...value,...(startupMs===null?{}:{startup:{requestedToRunningMs:startupMs}}),...(matchPolicy?{matchContext:{format:matchup.match.format,difficulty:matchPolicy.difficulty,difficultyPolicyVersion:matchPolicy.difficultyPolicyVersion}}:{})};onChange(structuredClone(last));};
  // A screen that becomes too small (a folded phone) pauses the open match instead of
  // ending it: the table waits under a notice and keeps reading the server, so the match
  // stays alive. Only if the screen stays too small for the whole limit does the match
@@ -160,7 +160,12 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   if(disposed||opening||client)throw Error('MATCH_ALREADY_OPEN');opening=true;const ticket=++generation,account=forgeAccountKey(readAccount()),setup=readSetup(),selection=selectionKey(setup);
   matchAccount=account;
   const current=()=>!disposed&&ticket===generation&&forgeAccountKey(readAccount())===account&&selectionKey(readSetup())===selection;
-  let requestedAt=null;
+  let requestedAt=null,ticker=null,artReady=false;startupMs=null;
+  // While the server starts the match: the honest stage, the seconds so far and a line
+  // saying it can take a minute (then why, after 25 s). It all stops when the table opens
+  // or the start ends.
+  const tick=()=>{if(requestedAt===null||!intro)return;const seconds=Math.max(0,Math.floor((now()-requestedAt)/1000));intro.elapsed?.(`${seconds} s`);intro.note?.(seconds>=25?'Still setting up. The first match after an update takes longer.':'Setting up a table can take up to a minute. Keep this page open.');};
+  const stopTicker=()=>{if(ticker!==null)view?.clearInterval?.(ticker);ticker=null;intro?.elapsed?.('');intro?.note?.('');};
   try{
    matchup=structuredClone(setup);matchPolicy=forgeCpuPolicy(setup.match.difficulty);
    if(!current()||setup.profile?.ownerId!==readAccount()?.user?.id)throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
@@ -168,7 +173,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    // Card art is needed only once the table opens, so it loads while the server starts
    // the match instead of before it. The matchup waits briefly so cached deck art shows.
    // Art is read only once its preparation has finished; before that the lookup refuses.
-   const preparing=Promise.resolve().then(()=>prepareArtwork(setup,{isCurrent:current}));preparing.then(()=>{try{if(current())intro?.refreshArtwork();}catch{/* the matchup keeps its placeholder */}},()=>{});
+   const preparing=Promise.resolve().then(()=>prepareArtwork(setup,{isCurrent:current}));preparing.then(()=>{artReady=true;try{if(current())intro?.refreshArtwork();}catch{/* the matchup keeps its placeholder */}},()=>{});
    await Promise.race([preparing,wait(1200)]);
    if(!current())throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
    await intro.showMatchup?.();
@@ -176,8 +181,9 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    if(!current()||startingPlayer===null)throw Object.assign(Error('SELECTION_CHANGED'),{code:'SELECTION_CHANGED'});
    const input=exactForgeInput(setup,{startingPlayer});
    client=createClient({readAccount,getAccessToken});
-   intro.status('Preparing the table…');
-   requestedAt=Date.now();await client.create(input);warn(true);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
+   intro.status('Starting the rules engine…');
+   requestedAt=now();tick();if(typeof view?.setInterval==='function')ticker=view.setInterval(tick,1000);
+   await client.create(input);warn(true);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
    let state,deadline=Date.now()+125000;
    while(current()&&Date.now()<deadline){
     try{state=await client.read();}catch(e){if(![429,503].includes(e.status))throw e;await wait(e.retryAfterMs||1000);continue;}
@@ -188,9 +194,11 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    }
    if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
    if(state?.status==='finished'){finish(state.result,state.viewerId);return last;}
-   if(state?.status!=='running')throw Error('HOST_STARTUP_TIMEOUT');viewer=state.snapshot.viewer;
+   if(state?.status!=='running')throw Error('HOST_STARTUP_TIMEOUT');viewer=state.snapshot.viewer;startupMs=now()-requestedAt;
    // The table's art is frozen from the finished preparation, as before the overlap.
+   if(!artReady)intro.status('Loading card art…');
    try{await preparing;}catch(e){await client.close().catch(()=>{});throw e;}
+   stopTicker();
    if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
    const artwork=capturedForgeArtwork(setup,lookup);
    if(!forgeStartingPlayer(state.snapshot))throw Object.assign(Error('STARTING_PLAYER_UNCONFIRMED'),{code:'STARTING_PLAYER_UNCONFIRMED'});
@@ -203,8 +211,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    session.acceptState(state.snapshot);session.subscribe(s=>{updateExit();if(!disposed&&ticket===generation&&last?.phase!=='finished')publish({phase:'playing',game:s});});
    // The engine and website build stay identifiable on screen and in diagnostics.
    root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true}});warn(true);await session.start({readInitial:false});return last;
-  }catch(e){if(current()){session?.close();warn(false);message('Your match could not start',[forgeMatchError(e),'Your selected decks are unchanged.',...(e.details||[])],{diagnostic:forgeDiagnostic(e)+(requestedAt===null?'':` · ${Math.round((Date.now()-requestedAt)/1000)}s after the table was requested`)});publish({phase:'session-ended',error:e.code||e.message});}throw e;}
-  finally{opening=false;}
+  }catch(e){stopTicker();if(current()){session?.close();warn(false);message('Your match could not start',[forgeMatchError(e),'Your selected decks are unchanged.',...(e.details||[])],{diagnostic:forgeDiagnostic(e)+(requestedAt===null?'':` · ${Math.round((now()-requestedAt)/1000)}s after the table was requested`)});publish({phase:'session-ended',error:e.code||e.message});}throw e;}
+  finally{stopTicker();opening=false;}
  }
  return {start,snapshot:()=>last?structuredClone(last):null,requestExit,
   reconcile(){if(matchAccount&&forgeAccountKey(readAccount())!==matchAccount){client?.detach();stopped({code:'ACCOUNT_CHANGED'});return false;}return true;},

@@ -5064,7 +5064,9 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .friends-tabs button{flex:1;min-height:44px;padding:8px;border:0;border-radius:9px;color:var(--muted);background:transparent;font:inherit;cursor:pointer}
 .friends-tabs [aria-pressed="true"]{color:var(--text);background:var(--surface);box-shadow:inset 0 -2px var(--accent,var(--gold))}
 .community-dialog .community-person{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
-.community-dialog .community-person>span{flex:1;min-width:100px;overflow-wrap:anywhere}
+.community-dialog .community-person>span:not(.profile-avatar){flex:1;min-width:100px;overflow-wrap:anywhere}
+.community-dialog .community-person>.profile-avatar{width:44px;height:44px;min-width:44px;max-width:44px;flex:0 0 44px;aspect-ratio:1;border-radius:50%;overflow:hidden}
+.community-dialog .community-person>.profile-avatar>img.profile-avatar-photo{width:100%;height:100%;object-fit:cover}
 .community-dialog .community-friend-link{width:100%;text-align:left}
 
 /* A shared card-first builder, using the app's existing buttons, fields and glass. */

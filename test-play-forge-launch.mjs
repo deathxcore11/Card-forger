@@ -153,3 +153,25 @@ test('a Universes Within flavor name finds its printing by cost, type and stats,
  const both=capturedForgeArtwork({...base,selected:deck('Mine',[{name:'Other Felon',qty:1}])},name=>cards[name]||null);
  assert.equal(both('Belion, the Parched',belion),null,'two cards that fit means no art rather than the wrong art');
 });
+test('while the server starts the match the intro shows the stage and the seconds so far, then stops counting',async()=>{
+ const s=setup(),{root,doc}=dom(),account={user:{id:OWNER},accountGeneration:1},calls=[];let clock=1000,tickFn=null,reads=0;
+ doc.defaultView.setInterval=fn=>{tickFn=fn;return 7;};doc.defaultView.clearInterval=id=>{if(id===7)tickFn=null;};
+ const intro=()=>({refreshArtwork(){},chooseStartingPlayer:async()=>'random',reveal:async()=>false,destroy(){},status:t=>calls.push(['status',t]),elapsed:t=>calls.push(['elapsed',t]),note:t=>calls.push(['note',t])});
+ const mat=createForgePlayerMat({root,mountIntro:intro,readAccount:()=>account,readSetup:()=>s,getAccessToken:async()=>'token',lookup:()=>null,now:()=>clock,pollMs:3000,
+  wait:async ms=>{for(let t=0;t<ms;t+=1000){clock+=Math.min(1000,ms-t);tickFn?.();}},
+  createClient:options=>createForgeHostClient({...options,fetchImpl:async(path,init)=>{
+   if(init.method==='POST'){const sent=JSON.parse(init.body);return Response.json({matchId:MATCH,generation:GENERATION,expiresAt:Date.now()+60000,deckDigests:{human:await exactDigest(sent.humanDeck),opponent:await exactDigest(sent.opponentDeck)},schema:'cardstashy.forge-proof.v1',forgeRevision:FORGE_REVISION,status:'initializing'},{status:202});}
+   // About 30 seconds of start-up at a 3 s poll, then the match reports its result.
+   if(++reads<11)return Response.json({matchId:MATCH,generation:GENERATION,status:'initializing'},{status:202});
+   return Response.json({matchId:MATCH,generation:GENERATION,status:'finished',viewerId:1,result:{draw:false,winnerPlayerId:1}});
+  }})});
+ await mat.start();
+ assert.deepEqual(calls.find(c=>c[0]==='status'),['status','Starting the rules engine…']);
+ const seconds=calls.filter(c=>c[0]==='elapsed'&&c[1]).map(c=>c[1]);
+ assert.equal(seconds[0],'0 s');assert.ok(seconds.includes('12 s')&&seconds.includes('29 s'),'the counter follows the clock');
+ const notes=calls.filter(c=>c[0]==='note'&&c[1]).map(c=>c[1]);
+ assert.equal(notes[0],'Setting up a table can take up to a minute. Keep this page open.','the wait is announced from the first second');
+ const later=calls.findIndex(c=>c[0]==='note'&&c[1]==='Still setting up. The first match after an update takes longer.');
+ assert.ok(later>calls.findIndex(c=>c[0]==='elapsed'&&c[1]==='25 s'),'the longer-wait line comes after 25 seconds');
+ assert.equal(tickFn,null,'no timer is left running once the start ends');
+});
