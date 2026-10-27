@@ -1126,6 +1126,11 @@
 @keyframes cs-next-sheen{30%,100%{translate:120% 0}}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-native-actions [data-native-key=ok]::before{animation:none;display:none}:where(body.practice-table-open) .play-match-header>details[open]>:not(summary){animation:none}}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=you]:has(.forge-control-emblems){overflow:visible}
-:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat .forge-control-emblems{position:absolute;top:-15px;left:calc(var(--portrait-w,56px) + 24px);margin:0;z-index:6}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat .forge-control-emblems{position:absolute;top:-15px;right:14px;margin:0;z-index:6}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat .forge-control-emblem{width:28px;height:28px;min-height:0;min-width:0;flex:none;box-shadow:0 0 0 3px #0b0d12,0 4px 10px #000a}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat .forge-control-emblem[aria-pressed=true]{box-shadow:0 0 0 3px #0b0d12,0 0 12px #e8b95b77}
+/* Docked preview: the card itself carries its rules; only live state is added under it. */
+:where(body.practice-table-open) .forge-peek[data-docked=true]{--peek-w:clamp(200px,calc(var(--peek-dock-h,420px) / 1.394),280px);flex-direction:column;align-items:stretch;gap:8px;transition:opacity .18s ease,transform 0s}
+:where(body.practice-table-open) .forge-peek[data-docked=true] .forge-peek-info{width:var(--peek-w);max-width:var(--peek-w);padding:8px 10px;max-height:90px;overflow:hidden}
+:where(body.practice-table-open) .forge-peek[data-docked=true] .forge-peek-info:not(:has(.forge-peek-state,.forge-peek-blocked,.forge-peek-attached)){display:none}
+:where(body.practice-table-open) .forge-peek[data-docked=true] .forge-peek-card[data-art=image]~.forge-peek-info :is(header,.forge-peek-type,.forge-peek-rules,.forge-peek-keywords){display:none}
