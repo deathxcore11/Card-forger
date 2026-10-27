@@ -22,6 +22,12 @@ function sameCardFace(card,native){
  if(face.power===undefined)return true;
  return String(native?.power)===String(face.power)&&String(native?.toughness)===String(face.toughness);
 }
+// The deck tracker's list: your main deck with each card's art crop, cost and whether it is a land.
+const BASIC_LAND=/^(Plains|Island|Swamp|Mountain|Forest|Wastes|Snow-Covered (Plains|Island|Swamp|Mountain|Forest))$/;
+export function trackerDeck(setup,artwork){
+ return (setup?.selected?.cards||[]).filter(r=>r?.name&&r.qty>0).map(r=>{const c=artwork(r.name)?.card,face=c?.card_faces?.[0];
+  return {name:r.name,qty:r.qty,art:c?.image_uris?.art_crop||face?.image_uris?.art_crop||'',cost:c?.mana_cost||face?.mana_cost||'',land:c?/\bLand\b/.test(c.type_line||''):BASIC_LAND.test(r.name)};});
+}
 export function capturedForgeArtwork(setup,lookup){
  const rows=[setup.selected,setup.opponent].flatMap(deck=>{const d=capturePracticeArtwork(deck,lookup);return [...d.cards,...(d.side||[])];});
  return (name,native)=>{
@@ -208,7 +214,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    await intro?.reveal(state.snapshot);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}intro?.destroy();intro=null;
    session.acceptState(state.snapshot);session.subscribe(s=>{updateExit();if(!disposed&&ticket===generation&&last?.phase!=='finished')publish({phase:'playing',game:s});});
    // The engine and website build stay identifiable on screen and in diagnostics.
-   root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true}});warn(true);await session.start({readInitial:false});return last;
+   root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true,tracker:trackerDeck(setup,artwork)}});warn(true);await session.start({readInitial:false});return last;
   }catch(e){stopTicker();if(current()){session?.close();warn(false);message('Your match could not start',[forgeMatchError(e),'Your selected decks are unchanged.',...(e.details||[])],{diagnostic:forgeDiagnostic(e)+(requestedAt===null?'':` · ${Math.round((now()-requestedAt)/1000)}s after the table was requested`)});publish({phase:'session-ended',error:e.code||e.message});}throw e;}
   finally{stopTicker();opening=false;}
  }

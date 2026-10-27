@@ -212,7 +212,7 @@ const session = createForgePresentationSession({lookupArtwork, allowControlMode:
 session.acceptState(native);
 const avatar = scry.get('Klothys, God of Destiny')?.image_uris?.art_crop || '';
 const root = document.getElementById('practicePlayerMat');
-window.fixture = {session, native, table: mountForgeTable(root, {session, profile: {displayName: 'idw011', username: 'idw011', avatarUrl: avatar}, format: 'Commander', title: 'CardStashy · Magic · fixture', onExit() {}, presentation: {hosted: true, allowControlMode: true}})};
+window.fixture = {session, native, table: mountForgeTable(root, {session, profile: {displayName: 'idw011', username: 'idw011', avatarUrl: avatar}, format: 'Commander', title: 'CardStashy · Magic · fixture', onExit() {}, presentation: {hosted: true, allowControlMode: true, tracker: [['Legion Warboss', 2], ['Goblin Guide', 1], ['Hill Giant', 2], ['Grizzly Bears', 2], ['Rancor', 1], ['Sol Ring', 1], ['Arcane Signet', 1], ['Loyal Apprentice', 1], ['Rampant Growth', 1], ['Mountain', 14], ['Forest', 12]].map(([name, qty]) => ({name, qty, art: '', cost: '', land: /^(Mountain|Forest)$/.test(name)}))}})};
 document.body.dataset.fixtureReady = 'true';
 </script>
 </body>

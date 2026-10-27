@@ -68,7 +68,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // Preserve local typed input/focus if an unrelated inspection redraws the board.
    const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null,oldInput=footer.querySelector('[data-native-key=native-value]'),oldValue=oldInput?.value,oldRevision=footer.querySelector('[data-native-panel]')?.dataset.nativeRevision;
    mountNativePanel(footer,{session,snapshot:snap,onLocalError:message=>fail(Error(message)),presentation:panelPresentation});panelKey=key;
-   if(localError){const e=doc.createElement('p');e.className='forge-diagnostic';e.textContent=localError;e.setAttribute('role','alert');const picker=footer.querySelector('.forge-zone-search-actions');if(picker)picker.before(e);else footer.querySelector('[data-native-panel]')?.append(e);}
+   if(localError){const e=doc.createElement('p');e.className='forge-diagnostic';e.textContent=plainError(localError);e.setAttribute('role','alert');const picker=footer.querySelector('.forge-zone-search-actions');if(picker)picker.before(e);else footer.querySelector('[data-native-panel]')?.append(e);}
    if(nativeValueDraft?.revision===n.revision&&nativeValueDraft?.promptId===n.prompt?.id){const input=footer.querySelector('[data-native-key=native-value]');if(input)input.value=nativeValueDraft.value;}else if(oldRevision===String(n.revision)&&oldValue!==undefined){const input=footer.querySelector('[data-native-key=native-value]');if(input)input.value=oldValue;}
    if(focused)footer.querySelector(`[data-native-key="${CSS.escape(focused)}"]`)?.focus();
   }
@@ -118,6 +118,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     if(mat&&!row){row=doc.createElement('nav');row.className='forge-zone-row';row.dataset.seat=own?'you':'cpu';row.setAttribute('aria-label',own?'Your zones':'CPU zones');mat.append(row);}
     if(row&&row.dataset.counts!==key){row.dataset.counts=key;row.replaceChildren(...counts.map(([zone,value])=>{const b=doc.createElement('button');b.type='button';b.dataset.zone=zone;b.dataset.nativeKey=`zone-${own?'you':'cpu'}-${zone}`;b.setAttribute('aria-label',`${own?'Your':'CPU'} ${zone.toLowerCase()}: ${value}`);b.innerHTML=`${boardIcon('zone-'+zone.toLowerCase(),'cs-icon cs-zone-icon')||outlineIcon(ZONE_ICONS[zone])}<span>${ZONE_LABELS[zone]}</span><b>${value}</b>`;return b;}));}
    }
+   // Deck tracker, the untapped way but quieter: Deck lists what is left in your library with the
+   // chance each card is your next draw; Opponent lists every card the CPU has shown. Each toggles.
+   if(Array.isArray(presentation.tracker)&&presentation.tracker.length)renderTracker(surface,mat);
+   // One turn statement: the dock says whose move it is; this track on the divider says where the turn is.
+   renderPhaseTrack(surface,mat);
    // The history button carries the stack size as a badge.
    const history=root.querySelector('.play-match-header>[data-focus-key=table-details]'),stackCount=n.stack?.length?String(n.stack.length):'';if(history&&(history.dataset.count||'')!==stackCount){if(stackCount)history.dataset.count=stackCount;else delete history.dataset.count;}
    // Smart, Full Control and auto-pay are small emblems under your name, the way Arena keeps them by your portrait.
@@ -161,7 +166,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const ownPlayer=nativePlayer(surface.seat),untappedLands=surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===surface.seat&&c.known&&c.types?.includes('Land')&&!c.tapped).length;
    const used=ownPlayer?.landsPlayedThisTurn,allowed=ownPlayer?.landPlaysAllowed,hasLandCount=Number.isSafeInteger(used)&&used>=0&&Number.isSafeInteger(allowed)&&allowed>=used;
    const fullPoolKey=poolKey+'|'+untappedLands+'|'+(hasLandCount?used+'/'+allowed:'');
-   if(pool&&pool.dataset.pool!==fullPoolKey){pool.dataset.pool=fullPoolKey;pool.hidden=!presentation.hosted&&!mine.some(([,a])=>a>0);if(youSeat)youSeat.dataset.floating=String(mine.some(([,a])=>a>0));pool.setAttribute('aria-label',manaLabel(mine)+`; ${untappedLands} untapped lands`+(hasLandCount?`; land plays used ${used} of ${allowed}`:''));const amount=c=>mine.find(([k])=>k===c)?.[1]||0;pool.innerHTML=presentation.hosted?`<h3>Mana pool</h3><div class="forge-seat-mana-row" aria-hidden="true">${MANA_ORDER.map(c=>`<span class="forge-mana-emblem" data-color="${c}" data-zero="${amount(c)===0}">${sym(c)}<b>${amount(c)}</b></span>`).join('')}</div><p class="forge-mana-sources"><span>Untapped lands <b>${untappedLands}</b></span>${hasLandCount?`<span class="forge-land-drop">Land plays <b>${used}/${allowed}</b></span>`:''}</p>`:`<h3>Floating mana</h3><div aria-hidden="true">${MANA_ORDER.map(c=>`<span data-zero="${amount(c)===0}">${sym(c)}<b>${amount(c)}</b></span>`).join('')}</div><p class="forge-mana-sources">Untapped lands <b>${untappedLands}</b>${hasLandCount?`<span class="forge-land-drop">Land plays <b>${used}/${allowed}</b></span>`:''}</p>`;}
+   if(pool&&pool.dataset.pool!==fullPoolKey){pool.dataset.pool=fullPoolKey;pool.hidden=!presentation.hosted&&!mine.some(([,a])=>a>0);if(youSeat)youSeat.dataset.floating=String(mine.some(([,a])=>a>0));pool.setAttribute('aria-label',manaLabel(mine)+`; ${untappedLands} untapped lands`+(hasLandCount?`; land plays used ${used} of ${allowed}`:''));const amount=c=>mine.find(([k])=>k===c)?.[1]||0;pool.innerHTML=presentation.hosted?`<h3>Mana pool</h3><div class="forge-seat-mana-row" aria-hidden="true">${MANA_ORDER.filter(c=>amount(c)>0).map(c=>`<span class="forge-mana-emblem" data-color="${c}">${sym(c)}<b>${amount(c)}</b></span>`).join('')||'<span class="forge-mana-empty">Nothing floating</span>'}</div><p class="forge-mana-sources"><span>Untapped lands <b>${untappedLands}</b></span>${hasLandCount?`<span class="forge-land-drop">Land plays <b>${used}/${allowed}</b></span>`:''}</p>`:`<h3>Floating mana</h3><div aria-hidden="true">${MANA_ORDER.map(c=>`<span data-zero="${amount(c)===0}">${sym(c)}<b>${amount(c)}</b></span>`).join('')}</div><p class="forge-mana-sources">Untapped lands <b>${untappedLands}</b>${hasLandCount?`<span class="forge-land-drop">Land plays <b>${used}/${allowed}</b></span>`:''}</p>`;}
    // Basic land subtypes grant these mana abilities. Mana colours are never inferred
    // from frame colour, artwork, colour identity, or a guessed Oracle sentence.
    const landColors={Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'};
@@ -188,16 +193,20 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     const summary=badgeSummary(b),label=el.getAttribute('aria-label')||'';if(summary&&!label.endsWith(summary))el.setAttribute('aria-label',`${label} \u00b7 ${summary}`);
     // Power and toughness read green above the printed card and red below it.
     const stats=el.querySelector('.play-current-stats'),printed=card?.known&&stats?printedStat(card):null;
-    if(stats){const shift=(now,was)=>{const n=Number(now),w=Number(was);return was===undefined||was===null||!Number.isFinite(n)||!Number.isFinite(w)?'':n>w?'up':n<w?'down':'';};stats.dataset.shiftP=printed?shift(card.power,printed[0]):'';stats.dataset.shiftT=printed?shift(card.toughness,printed[1]):'';}
+    if(stats){const shift=(now,was)=>{const n=Number(now),w=Number(was);return was===undefined||was===null||!Number.isFinite(n)||!Number.isFinite(w)?'':n>w?'up':n<w?'down':'';};stats.dataset.shiftP=printed?shift(card.power,printed[0]):'';stats.dataset.shiftT=printed?shift(card.toughness,printed[1]):'';stats.toggleAttribute('data-damaged',Number(card?.damage)>0);}
    }
    // Poison, energy and experience sit on each player's seat with live counts.
    for(const p of surface.players){const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`);if(!seat)continue;const list=playerCounterBadges(p.counters),html=playerCountersHtml(list);let box=seat.querySelector(':scope>.cs-player-counters');if(!html){box?.remove();continue;}if(!box){box=doc.createElement('span');box.className='cs-player-counters';seat.append(box);}if(box.dataset.html!==html){box.dataset.html=html;box.innerHTML=html;box.setAttribute('aria-label',list.map(c=>`${c.count} ${c.label.toLowerCase()}`).join(', '));}}
    // Each battlefield sizes its pieces so its creature row and its row of other
    // permanents both fit across: widths in piece units plus fixed gaps in pixels.
    for(const zone of root.querySelectorAll('.play-match-battlefields .play-match-zone')){
-    const rows={c:[0,0],o:[0,0]};let otherLanes=0;
-    for(const lane of zone.querySelectorAll('.play-match-lane')){const creature=lane.dataset.cardGroup==='creatures',row=creature?rows.c:rows.o,w=creature?1.18:.98;if(!creature&&otherLanes++)row[1]+=22;let first=true;
-     for(const wrap of lane.querySelectorAll('.play-match-card-wrap:not([data-attached])')){const pile=wrap.dataset.pileIndex&&wrap.dataset.pileIndex!=='0';if(pile)row[0]+=w-(wrap.dataset.pileTight==='true'?(creature?1.12:.92):(creature?.94:.76));else{row[0]+=w;if(!first)row[1]+=16;}first=false;}}
+    const rows={c:[0,0],o:[0,0]},lanes=[];let otherLanes=0;
+    for(const lane of zone.querySelectorAll('.play-match-lane')){const creature=lane.dataset.cardGroup==='creatures',row=creature?rows.c:rows.o,w=creature?1.18:.98,own=[0,0];if(!creature&&otherLanes++)row[1]+=22;let first=true;
+     for(const wrap of lane.querySelectorAll('.play-match-card-wrap:not([data-attached])')){const pile=wrap.dataset.pileIndex&&wrap.dataset.pileIndex!=='0',u=pile?w-(wrap.dataset.pileTight==='true'?(creature?1.12:.92):(creature?.94:.76)):w,g=!pile&&!first?16:0;row[0]+=u;row[1]+=g;own[0]+=u;own[1]+=g;first=false;}
+     if(!creature)lanes.push(own);}
+    // A long back row wraps its artifacts and enchantments under the lands, so size it by
+    // its widest lane instead of shrinking every piece to fit one line.
+    if(lanes.length>1&&rows.o[0]>7){const widest=lanes.reduce((a,b)=>b[0]>a[0]?b:a);rows.o=[Math.max(widest[0],rows.o[0]*.55),widest[1]];}
     const fit=`${Math.max(1,rows.c[0]).toFixed(2)},${rows.c[1]},${Math.max(1,rows.o[0]).toFixed(2)},${rows.o[1]}`;
     if(zone.dataset.fit!==fit){zone.dataset.fit=fit;const [cu,cg,ou,og]=fit.split(',');zone.style.setProperty('--fit-cu',cu);zone.style.setProperty('--fit-cg',cg+'px');zone.style.setProperty('--fit-ou',ou);zone.style.setProperty('--fit-og',og+'px');}
    }
@@ -311,7 +320,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function updateActivity(){
   const a=presentation.hosted&&root.dataset.stage==='match'&&playback?tableActivity(displayed,{beat:activeBeat,overlay:playback.overlay,recent:playback.recent}):null;
   const key=a?`${a.kind}|${a.label}|${a.detail}`:'';if(key===activityKey)return;activityKey=key;
-  activity.hidden=!a;if(!a)return;
+  activity.hidden=!a||a.kind==='decision';if(activity.hidden)return;
   activity.dataset.kind=a.kind;activity.innerHTML=`<strong>${esc(a.label)}</strong>${a.detail?`<span>${esc(a.detail)}</span>`:''}`;
   activity.title=playback.recent.join('\n');
  }
@@ -398,6 +407,53 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   updateActivity();
   if(drag?.active)markDrops();
   if(!blocked){autoPassOwnStack(s);autoPassIdle(s);}
+ }
+ // Engine and transport codes in plain words; a refusal Forge explains stays as Forge said it.
+ const plainError=msg=>/ordered-source|order/i.test(msg)&&/unavailable|not supported/i.test(msg)?'These can\u2019t be reordered here yet, so they\u2019ll resolve in the default order.':/contract is unavailable|is not supported/i.test(msg)?'That choice isn\u2019t available on this table yet.':msg==='MATCH_NOT_READY'?'One moment, the table is catching up.':msg==='STALE_CHOICE'?'That choice ran out. Try again.':/^(CHOICE_INCOMPLETE)$/.test(msg)?'Pick everything this asks for first.':msg==='CHOICE_FULL'?'You\u2019ve already picked the most allowed.':msg;
+ const PHASE_STEPS=[['Upkeep',['Untap','Upkeep']],['Draw',['Draw']],['Main',['PreCombatMain']],['Combat',['BeginningOfCombat','DeclareAttackers','DeclareBlockers','FirstStrikeDamage','CombatDamage','EndCombat']],['Main 2',['PostCombatMain']],['End',['End','Cleanup']]];
+ function renderPhaseTrack(surface,mat){
+  if(!mat)return;let track=mat.querySelector(':scope>.forge-phase-track');
+  const at=PHASE_STEPS.findIndex(([,list])=>list.includes(surface.phase)),owner=surface.activeSeat===surface.seat?'you':'cpu',key=[surface.turn,at,owner].join('|');
+  if(!track){track=doc.createElement('div');track.className='forge-phase-track';track.setAttribute('role','status');mat.append(track);}
+  if(track.dataset.key===key)return;track.dataset.key=key;track.dataset.owner=owner;
+  const step=PHASE_STEPS[at]?.[0]||'';track.setAttribute('aria-label',`${owner==='you'?'Your':'CPU'} turn ${surface.turn}${step?', '+step:''}`);
+  track.innerHTML=`<b>${owner==='you'?'You':'CPU'} · T${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
+ }
+ const trackerSeen=new Map(),trackerOpen={deck:false,opponent:false};
+ try{const saved=JSON.parse(win.localStorage?.getItem('cardstashy.tracker')||'{}');trackerOpen.deck=saved.deck===true;trackerOpen.opponent=saved.opponent===true;}catch{}
+ const EYE='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',EYE_OFF='M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.1 3.9M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 4.2-1M9.9 9.9a3 3 0 0 0 4.2 4.2';
+ const pct=(n,d)=>d>0?Math.round(n/d*100)+'%':'0%';
+ function renderTracker(surface,mat){
+  const header=root.querySelector('.play-match-header');if(!header||!mat)return;
+  let bar=header.querySelector(':scope>.forge-tracker-toggles');
+  const me=surface.players.find(p=>p.seat===surface.seat),lib=Math.max(0,Number(me?.libraryCount)||0);
+  // Your library: the deck list minus every copy you can see anywhere else.
+  const out=new Map();for(const c of surface.cards)if(c.known&&c.owner===surface.seat&&c.zone!=='Library')out.set(c.name,(out.get(c.name)||0)+1);
+  const left=presentation.tracker.map(r=>({...r,left:Math.max(0,r.qty-(out.get(r.name)||0))}));
+  const landsLeft=left.filter(r=>r.land).reduce((n,r)=>n+r.left,0),landsTotal=left.filter(r=>r.land).reduce((n,r)=>n+r.qty,0);
+  // The CPU's cards, remembered once shown so a card that leaves play still counts.
+  for(const c of surface.cards)if(c.known&&c.owner!==surface.seat&&c.zone!=='Library'&&c.zone!=='Hand'&&!c.isToken)trackerSeen.set(c.id,{name:c.name,art:resolvePracticeArtwork(c)?.artImageUrl||'',cost:c.manaCost||''});
+  const seen=new Map();for(const v of trackerSeen.values()){const e=seen.get(v.name)||{...v,n:0};e.n++;seen.set(v.name,e);}
+  if(!bar){bar=doc.createElement('div');bar.className='forge-tracker-toggles';bar.setAttribute('role','group');bar.setAttribute('aria-label','Deck tracker');header.append(bar);
+   bar.addEventListener('click',e=>{const b=e.target.closest('button[data-tracker]');if(!b)return;trackerOpen[b.dataset.tracker]=!trackerOpen[b.dataset.tracker];try{win.localStorage?.setItem('cardstashy.tracker',JSON.stringify(trackerOpen));}catch{}bar.dataset.key='';renderTracker(session.snapshot().status.surface,root.querySelector('.play-match-mat'));});}
+  const key=[trackerOpen.deck,trackerOpen.opponent,lib,left.map(r=>r.left).join(','),[...seen.values()].map(v=>v.n).join(',')].join('|');
+  if(bar.dataset.key===key&&mat.querySelectorAll(':scope>.forge-tracker').length===trackerOpen.deck+trackerOpen.opponent)return placeTracker(mat);bar.dataset.key=key;
+  bar.innerHTML=[['deck','Deck'],['opponent','Opponent']].map(([k,l])=>`<button type="button" data-tracker="${k}" aria-pressed="${trackerOpen[k]}">${outlineIcon(trackerOpen[k]?EYE:EYE_OFF)}<span>${l}</span></button>`).join('')+`<span class="forge-tracker-land" title="Chance your next draw is a land">${outlineIcon('M3 20l6-10 4 6 3-4 5 8z')}<b>${pct(landsLeft,lib)}</b></span>`;
+  for(const el of mat.querySelectorAll(':scope>.forge-tracker'))el.remove();
+  const row=(art,name,cost,count,sub)=>`<li${count?'':' data-out="true"'}><span class="forge-tracker-art">${art?`<img src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:''}</span><span class="forge-tracker-name"><b>${esc(name)}</b>${cost?`<i>${manaCost({mana_cost:cost})}</i>`:''}</span><span class="forge-tracker-num"><b>${count}</b>${sub?`<small>${sub}</small>`:''}</span></li>`;
+  if(trackerOpen.deck){const p=doc.createElement('section');p.className='forge-tracker';p.dataset.side='deck';p.setAttribute('aria-label','Your library');
+   const rows=[...left.filter(r=>!r.land)].sort((a,b)=>(b.left>0)-(a.left>0)||a.name.localeCompare(b.name));
+   p.innerHTML=`<header><strong>Library</strong><span>${lib} cards</span></header><ul>${rows.map(r=>row(r.art,r.name,r.cost,r.left,r.left?pct(r.left,lib):'')).join('')}</ul><footer>${outlineIcon('M3 20l6-10 4 6 3-4 5 8z')}<span>Lands</span><b>${landsLeft}/${landsTotal}</b><small>${pct(landsLeft,lib)}</small></footer>`;mat.append(p);}
+  if(trackerOpen.opponent){const p=doc.createElement('section');p.className='forge-tracker';p.dataset.side='opponent';p.setAttribute('aria-label','Cards the CPU has shown');
+   p.innerHTML=`<header><strong>Opponent</strong><span>${trackerSeen.size} seen</span></header>${seen.size?`<ul>${[...seen.values()].map(v=>row(v.art,v.name,v.cost,v.n,'')).join('')}</ul>`:'<p>Nothing shown yet.</p>'}`;mat.append(p);}
+  placeTracker(mat);
+ }
+ // The deck list sits under the table controls on the left; the CPU's list under its zone counts on the right.
+ function placeTracker(mat){
+  const head=root.querySelector('.play-match-header')?.getBoundingClientRect(),seat=root.querySelector('.play-match-seat[data-seat=you]')?.getBoundingClientRect(),cmd=root.querySelector('.play-command-zone[data-seat=you]')?.getBoundingClientRect(),cpuRow=root.querySelector('.forge-zone-row[data-seat=cpu]')?.getBoundingClientRect(),dock=root.querySelector('.play-match-decisions')?.getBoundingClientRect();
+  const deck=mat.querySelector(':scope>.forge-tracker[data-side=deck]'),opp=mat.querySelector(':scope>.forge-tracker[data-side=opponent]');
+  if(deck&&head){const top=Math.round(head.bottom+10),bottom=Math.round(Math.min(cmd?.top??Infinity,seat?.top??win.innerHeight)-12);deck.style.top=top+'px';deck.style.maxHeight=Math.max(160,bottom-top)+'px';}
+  if(opp){const top=Math.round((cpuRow?.bottom??80)+10),bottom=Math.round((dock?.top??win.innerHeight)-12);opp.style.top=top+'px';opp.style.maxHeight=Math.max(120,bottom-top)+'px';}
  }
  // Smart, the way Arena plays: once your own spell or ability is on top of the stack and
  // priority is back with you, pass it for you so it resolves (the CPU may still respond).
