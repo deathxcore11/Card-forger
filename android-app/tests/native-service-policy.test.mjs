@@ -79,3 +79,8 @@ test('public reference admission does not broaden API routes, methods or credent
   }
   for(const input of ['/api/reference/other','/api/reference/mtg%2Dwiki','/api/reference/%77iki','/api/reference/wiki-extra'])assert.throws(()=>resolve(input));
 });
+// Play is web-only: the app keeps its entry closed, so the Forge host routes stay out of the native inventory.
+test('the Forge host routes Play uses on the web are not native services', () => {
+  const match = '00000000-0000-4000-8000-000000000000';
+  for(const path of ['/api/play/matches','/api/play/matches/'+match,'/api/play/matches/'+match+'/actions'])assert.throws(()=>resolve(path),/Unknown service route/);
+});
