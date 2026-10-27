@@ -275,6 +275,8 @@ const ASSETS = [
 // Card artwork the app serves itself (packs, card backs, set art, Yu-Gi-Oh! images) is kept across
 // releases in its own cache, trimmed to the most recent images.
 const ART = "cardforge-art-v1", ART_MAX = 800;
+// Instant-scan fingerprints outlive releases (activate retires only cardforge-shell-* caches).
+const SCANIDX = "cardforge-scanidx-v1";
 const BASE = self.location.href || self.location.origin + "/";
 // Stylesheets stay network-first (a corrected style reaches open apps at once); they load in parallel.
 const SHELL = new Set(ASSETS.filter((a) => !a.endsWith(".css")).map((a) => new URL(a, BASE).pathname)),
@@ -312,18 +314,24 @@ self.addEventListener("fetch", (e) => {
   if (url.pathname.startsWith("/downloads/")) return;
   // Tour videos stream with range requests, which the shell cache cannot store.
   if (/\.(mp4|webm)$/.test(url.pathname)) return;
-  // The instant-scan index is large and changes rarely: serve the saved copy at once and refresh
-  // it in the background.
+  // Scan index. Recognition catalogues (.json.gz) are explicit downloads the app keeps in its own
+  // storage, checked against the manifest's sha256, so they and the manifest go to the network (the
+  // manifest falls back to its saved copy offline). The instant-scan fingerprints (.bin, -ids.txt)
+  // are large and change rarely: their own cache survives releases, serves the saved copy at once
+  // and refreshes it in the background.
   if (url.pathname.includes("/scanidx/")) {
+    if (url.pathname.endsWith(".json.gz")) return;
+    const manifest = url.pathname.endsWith("/catalog-manifest.json");
     e.respondWith(
-      caches.open(CACHE).then(async (c) => {
+      caches.open(SCANIDX).then(async (c) => {
         const hit = await c.match(e.request),
           fresh = fetch(e.request)
             .then((r) => {
               if (r.ok) c.put(e.request, r.clone());
               return r;
             })
-            .catch(() => hit);
+            .catch(() => hit || Response.error());
+        if (manifest) return fresh.then((r) => (r.ok || !hit ? r : hit));
         return hit || fresh;
       }),
     );
