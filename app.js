@@ -1630,6 +1630,8 @@ function focusNextPlaySelection(){const state=playSetup.snapshot();const target=
 A.playSelectDeck=t=>{cancelPlayBuilds();playSetup.selectDeck(t.dataset.playDeck,playSetup.snapshot().playStyle==='quick'?'player':playSetup.snapshot().inspectedSeat);refreshPlayMenu();focusNextPlaySelection();};
 A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu();};
 A.playClearSelection=()=>{cancelPlayBuilds();playSetup.clearSelection(playSetup.snapshot().inspectedSeat);refreshPlayMenu();};
+// Play vs CPU from a deck page: Quick Play with this saved deck in its own format.
+A.deckPlayCpu=t=>{const d=deckById(t.dataset.id);if(!d)return;cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};if(['Standard','Commander','Modern'].includes(d.format))playSetup.configure({format:d.format,mode:'cpu'});playSetup.setPlayStyle('quick');playSetup.selectDeck(d.id,'player');go('#play');};
 A.playConfigure=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};playSetup.configure({[t.dataset.playOption]:t.dataset.playValue});refreshPlayMenu();document.querySelector(`[data-act="playConfigure"][aria-pressed="true"]`)?.focus({preventScroll:true});};
 C.playMatchOption=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};const key=t.dataset.playOption,value=t.value;playSetup.configure({[key]:value});refreshPlayMenu();document.querySelector(`[data-play-option="${key}"]${key==='mode'?':checked':''}`)?.focus({preventScroll:true});};
 // Keyboards that compose a word (Gboard, Samsung) search when the word is done; redrawing

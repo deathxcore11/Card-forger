@@ -133,3 +133,25 @@
  .deck-viewer[data-deck-view="compact"] .mini-row > :is(.row-thumb,.mini-art,.img-missing) { width:48px; height:67px; flex-basis:48px; }
  .deck-viewer[data-deck-view="gallery"] .lot.deck-row .lot-side { flex-direction:column; align-items:flex-end; }
 }
+
+/* Deck header: the deck's art leads, then name, commander and three quiet facts, with one
+   Play vs CPU action. Ownership and prices live in the Cards and Shop tabs. */
+.deck-hero--feature .hero-shade{background:linear-gradient(90deg,rgba(11,13,18,.94) 0%,rgba(11,13,18,.72) 40%,rgba(11,13,18,.15) 75%,transparent),linear-gradient(0deg,var(--bg) 0%,transparent 50%)}
+.deck-hero--feature .hero-body{align-content:space-between}
+.deck-hero-main{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.deck-hero-id{display:grid;gap:6px;min-width:0}
+.deck-hero-eyebrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0!important}
+.deck-hero--feature .hero-body h1{margin-top:4px;font-size:clamp(28px,4vw,42px);letter-spacing:-.03em;overflow-wrap:anywhere}
+.deck-hero-commander{margin:0!important;color:#dfe3ea;font-size:15px}
+.deck-hero--feature .hero-stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.deck-hero--feature .hero-stats>*{display:inline-flex;align-items:baseline;gap:5px;padding:7px 12px;border-radius:999px;background:rgba(15,17,21,.72);border:1px solid rgba(255,255,255,.1);font-size:13px;color:var(--muted);backdrop-filter:blur(6px)}
+.deck-hero--feature .hero-stats b{font:800 14px Manrope,sans-serif;color:var(--text)}
+.deck-hero--feature .hero-stats button b{color:var(--gold)}
+.deck-hero--feature .hero-stats .review-badge{margin:0;width:auto}
+.deck-hero-cta{display:flex;align-items:flex-end}
+.deck-play-cpu{min-height:48px;padding:0 24px;border-radius:12px;font-size:16px;font-weight:800;box-shadow:0 8px 26px color-mix(in srgb,var(--gold) 28%,transparent);transition:transform .1s ease,box-shadow .2s ease}
+.deck-play-cpu:hover{transform:translateY(-1px);box-shadow:0 12px 32px color-mix(in srgb,var(--gold) 38%,transparent)}
+.deck-play-cpu:active{transform:scale(.97)}
+.deck-play-cpu[hidden]{display:none}
+@media(min-width:900px){.deck-hero--feature .hero-body{padding:22px 30px 24px}}
+@media(prefers-reduced-motion:reduce){.deck-play-cpu{transition:none}}

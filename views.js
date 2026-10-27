@@ -1096,17 +1096,22 @@ export function deckPage() {
     target = fm.size,
     tab = S.ui.deckTab,
     tabs = [["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["engine", "Power", "trophy"], ["matchups", "Matchups", "sword"], ["upgrade", "Upgrade lab", "build"], ["versions", "Versions", "viewStacks"], ["playtest", "Playtest", "random"], ["shop", t.missing ? `Shop · ${t.missing}` : "Shop", "bag"]];
-  return `<section class="deck-hero">${img(coverOf(d), d.name, "hero-art")}<div class="hero-shade"></div>
+  const power = shownPower(mtgPower(d)), countOk = fm.exact ? mainCopies === target : mainCopies >= target;
+  return `<section class="deck-hero deck-hero--feature">${img(coverOf(d), d.name, "hero-art")}<div class="hero-shade"></div>
     <div class="hero-body">
       <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button>${deckBoxMarkup(d,{images:d.cards.slice(0,3).map(r=>cardImage(meta(r.name))),open:true,button:true})}</div>
-      <h1>${esc(d.name)}</h1>
-      <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "No commander yet") + " · " : ""}<button class="chip dark fmt-chip" data-act="deckMenu" title="${esc(sizeLabel(fm))}${fm.note ? " · " + esc(fm.note) : ""}">${esc(fm.name)}</button>${d.locked ? ' · <span class="chip dark">Assembled</span>' : ""}</p>
-      ${reviewBadge(d)}
-      <div class="hero-stats">
-        <span><b class="${(fm.exact ? mainCopies === target : mainCopies >= target) ? "" : "warn-text"}">${mainCopies}/${target}</b>cards${sideCopies ? ` · ${sideCopies} sideboard` : ''}</span>
-        <span><b>${t.copies ? Math.round((t.covered / t.copies) * 100) : 0}%</b>owned</span>
-        <span><b>${usd(t.pricedGap, 0)}${t.unpriced ? "+" : ""}</b>${mainCopies < target ? "for listed cards" : "to finish"}${t.unpriced ? " · some unpriced" : ""}</span>
-        <button data-act="deckTab" data-id="engine"><b>${shownPower(mtgPower(d)) ?? "—"}</b>${shownPower(mtgPower(d)) == null ? "power unavailable" : "power"}</button>
+      <div class="deck-hero-main">
+        <div class="deck-hero-id">
+          <p class="deck-hero-eyebrow"><button class="chip dark fmt-chip" data-act="deckMenu" title="${esc(sizeLabel(fm))}${fm.note ? " · " + esc(fm.note) : ""}">${esc(fm.name)}</button>${fm.commander ? colorDots(meta(d.commander)) : ""}${d.locked ? '<span class="chip dark">Assembled</span>' : ""}</p>
+          <h1>${esc(d.name)}</h1>
+          ${fm.commander ? `<p class="deck-hero-commander">${esc(d.commander || "No commander yet")}</p>` : ""}
+          <div class="hero-stats">
+            <span><b class="${countOk ? "" : "warn-text"}">${mainCopies}/${target}</b>cards${sideCopies ? ` · ${sideCopies} sideboard` : ""}</span>
+            <button data-act="deckTab" data-id="engine"><b>${power ?? "—"}</b>${power == null ? "power unavailable" : "power"}</button>
+            ${reviewBadge(d)}
+          </div>
+        </div>
+        <div class="deck-hero-cta"><button class="btn deck-play-cpu" data-act="deckPlayCpu" data-id="${esc(d.id)}" data-desktop-play-entry="practice" hidden disabled>Play vs CPU<span aria-hidden="true"> →</span></button></div>
       </div>
     </div>
   </section>
