@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-board-first-v340";
+const CACHE = "cardforge-shell-board-first-v341";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",
@@ -12,6 +12,7 @@ const ASSETS = [
   "./play-forge-table.css",
   "./experiments/forge-proof/forge-session.mjs",
   "./experiments/forge-proof/forge-table.mjs",
+  "./experiments/forge-proof/cpu-action-playback.mjs",
   "./play-token-art.js",
   "./experiments/forge-proof/native-panel.mjs",
   "./experiments/phase-engine/choice-presentation.mjs",
