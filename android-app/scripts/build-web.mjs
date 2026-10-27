@@ -132,8 +132,9 @@ await writeFile(path.join(output, 'index.html'), html);
 for (const file of await readdir(path.join(root, 'runtime'))) await copyFile(path.join(root, 'runtime', file), path.join(output, file));
 // Android WebViews report the status and navigation bars through Capacitor's --safe-area-inset-*
 // variables rather than env(), so the app uses whichever is larger and HUD buttons clear them.
+// Every packaged stylesheet, nested ones included (the release gate rewrites each shared .css).
 let insetRewrites = 0;
-for (const file of (await readdir(output)).filter(f => f.endsWith('.css'))) {
+for (const file of new Set([...allowed, ...await readdir(path.join(root, 'runtime'))].filter(f => f.endsWith('.css')))) {
   const css = await readFile(path.join(output, file), 'utf8');
   const next = css.replace(/env\(safe-area-inset-(top|right|bottom|left)\)/g, (_, side) => { insetRewrites++; return `max(env(safe-area-inset-${side}), var(--safe-area-inset-${side}, 0px))`; });
   if (next !== css) await writeFile(path.join(output, file), next);
