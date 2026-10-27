@@ -2,7 +2,7 @@ import {pokemonMetaRoute} from './pokemon-meta-route.js';
 import {RELEASE} from './release-record.js';
 import {proxyForgePlayRequest} from './deploy/forge-host/src/app-route.mjs';
 import { checkNativeBackendRequest, withNativeResponseHeaders, createSupabaseBearerVerifier, isNativeAdmitted, releaseNativeAdmission } from './native-backend-contract.js';
-import { NATIVE_ORIGIN } from './native-service-policy.js';
+import { NATIVE_ORIGIN, SERVICE_ORIGIN } from './native-service-policy.js';
 import { SUPABASE } from './config.js';
 import { ANDROID_BETA, ANDROID_BETA_OLD_APK } from './android-beta.js';
 import {aiMatchupRoute} from './ai-matchup-route.js';
@@ -360,6 +360,15 @@ function androidCallbackLanding(request, url) {
   return new Response(request.method === 'HEAD' ? null : ANDROID_CALLBACK_HTML, { status: 200, headers });
 }
 
+// The Forge host takes Play only as same-origin browser requests and verifies the bearer itself.
+// Applied solely to app requests that passed native admission; it grants no account authority.
+function nativePlayRequest(request) {
+  const headers = new Headers(request.headers);
+  headers.set('Origin', SERVICE_ORIGIN);
+  headers.delete('Sec-Fetch-Site');
+  return new Request(request, { headers });
+}
+
 // Preserve all legacy web paths except the explicitly required signed-in AI POST.
 export default {
   ...handlers,
@@ -381,7 +390,7 @@ export default {
     }
     const admission = await checkNativeBackendRequest(request, { verifyBearer });
     if (!admission.allowed) return admission.response;
-    try { return withNativeResponseHeaders(await handlers.fetch(request, env, ctx), admission); }
+    try { return withNativeResponseHeaders(await (admission.native && admission.route.play ? proxyForgePlayRequest(nativePlayRequest(request), env) : handlers.fetch(request, env, ctx)), admission); }
     finally { releaseNativeAdmission(request); }
   },
 };

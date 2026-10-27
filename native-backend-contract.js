@@ -27,7 +27,7 @@ export async function checkNativeBackendRequest(request, { verifyBearer } = {}) 
     if (!native) return reject(403);
     const method = request.headers.get('Access-Control-Request-Method');
     if (!route.methods.includes(method)) return reject(405);
-    const permitted = ['accept', 'content-type', ...(route.authorizationAllowed ? ['authorization'] : [])];
+    const permitted = route.headers;
     const requested = (request.headers.get('Access-Control-Request-Headers') || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
     if (requested.some(name => !permitted.includes(name))) return reject(403);
     const headers = { ...corsHeaders(), 'Access-Control-Allow-Methods': method,
@@ -46,6 +46,9 @@ export async function checkNativeBackendRequest(request, { verifyBearer } = {}) 
   if (native && ['cookie','apikey','x-api-key','proxy-authorization'].some(name => request.headers.has(name))) return reject(403);
   const authorization = request.headers.get('Authorization');
   if (native && authorization && (!route.authorizationAllowed || !bearer(authorization))) return reject(403);
+  if (native && request.headers.has('Idempotency-Key') && !route.headers.includes('idempotency-key')) return reject(403);
+  // Hosted Play needs a signed-in bearer; the Forge host verifies it against the account itself.
+  if (native && route.play && !bearer(authorization)) return reject(401);
   let user = null;
   if (route.ai && request.method === 'POST') {
     if (!bearer(authorization) || typeof verifyBearer !== 'function') return reject(401);
@@ -65,6 +68,7 @@ export function withNativeResponseHeaders(response, admission) {
   headers.delete('Access-Control-Allow-Credentials');
   headers.delete('Access-Control-Allow-Headers');
   headers.delete('Access-Control-Allow-Methods');
+  if (headers.has('Retry-After')) headers.set('Access-Control-Expose-Headers', 'Retry-After');
   const vary = new Set((headers.get('Vary') || '').split(',').map(x => x.trim()).filter(Boolean));
   if (![...vary].some(x => x.toLowerCase() === 'origin')) vary.add('Origin');
   headers.set('Vary', [...vary].join(', '));

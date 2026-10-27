@@ -20,6 +20,28 @@ test('enabled service transport preserves body and sends only planned browser re
   await assert.rejects(transport('/api/daily-card',{headers:{Authorization:'Bearer nope'}}));
   await assert.rejects(transport('/api/ai/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}));
 });
+test('hosted Play requests leave as planned service requests; only the page-exit close is keepalive', async () => {
+  const sent = []; const transport = createNativeFetch({ enabled: true, fetcher: async request => { sent.push(request); return new Response(null, { status: 204 }); } });
+  const match = '/api/play/matches/0123abcd-0000-4000-8000-00000000beef', common = { credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer', cache: 'no-store' };
+  const headers = { Accept: 'application/json', Authorization: 'Bearer synthetic.jwt' }, json = { ...headers, 'Content-Type': 'application/json' };
+  // The same init shapes play-forge-host-client.js sends.
+  await transport('/api/play/matches', { ...common, method: 'POST', body: '{"format":"Standard"}', headers: { ...json, 'Idempotency-Key': '0d1c7f5e-1b9c-4b55-9f1e-3c2a5d6e7f80' } });
+  await transport(match, { ...common, method: 'GET', headers });
+  await transport(match + '/actions', { ...common, method: 'POST', body: '{"commandId":"x"}', headers: json });
+  await transport(match, { ...common, method: 'DELETE', headers });
+  await transport(match, { ...common, method: 'DELETE', headers, keepalive: true });
+  assert.deepEqual(sent.map(r => [r.method, r.url, r.keepalive, r.credentials, r.headers.get('authorization'), r.headers.get('idempotency-key'), r.headers.get('origin'), r.headers.get('cookie')]), [
+    ['POST', 'https://cardstashy.com/api/play/matches', false, 'omit', 'Bearer synthetic.jwt', '0d1c7f5e-1b9c-4b55-9f1e-3c2a5d6e7f80', null, null],
+    ['GET', 'https://cardstashy.com' + match, false, 'omit', 'Bearer synthetic.jwt', null, null, null],
+    ['POST', 'https://cardstashy.com' + match + '/actions', false, 'omit', 'Bearer synthetic.jwt', null, null, null],
+    ['DELETE', 'https://cardstashy.com' + match, false, 'omit', 'Bearer synthetic.jwt', null, null, null],
+    ['DELETE', 'https://cardstashy.com' + match, true, 'omit', 'Bearer synthetic.jwt', null, null, null],
+  ]);
+  assert.equal(await sent[0].text(), '{"format":"Standard"}'); assert.equal(await sent[2].text(), '{"commandId":"x"}');
+  await assert.rejects(transport(match, { ...common, method: 'GET', headers: { Accept: 'application/json' } }), /Sign in/);
+  await assert.rejects(createNativeFetch({ fetcher: async () => assert.fail('disabled builds send nothing') })(match, { ...common, headers }));
+  assert.equal(sent.length, 5);
+});
 test('provider calls are untouched: no account token is injected',async()=>{
   let seen; const transport=createNativeFetch({enabled:true,fetcher:async(...args)=>{seen=args;return new Response();}});
   const input='https://api.scryfall.com/cards/search?q=test',init={headers:{Accept:'application/json'}};

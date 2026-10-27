@@ -79,8 +79,42 @@ test('public reference admission does not broaden API routes, methods or credent
   }
   for(const input of ['/api/reference/other','/api/reference/mtg%2Dwiki','/api/reference/%77iki','/api/reference/wiki-extra'])assert.throws(()=>resolve(input));
 });
-// Play is web-only: the app keeps its entry closed, so the Forge host routes stay out of the native inventory.
-test('the Forge host routes Play uses on the web are not native services', () => {
-  const match = '00000000-0000-4000-8000-000000000000';
-  for(const path of ['/api/play/matches','/api/play/matches/'+match,'/api/play/matches/'+match+'/actions'])assert.throws(()=>resolve(path),/Unknown service route/);
+// Hosted Play: exactly the Forge host routes the web client calls, signed in, with nothing broader.
+test('hosted Play routes are exact, signed-in and keep their own methods and headers', async () => {
+  const match = '0123abcd-0000-4000-8000-00000000beef', base = '/api/play/matches', auth = { Authorization: 'Bearer test.jwt.value' };
+  for (const [path, methods, headers] of [
+    [base, ['POST'], ['accept', 'content-type', 'authorization', 'idempotency-key']],
+    [base + '/' + match, ['GET', 'DELETE'], ['accept', 'content-type', 'authorization']],
+    [base + '/' + match + '/actions', ['POST'], ['accept', 'content-type', 'authorization']],
+  ]) {
+    const route = resolve(path);
+    assert.deepEqual([route.url, route.play, route.ai, route.image, route.authorizationAllowed, route.methods, route.headers], [SERVICE_ORIGIN + path, true, false, false, true, methods, headers]);
+    for (const method of ['GET', 'HEAD', 'PUT', 'PATCH', 'DELETE', 'POST'].filter(m => !methods.includes(m))) assert.throws(() => plan(path, { method, headers: auth }), /Method/, path + ' ' + method);
+  }
+  for (const path of ['/api/play', '/api/play/', base + '/', base + '/' + match.toUpperCase(), base + '/' + match + '/', base + '/' + match + '/actions/', base + '/' + match + '/state',
+    base + '/not-a-uuid', base + '/' + match.slice(0, -1), base + '/' + match + '/actions/' + match, '/api/play/match', '/api/play/matches%2F' + match, '/api/play/%6datches', base + '/' + match + '/%61ctions',
+    base + '/' + match + '/../' + match, base + '?id=' + match, base + '/' + match + '?x=1', base + '/' + match + '/actions?revision=1']) assert.throws(() => resolve(path), path);
+  // Create: JSON, signed in and one idempotency key per new match; nothing else.
+  const create = (headers = {}) => plan(base, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'Idempotency-Key': '0d1c7f5e-1b9c-4b55-9f1e-3c2a5d6e7f80', ...auth, ...headers }, body: '{"format":"Standard"}' });
+  const { request } = create();
+  assert.deepEqual([request.url, request.method, request.credentials, request.redirect, request.referrerPolicy, request.keepalive], [SERVICE_ORIGIN + base, 'POST', 'omit', 'error', 'no-referrer', false]);
+  assert.equal(request.headers.get('Idempotency-Key'), '0d1c7f5e-1b9c-4b55-9f1e-3c2a5d6e7f80'); assert.equal(request.headers.get('Authorization'), auth.Authorization); assert.equal(await request.text(), '{"format":"Standard"}');
+  for (const headers of [{ Authorization: '' }, { Authorization: 'Basic secret' }, { 'Idempotency-Key': '' }, { 'Idempotency-Key': 'short' }, { 'Idempotency-Key': 'has space in the key here' }, { 'Content-Type': 'text/plain' }, { Cookie: 'session=x' }, { Origin: SERVICE_ORIGIN }, { 'Sec-Fetch-Site': 'same-origin' }, { 'X-User-ID': 'other' }, { apikey: 'x' }])
+    assert.throws(() => create(headers), JSON.stringify(headers));
+  assert.throws(() => plan(base, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': '0d1c7f5e-1b9c-4b55-9f1e-3c2a5d6e7f80' }, body: '{}' }), /Sign in/);
+  // Reads, actions and closing carry no idempotency key; actions are JSON.
+  assert.equal(plan(base + '/' + match, { headers: { Accept: 'application/json', ...auth }, cache: 'no-store' }).request.method, 'GET');
+  assert.equal(plan(base + '/' + match + '/actions', { method: 'POST', headers: { 'Content-Type': 'application/json', ...auth }, body: '{}' }).request.method, 'POST');
+  for (const [path, init] of [[base + '/' + match, { headers: { ...auth, 'Idempotency-Key': '0d1c7f5e-1b9c-4b55-9f1e-3c2a5d6e7f80' } }], [base + '/' + match + '/actions', { method: 'POST', headers: { 'Content-Type': 'text/plain', ...auth }, body: '{}' }],
+    [base + '/' + match, {}], [base + '/' + match, { method: 'DELETE' }], [base + '/' + match + '/actions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }]]) assert.throws(() => plan(path, init), path);
+  // Only the page-exit DELETE that ends the server match may outlive the page.
+  assert.equal(plan(base + '/' + match, { method: 'DELETE', headers: auth, keepalive: true }).request.keepalive, true);
+  assert.equal(plan(base + '/' + match, { method: 'DELETE', headers: auth }).request.keepalive, false);
+  assert.equal(plan(base + '/' + match, { headers: auth, keepalive: true }).request.keepalive, false);
+  assert.equal(create({}).request.keepalive, false);
+  assert.equal(plan('/api/ai/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', ...auth }, body: '{}', keepalive: true }).request.keepalive, false);
+  assert.equal(plan('/api/daily-card', { keepalive: true }).request.keepalive, false);
+  // Other routes gain neither Idempotency-Key nor authorization.
+  assert.throws(() => plan('/api/ai/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': '0d1c7f5e-1b9c-4b55-9f1e-3c2a5d6e7f80', ...auth }, body: '{}' }), /not allowed/);
+  assert.deepEqual(resolve('/api/daily-card').headers, ['accept', 'content-type']);
 });

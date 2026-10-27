@@ -29,6 +29,27 @@ test('preserves body and delegates rate/body/owner checks after authentication',
 test('rejects native cookies, unknown routes, unapproved host and bearer destination',async()=>{
   for(const input of [req(undefined,'POST',{Cookie:'session=x'}),req('/api/unknown','GET'),new Request('https://evil.test/api/daily-card',{headers:{Origin:NATIVE_ORIGIN}}),req('/api/daily-card','GET',{Authorization:'Bearer token'})]) assert.equal((await check(input)).allowed,false);
 });
+test('hosted Play: exact preflight, signed-in admission, and the host keeps account verification',async()=>{
+  const match='/api/play/matches/0123abcd-0000-4000-8000-00000000beef',pre=(path,method,headers)=>check(req(path,'OPTIONS',{'Access-Control-Request-Method':method,'Access-Control-Request-Headers':headers}));
+  for(const [path,method,headers] of [['/api/play/matches','POST','Content-Type, Authorization, Idempotency-Key'],[match,'GET','Authorization'],[match,'DELETE','Authorization'],[match+'/actions','POST','Content-Type, Authorization']]){
+    const response=(await pre(path,method,headers)).response;
+    assert.equal(response.status,204,path+' '+method);assert.equal(response.headers.get('Access-Control-Allow-Origin'),NATIVE_ORIGIN);assert.equal(response.headers.get('Access-Control-Allow-Methods'),method);
+    assert.equal(response.headers.get('Access-Control-Allow-Headers'),headers.toLowerCase());assert.equal(response.headers.get('Access-Control-Allow-Credentials'),null);
+  }
+  for(const [path,method,headers,status] of [[match,'POST','Authorization',405],['/api/play/matches','GET','Authorization',405],[match+'/actions','DELETE','Authorization',405],[match,'GET','Authorization, Idempotency-Key',403],[match+'/actions','POST','Authorization, Idempotency-Key',403],['/api/play/matches','POST','Authorization, Cookie',403],['/api/play/matches','POST','X-User-ID',403],['/api/play/matches/'+'0123ABCD-0000-4000-8000-00000000BEEF','GET','Authorization',404]])
+    assert.equal((await pre(path,method,headers)).response.status,status,path+' '+method+' '+headers);
+  assert.equal((await check(new Request(SERVICE_ORIGIN+match,{method:'OPTIONS',headers:{Origin:'https://evil.test','Access-Control-Request-Method':'GET'}}))).response.status,403);
+  let verified=0;const verifyBearer=async()=>{verified++;return verifiedUser;};
+  for(const input of [req(match,'GET'),req(match,'DELETE'),req(match,'GET',{Authorization:'Basic x'}),req('/api/play/matches','POST',{'Content-Type':'application/json'})])assert.equal((await check(input,{verifyBearer})).response.status,input.headers.has('Authorization')?403:401);
+  for(const input of [req(match,'GET',{Authorization:'Bearer t',Cookie:'s=1'}),req(match,'GET',{Authorization:'Bearer t','Idempotency-Key':'0d1c7f5e-1b9c-4b55-9f1e-3c2a5d6e7f80'}),req('/api/ai/ask','POST',{Authorization:'Bearer t','Idempotency-Key':'0d1c7f5e-1b9c-4b55-9f1e-3c2a5d6e7f80'})])assert.equal((await check(input,{verifyBearer})).response.status,403);
+  for(const input of [req('/api/play/matches','POST',{Authorization:'Bearer t','Content-Type':'application/json','Idempotency-Key':'0d1c7f5e-1b9c-4b55-9f1e-3c2a5d6e7f80'}),req(match,'GET',{Authorization:'Bearer t'}),req(match,'DELETE',{Authorization:'Bearer t'}),req(match+'/actions','POST',{Authorization:'Bearer t','Content-Type':'application/json'})]){
+    const admitted=await check(input,{verifyBearer});assert.deepEqual([admitted.allowed,admitted.native,admitted.route.play,admitted.user,admitted.request],[true,true,true,null,input]);
+  }
+  assert.equal(verified,0,'the website does not stand in for the host account check');
+  const busy=wrap(new Response('{"error":"forge_host_unavailable"}',{status:503,headers:{'Retry-After':'30'}}),{allowed:true,native:true});
+  assert.equal(busy.headers.get('Access-Control-Expose-Headers'),'Retry-After');assert.equal(busy.headers.get('Retry-After'),'30');
+  assert.equal(wrap(new Response(null,{status:204}),{allowed:true,native:true}).headers.get('Access-Control-Expose-Headers'),null);
+});
 test('Supabase verifier uses only existing public config and rejects failures/anonymous sessions',async()=>{
   let seen;const verify=createSupabaseBearerVerifier({url:'https://example.supabase.co',key:'existing-public-key',fetcher:async(...args)=>{seen=args;return Response.json(verifiedUser);}});
   assert.deepEqual(await verify('Bearer test.jwt'),verifiedUser);assert.equal(seen[0],'https://example.supabase.co/auth/v1/user');assert.equal(seen[1].redirect,'manual');assert.equal(seen[1].headers.apikey,'existing-public-key');
