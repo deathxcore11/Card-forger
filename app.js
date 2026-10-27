@@ -1554,6 +1554,17 @@ A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profil
 const PLAY_MATCH_RELEASE_READY=true;
 let playerMatHost=null,playerMatRoot=null,practicePregame=null,playStarting=false;
 function closePlayerMat(){practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
+// A failed Play download must never leave the app inert behind an empty layer.
+// The screen offers Return (restores the app) and Reload (fetches the current
+// release, which also covers an old page asking for a chunk a deploy removed).
+function playModuleFailed(error){
+ if(!playerMatRoot)return;
+ console.warn('Play module failed to load',error);
+ playerMatRoot.innerHTML='<section class="empty play-load-failed" role="alertdialog" aria-labelledby="playLoadFailedTitle"><h1 id="playLoadFailedTitle">Play couldn’t load</h1><p>The match screen didn’t download. Check your connection, then reload to get the current version. Your decks and collection are unchanged.</p><div class="actions"><button class="btn" type="button" data-play-load="reload">Reload</button><button class="btn ghost" type="button" data-play-load="return">Return</button></div></section>';
+ playerMatRoot.querySelector('[data-play-load="return"]').addEventListener('click',()=>closePlayerMat());
+ playerMatRoot.querySelector('[data-play-load="reload"]').addEventListener('click',()=>{closePlayerMat();location.reload();});
+ playerMatRoot.querySelector('[data-play-load="reload"]').focus({preventScroll:true});
+}
 const playUpdates=createPlayUpdateGate({checkRelease,notify:version=>toast(`Updating CardStashy${version==='replaced'?'':' to '+version} before your match. Your account and decks stay saved.`)});
 A.playStartCandidate=async()=>{
  if(!PLAY_MATCH_RELEASE_READY)return toast('Practice integration is still being verified.');
@@ -1572,7 +1583,10 @@ A.playStartCandidate=async()=>{
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
   if(FORGE_PLAY_TEST_ENABLED){
    if(!document.getElementById('forgeHostedTableStyles')){const css=document.createElement('link');css.id='forgeHostedTableStyles';css.rel='stylesheet';css.href='play-forge-table.css';document.head.append(css);}
-   const {createForgePlayerMat}=await import('./play-forge-player-mat.js');if(!current()||!playerMatRoot)return;
+   let createForgePlayerMat;
+   try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));}
+   catch(e){if(playerMatRoot)playModuleFailed(e);return;}
+   if(!current()||!playerMatRoot)return;
    const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
     resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
     lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
@@ -4605,6 +4619,9 @@ A.impPreview = async () => {
       buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw)),
       hash = [...new Uint8Array(buf)].map((x) => x.toString(16).padStart(2, "0")).join("");
     impDraft = previewImport(parsed, S.state.collection, hash, S.state.importHistory || []);
+    // One key per intentional attempt: repeated clicks and retries of this preview reuse it,
+    // while a new preview (a deliberate second import) gets a new one.
+    impDraft.attemptId = uid();
     for (const e of impDraft.lots) {
       e.include = true;
       e.review = printingState(e);
@@ -4670,12 +4687,18 @@ A.impVerify = async () => {
 A.impApply = async () => {
   const scope=mutationScope(),commit=scopedCommit();
   if (!impDraft || impBusy) return;
-  const rows = impDraft.lots.filter((e) => e.include !== false),
+  const draft = impDraft,
+    attemptId = draft.attemptId,
+    rows = draft.lots.filter((e) => e.include !== false),
     mode = $("#impMode").value,
     sourceKey = $("#impSource").value.trim();
+  const applied = (s) => !!attemptId && (s.importHistory || []).some((h) => h.attemptId === attemptId);
+  impBusy = true;
+  $("#impApply").disabled = true;
   try {
     if (!sourceKey) throw Error("Give this import a source name.");
     if (mode === "replace-all" && !await ask("Replace your whole collection? A recovery copy is kept, but export a backup first.")) return;
+    if (applied(S.state)) return closeSheet();
     const saved = await commit(
       (s) => {
         const lots = rows.map((e) => {
@@ -4683,12 +4706,12 @@ A.impApply = async () => {
           void candidates, void review, void rawRows, void include;
           return lot;
         });
-        s.collection = applyImport(s.collection, { ...impDraft, lots }, mode, sourceKey, uid);
-        s.importHistory = [...(s.importHistory || []), { id: uid(), hash: impDraft.hash, sourceKey, mode, date: new Date().toISOString(), qty: sumQty(rows) }].slice(-200);
+        s.collection = applyImport(s.collection, { ...draft, lots }, mode, sourceKey, uid);
+        s.importHistory = [...(s.importHistory || []), { id: uid(), attemptId, hash: draft.hash, sourceKey, mode, date: new Date().toISOString(), qty: sumQty(rows) }].slice(-200);
         s.printings = { ...s.printings, ...(S.pendingPrintings || {}) };
         s.example = false;
       },
-      { msg: `${sumQty(rows)} cards imported.`, recovery: mode === "replace-all" },
+      { msg: `${sumQty(rows)} cards imported.`, recovery: mode === "replace-all", guard: (s) => !applied(s) }, // checked inside the serialized write
     );
     if(saved===false||!mutationCurrent(scope))return;
     S.pendingPrintings = null;
@@ -4696,6 +4719,10 @@ A.impApply = async () => {
     go("#collection/cards");
   } catch (e) {
     if(mutationCurrent(scope)&&$("#impError"))$("#impError").textContent = e.message;
+  } finally {
+    impBusy = false;
+    const apply = mutationCurrent(scope) && impDraft === draft ? $("#impApply") : null;
+    if (apply) apply.disabled = false;
   }
 };
 
@@ -4921,7 +4948,11 @@ A.dImpSave = async (t) => {
       await commit((s) => {
         const i = s.decks.findIndex((x) => x.id === old.id);
         const snap = withSnapshot(s.decks[i], "Before re-import");
-        s.decks[i] = withSnapshot({ ...snap, name: d.name, format: d.format, commander: d.commander, source: d.source, cards: d.cards }, "Re-imported");
+        // The imported list replaces every zone, including an empty sideboard. This importer
+        // reads one commander, so an earlier partner pairing must not survive the replacement.
+        const { commanders, ...rest } = snap;
+        void commanders;
+        s.decks[i] = withSnapshot({ ...rest, name: d.name, format: d.format, commander: d.commander, source: d.source, cards: d.cards, side: d.side }, "Re-imported");
       });
       closeSheet();
       return go(`#deck/${old.id}/versions`);
@@ -5731,9 +5762,11 @@ A.mtgProven = (t) => {
       return result;
     },
     save: async (rows, labelText) => {
-      const commander = rows.find((r) => r.kind === "commander")?.name || "";
+      // Keep every declared commander (partners, backgrounds); `commander` stays the first for older readers.
+      const commanders = rows.filter((r) => r.kind === "commander").map((r) => ({ name: r.name, qty: r.qty })),
+        commander = commanders[0]?.name || "";
       const site = data.source.startsWith("MTGTop8") ? "MTGTop8" : data.source.startsWith("Magic Online") ? "Magic Online" : "TopDeck.gg";
-      const deck = withSnapshot({ id: uid(), name: `${d.name} · ${labelText}`.slice(0, 100), format: appFormat, commander, strategy: "Auto", budget: S.state.settings.budget ?? 25, locked: false, cards: rows.map((r) => ({ name: r.name, qty: r.qty })), side: fmt === "EDH" ? [] : (d.side || []).map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: sourceCredit({ kind: labelText === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, website: site, url: d.eventUrl || d.url, description: `${d.place} at ${d.event} (${d.players} players).` }) }, labelText === "original" ? `From ${site}` : "Adapted from a tournament list");
+      const deck = withSnapshot({ id: uid(), name: `${d.name} · ${labelText}`.slice(0, 100), format: appFormat, commander, ...(commanders.length > 1 ? { commanders } : {}), strategy: "Auto", budget: S.state.settings.budget ?? 25, locked: false, cards: rows.map((r) => ({ name: r.name, qty: r.qty })), side: fmt === "EDH" ? [] : (d.side || []).map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: sourceCredit({ kind: labelText === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, website: site, url: d.eventUrl || d.url, description: `${d.place} at ${d.event} (${d.players} players).` }) }, labelText === "original" ? `From ${site}` : "Adapted from a tournament list");
       await commit((s) => {
         s.decks.push(deck);
         s.activeDeck = deck.id;
