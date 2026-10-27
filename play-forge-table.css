@@ -1184,3 +1184,22 @@
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .forge-seat-mana .forge-mana-emblem>img{width:18px!important;height:18px!important}
 }
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat .forge-mana-panel.forge-seat-mana{transition:none;translate:none}}
+/* 4.3.0 Arena feel. Playable cards breathe blue in your hand; lifted, the card grows, and once it
+   is high enough to play it turns gold and the lane it will settle in lights up under it. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card[data-forge-role=playable]{animation:cs-playable-breathe 2.6s ease-in-out infinite}
+@keyframes cs-playable-breathe{50%{box-shadow:0 0 0 1.5px #8fdcff,0 0 26px 5px #5cc8ffc4,0 10px 24px #000c}}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-drag-ghost{transition:box-shadow .16s ease,scale .18s cubic-bezier(.2,.8,.2,1),rotate .18s ease,filter .16s ease}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-drag-ghost[data-drop=lift]{scale:1.08;box-shadow:0 0 0 2px #8fdcff,0 0 32px 6px #5cc8ffaa,0 26px 44px #000c}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-drag-ghost[data-drop=ready]{scale:1.3;rotate:6deg;opacity:1;filter:brightness(1.06);box-shadow:0 0 0 2.5px #ffd27a,0 0 24px 6px #ffb347cc,0 0 60px 14px #ff8a2a66,0 30px 50px #000d}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-lane[data-forge-lane-drop],
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-zone-groups[data-forge-lane-drop]{border-radius:16px;background:radial-gradient(ellipse at center,#ffc56a26,transparent 70%);box-shadow:inset 0 0 0 1.5px #ffcf7a66,0 0 30px #ffb34733;transition:background .2s,box-shadow .2s}
+:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-dragging .play-match-battlefields [data-placement-zone=battlefield]{outline:0}
+/* Lanes the Arena way on desktop: creatures up front in the middle, lands at the back on the
+   left, artifacts and enchantments at the back on the right. */
+@media not ((hover:none) and (pointer:coarse)){
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone-groups>.play-match-lane[data-card-group=lands]{flex:0 1 auto;margin-right:auto;padding-left:2%}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone-groups>.play-match-lane[data-card-group=other]{flex:0 1 auto;margin-left:auto;padding-right:2%}
+}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card[data-forge-role=playable]{animation:none}:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-drag-ghost{transition:none}}
+:where(body.practice-table-open) .forge-fx-ring[data-kind=attack]{border-color:#ff8a5a;box-shadow:0 0 26px 6px #ff6a3a88}
+:where(body.practice-table-open) .forge-fx-ring[data-kind=block]{border-color:#8fc4ff;box-shadow:0 0 28px 8px #5a9cffaa}
