@@ -272,7 +272,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   peek.style.setProperty('--peek-x',`${Math.round(x)}px`);peek.style.setProperty('--peek-y',`${Math.round(y)}px`);
  }
  function showPeek(el,pinned=false){
-  const c=surfaceCard(el);if(!c?.known||drag?.active){hidePeek();return;}
+  if(pinned)clearTimeout(peekTimer);const c=surfaceCard(el);if(!c?.known||drag?.active){hidePeek();return;}
   const keyNow=JSON.stringify([c.id,c.name,c.text,c.power,c.toughness,c.damage,c.counters,c.tapped,c.attacking,c.blocking,c.summoningSick,c.keywords,c.attachedTo,c.attachments,c.zone]);
   const fill=reference=>{if(peekFor!==el)return;peek.innerHTML=peekHtml(c,reference);peekKey=keyNow;placePeek(el);};
   if(peekFor&&peekFor!==el)peekFor.removeAttribute('aria-describedby');
@@ -291,9 +291,9 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  root.addEventListener('pointerover',over);root.addEventListener('pointerout',out);root.addEventListener('contextmenu',contextMenu,true);root.addEventListener('keydown',peekKeys,true);win.addEventListener('resize',reflow);root.addEventListener('scroll',reflow,true);
  const click=e=>{
   const magnifier=e.target.closest?.('.play-match-inspect-card');if(magnifier&&root.contains(magnifier)){e.preventDefault();e.stopImmediatePropagation();const card=magnifier.closest('.play-match-card-wrap')?.querySelector('.play-match-card[data-instance]');if(card)peekFor===card&&peekPinned?hidePeek():showPeek(card,true);return;}
-  if(peekPinned&&!e.target.closest?.('.forge-peek'))hidePeek();
+  const pinned=peekPinned&&peekFor;if(peekPinned&&!e.target.closest?.('.forge-peek'))hidePeek();
   if(Date.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();return;}
-  const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot();if(snapshot.busy)return;const cardId=Number(card.dataset.instance);if(snapshot.native?.inputType==='InputConfirmMulligan'&&!snapshot.native.prompt){peekFor===card&&peekPinned?hidePeek():showPeek(card,true);}else{card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);act(()=>session.nativeSelect('card',cardId));}return;}
+  const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot();if(snapshot.busy)return;const cardId=Number(card.dataset.instance);if(snapshot.native?.inputType==='InputConfirmMulligan'&&!snapshot.native.prompt){pinned===card?hidePeek():showPeek(card,true);}else{card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);act(()=>session.nativeSelect('card',cardId));}return;}
   const player=e.target.closest?.('[data-player-seat]');if(player&&root.contains(player)){e.preventDefault();e.stopImmediatePropagation();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(player.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));return;}
   const zone=e.target.closest?.('.forge-zone-row button[data-zone]');if(zone&&root.contains(zone)){openZone(zone.closest('.forge-zone-row').dataset.seat,zone.dataset.zone);}
  };
