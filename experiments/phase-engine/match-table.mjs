@@ -18,9 +18,12 @@ export function commanderDetailLines(view,cardId){
  for(const damage of data.damage||[])if(damage.commanderId===cardId&&Number.isSafeInteger(damage.amount)&&damage.amount>=0&&[0,1].includes(damage.player))lines.push(`Commander damage to ${damage.player===view.seat?'you':'CPU'}: ${damage.amount}`);
  return lines;
 }
+// Mana rocks (an artifact whose current text taps for mana) sit with the lands, Arena style.
+// They stay artifacts: this only chooses the row they are drawn in.
+const manaRock=card=>(card.types||[]).includes('Artifact')&&/\{T\}[^:\n]*:\s*Add\b/i.test(String(card.text||''));
 export function battlefieldGroups(cards){
- const groups=[{key:'creatures',label:'Creatures',cards:[]},{key:'lands',label:'Lands',cards:[]},{key:'other',label:'Other permanents',cards:[]}];
- for(const card of cards){const types=card.known===true?card.types||[]:[];groups[types.includes('Creature')?0:types.includes('Land')?1:2].cards.push(card);}
+ const groups=[{key:'creatures',label:'Creatures',cards:[]},{key:'lands',label:'Lands and mana',cards:[]},{key:'other',label:'Other permanents',cards:[]}];
+ for(const card of cards){const types=card.known===true?card.types||[]:[];groups[types.includes('Creature')?0:types.includes('Land')||card.known===true&&manaRock(card)?1:2].cards.push(card);}
  return groups.filter(group=>group.cards.length);
 }
 // Visually stacks permanents whose every visible detail matches, in first-seen order.

@@ -69,6 +69,26 @@ if (STATE === 'early') {
   Object.assign(BASE.cpu, {battlefield: [['Volcanic Island']], hand: 5, graveyard: [], exile: [], command: ['Kenrith, the Returned King']});
 }
 if (STATE === 'attack') { BASE.you.battlefield[0][1] = {attacking: true}; BASE.you.battlefield[2][1] = {attacking: true}; }
+// Every battlefield badge at once: keywords (with overflow), counters, damage, sickness,
+// combat, a planeswalker, a saga, a vehicle, a mana rock, an attached equipment, player
+// counters. Rules text is given here so the badges show offline too.
+if (STATE === 'badges') {
+  Object.assign(BASE.you, {battlefield: [
+    ['Serra Angel', {text: 'Flying, vigilance', counters: {P1P1: 2}, damage: 2, power: 6, toughness: 6}],
+    ['Questing Beast', {text: 'Vigilance, deathtouch, haste\nQuesting Beast can\u2019t be blocked by creatures with power 2 or less.', attacking: true, power: 4, toughness: 4}],
+    ['Goblin Guide', {text: 'Haste', sick: true, power: 2, toughness: 2, commander: true}],
+    ['Bonesplitter', {text: 'Equipped creature gets +2/+0.\nEquip {1}', type: 'Artifact \u2014 Equipment', attachTo: 'Goblin Guide'}],
+    ['Smuggler\u2019s Copter', {text: 'Flying\nCrew 1', type: 'Artifact \u2014 Vehicle', power: 3, toughness: 3}],
+    ['Chandra, Torch of Defiance', {type: 'Legendary Planeswalker \u2014 Chandra', counters: {LOYALTY: 4}}],
+    ['History of Benalia', {type: 'Enchantment \u2014 Saga', counters: {LORE: 2}}],
+    ['Sol Ring', {text: '{T}: Add {C}{C}.', type: 'Artifact'}],
+    ['Forest', {type: 'Basic Land \u2014 Forest'}], ['Forest', {type: 'Basic Land \u2014 Forest', tapped: true}]],
+    counters: {POISON: 3}});
+  Object.assign(BASE.cpu, {battlefield: [
+    ['Baneslayer Angel', {text: 'Flying, first strike, lifelink, protection from Demons and from Dragons', blocking: true, power: 5, toughness: 5, counters: {M1M1: 1, SHIELD: 1, STUN: 1}}],
+    ['Darksteel Colossus', {text: 'Trample, indestructible', power: 11, toughness: 11, tapped: true}],
+    ['Island', {type: 'Basic Land \u2014 Island'}], ['Island', {type: 'Basic Land \u2014 Island'}]], counters: {ENERGY: 2}});
+}
 
 // Real card data and art from Scryfall, by name; a missing card falls back to a drawn crest.
 const names = [...new Set([
@@ -93,11 +113,13 @@ const nativeCard = (name, zone, owner, opts = {}) => {
   const token = opts.token === true, creature = token && !opts.type;
   return {
     id: nextId++, owner, controller: owner, zone, hidden: false, name,
-    type: token ? opts.type || 'Token Creature — Goblin' : (c?.type_line || f.type_line || ''),
-    manaCost: token ? '' : (c?.mana_cost ?? f.mana_cost ?? ''), text: token ? opts.text || 'Haste' : (c?.oracle_text ?? f.oracle_text ?? ''),
-    power: creature ? 1 : token ? null : stat(c?.power ?? f.power), toughness: creature ? 1 : token ? null : stat(c?.toughness ?? f.toughness),
-    tapped: !!opts.tapped, attacking: !!opts.attacking, blocking: !!opts.blocking, token, commander: zone === 'Command',
-    damage: opts.damage || 0, summoningSick: !!opts.sick, counters: opts.counters || {}, keywords: creature ? ['Haste'] : token ? [] : (c?.keywords || []),
+    type: opts.type || (token ? 'Token Creature — Goblin' : (c?.type_line || f.type_line || (opts.power !== undefined ? 'Creature' : ''))),
+    manaCost: token ? '' : (c?.mana_cost ?? f.mana_cost ?? ''), text: opts.text ?? (token ? 'Haste' : (c?.oracle_text ?? f.oracle_text ?? '')),
+    power: opts.power ?? (creature ? 1 : token ? null : stat(c?.power ?? f.power)), toughness: opts.toughness ?? (creature ? 1 : token ? null : stat(c?.toughness ?? f.toughness)),
+    tapped: !!opts.tapped, attacking: !!opts.attacking, blocking: !!opts.blocking, token, commander: zone === 'Command' || !!opts.commander,
+    damage: opts.damage || 0, summoningSick: !!opts.sick, counters: opts.counters || {},
+    // Like the bridge: a keyword list only when the card has keywords.
+    ...(kw => kw.length ? {keywords: kw} : {})(creature ? ['Haste'] : token ? [] : (c?.keywords || [])),
     setCode: c?.set || '', imageKey: opts.imageKey || '',
   };
 };
@@ -110,6 +132,11 @@ const zoneOf = (side, owner) => ({
   Command: {cards: side.command.map(n => nativeCard(n, 'Command', owner))},
 });
 const youZones = zoneOf(BASE.you, YOU), cpuZones = zoneOf(BASE.cpu, CPU);
+// Attachments use the native host and attachment ids, as Forge's adapter reports them.
+for (const side of [[BASE.you, youZones], [BASE.cpu, cpuZones]]) side[0].battlefield.forEach(([, o], i) => {
+  if (!o?.attachTo) return; const card = side[1].Battlefield.cards[i], host = side[1].Battlefield.cards.find(c => c.name === o.attachTo);
+  if (host) { card.attachedTo = host.id; host.attachments = [...(host.attachments || []), card.id]; }
+});
 const ref = c => ({kind: 'card', id: c.id});
 const byName = (zone, name) => zone.cards.filter(c => c.name === name);
 
@@ -144,8 +171,8 @@ const stackCard = STATE === 'targets' ? nativeCard('Counterspell', 'Stack', CPU)
 const native = {
   schema: 'cardstashy.forge-proof.v1', revision: 7, viewer: YOU, status: 'running', busy: false,
   players: [
-    {id: YOU, name: 'idw011', life: 40, isViewer: true, mana: {W: 0, U: 0, B: 0, R: STATE === 'targets' ? 0 : 2, G: 0, C: 0}, zones: youZones},
-    {id: CPU, name: 'CPU', life: 38, isViewer: false, mana: {W: 0, U: 0, B: 0, R: 0, G: 0, C: 0}, zones: cpuZones},
+    {id: YOU, name: 'idw011', life: 40, isViewer: true, counters: BASE.you.counters || {}, mana: {W: 0, U: 0, B: 0, R: STATE === 'targets' ? 0 : 2, G: 0, C: 0}, zones: youZones},
+    {id: CPU, name: 'CPU', life: 38, isViewer: false, counters: BASE.cpu.counters || {}, mana: {W: 0, U: 0, B: 0, R: 0, G: 0, C: 0}, zones: cpuZones},
   ],
   stack: stackCard ? [{id: 990, text: 'Counterspell — Counter target spell.', source: stackCard, activatingPlayer: CPU}] : [], turn, phase, activePlayer: yourTurn ? YOU : CPU, priorityPlayer: yourTurn ? YOU : CPU,
   inputType: prompt ? '' : inputType, prompt, message, controlMode: 'smart', notification: {}, lastActionError: null,

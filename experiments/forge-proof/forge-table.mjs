@@ -4,6 +4,8 @@ import {practicePlayerPortrait} from '../../play-player-mat.js';
 import {mountNativePanel} from './native-panel.mjs';
 import {optionCardId} from './forge-session.mjs';
 import {CpuActionPlaybackQueue,createPlaybackSession} from './cpu-action-playback.mjs';
+import {tileBadges,tileLayerHtml,badgeSummary,currentKeywords,counterList,playerCounterBadges,playerCountersHtml} from '../../play-board-badges.js';
+import {boardIcon} from '../../play-board-icons.js';
 import {drawnArtwork,frameTone,surfaceColors} from '../../play-token-art.js';
 import {sym,symbolName,symbolText,manaCost,esc} from '../../ui.js';
 // Outline icons from the CardStashy UI packet (24-unit grid, currentColor).
@@ -42,6 +44,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  });
  const fail=e=>{if(e?.message==='MATCH_NOT_READY'&&playbackBusy){playback.flush();return;}localError=e.message||String(e);panelKey='';enhance();};
  const act=fn=>{try{const p=fn();if(p?.catch)p.catch(fail);}catch(e){fail(e);}};
+ let railFrame=0;
  function enhance(){
   if(closed)return;const snap=session.snapshot(),n=snap.native;if(!snap.status||!n)return;
   if(presentation.hosted){const exit=root.querySelector('[data-focus-key=exit-match]');if(exit&&exit.textContent!=='Return to Play setup')exit.textContent='Return to Play setup';}
@@ -99,7 +102,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
     const counts=[['Library',p.libraryCount],['Graveyard',count('Graveyard')],['Exile',count('Exile')],['Command',count('Command')]],key=counts.map(c=>c[1]).join(',');
     let row=mat?.querySelector(`.forge-zone-row[data-seat="${own?'you':'cpu'}"]`);
     if(mat&&!row){row=doc.createElement('nav');row.className='forge-zone-row';row.dataset.seat=own?'you':'cpu';row.setAttribute('aria-label',own?'Your zones':'CPU zones');mat.append(row);}
-    if(row&&row.dataset.counts!==key){row.dataset.counts=key;row.replaceChildren(...counts.map(([zone,value])=>{const b=doc.createElement('button');b.type='button';b.dataset.zone=zone;b.dataset.nativeKey=`zone-${own?'you':'cpu'}-${zone}`;b.setAttribute('aria-label',`${own?'Your':'CPU'} ${zone.toLowerCase()}: ${value}`);b.innerHTML=`${outlineIcon(ZONE_ICONS[zone])}<span>${zone}</span><b>${value}</b>`;return b;}));}
+    if(row&&row.dataset.counts!==key){row.dataset.counts=key;row.replaceChildren(...counts.map(([zone,value])=>{const b=doc.createElement('button');b.type='button';b.dataset.zone=zone;b.dataset.nativeKey=`zone-${own?'you':'cpu'}-${zone}`;b.setAttribute('aria-label',`${own?'Your':'CPU'} ${zone.toLowerCase()}: ${value}`);b.innerHTML=`${boardIcon('zone-'+zone.toLowerCase(),'cs-icon cs-zone-icon')||outlineIcon(ZONE_ICONS[zone])}<span>${zone}</span><b>${value}</b>`;return b;}));}
    }
    // The CPU has no profile picture; its commander's art becomes its portrait.
    const cpuBadge=root.querySelector('.play-match-seat[data-seat=cpu] .play-match-profile-badge');
@@ -126,6 +129,22 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
     if(!badge){badge=doc.createElement('span');badge.className='forge-land-colors';el.append(badge);}
     const key=colors.join('');if(badge.dataset.colors!==key){badge.dataset.colors=key;badge.setAttribute('aria-label','Basic land types can produce '+colors.map(symbolName).join(' or '));badge.innerHTML=colors.map(c=>`<span class="forge-land-color" data-color="${c}" aria-hidden="true">${c}</span>`).join('');}
    }
+   // Arena-style badges around the real art: state and activation corners, combat marker,
+   // keyword rail, counters, damage, crew and attachments. Decoration only, from the
+   // accepted snapshot; the card stays the one control and its name says it all.
+   const byId=new Map(surface.cards.map(c=>[c.id,c])),printedStat=c=>{const art=resolvePracticeArtwork(c)?.card,face=art?.card_faces?.[0]&&!art.mana_cost?art.card_faces[0]:art;return face?[face.power,face.toughness]:null;};
+   for(const el of root.querySelectorAll('.play-match-card[data-presentation=battlefield]')){
+    const card=byId.get(Number(el.dataset.instance)),b=tileBadges(card,{actionable:actionable.has(card?.id),cardsById:byId}),html=tileLayerHtml(b);
+    let layer=el.querySelector(':scope>.cs-tile-layer');
+    if(!html){layer?.remove();}else{if(!layer){layer=doc.createElement('span');layer.className='cs-tile-layer';layer.setAttribute('aria-hidden','true');el.append(layer);}if(layer.dataset.html!==html){layer.dataset.html=html;layer.innerHTML=html;}}
+    for(const flag of ['flying','hexproof','indestructible','sick'])el.toggleAttribute('data-kw-'+flag,!!b?.flags?.[flag]);
+    const summary=badgeSummary(b),label=el.getAttribute('aria-label')||'';if(summary&&!label.endsWith(summary))el.setAttribute('aria-label',`${label} \u00b7 ${summary}`);
+    // Power and toughness read green above the printed card and red below it.
+    const stats=el.querySelector('.play-current-stats'),printed=card?.known&&stats?printedStat(card):null;
+    if(stats){const shift=(now,was)=>{const n=Number(now),w=Number(was);return was===undefined||was===null||!Number.isFinite(n)||!Number.isFinite(w)?'':n>w?'up':n<w?'down':'';};stats.dataset.shiftP=printed?shift(card.power,printed[0]):'';stats.dataset.shiftT=printed?shift(card.toughness,printed[1]):'';}
+   }
+   // Poison, energy and experience sit on each player's seat with live counts.
+   for(const p of surface.players){const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`);if(!seat)continue;const list=playerCounterBadges(p.counters),html=playerCountersHtml(list);let box=seat.querySelector(':scope>.cs-player-counters');if(!html){box?.remove();continue;}if(!box){box=doc.createElement('span');box.className='cs-player-counters';seat.append(box);}if(box.dataset.html!==html){box.dataset.html=html;box.innerHTML=html;box.setAttribute('aria-label',list.map(c=>`${c.count} ${c.label.toLowerCase()}`).join(', '));}}
    // Each battlefield sizes its pieces so its creature row and its row of other
    // permanents both fit across: widths in piece units plus fixed gaps in pixels.
    for(const zone of root.querySelectorAll('.play-match-battlefields .play-match-zone')){
@@ -135,6 +154,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
     const fit=`${Math.max(1,rows.c[0]).toFixed(2)},${rows.c[1]},${Math.max(1,rows.o[0]).toFixed(2)},${rows.o[1]}`;
     if(zone.dataset.fit!==fit){zone.dataset.fit=fit;const [cu,cg,ou,og]=fit.split(',');zone.style.setProperty('--fit-cu',cu);zone.style.setProperty('--fit-cg',cg+'px');zone.style.setProperty('--fit-ou',ou);zone.style.setProperty('--fit-og',og+'px');}
    }
+   fitRails();
    // A gentle arc: cards further from the middle of the hand sit a little lower.
    // The count lets the hand tighten its spacing only when it would not fit.
    const hand=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')],handRow=root.querySelector('.play-match-hand .play-match-card-row');if(handRow&&handRow.style.getPropertyValue('--hand-count')!==String(hand.length))handRow.style.setProperty('--hand-count',String(hand.length));hand.forEach((w,i)=>{const lift=Math.abs(i-(hand.length-1)/2);const v=`${Math.min(Math.round(lift*lift*2.2),22)}px`;if(w.style.getPropertyValue('--arc-drop')!==v)w.style.setProperty('--arc-drop',v);});
@@ -220,6 +240,17 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  }
  const queueArrows=()=>{if(!arrowFrame)arrowFrame=win.requestAnimationFrame(drawArrows);};
  win.addEventListener('resize',queueArrows);
+ // Counters stack down a tile's right edge between its name and its P/T box; a tile too
+ // short for the stack shows them in a row just above the box. All reads, then the writes.
+ function fitRails(){
+  railFrame=0;if(closed)return;
+  const topIn=(node,card)=>{let y=0;for(let n=node;n&&n!==card;n=n.offsetParent)y+=n.offsetTop;return y;};
+  const layers=[...root.querySelectorAll('.play-match-battlefields .play-match-card>.cs-tile-layer')];
+  const floors=layers.map(layer=>{const el=layer.parentElement,rail=layer.querySelector(':scope>.cs-counters'),name=el.querySelector('.play-match-card-name'),floor=el.querySelector('.play-current-stats')||layer.querySelector(':scope>.cs-plaque');if(!rail||!name||!floor)return null;const n=rail.childElementCount,floorTop=topIn(floor,el),need=topIn(name,el)+name.offsetHeight+3+n*(rail.firstElementChild?.offsetHeight||0)+(n-1)*2;return need>floorTop-2?`${el.clientHeight-floorTop+3}px`:null;});
+  layers.forEach((layer,i)=>{const v=floors[i];layer.toggleAttribute('data-rail-row',!!v);if(v&&layer.style.getPropertyValue('--cs-floor')!==v)layer.style.setProperty('--cs-floor',v);});
+ }
+ const queueRails=()=>{if(!railFrame)railFrame=win.requestAnimationFrame(fitRails);};
+ win.addEventListener('resize',queueRails);
  function renderAccepted(s,blocked=false){
   const lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
   const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null;
@@ -264,13 +295,15 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  function peekHtml(c,reference){
   const art=resolvePracticeArtwork(c),printed=art?.card||{},face=printed.card_faces?.[0]&&!printed.mana_cost?printed.card_faces[0]:printed;
   const number=v=>v===null||v===undefined||v===''?null:Number(v),stat=(now,was)=>{const n=number(now),w=number(was);return `<b data-shift="${Number.isFinite(n)&&Number.isFinite(w)?(n>w?'up':n<w?'down':''):''}">${esc(String(now??'?'))}</b>`;};
-  const creature=/Creature/.test(c.type||''),onBattlefield=c.zone==='Battlefield',keywords=[...new Set((c.keywords||[]).map(String))];
+  const creature=/Creature/.test(c.type||''),onBattlefield=c.zone==='Battlefield',kwList=currentKeywords(c),keywords=[...new Set(kwList.map(k=>k.text))],kwIcon=new Map(kwList.map(k=>[k.text,k.key]));
+  // The preview names each board icon beside what it means.
+  const counterIcon=new Map(counterList(c.counters).map(x=>[x.name,x.icon])),chipIcon={tapped:'tapped',attack:'attacking',block:'blocking',sick:'summoning-sick',damage:'marked-damage',commander:'commander'};
   const chips=[];
   if(onBattlefield&&c.tapped)chips.push(['tapped','Tapped']);
   if(c.attacking)chips.push(['attack','Attacking']);if(c.blocking)chips.push(['block','Blocking']);
   if(onBattlefield&&creature&&c.summoningSick&&!keywords.some(k=>keywordKey(k)==='haste'))chips.push(['sick','Can\u2019t attack yet']);
   if(c.damage>0)chips.push(['damage',`${c.damage} damage`]);
-  for(const [kind,count]of Object.entries(c.counters||{}))if(Number(count)>0)chips.push(['counter',`${COUNTER_NAMES[kind]||kind.charAt(0)+kind.slice(1).toLowerCase()} \u00d7${count}`]);
+  for(const [kind,count]of Object.entries(c.counters||{}))if(Number(count)>0)chips.push(['counter',`${COUNTER_NAMES[kind]||kind.charAt(0)+kind.slice(1).toLowerCase()} \u00d7${count}`,counterIcon.get(kind)]);
   if(c.isToken)chips.push(['token','Token']);if(c.commander)chips.push(['commander','Commander']);
   const attached=[...(c.attachedTo?[c.attachedTo]:[])].map(id=>session.snapshot().status.surface.cards.find(x=>x.id===id)).filter(x=>x?.known).map(x=>`Attached to ${esc(x.name)}`);
   const withCards=(c.attachments||[]).map(id=>session.snapshot().status.surface.cards.find(x=>x.id===id)).filter(x=>x?.known).map(x=>esc(x.name));
@@ -286,8 +319,8 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
 <section class="forge-peek-info">
  <header><h3>${esc(c.name)}</h3>${c.manaCost?manaCost({mana_cost:c.manaCost}):''}</header>
  ${c.type?`<p class="forge-peek-type">${esc(c.type)}</p>`:''}
- ${creature&&c.power!==null&&c.power!==undefined||chips.length?`<div class="forge-peek-state">${creature&&c.power!==null&&c.power!==undefined?`<span class="forge-peek-pt">${stat(c.power,face.power)}<i>/</i>${stat(c.toughness,face.toughness)}</span>`:''}${chips.map(([k,t])=>`<span class="forge-peek-chip" data-kind="${k}">${t}</span>`).join('')}</div>`:''}
- ${keywords.length?`<ul class="forge-peek-keywords">${keywords.map(k=>{const hint=keywordHint(k,reference);return `<li><b>${esc(k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/:/g,' '))}</b>${hint?`<span>${symbolText(hint)}</span>`:''}</li>`;}).join('')}</ul>`:''}
+ ${creature&&c.power!==null&&c.power!==undefined||chips.length?`<div class="forge-peek-state">${creature&&c.power!==null&&c.power!==undefined?`<span class="forge-peek-pt">${stat(c.power,face.power)}<i>/</i>${stat(c.toughness,face.toughness)}</span>`:''}${chips.map(([k,t,icon])=>`<span class="forge-peek-chip" data-kind="${k}">${boardIcon(icon||chipIcon[k],'cs-icon forge-peek-icon')}${t}</span>`).join('')}</div>`:''}
+ ${keywords.length?`<ul class="forge-peek-keywords">${keywords.map(k=>{const hint=keywordHint(k,reference);return `<li><b>${boardIcon(kwIcon.get(k),'cs-icon forge-peek-icon')}${esc(k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/:/g,' '))}</b>${hint?`<span>${symbolText(hint)}</span>`:''}</li>`;}).join('')}</ul>`:''}
  ${lines.length?`<div class="forge-peek-rules">${lines.map(l=>`<p>${rule(l)}</p>`).join('')}</div>`:''}
  ${attached.length||withCards.length?`<p class="forge-peek-attached">${[...attached,withCards.length?`With ${withCards.join(', ')}`:''].filter(Boolean).join(' \u00b7 ')}</p>`:''}
 </section>`;
@@ -374,5 +407,5 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  const pressCancel=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}cancel();};
  const key=e=>{if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
  root.addEventListener('click',click,true);root.addEventListener('pointerdown',down);doc.addEventListener('pointermove',move,{passive:false});doc.addEventListener('pointerup',up);doc.addEventListener('pointercancel',pressCancel);doc.addEventListener('keydown',key);win.addEventListener('blur',cancel);
- return {destroy(){closed=true;playback.destroy();root.removeEventListener('pointerdown',skipPlayback,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);win.removeEventListener('resize',queueArrows);peek.remove();castShow.remove();arrows.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;playback.destroy();root.removeEventListener('pointerdown',skipPlayback,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
