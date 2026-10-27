@@ -64,14 +64,14 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
    if(focused)footer.querySelector(`[data-native-key="${CSS.escape(focused)}"]`)?.focus();
   }
   const ids=list=>new Set((list||[]).filter(r=>r.kind==='card').map(r=>r.id));
-  const actionable=ids(n.selection?.actionable),targets=ids(n.selection?.targets),choices=ids(n.selection?.cards),chosen=ids(n.selection?.chosen);
+  const blockedWhy=new Map((n.selection?.blocked||[]).filter(b=>b?.kind==='card'&&typeof b.reason==='string').map(b=>[Number(b.id),b.reason])),actionable=ids(n.selection?.actionable),targets=ids(n.selection?.targets),choices=ids(n.selection?.cards),chosen=ids(n.selection?.chosen);
   for(const index of snap.nativeDraft?.indexes||[]){const o=n.prompt?.options.find(o=>o.index===index);const cardId=optionCardId(o?.value);if(cardId!==null)chosen.add(cardId);}
   // Forge's own hint lists, shown by meaning: something you can play or use now,
   // a target for the spell or ability being cast, a card this prompt asks about,
   // and what you have already picked. Forge still validates every click.
   const discarding=!n.prompt&&choices.size>0&&/\bdiscard\b/i.test(String(n.message||''));
   const role=id=>chosen.has(id)?'chosen':targets.has(id)?'target':choices.has(id)?(discarding?'discard':'choice'):actionable.has(id)?'playable':'';
-  for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));el.dataset.forgeChosen=String(chosen.has(cardId));if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
+  for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
   const surface=snap.status.surface,nativePlayer=seat=>n.players.find(p=>p.id===surface.players.find(p=>p.seat===seat)?.nativeId);
   // Floating mana is the native pool only, never untapped lands or potential production.
   const manaEntries=player=>Object.entries(player?.mana||{}).map(([color,amount])=>[String(color).toUpperCase(),Number(amount)||0]);

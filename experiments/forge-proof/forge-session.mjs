@@ -208,6 +208,7 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
   reorderPrompt(index,direction){const p=currentPrompt();if(p.method!=='order'||p.ordered!==true||![1,-1].includes(direction))throw Error('Native order movement not offered.');const indexes=[...promptIndexes()],at=indexes.indexOf(index),to=at+direction;if(at<0||to<0||to>=indexes.length)return;[indexes[at],indexes[to]]=[indexes[to],indexes[at]];draft={...effectiveDraft(),indexes};emit();},
   replyValue(value){const p=currentPrompt();return send('reply',{promptId:p.id,value});},
   setControlMode(value){if(!allowControlMode||!['smart','full'].includes(value)||!['smart','full'].includes(native?.controlMode))throw Error('NATIVE_CONTROL_MODE_UNAVAILABLE');if(native.prompt||native.inputType==='InputLockUI')throw Error('MATCH_NOT_READY');return send('controlMode',{value});},
+  setAutoPay(value){if(!allowControlMode||typeof value!=='boolean'||typeof native?.autoPay!=='boolean')throw Error('NATIVE_AUTO_PAY_UNAVAILABLE');if(native.prompt||native.inputType==='InputLockUI')throw Error('MATCH_NOT_READY');return send('autoPay',{value});},
   concede(){return send('concede');},
   // No fake session rules or generic choose/cast fallback are exposed.
  };

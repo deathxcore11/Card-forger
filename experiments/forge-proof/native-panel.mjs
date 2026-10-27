@@ -141,6 +141,8 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   const group=node('div',undefined,'forge-native-mode');group.setAttribute('role','group');group.setAttribute('aria-label',copy('Response controls','Native response mode'));
   for(const [value,label]of [['smart','Smart'],['full','Full Control']]){const b=button(label,()=>session.setControlMode(value),!!n.prompt||n.inputType==='InputLockUI',`mode-${value}`);b.setAttribute('aria-pressed',String(n.controlMode===value));group.append(b);}
   group.title=n.controlMode==='smart'?'Automatic mana and passing empty response windows. Targets and required choices remain yours.':'Choose each response and mana payment yourself.';panel.append(group);
+  // Auto-pay is its own switch: Full Control can keep it, Smart can pay by hand.
+  if(typeof n.autoPay==='boolean'&&typeof session.setAutoPay==='function'){const b=button(n.autoPay?'Auto-pay mana: on':'Auto-pay mana: off',()=>session.setAutoPay(!n.autoPay),!!n.prompt||n.inputType==='InputLockUI','auto-pay');b.setAttribute('aria-pressed',String(n.autoPay));b.title='Pay mana costs automatically. Turn off to tap each source yourself.';group.append(b);}
  }
  if(n.notification?.message){const notice=node('p',`${n.notification.title||n.notification.method||'Forge'}: ${n.notification.message}`,'forge-diagnostic');notice.setAttribute('role','status');panel.append(notice);}
  if(n.lastActionError)panel.append(node('p',`Native action diagnostic: ${n.lastActionError}`,'forge-diagnostic'));
