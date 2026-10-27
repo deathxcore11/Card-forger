@@ -16,7 +16,7 @@ async function readReviewedRuntimeIndex(){
  }
  throw Error('Reviewed candidate runtime index missing');
 }
-const now=Date.parse('2026-10-26T12:00:00Z'),version='forge-heuristic-medium-beta-v1',profile=CPU_POLICIES[version];
+const now=Date.parse('2026-10-27T12:00:00Z'),version='forge-heuristic-medium-beta-v1',profile=CPU_POLICIES[version];
 async function syntheticOCI({gzip=false,layerBytes=1024}={}){
  const root=await mkdtemp(path.join(os.tmpdir(),'SYNTHETIC-OCI-UNIT-'));await mkdir(path.join(root,'blobs','sha256'),{recursive:true});
  const blob=async(bytes,mediaType)=>{const digest='sha256:'+sha256(bytes);await writeFile(path.join(root,'blobs','sha256',digest.slice(7)),bytes);return {mediaType,digest,size:bytes.length};};
@@ -52,12 +52,12 @@ test('SYNTHETIC policy retains CPU/rules/roster checks; never production-selecta
  for(const key of Object.keys(probe.state.initialization.rulesData)){const r=structuredClone(probe.state.initialization);r.rulesData[key]='SYNTHETIC_MISMATCH';assert.throws(()=>verifyLocalPolicyReceipt(r,probe.input,policy,identity,now),key);}
  for(const key of ['supported','legal','registeredRosterVerified','nativeRosterVerified','viewerId','requestDigest','humanDigest','opponentDigest','humanRosterDigest','opponentRosterDigest','errors']){const p=structuredClone(probe);p.state.initialization[key]=key==='errors'?['SYNTHETIC_FAILURE']:false;await assert.rejects(verifyExactLocalInitialization({...p,policy,identity,now}),undefined,key);}
  for(const key of Object.keys(probe.responseHeaders)){const p=structuredClone(probe);p.responseHeaders[key]='SYNTHETIC_MISMATCH';await assert.rejects(verifyExactLocalInitialization({...p,policy,identity,now}),undefined,key);}
- await assert.rejects(verifyExactLocalInitialization({...probe,responseStatus:503,policy,identity,now}));assert.throws(()=>validateLocalTestPolicy(policy,identity,Date.parse('2026-11-02T00:00:00Z')));
+ await assert.rejects(verifyExactLocalInitialization({...probe,responseStatus:503,policy,identity,now}));assert.throws(()=>validateLocalTestPolicy(policy,identity,Date.parse('2026-11-03T00:00:00Z')));
  }finally{await f.cleanup();}});
 test('attestation, native source and manifest evidence cannot be replaced',async()=>{const f=await syntheticOCI();try{const {args}=await syntheticPolicy(f);for(const key of ['reviewedManifestBytes','imageSourceBytes','imageCheckpointBytes','buildAttestationBytes','runtimeIndexBytes'])await assert.rejects(createLocalTestPolicy({...args,[key]:Buffer.from('{}')}),undefined,key);}finally{await f.cleanup();}});
 test('production CPU/rules predicates are copied verbatim; production has no local selector',async()=>{
  const production=await readFile(path.join(reviewedHostRoot,'src/release-policy.mjs'),'utf8'),local=await readFile(new URL('./local-test-policy.mjs',import.meta.url),'utf8');
- assert.equal(sha256(production),'405ec7aa47d2db1c405966022989eb07ed806157dcd30442f6cd0218fbe60fbf');
+ assert.equal(sha256(production),'4256dbd13626a44e87fffebaa4b526c21100414a29dfe4b90853b60f1750df1c');
  const start='  const policy = selectedPolicy(input?.difficultyPolicyVersion)';assert.equal(local.slice(local.indexOf(start)),production.slice(production.indexOf(start)));
  for(const file of ['worker.mjs','native-adapter-next.mjs','release-policy.mjs']){const text=await readFile(path.join(reviewedHostRoot,'src',file),'utf8');assert(!/local-oci|LOCAL_TEST_NOT_DEPLOYABLE|local-test-policy/.test(text));}
 });

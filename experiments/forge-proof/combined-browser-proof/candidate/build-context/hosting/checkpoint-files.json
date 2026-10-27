@@ -1,7 +1,7 @@
 {
-  "checkpoint": "native-starting-player-manifest:99f33aa12aaaaea1d736bf77ef79a2bebc2b0dea2df0bd3a9599f05e72a629dd",
+  "checkpoint": "native-starting-player-manifest:16acf7bd27c6ec4c75dd0dff6a38ab97e901e39b8113817107eb123dac9a1f01",
   "forgeRevision": "e5a0f8156da70ffc7866f923bed371c0111707cd",
-  "nativeManifestSha256": "99f33aa12aaaaea1d736bf77ef79a2bebc2b0dea2df0bd3a9599f05e72a629dd",
+  "nativeManifestSha256": "16acf7bd27c6ec4c75dd0dff6a38ab97e901e39b8113817107eb123dac9a1f01",
   "adapterCapabilities": [
     "cardstashy.match-input.v1",
     "cardstashy.formats-three.v1",
@@ -57,9 +57,9 @@
     "experiments/forge-proof/native/human/src/forge/ai/AvailableActions.java": "ef030f50b12bdbd19922689bc122d8285bb4062e504443c415cd6a90aff74fa1",
     "experiments/forge-proof/native/human/src/forge/ai/HumanActionAffordability.java": "0cc4ed27a36d83887c5c2788b2398d2bd386544f6cb13403a4189d1b98025baa",
     "experiments/forge-proof/native/human/src/forge/gamemodes/match/input/InputPayMana.java": "b780a4f005b28099aace1ff9c8f811c0ddea464cc0cdec27ce7991c1f5be3365",
-    "experiments/forge-proof/native/rules-data/current/cards.json": "eaceaa813c73520ac6df2172ff2d65f3db16b643e767f3b41c7c8665253c048f",
-    "experiments/forge-proof/native/rules-data/current/manifest.json": "21707a19c7701be9a0a499264f73ef23374d4dd14d3848a6486110289706c28b",
-    "experiments/forge-proof/native/rules-data/current/official-format-facts.json": "65789e094391071bd260c0c234a0a3969ab10534f6dc09bedeba630214e45171"
+    "experiments/forge-proof/native/rules-data/current/cards.json": "1903d046e5f6b98b3393c522e933144413f17cb8bfbbb8b90fe3616de74758fb",
+    "experiments/forge-proof/native/rules-data/current/manifest.json": "2b770c2d129849e534577d4ab8f3b236c21b9e2e80f2afef5c12af7c3f2c9d11",
+    "experiments/forge-proof/native/rules-data/current/official-format-facts.json": "c8b1dd5843a7312a11924eb623771e1208a96c5134f6c26857d47b318cbdfd7c"
   },
   "gatewaySha256": "d210358d28a1e2082b62858e5951edc4f965b9939f74cf43667ebfcaee68c0c6",
   "bootstrapSha256": "ad5cf253323d2f088b24aabbe9c6cacd45787208a95f42787798e5d5ca0b12fd",

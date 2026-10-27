@@ -1,9 +1,9 @@
 {
   ".dockerignore": "22050b43f43a2d9f93d5b863f49b10b3e45c70dfce806512a9a3a9aca1246cd9",
-  "Dockerfile": "f631f2a93fe104357ef137a74bae2e57779e749198e2dd69127f5ad26f15b5ac",
+  "Dockerfile": "7402717a6bc71968fef93ed321fa8df34bd146b228710345bdf0c950552d160a",
   "hosting/assemble.sh": "47d7a9f00139860417f91fc816f52117e8b6d8d2760d1be17cb2beb0e6a2c5dc",
   "hosting/bootstrap.py": "ad5cf253323d2f088b24aabbe9c6cacd45787208a95f42787798e5d5ca0b12fd",
-  "hosting/checkpoint-files.json": "9f4fd3581be270f612a5802f322791ac813ebcdb0fcf1bb4d0eda0872018a401",
+  "hosting/checkpoint-files.json": "f51f82f77ab7159037e18bc63550c5df4c188b10ff2f166a8c07a30ebe460b8e",
   "hosting/gateway.py": "d210358d28a1e2082b62858e5951edc4f965b9939f74cf43667ebfcaee68c0c6",
   "native/BASE-CANDIDATE.json": "8efcc09d4f3260904034aa1f2e1e9f9b8d66f1ad8aa3668c404a020b55d0dbbf",
   "native/CONTRACT.md": "3206da2ab12c8a826ff3ca7ce7852a32e82a90cfee232c7e1fe0d21c2e964462",
@@ -50,7 +50,7 @@
   "native/human/src/forge/ai/AvailableActions.java": "ef030f50b12bdbd19922689bc122d8285bb4062e504443c415cd6a90aff74fa1",
   "native/human/src/forge/ai/HumanActionAffordability.java": "0cc4ed27a36d83887c5c2788b2398d2bd386544f6cb13403a4189d1b98025baa",
   "native/human/src/forge/gamemodes/match/input/InputPayMana.java": "b780a4f005b28099aace1ff9c8f811c0ddea464cc0cdec27ce7991c1f5be3365",
-  "native/rules-data/current/cards.json": "eaceaa813c73520ac6df2172ff2d65f3db16b643e767f3b41c7c8665253c048f",
-  "native/rules-data/current/manifest.json": "21707a19c7701be9a0a499264f73ef23374d4dd14d3848a6486110289706c28b",
-  "native/rules-data/current/official-format-facts.json": "65789e094391071bd260c0c234a0a3969ab10534f6dc09bedeba630214e45171"
+  "native/rules-data/current/cards.json": "1903d046e5f6b98b3393c522e933144413f17cb8bfbbb8b90fe3616de74758fb",
+  "native/rules-data/current/manifest.json": "2b770c2d129849e534577d4ab8f3b236c21b9e2e80f2afef5c12af7c3f2c9d11",
+  "native/rules-data/current/official-format-facts.json": "c8b1dd5843a7312a11924eb623771e1208a96c5134f6c26857d47b318cbdfd7c"
 }
