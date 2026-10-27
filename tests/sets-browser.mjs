@@ -110,7 +110,7 @@ async function releaseFamilies(app){
  for(const width of [320,390,768,1440]){
   await page.setViewportSize({width,height:1000});await noOverflow(page,'#content','Set filter controls '+width);const rail=page.locator('.set-browser-quick'),buttons=rail.locator('button');assert.equal(await buttons.count(),4);
   for(const button of await buttons.all()){
-   assert(await button.isVisible());const label=await button.evaluate(n=>{const range=document.createRange();range.selectNodeContents(n);const style=getComputedStyle(n);return {text:n.textContent,lines:range.getClientRects().length,whiteSpace:style.whiteSpace,overflowWrap:style.overflowWrap,client:n.clientWidth,scroll:n.scrollWidth};});
+   assert(await button.isVisible());const label=await button.evaluate(n=>{const text=[...n.childNodes].filter(c=>c.nodeType===3&&c.textContent.trim()),range=document.createRange();range.setStartBefore(text[0]);range.setEndAfter(text.at(-1));const style=getComputedStyle(n);return {text:n.textContent,lines:range.getClientRects().length,whiteSpace:style.whiteSpace,overflowWrap:style.overflowWrap,client:n.clientWidth,scroll:n.scrollWidth};});
    assert.equal(label.whiteSpace,'nowrap',label.text+' stays on one line at '+width);assert.equal(label.overflowWrap,'normal');assert.equal(label.lines,1,label.text+' cannot split midword');assert(label.scroll<=label.client+1,label.text+' is not clipped inside its button');
   }
   const bounds=await rail.evaluate(n=>({client:n.clientWidth,scroll:n.scrollWidth,overflow:getComputedStyle(n).overflowX}));assert.equal(bounds.overflow,'auto','Narrow family controls retain native horizontal scrolling');

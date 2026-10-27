@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Production finish renderer verification</title><link rel="stylesheet" href="../finish-effects.css"><style>body{margin:0;padding:24px;background:#161b20;color:#eee;font:15px system-ui}h1{font-size:18px}.card{width:min(286px,82vw);margin:20px auto}.cd-zoom{position:relative;line-height:0}.card img{display:block;width:100%;height:auto;border-radius:4%}.card .finish-spotlight{display:none}#conditionPricePreview{max-width:400px;margin:auto;padding:16px;border:1px solid #aaa;line-height:1.5}#conditionPricePreview>*{display:block;margin:12px 0}a{color:#adc9ff}</style></head><body><h1 id="name"></h1><main id="stage"></main><div id="conditionPricePreview"></div><script type="module">
-import {finishAttrs,attachFinishPreview} from '../finish-preview.js';
+import {finishAttrs,attachFinishPreview,finishImageMatches} from '../finish-preview.js';
 import {normalizePtcg} from '../ptcg.js';
 import {normalizeYgo} from '../ygo.js';
 import {conditionPriceHtml} from '../condition-value.js';
@@ -13,6 +13,9 @@ async function render(){
  const raw=await (await fetch(file)).json(),card=c.game==='ptcg'?normalizePtcg(raw):c.game==='ygo'?normalizeYgo(raw):raw;
  document.querySelector('#name').textContent=c.name+' · '+c.finish;
  document.querySelector('#stage').innerHTML=`<div class="card" ${finishAttrs(c.game,card,c.identity.context,'detail')} style="--mx:35%;--my:40%"><div class="cd-zoom"><img src="../review/${c.image}" alt="Retained exact reference image"></div></div>`;
+ // A per-image mask paints only the image it was measured on, so show that image; the harness serves the retained bytes for it.
+ const model=JSON.parse(document.querySelector('#stage .card').dataset.finishModel||'{}'),img=document.querySelector('#stage img');
+ if(model.imageSources&&!finishImageMatches(model,img.src))img.src=model.imageSources[0];
  dispose=attachFinishPreview(document.querySelector('#stage'));document.documentElement.dataset.case=c.key;
 }
 window.addEventListener('hashchange',render);await render();

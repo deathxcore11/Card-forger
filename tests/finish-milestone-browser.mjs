@@ -10,7 +10,9 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.
 const browser=await chromium.launch(),result={cases:[],phoneHardwareTest:'not-performed',baseline:'0896479cbb5b0d103a46907e057354fe9bebf57a'};
 try{
  const context=await browser.newContext({viewport:{width:1440,height:1200},deviceScaleFactor:1});
- await context.route('**/*',route=>route.request().url().startsWith(base+'/')?route.continue():route.abort());
+ // The measured provider image for Zekrom is served from the retained copy of the same bytes.
+ const retained={'https://assets.tcgdex.net/en/swsh/cel25/10/high.webp':'review/assets/zekrom.png'};
+ await context.route('**/*',route=>{const url=route.request().url();if(retained[url])return route.fulfill({path:retained[url],contentType:'image/png'});return url.startsWith(base+'/')?route.continue():route.abort();});
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  const data=JSON.parse(await readFile('review/cases.json','utf8'));assert.equal(data.cases.length,14);
  for(const c of data.cases){
