@@ -1357,3 +1357,16 @@
 @keyframes cs-face-flash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
 @keyframes cs-life-hit{0%{color:inherit;scale:1}15%{color:#ff7a66;scale:1.22}100%{color:inherit;scale:1}}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line{animation:none}}
+
+/* 4.3.0 Touch and low power. A tap on your portrait opens the mana pool (no hover on touch). */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=you][data-mana-open]{z-index:40}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=you][data-mana-open] .forge-mana-panel.forge-seat-mana{opacity:1;visibility:visible;translate:0 0;transition-delay:0s}
+@media (hover:none){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=you] .play-match-profile-badge{cursor:pointer;min-width:44px;min-height:44px}}
+/* Narrow screens: the dock already says whose turn it is, so the phase track steps aside. */
+@media (max-width:640px){:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-phase-track{display:none}:where(body.practice-table-open) .forge-activity{top:50%}}
+/* Low power: flat glass, still fog, no foil sweep, no breathing glow. Same look, far less GPU. */
+:where(body.practice-table-open) .play-match-table[data-low-power] *,:where(body.practice-table-open) .play-match-table[data-low-power]{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+:where(body.practice-table-open) .play-match-table[data-low-power] .forge-ambient>i{filter:none;animation:none}
+:where(body.practice-table-open) .play-match-table[data-low-power] .play-match-card>.cs-foil{display:none}
+:where(body.practice-table-open) .play-match-table[data-low-power][data-stage=match] .play-match-hand .play-match-card[data-forge-role=playable]{animation:none;box-shadow:0 0 0 1.5px #8fdcff,0 0 18px 3px #5cc8ff99,0 10px 24px #000c}
+:where(body.practice-table-open) .play-match-table[data-low-power] :is(.forge-tracker,.forge-phase-track,.forge-combat-line>span,.forge-mana-panel){background-color:#0f1218ee}
