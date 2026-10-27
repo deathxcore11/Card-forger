@@ -819,6 +819,8 @@ jobs:
         if: ${{ !cancelled() }}
       - run: node tests/shiny-vault-browser.mjs
         if: ${{ !cancelled() }}
+      - run: node tests/forge-table-touch-browser.mjs
+        if: ${{ !cancelled() }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -307,7 +307,9 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  const down=e=>{if(e.button!==0||e.isPrimary===false)return;const card=e.target.closest?.('.play-match-card[data-instance]'),s=session.snapshot();
   if(card&&e.pointerType!=='mouse'){clearTimeout(pressTimer);pressAt={x:e.clientX,y:e.clientY,id:e.pointerId};pressShown=false;pressTimer=setTimeout(()=>{if(drag?.active)return;showPeek(card,true);pressShown=true;suppressUntil=Date.now()+60000;if(drag?.pointerId===e.pointerId)drag=null;},420);}
  if(!card||s.busy||s.native?.prompt||s.native?.inputType==='InputConfirmMulligan'||s.status?.terminal)return;drag={id:Number(card.dataset.instance),revision:s.status.revision,pointerId:e.pointerId,x:e.clientX,y:e.clientY,source:card,active:false};};
- const move=e=>{if(pressAt?.id===e.pointerId&&Math.hypot(e.clientX-pressAt.x,e.clientY-pressAt.y)>8){clearTimeout(pressTimer);pressAt=null;}
+ // Drift cancels a press only before its preview opens; after that the press is kept so
+ // its release or cancel still ends the 60 s click guard.
+ const move=e=>{if(pressAt?.id===e.pointerId&&!pressShown&&Math.hypot(e.clientX-pressAt.x,e.clientY-pressAt.y)>8){clearTimeout(pressTimer);pressAt=null;}
   if(!drag||drag.pointerId!==e.pointerId)return;if(peekFor&&drag.active)hidePeek();if(drag.revision!==session.snapshot().status?.revision){cancel();return;}if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>8)drag.active=true;if(!drag.active)return;if(e.cancelable)e.preventDefault();if(!ghost){ghost=drag.source.cloneNode(true);ghost.removeAttribute('data-instance');ghost.classList.add('forge-drag-ghost');ghost.setAttribute('aria-hidden','true');ghost.setAttribute('inert','');ghost.style.width=drag.source.getBoundingClientRect().width+'px';root.append(ghost);root.classList.add('forge-dragging');}ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';};
  // Like Arena, a card dragged out of your hand plays when released anywhere above
  // the hand; Forge decides where it goes. Other drags keep their drop targets.
