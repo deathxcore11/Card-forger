@@ -98,3 +98,10 @@ test('combat and target arrows are redrawn when a lane under them scrolls', () =
   assert.match(src, /root\.addEventListener\('scroll',reflow,true\)/);
   assert.match(src, /root\.removeEventListener\('scroll',reflow,true\)/);
 });
+
+test('reduced motion keeps the turn banner hidden, since only its animation fades it out', () => {
+  const css = readFileSync('play-forge-table.css', 'utf8');
+  const shown = css.match(/^([^{}\n]*\.play-match-turn-banner)\{[^}]*display:flex[^}]*animation:forge-turn-banner/m);
+  assert.ok(shown, 'the Forge table shows the turn banner and fades it with forge-turn-banner');
+  assert.ok(css.indexOf(`@media (prefers-reduced-motion:reduce){${shown[1]}{display:none}}`) > shown.index);
+});
