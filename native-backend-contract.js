@@ -30,7 +30,9 @@ export async function checkNativeBackendRequest(request, { verifyBearer } = {}) 
     const permitted = route.headers;
     const requested = (request.headers.get('Access-Control-Request-Headers') || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
     if (requested.some(name => !permitted.includes(name))) return reject(403);
-    const headers = { ...corsHeaders(), 'Access-Control-Allow-Methods': method,
+    // Cached for ten minutes, so Play's polls and actions do not each wait on a preflight
+    // (with the app's Play requests in the default cache mode: no-store skips the preflight cache).
+    const headers = { ...corsHeaders(), 'Access-Control-Allow-Methods': method, 'Access-Control-Max-Age': '600',
       Vary: 'Origin, Access-Control-Request-Method, Access-Control-Request-Headers' };
     if (requested.length) headers['Access-Control-Allow-Headers'] = [...new Set(requested)].join(', ');
     return { allowed: false, preflight: true, response: new Response(null, { status: 204, headers }) };
@@ -69,6 +71,8 @@ export function withNativeResponseHeaders(response, admission) {
   headers.delete('Access-Control-Allow-Headers');
   headers.delete('Access-Control-Allow-Methods');
   if (headers.has('Retry-After')) headers.set('Access-Control-Expose-Headers', 'Retry-After');
+  // The app sends Play in the default cache mode so its preflights are reused; replies are never stored.
+  if (admission.route?.play) headers.set('Cache-Control', 'no-store');
   const vary = new Set((headers.get('Vary') || '').split(',').map(x => x.trim()).filter(Boolean));
   if (![...vary].some(x => x.toLowerCase() === 'origin')) vary.add('Origin');
   headers.set('Vary', [...vary].join(', '));

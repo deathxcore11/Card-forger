@@ -35,9 +35,10 @@ test('hosted Play: exact preflight, signed-in admission, and the host keeps acco
     const response=(await pre(path,method,headers)).response;
     assert.equal(response.status,204,path+' '+method);assert.equal(response.headers.get('Access-Control-Allow-Origin'),NATIVE_ORIGIN);assert.equal(response.headers.get('Access-Control-Allow-Methods'),method);
     assert.equal(response.headers.get('Access-Control-Allow-Headers'),headers.toLowerCase());assert.equal(response.headers.get('Access-Control-Allow-Credentials'),null);
+    assert.equal(response.headers.get('Access-Control-Max-Age'),'600','a granted preflight is cached for ten minutes');
   }
   for(const [path,method,headers,status] of [[match,'POST','Authorization',405],['/api/play/matches','GET','Authorization',405],[match+'/actions','DELETE','Authorization',405],[match,'GET','Authorization, Idempotency-Key',403],[match+'/actions','POST','Authorization, Idempotency-Key',403],['/api/play/matches','POST','Authorization, Cookie',403],['/api/play/matches','POST','X-User-ID',403],['/api/play/matches/'+'0123ABCD-0000-4000-8000-00000000BEEF','GET','Authorization',404]])
-    assert.equal((await pre(path,method,headers)).response.status,status,path+' '+method+' '+headers);
+    {const response=(await pre(path,method,headers)).response;assert.equal(response.status,status,path+' '+method+' '+headers);assert.equal(response.headers.get('Access-Control-Max-Age'),null,'a refusal is not cached');}
   assert.equal((await check(new Request(SERVICE_ORIGIN+match,{method:'OPTIONS',headers:{Origin:'https://evil.test','Access-Control-Request-Method':'GET'}}))).response.status,403);
   let verified=0;const verifyBearer=async()=>{verified++;return verifiedUser;};
   for(const input of [req(match,'GET'),req(match,'DELETE'),req(match,'GET',{Authorization:'Basic x'}),req('/api/play/matches','POST',{'Content-Type':'application/json'})])assert.equal((await check(input,{verifyBearer})).response.status,input.headers.has('Authorization')?403:401);
@@ -49,6 +50,9 @@ test('hosted Play: exact preflight, signed-in admission, and the host keeps acco
   const busy=wrap(new Response('{"error":"forge_host_unavailable"}',{status:503,headers:{'Retry-After':'30'}}),{allowed:true,native:true});
   assert.equal(busy.headers.get('Access-Control-Expose-Headers'),'Retry-After');assert.equal(busy.headers.get('Retry-After'),'30');
   assert.equal(wrap(new Response(null,{status:204}),{allowed:true,native:true}).headers.get('Access-Control-Expose-Headers'),null);
+  // The app reads Play in the default cache mode, so its replies are never stored, whatever the host sent.
+  for(const headers of [{},{'Cache-Control':'max-age=60'}])assert.equal(wrap(Response.json({},{status:202,headers}),{allowed:true,native:true,route:{play:true}}).headers.get('Cache-Control'),'no-store');
+  assert.equal(wrap(Response.json({},{headers:{'Cache-Control':'max-age=60'}}),{allowed:true,native:true,route:{play:false}}).headers.get('Cache-Control'),'max-age=60');
 });
 test('Supabase verifier uses only existing public config and rejects failures/anonymous sessions',async()=>{
   let seen;const verify=createSupabaseBearerVerifier({url:'https://example.supabase.co',key:'existing-public-key',fetcher:async(...args)=>{seen=args;return Response.json(verifiedUser);}});

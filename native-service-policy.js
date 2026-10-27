@@ -96,7 +96,9 @@ export function planServiceRequest(input, init = {}) {
     method, headers, body: ['GET', 'HEAD'].includes(method) ? undefined : source.body,
     ...(source.body ? { duplex: 'half' } : {}), signal: source.signal,
     credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer',
-    cache: source.cache, integrity: source.integrity,
+    // Play replies are never stored (the server marks them no-store), and the default mode lets the
+    // WebView reuse a match route's preflight, which a no-store request always repeats.
+    cache: route.play ? 'default' : source.cache, integrity: source.integrity,
     // Only Play's page-exit DELETE (ending the server match) may outlive the page.
     keepalive: route.play && method === 'DELETE' && source.keepalive === true,
   });

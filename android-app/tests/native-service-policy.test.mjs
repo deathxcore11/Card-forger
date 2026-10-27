@@ -114,6 +114,11 @@ test('hosted Play routes are exact, signed-in and keep their own methods and hea
   assert.equal(create({}).request.keepalive, false);
   assert.equal(plan('/api/ai/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', ...auth }, body: '{}', keepalive: true }).request.keepalive, false);
   assert.equal(plan('/api/daily-card', { keepalive: true }).request.keepalive, false);
+  // Play goes in the default cache mode so the WebView reuses its preflight; other routes keep the caller's mode.
+  for (const [path, init] of [[base + '/' + match, { headers: auth, cache: 'no-store' }], [base + '/' + match + '/actions', { method: 'POST', headers: { 'Content-Type': 'application/json', ...auth }, body: '{}', cache: 'no-store' }], [base + '/' + match, { method: 'DELETE', headers: auth, keepalive: true, cache: 'no-store' }]]) assert.equal(plan(path, init).request.cache, 'default', path);
+  assert.equal(plan(base, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': '0d1c7f5e-1b9c-4b55-9f1e-3c2a5d6e7f80', ...auth }, body: '{}', cache: 'no-store' }).request.cache, 'default');
+  assert.equal(plan('/api/releases/current', { cache: 'no-store' }).request.cache, 'no-store');
+  assert.equal(plan('/api/ai/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', ...auth }, body: '{}', cache: 'no-store' }).request.cache, 'no-store');
   // Other routes gain neither Idempotency-Key nor authorization.
   assert.throws(() => plan('/api/ai/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': '0d1c7f5e-1b9c-4b55-9f1e-3c2a5d6e7f80', ...auth }, body: '{}' }), /not allowed/);
   assert.deepEqual(resolve('/api/daily-card').headers, ['accept', 'content-type']);
