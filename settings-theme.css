@@ -88,6 +88,12 @@
 :root[data-theme="light"] :is(.chip.ok-chip,.power-chip.p-hi em) {color:var(--good);}
 :root[data-theme="light"] :is(.chip.bad-chip,.power-chip.p-lo em) {color:var(--bad);}
 :root[data-theme="light"] .power-chip.p-mid em {color:var(--warn);}
+/* Deck tiles stay dark art surfaces in Light mode, so their power score keeps its light ink. */
+:root[data-theme="light"] .deck-tile .power-chip.p-hi em {color:#a6f0c4;}
+:root[data-theme="light"] .deck-tile .power-chip.p-mid em {color:#ffd98a;}
+:root[data-theme="light"] .deck-tile .power-chip.p-lo em {color:#ffb3a8;}
+/* Collection prices keep their tier tint on the white lot, but with enough ink for AA (worst tier 5.0:1). */
+:root[data-theme="light"] .display-list .lot[data-tier] .lot-side .price {color:color-mix(in srgb,var(--tier) 45%,var(--text));}
 :root[data-theme="light"] #toast {background:#f8fafff7;color:var(--text);border-color:var(--line);}
 :root[data-theme="light"] #toast.ok {background:#e4f3eb;color:#145637;}
 :root[data-theme="light"] #toast .toast-undo {background:#dfe7f0;}

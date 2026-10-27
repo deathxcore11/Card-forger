@@ -90,6 +90,11 @@ body[data-view="home"] .home-intro .home-value {
 :root[data-theme="light"] body[data-view="home"] .home-intro #homeHero .hh-shade {
   background:linear-gradient(180deg,#0b101de6 0%,#0b101dcc 45%,#f3f5f8e6 60%,var(--bg) 100%);
 }
+/* No daily art (the daily card failed to load or has none): nothing dark sits behind the hero and
+   daily text, so Light mode gives them page ink instead of the art-surface white. */
+:root[data-theme="light"] .home-intro:has(#homeHero.no-art) :is(.home-today,.home-today .hh-credit) { --text:#172337; --muted:#33445a; --faint:#3e5068; --gold:#674407; --accent:#674407; }
+:root[data-theme="light"] .home-intro:has(#homeHero.no-art) :is(#homeHero .eyebrow,.hh-credit,.hh-credit b,.today-set-name) { color:var(--text); text-shadow:none; }
+:root[data-theme="light"] .home-intro:has(#homeHero.no-art) .hh-credit>span:first-child { color:var(--gold); }
 :root[data-theme="light"] #content .home-intro .home-value-main>.eyebrow { color:var(--text); }
 
 /* The AI action is adjacent to the input pill and consumes the same typed query. */
