@@ -134,6 +134,16 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
    // The turn-change notice gets its banner art: whose turn large, the turn number small.
    const banner=root.querySelector('.play-match-turn-banner');
    if(banner&&!banner.dataset.owner){const [who,...rest]=banner.textContent.split(' · ');banner.dataset.owner=who==='Your turn'?'you':'cpu';const big=doc.createElement('strong'),small=doc.createElement('span');big.textContent=who;small.textContent=rest.join(' · ');banner.replaceChildren(big,small);}
+   // Ambience: the board's corners breathe a soft fog in each player's colours, read from their
+   // known cards (mana symbols and basic land types). Yours along the bottom, the CPU's along the top.
+   const main=root.querySelector('.play-match-main');
+   if(main){let amb=main.querySelector(':scope>.forge-ambient');if(!amb){amb=doc.createElement('div');amb.className='forge-ambient';amb.setAttribute('aria-hidden','true');amb.innerHTML='<i data-corner="tl"></i><i data-corner="tr"></i><i data-corner="bl"></i><i data-corner="br"></i>';main.prepend(amb);}
+    const FOG={W:'#f3dfa0',U:'#4f9dff',B:'#9a78e0',R:'#ff6440',G:'#4fd27a',C:'#c9c2bc'},basics={Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'};
+    const palette=own=>{const tally=new Map();for(const c of surface.cards){if(!c.known||(c.owner===surface.seat)!==own)continue;const cols=new Set((String(c.manaCost||'').match(/\{[^}]+\}/g)||[]).flatMap(t=>t.slice(1,-1).split('/')).filter(x=>'WUBRG'.includes(x)&&x.length===1));for(const [t,k] of Object.entries(basics))if(new RegExp('\\b'+t+'\\b').test(c.type||''))cols.add(k);for(const k of cols)tally.set(k,(tally.get(k)||0)+(c.commander?4:1));}
+     const top=[...tally].sort((a,b)=>b[1]-a[1]).map(([k])=>FOG[k]);return [top[0]||'#e8b95b',top[1]||top[0]||'#e8b95b'];};
+    const [y1,y2]=palette(true),[c1,c2]=palette(false),ambKey=[y1,y2,c1,c2].join();
+    const turn=surface.activeSeat===undefined?'':surface.activeSeat===surface.seat?'you':'cpu';if((amb.dataset.turn||'')!==turn)amb.dataset.turn=turn;
+    if(amb.dataset.key!==ambKey){amb.dataset.key=ambKey;for(const [k,v] of Object.entries({'--amb-you-1':y1,'--amb-you-2':y2,'--amb-cpu-1':c1,'--amb-cpu-2':c2}))amb.style.setProperty(k,v);}}
    // Your floating mana, only while you have some: all six colors, zeros dimmed.
    const dock=root.querySelector('.play-match-decisions'),mine=manaEntries(nativePlayer(surface.seat)),poolKey=mine.map(([c,a])=>c+a).join(',');
    // Hosted tables keep it off the board: a card of mana emblems that opens from your portrait.
