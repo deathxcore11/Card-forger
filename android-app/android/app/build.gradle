@@ -28,8 +28,10 @@ android {
     buildTypes {
         release {
             if (signingFile?.exists()) signingConfig signingConfigs.release
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // R8 drops unused AndroidX code (proguard-rules.pro keeps the app, Capacitor and Cordova whole)
+            // so the APK fits Cloudflare's 25 MiB download limit.
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
