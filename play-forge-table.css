@@ -1544,3 +1544,10 @@ body.practice-table-open:has(#practicePlayerMat.play-match-table[data-forge-nati
 @keyframes cs-glow-breathe{50%{opacity:1}}
 @keyframes forge-press{0%{outline:3px solid #f2d496cc;outline-offset:2px}100%{outline:3px solid #f2d49600;outline-offset:8px}}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) :is(.play-match-card,.play-match-piece-art,.cs-emblem-sick)::after{animation:none;opacity:.6}}
+/* Finger drags: your creatures that can be dragged to attack or block keep the swipe
+   instead of the browser taking it as a scroll (which cancelled the drag on phones). */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-forge-drag=true]{touch-action:none}
+/* A mana emblem whose symbol image failed to load shows its colour letter, not "Red mana" spilling out. */
+.forge-mana-emblem{overflow:visible}
+.forge-mana-emblem:not(:has(img)){width:38px;height:38px;font-size:0;color:transparent;background:#2a2f3a;box-shadow:0 3px 8px #000a,inset 0 0 0 2px #ffffff22}
+.forge-mana-emblem:not(:has(img))::before{content:attr(data-color);font:800 16px/1 'DM Sans',system-ui,sans-serif;color:#f3ead6}
