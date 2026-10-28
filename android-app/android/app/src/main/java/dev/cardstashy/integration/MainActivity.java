@@ -13,6 +13,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(CardStashyArtwork.class);
         registerPlugin(CardStashyAuth.class);
         registerPlugin(CardStashyHaptics.class);
+        registerPlugin(CardStashyDisplay.class);
         super.onCreate(savedInstanceState);
         // Card art at the app's own /img/ paths, cached on the phone like the website's service worker.
         bridge.setWebViewClient(new CardStashyWebViewClient(bridge));

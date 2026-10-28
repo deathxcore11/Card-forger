@@ -7,6 +7,7 @@ import { transformNativeScanner } from './transform-native-scanner.mjs';
 import { transformNativeStorageApp, transformNativeStorageViews } from './transform-native-storage-settings.mjs';
 import { transformNativeExports, transformNativeTcgExports } from './transform-native-exports.mjs';
 import { transformNativeFoil } from './transform-native-foil.mjs';
+import { transformNativePlaneswalk } from './transform-native-planeswalk.mjs';
 
 const once = (text, from, to, what) => {
   if (text.split(from).length !== 2) throw Error(`Unexpected ${what} shape; review the native adapter.`);
@@ -15,7 +16,7 @@ const once = (text, from, to, what) => {
 // Android WebViews report the system bars through Capacitor's --safe-area-inset-* variables.
 const insets = css => css.replace(/env\(safe-area-inset-(top|right|bottom|left)\)/g, (_, side) => `max(env(safe-area-inset-${side}), var(--safe-area-inset-${side}, 0px))`);
 
-export const NATIVE_ADAPTED = ['app.js', 'tcg.js', 'cloud.js', 'artwork.js', 'finish-preview.js', 'foil-gl.js', 'views.js', 'scancam.js'];
+export const NATIVE_ADAPTED = ['app.js', 'tcg.js', 'cloud.js', 'artwork.js', 'finish-preview.js', 'foil-gl.js', 'views.js', 'scancam.js', 'planeswalk.html'];
 export function nativeBundleFile(path, text) {
   if (path.endsWith('.css')) return insets(text);
   switch (path) {
@@ -28,6 +29,7 @@ export function nativeBundleFile(path, text) {
     case 'foil-gl.js': return transformNativeFoil(text);
     case 'views.js': return transformNativeStorageViews(text);
     case 'scancam.js': return transformNativeScanner(text);
+    case 'planeswalk.html': return transformNativePlaneswalk(text);
     default: return text;
   }
 }
