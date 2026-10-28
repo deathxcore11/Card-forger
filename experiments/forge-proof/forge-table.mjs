@@ -336,7 +336,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Tokens arriving together get one ring each at most six, so a swarm reads as one arrival.
   let rings=0;for(const c of b.cards){if(!onField(c)||was.get(c.id)?.zone==='Battlefield'||rings>=6)continue;const el=cardEl(c.id);if(!el)continue;rings++;const land=c.known&&c.types?.includes('Land');
    // The card itself drops onto the table from your side (or the CPU's) and settles, then the ring.
-   const w=el.closest('.play-match-card-wrap'),own=c.controller===b.seat;if(w&&rings<=3&&!before?.has(String(c.id)))w.animate([{transform:`translateY(${own?34:-34}px) scale(1.22)`,opacity:.35,filter:'brightness(1.6)'},{transform:'translateY(0) scale(.96)',opacity:1,filter:'brightness(1.25)',offset:.62},{transform:'none',opacity:1,filter:'none'}],{duration:land?380:520,easing:'cubic-bezier(.2,.75,.25,1)'});
+   const w=el.closest('.play-match-card-wrap'),own=c.controller===b.seat;if(w&&rings<=3&&!before?.has(String(c.id)))w.animate([{transform:`translateY(${own?34:-34}px) scale(1.22)`,opacity:.35},{transform:'translateY(0) scale(.96)',opacity:1,offset:.62},{transform:'none',opacity:1}],{duration:land?380:520,easing:'cubic-bezier(.2,.75,.25,1)'});
    setTimeout(()=>{if(el.isConnected)pulse(el,land?'land':c.known&&c.types?.includes('Creature')?'creature':'permanent',land?sourceTint(c):null);},land?300:420);}
   // 3. Combat impact: damage newly marked on a creature pops as a number where it lands; attackers
   // that dealt it lean in toward what they attacked. Life totals already count on the seats.

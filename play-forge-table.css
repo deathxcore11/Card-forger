@@ -1532,3 +1532,15 @@ body.practice-table-open:has(#practicePlayerMat.play-match-table[data-forge-nati
 :where(body.practice-table-open) .forge-drag-ghost{transform:translate(-50%,-50%) rotate(calc(-6deg + var(--tilt,0deg)));will-change:translate,transform}
 :where(body.practice-table-open) .play-match-card.forge-drag-source{opacity:.28;transition:opacity .12s ease}
 :where(body.practice-table-open) .forge-peek .forge-peek-actions>.forge-peek-hint{flex:1 1 auto;min-height:40px;border:1px dashed #8fdcff66;border-radius:999px;background:#5cc8ff12;color:#bfe9ff;font:600 13px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.02em}
+/* Smoothness: the always-on glows (playable cards, ready pieces, summoning sickness) used to animate
+   box-shadow, which repaints every frame on every card. They now hold the glow in a pseudo-element
+   and breathe its opacity only, which the compositor does for free. The press flash drops its filter. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card[data-forge-role=playable]{animation:none}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card[data-forge-role=playable]::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:0 0 0 1.5px #8fdcff,0 0 26px 5px #5cc8ffc4;opacity:0;animation:cs-glow-breathe 2.6s ease-in-out infinite;will-change:opacity}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-card[data-action-cue]:not([data-action-cue=""]) .play-match-piece-art{animation:none}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-card[data-action-cue]:not([data-action-cue=""]) .play-match-piece-art::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:0 0 0 3px #e5c88d55,0 0 24px #e5c88d66;opacity:0;animation:cs-glow-breathe 2.4s ease-in-out infinite;will-change:opacity}
+:where(body.practice-table-open) .cs-emblem-sick{animation:none}
+:where(body.practice-table-open) .cs-emblem-sick::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:0 0 0 5px #8f7dff33;opacity:0;animation:cs-glow-breathe 2.6s ease-in-out infinite}
+@keyframes cs-glow-breathe{50%{opacity:1}}
+@keyframes forge-press{0%{outline:3px solid #f2d496cc;outline-offset:2px}100%{outline:3px solid #f2d49600;outline-offset:8px}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) :is(.play-match-card,.play-match-piece-art,.cs-emblem-sick)::after{animation:none;opacity:.6}}
