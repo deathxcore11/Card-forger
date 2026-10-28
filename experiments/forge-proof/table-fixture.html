@@ -72,6 +72,11 @@ if (STATE === 'early' || STATE === 'pay') {
   if (STATE === 'pay' && params.get('auto')) BASE.you.battlefield.splice(1, 0, ['Mountain'], ['Mountain']);
   Object.assign(BASE.cpu, {battlefield: [['Volcanic Island']], hand: 5, graveyard: [], exile: [], command: ['Kenrith, the Returned King']});
 }
+// The owner's phone report (28 Oct): casting Gnarlid Colony with two tapped Plains across the table.
+if (STATE === 'kicker') {
+  Object.assign(BASE.you, {battlefield: [['Grizzly Bears'], ['Forest'], ['Forest'], ['Forest']], hand: ['Forest', 'Silver Bolt', 'Silver Bolt', 'Gnarlid Colony', 'Campus Guide'], graveyard: [], command: []});
+  Object.assign(BASE.cpu, {battlefield: [['Plains', {tapped: true}], ['Plains', {tapped: true}]], hand: 6, graveyard: ['Raise the Alarm'], exile: [], command: []});
+}
 if (STATE === 'attack') { BASE.you.battlefield[0][1] = {attacking: true}; BASE.you.battlefield[2][1] = {attacking: true}; }
 // Every battlefield badge at once: keywords (with overflow), counters, damage, sickness,
 // combat, a planeswalker, a saga, a vehicle, a mana rock, an attached equipment, player
@@ -188,7 +193,10 @@ const message = {
 // A library search the way Forge offers it: one option per eligible card.
 const prompt = STATE === 'search' ? {id: 'fixture-many-partings', supported: true, method: 'chooseSingleEntityForEffect', min: 0, max: 1, cancelable: true,
   message: 'Many Partings (63) - Search your library for a basic land card, reveal it, put it into your hand, then shuffle. Create a Food token.\nSelect a card from your library',
-  options: ['Forest', 'Forest', 'Mountain', 'Mountain', 'Mountain', 'Island', 'Plains', 'Swamp', 'Forest', 'Mountain', 'Wastes', 'Forest'].map((name, index) => ({index, value: {...nativeCard(name, 'Library', YOU), kind: 'card'}}))} : null;
+  options: ['Forest', 'Forest', 'Mountain', 'Mountain', 'Mountain', 'Island', 'Plains', 'Swamp', 'Forest', 'Mountain', 'Wastes', 'Forest'].map((name, index) => ({index, value: {...nativeCard(name, 'Library', YOU), kind: 'card'}}))}
+  // Casting a kicker spell: Forge's many() arrives as an order prompt of optional costs.
+  : STATE === 'kicker' ? {id: 'fixture-kicker', supported: true, method: 'order', ordered: true, min: 0, max: 1, remainingMin: 0, remainingMax: 1, sourceIndexes: [0], destinationIndexes: [], rememberAllowed: false, topLabel: 'Optional costs',
+    message: 'Choose optional costs — Optional costs', options: [{index: 0, value: {kind: 'optionalCost', description: 'Kicker {2}{G}'}}]} : null;
 const stackCard = STATE === 'targets' ? nativeCard('Counterspell', 'Stack', CPU) : null;
 const native = {
   schema: 'cardstashy.forge-proof.v1', revision: 7, viewer: YOU, status: 'running', busy: false,

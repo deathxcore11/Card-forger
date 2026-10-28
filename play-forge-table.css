@@ -1456,3 +1456,15 @@
 @media (prefers-reduced-motion:reduce){.forge-startup-chip{animation:none}}
 /* The table redraws on every board change. A panel that was already showing (dock prompt, open menu, tracker, combat line) comes back as it was instead of replaying its entrance. */
 :where(body.practice-table-open) :is(.forge-native-panel[data-settled],.forge-native-panel[data-settled] :is(.forge-native-card,.forge-order-num),details[data-settled][open]>:not(summary),.forge-tracker[data-settled],.forge-combat-line[data-settled]){animation:none!important}
+/* Phones and foldables draw the app under the status bar and around cutouts: the whole table sits inside the safe area. */
+body.practice-table-open:has(#practicePlayerMat.play-match-table[data-forge-native]){background:#0b0d12}
+:where(body.practice-table-open) #practicePlayerMat.play-match-table[data-forge-native]{inset:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);height:auto!important;min-height:0!important}
+/* Smart, Full Control and Auto-pay sit as one clean row just above your seat, never across its border or your name. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat .forge-control-emblems{top:auto;bottom:calc(100% + 8px);right:12px;gap:8px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat .forge-control-emblem{width:32px;height:32px;box-shadow:0 4px 10px #000a}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat .forge-control-emblem[aria-pressed=true]{box-shadow:0 0 12px #e8b95b77}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat .forge-control-emblem svg{width:16px;height:16px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat .forge-control-emblem:disabled{opacity:.7}
+/* Tapped piles: the turned cards are narrower than their slot, so they stack closer and the count sits on the pile itself. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-wrap[data-pile-index]:not([data-pile-index="0"]):has(>.play-match-card[data-tapped=true]){margin-left:calc(var(--play-piece)*-.86)!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-wrap:has(>.play-match-card[data-tapped=true])>.play-match-pile-count{left:50%;right:auto;top:-14px;translate:-50% 0}

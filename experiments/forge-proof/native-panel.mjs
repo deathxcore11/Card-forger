@@ -34,6 +34,8 @@ function searchImage(card){
  // Artwork is catalog metadata, not executable HTML or an engine identity.
  return typeof url==='string'&&(/^https?:\/\//i.test(url)||/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(url))?url:null;
 }
+// "Kicker 2 G" → "Kicker": the keyword before the cost.
+const costName=value=>String(optionLabel(value)).match(/^[A-Za-z][A-Za-z' -]*?(?=\s*(?:[:{\d(]|[WUBRGCX]\b|$))/)?.[0].trim()||'optional cost';
 export const isDescribedOption=value=>typeof value==='string'||typeof value==='number'||typeof value==='boolean'||!!(value&&value.hidden!==true&&value.card?.hidden!==true&&(value.name||value.description||value.text));
 // True when the open prompt leaves the player no reply: the panel below shows a diagnostic
 // instead of controls (unadapted method, unordered order, or too few presentable options).
@@ -149,13 +151,16 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  const symbols=typeof presentation.symbolText==='function'&&presentation.hosted?presentation.symbolText:null;
  if(symbols&&payment&&paying?.remaining){title.setAttribute('aria-label',playerTitle);title.innerHTML=symbols(playerTitle);}
  const hostedOrder=presentation.hosted&&n.prompt?.method==='order'&&n.prompt?.supported===true&&n.prompt?.ordered===true;
- if(hostedOrder){title.textContent=/simultaneous|trigger/i.test(String(n.prompt.message||nativeMessage))?'Order your triggers':'Choose an order';title.removeAttribute('aria-label');}
+ // Kicker, Buyback, Entwine…: Forge asks which optional costs to pay as a pick-any list.
+ const optionalCosts=presentation.hosted&&n.prompt?.supported===true&&['order','getChoices'].includes(n.prompt.method)&&n.prompt.options?.length>0&&n.prompt.options.every(o=>o.value?.kind==='optionalCost');
+ if(optionalCosts){const one=n.prompt.options.length===1?costName(n.prompt.options[0].value):null;title.textContent=one?`Pay ${one}?`:'Pay optional costs?';title.removeAttribute('aria-label');}
+ else if(hostedOrder){title.textContent=/simultaneous|trigger/i.test(String(n.prompt.message||nativeMessage))?'Order your triggers':'Choose an order';title.removeAttribute('aria-label');}
  title.tabIndex=-1;title.dataset.nativeKey='decision-title';context.setAttribute('aria-live','polite');context.setAttribute('aria-atomic','true');context.append(title);
  if(presentation.hosted&&!opening&&Number.isSafeInteger(n.turn)&&n.turn>0){const status=node('p',[`Turn ${n.turn}`,phaseNames[n.phase]||statusLines?.[3]||null].filter(Boolean).join(' · '),'forge-native-status');status.setAttribute('aria-label','Turn and phase');context.append(status);
   if(n.controlMode==='smart'&&n.phaseStops&&typeof n.phaseStops==='object'&&typeof session.setPhaseStop==='function')context.append(phaseStopSheet(n));}
  else if(compactStatus){const status=node('div',undefined,'forge-native-status');status.setAttribute('aria-label','Turn, phase and stack');const stack=n.stack?.length?`${n.stack.length} item${n.stack.length===1?'':'s'}`:'Empty';for(const [label,text]of [['Turn',presentation.hosted?String(n.turn):statusLines[2]],['Phase',presentation.hosted?(phaseNames[n.phase]||statusLines?.[3]||n.phase||'—'):statusLines[3]],['Stack',presentation.hosted?stack:statusLines[4]]]){const value=node('span',`${label}: ${text}`);status.append(value);}context.append(status);}
  // Forge's supporting lines (a few at most), never one that only repeats the title.
- if(presentation.hosted&&!hostedOrder)for(const line of playerDetail.filter(line=>!/^(declare (attackers|blockers)|choose any target)\.?$/i.test(line)).slice(0,3)){const p=node('p',line,'forge-native-detail');if(symbols&&payment)p.innerHTML=symbols(line);context.append(p);}
+ if(presentation.hosted&&!hostedOrder&&!optionalCosts)for(const line of playerDetail.filter(line=>!/^(declare (attackers|blockers)|choose any target)\.?$/i.test(line)).slice(0,3)){const p=node('p',line,'forge-native-detail');if(symbols&&payment)p.innerHTML=symbols(line);context.append(p);}
  panel.append(context);
  if(n.failure){panel.append(node('p',`Forge stopped: ${n.failure}`,'forge-diagnostic'));container.replaceChildren(panel);return;}
  if(n.status==='finished'){panel.append(node('p',n.draw===true?'Forge result: draw':n.winner?`Forge result: ${n.winner}`:'Forge reports that the game has finished.'));container.replaceChildren(panel);return;}
@@ -214,6 +219,21 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   if(!wasOpen)queueMicrotask(()=>{if(dialog.isConnected)heading.focus({preventScroll:true});});
  }else if(p){
   if(p.supported!==true||p.method==='order'&&p.ordered!==true){panel.append(node('p','This native prompt is not yet adapted. No response has been invented or sent.','forge-diagnostic'));}
+  else if(optionalCosts){
+   // One cost: answer in one tap (Arena's "Kicker" / "Cast without"). Several: toggle, then cast.
+   const options=p.options,indexes=s.nativeDraft?.revision===n.revision&&s.nativeDraft?.promptId===p.id?s.nativeDraft.indexes:[];
+   const label=o=>{const b=node('span',undefined,'forge-cost-label'),text=optionLabel(o.value);if(symbols)b.innerHTML=symbols(text);else b.textContent=text;return b;};
+   const answer=pick=>()=>{session.clearPrompt();for(const i of pick)session.selectPrompt(i);return session.confirmPrompt();};
+   const choices=node('div',undefined,'forge-optional-costs');
+   if(options.length===1){
+    const pay=button('',answer([options[0].index]),false,'pay-optional');pay.className='forge-cost-pay';pay.append(label(options[0]));
+    choices.append(pay,button(`Cast without ${costName(options[0].value).toLowerCase()}`,answer([]),false,'skip-optional'));
+   }else{
+    for(const o of options){const b=button('',()=>session.selectPrompt(o.index),false,`option-${o.index}`);b.className='forge-cost-toggle';b.setAttribute('aria-pressed',String(indexes.includes(o.index)));b.append(label(o));choices.append(b);}
+    choices.append(button(indexes.length?'Cast':'Cast without extras',()=>session.confirmPrompt(),indexes.length<p.min||indexes.length>p.max,'confirm-prompt'));
+   }
+   panel.append(choices);
+  }
   else if(['confirm','showConfirmDialog'].includes(p.method)){
    const options=p.options||[],named=presentation.hosted?session.promptNamedCard?.(n.revision):null,url=searchImage(named);
    if(url){const figure=node('figure',undefined,'forge-native-card'),image=node('img');image.src=url;image.alt=named.name;image.decoding='async';image.referrerPolicy='no-referrer';image.addEventListener('error',()=>figure.remove(),{once:true});figure.append(image);panel.append(figure);}
