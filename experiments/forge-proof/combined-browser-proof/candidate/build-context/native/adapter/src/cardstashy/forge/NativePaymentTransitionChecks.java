@@ -48,9 +48,13 @@ public final class NativePaymentTransitionChecks {
    Map<String,Object> duplicate=sendAtRevision(c,port,op,extra,originalRevision);
    Map<String,Object> busy=sendAtRevision(c,port,op,extra,consumed.get("revision"));
    boolean unchanged=consumed==c.bridge.published.get()&&beforeTaps==taps(c)&&beforeStack==c.game.getStack().size()&&beforeHand==c.human.getCardsIn(ZoneType.Hand).size()&&beforeLife==c.human.getLife();
-   boolean pass=Integer.valueOf(202).equals(accepted.get("httpStatus"))&&Boolean.TRUE.equals(consumed.get("busy"))
+   // When the engine is fast, its next native dialog can already be up by the time the
+   // consumed revision is read; the second request is then refused for that dialog instead.
+   boolean stillBusy=Boolean.TRUE.equals(consumed.get("busy"))&&"native_engine_busy".equals(busy.get("reason"));
+   boolean dialogUp=Boolean.FALSE.equals(consumed.get("busy"))&&"native_dialog_requires_reply".equals(busy.get("reason"));
+   boolean pass=Integer.valueOf(202).equals(accepted.get("httpStatus"))
     &&Integer.valueOf(409).equals(duplicate.get("httpStatus"))&&"stale_revision".equals(duplicate.get("reason"))
-    &&Integer.valueOf(409).equals(busy.get("httpStatus"))&&"native_engine_busy".equals(busy.get("reason"))&&unchanged;
+    &&Integer.valueOf(409).equals(busy.get("httpStatus"))&&(stillBusy||dialogUp)&&unchanged;
    checks.add(ForgeHttpBridge.obj("operation",op,"duplicate",duplicate,"consumedRevisionRequest",busy,"receiptAndResourcesUnchanged",unchanged,"busyReceipt",consumed.get("busy"),"pass",pass));
    return accepted;
   }finally{release.countDown();}

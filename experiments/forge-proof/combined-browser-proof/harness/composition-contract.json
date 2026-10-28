@@ -15,7 +15,7 @@
   "inputs": {
     "nativeDescendantManifest": {
       "path": "${CANDIDATE}/native/SHA256SUMS",
-      "sha256": "ff50afca842553d0fe937c5f5a19dccba51426ebec8b9ffdd305277dde30d56d"
+      "sha256": "45abeb068a8e6f1bbf73a194a053be60e75384d0a68552d338f6eec241ff146c"
     },
     "nativeBridge": {
       "path": "${CANDIDATE}/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java",
@@ -27,7 +27,7 @@
     },
     "hostContextManifest": {
       "path": "${CANDIDATE}/build-context/CONTEXT-SHA256.json",
-      "sha256": "7a7f469c2c7310fa41fa6f7cf734acf98075dd8546427888cd9a38c593a68155"
+      "sha256": "ca50397dc719372f3062f95f48122a028333c7a1d94411e6940f87fca5fa112a"
     },
     "uiManifest": {
       "path": "${CANDIDATE}/UI-SHA256.json",
@@ -91,7 +91,7 @@
     },
     "imageStagesManifest": {
       "path": "${PACKAGE}/image-stages/MANIFEST.json",
-      "sha256": "0c1c105eee85d32b89c273da1ad2c8265bd77f0783455bafe451d9cec6ad7580"
+      "sha256": "67356134bfdb3b0781d0b736df55b9040fe23928792f551b2f3370e59a09a91a"
     },
     "runtimeUISubset": {
       "path": "${CANDIDATE}/UI-RUNTIME-SHA256.json",
