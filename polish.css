@@ -353,13 +353,15 @@ body[data-view="scan"] #content>.context-guide{margin:12px 14px 0}
 @media(max-width:600px){.page-head.page-hero{min-height:140px;padding:16px;border-radius:18px}}
 
 /* Search empty state (art pass): a fan of today's cards from your collection. */
-.search-fan{display:grid;justify-items:center;gap:6px;margin:34px 0 8px;text-align:center}
-.search-fan-cards{position:relative;height:clamp(230px,30vw,330px);width:100%}
-.search-fan-card{position:absolute;left:50%;top:10px;width:clamp(130px,15vw,200px);padding:0;border:0;background:none;border-radius:10px;cursor:pointer;
- transform:translateX(calc(-50% + var(--i) * clamp(70px,8vw,112px))) translateY(calc(var(--i) * var(--i) * 6px)) rotate(calc(var(--i) * 7deg));transform-origin:50% 120%;transition:transform .22s ease,filter .22s ease;z-index:calc(10 - var(--i) * var(--i))}
-.search-fan-card img{display:block;width:100%;border-radius:10px;box-shadow:0 24px 48px #000c}
-.search-fan-card:hover,.search-fan-card:focus-visible{transform:translateX(calc(-50% + var(--i) * clamp(70px,8vw,112px))) translateY(-14px) rotate(calc(var(--i) * 7deg));z-index:20;filter:brightness(1.06)}
+/* The fan is spread by --fan-step and clipped sideways, so its outer cards can never push the
+   page wider than a phone screen (that shifted the whole app, bottom nav included). */
+.search-fan{--fan-w:clamp(112px,15vw,200px);--fan-step:clamp(36px,8vw,112px);display:grid;justify-items:center;gap:6px;margin:34px 0 8px;text-align:center;max-width:100%;min-width:0}
+.search-fan-cards{position:relative;height:calc(var(--fan-w) * 1.4 + 44px);width:100%;overflow-x:clip;overflow-clip-margin:0}
+.search-fan-card{position:absolute;left:50%;top:10px;width:var(--fan-w);padding:0;border:0;background:none;border-radius:10px;cursor:pointer;
+ transform:translateX(calc(-50% + var(--i) * var(--fan-step))) translateY(calc(var(--i) * var(--i) * 6px)) rotate(calc(var(--i) * 7deg));transform-origin:50% 120%;transition:transform .22s ease,filter .22s ease;z-index:calc(10 - var(--i) * var(--i))}
+.search-fan-card img{display:block;width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:10px;box-shadow:0 24px 48px #000c}
+.search-fan-card:hover,.search-fan-card:focus-visible{transform:translateX(calc(-50% + var(--i) * var(--fan-step))) translateY(-14px) rotate(calc(var(--i) * 7deg));z-index:20;filter:brightness(1.06)}
 .search-fan h2{margin:4px 0 0;font:700 clamp(20px,2vw,26px)/1.2 Cinzel,Georgia,serif}
 .search-fan p{margin:0}
-.search-fan+.hints{justify-content:center}
+.search-fan+.hints,.search-fan+.center{justify-content:center;text-align:center}
 @media(prefers-reduced-motion:reduce){.search-fan-card{transition:none}}
