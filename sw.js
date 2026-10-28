@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-play-music-only-v365";
+const CACHE = "cardforge-shell-play-sound-only-v366";
 const ASSETS = [
   "./play-forge-feature.js",
   "./audio.js",

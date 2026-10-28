@@ -137,7 +137,7 @@ import { attachSuggest } from "./suggest.js";
 import { shouldTour, openTour, resetOnboarding, markGuide, guidePrompt } from "./tour.js";
 import { tourScenes } from "./tour-scenes.js";
 import { haptic, hapticFor, flyToCollection, captureCollectionFlight, countUp, ripple, setHaptics, attachGestures, attachTilt } from "./feel.js";
-import { setAudioSettings, installAppSounds, toastSound, viewMusic, sfx } from "./audio.js";
+import { setAudioSettings, viewMusic } from "./audio.js";
 import { alertSheet, setAlert, onAlert, alertText, priceSeries } from "./pricehist.js";
 import { onSharedPrices, watchCards } from "./sharedprices.js";
 import { mtgCollector, nameCandidates, textPhrases } from "./scan.js";
@@ -704,7 +704,6 @@ function toast(text, { undo = false } = {}) {
   t.setAttribute("role","status");t.setAttribute("aria-live","polite");
   t.innerHTML = `${ok ? TOAST_OK : ""}<span>${esc(text)}</span>${undo ? `<button class="toast-undo" data-act="undo">Undo</button>` : ""}`;
   t.classList.toggle("ok", ok);
-  toastSound(text, ok);
   t.classList.remove("show");
   void t.offsetWidth;
   t.classList.toggle("has-action", undo);
@@ -1976,7 +1975,6 @@ attachCardGestures({onSelect:target=>{
 
 document.addEventListener("pointerdown", ripple, { passive: true });
 attachGestures({ closeSheet: () => A.closeSheet() });
-installAppSounds();
 // One shared shell measurement keeps sticky section tabs below the responsive
 // game header through live viewport/fold changes without fixing workspace height.
 function readSectionTabRail(content) {
@@ -6588,8 +6586,8 @@ C.setHaptics = (t) => {
   toast(saved?"Saved vibration preference on this device.":"Vibration preference could not be saved. Your previous setting is kept.");
   if (saved&&t.checked) haptic("success");
 };
-C.setSoundOn = (t) => { if (!setAudioSettings({ on: t.checked })) { t.checked = !t.checked; toast("Could not save the sound setting."); return; } if (t.checked) sfx("APP-020"); };
-C.setSfxVolume = (t) => { setAudioSettings({ sfx: Number(t.value) / 100 }); sfx("APP-010"); };
+C.setSoundOn = (t) => { if (!setAudioSettings({ on: t.checked })) { t.checked = !t.checked; toast("Could not save the sound setting."); return; } };
+C.setSfxVolume = (t) => setAudioSettings({ sfx: Number(t.value) / 100 });
 C.setMusicVolume = (t) => setAudioSettings({ music: Number(t.value) / 100 });
 A.installLater = () => {
   dismissInstall();
