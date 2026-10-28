@@ -87,11 +87,11 @@
     },
     "localOCIManifest": {
       "path": "${PACKAGE}/local-oci/MANIFEST.json",
-      "sha256": "120f862b0e31c2f26ea76047bd3096fdc28e9427bd9a898549254d351a6bb08b"
+      "sha256": "a4ac92d58c091a2e982daf351bf7c98acac85f13c91ca460b2457da87fedb0e8"
     },
     "imageStagesManifest": {
       "path": "${PACKAGE}/image-stages/MANIFEST.json",
-      "sha256": "1e789e449c68c8e31649e9b2bc81a40a6dbf715e640a0f73c4f2d56e1c0f8fec"
+      "sha256": "bf4e310f253712c31da754716803757e1d0caeb793c12686a8bc5f05440c92ef"
     },
     "runtimeUISubset": {
       "path": "${CANDIDATE}/UI-RUNTIME-SHA256.json",

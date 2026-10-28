@@ -22,7 +22,7 @@
   "scripts/compose-exact-context.py": "24fb7bb4f4b1d66c744caf8d6c60de3d9ece2a1fcac2fcedc048134cc31aeac8",
   "scripts/compose-next-context.py": "aef555abc5c28a8d83b944933343a3384af591e0bdb73ecfade3ef495376e7e1",
   "scripts/create-release-policy.mjs": "ed49937d148d7488287712759f8f3669ff956b545493c6687f8845760fb659d5",
-  "scripts/deploy-private-host.mjs": "1ca0b160b8ddc03a508671e18d0e32d08b228075a8567aff8baeab6d14417a2c",
+  "scripts/deploy-private-host.mjs": "35c32068f06214330f1a5b5a340b3e92b269c57724a3f2668c7fc4dbe0dbb290",
   "scripts/docker-proof-client.py": "73dc6366ec4b9a6cefe713dc317775cb56bb551ee7fd1ef2c375bdfafbe3dca2",
   "scripts/refresh-rules-data.py": "0c59e455018a1c280f92e63ae8088fd48f8104c413582a6473cf20ca35aab0f5",
   "scripts/release-configuration.mjs": "2eb687b149aa9059f136f5577a01c0aa04bfd053cbc184870a93bf20c52eab9a",

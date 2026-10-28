@@ -59,7 +59,7 @@
     {
       "path": "test-fixtures.mjs",
       "bytes": 7465,
-      "sha256": "187ee352b90dff64252855838a9941487157ee574537388e95ed432bb0f5927e"
+      "sha256": "31babf65f1de60ed5ded9bf7c54397485fe52889755d62c57d162019107370b8"
     },
     {
       "path": "test-local-oci.mjs",
@@ -69,7 +69,7 @@
     {
       "path": "test-provider.mjs",
       "bytes": 14267,
-      "sha256": "9ccb0dd4eaf8d088a77f3adb485f7eefe3d3f61a39b3263c9e2614c2d96b4922"
+      "sha256": "f95c4ec86b1efcfc7928f243b2b77ba47eaac88cb520878ed8f859e4e703ed59"
     },
     {
       "path": "test-relay.py",

@@ -11,7 +11,7 @@
     },
     "SHA256SUMS": {
       "bytes": 1550,
-      "sha256": "f4a32b363881352dfc8196f8d74089ff61b53a261911caf312a6ef1b5200ecd1"
+      "sha256": "b3ed326399a2853c9c7c214b13f4c8bdc0dd4ee7eec2739d9011149f67f0b527"
     },
     "build-and-probe.mjs": {
       "bytes": 10849,
@@ -71,7 +71,7 @@
     },
     "test-probe-loader.mjs": {
       "bytes": 11925,
-      "sha256": "6f870bf5e9de49f85fd2f9044f36a526c472ed571c732da82525689b42119201"
+      "sha256": "66ab4ece597da6be23a96881138fed017a7bbd97dffbac1335b40b048d9bf1e6"
     },
     "test-starting-player-contract.mjs": {
       "bytes": 2023,
@@ -83,7 +83,7 @@
     "nativeManifestSha256": "9a1452d876d47f1043a9edf514930bb515611dc21cf197bae7a54c4eb0984e6b",
     "hostManifestSha256": "5e35f73226af412901acb63896c9d5b1d71870b17f27a08df9267bfabf2b9342",
     "contextManifestSha256": "e4748bce03027787de58090825a38f1d022789875009b25ff299de4dae57bfe8",
-    "localOciManifestSha256": "120f862b0e31c2f26ea76047bd3096fdc28e9427bd9a898549254d351a6bb08b"
+    "localOciManifestSha256": "a4ac92d58c091a2e982daf351bf7c98acac85f13c91ca460b2457da87fedb0e8"
   },
   "budgetsSeconds": {
     "build": 600,
