@@ -20,9 +20,14 @@ public class CardStashyWebViewClient extends BridgeWebViewClient {
     static final String APP_HOST = "android-integration.cardstashy.invalid";
     private static final int MAX_BYTES = 8 * 1024 * 1024;
     private final ImageCache images, scryfall;
+    // Scryfall's mana and card symbols ship inside the app (assets/card-symbols/), so costs never fall
+    // back to "Red mana" text when the phone is offline.
+    private static final java.util.regex.Pattern SYMBOL = java.util.regex.Pattern.compile("^/card-symbols/([A-Z0-9]{1,8})\\.svg$");
+    private final android.content.res.AssetManager assets;
 
     public CardStashyWebViewClient(Bridge bridge) {
         super(bridge);
+        assets = bridge.getContext().getAssets();
         images = new ImageCache(new java.io.File(bridge.getContext().getCacheDir(), "card-art"), CardStashyWebViewClient::download, Thread::sleep, 3000);
         // Scryfall art the app has shown or saved for a deck, kept so decks still look right offline.
         scryfall = new ImageCache(new java.io.File(bridge.getContext().getCacheDir(), "scryfall-art"), CardStashyWebViewClient::download, Thread::sleep, 6000, ImageCache.SCRYFALL, ImageCache.SCRYFALL_ROUTES);
@@ -39,6 +44,18 @@ public class CardStashyWebViewClient extends BridgeWebViewClient {
             headers.put("Cache-Control", r == null ? "no-store" : "private, max-age=604800");
             if (r == null) return new WebResourceResponse("text/plain", "utf-8", 404, "Not Found", headers, new ByteArrayInputStream(new byte[0]));
             return new WebResourceResponse(r.type, null, 200, "OK", headers, new ByteArrayInputStream(r.body));
+        }
+        if ("GET".equals(request.getMethod()) && "https".equals(u.getScheme()) && "svgs.scryfall.io".equals(u.getHost()) && u.getPath() != null) {
+            java.util.regex.Matcher m = SYMBOL.matcher(u.getPath());
+            if (m.matches()) {
+                try {
+                    InputStream in = assets.open("card-symbols/" + m.group(1) + ".svg");
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Cache-Control", "public, max-age=2592000");
+                    headers.put("Access-Control-Allow-Origin", "*");
+                    return new WebResourceResponse("image/svg+xml", "utf-8", 200, "OK", headers, in);
+                } catch (IOException e) { /* a symbol the app does not carry loads from Scryfall as before */ }
+            }
         }
         if ("GET".equals(request.getMethod()) && "https".equals(u.getScheme()) && "cards.scryfall.io".equals(u.getHost()) && u.getPort() == -1
             && ImageCache.allowed(ImageCache.SCRYFALL_ROUTES, u.getPath(), u.getEncodedQuery())) {
