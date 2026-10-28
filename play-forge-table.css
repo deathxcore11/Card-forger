@@ -1443,3 +1443,6 @@
 :where(body.practice-table-open) .forge-native-panel .forge-stop[data-state=pinned]{border:0;background:linear-gradient(180deg,#f6dc9a,#d9a64a)}
 /* Arena frustrations: "Pick lands" beside Play casts with auto-pay off for this one spell. */
 :where(body.practice-table-open) .forge-peek .forge-peek-play.forge-peek-manual{background:#0f1117e6;color:#f4d78f;border:1px solid #e8b95b88;margin-top:6px}
+/* Arena frustrations: the lands Forge's Auto would tap wear a gold ring while you pay by hand. */
+:where(body.practice-table-open) .play-match-table[data-stage][data-forge-native] .play-match-battlefields .play-match-card[data-auto-tap=true][data-instance]{border-color:#e8b95b;box-shadow:0 0 0 2px #e8b95b,0 0 20px 4px #e8b95b99}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-auto-tap=true]::before{content:'Auto';position:absolute;left:50%;bottom:6px;translate:-50% 0;z-index:5;padding:2px 8px;border-radius:999px;background:linear-gradient(180deg,#f6dc9a,#d9a64a);color:#1b1406;font:800 10px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.06em;pointer-events:none}

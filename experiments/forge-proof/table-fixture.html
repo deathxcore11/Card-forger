@@ -68,6 +68,8 @@ if (STATE === 'crowded') BASE.you.hand.push('Shock', 'Opt', 'Brainstorm', 'Light
 if (STATE === 'early' || STATE === 'pay') {
   Object.assign(BASE.you, {battlefield: [['Forest'], ['Food', {token: true, imageKey: 't:c_a_food_sac', type: 'Token Artifact — Food', text: '{2}, {T}, Sacrifice this token: You gain 3 life.'}]],
     hand: ['Mountain', 'Legion Warboss', 'Mountain', 'Rampant Growth', "Witch's Mark", "Krenko's Command"], graveyard: ['Many Partings'], command: ['Chishiro, the Shattered Blade']});
+  // ?state=pay&auto=1: three untapped lands, and Forge's Auto plan (listed twice) is Forest + one Mountain.
+  if (STATE === 'pay' && params.get('auto')) BASE.you.battlefield.splice(1, 0, ['Mountain'], ['Mountain']);
   Object.assign(BASE.cpu, {battlefield: [['Volcanic Island']], hand: 5, graveyard: [], exile: [], command: ['Kenrith, the Returned King']});
 }
 if (STATE === 'attack') { BASE.you.battlefield[0][1] = {attacking: true}; BASE.you.battlefield[2][1] = {attacking: true}; }
@@ -168,7 +170,8 @@ if (STATE === 'main' || STATE === 'dense' || STATE === 'crowded') {
 } else if (STATE === 'discard') {
   Object.assign(selection, {cards: youZones.Hand.cards.map(ref), min: 1, max: 1});
 } else if (STATE === 'pay') {
-  selection.actionable = [];
+  const lands = ['Forest', 'Mountain'].flatMap(n => byName(youZones.Battlefield, n));
+  selection.actionable = params.get('auto') ? [...lands, lands[0], lands[1]].map(ref) : [];
 } else if (STATE === 'block') {
   selection.cards = youZones.Battlefield.cards.filter(c => /Creature/.test(c.type)).map(ref);
 } else if (STATE === 'attack') {

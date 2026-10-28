@@ -76,6 +76,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  });
  const panelPresentation={...presentation,symbolText,...(presentation.hosted?{controlsOnSeat:true,shortNext:true}:{})};
  const fail=e=>{if(e?.message==='MATCH_NOT_READY'&&playbackBusy){playback.flush();return;}localError=e.message||String(e);panelKey='';enhance();};
+ let manualPay=null; // the spell being cast with "Pick lands" (see restoreAutoPay)
  const act=fn=>{try{const p=fn();if(p?.catch)p.catch(fail);}catch(e){fail(e);}};
  let railFrame=0;
  function enhance(){
@@ -454,6 +455,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   updateActivity();
   if(drag?.active)markDrops();
   restoreAutoPay(s);
+  markAutoTap(s);
   if(!blocked){autoPassOwnStack(s);autoPassIdle(s);}
  }
  // Engine and transport codes in plain words; a refusal Forge explains stays as Forge said it.
@@ -620,8 +622,16 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const cost=session.snapshot().status?.surface.cards.find(c=>c.id===Number(el.dataset.instance))?.manaCost||'';
   if(el.closest('.play-match-hand')&&n.autoPay===true&&typeof session.setAutoPay==='function'&&/\{(?!0\})[^}]+\}/.test(cost)){const m=doc.createElement('button');m.type='button';m.className='forge-peek-play forge-peek-manual';m.dataset.peekPlay='manual';m.textContent='Pick lands';m.title='Cast it and choose which lands pay';b.after(m);}
  }
+ // While you pay by hand, Forge lists the sources its Auto button would tap twice among the
+ // payable ones. Those get the gold preview; tapping any other land swaps it into the payment,
+ // and Forge re-plans the rest.
+ function markAutoTap(s){
+  const n=s?.native,paying=presentation.hosted&&String(n?.inputType||'').startsWith('InputPayMana')&&!n?.prompt,seen=new Map();
+  if(paying)for(const r of n.selection?.actionable||[])if(r?.kind==='card')seen.set(r.id,(seen.get(r.id)||0)+1);
+  for(const el of root.querySelectorAll('.play-match-card[data-auto-tap]'))if(!(seen.get(Number(el.dataset.instance))>1))delete el.dataset.autoTap;
+  for(const [id,count]of seen)if(count>1){const el=root.querySelector(`.play-match-card[data-instance="${id}"]`);if(el&&el.dataset.autoTap!=='true')el.dataset.autoTap='true';}
+ }
  // The one spell cast with "Pick lands": once its payment has come and gone, auto-pay is restored.
- let manualPay=null;
  function restoreAutoPay(s){
   const n=s?.native;if(!manualPay||!n)return;
   if(String(n.inputType||'').startsWith('InputPayMana')){manualPay.seen=true;return;}
