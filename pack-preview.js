@@ -10,7 +10,7 @@ import {ygoSetReference} from './ygo-set-prices.js';
 import {pkCatalogueSymbolSources} from './emblems.js';
 import {drawMtgBooster} from './mtg-boosters.js';
 import {haptic,cancelHaptics} from './feel.js';
-import {addGlints,catchLight} from './foil-fx.js';
+import {addGlints,catchLight,burstGlints} from './foil-fx.js';
 // A discovery sampler. No collation, print-run odds, purchases or ownership are implied.
 export function sampleSetCards(cards,count=10,random=Math.random){
  const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),c])).values()];
@@ -320,7 +320,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   if(big){showcase=performance.now();if(!raf)raf=requestAnimationFrame(light);
    // On a phone that can tilt but hasn't turned it on, the tilt button glows to invite playing with the foil.
    const tb=dialog.querySelector('.pack-tilt');if(tb&&!tb.hidden&&tb.getAttribute('aria-pressed')!=='true')tb.classList.add('pack-tilt-hint');}
-  catchLight(focusCard);focusCard.classList.remove('pack-pop','pack-hit-big');void focusCard.offsetWidth;focusCard.classList.add('pack-pop');if(big)focusCard.classList.add('pack-hit-big');
+  catchLight(focusCard);const t2=t>=2||packRarity(game,picks[i]).rank>=2;if(t2||focusCard.classList.contains('pack-foil'))burstGlints(face);focusCard.classList.remove('pack-pop','pack-hit-big');void focusCard.offsetWidth;focusCard.classList.add('pack-pop');if(big)focusCard.classList.add('pack-hit-big');
   later(()=>focusCard.classList.remove('pack-pop'),450);later(()=>focusCard.classList.remove('pack-hit-big'),1700);};
  fill();
  // Feel: the tear as the seam opens, a few dry contacts as the cards settle (not one per card, which would blur into

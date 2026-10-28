@@ -2,17 +2,8 @@
    Animated properties are transform and opacity only. Reduced motion keeps the still look. */
 .finish-pop{position:absolute;display:block;pointer-events:none!important;z-index:3;border-radius:4.75% / 3.5%;overflow:hidden}
 .finish-pop[hidden]{display:none}
-/* Holo rim: a thin rainbow ring on the card edge; the colours turn slowly inside the ring. */
-.fp-rim{position:absolute;inset:0;border-radius:inherit;padding:1.6%;
- -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.7}
-.fp-rim>i{position:absolute;left:50%;top:50%;width:150%;aspect-ratio:1;translate:-50% -50%;background:conic-gradient(#ff8ad8,#ffe48a,#8affc8,#7ad0ff,#c58aff,#ff8ad8);animation:fx-spin 7s linear infinite}
-.finish-pop[data-pop=lite] .fp-rim{opacity:.5}
-.finish-pop[data-pop=lite] .fp-rim>i{animation:none}
-@keyframes fx-spin{to{rotate:360deg}}
-/* Glare: a soft hot spot that follows the light the card already tracks (pointer, tilt or idle drift). */
-.fp-glare{position:absolute;inset:-50%;background:radial-gradient(circle at 50% 50%,#ffffffb0 0%,#ffffff33 13%,transparent 32%);mix-blend-mode:overlay;opacity:.55;
- transform:translate(calc(var(--mx,50%) - 50%),calc(var(--my,40%) - 50%))}
-.finish-pop[data-pop=lite] .fp-glare{display:none}
+/* The card itself is never painted over at rest: the measured finish (art foil, Yu-Gi-Oh! lettering,
+   stamps) shows exactly as before. The pop is motion only: a light catch and a short glint burst. */
 /* Light catch: one bright band crosses when the card appears, is hovered, or is revealed. */
 .fx-catch{position:absolute;inset:0;overflow:hidden;border-radius:inherit}
 .fx-catch::before{content:'';position:absolute;top:-25%;bottom:-25%;left:0;width:55%;background:linear-gradient(100deg,transparent 12%,#ffffff70 46%,#fff0c0a0 52%,transparent 88%);mix-blend-mode:overlay;
@@ -23,9 +14,11 @@
 /* Glints: four-point stars that twinkle on their own clocks. */
 .fx-glints{position:absolute;inset:0}
 .fx-glint{position:absolute;width:calc(9% * var(--fx-s,1));aspect-ratio:1;translate:-50% -50%;background:#fff;opacity:0;transform:scale(0);
- clip-path:polygon(50% 0,57% 43%,100% 50%,57% 57%,50% 100%,43% 57%,0 50%,43% 43%);animation:fx-twinkle var(--fx-d,2.4s) ease-in-out infinite var(--fx-dl,0s)}
+ clip-path:polygon(50% 0,57% 43%,100% 50%,57% 57%,50% 100%,43% 57%,0 50%,43% 43%)}
+/* Glints only play as a short burst when the card is shown (.fx-burst), then the card is left clean. */
+.fx-burst .fx-glint{animation:fx-twinkle calc(var(--fx-d,2.4s) * .6) ease-in-out 2 calc(var(--fx-dl,0s) * -.25)}
 @keyframes fx-twinkle{0%,100%{opacity:0;transform:scale(0) rotate(0)}42%{opacity:1;transform:scale(1) rotate(40deg)}58%{opacity:.85;transform:scale(.75) rotate(55deg)}}
-@media (prefers-reduced-motion:reduce){.fp-rim>i,.fx-glint,.fx-catch::before{animation:none!important}.fx-glint{opacity:.7;transform:scale(.6)}}
+@media (prefers-reduced-motion:reduce){.fx-glint,.fx-catch::before{animation:none!important}}
 
 /* ---------- Pack opener beats (all three games share the dialog) ---------- */
 /* Pack wrapper sheen: an oversized band that moves by transform instead of repainting the gradient. */
@@ -51,12 +44,10 @@
 @keyframes pack-rise{0%{transform:translateY(42%) scale(.82);opacity:0}70%{transform:translateY(-2%) scale(1.03);opacity:1}100%{transform:none;opacity:1}}
 /* Reveal: the flip lands with a light catch and a burst of glints; better pulls rise with a glow, the best get rays. */
 .pack-face>.fx-glints,.pack-face>.fx-catch{z-index:3;pointer-events:none}
-.pack-face>.fx-glints{opacity:0;transition:opacity .3s}
 /* Tease: a face-down rare glows gold behind its back before the flip. */
 .pack-focus-card.pack-tease>.pack-backlight{opacity:.75;background:#f0c75e;animation:pack-tease 1.1s ease-in-out infinite alternate}
 .pack-focus-card.pack-tease>.pack-card-back{box-shadow:inset 0 0 0 3px #f0c75e99,inset 0 0 24px #f0c75e55}
 @keyframes pack-tease{from{opacity:.35}to{opacity:.85}}
-.pack-focus-card.revealed:is([data-tier="t2"],[data-tier="t3"],[data-tier="t4"],[data-tier="t5"])>.pack-face>.fx-glints,.pack-focus-card.pack-foil.revealed>.pack-face>.fx-glints{opacity:1}
 .pack-focus-card.pack-pop{animation:pack-pop .42s cubic-bezier(.2,.8,.2,1)}
 @keyframes pack-pop{0%{scale:1}35%{scale:1.07}100%{scale:1}}
 .pack-rays{position:absolute;left:50%;top:50%;width:190%;aspect-ratio:1;translate:-50% -50%;pointer-events:none;border-radius:50%;opacity:0;transform:translateZ(-8px);

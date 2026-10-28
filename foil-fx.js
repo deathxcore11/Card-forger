@@ -1,7 +1,7 @@
-// Foil pop: the shared light layer that sits over every foil finish (card page, zoom, gallery, deck
-// view, pack opener). It adds a holo rim, twinkling glints, a glare that follows the existing
-// --mx/--my light, and a light catch when the card appears. Each moving part animates transform or
-// opacity only; the measured WebGL / CSS finish underneath is untouched.
+// Foil pop: motion over every foil finish (card page, zoom, gallery, deck view, pack opener). When a
+// card is shown, a light band crosses it and a few glints burst, then nothing stays on top, so the
+// measured WebGL / CSS finish (art foil, Yu-Gi-Oh! lettering, stamps) looks exactly as before.
+// Each moving part animates transform or opacity only.
 const FULL=['detail','zoom','pack'];
 const hash=(s,i)=>{let h=2166136261^i;for(const c of String(s))h=Math.imul(h^c.charCodeAt(0),16777619);return ((h>>>0)%1000)/1000;};
 // Glints sit where a printed foil catches points of light: spread over the card, kept off the edges.
@@ -13,12 +13,14 @@ export function addGlints(host,{n=8,seed=''}={}){
 }
 // One light sweep across the element (restarts if it is already running).
 export function catchLight(el){if(!el)return;el.classList.remove('fx-catching');void el.offsetWidth;el.classList.add('fx-catching');}
+// A short burst of glints (about two twinkles each), then the layer is quiet again.
+export function burstGlints(el,ms=2600){if(!el)return;el.classList.remove('fx-burst');void el.offsetWidth;el.classList.add('fx-burst');clearTimeout(el._fxBurst);el._fxBurst=setTimeout(()=>el.classList.remove('fx-burst'),ms);}
 export function mountFinishPop(host,{surface='large',seed=''}={}){
  const doc=host.ownerDocument,pop=doc.createElement('span'),full=FULL.includes(surface);
  pop.className='finish-pop';pop.dataset.pop=full?'full':'lite';pop.setAttribute('aria-hidden','true');
- pop.innerHTML='<span class="fp-rim"><i></i></span><span class="fp-glare"></span><span class="fx-catch"></span>';
+ pop.innerHTML='<span class="fx-catch"></span>';
  if(full)addGlints(pop,{n:surface==='pack'?10:8,seed});
  host.append(pop);
- if(!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches)requestAnimationFrame(()=>catchLight(pop));
+ if(!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches)requestAnimationFrame(()=>{catchLight(pop);if(full)burstGlints(pop);});
  return pop;
 }
