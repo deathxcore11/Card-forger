@@ -288,6 +288,10 @@ export class MatchService {
     // Platform errors carry no step of their own; this names it on the owner's screen.
     const began = this.now();
     let step = 'options', exited = null, lastPoll = 'none';
+    // Seconds into startup at which each step began. Logged once per start (no input,
+    // token or ids) so `wrangler tail` shows where a slow start spends its time.
+    const timings = {};
+    const enter = name => { step = name; timings[name] = this.now() - began; };
     const containerExited = () => exited && Object.assign(new Error('container_exited'), { containerExited: true });
     const replaced = () => this.replacing === allocation.generation && Object.assign(new Error('replaced_by_new_start'), { replaced: true });
     const stopIfReplaced = () => { const failure = replaced(); if (failure) throw failure; };
@@ -298,7 +302,7 @@ export class MatchService {
       // means any crash before/after start is ambiguous and MUST NOT restart.
       const options = await this.native.startOptions({ input, allocation, internalToken: token });
       if (options?.enableInternet !== false || options?.env?.HOST_INTERNAL_TOKEN !== token || options?.env?.HOST_ABSOLUTE_DEADLINE_MS !== String(allocation.expiresAt)) throw new Error('unsafe_native_start_options');
-      step = 'start';
+      enter('start');
       stopIfReplaced();
       if (this.container().running) throw new Error('unexpected_existing_container');
       this.container().start(options);
@@ -307,15 +311,15 @@ export class MatchService {
       let ended = null;
       try { ended = typeof this.container().monitor === 'function' ? this.container().monitor() : null; } catch { /* not observable */ }
       ended?.then?.(() => { exited = 'exit 0'; }, failure => { exited = startupFailure(failure).slice(0, 72); });
-      step = 'inactivity';
+      enter('inactivity');
       await this.container().setInactivityTimeout(IDLE_MS);
       if (this.native.bootstrapExisting) {
-        step = 'bootstrap';
+        enter('bootstrap');
         await this.native.bootstrapExisting({ input, allocation, internalToken: token,
           deadline: record.startupDeadline, now: this.now, wait: async ms => { stopIfReplaced(); await this.wait(ms); stopIfReplaced(); },
           fetchExisting: request => { stopIfReplaced(); const gone = containerExited(); if (gone) throw gone; if (!this.container().running) throw new Error('native_not_running'); return openFetch(request); } });
       }
-      step = 'ready';
+      enter('ready');
       let ready = false, validationFailure = null;
       while (this.now() < record.startupDeadline) {
         stopIfReplaced();
@@ -345,24 +349,27 @@ export class MatchService {
       }
       if (!ready) throw new Error('startup_deadline last ' + lastPoll);
       stopIfReplaced();
-      step = 'confirm';
+      enter('confirm');
       // Must compare native accepted raw snapshot digests/policy against this
       // allocation, not merely observe /ready or a plausible opening hand.
       const initialized = await this.native.confirmInitialization({ allocation, input, epoch: record.epoch,
         internalToken: token, fetchExisting: openFetch });
       if (!Number.isSafeInteger(initialized?.viewerId) || initialized.viewerId < 0 || initialized.schema !== NATIVE_SCHEMA || initialized.engineRevision !== FORGE_REVISION || initialized.policyVersion !== input.difficultyPolicyVersion || initialized.humanDigest !== allocation.deckDigests.human || initialized.opponentDigest !== allocation.deckDigests.opponent) throw new Error('native_initialization_receipt_mismatch');
       stopIfReplaced();
-      step = 'authority';
+      enter('authority');
       record.status = 'running'; await this.storage.put('allocation', record);
       const authority = await this.authority(record);
       await authority.initialize({ ...allocation, epoch: record.epoch, viewerId: initialized.viewerId });
       await this.storage.setAlarm(Math.min(record.expiresAt, this.now() + IDLE_MS));
+      timings.running = this.now() - began;
+      console.log('forge_startup ' + JSON.stringify(timings));
       return { status: 'running' };
     } catch (failure) {
       // Keep a short, character-limited cause so the owner's error screen can tell a
       // provider start failure from a readiness timeout. No stack, input or token.
       try {
         const seconds = ((this.now() - began) / 1000).toFixed(1);
+        console.log('forge_startup_failed ' + JSON.stringify({ ...timings, failedAt: step, after: this.now() - began }));
         record.failure = safeText('at ' + step + ' ' + seconds + 's: ' + startupFailure(failure) + (exited ? ' container ' + exited : ''));
         await this.storage.put('allocation', record);
       } catch { /* cleanup still runs */ }

@@ -35,7 +35,7 @@
   "src/policy.mjs": "6004d77a9428bfaacb8a212fc424139a33727d0c119c5f593e06c474944d1cea",
   "src/provisional-ledger.mjs": "0c0aa253f8ec34af025d033bfaffee377eaf4b26571c5118b596f1661332d102",
   "src/release-policy.mjs": "8daf001be42e20a906643ce11929bca425f7feb1222eeabb9e92cfed1f09e5af",
-  "src/service-core.mjs": "ca522c5b3dd47d65320cd4c6725758eee1cc3b13f4de845aedb26b10f8092c5f",
+  "src/service-core.mjs": "fa2342f83cd9bef6e2d669c99dddf8faf44731ffcb637c6115dbec5cb6f662b3",
   "src/trial.mjs": "fd41a7e3e3a3cb636c56aefe04cc71ec7fad160c6ceb95850e630f7551e00eb3",
   "src/vendor/app/config.js": "92a35116c57f73d009f937ae5c0f188ef456f7c641ccacf87e9eadfa2e7602c0",
   "src/vendor/app/native-backend-contract.js": "284ee719870db9b414fe7bffdf24916ef0ae403c231eccd78a160d34bf1648f3",
