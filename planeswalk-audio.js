@@ -19,7 +19,9 @@ if(app){
   // A button the game shows but you cannot use yet (not enough energy or gold) gets the "can't" knock.
   if(b.disabled||b.getAttribute('aria-disabled')==='true'){sfx(b.closest('.shop, .screen.shop')?'PW-021':'PWB-004',{volume:.6});return;}
   const id=CLICK[b.dataset.act];if(id)sfx(id,{volume:.8});},true);
- let screen='',pops=0;const told=new WeakSet();
+ let screen='',pops=0;const told=new WeakSet();let lastDungeon='';
+ // Each new dungeon room's banner is added to <body>.
+ new MutationObserver(l=>{for(const m of l)for(const n of m.addedNodes)if(n.classList?.contains('pw-room'))sfx('RAV-004');}).observe(document.body,{childList:true});
  const read=()=>{
   const q=s=>app.querySelector(s),act=+document.body.dataset.actnum||1;
   if(q('.screen.heroes'))return ['heroes','MUS-PW-01'];
@@ -38,14 +40,16 @@ if(app){
  const STING={ante:'PW-012',boss:'PW-011',elite:'PW-010',battle:'PW-009',won:'PW-030',lost:'PW-031',shop:'PW-019',event:'PW-027',heroes:''};
  const look=()=>{
   const [next,track]=read(),q=s=>app.querySelector(s);
+  const dg=q('section.battle[data-dungeon]');if(dg)lastDungeon=dg.dataset.dungeon;
   // The ante settles after the fight: the wager paid off, or the staked card burned.
-  const ar=q('.ante-result');if(ar&&!told.has(ar)){told.add(ar);sfx(ar.dataset.r==='won'?'PW-015':'PW-022');}
+  const ar=q('.ante-result');if(ar&&!told.has(ar)){told.add(ar);if(ar.dataset.r==='won')sfx('PW-015');else sfx('RAV-005',{delay:900});}
   if(next!==screen){const was=screen;screen=next;
    if(STING[next])sfx(STING[next]);
-   if(next==='dungeon'&&was!=='dungeon')sfx('PW-008');
+   if(next==='dungeon'&&was!=='dungeon'){sfx('RAV-001');if(q('section.battle[data-dungeon=vaults]'))sfx('RAV-002',{delay:500});}
+   if(next==='reward'&&was==='dungeon'&&lastDungeon==='vaults')sfx('RAV-003',{delay:300});
    if(next==='reward'&&/^(battle|elite|boss|dungeon)$/.test(was))sfx(was==='boss'?'PW-029':'PW-014');
    if(next==='map'&&was&&was!=='map')sfx('PW-005',{volume:.7});
-   if(next==='reward'&&q('.card[data-sig]'))sfx('PW-016',{delay:600});
+   if(next==='reward'&&q('.card[data-sig]'))sfx('RAV-006',{delay:450});
    if(/^(battle|elite|boss|dungeon)$/.test(next))preload(['PWB-003','PWB-017','PWB-001','CMB-004','CMB-005','PWB-018']);
    if(track)setMusic('app',track,{loop:!/^(won|lost)$/.test(next)});
    else if(next==='reward')setMusic('app','MUS-PW-09');}
