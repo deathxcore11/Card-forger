@@ -329,3 +329,15 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .play-solo-copy span{font-size:.85rem;opacity:.78;overflow-wrap:anywhere}
 .play-solo-go{font-size:1.8rem;color:#e8b95b;line-height:1}
 @media(max-width:520px){.play-solo-tile{grid-template-columns:72px 1fr auto;gap:10px}.play-solo-art{width:72px;height:56px}}
+/* Solo at the top of Play: a compact tile in the seat bar's free space (Practice), or its own row above the Quick Play lobby. */
+.play-menu>.play-solo-tile{grid-row:2;margin:0}
+.play-menu:has(>.play-solo-tile) .play-feature{grid-row:3}
+.play-menu:has(>.play-solo-tile) .play-workspace.play-workspace--single{grid-row:4}
+.play-match-bar>.play-solo-tile{flex:1 1 280px;max-width:440px;margin:0;grid-template-columns:64px 1fr auto;gap:12px;padding:8px 14px 8px 8px}
+.play-match-bar>.play-solo-tile .play-solo-art{width:64px;height:48px}
+.play-match-bar>.play-solo-tile .play-solo-copy strong{font-size:1rem}
+.play-match-bar>.play-solo-tile .play-solo-copy span{font-size:.78rem;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.play-match-bar>.play-profile{margin-right:0}
+@media(max-width:800px){.play-match-bar>.play-solo-tile{flex-basis:100%;max-width:none}}
+/* Touch screens scroll the page, not a box inside it: the deck lists grow with the page so a swipe never gets stuck on them. */
+@media(pointer:coarse){.play-library-scroll,.play-inspector-scroll{max-height:none!important;overflow:visible;overscroll-behavior:auto}.play-workspace{min-height:0}.play-workspace>.play-inspector,.play-workspace>section:not(.play-library){align-self:start;position:sticky;top:calc(env(safe-area-inset-top) + 72px)}}
