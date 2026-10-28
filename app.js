@@ -1633,7 +1633,9 @@ function warmNativePlay(){
  let lastTouch=Date.now(),artFor='';
  const touched=()=>{lastTouch=Date.now();};
  for(const type of ['pointerdown','keydown'])addEventListener(type,touched,{passive:true,capture:true});
- const tick=()=>{
+ // Launch and return-to-app warm once; the repeating tick only keeps a warm engine while Play is open.
+ const tick=(once=false)=>{
+  if(!once&&S.ui.view!=='play')return;
   if(document.hidden||accountLocked||T.game()!=='mtg'||Date.now()-lastTouch>NATIVE_WARM_IDLE_MS)return;
   const state=playSetup.snapshot();if(!state.profile?.signedIn)return;
   warmForgeEngine(state);
@@ -1643,8 +1645,8 @@ function warmNativePlay(){
    for(const name of names){const c=meta(name),face=c?.card_faces?.[0];for(const url of [c?.image_uris?.normal||face?.image_uris?.normal,c?.image_uris?.art_crop||face?.image_uris?.art_crop])if(url)new Image().src=url;}
   }).catch(()=>{artFor='';});
  };
- setTimeout(tick,2000);setInterval(tick,30000);
- document.addEventListener('visibilitychange',()=>{if(!document.hidden){touched();tick();}});
+ setTimeout(()=>tick(true),2000);setInterval(()=>tick(),30000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){touched();tick(true);}});
 }
 function renderPlayPage() {
   if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>Choose Magic in the game selector to prepare a CPU match.</p><a class="btn" href="#home">Return Home</a></section>';

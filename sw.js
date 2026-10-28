@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-steady-table-v351";
+const CACHE = "cardforge-shell-planeswalk-app-play-v352";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",
