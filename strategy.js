@@ -74,6 +74,7 @@ export function mtgjsonDeck(payload) {
     name: d.name || "Imported precon",
     cards,
     commander: d.commander?.[0]?.name || "",
+    commanders: (d.commander || []).map((c) => c.name).filter(Boolean),
     excluded: sumQty((d.sideBoard || []).map((c) => ({ qty: c.count || 0 }))),
     errors: [],
     total: sumQty(cards),
