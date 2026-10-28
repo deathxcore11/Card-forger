@@ -170,6 +170,11 @@ export function refreshDeckScores(root) {
   }
 }
 
+// A small emblem per format family on the deck tile: crown for Commander, shield for the
+// rotating formats, star for the eternal ones.
+const FORMAT_EMBLEM={crown:'<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/>',shield:'<path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"/>',star:'<path d="M12 2l2.5 7.5H22l-6 4.5 2.5 7.5L12 17l-6.5 4.5L8 14 2 9.5h7.5z"/>'};
+function formatEmblem(f){const k=f.commander?'crown':/standard|pioneer|alchemy|brawl/i.test(f.name)?'shield':'star';return `<svg class="format-emblem" viewBox="0 0 24 24" aria-hidden="true">${FORMAT_EMBLEM[k]}</svg>`;}
+
 export function deckTile(d, wide = false, {playSelection = null} = {}) {
   // Owned and to-find cover the physical pool (main and sideboard share copies); no prices
   // on a deck tile. The size line counts the main deck against the format, like the deck page.
@@ -180,17 +185,32 @@ export function deckTile(d, wide = false, {playSelection = null} = {}) {
   return `<button class="deck-tile ${wide ? "wide" : ""}" ${typeof playSelection==='boolean' ? `data-act="playSelectDeck" data-play-deck="${esc(d.id)}" aria-pressed="${playSelection}" aria-label="Select ${esc(d.name)}"` : `data-act="go" data-to="#deck/${esc(d.id)}"`}>
     <span class="tile-art">${img(cover, d.name)}</span>
     <span class="tile-shade"></span>
-    <span class="tile-top"><span class="deck-format-stack"><span class="chip dark">${esc(formatOf(d).name)}</span>${deckBoxMarkup(d,{images:d.cards.slice(0,3).map(r=>cardImage(meta(r.name)))})}</span>${colorDots(meta(d.commander))}</span>
+    <span class="tile-top"><span class="deck-format-stack"><span class="chip dark deck-format-emblem">${formatEmblem(formatOf(d))}${esc(formatOf(d).name)}</span>${deckBoxMarkup(d,{images:d.cards.slice(0,3).map(r=>cardImage(meta(r.name)))})}</span>${colorDots(meta(d.commander))}</span>
     <span class="tile-body">
       <b>${esc(d.name)}</b>
       <small>${esc(formatOf(d).commander ? d.commander || "No commander yet" : mtgPower(d).plan)} · ${main}/${target}${side ? ` · ${side} sideboard` : ""}</small>
-      <span class="tile-stats"><span data-deck-score="${esc(d.id)}">${powerChip(mtgPower(d))}</span><span><em>${Math.round(owned * 100)}%</em> owned</span>${t.missing ? `<span><em>${t.missing}</em> to find</span>` : ""}</span>
+      <span class="tile-stats"><span data-deck-score="${esc(d.id)}">${powerChip(mtgPower(d))}</span><span class="tile-owned"><em>${Math.round(owned * 100)}%</em> owned</span><span class="tile-find">${t.missing ? `<em>${t.missing}</em> to find` : t.copies ? "Ready" : ""}</span></span>
       ${bar(owned, "thin")}
     </span>
   </button>`;
 }
 
 /* ---------- Search ---------- */
+
+// The empty search page shows a fan of five cards from your own collection, a new five each
+// day, instead of a black void. Tapping one opens it. Nothing shows without owned art.
+function searchFan() {
+  const seen = new Set(), pool = [];
+  for (const entry of S.state.collection) {
+    const c = magicOwnedCard(entry, S.state.printings?.[entry.printingId]), src = c && cardImage(c);
+    if (src && !seen.has(key(c.name))) { seen.add(key(c.name)); pool.push({ c, src }); }
+  }
+  if (pool.length < 3) return "";
+  const day = Math.floor(Date.now() / 864e5), picks = [];
+  for (let i = 0; i < Math.min(5, pool.length); i++) picks.push(pool[(day * 7 + i * 13) % pool.length]);
+  const unique = [...new Map(picks.map((p) => [p.c.name, p])).values()], mid = (unique.length - 1) / 2;
+  return `<section class="search-fan" aria-label="Cards from your collection"><div class="search-fan-cards">${unique.map((p, i) => `<button class="search-fan-card" style="--i:${(i - mid).toFixed(1)}" data-act="card" data-name="${esc(p.c.name)}" aria-label="Open ${esc(p.c.name)}">${img(p.src, p.c.name)}</button>`).join("")}</div><h2>From your collection today</h2><p class="muted">Tap one to read it, or start typing above.</p></section>`;
+}
 
 const COLOR_ID = [["W", "White"], ["U", "Blue"], ["B", "Black"], ["R", "Red"], ["G", "Green"], ["WU", "Azorius WU"], ["UB", "Dimir UB"], ["BR", "Rakdos BR"], ["RG", "Gruul RG"], ["GW", "Selesnya GW"], ["WB", "Orzhov WB"], ["UR", "Izzet UR"], ["BG", "Golgari BG"], ["RW", "Boros RW"], ["GU", "Simic GU"], ["WUBRG", "All five"], ["C", "Colorless"]];
 const MTG_SORTS = [["", "Best match"], ["name", "Name"], ["usdAsc", "Price: low to high"], ["usd", "Price: high to low"], ["released", "Newest"], ["cmc", "Mana value"], ["edhrec", "Most played (EDHREC)"], ["rarity", "Rarity"]];
@@ -255,7 +275,7 @@ export function search() {
             return `<button class="grid-card" ${finishAttrs('mtg',c,{})} data-act="card" data-name="${esc(c.name)}" ${tierAttrs(tierOf("mtg", c.rarity, c.prices?.usd ?? c.prices?.usd_foil))}>${img(cardImage(c), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">${esc(c.name)} ${setBadge(c)}</span><span>${usd(c.prices?.usd ?? c.prices?.usd_foil)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
           })
           .join("")}</div>`
-      : `<div class="hints"><p class="muted small">Try:</p>${[["Cheap card draw", "o:\"draw a card\" usd<1"], ["Angels", "t:angel"], ["Red legends", "t:legendary t:creature id=r"], ["Token makers", "o:\"create\" o:token"]]
+      : `${searchFan()}<div class="hints"><p class="muted small">Try:</p>${[["Cheap card draw", "o:\"draw a card\" usd<1"], ["Angels", "t:angel"], ["Red legends", "t:legendary t:creature id=r"], ["Token makers", "o:\"create\" o:token"]]
           .map(([l, q]) => `<button class="chip" data-act="dbTry" data-q="${esc(q)}">${esc(l)}</button>`)
           .join("")}</div>`
   }${db.next ? `<button class="btn ghost block" data-act="dbMore" ${db.busy ? "disabled" : ""}>${db.busy ? "Loading…" : db.error ? "Retry loading more" : "Load more"}</button>` : ""}`;
@@ -682,9 +702,22 @@ export function compareSheet() {
 
 /* ---------- Collection ---------- */
 
+// The header band shows an illustration from your own collection (the art crop, never the card
+// frame): the rarest card first, the same one each visit.
+function collectionHeroArt() {
+  const rank = { mythic: 4, special: 3, rare: 2, uncommon: 1 };
+  let best = null, score = -1;
+  for (const entry of S.state.collection) {
+    const c = magicOwnedCard(entry, S.state.printings?.[entry.printingId]), art = c?.image_uris?.art_crop || c?.card_faces?.[0]?.image_uris?.art_crop;
+    if (art && (rank[c.rarity] || 0) > score) { best = art; score = rank[c.rarity] || 0; }
+  }
+  return best;
+}
+
 export function collection() {
   const tab = S.ui.collTab;
-  return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${S.ui.collTab === "cards" ? viewControl("mtg","collection")+selectionControl("mtg") : ""}<button class="icon" data-act="collMenu" aria-label="More collection actions">⋯</button></div></div>
+  const art = collectionHeroArt();
+  return `<div class="page-head${art ? " page-hero" : ""}">${art ? `<span class="page-hero-art" aria-hidden="true"><img src="${esc(art)}" alt="" decoding="async" referrerpolicy="no-referrer"></span>` : ""}<h1>Collection</h1><div class="head-actions">${S.ui.collTab === "cards" ? viewControl("mtg","collection")+selectionControl("mtg") : ""}<button class="icon" data-act="collMenu" aria-label="More collection actions">⋯</button></div></div>
   ${segmented("collTab", tab === "wishlist" ? "cards" : tab, [["cards", "Cards", "cardStack"], ["binders", "Binders", "binder"], ["value", "Value", "history"]])}
   ${tab === "binders" ? binderShelf(S.state.collection.map(entry => { const c=magicOwnedCard(entry,S.state.printings?.[entry.printingId]); return {entry,card:c,image:cardImage(c),game:"mtg",owned:true}; }),"mtg",S.state.settings.binders || []) : tab === "value" ? collectionValueView() : collectionCards(tab === "wishlist")}`;
 }

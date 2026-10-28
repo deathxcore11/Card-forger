@@ -300,3 +300,22 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 #practicePlayerMat .play-result-board-bar{position:fixed;left:50%;top:12px;translate:-50% 0;z-index:3000;display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:999px;background:#0d1016f2;border:1px solid #d6ad6444;box-shadow:0 10px 30px #000a;color:#f4d78f;font:700 12px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase}
 #practicePlayerMat .play-result-board-bar .btn{letter-spacing:normal;text-transform:none}
 #practicePlayerMat [data-result-board] :is(button,[role=button]){pointer-events:none}
+/* Arena lobby (art pass): two portraits around the crest, the bar beneath. */
+.play-feature.play-lobby{grid-template-columns:minmax(0,1fr) 96px minmax(0,1fr);grid-template-rows:minmax(300px,46vh) auto;border:0;background:none;box-shadow:none;overflow:visible}
+.play-lobby-seat{border:1px solid var(--glass-line,#d6ad6433);border-radius:24px;overflow:hidden;box-shadow:0 26px 54px #0009;min-height:300px}
+.play-lobby-seat.play-feature-art:after{background:linear-gradient(180deg,#0c0c0e00 35%,#0c0c0ef0 92%)}
+.play-lobby-seat .play-feature-copy{padding-bottom:44px}
+.play-lobby-cpu{background:radial-gradient(70% 60% at 50% 35%,#1f3248,#0c0e13 70%)}
+.play-lobby-cpu .eyebrow{color:#9fd0ff!important}
+.play-lobby-backs{position:absolute;left:50%;top:44%;z-index:-1;width:0;height:0}
+.play-lobby-backs i{position:absolute;width:118px;height:165px;margin:-82px 0 0 -59px;border-radius:10px;border:2px solid #d6ad6488;background:radial-gradient(circle at 50% 50%,#d6ad6433 0 18px,transparent 19px),repeating-linear-gradient(45deg,#16243a 0 6px,#1b2c46 6px 12px);box-shadow:0 16px 30px #000a}
+.play-lobby-backs i:nth-child(1){transform:rotate(-12deg) translateX(-46px)}.play-lobby-backs i:nth-child(3){transform:rotate(12deg) translateX(46px)}
+.play-lobby-vs{display:grid;place-items:center;z-index:2}
+.play-lobby-vs b{display:grid;place-items:center;width:74px;height:74px;transform:rotate(45deg);border:2px solid var(--gold,#e8b95b);background:#0c0e13e6;box-shadow:0 0 36px #e8b95b44}
+.play-lobby-vs b{font:700 0/1 Cinzel,Georgia,serif}
+.play-lobby-vs b:before{content:"VS";transform:rotate(-45deg);font-size:22px;color:var(--gold,#e8b95b)}
+.play-feature-side.play-lobby-bar{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px;margin:-34px auto 0;padding:12px 16px;border:1px solid var(--glass-line,#d6ad6433);border-radius:22px;background:#0c0e13cc;backdrop-filter:blur(14px);z-index:3;width:min(720px,100%)}
+.play-lobby-bar .play-feature-paths{grid-template-columns:auto auto}
+.play-lobby-bar .play-feature-start.btn{margin-top:0;min-width:220px}
+.play-lobby-bar .play-feature-status{flex-basis:100%;text-align:center}
+@media(max-width:800px){.play-feature.play-lobby{grid-template-columns:1fr 56px 1fr;grid-template-rows:auto auto}.play-lobby-seat{min-height:220px}.play-lobby-vs b{width:46px;height:46px}.play-lobby-vs b:before{font-size:15px}.play-lobby-backs i{width:80px;height:112px;margin:-56px 0 0 -40px}}

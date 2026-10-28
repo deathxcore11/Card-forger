@@ -329,3 +329,37 @@ body[data-view="scan"] #content>.context-guide{margin:12px 14px 0}
 .scan-workspace:not(.is-live) .scan-toolbar{width:min(100% - 28px,1196px);margin-inline:auto;justify-self:center;align-self:center;background:transparent!important;border-color:transparent!important;box-shadow:none!important;backdrop-filter:none!important}
 .scan-workspace:not(.is-live) .scan-toolbar h1{font-size:clamp(24px,2.4vw,30px)}
 .scan-auto-game{padding:3px 9px;border:1px solid var(--glass-line,var(--line));border-radius:999px;font-size:11.5px;color:var(--muted)}
+
+/* Deck tiles as art (art pass): taller art, a format emblem, Cinzel names, owned on the left and
+   what's left to find on the right over a gold bar. No prices. */
+.deck-grid .deck-tile:not(.wide){height:260px}
+.deck-tile .tile-shade{background:linear-gradient(180deg,#0000 28%,#07080bd9 78%,#07080bf5)}
+.deck-format-emblem{display:inline-flex;align-items:center;gap:6px;padding-left:8px;backdrop-filter:blur(8px)}
+.deck-format-emblem .format-emblem{width:14px;height:14px;fill:var(--gold);flex:none}
+.deck-tile .tile-body>b{font:700 21px/1.15 Cinzel,Georgia,serif;letter-spacing:.01em;text-shadow:0 2px 10px #000a}
+.deck-tile .tile-stats{display:flex;align-items:center;gap:10px}
+.deck-tile .tile-find{margin-left:auto}
+.deck-tile .tile-find:not(:has(em)){color:var(--gold);font-weight:750}
+.deck-tile .bar.thin>span{background:linear-gradient(90deg,#c08a3a,var(--gold))}
+
+/* Art header band (art pass): the page title over an illustration from your own cards. */
+.page-head.page-hero{position:relative;isolation:isolate;overflow:hidden;min-height:180px;align-items:flex-end;padding:22px 26px;margin-bottom:6px;border:1px solid var(--glass-line,var(--line));border-radius:22px;box-shadow:0 18px 40px #0007}
+.page-hero-art{position:absolute;inset:0;z-index:-1}
+.page-hero-art img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;transform:scale(1.02)}
+.page-hero-art:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#07080bf0 12%,#07080b80 48%,#07080b1f),linear-gradient(0deg,#07080bc7,transparent 65%)}
+.page-head.page-hero h1{font-size:clamp(30px,3.4vw,44px);color:#f6eedb;text-shadow:0 2px 14px #000c}
+.page-head.page-hero .head-actions{align-self:flex-start}
+:root[data-theme="light"] .page-head.page-hero h1{color:#fff}
+@media(max-width:600px){.page-head.page-hero{min-height:140px;padding:16px;border-radius:18px}}
+
+/* Search empty state (art pass): a fan of today's cards from your collection. */
+.search-fan{display:grid;justify-items:center;gap:6px;margin:34px 0 8px;text-align:center}
+.search-fan-cards{position:relative;height:clamp(230px,30vw,330px);width:100%}
+.search-fan-card{position:absolute;left:50%;top:10px;width:clamp(130px,15vw,200px);padding:0;border:0;background:none;border-radius:10px;cursor:pointer;
+ transform:translateX(calc(-50% + var(--i) * clamp(70px,8vw,112px))) translateY(calc(var(--i) * var(--i) * 6px)) rotate(calc(var(--i) * 7deg));transform-origin:50% 120%;transition:transform .22s ease,filter .22s ease;z-index:calc(10 - var(--i) * var(--i))}
+.search-fan-card img{display:block;width:100%;border-radius:10px;box-shadow:0 24px 48px #000c}
+.search-fan-card:hover,.search-fan-card:focus-visible{transform:translateX(calc(-50% + var(--i) * clamp(70px,8vw,112px))) translateY(-14px) rotate(calc(var(--i) * 7deg));z-index:20;filter:brightness(1.06)}
+.search-fan h2{margin:4px 0 0;font:700 clamp(20px,2vw,26px)/1.2 Cinzel,Georgia,serif}
+.search-fan p{margin:0}
+.search-fan+.hints{justify-content:center}
+@media(prefers-reduced-motion:reduce){.search-fan-card{transition:none}}

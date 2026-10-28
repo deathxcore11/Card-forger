@@ -41,11 +41,14 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
     </footer>`;
   // Quick Play: one selected deck, a random CPU and one Play button. Practice keeps the full setup.
   const startButton=`<button class="btn play-feature-start cs-plate" data-act="playStartCandidate" ${canStart?'':'disabled'} aria-describedby="playMatchStatus"><span class="cs-plate-label">${quickStatus.busy?'Finding a CPU deck…':'Play vs CPU'}</span></button>`;
-  const quickFeature=`<section class="play-feature" aria-label="Quick Play">
-      <div class="play-feature-art">${matchupArt.player||''}<div class="play-feature-copy"><p class="eyebrow">${state.selected?'Your deck · '+esc(match.format):esc(match.format)}</p><h2 id="playSelectedTitle" tabindex="-1">${esc(state.selected?.name||'Choose a deck below')}</h2><p>${state.selected?esc([state.selected.commander,count(state.selected.cards)+' cards'].filter(Boolean).join(' · ')):'Your selection carries straight into the match.'}</p></div></div>
-      <div class="play-feature-side">
+  // Quick Play as Arena's lobby: your deck and the CPU face each other as art portraits around
+  // the VS crest, with the mode and one plate in a bar beneath.
+  const quickFeature=`<section class="play-feature play-lobby" aria-label="Quick Play">
+      <div class="play-feature-art play-lobby-seat">${matchupArt.player||''}<div class="play-feature-copy"><p class="eyebrow">${state.selected?'You · '+esc(match.format):esc(match.format)}</p><h2 id="playSelectedTitle" tabindex="-1">${esc(state.selected?.name||'Choose a deck below')}</h2><p>${state.selected?esc([state.selected.commander,count(state.selected.cards)+' cards'].filter(Boolean).join(' · ')):'Your selection carries straight into the match.'}</p></div></div>
+      <div class="play-lobby-vs" aria-hidden="true"><b>VS</b></div>
+      <div class="play-feature-art play-lobby-seat play-lobby-cpu"><span class="play-lobby-backs" aria-hidden="true"><i></i><i></i><i></i></span><div class="play-feature-copy"><p class="eyebrow">CPU · Random deck</p><h2>Random CPU</h2><p>${state.quickMatch?`${state.quickMatch.candidateCount} compatible list${state.quickMatch.candidateCount===1?'':'s'} considered`:'Picked when you start'}</p></div></div>
+      <div class="play-feature-side play-lobby-bar">
         <nav class="play-paths play-feature-paths" aria-label="Play mode">${[['quick','Quick Play'],['practice','Practice']].map(([value,label])=>`<button class="btn ghost" data-act="playStyle" data-play-style="${value}" aria-pressed="${state.playStyle===value}">${label}</button>`).join('')}</nav>
-        <div class="play-feature-opponent"><span class="play-feature-orb" aria-hidden="true">?</span><div><strong>Random CPU</strong><span>${state.quickMatch?`${state.quickMatch.candidateCount} compatible list${state.quickMatch.candidateCount===1?'':'s'} considered`:'Picked when you start'}</span></div></div>
         ${signedIn?startButton:'<button class="btn play-feature-start cs-plate" data-act="menu"><span class="cs-plate-label">Sign in to play</span></button>'}
         <div id="playMatchStatus" class="small muted play-feature-status" role="status"><p>${esc(footerText)}</p>${Object.entries(review.seats||{}).map(([seat,s])=>notices(s.unsupported,(seat==='player'?'Your deck':'CPU deck')+': card rules unavailable')).join('')}</div>
       </div>
