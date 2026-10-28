@@ -1665,3 +1665,12 @@ body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
 @keyframes cs-art-push{from{opacity:0;transform:scale(1.18)}25%{opacity:1}to{opacity:1;transform:scale(1)}}
 @keyframes cs-vs-slam{0%{opacity:0;transform:scale(2.8) rotate(-8deg)}75%{opacity:1;transform:scale(.9)}100%{opacity:1;transform:none}}
 @keyframes cs-sheen{to{transform:translateX(320%) skewX(-12deg)}}
+/* Upright phones: the opening hand is two centred rows (four, then three) sized to the screen
+   width, the way taller screens already lay it out, instead of a fan wider than the screen; and
+   the hand and "Keep this hand?" sit together in the middle rather than at opposite ends. */
+@media (max-width:599px) and (orientation:portrait){
+:where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-mat{justify-content:center!important;gap:10px!important}
+:where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-hand-area{flex:0 0 auto!important;height:auto!important;overflow:visible!important}
+:where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-hand .play-match-card-row{flex-wrap:wrap!important;justify-content:center!important;gap:10px 8px!important;padding:16px 0 6px!important;overflow:visible!important}
+:where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-hand .play-match-card-wrap{--fan-angle:0deg!important;flex:0 0 auto!important;width:min(130px,calc((100% - 24px) / 4))!important;min-width:0!important;max-width:none!important;margin:0!important}
+}
