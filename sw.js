@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-warm-match-start-v349";
+const CACHE = "cardforge-shell-mega-art-flicker-v350";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",
