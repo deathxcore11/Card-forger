@@ -1,7 +1,7 @@
-// Website 4.3.14 ships with Android 0.10.2 beta, which bundles this same website.
+// Website 4.3.15 is a web-only update until the next Android beta bundles it.
 export const RELEASE = Object.freeze({
- id:'web-4.3.14-thirteen-playmats-android-0.10.2',date:'2026-10-28',webVersion:'4.3.14',
- changes:["Seven new playmats for the Play table, for thirteen in all.","A calmer match screen: the deck tracker is one button with tabs, the attack and block bar speaks plainly, the combat banner no longer covers creatures, zone lists stay focused, the card preview is slimmer, and summoning-sick creatures look quieter. Seats are slim pills, zone counts are icon chips, and the turn buttons sit without a box.","Hits, landings and deaths now show above the table, and life drops when the attacker connects.","Planeswalk battles are drag and drop: drag spells onto targets, drag to attack and to reorder, tap the loyalty diamond to fan out abilities, with new battle mats and keyword badges and a legend.","Foil cards and pack openings shine more, and foils catch the light on the table when they land or strike. Rare pulls sway as you tilt your phone, buzz, and pop.","Matches open and close with flair: the versus screen slams together, the coin flip bursts in the winner's colour, your opening hand is dealt card by card, and wins and losses get their own reveal.","Android app 0.10.2 beta brings these to the app."],
+ id:'web-4.3.15-upright-opening-hand-android-0.10.2',date:'2026-10-28',webVersion:'4.3.15',
+ changes:["The opening hand fits on phones held upright instead of being cut off."],
 
  android:Object.freeze({version:'0.10.2 beta',versionName:'0.10.2-beta',versionCode:21,interfaceVersion:'4.3.14',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.10.2.apk',bytes:27671156,sha256:'99fed6c0ec6890f3a98aa6a0fdc2bc00672081197c627e92a3f8eca76b8227d4'})
 });
