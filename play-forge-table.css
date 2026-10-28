@@ -711,7 +711,6 @@
 /* Fingers drag a card out of your hand to play it, so your hand never hands the gesture
    to the browser. On the board every swipe still scrolls. */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card{touch-action:none}
-@media (hover:hover){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card-wrap:hover{transform:translateY(calc(var(--play-hand)*-.32)) scale(1.06);z-index:30}}
 /* A press and hold previews a card, so the browser's own long-press menu, text
    selection and image dragging never start on the table (iPad Safari shows them). */
 :where(body.practice-table-open) .play-match-table[data-forge-native] :is(.play-match-card,.play-match-card *,.play-command-zone,.play-match-opponent-fan),:where(body.practice-table-open) .forge-peek{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
@@ -1789,8 +1788,9 @@ body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
 :where(body.practice-table-open) .forge-peek .forge-peek-commander li{padding:4px 9px;border-radius:999px;background:#e8b95b1f;border:1px solid #e8b95b55;color:#ffe2a6;font:700 11.5px/1.2 'DM Sans',system-ui,sans-serif}
 :where(body.practice-table-open) .forge-peek .forge-peek-commander li:first-child::before{content:"\265B  "}
 @media (max-aspect-ratio:17/20){
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]{--you-y:calc(var(--b) + 30px);--hand-lift:calc(var(--b) + 34px)}
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-mat{padding-top:calc(var(--t) + 146px)!important;padding-bottom:calc(var(--b) + 196px)!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]{--you-y:calc(var(--b) + 30px);--hand-lift:calc(var(--b) + 120px)}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .forge-seat-mana{bottom:calc(100% + 2px)!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-mat{padding-top:calc(var(--t) + 146px)!important;padding-bottom:calc(var(--b) + 250px)!important}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=cpu]{top:calc(var(--t) + 8px)!important;left:calc(50% - 26px)!important}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-command-zone.forge-crest[data-seat=cpu]{top:calc(var(--t) + 2px)!important;left:calc(50% - 98px)!important;right:auto!important;bottom:auto!important}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row[data-seat=cpu]{top:calc(var(--t) + 19px)!important;left:calc(50% + 36px)!important;right:auto!important}
@@ -1825,6 +1825,13 @@ body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields :is(.play-match-lane,.play-match-card-row){min-width:0!important}
 /* Arena's hand lift: the hand rises clear of your profile strip while a thumb or the mouse is on it. */
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand-area{transform-origin:50% 100%;touch-action:none;transition:translate .3s cubic-bezier(.2,.8,.2,1),scale .3s cubic-bezier(.2,.8,.2,1)}
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-hand-lift=true] .play-match-hand-area{translate:0 calc(-1 * var(--hand-raise,0px));scale:var(--hand-scale,1);z-index:36!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-hand-focused=true] .play-match-hand-area,:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-hand-lift=true] .play-match-hand-area{translate:0 calc(-1 * var(--hand-raise,0px));scale:var(--hand-scale,1);z-index:36!important}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand-area{transition:none}}
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card-wrap[data-hand-focus]{transform:translateY(calc(var(--play-hand)*-.3)) scale(1.08);z-index:30}
+/* Arena's fan: the focused card pops upright to --focus-k, its neighbours slide aside by --shove (layoutHand). */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card-wrap{translate:var(--shove,0px) 0;transition:transform .16s cubic-bezier(.2,.8,.2,1),translate .16s cubic-bezier(.2,.8,.2,1)}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card-wrap[data-hand-focus]{transform:translate(var(--focus-x,0px),var(--focus-y,0px)) scale(var(--focus-k,1.5));z-index:40}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card-wrap{transition:none}}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card-row{overflow:visible!important}
+/* Trouble toasts sit top-center under the opponent's row, never over a life total. */
+:where(body.practice-table-open) .forge-native-panel .forge-toast{left:50%!important;right:auto!important;translate:-50% 0;top:calc(max(env(safe-area-inset-top),6px) + 84px)!important}
+@media (max-aspect-ratio:17/20){:where(body.practice-table-open) .forge-native-panel .forge-toast{top:calc(max(env(safe-area-inset-top),6px) + 150px)!important}}
