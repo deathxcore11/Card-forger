@@ -19,7 +19,7 @@ const OWNER = '00000000-0000-4000-8000-000000000001';
 const BEARER = 'forge-browser-fixture-owner'; // synthetic test credential ONLY
 const observations = new FixtureObservationCache({ bearer: BEARER });
 const actionReceipts = new FixtureReceiptCache({ bearer: BEARER, viewerObservations: observations });
-const SOURCE_SHA='dc0fbd381f81a447a1459ec62b525f92b812f86b1f883af298e65a7a4eb7f9e3';
+const SOURCE_SHA='1213d8acfa1d65f39d8184365ebca2815b9b41776e8f8847abf1517bf5464e84';
 const HOST_MANIFEST_SHA='561a0cd593476a0be68e5b2bea66a60c836107fd15edb13d1458b7ab3ab2f5c0';
 const args = {};
 for (let i = 2; i < process.argv.length; i += 2) {

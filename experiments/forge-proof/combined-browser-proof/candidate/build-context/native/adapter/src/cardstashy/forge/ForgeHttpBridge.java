@@ -736,6 +736,11 @@ public final class ForgeHttpBridge implements IRemote {
         if(value instanceof SpellAbilityView sa)return obj("kind","ability","id",sa.getId(),"description",sa.getDescription(),"card",card(sa.getHostCard()));
         if(value instanceof forge.game.replacement.ReplacementEffectView re)return obj("kind","replacementEffect","id",re.getId(),"description",re.getDescription());
         if(value instanceof String || value instanceof Number || value instanceof Boolean || value instanceof Enum<?>)return String.valueOf(value);
+        // Kicker, Buyback, Entwine and other optional costs (Forge asks with many(), so an order
+        // prompt) and counter kinds: the reply hands back the original object, so a label is enough.
+        String type=value==null?"":value.getClass().getSimpleName();
+        if(type.equals("OptionalCostValue"))return obj("kind","optionalCost","description",String.valueOf(value));
+        if(type.equals("CounterType"))return obj("kind","counterType","description",String.valueOf(value));
         return null;
     }
     Map<String,Object> card(CardView c) {
