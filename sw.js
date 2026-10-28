@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-play-audit-fixes-v354";
+const CACHE = "cardforge-shell-portrait-playmats-motion-v355";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",
@@ -18,6 +18,7 @@ const ASSETS = [
   "./play-board-icons.js",
   "./play-token-art.js",
   "./play-token-printing.js",
+  "./play-playmats.js",
   "./experiments/forge-proof/native-panel.mjs",
   "./experiments/phase-engine/choice-presentation.mjs",
   "./play-card-support.js",

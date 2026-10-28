@@ -139,3 +139,4 @@ experiments/forge-proof/*
 !experiments/forge-proof/forge-table.mjs
 !experiments/forge-proof/cpu-action-playback.mjs
 !experiments/forge-proof/native-panel.mjs
+!experiments/forge-proof/motion-kit.mjs
