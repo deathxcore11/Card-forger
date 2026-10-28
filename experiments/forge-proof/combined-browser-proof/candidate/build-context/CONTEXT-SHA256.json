@@ -1,7 +1,7 @@
 {
   ".dockerignore": "22050b43f43a2d9f93d5b863f49b10b3e45c70dfce806512a9a3a9aca1246cd9",
   "Dockerfile": "a9a864c2846018cc3528b74258a3024b915dc83f0bef75555508f2dbd3b8359a",
-  "hosting/assemble.sh": "47d7a9f00139860417f91fc816f52117e8b6d8d2760d1be17cb2beb0e6a2c5dc",
+  "hosting/assemble.sh": "4a631468cef0b41772b24ee82b9a34d0b05601de0faa0103608bc69936243d43",
   "hosting/bootstrap.py": "ad5cf253323d2f088b24aabbe9c6cacd45787208a95f42787798e5d5ca0b12fd",
   "hosting/checkpoint-files.json": "c333d6b7a43848b4f3798cd711283daa6165285255868e4db10822bfcb264278",
   "hosting/gateway.py": "78772da07078ca7259c92a69ddb242a2719b28d65010a7ff4e473e6525aec079",

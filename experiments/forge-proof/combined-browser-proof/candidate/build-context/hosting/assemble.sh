@@ -29,7 +29,8 @@ mkdir -p /tmp/native-payment-home
 timeout --signal=TERM --kill-after=5s 90s java -Xmx1g -XX:ActiveProcessorCount=2 \
   -Djava.awt.headless=true -Dsentry.enabled=false -Duser.home=/tmp/native-payment-home \
   -Dproof.root=/opt/forge-proof -cp "$CP" cardstashy.forge.NativePaymentTransitionChecks \
-  /opt/forge-proof/human/payment-transition-checks.json
+  /opt/forge-proof/human/payment-transition-checks.json \
+  || { cat /opt/forge-proof/human/payment-transition-checks.json >&2 || true; exit 1; } # show which case failed
 timeout --signal=TERM --kill-after=5s 60s java -Xmx1g -XX:ActiveProcessorCount=2 \
   -Djava.awt.headless=true -Dsentry.enabled=false -Duser.home=/tmp/native-payment-home \
   -Dproof.root=/opt/forge-proof -cp "$CP" cardstashy.forge.NativeStartingPlayerChecks

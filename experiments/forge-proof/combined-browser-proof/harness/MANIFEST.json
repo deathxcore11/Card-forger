@@ -101,7 +101,7 @@
     {
       "path": "collect-combined.py",
       "bytes": 10399,
-      "sha256": "b35973257fcbdce46e3b33f6a876d3c54f6e952aae2ed8d064c42aaf147c45bb"
+      "sha256": "93fb2144f6fd5c9fdb375809fe57cab15c0d0dce6a4d2a0f6eba86f7dc412ceb"
     },
     {
       "path": "combined-driver.patch",
@@ -111,7 +111,7 @@
     {
       "path": "composition-contract.json",
       "bytes": 5606,
-      "sha256": "01960b88cd55da173ee0356fd96d8dc5debbd2b6b607bbf95ea0c506d08e13b2"
+      "sha256": "476ce552b20c1d889e5f4c6c1ba4841ba411cc024a2ffcae9c6392b8c1703be2"
     },
     {
       "path": "evidence/ci-40318684639/artifact/image-summary.json",
@@ -421,7 +421,7 @@
     {
       "path": "image-stages/MANIFEST.json",
       "bytes": 5201,
-      "sha256": "bf4e310f253712c31da754716803757e1d0caeb793c12686a8bc5f05440c92ef"
+      "sha256": "265fd3481ac89ebb64fa067248e1b514bda97d7dc65d1cce6776da409c8ea476"
     },
     {
       "path": "image-stages/README.md",
@@ -431,7 +431,7 @@
     {
       "path": "image-stages/SHA256SUMS",
       "bytes": 1550,
-      "sha256": "b3ed326399a2853c9c7c214b13f4c8bdc0dd4ee7eec2739d9011149f67f0b527"
+      "sha256": "83d7e03b0f0acfbb2704461d9abd427d560f963e9f25da1beca6b7040d3f6a7b"
     },
     {
       "path": "image-stages/build-and-probe.mjs",
@@ -471,7 +471,7 @@
     {
       "path": "image-stages/pins.mjs",
       "bytes": 1210,
-      "sha256": "0eb11983113b27b681c3e6cd4d22503354a4845fa0a83606c96bd2be7b683cd4"
+      "sha256": "16e57fa835e06a5ae5585e5a452aa5b92b8a1c0c2628e27349fda7c4f9b02375"
     },
     {
       "path": "image-stages/probe-image.mjs",
@@ -661,7 +661,7 @@
     {
       "path": "test-collector.py",
       "bytes": 6328,
-      "sha256": "1f23bc0c28b56c110e367624ad7e54db2db93cf5c3f5bc6bbfdd8761f5c59143"
+      "sha256": "aa5c38d8834712e9f1e54e2a7dfd48d699a399c57c2854e7a7a72066d1170aff"
     },
     {
       "path": "test-delivered-observer.mjs",

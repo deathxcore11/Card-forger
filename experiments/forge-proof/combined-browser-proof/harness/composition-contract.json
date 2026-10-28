@@ -27,7 +27,7 @@
     },
     "hostContextManifest": {
       "path": "${CANDIDATE}/build-context/CONTEXT-SHA256.json",
-      "sha256": "e4748bce03027787de58090825a38f1d022789875009b25ff299de4dae57bfe8"
+      "sha256": "983722cee3e76830a5acba8cc9d9401e84d3aaa851324cab4e22c0583c498121"
     },
     "uiManifest": {
       "path": "${CANDIDATE}/UI-SHA256.json",
@@ -91,7 +91,7 @@
     },
     "imageStagesManifest": {
       "path": "${PACKAGE}/image-stages/MANIFEST.json",
-      "sha256": "bf4e310f253712c31da754716803757e1d0caeb793c12686a8bc5f05440c92ef"
+      "sha256": "265fd3481ac89ebb64fa067248e1b514bda97d7dc65d1cce6776da409c8ea476"
     },
     "runtimeUISubset": {
       "path": "${CANDIDATE}/UI-RUNTIME-SHA256.json",
