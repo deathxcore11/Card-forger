@@ -3,6 +3,11 @@ const OPTION_METHODS=new Set(['getChoices','getAbilityToPlay','chooseSingleEntit
 const SEARCH_ZONES=new Set(['Library','Graveyard','Exile']);
 // Only current engine-offered choices enter the picker. Do not enumerate a zone:
 // a visible library can include cards which the current search cannot select.
+// Three or more identical items in a row on the stack show as one line with a ×N badge.
+// Display only: Forge still resolves each one, and nothing groups while a stack item is a pick.
+function stackRuns(n){const picking=[...(n.selection?.targets||[]),...(n.selection?.actionable||[])].some(r=>r?.kind==='stack'),runs=[];
+ for(const item of n.stack||[]){const last=runs.at(-1),same=last&&!picking&&last[0].text&&last[0].text===item.text&&last[0].activatingPlayer===item.activatingPlayer;if(same)last.push(item);else runs.push([item]);}
+ return runs;}
 export function nativeZoneSearch(snapshot){
  const n=snapshot?.native,p=n?.prompt,cards=snapshot?.status?.surface?.cards||[],byId=new Map(cards.map(c=>[c.id,c]));
  if(!n||n.failure||n.status==='finished'||snapshot.transportError)return null;
@@ -256,7 +261,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   // (flashback or escape in the graveyard, a card you may play from exile, a target there) is picked here.
   if(unique.size&&presentation.hosted){const drawn=new Set([...(container.closest('.play-match-table')?.querySelectorAll('.play-match-card[data-instance]')||[])].map(e=>e.dataset.instance)),elsewhere=node('section',undefined,'forge-native-elsewhere');elsewhere.setAttribute('aria-label','In other zones');elsewhere.append(node('h3','In other zones'));
    for(const r of unique.values()){const c=r.kind==='card'&&!drawn.has(String(r.id))&&s.status.surface.cards.find(c=>c.id===r.id);if(c)elsewhere.append(button(`${c.known?c.name:'Face-down card'} · ${c.zone}`,()=>session.nativeSelect('card',r.id,n.revision),false,`ref-card-${r.id}`));}if(elsewhere.childNodes.length>1)panel.append(elsewhere);}
-  if(n.stack?.length){const stack=presentation.hosted?node('section',undefined,'forge-native-stack'):node('details');stack.append(node(presentation.hosted?'h3':'summary',presentation.hosted?'On the stack':`Native stack · ${n.stack.length}`));if(presentation.hosted)stack.setAttribute('aria-label','On the stack');for(const item of n.stack)stack.append(button(item.text||`Stack item ${item.id}`,()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`));panel.append(stack);}
+  if(n.stack?.length){const stack=presentation.hosted?node('section',undefined,'forge-native-stack'):node('details');stack.append(node(presentation.hosted?'h3':'summary',presentation.hosted?'On the stack':`Native stack · ${n.stack.length}`));if(presentation.hosted)stack.setAttribute('aria-label','On the stack');for(const run of stackRuns(n))if(run.length<3)for(const item of run)stack.append(button(item.text||`Stack item ${item.id}`,()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`));else{const top=run[0],b=button(top.text||`Stack item ${top.id}`,()=>session.nativeSelect('stack',top.id,n.revision),false,`stack-${top.id}`),count=node('b',`×${run.length}`,'forge-stack-count');b.dataset.stackCount=String(run.length);b.setAttribute('aria-label',`${run.length} identical: ${top.text||'stack item'}`);b.append(count);stack.append(b);}panel.append(stack);}
   const selected=presentation.hosted?null:s.status.surface.cards.find(c=>c.id===s.selected);if(selected)panel.append(button(copy(`Select ${selected.known?selected.name:'card'}`,`Send ${selected.known?selected.name:'card'} click to Forge`),()=>session.nativeSelect('card',selected.id,n.revision),false,'click-inspected'));
  }
  if(presentation.hosted){container.replaceChildren(panel);if(keepStripLeft){const strip=panel.querySelector('.forge-zone-search-cards');if(strip)strip.scrollLeft=keepStripLeft;}return;}

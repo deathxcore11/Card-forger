@@ -54,13 +54,15 @@ const BASE = {
     command: ['Talrand, Sky Summoner'],
   },
 };
-if (STATE === 'dense') {
+if (STATE === 'dense' || STATE === 'crowded') {
   BASE.you.battlefield.push(['Llanowar Elves'], ['Elvish Mystic'], ['Fyndhorn Elves', {sick: true}], ['Craterhoof Behemoth'], ['Krenko, Tin Street Kingpin', {counters: {P1P1: 2}}], ['Ghalta, Primal Hunger', {damage: 3}],
     ...Array.from({length: 4}, () => ['Goblin', {token: true, imageKey: 't:r_1_1_goblin_haste'}]),
     ...Array.from({length: 4}, () => ['Mountain']), ...Array.from({length: 3}, () => ['Forest', {tapped: true}]), ['Sol Ring'], ['Mind Stone']);
   BASE.cpu.battlefield.push(['Talrand, Sky Summoner'], ['Delver of Secrets'], ['Snapcaster Mage'], ['Frost Titan'], ['Phantasmal Image'], ...Array.from({length: 3}, () => ['Island']), ['Command Tower'], ['Fellwar Stone']);
 }
 if (STATE === 'discard') BASE.you.hand.push('Shock');
+// A Commander-sized hand and a pile of identical triggers (View full hand, the ×N stack badge).
+if (STATE === 'crowded') BASE.you.hand.push('Shock', 'Opt', 'Brainstorm', 'Lightning Bolt', 'Ponder', 'Counterspell');
 // The owner's real early board: the CPU went first and played a land; you played Forest
 // and Many Partings made a Food token.
 if (STATE === 'early' || STATE === 'pay') {
@@ -157,7 +159,7 @@ const phase = STATE === 'attack' ? 'COMBAT_DECLARE_ATTACKERS' : STATE === 'block
 const inputType = {targets: 'InputSelectTargets', attack: 'InputAttack', block: 'InputBlock', cpu: 'InputPassPriority', discard: '', opening: 'InputConfirmMulligan', pay: 'InputPayManaOfCostPayment'}[STATE] ?? 'InputPassPriority';
 const castable = ['Lightning Bolt', 'Monastery Swiftspear', 'Play with Fire', 'Skewer the Critics', 'Forest', 'Llanowar Elves'];
 const selection = {cards: [], targets: [], chosen: [], actionable: []};
-if (STATE === 'main' || STATE === 'dense') {
+if (STATE === 'main' || STATE === 'dense' || STATE === 'crowded') {
   selection.actionable = [...youZones.Hand.cards.filter(c => castable.includes(c.name)), ...byName(youZones.Battlefield, 'Arcane Signet')].map(ref);
 } else if (STATE === 'targets') {
   selection.targets = [...cpuZones.Battlefield.cards.filter(c => /Creature/.test(c.type)), ...youZones.Battlefield.cards.filter(c => /Creature/.test(c.type))].map(ref);
@@ -191,7 +193,7 @@ const native = {
     {id: YOU, name: 'idw011', life: 40, isViewer: true, counters: BASE.you.counters || {}, mana: {W: 0, U: 0, B: 0, R: ['targets', 'pay'].includes(STATE) ? 0 : 2, G: 0, C: 0}, zones: youZones},
     {id: CPU, name: 'CPU', life: 38, isViewer: false, counters: BASE.cpu.counters || {}, mana: {W: 0, U: 0, B: 0, R: 0, G: 0, C: 0}, zones: cpuZones},
   ],
-  stack: stackCard ? [{id: 990, text: 'Counterspell — Counter target spell.', source: stackCard, activatingPlayer: CPU}] : [], turn, phase, activePlayer: yourTurn ? YOU : CPU, priorityPlayer: yourTurn ? YOU : CPU,
+  stack: stackCard ? [{id: 990, text: 'Counterspell — Counter target spell.', source: stackCard, activatingPlayer: CPU}] : STATE === 'crowded' ? Array.from({length: 4}, (_, i) => ({id: 980 + i, text: 'Soul Warden — Whenever another creature enters, you gain 1 life.', source: null, activatingPlayer: YOU})) : [], turn, phase, activePlayer: yourTurn ? YOU : CPU, priorityPlayer: yourTurn ? YOU : CPU,
   inputType: prompt ? '' : inputType, prompt, message, controlMode: 'smart', notification: {}, lastActionError: null,
   buttons: STATE === 'opening' ? {ok: 'Keep', okEnabled: true, cancel: 'Mulligan', cancelEnabled: true}
     : STATE === 'discard' ? {ok: 'OK', okEnabled: false, cancel: '', cancelEnabled: false}

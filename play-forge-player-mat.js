@@ -125,17 +125,33 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   if(disposed)return;
   if(matchAccount!==forgeAccountKey(readAccount())){client?.detach();stopped({code:'ACCOUNT_CHANGED'});return;}
   if(terminalViewer!==null&&(!Number.isSafeInteger(terminalViewer)||terminalViewer<0||viewer!==null&&terminalViewer!==viewer)){stopped({code:'INVALID_NATIVE_TERMINAL_RECEIPT'});return;}
+  // The final board is kept as a still copy for Inspect board: only what this viewer already saw.
+  const board=table&&root.dataset.engine==='forge-hosted'&&root.childElementCount?{nodes:[...root.children].map(el=>el.cloneNode(true)),className:root.className}:null;
   session?.close();warn(false);exitDialog?.remove();exitDialog=null;exitConfirm=null;
   if(Number.isSafeInteger(terminalViewer)&&terminalViewer>=0)viewer=terminalViewer;
   const outcome=result.draw?'draw':viewer===null?null:result.winnerPlayerId===viewer?'win':'loss';
   const title=outcome==='draw'?'Draw':outcome==='win'?'You won':outcome==='loss'?'CPU won':'Your result is not yet identified';
   publish({phase:'finished',result:structuredClone(result),viewerId:viewer,outcome,endingReason:'unclassified-engine-terminal',deckDigests:client?.status().allocation?.deckDigests||null});message('Match finished',[title,...(outcome===null?[`Forge reported winner player ${result.winnerPlayerId}, but this receipt does not identify your seat. No win or loss has been assigned.`]:[]),'This match has ended. Return to setup whenever you are ready for another game.','Results are not yet saved to your account.']);
   root.classList.add('play-mat-result');const panel=root.querySelector('section');panel.classList.add('play-match-result');panel.setAttribute('data-outcome',outcome||'unknown');
-  if(matchup){const decks=node('details');decks.append(node('summary','Exact deck snapshots used'));
-   for(const [seat,deck]of [['human',matchup.selected],['opponent',matchup.opponent]]){decks.append(node('h3',(seat==='human'?'Your deck: ':'CPU deck: ')+deck.name));const hash=client?.status().allocation?.deckDigests?.[seat];if(hash)decks.append(node('code','Snapshot SHA-256: '+hash));const list=node('ul');for(const row of deck.cards||[])list.append(node('li',`${row.qty} ${row.name}`));decks.append(list);if(deck.side?.length){decks.append(node('p','Sideboard'));for(const row of deck.side)decks.append(node('p',`${row.qty} ${row.name}`));}const metadata=node('details'),source=node('pre',JSON.stringify(deck,null,2));source.style.whiteSpace='pre-wrap';source.style.overflowWrap='anywhere';metadata.append(node('summary','Read-only snapshot metadata'),source);decks.append(metadata);}
+  if(board){const b=node('button','Inspect board');b.type='button';b.className='btn';b.addEventListener('click',()=>inspectBoard(board));panel.append(b);}
+  if(matchup){const decks=node('details');decks.append(node('summary','Decklists'));
+   for(const [seat,deck]of [['human',matchup.selected],['opponent',matchup.opponent]]){decks.append(node('h3',(seat==='human'?'Your deck: ':'CPU deck: ')+deck.name));const hash=client?.status().allocation?.deckDigests?.[seat];if(hash)decks.append(node('code','Snapshot SHA-256: '+hash));const list=node('ul');for(const row of deck.cards||[])list.append(node('li',`${row.qty} ${row.name}`));decks.append(list,copyDeckButton(deck));if(deck.side?.length){decks.append(node('p','Sideboard'));for(const row of deck.side)decks.append(node('p',`${row.qty} ${row.name}`));}const metadata=node('details'),source=node('pre',JSON.stringify(deck,null,2));source.style.whiteSpace='pre-wrap';source.style.overflowWrap='anywhere';metadata.append(node('summary','Read-only snapshot metadata'),source);decks.append(metadata);}
    panel.append(decks);
   }
   for(const [label,fn]of [['Rematch setup',onRematch],['Home',onHome]])if(fn){const b=node('button',label);b.type='button';b.className='btn ghost';b.addEventListener('click',()=>{if(label==='Rematch setup'&&selectionKey(readSetup())!==selectionKey(matchup)){message('Match setup changed',['Your deck selection changed after this match opened. Review the current setup before starting another match.']);return;}fn();});panel.append(b);}
+ }
+ // Inspect board swaps the result for the frozen final table, read only, with a way back.
+ function inspectBoard(board){
+  const results=[...root.childNodes],resultsClass=root.className;
+  const bar=node('div');bar.className='play-result-board-bar';const back=node('button','Back to results');back.type='button';back.className='btn';bar.append(node('span','Final board'),back);
+  back.addEventListener('click',()=>{root.className=resultsClass;root.replaceChildren(...results);root.querySelector('.play-match-result button')?.focus();});
+  root.className=board.className;root.replaceChildren(...board.nodes.map(el=>{const copy=el.cloneNode(true);copy.setAttribute('aria-hidden','false');copy.dataset.resultBoard='true';return copy;}),bar);back.focus();
+ }
+ function copyDeckButton(deck){
+  const b=node('button','Copy deck');b.type='button';b.className='btn ghost';
+  const text=[...(deck.cards||[]).map(r=>`${r.qty} ${r.name}`),...(deck.side?.length?['','Sideboard',...deck.side.map(r=>`${r.qty} ${r.name}`)]:[])].join('\n');
+  b.addEventListener('click',async()=>{try{await view?.navigator?.clipboard?.writeText(text);b.textContent='Copied';}catch{b.textContent='Copy failed';}});
+  return b;
  }
  function stopped(e){
   if(disposed)return;session?.close();warn(false);exitDialog?.remove();exitDialog=null;exitConfirm=null;publish({phase:e.code==='ACCOUNT_CHANGED'?'account-changed':'session-ended',error:e.code||'HOST_SESSION_STOPPED'});

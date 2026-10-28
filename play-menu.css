@@ -296,3 +296,7 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .play-workspace--single .play-deck-choice>.deck-tile{height:250px}
 @media(max-width:600px){.play-library-actions{width:100%;justify-content:flex-start}}
 .play-workspace--single .play-library-scroll>.play-result-count{margin-top:0}
+/* Inspect board after a match: the frozen final table with a slim bar back to the result. */
+#practicePlayerMat .play-result-board-bar{position:fixed;left:50%;top:12px;translate:-50% 0;z-index:3000;display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:999px;background:#0d1016f2;border:1px solid #d6ad6444;box-shadow:0 10px 30px #000a;color:#f4d78f;font:700 12px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase}
+#practicePlayerMat .play-result-board-bar .btn{letter-spacing:normal;text-transform:none}
+#practicePlayerMat [data-result-board] :is(button,[role=button]){pointer-events:none}
