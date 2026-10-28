@@ -166,10 +166,11 @@ function parseText(raw, result) {
     if (prefix) normalized.push(zoneHeading[section]);
   }
   // Same narrow MTGO rule as parseDeckImport: two blocks, >=40 main copies,
-  // then 1..15 side copies, with no explicit zone declaration. Preserve blanks
+  // then 1..15 side copies, with no explicit zone or category declaration. Preserve blanks
   // in normalizedText so an injected parser can apply its own existing rule.
   const groups = [...new Set(rows.map((row) => row.block))];
-  if (!explicitZone && groups.length === 2 && sum(rows.filter((row) => row.block === groups[0])) >= 40) {
+  // Recognized category headings (Creatures, Lands...) already say these are main-deck sections.
+  if (!explicitZone && !rows.some((row) => row.category) && groups.length === 2 && sum(rows.filter((row) => row.block === groups[0])) >= 40) {
     const last = rows.filter((row) => row.block === groups[1]);
     if (sum(last) > 0 && sum(last) <= 15) for (const row of last) row.section = "side";
   }
