@@ -18,14 +18,14 @@
   "scripts/check-builder.mjs": "9791ffb425059733dd02897b29c6b36ff1154c31bc3677d63cd948d6b4ea2942",
   "scripts/check-deployment-ready.mjs": "6ab98b9d0bae5eb988f354cbf7851582793621f42835eed59b32f92f63f10d5d",
   "scripts/check-publish-access.mjs": "4e682d5ad9b87235f9fed7ac9639b9e884fde283b044d45d649ee5cbad125293",
-  "scripts/check-release-config.mjs": "f38d3a6871c3f1e0037bd491c9e86c75f6a796234d02f2d0d9dc0fb88f0ac2fd",
+  "scripts/check-release-config.mjs": "6fcecfcc1ca37a8d8a8a228def96e2765902c19e5cf40c90aaeede822f8c063e",
   "scripts/compose-exact-context.py": "24fb7bb4f4b1d66c744caf8d6c60de3d9ece2a1fcac2fcedc048134cc31aeac8",
   "scripts/compose-next-context.py": "b7ea9d797d0fcdbf81a7789f86c30523f47eda0748bc27a89437a541df3d621a",
   "scripts/create-release-policy.mjs": "ed49937d148d7488287712759f8f3669ff956b545493c6687f8845760fb659d5",
-  "scripts/deploy-private-host.mjs": "717a9afa558b6d6dba607cadee06b47a6adc03eeed20a7f305a88a32c524feee",
+  "scripts/deploy-private-host.mjs": "8a69c488e62dba72775f5ee5c26863ebaf152c3281bcceba199fa82ddae95fc9",
   "scripts/docker-proof-client.py": "73dc6366ec4b9a6cefe713dc317775cb56bb551ee7fd1ef2c375bdfafbe3dca2",
   "scripts/refresh-rules-data.py": "0c59e455018a1c280f92e63ae8088fd48f8104c413582a6473cf20ca35aab0f5",
-  "scripts/release-configuration.mjs": "2eb687b149aa9059f136f5577a01c0aa04bfd053cbc184870a93bf20c52eab9a",
+  "scripts/release-configuration.mjs": "0868dce2a869d0d0c9d0c684980b584b5757bf2ea66ee90125ad221709692531",
   "scripts/report-build-failure.mjs": "7b3ce67694a333c9b809d58d5e02276b3472fb191d50a05ea5c58ed51aa30b25",
   "src/admission-policy.mjs": "2d4c2c3e4efebdb44b73565c6d2121f967640e9b8f9f44d3dbaef2230c04bc37",
   "src/app-route.mjs": "d727fcf6444389eb33efe9de463095fc08533f608e730fc0871b4dbf98d73012",
@@ -76,5 +76,5 @@
   "tests/test_docker_proof_client.py": "3ccd8bb446bc3e7ced8b9af4efdea6123d3eaedef395d970b3e8eb4159dbf387",
   "tests/test_next_launcher.py": "9817b5c7ef6f4039b1d8a296eb8fea672c731852979e05df205fd34c8146d4b4",
   "tests/worker-rpc-surface.test.mjs": "c4d4a7250db51301133f6dabf444ff74d5a0ac91930c28098ac49084d96aa907",
-  "wrangler.jsonc": "60b40c5578fafe46cdbcc653aee98030317daabbc7df23d61ff04b3a80fdd970"
+  "wrangler.jsonc": "191471f5dfe87a5174033ebace988ef389e68dde866b12e407225e0c9b258a63"
 }

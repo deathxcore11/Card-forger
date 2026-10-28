@@ -49,7 +49,7 @@
     {
       "path": "reviewed-host.mjs",
       "bytes": 2132,
-      "sha256": "0433e1f5c352e75310267851e17941dacfe9e71601d84495bd29d180bf6e94e3"
+      "sha256": "ed3246b699367e691cc142c1ae0bd0eee24b2caa9b22feff2c9c573c1ca86af3"
     },
     {
       "path": "schema.json",

@@ -70,6 +70,6 @@
     "tests/test_bootstrap.py": "21be212d3cfb3f6f84211d433ed7b5afcd160570225e40f36101f2e654367ff9",
     "tests/test_compose_context.py": "a9a3504a22af82331f6786319ec0248ee264c964614a1adbf3341779dfac7ba4",
     "tests/test_docker_proof_client.py": "3ccd8bb446bc3e7ced8b9af4efdea6123d3eaedef395d970b3e8eb4159dbf387",
-    "wrangler.jsonc": "60b40c5578fafe46cdbcc653aee98030317daabbc7df23d61ff04b3a80fdd970"
+    "wrangler.jsonc": "191471f5dfe87a5174033ebace988ef389e68dde866b12e407225e0c9b258a63"
   }
 }

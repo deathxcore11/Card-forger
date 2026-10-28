@@ -74,7 +74,7 @@
   {
     "path": "patches/rematch-manifest.json",
     "source": "takeover/forge-host-service-rematch/manifest.json",
-    "sha256": "79a32721313efd0416e308eb3b1f5d8b9b44509f89e15025eabe7e59912ffe13",
+    "sha256": "a6a76c7c0b6554f875859ec814257ebc4261c72be1312e165a7fd0ada68a6b15",
     "bytes": 1265
   },
   {

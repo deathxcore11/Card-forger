@@ -24,7 +24,7 @@
     "scheduling_policy": "default",
     "image": "registry.cloudflare.com/REQUIRED_ACCOUNT/cardstashy-forge@sha256:0000000000000000000000000000000000000000000000000000000000000000",
     "instance_type": "standard-1",
-    "max_instances": 2,
+    "max_instances": 4,
     "observability": { "enabled": false }
   }]
 }

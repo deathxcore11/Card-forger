@@ -50,7 +50,9 @@ export function assertReleaseConfiguration(config) {
   assert.equal(config.containers?.length, 1);
   assert.equal(config.containers[0].image, release.containerImage);
   assert.equal(config.containers[0].class_name, 'ForgeMatchContainer');
-  assert.equal(config.containers[0].max_instances, 2);
+  // Admission holds at most 2 matches (leases); 2 more instances are headroom for a
+  // container the platform is still tearing down when the same player starts again.
+  assert.equal(config.containers[0].max_instances, 4);
   assert.equal(config.containers[0].instance_type, 'standard-1');
   assert.equal(config.observability?.enabled, false);
   return config;
