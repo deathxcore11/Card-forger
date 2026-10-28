@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-finger-drag-planeswalk-drag-v359";
+const CACHE = "cardforge-shell-thirteen-playmats-v360";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",
