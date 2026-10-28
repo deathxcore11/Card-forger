@@ -155,11 +155,12 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // Deck tracker, the untapped way but quieter: Deck lists what is left in your library with the
    // chance each card is your next draw; Opponent lists every card the CPU has shown. Each toggles.
    if(Array.isArray(presentation.tracker)&&presentation.tracker.length)renderTracker(surface,mat);
+   foldMenu();
    // One turn statement: the dock says whose move it is; this track on the divider says where the turn is.
    renderPhaseTrack(surface,mat);
    renderCombatLine(n,surface);
    // The history button carries the stack size as a badge.
-   const history=root.querySelector('.play-match-header>[data-focus-key=table-details]'),stackCount=n.stack?.length?String(n.stack.length):'';if(history&&(history.dataset.count||'')!==stackCount){if(stackCount)history.dataset.count=stackCount;else delete history.dataset.count;}
+   const history=root.querySelector('.play-match-header [data-focus-key=table-details]'),stackCount=n.stack?.length?String(n.stack.length):'';if(history&&(history.dataset.count||'')!==stackCount){if(stackCount)history.dataset.count=stackCount;else delete history.dataset.count;}
    // Smart, Full Control and auto-pay are small emblems under your name, the way Arena keeps them by your portrait.
    const youInfo=root.querySelector('.play-match-seat[data-seat=you] .play-match-player'),modes=presentation.allowControlMode===true&&['smart','full'].includes(n.controlMode);
    let emblems=youInfo?.querySelector(':scope>.forge-control-emblems');
@@ -554,7 +555,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  let trackerCache={key:null,bar:'',nodes:[]},trackerToggled=null,combatLine=null,zoneOnly=null;
  function renderTracker(surface,mat){
   const header=root.querySelector('.play-match-header');if(!header||!mat)return;
-  let bar=header.querySelector(':scope>.forge-tracker-toggles');
+  let bar=header.querySelector('.forge-tracker-toggles');
   const me=surface.players.find(p=>p.seat===surface.seat),lib=Math.max(0,Number(me?.libraryCount)||0);
   // Your library: the deck list minus every copy you can see anywhere else.
   // Each listed name, and each face of a two-faced listed name, leads to the list row.
@@ -575,7 +576,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // so they don't pop in again and reload their art; only a panel you just opened plays its entrance.
   if(trackerCache.key===key){if(bar.dataset.key!==key){bar.dataset.key=key;bar.innerHTML=trackerCache.bar;}for(const el of mat.querySelectorAll(':scope>.forge-tracker'))if(!trackerCache.nodes.includes(el))el.remove();for(const p of trackerCache.nodes)if(p.parentElement!==mat){p.dataset.settled='';mat.append(p);}return placeTracker(mat);}
   bar.dataset.key=key;
-  bar.innerHTML=`<button type="button" data-tracker="toggle" aria-pressed="${open}" aria-label="${open?'Close deck tracker':'Open deck tracker'}" title="Deck tracker">${outlineIcon('M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM9 9h6M9 13h6')}</button>`;
+  bar.innerHTML=`<button type="button" data-tracker="toggle" aria-pressed="${open}" aria-label="${open?'Close deck tracker':'Open deck tracker'}" title="Deck tracker">${outlineIcon('M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM9 9h6M9 13h6')}<span>Deck tracker</span></button>`;
   for(const el of mat.querySelectorAll(':scope>.forge-tracker'))el.remove();
   const row=(art,name,cost,count,sub)=>`<li${count?'':' data-out="true"'}><span class="forge-tracker-art">${art?`<img src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:''}</span><span class="forge-tracker-name"><b>${esc(name)}</b>${cost?`<i>${manaCost({mana_cost:cost})}</i>`:''}</span><span class="forge-tracker-num"><b>${count}</b>${sub?`<small>${sub}</small>`:''}</span></li>`;
   if(open){const p=doc.createElement('section');p.className='forge-tracker';p.dataset.side='deck';p.dataset.view=side;if(trackerToggled!=='open')p.dataset.settled='';p.setAttribute('aria-label',side==='deck'?'Your library':'Cards the CPU has shown');
@@ -586,10 +587,20 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    mat.append(p);}
   trackerToggled=null;trackerCache={key,bar:bar.innerHTML,nodes:[...mat.querySelectorAll(':scope>.forge-tracker')]};placeTracker(mat);
  }
+ // One menu button: History & stack and the deck tracker live inside the match menu instead of
+ // as their own round buttons; the menu button carries the stack count.
+ function foldMenu(){
+  const menu=root.querySelector('.play-match-header>.play-match-menu');if(!presentation.hosted||!menu)return;
+  let panel=menu.querySelector(':scope>.forge-menu-panel');
+  if(!panel){panel=doc.createElement('div');panel.className='forge-menu-panel';for(const el of [...menu.children])if(el.tagName!=='SUMMARY')panel.append(el);menu.append(panel);}
+  const history=root.querySelector('.play-match-header>button[data-focus-key=table-details]'),bar=root.querySelector('.play-match-header>.forge-tracker-toggles');
+  if(history)panel.prepend(history);if(bar)(history||panel.firstChild)?.after?.(bar)??panel.prepend(bar);
+  const summary=menu.querySelector(':scope>summary'),count=String(session.snapshot().native?.stack?.length||'');if(summary&&(summary.dataset.count||'')!==count){if(count)summary.dataset.count=count;else delete summary.dataset.count;}
+ }
  function setTracker(side,animate=true){
   trackerOpen.deck=side==='deck';trackerOpen.opponent=side==='opponent';trackerToggled=side&&animate?'open':null;
   try{win.localStorage?.setItem('cardstashy.tracker',JSON.stringify(trackerOpen));}catch{}
-  const bar=root.querySelector('.play-match-header>.forge-tracker-toggles');if(bar)bar.dataset.key='';const s=session.snapshot();if(s.status?.surface)renderTracker(s.status.surface,root.querySelector('.play-match-mat'));
+  const bar=root.querySelector('.play-match-header .forge-tracker-toggles');if(bar)bar.dataset.key='';const s=session.snapshot();if(s.status?.surface)renderTracker(s.status.surface,root.querySelector('.play-match-mat'));
  }
  const trackerClick=e=>{const tab=e.target.closest?.('.forge-tracker [data-tracker-tab]'),close=e.target.closest?.('.forge-tracker [data-tracker-close]');if(!tab&&!close)return;e.preventDefault();e.stopPropagation();if(close)setTracker(null);else if(tab.getAttribute('aria-selected')!=='true')setTracker(tab.dataset.trackerTab,false);};
  root.addEventListener('click',trackerClick,true);

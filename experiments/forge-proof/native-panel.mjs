@@ -175,8 +175,15 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   if(typeof n.autoPay==='boolean'&&typeof session.setAutoPay==='function'){const b=button(n.autoPay?'Auto-pay mana: on':'Auto-pay mana: off',()=>session.setAutoPay(!n.autoPay),!!n.prompt||n.inputType==='InputLockUI','auto-pay');b.setAttribute('aria-pressed',String(n.autoPay));b.title='Pay mana costs automatically. Turn off to tap each source yourself.';group.append(b);}
  }
  if(n.notification?.message){const notice=node('p',`${n.notification.title||n.notification.method||'Forge'}: ${n.notification.message}`,'forge-diagnostic');notice.setAttribute('role','status');panel.append(notice);}
+ // On the hosted table, trouble is one small toast in plain words with Retry, never a raw code.
+ if(presentation.hosted&&(s.transportError||n.lastActionError)){
+  const toast=node('div',undefined,'forge-toast');toast.setAttribute('role','alert');toast.title=String(s.transportError||n.lastActionError);
+  const text=s.transportError?(/TIMEOUT/i.test(String(s.transportError))?'The table is slow to answer.':'Lost touch with the table.'):'That move didn\u2019t go through.';
+  toast.append(node('i'),node('span',text));if(s.transportError){const retry=button('Retry',()=>session.refresh(),false,'refresh');retry.disabled=false;toast.append(retry);}panel.append(toast);
+ }else{
  if(n.lastActionError)panel.append(node('p',`Native action diagnostic: ${n.lastActionError}`,'forge-diagnostic'));
  if(s.transportError){const error=node('p',`Connection/action diagnostic: ${s.transportError}`,'forge-diagnostic');error.setAttribute('role','alert');panel.append(error,button('Refresh state (does not replay action)',()=>session.refresh(),false,'refresh'));}
+ }
  // The table shows the state itself; the hosted panel adds no instructions.
  if(!presentation.hosted&&s.busy)panel.append(node('p','Waiting for Forge to resolve…','forge-native-wait'));
  const p=n.prompt;
