@@ -2,6 +2,7 @@ import {mountMatchTable} from '../phase-engine/match-table.mjs';
 import {practiceArtworkHooks,resolvePracticeArtwork} from '../../play-card-surface.js';
 import {practicePlayerPortrait} from '../../play-player-mat.js';
 import {mountNativePanel} from './native-panel.mjs';
+import {createMotion} from './motion-kit.mjs';
 import {optionCardId} from './forge-session.mjs';
 import {CpuActionPlaybackQueue,createPlaybackSession,tableActivity} from './cpu-action-playback.mjs';
 import {tileBadges,tileLayerHtml,badgeSummary,currentKeywords,counterList,playerCounterBadges,playerCountersHtml} from '../../play-board-badges.js';
@@ -273,6 +274,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // motion turns them all off. Timings are starting points to tune on a real Fold.
  const MANA_TINT={W:'#f4ecc8',U:'#6fb7ff',B:'#b48ad8',R:'#ff7a52',G:'#5fd37e',C:'#cfd3da'};
  const fx=doc.createElement('div');fx.className='forge-fx';fx.setAttribute('aria-hidden','true');doc.body.append(fx);
+ // The shared motion kit (also used by Planeswalk) does the hit-stop, numbers and shatter.
+ const motion=createMotion({doc,win,lowPower,reduced:reducedMotion});
  const rectOf=el=>{const b=el&&(el.closest('.play-match-card-wrap')||el).getBoundingClientRect();return b&&b.width>0?b:null;};
  const cardEl=id=>root.querySelector(`.play-match-card[data-instance="${id}"]`);
  const sourceTint=c=>{if(!c?.known)return MANA_TINT.C;const basic=Object.entries({Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'}).find(([t])=>new RegExp('\\b'+t+'\\b').test(c.type||''));if(basic)return MANA_TINT[basic[1]];const pip=/\{([WUBRG])\}/.exec(c.text||'');return MANA_TINT[pip?.[1]]||'#e3bb68';};
@@ -290,25 +293,21 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // One motion scale for the table, tunable in one place: press, move, land, lunge.
  const MOTION={press:120,move:220,land:360,lunge:500,stagger:140};
  let strikeEnd=0;
- function strike(el,to,{face=false,delay=0}={}){
-  const w=el?.closest('.play-match-card-wrap'),r=rectOf(el),t=rectOf(to);if(!w||!r||!t)return;
+ function strike(el,to,{face=false,delay=0,big=false}={}){
+  const w=el?.closest('.play-match-card-wrap');if(!w||!rectOf(el)||!rectOf(to))return;
   // The battlefields clip their overflow; let the striker leave its lane for the flight.
-  const ms=MOTION.lunge+140;root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+delay+ms);
+  const ms=MOTION.lunge+20;root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+delay+ms);
   setTimeout(()=>{if(Date.now()>=strikeEnd-20)delete root.dataset.csStriking;},delay+ms+40);
-  const reach=face?.8:.5,dx=(t.left+t.width/2-(r.left+r.width/2))*reach,dy=(t.top+t.height/2-(r.top+r.height/2))*reach,tilt=Math.max(-10,Math.min(10,dx/30));
-  setTimeout(()=>{if(!w.isConnected)return;w.dataset.csStriker='true';
-   w.animate([{transform:'none',easing:'cubic-bezier(.2,.8,.3,1)'},{transform:`translate(${-dx*.05}px,${-dy*.05+6}px) scale(1.04)`,offset:.22,easing:'cubic-bezier(.55,0,.85,.35)'},{transform:`translate(${dx}px,${dy}px) scale(1.14) rotate(${tilt}deg)`,offset:.52,easing:'ease-out'},{transform:`translate(${dx*.9}px,${dy*.9}px) scale(1.1) rotate(${tilt*.6}deg)`,offset:.62,easing:'cubic-bezier(.45,0,.2,1)'},{transform:'none'}],{duration:ms}).finished.then(()=>delete w.dataset.csStriker,()=>delete w.dataset.csStriker);
-   setTimeout(()=>{if(!to.isConnected)return;pulse(to,face?'face':'hit');
-    const target=to.closest('.play-match-seat')||to.closest('.play-match-card-wrap')||to;target.animate([{transform:'none'},{transform:`translate(${dx>0?5:-5}px,${dy>0?5:-5}px)`,offset:.2},{transform:`translate(${dx>0?-3:3}px,${dy>0?-2:2}px)`,offset:.5},{transform:'none'}],{duration:MOTION.land,easing:'ease-out'});
-    if(face){target.classList.remove('cs-face-hit');void target.offsetWidth;target.classList.add('cs-face-hit');setTimeout(()=>target.classList.remove('cs-face-hit'),700);}},ms*.52);
-  },delay);
+  w.dataset.csStriker='true';setTimeout(()=>delete w.dataset.csStriker,delay+ms+20);
+  // Wind-up, lunge, a short freeze on contact (hit-stop), then spring back. The target shakes on contact,
+  // and a big hit (5 or more) nudges the whole board unless low power is on.
+  motion.strike(w,to.closest?.('.play-match-card-wrap')||to,{reach:face?.8:.5,ms,delay,onHit:()=>{if(!to.isConnected)return;pulse(to,face?'face':'hit');
+   const target=to.closest('.play-match-seat')||to.closest('.play-match-card-wrap')||to;motion.shake(target,face?9:6,360);
+   if(big)motion.shake(root.querySelector('.play-match-main')||root,4,260,{garnish:true});
+   if(face){target.classList.remove('cs-face-hit');void target.offsetWidth;target.classList.add('cs-face-hit');setTimeout(()=>target.classList.remove('cs-face-hit'),700);}}});
  }
- function popNumber(el,text,kind){
-  const r=rectOf(el);if(!r)return;const n=doc.createElement('span');n.className='forge-fx-number';n.dataset.kind=kind;n.textContent=text;fx.append(n);
-  n.style.left=`${r.left+r.width/2}px`;n.style.top=`${r.top+r.height*.35}px`;
-  n.animate([{opacity:0,transform:'translate(-50%,6px) scale(.7)'},{opacity:1,transform:'translate(-50%,-6px) scale(1.15)',offset:.25},{opacity:1,transform:'translate(-50%,-14px) scale(1)',offset:.7},{opacity:0,transform:'translate(-50%,-24px)'}],{duration:1100,fill:'both'}).finished.then(()=>n.remove(),()=>n.remove());
- }
- function boardEffects(prev,next,before){
+ function popNumber(el,text,kind,size=''){if(rectOf(el))motion.number(el.closest('.play-match-card-wrap')||el,text,{kind,size});}
+ function boardEffects(prev,next,before,leaving){
   const a=prev?.status?.surface,b=next?.status?.surface;if(!a||!b||!presentation.hosted||reducedMotion()||root.dataset.stage!=='match')return;
   const was=new Map(a.cards.map(c=>[c.id,c])),onField=c=>c.zone==='Battlefield';
   // 1. Mana payment: sources that just tapped send their mana to the spell or ability that appeared
@@ -336,8 +335,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    for(const c of a.cards.filter(c=>c.attacking&&b.cards.some(x=>x.id===c.id))){const el=cardEl(c.id);if(!el)continue;
     const seat=root.querySelector(`.play-match-seat[data-player-seat="${b.players.find(p=>p.nativeId===c.attackTarget?.id)?.seat??b.players.find(p=>p.seat!==c.controller)?.seat}"]`);
     const blocker=blockerOf.has(c.id)?cardEl(blockerOf.get(c.id)):null,to=blocker||(c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seat);
-    strike(el,to,{face:!blocker&&to===seat,delay:struck++*MOTION.stagger});}
-   damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){popNumber(el,`−${c.damage-(was.get(c.id)?.damage||0)}`,'damage');pulse(el,'hit');}},MOTION.lunge*.7+i*60));
+    strike(el,to,{face:!blocker&&to===seat,delay:struck++*MOTION.stagger,big:(c.power||0)>=5});}
+   damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=c.damage-(was.get(c.id)?.damage||0);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},MOTION.lunge*.58+i*60));
   }
   // 3b. Declared: a new attacker surges forward toward what it attacks and settles; a new blocker
   // steps across to meet its attacker with a blue shield flash. Arrows then hold the pairing.
@@ -351,6 +350,19 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // the host's stats flash so the change it brings is noticed.
   for(const c of b.cards){if(!onField(c)||!Number.isSafeInteger(c.attachedTo)||was.get(c.id)?.attachedTo===c.attachedTo)continue;const host=cardEl(c.attachedTo);if(!host)continue;
    setTimeout(()=>{if(!host.isConnected)return;pulse(host,'attach');host.querySelector('.play-current-stats')?.animate([{transform:'scale(1)'},{transform:'scale(1.25)',filter:'brightness(1.6)',offset:.4},{transform:'scale(1)'}],{duration:600});},380);}
+
+  // 5. Death: a permanent that went to a graveyard or exile (or a token that ceased to exist) breaks
+  // into shards where it stood. The shards sit outside the table's scoped styles, so they carry the
+  // art of the element the redraw just replaced on a plain frame.
+  if(leaving?.size){let broke=0;const at=combat?MOTION.lunge*.62:0;for(const c of a.cards){if(!onField(c)||broke>=4)continue;const now=b.cards.find(x=>x.id===c.id);if(now&&!/^(Graveyard|Exile)$/.test(now.zone))continue;
+   const old=leaving.get(String(c.id)),r=before?.get(String(c.id))?.r;if(!old||!r)continue;broke++;const src=old.querySelector('img')?.currentSrc||old.querySelector('img')?.src||'',shot={rect:{left:r.left,top:r.top,width:r.width,height:r.height},html:`<div class="forge-shard-face" style="background-image:${src?`url(&quot;${esc(src)}&quot;)`:'none'}"></div>`};setTimeout(()=>motion.shatter(shot),at+broke*60);}}
+  // 6. Draw: a card new to your hand turns face up on its way in from your side of the table.
+  const mySeat=root.querySelector(`.play-match-seat[data-player-seat="${b.seat}"]`),seatBox=rectOf(mySeat);let drawn=0;
+  if(seatBox)for(const c of b.cards){if(c.zone!=='Hand'||c.controller!==b.seat||before?.has(String(c.id))||was.get(c.id)?.zone==='Hand'||drawn>=3)continue;const el=cardEl(c.id),w=el?.closest('.play-match-card-wrap'),r=rectOf(el);if(!w||!r)continue;
+   const dx=seatBox.left+seatBox.width/2-(r.left+r.width/2),dy=seatBox.top+seatBox.height/2-(r.top+r.height/2);
+   w.animate([{transform:`translate(${dx}px,${dy}px) rotateY(90deg) scale(.7)`,opacity:.4},{transform:`translate(${dx/2}px,${dy/2-50}px) rotateY(30deg) scale(1.2)`,opacity:1,offset:.55},{transform:'translateY(-6px) scale(1.04)',offset:.85},{transform:'none'}],{duration:480,delay:drawn++*120,easing:'cubic-bezier(.3,.1,.3,1)',fill:'backwards'});}
+  // 7. Your turn: once the banner has gone, a blue wave runs through the cards you can play now.
+  if(b.activeSeat===b.seat&&a.activeSeat!==b.seat)setTimeout(()=>{if(closed)return;[...root.querySelectorAll('.play-match-hand .play-match-card[data-forge-role=playable]')].slice(0,10).forEach((el,i)=>setTimeout(()=>{if(!el.isConnected)return;pulse(el,'playable');el.closest('.play-match-card-wrap')?.animate([{transform:'none'},{transform:'translateY(-10px)',offset:.4},{transform:'none'}],{duration:420,easing:'ease-out'});},i*70));},900);
  }
  // Hold the previous accepted board while a meaningful observed update is announced.
  // Only projected public cards reach this queue; it cannot recover events omitted by a poll.
@@ -441,14 +453,14 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function renderAccepted(s,blocked=false){
   const previous=displayed,lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
   const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null;
-  const before=presentation.hosted?positions():null;
+  const before=presentation.hosted?positions():null,leaving=presentation.hosted?new Map([...root.querySelectorAll('.play-match-battlefields .play-match-card[data-instance]')].map(el=>[el.dataset.instance,el.closest('.play-match-card-wrap')||el])):null;
   localError='';table.render(session.snapshot());enhance();
   // The stylesheet scopes the Forge table by this attribute. It changes only when the
   // native panel comes or goes, unlike a :has() test that rechecks the whole table each redraw.
   root.toggleAttribute('data-forge-native',!!root.querySelector('.forge-native-panel'));
   doc.body.toggleAttribute('data-forge-search',!!root.querySelector('.forge-zone-search'));
-  if(before&&!blocked){glide(before);boardEffects(previous,s,before);}
-  if(presentation.hosted&&!reducedMotion())for(const p of s.status?.surface?.players||[]){const was=lifeBefore.get(p.seat);if(was===undefined||was===p.life)continue;const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`),life=seat?.querySelector('.play-match-life strong');if(!seat||!life)continue;const delta=p.life-was,badge=doc.createElement('span');badge.className='forge-life-delta';badge.dataset.dir=delta<0?'down':'up';badge.textContent=(delta>0?'+':'\u2212')+Math.abs(delta);badge.setAttribute('aria-hidden','true');seat.append(badge);badge.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(-4px)',offset:.25},{opacity:1,transform:'translateY(-10px)',offset:.75},{opacity:0,transform:'translateY(-18px)'}],{duration:1300,fill:'both'}).finished.then(()=>badge.remove(),()=>badge.remove());life.animate([{transform:'scale(1)'},{transform:'scale(1.22)',color:delta<0?'#ff9a8a':'#8fe7a3',offset:.35},{transform:'scale(1)'}],{duration:700});}
+  if(before&&!blocked){glide(before);boardEffects(previous,s,before,leaving);}
+  if(presentation.hosted&&!reducedMotion())for(const p of s.status?.surface?.players||[]){const was=lifeBefore.get(p.seat);if(was===undefined||was===p.life)continue;const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`),life=seat?.querySelector('.play-match-life strong');if(!seat||!life)continue;const delta=p.life-was,badge=doc.createElement('span');badge.className='forge-life-delta';badge.dataset.dir=delta<0?'down':'up';badge.textContent=(delta>0?'+':'\u2212')+Math.abs(delta);badge.setAttribute('aria-hidden','true');seat.append(badge);badge.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(-4px)',offset:.25},{opacity:1,transform:'translateY(-10px)',offset:.75},{opacity:0,transform:'translateY(-18px)'}],{duration:1300,fill:'both'}).finished.then(()=>badge.remove(),()=>badge.remove());life.animate([{transform:'scale(1)'},{transform:'scale(1.22)',color:delta<0?'#ff9a8a':'#8fe7a3',offset:.35},{transform:'scale(1)'}],{duration:700});if(Math.abs(delta)>1)motion.countUp(life,was,p.life,Math.min(700,240+Math.abs(delta)*40));}
   // A redraw that replaced the card's element keeps its open preview on the new one.
   if(peekFor&&!peekFor.isConnected){const again=root.querySelector(`.play-match-card[data-instance="${CSS.escape(peekFor.dataset.instance||'')}"]`);if(again){peekFor.removeAttribute('aria-describedby');peekFor=again;}}
   if(peekFor){if(!peekFor.isConnected||!surfaceCard(peekFor)?.known)hidePeek();else showPeek(peekFor,peekPinned);}
@@ -781,5 +793,5 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const pressCancel=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}cancel();};
  const key=e=>{if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&seat===e.target&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
  root.addEventListener('click',click,true);root.addEventListener('pointerdown',down);doc.addEventListener('pointermove',move,{passive:false});doc.addEventListener('pointerup',up);doc.addEventListener('pointercancel',pressCancel);doc.addEventListener('keydown',key);win.addEventListener('blur',cancel);
- return {destroy(){closed=true;clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
