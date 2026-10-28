@@ -1020,6 +1020,7 @@ function play(i,t){
  c.pending=null;
  c.casting=!d.ally;
  if(c.pact&&((c.pact==='creature')===!!d.ally)){hurt(3);c.log=`The pact takes 3 life for that ${c.pact}.`}
+ if(d.ally)c.nCre=(c.nCre||0)+1;else c.nSpell=(c.nSpell||0)+1;
  if(d.e==='X'){const x=c.energy-(c.tax?1:0);c.lastX=x;c.energy=0;hit(t,x*(card.foil?4:3))}
  else{c.energy-=costOf(card);if(d.ally)summon(d.ally(card.foil),d.name);else d.play(card.foil,t)}
  if(!d.ally){
@@ -1127,7 +1128,7 @@ const intentOf=e=>{const d=E[e.key],list=e.phase2?d.phase2:d.intents;let it=list
 // Enemies act one at a time so each action can be seen.
 // A new enemy arriving mid-fight triggers landfall (Baloth) and rage (Omnath).
 function addFoe(k){const n=foe(k,c.depth);c.enemies.push(n);c.enemies.forEach(x=>{if(x===n||x.hp<=0)return;const d=E[x.key];if(d.landfall)x.buff+=d.landfall;if(d.rage)hurt(d.rage)});return n}
-function enemyTurn(){if(c.enemies.some(e=>E[e.key].pact&&e.phase2)){c.pact=c.pact==='creature'?'spell':'creature'}c.notes=[];c.queue=c.enemies.map(e=>e.id);step()}
+function enemyTurn(){const ob=c.enemies.find(e=>E[e.key].pact&&e.hp>0),ns=c.nSpell||0,nc=c.nCre||0;c.pact=!ob?null:ob.phase2?(ns*1.25>=nc?'spell':'creature'):(ns>nc?'spell':null);c.notes=[];c.queue=c.enemies.map(e=>e.id);step()}
 function act(e){
  const [t,v,loy]=intentOf(e);let msg='';
  if(t==='atk'){msg=strike(e,v+e.buff)}
@@ -1212,7 +1213,7 @@ const intentLabel=e=>{const [t,v,loy]=intentOf(e);const L='';
  if(t==='pay')return `<span class="intent buff" title="Pays ${v} life for +${v} attack">▲ pay ${v}</span>`;
  return `<span class="intent transform" title="Night falls">☾ transform</span>`};
 const ACT={scion:()=>'empower the biggest enemy',process:v=>`process an exiled card into ${v} Spawn`,sweep:v=>`${v} damage to each of your allies`,bolster:v=>`give an ally +${v} attack`,rally:v=>`all enemies +${v} attack`,annihilate:v=>`attack for ${v}, then destroy your weakest ally`,pay:v=>`pay ${v} life for +${v} attack`,atk:v=>`attack for ${v}`,drain:v=>`drain ${v} life`,buff:v=>`gain +${v} attack`,guard:v=>`guard ${v}`,haunt:()=>'haunt (you draw 1 fewer)',summon:v=>`summon a ${E[v]?E[v].name:v}`,sac:v=>`sacrifice a minion to hit you for ${v}`,transform:()=>'transform at night'};
-function enemyInfo(e){const d=E[e.key];const tr=[d.fly&&'Flying: only flying or reach allies can block it.',d.first&&'First strike: hits your attacker first.',d.tax&&'Your noncreature spells cost 1 more.',d.raise&&'Dead minions come back as Zombies.',d.feed&&'Gets +1 attack each time it is blocked or attacked.',d.crawl&&'Returns once while another Zombie stands.',d.phase2&&'Below half life: shield 10 and a harder pattern.',d.loyalty&&'Loyalty: ultimate at 8. Each creature hit removes 1.',d.ingest&&'Unblocked hits exile the top card of your draw pile for this fight.',d.spawnDie&&'When it dies, other Eldrazi get +1 attack.',d.landfall&&`Gets +${d.landfall} attack whenever another enemy enters.`,d.rage&&`Deals ${d.rage} to you whenever another enemy enters.`,d.pact&&'Below half life: each turn he names creatures or spells, and playing that type costs you 3 life.'].filter(Boolean);
+function enemyInfo(e){const d=E[e.key];const tr=[d.fly&&'Flying: only flying or reach allies can block it.',d.first&&'First strike: hits your attacker first.',d.tax&&'Your noncreature spells cost 1 more.',d.raise&&'Dead minions come back as Zombies.',d.feed&&'Gets +1 attack each time it is blocked or attacked.',d.crawl&&'Returns once while another Zombie stands.',d.phase2&&'Below half life: shield 10 and a harder pattern.',d.loyalty&&'Loyalty: ultimate at 8. Each creature hit removes 1.',d.ingest&&'Unblocked hits exile the top card of your draw pile for this fight.',d.spawnDie&&'When it dies, other Eldrazi get +1 attack.',d.landfall&&`Gets +${d.landfall} attack whenever another enemy enters.`,d.rage&&`Deals ${d.rage} to you whenever another enemy enters.`,d.pact&&'If you have played more spells than creatures this fight, he names spells, and each one costs you 3 life. Below half life he names whichever type you have played more.'].filter(Boolean);
  const list=(e.phase2?d.phase2:d.intents).map(([t,v])=>(ACT[t]||(()=>t))(['atk','annihilate'].includes(t)?v+e.buff:v)).join(' → ')+(e.buff?` (includes +${e.buff} from buffs)`:'');
  return `<div class="inspect" role="dialog" aria-label="${e.name}"><b>${e.name}</b><span class="muted"> · ${e.rank==='boss'?'Planeswalker':e.rank==='elite'?'Legendary':'Minion'} · ⚔ ${e.pow+e.buff} · ♥ ${Math.max(0,e.hp)}/${e.max}${e.shield?` · ◈ ${e.shield}`:''}</span><p>Pattern: ${list}</p>${tr.length?`<p>${tr.join(' ')}</p>`:''}<button class="btn" data-act="closeinspect">Close</button></div>`}
 const popOf=o=>{let s='';if(o.pop)s+=`<span class="pop${o.pop>=8?' big':''}" style="font-size:${(1.1+Math.min(o.pop,20)/14).toFixed(2)}rem">−${o.pop}</span>`;if(o.heal)s+=`<span class="pop heal">+${o.heal}</span>`;o.pop=0;o.heal=0;return s};
@@ -1247,7 +1248,7 @@ const P=c.pending;const F=c.busy?{you:0,dead:new Set()}:forecast();const low=run
  const foes=c.enemies.map(e=>`<button data-n="${e.name}" class="unit ${e.rank} ${P&&P.aim==='enemy'?'aim':''}${e.acting?' acting':''}" data-act="target" data-id="${e.id}" aria-label="${P&&P.aim==='enemy'?'Target':'Inspect'} ${e.name}">${popOf(e)}${e.rank==='boss'?`<span class="loyal" title="Loyalty. Ultimate at 8. Each creature that hits him removes 1.">${e.loyalty}${(d=>d?`<small class="loyd">${d>0?'+':''}${d}</small>`:'')(intentOf(e)[2]||0)}</span>`:''}${intentLabel(e)}<div class="art"><span class="tag">${e.rank==='boss'?'Planeswalker':e.rank==='elite'?'Legendary':'Minion'}${e.fly?' · Flying':''}</span><span class="glyph">${e.g}</span><span class="stats hp" title="Power ${e.pow}">${e.hp}</span></div><span class="name">${e.name}</span>${e.shield?`<span class="shield">◈ ${e.shield}</span>`:''}<div class="bar"><i style="width:${Math.max(0,e.hp)/e.max*100}%"></i></div></button>`).join('');
  const anyReady=c.allies.some(ready);
  const q=c.quake;c.quake=0;const co=c.callout;c.callout='';
- return `<section class="battle${q?' quake'+q:''}${c.ult?' inferno':''}" aria-label="Battle">${c.pact&&c.enemies.some(e=>e.phase2&&E[e.key].pact)?`<div class="pact">Demonic Pact · <b>${c.pact==='creature'?'Creatures':'Spells'}</b> cost 3 life this turn</div>`:''}${co?`<div class="callout">${co}</div>`:''}
+ return `<section class="battle${q?' quake'+q:''}${c.ult?' inferno':''}" aria-label="Battle">${c.pact&&c.enemies.some(e=>e.hp>0&&E[e.key].pact)?`<div class="pact">Demonic Pact · <b>${c.pact==='creature'?'Creatures':'Spells'}</b> cost 3 life this turn</div>`:''}${co?`<div class="callout">${co}</div>`:''}
   <div class="field"><div class="side you">${hero}${allies}</div><div class="side foe">${foes}</div></div>
   <div class="controls">
    <button class="btn" data-act="plus" ${c.used||c.busy?'disabled':''}>+1 · Deal ${2+(run.emblems.includes('pyre')?2:0)}</button>
