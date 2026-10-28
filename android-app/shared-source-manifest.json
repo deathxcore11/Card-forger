@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.13",
-  "commit": "869c906c3da72776492938462a25c6697b88c2c2",
-  "tree": "71073df238185722463ceebb113eaa88dc2232b6",
+  "version": "4.3.14",
+  "commit": "66c2b12e9305347a5abd3fc1eb1a28e6b1855622",
+  "tree": "792f824167155505228dde04c72cd71fef834df3",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -98,8 +98,8 @@
     },
     {
       "path": "app-motion.js",
-      "bytes": 2676,
-      "sha256": "d755f7e299c8f631ebe6d6daf67ffcfcb210c337196351a454c8e0e0de9d295e"
+      "bytes": 6967,
+      "sha256": "1b922321e2d584f4389a834a867ff279c76075d6585af1c8cdc0d71537577d75"
     },
     {
       "path": "app.js",
@@ -182,6 +182,36 @@
       "sha256": "87a0dd57c996b9d9394e33f26f2aa07ca0c6c677515480e5b6abaeece8b82028"
     },
     {
+      "path": "assets/play/playmat-ancient-coast-tall.webp",
+      "bytes": 54752,
+      "sha256": "492c682e575acbf3076623eea90cd57ac522b1c6c0991bc2ebe4bfa9b192a967"
+    },
+    {
+      "path": "assets/play/playmat-ancient-coast-thumb.webp",
+      "bytes": 10152,
+      "sha256": "8213990f64ae149caabdda88e2a7b0c90f14122b128780212d24cf47a38414e5"
+    },
+    {
+      "path": "assets/play/playmat-ancient-coast.webp",
+      "bytes": 150848,
+      "sha256": "02fcc2b8df12199b5980c8561ce6e68c1cc4c6d4b7989762ccdc25b4b7a50fd7"
+    },
+    {
+      "path": "assets/play/playmat-ancient-woods-tall.webp",
+      "bytes": 65648,
+      "sha256": "43e1fcd8b6a7e96e8c011d43b82500f15ec3f0be1b18b77233c40f42bf8f5f49"
+    },
+    {
+      "path": "assets/play/playmat-ancient-woods-thumb.webp",
+      "bytes": 10642,
+      "sha256": "f3445eee65f02ef7ed5ef971d8bec8962b0bfff2d673bb22a6d5160df48da221"
+    },
+    {
+      "path": "assets/play/playmat-ancient-woods.webp",
+      "bytes": 172480,
+      "sha256": "e19699af22e53796f9e085cb9456ed1561a3388fea622154b80e65252297466a"
+    },
+    {
       "path": "assets/play/playmat-ashen-forge-tall.webp",
       "bytes": 35740,
       "sha256": "3e038a42313014d9436077b60801df0e62aa8ccecbb14faa9bd37009fc95511c"
@@ -212,6 +242,21 @@
       "sha256": "182b772a4b32525e99cb6304a2bfde10772d72cacd63a1adfb1bd08a7c11ecc4"
     },
     {
+      "path": "assets/play/playmat-forgotten-graves-tall.webp",
+      "bytes": 70064,
+      "sha256": "2a75d5042b28325067ec5d82170bde84eb79e4eb14cf8ecf5bc70601079c27be"
+    },
+    {
+      "path": "assets/play/playmat-forgotten-graves-thumb.webp",
+      "bytes": 11338,
+      "sha256": "71cb7065a42819fb85c3aaa7552e5c93e4ff1baf1522c184d7265acda504ae11"
+    },
+    {
+      "path": "assets/play/playmat-forgotten-graves.webp",
+      "bytes": 185350,
+      "sha256": "499ae0bf635b051fb8c116aae66638f160efcec0ae63ebb2a7e732663be9bd14"
+    },
+    {
       "path": "assets/play/playmat-gothic-stone-tall.webp",
       "bytes": 54194,
       "sha256": "b503e6881399a29e00e218b35b0f04304d3b1922de2750a9117013bf6f96ca2f"
@@ -225,6 +270,21 @@
       "path": "assets/play/playmat-gothic-stone.webp",
       "bytes": 109322,
       "sha256": "0d4863109ad274b1a3f8e4b1a309f03d79679f47cde99d57aa72ceace3b86114"
+    },
+    {
+      "path": "assets/play/playmat-haunted-chapel-tall.webp",
+      "bytes": 41582,
+      "sha256": "cfaa5526a66aae40bc0c007de35f45b641c8e386b4acdbd0fe00d4cae5d1db86"
+    },
+    {
+      "path": "assets/play/playmat-haunted-chapel-thumb.webp",
+      "bytes": 8364,
+      "sha256": "7001660cd50fe0d83af4f0c80410a23c8572bae4b5a4f98bab2d5e5b27f3928c"
+    },
+    {
+      "path": "assets/play/playmat-haunted-chapel.webp",
+      "bytes": 130632,
+      "sha256": "a163fb98b0b6280e0a2874f027e431c526fe27130d6bc657e397bce49b5718e0"
     },
     {
       "path": "assets/play/playmat-hedron-garden-tall.webp",
@@ -257,6 +317,36 @@
       "sha256": "583f3caf28753c2deacf02e90789f25a051b6a40c268c1ca476cccb19bcbb48c"
     },
     {
+      "path": "assets/play/playmat-ruined-shrine-tall.webp",
+      "bytes": 89928,
+      "sha256": "8fd1f18b70ac1692ae7b1bdb6366785acc5152469e69a2844df0c9753fddd3b8"
+    },
+    {
+      "path": "assets/play/playmat-ruined-shrine-thumb.webp",
+      "bytes": 14366,
+      "sha256": "7286281789662935d3c217a2101754188e286be3be67b12ba852ffa22577a47e"
+    },
+    {
+      "path": "assets/play/playmat-ruined-shrine.webp",
+      "bytes": 236756,
+      "sha256": "47230d9be16668a58ccf4e48ddca5db084a4f6ff0827b3217bdb71034995f333"
+    },
+    {
+      "path": "assets/play/playmat-sky-ruins-tall.webp",
+      "bytes": 64802,
+      "sha256": "ab643cf7a662deb2a78bb276cf946d9f2b4b7b1bd8e0ebdffbd528d9776965a5"
+    },
+    {
+      "path": "assets/play/playmat-sky-ruins-thumb.webp",
+      "bytes": 11794,
+      "sha256": "46d1514d6156ba67bec52039e27642c33cb1d92bba383ed1e3e3c7e40b5a95e4"
+    },
+    {
+      "path": "assets/play/playmat-sky-ruins.webp",
+      "bytes": 176046,
+      "sha256": "188e41b456b231fc65bbad321dafb310736897c62cf940cdd125ddbb8461c51c"
+    },
+    {
       "path": "assets/play/playmat-star-observatory-tall.webp",
       "bytes": 38554,
       "sha256": "0d8dcb39dab90c35213f2120ab2bc00d12bc85a038ad498cec15f5a5634deed5"
@@ -270,6 +360,21 @@
       "path": "assets/play/playmat-star-observatory.webp",
       "bytes": 104308,
       "sha256": "882a7c8df074980f153ad46ff66acc2653709f4e93eecdb2cea746ec3eab9446"
+    },
+    {
+      "path": "assets/play/playmat-volcanic-plain-tall.webp",
+      "bytes": 48244,
+      "sha256": "cc1620c0a00b7fd344e8a83231f4de328ffa5c670cb3f2672a46dbd4af29e969"
+    },
+    {
+      "path": "assets/play/playmat-volcanic-plain-thumb.webp",
+      "bytes": 9830,
+      "sha256": "afd53c861b951fa5f6e9dccccc395e42b57b4bba093c4729c72ec3787e494db0"
+    },
+    {
+      "path": "assets/play/playmat-volcanic-plain.webp",
+      "bytes": 130264,
+      "sha256": "0f22bc3d3d8bf758252f590ba66af71ccd7f040fd55d8d9afa8d2cbf3c7973d5"
     },
     {
       "path": "assets/play/result-draw.webp",
@@ -484,7 +589,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "41b4c2a0921285abc7964f9eee568654ce5183d7b98293ce04c33acfa0ef8550"
+      "sha256": "6d0f98a18025ae8cc108c75a8ad873bcbf82873ec244f2b719e165ddc7762424"
     },
     {
       "path": "core.js",
@@ -1483,8 +1588,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 112421,
-      "sha256": "12db4b9a8b7fb91f3bda5991c93875419cc6be50265586c006eee0252f536685"
+      "bytes": 116371,
+      "sha256": "94d1a6b27c8670d480a4e8b36940c94e588a4d3d927c16a121472c81ec32f55a"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -1493,8 +1598,8 @@
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
-      "bytes": 43130,
-      "sha256": "529d0a383e4b37399d24370171c069042fd72c36e31badb00f14a5fd8d132c03"
+      "bytes": 43553,
+      "sha256": "acf1140ef5fbc0294fab715a86913a25995df5abc2f1a888318abde0876247ab"
     },
     {
       "path": "experiments/phase-engine/card-placement.mjs",
@@ -1758,8 +1863,18 @@
     },
     {
       "path": "finish-preview.js",
-      "bytes": 19298,
-      "sha256": "8c7039ec52e9d7509c5aff4e967a7c93e58fec5a77d0031dee987b6f7162d86b"
+      "bytes": 20141,
+      "sha256": "4fcd7a6639e13416be9f7e3abcb9a6e7d2896560dcceb613b2b07146727a9ff5"
+    },
+    {
+      "path": "foil-fx.css",
+      "bytes": 7767,
+      "sha256": "6788ce4eff28da5f99159cf5757229cbee8a36b21873a2bb47dda2a79ed10599"
+    },
+    {
+      "path": "foil-fx.js",
+      "bytes": 2178,
+      "sha256": "e5b3fc3b05f02f5ba82833e3f37fd757ad9367909ba3ae5528dd8b7f732f65dc"
     },
     {
       "path": "foil-gl.js",
@@ -1923,8 +2038,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 19599,
-      "sha256": "230ef1853964c3bbd93e00467b793a4dc42824fe2cf5a285f39d71333b938b67"
+      "bytes": 19642,
+      "sha256": "0890ae6483901af7c07afc1ac7b744df01094e511450db327fb61dc1c7f959a6"
     },
     {
       "path": "insights.js",
@@ -2123,13 +2238,13 @@
     },
     {
       "path": "pack-preview.js",
-      "bytes": 41249,
-      "sha256": "c20873ded16899abbed6f1ce3d3daa666990d0a43ca6e4c12b54f2aae8491146"
+      "bytes": 44709,
+      "sha256": "b445cf492bf6d88d952245375a7631b6b85f8546dbd329b9bee33e8fd516059d"
     },
     {
       "path": "package.json",
       "bytes": 11594,
-      "sha256": "d9fccc13dffca7e0465e181ba599ca25b74b816aff8047772608e7490cf0782f"
+      "sha256": "4258541ae034113dba74bedef9d7a7fd51733d9c96bdddfae83f73ba18b45c8f"
     },
     {
       "path": "pairing.js",
@@ -2143,8 +2258,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 3863625,
-      "sha256": "84ac9e9455b9903c359eec6f88342d1a22552b921e08d283987a9f02159a291b"
+      "bytes": 4094340,
+      "sha256": "259a25d346700e2546a82f8964ee3a52228eae5d74b0e4c219a155838a3c3af8"
     },
     {
       "path": "planner.js",
@@ -2238,13 +2353,13 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 265186,
-      "sha256": "984d3f41be158204ff8de260d44049030066feae733085f7ac4b227c93f0fe52"
+      "bytes": 287340,
+      "sha256": "01c1952f337d2afe3a261065ed3b2886ec6b5cf74d6b523f9393586946f1b0f1"
     },
     {
       "path": "play-menu.css",
-      "bytes": 47574,
-      "sha256": "bcd6a008d8ba315db86daa22ef21beea5e461acef31ae435b8e7d21e7a8d9af4"
+      "bytes": 48479,
+      "sha256": "a8984f8491e698b428b6e68c96dafdeeafdaa31a5d28c419982e1d09f4e94d5c"
     },
     {
       "path": "play-menu.js",
@@ -2263,8 +2378,8 @@
     },
     {
       "path": "play-playmats.js",
-      "bytes": 1850,
-      "sha256": "35ac2b0fa0d53f882451d122eb17c1ce054ba07c6a39c15f377df9053ab30b8d"
+      "bytes": 2133,
+      "sha256": "f19c35115e8056130e683614d9ccbcdf1b65f848c5128ca3f3b7b3d250a25298"
     },
     {
       "path": "play-precon-formats.js",
@@ -2463,8 +2578,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 873,
-      "sha256": "9fb3d4d90681d638fe08a8641346cd67936359717c33746a7f4ae34d72501a94"
+      "bytes": 1624,
+      "sha256": "198ce434b4b75b8f0a10cd90ea5e864eb10a7c4220fbcb638328949745fdca08"
     },
     {
       "path": "release-status.js",
@@ -2783,8 +2898,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15084,
-      "sha256": "4116e0e405348b602f338798f3a805c7d3c3980849ae45a6b0321395ea3d4953"
+      "bytes": 15114,
+      "sha256": "109c3c66babbc0f3346e087327e3df4dddb85dd8c8d7ef0ba9dda81adb4f9bbb"
     },
     {
       "path": "sync-merge.js",
