@@ -472,7 +472,13 @@ def launch_command(root):
                 or hashlib.sha256(source.read_bytes()).hexdigest() != expected):
             raise ValueError("Reviewed exact-input adapter capability required")
         match_input = Path(exact_input_path())
-        if match_input.is_symlink() or not match_input.is_file() or not 0 < match_input.stat().st_size <= 262144:
+        if prewarming():
+            # A warm engine reads its input from the bootstrap's private pipe, which the
+            # gateway fills once (prewarm_server). The JVM bounds what it reads.
+            status = os.lstat(match_input)
+            if not stat.S_ISFIFO(status.st_mode) or status.st_uid != os.geteuid() or status.st_mode & 0o077:
+                raise ValueError("Require the bootstrap's private exact-input pipe")
+        elif match_input.is_symlink() or not match_input.is_file() or not 0 < match_input.stat().st_size <= 262144:
             raise ValueError("Require a bounded regular exact-input file")
         required_capabilities = {"cardstashy.match-input.v1", "cardstashy.formats-three.v1",
                                  "cardstashy.rules-data.v1", "cardstashy.experimental-heuristic-cpu.v1"}
@@ -520,6 +526,50 @@ def launch_command(root):
     return command
 
 
+def prewarming():
+    return os.environ.get("HOST_PREWARM") == "1" and "HOST_RUNTIME_ROOT" in os.environ
+
+
+def bootstrap_module():
+    import importlib.util
+    path = next(p for p in (Path("/opt/host-service/bootstrap.py"), Path(__file__).with_name("bootstrap.py")) if p.is_file())
+    spec = importlib.util.spec_from_file_location("cardstashy_bootstrap", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+# The bootstrap's own one-time input service on port 8080, for a warm engine. The
+# accepted input goes into the pipe the JVM is (or will be) waiting on; the reply
+# does not wait for the JVM to finish loading.
+def prewarm_server(token, fifo, deadline, address=("0.0.0.0", 8080)):
+    bootstrap = bootstrap_module()
+
+    class PrewarmServer(bootstrap.BootstrapServer):
+        delivered = threading.Event()
+        failed = None
+
+        def store(self, data):
+            if not stat.S_ISFIFO(os.lstat(self.input_path).st_mode):
+                raise FileExistsError()
+
+            def deliver():
+                try:
+                    fd = os.open(self.input_path, os.O_WRONLY | os.O_NOFOLLOW)  # waits for the JVM
+                    with os.fdopen(fd, "wb") as output:
+                        output.write(data)
+                except OSError as failure:
+                    PrewarmServer.failed = type(failure).__name__
+                finally:
+                    PrewarmServer.delivered.set()
+            threading.Thread(target=deliver, daemon=True).start()
+
+    server = PrewarmServer(address, token, fifo)
+    if deadline is not None:
+        server.deadline = deadline
+    return server
+
+
 def launch(root):
     command = launch_command(root)
     child_env = {key: value for key, value in os.environ.items()
@@ -548,8 +598,20 @@ def main():
     process = launch(root)
     server = None
     probe = None
+    pre = None
     started = time.monotonic()
     try:
+        if prewarming():
+            pre = prewarm_server(internal_token, Path(exact_input_path()), absolute_deadline)
+
+            def take_input():
+                try:
+                    while not pre.accepted and not stopping.is_set() and time.monotonic() < pre.deadline:
+                        pre.handle_request()
+                finally:
+                    pre.server_close()
+            pre_thread = threading.Thread(target=take_input, daemon=True)
+            pre_thread.start()
         while True:
             if (process.poll() is not None or stopping.is_set() or time.monotonic() - started >= STARTUP_TIMEOUT
                     or (absolute_deadline is not None and time.monotonic() >= absolute_deadline)):
@@ -561,8 +623,27 @@ def main():
                 break
             except (FileNotFoundError, ValueError):
                 stopping.wait(0.1)
+        if pre is not None:
+            # Warm: wait for the match's input, however long the player takes, within
+            # the lease. The startup clock then starts again, as if launched now.
+            while not pre.delivered.is_set():
+                if (process.poll() is not None or stopping.is_set() or not pre_thread.is_alive() and not pre.accepted
+                        or (absolute_deadline is not None and time.monotonic() >= absolute_deadline)):
+                    raise RuntimeError("Warm engine ended before its match input")
+                stopping.wait(0.1)
+            pre_thread.join(timeout=5)
+            if pre.failed or pre_thread.is_alive():
+                raise RuntimeError("Warm engine could not take its match input")
+            started = time.monotonic()
         bridge = Bridge(native["token"], internal_token)
-        server = Server(("0.0.0.0", 8080), bridge)
+        for attempt in range(20):
+            try:
+                server = Server(("0.0.0.0", 8080), bridge)
+                break
+            except OSError:
+                if pre is None or attempt == 19:
+                    raise
+                stopping.wait(0.1)
         threading.Thread(target=server.serve_forever, daemon=True).start()
         probe = ProbeMonitor(bridge, stopping)
         probe.start()

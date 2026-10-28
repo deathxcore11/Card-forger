@@ -53,17 +53,32 @@ export async function reserveAdmissionBudget(txn, allocation, policy, now) {
   const entries = (saved?.entries ?? []).filter(e => e.at > now - WINDOW_MS)
     .map(e => e.matchId === undefined && e.at < SETTLEMENT_SHIPPED_AT ? { ...e, runtimeMs: Math.min(e.runtimeMs, TEARDOWN_MS + 1) } : e);
   const reserved = entries.reduce((sum, e) => sum + e.runtimeMs, 0);
-  if (entries.length >= policy.maxReservations || reserved + charge > policy.runtimeBudgetMs) {
+  // A warm engine that was never used for a match holds runtime, not one of the
+  // day's matches; claiming it for a match counts it then (claimAdmissionBudget).
+  if (entries.filter(e => !e.warm).length >= policy.maxReservations || reserved + charge > policy.runtimeBudgetMs) {
     return { status: 429, error: 'play_resource_budget_exhausted' };
   }
-  entries.push({ at: now, runtimeMs: charge, matchId: allocation.matchId });
+  entries.push({ at: now, runtimeMs: charge, matchId: allocation.matchId, ...(allocation.admissionState === 'warm' ? { warm: true } : {}) });
   await txn.put('play-runtime-budget', { version: 1, entries });
   return null;
 }
 
+// A warm engine claimed for a match: its runtime is already reserved, and it now
+// counts as one of the day's matches.
+export async function claimAdmissionBudget(txn, allocation, policy) {
+  if (policy?.mode === 'trial') return { status: 409, error: 'warm_unavailable' };
+  const saved = await txn.get('play-runtime-budget');
+  const entry = saved?.version === 1 && Array.isArray(saved.entries) ? saved.entries.find(e => e.matchId === allocation.matchId) : null;
+  if (!entry?.warm) return { status: 503, error: 'play_runtime_budget_unavailable' };
+  if (saved.entries.filter(e => !e.warm).length >= policy.maxReservations) return { status: 429, error: 'play_resource_budget_exhausted' };
+  delete entry.warm;
+  await txn.put('play-runtime-budget', saved);
+  return null;
+}
+
 // The runtime an ended match keeps: what it actually held plus teardown, never more
-// than it reserved.
-const settledRuntime = (entry, lease, now) => Math.max(TEARDOWN_MS + 1, Math.min(entry.runtimeMs, now - lease.createdAt + TEARDOWN_MS));
+// than it reserved. A match on a warm engine held it from the warm start.
+const settledRuntime = (entry, lease, now) => Math.max(TEARDOWN_MS + 1, Math.min(entry.runtimeMs, now - (lease.warmedAt ?? lease.createdAt) + TEARDOWN_MS));
 // Called only after the match's destruction proof released its lease. A start that
 // failed, or a short match, keeps only the runtime it actually held plus teardown,
 // so failed starts cannot exhaust the rolling allowance. Never raises a charge.

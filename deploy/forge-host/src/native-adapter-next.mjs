@@ -29,6 +29,13 @@ export function nativeAdapter(env, { now = Date.now } = {}) {
       validateReleasePolicy(release, configuredImage, now()); selectedPolicy(options.input?.difficultyPolicyVersion);
       return transport.startOptions(options);
     },
+    // A warm container: the same bootstrap and capability, told to start the JVM before
+    // the input arrives. Input and policy are still checked when the match claims it.
+    async prewarmOptions(options) {
+      validateReleasePolicy(release, configuredImage, now());
+      const start = await transport.startOptions(options);
+      return { ...start, env: { ...start.env, HOST_PREWARM: '1' } };
+    },
     bootstrapExisting: transport.bootstrapExisting,
     readStartupFailure: transport.readStartupFailure,
     async confirmInitialization({ allocation, input, epoch, internalToken, fetchExisting }) {

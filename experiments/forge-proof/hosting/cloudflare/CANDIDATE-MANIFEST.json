@@ -43,7 +43,7 @@
     "scripts/local-chain-client.mjs": "f8908bc3e32579b9813ccba2cd47a63144df83f418bb1079e9e462a699074dfe",
     "scripts/local-chain.py": "ae9f84ea430427614939e5d3c4847179b977ece36abd9fd43fa781fb06dbcb83",
     "scripts/verify-native-receipt.mjs": "8e68e68d71f9d79cbff555e280a6ef29a733b07f0c3573992d53114778957a55",
-    "src/app-route.mjs": "03dbcb4835e5baf8d03b4b8c536cd92dc2641057d94f1b94d9e509d820e84458",
+    "src/app-route.mjs": "d727fcf6444389eb33efe9de463095fc08533f608e730fc0871b4dbf98d73012",
     "src/auth.mjs": "354d8d771974dce87bcb22ed7fb0f26d245d88acc98023a77d4eec6a2d876c58",
     "src/native-adapter.mjs": "d6a386e681d549796efb80847e7b66270b66473cc892ff4101b9596d21093777",
     "src/policy.mjs": "6004d77a9428bfaacb8a212fc424139a33727d0c119c5f593e06c474944d1cea",

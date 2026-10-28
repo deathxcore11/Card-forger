@@ -4,7 +4,7 @@ import { MatchAuthority, GatewayDriver, verifyHostUser, boundedJSON,
   FORGE_REVISION, NATIVE_SCHEMA, digest, abortable } from './policy.mjs';
 import { ProvisionalAdmissionLedger } from './provisional-ledger.mjs';
 import { validateExactDeckInput } from './vendor/host001/admission-ledger.mjs';
-import { admissionPolicy, allowsAccount, reserveAdmissionBudget, settleAdmissionBudget, settleLeasesForCheck } from './admission-policy.mjs';
+import { admissionPolicy, allowsAccount, reserveAdmissionBudget, claimAdmissionBudget, settleAdmissionBudget, settleLeasesForCheck } from './admission-policy.mjs';
 export const ORIGIN = 'https://cardstashy.com';
 export const GLOBAL_NAME = 'forge-global-admission-v1';
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
@@ -14,6 +14,12 @@ const safeText = text => String(text).replace(/[^A-Za-z0-9 _.:-]/g, '').replace(
 const startupFailure = failure => safeText(failure?.message || failure?.name || 'unknown');
 // Ending a previous match must finish well inside the website's 15 s start request.
 const STARTUP_MS = 120_000, IDLE_MS = 600_000, RETAIN_MS = 86_400_000, REPLACE_MS = 8_000;
+// A warm engine (container, JVM and card database started while the player picks
+// decks) waits this long for its match, then is destroyed and its capacity freed.
+const WARM_MS = 180_000;
+const WARM_PATH = '/api/play/warm';
+// Live states: a destruction proof is never given while a container may hold one.
+const ACTIVE = ['running', 'initializing', 'warming'];
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{16,128}$/;
 const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...extra },
@@ -65,13 +71,13 @@ export async function readJSONWithin(request, maximum, timeoutMs = 5000) {
 export async function routeHostRequest(request, env, verifyBearer) {
   const path = new URL(request.url).pathname;
   const route = MATCH_PATH.exec(path);
-  if (path !== '/api/play/matches' && !route) return error('not_found', 404);
-  if (path === '/api/play/matches' ? request.method !== 'POST'
+  if (path !== '/api/play/matches' && path !== WARM_PATH && !route) return error('not_found', 404);
+  if (path === '/api/play/matches' || path === WARM_PATH ? request.method !== 'POST'
     : !((!route[2] && ['GET', 'DELETE'].includes(request.method)) || (route[2] && request.method === 'POST'))) {
     return error('method_not_allowed', 405);
   }
   if (!await verifyHostUser(request, { verifyBearer, origin: ORIGIN })) return error('authentication_required', 401);
-  if (path === '/api/play/matches') return env.FORGE_ADMISSION.getByName(GLOBAL_NAME).fetch(request);
+  if (path === '/api/play/matches' || path === WARM_PATH) return env.FORGE_ADMISSION.getByName(GLOBAL_NAME).fetch(request);
   return env.FORGE_MATCHES.getByName(route[1].toLowerCase()).fetch(request);
 }
 
@@ -92,13 +98,15 @@ export class AdmissionService {
     this.ledger = new ProvisionalAdmissionLedger({ storage: this.storage, now });
   }
   async fetch(request) {
-    if (new URL(request.url).pathname !== '/api/play/matches' || request.method !== 'POST') return error('not_found', 404);
+    const path = new URL(request.url).pathname;
+    if (![WARM_PATH, '/api/play/matches'].includes(path) || request.method !== 'POST') return error('not_found', 404);
     const user = await verifyHostUser(request, { verifyBearer: this.verifyBearer, origin: ORIGIN });
     if (!user) return error('authentication_required', 401);
     const access = admissionPolicy(this.env, this.now());
     const trialMode = (this.env.FORGE_PLAY_ACCESS ?? 'trial') === 'trial';
     if (!access) return error(trialMode ? 'trial_unavailable_or_expired' : 'play_unavailable', 503);
     if (!allowsAccount(access, user.id)) return error(trialMode ? 'trial_not_authorized' : 'play_not_authorized', 403);
+    if (path === WARM_PATH) return this.warm(user, access);
     if (await limited(this.storage, 'attempt:' + user.id, [[60_000, 3], [3_600_000, 60]], this.now())) return error('create_attempt_rate_limit', 429);
     // Always alarm after attempts so rejected-user rate records are also pruned.
     await scheduleNoLater(this.storage, this.now() + 60_000);
@@ -116,12 +124,19 @@ export class AdmissionService {
     if (!IDEMPOTENCY_KEY.test(idempotencyKey || '')) return error('invalid_match_input', 400);
     const lifetimeMs = access.mode === 'trial' ? Math.min(access.matchMs, access.expiresAt - this.now()) : access.matchMs;
     const reserveGuard = (txn, allocation) => reserveAdmissionBudget(txn, allocation, access, this.now());
+    // The account's warm engine, when it is still waiting, becomes this match.
+    const claimed = await this.claimWarm({ ownerId: user.id, idempotencyKey, input, access });
+    if (claimed?.allocation) return this.dispatch(claimed, input);
+    if (claimed) return error(claimed.error, claimed.status);
     const refused = await this.replacePreviousMatch({ ownerId: user.id, idempotencyKey, input, lifetimeMs, reserveGuard });
     if (refused) return refused.retryAfter ? json({ error: refused.error }, refused.status, { 'Retry-After': String(refused.retryAfter) }) : error(refused.error, refused.status);
     let result;
     try { result = await this.ledger.reserveProvisional({ ownerId: user.id, idempotencyKey, input, lifetimeMs, reserveGuard }); }
     catch { return error('invalid_match_input', 400); }
     if (!result.allocation) return error(result.error, result.status);
+    return this.dispatch(result, input);
+  }
+  async dispatch(result, input) {
     const allocation = result.allocation;
     if (!result.replay) {
       // The lease already exists transactionally. Failure here leaves capacity
@@ -141,6 +156,39 @@ export class AdmissionService {
       else await startup; // explicit local fixture contexts may omit waitUntil
     }
     return json({ ...publicAllocation(allocation), status: 'initializing', admissionState: 'provisional_native_validation_required', replay: result.replay }, 202);
+  }
+  // Start the engine for this account's next match before its decks are chosen. Best
+  // effort: a refusal changes nothing, and the match then starts the usual way.
+  // Never ends or replaces a match the account already has.
+  async warm(user, access) {
+    if (access.mode === 'trial' || !this.native.ready || typeof this.native.prewarmOptions !== 'function') return error('warm_unavailable', 409);
+    // Under 'attempt:' so the alarm prunes it with the create attempts.
+    if (await limited(this.storage, 'attempt:warm:' + user.id, [[60_000, 3], [3_600_000, 30]], this.now())) return error('warm_attempt_rate_limit', 429);
+    await scheduleNoLater(this.storage, this.now() + 60_000);
+    if ((await this.storage.get('leases') || []).some(lease => lease.ownerId === user.id)) return json({ status: 'busy' }, 200);
+    const reserveGuard = (txn, allocation) => reserveAdmissionBudget(txn, allocation, access, this.now());
+    let result;
+    try { result = await this.ledger.reserveWarm({ ownerId: user.id, lifetimeMs: access.matchMs, warmMs: WARM_MS, reserveGuard }); }
+    catch { return error('warm_unavailable', 409); }
+    if (!result.allocation) return error(result.error, result.status);
+    const lease = result.allocation;
+    const warming = this.env.FORGE_MATCHES.getByName(lease.matchId).prewarm(lease)
+      .then(outcome => outcome?.status === 'interrupted' ? this.release(lease.matchId, lease.generation) : undefined)
+      .catch(() => { /* uncertain: the alarm reconciles the recorded ID */ });
+    if (typeof this.ctx.waitUntil === 'function') this.ctx.waitUntil(warming); else await warming;
+    return json({ status: 'warming', warmUntil: lease.warmUntil }, 202);
+  }
+  // Claim only an engine its match object still reports as waiting and alive.
+  // Anything else falls through to the usual start, which ends the warm lease.
+  async claimWarm({ ownerId, idempotencyKey, input, access }) {
+    const warm = (await this.storage.get('leases') || []).find(lease => lease.ownerId === ownerId && lease.admissionState === 'warm');
+    if (!warm || this.now() >= warm.warmUntil || access.mode === 'trial') return null;
+    try {
+      const status = await abortable(this.env.FORGE_MATCHES.getByName(warm.matchId).warmStatus(warm), AbortSignal.timeout(3000));
+      if (status?.usable !== true) return null;
+    } catch { return null; }
+    try { return await this.ledger.claimWarm({ ownerId, idempotencyKey, input, claimGuard: (txn, allocation) => claimAdmissionBudget(txn, allocation, access) }); }
+    catch { return null; }
   }
   // A new start ends the same account's previous match. First a dry run of the
   // reservation, as if that match had already ended: a start that would be refused
@@ -276,10 +324,14 @@ export class MatchService {
     if (!UUID_RE.test(allocation?.matchId || '') || !UUID_RE.test(allocation.generation || '') || !UUID_RE.test(allocation.ownerId || '') || allocation.createdAt + STARTUP_MS <= this.now()) throw new Error('invalid_or_expired_allocation');
     if (!await this.env.FORGE_ADMISSION.getByName(GLOBAL_NAME).verifyLease(allocation) || await digest(input) !== allocation.requestDigest) throw new Error('unreserved_allocation_or_changed_input');
     const existing = await this.storage.get('allocation');
-    if (existing) return { status: existing.status }; // includes tombstones, never restart
+    // The only existing record a start may use: this lease's own warm engine, still
+    // waiting. Its container already runs bootstrap and the JVM; nothing restarts.
+    const warm = existing?.status === 'warming' && existing.generation === allocation.generation
+      && existing.matchId === allocation.matchId && existing.ownerId === allocation.ownerId && this.now() < existing.startupDeadline;
+    if (existing && !warm) return { status: existing.status }; // includes tombstones, never restart
     // Namespaces are private, but also require the server admission lease. The
     // global caller supplied it; no public request ever reaches this method.
-    const token = this.newToken();
+    const token = warm ? existing.internalToken : this.newToken();
     const record = { ...allocation, status: 'initializing', internalToken: token,
       startupDeadline: allocation.createdAt + STARTUP_MS, lastAuthorizedAt: this.now(), retainUntil: allocation.expiresAt + RETAIN_MS };
     await this.storage.put('allocation', record);
@@ -288,6 +340,10 @@ export class MatchService {
     // Platform errors carry no step of their own; this names it on the owner's screen.
     const began = this.now();
     let step = 'options', exited = null, lastPoll = 'none';
+    // Seconds into startup at which each step began. Logged once per start (no input,
+    // token or ids) so `wrangler tail` shows where a slow start spends its time.
+    const timings = {};
+    const enter = name => { step = name; timings[name] = this.now() - began; };
     const containerExited = () => exited && Object.assign(new Error('container_exited'), { containerExited: true });
     const replaced = () => this.replacing === allocation.generation && Object.assign(new Error('replaced_by_new_start'), { replaced: true });
     const stopIfReplaced = () => { const failure = replaced(); if (failure) throw failure; };
@@ -296,26 +352,32 @@ export class MatchService {
     try {
       // The native bridge owns exact snapshot transport. Persisted initializing
       // means any crash before/after start is ambiguous and MUST NOT restart.
-      const options = await this.native.startOptions({ input, allocation, internalToken: token });
-      if (options?.enableInternet !== false || options?.env?.HOST_INTERNAL_TOKEN !== token || options?.env?.HOST_ABSOLUTE_DEADLINE_MS !== String(allocation.expiresAt)) throw new Error('unsafe_native_start_options');
-      step = 'start';
-      stopIfReplaced();
-      if (this.container().running) throw new Error('unexpected_existing_container');
-      this.container().start(options);
+      if (warm) {
+        enter('claim');
+        stopIfReplaced();
+        if (!this.container().running) throw new Error('warm_container_gone');
+      } else {
+        const options = await this.native.startOptions({ input, allocation, internalToken: token });
+        if (options?.enableInternet !== false || options?.env?.HOST_INTERNAL_TOKEN !== token || options?.env?.HOST_ABSOLUTE_DEADLINE_MS !== String(allocation.expiresAt)) throw new Error('unsafe_native_start_options');
+        enter('start');
+        stopIfReplaced();
+        if (this.container().running) throw new Error('unexpected_existing_container');
+        this.container().start(options);
+      }
       // Observe the container's own end (an exit code or a platform stop) without
       // waiting on it, so a crash ends startup now instead of at the deadline.
       let ended = null;
       try { ended = typeof this.container().monitor === 'function' ? this.container().monitor() : null; } catch { /* not observable */ }
       ended?.then?.(() => { exited = 'exit 0'; }, failure => { exited = startupFailure(failure).slice(0, 72); });
-      step = 'inactivity';
+      enter('inactivity');
       await this.container().setInactivityTimeout(IDLE_MS);
       if (this.native.bootstrapExisting) {
-        step = 'bootstrap';
+        enter('bootstrap');
         await this.native.bootstrapExisting({ input, allocation, internalToken: token,
           deadline: record.startupDeadline, now: this.now, wait: async ms => { stopIfReplaced(); await this.wait(ms); stopIfReplaced(); },
           fetchExisting: request => { stopIfReplaced(); const gone = containerExited(); if (gone) throw gone; if (!this.container().running) throw new Error('native_not_running'); return openFetch(request); } });
       }
-      step = 'ready';
+      enter('ready');
       let ready = false, validationFailure = null;
       while (this.now() < record.startupDeadline) {
         stopIfReplaced();
@@ -345,24 +407,27 @@ export class MatchService {
       }
       if (!ready) throw new Error('startup_deadline last ' + lastPoll);
       stopIfReplaced();
-      step = 'confirm';
+      enter('confirm');
       // Must compare native accepted raw snapshot digests/policy against this
       // allocation, not merely observe /ready or a plausible opening hand.
       const initialized = await this.native.confirmInitialization({ allocation, input, epoch: record.epoch,
         internalToken: token, fetchExisting: openFetch });
       if (!Number.isSafeInteger(initialized?.viewerId) || initialized.viewerId < 0 || initialized.schema !== NATIVE_SCHEMA || initialized.engineRevision !== FORGE_REVISION || initialized.policyVersion !== input.difficultyPolicyVersion || initialized.humanDigest !== allocation.deckDigests.human || initialized.opponentDigest !== allocation.deckDigests.opponent) throw new Error('native_initialization_receipt_mismatch');
       stopIfReplaced();
-      step = 'authority';
+      enter('authority');
       record.status = 'running'; await this.storage.put('allocation', record);
       const authority = await this.authority(record);
       await authority.initialize({ ...allocation, epoch: record.epoch, viewerId: initialized.viewerId });
       await this.storage.setAlarm(Math.min(record.expiresAt, this.now() + IDLE_MS));
+      timings.running = this.now() - began;
+      console.log('forge_startup ' + JSON.stringify({ ...timings, warm }));
       return { status: 'running' };
     } catch (failure) {
       // Keep a short, character-limited cause so the owner's error screen can tell a
       // provider start failure from a readiness timeout. No stack, input or token.
       try {
         const seconds = ((this.now() - began) / 1000).toFixed(1);
+        console.log('forge_startup_failed ' + JSON.stringify({ ...timings, warm, failedAt: step, after: this.now() - began }));
         record.failure = safeText('at ' + step + ' ' + seconds + 's: ' + startupFailure(failure) + (exited ? ' container ' + exited : ''));
         await this.storage.put('allocation', record);
       } catch { /* cleanup still runs */ }
@@ -370,15 +435,53 @@ export class MatchService {
       return { status: 'interrupted' };
     } finally { if (this.opening?.stop === stop) this.opening = null; }
   }
+  // Private namespace RPC from admission: start this lease's container before the
+  // match input exists. The container's bootstrap starts the JVM and card database at
+  // once and takes the input later (begin). Unclaimed, it is destroyed at warmUntil.
+  prewarm(lease) { return this.serial(async () => {
+    if (!this.native.ready || typeof this.native.prewarmOptions !== 'function') return { status: 'unsupported' };
+    if (!UUID_RE.test(lease?.matchId || '') || !UUID_RE.test(lease.generation || '') || !UUID_RE.test(lease.ownerId || '')
+      || lease.admissionState !== 'warm' || !Number.isSafeInteger(lease.warmUntil) || lease.warmUntil <= this.now()) throw new Error('invalid_or_expired_allocation');
+    if (!await this.env.FORGE_ADMISSION.getByName(GLOBAL_NAME).verifyLease(lease)) throw new Error('unreserved_allocation');
+    const existing = await this.storage.get('allocation');
+    if (existing) return { status: existing.status };
+    const token = this.newToken();
+    const record = { ...lease, status: 'warming', internalToken: token, startupDeadline: lease.warmUntil,
+      lastAuthorizedAt: this.now(), retainUntil: lease.expiresAt + RETAIN_MS };
+    await this.storage.put('allocation', record);
+    await this.storage.setAlarm(record.startupDeadline);
+    try {
+      const options = await this.native.prewarmOptions({ allocation: lease, internalToken: token });
+      if (options?.enableInternet !== false || options?.env?.HOST_INTERNAL_TOKEN !== token || options?.env?.HOST_ABSOLUTE_DEADLINE_MS !== String(lease.expiresAt)
+        || options?.env?.HOST_PREWARM !== '1') throw new Error('unsafe_native_start_options');
+      if (this.container().running) throw new Error('unexpected_existing_container');
+      this.container().start(options);
+      await this.container().setInactivityTimeout(IDLE_MS);
+      console.log('forge_prewarm started');
+      return { status: 'warming' };
+    } catch (failure) {
+      try { record.failure = safeText('at prewarm: ' + startupFailure(failure)); await this.storage.put('allocation', record); } catch { /* cleanup still runs */ }
+      await this.cleanup(record, 'startup_interrupted');
+      return { status: 'interrupted' };
+    }
+  }); }
+  warmStatus(lease) { return this.serial(async () => {
+    const record = await this.storage.get('allocation');
+    let running = false;
+    try { running = this.container().running === true; } catch { /* no container binding */ }
+    return { usable: record?.status === 'warming' && record.generation === lease?.generation && record.ownerId === lease?.ownerId
+      && this.now() < record.startupDeadline && running };
+  }); }
   async fetch(request) {
     if (request.method === 'GET') {
       const route = MATCH_PATH.exec(new URL(request.url).pathname);
       const record = await this.storage.get('allocation');
-      if (route && !route[2] && (!record || record.status === 'initializing')) {
+      // A claimed warm engine reads as warming until begin runs: answer from its lease.
+      if (route && !route[2] && (!record || ['initializing', 'warming'].includes(record.status))) {
         const user = await verifyHostUser(request, { verifyBearer: this.verifyBearer, origin: ORIGIN });
         if (!user) return error('authentication_required', 401);
         let pending;
-        if (record) {
+        if (record?.status === 'initializing') {
           if (record.ownerId !== user.id || record.matchId !== route[1]) return error('match_not_found', 404);
           pending = { ...publicAllocation(record), startupDeadline: record.startupDeadline };
         } else {
@@ -386,7 +489,7 @@ export class MatchService {
             pending = await abortable(this.env.FORGE_ADMISSION.getByName(GLOBAL_NAME)
               .pendingStatus(route[1], user.id), AbortSignal.timeout(5000));
           } catch { return json({ error: 'match_status_temporarily_unavailable' }, 503, { 'Retry-After': '1' }); }
-          if (!pending) return error('match_not_found', 404);
+          if (!pending || !pending.deckDigests) return error('match_not_found', 404);
         }
         // Read-only initialization projection must not queue behind120s begin.
         // It neither invokes provider APIs nor changes/resumes an allocation.
@@ -506,14 +609,14 @@ export class MatchService {
       }
       if (record.generation !== allocation.generation || record.ownerId !== allocation.ownerId) return { confirmed: false };
       if (await this.storage.get('destructionConfirmed') !== true) {
-        await this.cleanup(record, ['running', 'initializing'].includes(record.status) ? 'replaced' : record.reason || 'interrupted');
+        await this.cleanup(record, ACTIVE.includes(record.status) ? 'replaced' : record.reason || 'interrupted');
       }
       return { confirmed: await this.storage.get('destructionConfirmed') === true };
     }).finally(() => { if (this.replacing === allocation.generation) this.replacing = null; });
   }
   destructionProof(generation) { return this.serial(async () => {
     const record = await this.storage.get('allocation');
-    return { generation: record?.generation, confirmed: record?.generation === generation && record.status !== 'running' && record.status !== 'initializing' && await this.storage.get('destructionConfirmed') === true };
+    return { generation: record?.generation, confirmed: record?.generation === generation && !ACTIVE.includes(record.status) && await this.storage.get('destructionConfirmed') === true };
   }); }
   reconcile(allocation) { return this.serial(async () => {
     let record = await this.storage.get('allocation');
@@ -526,15 +629,15 @@ export class MatchService {
     }
     if (record.generation !== allocation.generation) return;
     const expired = this.now() >= record.expiresAt || this.now() >= record.lastAuthorizedAt + IDLE_MS;
-    const pendingExpired = record.status === 'initializing' && this.now() >= record.startupDeadline;
-    if (expired || pendingExpired || !['running', 'initializing'].includes(record.status)) await this.cleanup(record, record.reason || 'interrupted');
+    const pendingExpired = ['initializing', 'warming'].includes(record.status) && this.now() >= record.startupDeadline;
+    if (expired || pendingExpired || !ACTIVE.includes(record.status)) await this.cleanup(record, record.reason || 'interrupted');
     else if (record.status === 'running' && !this.container().running) await this.cleanup(record, 'native_disappeared');
   }); }
   alarm() { return this.serial(async () => {
     const record = await this.storage.get('allocation');
     if (!record) return;
-    if (['running', 'initializing'].includes(record.status)) {
-      if (record.status === 'initializing' || this.now() >= record.expiresAt || this.now() >= record.lastAuthorizedAt + IDLE_MS || !this.container().running) await this.cleanup(record, 'expired');
+    if (ACTIVE.includes(record.status)) {
+      if (record.status !== 'running' || this.now() >= record.expiresAt || this.now() >= record.lastAuthorizedAt + IDLE_MS || !this.container().running) await this.cleanup(record, 'expired');
       else await this.storage.setAlarm(Math.min(record.expiresAt, record.lastAuthorizedAt + IDLE_MS));
     } else if (!await this.storage.get('destructionConfirmed')) await this.cleanup(record, record.reason || 'interrupted');
     const current = await this.storage.get('allocation');

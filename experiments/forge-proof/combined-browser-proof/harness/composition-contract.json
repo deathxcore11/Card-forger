@@ -23,11 +23,11 @@
     },
     "hostManifest": {
       "path": "${CANDIDATE}/HOST-SHA256.json",
-      "sha256": "6a13cf21cba7147d42e0975449547eb5ea5560922a6ad666fb75c522555d561e"
+      "sha256": "8412105cb451005a15fc22f67b84a3e790bfc27b91f452a986aa68dbb126ee1b"
     },
     "hostContextManifest": {
       "path": "${CANDIDATE}/build-context/CONTEXT-SHA256.json",
-      "sha256": "f2ad8d4311b2c8562fdae37d3419046f55f687bf686cc5a1a9ec86148adf4fa4"
+      "sha256": "da0110bda2fe8b2b42da84ccc69d004f3fa7445bc622bfb7f201fa899a77c7a2"
     },
     "uiManifest": {
       "path": "${CANDIDATE}/UI-SHA256.json",
@@ -59,7 +59,7 @@
     },
     "fixtureServer": {
       "path": "${PACKAGE}/fixture-server.mjs",
-      "sha256": "fbf838f9ced10c14b072f4423797ac314bc0d897be978929f2b25eec7973835d"
+      "sha256": "b3dcca7879d2b5f29a9d7fdc4f5170e4c4027c6264036f3080d2b992d3ee0425"
     },
     "browserDriver": {
       "path": "${PACKAGE}/browser-journey.mjs",
@@ -87,11 +87,11 @@
     },
     "localOCIManifest": {
       "path": "${PACKAGE}/local-oci/MANIFEST.json",
-      "sha256": "abd3ae82540f19163621cd56a24efdbfce84c7a79810438757d1a0e60f098d54"
+      "sha256": "38805391f5b0ba7ac1e22c55044afeb4c345fb4a7043fe5ebec1c2a0db76b288"
     },
     "imageStagesManifest": {
       "path": "${PACKAGE}/image-stages/MANIFEST.json",
-      "sha256": "36d6e33332c99bb3c07b8ea15f81e3ec81cde9bee48744687e82f46d95d3333d"
+      "sha256": "b3e3819c3a1236ef035e18b5182652fa303b4cbf38110327bd80c96d9fcc637a"
     },
     "runtimeUISubset": {
       "path": "${CANDIDATE}/UI-RUNTIME-SHA256.json",
