@@ -1262,7 +1262,7 @@ const E={
  ironfang:{name:'Ironfang',hp:26,pow:6,g:'W',intents:[['atk',12],['atk',7]]},
  zombie:{name:'Zombie',hp:4,pow:2,g:'Z',zombie:1,token:1,intents:[['atk',2]]},
  gisa:{name:'Gisa, Glorious Resurrector',hp:40,pow:4,g:'Gi',rank:'elite',raise:1,intents:[['summon','zombie'],['atk',8],['atk',6],['buff',2]]},
- olivia:{name:'Olivia Voldaren',hp:32,pow:3,g:'Ol',rank:'elite',fly:1,feed:1,intents:[['atk',6],['drain',5],['atk',9]]},
+ olivia:{name:'Olivia Voldaren',hp:28,pow:3,g:'Ol',rank:'elite',fly:1,feed:1,intents:[['atk',6],['drain',4],['atk',8]]},
  thalia:{name:'Thalia, Guardian of Thraben',hp:30,pow:2,g:'Th',rank:'elite',first:1,tax:1,intents:[['atk',6],['atk',6],['guard',8]]},
  sorin:{name:'Sorin, Vengeful Bloodlord',hp:58,pow:4,g:'So',rank:'boss',loyalty:5,intents:[['atk',8,2],['summon','interloper',1],['drain',6,-3]],phase2:[['atk',10,2],['summon','interloper',1],['guard',10,1],['drain',8,-3]]},
 };
@@ -1434,7 +1434,7 @@ function attack(a,t){
  if(!t){t=solo();if(!t){c.pending={kind:'atk',id:a.id,aim:'enemy'};c.log=`${a.name}: choose an enemy to attack.`;return render()}}
  c.pending=null;
  const dmg=pow(a)+(a.raid||0), eFirst=E[t.key].first&&!a.first;
- const back=()=>{if(a.flying&&!t.fly)return;a.dmg+=t.pow;if(E[t.key].feed)t.pow++};
+ const back=()=>{if(a.flying&&!t.fly)return;a.dmg+=t.pow;if(E[t.key].feed&&a.dmg>=tough(a))t.pow++};
  if(eFirst){back();if(a.dmg>=tough(a)){a.tapped=true;c.log=`${a.name} is struck down by first strike.`;return after()}}
  if(a.first){deal(a,t,dmg);if(t.hp>0&&!eFirst)back()}
  else{deal(a,t,dmg);if(!eFirst)back()}
@@ -1507,7 +1507,7 @@ function strike(e,n){
  const room=tough(b)-b.dmg;let msg;
  if(n>=room){b.dmg=tough(b);hurt(n-room);msg=`${b.name} blocks ${e.name} and dies`+(n>room?`, ${n-room} gets through.`:'.')}else{b.dmg+=n;msg=`${b.name} blocks ${e.name}.`}
  b.flash=1;
- if(E[e.key].feed)e.pow++;
+ if(E[e.key].feed&&b.dmg>=tough(b))e.pow++;
  if(pow(b)>0)hit(e,b.deathtouch&&!e.rank?99:pow(b));
  return msg;
 }
@@ -1557,7 +1557,7 @@ function offerEmblems(){const out=[];const left=k=>!run.emblems.includes(k)&&!ou
 const PRICE={C:25,U:40,R:70};
 function makeShop(){const pickR=r=>shuffle(POOL.filter(k=>C[k].r===r));const cards=[...pickR('C').slice(0,2),...pickR('U').slice(0,2),pickR('R')[0]];
  const emb=pick(Object.keys(EMB).filter(k=>!run.emblems.includes(k)&&!EMB[k].r&&forHero(k)));
- return {cards:cards.map(k=>({k,price:Math.round((PRICE[C[k].r]+Math.floor(rng()*6))*(1+.1*((run.act||1)-1))),sold:false})),remove:{price:35+25*(run.removed||0),sold:false},emb:emb?{k:emb,price:55,sold:false}:null}}
+ return {cards:cards.map(k=>({k,price:Math.round((PRICE[C[k].r]+Math.floor(rng()*6))*(1+.1*((run.act||1)-1))),sold:false})),remove:{price:35+25*(run.removed||0),sold:false},foil:{price:45+10*((run.act||1)-1),sold:false},emb:emb?{k:emb,price:55,sold:false}:null}}
 function treasureEmblems(){const x=rng(),want=x<.4?'M':'R';const pool=Object.keys(EMB).filter(k=>!run.emblems.includes(k)&&EMB[k].r===want&&!BOSSEMB[k]&&forHero(k));return pool.length?shuffle(pool).slice(0,2):[]}
 function treasureCards(){const r=pick(POOL.filter(k=>C[k].r==='R'));const u=shuffle(POOL.filter(k=>C[k].r==='U')).slice(0,2);return shuffle([r,...u])}
 // Rarity with a pity timer: every card offered that isn't rare raises the next rare chance.
@@ -1605,7 +1605,7 @@ const intentLabel=e=>{if(e.pacified&&PACIFIED.includes(intentOf(e)[0]))return `<
  if(t==='pay')return `<span class="intent buff" title="Pays ${v} life for +${v} attack">▲ pay ${v}</span>`;
  return `<span class="intent transform" title="Night falls">☾ transform</span>`};
 const ACT={scion:()=>'empower the biggest enemy',process:v=>`process an exiled card into ${v} Spawn`,sweep:v=>`${v} damage to each of your allies`,bolster:v=>`give an ally +${v} attack`,rally:v=>`all enemies +${v} attack`,annihilate:v=>`attack for ${v}, then destroy your weakest ally`,pay:v=>`pay ${v} life for +${v} attack`,atk:v=>`attack for ${v}`,drain:v=>`drain ${v} life`,buff:v=>`gain +${v} attack`,guard:v=>`guard ${v}`,haunt:()=>'haunt (you draw 1 fewer)',summon:v=>`summon a ${E[v]?E[v].name:v}`,sac:v=>`sacrifice a minion to hit you for ${v}`,transform:()=>'transform at night'};
-function enemyInfo(e){const d=E[e.key];const tr=[e.pacified&&(e.rank?'Pacified: its next attack is stopped, then it shakes it off.':'Pacified: it can\'t attack this fight.'),e.pacImmune&&'Immune to Pacifism for the rest of this fight.',d.fly&&'Flying: only flying or reach allies can block it.',d.first&&'First strike: hits your attacker first.',d.tax&&'Your noncreature spells cost 1 more.',d.raise&&'Dead minions come back as Zombies.',d.feed&&'Gets +1 attack each time it is blocked or attacked.',d.crawl&&'Returns once while another Zombie stands.',d.phase2&&'Below half life: shield 10 and a harder pattern.',d.loyalty&&'Loyalty: ultimate at 8. Each creature hit removes 1.',d.ingest&&'Unblocked hits exile the top card of your draw pile for this fight.',d.spawnDie&&'When it dies, other Eldrazi get +1 attack.',d.landfall&&`Gets +${d.landfall} attack whenever another enemy enters.`,d.rage&&`Deals ${d.rage} to you whenever another enemy enters.`,d.pact&&'If you have played at least as many spells as creatures this fight, he names spells, and each one costs you 3 life. Below half life he names whichever type you have played more.'].filter(Boolean);
+function enemyInfo(e){const d=E[e.key];const tr=[e.pacified&&(e.rank?'Pacified: its next attack is stopped, then it shakes it off.':'Pacified: it can\'t attack this fight.'),e.pacImmune&&'Immune to Pacifism for the rest of this fight.',d.fly&&'Flying: only flying or reach allies can block it.',d.first&&'First strike: hits your attacker first.',d.tax&&'Your noncreature spells cost 1 more.',d.raise&&'Dead minions come back as Zombies.',d.feed&&'Gets +1 attack each time a creature she damaged dies.',d.crawl&&'Returns once while another Zombie stands.',d.phase2&&'Below half life: shield 10 and a harder pattern.',d.loyalty&&'Loyalty: ultimate at 8. Each creature hit removes 1.',d.ingest&&'Unblocked hits exile the top card of your draw pile for this fight.',d.spawnDie&&'When it dies, other Eldrazi get +1 attack.',d.landfall&&`Gets +${d.landfall} attack whenever another enemy enters.`,d.rage&&`Deals ${d.rage} to you whenever another enemy enters.`,d.pact&&'If you have played at least as many spells as creatures this fight, he names spells, and each one costs you 3 life. Below half life he names whichever type you have played more.'].filter(Boolean);
  const list=(e.phase2?d.phase2:d.intents).map(([t,v])=>(ACT[t]||(()=>t))(['atk','annihilate'].includes(t)?v+e.buff:v)).join(' → ')+(e.buff?` (includes +${e.buff} from buffs)`:'');
  return `<div class="inspect" role="dialog" aria-label="${e.name}"><b>${e.name}</b><span class="muted"> · ${e.rank==='boss'?'Planeswalker':e.rank==='elite'?'Legendary':'Minion'} · ⚔ ${e.pow+e.buff} · ♥ ${Math.max(0,e.hp)}/${e.max}${e.shield?` · ◈ ${e.shield}`:''}</span><p>Pattern: ${list}</p>${tr.length?`<p>${tr.join(' ')}</p>`:''}<button class="btn" data-act="closeinspect">Close</button></div>`}
 const popOf=o=>{let s='';if(o.pop)s+=`<span class="pop${o.pop>=8?' big':''}" style="font-size:${(1.1+Math.min(o.pop,20)/14).toFixed(2)}rem">−${o.pop}</span>`;if(o.heal)s+=`<span class="pop heal">+${o.heal}</span>`;o.pop=0;o.heal=0;return s};
@@ -1693,10 +1693,12 @@ function eventView(){
   <button class="option" data-act="bandage"><b>Take the medicine</b><span class="muted">Heal 12 life.</span></button></div></section>`;
 }
 function shopView(){const sh=reward.shop;
+ if(reward.foiling)return `<section class="screen"><h2>Foil a card</h2><p>A foiled card is permanently stronger.</p><div class="choices">${run.deck.filter(d=>!d.foil&&C[d.key].kind!=='Curse').map(card=>cardHtml(card,`data-act="shopfoil" data-id="${card.id}"`)).join('')}</div><button class="btn" data-act="shopback">Back</button></section>`;
  if(reward.removing)return `<section class="screen"><h2>Remove a card</h2><p>Thin your deck so your best cards show up more often.</p><div class="choices">${run.deck.map(card=>cardHtml(card,`data-act="shopremove" data-id="${card.id}"`)).join('')}</div><button class="btn" data-act="shopback">Back</button></section>`;
  return `<section class="screen"><h2>${ACTS[run.act||1].market}</h2><p class="summary"><span>◎ ${run.gold} gold</span></p>
  <div class="choices">${sh.cards.map((x,n)=>x.sold?'':`<div class="buy">${cardHtml({key:x.k,foil:false},`data-act="buy" data-n="${n}" data-rar="${C[x.k].r}" ${run.gold<x.price?'disabled':''}`)}<span class="price">◎ ${x.price}</span></div>`).join('')}</div>
  <div class="choices">${sh.remove.sold?'':`<button class="option" data-act="shopremovepick" ${run.gold<sh.remove.price?'disabled':''}><b>Remove a card · ◎ ${sh.remove.price}</b><span class="muted">Fewer weak cards means your engines show up sooner.</span></button>`}
+ ${sh.foil&&!sh.foil.sold?`<button class="option" data-act="shopfoilpick" ${run.gold<sh.foil.price||!run.deck.some(d=>!d.foil&&C[d.key].kind!=='Curse')?'disabled':''}><b>Foil a card · ◎ ${sh.foil.price}</b><span class="muted">Make one card in your deck permanently stronger.</span></button>`:''}
  ${sh.emb&&!sh.emb.sold?`<button class="option" data-act="buyemb" ${run.gold<sh.emb.price?'disabled':''}>${embSvg(sh.emb.k)}<b>${EMB[sh.emb.k].name} · ◎ ${sh.emb.price}</b><span class="muted">${EMB[sh.emb.k].text}</span></button>`:''}</div>
  <button class="btn main" data-act="leave">Leave the market</button></section>`}
 function bossRewardView(){
@@ -1749,7 +1751,9 @@ document.getElementById('app').addEventListener('click',ev=>{
  if(a==='buy'){const x=reward.shop.cards[+b.dataset.n];if(x&&!x.sold&&run.gold>=x.price){run.gold-=x.price;x.sold=true;run.deck.push(mk(x.k))}return render()}
  if(a==='buyemb'){const x=reward.shop.emb;if(x&&!x.sold&&run.gold>=x.price){run.gold-=x.price;x.sold=true;run.emblems.push(x.k)}return render()}
  if(a==='shopremovepick'){reward.removing=1;return render()}
- if(a==='shopback'){reward.removing=0;return render()}
+ if(a==='shopback'){reward.removing=0;reward.foiling=0;return render()}
+ if(a==='shopfoilpick'){reward.foiling=1;return render()}
+ if(a==='shopfoil'){const sh=reward.shop,x=run.deck.find(d=>d.id===+b.dataset.id);if(x&&sh.foil&&!sh.foil.sold&&run.gold>=sh.foil.price){run.gold-=sh.foil.price;sh.foil.sold=true;x.foil=true}reward.foiling=0;return render()}
  if(a==='shopremove'){const sh=reward.shop;if(run.gold>=sh.remove.price){run.gold-=sh.remove.price;sh.remove.sold=true;run.removed=(run.removed||0)+1;run.deck=run.deck.filter(d=>d.id!==+b.dataset.id)}reward.removing=0;return render()}
  if(a==='sac'){c.pending={kind:'sac',aim:'ally'};c.log='Goblin Bombardment: choose an ally to sacrifice.';return render()}
  if(a==='bossemb')return nextAct(b.dataset.k);
