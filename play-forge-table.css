@@ -1520,3 +1520,7 @@ body.practice-table-open:has(#practicePlayerMat.play-match-table[data-forge-nati
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-hand{align-self:center;max-width:calc(100% - 2*150px);min-width:84px;height:44px;max-height:44px!important;display:flex;align-items:center;justify-content:center}
 }
 @media (hover:none) and (pointer:coarse) and (max-width:599px) and (orientation:portrait) and (min-height:781px){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]{--play-piece:clamp(54px,calc((100dvh - 640px) / 3.6),72px)!important}:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone-groups{--play-piece:clamp(54px,calc((100dvh - 640px) / 3.6),72px)!important}}
+/* Drag: the lifted card follows by transform only (no layout per move) and leans with the motion; its slot dims while it is up. */
+:where(body.practice-table-open) .forge-drag-ghost{transform:translate(-50%,-50%) rotate(calc(-6deg + var(--tilt,0deg)));will-change:translate,transform}
+:where(body.practice-table-open) .play-match-card.forge-drag-source{opacity:.28;transition:opacity .12s ease}
+:where(body.practice-table-open) .forge-peek .forge-peek-actions>.forge-peek-hint{flex:1 1 auto;min-height:40px;border:1px dashed #8fdcff66;border-radius:999px;background:#5cc8ff12;color:#bfe9ff;font:600 13px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.02em}
