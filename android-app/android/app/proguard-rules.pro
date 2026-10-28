@@ -19,3 +19,12 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# CardStashy: shrink only the unused library code. The app's own classes, Capacitor and the
+# Cordova bridge are kept whole (plugins are found by reflection and called from the WebView).
+-keep class dev.cardstashy.** { *; }
+-keep class com.getcapacitor.** { *; }
+-keep class org.apache.cordova.** { *; }
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,SourceFile,LineNumberTable
+-keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
+-dontobfuscate

@@ -7,8 +7,8 @@ android {
         applicationId "com.cardstashy.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 16
-        versionName "0.8.1-beta"
+        versionCode 17
+        versionName "0.9.0-beta"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
             noCompress 'gzip'
@@ -28,8 +28,10 @@ android {
     buildTypes {
         release {
             if (signingFile?.exists()) signingConfig signingConfigs.release
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // R8 drops unused AndroidX code (proguard-rules.pro keeps the app, Capacitor and Cordova whole)
+            // so the APK fits Cloudflare's 25 MiB download limit.
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }

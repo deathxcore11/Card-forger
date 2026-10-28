@@ -3,6 +3,7 @@ import { createNativeAuth } from './native-auth.js';
 import { createNativeArtworkStore } from './native-art-storage.js';
 import { createNativeDocuments, installFileInputAdapter } from './native-documents.js';
 import { OFFLINE_ART } from './offline-art-manifest.js';
+import { installNativeDisplay } from './native-display.js';
 
 if (location.origin !== 'https://android-integration.cardstashy.invalid') throw Error('This integration build must run in its own Android origin.');
 Object.defineProperty(globalThis, 'CARDSTASHY_NATIVE', { value: Object.freeze({ platform: 'android', networkIntegrated: true }), writable: false });
@@ -51,4 +52,5 @@ await plugin.addListener('lifecycle', event => {
   if (event.state !== 'memory-pressure') document.documentElement.dataset.nativeAppState = event.state;
   globalThis.dispatchEvent(new CustomEvent('cardstashy-native-lifecycle', { detail: { state: event.state } }));
 });
+installNativeDisplay({ plugin: globalThis.Capacitor.registerPlugin('CardStashyDisplay') });
 await import('./app.js');

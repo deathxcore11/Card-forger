@@ -3,6 +3,7 @@ import { transformNativeScanner } from './transform-native-scanner.mjs';
 import { transformNativeStorageApp, transformNativeStorageViews } from './transform-native-storage-settings.mjs';
 import { transformNativeExports, transformNativeTcgExports } from './transform-native-exports.mjs';
 import { transformNativeFoil } from './transform-native-foil.mjs';
+import { transformNativePlaneswalk } from './transform-native-planeswalk.mjs';
 import { readFile, writeFile, mkdir, rm, copyFile, readdir, stat, rename } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -131,10 +132,12 @@ const csp = ["default-src 'self'", "script-src 'self' 'unsafe-inline' 'wasm-unsa
   "worker-src 'self' blob:", "media-src 'self' blob:", "object-src 'none'", "frame-src 'none'", "form-action 'none'", "base-uri 'self'"].join('; ');
 html = html.replace('<head>', `<head>\n<meta http-equiv="Content-Security-Policy" content="${csp}">\n<link rel="stylesheet" href="native-integration.css">`);
 await writeFile(path.join(output, 'index.html'), html);
-// Planeswalk falls back to Georgia and the system font, so it needs no web fonts offline.
 const planeswalk = path.join(output, 'planeswalk.html');
-await writeFile(planeswalk, (await readFile(planeswalk, 'utf8')).replace(/<link\b[^>]*href="https?:\/\/[^>]*>\s*/g, ''));
+await writeFile(planeswalk, transformNativePlaneswalk(await readFile(planeswalk, 'utf8')));
 for (const file of await readdir(path.join(root, 'runtime'))) await copyFile(path.join(root, 'runtime', file), path.join(output, file));
+// Planeswalk is its own page: its native script loads the same Capacitor core as the app.
+const planeswalkNative = path.join(output, 'native-planeswalk.js');
+await writeFile(planeswalkNative, (await readFile(planeswalkNative, 'utf8')).replace('__CAPACITOR_CORE__', coreFile));
 // Android WebViews report the status and navigation bars through Capacitor's --safe-area-inset-*
 // variables rather than env(), so the app uses whichever is larger and HUD buttons clear them.
 // Every packaged stylesheet, nested ones included (the release gate rewrites each shared .css).
