@@ -999,7 +999,7 @@ const C={
  bolt:{name:'Lightning Bolt',e:1,r:'C',aim:'enemy',kind:'Instant',g:'ϟ',text:f=>`Deal ${f?6:4} damage.`,play:(f,t)=>hit(t,f?6:4)},
  fanatic:{name:'Mogg Fanatic',e:1,r:'C',kind:'Creature · Goblin',g:'G',ally:f=>({p:1,t:1,goblin:1,deathBurn:f?4:2}),text:f=>`1/1. When it dies, deal ${f?4:2} to the front enemy.`},
  krenko:{name:"Krenko's Command",e:1,r:'C',kind:'Sorcery',g:'G',tokens:1,text:f=>`Summon two ${f?'2/1':'1/1'} Goblins.`,play:f=>{for(let i=0;i<2;i++)summon({p:f?2:1,t:1,goblin:1},'Goblin token')}},
- brute:{name:'Brute Force',e:1,r:'C',aim:'ally',kind:'Instant',g:'+',needAlly:1,text:f=>`Target ally gets +${f?4:3}/+${f?4:3} until your next turn. Untap it.`,play:(f,t)=>{t.temp+=f?4:3;t.tapped=false}},
+ brute:{name:'Brute Force',e:1,r:'C',aim:'ally',kind:'Instant',g:'+',needAlly:1,text:f=>`Target ally gets +${f?4:3}/+${f?4:3} until your next turn. Untap it: it can attack again this turn.`,play:(f,t)=>{t.temp+=f?4:3;t.tapped=false}},
  marauder:{name:'Borderland Marauder',e:1,r:'C',kind:'Creature · Warrior',g:'M',ally:f=>({p:1,t:f?3:2,raid:2}),text:f=>`1/${f?3:2}. Gets +2/+0 while attacking.`},
  dasher:{name:'Valley Dasher',e:1,r:'C',kind:'Creature · Berserker',g:'V',ally:f=>({p:f?3:2,t:3,haste:1,must:1}),text:f=>`${f?3:2}/3. Haste. Attacks by itself at end of turn if you didn't.`},
  guide:{name:'Goblin Guide',e:1,r:'U',kind:'Creature · Goblin',g:'G',ally:f=>({p:f?3:2,t:2,haste:1,goblin:1}),text:f=>`${f?3:2}/2. Haste.`},
@@ -1086,7 +1086,7 @@ const EMB={
  surge:{name:'Emblem of the Surge',g:'⚡',r:'R',text:'You get 1 extra energy on odd turns (1st, 3rd, 5th...).'},
  furnace:{name:'Emblem of the Furnace',g:'✹',r:'M',text:'Once you have played 2 cards in a turn, your spells deal double damage and everything else deals 50% more. Each hit you take deals 1 extra.'},
  season:{name:'Emblem of Doubling Season',g:'❖',r:'M',text:'At the start of your turn, summon a 1/1 token. Whenever you summon a token, summon a second one. Your tokens have haste.'},
- paradox:{name:'Emblem of the Paradox Engine',g:'⟲',r:'M',text:'Whenever you cast a noncreature spell, untap all your creatures and they get +1/+1 for the rest of the fight.'},
+ paradox:{name:'Emblem of the Paradox Engine',g:'⟲',r:'M',text:'Whenever you cast a noncreature spell, untap all your creatures (they can attack again) and they get +1/+1 for the rest of the fight.'},
  dawn:{col:'W',name:'Emblem of the Dawn',g:'☀',text:"Elspeth's +1 summons two Soldiers."},
  beacon:{col:'W',name:'Emblem of the Beacon',g:'✧',r:'R',text:'Whenever you heal, deal 1 damage to each enemy.'},
  legion:{col:'R',name:'Emblem of the Legion',g:'⚑',r:'R',text:'The first Goblin you summon each turn brings a 2/1 Goblin token with haste.'},
@@ -1190,7 +1190,7 @@ function startTurn(){
  c.twinned=0;c.legioned=0;c.embered=0;c.healedTurn=0;c.turnStart=c.stats.dealt;c.juice=[];
  for(const m of c.allies.filter(a=>a.mob)){const n=c.allies.filter(a=>a.goblin).length;for(let k=0;k<n&&c.allies.length<MAXA;k++)summon({p:1,t:1,goblin:1,sick:0},'Goblin token')}
  if(run.emblems.includes('season'))summon({p:1,t:1},'Spirit token');
- if(run.emblems.includes('monument')&&c.allies.length&&c.turn%2===0){const w=[...c.allies].sort((x,y)=>pow(x)-pow(y))[0];w.dmg=999;if(c.turn%2===0)hurt(1);cleanup()}
+ if(run.emblems.includes('monument')&&c.turn%2===0){hurt(1);if(c.allies.length){const w=[...c.allies].sort((x,y)=>pow(x)-pow(y))[0];w.dmg=999;cleanup()}}
  
  if(c.enemies.some(e=>e.hp<=0))cleanup();
  c.energy=HERO.energy+(run.emblems.includes('signet')&&c.turn>1?1:0)+(c.turn===1&&run.emblems.includes('contract')?2:0)+(run.emblems.includes('surge')&&c.turn%2===1?1:0)+(c.turn===1&&run.emblems.includes('spark')?2:0)+c.bank; c.banked=c.bank; c.bank=0; c.chain=0; c.used=false; draw(5-c.haunt+(run.emblems.includes('contract')?2:0)); c.haunt=0;
@@ -1200,7 +1200,10 @@ function draw(n){for(let i=0;i<n;i++){if(!c.draw.length){c.draw=shuffle(c.discar
 const lords=a=>a.goblin?c.allies.filter(x=>x.lord&&x!==a).length:0;
 const marshals=a=>c.allies.filter(x=>x.marshal&&x!==a).length+(c.anthem||0)+(a.flying?c.allies.filter(x=>x.skylord&&x!==a).length:0);
 const pow=a=>a.p+a.temp+(a.temp1||0)+2*lords(a)+marshals(a), tough=a=>a.t+a.temp+(a.tough4||0)+lords(a)+marshals(a);
-const ready=a=>!a.sick&&!a.tapped&&!a.defender&&!c.busy;
+// Granted haste is read from the board now, so summon order and a lord leaving both count.
+const granted=a=>a.goblin&&c.allies.some(x=>x.dmg<tough(x)&&(x.chief||(x.lord&&x!==a)));
+const hasty=a=>a.haste||granted(a);
+const ready=a=>(!a.sick||hasty(a))&&!a.tapped&&!a.defender&&!c.busy;
 const alive=()=>c.enemies.filter(e=>e.hp>0);
 const solo=()=>alive().length===1?alive()[0]:null;
 function hit(e,n){if(!e||e.hp<=0||n<=0)return 0;if(c&&c.font&&!c.busy){n+=c.font;juice(`+${c.font} Agony`);c.font=0}if(run.emblems.includes('font')&&run.hp<=run.max*.3){n=Math.ceil(n*1.5);juice('×1.5 Agony',1)}if(run.emblems.includes('furnace')&&c&&c.chain>=2){n=c.casting?n*2:Math.ceil(n*1.5);juice(c.casting?'×2 Furnace':'×1.5 Furnace',1)}if(e.shield){const s=Math.min(e.shield,n);e.shield-=s;n-=s}e.hp-=n;e.pop=(e.pop||0)+n;if(E[e.key].phase2&&!e.phase2&&e.hp>0&&e.hp<=e.max/2){e.phase2=true;e.i=0;e.shield+=10;if(c){c.callout='Bloodlord form';c.log='Sorin drops below half: he raises a 10 shield and his attacks grow. Burst through it or outlast it.'}}if(c&&!c.busy){c.burst=(c.burst||0)+n;c.stats.dealt+=n}return n}
@@ -1216,8 +1219,7 @@ function summon(base,name){
  const a={id:++uid,name,...base,dmg:0,temp:0,tapped:false};
  if(run.emblems.includes('horde'))a.p++;
  if(run.emblems.includes('monument')){a.flying=1}
- if(a.goblin&&c.allies.some(x=>x.chief||x.lord))a.haste=1;
- a.sick=!a.haste; c.allies.push(a);
+  a.sick=!a.haste; c.allies.push(a);
  if(run.emblems.includes('season')&&/token|Elemental/.test(name)){a.haste=1;a.sick=false}
  if(run.emblems.includes('season')&&/token|Elemental/.test(name)&&!c.seasoning){c.seasoning=1;summon({...base},name);c.seasoning=0}
  if(a.goblin&&run.emblems.includes('legion')&&!c.legioned&&name!=='Goblin token'){c.legioned=1;summon({p:2,t:1,goblin:1,haste:1},'Goblin token')}
@@ -1469,8 +1471,8 @@ function mapView(){
 function battleView(){
 const P=c.pending;const F=c.busy?{you:0,dead:new Set()}:forecast();const low=run.hp<=run.max*.3;
  const hero=`<div class="unit hero${run.pop?' struck':''}${low?' low':''}" data-n="${HERO.name}">${c.busy?'':`<span class="incoming ${F.you?'':'safe'}" title="If you end your turn now">${F.you?`⚔ ${F.you} incoming`:'✓ Safe'}</span>`}${popOf(run)}<span class="loyal" title="Loyalty">${c.loyalty}</span><div class="art"><span class="tag"></span><span class="glyph">C</span><span class="stats">${Math.max(0,run.hp)}</span></div><span class="name">${HERO.short}</span><div class="bar"><i style="width:${Math.max(0,run.hp)/run.max*100}%"></i></div></div>`;
- const allies=c.allies.map(a=>{const fl=a.flash;a.flash=0;const r=P&&P.aim==='ally'?true:ready(a);const sel=P&&P.kind==='atk'&&P.id===a.id;const doom=F.dead.has(a.id);const st=doom?'☠ Doomed':a.defender?'Defender':a.sick?'Zzz':a.tapped?'Tapped':sel?'Attacking':a.haste&&c.allies.length&&!a.swung?'Haste!':'Ready';
-  return `<button data-n="${a.name}" class="unit ally${fl?' struck':''}${doom?' doom':''}${a.sick?' sick':''}${a.tapped?' tapped':''}${r?' ready':''}${sel?' chosen':''}" data-act="${P&&P.aim==='ally'?'target-ally':'atk'}" data-id="${a.id}" ${r?'':'disabled'} title="${a.sick?'Just arrived: can block, attacks next turn':a.tapped?'Attacked this turn: cannot block':r?'Tap, then choose an enemy to attack':''}"><div class="art"><span class="tag">${st}</span><span class="glyph">${a.name[0]}</span><span class="stats">${pow(a)}/${tough(a)-a.dmg}</span></div><span class="name">${a.name}</span><span class="kw">${kws(a)}</span></button>`}).join('')+'<div class="slot" aria-hidden="true"></div>'.repeat(Math.max(0,Math.min(2,4-c.allies.length)));
+ const allies=c.allies.map(a=>{const fl=a.flash;a.flash=0;const r=P&&P.aim==='ally'?true:ready(a);const sel=P&&P.kind==='atk'&&P.id===a.id;const doom=F.dead.has(a.id);const st=doom?'☠ Doomed':a.defender?'Defender':a.sick&&!hasty(a)?'Zzz':a.tapped?'Tapped':sel?'Attacking':hasty(a)&&c.allies.length&&!a.swung?'Haste!':'Ready';
+  return `<button data-n="${a.name}" class="unit ally${fl?' struck':''}${doom?' doom':''}${a.sick&&!hasty(a)?' sick':''}${a.tapped?' tapped':''}${r?' ready':''}${sel?' chosen':''}" data-act="${P&&P.aim==='ally'?'target-ally':'atk'}" data-id="${a.id}" ${r?'':'disabled'} title="${a.sick&&!hasty(a)?'Just arrived: can block, attacks next turn':a.tapped?'Attacked this turn: cannot block':r?'Tap, then choose an enemy to attack':''}"><div class="art"><span class="tag">${st}</span><span class="glyph">${a.name[0]}</span><span class="stats">${pow(a)}/${tough(a)-a.dmg}</span></div><span class="name">${a.name}</span><span class="kw">${kws(a)}</span></button>`}).join('')+'<div class="slot" aria-hidden="true"></div>'.repeat(Math.max(0,Math.min(2,4-c.allies.length)));
  const foes=c.enemies.map(e=>`<button data-n="${e.name}" class="unit ${e.rank} ${P&&P.aim==='enemy'?'aim':''}${e.acting?' acting':''}" data-act="target" data-id="${e.id}" aria-label="${P&&P.aim==='enemy'?'Target':'Inspect'} ${e.name}">${popOf(e)}${e.rank==='boss'?`<span class="loyal" title="Loyalty. Ultimate at 8. Each creature that hits him removes 1.">${e.loyalty}${(d=>d?`<small class="loyd">${d>0?'+':''}${d}</small>`:'')(intentOf(e)[2]||0)}</span>`:''}${intentLabel(e)}<div class="art"><span class="tag">${e.rank==='boss'?'Planeswalker':e.rank==='elite'?'Legendary':'Minion'}${e.fly?' · Flying':''}</span><span class="glyph">${e.g}</span><span class="stats hp" title="Power ${e.pow}">${e.hp}</span></div><span class="name">${e.name}</span>${e.shield?`<span class="shield">◈ ${e.shield}</span>`:''}<div class="bar"><i style="width:${Math.max(0,e.hp)/e.max*100}%"></i></div></button>`).join('');
  const anyReady=c.allies.some(ready);
  const q=c.quake;c.quake=0;const co=c.callout;c.callout='';
