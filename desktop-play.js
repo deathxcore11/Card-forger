@@ -5,9 +5,8 @@ export const PLAY_TOUCH_MIN_EDGE = 600;
 // On touch devices the table fits when its shortest side has room: tablets and
 // unfolded foldables in either orientation. A phone (or a folded cover screen) fits
 // held sideways, where the table has its own compact phone layout, the way Arena
-// plays on a phone. Upright, Play still opens: starting a match asks the browser for
-// fullscreen sideways, and the table falls back to its upright layout when the
-// browser cannot turn. Size alone decides: browsers
+// plays on a phone. Held upright it fits too, with its own portrait layout; the table
+// follows however the phone is held and never forces a turn. Size alone decides: browsers
 // report no hinge or fold state.
 export const PLAY_PHONE_MIN = {width:640, height:300, ratio:1.5};
 export const playPhoneSideways=(width,height)=>width>=PLAY_PHONE_MIN.width&&height>=PLAY_PHONE_MIN.height&&width>=height*PLAY_PHONE_MIN.ratio;
@@ -17,7 +16,7 @@ export function playScreenFits(width, height, {screenMin=0, typing=false}={}) {
   if(typing)return width>=PLAY_TOUCH_MIN_EDGE;
   if(Math.min(width,height)>=PLAY_TOUCH_MIN_EDGE)return true;
   if(playPhoneSideways(width,height))return true;
-  // Upright phones play too: the start asks for fullscreen sideways, and the table has an upright layout when it cannot turn.
+  // Upright phones get the portrait table.
   if(playPhoneSideways(height,width))return true;
   // A tablet held sideways loses height to the browser's own bars; its screen still decides.
   return screenMin>=PLAY_TOUCH_MIN_EDGE&&width>=PLAY_TOUCH_MIN_EDGE&&height>=520;
@@ -141,20 +140,4 @@ export function createPlayScreenPause({limitMs=PLAY_SMALL_SCREEN_LIMIT_MS,now=()
     get ended(){return ended;},
     destroy(){ended=true;since=null;stop();},
   };
-}
-// Phones, foldables and tablets: starting a match asks for one fullscreen landscape screen, the
-// way Arena plays. It must run inside the tap that starts the match (browsers require a user
-// gesture). Where the browser or app refuses, the table keeps its upright layout; nothing waits
-// on the answer.
-export function enterPlayLandscape(view=globalThis,root=view.document) {
-  try{
-    if(readPlayDeviceEligibility(view,root).entry!=='touch')return false;
-    const el=root.documentElement,full=root.fullscreenElement||typeof el?.requestFullscreen!=='function'?Promise.resolve():el.requestFullscreen({navigationUI:'hide'});
-    Promise.resolve(full).then(()=>view.screen?.orientation?.lock?.('landscape')).catch(()=>{});
-    return true;
-  }catch{return false;}
-}
-export function leavePlayLandscape(view=globalThis,root=view.document) {
-  try{view.screen?.orientation?.unlock?.();}catch{}
-  try{if(root?.fullscreenElement)Promise.resolve(root.exitFullscreen?.()).catch(()=>{});}catch{}
 }

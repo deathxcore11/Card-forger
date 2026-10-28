@@ -11,7 +11,7 @@ import {loadMtgBooster,mtgBoosterCards} from './mtg-boosters.js';
 // Booster pack photos trim to the pack itself wherever they appear.
 document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]'))trimPackArt(e.target);},true);
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
-import {syncDesktopPlayEntries,playDeviceGate,watchPlayDeviceEligibility,enterPlayLandscape,leavePlayLandscape} from './desktop-play.js';
+import {syncDesktopPlayEntries,playDeviceGate,watchPlayDeviceEligibility} from './desktop-play.js';
 import {createPlaySetup} from './play-setup.js';
 import {FORGE_PLAY_TEST_ENABLED} from './play-forge-feature.js';
 import {forgeDeckSupport,forgeCpuDeckComplete} from './play-forge-setup-review.js';
@@ -1553,7 +1553,7 @@ A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profil
 // pass. The account/table lifecycle below is testable independently of activation.
 const PLAY_MATCH_RELEASE_READY=true;
 let playerMatHost=null,playerMatRoot=null,practicePregame=null,playStarting=false;
-function closePlayerMat(){leavePlayLandscape();practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
+function closePlayerMat(){practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
 // A failed Play download must never leave the app inert behind an empty layer.
 // The screen offers Return (restores the app) and Reload (fetches the current
 // release, which also covers an old page asking for a chunk a deploy removed).
@@ -1570,8 +1570,6 @@ A.playStartCandidate=async()=>{
  if(!PLAY_MATCH_RELEASE_READY)return toast('Practice integration is still being verified.');
  if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
  playStarting=true;forgeWarmAt=0; // this start claims the warm engine; warm again next time
- // Inside the tap itself: a phone turns sideways for the table; a start that stops early turns it back.
- const turned=enterPlayLandscape();
  try{
  const initial=playSetup.snapshot();
  if(initial.playStyle==='quick'&&initial.match.mode==='cpu'&&!initial.quickMatch){if(!await A.playFindOpponent())return;}
@@ -1608,7 +1606,7 @@ A.playStartCandidate=async()=>{
  if(FORGE_PLAY_TEST_ENABLED)await beginGame({}); // Forge owns its opening decisions.
  else if(source.playStyle==='quick')await beginGame(resolvePracticePregame('random'));
  else practicePregame=mountPracticePregame({root:playerMatRoot,renderDeckArtwork:deck=>{const art=document.createElement('div');art.className='play-pregame-art';art.innerHTML=V.deckArtwork(deck);return art;},readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),onCancel:closePlayerMat,onConfirm:beginGame});
- }finally{playStarting=false;if(turned&&!playerMatRoot)leavePlayLandscape();}
+ }finally{playStarting=false;}
 };
 function playDeckPreview(deck) {
   if(!deck||!Array.isArray(deck.cards)||!Array.isArray(deck.side||[])||(deck.format!==undefined&&typeof deck.format!=='string')||[...deck.cards,...(deck.side||[])].some(row=>!row||typeof row.name!=='string'||!Number.isSafeInteger(row.qty)||row.qty<1))return '<p class="note warn">This deck needs review in Decks before its cards can be displayed.</p>';
