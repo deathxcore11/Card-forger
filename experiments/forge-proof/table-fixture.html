@@ -193,8 +193,8 @@ const native = {
     {id: YOU, name: 'idw011', life: 40, isViewer: true, counters: BASE.you.counters || {}, mana: {W: 0, U: 0, B: 0, R: ['targets', 'pay'].includes(STATE) ? 0 : 2, G: 0, C: 0}, zones: youZones},
     {id: CPU, name: 'CPU', life: 38, isViewer: false, counters: BASE.cpu.counters || {}, mana: {W: 0, U: 0, B: 0, R: 0, G: 0, C: 0}, zones: cpuZones},
   ],
-  stack: stackCard ? [{id: 990, text: 'Counterspell — Counter target spell.', source: stackCard, activatingPlayer: CPU}] : STATE === 'crowded' ? Array.from({length: 4}, (_, i) => ({id: 980 + i, text: 'Soul Warden — Whenever another creature enters, you gain 1 life.', source: null, activatingPlayer: YOU})) : [], turn, phase, activePlayer: yourTurn ? YOU : CPU, priorityPlayer: yourTurn ? YOU : CPU,
-  inputType: prompt ? '' : inputType, prompt, message, controlMode: 'smart', notification: {}, lastActionError: null,
+  stack: stackCard ? [{id: 990, text: 'Counterspell — Counter target spell.', source: stackCard, activatingPlayer: CPU}] : STATE === 'crowded' ? Array.from({length: 4}, (_, i) => ({id: 980 + i, text: 'Soul Warden — Whenever another creature enters, you gain 1 life.', source: null, activatingPlayer: YOU, ability: true, yielded: false})) : [], turn, phase, activePlayer: yourTurn ? YOU : CPU, priorityPlayer: yourTurn ? YOU : CPU,
+  inputType: prompt ? '' : inputType, prompt, message, controlMode: 'smart', ...(STATE === 'crowded' ? {phaseStops: {'you:UPKEEP': true, 'opponent:END_OF_TURN': false}} : {}), notification: {}, lastActionError: null,
   buttons: STATE === 'opening' ? {ok: 'Keep', okEnabled: true, cancel: 'Mulligan', cancelEnabled: true}
     : STATE === 'discard' ? {ok: 'OK', okEnabled: false, cancel: '', cancelEnabled: false}
     : STATE === 'targets' ? {ok: 'OK', okEnabled: true, cancel: 'Cancel', cancelEnabled: true}

@@ -129,9 +129,11 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
   async submit(action){
    if(!allocation||closed||blocked||submitting)throw fail(error||'MATCH_NOT_READY');
    if(unsettled)throw Object.assign(fail('ACTION_OUTCOME_PENDING'),{message:OUTCOME_PENDING});
-   if(!Number.isSafeInteger(action?.revision)||!['ok','cancel','card','player','stack','reply','concede','controlMode','autoPay'].includes(action?.op))throw fail('INVALID_NATIVE_ACTION');
+   if(!Number.isSafeInteger(action?.revision)||!['ok','cancel','card','player','stack','reply','concede','controlMode','autoPay','phaseStop','yieldSource'].includes(action?.op))throw fail('INVALID_NATIVE_ACTION');
    if(action.op==='controlMode'&&(!['smart','full'].includes(action.value)||Object.keys(action).some(k=>!['revision','op','value'].includes(k))))throw fail('INVALID_NATIVE_CONTROL_MODE');
    if(action.op==='autoPay'&&(typeof action.value!=='boolean'||Object.keys(action).some(k=>!['revision','op','value'].includes(k))))throw fail('INVALID_NATIVE_AUTO_PAY');
+   if(action.op==='phaseStop'&&(!['you','opponent'].includes(action.seat)||!['UNTAP','UPKEEP','DRAW','MAIN1','COMBAT_BEGIN','COMBAT_DECLARE_ATTACKERS','COMBAT_DECLARE_BLOCKERS','COMBAT_FIRST_STRIKE_DAMAGE','COMBAT_DAMAGE','COMBAT_END','MAIN2','END_OF_TURN','CLEANUP'].includes(action.phase)||!['off','once','pinned'].includes(action.mode)||Object.keys(action).some(k=>!['revision','op','seat','phase','mode'].includes(k))))throw fail('INVALID_NATIVE_PHASE_STOP');
+   if(action.op==='yieldSource'&&(!Number.isSafeInteger(action.id)||action.id<0||typeof action.value!=='boolean'||Object.keys(action).some(k=>!['revision','op','id','value'].includes(k))))throw fail('INVALID_NATIVE_YIELD');
    const commandId=newId();submitting=true;
    try{const {status:code,data}=await request('/api/play/matches/'+allocation.matchId+'/actions',{method:'POST',body:{commandId,generation:allocation.generation,action:structuredClone(action)},expectedCommandId:commandId});
     if(data?.commandId!==commandId||code!==202)throw fail('HOST_COMMAND_RECEIPT_MISMATCH');

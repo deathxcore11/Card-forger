@@ -6,7 +6,7 @@
 // Playback never stands between the player and a decision: the board that asks is shown at once
 // and the story of how it got there plays over it without blocking a command.
 export function createPlaybackSession(authority,{displayed,busy}){
- const commands=new Set(['nativeSelect','nativeButton','selectPrompt','confirmPrompt','clearPrompt','rememberPrompt','reorderPrompt','replyValue','setControlMode','concede']);
+ const commands=new Set(['nativeSelect','nativeButton','selectPrompt','confirmPrompt','clearPrompt','rememberPrompt','reorderPrompt','replyValue','setControlMode','setPhaseStop','yieldSource','concede']);
  return new Proxy(authority,{get(target,key){
   if(key==='snapshot')return()=>({...displayed(),busy:busy()||displayed()?.busy});
   const value=target[key];

@@ -1428,3 +1428,16 @@
 /* Arena frustrations: identical triggers grouped on the stack carry a gold ×N badge. */
 :where(body.practice-table-open) .forge-native-panel .forge-native-stack button[data-stack-count]{display:flex;align-items:center;justify-content:space-between;gap:8px}
 :where(body.practice-table-open) .forge-native-panel .forge-native-stack .forge-stack-count{flex:none;min-width:30px;padding:2px 7px;border-radius:999px;background:linear-gradient(180deg,#f6dc9a,#d9a64a);color:#1b1406;font:800 12px/1.2 'DM Sans',system-ui,sans-serif;text-align:center}
+/* Arena frustrations: Yield on a stack ability, and the phase-stops sheet under the turn line. */
+:where(body.practice-table-open) .forge-native-panel .forge-stack-row{display:flex;gap:6px;align-items:stretch}
+:where(body.practice-table-open) .forge-native-panel .forge-stack-row>button:first-child{flex:1;min-width:0}
+:where(body.practice-table-open) .forge-native-panel .forge-native-stack .forge-stack-yield{flex:none;min-height:0;padding:4px 10px;border-radius:999px;font:700 11px/1 'DM Sans',system-ui,sans-serif;color:#cfd4dc;background:#ffffff0d}
+:where(body.practice-table-open) .forge-native-panel .forge-native-stack .forge-stack-yield[aria-pressed=true]{background:linear-gradient(180deg,#f6dc9a,#d9a64a);color:#1b1406;border-color:transparent}
+:where(body.practice-table-open) .forge-native-panel .forge-stops{display:grid;gap:6px;justify-items:start}
+:where(body.practice-table-open) .forge-native-panel .forge-stops-toggle{min-height:24px;padding:3px 10px;border-radius:999px;border:1px solid #e8b95b55;background:#0f1117cc;color:#f4d78f;font:700 11px/1 'DM Sans',system-ui,sans-serif;cursor:pointer}
+:where(body.practice-table-open) .forge-native-panel .forge-stops-grid{display:grid;grid-template-columns:1fr 34px 34px;gap:4px 8px;align-items:center;width:100%;padding:8px 10px;border-radius:12px;background:#0b0d12cc;border:1px solid #ffffff14;font:600 12px/1.2 'DM Sans',system-ui,sans-serif;color:#cfd4dc}
+:where(body.practice-table-open) .forge-native-panel .forge-stops-grid[hidden]{display:none}
+:where(body.practice-table-open) .forge-native-panel .forge-stops-grid>b{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9aa2b1;text-align:center}
+:where(body.practice-table-open) .forge-native-panel .forge-stop{width:26px;height:26px;min-height:0;padding:0;justify-self:center;border-radius:50%;border:1.5px dashed #ffffff40;background:none;color:#f4d78f;font-size:12px;line-height:1}
+:where(body.practice-table-open) .forge-native-panel .forge-stop[data-state=once]{border-style:solid;border-color:#e8b95b}
+:where(body.practice-table-open) .forge-native-panel .forge-stop[data-state=pinned]{border:0;background:linear-gradient(180deg,#f6dc9a,#d9a64a)}

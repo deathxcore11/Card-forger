@@ -225,6 +225,9 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
   replyValue(value){const p=currentPrompt();return send('reply',{promptId:p.id,value});},
   setControlMode(value){if(!allowControlMode||!['smart','full'].includes(value)||!['smart','full'].includes(native?.controlMode))throw Error('NATIVE_CONTROL_MODE_UNAVAILABLE');if(native.prompt||native.inputType==='InputLockUI')throw Error('MATCH_NOT_READY');return send('controlMode',{value});},
   setAutoPay(value){if(!allowControlMode||typeof value!=='boolean'||typeof native?.autoPay!=='boolean')throw Error('NATIVE_AUTO_PAY_UNAVAILABLE');if(native.prompt||native.inputType==='InputLockUI')throw Error('MATCH_NOT_READY');return send('autoPay',{value});},
+  // Older bridges carry no phaseStops; the table then offers no stop controls.
+  setPhaseStop(seat,phase,mode){if(!allowControlMode||!native?.phaseStops||typeof native.phaseStops!=='object')throw Error('NATIVE_PHASE_STOPS_UNAVAILABLE');return send('phaseStop',{seat,phase,mode});},
+  yieldSource(id,value=true){const item=native?.stack?.find(x=>x.id===id);if(!allowControlMode||item?.ability!==true)throw Error('NATIVE_YIELD_UNAVAILABLE');if(native.prompt||native.inputType==='InputLockUI')throw Error('MATCH_NOT_READY');return send('yieldSource',{id,value:!!value});},
   concede(){return send('concede');},
   // No fake session rules or generic choose/cast fallback are exposed.
  };
