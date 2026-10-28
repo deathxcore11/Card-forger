@@ -156,7 +156,10 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  }
  function copyDeckButton(deck){
   const b=node('button','Copy deck');b.type='button';b.className='btn ghost';
-  const text=[...(deck.cards||[]).map(r=>`${r.qty} ${r.name}`),...(deck.side?.length?['','Sideboard',...deck.side.map(r=>`${r.qty} ${r.name}`)]:[])].join('\n');
+  // Commander decks keep their commander(s) in a Commander section, taken once out of the main list.
+  const commanders=(Array.isArray(deck.commanders)&&deck.commanders.length?deck.commanders.map(c=>typeof c==='string'?c:c?.name):[deck.commander]).filter(n=>typeof n==='string'&&n);
+  const left=new Map();for(const n of commanders)left.set(n,(left.get(n)||0)+1);const main=(deck.cards||[]).map(r=>{const take=Math.min(left.get(r.name)||0,r.qty);if(take)left.set(r.name,left.get(r.name)-take);return {qty:r.qty-take,name:r.name};}).filter(r=>r.qty>0);
+  const text=[...(commanders.length?['Commander',...commanders.map(n=>`1 ${n}`),'','Deck']:[]),...main.map(r=>`${r.qty} ${r.name}`),...(deck.side?.length?['','Sideboard',...deck.side.map(r=>`${r.qty} ${r.name}`)]:[])].join('\n');
   b.addEventListener('click',async()=>{try{await view?.navigator?.clipboard?.writeText(text);b.textContent='Copied';}catch{b.textContent='Copy failed';}});
   return b;
  }
