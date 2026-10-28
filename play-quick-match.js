@@ -9,8 +9,9 @@ export function chooseQuickOpponent({player,candidates=[],difficulty='Medium',es
  for(const entry of candidates){const deck=entry?.deck||entry;if(!deck||deck.format!==player.format)continue;const key=listKey(deck);if(seen.has(key)||!eligible(deck))continue;seen.add(key);let score=null;try{const n=estimate(deck);if(Number.isFinite(n)&&n>=0&&n<=100)score=n;}catch{}rows.push({deck,score,key});}
  if(!rows.length)throw Error('No compatible CPU deck is available in this format yet. Choose another source in Practice.');
  // The CPU plays a different list whenever one exists; a mirror is only the last resort.
- // Same cards under another record (a precon you selected, a saved copy, an import) is still a mirror.
- const cardsKey=deck=>JSON.stringify([[deck.commander||'',...(deck.commanders||[])].map(n=>String(n?.name??n).toLowerCase()).sort(),...['cards','side'].map(z=>(deck[z]||[]).map(r=>String(r?.name||'').toLowerCase()+'×'+r?.qty).sort())]);
+ // Same cards under another record (a precon you selected, a saved copy, an import), or split across
+ // rows and printings, is still a mirror.
+ const cardsKey=deck=>JSON.stringify([[deck.commander||'',...(deck.commanders||[])].map(n=>String(n?.name??n).toLowerCase()).sort(),...['cards','side'].map(z=>{const total=new Map();for(const r of deck[z]||[]){const n=String(r?.name||'').trim().toLowerCase(),q=Number(r?.qty)||0;total.set(n,(total.get(n)||0)+q);}return [...total].filter(([,q])=>q>0).map(([n,q])=>n+'×'+q).sort();})]);
  const ownKey=listKey(player),ownCards=cardsKey(player),others=rows.filter(r=>r.key!==ownKey&&cardsKey(r.deck)!==ownCards&&!(player.id&&r.deck.id===player.id));if(!others.length)throw Error('Quick Play needs a different deck for the CPU in this format. Load Precons or Meta, or pick the CPU deck in Practice.');rows.splice(0,rows.length,...others);
  let own=null;try{const n=estimate(player);if(Number.isFinite(n)&&n>=0&&n<=100)own=n;}catch{}
  // Forge difficulty changes decision policy; it must not secretly select a
