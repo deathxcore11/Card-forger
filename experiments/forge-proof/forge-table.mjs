@@ -1018,7 +1018,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(fi<0){for(const w of g.wraps)for(const v of ['--shove','--focus-k','--focus-x','--focus-y'])w.style.removeProperty(v);return;}
   const W=win.innerWidth,H=win.innerHeight,L=g.wraps.map(g.local),f=L[fi],K=g.K,touch=handPointer!==null&&lastPointerType!=='mouse';
   const restTop=g.sy(f.y),restBottom=g.sy(f.y+f.h),cx=g.sx(f.x+f.w/2),bottom=Math.min(touch?restTop+f.h*K*.25:restBottom,H-8);
-  const k=Math.max(1,Math.min(3,Math.max(1.5,230/(f.w*K)),(bottom-8)/(f.h*K),(W-12)/(f.w*K))),half=f.w*K*k/2,dx=Math.max(6+half-cx,Math.min(0,W-6-half-cx));
+  // A playable card already sits a few pixels up inside its slot; count that so the popped card's top
+  // edge (its name) stays on screen. Short screens keep it nearer 1.5x.
+  const lift=-Math.min(0,parseFloat(String(getComputedStyle(handFocus.querySelector('.play-match-card')||handFocus).translate).split(' ')[1])||0),top=12;
+  const k=Math.max(1,Math.min(H<500?2:3,Math.max(1.5,230/(f.w*K)),(bottom-top)/((f.h+lift)*K),(W-12)/(f.w*K))),half=f.w*K*k/2,dx=Math.max(6+half-cx,Math.min(0,W-6-half-cx));
   handFocus.style.setProperty('--focus-k',k.toFixed(3));handFocus.style.setProperty('--focus-x',`${(dx/K).toFixed(1)}px`);handFocus.style.setProperty('--focus-y',`${((bottom-restBottom)/K).toFixed(1)}px`);handFocus.style.removeProperty('--shove');handFocus.setAttribute('data-hand-focus','true');
   for(const side of [-1,1]){const idx=[];for(let i=fi+side;i>=0&&i<L.length;i+=side)idx.push(i);if(!idx.length)continue;
    const s=Math.abs(L[idx[0]].x-f.x)*K,first=Math.min(f.w*K*1.2,Math.max(0,side*dx+half-s+f.w*K/2+4));const sh=idx.map((_,j)=>first*Math.max(0,1-j*.34));
