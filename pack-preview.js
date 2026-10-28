@@ -10,7 +10,7 @@ import {ygoSetReference} from './ygo-set-prices.js';
 import {pkCatalogueSymbolSources} from './emblems.js';
 import {drawMtgBooster} from './mtg-boosters.js';
 import {haptic,cancelHaptics} from './feel.js';
-import {sfx,setMusic,preload} from './audio.js';
+import {sfx,preload} from './audio.js';
 import {addGlints,catchLight,burstGlints} from './foil-fx.js';
 // A discovery sampler. No collation, print-run odds, purchases or ownership are implied.
 export function sampleSetCards(cards,count=10,random=Math.random){
@@ -277,8 +277,8 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
 <div class="pack-content" hidden><div class="pack-focus"><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><i class="pack-backlight" aria-hidden="true"></i><i class="pack-frame" aria-hidden="true"></i><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"><i class="fx-catch" aria-hidden="true"></i></span>${back}<i class="pack-rays" aria-hidden="true"></i></button><p class="pack-focus-meta" aria-live="polite"><b></b><span class="pack-rarity"></span></p></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
 <div class="pack-actions"><button class="btn ghost pack-reveal-all" data-pack="reveal-all">Reveal all</button><div class="pack-tools" role="group" aria-label="This pack"><button class="pack-tool" data-pack="copy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg><span>Copy list</span></button><button class="pack-tool" data-pack="wish" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span>Wishlist all</span></button><button class="pack-tool" data-pack="buy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14l-1.4 9.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Shop list</span></button></div><button class="btn pack-again" data-pack="again">Open a new pack</button></div></div><p class="pack-status" role="status" aria-live="polite"></p>`;
  document.body.append(dialog);dialog.tabIndex=-1;dialog.showModal();dialog.focus({preventScroll:true});
- // Sound: the pack's own music while it is open, and a cue for each moment (sound bible PACK-002…013).
- setMusic('pack','MUS-APP-03');preload(['PACK-004','PACK-005','PACK-006','PACK-007','PACK-008','PACK-009','PACK-010','PACK-013']);sfx('PACK-002');
+ // Sound: a cue for each moment (sound bible PACK-002…013).
+ preload(['PACK-004','PACK-005','PACK-006','PACK-007','PACK-008','PACK-009','PACK-010','PACK-013']);sfx('PACK-002');
  const status=dialog.querySelector('.pack-status'),focusCard=dialog.querySelector('.pack-focus-card'),face=focusCard.querySelector('.pack-face'),faceImg=face.querySelector('img'),meta=dialog.querySelector('.pack-focus-meta');
  const ref=i=>({game,card:picks[i],dataset:{}});
  // Foil pass: glints and a light catch live on the big card; they show on foils and better pulls.
@@ -338,7 +338,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
    if(!reduce())for(const ms of [150,320,490])later(()=>{if(!suspended)haptic('pack-land');},ms);};
   haptic('pack-tear');sfx('PACK-004');later(()=>sfx('PACK-005'),reduce()?0:700);
   if(reduce()){done();return;}w.classList.add('tearing');later(done,700);};
- const close=()=>{if(disposed)return;quiet();disposed=true;setMusic('pack',null);cancelAnimationFrame(raf);stopTilt();dialog.close();dialog.remove();};
+ const close=()=>{if(disposed)return;quiet();disposed=true;cancelAnimationFrame(raf);stopTilt();dialog.close();dialog.remove();};
  // Inspecting a pulled card opens its page above the pack. The pack stays exactly as it is underneath (same pulls,
  // reveals, focused card, nothing re-dealt or replayed), paused while covered, and is back when that page closes.
  let suspended=false;

@@ -153,8 +153,9 @@ function fadeOut(p) {
 // ---------- app interface sounds ----------
 // Read from what the app already marks up, so no screen needs its own wiring: data-act buttons,
 // tabs, sheets and dialogs opening and closing, switches and sliders.
-const VIEW_MUSIC = { home: "MUS-APP-01", collection: "MUS-APP-02", decks: "MUS-APP-02", search: "MUS-APP-02", value: "MUS-APP-02", scan: "", play: "MUS-TBL-01" };
-export function viewMusic(view) { setMusic("app", VIEW_MUSIC[view] ?? "MUS-APP-02"); }
+// Music is only for the play modes (a versus match, Planeswalk). The app's own screens (collection,
+// decks, search, menus, packs) stay quiet apart from interface sounds, so leaving a match stops it.
+export function viewMusic() { setMusic("app", null); }
 export function uiCue(act = "", el = null) {
   if (/^(closeSheet|closeSettings|close[A-Z]\w*|dismiss\w*)$/.test(act)) return "APP-008";
   if (/(^back|Back)$/.test(act)) return "APP-004";
