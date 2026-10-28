@@ -1,7 +1,7 @@
 // Integration helper for EXISTING app worker.js. Call before its native AI
 // inventory gate; leave every non-game route unchanged. It grants no new origin
 // or account authority: host re-verifies the existing Supabase bearer itself.
-const route = /^\/api\/play\/matches(?:\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\/actions)?)?$/i;
+const route = /^\/api\/play\/(?:warm$|matches(?:\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\/actions)?)?$)/i;
 export function proxyForgePlayRequest(request, env) {
   if (!route.test(new URL(request.url).pathname)) return null;
   if (!env.FORGE_HOST) return new Response(JSON.stringify({ error: 'forge_host_unavailable' }), {
