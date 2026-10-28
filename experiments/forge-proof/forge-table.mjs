@@ -736,11 +736,13 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // Arena's lift: a playable card from your hand glows blue in the hand and turns gold once
  // it is high enough to play; the lane it will settle in lights up softly under it.
  const laneFor=card=>{const c=surfaceCard(card);if(!c?.known)return '';return c.types?.includes('Creature')?'creatures':c.types?.includes('Land')?'lands':c.types?.some(t=>['Artifact','Enchantment','Planeswalker','Battle'].includes(t))?'other':'';};
+ // One rule for the gold "ready" lift and for the release that plays: over the battlefield, or anywhere
+ // above your hand that is not the decision dock. Dropping on the dock or back on the hand cancels.
+ const playDropAt=(x,y)=>{const hit=doc.elementFromPoint(x,y),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top;if(hit?.closest('.play-match-decisions,.forge-native-panel,.play-match-hand-area'))return false;return !!hit?.closest('[data-placement-zone=battlefield]')||handTop!==undefined&&y<handTop;};
  function markPlayDrop(e){
   if(!ghost||!drag?.active||drag.combat)return;
   const fromHand=!!drag.source.closest('.play-match-hand'),playable=drag.source.dataset.forgeRole==='playable';
-  const hit=doc.elementFromPoint(e.clientX,e.clientY),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top;
-  const ready=presentation.hosted&&fromHand&&playable&&(!!hit?.closest('[data-placement-zone=battlefield]')||handTop!==undefined&&e.clientY<handTop&&!hit?.closest('.play-match-hand-area'));
+  const ready=presentation.hosted&&fromHand&&playable&&playDropAt(e.clientX,e.clientY);
   const state=ready?'ready':fromHand&&playable?'lift':'';if((ghost.dataset.drop||'')!==state)ghost.dataset.drop=state;
   const lane=ready?laneFor(drag.source):'';
   for(const el of root.querySelectorAll('[data-forge-lane-drop]'))if(el.dataset.cardGroup!==lane||!el.closest('[data-placement-zone=battlefield]'))el.removeAttribute('data-forge-lane-drop');
@@ -759,7 +761,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // Like Arena, a card dragged out of your hand plays when released anywhere above
  // the hand; Forge decides where it goes. Other drags keep their drop targets.
  const up=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;if(pressShown){pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}}
-  if(!drag||drag.pointerId!==e.pointerId)return;const pending=drag,target=doc.elementFromPoint(e.clientX,e.clientY)?.closest('[data-placement-zone=battlefield],.forge-native-panel'),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top,fromHand=!!pending.source.closest('.play-match-hand'),overHand=!!doc.elementFromPoint(e.clientX,e.clientY)?.closest('.play-match-hand-area'),aboveHand=presentation.hosted&&fromHand&&handTop!==undefined&&e.clientY<handTop&&!overHand;if(pending.active)suppressUntil=Date.now()+300;const combatTarget=pending.active?dropTargetAt(e.clientX,e.clientY):null;cancel();if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(pending.active&&(target&&root.contains(target)||aboveHand)){const now=session.snapshot().status?.revision;act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));}};
+  if(!drag||drag.pointerId!==e.pointerId)return;const pending=drag,target=doc.elementFromPoint(e.clientX,e.clientY)?.closest('[data-placement-zone=battlefield],.forge-native-panel'),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top,fromHand=!!pending.source.closest('.play-match-hand'),overHand=!!doc.elementFromPoint(e.clientX,e.clientY)?.closest('.play-match-hand-area'),aboveHand=presentation.hosted&&fromHand&&handTop!==undefined&&e.clientY<handTop&&!overHand;if(pending.active)suppressUntil=Date.now()+300;const combatTarget=pending.active?dropTargetAt(e.clientX,e.clientY):null;cancel();if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(pending.active&&(presentation.hosted&&fromHand?pending.source.dataset.forgeRole==='playable'&&playDropAt(e.clientX,e.clientY):target&&root.contains(target)||aboveHand)){const now=session.snapshot().status?.revision;act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));}};
  // A press that the browser takes over (a scroll, a system gesture) ends the preview and its click guard.
  // A long press's 60 s click guard ends with that press even when a redraw, scroll or
  // resize already closed its preview; otherwise the table would ignore taps for a minute.
