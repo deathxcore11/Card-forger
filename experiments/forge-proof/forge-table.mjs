@@ -642,13 +642,14 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function hidePeek(){clearTimeout(peekTimer);peek.dataset.open='false';peek.dataset.pinned='false';peekFor?.removeAttribute('aria-describedby');peekFor=null;peekPinned=false;}
  // A pinned preview of a card you can play or use right now offers that as one button.
  function peekAction(el){
-  peek.querySelector('.forge-peek-play')?.remove();peek.querySelector('.forge-peek-blocked')?.remove();peek.dataset.pinned=String(peekPinned);
+  // Clear every earlier action button, not just the first (a second "Pick lands" used to pile up).
+  for(let i=0,x;i<8&&(x=peek.querySelector('.forge-peek-actions,.forge-peek-play,.forge-peek-blocked'));i++)x.remove();peek.dataset.pinned=String(peekPinned);
   // Why Forge would not let you play or use it right now ("Need 2 mana"), before you try.
   if(el.dataset.forgeBlocked){const why=doc.createElement('p');why.className='forge-peek-blocked';why.setAttribute('role','note');why.textContent=el.dataset.forgeBlocked;(peek.querySelector('.forge-peek-info')||peek).append(why);}peek.setAttribute('role',peekPinned?'dialog':'tooltip');
   // A press-and-hold preview closes when the finger lifts, so it never offers a button.
   const n=session.snapshot().native;if(!peekPinned||pressAt||!presentation.hosted||el.dataset.forgeHint!=='true'||n?.inputType!=='InputPassPriority'||n?.prompt)return;
   const b=doc.createElement('button');b.type='button';b.className='forge-peek-play';b.dataset.peekPlay='true';b.textContent=el.closest('.play-match-hand')?'Play':'Use';
-  (peek.querySelector('.forge-peek-info')||peek).append(b);
+  const row=doc.createElement('div');row.className='forge-peek-actions';row.append(b);(peek.querySelector('.forge-peek-info')||peek).append(row);
   // Never trust the auto-tapper: cast this one with auto-pay off, tap the lands you want, then
   // Forge's own Auto pays whatever is left. Auto-pay comes back once the payment is over.
   const cost=session.snapshot().status?.surface.cards.find(c=>c.id===Number(el.dataset.instance))?.manaCost||'';
