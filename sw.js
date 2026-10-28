@@ -106,6 +106,8 @@ const ASSETS = [
   "./deck-box.js",
   "./shared-deck-view.js",
   "./finish-preview.js",
+  "./foil-fx.js",
+  "./foil-fx.css",
   "./finish-effects.js",
   "./pokemon-anniversary-masks.js",
   "./finish-materials.js",

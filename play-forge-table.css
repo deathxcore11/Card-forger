@@ -1232,14 +1232,22 @@
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient[data-turn=cpu]>i:is([data-corner=bl],[data-corner=br]){opacity:.16}
 @keyframes cs-fog{0%{transform:translate(0,0) scale(1)}50%{transform:translate(2.5vmax,-1.5vmax) scale(1.06)}100%{transform:translate(-2vmax,2vmax) scale(.96)}}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i{animation:none;transition:none}}
-/* 4.3.0 Foils on the battlefield: a slow holographic sheen that only moves a transform, so the
-   compositor carries it. Hand cards keep the app's own foil; etched stays plain on the table. */
+/* Foils on the battlefield (foil pass): a still prism tint and a thin holo edge that never repaint, plus
+   a light band that only moves a transform. It crosses when the card lands or attacks (.cs-catch),
+   on hover, and once in a long idle cycle (staggered per card), so the compositor carries all of it.
+   Hand cards keep the app's own foil; etched stays plain on the table. */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-cs-foil]{isolation:isolate}
-:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-cs-foil]>.cs-foil{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;
- background:linear-gradient(115deg,transparent 0%,transparent 36%,#ff7ad966 41%,#ffe98a80 45.5%,#8affd88c 50%,#7ac4ff80 54.5%,#c98aff66 59%,transparent 64%,transparent 100%);background-size:260% 100%;
- mix-blend-mode:screen;opacity:.7;transform:translateZ(0);animation:cs-foil-sheen 7s ease-in-out infinite;will-change:background-position}
-@keyframes cs-foil-sheen{0%{background-position:105% 0}45%,100%{background-position:-5% 0}}
-@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-cs-foil]>.cs-foil{animation:none;background-position:50% 0;opacity:.45}}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-cs-foil]>.cs-foil{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;overflow:hidden;
+ background:linear-gradient(125deg,#ff8ad824,#ffe48a2e 30%,#8affc824 55%,#7ad0ff2e 80%,#c58aff24);mix-blend-mode:color-dodge;--cs-idle:11s}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-cs-foil]>.cs-foil::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1.5px;
+ background:linear-gradient(135deg,#ff8ad8,#ffe48a,#8affc8,#7ad0ff,#c58aff);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.8}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-cs-foil]>.cs-foil::after{content:'';position:absolute;top:-25%;bottom:-25%;left:0;width:70%;
+ background:linear-gradient(100deg,transparent 15%,#ffffff55 45%,#fff2c288 52%,transparent 85%);transform:translateX(-160%) skewX(-14deg);animation:cs-foil-idle var(--cs-idle) linear infinite;animation-delay:inherit}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-cs-foil]:hover>.cs-foil::after,
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-cs-foil]>.cs-foil.cs-catch::after{animation:cs-foil-catch .62s cubic-bezier(.3,.7,.2,1) both}
+@keyframes cs-foil-idle{0%{transform:translateX(-160%) skewX(-14deg)}7%,100%{transform:translateX(260%) skewX(-14deg)}}
+@keyframes cs-foil-catch{from{transform:translateX(-160%) skewX(-14deg)}to{transform:translateX(260%) skewX(-14deg)}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-cs-foil]>.cs-foil::after{animation:none!important;opacity:0}}
 /* 4.3.0 Keyword boxes, Arena style: each keyword is its own dark glass card with its emblem,
    name and plain reminder. Docked on the right, they stack to the left of the preview. */
 :where(body.practice-table-open) .forge-peek .forge-peek-keywords{gap:8px}
@@ -1367,7 +1375,7 @@
 /* Low power: flat glass, still fog, no foil sweep, no breathing glow. Same look, far less GPU. */
 :where(body.practice-table-open) .play-match-table[data-low-power] *,:where(body.practice-table-open) .play-match-table[data-low-power]{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 :where(body.practice-table-open) .play-match-table[data-low-power] .forge-ambient>i{filter:none;animation:none}
-:where(body.practice-table-open) .play-match-table[data-low-power] .play-match-card>.cs-foil{display:none}
+:where(body.practice-table-open) .play-match-table[data-low-power] .play-match-card>.cs-foil::after{display:none}
 :where(body.practice-table-open) .play-match-table[data-low-power][data-stage=match] .play-match-hand .play-match-card[data-forge-role=playable]{animation:none;box-shadow:0 0 0 1.5px #8fdcff,0 0 18px 3px #5cc8ff99,0 10px 24px #000c}
 :where(body.practice-table-open) .play-match-table[data-low-power] :is(.forge-tracker,.forge-phase-track,.forge-combat-line>span,.forge-mana-panel){background-color:#0f1218ee}
 

@@ -10,6 +10,7 @@ import {ygoSetReference} from './ygo-set-prices.js';
 import {pkCatalogueSymbolSources} from './emblems.js';
 import {drawMtgBooster} from './mtg-boosters.js';
 import {haptic,cancelHaptics} from './feel.js';
+import {addGlints,catchLight} from './foil-fx.js';
 // A discovery sampler. No collation, print-run odds, purchases or ownership are implied.
 export function sampleSetCards(cards,count=10,random=Math.random){
  const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),c])).values()];
@@ -271,12 +272,14 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const back=`<span class="pack-card-back" data-back="${esc(game)}">${brandStaticMark()}<img class="pack-back-img" src="/img/back/${esc(game)}.jpg" alt="" decoding="async" onerror="this.remove()"></span>`;
  const hand=()=>picks.map((c,i)=>{return `<button class="pack-card" data-pack="reveal" data-index="${i}" data-hold-card style="--i:${i}" aria-label="Card ${i+1}, face down" aria-pressed="false">${back}<span class="pack-card-front"><img data-pack-src="${esc(setImageUrl(cardArt(c)))}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true"></span></button>`;}).join('');
  dialog.innerHTML=`<header class="pack-header"><div class="pack-title">${(([first,...rest])=>first?`<img class="pack-emblem" data-game="${esc(game)}" src="${esc(first)}" data-alt="${esc(rest.join(' '))}" alt="" referrerpolicy="no-referrer" onerror="const n=this.dataset.alt.split(' ').filter(Boolean);if(n.length){this.src=n.shift();this.dataset.alt=n.join(' ')}else this.remove()">`:'')(setEmblems(game,set))}<h2>${esc(set.name)}</h2><p class="pack-explanation">${booster?'Free preview drawn from this set’s real booster sheets and pull rates (MTGJSON). Nothing is added to your collection.':'Free preview with approximate pull rates, not a real booster. Nothing is added to your collection.'}</p></div><div class="pack-header-tools"><button type="button" class="pack-tilt" title="Tilt your device to move the foil light" hidden>Enable tilt</button><button class="icon" data-pack="close" aria-label="Close pack">✕</button></div></header>
-<div class="pack-sealed"><button class="pack-wrapper" data-pack="open" aria-label="Open the ${esc(set.name)} pack"><span class="pack-body"><span class="pack-wrap-art">${sources.length?`<img data-pack-art src="${esc(safeHref(setImageUrl(sources[0])))}" data-sources="${esc(JSON.stringify(sources))}" alt="" referrerpolicy="no-referrer" onerror="const s=JSON.parse(this.dataset.sources),i=(+this.dataset.i||0)+1;if(s[i]){this.dataset.i=i;this.src=s[i];this.closest('.pack-wrapper').classList.add('pack-generic');}else this.hidden=true">`:''}<span class="pack-wrap-brand">${brandStaticMark()}<b>${esc(set.name)}</b></span></span><span class="pack-crimp top"></span><span class="pack-crimp bottom"></span><span class="pack-sheen"></span></span></button></div>
-<div class="pack-content" hidden><div class="pack-focus"><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><i class="pack-backlight" aria-hidden="true"></i><i class="pack-frame" aria-hidden="true"></i><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"></span>${back}</button><p class="pack-focus-meta" aria-live="polite"><b></b><span class="pack-rarity"></span></p></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
+<div class="pack-sealed"><button class="pack-wrapper" data-pack="open" aria-label="Open the ${esc(set.name)} pack"><span class="pack-body"><span class="pack-wrap-art">${sources.length?`<img data-pack-art src="${esc(safeHref(setImageUrl(sources[0])))}" data-sources="${esc(JSON.stringify(sources))}" alt="" referrerpolicy="no-referrer" onerror="const s=JSON.parse(this.dataset.sources),i=(+this.dataset.i||0)+1;if(s[i]){this.dataset.i=i;this.src=s[i];this.closest('.pack-wrapper').classList.add('pack-generic');}else this.hidden=true">`:''}<span class="pack-wrap-brand">${brandStaticMark()}<b>${esc(set.name)}</b></span></span><span class="pack-crimp top"></span><span class="pack-crimp bottom"></span><span class="pack-sheen"></span><span class="pack-slice"></span><span class="pack-flash"></span></span></button></div>
+<div class="pack-content" hidden><div class="pack-focus"><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><i class="pack-backlight" aria-hidden="true"></i><i class="pack-frame" aria-hidden="true"></i><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"><i class="fx-catch" aria-hidden="true"></i></span>${back}<i class="pack-rays" aria-hidden="true"></i></button><p class="pack-focus-meta" aria-live="polite"><b></b><span class="pack-rarity"></span></p></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
 <div class="pack-actions"><button class="btn ghost pack-reveal-all" data-pack="reveal-all">Reveal all</button><div class="pack-tools" role="group" aria-label="This pack"><button class="pack-tool" data-pack="copy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg><span>Copy list</span></button><button class="pack-tool" data-pack="wish" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span>Wishlist all</span></button><button class="pack-tool" data-pack="buy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14l-1.4 9.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Shop list</span></button></div><button class="btn pack-again" data-pack="again">Open a new pack</button></div></div><p class="pack-status" role="status" aria-live="polite"></p>`;
  document.body.append(dialog);dialog.tabIndex=-1;dialog.showModal();dialog.focus({preventScroll:true});
  const status=dialog.querySelector('.pack-status'),focusCard=dialog.querySelector('.pack-focus-card'),face=focusCard.querySelector('.pack-face'),faceImg=face.querySelector('img'),meta=dialog.querySelector('.pack-focus-meta');
  const ref=i=>({game,card:picks[i],dataset:{}});
+ // Foil pass: glints and a light catch live on the big card; they show on foils and better pulls.
+ addGlints(face,{n:10,seed:set?.id||set?.name||game});
  // Each card box takes its picture's own proportions (scans are not all exactly 63:88), so the price
  // frame hugs the printed card instead of leaving a gap above and below it.
  const fit=(box,img)=>{if(img.naturalWidth&&img.naturalHeight)box.style.aspectRatio=`${img.naturalWidth}/${img.naturalHeight}`;};
@@ -295,6 +298,9 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   focusCard.setAttribute('aria-label',open?`${c.name}. Open card`:`Card ${focus+1}, face down. Reveal`);
   if(open){const src=setImageUrl(cardArt(c));if(faceImg.getAttribute('src')!==src)faceImg.src=src;const attrs=finishAttrs(game,c,ctxs[focus],'pack');const tmp=document.createElement('span');tmp.innerHTML=`<i ${attrs}></i>`;const i2=tmp.firstChild;for(const a of ['data-finish-game','data-finish-effect','data-finish-model'])face.setAttribute(a,i2.getAttribute(a));face.dataset.finishSurface='pack';}
   else{face.removeAttribute('data-finish-model');faceImg.removeAttribute('src');focusCard.style.removeProperty('aspect-ratio');}
+  // A face-down hit glows before it is flipped, so the next tap feels worth it.
+  focusCard.classList.toggle('pack-tease',!open&&rarity.rank>=2);
+  focusCard.classList.toggle('pack-foil',open&&!!face.dataset.finishEffect&&face.dataset.finishEffect!=='plain');
   meta.querySelector('b').textContent=open?c.name:'';meta.querySelector('.pack-rarity').innerHTML=open?rarityEmblem(game,rarity.label,{finish:packFinishLabel(game,ctxs[focus]||{},rarity.label)}):'';
  };
  // Pulled shiny slots load their full card in the background and pick up their holo before they are seen.
@@ -304,8 +310,13 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const feelOf=i=>packRevealHaptic(trustedPackPrice(game,picks[i],ctxs[i]||{}));
  const reveal=(i,{silent=false}={})=>{if(!Number.isInteger(i)||!picks[i])return;if(!revealed.has(i)){revealed.add(i);if(!silent)haptic(feelOf(i));const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');img.src=img.dataset.packSrc;b.classList.add('revealed');b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
    setTier(b,tierOf(i));status.textContent=`${revealed.size} of ${picks.length} revealed`;
+   if(!silent)later(()=>revealMoment(i),330);
    if(revealed.size===picks.length){dialog.classList.add('pack-done');if(picks.godPack)status.textContent='God pack! Every hit is an illustration rare.';for(const x of dialog.querySelectorAll('.pack-actions [disabled]'))x.disabled=false;}}
   show(i);};
+ // The flip lands: a light catch and a small pop; a big pull (rare+ or a high price tier) adds rays.
+ const revealMoment=i=>{if(reduce()||focus!==i||!revealed.has(i))return;const t=+String(tierOf(i)).slice(1)||0,big=packRarity(game,picks[i]).rank>=3||t>=3;
+  catchLight(focusCard);focusCard.classList.remove('pack-pop','pack-hit-big');void focusCard.offsetWidth;focusCard.classList.add('pack-pop');if(big)focusCard.classList.add('pack-hit-big');
+  later(()=>focusCard.classList.remove('pack-pop'),450);later(()=>focusCard.classList.remove('pack-hit-big'),1700);};
  fill();
  // Feel: the tear as the seam opens, a few dry contacts as the cards settle (not one per card, which would blur into
  // a buzz), one contact per first reveal. Anything pending stops when the pack closes or a card page opens over it.
@@ -314,9 +325,10 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const quiet=()=>{for(const t of timers)clearTimeout(t);timers.clear();cancelHaptics();};
  const open=()=>{if(opening||disposed||!dialog.querySelector('.pack-content').hidden)return;opening=true;const w=dialog.querySelector('.pack-wrapper');
   const done=()=>{opening=false;w.classList.remove('tearing');dialog.querySelector('.pack-sealed').hidden=true;dialog.querySelector('.pack-content').hidden=false;dialog.classList.add('pack-dealt');show(0);focusCard.focus({preventScroll:true});
+   if(!reduce()){focusCard.classList.add('pack-rising');later(()=>focusCard.classList.remove('pack-rising'),480);}
    if(!reduce())for(const ms of [150,320,490])later(()=>{if(!suspended)haptic('pack-land');},ms);};
   haptic('pack-tear');
-  if(reduce()){done();return;}w.classList.add('tearing');later(done,620);};
+  if(reduce()){done();return;}w.classList.add('tearing');later(done,700);};
  const close=()=>{if(disposed)return;quiet();disposed=true;cancelAnimationFrame(raf);stopTilt();dialog.close();dialog.remove();};
  // Inspecting a pulled card opens its page above the pack. The pack stays exactly as it is underneath (same pulls,
  // reveals, focused card, nothing re-dealt or replayed), paused while covered, and is back when that page closes.
@@ -346,7 +358,11 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  focusCard.addEventListener('pointerup',e=>{if(!swipe)return;const dx=e.clientX-swipe.x;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(e.clientY-swipe.y)){swipe.moved=true;slide(dx<0?1:-1);}});
  focusCard.addEventListener('pointercancel',()=>{swipe=null;});
  // A swipe slides the big card out and the next one in from that side.
- const slide=step=>{const next=focus+step;if(next<0||next>=picks.length)return;show(next);if(reduce())return;focusCard.classList.remove('pack-slide-next','pack-slide-prev');void focusCard.offsetWidth;focusCard.classList.add(step>0?'pack-slide-next':'pack-slide-prev');};
+ // The card leaving flicks off the stack with a tilt while the next one comes up from underneath.
+ const fling=step=>{if(reduce()||!revealed.has(focus)||!faceImg.currentSrc)return;const r=focusCard.getBoundingClientRect(),f=document.createElement('div');f.className='pack-fling';f.setAttribute('aria-hidden','true');
+  Object.assign(f.style,{position:'fixed',left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});const img=document.createElement('img');img.src=faceImg.currentSrc;img.alt='';f.append(img);dialog.append(f);
+  f.animate([{transform:'none',opacity:1},{transform:`translateX(${-step*115}%) translateY(-6%) rotate(${-step*16}deg)`,opacity:0}],{duration:360,easing:'cubic-bezier(.3,.6,.4,1)'}).finished.catch(()=>{}).then(()=>f.remove());};
+ const slide=step=>{const next=focus+step;if(next<0||next>=picks.length)return;fling(step);show(next);if(reduce())return;focusCard.classList.remove('pack-slide-next','pack-slide-prev');void focusCard.offsetWidth;focusCard.classList.add(step>0?'pack-slide-next':'pack-slide-prev');};
  focusCard.addEventListener('animationend',e=>{if(/^pack-slide/.test(e.animationName))focusCard.classList.remove('pack-slide-next','pack-slide-prev');});
  // Phones, tablets and foldables can tilt the revealed card to play with its foil.
  const stopTilt=attachZoomMotion({dialog,surface:focusCard,button:dialog.querySelector('.pack-tilt'),active:()=>!disposed&&!suspended&&revealed.has(focus)&&!dialog.querySelector('.pack-content').hidden});
