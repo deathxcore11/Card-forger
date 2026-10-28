@@ -292,7 +292,9 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const setTier=(el,t)=>{if(t){el.dataset.tier=t;el.style.setProperty('--tier',t==='tn'?'#8b939c':TIERS[+t.slice(1)].color);}else{delete el.dataset.tier;el.style.removeProperty('--tier');}};
  const show=i=>{
   focus=Math.max(0,Math.min(picks.length-1,i));const c=picks[focus],open=revealed.has(focus),rarity=packRarity(game,c);
-  dialog.querySelectorAll('.pack-card').forEach((b,j)=>{b.classList.toggle('focused',j===focus);b.style.setProperty('--d',j-focus);});
+  dialog.querySelectorAll('.pack-card').forEach((b,j)=>{const d=j-focus,edge=(d<0&&j===0)||(d>0&&j===picks.length-1);b.classList.toggle('focused',j===focus);b.style.setProperty('--d',d);
+   // Like a hand in Arena: the cards beside the raised one part to make room for it, less the further out they are.
+   b.style.setProperty('--push',d&&!edge?Math.sign(d)*Math.max(0,1-(Math.abs(d)-1)*.45):0);});
   focusCard.quickRef=ref(focus);focusCard.classList.toggle('revealed',open);// Once flipped, the card wears the collection's price frame with its glow behind it.
   setTier(focusCard,open?tierOf(focus):'');
   focusCard.setAttribute('aria-label',open?`${c.name}. Open card`:`Card ${focus+1}, face down. Reveal`);
@@ -329,7 +331,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const later=(fn,ms)=>{const t=setTimeout(()=>{timers.delete(t);if(!disposed)fn();},ms);timers.add(t);};
  const quiet=()=>{for(const t of timers)clearTimeout(t);timers.clear();cancelHaptics();};
  const open=()=>{if(opening||disposed||!dialog.querySelector('.pack-content').hidden)return;opening=true;const w=dialog.querySelector('.pack-wrapper');
-  const done=()=>{opening=false;w.classList.remove('tearing');dialog.querySelector('.pack-sealed').hidden=true;dialog.querySelector('.pack-content').hidden=false;dialog.classList.add('pack-dealt');show(0);focusCard.focus({preventScroll:true});
+  const done=()=>{opening=false;w.classList.remove('tearing');dialog.querySelector('.pack-sealed').hidden=true;dialog.querySelector('.pack-content').hidden=false;dialog.classList.add('pack-dealt','pack-dealing');later(()=>dialog.classList.remove('pack-dealing'),picks.length*55+500);show(0);focusCard.focus({preventScroll:true});
    if(!reduce()){focusCard.classList.add('pack-rising');later(()=>focusCard.classList.remove('pack-rising'),480);}
    if(!reduce())for(const ms of [150,320,490])later(()=>{if(!suspended)haptic('pack-land');},ms);};
   haptic('pack-tear');
@@ -357,13 +359,17 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   const [x,y]=pointer||(sp<1?[50+sway*46,40-sway*12]:[50+44*Math.sin((now-t0)/1500),42+30*Math.sin((now-t0)/2100)]);focusCard.style.setProperty('--mx',x+'%');focusCard.style.setProperty('--my',y+'%');
   // Only a pointer tilts the card; at rest just the light drifts, so the card itself stays still.
   if(!reduce()){focusCard.style.transform=pointer?`rotateY(${(x-50)/6}deg) rotateX(${(50-y)/8}deg)`:sway?`rotateY(${sway*14}deg) rotateX(${sway*-4}deg)`:'';if(!pointer)raf=requestAnimationFrame(light);}};
- focusCard.addEventListener('pointermove',e=>{const r=focusCard.getBoundingClientRect();pointer=[(e.clientX-r.left)/r.width*100,(e.clientY-r.top)/r.height*100];if(!raf)raf=requestAnimationFrame(light);});
+ focusCard.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;const r=focusCard.getBoundingClientRect();pointer=[(e.clientX-r.left)/r.width*100,(e.clientY-r.top)/r.height*100];if(!raf)raf=requestAnimationFrame(light);});
  focusCard.addEventListener('pointerleave',()=>{pointer=null;if(!raf)raf=requestAnimationFrame(light);});
  raf=requestAnimationFrame(light);
  // Swipe the big card to move through the pack; drag along the hand to scrub.
- let swipe=null;focusCard.addEventListener('pointerdown',e=>{swipe={x:e.clientX,y:e.clientY,moved:false};});
- focusCard.addEventListener('pointerup',e=>{if(!swipe)return;const dx=e.clientX-swipe.x;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(e.clientY-swipe.y)){swipe.moved=true;slide(dx<0?1:-1);}});
- focusCard.addEventListener('pointercancel',()=>{swipe=null;});
+ // The big card follows the finger sideways while it is dragged, then slides on or springs back.
+ let swipe=null;focusCard.addEventListener('pointerdown',e=>{swipe={x:e.clientX,y:e.clientY,moved:false,touch:e.pointerType!=='mouse'};});
+ focusCard.addEventListener('pointermove',e=>{if(!swipe?.touch||reduce())return;const dx=e.clientX-swipe.x;if(Math.abs(dx)<6||Math.abs(dx)<Math.abs(e.clientY-swipe.y))return;
+  focusCard.style.transition='none';focusCard.style.translate=`${dx*.6}px 0`;});
+ const settle=()=>{if(!focusCard.style.translate)return;focusCard.style.transition='';focusCard.style.translate='';};
+ focusCard.addEventListener('pointerup',e=>{settle();if(!swipe)return;const dx=e.clientX-swipe.x;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(e.clientY-swipe.y)){swipe.moved=true;slide(dx<0?1:-1);}});
+ focusCard.addEventListener('pointercancel',()=>{settle();swipe=null;});
  // A swipe slides the big card out and the next one in from that side.
  // The card leaving flicks off the stack with a tilt while the next one comes up from underneath.
  const fling=step=>{if(reduce()||!revealed.has(focus)||!faceImg.currentSrc)return;const r=focusCard.getBoundingClientRect(),f=document.createElement('div');f.className='pack-fling';f.setAttribute('aria-hidden','true');
@@ -373,7 +379,19 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  focusCard.addEventListener('animationend',e=>{if(/^pack-slide/.test(e.animationName))focusCard.classList.remove('pack-slide-next','pack-slide-prev');});
  // Phones, tablets and foldables can tilt the revealed card to play with its foil.
  const stopTilt=attachZoomMotion({dialog,surface:focusCard,button:dialog.querySelector('.pack-tilt'),active:()=>!disposed&&!suspended&&revealed.has(focus)&&!dialog.querySelector('.pack-content').hidden});
- const handEl=dialog.querySelector('.pack-hand');handEl.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&!e.buttons){const b=e.target.closest('.pack-card');if(b)show(+b.dataset.index);return;}if(!e.buttons)return;const r=handEl.getBoundingClientRect();show(Math.round((e.clientX-r.left)/r.width*(picks.length-1)));});
+ // The hand follows the mouse (hover raises a card) and the finger: press anywhere on it and slide, and the card
+ // under the finger rises and shows above; lifting after a slide keeps that card instead of flipping it.
+ const handEl=dialog.querySelector('.pack-hand');let scrub=null,scrubbed=false,scrubFrame=0;
+ const under=x=>{const r=handEl.getBoundingClientRect(),w=handEl.querySelector('.pack-card')?.offsetWidth||0,span=Math.max(1,r.width-w);return Math.round((x-r.left-w/2)/span*(picks.length-1));};
+ const scrubTo=x=>{if(scrubFrame)return;scrubFrame=requestAnimationFrame(()=>{scrubFrame=0;const i=Math.max(0,Math.min(picks.length-1,under(x)));if(i!==focus){show(i);if(scrub?.touch)haptic('pack-land');}});};
+ handEl.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;scrub={x:e.clientX,id:e.pointerId,touch:e.pointerType!=='mouse',moved:false};scrubbed=false;});
+ handEl.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&!e.buttons){const b=e.target.closest('.pack-card');if(b&&+b.dataset.index!==focus)show(+b.dataset.index);return;}
+  if(!scrub||scrub.id!==e.pointerId)return;if(!scrub.moved&&Math.abs(e.clientX-scrub.x)<8)return;
+  if(!scrub.moved){scrub.moved=true;try{handEl.setPointerCapture(e.pointerId);}catch{}}scrubTo(e.clientX);});
+ const endScrub=e=>{if(!scrub||scrub.id!==e.pointerId)return;scrubbed=scrub.moved;scrub=null;try{handEl.releasePointerCapture(e.pointerId);}catch{}};
+ handEl.addEventListener('pointerup',endScrub);handEl.addEventListener('pointercancel',endScrub);
+ // The click that ends a slide is not a tap on the card under the finger.
+ handEl.addEventListener('click',e=>{if(scrubbed){scrubbed=false;e.stopPropagation();e.preventDefault();}},true);
  dialog.addEventListener('keydown',e=>{if(dialog.querySelector('.pack-content').hidden)return;if(e.key==='ArrowRight'){e.preventDefault();slide(1);}else if(e.key==='ArrowLeft'){e.preventDefault();slide(-1);}});
  dialog.addEventListener('close',close);dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
  dialog.addEventListener('click',async e=>{const b=e.target.closest('[data-pack]');if(!b||busy)return;const action=b.dataset.pack,i=Number(b.dataset.index);

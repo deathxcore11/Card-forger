@@ -162,7 +162,7 @@ body.practice-table-open{overflow:hidden}#practicePlayerMat{position:fixed;inset
 .play-menu--forge .play-versus{display:grid;place-items:center;flex-shrink:0;width:42px;height:42px;border:1px solid #d4b77c44;border-radius:50%;font-size:11px;letter-spacing:.12em;color:var(--gold);background:radial-gradient(circle,#d4b77c12,transparent 75%)}
 .play-menu--forge .play-library,.play-menu--forge .play-inspector{border-radius:20px}
 @media(max-width:1199px){.play-menu--forge .play-mode-summary{display:none}}
-@media(max-width:800px){.play-menu--forge .play-heading{align-items:flex-start;gap:18px}.play-menu--forge .play-format{margin-left:0}.play-menu--forge .play-match-bar{padding:15px}.play-menu--forge .play-paths{flex:1}.play-menu--forge .play-start .btn{min-width:120px}.play-menu--forge .play-matchup-seat{min-height:145px;padding:18px}}
+@media(max-width:800px){.play-menu--forge .play-heading{align-items:center;gap:18px}.play-menu--forge .play-match-bar{padding:15px}.play-menu--forge .play-paths{flex:1}.play-menu--forge .play-start .btn{min-width:120px}.play-menu--forge .play-matchup-seat{min-height:145px;padding:18px}}
 @media(max-width:600px){.play-menu--forge .play-matchup{gap:10px}.play-menu--forge .play-versus{width:32px;height:32px;align-self:center}.play-menu--forge .play-format{width:100%;border-radius:16px}.play-menu--forge .play-format .btn{flex:1;padding-inline:8px}.play-menu--forge .play-paths{flex-basis:100%;gap:3px}.play-menu--forge .play-paths .btn{flex:1;font-size:12px;padding-inline:8px}.play-menu--forge .play-start{width:100%}.play-menu--forge .play-start .btn{width:100%}}
 @media(prefers-reduced-motion:reduce){.play-menu--forge .play-matchup-seat{transition:none}.play-menu--forge .play-matchup-seat:hover{transform:none}}
 
@@ -303,22 +303,24 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 /* Arena lobby (art pass): two portraits around the crest, the bar beneath. */
 .play-feature.play-lobby{grid-template-columns:minmax(0,1fr) 96px minmax(0,1fr);grid-template-rows:minmax(300px,46vh) auto;border:0;background:none;box-shadow:none;overflow:visible}
 .play-lobby-seat{border:1px solid var(--glass-line,#d6ad6433);border-radius:24px;overflow:hidden;box-shadow:0 26px 54px #0009;min-height:300px}
-.play-lobby-seat.play-feature-art:after{background:linear-gradient(180deg,#0c0c0e00 35%,#0c0c0ef0 92%)}
-.play-lobby-seat .play-feature-copy{padding-bottom:44px}
+/* A scrim under each seat's words, so the name reads over the art and the CPU's card backs. */
+.play-lobby-seat.play-feature-art:after{background:linear-gradient(180deg,#0c0c0e00 22%,#0c0c0ec4 58%,#0c0c0ef5 90%)}
+.play-lobby-seat .play-feature-copy{padding-bottom:4px}
 .play-lobby-seat.play-lobby-cpu{background:radial-gradient(70% 60% at 50% 35%,#1f3248,#0c0e13 70%)}
 .play-lobby-seat.play-lobby-cpu .eyebrow{color:#9fd0ff!important}
-.play-lobby-backs{position:absolute;left:50%;top:44%;z-index:-1;width:0;height:0}
+.play-lobby-backs{position:absolute;left:50%;top:34%;z-index:-1;width:0;height:0}
 .play-lobby-backs i{position:absolute;width:118px;height:165px;margin:-82px 0 0 -59px;border-radius:10px;border:2px solid #d6ad6488;background:radial-gradient(circle at 50% 50%,#d6ad6433 0 18px,transparent 19px),repeating-linear-gradient(45deg,#16243a 0 6px,#1b2c46 6px 12px);box-shadow:0 16px 30px #000a}
 .play-lobby-backs i:nth-child(1){transform:rotate(-12deg) translateX(-46px)}.play-lobby-backs i:nth-child(3){transform:rotate(12deg) translateX(46px)}
 .play-lobby-vs{display:grid;place-items:center;z-index:2}
 .play-lobby-vs b{display:grid;place-items:center;width:74px;height:74px;transform:rotate(45deg);border:2px solid var(--gold,#e8b95b);background:#0c0e13e6;box-shadow:0 0 36px #e8b95b44}
 .play-lobby-vs b{font:700 0/1 Cinzel,Georgia,serif}
 .play-lobby-vs b:before{content:"VS";transform:rotate(-45deg);font-size:22px;color:var(--gold,#e8b95b)}
-.play-feature-side.play-lobby-bar{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px;margin:-34px auto 0;padding:12px 16px;border:1px solid var(--glass-line,#d6ad6433);border-radius:22px;background:#0c0e13cc;backdrop-filter:blur(14px);z-index:3;width:min(720px,100%)}
+.play-feature-side.play-lobby-bar{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px;margin:14px auto 0;padding:12px 16px;border:1px solid var(--glass-line,#d6ad6433);border-radius:22px;background:#0c0e13cc;backdrop-filter:blur(14px);z-index:3;width:min(720px,100%)}
 .play-lobby-bar .play-feature-paths{grid-template-columns:auto auto}
 .play-lobby-bar .play-feature-start.btn{margin-top:0;min-width:220px}
 .play-lobby-bar .play-feature-status{flex-basis:100%;text-align:center}
-@media(max-width:800px){.play-feature.play-lobby{grid-template-columns:1fr 56px 1fr;grid-template-rows:auto auto}.play-lobby-seat{min-height:220px}.play-lobby-vs b{width:46px;height:46px}.play-lobby-vs b:before{font-size:15px}.play-lobby-backs i{width:80px;height:112px;margin:-56px 0 0 -40px}}
+@media(max-width:800px){.play-feature.play-lobby{grid-template-columns:1fr 56px 1fr;grid-template-rows:auto auto}.play-lobby-seat{min-height:220px}.play-lobby-vs b{width:46px;height:46px}.play-lobby-vs b:before{font-size:15px}.play-lobby-backs{top:26%}.play-lobby-backs i{width:80px;height:112px;margin:-56px 0 0 -40px}.play-lobby-seat .play-feature-copy p:last-child{white-space:normal}}
+@media(max-width:600px){.play-lobby-backs{top:20%;opacity:.5}.play-lobby-backs i{width:60px;height:84px;margin:-42px 0 0 -30px}.play-lobby-backs i:nth-child(1){transform:rotate(-12deg) translateX(-30px)}.play-lobby-backs i:nth-child(3){transform:rotate(12deg) translateX(30px)}}
 /* Solo entry: an art tile for Planeswalk under the match setup. */
 .play-solo-tile{display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:14px;margin:14px 0 0;padding:10px 16px 10px 10px;border-radius:16px;border:1px solid rgba(232,185,91,.38);background:linear-gradient(90deg,rgba(40,22,14,.92),rgba(18,20,27,.86));color:inherit;text-decoration:none;box-shadow:0 10px 30px rgba(0,0,0,.28);transition:border-color .22s,transform .22s}
 .play-solo-tile:hover,.play-solo-tile:focus-visible{border-color:rgba(232,185,91,.8);transform:translateY(-1px)}
