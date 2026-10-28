@@ -1647,3 +1647,21 @@ body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row[data-seat=cpu]{top:calc(var(--edge) + 56px)!important}
 /* A narrow dock stacks End turn above Next instead of letting the hand cover it. */
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions[data-complex=false] .forge-native-actions{flex-wrap:wrap-reverse!important;row-gap:6px!important}
+/* Motion pass: versus screen. Seats slam in from each side and meet as the VS lands (app-motion.js adds
+   the shockwave, sparks and the sheen spans). Transform and opacity only; low power keeps a plain slide. */
+@media (prefers-reduced-motion:no-preference){
+ html:not(.cs-low-power) .forge-intro-you{animation:cs-seat-slam-l .56s cubic-bezier(.3,.1,.3,1) both}
+ html:not(.cs-low-power) .forge-intro-cpu{animation:cs-seat-slam-r .56s cubic-bezier(.3,.1,.3,1) both}
+ html:not(.cs-low-power) .forge-intro-art img{animation:cs-art-push 2.4s cubic-bezier(.2,.8,.2,1) both}
+ html:not(.cs-low-power) .forge-intro-vs{animation:cs-vs-slam .42s .42s cubic-bezier(.6,0,.9,.5) both}
+ .forge-intro-you{border-color:#7fd0ff59}.forge-intro-cpu{border-color:#f0c27a59}
+ .cs-vs-sheen{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;border-radius:inherit}
+ .cs-vs-sheen:before{content:'';position:absolute;top:-20%;bottom:-20%;left:0;width:38%;background:linear-gradient(100deg,transparent,#ffffff2e 45%,#fff5 50%,#ffffff2e 55%,transparent);transform:translateX(-120%) skewX(-12deg);animation:cs-sheen .9s .1s cubic-bezier(.4,0,.2,1) forwards}
+ .forge-intro-cpu .cs-vs-sheen:before{animation-delay:.18s}
+ .cs-mk .cs-win-rays{width:620px;height:620px;margin:-310px;border-radius:50%;background:repeating-conic-gradient(from 0deg,#f2d49640 0 6deg,transparent 6deg 18deg);-webkit-mask:radial-gradient(circle,#000 18%,transparent 68%);mask:radial-gradient(circle,#000 18%,transparent 68%)}
+}
+@keyframes cs-seat-slam-l{0%{opacity:0;transform:translateX(-70%) skewX(8deg)}70%{opacity:1;transform:translateX(10px) skewX(-2deg)}85%{transform:translateX(-3px)}100%{opacity:1;transform:none}}
+@keyframes cs-seat-slam-r{0%{opacity:0;transform:translateX(70%) skewX(-8deg)}70%{opacity:1;transform:translateX(-10px) skewX(2deg)}85%{transform:translateX(3px)}100%{opacity:1;transform:none}}
+@keyframes cs-art-push{from{opacity:0;transform:scale(1.18)}25%{opacity:1}to{opacity:1;transform:scale(1)}}
+@keyframes cs-vs-slam{0%{opacity:0;transform:scale(2.8) rotate(-8deg)}75%{opacity:1;transform:scale(.9)}100%{opacity:1;transform:none}}
+@keyframes cs-sheen{to{transform:translateX(320%) skewX(-12deg)}}
