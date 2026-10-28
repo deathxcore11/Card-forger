@@ -70,7 +70,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
    // the app's own foil). Etched is left plain here; its effect is too heavy for a live board.
    const finish=resolvePracticeArtwork(card)?.finish;
    if(finish==='etched'){for(const a of [...node.attributes])if(a.name.startsWith('data-finish'))node.removeAttribute(a.name);node.classList.remove('play-match-art-surface');delete node.dataset.csFoil;}
-   else if(finish&&finish!=='nonfoil'&&node.dataset.presentation==='battlefield'){node.dataset.csFoil=finish;if(!node.querySelector(':scope>.cs-foil')){const sheen=doc.createElement('span');sheen.className='cs-foil';sheen.setAttribute('aria-hidden','true');sheen.style.animationDelay=`-${(Number(card.id)||0)%7}s`;node.append(sheen);}}
+   else if(finish&&finish!=='nonfoil'&&node.dataset.presentation==='battlefield'){node.dataset.csFoil=finish;if(!node.querySelector(':scope>.cs-foil')){const sheen=doc.createElement('span');sheen.className='cs-foil';sheen.setAttribute('aria-hidden','true');sheen.style.animationDelay=`-${(Number(card.id)||0)*3%11}s`;node.append(sheen);}}
    else{delete node.dataset.csFoil;node.querySelector(':scope>.cs-foil')?.remove();}
 const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.length))>=10)node.dataset.nameLength='word';else if(name.length>13)node.dataset.nameLength='long';const colors=surfaceColors(card,resolvePracticeArtwork(card)?.card),tone=frameTone(colors);if(tone){node.dataset.colors=tone.key;node.style.setProperty('--frame-a',tone.a);node.style.setProperty('--frame-b',tone.b);}if(card.isToken)node.dataset.token='true';const blank=node.querySelector('.play-match-card-back');if(blank){const art=drawnArtwork(doc,card,colors);if(node.dataset.presentation!=='battlefield')art.classList.add('play-drawn-full');blank.replaceWith(art);if(card.isToken&&tokenArtKey(card))node.dataset.tokenArt=tokenArtKey(card);}},
   renderOracleText(text){const el=doc.createElement('p');el.textContent=text;el.className='play-match-rules';return el;},
@@ -270,6 +270,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // of a drag: the drag code sets lastDrop just before it sends the play, and this clears it), hangs for a beat, slams down
  // with a slight overshoot, kicks up a dust ring and nudges its neighbours. Transform only.
 
+ // A foil permanent catches the light when it does something (land slam, attack wind-up): one transform sweep.
+ const catchFoil=w=>{const f=w?.querySelector('.cs-foil');if(!f)return;f.classList.remove('cs-catch');void f.offsetWidth;f.classList.add('cs-catch');setTimeout(()=>f.classList.remove('cs-catch'),700);};
  function land(w,id,dx,dy,s){
   const r=w.getBoundingClientRect(),drop=lastDrop&&lastDrop.instance===id&&Date.now()-lastDrop.at<3000?lastDrop.rect:null;lastDrop=null;
   if(drop){dx=drop.left-r.left;dy=drop.top-r.top;s=Math.max(.4,Math.min(2.2,drop.width/r.width));}
@@ -277,7 +279,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Let the card leave its clipped lane while it flies, as a strike does.
   root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+ms);setTimeout(()=>{if(Date.now()>=strikeEnd-20)delete root.dataset.csStriking;},ms+40);
   w.animate([{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${tilt}deg)`,zIndex:50,easing:'cubic-bezier(.2,.7,.3,1)'},{transform:`translate(${dx*.12}px,${dy*.12-26}px) scale(1.2) rotate(${tilt*.3}deg)`,zIndex:50,offset:.5,easing:'cubic-bezier(.6,0,.9,.5)'},{transform:'translateY(3px) scale(.95)',zIndex:50,offset:.8,easing:'ease-out'},{transform:'translateY(-1px) scale(1.01)',zIndex:50,offset:.9},{transform:'none',zIndex:50}],{duration:ms});
-  setTimeout(()=>{if(!w.isConnected)return;motion.ring(w,'#f0d48a',420);motion.sparks(w,{n:6,spread:40,color:'#f0d48a'});
+  setTimeout(()=>{if(!w.isConnected)return;catchFoil(w);motion.ring(w,'#f0d48a',420);motion.sparks(w,{n:6,spread:40,color:'#f0d48a'});
    for(const n of w.parentElement?.children||[]){if(n===w)continue;const nr=n.getBoundingClientRect(),side=Math.sign(nr.left-r.left);if(!side||Math.abs(nr.left-r.left)>r.width*2.4)continue;n.animate([{transform:'none'},{transform:`translateX(${side*5}px)`,offset:.35},{transform:'none'}],{duration:260,easing:'ease-out'});}},ms*.8);
  }
  const glide=before=>{
@@ -322,6 +324,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   arrows.style.opacity='0';setTimeout(()=>{if(Date.now()>=strikeEnd-20){delete root.dataset.csStriking;arrows.style.opacity='';}},delay+ms+40);
   if(!delay||hitAt<Date.now())hitAt=Date.now()+delay+ms*.55;
   w.dataset.csStriker='true';setTimeout(()=>delete w.dataset.csStriker,delay+ms+20);
+  setTimeout(()=>catchFoil(w),delay);
   // Wind-up, lunge, a short freeze on contact (hit-stop), then spring back. The target shakes on contact,
   // and a big hit (5 or more) nudges the whole board unless low power is on.
   motion.strike(w,to.closest?.('.play-match-card-wrap')||to,{reach:face?.8:.5,ms,delay,onHit:()=>{if(!to.isConnected)return;pulse(to,face?'face':'hit');haptic(big||face?'warn':'tick');

@@ -8,6 +8,7 @@ import {mountMtgFoil} from './mtg-foil.js';
 import {mountPtcgFoil} from './ptcg-foil.js';
 import {ygoRarityEffect,ygoRarityRank,ygoRaritySwatch} from './ygo-foil-recipes.js';
 import {quoteForContext} from './pricing-presentation.js';
+import {mountFinishPop} from './foil-fx.js';
 export {finishChoices,finishEffect,resolveFinish,selectPreviewFinish,finishArtworkCard} from './finish-effects.js';
 const KEY='cardstashy-finish-effects';
 export const finishEffectsOn=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
@@ -110,16 +111,17 @@ export function attachFinishPreview(root){
  const visible=el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom>0&&r.top<(globalThis.innerHeight||Infinity)&&r.right>0&&r.left<(globalThis.innerWidth||Infinity);};
  const foreground=el=>{const top=foregroundDialog();return !top||top.contains(el);};
  const allowed=el=>finishEffectsOn()&&!reduced()&&!globalThis.document?.hidden&&finishEligible(el)&&el.isConnected!==false&&foreground(el);
- const unmount=el=>{const m=mounted.get(el);if(m){ro?.unobserve(m.img);m.nameFoil?.dispose();m.rarityFoil?.dispose();m.overlay.remove();mounted.delete(el);}};
+ const unmount=el=>{const m=mounted.get(el);if(m){ro?.unobserve(m.img);m.nameFoil?.dispose();m.rarityFoil?.dispose();m.overlay.remove();m.pop?.remove();mounted.delete(el);}};
  const size=el=>{
   const m=mounted.get(el);if(!m)return;
   const {img,overlay,host}=m,css=globalThis.getComputedStyle?.(img),px=v=>parseFloat(v)||0;
   const left=px(css?.paddingLeft),top=px(css?.paddingTop),box=containedImageBox(img.clientWidth-left-px(css?.paddingRight),img.clientHeight-top-px(css?.paddingBottom),img.naturalWidth,img.naturalHeight);
-  if(!box||img.hidden){if(!overlay.hidden)overlay.hidden=true;return;}
+  if(!box||img.hidden){if(!overlay.hidden)overlay.hidden=true;if(m.pop)m.pop.hidden=true;return;}
   let x=(img.offsetLeft||0)+(img.clientLeft||0)+left,y=(img.offsetTop||0)+(img.clientTop||0)+top,ancestor=img.offsetParent;
   while(ancestor&&ancestor!==host){x+=ancestor.offsetLeft||0;y+=ancestor.offsetTop||0;ancestor=ancestor.offsetParent;}
-  if(ancestor!==host){if(!overlay.hidden)overlay.hidden=true;return;}
-  Object.assign(overlay.style,{left:`${x+box.left}px`,top:`${y+box.top}px`,width:`${box.width}px`,height:`${box.height}px`});if(overlay.hidden)overlay.hidden=false;
+  if(ancestor!==host){if(!overlay.hidden)overlay.hidden=true;if(m.pop)m.pop.hidden=true;return;}
+  const geo={left:`${x+box.left}px`,top:`${y+box.top}px`,width:`${box.width}px`,height:`${box.height}px`};Object.assign(overlay.style,geo);if(overlay.hidden)overlay.hidden=false;
+  if(m.pop){Object.assign(m.pop.style,geo);m.pop.hidden=false;}
  };
  const ro=typeof ResizeObserver==='undefined'?null:new ResizeObserver(entries=>{for(const [el,m] of mounted)if(entries.some(x=>x.target===m.img))size(el);for(const entry of entries)if(choiceRails.has(entry.target))syncFinishChoiceRail(entry.target);});
  const mount=el=>{
@@ -141,7 +143,10 @@ export function attachFinishPreview(root){
   if(detail){const light=img.ownerDocument.createElement('span');light.className='finish-spotlight';overlay.append(light);}
   for(const l of layers){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];overlay.append(part);}
   if(hasFinishPattern(p.materialProfile)&&FINISH_MASKS[layers[0]?.mask]){const pattern=img.ownerDocument.createElement('span');pattern.className='finish-pattern';pattern.style.clipPath=FINISH_MASKS[layers[0].mask];overlay.append(pattern);}
-  host.append(overlay);mounted.set(el,{img,host,overlay,model:el.dataset.finishModel,src:img.currentSrc});ro?.observe(img);size(el);
+  // Foil pass: every real foil (not a plain card) gets the pop layer over the whole card face: rim, glare,
+  // glints and a light catch. It covers the card box, so it maps to each game's frame at any size.
+  const pop=p.effect&&p.effect!=='plain'?mountFinishPop(host,{surface:el.dataset.finishSurface,seed:p.printingId||img.currentSrc}):null;
+  host.append(overlay);if(pop)host.append(pop);mounted.set(el,{img,host,overlay,pop,model:el.dataset.finishModel,src:img.currentSrc});ro?.observe(img);size(el);
   // Yu-Gi-Oh!, Magic and Pokémon cards get the WebGL foil; the CSS layers stay beneath as the fallback.
   if(p.game==='ygo')mounted.get(el).rarityFoil=mountYgoRarityFoil(overlay,img,p.effect,{surface:el.dataset.finishSurface,layout:p.layout,stars:p.stars});
   else if(p.game==='mtg'&&p.treatment)mounted.get(el).rarityFoil=mountMtgFoil(overlay,img,p.treatment,{surface:el.dataset.finishSurface,frame:p.frame,holostamp:!!p.holostamp});

@@ -1,0 +1,78 @@
+/* Foil pop (foil pass): one light vocabulary for every foil outside play, and the pack opener beats.
+   Animated properties are transform and opacity only. Reduced motion keeps the still look. */
+.finish-pop{position:absolute;display:block;pointer-events:none!important;z-index:3;border-radius:4.75% / 3.5%;overflow:hidden}
+.finish-pop[hidden]{display:none}
+/* Holo rim: a thin rainbow ring on the card edge; the colours turn slowly inside the ring. */
+.fp-rim{position:absolute;inset:0;border-radius:inherit;padding:1.6%;
+ -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.7}
+.fp-rim>i{position:absolute;left:50%;top:50%;width:150%;aspect-ratio:1;translate:-50% -50%;background:conic-gradient(#ff8ad8,#ffe48a,#8affc8,#7ad0ff,#c58aff,#ff8ad8);animation:fx-spin 7s linear infinite}
+.finish-pop[data-pop=lite] .fp-rim{opacity:.5}
+.finish-pop[data-pop=lite] .fp-rim>i{animation:none}
+@keyframes fx-spin{to{rotate:360deg}}
+/* Glare: a soft hot spot that follows the light the card already tracks (pointer, tilt or idle drift). */
+.fp-glare{position:absolute;inset:-50%;background:radial-gradient(circle at 50% 50%,#ffffffb0 0%,#ffffff33 13%,transparent 32%);mix-blend-mode:overlay;opacity:.55;
+ transform:translate(calc(var(--mx,50%) - 50%),calc(var(--my,40%) - 50%))}
+.finish-pop[data-pop=lite] .fp-glare{display:none}
+/* Light catch: one bright band crosses when the card appears, is hovered, or is revealed. */
+.fx-catch{position:absolute;inset:0;overflow:hidden;border-radius:inherit}
+.fx-catch::before{content:'';position:absolute;top:-25%;bottom:-25%;left:0;width:55%;background:linear-gradient(100deg,transparent 12%,#ffffff70 46%,#fff0c0a0 52%,transparent 88%);mix-blend-mode:overlay;
+ transform:translateX(-170%) skewX(-12deg);opacity:0}
+.fx-catching .fx-catch::before,.fx-catching.fx-catch::before{animation:fx-catch .66s cubic-bezier(.3,.7,.2,1) both}
+:is(.zoom-card-surface,[data-finish-surface]):hover>.finish-pop .fx-catch::before{animation:fx-catch .66s cubic-bezier(.3,.7,.2,1) both}
+@keyframes fx-catch{0%{transform:translateX(-170%) skewX(-12deg);opacity:1}100%{transform:translateX(300%) skewX(-12deg);opacity:1}}
+/* Glints: four-point stars that twinkle on their own clocks. */
+.fx-glints{position:absolute;inset:0}
+.fx-glint{position:absolute;width:calc(9% * var(--fx-s,1));aspect-ratio:1;translate:-50% -50%;background:#fff;opacity:0;transform:scale(0);
+ clip-path:polygon(50% 0,57% 43%,100% 50%,57% 57%,50% 100%,43% 57%,0 50%,43% 43%);animation:fx-twinkle var(--fx-d,2.4s) ease-in-out infinite var(--fx-dl,0s)}
+@keyframes fx-twinkle{0%,100%{opacity:0;transform:scale(0) rotate(0)}42%{opacity:1;transform:scale(1) rotate(40deg)}58%{opacity:.85;transform:scale(.75) rotate(55deg)}}
+@media (prefers-reduced-motion:reduce){.fp-rim>i,.fx-glint,.fx-catch::before{animation:none!important}.fx-glint{opacity:.7;transform:scale(.6)}}
+
+/* ---------- Pack opener beats (all three games share the dialog) ---------- */
+/* Pack wrapper sheen: an oversized band that moves by transform instead of repainting the gradient. */
+.pack-dialog .pack-sheen{overflow:hidden;background:none;animation:none}
+.pack-dialog .pack-sheen::before{content:'';position:absolute;top:-20%;bottom:-20%;left:0;width:60%;background:linear-gradient(105deg,transparent 15%,#ffffff40 45%,#9fe3ff33 50%,#ffd0f233 55%,transparent 85%);
+ transform:translateX(-170%) skewX(-10deg);animation:pack-sheen-move 3.2s ease-in-out infinite}
+@keyframes pack-sheen-move{0%{transform:translateX(-170%) skewX(-10deg)}100%{transform:translateX(260%) skewX(-10deg)}}
+/* Slice: a glowing seam races across the top crimp, a flash, then the strip flies off and the pack drops away. */
+.pack-slice{position:absolute;left:0;right:0;top:8.5%;height:3px;pointer-events:none;z-index:4;transform-origin:0 50%;transform:scaleX(0);opacity:0;
+ background:linear-gradient(90deg,#ff5fd2,#fff 55%,#9ff0ff);box-shadow:0 0 10px 2px #ff7ad9,0 0 22px 6px #ffffff88;border-radius:3px}
+.pack-wrapper.tearing .pack-slice{animation:pack-slice .34s cubic-bezier(.6,0,.4,1) forwards}
+.pack-flash{position:absolute;inset:-30%;pointer-events:none;z-index:5;opacity:0;background:radial-gradient(circle at 50% 20%,#fff 0%,#fff8 22%,transparent 60%)}
+.pack-wrapper.tearing .pack-flash{animation:pack-flash .5s .3s ease-out both}
+.pack-wrapper.tearing .pack-crimp.top{animation:pack-strip .42s .3s cubic-bezier(.3,.6,.4,1) forwards}
+.pack-wrapper.tearing .pack-body{animation:pack-rip-down .68s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes pack-slice{0%{transform:scaleX(0);opacity:1}100%{transform:scaleX(1);opacity:1}}
+@keyframes pack-flash{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+@keyframes pack-rip-down{0%,45%{transform:translateY(0) scale(1)}55%{transform:translateY(-8px) scale(1.04)}100%{transform:translateY(60%) scale(.88);opacity:0}}
+/* Deal: the cards rise out of the pack as one stack, then fan into the hand. */
+.pack-dialog:not(.pack-dealt) .pack-card{transform:translate(calc((var(--pack-n,10) / 2 - var(--i)) * 100% * .55),-60%) scale(.8);opacity:0}
+.pack-dealt .pack-card{transition:transform .5s cubic-bezier(.2,.8,.2,1),opacity .25s,filter .3s;transition-delay:calc(var(--i) * 40ms + 60ms),calc(var(--i) * 40ms),0s}
+.pack-focus-card.pack-rising{animation:pack-rise .46s cubic-bezier(.2,.8,.2,1) both}
+@keyframes pack-rise{0%{transform:translateY(42%) scale(.82);opacity:0}70%{transform:translateY(-2%) scale(1.03);opacity:1}100%{transform:none;opacity:1}}
+/* Reveal: the flip lands with a light catch and a burst of glints; better pulls rise with a glow, the best get rays. */
+.pack-face>.fx-glints,.pack-face>.fx-catch{z-index:3;pointer-events:none}
+.pack-face>.fx-glints{opacity:0;transition:opacity .3s}
+/* Tease: a face-down rare glows gold behind its back before the flip. */
+.pack-focus-card.pack-tease>.pack-backlight{opacity:.75;background:#f0c75e;animation:pack-tease 1.1s ease-in-out infinite alternate}
+.pack-focus-card.pack-tease>.pack-card-back{box-shadow:inset 0 0 0 3px #f0c75e99,inset 0 0 24px #f0c75e55}
+@keyframes pack-tease{from{opacity:.35}to{opacity:.85}}
+.pack-focus-card.revealed:is([data-tier="t2"],[data-tier="t3"],[data-tier="t4"],[data-tier="t5"])>.pack-face>.fx-glints,.pack-focus-card.pack-foil.revealed>.pack-face>.fx-glints{opacity:1}
+.pack-focus-card.pack-pop{animation:pack-pop .42s cubic-bezier(.2,.8,.2,1)}
+@keyframes pack-pop{0%{scale:1}35%{scale:1.07}100%{scale:1}}
+.pack-rays{position:absolute;left:50%;top:50%;width:190%;aspect-ratio:1;translate:-50% -50%;pointer-events:none;border-radius:50%;opacity:0;transform:translateZ(-8px);
+ background:repeating-conic-gradient(color-mix(in srgb,var(--tier,#fff6d0) 70%,#fff) 0 5deg,transparent 5deg 20deg);
+ -webkit-mask:radial-gradient(circle,#000 12%,transparent 64%);mask:radial-gradient(circle,#000 12%,transparent 64%)}
+.pack-focus-card.pack-hit-big .pack-rays{animation:pack-rays 1.6s ease-out both}
+@keyframes pack-rays{0%{opacity:0;scale:.4;rotate:0deg}25%{opacity:.9;scale:1;rotate:20deg}100%{opacity:0;scale:1.15;rotate:70deg}}
+/* Rarity line: pops in under the revealed card. */
+.pack-focus-card.revealed~.pack-focus-meta .pack-rarity>*{animation:pack-meta-in .34s .12s cubic-bezier(.2,.8,.2,1) both}
+@keyframes pack-meta-in{from{opacity:0;transform:translateY(6px) scale(.9)}to{opacity:1;transform:none}}
+/* Swipe: the big card flicks away with a tilt and the next one comes up from underneath the stack. */
+.pack-focus-card.pack-slide-next{animation:pack-under-next .34s cubic-bezier(.2,.8,.2,1)}
+.pack-focus-card.pack-slide-prev{animation:pack-under-prev .34s cubic-bezier(.2,.8,.2,1)}
+@keyframes pack-under-next{from{translate:0 5%;scale:.92;opacity:.35}to{translate:0 0;scale:1;opacity:1}}
+@keyframes pack-under-prev{from{translate:0 5%;scale:.92;opacity:.35}to{translate:0 0;scale:1;opacity:1}}
+.pack-fling{position:absolute;pointer-events:none;z-index:20;border-radius:4.6%/3.3%;overflow:hidden;box-shadow:0 24px 40px #000a}
+.pack-fling>img{display:block;width:100%;height:100%;object-fit:contain}
+@media (prefers-reduced-motion:reduce){.pack-dialog .pack-sheen::before,.pack-wrapper.tearing *,.pack-dealt .pack-focus-card,.pack-focus-card.pack-pop,.pack-focus-card>.pack-rays,.pack-focus-card.revealed~.pack-focus-meta .pack-rarity>*{animation:none!important}.pack-fling{display:none}}
+.pack-face>.finish-pop .fx-glints{display:none}
