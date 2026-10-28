@@ -299,7 +299,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   if(open){const src=setImageUrl(cardArt(c));if(faceImg.getAttribute('src')!==src)faceImg.src=src;const attrs=finishAttrs(game,c,ctxs[focus],'pack');const tmp=document.createElement('span');tmp.innerHTML=`<i ${attrs}></i>`;const i2=tmp.firstChild;for(const a of ['data-finish-game','data-finish-effect','data-finish-model'])face.setAttribute(a,i2.getAttribute(a));face.dataset.finishSurface='pack';}
   else{face.removeAttribute('data-finish-model');faceImg.removeAttribute('src');focusCard.style.removeProperty('aspect-ratio');}
   // A face-down hit glows before it is flipped, so the next tap feels worth it.
-  focusCard.classList.toggle('pack-tease',!open&&rarity.rank>=2);
+  const tease=!open&&rarity.rank>=2;if(tease&&!focusCard.classList.contains('pack-tease')&&dialog.classList.contains('pack-dealt'))haptic('pack-land');focusCard.classList.toggle('pack-tease',tease);
   focusCard.classList.toggle('pack-foil',open&&!!face.dataset.finishEffect&&face.dataset.finishEffect!=='plain');
   meta.querySelector('b').textContent=open?c.name:'';meta.querySelector('.pack-rarity').innerHTML=open?rarityEmblem(game,rarity.label,{finish:packFinishLabel(game,ctxs[focus]||{},rarity.label)}):'';
  };
@@ -307,7 +307,9 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  let deal=0;const fill=()=>{if(!hydrate)return;const n=++deal,now=picks;now.forEach((c,i)=>{const hit=!!featured&&c===featured;if(!packNeedsHydration(game,c,hit))return;
   Promise.resolve().then(()=>hydrate(c)).then(full=>{if(disposed||n!==deal||!full||String(full.id)!==String(c.id))return;
    const {setContext,...rest}=full;now[i]={...c,...rest,name:c.name,rarity:c.rarity||full.rarity,packSlot:c.packSlot};ctxs[i]=(hit&&featuredFinish(now[i]))||packFinishes(game,[now[i]])[0];if(revealed.has(i))setTier(dialog.querySelector(`.pack-card[data-index="${i}"]`),tierOf(i));if(focus===i&&revealed.has(i))show(i);}).catch(()=>{});});};
- const feelOf=i=>packRevealHaptic(trustedPackPrice(game,picks[i],ctxs[i]||{}));
+ // A pull feels as good as its price or its rarity, whichever is bigger, so an unpriced mythic still hits hard.
+ const RARITY_FEEL=['pack-reveal','pack-reveal','pack-value-2','pack-value-3','pack-value-4'],FEELS=['pack-reveal','pack-value-2','pack-value-3','pack-value-4'];
+ const feelOf=i=>{const byPrice=packRevealHaptic(trustedPackPrice(game,picks[i],ctxs[i]||{})),byRarity=RARITY_FEEL[Math.min(4,packRarity(game,picks[i]).rank)];return FEELS.indexOf(byRarity)>FEELS.indexOf(byPrice)?byRarity:byPrice;};
  const reveal=(i,{silent=false}={})=>{if(!Number.isInteger(i)||!picks[i])return;if(!revealed.has(i)){revealed.add(i);if(!silent)haptic(feelOf(i));const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');img.src=img.dataset.packSrc;b.classList.add('revealed');b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
    setTier(b,tierOf(i));status.textContent=`${revealed.size} of ${picks.length} revealed`;
    if(!silent)later(()=>revealMoment(i),330);
@@ -315,6 +317,9 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   show(i);};
  // The flip lands: a light catch and a small pop; a big pull (rare+ or a high price tier) adds rays.
  const revealMoment=i=>{if(reduce()||focus!==i||!revealed.has(i))return;const t=+String(tierOf(i)).slice(1)||0,big=packRarity(game,picks[i]).rank>=3||t>=3;
+  if(big){showcase=performance.now();if(!raf)raf=requestAnimationFrame(light);
+   // On a phone that can tilt but hasn't turned it on, the tilt button glows to invite playing with the foil.
+   const tb=dialog.querySelector('.pack-tilt');if(tb&&!tb.hidden&&tb.getAttribute('aria-pressed')!=='true')tb.classList.add('pack-tilt-hint');}
   catchLight(focusCard);focusCard.classList.remove('pack-pop','pack-hit-big');void focusCard.offsetWidth;focusCard.classList.add('pack-pop');if(big)focusCard.classList.add('pack-hit-big');
   later(()=>focusCard.classList.remove('pack-pop'),450);later(()=>focusCard.classList.remove('pack-hit-big'),1700);};
  fill();
@@ -344,12 +349,14 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   });
  };
  // Light follows the pointer (or tilt) over the focused card; at rest it drifts slowly.
- let raf=0,t0=performance.now(),pointer=null;
+ let raf=0,t0=performance.now(),pointer=null,showcase=0;
  const light=now=>{raf=0;if(disposed||suspended||!dialog.isConnected)return;
   // While the phone's tilt drives the card, the resting drift steps aside.
-  if(!pointer&&/perspective/.test(focusCard.style.transform)){raf=requestAnimationFrame(light);return;}const [x,y]=pointer||[50+44*Math.sin((now-t0)/1500),42+30*Math.sin((now-t0)/2100)];focusCard.style.setProperty('--mx',x+'%');focusCard.style.setProperty('--my',y+'%');
+  if(!pointer&&/perspective/.test(focusCard.style.transform)){raf=requestAnimationFrame(light);return;}// A big pull shows itself off: the card sways once and the light rolls across its foil.
+  const sp=showcase&&!pointer?(now-showcase)/1100:1;if(sp>=1)showcase=0;const sway=sp<1?Math.sin(sp*Math.PI*2.5)*(1-sp):0;
+  const [x,y]=pointer||(sp<1?[50+sway*46,40-sway*12]:[50+44*Math.sin((now-t0)/1500),42+30*Math.sin((now-t0)/2100)]);focusCard.style.setProperty('--mx',x+'%');focusCard.style.setProperty('--my',y+'%');
   // Only a pointer tilts the card; at rest just the light drifts, so the card itself stays still.
-  if(!reduce()){focusCard.style.transform=pointer?`rotateY(${(x-50)/6}deg) rotateX(${(50-y)/8}deg)`:'';if(!pointer)raf=requestAnimationFrame(light);}};
+  if(!reduce()){focusCard.style.transform=pointer?`rotateY(${(x-50)/6}deg) rotateX(${(50-y)/8}deg)`:sway?`rotateY(${sway*14}deg) rotateX(${sway*-4}deg)`:'';if(!pointer)raf=requestAnimationFrame(light);}};
  focusCard.addEventListener('pointermove',e=>{const r=focusCard.getBoundingClientRect();pointer=[(e.clientX-r.left)/r.width*100,(e.clientY-r.top)/r.height*100];if(!raf)raf=requestAnimationFrame(light);});
  focusCard.addEventListener('pointerleave',()=>{pointer=null;if(!raf)raf=requestAnimationFrame(light);});
  raf=requestAnimationFrame(light);

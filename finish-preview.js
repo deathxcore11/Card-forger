@@ -103,6 +103,7 @@ export function finishOverlayProfile(model,source){
  return model.overlayProfiles?.find(p=>finishImageMatches({imageSources:p.images},source))||null;
 }
 const attached=new WeakMap();
+const buzzed=new WeakSet();
 export function attachFinishPreview(root){
  if(!root)return ()=>{};
  if(attached.has(root))return attached.get(root);
@@ -146,6 +147,8 @@ export function attachFinishPreview(root){
   // Foil pass: every real foil (not a plain card) gets the pop layer over the whole card face: rim, glare,
   // glints and a light catch. It covers the card box, so it maps to each game's frame at any size.
   const pop=p.effect&&p.effect!=='plain'?mountFinishPop(host,{surface:el.dataset.finishSurface,seed:p.printingId||img.currentSrc}):null;
+  // Opening a foil in the zoom view gives a small tap, once per card, so a rare foil feels like one.
+  if(pop&&el.dataset.finishSurface==='zoom'&&!buzzed.has(el)){buzzed.add(el);import('./feel.js').then(m=>m.haptic('pack-value-2')).catch(()=>{});}
   host.append(overlay);if(pop)host.append(pop);mounted.set(el,{img,host,overlay,pop,model:el.dataset.finishModel,src:img.currentSrc});ro?.observe(img);size(el);
   // Yu-Gi-Oh!, Magic and Pokémon cards get the WebGL foil; the CSS layers stay beneath as the fallback.
   if(p.game==='ygo')mounted.get(el).rarityFoil=mountYgoRarityFoil(overlay,img,p.effect,{surface:el.dataset.finishSurface,layout:p.layout,stars:p.stars});

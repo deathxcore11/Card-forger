@@ -76,3 +76,7 @@
 .pack-fling>img{display:block;width:100%;height:100%;object-fit:contain}
 @media (prefers-reduced-motion:reduce){.pack-dialog .pack-sheen::before,.pack-wrapper.tearing *,.pack-dealt .pack-focus-card,.pack-focus-card.pack-pop,.pack-focus-card>.pack-rays,.pack-focus-card.revealed~.pack-focus-meta .pack-rarity>*{animation:none!important}.pack-fling{display:none}}
 .pack-face>.finish-pop .fx-glints{display:none}
+/* A big pull invites the phone tilt: the button glows gold until it is used. */
+.pack-tilt.pack-tilt-hint:not([aria-pressed="true"]){color:var(--gold,#e8b95b);border-color:#e8b95b99;animation:pack-tilt-hint 1.2s ease-in-out infinite alternate}
+@keyframes pack-tilt-hint{from{opacity:.7}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.pack-tilt.pack-tilt-hint{animation:none}}
