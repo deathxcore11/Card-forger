@@ -932,14 +932,14 @@ const costOf=card=>{const d=C[card.key];if(d.e==='X')return 'X';let e=d.e+(c&&c.
 // ---------- emblems ----------
 const EMB={
  spark:{name:'Emblem of the Spark',g:'✦',text:'Your first turn of each fight has 2 extra energy.'},
- embers:{name:'Emblem of Embers',g:'ϟ',text:'Whenever you cast a noncreature spell, deal 1 damage to each enemy and Chandra gains 1 life.'},
- horde:{name:'Emblem of the Horde',g:'G',text:'Allies enter with +1/+0. Goblins get +1/+1 instead.'},
+ embers:{name:'Emblem of Embers',g:'ϟ',text:'Whenever you cast a noncreature spell, deal 1 damage to each enemy. The first one each turn also gives Chandra 1 life.'},
+ horde:{name:'Emblem of the Horde',g:'G',text:'Allies enter with +1/+0.'},
  pyre:{name:'Emblem of the Pyre',g:'▲',text:"Chandra's +1 deals 2 more damage."},
  hearth:{name:'Emblem of the Hearth',g:'♥',text:'Heal 4 life after every fight.'},
  font:{name:'Font of Agonies',g:'♨',r:'R',text:'Whenever you lose life on your turn, your next hit deals 1 more. Below 30% life, your hits deal 50% more.'},
  twin:{name:'Emblem of Echoes',g:'∞',r:'R',text:'The first noncreature spell you cast each turn is cast twice.'},
  surge:{name:'Emblem of the Surge',g:'⚡',r:'R',text:'You get 1 extra energy on odd turns (1st, 3rd, 5th...).'},
- furnace:{name:'Emblem of the Furnace',g:'✹',r:'M',text:'Once you have played 3 cards in a turn, your spells deal double damage and everything else deals 75% more. Each hit Chandra takes deals 1 extra.'},
+ furnace:{name:'Emblem of the Furnace',g:'✹',r:'M',text:'Once you have played 2 cards in a turn, your spells deal double damage and everything else deals 50% more. Each hit Chandra takes deals 1 extra.'},
  season:{name:'Emblem of Doubling Season',g:'❖',r:'M',text:'At the start of your turn, summon a 1/1 token. Whenever you summon a token, summon a second one. Your tokens have haste.'},
  paradox:{name:'Emblem of the Paradox Engine',g:'⟲',r:'M',text:'Whenever you cast a noncreature spell, untap all your creatures and they get +1/+1 for the rest of the fight.'},
  legion:{name:'Emblem of the Legion',g:'⚑',r:'R',text:'The first Goblin you summon each turn brings a 2/1 Goblin token with haste.'},
@@ -1039,7 +1039,7 @@ function startFight(keys,kind,depth=0){
 }
 function startTurn(){
  c.turn++; c.allies.forEach(a=>{a.dmg=0;a.temp=0;a.sick=false;a.tapped=false;a.swung=false});
- c.twinned=0;c.legioned=0;c.turnStart=c.stats.dealt;c.juice=[];
+ c.twinned=0;c.legioned=0;c.embered=0;c.turnStart=c.stats.dealt;c.juice=[];
  for(const m of c.allies.filter(a=>a.mob)){const n=c.allies.filter(a=>a.goblin).length;for(let k=0;k<n&&c.allies.length<MAXA;k++)summon({p:1,t:1,goblin:1,sick:0},'Goblin token')}
  if(run.emblems.includes('season'))summon({p:1,t:1},'Spirit token');
  if(run.emblems.includes('monument')&&c.allies.length&&c.turn%2===0){const w=[...c.allies].sort((x,y)=>pow(x)-pow(y))[0];w.dmg=999;if(c.turn%2===0)hurt(1);cleanup()}
@@ -1054,7 +1054,7 @@ const pow=a=>a.p+a.temp+2*lords(a), tough=a=>a.t+a.temp+lords(a);
 const ready=a=>!a.sick&&!a.tapped&&!a.defender&&!c.busy;
 const alive=()=>c.enemies.filter(e=>e.hp>0);
 const solo=()=>alive().length===1?alive()[0]:null;
-function hit(e,n){if(!e||e.hp<=0||n<=0)return 0;if(c&&c.font&&!c.busy){n+=c.font;juice(`+${c.font} Agony`);c.font=0}if(run.emblems.includes('font')&&run.hp<=run.max*.3){n=Math.ceil(n*1.5);juice('×1.5 Agony',1)}if(run.emblems.includes('furnace')&&c&&c.chain>=3){n=c.casting?n*2:Math.ceil(n*1.75);juice(c.casting?'×2 Furnace':'×1.75 Furnace',1)}if(e.shield){const s=Math.min(e.shield,n);e.shield-=s;n-=s}e.hp-=n;e.pop=(e.pop||0)+n;if(E[e.key].phase2&&!e.phase2&&e.hp>0&&e.hp<=e.max/2){e.phase2=true;e.i=0;e.shield+=10;if(c){c.callout='Bloodlord form';c.log='Sorin drops below half: he raises a 10 shield and his attacks grow. Burst through it or outlast it.'}}if(c&&!c.busy){c.burst=(c.burst||0)+n;c.stats.dealt+=n}return n}
+function hit(e,n){if(!e||e.hp<=0||n<=0)return 0;if(c&&c.font&&!c.busy){n+=c.font;juice(`+${c.font} Agony`);c.font=0}if(run.emblems.includes('font')&&run.hp<=run.max*.3){n=Math.ceil(n*1.5);juice('×1.5 Agony',1)}if(run.emblems.includes('furnace')&&c&&c.chain>=2){n=c.casting?n*2:Math.ceil(n*1.5);juice(c.casting?'×2 Furnace':'×1.5 Furnace',1)}if(e.shield){const s=Math.min(e.shield,n);e.shield-=s;n-=s}e.hp-=n;e.pop=(e.pop||0)+n;if(E[e.key].phase2&&!e.phase2&&e.hp>0&&e.hp<=e.max/2){e.phase2=true;e.i=0;e.shield+=10;if(c){c.callout='Bloodlord form';c.log='Sorin drops below half: he raises a 10 shield and his attacks grow. Burst through it or outlast it.'}}if(c&&!c.busy){c.burst=(c.burst||0)+n;c.stats.dealt+=n}return n}
 function heal(n){if(n<=0)return;if(run.emblems.includes('signet')&&!(c&&view==='battle'))return;run.hp=Math.min(run.max,run.hp+n);run.heal=(run.heal||0)+n}
 function hurt(n){if(n<=0)return;if(run.emblems.includes('furnace'))n+=1;run.hp-=n;run.pop=(run.pop||0)+n;if(c&&view==='battle'&&!c.busy&&run.emblems.includes('font'))c.font=(c.font||0)+1}
 // Juice stack: each bonus that touches a hit pops on the turn tally, flat (+) before multiplier (×).
@@ -1062,7 +1062,7 @@ function juice(t,mul){if(!c||c.busy)return;c.juice=c.juice||[];const l=c.juice[c
 function summon(base,name){
  if(c.allies.length>=MAXA)return;
  const a={id:++uid,name,...base,dmg:0,temp:0,tapped:false};
- if(run.emblems.includes('horde')){a.p++;if(a.goblin)a.t++}
+ if(run.emblems.includes('horde'))a.p++;
  if(run.emblems.includes('monument')){a.flying=1}
  if(a.goblin&&c.allies.some(x=>x.chief||x.lord))a.haste=1;
  a.sick=!a.haste; c.allies.push(a);
@@ -1097,7 +1097,7 @@ function play(i,t){
   for(const a of [...c.allies]){if(a.snipe)c.enemies.forEach(e=>hit(e,a.snipe));if(a.pyro)summon({p:1,t:1,haste:1},'Elemental')}
  }
  c.hand.splice(i,1);if(!d.power)c.discard.push(card);
- if(!d.ally&&run.emblems.includes('embers')){c.enemies.forEach(e=>hit(e,1));heal(1)}
+ if(!d.ally&&run.emblems.includes('embers')){c.enemies.forEach(e=>hit(e,1));if(!c.embered){c.embered=1;heal(1)}}
  if(!d.ally&&c.ult)c.enemies.forEach(e=>hit(e,3));
  c.chain++;c.log=`You cast ${d.name}.`;
  if(c.chain%4===0){const fz=3*c.chain/4;c.enemies.forEach(e=>hit(e,fz));c.callout=c.chain>=8?`Fury ×${c.chain/4}!`:'Fury!';juice(`+${fz} Fury`);c.log=`Card ${c.chain} this turn: Chandra's fury deals ${fz} to each enemy.`}
