@@ -60,3 +60,21 @@ Read through the 427 event log code again: ordering, viewer filtering and lockin
 card is named only when its face is visible at that moment, CPU draws carry no card, and the log
 is copied under its own lock. One thing to know: a name already in the log stays there after the
 card goes back to a hidden zone (it was public when it happened). Nothing blocking.
+
+## Follow-up: prompts the table could not answer (branch `claude/engine-prompts`)
+
+Based on `claude/forge-host-4.2.8`, re-pinned (verify-inputs passes, host tests 223/223).
+
+- **Scry / Surveil 2+.** `UI_SELECT_FROM_CARD_DISPLAYS` is off, so Forge asks with its
+  choose-then-order dialogs. The `order` prompt treats `-1` bounds as "any number"; the DTO's
+  `remainingMin`/`remainingMax` are normalised (0 and the card count), never -1.
+- **Combat damage** (`assignCombatDamage`) and **divided amounts** (`assignGenericAmount`:
+  divided damage, counters, shields, mana combos) are now supported prompts. The DTO carries
+  `options` (blockers, then the player or planeswalker when trample allows it) and
+  `assign: {amount, lethal[], defenderIndex, freeDivision, maySkip}` or
+  `assign: {amount, maxima[], atLeastOne, label}`. Reply `{"promptId", "amounts":[one per option]}`;
+  `{"skip":true}` only when `maySkip`. The bridge checks the total, the per-target limits and
+  current combat rules: no damage assignment order among blockers; damage reaches the player
+  or planeswalker only after every blocker has lethal (1 with deathtouch).
+- Checks: `harness/fixtures/BridgePromptAmountChecks.java`, `harness/fixtures/CombatDamageChecks.java`.
+- The web table still shows Concede for these until it renders `prompt.assign`.

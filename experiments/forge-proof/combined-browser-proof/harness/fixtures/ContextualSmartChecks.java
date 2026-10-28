@@ -20,8 +20,11 @@ public final class ContextualSmartChecks {
  static Card own(Ctx c,String name,ZoneType zone){return card(c,name,c.human,zone);}
  static void lands(Ctx c,String name,int n){for(int i=0;i<n;i++)own(c,name,ZoneType.Battlefield);}
  static void settle(Ctx c)throws Exception{c.game.getAction().checkStaticAbilities(false);c.bridge.refreshBoard();c.bridge.publish();SwingUtilities.invokeAndWait(()->{});}
- static Map<String,Object> window(Ctx c,String label,boolean shouldStop)throws Exception {
-  settle(c);long start=System.nanoTime();var task=new FutureTask<List<SpellAbility>>(()->c.ctrl.chooseSpellAbilityToPlay());Thread worker=new Thread(task,"fixture-human-priority");worker.start();
+ static Map<String,Object> window(Ctx c,String label,boolean canRespond)throws Exception {
+  settle(c);
+  // Smart passes the opponent's main phase while the stack is empty (Arena style), even with a
+  // response in hand; it stops there only for something on the stack. Case 7 still checks affordability.
+  boolean shouldStop=canRespond&&(!c.bridge.controlMode.equals("smart")||!c.game.getStack().isEmpty());long start=System.nanoTime();var task=new FutureTask<List<SpellAbility>>(()->c.ctrl.chooseSpellAbilityToPlay());Thread worker=new Thread(task,"fixture-human-priority");worker.start();
   long until=System.nanoTime()+TimeUnit.SECONDS.toNanos(5);Input input=null;
   while(System.nanoTime()<until){input=c.ctrl.getInputQueue().getInput();if(task.isDone()||input instanceof InputPassPriority)break;Thread.sleep(5);}
   SwingUtilities.invokeAndWait(()->{});Thread.sleep(100); // held input must survive without an answer

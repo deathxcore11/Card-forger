@@ -163,6 +163,9 @@ public final class ForgeHttpBridge implements IRemote {
             prefs.setPref(FPref.YIELD_AUTO_PASS_NO_ACTIONS,false);
             prefs.setPref(FPref.YIELD_DECLINE_SCOPE_STACK_YIELD,"NEVER");
             prefs.setPref(FPref.YIELD_DECLINE_SCOPE_NO_ACTIONS,"NEVER");
+            // Scry and Surveil of 2+ then ask through choose-and-order dialogs the table can
+            // answer, instead of picking cards on Forge's own library display.
+            prefs.setPref(FPref.UI_SELECT_FROM_CARD_DISPLAYS,false);
             return null;
         });
         ForgeHttpBridge bridge=new ForgeHttpBridge();
@@ -281,6 +284,9 @@ public final class ForgeHttpBridge implements IRemote {
         controller.getYieldController().setPref(FPref.YIELD_AUTO_PASS_NO_ACTIONS,String.valueOf(effectiveAutoPass));
         if(event.phase()==forge.game.phase.PhaseType.COMBAT_BEGIN)setCombatStops(false);
     }
+    // Forge appends bookkeeping such as "[Zone Changer: Gruul Turf (195)]" or "[Phase: ...]" to stack text.
+    static final java.util.regex.Pattern STACK_BOOKKEEPING=java.util.regex.Pattern.compile("\\s*\\[[A-Z][A-Za-z ]*: [^\\]]*\\]");
+    static String stackText(String text){return text==null?null:STACK_BOOKKEEPING.matcher(text).replaceAll("").trim();}
     static boolean smartStop(boolean ownTurn, forge.game.phase.PhaseType phase, boolean attackers){
         return switch(phase){
             case MAIN1, MAIN2 -> ownTurn;
@@ -437,7 +443,7 @@ public final class ForgeHttpBridge implements IRemote {
             case showPromptMessage -> message=(String)a[1];
             case updateButtons -> { buttons=obj("ok",a[1],"cancel",a[2],"okEnabled",a[3],"cancelEnabled",a[4]); busy=false; }
             case setSelection -> { selection=(Selection)a[0]; busy=false; }
-            case awaitNextInput -> { busy=true; }
+            case awaitNextInput -> { busy=true; recheckBusy(); }
             case flashIncorrectAction -> { busy=false; }
             case message,showErrorDialog -> {notification=obj("method",e.getMethod().name(),"message",a[0],"title",a.length>1?a[1]:null); busy=false;}
             default -> { }
@@ -448,6 +454,23 @@ public final class ForgeHttpBridge implements IRemote {
         maybeNativeAutoPay();
         if(e.getMethod()==ProtocolMethod.setSelection || e.getMethod()==ProtocolMethod.updateButtons || e.getMethod()==ProtocolMethod.showPromptMessage || e.getMethod()==ProtocolMethod.flashIncorrectAction || e.getMethod()==ProtocolMethod.message || e.getMethod()==ProtocolMethod.showErrorDialog) publish();
         }
+    }
+    // Forge's lock-UI timer can send awaitNextInput after the next priority prompt is already
+    // showing, and nothing clears busy for that prompt, so the table reads "Resolving" while
+    // Forge waits on the player. If the same live input is still up shortly after, it was stale.
+    static final ScheduledExecutorService BUSY_RECHECK=Executors.newSingleThreadScheduledExecutor(r->{Thread t=new Thread(r,"cardstashy-busy-recheck");t.setDaemon(true);return t;});
+    void recheckBusy(){
+        PlayerControllerHuman c=controller;if(c==null)return;
+        forge.gamemodes.match.input.Input in=c.getInputProxy().getInput();
+        if(in==null||in instanceof forge.gamemodes.match.input.InputLockUI)return;
+        BUSY_RECHECK.schedule(()->{
+            boolean changed=false;
+            synchronized(lock){
+                if(busy&&!commandInFlight&&pending==null&&failure==null&&!finished&&!concessionRequested
+                    &&c.getInputProxy().getInput()==in){busy=false;changed=true;}
+            }
+            if(changed)publish();
+        },300,TimeUnit.MILLISECONDS);
     }
     void clearSmartIntent(){smartIntentOrigin=null;smartIntentAbility=null;}
     // Trustworthy glow. selection.actionable is what can be finished now (the human
@@ -607,7 +630,7 @@ public final class ForgeHttpBridge implements IRemote {
     Pending makePending(GuiGameEvent e) {
         Object[] a=e.getObjects();
         String kind=e.getMethod().name(), text=kind;
-        List<?> options=List.of(); int min=0,max=1; boolean supported=true;
+        List<?> options=List.of(); int min=0,max=1; boolean supported=true; Map<String,Object> amounts=null;
         switch(e.getMethod()) {
             case getChoices -> {text=(String)a[0];min=(Integer)a[1];max=(Integer)a[2];options=(List<?>)a[3];}
             case getAbilityToPlay -> {text="Choose an ability";min=0;options=(List<?>)a[1];}
@@ -622,10 +645,32 @@ public final class ForgeHttpBridge implements IRemote {
                 List<Object> combined=new ArrayList<>((List<?>)a[4]);
                 if(a[5]!=null)combined.addAll((List<?>)a[5]);
                 options=combined;
-                int remainingMin=(Integer)a[2],remainingMax=(Integer)a[3];
+                // -1 means "no limit" (Scry/Surveil: put any number on the bottom or in the graveyard).
+                int remainingMin=Math.max(0,(Integer)a[2]),remainingMax=(Integer)a[3]<0?combined.size():(Integer)a[3];
                 supported=remainingMin>=0&&remainingMax>=remainingMin&&!Boolean.TRUE.equals(a[7]);
                 min=Math.max(0,combined.size()-remainingMax);max=combined.size()-remainingMin;
                 supported &= max>=min&&max<=combined.size();
+            }
+            case assignCombatDamage -> {
+                // Current rules (no damage assignment order): damage is divided among the
+                // blockers as the player chooses. Trample may assign to the player or
+                // planeswalker only once every blocker has lethal damage.
+                CardView attacker=(CardView)a[0];var st=attacker.getCurrentState();GameEntityView defender=(GameEntityView)a[3];
+                boolean deathtouch=st.hasDeathtouch(),divide=st.hasDivideDamage()&&(Boolean)a[4];
+                List<Object> combined=new ArrayList<>((List<?>)a[1]);List<Integer> lethal=new ArrayList<>();
+                for(Object o:combined){int l=Math.max(0,((CardView)o).getLethalDamage());lethal.add(deathtouch?Math.min(l,1):l);}
+                if(defender!=null&&(st.hasTrample()||divide)){combined.add(defender);lethal.add(null);}
+                options=combined;min=0;max=combined.size();
+                text="Assign "+a[2]+" combat damage from "+(attacker.canFaceDownBeShownTo(viewer)?st.getName():"a creature");
+                amounts=obj("amount",a[2],"lethal",lethal,"defenderIndex",combined.size()>((List<?>)a[1]).size()?combined.size()-1:null,"freeDivision",divide,"maySkip",a[5]);
+            }
+            case assignGenericAmount -> {
+                Map<?,?> targets=(Map<?,?>)a[1];List<Object> combined=new ArrayList<>();List<Object> maxima=new ArrayList<>();
+                for(var t:targets.entrySet()){combined.add(t.getKey());maxima.add(t.getValue());}
+                options=combined;min=0;max=combined.size();
+                CardView src=(CardView)a[0];
+                text="Divide "+a[2]+" "+a[4]+(src!=null&&src.canFaceDownBeShownTo(viewer)?" from "+src.getCurrentState().getName():"");
+                amounts=obj("amount",a[2],"maxima",maxima,"atLeastOne",a[3],"label",a[4]);
             }
             default -> {supported=false;text="Native prompt not yet adapted: "+kind;}
         }
@@ -646,9 +691,11 @@ public final class ForgeHttpBridge implements IRemote {
             int sourceCount=((List<?>)a[4]).size();
             List<Integer> src=new ArrayList<>(),dst=new ArrayList<>();
             for(int i=0;i<options.size();i++)if(i<sourceCount)src.add(i);else dst.add(i);
-            dto.put("ordered",true);dto.put("topLabel",a[1]);dto.put("remainingMin",a[2]);dto.put("remainingMax",a[3]);
+            dto.put("ordered",true);dto.put("topLabel",a[1]);dto.put("remainingMin",Math.max(0,(Integer)a[2]));dto.put("remainingMax",(Integer)a[3]<0?options.size():a[3]);
             dto.put("sourceIndexes",src);dto.put("destinationIndexes",dst);dto.put("rememberAllowed",a[8]);
         }
+        // Amount prompts: reply {"amounts":[n per option]} that adds up to "amount".
+        if(amounts!=null)dto.put("assign",amounts);
         dto.put("acknowledgeOnly",acknowledge);
         dto.put("cancelable",e.getMethod()==ProtocolMethod.getAbilityToPlay);
         if(e.getMethod()==ProtocolMethod.showInputDialog){dto.put("numeric",a[5]);dto.put("initialValue",a[3]);}
@@ -786,7 +833,7 @@ public final class ForgeHttpBridge implements IRemote {
             }
             if(v.getStack()!=null)for(StackItemView si:v.getStack()){
                 exposedStack.put(si.getId(),si);
-                stack.add(obj("id",si.getId(),"text",si.getText(),"source",si.getSourceCard()==null?null:card(si.getSourceCard()),"activatingPlayer",id(si.getActivatingPlayer()),"targets",refs(stackTargets(si))));
+                stack.add(obj("id",si.getId(),"text",stackText(si.getText()),"source",si.getSourceCard()==null?null:card(si.getSourceCard()),"activatingPlayer",id(si.getActivatingPlayer()),"targets",refs(stackTargets(si))));
             }
             board=obj("schema","cardstashy.forge-proof.v1","forgeRevision",REV,"viewer",viewer.getId(),"aiProfile",actualAiProfile,"match",obj("humanDeck",humanDeckAlias,"aiDeck",aiDeckAlias),"turn",v.getTurn(),"phase",v.getPhase()==null?null:v.getPhase().name(),"activePlayer",id(v.getPlayerTurn()),"priorityPlayer",game.getPhaseHandler().getPriorityPlayer()==null?null:game.getPhaseHandler().getPriorityPlayer().getId(),"players",players,"stack",stack,"dayNight",game.isDay()?"day":game.isNight()?"night":null,"gameOver",v.isGameOver(),"winner",v.isGameOver()?v.getWinningPlayerName():null,"winnerPlayerId",winnerId(),"draw",v.isGameOver()&&game.getOutcome()!=null&&game.getOutcome().isDraw());
             boardVisibility=List.copyOf(visibility);
@@ -862,6 +909,7 @@ public final class ForgeHttpBridge implements IRemote {
             if(!p.options.isEmpty()&&!p.options.contains(value))throw new IllegalArgumentException("input_not_offered");
             return value;
         }
+        if(kind.equals("assignCombatDamage")||kind.equals("assignGenericAmount"))return assignAmounts(p,body);
         JsonArray indices=body.getAsJsonArray("indexes");
         if(indices==null||indices.size()<p.min||indices.size()>p.max)throw new IllegalArgumentException("choice_count_out_of_range");
         List<Object> values=new ArrayList<>(); Set<Integer> seen=new HashSet<>();
@@ -878,6 +926,35 @@ public final class ForgeHttpBridge implements IRemote {
         };
     }
 
+    @SuppressWarnings("unchecked")
+    static Object assignAmounts(Pending p,JsonObject body){
+        Map<String,Object> spec=(Map<String,Object>)p.dto.get("assign");
+        boolean combat=p.event.getMethod()==ProtocolMethod.assignCombatDamage;
+        if(body.has("skip")){
+            if(!combat||!exactBoolean(body.get("skip"),"skip")||!Boolean.TRUE.equals(spec.get("maySkip")))throw new IllegalArgumentException("skip_not_offered");
+            return null;
+        }
+        JsonArray raw=body.getAsJsonArray("amounts");
+        if(raw==null||raw.size()!=p.options.size())throw new IllegalArgumentException("amounts_must_match_options");
+        int total=0;int[] n=new int[raw.size()];
+        for(int i=0;i<n.length;i++){n[i]=exactInt(raw.get(i),"amount");if(n[i]<0)throw new IllegalArgumentException("amount_negative");total+=n[i];}
+        if(total!=(Integer)spec.get("amount"))throw new IllegalArgumentException("amounts_must_add_up");
+        if(combat){
+            List<Integer> lethal=(List<Integer>)spec.get("lethal");Integer defender=(Integer)spec.get("defenderIndex");
+            if(defender!=null&&n[defender]>0&&!Boolean.TRUE.equals(spec.get("freeDivision")))
+                for(int i=0;i<n.length;i++)if(i!=defender&&n[i]<lethal.get(i))throw new IllegalArgumentException("blockers_need_lethal_first");
+            Map<CardView,Integer> out=new HashMap<>();
+            for(int i=0;i<n.length;i++)out.put(defender!=null&&i==defender?null:(CardView)p.options.get(i),n[i]); // null key = the defender
+            return out;
+        }
+        List<Object> maxima=(List<Object>)spec.get("maxima");boolean atLeastOne=Boolean.TRUE.equals(spec.get("atLeastOne"));
+        Map<Object,Integer> out=new LinkedHashMap<>();
+        for(int i=0;i<n.length;i++){
+            if(n[i]>((Number)maxima.get(i)).intValue()||atLeastOne&&n[i]<1)throw new IllegalArgumentException("amount_out_of_range");
+            out.put(p.options.get(i),n[i]);
+        }
+        return out;
+    }
     static String exactString(JsonElement e,String field){if(e==null||!e.isJsonPrimitive()||!e.getAsJsonPrimitive().isString())throw new IllegalArgumentException(field+"_must_be_string");return e.getAsString();}
     static boolean exactBoolean(JsonElement e,String field){if(e==null||!e.isJsonPrimitive()||!e.getAsJsonPrimitive().isBoolean())throw new IllegalArgumentException(field+"_must_be_boolean");return e.getAsBoolean();}
     static long exactLong(JsonElement e,String field){

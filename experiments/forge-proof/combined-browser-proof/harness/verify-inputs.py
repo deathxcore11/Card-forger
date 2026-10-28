@@ -49,7 +49,7 @@ for record in m['files']:
  p=HERE/record['path'];assert p.is_file() and not p.is_symlink() and p.resolve().is_relative_to(HERE)
  assert len(p.read_bytes())==record['bytes'] and hashlib.sha256(p.read_bytes()).hexdigest()==record['sha256'],record['path']+' package hash mismatch'
 assert c['sourceIdentity']['forgeRevision']=='e5a0f8156da70ffc7866f923bed371c0111707cd'
-assert c['sourceIdentity']['nativeSourceSHA256']=='eb7dc914eaaa85636b133477c052de0c5bd30a6f4789fad190955e5f105c8969'
+assert c['sourceIdentity']['nativeSourceSHA256']=='84d695fedcce274f2e62b1b7883e0b5a73d5bde469c57c0a65b1b5e98923bcea'
 assert c['sourceIdentity']['difficultyPolicyVersion']=='forge-heuristic-medium-beta-v1'
 assert c['localImageScope']=='LOCAL_TEST_NOT_DEPLOYABLE' and c['productionReleasePolicy'] is None
 print(json.dumps({'inputsVerified':len(c['inputs']),'packageFilesVerified':len(m['files']),'candidateRoot':str(candidate),'publicationAuthorized':False,'runAuthorized':False,'productionReleaseReady':False}))
