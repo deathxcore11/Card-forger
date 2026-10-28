@@ -2860,7 +2860,7 @@ A.replayTour = (t) => openTour({...tourArt(),lesson:t?.dataset?.lesson||'',choos
 }});
 const tableArtFor=createTableArtResolver(T.SOURCES);
 A.tabletop=()=>openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor});
-A.dismissGuide=t=>{markGuide(t.dataset.id);t.closest('[data-guide]')?.remove();};
+A.dismissGuide=t=>{markGuide(t.dataset.id);markGuide('*');document.querySelectorAll('.context-guide[data-guide]').forEach(g=>g.remove());};
 A.resetOnboarding=async()=>{
 if(!await ask('Reset guide history? Only tutorials will reset. Your cards, decks, account and preferences stay saved.'))return;resetOnboarding();introPending=true;toast('Guides reset. The introduction will return on Home when you finish your current task.');};
 A.helpOpen=t=>{const id=t?.dataset?.id||'start';if(!INFO_TOPICS.some(x=>x.id===id))return;S.ui.settingsTab='info';settingsPopup.open();A.settingsTab({dataset:{id:'info'}});const topic=document.getElementById('info-'+id);if(topic){topic.hidden=false;topic.open=true;topic.querySelector('summary')?.focus();topic.scrollIntoView({block:'nearest'});}};

@@ -19,7 +19,7 @@ test('the deck browser marks the inspected seat without replacing either matchup
 });
 test('guest has a direct sign-in action and no false match-readiness promise',()=>{
  const state=setup();state.profile={signedIn:false};const html=playMenuMarkup(state,{matchReleaseReady:true});
- assert.match(html,/>Sign in to play</);assert.match(html,/disabled[^>]*>Play CPU</);assert.match(html,/Keep this page open/);
+ assert.match(html,/data-act="menu"><span class="cs-plate-label">Sign in to play</);assert.doesNotMatch(html,/Play vs CPU|Keep this page open|Social/);
 });
 
 test('Standard precons explain the legal 60-card product check and keep normal deck sources',()=>{
@@ -28,5 +28,5 @@ test('Standard precons explain the legal 60-card product check and keep normal d
 });
 test('support errors appear by the selected artwork before launch with expandable cards',()=>{
  const state=setup();state.match.format='Standard';state.selected={name:'Unsupported list',format:'Standard',cards:[{name:'Seasoned Cryomancer',qty:4},{name:'Forest',qty:56}],side:[]};state.opponent={name:'CPU',format:'Standard',cards:[{name:'Forest',qty:60}],side:[]};
- const html=playMenuMarkup(state,{matchReleaseReady:true});assert.match(html,/Not supported yet/);assert.match(html,/View affected cards/);assert.match(html,/Seasoned Cryomancer: unfinished rules/);assert.match(html,/disabled[^>]*>Play CPU</);assert.doesNotMatch(html,/Ready for match checks/);
+ const html=playMenuMarkup(state,{matchReleaseReady:true});assert.match(html,/Not supported yet/);assert.match(html,/View affected cards/);assert.match(html,/Seasoned Cryomancer: unfinished rules/);assert.match(html,/disabled[^>]*><span class="cs-plate-label">Play vs CPU</);assert.doesNotMatch(html,/Ready for match checks/);
 });

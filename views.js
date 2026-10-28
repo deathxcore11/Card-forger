@@ -171,14 +171,9 @@ export function refreshDeckScores(root) {
 }
 
 export function deckTile(d, wide = false, {playSelection = null} = {}) {
-  // Owned, value and to-finish cover the physical pool (main and sideboard share
-  // copies); the size line counts the main deck against the format, like the deck page.
+  // Owned and to-find cover the physical pool (main and sideboard share copies); no prices
+  // on a deck tile. The size line counts the main deck against the format, like the deck page.
   const rows = rowsFor(d), t = comparisonTotals(rows), main = sumQty(d.cards), side = sumQty(d.side || []),
-    v = rows.reduce((a, r) => ({ total: a.total + (r.price ?? 0) * r.qty, unpriced: a.unpriced + (r.price == null ? r.qty : 0) }), { total: 0, unpriced: 0 }),
-    valueAmount = v.unpriced && v.unpriced === t.copies ? "—" : usd(v.total, 0),
-    valueLabel = v.unpriced ? `${v.unpriced === t.copies ? "value unavailable" : "known deck subtotal"} · ${v.unpriced} unpriced` : "value",
-    gapAmount = t.unpriced && t.unpriced === t.missing ? "—" : usd(t.pricedGap, 0),
-    gapLabel = t.unpriced ? `${t.unpriced === t.missing ? "cost unavailable" : "known purchase subtotal"} · ${t.unpriced} unpriced` : main < formatOf(d).size ? "for listed cards" : "to finish",
     cover = coverOf(d),
     target = formatOf(d).size,
     owned = t.copies ? t.covered / t.copies : 0;
@@ -189,7 +184,7 @@ export function deckTile(d, wide = false, {playSelection = null} = {}) {
     <span class="tile-body">
       <b>${esc(d.name)}</b>
       <small>${esc(formatOf(d).commander ? d.commander || "No commander yet" : mtgPower(d).plan)} · ${main}/${target}${side ? ` · ${side} sideboard` : ""}</small>
-      <span class="tile-stats"><span data-deck-score="${esc(d.id)}">${powerChip(mtgPower(d))}</span><span><em>${Math.round(owned * 100)}%</em> owned</span><span><em>${valueAmount}</em> ${valueLabel}</span>${t.missing ? `<span><em>${gapAmount}</em> ${gapLabel}</span>` : ""}</span>
+      <span class="tile-stats"><span data-deck-score="${esc(d.id)}">${powerChip(mtgPower(d))}</span><span><em>${Math.round(owned * 100)}%</em> owned</span>${t.missing ? `<span><em>${t.missing}</em> to find</span>` : ""}</span>
       ${bar(owned, "thin")}
     </span>
   </button>`;
@@ -701,7 +696,7 @@ function collectionCards(wantedOnly = false) {
   if (!st.collection.length && !wanted.length)
     return empty("Start with the cards in front of you", "Add one card, scan it, or import a ManaBox / Moxfield / CSV export. Nothing counts as owned until you add it.", `<button class="btn" data-act="addCard">Add a card</button><button class="btn ghost" data-act="importCollection">Import a list</button>`);
   const value = collectionValue(st.collection, S.catalog, st.printings, []);
-  return `<p class="summary-line"><b>${sumQty(st.collection)}</b> copies · <b>${new Set(st.collection.map((e) => key(e.name))).size}</b> names · <b data-count="${Math.round(value.total)}" data-money="1">${usd(value.total, 0)}</b>${value.unpriced ? ` <span class="muted">(${value.unpriced} unpriced)</span>` : ""}${wanted.length ? ` · <b>${wanted.length}</b> on wishlist` : ""}</p>
+  return `<p class="summary-line"><b>${sumQty(st.collection)}</b> copies · ${((n) => `<b>${n}</b> name${n === 1 ? "" : "s"}`)(new Set(st.collection.map((e) => key(e.name))).size)} · <b data-count="${Math.round(value.total)}" data-money="1">${usd(value.total, 0)}</b>${value.unpriced ? ` <span class="muted">(${value.unpriced} unpriced)</span>` : ""}${wanted.length ? ` · <b>${wanted.length}</b> on wishlist` : ""}</p>
   <div class="coll-tools"><div class="collection-primary-tools">${collectionSortControls('mtg',S.ui.collSort,S.ui.collDirection)}<input type="search" value="${esc(S.ui.q.coll)}" placeholder="Search name, set, binder…" data-input="collSearch" aria-label="Search collection"></div><div class="filter-pills"><select data-change="collFilter" aria-label="Filter">${options([["all", "Owned + wishlist"], ["owned", "Owned only"], ["wanted", "Wishlist"], ["meta", "★ Meta & staples"], ["spare", "Not in a deck"], ["review", "Printing to review"], ["foil", "Foils"], ["unpriced", "Unpriced"]], S.ui.collFilter)}</select></div></div>
   <div id="collList">${collectionList()}</div>`;
 }

@@ -4,7 +4,8 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 export const tourSeen=()=>{try{return localStorage.getItem(KEY)==='done';}catch{return true;}};
 export const shouldTour=({seen=tourSeen()}={})=>!seen;
 const markSeen=()=>{try{localStorage.setItem(KEY,'done');}catch{}};
-export const guideSeen=key=>{try{return JSON.parse(localStorage.getItem(GUIDE_KEY)||'[]').includes(key);}catch{return true;}};
+// Closing any one guide ('*') closes them all; Help can still replay each lesson.
+export const guideSeen=key=>{try{const seen=JSON.parse(localStorage.getItem(GUIDE_KEY)||'[]');return seen.includes(key)||seen.includes('*');}catch{return true;}};
 export function markGuide(key){try{const seen=JSON.parse(localStorage.getItem(GUIDE_KEY)||'[]');localStorage.setItem(GUIDE_KEY,JSON.stringify([...new Set([...seen,key])].slice(-30)));}catch{}}
 export function resetOnboarding(){try{localStorage.removeItem(KEY);localStorage.removeItem(GUIDE_KEY);}catch{}}
 // The welcome: short recordings of the real app (scripts/record-tour.mjs), not imitation screens.

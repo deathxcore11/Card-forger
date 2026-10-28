@@ -15,7 +15,7 @@ test('menu preserves supplied shared renderers and keeps match creation unavaila
   const preview='<section class="deck-viewer" data-deck-view="stacks">Shared card rows</section>';
   const html=playMenuMarkup(state,{avatarMarkup:'<span class="profile-avatar">Shared avatar</span>',deckTiles:new Map([['one',tile]]),deckPreview:preview});
   assert(html.includes(tile));assert(html.includes(preview));assert.match(html,/A Player/);assert.match(html,/@player/);
-  assert.match(html,/<button class="btn"[^>]*disabled[^>]*>Play CPU<\/button>/);assert.doesNotMatch(html,/private-account-id|data-act="(?:startMatch|playCpu)"/);
+  assert.match(html,/<button class="btn cs-plate"[^>]*disabled[^>]*><span class="cs-plate-label">Play vs CPU<\/span><\/button>/);assert.doesNotMatch(html,/private-account-id|data-act="(?:startMatch|playCpu)"/);
 });
 test('profile, deck names and pasted text cannot inject markup',()=>{
   const s=base();s.profile.displayName='<img src=x onerror=alert(1)>';s.profile.username='evil" onfocus="x';
@@ -63,7 +63,7 @@ test('selected import is displayed once and exposes a focus destination',()=>{
 test('desktop setup has one persistent inspector and only Standard/Commander formats',()=>{
  const html=playMenuMarkup(base());assert.match(html,/class="play-workspace"/);assert.match(html,/<aside class="panel play-inspector"/);
  assert.match(html,/data-play-value="Standard"/);assert.match(html,/data-play-value="Commander"/);assert.doesNotMatch(html,/data-play-value="(?:Modern|Draft)"/);
- assert.match(html,/data-play-style="quick"/);assert.match(html,/data-play-style="practice"/);assert.match(html,/data-play-style="social"/);assert.match(html,/<option value="Easy">Easy<\/option>/);assert.match(html,/<option value="Medium" selected>Medium<\/option>/);assert.match(html,/<option value="Hard">Hard<\/option>/);
+ assert.match(html,/data-play-style="quick"/);assert.match(html,/data-play-style="practice"/);assert.doesNotMatch(html,/data-play-style="social"|Coming later/);assert.match(html,/<option value="Easy">Easy<\/option>/);assert.match(html,/<option value="Medium" selected>Medium<\/option>/);assert.match(html,/<option value="Hard">Hard<\/option>/);
 });
 test('shelf filters exact format and search without deleting the selected deck preview',()=>{
  const s=base();s.decks=[{id:'a',name:'Alpha',format:'Standard'},{id:'b',name:'Beta',format:'Commander'},{id:'c',name:'Gamma',format:'Standard'}];s.browse.query='alpha';
@@ -71,7 +71,7 @@ test('shelf filters exact format and search without deleting the selected deck p
  assert.match(html,/data-play-deck="a"/);assert.doesNotMatch(html,/data-play-deck="[bc]"/);assert.match(html,/Selected rows/);assert.match(html,/1 of 2 Standard decks/);
 });
 test('friends preference exposes no invented connection and does not advertise a CPU difficulty',()=>{
- const s=base();s.match.mode='friends';const html=playMenuMarkup(s);assert.match(html,/disabled[^>]*>Play with friends<\/button>/);assert.doesNotMatch(html,/id="playDifficulty"|data-act="(?:createRoom|joinRoom)"/);
+ const s=base();s.match.mode='friends';const html=playMenuMarkup(s);assert.match(html,/disabled[^>]*><span class=\"cs-plate-label\">Play with friends<\/span><\/button>/);assert.doesNotMatch(html,/id="playDifficulty"|data-act="(?:createRoom|joinRoom)"/);
 });
 
 
