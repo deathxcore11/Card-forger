@@ -1441,3 +1441,5 @@
 :where(body.practice-table-open) .forge-native-panel .forge-stop{width:26px;height:26px;min-height:0;padding:0;justify-self:center;border-radius:50%;border:1.5px dashed #ffffff40;background:none;color:#f4d78f;font-size:12px;line-height:1}
 :where(body.practice-table-open) .forge-native-panel .forge-stop[data-state=once]{border-style:solid;border-color:#e8b95b}
 :where(body.practice-table-open) .forge-native-panel .forge-stop[data-state=pinned]{border:0;background:linear-gradient(180deg,#f6dc9a,#d9a64a)}
+/* Arena frustrations: "Pick lands" beside Play casts with auto-pay off for this one spell. */
+:where(body.practice-table-open) .forge-peek .forge-peek-play.forge-peek-manual{background:#0f1117e6;color:#f4d78f;border:1px solid #e8b95b88;margin-top:6px}

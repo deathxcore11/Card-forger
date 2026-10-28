@@ -453,6 +453,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   }
   updateActivity();
   if(drag?.active)markDrops();
+  restoreAutoPay(s);
   if(!blocked){autoPassOwnStack(s);autoPassIdle(s);}
  }
  // Engine and transport codes in plain words; a refusal Forge explains stays as Forge said it.
@@ -614,10 +615,24 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const n=session.snapshot().native;if(!peekPinned||pressAt||!presentation.hosted||el.dataset.forgeHint!=='true'||n?.inputType!=='InputPassPriority'||n?.prompt)return;
   const b=doc.createElement('button');b.type='button';b.className='forge-peek-play';b.dataset.peekPlay='true';b.textContent=el.closest('.play-match-hand')?'Play':'Use';
   (peek.querySelector('.forge-peek-info')||peek).append(b);
+  // Never trust the auto-tapper: cast this one with auto-pay off, tap the lands you want, then
+  // Forge's own Auto pays whatever is left. Auto-pay comes back once the payment is over.
+  const cost=session.snapshot().status?.surface.cards.find(c=>c.id===Number(el.dataset.instance))?.manaCost||'';
+  if(el.closest('.play-match-hand')&&n.autoPay===true&&typeof session.setAutoPay==='function'&&/\{(?!0\})[^}]+\}/.test(cost)){const m=doc.createElement('button');m.type='button';m.className='forge-peek-play forge-peek-manual';m.dataset.peekPlay='manual';m.textContent='Pick lands';m.title='Cast it and choose which lands pay';b.after(m);}
+ }
+ // The one spell cast with "Pick lands": once its payment has come and gone, auto-pay is restored.
+ let manualPay=null;
+ function restoreAutoPay(s){
+  const n=s?.native;if(!manualPay||!n)return;
+  if(String(n.inputType||'').startsWith('InputPayMana')){manualPay.seen=true;return;}
+  if(!manualPay.seen&&Date.now()-manualPay.at<4000||s.busy||n.prompt||n.inputType==='InputLockUI'||n.autoPay!==false)return;
+  manualPay=null;act(()=>session.setAutoPay(true));
  }
  // Tapping the open card closes it; its Play button plays it.
  peek.addEventListener('click',e=>{if(!e.target.closest?.('[data-peek-play]')){hidePeek();return;}e.preventDefault();e.stopPropagation();const card=peekFor,s=session.snapshot();
-  if(!card||card.dataset.forgeHint!=='true'||s.busy){hidePeek();return;}const id=Number(card.dataset.instance);hidePeek();act(()=>session.nativeSelect('card',id));});
+  if(!card||card.dataset.forgeHint!=='true'||s.busy){hidePeek();return;}const id=Number(card.dataset.instance),manual=e.target.closest('[data-peek-play]').dataset.peekPlay==='manual';hidePeek();
+  if(!manual){act(()=>session.nativeSelect('card',id));return;}
+  act(async()=>{await session.setAutoPay(false);manualPay={seen:false,at:Date.now()};await session.nativeSelect('card',id);});});
  const peekCard=e=>{const card=e.target.closest?.('.play-match-card[data-instance]');return card&&root.contains(card)&&!card.closest('.forge-drag-ghost')?card:null;};
  const over=e=>{if(e.pointerType==='touch'||peekPinned)return;const card=peekCard(e);if(!card)return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>showPeek(card),peekFor?40:240);};
  const out=e=>{if(e.pointerType==='touch'||peekPinned)return;const card=peekCard(e);if(!card||card.contains(e.relatedTarget))return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>{if(!peekPinned)hidePeek();},90);};
