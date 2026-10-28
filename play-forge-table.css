@@ -1468,3 +1468,5 @@ body.practice-table-open:has(#practicePlayerMat.play-match-table[data-forge-nati
 /* Tapped piles: the turned cards are narrower than their slot, so they stack closer and the count sits on the pile itself. */
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-wrap[data-pile-index]:not([data-pile-index="0"]):has(>.play-match-card[data-tapped=true]){margin-left:calc(var(--play-piece)*-.86)!important}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-wrap:has(>.play-match-card[data-tapped=true])>.play-match-pile-count{left:50%;right:auto;top:-14px;translate:-50% 0}
+/* Your name and your life total each keep their own space: a long name ends in an ellipsis before the life number (the full name stays in the text for screen readers). */
+:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-seat .play-match-player>strong{max-width:calc(100% - 56px)}
