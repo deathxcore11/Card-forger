@@ -1617,7 +1617,7 @@ function playDeckPreview(deck) {
 // that, and never while a match is open.
 let forgeWarmAt=0;
 function warmForgeEngine(state,{afterMatch=false}={}){
- if(!FORGE_PLAY_TEST_ENABLED||!PLAY_MATCH_RELEASE_READY||state.match.mode!=='cpu'||!state.profile?.signedIn||!afterMatch&&(playerMatHost||playStarting||Date.now()-forgeWarmAt<150000))return;
+ if(!FORGE_PLAY_TEST_ENABLED||!PLAY_MATCH_RELEASE_READY||state.match.mode!=='cpu'||!state.profile?.signedIn||playStarting||!afterMatch&&(playerMatHost||Date.now()-forgeWarmAt<150000))return;
  forgeWarmAt=Date.now();
  void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});
 }
