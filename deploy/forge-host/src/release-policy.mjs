@@ -12,7 +12,7 @@ export const EXPECTED_RULES = Object.freeze({
   version: 'rules-20261028-scryfall20261027-native-e5a0f815',
   manifestSha256: '374282d37829bf78913508db7d2e7f85e3c85e2c9bf282e4c72e196fec8621c1',
   indexSha256: '26baf849dfbb177b2ea6ce807ce518006f5b634599c45a8c55483302eb5ad1fe',
-  sourceSha256: '6b60448af57f8d8ae01c16f5896749fd61153e2c25df89cdc40866c18c077c3c',
+  sourceSha256: '2f8afacba1b8f5375723cdeec3bc00adb3c6b97d038acc6406fa774129d7cf0a',
   sourceUpdatedAt: '2026-10-27T21:02:43.600+00:00', asOfDate: '2026-10-28', validUntilExclusive: '2026-11-04',
 });
 const sha = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value) && !/^0+$/.test(value);

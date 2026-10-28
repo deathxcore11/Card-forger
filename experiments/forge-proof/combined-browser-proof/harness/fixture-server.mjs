@@ -20,7 +20,7 @@ const BEARER = 'forge-browser-fixture-owner'; // synthetic test credential ONLY
 const observations = new FixtureObservationCache({ bearer: BEARER });
 const actionReceipts = new FixtureReceiptCache({ bearer: BEARER, viewerObservations: observations });
 const SOURCE_SHA='eb7dc914eaaa85636b133477c052de0c5bd30a6f4789fad190955e5f105c8969';
-const HOST_MANIFEST_SHA='5e35f73226af412901acb63896c9d5b1d71870b17f27a08df9267bfabf2b9342';
+const HOST_MANIFEST_SHA='6a13cf21cba7147d42e0975449547eb5ea5560922a6ad666fb75c522555d561e';
 const args = {};
 for (let i = 2; i < process.argv.length; i += 2) {
   if (!/^--[a-z-]+$/.test(process.argv[i]) || !process.argv[i + 1]) throw Error('named fixture arguments required');

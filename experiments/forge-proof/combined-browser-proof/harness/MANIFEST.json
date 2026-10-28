@@ -111,7 +111,7 @@
     {
       "path": "composition-contract.json",
       "bytes": 5606,
-      "sha256": "476ce552b20c1d889e5f4c6c1ba4841ba411cc024a2ffcae9c6392b8c1703be2"
+      "sha256": "2968f6cd0a44f66beca5d1613626bd2d6804261afeb3467b6311a47f80d0acdb"
     },
     {
       "path": "evidence/ci-40318684639/artifact/image-summary.json",
@@ -371,7 +371,7 @@
     {
       "path": "fixture-server.mjs",
       "bytes": 12720,
-      "sha256": "9188101b566e3451c621638be345eb62e9675995abdf3857f8d9afc0c827510d"
+      "sha256": "95c4df47b9d4c8aa9dd0ea52fc50672a9f8448237875859b2c2a89aea9f891f1"
     },
     {
       "path": "fixture-storage.mjs",
@@ -421,7 +421,7 @@
     {
       "path": "image-stages/MANIFEST.json",
       "bytes": 5201,
-      "sha256": "265fd3481ac89ebb64fa067248e1b514bda97d7dc65d1cce6776da409c8ea476"
+      "sha256": "829b8a001056f2731748ae8e588054a1c4e012fe8d4208f49abb0df038deb197"
     },
     {
       "path": "image-stages/README.md",
@@ -431,7 +431,7 @@
     {
       "path": "image-stages/SHA256SUMS",
       "bytes": 1550,
-      "sha256": "83d7e03b0f0acfbb2704461d9abd427d560f963e9f25da1beca6b7040d3f6a7b"
+      "sha256": "71a3deb355ee019ad2a20c776e9847e37724e7bae6741cb9662165f159d7d222"
     },
     {
       "path": "image-stages/build-and-probe.mjs",
@@ -471,7 +471,7 @@
     {
       "path": "image-stages/pins.mjs",
       "bytes": 1210,
-      "sha256": "16e57fa835e06a5ae5585e5a452aa5b92b8a1c0c2628e27349fda7c4f9b02375"
+      "sha256": "92d62239c28684a999822512da061e0ef3f20449811b1caef5233036455793c2"
     },
     {
       "path": "image-stages/probe-image.mjs",
@@ -521,7 +521,7 @@
     {
       "path": "local-oci/MANIFEST.json",
       "bytes": 2491,
-      "sha256": "a4ac92d58c091a2e982daf351bf7c98acac85f13c91ca460b2457da87fedb0e8"
+      "sha256": "abd3ae82540f19163621cd56a24efdbfce84c7a79810438757d1a0e60f098d54"
     },
     {
       "path": "local-oci/README.md",
@@ -566,7 +566,7 @@
     {
       "path": "local-oci/reviewed-host.mjs",
       "bytes": 2132,
-      "sha256": "c163c7d14b4fb1df37e93d31612dc47ad5bd5bb6a32b04bc8f9c709cc474355d"
+      "sha256": "c2589abec074eece81534ca8eef1cb4206b1995c60fd23ec3311ecd3803c5832"
     },
     {
       "path": "local-oci/schema.json",
@@ -581,7 +581,7 @@
     {
       "path": "local-oci/test-local-oci.mjs",
       "bytes": 13448,
-      "sha256": "19fa41e1aa0644ed0aa1e5121e5585b176a4ce260b577fe088c8e2c6888c2f3e"
+      "sha256": "1541a343c369ffcf68ed506cf1d1a22f268741de963b67b5aa1f6f28f7aad814"
     },
     {
       "path": "local-oci/test-provider.mjs",

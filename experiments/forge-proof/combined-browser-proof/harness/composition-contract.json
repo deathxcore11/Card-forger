@@ -23,7 +23,7 @@
     },
     "hostManifest": {
       "path": "${CANDIDATE}/HOST-SHA256.json",
-      "sha256": "5e35f73226af412901acb63896c9d5b1d71870b17f27a08df9267bfabf2b9342"
+      "sha256": "6a13cf21cba7147d42e0975449547eb5ea5560922a6ad666fb75c522555d561e"
     },
     "hostContextManifest": {
       "path": "${CANDIDATE}/build-context/CONTEXT-SHA256.json",
@@ -35,7 +35,7 @@
     },
     "productionReleasePolicy": {
       "path": "${CANDIDATE}/host/src/release-policy.mjs",
-      "sha256": "8daf001be42e20a906643ce11929bca425f7feb1222eeabb9e92cfed1f09e5af"
+      "sha256": "5d97d7a61ddf703a274f08635c21a13775c62204799fe75c8092897855a965bd"
     },
     "frontendSession": {
       "path": "${CANDIDATE}/ui/experiments/forge-proof/forge-session.mjs",
@@ -59,7 +59,7 @@
     },
     "fixtureServer": {
       "path": "${PACKAGE}/fixture-server.mjs",
-      "sha256": "9188101b566e3451c621638be345eb62e9675995abdf3857f8d9afc0c827510d"
+      "sha256": "95c4df47b9d4c8aa9dd0ea52fc50672a9f8448237875859b2c2a89aea9f891f1"
     },
     "browserDriver": {
       "path": "${PACKAGE}/browser-journey.mjs",
@@ -87,11 +87,11 @@
     },
     "localOCIManifest": {
       "path": "${PACKAGE}/local-oci/MANIFEST.json",
-      "sha256": "a4ac92d58c091a2e982daf351bf7c98acac85f13c91ca460b2457da87fedb0e8"
+      "sha256": "abd3ae82540f19163621cd56a24efdbfce84c7a79810438757d1a0e60f098d54"
     },
     "imageStagesManifest": {
       "path": "${PACKAGE}/image-stages/MANIFEST.json",
-      "sha256": "265fd3481ac89ebb64fa067248e1b514bda97d7dc65d1cce6776da409c8ea476"
+      "sha256": "829b8a001056f2731748ae8e588054a1c4e012fe8d4208f49abb0df038deb197"
     },
     "runtimeUISubset": {
       "path": "${CANDIDATE}/UI-RUNTIME-SHA256.json",
