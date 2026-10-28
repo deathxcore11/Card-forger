@@ -136,7 +136,7 @@ export function createForgeSession({baseUrl,token,fetchImpl=globalThis.fetch,pol
 // supplies same-origin account requests, never a remote bridge URL or token.
 export function createForgePresentationSession({request,pollMs=350,lookupArtwork=()=>null,onClose=()=>{},allowControlMode=false,transportStatus=()=>({blocked:false,error:null})}={}){
  if(typeof request!=='function')throw Error('FORGE_TRANSPORT_REQUIRED');
- let native=null,status=null,selected=null,draft=null,error=null,actionError=null,sending=false,awaitRevision=null,closed=false,timer=null,refreshing=null,boundViewer=null,lastAcceptedRevision=-1;
+ let native=null,status=null,selected=null,draft=null,error=null,actionError=null,sending=false,awaitRevision=null,awaitSince=0,closed=false,timer=null,refreshing=null,boundViewer=null,lastAcceptedRevision=-1;
  const listeners=new Set();
  const effectiveDraft=()=>draft||(native?.prompt?.method==='order'&&native.prompt.ordered===true?{revision:native.revision,promptId:native.prompt.id,indexes:[...list(native.prompt.destinationIndexes)],remember:false}:null);
  const snapshot=()=>({status,selected,pending:null,busy:sending||awaitRevision!==null||!!native?.busy||transportStatus().blocked===true,error:status?.failure?'NATIVE_PROJECTION_UNAVAILABLE':!status&&error?'FORGE_PROJECTION_UNAVAILABLE':null,clock:null,native,nativeDraft:effectiveDraft(),transportError:transportStatus().error||actionError||error});
@@ -146,6 +146,9 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
  const transportKey=()=>{const t=transportStatus();return (t.blocked===true)+'|'+(t.error||'');};
  const emit=()=>{shownTransport=transportKey();for(const fn of listeners)fn(snapshot());};
  const clearPrivateState=()=>{native=null;status=null;selected=null;draft=null;awaitRevision=null;};
+ // Safety net: if Forge settled on an idle step without a newer revision, stop waiting after a few
+ // seconds so the prompt (and its Cancel) shows instead of "Forge is applying your play".
+ const AWAIT_STALE_MS=4000;
  const acceptState=next=>{
   if(closed)return false;
   if(boundViewer!==null&&next?.viewer!==boundViewer){clearPrivateState();error='Forge viewer identity changed.';emit();throw Error(error);}
@@ -167,7 +170,7 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
 
  const refresh=()=>{
   if(closed)return Promise.resolve();if(refreshing)return refreshing;
-  refreshing=request('/state').then(next=>{if(closed)return;error=null;if(next!==null)acceptState(next);if(transportKey()!==shownTransport){if(shownTransport.startsWith('true|')&&transportStatus().blocked!==true)actionError=null;emit();}}).catch(e=>{if([401,410].includes(e.status)||e.code==='ACCOUNT_CHANGED'||e.code?.includes('MISMATCH')||e.code==='INVALID_NATIVE_TERMINAL_RECEIPT')clearPrivateState();error=e.message;emit();throw e;}).finally(()=>{refreshing=null;});return refreshing;
+  refreshing=request('/state').then(next=>{if(closed)return;error=null;if(next!==null&&!acceptState(next)&&awaitRevision!==null&&Date.now()-awaitSince>AWAIT_STALE_MS&&next.busy!==true){awaitRevision=null;emit();}if(transportKey()!==shownTransport){if(shownTransport.startsWith('true|')&&transportStatus().blocked!==true)actionError=null;emit();}}).catch(e=>{if([401,410].includes(e.status)||e.code==='ACCOUNT_CHANGED'||e.code?.includes('MISMATCH')||e.code==='INVALID_NATIVE_TERMINAL_RECEIPT')clearPrivateState();error=e.message;emit();throw e;}).finally(()=>{refreshing=null;});return refreshing;
  };
  async function send(op,payload={},expectedRevision=native?.revision){
   if(closed||!status||snapshot().busy||native.failure||status.failure||status.terminal)throw Error('MATCH_NOT_READY');
@@ -179,7 +182,7 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
    // A concurrent poll may already have observed this action's advancement
    // before its receipt arrived. Do not wait again for an already accepted
    // revision: repeated snapshots are deliberately ignored by acceptState.
-   awaitRevision=lastAcceptedRevision>expectedRevision?null:expectedRevision;draft=null;
+   awaitRevision=lastAcceptedRevision>expectedRevision?null:expectedRevision;awaitSince=Date.now();draft=null;
    await refresh();
   }catch(e){draft=null;awaitRevision=null;actionError=e.message;emit();try{await refresh();}catch{}actionError=e.message;}
   finally{sending=false;emit();}
