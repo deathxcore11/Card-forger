@@ -577,7 +577,7 @@ body{margin:0}
  .battle,.map{height:calc(100dvh - 52px)}
 }
 @media (orientation:landscape) and (max-height:520px){
- .map>.plane:first-child{margin-left:6px}
+ .map>.plane:first-of-type{margin-left:6px}
  details.deck summary{display:inline-flex;align-items:center}
 }
 /* phone portrait battle: compact like landscape so the hand stays on screen */
@@ -709,7 +709,7 @@ body{margin:0}
 .emb[aria-label="Sorin's Signet"] circle,.emb[aria-label="Eldrazi Monument"] circle,.emb[aria-label="Ob Nixilis's Contract"] circle{stroke:#e0566a}
 .emb[aria-label="Sorin's Signet"] text,.emb[aria-label="Eldrazi Monument"] text,.emb[aria-label="Ob Nixilis's Contract"] text{fill:#e0566a}
 @media (orientation:landscape) and (max-height:520px){
- .map>.plane:first-child{margin-left:18px}
+ .map>.plane:first-of-type{margin-left:18px}
  .node.boss{max-width:84px;text-align:center;line-height:1.1}
  .bosspick .option{max-width:190px}
  .bosspick .option .emb{width:38px;height:38px}
@@ -975,6 +975,61 @@ body{margin:0}
 .card[data-n="Mirror Shield"]{background:linear-gradient(160deg,#5a5f66,#15171a 40%,#3a3e44)!important}
 .card[data-n="Mirror Shield"] .head{background:linear-gradient(180deg,#6a7078,#2a2d31)!important}
 .card[data-n="Mirror Shield"] .cost{background:#cfd4da!important}
+
+
+/* ===== Map v2: quieter, cleaner, uses the whole screen =====
+   Fights and rests are small quiet stones; special stops (Legendary, Shop, Treasure, Event, Bargain) are larger and labelled.
+   Only reachable nodes and special stops carry a label. The rows spread to fill the space with a gentle stagger. */
+.map .node{font-size:0;gap:3px}
+.map .node::before{width:var(--ns,38px);height:var(--ns,38px)}
+.map .node b{top:calc(var(--ns,38px)/2 - var(--is,18px)/2);width:var(--is,18px);height:var(--is,18px);margin-left:calc(var(--is,18px)/-2)}
+.map .node[data-t=fight],.map .node[data-t=rest]{--ns:32px;--is:15px}
+.map .node[data-t=event],.map .node[data-t=treasure]{--ns:38px;--is:18px}
+.map .node[data-t=elite],.map .node[data-t=shop],.map .node[data-t=bargain]{--ns:44px;--is:22px}
+.map .node[data-t=elite]::before{box-shadow:0 0 0 2px #0b0d12,0 0 0 3px #e8b95bcc,0 0 14px #e8b95b44,0 6px 14px #000c}
+.map .node[data-t=bargain]::before{box-shadow:0 0 0 2px #0b0d12,0 0 0 3px #e0566acc,0 0 14px #e0566a44,0 6px 14px #000c}
+.map .node:is([data-t=elite],[data-t=shop],[data-t=treasure],[data-t=bargain],[data-t=event]),.map .node.open{font:700 .54rem/1.1 var(--body);letter-spacing:.03em}
+.map .node.open{--ns:44px;--is:21px}
+.map .node.open::before{transform:none}
+.map .node.past{opacity:.28;filter:none}
+.map .node.past::before{box-shadow:0 0 0 1px #0b0d12,0 0 0 2px #d6ad6430}
+.map .node.done::before{box-shadow:0 0 0 2px #0b0d12,0 0 0 3px var(--pw-gold),0 0 12px #e8b95b55}
+/* gentle stagger so the path reads like a road, not a spreadsheet */
+.map .maprow:nth-of-type(odd) .node[data-l="0"]{translate:0 5px}.map .maprow:nth-of-type(even) .node[data-l="2"]{translate:0 -5px}
+.map .maprow:nth-of-type(3n) .node[data-l="1"]{translate:0 4px}
+.pw-paths line{stroke:#d6ad6442;stroke-width:1.4;stroke-dasharray:none}
+.pw-paths line.walked{stroke-width:2.2}
+.pw-paths line.ahead{stroke:#f2d496cc;stroke-width:1.6;stroke-dasharray:4 4}
+
+@media (orientation:landscape) and (max-height:520px){
+ .map{align-items:stretch;justify-content:space-between;padding:22px 26px 14px;gap:0}
+ .map>.maprow{display:grid;grid-auto-rows:1fr;align-items:center;justify-items:center;gap:0;width:auto;flex:1 1 0}
+ .map>.maprow:has(.boss){flex:0 0 auto;align-content:center;padding-left:8px}
+ .map .node.boss::before{width:70px;height:70px}
+ .map .node.boss{font-size:.66rem}
+ .map>.plane:first-of-type{align-self:center}
+ .map .maprow:nth-of-type(odd) .node[data-l="0"]{translate:4px 0}.map .maprow:nth-of-type(even) .node[data-l="2"]{translate:-4px 0}
+ .map .maprow:nth-of-type(3n) .node[data-l="1"]{translate:0 6px}
+}
+@media (max-width:620px) and (orientation:portrait){
+ .map{display:flex;flex-direction:column;justify-content:space-between;align-items:stretch;padding:10px 10px 8px;gap:0}
+ .map>.maprow{display:grid;grid-template-columns:repeat(3,1fr);justify-items:center;align-items:center;flex:1 1 0;width:100%;gap:0}
+ .map>.maprow:has(.boss){grid-template-columns:1fr;flex:0 0 auto;margin:4px 0}
+ .map .node:not(.boss)::before{width:var(--ns,38px)!important;height:var(--ns,38px)!important}
+ .map .node:not(.boss) b{top:calc(var(--ns,38px)/2 - var(--is,18px)/2)!important;width:var(--is,18px)!important;height:var(--is,18px)!important;margin-left:calc(var(--is,18px)/-2)!important}
+ .map .node.boss::before{width:76px;height:76px}
+ .map>.plane{text-align:center}
+}
+.map .node.boss .heal{display:block;margin-top:2px;padding:0 7px;border-radius:99px;font:800 .5rem/1.6 var(--body);letter-spacing:.04em;color:#9fe3b0;background:#0d1a10e6;border:1px solid #6fcf8a88;white-space:nowrap}
+@media (max-width:620px) and (orientation:portrait){.map{height:calc(100dvh - 70px);min-height:0}}
+.map .node.boss{grid-column:1/-1;justify-self:center}
+@media (max-width:620px) and (orientation:portrait){
+ .map .node[data-t=elite],.map .node[data-t=shop],.map .node[data-t=bargain],.map .node.open{--ns:40px;--is:20px}
+ .map .node[data-t=event],.map .node[data-t=treasure]{--ns:34px;--is:16px}
+ .map .node{font-size:0!important}
+ .map .node.open,.map .node:is([data-t=elite],[data-t=shop],[data-t=bargain]):not(.past){font:700 .5rem/1 var(--body)!important}
+}
+.map .node{min-width:44px;min-height:44px;justify-content:flex-start}.map .node.boss{gap:6px}
 
 
 /* ---------- art (Scryfall art crops, artists credited in the note below the game) ---------- */
@@ -1732,8 +1787,13 @@ if(!resumeRun())newRun();
  }
  const zoomOpen=()=>document.querySelector('.pw-zoom');
  function closeZoom(fromPop){const o=zoomOpen();if(!o)return false;o.remove();if(!fromPop&&history.state?.pwZoom){skipPop=true;history.back()}return true}
+ const NODE={fight:'Minions: a normal fight. Win a card reward.',elite:'Legendary: a dangerous fight. Better rewards, including emblems.',rest:'Rest: heal, foil a card, or burn one.',event:'Event: a stranger offer. Read carefully.',treasure:'Treasure: a free emblem.',shop:'Shop: buy cards and emblems, or pay to remove a card.',bargain:'Bargain: power for a price.',boss:'The act boss. Beat them to heal to full and move on.'};
  function zoom(el){
   closeZoom();
+  if(el.matches('.node')){const box=document.createElement('div');box.className='pw-zoom has-info';box.setAttribute('role','dialog');
+   const name=[...el.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim()||el.dataset.t;box.append(panel(`<b>${esc(name)}</b><p>${esc(NODE[el.dataset.t]||'')}</p>`));
+   const hint=document.createElement('p');hint.className='pw-zoom-hint';hint.textContent='Tap anywhere to close';box.append(hint);
+   box.addEventListener('click',()=>closeZoom());document.body.append(box);history.pushState({pwZoom:1},'');buzz(10);return}
   const box=document.createElement('div');box.className='pw-zoom';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
   const copy=document.createElement('div');copy.className=el.className.replace(/\b(struck|acting|aim|chosen|ready)\b/g,'');
   for(const a of ['data-n','data-rar'])if(el.hasAttribute(a))copy.setAttribute(a,el.getAttribute(a));
@@ -1744,12 +1804,12 @@ if(!resumeRun())newRun();
   document.body.append(box);history.pushState({pwZoom:1},'');buzz(10);
  }
 
- app.addEventListener('pointerdown',e=>{const el=e.target.closest('.card,.unit');fired=false;clearTimeout(timer);if(!el||e.button>0)return;
+ app.addEventListener('pointerdown',e=>{const el=e.target.closest('.card,.unit,.map .node');fired=false;clearTimeout(timer);if(!el||e.button>0)return;
   sx=e.clientX;sy=e.clientY;timer=setTimeout(()=>{fired=true;zoom(el)},LP)},{passive:true});
  app.addEventListener('pointermove',e=>{if(Math.hypot(e.clientX-sx,e.clientY-sy)>10)clearTimeout(timer)},{passive:true});
  for(const k of ['pointerup','pointercancel'])app.addEventListener(k,()=>clearTimeout(timer),{passive:true});
  app.addEventListener('click',e=>{if(fired){fired=false;e.stopPropagation();e.preventDefault()}},true);
- app.addEventListener('contextmenu',e=>{const el=e.target.closest('.card,.unit');if(!el)return;e.preventDefault();if(!fired)zoom(el)});
+ app.addEventListener('contextmenu',e=>{const el=e.target.closest('.card,.unit,.map .node');if(!el)return;e.preventDefault();if(!fired)zoom(el)});
 
  // Android back button: Capacitor and the WebView both route it through history.
  history.replaceState({pwBase:1},'');history.pushState({pwGuard:1},'');
