@@ -34,6 +34,9 @@ export class ForgeMatchContainer extends DurableObject {
   // receives the default HTTP service, never the DO namespace or container port.
   begin(allocation, input, admission) { return this.service.begin(allocation, input, admission); }
   reconcile(allocation) { return this.service.reconcile(allocation); }
+  // A warm engine for the account's next match, and whether it can still be claimed.
+  prewarm(lease) { return this.service.prewarm(lease); }
+  warmStatus(lease) { return this.service.warmStatus(lease); }
   destructionProof(generation) { return this.service.destructionProof(generation); }
   // The same account's next start ends this match on its own destruction proof.
   endForNewStart(allocation) { return this.service.endForNewStart(allocation); }

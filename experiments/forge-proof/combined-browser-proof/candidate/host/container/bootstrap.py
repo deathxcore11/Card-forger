@@ -92,6 +92,14 @@ class BootstrapServer(http.server.HTTPServer):
         self.accepted = False
         self.deadline = time.monotonic() + BOOT_DEADLINE
         self.timeout = 0.5
+    def store(self, data):
+        # Native owns snapshot interpretation. Never split commanders, alter
+        # printings, or substitute defaults here. Exclusive write forbids reuse.
+        fd = os.open(self.input_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, 'wb') as output:
+            output.write(data)
+            output.flush()
+            os.fsync(output.fileno())
 
 class BootstrapHandler(http.server.BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.0'
@@ -133,13 +141,7 @@ class BootstrapHandler(http.server.BaseHTTPRequestHandler):
             if not isinstance(body, dict) or set(body) != {'input'} or not isinstance(body['input'], dict): return self.reply(400, {'error': 'input_object_required'})
             # The body is read first, so the refusal is not lost to a reset connection.
             if self.server.input_path is None: return self.reply(503, {'error': self.server.unavailable})
-            # Native owns snapshot interpretation. Never split commanders, alter
-            # printings, or substitute defaults here. Exclusive write forbids reuse.
-            fd = os.open(self.server.input_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o600)
-            with os.fdopen(fd, 'wb') as output:
-                output.write(data)
-                output.flush()
-                os.fsync(output.fileno())
+            self.server.store(data)
             self.server.accepted = True
             self.reply(204)
         except (TimeoutError, socket.timeout): self.reply(408, {'error': 'body_timeout'})
@@ -164,6 +166,15 @@ def main():
     # launcher still answers so the host can show why initialization was refused.
     root = private_root()
     unavailable = root if isinstance(root, str) else None
+    if os.environ.get('HOST_PREWARM') == '1':
+        # A warm engine: the gateway starts the JVM and card database now, reading the
+        # input from this private pipe, and takes the input itself on this same port.
+        if unavailable: raise SystemExit('BOOTSTRAP_EXIT ' + unavailable)
+        os.mkfifo(root / INPUT_NAME, 0o600)
+        os.environ['HOST_RUNTIME_ROOT'] = str(root)
+        os.environ['HOST_MATCH_INPUT_PATH'] = str(root / INPUT_NAME)
+        os.chdir(root)
+        os.execv(sys.executable, [sys.executable, GATEWAY])
     server = BootstrapServer(('0.0.0.0', 8080), token, None if unavailable else root / INPUT_NAME, unavailable)
     server.deadline = min(server.deadline, time.monotonic() + remaining)
     try:

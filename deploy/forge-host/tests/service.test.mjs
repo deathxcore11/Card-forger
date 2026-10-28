@@ -678,3 +678,69 @@ test('a replacement aborts an opening start\'s request in flight instead of wait
   await opening;
   assert.equal((await f.stores.get(first.body.matchId).get('allocation')).reason, 'replaced');
 });
+// A warm engine starts the container (bootstrap, JVM, card database) before the
+// decks are known; the next start claims that same container instead of a new one.
+function warmFixture() {
+  const f = authenticatedFixture();
+  f.native.prewarmOptions = async ({ allocation, internalToken }) => ({ enableInternet: false, env: { HOST_INTERNAL_TOKEN: internalToken, HOST_ABSOLUTE_DEADLINE_MS: String(allocation.expiresAt), HOST_PREWARM: '1' } });
+  f.warm = async (token = 'owner') => { const response = await f.route(request('/api/play/warm', { token, body: {} })); return { response, body: await response.json() }; };
+  return f;
+}
+test('a warm engine is claimed by the next start: one container, its IDs, a counted match', async () => {
+  const f = warmFixture();
+  const warmed = await f.warm();
+  assert.equal(warmed.response.status, 202); assert.equal(warmed.body.status, 'warming'); assert.equal(f.calls.start, 1);
+  const [lease] = await f.storage.get('leases');
+  assert.equal(lease.admissionState, 'warm'); assert.equal((await f.stores.get(lease.matchId).get('allocation')).status, 'warming');
+  assert.equal((await f.storage.get('play-runtime-budget')).entries[0].warm, true);
+  f.setTime(61000);
+  const { response, body } = await f.create();
+  assert.equal(response.status, 202); assert.equal(body.matchId, lease.matchId); assert.equal(body.generation, lease.generation);
+  assert.equal(f.calls.start, 1, 'the warm container is used, never a second start');
+  const record = await f.stores.get(lease.matchId).get('allocation');
+  assert.equal(record.status, 'running'); assert.equal(record.createdAt, 61000); assert.equal(record.expiresAt, lease.expiresAt);
+  const [claimed] = await f.storage.get('leases');
+  assert.equal(claimed.warmedAt, lease.createdAt); assert.equal(claimed.requestDigest, await digest(input()));
+  assert.equal((await f.storage.get('play-runtime-budget')).entries[0].warm, undefined);
+  assert.equal((await f.route(request('/api/play/matches/' + body.matchId, { method: 'GET' }))).status, 200);
+});
+test('an unclaimed warm engine is destroyed at its deadline and the next start is a fresh one', async () => {
+  const f = warmFixture();
+  await f.warm();
+  const [lease] = await f.storage.get('leases');
+  f.setTime(lease.warmUntil); await f.matches.get(lease.matchId).alarm();
+  assert.equal(f.containers.get(lease.matchId).running, false);
+  await f.admission.alarm(); assert.equal((await f.storage.get('leases')).length, 0);
+  const { response, body } = await f.create();
+  assert.equal(response.status, 202); assert.notEqual(body.matchId, lease.matchId); assert.equal(f.calls.start, 2);
+});
+test('a dead warm engine is not claimed; the start replaces it with a new match', async () => {
+  const f = warmFixture();
+  await f.warm();
+  const [lease] = await f.storage.get('leases');
+  f.containers.get(lease.matchId).running = false;
+  const { response, body } = await f.create();
+  assert.equal(response.status, 202); assert.notEqual(body.matchId, lease.matchId); assert.equal(f.calls.start, 2);
+  assert.deepEqual((await f.storage.get('leases')).map(l => l.matchId), [body.matchId]);
+});
+test('warming never touches a match the account already has, and is off in trial mode', async () => {
+  const f = warmFixture();
+  const { body } = await f.create();
+  const busy = await f.warm();
+  assert.equal(busy.response.status, 200); assert.equal(busy.body.status, 'busy'); assert.equal(f.calls.start, 1);
+  assert.equal((await f.stores.get(body.matchId).get('allocation')).status, 'running');
+  const trial = fixture();
+  trial.native.prewarmOptions = f.native.prewarmOptions;
+  assert.equal((await trial.route(request('/api/play/warm', { body: {} }))).status, 409);
+});
+test('an abandoned warm engine holds runtime but not one of the day\'s matches', async () => {
+  const f = warmFixture();
+  f.env.FORGE_PLAY_DAILY_RESERVATIONS = '1';
+  await f.warm();
+  const [lease] = await f.storage.get('leases');
+  f.setTime(lease.warmUntil); await f.matches.get(lease.matchId).alarm(); await f.admission.alarm();
+  const [entry] = (await f.storage.get('play-runtime-budget')).entries;
+  assert.equal(entry.warm, true); assert(entry.runtimeMs <= lease.warmUntil - lease.createdAt + 7000);
+  f.setTime(lease.warmUntil + 120000);
+  assert.equal((await f.create()).response.status, 202, 'the one daily match is still available');
+});
