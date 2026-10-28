@@ -3,6 +3,8 @@
 // its own fetched source evidence, and official game rules remain authoritative.
 import {MTG_CONCEPTS,resolveMtgConcept,searchMtgConcepts,readMtgConceptMentions,buildMtgWikiReference} from './mtg-wiki-knowledge.js';
 import {wikiSourceForGame,isAllowedWikiUrl} from './wiki-sources.js';
+import {PTCG_GLOSSARY,YGO_GLOSSARY,GLOSSARY_REVIEWED_ON} from './game-glossary-data.js';
+import {KEYWORD_REFERENCE,KEYWORD_SOURCE} from './mtg-keyword-reference.js';
 const copy=v=>structuredClone(v);
 const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v);}return v;};
 const key=v=>String(v||'').normalize('NFKC').replace(/[’]/g,"'").trim().toLowerCase().replace(/\s+/g,' ');
@@ -29,24 +31,28 @@ const LOCAL=freeze({
   make('ygo','archetype','Archetype','deck-concept',['archetypes'],'An archetype is a named group recognized by the relevant card-name or effect wording. It is distinct from sharing a monster Type or Attribute.',['Check exact names, name-changing effects and the wording of cards that support the group.','A community grouping or similar artwork alone is not enough to prove an archetype interaction.'],'Archetype')
  ]
 });
+// Built-in glossary rows join the older notes; an existing id keeps its note.
+// Their reading link is a wiki search, since exact article titles vary.
+const glossaryRecord=(game,[id,label,kind,aliases,summary,points])=>{const r=make(game,id,label,kind,aliases,summary,points,'Special:Search?search='+encodeURIComponent(game==='ptcg'?label+' (TCG)':label));r.source.reviewedOn=GLOSSARY_REVIEWED_ON;r.sourceStatus='glossary';return r;};
+const ALL=freeze(Object.fromEntries([['ptcg',PTCG_GLOSSARY],['ygo',YGO_GLOSSARY]].map(([game,rows])=>{const own=LOCAL[game].map(copy),ids=new Set(own.map(c=>c.id));return [game,[...own,...rows.filter(r=>!ids.has(r[0])).map(r=>glossaryRecord(game,r))]];})));
 function mtgRecord(c){return {...c,game:'mtg',source:{...c.source,pageVerified:true}};}
-export function gameConcepts(game){if(!wikiSourceForGame(game))return [];return game==='mtg'?MTG_CONCEPTS.map(c=>mtgRecord(copy(c))):copy(LOCAL[game]);}
+export function gameConcepts(game){if(!wikiSourceForGame(game))return [];return game==='mtg'?MTG_CONCEPTS.map(c=>mtgRecord(copy(c))):copy(ALL[game]);}
 export function resolveGameConcept(game,value){
  if(!wikiSourceForGame(game)||typeof value!=='string'||value.length>160)return null;
  if(game==='mtg'){const c=resolveMtgConcept(value);return c?mtgRecord(c):null;}
- const wanted=key(value),record=LOCAL[game].find(c=>[c.id,...c.aliases].some(a=>key(a)===wanted));return record?copy(record):null;
+ const wanted=key(value),record=ALL[game].find(c=>key(c.id)===wanted||key(c.label)===wanted)||ALL[game].find(c=>c.aliases.some(a=>key(a)===wanted));return record?copy(record):null;
 }
 export function searchGameConcepts(game,query='',{limit=8}={}){
  if(!wikiSourceForGame(game)||typeof query!=='string'||query.length>240)return [];
  if(game==='mtg')return searchMtgConcepts(query,{limit}).map(mtgRecord);
  const q=key(query),words=q.split(/[^\p{L}\p{N}+]+/u).filter(Boolean),count=Number.isInteger(limit)?Math.max(1,Math.min(limit,20)):8;
  const rank=c=>{const aliases=[c.id,...c.aliases].map(key),body=key([c.summary,...c.prerequisites].join(' '));return !q?1:aliases.includes(q)?100:aliases.some(a=>a.startsWith(q))?60:words.reduce((n,w)=>n+(aliases.some(a=>a.includes(w))?10:body.includes(w)?1:0),0);};
- return LOCAL[game].map(c=>({c,rank:rank(c)})).filter(r=>r.rank>0).sort((a,b)=>b.rank-a.rank||a.c.label.localeCompare(b.c.label)).slice(0,count).map(r=>copy(r.c));
+ return ALL[game].map(c=>({c,rank:rank(c)})).filter(r=>r.rank>0).sort((a,b)=>b.rank-a.rank||a.c.label.localeCompare(b.c.label)).slice(0,count).map(r=>copy(r.c));
 }
 export function gameConceptMentions(game,value=''){
  if(!wikiSourceForGame(game)||typeof value!=='string')return [];
  if(game==='mtg')return readMtgConceptMentions(value).map(mtgRecord);
- const text=value.slice(0,2000).replace(/[’]/g,"'").replace(/["“][^"”]*["”]/g,m=>' '.repeat(m.length)),all=LOCAL[game],aliases=[...new Set(all.flatMap(c=>[c.id,...c.aliases]))].sort((a,b)=>b.length-a.length),rx=new RegExp('\\b(?:'+aliases.map(escape).join('|')+')\\b','gi'),found=new Map();
+ const text=value.slice(0,2000).replace(/[’]/g,"'").replace(/["“][^"”]*["”]/g,m=>' '.repeat(m.length)),all=ALL[game],aliases=[...new Set(all.flatMap(c=>[c.id,...c.aliases]))].sort((a,b)=>b.length-a.length),rx=new RegExp('\\b(?:'+aliases.map(escape).join('|')+')\\b','gi'),found=new Map();
  for(const match of text.matchAll(rx)){
   const c=all.find(c=>[c.id,...c.aliases].some(a=>key(a)===key(match[0]))),prefix=text.slice(0,match.index).split(/[.!?;,]|\bbut\b/i).at(-1);if(!c)continue;
   if(/\b(?:no|not|without|avoid|remove|drop|stop|skip|don't|do not)\b(?:\s+[a-z'-]+){0,10}\s*$/i.test(prefix)){found.delete(c.id);continue;}found.set(c.id,c);
@@ -67,4 +73,21 @@ export function gameWikiTitleForCard(game,card={}){
  if(game!=='ptcg')return card.name.trim();
  const set=(typeof card.set==='object'?card.set?.name:'')||card.setName||'',number=card.number||card.collector_number||card.localId;
  return set&&number?`${card.name.trim()} (${set} ${number})`:`${card.name.trim()} (TCG)`;
+}
+// One glossary entry for the Wiki reader: Magic uses the bundled Comprehensive
+// Rules glossary first, then the curated notes; the other games use their notes.
+export function gameGlossaryEntry(game,value){
+ const source=wikiSourceForGame(game);if(!source||typeof value!=='string'||value.length>160)return null;
+ const search=label=>source.articlePrefix+'Special:Search?search='+encodeURIComponent(label);
+ if(game==='mtg'){
+  const rule=Object.hasOwn(KEYWORD_REFERENCE,key(value))?KEYWORD_REFERENCE[key(value)]:null;
+  if(rule)return {game,label:rule.label,definition:rule.definition,points:[],sourceLabel:'Magic Comprehensive Rules '+rule.entryId+' ('+KEYWORD_SOURCE.date+')',official:true,readMoreUrl:source.articlePrefix+encodeURIComponent(rule.label.replace(/ /g,'_'))};
+ }
+ const c=resolveGameConcept(game,value);if(!c)return null;
+ return {game,label:c.label,definition:c.summary,points:[...(c.prerequisites||[])],sourceLabel:'CardStashy glossary · official rules and the exact card text decide',official:false,readMoreUrl:isAllowedWikiUrl(game,c.source.url)?c.source.url:search(c.label)};
+}
+export function gameGlossaryTopics(game){
+ if(!wikiSourceForGame(game))return [];
+ const labels=game==='mtg'?[...MTG_CONCEPTS.filter(c=>!['background-topic','player-history'].includes(c.kind)).map(c=>c.label),...Object.values(KEYWORD_REFERENCE).map(r=>r.label)]:ALL[game].map(c=>c.label);
+ return [...new Map(labels.map(l=>[key(l),l])).values()].sort((a,b)=>a.localeCompare(b));
 }

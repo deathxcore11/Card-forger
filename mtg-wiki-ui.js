@@ -1,5 +1,5 @@
 import {esc} from './ui.js';
-import {buildGameWikiReference,resolveGameConcept,searchGameConcepts,gameConcepts} from './game-wiki-knowledge.js';
+import {buildGameWikiReference,resolveGameConcept,searchGameConcepts,gameConcepts,gameGlossaryEntry,gameGlossaryTopics} from './game-wiki-knowledge.js';
 import {WIKI_SOURCES,wikiSourceForGame} from './wiki-sources.js';
 import {readGameWikiReference,readGameWikiDaily,readGameWikiArticle} from './mtg-wiki-client.js';
 import {wikiArticleMarkup,bindWikiArticleImages} from './game-wiki-article.js';
@@ -113,13 +113,30 @@ const suggestionKey=row=>clean(row.title).toLowerCase();
 function suggestionContent(state){
  return `<div class="list compact" id="wikiSuggestionList" role="listbox" aria-label="Wiki topics">${(state.suggestions||[]).map((row,i)=>`<button type="button" class="mini-row" id="wiki-suggestion-${i}" role="option" aria-selected="${i===state.suggestionIndex}" data-wiki-suggestion="${i}"><b>${esc(row.title)}</b><span class="small muted">${row.kind==='wiki'?provider(state.game||'mtg').name:'CardStashy topic'}</span></button>`).join('')}</div>${state.suggestionStatus?`<p class="home-result-status small" role="status">${esc(state.suggestionStatus)}</p>`:''}`;
 }
+// The built-in glossary answers first and needs no network; the wiki article
+// is a "Read more" link, with an optional in-app load beneath the entry.
+function glossaryCard(entry,game){
+ return `<section class="panel wiki-glossary" data-wiki-glossary><p class="eyebrow">${entry.official?'Official rules':'Glossary'} · ${esc(gameName(game))}</p><h2>${esc(entry.label)}</h2><p>${esc(entry.definition)}</p>${entry.points.length?`<ul>${entry.points.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}<p class="foot">${esc(entry.sourceLabel)}</p></section>`;
+}
+function glossaryMore(entry,game,state){
+ const name=provider(game).name,more=link(entry.readMoreUrl,'Read more on '+name,'btn ghost small',game);
+ if(state.loading)return `<div class="actions wrap">${more}</div><p class="foot" role="status" aria-live="polite">Loading the full ${esc(name)} article…</p>`;
+ const failed=state.status!=='glossary'&&state.status!=='available';
+ return `<div class="actions wrap">${more}${state.status==='glossary'||failed?`<button type="button" class="btn ghost small" data-act="mtgWikiRetry">${failed?'Try the full article again':'Load the full article here'}</button>`:''}</div>${failed?`<p class="foot" role="status">${esc(name)} didn’t load in the app. The link above opens it in your browser.</p>`:''}`;
+}
+export function wikiGlossaryBrowser(game='mtg'){
+ const topics=gameGlossaryTopics(game);if(!topics.length)return '';
+ return `<details class="panel wiki-glossary-browse" data-wiki-glossary-browse><summary><b>Browse the glossary</b> <span class="small muted">${topics.length} terms</span></summary><div class="chips wrap">${topics.map(t=>`<button type="button" class="chip" data-act="mtgWikiPick" data-wiki-topic="${esc(t)}">${esc(t)}</button>`).join('')}</div></details>`;
+}
 export function mtgWikiPageContent(state={},at=Date.now()){
  const game=state.game||'mtg',sourceInfo=provider(game);
- if(state.view!=='article')return `<div data-wiki-page-content>${mtgWikiDailyMarkup(state.daily,at,game)}</div>`;
+ if(state.view!=='article')return `<div data-wiki-page-content>${mtgWikiDailyMarkup(state.daily,at,game)}${wikiGlossaryBrowser(game)}</div>`;
  const reference=readerReference(game,state.topic),article=state.response?.game===game||!state.response?.game?state.response:null;
  const renderedArticle=article?.status==='available'&&article.article?wikiArticleMarkup(article,{game}):'';
  const toolbar=`<div class="wiki-reader-toolbar"><button type="button" class="btn ghost small" data-act="mtgWikiHome" aria-label="Wiki home">← Wiki home</button><button type="button" class="btn ghost small" data-act="mtgWikiAsk">Ask about this</button></div>`;
  const content=state.loading?`<section class="wiki-reader-empty" role="status" aria-live="polite"><p class="eyebrow">${esc(sourceInfo.name)}</p><h2>${esc(state.topic)}</h2><p>Opening article…</p></section>`:renderedArticle||`<section class="wiki-reader-empty"><p class="eyebrow">${esc(sourceInfo.name)}</p><h2>${esc(state.topic)}</h2><p role="status">${state.status==='not-found'?'No article found. Try another name or choose a suggested topic.':'This article couldn’t load. Try again or read it at the source.'}</p><div class="actions wrap"><button type="button" class="btn ghost small" data-act="mtgWikiRetry">Try again</button>${reference?link(reference.url,'Read on '+sourceInfo.name+'','link',game):''}</div></section>`;
+ const entry=gameGlossaryEntry(game,state.topic);
+ if(entry)return `<div data-wiki-page-content data-wiki-view="article" aria-busy="${!!state.loading}">${toolbar}${glossaryCard(entry,game)}${glossaryMore(entry,game,state)}${renderedArticle}</div>`;
  return `<div data-wiki-page-content data-wiki-view="article" aria-busy="${!!state.loading}">${toolbar}${content}</div>`;
 }
 export function mtgWikiPageMarkup(state={}){
@@ -144,6 +161,7 @@ export function createMtgWikiPageController({active=()=>false,root,scope=()=>()=
  const lookup=async(title,{query=false,retry=false}={})=>{
   const topic=clean(title);if(!active()||!topic)return null;
   if(!readerTopic(title)){cancelArticle();closeSuggestions();Object.assign(state,{view:'article',topic:topic.slice(0,180),query:topic.slice(0,180),loading:false,status:'not-found',response:null});paintContent();return null;}
+  if(!retry&&gameGlossaryEntry(game,topic)){closeSuggestions();pauseDaily();cancelArticle();Object.assign(state,{view:'article',topic,query:topic,mode:query?'query':'title',loading:false,status:'glossary',response:null});const field=root?.()?.querySelector?.('#wikiQ');if(field)field.value=topic;paintContent();return null;}
   closeSuggestions();pauseDaily();cancelArticle();const revision=++articleRevision,abort=new AbortController(),valid=scope(),cacheKey=game+':article:'+(query?'query:':'title:')+topic.toLocaleLowerCase(),cached=responses.get(cacheKey);articleAbort=abort;
   Object.assign(state,{view:'article',topic,query:topic,mode:query?'query':'title',loading:true,status:'loading',response:null});const field=root?.()?.querySelector?.('#wikiQ');if(field)field.value=topic;paintContent();
   const live=()=>active()&&revision===articleRevision&&!abort.signal.aborted&&valid?.()!==false;
