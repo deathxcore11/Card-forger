@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-kicker-phone-v353";
+const CACHE = "cardforge-shell-play-audit-fixes-v354";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",
