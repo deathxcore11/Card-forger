@@ -41,6 +41,7 @@ import {collectionSortControls,compareCollectionRows} from "./collection-sort.js
 import { hapticsOn } from "./feel.js";
 import { tradePanel } from "./trade.js";
 import { skeletonGrid } from "./ui.js";
+import { searchFanMarkup } from "./search-fan.js";
 import { trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
 import { installNudge, installCardMarkup } from "./install.js";
 import {knownSetCount,setRowContent,setYearSections,setProgressMarkup,setCardFacets,filterSortSetCards} from './set-list-ui.js';
@@ -197,19 +198,13 @@ export function deckTile(d, wide = false, {playSelection = null} = {}) {
 
 /* ---------- Search ---------- */
 
-// The empty search page shows a fan of five cards from your own collection, a new five each
-// day, instead of a black void. Tapping one opens it. Nothing shows without owned art.
 function searchFan() {
   const seen = new Set(), pool = [];
   for (const entry of S.state.collection) {
     const c = magicOwnedCard(entry, S.state.printings?.[entry.printingId]), src = c && cardImage(c);
-    if (src && !seen.has(key(c.name))) { seen.add(key(c.name)); pool.push({ c, src }); }
+    if (src && !seen.has(key(c.name))) { seen.add(key(c.name)); pool.push({ name: c.name, art: img(src, c.name) }); }
   }
-  if (pool.length < 3) return "";
-  const day = Math.floor(Date.now() / 864e5), picks = [];
-  for (let i = 0; i < Math.min(5, pool.length); i++) picks.push(pool[(day * 7 + i * 13) % pool.length]);
-  const unique = [...new Map(picks.map((p) => [p.c.name, p])).values()], mid = (unique.length - 1) / 2;
-  return `<section class="search-fan" aria-label="Cards from your collection"><div class="search-fan-cards">${unique.map((p, i) => `<button class="search-fan-card" style="--i:${(i - mid).toFixed(1)}" data-act="card" data-name="${esc(p.c.name)}" aria-label="Open ${esc(p.c.name)}">${img(p.src, p.c.name)}</button>`).join("")}</div><h2>From your collection today</h2><p class="muted">Tap one to read it, or start typing above.</p></section>`;
+  return searchFanMarkup(pool, "card");
 }
 
 const COLOR_ID = [["W", "White"], ["U", "Blue"], ["B", "Black"], ["R", "Red"], ["G", "Green"], ["WU", "Azorius WU"], ["UB", "Dimir UB"], ["BR", "Rakdos BR"], ["RG", "Gruul RG"], ["GW", "Selesnya GW"], ["WB", "Orzhov WB"], ["UR", "Izzet UR"], ["BG", "Golgari BG"], ["RW", "Boros RW"], ["GU", "Simic GU"], ["WUBRG", "All five"], ["C", "Colorless"]];

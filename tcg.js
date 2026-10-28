@@ -18,6 +18,7 @@ import {privateKey} from './account-scope.js';
 import {detailOwnedGroups,detailOwnedLots} from './quick-quantity.js';
 import {addCollectionEntry,addScannedEntry} from './collection-stack.js';
 import {homeSearchMarkup,searchEmblem} from './home-search.js';
+import {searchFanMarkup} from './search-fan.js';
 import {applyYgoSetPrices,ygoSetReference} from './ygo-set-prices.js';
 import {YGO_EDITION_NAMES,ygoPricePreview,ygoPurchaseReference,ygoPurchaseChecklist} from './ygo-price-selection.js';
 import {buyContext,compactPriceSummary,detailTabs,detailPanel,presentationQuote,quoteForContext,sellerModels} from "./pricing-presentation.js";
@@ -237,6 +238,17 @@ export function tcgRarityAttrs(c,e=null) {
 }
 const rowBadges = (c) => (!c || c.brief ? "" : `${gameEmblems(c)}${tcgSetBadge(c)} `);
 const imgTag = (c,cls="card-img",large=false,knownPrice=undefined) => artworkHTML(knownPrice===undefined?c:{...c,prices:{...c?.prices,usd:knownPrice},...(c?.setContext?{setContext:{...c.setContext,price:knownPrice}}:{})},cls,large);
+// Owned cards with known art for the empty search page's daily fan (search-fan.js).
+const tcgSearchFan = g => {
+  const seen = new Set(), pool = [];
+  for (const e of gs(g).collection) {
+    const c = cardOf(g, e.cardId);
+    if (!c || seen.has(c.name)) continue;
+    const variantImage = c.variants?.find(v => v.key === e.variant)?.image, art = imgTag(variantImage ? { ...c, image: variantImage } : c, "search-fan-img");
+    if (art.startsWith("<img")) { seen.add(c.name); pool.push({ id: c.id, name: c.name, art }); }
+  }
+  return searchFanMarkup(pool, "tCard", p => p.id);
+};
 
 // A printed variant can share art, but that is not proof of its stamp/finish.
 export function variantArtwork(card, variant = {}) {
@@ -760,7 +772,7 @@ export function tcgSearch() {
   ${list.length ? `<div class="card-grid">${list.map(c => {
     const own = ownedOf(g,c,m), p = price(c);
     return `<button class="grid-card" ${finishAttrs(g,c,{})}  data-act="tCard" data-id="${esc(c.id)}" ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${esc(c.name)}</span><span>${c.brief ? "Details not loaded" : p === null ? "—" : usd(p)}</span></span>${g === "ygo" && !c.brief ? ygoRarityStrip(c) : ""}${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
-  }).join("")}</div>` : U.ran && !U.busy ? empty(loaded.length || U.more ? "No matches among loaded cards" : "No cards found", pending ? "Card details are needed to check these filters." : U.more ? "More provider results are available. Load more or clear a filter." : "Try a shorter name or clear a filter.") : U.busy ? '<p class="muted center pad">Searching…</p>' : `<p class="muted small">Search by name, or leave it blank and pick filters. ${g === "ptcg" ? "Pokémon TCG Pocket (digital) cards are left out." : ""}</p>`}
+  }).join("")}</div>` : U.ran && !U.busy ? empty(loaded.length || U.more ? "No matches among loaded cards" : "No cards found", pending ? "Card details are needed to check these filters." : U.more ? "More provider results are available. Load more or clear a filter." : "Try a shorter name or clear a filter.") : U.busy ? '<p class="muted center pad">Searching…</p>' : `${!U.q.trim() && !U.error ? tcgSearchFan(g) : ""}<p class="muted small${U.q.trim() ? "" : " center"}">Search by name, or leave it blank and pick filters. ${g === "ptcg" ? "Pokémon TCG Pocket (digital) cards are left out." : ""}</p>`}
   ${U.more ? `<button class="btn ghost block" data-act="tMore" ${U.busy ? "disabled" : ""}>${U.failedPage > 0 ? "Retry load more" : U.busy ? "Loading…" : "Load more"}</button>` : ""}
   ${g === "ptcg" && loaded.some(c => c.brief) && !U.detailsBusy && !U.busy ? '<button class="btn ghost block" data-act="tSearchDetails">Retry details</button>' : ""}`;
 }
