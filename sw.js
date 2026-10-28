@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-play-modes-home-v373";
+const CACHE = "cardforge-shell-animated-playmats-v374";
 const ASSETS = [
   "./play-forge-feature.js",
   "./audio.js",
