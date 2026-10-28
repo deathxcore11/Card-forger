@@ -1569,7 +1569,7 @@ const playUpdates=createPlayUpdateGate({checkRelease,notify:version=>toast(`Upda
 A.playStartCandidate=async()=>{
  if(!PLAY_MATCH_RELEASE_READY)return toast('Practice integration is still being verified.');
  if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
- playStarting=true;
+ playStarting=true;forgeWarmAt=0; // this start claims the warm engine; warm again next time
  try{
  const initial=playSetup.snapshot();
  if(initial.playStyle==='quick'&&initial.match.mode==='cpu'&&!initial.quickMatch){if(!await A.playFindOpponent())return;}
@@ -1591,7 +1591,9 @@ A.playStartCandidate=async()=>{
     resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
     lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
    playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,
-    prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();}});
+    prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();},
+    // A finished match frees its engine after cleanup; warm the next one for a rematch.
+    onFinished:()=>setTimeout(()=>warmForgeEngine(playSetup.snapshot(),{afterMatch:true}),4000)});
    try{await playerMatHost.start();}catch{/* The match screen presents the error and recovery action. */}return;
   }
   const cards=createPracticeCardPreparation({selectionKey:key,isCurrent:current,
@@ -1614,8 +1616,8 @@ function playDeckPreview(deck) {
 // itself only binds them. The host keeps a warm engine for 3 minutes; ask again after
 // that, and never while a match is open.
 let forgeWarmAt=0;
-function warmForgeEngine(state){
- if(!FORGE_PLAY_TEST_ENABLED||!PLAY_MATCH_RELEASE_READY||state.match.mode!=='cpu'||!state.profile?.signedIn||playerMatHost||playStarting||Date.now()-forgeWarmAt<150000)return;
+function warmForgeEngine(state,{afterMatch=false}={}){
+ if(!FORGE_PLAY_TEST_ENABLED||!PLAY_MATCH_RELEASE_READY||state.match.mode!=='cpu'||!state.profile?.signedIn||!afterMatch&&(playerMatHost||playStarting||Date.now()-forgeWarmAt<150000))return;
  forgeWarmAt=Date.now();
  void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});
 }

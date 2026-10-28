@@ -141,7 +141,7 @@ test('while the server starts the match the intro shows the stage and the second
  const s=setup(),{root,doc}=dom(),account={user:{id:OWNER},accountGeneration:1},calls=[];let clock=1000,tickFn=null,reads=0;
  doc.defaultView.setInterval=fn=>{tickFn=fn;return 7;};doc.defaultView.clearInterval=id=>{if(id===7)tickFn=null;};
  const intro=()=>({refreshArtwork(){},chooseStartingPlayer:async()=>'random',reveal:async()=>false,destroy(){},status:t=>calls.push(['status',t]),elapsed:t=>calls.push(['elapsed',t]),note:t=>calls.push(['note',t])});
- const mat=createForgePlayerMat({root,mountIntro:intro,readAccount:()=>account,readSetup:()=>s,getAccessToken:async()=>'token',lookup:()=>null,now:()=>clock,pollMs:3000,
+ const mat=createForgePlayerMat({root,mountIntro:intro,readAccount:()=>account,readSetup:()=>s,getAccessToken:async()=>'token',lookup:()=>null,now:()=>clock,pollMs:3000,startupPollMs:3000,
   wait:async ms=>{for(let t=0;t<ms;t+=1000){clock+=Math.min(1000,ms-t);tickFn?.();}},
   createClient:options=>createForgeHostClient({...options,fetchImpl:async(path,init)=>{
    if(init.method==='POST'){const sent=JSON.parse(init.body);return Response.json({matchId:MATCH,generation:GENERATION,expiresAt:Date.now()+60000,deckDigests:{human:await exactDigest(sent.humanDeck),opponent:await exactDigest(sent.opponentDeck)},schema:'cardstashy.forge-proof.v1',forgeRevision:FORGE_REVISION,status:'initializing'},{status:202});}
