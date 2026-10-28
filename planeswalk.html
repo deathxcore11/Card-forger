@@ -503,7 +503,7 @@ const C={
  guide:{name:'Goblin Guide',e:1,r:'U',kind:'Creature · Goblin',g:'G',ally:f=>({p:f?3:2,t:2,haste:1,goblin:1}),text:f=>`${f?3:2}/2. Haste.`},
  hauler:{name:'Ember Hauler',e:1,r:'U',kind:'Creature · Goblin',g:'G',ally:f=>({p:2,t:f?2:1,goblin:1,deathBurn:2}),text:f=>`2/${f?2:1}. When it dies, deal 2 to the front enemy.`},
  tremors:{name:'Impact Tremors',e:1,r:'U',kind:'Enchantment',g:'∞',power:1,text:f=>`Whenever an ally enters, deal ${f?2:1} to each enemy.`,play:f=>{c.tremors+=f?2:1}},
- king:{name:'Goblin King',e:2,r:'U',kind:'Creature · Goblin',g:'K',ally:f=>({p:f?3:2,t:f?3:2,goblin:1,lord:1}),text:f=>`${f?'3/3':'2/2'}. Other Goblins get +1/+1.`},
+ king:{name:'Goblin King',e:2,r:'U',kind:'Creature · Goblin',g:'K',ally:f=>({p:f?3:2,t:f?3:2,goblin:1,lord:1}),text:f=>`${f?'3/3':'2/2'}. Other Goblins get +2/+1 and have haste.`},
  cannon:{name:'Fiery Cannonade',e:2,r:'U',kind:'Instant',g:'✶',text:f=>`Deal ${f?5:4} damage to each enemy.`,play:f=>c.enemies.forEach(e=>hit(e,f?5:4))},
  fireball:{name:'Fireball',e:'X',r:'U',aim:'enemy',kind:'Sorcery',g:'✹',text:f=>`Spend all energy. Deal ${f?4:3} per energy.`},
  impulse:{name:'Reckless Impulse',e:1,r:'C',kind:'Sorcery',g:'↻',text:f=>`Draw ${f?4:3} cards.`,play:f=>draw(f?4:3)},
@@ -511,7 +511,7 @@ const C={
  snipe:{name:'Guttersnipe',e:2,r:'U',kind:'Creature · Goblin',g:'S',ally:f=>({p:2,t:f?2:1,goblin:1,snipe:f?3:2}),text:f=>`2/${f?2:1}. Whenever you cast a noncreature spell, deal ${f?3:2} to each enemy.`},
  warchief:{name:'Goblin Warchief',e:2,r:'U',kind:'Creature · Goblin',g:'W',ally:f=>({p:f?3:2,t:2,goblin:1,haste:1,chief:1}),text:f=>`${f?3:2}/2. Haste. Your Goblin cards cost 1 less, and your Goblins have haste.`},
  mob:{name:'Krenko, Mob Boss',e:2,r:'R',kind:'Legendary Creature · Goblin',g:'K',ally:f=>({p:3,t:f?4:3,goblin:1,mob:1}),text:f=>`3/${f?4:3}. At the start of your turn, summon a 1/1 Goblin for each Goblin you have.`},
- bombard:{name:'Goblin Bombardment',e:1,r:'R',kind:'Enchantment',g:'✸',power:1,text:f=>`Any number of times: sacrifice an ally to deal ${f?3:2} damage to an enemy.`,play:f=>{c.bombard=Math.max(c.bombard||0,f?3:2)}},
+ bombard:{name:'Goblin Bombardment',e:1,r:'R',kind:'Enchantment',g:'✸',power:1,text:f=>`Any number of times: sacrifice an ally to deal ${f?4:3} damage to an enemy.`,play:f=>{c.bombard=Math.max(c.bombard||0,f?4:3)}},
  rite:{name:'Rite of Flame',e:1,r:'C',kind:'Sorcery',g:'△',text:f=>f?'Gain 1 energy. Draw a card.':'Gain 1 energy.',play:f=>{c.energy+=1;draw(f?1:0)}},
  mana:{name:'Manamorphose',e:1,r:'U',kind:'Instant',g:'◇',text:f=>f?'Gain 1 energy. Draw 2 cards.':'Gain 1 energy. Draw a card.',play:f=>{c.energy+=1;draw(f?2:1)}},
  grape:{name:'Grapeshot',e:1,r:'R',aim:'enemy',kind:'Sorcery',g:'⁂',text:f=>`Deal ${f?3:2} damage to target enemy for each card you've played this turn, counting this one.`,play:(f,t)=>hit(t,(c.chain+1)*(f?3:2))},
@@ -537,7 +537,7 @@ const EMB={
  furnace:{name:'Emblem of the Furnace',g:'✹',r:'M',text:'Your spells deal double damage and everything else deals 75% more. Each hit Chandra takes deals 1 extra.'},
  season:{name:'Emblem of Doubling Season',g:'❖',r:'M',text:'At the start of your turn, summon a 1/1 token. Whenever you summon a token, summon a second one. Your tokens have haste.'},
  paradox:{name:'Emblem of the Paradox Engine',g:'⟲',r:'M',text:'Whenever you cast a noncreature spell, untap all your creatures and they get +1/+1 for the rest of the fight.'},
- legion:{name:'Emblem of the Legion',g:'⚑',r:'R',text:'The first Goblin you summon each turn brings a 1/1 Goblin token with it.'},
+ legion:{name:'Emblem of the Legion',g:'⚑',r:'R',text:'The first Goblin you summon each turn brings a 2/1 Goblin token with haste.'},
 };
 const embSvg=k=>`<svg class="emb${EMB[k].r==='M'?' mythic':EMB[k].r?' rare':''}" viewBox="0 0 24 24" role="img" aria-label="${EMB[k].name}"><title>${EMB[k].name}: ${EMB[k].text}</title><circle cx="12" cy="12" r="11" fill="#2a1a10" stroke="#e8b95b" stroke-width="1.4"/><text x="12" y="16.2" text-anchor="middle" font-size="11" fill="#e8b95b" font-family="Marcellus,serif">${EMB[k].g}</text></svg>`;
 
@@ -612,7 +612,7 @@ function startTurn(){
 }
 function draw(n){for(let i=0;i<n;i++){if(!c.draw.length){c.draw=shuffle(c.discard);c.discard=[]}if(!c.draw.length)break;c.hand.push(c.draw.pop())}}
 const lords=a=>a.goblin?c.allies.filter(x=>x.lord&&x!==a).length:0;
-const pow=a=>a.p+a.temp+lords(a), tough=a=>a.t+a.temp+lords(a);
+const pow=a=>a.p+a.temp+2*lords(a), tough=a=>a.t+a.temp+lords(a);
 const ready=a=>!a.sick&&!a.tapped&&!a.defender&&!c.busy;
 const alive=()=>c.enemies.filter(e=>e.hp>0);
 const solo=()=>alive().length===1?alive()[0]:null;
@@ -623,11 +623,11 @@ function summon(base,name){
  if(c.allies.length>=MAXA)return;
  const a={id:++uid,name,...base,dmg:0,temp:0,tapped:false};
  if(run.emblems.includes('horde')){a.p++;a.t++}
- if(a.goblin&&c.allies.some(x=>x.chief))a.haste=1;
+ if(a.goblin&&c.allies.some(x=>x.chief||x.lord))a.haste=1;
  a.sick=!a.haste; c.allies.push(a);
  if(run.emblems.includes('season')&&/token|Elemental/.test(name)){a.haste=1;a.sick=false}
  if(run.emblems.includes('season')&&/token|Elemental/.test(name)&&!c.seasoning){c.seasoning=1;summon({...base},name);c.seasoning=0}
- if(a.goblin&&run.emblems.includes('legion')&&!c.legioned&&name!=='Goblin token'){c.legioned=1;summon({p:1,t:1,goblin:1},'Goblin token')}
+ if(a.goblin&&run.emblems.includes('legion')&&!c.legioned&&name!=='Goblin token'){c.legioned=1;summon({p:2,t:1,goblin:1,haste:1},'Goblin token')}
  if(c.tremors)c.enemies.forEach(e=>hit(e,c.tremors));
 }
 function canPlay(card){
