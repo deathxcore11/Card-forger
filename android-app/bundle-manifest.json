@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "6f2f5056c43add84996bd9d3c9bc02cc608fcccd",
-  "sourceVersion": "4.3.16",
+  "commit": "076aa09790c3f799bcf7c5108ec70ec1f463028f",
+  "sourceVersion": "4.3.17",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -934,8 +934,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 446792,
-      "sha256": "ed76f91d856cf9d0859d9e15419586f05f5adfe1eaec32070d60f43b473731e4"
+      "bytes": 446661,
+      "sha256": "ac07d871556ad68c56942f76799fc6ca9b7e3ec9ffe88f173c645b5c0fad9b5f"
     },
     {
       "path": "artwork.js",
@@ -2184,8 +2184,8 @@
     },
     {
       "path": "audio.js",
-      "bytes": 12003,
-      "sha256": "f06381b813bdf9a1b63ed0030cee3b875ce7eb315e23349c363061a56165b435"
+      "bytes": 12010,
+      "sha256": "87899241d8998ee5b0b9c4fcea8a36caacaf665d0505ec9134e4655dca2e9846"
     },
     {
       "path": "aura.css",
@@ -2375,7 +2375,7 @@
     {
       "path": "config.js",
       "bytes": 628,
-      "sha256": "4a2df1969f5d1e5e58db23280cf05a5f80e5d544e7ae073a2cf490743d0b8601"
+      "sha256": "fae6593b212b048489da40b5f6dd62d1d1338a019099ea40327e681ab6f9d2e2"
     },
     {
       "path": "core.js",
@@ -3374,8 +3374,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 126159,
-      "sha256": "5177b49064f07dce6fdfd7ba7c7ecbf65f389d49d49e9653261747e7f36ab6de"
+      "bytes": 132254,
+      "sha256": "4a4af55dda231917d95bb6325dd880babd9b2a63055bccbe7f605c6813173199"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -4069,8 +4069,8 @@
     },
     {
       "path": "pack-preview.js",
-      "bytes": 45517,
-      "sha256": "4d571a5df7defcda34193da1db6e7888f3ead4e521d9ddc9f509884afa0e2682"
+      "bytes": 44709,
+      "sha256": "b445cf492bf6d88d952245375a7631b6b85f8546dbd329b9bee33e8fd516059d"
     },
     {
       "path": "pairing.js",
@@ -4089,8 +4089,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 4445418,
-      "sha256": "7761425616b0d5020676fb8c622dde7a3b5bb3937e8ccb81c40089f4e5ddea51"
+      "bytes": 4534324,
+      "sha256": "adf95fd2ff0c01410697de75c77699dff04d62fe1efffa3807c3e79b3ad8c3c6"
     },
     {
       "path": "planner.js",
@@ -4184,8 +4184,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 322040,
-      "sha256": "5e3e8a9433eb084e738617add4ada17ca2b8caa30c9087e04f937a42c3b8f761"
+      "bytes": 322994,
+      "sha256": "e0e5025bd1631230606620006e3048fe0bd1e1b1934504453cff6a36f03d52a0"
     },
     {
       "path": "play-menu.css",
@@ -4414,8 +4414,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1381,
-      "sha256": "9043c754b2de0df60a5ebcb3c76ec490565281d185723ecae3efb9bffe840cb4"
+      "bytes": 1029,
+      "sha256": "bb0fb5ede64a89ae449760b939cc7eadd05a89e389325dc15061b33d9b99c5da"
     },
     {
       "path": "release-status.js",
@@ -4904,8 +4904,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 199277,
-      "sha256": "15e28cc9aec93708f0df4ca42a7088eff6225de0c604aa4f628cd1eedddaea61"
+      "bytes": 199357,
+      "sha256": "eb2e345fcaefdbd9bc7c237c3eaea1a057f1df71ac59bb23dd9ab14f47886e77"
     },
     {
       "path": "wiki-card-handoff.js",
