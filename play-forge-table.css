@@ -1551,3 +1551,50 @@ body.practice-table-open:has(#practicePlayerMat.play-match-table[data-forge-nati
 .forge-mana-emblem{overflow:visible}
 .forge-mana-emblem:not(:has(img)){width:38px;height:38px;font-size:0;color:transparent;background:#2a2f3a;box-shadow:0 3px 8px #000a,inset 0 0 0 2px #ffffff22}
 .forge-mana-emblem:not(:has(img))::before{content:attr(data-color);font:800 16px/1 'DM Sans',system-ui,sans-serif;color:#f3ead6}
+/* 4.3.15 match screen cleanup: less on the board, nothing floating over your cards.
+   Summoning sickness is a small still moon on the art and slightly cooler art, no haze,
+   rising z's or pulsing edge. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-sick]{outline:0;animation:none}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-sick] .play-match-piece-art:before,:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-zzz{display:none}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-sick] .play-match-piece-art img{filter:saturate(.7) brightness(.86)}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-emblem{width:20px;height:20px;left:5px;bottom:5px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-emblem>svg{width:11px;height:11px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-emblem-sick{animation:none;opacity:.85;border-width:1px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-sick][data-kw-commander] .cs-emblem-sick{left:29px}
+/* The combat line carries no words over your creatures: just the line, and a small count at its
+   right end once you have picked attackers or blockers. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line>span{grid-auto-flow:column;align-items:baseline;gap:5px;padding:3px 11px 4px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line>span b{font:800 14px/1 'DM Sans',system-ui,sans-serif;letter-spacing:0}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line>span small{font-size:11px}
+/* Zone counts: library and graveyard always, exile and command only when used; they line up
+   from the seat's own side. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row{display:flex}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row>button{flex:0 0 calc((100% - 18px) / 4)}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row[data-seat=cpu]{justify-content:flex-end}
+/* The Zones menu lists only zones with cards, without the hand/library line the seats already show;
+   opened from a count it shows just that list, beside that seat. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-zones-menu>div>p,:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-zones-menu>div>details:not(:has(>button,>h3)):not([data-revealed-zone]){display:none}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-zones-menu[data-only]>div>:not([data-zone-focus]){display:none}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-zones-menu[data-only]>div{position:fixed;width:min(300px,calc(100vw - 32px));max-height:min(420px,60dvh);overflow:auto}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-zones-menu[data-only=cpu]>div{top:calc(var(--edge,16px) + var(--seat-h,96px) + 74px);right:var(--edge,16px);left:auto;bottom:auto}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-zones-menu[data-only=you]>div{bottom:calc(var(--edge,16px) + 64px);left:var(--edge,16px);top:auto;right:auto}
+/* The card preview: when the real card image shows, the panel beside it only adds what the
+   image can't (current stats, state, keyword reminders), never the name, type or rules again. */
+:where(body.practice-table-open) .forge-peek .forge-peek-card[data-art=image]~.forge-peek-info :is(header,.forge-peek-type,.forge-peek-rules){display:none}
+:where(body.practice-table-open) .forge-peek .forge-peek-card[data-art=image]~.forge-peek-info:not(:has(.forge-peek-state,.forge-peek-keywords,.forge-peek-attached,.forge-peek-blocked,.forge-peek-actions)){display:none}
+:where(body.practice-table-open) .forge-peek .forge-peek-card[data-art=image]~.forge-peek-info{max-width:250px}
+:where(body.practice-table-open) .forge-peek .forge-peek-keywords>li>b img.ms{width:15px;height:15px;vertical-align:-2px;margin:0 1px}
+/* Deck tracker: one round control beside the others, opening one panel with Library / Opponent
+   tabs and a close button. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-header .forge-tracker-toggles{margin-left:0!important;padding:0!important;gap:0!important;height:auto!important;border:0!important;background:none!important;-webkit-backdrop-filter:none;backdrop-filter:none}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-header .forge-tracker-toggles>button{width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;padding:0!important;display:grid!important;place-items:center;border-radius:50%!important;border:1px solid #e8b95b30!important;background:radial-gradient(circle at 35% 30%,#262a33,#0f1117)!important;color:#e9d4a4!important}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-header .forge-tracker-toggles>button svg{width:19px;height:19px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-header .forge-tracker-toggles>button[aria-pressed=true]{border-color:#e8b95b!important;background:radial-gradient(circle at 35% 30%,#3a3121,#16130d)!important}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker[data-side]{left:var(--edge,18px);right:auto}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker>header{align-items:center;gap:6px;padding:6px 6px 6px 8px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-tabs{display:flex;gap:2px;flex:1;min-width:0}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-tabs>button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:34px;padding:0 8px;border:0;border-radius:9px;background:none;color:#9aa2b1;font:700 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-tabs>button[aria-selected=true]{background:#e8b95b1f;color:#f4e3bd}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-tabs>button span{letter-spacing:0;color:inherit;opacity:.75;font-size:11px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-close{flex:none;width:34px;height:34px;border:0;border-radius:50%;background:#ffffff0d;color:#cfd3da;font:400 20px/1 'DM Sans',system-ui,sans-serif}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-close:hover{background:#ffffff1a;color:#fff}
