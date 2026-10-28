@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-play-prompts-v345";
+const CACHE = "cardforge-shell-deck-play-redesign-v346";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",
