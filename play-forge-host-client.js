@@ -39,6 +39,15 @@ export function exactForgeInput(setup,{startingPlayer=setup?.match?.startingPlay
  // Forge reports the actual starting player before the opening hand.
  return structuredClone({format:setup.match.format,humanDeck:setup.selected,opponentDeck:setup.opponent,difficultyPolicyVersion,startingPlayer,playStyle});
 }
+// Ask the host to start the engine for this account's next match while the player
+// is still choosing decks. Best effort and idempotent on the server: it never ends a
+// match, and a refusal only means the next start boots the engine itself.
+export async function warmForgeHost({getAccessToken,fetchImpl=globalThis.fetch}={}){
+ const token=await getAccessToken();
+ if(typeof token!=='string'||!token||token.length>8192||!/^[-A-Za-z0-9._]+$/.test(token))return false;
+ const r=await fetchImpl(API_PREFIX+'/api/play/warm',{method:'POST',body:'{}',headers:{Accept:'application/json','Content-Type':'application/json',Authorization:'Bearer '+token},credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',cache:'no-store'});
+ void r.body?.cancel().catch(()=>{});return r.status===202;
+}
 export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=globalThis.fetch,timeoutMs=15000,newId=()=>crypto.randomUUID()}={}){
  if(typeof readAccount!=='function'||typeof getAccessToken!=='function'||typeof fetchImpl!=='function')throw fail('FORGE_HOST_READERS_REQUIRED');
  const owner=readAccount(),ownerKey=forgeAccountKey(owner);
