@@ -17,6 +17,9 @@ const STARTUP_MS = 120_000, IDLE_MS = 600_000, RETAIN_MS = 86_400_000, REPLACE_M
 // A warm engine (container, JVM and card database started while the player picks
 // decks) waits this long for its match, then is destroyed and its capacity freed.
 const WARM_MS = 180_000;
+// A provider refusal ("no container instance") before the container answers is retried
+// within the startup deadline; the message is Cloudflare's, matched loosely.
+const ALLOCATION_ATTEMPTS = 3, NO_INSTANCE_RE = /no container instance/i;
 const WARM_PATH = '/api/play/warm';
 // Live states: a destruction proof is never given while a container may hold one.
 const ACTIVE = ['running', 'initializing', 'warming'];
@@ -360,80 +363,97 @@ export class MatchService {
     const replaced = () => this.replacing === allocation.generation && Object.assign(new Error('replaced_by_new_start'), { replaced: true });
     const stopIfReplaced = () => { const failure = replaced(); if (failure) throw failure; };
     const stop = new AbortController(); this.opening = { generation: allocation.generation, stop };
-    const openFetch = request => this.container().getTcpPort(8080).fetch(new Request(request, { signal: AbortSignal.any([request.signal, stop.signal]) }));
+    // Any reply from the container means it may hold input, so allocation retries stop.
+    let contacted = false, current = 0;
+    const openFetch = async request => { const response = await this.container().getTcpPort(8080).fetch(new Request(request, { signal: AbortSignal.any([request.signal, stop.signal]) }));
+      contacted = true; return response; };
     try {
-      // The native bridge owns exact snapshot transport. Persisted initializing
-      // means any crash before/after start is ambiguous and MUST NOT restart.
-      if (warm) {
-        enter('claim');
-        stopIfReplaced();
-        if (!this.container().running) throw new Error('warm_container_gone');
-      } else {
-        const options = await this.native.startOptions({ input, allocation, internalToken: token });
-        if (options?.enableInternet !== false || options?.env?.HOST_INTERNAL_TOKEN !== token || options?.env?.HOST_ABSOLUTE_DEADLINE_MS !== String(allocation.expiresAt)) throw new Error('unsafe_native_start_options');
-        enter('start');
-        stopIfReplaced();
-        if (this.container().running) throw new Error('unexpected_existing_container');
-        this.container().start(options);
-      }
-      // Observe the container's own end (an exit code or a platform stop) without
-      // waiting on it, so a crash ends startup now instead of at the deadline.
-      let ended = null;
-      try { ended = typeof this.container().monitor === 'function' ? this.container().monitor() : null; } catch { /* not observable */ }
-      ended?.then?.(() => { exited = 'exit 0'; }, failure => { exited = startupFailure(failure).slice(0, 72); });
-      enter('inactivity');
-      await this.container().setInactivityTimeout(IDLE_MS);
-      if (this.native.bootstrapExisting) {
-        enter('bootstrap');
-        await this.native.bootstrapExisting({ input, allocation, internalToken: token,
-          deadline: record.startupDeadline, now: this.now, wait: async ms => { stopIfReplaced(); await this.wait(ms); stopIfReplaced(); },
-          fetchExisting: request => { stopIfReplaced(); const gone = containerExited(); if (gone) throw gone; if (!this.container().running) throw new Error('native_not_running'); return openFetch(request); } });
-      }
-      enter('ready');
-      let ready = false, validationFailure = null;
-      while (this.now() < record.startupDeadline) {
-        stopIfReplaced();
-        const gone = containerExited(); if (gone) throw gone;
-        if (!this.container().running) { lastPoll = 'not running'; await this.wait(250); continue; }
-        try {
-          const response = await openFetch(new Request('http://host001.internal/ready', {
-            headers: { Authorization: 'Bearer ' + token }, redirect: 'manual', signal: AbortSignal.timeout(5000),
-          }));
-          const epoch = response.headers.get('X-Host-Epoch');
-          const ok = response.status === 200; await response.body?.cancel().catch(() => {});
-          lastPoll = 'ready ' + response.status;
-          if (UUID_RE.test(epoch || '')) {
-            record.epoch = epoch;
-            if (ok) { ready = true; break; }
-            if (this.native.readStartupFailure) {
-              validationFailure = await this.native.readStartupFailure({ epoch, internalToken: token, fetchExisting: openFetch });
-              if (validationFailure) break;
-            }
+      for (let attempt = 1; ; attempt++) { current = attempt; try {
+          // The native bridge owns exact snapshot transport. Persisted initializing
+          // means any crash before/after start is ambiguous and MUST NOT restart.
+          if (warm) {
+            enter('claim');
+            stopIfReplaced();
+            if (!this.container().running) throw new Error('warm_container_gone');
+          } else {
+            const options = await this.native.startOptions({ input, allocation, internalToken: token });
+            if (options?.enableInternet !== false || options?.env?.HOST_INTERNAL_TOKEN !== token || options?.env?.HOST_ABSOLUTE_DEADLINE_MS !== String(allocation.expiresAt)) throw new Error('unsafe_native_start_options');
+            enter('start');
+            stopIfReplaced();
+            if (this.container().running) throw new Error('unexpected_existing_container');
+            this.container().start(options);
           }
-        } catch (failure) { lastPoll = startupFailure(failure).slice(0, 72); /* readiness polling is not a restart or command replay */ }
-        await this.wait(250);
-      }
-      if (validationFailure) {
-        record.validation = validationFailure; await this.storage.put('allocation', record);
-        throw Object.assign(new Error('native_exact_validation_rejected'), { nativeRejected: true });
-      }
-      if (!ready) throw new Error('startup_deadline last ' + lastPoll);
-      stopIfReplaced();
-      enter('confirm');
-      // Must compare native accepted raw snapshot digests/policy against this
-      // allocation, not merely observe /ready or a plausible opening hand.
-      const initialized = await this.native.confirmInitialization({ allocation, input, epoch: record.epoch,
-        internalToken: token, fetchExisting: openFetch });
-      if (!Number.isSafeInteger(initialized?.viewerId) || initialized.viewerId < 0 || initialized.schema !== NATIVE_SCHEMA || initialized.engineRevision !== FORGE_REVISION || initialized.policyVersion !== input.difficultyPolicyVersion || initialized.humanDigest !== allocation.deckDigests.human || initialized.opponentDigest !== allocation.deckDigests.opponent) throw new Error('native_initialization_receipt_mismatch');
-      stopIfReplaced();
-      enter('authority');
-      record.status = 'running'; await this.storage.put('allocation', record);
-      const authority = await this.authority(record);
-      await authority.initialize({ ...allocation, epoch: record.epoch, viewerId: initialized.viewerId });
-      await this.storage.setAlarm(Math.min(record.expiresAt, this.now() + IDLE_MS));
-      timings.running = this.now() - began;
-      console.log('forge_startup ' + JSON.stringify({ ...timings, warm }));
-      return { status: 'running' };
+          // Observe the container's own end (an exit code or a platform stop) without
+          // waiting on it, so a crash ends startup now instead of at the deadline.
+          let ended = null;
+          try { ended = typeof this.container().monitor === 'function' ? this.container().monitor() : null; } catch { /* not observable */ }
+          ended?.then?.(() => { if (attempt === current) exited = 'exit 0'; }, failure => { if (attempt === current) exited = startupFailure(failure).slice(0, 72); });
+          enter('inactivity');
+          await this.container().setInactivityTimeout(IDLE_MS);
+          if (this.native.bootstrapExisting) {
+            enter('bootstrap');
+            await this.native.bootstrapExisting({ input, allocation, internalToken: token,
+              deadline: record.startupDeadline, now: this.now, wait: async ms => { stopIfReplaced(); await this.wait(ms); stopIfReplaced(); },
+              fetchExisting: request => { stopIfReplaced(); const gone = containerExited(); if (gone) throw gone; if (!this.container().running) throw new Error('native_not_running'); return openFetch(request); } });
+          }
+          enter('ready');
+          let ready = false, validationFailure = null;
+          while (this.now() < record.startupDeadline) {
+            stopIfReplaced();
+            const gone = containerExited(); if (gone) throw gone;
+            if (!this.container().running) { lastPoll = 'not running'; await this.wait(250); continue; }
+            try {
+              const response = await openFetch(new Request('http://host001.internal/ready', {
+                headers: { Authorization: 'Bearer ' + token }, redirect: 'manual', signal: AbortSignal.timeout(5000),
+              }));
+              const epoch = response.headers.get('X-Host-Epoch');
+              const ok = response.status === 200; await response.body?.cancel().catch(() => {});
+              lastPoll = 'ready ' + response.status;
+              if (UUID_RE.test(epoch || '')) {
+                record.epoch = epoch;
+                if (ok) { ready = true; break; }
+                if (this.native.readStartupFailure) {
+                  validationFailure = await this.native.readStartupFailure({ epoch, internalToken: token, fetchExisting: openFetch });
+                  if (validationFailure) break;
+                }
+              }
+            } catch (failure) { lastPoll = startupFailure(failure).slice(0, 72); /* readiness polling is not a restart or command replay */ }
+            await this.wait(250);
+          }
+          if (validationFailure) {
+            record.validation = validationFailure; await this.storage.put('allocation', record);
+            throw Object.assign(new Error('native_exact_validation_rejected'), { nativeRejected: true });
+          }
+          if (!ready) throw new Error('startup_deadline last ' + lastPoll);
+          stopIfReplaced();
+          enter('confirm');
+          // Must compare native accepted raw snapshot digests/policy against this
+          // allocation, not merely observe /ready or a plausible opening hand.
+          const initialized = await this.native.confirmInitialization({ allocation, input, epoch: record.epoch,
+            internalToken: token, fetchExisting: openFetch });
+          if (!Number.isSafeInteger(initialized?.viewerId) || initialized.viewerId < 0 || initialized.schema !== NATIVE_SCHEMA || initialized.engineRevision !== FORGE_REVISION || initialized.policyVersion !== input.difficultyPolicyVersion || initialized.humanDigest !== allocation.deckDigests.human || initialized.opponentDigest !== allocation.deckDigests.opponent) throw new Error('native_initialization_receipt_mismatch');
+          stopIfReplaced();
+          enter('authority');
+          record.status = 'running'; await this.storage.put('allocation', record);
+          const authority = await this.authority(record);
+          await authority.initialize({ ...allocation, epoch: record.epoch, viewerId: initialized.viewerId });
+          await this.storage.setAlarm(Math.min(record.expiresAt, this.now() + IDLE_MS));
+          timings.running = this.now() - began;
+          console.log('forge_startup ' + JSON.stringify({ ...timings, warm }));
+          return { status: 'running' };
+      } catch (failure) {
+        // The provider refused an instance before the container answered anything, so
+        // no input reached an engine: start again within the same startup deadline,
+        // after a destroy receipt. Anything ambiguous still fails closed below.
+        if (warm || contacted || attempt >= ALLOCATION_ATTEMPTS || replaced() || failure?.replaced
+          || !NO_INSTANCE_RE.test(startupFailure(failure) + ' ' + (exited || ''))
+          || this.now() + attempt * 1000 >= record.startupDeadline) throw failure;
+        try { await abortable(this.container().destroy(), AbortSignal.timeout(10000)); } catch { throw failure; }
+        if (this.container().running !== false) throw failure;
+        console.log('forge_startup_retry ' + JSON.stringify({ attempt, failedAt: step, after: this.now() - began }));
+        exited = null; timings['retry' + attempt] = this.now() - began;
+        await this.wait(attempt * 1000); stopIfReplaced();
+      } }
     } catch (failure) {
       // Keep a short, character-limited cause so the owner's error screen can tell a
       // provider start failure from a readiness timeout. No stack, input or token.

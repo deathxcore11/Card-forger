@@ -759,3 +759,32 @@ test('a start in progress shows its owner only step names and seconds', async ()
   assert.equal(JSON.stringify(value).includes('secret'), false);
   assert.equal((await f.route(request('/api/play/matches/' + body.matchId, { method: 'GET', token: 'other' }))).status, 404);
 });
+function patchFirstContainer(f, patch) {
+  const get = f.env.FORGE_MATCHES.getByName.bind(f.env.FORGE_MATCHES); let done = false;
+  f.env.FORGE_MATCHES.getByName = id => { const match = get(id); if (!done) { done = true; patch(f.containers.get(id)); } return match; };
+}
+const NO_INSTANCE = 'There is no container instance that can be provided to this Durable Object';
+test('a provider allocation refusal before any container reply starts again within the deadline', async () => {
+  const f = fixture(), work = []; f.admission.ctx.waitUntil = promise => work.push(promise);
+  let refusals = 1;
+  patchFirstContainer(f, c => { const set = c.setInactivityTimeout;
+    c.setInactivityTimeout = async ms => { if (refusals-- > 0) throw Error(NO_INSTANCE); return set.call(c, ms); }; });
+  const { body } = await f.create(); await Promise.all(work);
+  const record = await f.stores.get(body.matchId).get('allocation');
+  assert.equal(record.status, 'running'); assert.equal(f.calls.start, 2); assert.equal(f.calls.destroy, 1);
+  assert.equal(typeof record.progress.ms.retry1, 'number');
+});
+test('allocation refusals stop after the attempt limit and after the container has answered', async () => {
+  const f = fixture(), work = []; f.admission.ctx.waitUntil = promise => work.push(promise);
+  patchFirstContainer(f, c => { c.setInactivityTimeout = async () => { throw Error(NO_INSTANCE); }; });
+  const first = await f.create(); await Promise.all(work);
+  const record = await f.stores.get(first.body.matchId).get('allocation');
+  assert.equal(record.status, 'interrupted'); assert.equal(f.calls.start, 3); assert.match(record.failure, /no container instance/);
+  // Once the container replied, input may be inside it: never start again.
+  const g = fixture(), more = []; g.admission.ctx.waitUntil = promise => more.push(promise);
+  g.native.bootstrapExisting = async ({ fetchExisting, internalToken }) => {
+    await fetchExisting(new Request('http://host001.internal/bootstrap-ready', { headers: { Authorization: 'Bearer ' + internalToken } }));
+    throw Error(NO_INSTANCE); };
+  const second = await g.create(); await Promise.all(more);
+  assert.equal((await g.stores.get(second.body.matchId).get('allocation')).status, 'interrupted'); assert.equal(g.calls.start, 1);
+});
