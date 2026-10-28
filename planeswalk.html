@@ -1264,7 +1264,7 @@ const E={
  gisa:{name:'Gisa, Glorious Resurrector',hp:40,pow:4,g:'Gi',rank:'elite',raise:1,intents:[['summon','zombie'],['atk',8],['atk',6],['buff',2]]},
  olivia:{name:'Olivia Voldaren',hp:32,pow:3,g:'Ol',rank:'elite',fly:1,feed:1,intents:[['atk',6],['drain',5],['atk',9]]},
  thalia:{name:'Thalia, Guardian of Thraben',hp:30,pow:2,g:'Th',rank:'elite',first:1,tax:1,intents:[['atk',6],['atk',6],['guard',8]]},
- sorin:{name:'Sorin, Vengeful Bloodlord',hp:62,pow:4,g:'So',rank:'boss',loyalty:5,intents:[['atk',8,2],['summon','interloper',1],['drain',6,-3]],phase2:[['atk',10,2],['summon','interloper',1],['guard',10,1],['drain',8,-3]]},
+ sorin:{name:'Sorin, Vengeful Bloodlord',hp:58,pow:4,g:'So',rank:'boss',loyalty:5,intents:[['atk',8,2],['summon','interloper',1],['drain',6,-3]],phase2:[['atk',10,2],['summon','interloper',1],['guard',10,1],['drain',8,-3]]},
 };
 Object.assign(E,{
  // Act two · Zendikar: the hungry wild. Enemies grow over the fight, so slow decks lose.
@@ -1279,13 +1279,13 @@ Object.assign(E,{
  drana:{name:'Drana, Liberator of Malakir',hp:36,pow:4,g:'Dr',rank:'elite',fly:1,first:1,intents:[['atk',7],['rally',1],['atk',9]]},
  kozilek:{name:"Kozilek's Herald",hp:40,pow:5,g:'Kz',rank:'elite',eldrazi:1,intents:[['annihilate',7],['summon','spawn'],['atk',6]]},
  omnath:{name:'Omnath, Locus of Rage',hp:38,pow:4,g:'Om',rank:'elite',rage:2,intents:[['summon','spawn'],['atk',7],['summon','scion']]},
- ob:{name:'Ob Nixilis Reignited',hp:82,pow:5,g:'Ob',rank:'boss',loyalty:5,ultFx:'kill',
+ ob:{name:'Ob Nixilis Reignited',hp:76,pow:5,g:'Ob',rank:'boss',loyalty:5,ultFx:'kill',
   intents:[['atk',11,2],['pay',3,1],['drain',7,-3]],phase2:[['atk',13,2],['pay',4,1],['summon','spawn',1],['drain',8,-3]],pact:1},
 });
 // Each act: map rows, enemy groups, elites and boss. Depth scaling restarts every act.
 const ACTS=[null,
- {name:'Innistrad',num:'one',boss:'sorin',bossShort:'Sorin',elites:['gisa','olivia','thalia'],market:'The Gavony market',flavor:'Climb from the bottom. Minions are common creatures, legendary nodes are elites that drop emblems, and the planeswalker Sorin waits at the top.'},
- {name:'Zendikar',num:'two',boss:'ob',bossShort:'Ob Nixilis',elites:['drana','kozilek','omnath'],market:'The Sea Gate bazaar',flavor:'The Eldrazi feed and grow. Kill the small ones before they power up the big ones. Ob Nixilis waits at the top.',
+ {name:'Innistrad',num:'one',boss:'sorin',bossShort:'Sorin',elites:['gisa','olivia','thalia'],market:'The Gavony market',mapw:{elite:.12,rest:.16,event:.22},events:['shrine','cart','cathar'],flavor:'Climb from the bottom. Minions are common creatures, legendary nodes are elites that drop emblems, and the planeswalker Sorin waits at the top.'},
+ {name:'Zendikar',num:'two',boss:'ob',bossShort:'Ob Nixilis',elites:['drana','kozilek','omnath'],market:'The Sea Gate bazaar',mapw:{elite:.18,rest:.14,event:.2},events:['hedron','ruins','shrine'],flavor:'The Eldrazi feed and grow. Kill the small ones before they power up the big ones. Ob Nixilis waits at the top.',
   easy:[['spawn','spawn','scion'],['intruder','spawn'],['skyfisher','spawn','spawn'],['wolf','wolf','spawn']],
   hard:[['herder','intruder'],['baloth','spawn','spawn'],['ranger','spawn'],['intruder','intruder','scion'],['skyfisher','baloth']]}];
 // Boss emblems: big power with a drawback, picked after an act boss.
@@ -1298,7 +1298,7 @@ Object.assign(EMB,BOSSEMB);
 const EASY=[['diregraf','diregraf'],['interloper','diregraf'],['crawler','crawler','diregraf'],['geist','diregraf']];
 const HARD=[['ironsmith'],['patrol','interloper'],['patrol','geist'],['cultist','diregraf','diregraf'],['patrol','crawler','crawler']];
 // Enemies get tougher as you climb: depth 0 at the bottom of the map, up to 2 near the top.
-const foe=(key,depth=0)=>{const d=E[key];const hp=Math.round(d.hp*Math.min(d.rank==='elite'?1.35:9,1+(d.rank?.3:.3)*depth));return {id:++uid,key,name:d.name,g:d.g,hp,max:hp,pow:d.pow,fly:!!d.fly,rank:d.rank||'',i:0,buff:d.rank==='elite'?depth:Math.floor(depth*.75),shield:0,loyalty:d.loyalty||0,zombie:!!d.zombie,token:!!d.token}};
+const foe=(key,depth=0)=>{const d=E[key];const hp=Math.round(d.hp*(d.rank==='elite'?1.1:1)*Math.min(d.rank==='elite'?1.35:9,1+(d.rank?.3:.3)*depth));return {id:++uid,key,name:d.name,g:d.g,hp,max:hp,pow:d.pow,fly:!!d.fly,rank:d.rank||'',i:0,buff:d.rank==='elite'?depth:Math.floor(depth*.75),shield:0,loyalty:d.loyalty||0,zombie:!!d.zombie,token:!!d.token}};
 
 // ---------- run ----------
 let run, c, view, reward;
@@ -1309,16 +1309,20 @@ function newRun(s,hk){
  run={hero:HERO.key,hp:HERO.life,max:HERO.life,loyalty:HERO.loyalty,best:0,gold:0,pity:0,act:1,deck:HERO.starter.map(mk),emblems:[],map:genMap(1),pos:null,done:[],fights:0};
  view='map'; c=null; reward=null; render();
 }
+// Random but act-shaped, like Slay the Spire: each act sets its own odds, no elites in the first rows,
+// no rest right before the campfire row, and no path offers the same
+// elite, rest or shop twice in a row.
 function genMap(act=1){
- const rows=[];
+ const w=(ACTS[act]||ACTS[1]).mapw||{elite:.15,rest:.15,event:.2},rows=[];
  for(let r=0;r<7;r++){const row=[];for(let l=0;l<3;l++){let t;const x=rng();
-  if(r===0)t='fight';else if(r===6)t='rest';else if(r===1)t=x<.35?'event':'fight';
-  else t=x<.15?'elite':x<.3?'rest':x<.5?'event':'fight';row.push(t)}rows.push(row)}
- if(!rows.flat().includes('elite'))rows[3][Math.floor(rng()*3)]='elite';
+  if(r===0)t='fight';else if(r===6)t='rest';else if(r===1)t=x<w.event+.1?'event':'fight';
+  else t=x<w.elite?'elite':x<w.elite+w.rest&&r!==5?'rest':x<w.elite+w.rest+w.event?'event':'fight';row.push(t)}rows.push(row)}
  rows[4][Math.floor(rng()*3)]='treasure';
  rows[2+Math.floor(rng()*2)][Math.floor(rng()*3)]='shop';
  rows[5][Math.floor(rng()*3)]='shop';
  if(act>=2)rows[3][Math.floor(rng()*3)]='bargain';
+ for(let r=1;r<6;r++)for(let l=0;l<3;l++){const t=rows[r][l];if(['elite','rest','shop'].includes(t)&&[l-1,l,l+1].some(k=>rows[r-1][k]===t))rows[r][l]=t==='shop'?'event':'fight'}
+ if(!rows.flat().includes('elite')){const l=Math.floor(rng()*3);rows[3][l]='elite';[2,4].forEach(r=>[l-1,l,l+1].forEach(k=>{if(rows[r][k]==='elite')rows[r][k]='fight'}))}
  return rows;
 }
 const open=(r,l)=>r===7?run.pos?.r===6:!run.pos?r===0:r===run.pos.r+1&&Math.abs(l-run.pos.l)<=1;
@@ -1333,7 +1337,7 @@ function enter(r,l){
  else if(t==='rest'){view='rest';render()}
  else if(t==='shop'){c=null;reward={shop:makeShop()};view='shop';render()}
  else if(t==='treasure'){c=null;reward={cards:treasureCards(),embs:treasureEmblems(),treasure:1};view='reward';render()}
- else {view='event';reward={ev:pick(['shrine','cart'])};render()}
+ else {view='event';reward={ev:pick(ACTS[run.act||1].events||['shrine','cart'])};render()}
 }
 
 // ---------- combat ----------
@@ -1558,14 +1562,14 @@ function treasureEmblems(){const x=rng(),want=x<.4?'M':'R';const pool=Object.key
 function treasureCards(){const r=pick(POOL.filter(k=>C[k].r==='R'));const u=shuffle(POOL.filter(k=>C[k].r==='U')).slice(0,2);return shuffle([r,...u])}
 // Rarity with a pity timer: every card offered that isn't rare raises the next rare chance.
 function rollCard(minRare){const x=rng(),rare=.04+run.pity+(minRare?.2:0);let r;
- if(x<rare){r='R';run.pity=0}else{run.pity+=.02;r=minRare||x<rare+.3?'U':'C'}
+ if(minRare==='R'||x<rare){r='R';run.pity=0}else{run.pity+=.02;r=minRare||x<rare+.3?'U':'C'}
  return pick(POOL.filter(k=>C[k].r===r))}
 function win(){
  run.fights++; if(run.emblems.includes('hearth'))heal(4); run.loyalty=Math.min(8,c.loyalty+1);
  if(c.kind==='boss'){if((run.act||1)<ACTS.length-1){reward={boss:shuffle(Object.keys(BOSSEMB).filter(k=>!run.emblems.includes(k))).slice(0,3)};view='bossreward';return render()}view='victory';return render()}
- const cards=[];let guard=0;while(cards.length<3&&guard++<50){const k=rollCard(c.kind==='elite'&&cards.length===0);if(!cards.includes(k))cards.push(k)}
+ const cards=[];let guard=0;while(cards.length<3&&guard++<50){const k=rollCard(c.kind==='elite'&&cards.length===0?'R':false);if(!cards.includes(k))cards.push(k)}
  const embs=c.kind==='elite'?offerEmblems():[];
- run.gold+=Math.round((c.kind==='elite'?25:10+Math.floor(rng()*7))*((run.act||1)>1?.45:1));
+ run.gold+=Math.round((c.kind==='elite'?35:10+Math.floor(rng()*7))*((run.act||1)>1?.45:1));
  reward={cards,embs,stats:{...c.stats,turns:c.turn}}; view='reward'; render();
 }
 
@@ -1674,6 +1678,16 @@ function eventView(){
   <button class="option" data-act="blood" ${run.emblems.length>=Object.keys(EMB).length?'disabled':''}><b>Offer blood</b><span class="muted">Lose 10 life. Gain a random emblem.</span></button>
   <button class="option" data-act="burn"><b>Burn a card</b><span class="muted">Remove one card from your deck.</span></button>
   <button class="option" data-act="leave"><b>Walk on</b><span class="muted">Nothing happens.</span></button></div></section>`;
+ if(reward.ev==='cathar')return `<section class="screen"><h2>A wounded cathar</h2><p class="note">A cathar of Thraben sits against a gravestone, his blade across his knees. The thing that hurt him is still out there.</p><div class="choices">
+  <button class="option" data-act="tend"><b>Tend his wounds</b><span class="muted">Lose 6 life. He gives you a random uncommon card.</span></button>
+  <button class="option" data-act="bless"><b>Take his blessing</b><span class="muted">Heal 8 life.</span></button>
+  <button class="option" data-act="leave"><b>Walk on</b><span class="muted">Nothing happens.</span></button></div></section>`;
+ if(reward.ev==='hedron')return `<section class="screen"><h2>The hedron field</h2><p class="note">Stone hedrons drift above the ground, humming with old power. Touching one hurts. It also leaves something behind.</p><div class="choices">
+  <button class="option" data-act="hedron" ${run.deck.some(d=>!d.foil&&C[d.key]&&C[d.key].kind!=='Curse')?'':'disabled'}><b>Touch a hedron</b><span class="muted">Lose 8 life. A random card in your deck becomes foil.</span></button>
+  <button class="option" data-act="leave"><b>Walk on</b><span class="muted">Nothing happens.</span></button></div></section>`;
+ if(reward.ev==='ruins')return `<section class="screen"><h2>Expedition ruins</h2><p class="note">An expedition camp, half swallowed by the ground. Their packs are still here. So is whatever ate them.</p><div class="choices">
+  <button class="option" data-act="dig"><b>Dig through the packs</b><span class="muted">Half the time, find a rare card. Otherwise, lose 10 life.</span></button>
+  <button class="option" data-act="bandage"><b>Take the medicine</b><span class="muted">Heal 10 life.</span></button></div></section>`;
  return `<section class="screen"><h2>An abandoned cart</h2><p class="note">A traveler's cart lies on its side near Thraben. The horses are gone. The cargo is not.</p><div class="choices">
   <button class="option" data-act="loot"><b>Search the cargo</b><span class="muted">Add a random common to your deck.</span></button>
   <button class="option" data-act="bandage"><b>Take the medicine</b><span class="muted">Heal 12 life.</span></button></div></section>`;
@@ -1745,12 +1759,20 @@ document.getElementById('app').addEventListener('click',ev=>{
  if(a==='purify'){const x=run.deck.find(d=>d.key==='doubt');if(x){x.key='clarity';x.foil=false}return toMap()}
  if(a==='foilpick'){reward={foil:1};return render()}
  if(a==='foil'){const x=run.deck.find(d=>d.id===+b.dataset.id);if(x)x.foil=true;return toMap()}
- if(a==='blood'){run.hp-=10;if(run.hp<=0){run.hp=0;view='over';return render()}const left=Object.keys(EMB).filter(k=>!run.emblems.includes(k)&&!EMB[k].r);if(left.length)run.emblems.push(pick(left));return toMap()}
+ if(a==='blood'){run.hp-=10;if(run.hp<=0){run.hp=0;view='over';return render()}const left=Object.keys(EMB).filter(k=>!run.emblems.includes(k)&&!EMB[k].r&&forHero(k));if(left.length)run.emblems.push(pick(left));return toMap()}
  if(a==='burn'){reward.removing=1;return render()}
  if(a==='remove'){run.deck=run.deck.filter(d=>d.id!==+b.dataset.id);return toMap()}
  if(a==='loot'){run.deck.push(mk(pick(POOL.filter(k=>C[k].r==='C'))));return toMap()}
- if(a==='bandage'){heal(12);return toMap()}
+ if(a==='bandage'){heal(reward&&reward.ev==='ruins'?10:12);return toMap()}
+ if(['tend','bless','hedron','dig'].includes(a))return evChoice(a);
 });
+function evChoice(a){
+ const hurtRun=n=>{run.hp-=n;if(run.hp<=0){run.hp=0;view='over';render();return true}};
+ if(a==='tend'){if(hurtRun(6))return;run.deck.push(mk(pick(POOL.filter(k=>C[k].r==='U'))))}
+ if(a==='bless')heal(8);
+ if(a==='hedron'){if(hurtRun(8))return;const xs=run.deck.filter(d=>!d.foil&&C[d.key]&&C[d.key].kind!=='Curse');if(xs.length)pick(xs).foil=true}
+ if(a==='dig'){if(rng()<.5)run.deck.push(mk(pick(POOL.filter(k=>C[k].r==='R'))));else if(hurtRun(10))return}
+ return toMap()}
 const inApp=typeof window!=='undefined'&&window.self===window.top&&/planeswalk\.html$/.test(location.pathname);
 if(!resumeRun())newRun();
 </script>
