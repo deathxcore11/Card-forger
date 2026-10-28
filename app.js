@@ -6587,6 +6587,7 @@ C.setHaptics = (t) => {
   if (saved&&t.checked) haptic("success");
 };
 C.setSoundOn = (t) => { if (!setAudioSettings({ on: t.checked })) { t.checked = !t.checked; toast("Could not save the sound setting."); return; } };
+C.setMasterVolume = (t) => setAudioSettings({ master: Number(t.value) / 100 });
 C.setSfxVolume = (t) => setAudioSettings({ sfx: Number(t.value) / 100 });
 C.setMusicVolume = (t) => setAudioSettings({ music: Number(t.value) / 100 });
 A.installLater = () => {

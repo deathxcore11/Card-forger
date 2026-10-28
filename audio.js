@@ -6,7 +6,7 @@
 // first tap or key press (browser autoplay rules). Settings: on/off, effects and music volume.
 
 const KEY = "cardstashy-audio", CACHE = "cardstashy-audio-v1", SITE = "https://cardstashy.com";
-const DEFAULTS = { on: true, sfx: 0.7, music: 0.4 };
+const DEFAULTS = { on: true, master: 1, sfx: 0.7, music: 0.4 };
 // Which cues have a file: prefix → [last number, ...numbers that are music rows instead].
 const RANGES = { APP: [20, 2], COL: [10], PACK: [13, 1], QP: [24, 1, 3], TT: [10], CARD: [31], CMB: [21], PW: [33, 1], PWB: [20], AMB: [7], RAV: [6] };
 // RAV-001…006: Planeswalk Ravnica drafts (dungeon gate, vault lock, vault reveal, room advance, ante shatter, signature reveal).
@@ -39,7 +39,7 @@ let ctx = null, master, sfxBus, musicBus, duckBus;
 function apply() {
   if (!ctx) return;
   const s = audioSettings(), t = ctx.currentTime, off = silent();
-  master.gain.setTargetAtTime(off ? 0 : 1, t, 0.03);
+  master.gain.setTargetAtTime(off ? 0 : clamp(s.master), t, 0.03);
   sfxBus.gain.setTargetAtTime(clamp(s.sfx), t, 0.03);
   musicBus.gain.setTargetAtTime(clamp(s.music) * 0.8, t, 0.08);
 }
