@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-deck-play-redesign-v346";
+const CACHE = "cardforge-shell-deck-page-tokens-v347";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",
@@ -16,6 +16,7 @@ const ASSETS = [
   "./play-board-badges.js",
   "./play-board-icons.js",
   "./play-token-art.js",
+  "./play-token-printing.js",
   "./experiments/forge-proof/native-panel.mjs",
   "./experiments/phase-engine/choice-presentation.mjs",
   "./play-card-support.js",
