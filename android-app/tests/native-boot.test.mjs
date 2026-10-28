@@ -66,7 +66,7 @@ test('the top bar and pop-ups stay clear of the status bar', async () => {
 // app relies on desktop-play.js keeping Play closed natively; only the Play modules the website serves ship.
 test('Play opens in the app by the touch rules and stays closed without a touchscreen', async () => {
   const { readPlayDeviceEligibility } = await import(pathToFileURL(path.join(root, 'www/desktop-play.js')));
-  const phone = { Capacitor: { isNativePlatform: () => true }, screen: { width: 915, height: 412 }, navigator: { userAgent: 'Mozilla/5.0 (Linux; Android 16; wv) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36', maxTouchPoints: 5 }, matchMedia: q => ({ matches: q.includes('coarse') }) };
+  const phone = { Capacitor: { isNativePlatform: () => true }, CSS: { supports: () => true }, PointerEvent: function () {}, screen: { width: 915, height: 412 }, navigator: { userAgent: 'Mozilla/5.0 (Linux; Android 16; wv) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36', maxTouchPoints: 5 }, matchMedia: q => ({ matches: q.includes('coarse') }) };
   const sideways = readPlayDeviceEligibility(phone, { documentElement: { clientWidth: 915, clientHeight: 412 } });
   assert.deepEqual([sideways.eligible, sideways.entry], [true, 'touch']);
   const noTouch = { ...phone, navigator: { ...phone.navigator, maxTouchPoints: 0 }, matchMedia: () => ({ matches: false }) };
