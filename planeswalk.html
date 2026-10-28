@@ -1203,6 +1203,11 @@ Object.assign(C,{
  grace:{name:'Healing Grace',e:1,r:'C',kind:'Instant',g:'✧',text:f=>`Shield ${f?4:3}. Heal 1.`,play:f=>{shield(f?4:3);heal(1)}},
  shelter:{name:'Shelter',e:2,r:'U',kind:'Instant',g:'⌂',text:f=>`Shield ${f?7:5}. Draw a card.`,play:f=>{shield(f?7:5);draw(1)}},
  mirror:{col:'C',name:'Mirror Shield',e:1,r:'U',kind:'Artifact',g:'◈',text:f=>`Shield ${f?5:4}.`,play:f=>shield(f?5:4)},
+ // Mythics: rare drops from any fight, likelier from elites, treasure and markets.
+ titan:{col:'R',name:'Inferno Titan',e:4,r:'M',kind:'Creature · Giant',g:'T',ally:f=>({p:f?7:6,t:f?7:6,titan:3}),text:f=>`${f?'7/7':'6/6'}. When it enters, deal 3 damage to each enemy.`},
+ ignition:{col:'R',name:"Chandra's Ignition",e:3,r:'M',kind:'Sorcery',g:'✺',text:f=>`Your strongest ally deals damage equal to its power${f?' +2':''} to each enemy. With no allies, deal ${f?6:4} to each enemy.`,play:f=>{const a=[...c.allies].sort((x,y)=>pow(y)-pow(x))[0];const n=a?pow(a)+(f?2:0):(f?6:4);alive().forEach(e=>hit(e,n))}},
+ thune:{col:'W',name:'Archangel of Thune',e:4,r:'M',kind:'Creature · Angel',g:'A',ally:f=>({p:f?4:3,t:4,flying:1,lifelink:1,thune:1}),text:f=>`${f?4:3}/4. Flying, lifelink. The first time you heal each turn, each ally gets +1/+1 for the fight.`},
+ akroma:{col:'W',name:'Akroma, Angel of Wrath',e:4,r:'M',kind:'Legendary Creature · Angel',g:'A',ally:f=>({p:f?5:4,t:f?5:4,flying:1,first:1,lifelink:1,haste:1}),text:f=>`${f?'5/5':'4/4'}. Flying, first strike, lifelink, haste.`},
 });
 for(const k in C)C[k].col=C[k].col||'W';
 // ---------- heroes ----------
@@ -1213,7 +1218,7 @@ const HEROES={
   plus:t=>{const n=2+(run.emblems.includes('pyre')?2:0);hit(t,n);return `Chandra +1: ${n} damage to ${t.name}.`},
   minus:()=>{c.enemies.forEach(e=>hit(e,3));return 'Chandra −3: 3 damage to each enemy.'},
   ult:()=>{c.ult=true;c.callout='Emblem of the Inferno';return 'Chandra −6: for the rest of this fight, every spell deals 3 to each enemy.'}},
- W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',life:66,energy:3,loyalty:2,theme:'Soldiers, lifegain and flyers. Go wide, then make them huge.',
+ W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',life:63,energy:3,loyalty:2,theme:'Soldiers, lifegain and flyers. Go wide, then make them huge.',
   starter:['vanguard','vanguard','vanguard','salve','salve','grace','pacifism','pacifism','pguard','pguard'],
   plusAim:null,plusLabel:()=>`+1 · Summon ${run&&run.emblems.includes('dawn')?'two Soldiers':'a Soldier'}`,minusLabel:'−3 · Allies +2/+2',ultLabel:'−6 · Allies +2/+2 and fly',
   plus:()=>{soldier();if(run.emblems.includes('dawn'))soldier();return 'Elspeth +1: Soldiers join you.'},
@@ -1372,7 +1377,7 @@ function hit(e,n){if(!e||e.hp<=0||n<=0)return 0;if(c&&c.font&&!c.busy){n+=c.font
 // In a fight, healing is capped per turn so life gain sustains a plan instead of replacing one.
 const HEAL_CAP=5;
 function heal(n){if(n<=0)return;if(run.emblems.includes('signet')&&!(c&&view==='battle'))return;if(c&&view==='battle'){n=Math.min(n,HEAL_CAP-(c.healedTurn||0));if(n<=0)return;c.healedTurn=(c.healedTurn||0)+n}run.hp=Math.min(run.max,run.hp+n);run.heal=(run.heal||0)+n;
- if(c&&view==='battle'){c.allies.forEach(a=>{if(a.pride){a.p++;a.t++}});if(run.emblems.includes('beacon')&&!c.beaconing){c.beaconing=1;c.enemies.forEach(e=>hit(e,1));c.beaconing=0}}}
+ if(c&&view==='battle'){c.allies.forEach(a=>{if(a.pride){a.p++;a.t++}});if(c.allies.some(a=>a.thune)&&c.thuneT!==c.turn){c.thuneT=c.turn;c.allies.forEach(a=>{a.p++;a.t++})}if(run.emblems.includes('beacon')&&!c.beaconing){c.beaconing=1;c.enemies.forEach(e=>hit(e,1));c.beaconing=0}}}
 // Shield (Block in StS): soaks enemy damage before life until your next turn. Life you pay yourself ignores it.
 function shield(n){if(!c||n<=0)return;c.ward=(c.ward||0)+n;juice(`◈ +${n} Shield`)}
 function hurt(n){if(n<=0)return;if(run.emblems.includes('furnace'))n+=1;if(c&&view==='battle'&&c.busy&&c.ward){const a=Math.min(c.ward,n);c.ward-=a;n-=a;c.warded=(c.warded||0)+a;if(n<=0)return}run.hp-=n;run.pop=(run.pop||0)+n;if(c&&view==='battle'&&!c.busy&&run.emblems.includes('font'))c.font=(c.font||0)+1}
@@ -1391,6 +1396,7 @@ function summon(base,name){
  if(c.tremors)c.enemies.forEach(e=>hit(e,c.tremors));
  c.allies.forEach(x=>{if(x!==a&&x.warden)heal(x.warden)});
  if(c.crusade)c.allies.forEach(x=>{x.p+=c.crusade});
+ if(a.titan)alive().forEach(e=>hit(e,a.titan));
  if(a.drawOn)draw(1);
  if(a.squire)summon({p:1,t:1,soldier:1},'Soldier token');
 }
@@ -1554,15 +1560,16 @@ function step(){
 let STEP_MS=600;const stepMs=()=>c&&c.fast?120:STEP_MS;
 function offerEmblems(){const out=[];const left=k=>!run.emblems.includes(k)&&!out.includes(k)&&!BOSSEMB[k]&&forHero(k);
  for(let n=0;n<3;n++){const x=rng(),want=x<.12?'M':x<.34?'R':undefined;let pool=Object.keys(EMB).filter(k=>left(k)&&EMB[k].r===want);if(!pool.length)pool=Object.keys(EMB).filter(left);if(pool.length)out.push(pick(pool))}return out}
-const PRICE={C:25,U:40,R:70};
-function makeShop(){const pickR=r=>shuffle(POOL.filter(k=>C[k].r===r));const cards=[...pickR('C').slice(0,2),...pickR('U').slice(0,2),pickR('R')[0]];
+const PRICE={C:25,U:40,R:70,M:110};
+const mythOr=k=>{const m=POOL.filter(x=>C[x].r==='M');return m.length&&rng()<.1?pick(m):k};
+function makeShop(){const pickR=r=>shuffle(POOL.filter(k=>C[k].r===r));const cards=[...pickR('C').slice(0,2),...pickR('U').slice(0,2),mythOr(pickR('R')[0])];
  const emb=pick(Object.keys(EMB).filter(k=>!run.emblems.includes(k)&&!EMB[k].r&&forHero(k)));
  return {cards:cards.map(k=>({k,price:Math.round((PRICE[C[k].r]+Math.floor(rng()*6))*(1+.1*((run.act||1)-1))),sold:false})),remove:{price:35+25*(run.removed||0),sold:false},foil:{price:45+10*((run.act||1)-1),sold:false},emb:emb?{k:emb,price:55,sold:false}:null}}
 function treasureEmblems(){const x=rng(),want=x<.4?'M':'R';const pool=Object.keys(EMB).filter(k=>!run.emblems.includes(k)&&EMB[k].r===want&&!BOSSEMB[k]&&forHero(k));return pool.length?shuffle(pool).slice(0,2):[]}
-function treasureCards(){const r=pick(POOL.filter(k=>C[k].r==='R'));const u=shuffle(POOL.filter(k=>C[k].r==='U')).slice(0,2);return shuffle([r,...u])}
+function treasureCards(){const r=mythOr(pick(POOL.filter(k=>C[k].r==='R')));const u=shuffle(POOL.filter(k=>C[k].r==='U')).slice(0,2);return shuffle([r,...u])}
 // Rarity with a pity timer: every card offered that isn't rare raises the next rare chance.
 function rollCard(minRare){const x=rng(),rare=.04+run.pity+(minRare?.2:0);let r;
- if(minRare==='R'||x<rare){r='R';run.pity=0}else{run.pity+=.02;r=minRare||x<rare+.3?'U':'C'}
+ if(minRare==='R'||x<rare){r=rng()<(minRare==='R'?.1:.08)&&POOL.some(k=>C[k].r==='M')?'M':'R';run.pity=0}else{run.pity+=.02;r=minRare||x<rare+.3?'U':'C'}
  return pick(POOL.filter(k=>C[k].r===r))}
 function win(){
  run.fights++; if(run.emblems.includes('hearth'))heal(4); run.loyalty=Math.min(8,c.loyalty+1);
@@ -1609,7 +1616,7 @@ function enemyInfo(e){const d=E[e.key];const tr=[e.pacified&&(e.rank?'Pacified: 
  const list=(e.phase2?d.phase2:d.intents).map(([t,v])=>(ACT[t]||(()=>t))(['atk','annihilate'].includes(t)?v+e.buff:v)).join(' → ')+(e.buff?` (includes +${e.buff} from buffs)`:'');
  return `<div class="inspect" role="dialog" aria-label="${e.name}"><b>${e.name}</b><span class="muted"> · ${e.rank==='boss'?'Planeswalker':e.rank==='elite'?'Legendary':'Minion'} · ⚔ ${e.pow+e.buff} · ♥ ${Math.max(0,e.hp)}/${e.max}${e.shield?` · ◈ ${e.shield}`:''}</span><p>Pattern: ${list}</p>${tr.length?`<p>${tr.join(' ')}</p>`:''}<button class="btn" data-act="closeinspect">Close</button></div>`}
 const popOf=o=>{let s='';if(o.pop)s+=`<span class="pop${o.pop>=8?' big':''}" style="font-size:${(1.1+Math.min(o.pop,20)/14).toFixed(2)}rem">−${o.pop}</span>`;if(o.heal)s+=`<span class="pop heal">+${o.heal}</span>`;o.pop=0;o.heal=0;return s};
-const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Common',U:'Uncommon',R:'Rare',K:'Curse'}[d.r];return `<button class="card${card.foil?' foil':''}" data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" ${attrs}><span class="head"><b>${d.name}${card.foil?' ✦':''}</b><span class="cost">${c&&view==='battle'?costOf(card):d.e}</span></span><span class="pic">${d.g}</span><span class="kind">${d.r==='K'?d.kind:d.kind+' · '+r}</span><span>${d.text(card.foil)}</span></button>`};
+const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Common',U:'Uncommon',R:'Rare',M:'Mythic',K:'Curse'}[d.r];return `<button class="card${card.foil?' foil':''}" data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" ${attrs}><span class="head"><b>${d.name}${card.foil?' ✦':''}</b><span class="cost">${c&&view==='battle'?costOf(card):d.e}</span></span><span class="pic">${d.g}</span><span class="kind">${d.r==='K'?d.kind:d.kind+' · '+r}</span><span>${d.text(card.foil)}</span></button>`};
 const kws=a=>['haste','flying','reach','first','vigilance','deathtouch','lifelink','trample','defender'].filter(k=>a[k]).map(k=>k==='first'?'first strike':k).join(' · ');
 
 function topBar(){
@@ -1663,9 +1670,10 @@ function rewardView(){
  </section>`;
 }
 function restView(){
- return `<section class="screen"><h2>A quiet chapel</h2>
- ${reward?.foil?`<p>Pick a card to foil. Foiled cards are stronger for the rest of the run.</p><div class="choices">${run.deck.filter(x=>!x.foil).map(card=>cardHtml(card,`data-act="foil" data-id="${card.id}"`)).join('')}</div><button class="btn" data-act="back">Back</button>`
- :`<div class="choices"><button class="option" data-act="heal"><b>Rest</b><span class="muted">Heal ${Math.round(run.max*.3)} life.</span></button><button class="option" data-act="foilpick"><b>Foil a card</b><span class="muted">Upgrade one card for the rest of the run.</span></button>${(run.act||1)>=2&&run.deck.some(x=>x.key==='doubt')?`<button class="option" data-act="purify"><b>Answer your Doubt</b><span class="muted">Your Doubt becomes Moment of Clarity: 0 energy, draw 2, gain 2 life.</span><span class="costline">Cost: no rest this time</span></button>`:''}</div>`}
+ return `<section class="screen bonfire"><h2>A quiet chapel</h2>
+ ${reward?.removing?`<p>Pick a card to burn. It leaves your deck for good.</p><div class="choices">${run.deck.map(card=>cardHtml(card,`data-act="remove" data-id="${card.id}"`)).join('')}</div><button class="btn" data-act="back">Back</button>`
+ :reward?.foil?`<p>Pick a card to foil. Foiled cards are stronger for the rest of the run.</p><div class="choices">${run.deck.filter(x=>!x.foil).map(card=>cardHtml(card,`data-act="foil" data-id="${card.id}"`)).join('')}</div><button class="btn" data-act="back">Back</button>`
+ :`<div class="choices"><button class="option" data-act="heal"><b>Rest</b><span class="muted">Heal ${Math.round(run.max*.3)} life.</span></button><button class="option" data-act="foilpick"><b>Foil a card</b><span class="muted">Upgrade one card for the rest of the run.</span></button><button class="option" data-act="restburn" ${run.deck.length<=5?'disabled':''}><b>Burn a card</b><span class="muted">Remove one card from your deck.</span></button>${(run.act||1)>=2&&run.deck.some(x=>x.key==='doubt')?`<button class="option" data-act="purify"><b>Answer your Doubt</b><span class="muted">Your Doubt becomes Moment of Clarity: 0 energy, draw 2, gain 2 life.</span><span class="costline">Cost: no rest this time</span></button>`:''}</div>`}
  </section>`;
 }
 function eventView(){
@@ -1762,6 +1770,7 @@ document.getElementById('app').addEventListener('click',ev=>{
  if(a==='heal'){heal(Math.round(run.max*.3));return toMap()}
  if(a==='purify'){const x=run.deck.find(d=>d.key==='doubt');if(x){x.key='clarity';x.foil=false}return toMap()}
  if(a==='foilpick'){reward={foil:1};return render()}
+ if(a==='restburn'){reward={removing:1};return render()}
  if(a==='foil'){const x=run.deck.find(d=>d.id===+b.dataset.id);if(x)x.foil=true;return toMap()}
  if(a==='blood'){run.hp-=10;if(run.hp<=0){run.hp=0;view='over';return render()}const left=Object.keys(EMB).filter(k=>!run.emblems.includes(k)&&!EMB[k].r&&forHero(k));if(left.length)run.emblems.push(pick(left));return toMap()}
  if(a==='burn'){reward.removing=1;return render()}
