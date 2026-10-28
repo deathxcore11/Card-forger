@@ -17,6 +17,7 @@ import {FORGE_PLAY_TEST_ENABLED} from './play-forge-feature.js';
 import {forgeDeckSupport,forgeCpuDeckComplete} from './play-forge-setup-review.js';
 import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
+import {cyclePlaymatChoice,nextPlaymat} from './play-playmats.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {createPlayerMat} from './play-player-mat.js';
 import {createPlayUpdateGate} from './play-update-gate.js';
@@ -1512,6 +1513,7 @@ const savedPlayCopy=deck=>playSaver.savedId(deck);
 async function savePlayDeck(deck){const id=await playSaver.save(deck);refreshPlayMenu();return id;}
 const cancelPlayBuilds=()=>{for(const builder of Object.values(playBuilders))builder.cancel();};
 let quickStatus={busy:false,error:null},quickSequence=0;
+A.playPlaymat=()=>{cyclePlaymatChoice();refreshPlayMenu();};
 A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBuilds();playSetup.configure({mode:t.dataset.playStyle==='social'?'friends':'cpu'});if(t.dataset.playStyle!=='social')playSetup.setPlayStyle(t.dataset.playStyle);refreshPlayMenu();};
 A.playFindOpponent=async()=>{
  const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
@@ -1577,7 +1579,7 @@ A.playStartCandidate=async()=>{
  const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
  if(await playUpdates.beforeMatch())return; // The page reopens Play on the current release.
  if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
- playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
+ playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
  const beginGame=async options=>{
   practicePregame?.destroy();practicePregame=null;
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
