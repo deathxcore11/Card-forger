@@ -11,7 +11,7 @@ for(const title of ['Krenko, Mob Boss','Bloodthirst','Urza','Jon Finkel']){
  let calls=0;
  const fetcher=async(url,options)=>{
   calls++;const u=new URL(url);assert.equal(u.origin,'https://mtg.wiki');assert.equal(u.pathname,'/api.php');assert.equal(u.searchParams.get('titles'),title);assert.equal(u.searchParams.get('action'),'query');assert.equal(u.searchParams.get('formatversion'),'2');assert.equal(u.searchParams.get('explaintext'),'1');assert.equal(u.searchParams.get('exintro'),'1');assert.equal(u.searchParams.get('exlimit'),'1');assert.equal(u.searchParams.get('prop'),'extracts|info');
-  assert.equal(options.redirect,'manual');assert.equal(options.credentials,'omit');assert.deepEqual(Object.keys(options.headers),['Accept'],'No cookies, auth, borrowed User-Agent, browser fingerprint or chat payload is sent');assert.equal(options.body,undefined);
+  assert.equal(options.redirect,'manual');assert.equal(options.credentials,'omit');assert.deepEqual(Object.keys(options.headers),['Accept','User-Agent','Api-User-Agent'],'No cookies, auth, browser fingerprint or chat payload is sent');assert.match(options.headers['User-Agent'],/^CardStashy\/[\d.]+ \(in-app wiki reader;/,'Own descriptive User-Agent, never a borrowed browser one');assert.equal(options.body,undefined);
   return response(article(title,Array.from({length:80},(_,i)=>'word'+i).join(' ')));
  };
  const result=await lookupMtgWikiReference({title},{fetcher});
@@ -107,7 +107,7 @@ const providerCases=[['mtg','Bloodthirst'],['ptcg','Poisoned (TCG)'],['ygo','Syn
 for(const [game,title] of providerCases){
  const provider=WIKI_SOURCES[game];let calls=0;
  const fetcher=async(url,options)=>{
-  calls++;const u=new URL(url);assert.equal(u.origin+u.pathname,provider.apiEndpoint);assert.equal(options.redirect,'manual');assert.equal(options.credentials,'omit');assert.deepEqual(options.headers,{Accept:'application/json'});
+  calls++;const u=new URL(url);assert.equal(u.origin+u.pathname,provider.apiEndpoint);assert.equal(options.redirect,'manual');assert.equal(options.credentials,'omit');assert.equal(options.headers.Accept,'application/json');assert.match(options.headers['User-Agent'],/^CardStashy\//);
   if(game==='ptcg'){assert.equal(u.searchParams.get('prop'),'extracts|info|categories');assert.equal(u.searchParams.get('cllimit'),'20');}
   return response(article(title,'A source quotation is community context, not an official card ruling.'));
  };

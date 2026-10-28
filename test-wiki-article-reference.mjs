@@ -10,7 +10,7 @@ const parsed=(title='Bloodlust',html=`<p>${words}</p><h2 id="Plan">Plan</h2><p><
 const short=(title='Bloodlust')=>({batchcomplete:true,query:{pages:[{title,pageid:100,ns:0,lastrevid:200,extract:words,index:1}]}});
 let calls=[];
 const fetcher=async(url,init)=>{
- const u=new URL(url);calls.push(u);assert.equal(u.origin,'https://mtg.wiki');assert.equal(u.pathname,'/api.php');assert.equal(init.credentials,'omit');assert.equal(init.redirect,'manual');assert.deepEqual(init.headers,{Accept:'application/json'});
+ const u=new URL(url);calls.push(u);assert.equal(u.origin,'https://mtg.wiki');assert.equal(u.pathname,'/api.php');assert.equal(init.credentials,'omit');assert.equal(init.redirect,'manual');assert.equal(init.headers.Accept,'application/json');assert.match(init.headers['User-Agent'],/^CardStashy\//);assert(!('Cookie' in init.headers)&&!('Authorization' in init.headers));
  return json(u.searchParams.get('action')==='parse'?parsed():short());
 };
 const article=await lookupGameWikiReference({game:'mtg',mode:'article',title:'Bloodlust'},{fetcher});

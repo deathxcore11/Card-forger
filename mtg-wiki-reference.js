@@ -19,7 +19,11 @@ export const MTG_WIKI_REFERENCE_POLICY=Object.freeze({
  copyrightPolicyUrl:ORIGIN+'/page/MTG_Wiki%3ACopyrights',
 });
 export const WIKI_REFERENCE_POLICY=Object.freeze(Object.fromEntries(Object.entries(MTG_WIKI_REFERENCE_POLICY).filter(([key])=>!['origin','endpoint','license','licenseUrl','copyrightPolicyUrl'].includes(key))));
-export const WIKI_ARTICLE_POLICY=Object.freeze({maxResponseBytes:2*1024*1024,timeoutMs:14000,maxImageMetadata:12,maxCacheEntries:8,maxCacheBytes:12*1024*1024,maxCachedResponseBytes:2*1024*1024});
+export const WIKI_ARTICLE_POLICY=Object.freeze({maxResponseBytes:4*1024*1024,timeoutMs:14000,maxImageMetadata:12,maxCacheEntries:8,maxCacheBytes:12*1024*1024,maxCachedResponseBytes:2*1024*1024});
+// MediaWiki's API etiquette asks every client for a descriptive User-Agent, and
+// Cloudflare-fronted wikis (Bulbapedia, Fandom) refuse bare Worker requests
+// that send none, which surfaced as "This article couldn't load".
+const WIKI_REQUEST_HEADERS=Object.freeze({Accept:'application/json','User-Agent':'CardStashy/4.3 (in-app wiki reader; https://cardstashy.com; github.com/deathxcore11/Card-forger)','Api-User-Agent':'CardStashy/4.3 (in-app wiki reader; https://cardstashy.com)'});
 const states=new WeakMap(),copy=v=>structuredClone(v);
 const cleanText=value=>String(value||'').replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g,' ').replace(/\s+/gu,' ').trim();
 function publicTopic(value){
@@ -141,7 +145,7 @@ async function fetchReference(input,{fetcher,now,signal,timeoutMs}){
   const read=async(url,maxBytes,readSignal=controller.signal)=>{
   // Fixed origin/path; returned URLs and article prose are never fetched.
   if(url.origin!==input.provider.origin||url.origin+url.pathname!==input.provider.apiEndpoint)throw new Error('unsafe-destination');
-  const response=await fetcher(url.href,{method:'GET',headers:{Accept:'application/json'},redirect:'manual',credentials:'omit',referrerPolicy:'no-referrer',signal:readSignal});
+  const response=await fetcher(url.href,{method:'GET',headers:WIKI_REQUEST_HEADERS,redirect:'manual',credentials:'omit',referrerPolicy:'no-referrer',signal:readSignal});
   if(response.redirected||response.url&&(new URL(response.url).origin!==input.provider.origin||new URL(response.url).pathname!==new URL(input.provider.apiEndpoint).pathname))return {error:unavailable(input,checkedAt,'redirect','A wiki redirect was refused. No alternate destination was fetched.')};
   if(response.status>=300&&response.status<400)return {error:unavailable(input,checkedAt,'redirect','A wiki redirect was refused. No alternate destination was fetched.',{httpStatus:response.status})};
   if(!response.ok)return {error:unavailable(input,checkedAt,'upstream-http',input.provider.name+' could not be read from this server (HTTP '+response.status+'). No wiki article facts were retrieved.',{httpStatus:response.status})};
