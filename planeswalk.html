@@ -1212,7 +1212,6 @@ svg.pw-guards circle{fill:#8fc7ff}
  #app[data-pw-tall] .field:has(.side.foe .unit:nth-child(4)) .side.you{justify-content:center;width:auto!important;margin:0 auto}
  #app[data-pw-tall] .field:has(.side.foe .unit:nth-child(4)) .side.foe .unit:not(.boss){width:60px!important}
 }
-.pw-rotbtn{font-size:.72rem;padding-inline:10px;border-color:#e8b95b88!important;color:#f3d48a}
 @media (orientation:portrait){.screen.heroes>h2{font-size:1.15rem;margin-block:2px 8px}}
 /* tall upright phones: the board grows into the spare height, bigger hand */
 @media (orientation:portrait){
@@ -2203,14 +2202,6 @@ if(!resumeRun())newRun();
   if(z>1){app.dataset.pwZoom='';de.style.setProperty('--pw-zoom',z)}else{delete app.dataset.pwZoom;de.style.removeProperty('--pw-zoom')}
   de.style.setProperty('--pw-vh',(H/z)+'px');if(!port&&H/z>=430)app.dataset.pwTall='';else delete app.dataset.pwTall;if(port&&H/z>=760)app.dataset.pwTallp='';else delete app.dataset.pwTallp;window.dispatchEvent(new Event('pw-fit'))};
  addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeout(fit,120));fit()})();
-// Upright phones: one tap goes sideways (fullscreen + landscape lock where the browser allows it; Android Chrome and the app).
-(()=>{const app=document.getElementById('app');if(!app)return;const so=screen.orientation;
- const can=()=>so&&so.lock&&document.documentElement.requestFullscreen&&matchMedia('(pointer:coarse) and (orientation:portrait)').matches&&Math.min(screen.width,screen.height)<=600;
- const add=()=>{const top=app.querySelector('.top');if(!top)return;let b=top.querySelector('.pw-rotbtn');
-  if(!can()){if(b)b.remove();return}if(b)return;b=document.createElement('button');b.className='btn pw-rotbtn';b.type='button';b.textContent='⟳ Sideways';b.setAttribute('aria-label','Play sideways in full screen');
-  b.addEventListener('click',async()=>{try{await document.documentElement.requestFullscreen({navigationUI:'hide'});await so.lock('landscape')}catch(e){b.remove()}});
-  const ref=top.querySelector('.pw-infobtn');ref?top.insertBefore(b,ref):top.appendChild(b)};
- new MutationObserver(add).observe(app,{childList:true});addEventListener('resize',add);add()})();
 
 </script>
 </body>
