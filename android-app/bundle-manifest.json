@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "5d3d3a5f972e3608ec7782a8b66fa7f3835340a6",
-  "sourceVersion": "4.3.12",
+  "commit": "869c906c3da72776492938462a25c6697b88c2c2",
+  "sourceVersion": "4.3.13",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -1098,7 +1098,7 @@
     {
       "path": "config.js",
       "bytes": 628,
-      "sha256": "e15b42acfd1a7fdb150e8465525e6ef3470d7b4dc0a04f3f577392fc295eef35"
+      "sha256": "d9b3275dcfa9acfe8b77c6f65c06d129750d69cee763fbac759cf8a60d268b13"
     },
     {
       "path": "core.js",
@@ -2097,8 +2097,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 112179,
-      "sha256": "f81f7e8dfa335686baf98b60f54798c80208cb4d4fcfdba813b44f4b2d0e737c"
+      "bytes": 112421,
+      "sha256": "12db4b9a8b7fb91f3bda5991c93875419cc6be50265586c006eee0252f536685"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -2792,8 +2792,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 3858104,
-      "sha256": "2e2390553b46012551031a50b763792629d8e4f5926fec656eacf9c01d70fb9d"
+      "bytes": 3863670,
+      "sha256": "896cced5b872e1d145d7ab914c295d4e19d6b0c2fef4c2cf405647e9fd520b75"
     },
     {
       "path": "planner.js",
@@ -2887,8 +2887,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 264843,
-      "sha256": "d98c92911135e3cb43fc3873db35df1b98b2f67b017fb8d120d9f75375cca2b2"
+      "bytes": 265580,
+      "sha256": "7e2f8905ee4483c6fb5b331c597ec77a489ea31fad89d5f770768dedbb4b5ea9"
     },
     {
       "path": "play-menu.css",
@@ -3112,8 +3112,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 902,
-      "sha256": "937999ed427f12e44edcbd8f0e5133cdd64ec916110de3851f302e96eb84d4fa"
+      "bytes": 873,
+      "sha256": "9fb3d4d90681d638fe08a8641346cd67936359717c33746a7f4ae34d72501a94"
     },
     {
       "path": "release-status.js",
