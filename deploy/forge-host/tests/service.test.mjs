@@ -744,3 +744,18 @@ test('an abandoned warm engine holds runtime but not one of the day\'s matches',
   f.setTime(lease.warmUntil + 120000);
   assert.equal((await f.create()).response.status, 202, 'the one daily match is still available');
 });
+test('a start in progress shows its owner only step names and seconds', async () => {
+  const f = warmFixture();
+  const { body } = await f.create();
+  const store = f.stores.get(body.matchId);
+  const record = await store.get('allocation');
+  assert.equal(record.progress.warm, false); assert.equal(record.progress.step, 'authority');
+  await store.put('allocation', { ...record, status: 'initializing', startupDeadline: record.createdAt + 120000,
+    progress: { warm: true, step: 'ready', ms: { claim: 0, bootstrap: 40, ready: 900, bogus: 5 }, secret: 'x' } });
+  const response = await f.route(request('/api/play/matches/' + body.matchId, { method: 'GET' }));
+  assert.equal(response.status, 202);
+  const value = await response.json();
+  assert.deepEqual(value.progress, { warm: true, step: 'ready', ms: { claim: 0, bootstrap: 40, ready: 900 }, sinceMs: 0 });
+  assert.equal(JSON.stringify(value).includes('secret'), false);
+  assert.equal((await f.route(request('/api/play/matches/' + body.matchId, { method: 'GET', token: 'other' }))).status, 404);
+});

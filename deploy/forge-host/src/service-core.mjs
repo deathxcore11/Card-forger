@@ -29,6 +29,15 @@ const error = (code, status) => json({ error: code }, status,
 const publicAllocation = a => ({ matchId: a.matchId, generation: a.generation,
   deckDigests: a.deckDigests, expiresAt: a.expiresAt, forgeRevision: FORGE_REVISION, schema: NATIVE_SCHEMA });
 
+// Only the step names and seconds of a start in progress; nothing from the input.
+const STEPS = ['options', 'claim', 'start', 'inactivity', 'bootstrap', 'ready', 'confirm', 'authority'];
+function startupProgress(progress, sinceMs) {
+  if (!progress || !STEPS.includes(progress.step)) return null;
+  const ms = {};
+  for (const name of STEPS) if (Number.isSafeInteger(progress.ms?.[name]) && progress.ms[name] >= 0) ms[name] = progress.ms[name];
+  return { warm: progress.warm === true, step: progress.step, ms, sinceMs: Math.max(0, sinceMs) };
+}
+
 // A Durable Object has one alarm. Attempts and housekeeping may advance a
 // wakeup, but must not postpone an earlier cleanup. Transaction retries are
 // safe: this callback only reads and writes the alarm on the transaction.
@@ -343,7 +352,10 @@ export class MatchService {
     // Seconds into startup at which each step began. Logged once per start (no input,
     // token or ids) so `wrangler tail` shows where a slow start spends its time.
     const timings = {};
-    const enter = name => { step = name; timings[name] = this.now() - began; };
+    const enter = name => { step = name; timings[name] = this.now() - began;
+      // The owner's loading screen shows these while the match starts (startupProgress).
+      record.progress = { warm, step: name, ms: { ...timings } };
+      this.storage.put('allocation', record).catch(() => {}); };
     const containerExited = () => exited && Object.assign(new Error('container_exited'), { containerExited: true });
     const replaced = () => this.replacing === allocation.generation && Object.assign(new Error('replaced_by_new_start'), { replaced: true });
     const stopIfReplaced = () => { const failure = replaced(); if (failure) throw failure; };
@@ -495,7 +507,8 @@ export class MatchService {
         // It neither invokes provider APIs nor changes/resumes an allocation.
         if (this.now() >= pending.startupDeadline || this.now() >= pending.expiresAt) return error('match_startup_interrupted', 410);
         const { startupDeadline, ...allocation } = pending;
-        return json({ ...allocation, status: 'initializing' }, 202);
+        const progress = record?.status === 'initializing' ? startupProgress(record.progress, this.now() - record.createdAt) : null;
+        return json({ ...allocation, status: 'initializing', ...(progress ? { progress } : {}) }, 202);
       }
     }
     if (request.method === 'POST') {
