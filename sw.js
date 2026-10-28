@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-scanner-audit-pw-labels-v371";
+const CACHE = "cardforge-shell-playable-glow-guard-v372";
 const ASSETS = [
   "./play-forge-feature.js",
   "./audio.js",
