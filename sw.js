@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-uniform-arena-v348";
+const CACHE = "cardforge-shell-warm-match-start-v349";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",
