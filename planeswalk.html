@@ -1302,6 +1302,99 @@ body[data-actnum="2"] .screen{--pw-bg-screen:var(--pw-x-zen-map)}
 .card[data-rar=R] .pic::after{content:"Rare";position:absolute;right:5px;bottom:4px;z-index:4;background:var(--pw-gold);color:#1b1406;font:800 .5rem/1.5 var(--body);letter-spacing:.12em;text-transform:uppercase;padding:0 6px;border-radius:99px;box-shadow:0 0 0 1px #000,0 0 10px #e8b95b88;pointer-events:none}
 .battle .hand .card[data-rar=R] .pic::after{font-size:.42rem;padding:0 4px;right:3px;bottom:2px}
 
+/* ===== B5 battle layout (motion-pass spec): board gets the room, abilities beside the hero,
+   hand fan, piles at the hand's sides, hint toast, floating tally. Stone and iron, hourglass End turn. ===== */
+:root{--pw-stone:linear-gradient(180deg,#2a2622f2,#1a1714f2 55%,#141210f2);--pw-iron:#4a4a4e;--pw-iron-hi:#8a8a92}
+/* materials (both orientations) */
+#app .battle .controls .btn:not(.main){background:var(--pw-stone);border:1px solid var(--pw-iron);box-shadow:inset 0 1px 0 #ffffff14,inset 0 -2px 0 #0008,0 3px 8px #000a;color:#e8e0cf}
+#app .battle .controls .btn:not(.main):not(:disabled):hover{border-color:var(--pw-gold)}
+#app .battle .controls .btn:disabled{opacity:.62;filter:saturate(.4)}
+#app .battle .controls :is([data-act=plus],[data-act=minus],[data-act=ult]){border-radius:999px;border-left:3px solid var(--pw-gold);text-align:left;padding-left:9px}
+#app .battle .controls .btn.ult{border-left-color:#ff8a3d}
+#app .battle .controls .btn.main{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;background:linear-gradient(180deg,#ffd98a,#e8b95b 45%,#b9862c);color:#1a1408;border:1px solid #6b4d16;box-shadow:inset 0 1px 0 #fff6,inset 0 -2px 0 #0004,0 0 0 2px #120f0a,0 6px 14px #000c;letter-spacing:.08em}
+#app .battle .controls .btn.main::before{content:"";width:11px;height:15px;flex:none;background:#1a1408;clip-path:polygon(0 0,100% 0,100% 8%,58% 50%,100% 92%,100% 100%,0 100%,0 92%,42% 50%,0 8%)}
+#app .battle .controls .log{background:#120f0ad9;border:1px solid var(--pw-iron);border-radius:999px;color:#efe6d2;box-shadow:0 4px 12px #000a}
+/* loyalty diamond on the hero */
+#app .battle .unit.hero .loyal{width:26px!important;height:26px!important;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);background:linear-gradient(180deg,#ffe3a0,#e8b95b 55%,#a9781f)!important;color:#1a1408!important;font:800 .72rem/26px var(--body)!important;text-shadow:none;display:grid;place-items:center;top:-13px!important;filter:drop-shadow(0 0 0 #000) drop-shadow(0 2px 3px #000)}
+/* hand fan: cards overlap on an arc and lift on touch */
+#app .battle .hand{--n:5;overflow:visible}
+#app .battle .hand:has(>.card:nth-child(1):last-child){--n:1}#app .battle .hand:has(>.card:nth-child(2):last-child){--n:2}
+#app .battle .hand:has(>.card:nth-child(3):last-child){--n:3}#app .battle .hand:has(>.card:nth-child(4):last-child){--n:4}
+#app .battle .hand:has(>.card:nth-child(6):last-child){--n:6}#app .battle .hand:has(>.card:nth-child(7):last-child){--n:7}
+#app .battle .hand:has(>.card:nth-child(8):last-child){--n:8}#app .battle .hand:has(>.card:nth-child(9):last-child){--n:9}
+#app .battle .hand:has(>.card:nth-child(10):last-child){--n:10}
+#app .battle .hand>.card:nth-child(1){--i:0}#app .battle .hand>.card:nth-child(2){--i:1}#app .battle .hand>.card:nth-child(3){--i:2}
+#app .battle .hand>.card:nth-child(4){--i:3}#app .battle .hand>.card:nth-child(5){--i:4}#app .battle .hand>.card:nth-child(6){--i:5}
+#app .battle .hand>.card:nth-child(7){--i:6}#app .battle .hand>.card:nth-child(8){--i:7}#app .battle .hand>.card:nth-child(9){--i:8}#app .battle .hand>.card:nth-child(10){--i:9}
+#app .battle .hand>.card{--k:calc(var(--i,0) - (var(--n) - 1) / 2);transform:translateY(calc(max(var(--k),-1 * var(--k)) * 3px)) rotate(calc(var(--k) * var(--rot,4deg)));transform-origin:50% 120%;transition:transform .14s ease-out}
+#app .battle .hand>.card:not(:disabled):hover,#app .battle .hand>.card[data-chosen]{transform:translateY(-14px) rotate(0) scale(1.08)!important;z-index:9}
+#app .battle .hand>.card:nth-child(n+7){--fan:0}
+@media (prefers-reduced-motion:reduce){#app .battle .hand>.card{transition:none}}
+
+@media (orientation:landscape){
+ /* top bar: slim, round icons */
+ #app:has(>.battle) .top{height:36px;gap:8px}
+ #app:has(>.battle) .top h1{font-size:.9rem}
+ #app:has(>.battle) .top :is(.pw-infobtn,[data-act=new]){width:40px;min-width:40px;height:40px;padding:0;border-radius:50%}
+ #app:has(>.battle) .top [data-act=new]{font-size:0}
+ #app:has(>.battle) .top [data-act=new]::after{content:"⚑";font:700 1.05rem/1 var(--body);color:#e8e0cf}
+ #app:has(>.battle) .top details.deck summary{height:40px;border-radius:999px;padding:0 12px;font-size:.7rem}
+ /* grid: pills+energy | board, hint, hand | actions */
+ #app .battle{grid-template-columns:84px minmax(0,1fr) 108px!important;grid-template-rows:minmax(0,1fr) 22px 78px!important;gap:2px 6px!important;position:relative;overflow:clip}
+ #app .battle .field{grid-column:2!important;grid-row:1!important;padding-top:20px!important;align-self:stretch}
+ #app .battle .controls{display:contents!important}
+ #app .battle .controls :is([data-act=plus],[data-act=minus],[data-act=ult]){grid-column:1;grid-row:1;position:relative;z-index:3;width:84px;min-height:44px!important;font-size:.5rem!important;padding-right:4px!important;line-height:1.12;padding-block:2px!important}
+ #app .battle .controls :is([data-act=plus],[data-act=minus],[data-act=ult]){align-self:end}
+ #app .battle .controls [data-act=plus]{margin-bottom:100px}
+ #app .battle .controls [data-act=minus]{margin-bottom:50px}
+ #app .battle .controls :is([data-act=all],[data-act=arrange],[data-act=cancel],[data-act=sac]){grid-column:3;grid-row:1;min-height:44px!important;font-size:.58rem!important;border-radius:12px;position:relative;z-index:3}
+ #app .battle .controls :is([data-act=all],[data-act=arrange],[data-act=sac]){align-self:end}
+ #app .battle .controls [data-act=arrange]{margin-bottom:50px}
+ #app .battle .controls [data-act=sac]{margin-bottom:100px}
+ #app .battle .controls [data-act=cancel]{grid-row:3;align-self:start}
+ #app .battle .controls .btn.main{grid-column:3;grid-row:3;align-self:end;min-height:46px!important;font-size:.78rem!important;margin:0}
+ #app .battle .controls .log{position:static!important;grid-column:2;grid-row:2;justify-self:center;align-self:start;margin-top:-6px;z-index:5;max-width:100%;font-size:.62rem!important;padding:2px 12px!important;line-height:18px}
+ #app .battle .controls .inspect{left:104px;right:120px}
+ /* energy orb bottom-left, piles at the hand's sides, tally floats top-centre */
+ #app .battle .energy{grid-column:1!important;grid-row:3!important;align-self:end!important;justify-self:start!important;margin:0 0 6px 2px;width:52px!important;height:52px!important}
+ #app .battle .chain{grid-column:1!important;grid-row:2!important;margin:0!important;justify-self:center}
+ #app .battle .piles{display:contents!important}
+ #app .battle .piles>span{grid-row:3;align-self:end;z-index:2;display:grid;justify-items:center;gap:1px;font:700 .5rem var(--body);letter-spacing:.08em;text-transform:uppercase;color:#a59a84;width:40px;text-align:center}
+ #app .battle .piles>span:nth-child(1){grid-column:1/3;justify-self:start;margin:0 0 2px 56px;width:34px}
+ #app .battle .piles>span:nth-child(2){grid-column:3;justify-self:start;align-self:start;margin:-4px 0 0 2px;display:flex;align-items:center;gap:6px;width:auto}
+ #app .battle .piles>span:is(:nth-child(1),:nth-child(2))::before{content:"";width:22px;height:30px;border-radius:4px;background:repeating-linear-gradient(45deg,#3b2a14 0 4px,#2c1f0f 4px 8px);border:1px solid #8a6a33;box-shadow:2px -2px 0 -1px #2c1f0f,2px -2px 0 0 #8a6a33}
+ #app .battle .piles>.bankhint{grid-column:1;grid-row:3;justify-self:center;align-self:start;width:auto;margin-left:4px;font-size:.46rem;text-transform:none;letter-spacing:0;color:#9fe3b0}
+ #app .battle .tally{position:absolute!important;top:4px;left:50%;transform:translateX(-50%);z-index:6;grid-column:auto;grid-row:auto;padding:1px 12px;min-width:50px;background:#120f0ae6;border:1.5px solid var(--pw-gold);border-radius:10px;font-size:1rem;line-height:1.1}
+ #app .battle .tally small{font-size:.42rem}
+ #app .battle .hand{grid-column:2!important;grid-row:3!important;justify-content:center;align-items:end;padding:0!important}
+ #app .battle .hand{align-self:start;height:78px}
+ #app .battle .hand>.card{width:72px!important;height:96px!important;margin:0 -7px!important;translate:0 9px}
+}
+ /* 5 foes at phone size: one-line names, slimmer tiles so nothing overlaps */
+@media (orientation:landscape){
+ #app:not([data-pw-tall]) .battle .side.foe:has(>.unit:nth-child(5)){gap:3px}
+ #app:not([data-pw-tall]) .battle .field{grid-template-columns:auto auto!important;justify-content:space-between;column-gap:12px}
+ #app:not([data-pw-tall]) .battle .side.foe:has(>.unit:nth-child(5))>.unit{width:44px!important;flex:none}
+ #app:not([data-pw-tall]) .battle .side.foe:has(>.unit:nth-child(5))>.unit .name{-webkit-line-clamp:1;font-size:.44rem;white-space:nowrap;text-overflow:ellipsis;display:block;max-width:44px}
+}
+/* portrait fan: gentler arc, tighter overlap so 5+ cards stay inside the frame */
+@media (orientation:portrait){
+ #app .battle .hand{--rot:2.5deg}
+ #app .battle .hand>.card{margin-inline:-9px!important}
+ #app .battle .hand:has(>.card:nth-child(6)){--rot:2deg}
+ #app .battle .hand:has(>.card:nth-child(6))>.card{margin-inline:-16px!important}
+}
+/* status tags (Doomed, Tapped, Zzz) never clip to a fragment */
+#app .battle .unit .tag{white-space:nowrap;overflow:visible;text-overflow:clip;letter-spacing:.02em;max-width:none;width:auto;font-size:.44rem}
+/* B5 r2: a clear border between your line and theirs; enemy ground tinted */
+@media (orientation:landscape){
+ #app:not([data-pw-tall]) .battle .field>.side.foe{padding-left:12px;border-left:2px solid transparent;border-image:linear-gradient(180deg,transparent,#e8705acc 30%,#e8705acc 70%,transparent) 1;background:radial-gradient(80% 40% at 50% 92%,#e8705a22,transparent 70%)}
+ #app[data-pw-tall] .battle .field{padding-bottom:26px!important}
+ #app .battle .unit .pv{z-index:7}
+}
+/* doomed allies: skull only (the full state is in the long-press card) */
+#app .battle .unit.ally.doom .tag{font-size:0!important;padding:0 5px;letter-spacing:0}
+#app .battle .unit.ally.doom .tag::before{content:"☠";font-size:.78rem;line-height:1.2;color:#ffb0a8}
 
 
 /* ---------- art (Scryfall art crops, artists credited in the note below the game; location backdrops from Randall's Planeswalk art packs) ---------- */
@@ -2279,6 +2372,176 @@ if(!resumeRun())newRun();
   if(z>1){app.dataset.pwZoom='';de.style.setProperty('--pw-zoom',z)}else{delete app.dataset.pwZoom;de.style.removeProperty('--pw-zoom')}
   de.style.setProperty('--pw-vh',(H/z)+'px');if(!port&&H/z>=430)app.dataset.pwTall='';else delete app.dataset.pwTall;if(port&&H/z>=760)app.dataset.pwTallp='';else delete app.dataset.pwTallp;window.dispatchEvent(new Event('pw-fit'))};
  addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeout(fit,120));fit()})();
+
+</script>
+<script id="pw-motion">
+/* Planeswalk motion: built by motion/build-motion.sh. Edit motion/pw-motion-glue.js, not this file. */
+// Shared motion kit for the Forge table and Planeswalk: arcs, hit-stop strikes, damage numbers,
+// shatter, sparks, shake, count-up and flips. Transform and opacity only (no blur), every bit is
+// removed when it finishes, and at most BUDGET loose bits fly at once so low-end web views keep up.
+// Low power keeps the beat (move, number, count) and drops the garnish (sparks, shards, board shake).
+// Planeswalk inlines this file as a classic script: drop the last line (the exports) and use window.CSMotion.
+const STYLE=`.cs-mk{position:fixed;inset:0;pointer-events:none;z-index:900;overflow:hidden}
+.cs-mk>*{position:absolute;left:0;top:0;will-change:transform,opacity}
+.cs-mk-num{font:800 26px/1 'DM Sans',system-ui,sans-serif;color:#fff;white-space:nowrap;text-shadow:0 2px 0 #000,0 0 12px var(--glow,#ff4a2a)}
+.cs-mk-num[data-size=big]{font-size:40px}.cs-mk-num[data-size=small]{font-size:16px}
+.cs-mk-num[data-kind=heal]{--glow:#4fd07a}.cs-mk-num[data-kind=gold]{--glow:#e8b95b;color:#ffe3a3}
+.cs-mk-dot{width:6px;height:6px;margin:-3px;border-radius:50%;background:var(--c,#ffd98a);box-shadow:0 0 6px var(--c,#e8b95b)}
+.cs-mk-flash{width:96px;height:96px;margin:-48px;border-radius:50%;background:radial-gradient(circle,#fff 0,rgba(255,240,200,.85) 30%,rgba(255,200,120,0) 70%)}
+.cs-mk-ring{width:72px;height:72px;margin:-36px;border-radius:50%;border:3px solid var(--c,#e8b95b)}`;
+function createMotion({doc=document,win=doc.defaultView,lowPower=false,reduced=()=>win.matchMedia?.('(prefers-reduced-motion: reduce)').matches,budget=12}={}){
+ if(!doc.getElementById('cs-mk-style')){const s=doc.createElement('style');s.id='cs-mk-style';s.textContent=STYLE;doc.head.append(s);}
+ const layer=doc.createElement('div');layer.className='cs-mk';layer.setAttribute('aria-hidden','true');doc.body.append(layer);
+ let live=0;const off=()=>!!reduced();
+ const center=n=>{const r=n?.getBoundingClientRect?.()||n;return r&&r.width!==undefined?{x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height}:r;};
+ // A loose bit in the fx layer; refused once the budget is spent so a swarm never piles up.
+ function bit(cls,x,y,style=''){if(live>=budget)return null;const n=doc.createElement('span');n.className=cls;if(style)n.style.cssText=style;n.style.left=`${x}px`;n.style.top=`${y}px`;layer.append(n);live++;return n;}
+ const done=(a,n)=>{const end=()=>{n.remove();live--;};a.finished.then(end,end);return a;};
+ const bump=(n,s=1.3,ms=260)=>off()||!n?null:n.animate([{transform:'scale(1)'},{transform:`scale(${s})`,offset:.35},{transform:'scale(1)'}],{duration:ms,easing:'ease-out'});
+ function shake(n,amp=6,ms=320,{garnish=false}={}){if(off()||!n||garnish&&lowPower)return null;return n.animate([0,1,-1,.7,-.6,.3,0].map((f,i)=>({transform:`translate(${f*amp*(i%2?1:-1)}px,${f*amp*.5}px)`})),{duration:ms,easing:'ease-out'});}
+ function sparks(at,{n=8,color='#ffd98a',spread=46}={}){if(off()||lowPower)return;const p=center(at);if(!p)return;
+  for(let i=0;i<n;i++){const a=i/n*Math.PI*2+Math.random()*.4,d=spread*(.6+Math.random()*.6),dot=bit('cs-mk-dot',p.x,p.y,`--c:${color}`);if(!dot)return;
+   done(dot.animate([{opacity:1,transform:'translate(0,0)'},{opacity:0,transform:`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px) scale(.3)`}],{duration:420+Math.random()*160,easing:'cubic-bezier(.1,.7,.3,1)'}),dot);}}
+ function flash(at,scale=1){if(off())return;const p=center(at),f=p&&bit('cs-mk-flash',p.x,p.y);if(!f)return;
+  done(f.animate([{opacity:1,transform:`scale(${.3*scale})`},{opacity:.9,transform:`scale(${.9*scale})`,offset:.3},{opacity:0,transform:`scale(${1.3*scale})`}],{duration:lowPower?200:300,easing:'ease-out'}),f);}
+ function ring(at,color='#e8b95b',ms=520){if(off())return;const p=center(at),r=p&&bit('cs-mk-ring',p.x,p.y,`--c:${color}`);if(!r)return;
+  done(r.animate([{opacity:.95,transform:'scale(.5)'},{opacity:0,transform:'scale(1.5)'}],{duration:ms,easing:'ease-out'}),r);}
+ // A number that punches out of what was hit, overshoots and drifts up. Never budget-limited: it is information.
+ function number(at,text,{kind='damage',size='',dx=0}={}){if(off())return;const p=center(at);if(!p)return;
+  const n=doc.createElement('span');n.className='cs-mk-num';n.dataset.kind=kind;if(size)n.dataset.size=size;n.textContent=text;n.style.left=`${p.x+dx}px`;n.style.top=`${p.y-p.h*.15}px`;layer.append(n);
+  const d=Math.random()*16-8;n.animate([{opacity:0,transform:'translate(-50%,-50%) translateY(8px) scale(.5)'},{opacity:1,transform:`translate(-50%,-50%) translate(${d*.4}px,-14px) scale(1.35)`,offset:.18},{opacity:1,transform:`translate(-50%,-50%) translate(${d*.7}px,-22px) scale(1)`,offset:.6},{opacity:0,transform:`translate(-50%,-50%) translate(${d}px,-40px)`}],{duration:1000,easing:'cubic-bezier(.2,.8,.3,1)',fill:'both'}).finished.then(()=>n.remove(),()=>n.remove());}
+ // Move an element that already sits at its destination in from where it was, along a lifted arc.
+ function arc(n,from,{lift=60,s0=1,mid=1.15,s1=1,r0=0,r1=0,ms=420,delay=0,easing='cubic-bezier(.3,.1,.3,1)'}={}){if(off()||!n)return null;const a=center(from),b=center(n);if(!a||!b)return null;
+  const dx=a.x-b.x,dy=a.y-b.y;return n.animate([{transform:`translate(${dx}px,${dy}px) rotate(${r0}deg) scale(${s0})`},{transform:`translate(${dx/2}px,${dy/2-lift}px) rotate(${(r0+r1)/2}deg) scale(${mid})`,offset:.5},{transform:`rotate(${r1}deg) scale(${s1})`}],{duration:ms,delay,easing,fill:'backwards'});}
+ // Arena strike with weight: wind-up, lunge, a short freeze on contact (hit-stop), spring back.
+ // onHit runs at contact so the caller can pop numbers and shake the target in time with it.
+ function strike(n,to,{reach=.78,ms=520,hold=70,delay=0,onHit}={}){if(off()||!n)return 0;const a=center(n),b=center(to);if(!a||!b)return 0;
+  const dx=(b.x-a.x)*reach,dy=(b.y-a.y)*reach,tilt=Math.max(-8,Math.min(8,dx/30)),hit=.55,stop=Math.min(.8,hit+hold/ms);
+  n.animate([{transform:'none'},{transform:`translate(${-dx*.06}px,${-dy*.06+6}px) scale(1.05) rotate(${-tilt/2}deg)`,offset:.3,easing:'cubic-bezier(.55,0,.85,.35)'},{transform:`translate(${dx}px,${dy}px) scale(1.16) rotate(${tilt}deg)`,offset:hit},{transform:`translate(${dx}px,${dy}px) scale(1.16) rotate(${tilt}deg)`,offset:stop,easing:'cubic-bezier(.3,.6,.3,1)'},{transform:'none'}],{duration:ms,delay});
+  const at=delay+ms*hit;win.setTimeout(()=>{if(to?.isConnected===false)return;flash(to);sparks(to,{n:10,spread:56});onHit?.();},at);return at;}
+ // Break a card into six shards and a few embers. Pass the card element (still in place) or a
+ // snapshot {rect, html} taken before a redraw removed it.
+ const SHARDS=['0 0,55% 0,40% 45%,0 35%','55% 0,100% 0,100% 30%,40% 45%','0 35%,40% 45%,30% 75%,0 70%','40% 45%,100% 30%,100% 65%,60% 60%','0 70%,30% 75%,45% 100%,0 100%','30% 75%,60% 60%,100% 65%,100% 100%,45% 100%'];
+ function snapshot(n){const r=n?.getBoundingClientRect?.();return r&&r.width?{rect:{left:r.left,top:r.top,width:r.width,height:r.height},html:n.outerHTML}:null;}
+ function shatter(src,{embers=8}={}){if(off())return;const s=src?.rect?src:snapshot(src);if(!s)return;const {left,top,width,height}=s.rect;
+  if(src?.style&&src.isConnected)src.style.visibility='hidden';
+  const piece=(clip)=>{if(live>=budget)return null;const w=doc.createElement('div');w.style.cssText=`left:${left}px;top:${top}px;width:${width}px;height:${height}px${clip?`;clip-path:polygon(${clip})`:''}`;w.innerHTML=s.html;const c=w.firstElementChild;if(c){c.style.visibility='visible';c.style.margin='0';c.style.width='100%';c.style.height='100%';c.style.transform='none';}layer.append(w);live++;return w;};
+  if(lowPower){const w=piece('');if(w)done(w.animate([{opacity:1,transform:'none'},{opacity:0,transform:'scale(.85) translateY(-8px)'}],{duration:320,easing:'ease-in'}),w);return;}
+  SHARDS.forEach((poly,i)=>{const w=piece(poly);if(!w)return;const cx=(i%2?1:-1)*(18+Math.random()*22),cy=-20-Math.random()*40+(i>3?24:0),r=Math.random()*60-30;
+   done(w.animate([{transform:'none',opacity:1},{transform:`translate(${cx*.4}px,${cy*.3}px) rotate(${r*.3}deg)`,opacity:1,offset:.25},{transform:`translate(${cx}px,${cy}px) rotate(${r}deg) scale(.7)`,opacity:0}],{duration:620,easing:'cubic-bezier(.2,.6,.3,1)'}),w);});
+  for(let i=0;i<embers;i++){const e=bit('cs-mk-dot',left+Math.random()*width,top+height*(.2+Math.random()*.7),'--c:#ff8a3d');if(!e)break;
+   done(e.animate([{opacity:0,transform:'none'},{opacity:1,offset:.2},{opacity:0,transform:`translate(${(Math.random()-.5)*30}px,${-50-Math.random()*40}px) scale(.4)`}],{duration:700+Math.random()*300,delay:80+i*30,fill:'backwards'}),e);}}
+ // Tick a number from one value to another (life totals, gold, the tally).
+ function countUp(n,from,to,ms=420){if(!n)return Promise.resolve();if(off()||from===to){n.textContent=String(to);return Promise.resolve();}
+  const t0=win.performance.now();return new Promise(res=>{const step=t=>{const p=Math.min(1,(t-t0)/ms);n.textContent=String(Math.round(from+(to-from)*(1-(1-p)**2)));p<1?win.requestAnimationFrame(step):res();};win.requestAnimationFrame(step);});}
+ // A face-down card turning face up: the element holds both faces (the back is rotated 180deg).
+ function flip(n,{ms=380,delay=0,settle=1}={}){if(!n)return null;if(off()){n.style.transform='rotateY(180deg)';return null;}
+  return n.animate([{transform:'rotateY(0)'},{transform:'rotateY(90deg) scale(1.12)',offset:.5},{transform:`rotateY(180deg) scale(${settle})`}],{duration:ms,delay,easing:'cubic-bezier(.3,.1,.3,1)',fill:'both'});}
+ return {layer,lowPower,arc,strike,number,shatter,snapshot,sparks,flash,ring,shake,bump,countUp,flip,destroy(){layer.remove();}};
+}
+if(typeof window!=='undefined')window.CSMotion={createMotion};
+// Planeswalk motion (glue). Built into ../planeswalk-motion.js after the shared motion kit by build-motion.sh.
+// It only reads what the game has already rendered into #app (confirmed state), never changes game
+// state, and never shakes the screen. Every effect sits in the kit's fixed layer outside #app, so it
+// works under the #app CSS zoom. Reduced motion turns it all off; low power drops the garnish.
+(function(){
+ if(window.pwMotion)return;
+ const app=document.getElementById('app')||document.body;
+ const lowPower=(()=>{let p='';try{p=localStorage.getItem('cardstashy.lowPower')||'';}catch{}if(p==='on')return true;if(p==='off')return false;
+  const n=navigator,ua=n.userAgent||'';return /Android/i.test(ua)&&/; wv\)/.test(ua)||(n.deviceMemory&&n.deviceMemory<=3)||false;})();
+ const M=window.CSMotion.createMotion({lowPower});
+ const off=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const css=document.createElement('style');css.id='pw-motion-style';css.textContent=`
+.cs-mk .pw-mk-ghost{border-radius:50% 50% 8px 8px;background:#1b170f center/cover no-repeat;border:1.5px solid #6d5a33}
+.cs-mk .pw-mk-card{width:56px;height:78px;margin:-39px -28px;border-radius:6px;background:linear-gradient(#3a2a14,#1b170f);border:1.5px solid #e8b95b;box-shadow:0 0 16px #ffb06788}
+.cs-mk .pw-mk-coin{width:14px;height:14px;margin:-7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3c4,#e8b95b 45%,#8a6420);border:1px solid #5b3f12}
+.cs-mk .pw-mk-iris{inset:0;left:0;top:0;width:100%;height:100%;background:radial-gradient(circle,#2a1416,#0b0809)}
+.cs-mk .pw-mk-rays{width:220px;height:220px;margin:-110px;border-radius:50%;background:repeating-conic-gradient(rgba(255,138,61,.4) 0 10deg,transparent 10deg 30deg);-webkit-mask:radial-gradient(circle,#000 30%,transparent 70%);mask:radial-gradient(circle,#000 30%,transparent 70%)}
+.cs-mk .pw-mk-token{width:26px;height:26px;margin:-13px;border-radius:50%;border:2px solid #ffd98a;background:radial-gradient(circle at 40% 35%,#fff7e0,#e8b95b 55%,#7a5518);box-shadow:0 3px 8px #000}
+.bar>.pw-ghost{position:absolute;left:0;top:0;bottom:0;background:#fff;opacity:.85;transform-origin:left;pointer-events:none}
+.bar{position:relative}.bar>i{position:relative;z-index:1}
+#app .map .node.open:not(:disabled){animation:pw-mk-open 1.8s ease-in-out infinite}
+#app .map .node.boss{animation:pw-mk-loom 3.2s ease-in-out infinite}
+@keyframes pw-mk-open{50%{box-shadow:0 0 0 4px rgba(232,185,91,.35),0 0 18px rgba(232,185,91,.45)}}
+@keyframes pw-mk-loom{50%{transform:scale(1.06);box-shadow:0 0 26px rgba(200,40,40,.55)}}
+@media (prefers-reduced-motion:reduce){#app .map .node{animation:none!important}}`;
+ document.head.append(css);
+ const haptic=n=>{try{window.pwHaptic?.(n);}catch{}};
+ const num=t=>Number(String(t||'').replace(/[^\d-]/g,''))||0;
+ const pct=el=>parseFloat(el?.style.width)||0;
+ // What the last render showed, kept so the next one can be compared with it.
+ let last={foes:new Map(),hand:new Map(),gold:null,tally:null,screen:'',mul:0},lastDeath=null;
+ function read(){
+  const foes=new Map(),hand=new Map();
+  for(const u of app.querySelectorAll('.side.foe .unit[data-id]')){const r=u.getBoundingClientRect(),art=u.querySelector('.art');
+   foes.set(u.dataset.id,{rect:{left:r.left,top:r.top,width:r.width,height:r.height},hp:pct(u.querySelector('.bar>i')),art:art?getComputedStyle(art).backgroundImage:'none'});}
+  for(const c of app.querySelectorAll('.hand .card[data-n]')){const r=c.getBoundingClientRect();hand.set(c.dataset.n+'#'+hand.size,{rect:r,name:c.dataset.n});}
+  const g=app.querySelector('.gold'),t=app.querySelector('.tally');
+  const s=app.querySelector('.map')?'map':app.querySelector('.side.foe')?'battle':(app.querySelector('section.screen')?.className||'');
+  return {foes,hand,gold:g?num(g.textContent):null,tally:t?num([...t.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('')):null,screen:s,mul:app.querySelectorAll('.tally .juice .mul').length};
+ }
+ function onRender(){
+  const now=read(),was=last;last=now;if(off())return;
+  // Battle: hits drain a white ghost bar behind the life bar; a played card flies to what it hit.
+  if(now.screen==='battle'&&was.screen==='battle'){
+   const goneHand=[...was.hand.values()].filter(h=>![...now.hand.values()].some(x=>x.name===h.name&&Math.abs(x.rect.left-h.rect.left)<2));
+   let flown=false;
+   for(const [id,f] of now.foes){const p=was.foes.get(id);if(!p||f.hp>=p.hp)continue;const u=app.querySelector(`.side.foe .unit[data-id="${CSS.escape(id)}"]`),bar=u?.querySelector('.bar');
+    const big=p.hp-f.hp>=30,delay=goneHand.length&&!flown?240:0;
+    if(goneHand.length&&!flown){flown=true;const h=goneHand[0],card=document.createElement('span');card.className='pw-mk-card';const to=u.getBoundingClientRect();card.style.left=to.left+to.width/2+'px';card.style.top=to.top+to.height/2+'px';M.layer.append(card);
+     M.arc(card,h.rect,{ms:240,lift:50,s0:1,mid:.9,s1:.25,r1:200,easing:'cubic-bezier(.5,0,.8,.6)'})?.finished.then(()=>card.remove(),()=>card.remove());if(off())card.remove();}
+    setTimeout(()=>{if(!u?.isConnected)return;M.flash(u,big?1.2:.9);M.sparks(u,{n:big?12:7,color:'#ff9a5a',spread:big?64:46});
+     u.animate([{transform:'none'},{transform:'translateX(9px) rotate(3deg)',offset:.2},{transform:'none'}],{duration:320,easing:'ease-out'});if(big)haptic(15);},delay);
+    if(bar){const gh=document.createElement('span');gh.className='pw-ghost';gh.style.width=p.hp+'%';bar.prepend(gh);
+     gh.animate([{transform:'scaleX(1)'},{transform:'scaleX(1)',offset:.35},{transform:`scaleX(${p.hp?f.hp/p.hp:0})`}],{duration:delay+680,easing:'ease-in-out',fill:'forwards'}).finished.then(()=>gh.remove(),()=>gh.remove());}}
+   // Deaths: an enemy that left the field breaks apart where it stood.
+   for(const [id,p] of was.foes){if(now.foes.has(id))continue;lastDeath={x:p.rect.left+p.rect.width/2,y:p.rect.top+p.rect.height/2,t:Date.now()};
+    const html=`<div class="pw-mk-ghost" style="background-image:${p.art.replace(/"/g,'&quot;')}"></div>`;setTimeout(()=>M.shatter({rect:p.rect,html}),200);}
+   // The tally bumps as it climbs; a fresh multiplier pops.
+   const t=app.querySelector('.tally');if(t&&now.tally>was.tally){M.bump(t,1.22,240);M.sparks(t,{n:4,spread:26});}
+   if(t&&now.mul>was.mul)M.bump(t.querySelector('.juice .mul:last-of-type'),1.5,320);
+  }
+  // Gold: coins burst from the last kill (or the middle of the screen) and fly into the counter.
+  const g=app.querySelector('.gold');if(g&&was.gold!==null&&now.gold>was.gold){const from=lastDeath&&Date.now()-lastDeath.t<4000?lastDeath:{x:innerWidth/2,y:innerHeight/2},n=Math.min(8,now.gold-was.gold),gr=g.getBoundingClientRect();
+   M.countUp(g.lastChild?.nodeType===3?{set textContent(v){g.lastChild.textContent='◎ '+v;}}:null,was.gold,now.gold,500);
+   for(let i=0;i<n;i++){const c=document.createElement('span');c.className='pw-mk-coin';c.style.left=gr.left+gr.width/2+'px';c.style.top=gr.top+gr.height/2+'px';M.layer.append(c);
+    const bx=(i-n/2)*20,by=-40-(i%3)*14,dx=from.x-(gr.left+gr.width/2),dy=from.y-(gr.top+gr.height/2);
+    c.animate([{transform:`translate(${dx}px,${dy}px) scale(.4)`},{transform:`translate(${dx+bx}px,${dy+by}px) scale(1.1)`,offset:.35,easing:'cubic-bezier(.5,0,.75,0)'},{transform:'scale(.6)'}],{duration:lowPower?420:700,delay:300+i*55,fill:'both'}).finished.then(()=>{c.remove();M.bump(g,1.15,180);},()=>c.remove());}}
+  // Rewards: the cards turn face up one at a time; rare rims flash gold and a mythic gets light rays.
+  if(now.screen!==was.screen&&app.querySelector('[data-act=take]')){const cards=[...app.querySelectorAll('.card[data-act=take],[data-act=take] .card,.card')].filter(c=>c.closest('.choices'));
+   cards.slice(0,5).forEach((c,i)=>{c.animate([{transform:'perspective(600px) translateY(-30px) rotateY(90deg)',opacity:0},{transform:'perspective(600px) rotateY(90deg)',opacity:1,offset:.4},{transform:'perspective(600px) rotateY(0) scale(1.06)',offset:.8},{transform:'none',opacity:1}],{duration:560,delay:200+i*260,easing:'cubic-bezier(.3,.1,.3,1)',fill:'backwards'});
+    const r=c.dataset.rar;if(r==='R'||r==='M')setTimeout(()=>{if(!c.isConnected)return;M.ring(c,r==='M'?'#ff8a3d':'#e8b95b',600);M.sparks(c,{n:r==='M'?12:6,color:r==='M'?'#ff8a3d':'#ffd98a',spread:70});
+     if(r==='M'&&!lowPower){const b=c.getBoundingClientRect(),ray=document.createElement('span');ray.className='pw-mk-rays';ray.style.left=b.left+b.width/2+'px';ray.style.top=b.top+b.height/2+'px';M.layer.prepend(ray);
+      ray.animate([{opacity:0,transform:'rotate(0) scale(.6)'},{opacity:1,transform:'rotate(40deg) scale(1.1)',offset:.4},{opacity:0,transform:'rotate(140deg) scale(1)'}],{duration:1600}).finished.then(()=>ray.remove(),()=>ray.remove());haptic(20);}},200+i*260+420);});}
+  // Map: on arrival the paths draw in and the nodes come up column by column.
+  if(now.screen==='map'&&was.screen!=='map'){const map=app.querySelector('.map');
+   for(const p of map.querySelectorAll('svg.pw-paths path,svg.pw-paths line')){const len=p.getTotalLength?.()||200;p.animate([{strokeDasharray:`${len}`,strokeDashoffset:len},{strokeDasharray:`${len}`,strokeDashoffset:0}],{duration:700,delay:150,easing:'ease-out',fill:'backwards'});}
+   const rows=[...map.querySelectorAll('.maprow')];rows.forEach((row,ri)=>{const k=rows.length-1-ri;for(const n of row.querySelectorAll('.node'))n.animate([{opacity:0,transform:'scale(.6)'},{opacity:1,transform:'scale(1.08)',offset:.7},{opacity:1,transform:'none'}],{duration:340,delay:k*55,easing:'cubic-bezier(.2,.8,.3,1)',fill:'backwards'});});}
+  // Any other new screen (act start, rest, shop, events) rises in; an act start reveals its title.
+  else if(now.screen!==was.screen&&now.screen&&now.screen!=='battle'){const s=app.querySelector('section.screen');s?.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}],{duration:280,easing:'ease-out'});
+   if(/actstart/.test(now.screen))s?.querySelector('h2')?.animate([{opacity:0,letterSpacing:'.5em'},{opacity:1,letterSpacing:'normal'}],{duration:900,easing:'cubic-bezier(.2,.8,.3,1)'});}
+ }
+ // Map walk: tapping an open node walks a token there along the path, then an iris opens into it.
+ // The tap is held for the walk and then handed to the game unchanged.
+ // A long press (node info) is not a pick: a click that ends a press held over 450 ms walks nowhere.
+ let walking=false,pressAt=0;
+ app.addEventListener('pointerdown',()=>{pressAt=Date.now();},true);
+ app.addEventListener('click',e=>{const node=e.target.closest?.('.map .node[data-act=go]:not(:disabled)');if(!node||node.dataset.pwWalked||off()||pressAt&&Date.now()-pressAt>450)return;
+  e.preventDefault();e.stopImmediatePropagation();if(walking)return;walking=true;
+  const map=node.closest('.map'),r=+node.dataset.r,prev=[...map.querySelectorAll(`.node.done[data-r="${r-1}"]`)][0],to=node.getBoundingClientRect(),tx=to.left+to.width/2,ty=to.top+to.height/2;
+  const tok=document.createElement('span');tok.className='pw-mk-token';tok.style.left=tx+'px';tok.style.top=ty+'px';M.layer.append(tok);
+  const from=prev?.getBoundingClientRect()||{left:tx-60,top:ty+40,width:0,height:0},fx=from.left+from.width/2,fy=from.top+from.height/2;
+  M.bump(node,1.25,300);M.ring(node,node.classList.contains('boss')?'#c83030':'#e8b95b',480);haptic(10);
+  tok.animate([{transform:`translate(${fx-tx}px,${fy-ty}px)`},{transform:`translate(${(fx-tx)/2}px,${(fy-ty)/2-24}px)`,offset:.4,easing:'ease-in'},{transform:`translate(${(fx-tx)*.15}px,${(fy-ty)*.15}px)`,offset:.75,easing:'ease-out'},{transform:'translateY(-14px)',offset:.9},{transform:'none'}],{duration:lowPower?360:520,easing:'ease-out',fill:'both'});
+  const iris=document.createElement('span');iris.className='pw-mk-iris';iris.style.clipPath=`circle(0px at ${tx}px ${ty}px)`;
+  const go=()=>{node.dataset.pwWalked='1';node.click();walking=false;tok.remove();requestAnimationFrame(()=>iris.animate([{opacity:1},{opacity:0}],{duration:320,easing:'ease-out',fill:'both'}).finished.then(()=>iris.remove(),()=>iris.remove()));};
+  setTimeout(()=>{if(lowPower){go();return;}M.layer.append(iris);const R=Math.hypot(innerWidth,innerHeight);iris.animate([{clipPath:`circle(0px at ${tx}px ${ty}px)`},{clipPath:`circle(${R}px at ${tx}px ${ty}px)`}],{duration:380,easing:'cubic-bezier(.6,0,.4,1)',fill:'both'}).finished.then(go,go);},lowPower?360:500);
+ },true);
+ // Read after every render; the game rebuilds #app with innerHTML, so one frame after the burst is enough.
+ let queued=0;new MutationObserver(()=>{if(!queued)queued=requestAnimationFrame(()=>{queued=0;onRender();});}).observe(app,{childList:true,subtree:true});
+ last=read();
+ window.pwMotion={motion:M,lowPower};
+})();
 
 </script>
 </body>
