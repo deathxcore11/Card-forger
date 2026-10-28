@@ -150,7 +150,8 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
   if(!prev||projection.failure||projection.terminal||prev.seat!==view.seat||!(next.busy===true||paying)){transit.clear();return projection;}
   const now=Date.now(),ids=new Set(view.cards.map(c=>c.id)),kept=[],hand=[...view.hand];
   for(const c of prev.cards){
-   if(ids.has(c.id)||!c.known||!(c.zone==='Battlefield'||c.zone==='Hand'&&c.zoneHolder===view.seat))continue;
+   // A token that leaves the battlefield ceases to exist, so it is never in transit: let it go at once.
+   if(ids.has(c.id)||!c.known||c.zone==='Battlefield'&&c.isToken||!(c.zone==='Battlefield'||c.zone==='Hand'&&c.zoneHolder===view.seat))continue;
    const since=transit.get(c.id)??now;if(!paying&&now-since>TRANSIT_MS)continue;
    kept.push({...c,inTransit:true});if(c.zone==='Hand')hand.splice(Math.min(Math.max(prev.hand.indexOf(c.id),0),hand.length),0,c.id);
   }
