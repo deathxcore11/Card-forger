@@ -15,6 +15,9 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
 const error = (code, status) => json({ error: code }, status);
 const plainObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 
+// Forge PhaseType names a player may set a stop on.
+const phaseStopPhases = ['UNTAP', 'UPKEEP', 'DRAW', 'MAIN1', 'COMBAT_BEGIN', 'COMBAT_DECLARE_ATTACKERS', 'COMBAT_DECLARE_BLOCKERS', 'COMBAT_FIRST_STRIKE_DAMAGE', 'COMBAT_DAMAGE', 'COMBAT_END', 'MAIN2', 'END_OF_TURN', 'CLEANUP'];
+
 // One operation at a time for each live storage identity. In particular, close
 // drains an already-reserved dispatch before writing its tombstone; a queued
 // action then sees that tombstone before it can reserve or contact native code.
@@ -291,11 +294,16 @@ export class MatchAuthority {
     if (Object.keys(body).some(key => !['commandId', 'generation', 'action'].includes(key))
         || !commandIdPattern.test(body.commandId || '') || body.generation !== match.generation
         || !plainObject(body.action) || !Number.isSafeInteger(body.action.revision) || body.action.revision < 0
-        || !['ok', 'cancel', 'card', 'player', 'stack', 'reply', 'concede', 'controlMode', 'autoPay'].includes(body.action.op)
+        || !['ok', 'cancel', 'card', 'player', 'stack', 'reply', 'concede', 'controlMode', 'autoPay', 'phaseStop', 'yieldSource'].includes(body.action.op)
         || (body.action.op === 'controlMode' && (!['smart', 'full'].includes(body.action.value)
           || Object.keys(body.action).some(key => !['revision', 'op', 'value'].includes(key))))
         || (body.action.op === 'autoPay' && (typeof body.action.value !== 'boolean'
           || Object.keys(body.action).some(key => !['revision', 'op', 'value'].includes(key))))
+        || (body.action.op === 'phaseStop' && (!['you', 'opponent'].includes(body.action.seat) || !phaseStopPhases.includes(body.action.phase)
+          || !['off', 'once', 'pinned'].includes(body.action.mode)
+          || Object.keys(body.action).some(key => !['revision', 'op', 'seat', 'phase', 'mode'].includes(key))))
+        || (body.action.op === 'yieldSource' && (!Number.isSafeInteger(body.action.id) || body.action.id < 0 || typeof body.action.value !== 'boolean'
+          || Object.keys(body.action).some(key => !['revision', 'op', 'id', 'value'].includes(key))))
         || new TextEncoder().encode(JSON.stringify(body.action)).length > 16384) return error('invalid_command_envelope', 400);
     // Clone the parsed JSON once; canonical hashing never changes the action
     // actually sent to native code. Native scalar/legality validation stays native.

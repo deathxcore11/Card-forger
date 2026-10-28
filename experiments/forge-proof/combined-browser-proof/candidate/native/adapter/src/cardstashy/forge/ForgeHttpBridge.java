@@ -67,6 +67,13 @@ public final class ForgeHttpBridge implements IRemote {
     // hold priority (Full Control). Until the autoPay action is used, it follows the
     // control mode as before (Smart pays, Full doesn't); choosing a mode resets it.
     volatile Boolean autoPayChoice;
+    // The player's own phase stops, on top of Smart: "you:UPKEEP" -> true when pinned for the
+    // match, false when it holds only the next time that step comes round.
+    final Map<String,Boolean> phaseStops=new ConcurrentHashMap<>();
+    final Set<String> reachedOnceStops=ConcurrentHashMap.newKeySet();
+    // Abilities the player yields to until the end of this turn, by Forge's yield key. Forge's own
+    // auto-yield passes only while that ability is on top; targets and choices still stop.
+    final Set<String> turnYields=ConcurrentHashMap.newKeySet();
     boolean autoPay(){Boolean choice=autoPayChoice;return choice!=null?choice:controlMode.equals("smart");}
     volatile boolean effectiveAutoPass;
     // Bounded Smart assistance applies only to an explicit priority card/ability intention.
@@ -280,7 +287,13 @@ public final class ForgeHttpBridge implements IRemote {
         if(failure!=null){effectiveAutoPass=false;return;}
         boolean ownMain=event.playerTurn()!=null&&event.playerTurn().getId()==viewer.getId()
             &&(event.phase()==forge.game.phase.PhaseType.MAIN1||event.phase()==forge.game.phase.PhaseType.MAIN2);
-        effectiveAutoPass=failure==null&&controlMode.equals("smart")&&!ownMain;
+        String here=event.playerTurn()==null||event.phase()==null?null:stopKey(event.playerTurn(),event.phase());
+        // A one-time stop holds through its step and is gone once the game moves past it.
+        boolean expired=false;
+        for(String k:List.copyOf(reachedOnceStops))if(!k.equals(here)){reachedOnceStops.remove(k);if(Boolean.FALSE.equals(phaseStops.get(k))){phaseStops.remove(k);expired=true;}}
+        if(here!=null&&Boolean.FALSE.equals(phaseStops.get(here)))reachedOnceStops.add(here);
+        if(expired)applyStops();
+        effectiveAutoPass=failure==null&&controlMode.equals("smart")&&!ownMain&&(here==null||!phaseStops.containsKey(here));
         controller.getYieldController().setPref(FPref.YIELD_AUTO_PASS_NO_ACTIONS,String.valueOf(effectiveAutoPass));
         if(event.phase()==forge.game.phase.PhaseType.COMBAT_BEGIN)setCombatStops(false);
     }
@@ -305,7 +318,21 @@ public final class ForgeHttpBridge implements IRemote {
         if(controller==null||game==null||failure!=null)return;
         var yc=controller.getYieldController();
         for(PlayerView p:game.getView().getPlayers())
-            yc.setSkipPhase(p,forge.game.phase.PhaseType.COMBAT_DECLARE_ATTACKERS,controlMode.equals("smart")&&!attackers);
+            yc.setSkipPhase(p,forge.game.phase.PhaseType.COMBAT_DECLARE_ATTACKERS,skipsPhase(p,forge.game.phase.PhaseType.COMBAT_DECLARE_ATTACKERS));
+    }
+    String stopKey(PlayerView p,forge.game.phase.PhaseType phase){return (p.getId()==viewer.getId()?"you":"opponent")+":"+phase.name();}
+    // Smart skips a step unless it is one of Smart's own stops or a stop the player set.
+    boolean skipsPhase(PlayerView p,forge.game.phase.PhaseType phase){
+        return controlMode.equals("smart")&&!smartStop(p.getId()==viewer.getId(),phase,combatHasAttackers)&&!phaseStops.containsKey(stopKey(p,phase));
+    }
+    void applyStops(){
+        if(controller==null||game==null||failure!=null)return;
+        var yc=controller.getYieldController();
+        for(PlayerView p:game.getView().getPlayers())for(var phase:forge.game.phase.PhaseType.values())yc.setSkipPhase(p,phase,skipsPhase(p,phase));
+    }
+    @com.google.common.eventbus.Subscribe public void endTurnYields(forge.game.event.GameEventTurnBegan e){
+        if(controller==null)return;var yc=controller.getYieldController();
+        for(String key:List.copyOf(turnYields)){yc.setShouldAutoYield(key,false,true);turnYields.remove(key);}
     }
     @com.google.common.eventbus.Subscribe public void smartCombat(forge.game.event.GameEventAttackersDeclared e){setCombatStops(!e.attackersMap().isEmpty());}
     // A watched CPU turn shows each visible action on its own, like a person playing:
@@ -417,7 +444,7 @@ public final class ForgeHttpBridge implements IRemote {
         // in your main phases and in combat after attackers or blockers are declared.
         // Anything on the stack still stops you when you can respond; Full Control stops everywhere.
         for(PlayerView p:game.getView().getPlayers())for(var phase:forge.game.phase.PhaseType.values())
-            yc.setSkipPhase(p,phase,controlMode.equals("smart")&&!smartStop(p.getId()==viewer.getId(),phase,combatHasAttackers));
+            yc.setSkipPhase(p,phase,skipsPhase(p,phase));
         var ph=game.getPhaseHandler();
         boolean ownMain=ph.getPlayerTurn()!=null&&ph.getPlayerTurn().getId()==viewer.getId()
             &&(ph.getPhase()==forge.game.phase.PhaseType.MAIN1||ph.getPhase()==forge.game.phase.PhaseType.MAIN2);
@@ -833,7 +860,7 @@ public final class ForgeHttpBridge implements IRemote {
             }
             if(v.getStack()!=null)for(StackItemView si:v.getStack()){
                 exposedStack.put(si.getId(),si);
-                stack.add(obj("id",si.getId(),"text",stackText(si.getText()),"source",si.getSourceCard()==null?null:card(si.getSourceCard()),"activatingPlayer",id(si.getActivatingPlayer()),"targets",refs(stackTargets(si))));
+                stack.add(obj("id",si.getId(),"text",stackText(si.getText()),"source",si.getSourceCard()==null?null:card(si.getSourceCard()),"activatingPlayer",id(si.getActivatingPlayer()),"targets",refs(stackTargets(si)),"ability",si.isAbility(),"yielded",si.isAbility()&&turnYields.contains(forge.player.AutoYieldStore.abilitySuffix(si.getKey()))));
             }
             board=obj("schema","cardstashy.forge-proof.v1","forgeRevision",REV,"viewer",viewer.getId(),"aiProfile",actualAiProfile,"match",obj("humanDeck",humanDeckAlias,"aiDeck",aiDeckAlias),"turn",v.getTurn(),"phase",v.getPhase()==null?null:v.getPhase().name(),"activePlayer",id(v.getPlayerTurn()),"priorityPlayer",game.getPhaseHandler().getPriorityPlayer()==null?null:game.getPhaseHandler().getPriorityPlayer().getId(),"players",players,"stack",stack,"dayNight",game.isDay()?"day":game.isNight()?"night":null,"gameOver",v.isGameOver(),"winner",v.isGameOver()?v.getWinningPlayerName():null,"winnerPlayerId",winnerId(),"draw",v.isGameOver()&&game.getOutcome()!=null&&game.getOutcome().isDraw());
             boardVisibility=List.copyOf(visibility);
@@ -893,7 +920,7 @@ public final class ForgeHttpBridge implements IRemote {
             int count=warnings instanceof Collection<?> values?values.size():0;
             if(count>0)snapshot.put("cpuWarnings",obj("count",count,"message","The CPU may play some cards in this deck imperfectly."));
         }
-        snapshot.putAll(obj("revision",publicationRevision,"status",failure!=null?"failed":(finished||Boolean.TRUE.equals(board.get("gameOver"))?"finished":exactAdmission!=null&&(!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))||startingPlayer!=null&&pregame.isEmpty())?"initializing":"running"),"failure",failure,"message",message,"buttons",buttons,"inputType",input,"selection",select,"prompt",concessionRequested||pending==null?null:pending.dto,"busy",!(finished||Boolean.TRUE.equals(board.get("gameOver")))&&(concessionRequested||(pending!=null?pending.answer.isDone():(busy||commandInFlight||nativePaymentPending()||publishedInput==null||publishedInput instanceof forge.gamemodes.match.input.InputLockUI))),"lastActionError",lastActionError,"notification",notification,"controlMode",controlMode,"autoPay",autoPay(),"autoPassNoActions",effectiveAutoPass,"nativeAutoPayments",nativeAutoPayments,"canConcede",failure==null&&!finished&&!concessionRequested&&!Boolean.TRUE.equals(board.get("gameOver")),"concession",obj("requested",concessionRequested,"nativeConfirmed",nativeOutcomeConfirmed,"applied",concessionApplied)));
+        snapshot.putAll(obj("revision",publicationRevision,"status",failure!=null?"failed":(finished||Boolean.TRUE.equals(board.get("gameOver"))?"finished":exactAdmission!=null&&(!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))||startingPlayer!=null&&pregame.isEmpty())?"initializing":"running"),"failure",failure,"message",message,"buttons",buttons,"inputType",input,"selection",select,"prompt",concessionRequested||pending==null?null:pending.dto,"busy",!(finished||Boolean.TRUE.equals(board.get("gameOver")))&&(concessionRequested||(pending!=null?pending.answer.isDone():(busy||commandInFlight||nativePaymentPending()||publishedInput==null||publishedInput instanceof forge.gamemodes.match.input.InputLockUI))),"lastActionError",lastActionError,"notification",notification,"controlMode",controlMode,"autoPay",autoPay(),"phaseStops",Map.copyOf(phaseStops),"autoPassNoActions",effectiveAutoPass,"nativeAutoPayments",nativeAutoPayments,"canConcede",failure==null&&!finished&&!concessionRequested&&!Boolean.TRUE.equals(board.get("gameOver")),"concession",obj("requested",concessionRequested,"nativeConfirmed",nativeOutcomeConfirmed,"applied",concessionApplied)));
         published.set(snapshot);
     }}
     Integer winnerId(){if(!game.isGameOver()||game.getOutcome()==null)return null;for(Player p:game.getRegisteredPlayers())if(game.getOutcome().isWinner(p.getRegisteredPlayer()))return p.getId();return null;}
@@ -1000,6 +1027,27 @@ public final class ForgeHttpBridge implements IRemote {
                                 }
                                 controlMode=mode;autoPayChoice=null;applyControlMode();
                             }
+                            catch(Throwable t){recordFailure(t);}
+                            finally{synchronized(lock){commandInFlight=false;publish();}}
+                        });
+                    }else if(op.equals("phaseStop")){
+                        // Only marks which steps Smart may skip; no native command runs.
+                        String seat=exactString(body.get("seat"),"seat"),mode=exactString(body.get("mode"),"mode");
+                        if(!Set.of("you","opponent").contains(seat)||!Set.of("off","once","pinned").contains(mode))throw new IllegalArgumentException("phaseStop_invalid");
+                        String key=seat+":"+forge.game.phase.PhaseType.valueOf(exactString(body.get("phase"),"phase")).name();
+                        if(mode.equals("off"))phaseStops.remove(key);else phaseStops.put(key,mode.equals("pinned"));
+                        reachedOnceStops.remove(key);applyStops();publish();
+                    }else if(op.equals("yieldSource")){
+                        StackItemView s=exposedStack.get(exactInt(body.get("id"),"id"));
+                        if(s==null||!s.isAbility())throw new IllegalArgumentException("stack_item_not_offered");
+                        boolean on=exactBoolean(body.get("value"),"value");
+                        if(pending!=null||busy||commandInFlight||nativePaymentPending()){respond(x,409,obj("error","native_engine_busy"));return;}
+                        final String key=s.getKey(),suffix=forge.player.AutoYieldStore.abilitySuffix(key);
+                        commandInFlight=true;publish();
+                        // Forge's own yield: passes priority while this ability is on top, then
+                        // the yield is dropped at the start of the next turn.
+                        SwingUtilities.invokeLater(()->{
+                            try{if(on)turnYields.add(suffix);else turnYields.remove(suffix);controller.setShouldAutoYield(key,on,true);}
                             catch(Throwable t){recordFailure(t);}
                             finally{synchronized(lock){commandInFlight=false;publish();}}
                         });
