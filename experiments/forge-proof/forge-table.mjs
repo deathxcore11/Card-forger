@@ -78,9 +78,13 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const fail=e=>{if(e?.message==='MATCH_NOT_READY'&&playbackBusy){playback.flush();return;}localError=e.message||String(e);panelKey='';enhance();};
  let manualPay=null; // the spell being cast with "Pick lands" (see restoreAutoPay)
  const act=fn=>{try{const p=fn();if(p?.catch)p.catch(fail);}catch(e){fail(e);}};
- let railFrame=0;
+ let railFrame=0,panelPromptKey=null,loopFrame=0;
+ // The table re-inserts its cards and fog on every board change, which restarts their looping glow,
+ // hover and fog from the first frame: a visible jump on each action. Run every loop on the page's
+ // clock instead, so a re-inserted element carries on from where it was.
+ const syncLoops=()=>{loopFrame=0;if(closed)return;for(const a of root.getAnimations?.({subtree:true})||[])if(a.animationName&&a.startTime!==0&&a.effect?.getTiming?.().iterations===Infinity)try{a.startTime=0;}catch{}};
  function enhance(){
-  if(closed)return;const snap=session.snapshot(),n=snap.native;if(!snap.status||!n)return;
+  if(closed)return;if(!loopFrame&&typeof win.requestAnimationFrame==='function')loopFrame=win.requestAnimationFrame(syncLoops);const snap=session.snapshot(),n=snap.native;if(!snap.status||!n)return;
   if(presentation.hosted){const exit=root.querySelector('[data-focus-key=exit-match]');if(exit&&exit.textContent!=='Return to Play setup')exit.textContent='Return to Play setup';}
   const footer=root.querySelector('.play-match-decisions');if(!footer)return;
   const key=JSON.stringify([n.revision,snap.busy,snap.nativeDraft,snap.transportError,snap.selected,localError]);
@@ -88,6 +92,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // Preserve local typed input/focus if an unrelated inspection redraws the board.
    const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null,oldInput=footer.querySelector('[data-native-key=native-value]'),oldValue=oldInput?.value,oldRevision=footer.querySelector('[data-native-panel]')?.dataset.nativeRevision;
    mountNativePanel(footer,{session,snapshot:snap,onLocalError:message=>fail(Error(message)),presentation:panelPresentation});panelKey=key;
+   // The dock is remounted on every board change; only a new prompt plays its entrance.
+   const promptKey=JSON.stringify([n.inputType||'',n.prompt?.id??null,n.prompt?.message??null]),mounted=footer.querySelector('[data-native-panel]');if(mounted&&promptKey===panelPromptKey)mounted.dataset.settled='';panelPromptKey=promptKey;
    if(localError){const e=doc.createElement('p');e.className='forge-diagnostic';e.textContent=plainError(localError);e.setAttribute('role','alert');const picker=footer.querySelector('.forge-zone-search-actions');if(picker)picker.before(e);else footer.querySelector('[data-native-panel]')?.append(e);}
    if(nativeValueDraft?.revision===n.revision&&nativeValueDraft?.promptId===n.prompt?.id){const input=footer.querySelector('[data-native-key=native-value]');if(input)input.value=nativeValueDraft.value;}else if(oldRevision===String(n.revision)&&oldValue!==undefined){const input=footer.querySelector('[data-native-key=native-value]');if(input)input.value=oldValue;}
    if(focused)footer.querySelector(`[data-native-key="${CSS.escape(focused)}"]`)?.focus();
@@ -464,9 +470,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // middle of the board with the question on it and a running count.
  function renderCombatLine(n,surface){
   const zone=root.querySelector('.play-match-battlefields .play-match-zone[data-owner=you]'),mode=n.inputType==='InputAttack'?'attack':n.inputType==='InputBlock'?'block':'';
-  let line=root.querySelector(':scope .forge-combat-line');if(!mode||!zone){line?.remove();return;}
+  let line=combatLine;if(!mode||!zone){line?.remove();combatLine=null;return;}
   const mine=surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===surface.seat),k=mode==='attack'?mine.filter(c=>c.attacking).length:mine.filter(c=>c.blockingIds?.length||c.blocking).length;
-  const key=`${mode}|${k}`;if(!line){line=doc.createElement('div');line.className='forge-combat-line';line.setAttribute('aria-hidden','true');root.querySelector('.play-match-mat')?.append(line);}
+  const key=`${mode}|${k}`;if(!line){line=combatLine=doc.createElement('div');line.className='forge-combat-line';line.setAttribute('aria-hidden','true');}const mat=root.querySelector('.play-match-mat');if(mat&&line.parentElement!==mat){if(line.parentElement||line.dataset.key)line.dataset.settled='';mat.append(line);}
   if(line.dataset.key!==key){line.dataset.key=key;line.dataset.mode=mode;line.innerHTML=`<i></i><span><b>${mode==='attack'?'Choose attackers':'Choose blockers'}</b><small>${k?`${k} ${mode==='attack'?'attacking':'blocking'}`:mode==='attack'?'Tap or drag a creature':'Tap your creature, then its attacker'}</small></span><i></i>`;}
   const r=zone.getBoundingClientRect(),v=`${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}`;if(line.dataset.at!==v){line.dataset.at=v;line.style.left=Math.round(r.left)+'px';line.style.top=Math.round(r.top)+'px';line.style.width=Math.round(r.width)+'px';}
  }
@@ -484,6 +490,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  try{const saved=JSON.parse(win.localStorage?.getItem('cardstashy.tracker')||'{}');trackerOpen.deck=saved.deck===true;trackerOpen.opponent=saved.opponent===true;}catch{}
  const EYE='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',EYE_OFF='M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.1 3.9M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 4.2-1M9.9 9.9a3 3 0 0 0 4.2 4.2';
  const pct=(n,d)=>d>0?Math.round(n/d*100)+'%':'0%';
+ let trackerCache={key:null,bar:'',nodes:[]},trackerToggled=null,combatLine=null;
  function renderTracker(surface,mat){
   const header=root.querySelector('.play-match-header');if(!header||!mat)return;
   let bar=header.querySelector(':scope>.forge-tracker-toggles');
@@ -496,18 +503,21 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   for(const c of surface.cards)if(c.known&&c.owner!==surface.seat&&c.zone!=='Library'&&c.zone!=='Hand'&&!c.isToken)trackerSeen.set(c.id,{name:c.name,art:resolvePracticeArtwork(c)?.artImageUrl||'',cost:c.manaCost||''});
   const seen=new Map();for(const v of trackerSeen.values()){const e=seen.get(v.name)||{...v,n:0};e.n++;seen.set(v.name,e);}
   if(!bar){bar=doc.createElement('div');bar.className='forge-tracker-toggles';bar.setAttribute('role','group');bar.setAttribute('aria-label','Deck tracker');header.append(bar);
-   bar.addEventListener('click',e=>{const b=e.target.closest('button[data-tracker]');if(!b)return;trackerOpen[b.dataset.tracker]=!trackerOpen[b.dataset.tracker];try{win.localStorage?.setItem('cardstashy.tracker',JSON.stringify(trackerOpen));}catch{}bar.dataset.key='';renderTracker(session.snapshot().status.surface,root.querySelector('.play-match-mat'));});}
+   bar.addEventListener('click',e=>{const b=e.target.closest('button[data-tracker]');if(!b)return;trackerOpen[b.dataset.tracker]=!trackerOpen[b.dataset.tracker];trackerToggled=b.dataset.tracker;try{win.localStorage?.setItem('cardstashy.tracker',JSON.stringify(trackerOpen));}catch{}bar.dataset.key='';renderTracker(session.snapshot().status.surface,root.querySelector('.play-match-mat'));});}
   const key=[trackerOpen.deck,trackerOpen.opponent,lib,left.map(r=>r.left).join(','),[...seen.values()].map(v=>v.n).join(',')].join('|');
-  if(bar.dataset.key===key&&mat.querySelectorAll(':scope>.forge-tracker').length===trackerOpen.deck+trackerOpen.opponent)return placeTracker(mat);bar.dataset.key=key;
+  // The table redraws the mat and header on every board change. Reuse the open panels as they were,
+  // so they don't pop in again and reload their art; only a panel you just opened plays its entrance.
+  if(trackerCache.key===key){if(bar.dataset.key!==key){bar.dataset.key=key;bar.innerHTML=trackerCache.bar;}for(const el of mat.querySelectorAll(':scope>.forge-tracker'))if(!trackerCache.nodes.includes(el))el.remove();for(const p of trackerCache.nodes)if(p.parentElement!==mat){p.dataset.settled='';mat.append(p);}return placeTracker(mat);}
+  bar.dataset.key=key;
   bar.innerHTML=[['deck','Deck'],['opponent','Opponent']].map(([k,l])=>`<button type="button" data-tracker="${k}" aria-pressed="${trackerOpen[k]}">${outlineIcon(trackerOpen[k]?EYE:EYE_OFF)}<span>${l}</span></button>`).join('')+`<span class="forge-tracker-land" title="Chance your next draw is a land">${outlineIcon('M3 20l6-10 4 6 3-4 5 8z')}<b>${pct(landsLeft,lib)}</b></span>`;
   for(const el of mat.querySelectorAll(':scope>.forge-tracker'))el.remove();
   const row=(art,name,cost,count,sub)=>`<li${count?'':' data-out="true"'}><span class="forge-tracker-art">${art?`<img src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:''}</span><span class="forge-tracker-name"><b>${esc(name)}</b>${cost?`<i>${manaCost({mana_cost:cost})}</i>`:''}</span><span class="forge-tracker-num"><b>${count}</b>${sub?`<small>${sub}</small>`:''}</span></li>`;
-  if(trackerOpen.deck){const p=doc.createElement('section');p.className='forge-tracker';p.dataset.side='deck';p.setAttribute('aria-label','Your library');
+  if(trackerOpen.deck){const p=doc.createElement('section');p.className='forge-tracker';p.dataset.side='deck';if(trackerToggled!=='deck')p.dataset.settled='';p.setAttribute('aria-label','Your library');
    const rows=[...left.filter(r=>!r.land)].sort((a,b)=>(b.left>0)-(a.left>0)||a.name.localeCompare(b.name));
    p.innerHTML=`<header><strong>Library</strong><span>${lib} cards</span></header><ul>${rows.map(r=>row(r.art,r.name,r.cost,r.left,r.left?pct(r.left,lib):'')).join('')}</ul><footer>${outlineIcon('M3 20l6-10 4 6 3-4 5 8z')}<span>Lands</span><b>${landsLeft}/${landsTotal}</b><small>${pct(landsLeft,lib)}</small></footer>`;mat.append(p);}
-  if(trackerOpen.opponent){const p=doc.createElement('section');p.className='forge-tracker';p.dataset.side='opponent';p.setAttribute('aria-label','Cards the CPU has shown');
+  if(trackerOpen.opponent){const p=doc.createElement('section');p.className='forge-tracker';p.dataset.side='opponent';if(trackerToggled!=='opponent')p.dataset.settled='';p.setAttribute('aria-label','Cards the CPU has shown');
    p.innerHTML=`<header><strong>Opponent</strong><span>${trackerSeen.size} seen</span></header>${seen.size?`<ul>${[...seen.values()].map(v=>row(v.art,v.name,v.cost,v.n,'')).join('')}</ul>`:'<p>Nothing shown yet.</p>'}`;mat.append(p);}
-  placeTracker(mat);
+  trackerToggled=null;trackerCache={key,bar:bar.innerHTML,nodes:[...mat.querySelectorAll(':scope>.forge-tracker')]};placeTracker(mat);
  }
  // The deck list sits under the table controls on the left; the CPU's list under its zone counts on the right.
  function placeTracker(mat){
@@ -752,5 +762,5 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const pressCancel=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}cancel();};
  const key=e=>{if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
  root.addEventListener('click',click,true);root.addEventListener('pointerdown',down);doc.addEventListener('pointermove',move,{passive:false});doc.addEventListener('pointerup',up);doc.addEventListener('pointercancel',pressCancel);doc.addEventListener('keydown',key);win.addEventListener('blur',cancel);
- return {destroy(){closed=true;clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }

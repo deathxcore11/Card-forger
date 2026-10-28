@@ -1449,3 +1449,5 @@
 /* A card Forge is moving (being paid for, or resolving) stays put, dimmed and inert, instead of blinking out and back. */
 :where(body.practice-table-open) .play-match-card[data-in-transit]{opacity:.6;filter:saturate(.7);pointer-events:none;animation:none!important;transition:opacity .2s ease}
 :where(body.practice-table-open) .play-match-card-wrap:has(>.play-match-card[data-in-transit]){pointer-events:none}
+/* The table redraws on every board change. A panel that was already showing (dock prompt, open menu, tracker, combat line) comes back as it was instead of replaying its entrance. */
+:where(body.practice-table-open) :is(.forge-native-panel[data-settled],.forge-native-panel[data-settled] :is(.forge-native-card,.forge-order-num),details[data-settled][open]>:not(summary),.forge-tracker[data-settled],.forge-combat-line[data-settled]){animation:none!important}

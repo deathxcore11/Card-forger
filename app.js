@@ -1019,7 +1019,7 @@ function render() {
   for(const [game,controller] of Object.entries(wikiPageControllers))if(S.ui.view!=="wiki"||T.game()!==game)controller.cancel();
   if(accountLocked){
     const content=$('#content'),failed=cloudInfo().status.state==='error';if(content)content.innerHTML=failed?'<section class="empty account-opening" role="alert"><h2>Your saved data is protected</h2><p>'+esc(cloudInfo().status.msg)+'</p><button class="btn" onclick="location.reload()">Retry opening account</button></section>':'<section class="empty account-opening" role="status"><h2>Opening your account…</h2><p>Your cards and profile will appear here.</p></section>';
-    const avatar=document.querySelector('.topbar [data-act="menu"]');if(avatar)avatar.innerHTML=profileAvatar(null,{});
+    const avatar=document.querySelector('.topbar [data-act="menu"]');if(avatar){delete avatar.dataset.avatarHtml;avatar.innerHTML=profileAvatar(null,{});}
     return;
   }
   if(settingsPopup?.isOpen){settingsPopup.refresh();return;}
@@ -3606,7 +3606,8 @@ function refreshProfileAvatar(){
  const a=cloudInfo(),requests=accountLocked?0:(S.ui.communityRequests||0),important=!accountLocked&&a.user&&(a.pending||a.status.state==='error');
  const html=(accountLocked ? profileAvatar(null,{}) : profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,a.profile||{}))+releaseDot()+(important?'<span class="account-sync-notice" aria-hidden="true">!</span>':'')+(requests?`<span class="account-notice-badge" aria-hidden="true">${requests>99?'99+':requests}</span>`:'');
  button.setAttribute('aria-label',`Profile and settings${requests?`, ${requests} pending friend request${requests===1?'':'s'}`:''}${releaseState().unread?', unread release notes':''}${important?', account saving needs attention':''}`);
- if(button.innerHTML!==html)button.innerHTML=html;
+ // Compare with what was written, not innerHTML: the browser re-serializes (& in art URLs), so that never matched and the avatar reloaded on every account check.
+ if(button.dataset.avatarHtml!==html){button.dataset.avatarHtml=html;button.innerHTML=html;}
  button.classList.add('profile-menu');button.title='Profile & settings';
 }
 async function saveProfileArtwork(kind,value){

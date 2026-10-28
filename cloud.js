@@ -318,11 +318,15 @@ async function loadProfile() {
   if (!owner) return;
   const { data } = await client.from("profiles").select("username, display_name, avatar_url, bio, favorite_formats").eq("id", owner).maybeSingle();
   if (user?.id !== owner || syncEpoch !== epoch) return;
-  profile = data || { display_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "", avatar_url: user.user_metadata?.avatar_url || "" };
-  hooks.changed();
+  // Polled every few seconds: redraw only when the profile or its art actually changed, or the
+  // Settings and Community pages re-render (and blink) on every check.
+  const next = data || { display_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "", avatar_url: user.user_metadata?.avatar_url || "" };
+  const was = JSON.stringify(profile);
+  profile = next;
+  if (JSON.stringify(next) !== was) hooks.changed();
   if(client.rpc)try{
     const {data:overview,error}=await client.rpc('community_action',{action:'overview',payload:{}});
-    if(!error && user?.id===owner && syncEpoch===epoch){accountArt=overview?.art||null;hooks.changed();}
+    if(!error && user?.id===owner && syncEpoch===epoch){const art=overview?.art||null;if(JSON.stringify(art)!==JSON.stringify(accountArt)){accountArt=art;hooks.changed();}}
   }catch{}
 }
 export async function saveProfile(fields) {
