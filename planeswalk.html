@@ -436,12 +436,12 @@ html,body{overflow-x:hidden}
 /* long-press inspect overlay (planeswalk-touch.js) */
 .pw-zoom{position:fixed;inset:0;z-index:100;display:grid;place-content:center;justify-items:center;gap:14px;padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));background:#050506e6;animation:pw-fade var(--t2) ease-out}
 @keyframes pw-fade{from{opacity:0}}
-.pw-zoom .card{width:min(250px,70vw,48vh);min-height:0;aspect-ratio:5/7;grid-template-rows:auto 46% auto 1fr;font-size:.92rem;transform:none!important;filter:none!important;opacity:1!important}
+.pw-zoom .card{width:min(250px,70vw,calc(var(--pw-vh,100vh) * .48));min-height:0;aspect-ratio:5/7;grid-template-rows:auto 46% auto 1fr;font-size:.92rem;transform:none!important;filter:none!important;opacity:1!important}
 .pw-zoom .card .head b{font-size:1rem;white-space:normal}
 .pw-zoom .card .cost{width:26px;height:26px;font-size:.95rem}
 .pw-zoom .card .kind{font-size:.7rem}
 .pw-zoom .card>span:last-child{font-size:.95rem}
-.pw-zoom .unit{width:min(220px,56vw,40vh);font-size:.9rem}
+.pw-zoom .unit{width:min(220px,56vw,calc(var(--pw-vh,100vh) * .40));font-size:.9rem}
 .pw-zoom .unit .art{transform:none;filter:none;animation:none}
 .pw-zoom .unit .name{font-size:1.1rem}
 .pw-zoom .unit .tag{font-size:.75rem}
@@ -476,7 +476,7 @@ html,body{overflow-x:hidden}
 @media (prefers-reduced-motion:reduce){.node.open::after,.pw-zoom{animation:none}}
 
 /* ---------- phone portrait (secondary) ---------- */
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .top{gap:8px 12px}
  .top h1{font-size:1.1rem}
  .top .mono{display:none}
@@ -487,7 +487,7 @@ html,body{overflow-x:hidden}
 }
 
 /* ---------- phone landscape (primary, like the Play table) ---------- */
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:landscape){
  #app{max-width:none;gap:6px;padding-top:max(4px,env(safe-area-inset-top,0px));padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px))}
  .top{flex-wrap:nowrap;gap:12px;height:46px;padding:0;border-bottom:0}
  .top h1{font-size:1rem;white-space:nowrap}
@@ -499,7 +499,7 @@ html,body{overflow-x:hidden}
  .note{font-size:.72rem}
 
  /* map runs left to right: you start on the left, Sorin waits on the right */
- .map{--nd:44px;display:flex;flex-direction:row-reverse;align-items:center;justify-content:center;gap:6px;padding:10px 8px;height:calc(100dvh - 66px);min-height:250px}
+ .map{--nd:44px;display:flex;flex-direction:row-reverse;align-items:center;justify-content:center;gap:6px;padding:10px 8px;height:calc(var(--pw-vh,100dvh) - 66px);min-height:250px}
  .maprow{display:grid;grid-template-columns:58px;grid-auto-rows:auto;gap:8px;width:auto}
  .node{font-size:.56rem;gap:3px;letter-spacing:0}
  .node::before{width:44px;height:44px}
@@ -509,7 +509,7 @@ html,body{overflow-x:hidden}
  .plane{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.56rem;letter-spacing:.2em}
 
  /* battle: energy left, board and hand centre, actions right */
- .battle{display:grid;grid-template-columns:70px minmax(0,1fr) 146px;grid-template-rows:minmax(0,1fr) auto auto;gap:4px 8px;padding:8px 10px;height:calc(100dvh - 62px);min-height:290px}
+ .battle{display:grid;grid-template-columns:70px minmax(0,1fr) 146px;grid-template-rows:minmax(0,1fr) auto auto;gap:4px 8px;padding:8px 10px;height:calc(var(--pw-vh,100dvh) - 62px);min-height:290px}
  .foot{display:contents}
  .field{grid-column:2;grid-row:1/3;min-height:0;gap:10px;align-items:center;align-self:stretch;padding-top:22px}
  .battle .hand{grid-column:2;grid-row:3;padding-top:0;min-width:0}
@@ -558,12 +558,12 @@ html,body{overflow-x:hidden}
  .summary span{font-size:.66rem;padding:2px 8px}
  .price{height:26px;font-size:.72rem}
 }
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:landscape){
  #app{padding-top:max(4px,env(safe-area-inset-top,0px))!important}
  .top{height:40px}
  details.deck summary{white-space:nowrap}
- .battle{height:calc(100dvh - 54px);min-height:280px;padding:6px 8px;grid-template-rows:minmax(0,1fr) auto 96px}
- .map{height:calc(100dvh - 54px)}
+ .battle{height:calc(var(--pw-vh,100dvh) - 54px);min-height:280px;padding:6px 8px;grid-template-rows:minmax(0,1fr) auto 96px}
+ .map{height:calc(var(--pw-vh,100dvh) - 54px)}
  .chain{margin-top:4px}
  .unit{width:56px}.hero{width:64px}.foe .unit.elite{width:64px}.foe .unit.boss{width:76px}
  .field{padding-top:18px}
@@ -573,15 +573,15 @@ html,body{overflow-x:hidden}
 }
 body{margin:0}
 .btn,.option,details.deck summary,.battle,.map,.screen{box-sizing:border-box}
-@media (orientation:landscape) and (max-height:520px){
- .battle,.map{height:calc(100dvh - 52px)}
+@media (orientation:landscape){
+ .battle,.map{height:calc(var(--pw-vh,100dvh) - 52px)}
 }
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:landscape){
  .map>.plane:first-of-type{margin-left:6px}
  details.deck summary{display:inline-flex;align-items:center}
 }
 /* phone portrait battle: compact like landscape so the hand stays on screen */
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .top .emblems .muted{display:none}
  .battle{padding:30px 10px 10px;gap:8px}
  .field{gap:26px}
@@ -613,7 +613,7 @@ body{margin:0}
  .battle .hand .card .cost{width:15px;height:15px;font-size:.58rem}
  .battle .hand .card .pic{border-radius:0 0 5px 5px}
 }
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .top{flex-wrap:nowrap;gap:10px;padding-bottom:6px}
  .top h1{display:none}
  .top .life{font-size:.8rem}
@@ -628,7 +628,7 @@ body{margin:0}
  .energy{width:46px;height:46px;font-size:1.3rem}
  .piles{display:flex;gap:10px}
 }
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .top .life,.top .gold{white-space:nowrap;flex-wrap:nowrap}
  .field{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:end;padding-top:6px}
  .side.foe{order:0;justify-content:flex-end}
@@ -636,7 +636,7 @@ body{margin:0}
  .unit{width:58px}.hero{width:66px}.foe .unit.elite{width:66px}.foe .unit.boss{width:84px}
  .piles{font-size:.52rem;gap:6px}
 }
-@media (max-width:620px) and (orientation:portrait){.hero .incoming{left:-4px;transform:none}}
+@media (orientation:portrait){.hero .incoming{left:-4px;transform:none}}
 :where(.unit){--tint:#2a2230}
 /* creature names on a dark plate, above the frame ring */
 .unit .name{position:relative;z-index:2;margin-top:3px;padding:1px 7px;border-radius:6px;background:#0b0d12e8;box-shadow:0 0 0 1px #ffffff14;color:#f4ecda;text-shadow:none;max-width:calc(100% + 12px)}
@@ -648,10 +648,10 @@ body{margin:0}
 .pw-info b{font:700 1rem var(--display);color:var(--pw-gold-hi)}
 .pw-info p{margin:.45em 0 0}
 .pw-zoom .unit .tag{white-space:normal;overflow:visible;text-overflow:clip;max-width:none}
-@media (orientation:portrait){.pw-zoom.has-info{grid-auto-flow:row}.pw-zoom.has-info .pw-zoom-hint{grid-row:auto}.pw-zoom .unit{width:min(170px,44vw,30vh)}}
+@media (orientation:portrait){.pw-zoom.has-info{grid-auto-flow:row}.pw-zoom.has-info .pw-zoom-hint{grid-row:auto}.pw-zoom .unit{width:min(170px,44vw,calc(var(--pw-vh,100vh) * .30))}}
 /* touch devices: page text sits behind the i button */
 .pw-infobtn{display:none;font:800 1rem var(--display);padding:0}
-@media (pointer:coarse){
+@media all{
  .pw-infobtn{display:inline-grid;place-items:center;width:44px;min-width:44px}
  body:not(.pw-show-info) #app>:not(.top):not(section){display:none}
 }
@@ -660,7 +660,7 @@ body{margin:0}
 .pw-zoom.has-info{grid-template-columns:auto auto;grid-auto-flow:row}
 .pw-zoom.has-info .pw-zoom-hint{grid-row:auto}
 @media (orientation:portrait){.pw-zoom.has-info{grid-template-columns:auto}}
-@media (max-width:620px) and (orientation:portrait){.top{gap:6px}.lifebar{width:40px}.top .btn,details.deck summary{padding:6px 8px;font-size:.74rem}.top .spacer{display:none}}
+@media (orientation:portrait){.top{gap:6px}.lifebar{width:40px}.top .btn,details.deck summary{padding:6px 8px;font-size:.74rem}.top .spacer{display:none}}
 
 /* =================== Act two · Zendikar =================== */
 .map[aria-label="Zendikar map"]{--pw-bg:var(--pw-bg-map2)}
@@ -701,14 +701,14 @@ body{margin:0}
 /* Turn tally: damage dealt this turn, Balatro-style counter */
 .tally{min-width:58px;padding:4px 8px;border-radius:10px;background:#140806d9;border:1px solid #e8705a66;color:#ffcf6b;font:800 1.3rem/1 var(--display);text-shadow:0 0 12px #ff8a3d88}
 .tally small{color:#ffd2c4;font:700 .5rem/1.2 var(--body);letter-spacing:.14em;margin-bottom:2px}
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:landscape){
  .tally{grid-column:1;grid-row:1;align-self:start;justify-self:center;min-width:0;padding:3px 6px;font-size:1rem}
  .controls .log{bottom:auto;top:4px}
 }
-@media (max-width:620px) and (orientation:portrait){.tally{min-width:0;padding:3px 6px;font-size:1rem}}
+@media (orientation:portrait){.tally{min-width:0;padding:3px 6px;font-size:1rem}}
 .emb[aria-label="Sorin's Signet"] circle,.emb[aria-label="Eldrazi Monument"] circle,.emb[aria-label="Ob Nixilis's Contract"] circle{stroke:#e0566a}
 .emb[aria-label="Sorin's Signet"] text,.emb[aria-label="Eldrazi Monument"] text,.emb[aria-label="Ob Nixilis's Contract"] text{fill:#e0566a}
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:landscape){
  .map>.plane:first-of-type{margin-left:18px}
  .node.boss{max-width:84px;text-align:center;line-height:1.1}
  :is(.bosspick,.actstart) .option{max-width:190px}
@@ -717,19 +717,19 @@ body{margin:0}
  .side.foe:has(.unit:nth-child(4)) .intent{font-size:.54rem;padding:1px 4px}
 }
 /* many cards or foes: shrink instead of overflowing */
-@media (max-width:620px) and (orientation:portrait),(orientation:landscape) and (max-height:520px){
+@media (orientation:portrait),(orientation:landscape){
  .battle .hand .card{flex:0 1 76px;min-width:0}
  .battle{min-width:0;max-width:100%}
  .field>.side{min-width:0}
 }
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .side.foe:has(.unit:nth-child(4)) .unit:not(.boss):not(.elite){width:50px}
  .side.foe:has(.unit:nth-child(4)) .intent{font-size:.54rem;padding:1px 4px}
  .side.foe{flex-wrap:wrap;row-gap:22px}
 }
-@media (max-width:620px) and (orientation:portrait){.battle{grid-template-columns:minmax(0,1fr)}.controls{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (orientation:portrait){.battle{grid-template-columns:minmax(0,1fr)}.controls{grid-template-columns:repeat(3,minmax(0,1fr))}}
 /* portrait, 4+ foes: foes get their own full-width row, everything a bit smaller, hand stays on screen */
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .field:has(.side.foe .unit:nth-child(4)){grid-template-columns:minmax(0,1fr);gap:26px;padding-top:0}
  .field:has(.side.foe .unit:nth-child(4)) .side.foe{order:-1;justify-content:center;flex-wrap:nowrap}
  .field:has(.side.foe .unit:nth-child(4)) .side.you{justify-content:center}
@@ -745,7 +745,7 @@ body{margin:0}
 @keyframes pw-pact{50%{opacity:.78}}
 .costline{display:block;margin-top:6px;padding-top:6px;border-top:1px solid #e0566a33;color:#ff9c8a;font:700 .8em var(--body)}
 .costline::before{content:"";display:inline-block;width:7px;height:7px;margin-right:6px;border-radius:50%;background:#e0566a;vertical-align:middle}
-@media (orientation:landscape) and (max-height:520px){.pact{top:2px;font-size:.62rem;padding:2px 10px}.controls .log{top:26px}.battle:not(:has(.pact)) .controls .log{top:4px}.obhand{font-size:.58rem;padding:1px 5px}}
+@media (orientation:landscape){.pact{top:2px;font-size:.62rem;padding:2px 10px}.controls .log{top:26px}.battle:not(:has(.pact)) .controls .log{top:4px}.obhand{font-size:.58rem;padding:1px 5px}}
 @media (prefers-reduced-motion:reduce),(pointer:coarse){.pact{animation:none}}
 
 /* M2 fit pass: bargain, pact, bosspick on phones */
@@ -757,14 +757,14 @@ body{margin:0}
 .option>.card .cost{width:13px;height:13px;font-size:.5rem}
 .option>.card .pic{height:40px;border-radius:0 0 4px 4px}
 .option:disabled{opacity:.55}
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:landscape){
  .screen{padding-top:10px}
  .screen .note{margin:0 0 4px;font-size:.7rem}
  .battle:has(.pact) .field{margin-top:16px}
  .battle:has(.pact) .controls .log{top:24px;font-size:.6rem}
  .pact{max-width:calc(100% - 250px);overflow:hidden;text-overflow:ellipsis}
 }
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .top .btn[data-act=new]{font-size:.66rem;padding:4px 6px;line-height:1.05;white-space:normal;width:48px;text-align:center;justify-content:center;margin-left:4px}
  .top a.btn{padding:6px 8px}
  .screen{padding:14px 12px}
@@ -776,7 +776,7 @@ body{margin:0}
  .costline{margin-top:4px;padding-top:4px}
  .pact{top:2px;font-size:.6rem;padding:2px 10px;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis}
 }
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .screen .option:has(>.emb){display:grid;grid-template-columns:38px minmax(0,1fr);column-gap:10px;align-items:center}
  .screen .option:has(>.emb)>.emb{grid-row:span 2;margin:0;float:none}
  .screen .option:has(>.emb)>.costline,.screen .option:has(>.emb)>.card{grid-column:1/-1}
@@ -784,7 +784,7 @@ body{margin:0}
  .screen .option .muted{font-size:.74rem;line-height:1.3}
 }
 .option:disabled .costline{display:none}
-@media (max-width:620px) and (orientation:portrait){.top .lifebar{display:none}.top{min-width:0}}
+@media (orientation:portrait){.top .lifebar{display:none}.top{min-width:0}}
 
 /* M2.1 juice stack: Balatro-style chips (+flat, blue) and mult (×, red-orange) on the turn tally */
 @keyframes pw-juice{0%{transform:scale(1.5) rotate(-6deg);opacity:0}55%{transform:scale(.92) rotate(2deg);opacity:1}100%{transform:none}}
@@ -796,13 +796,13 @@ body{margin:0}
 .tally .juice i b{display:inline-block;margin-left:3px;padding:0 3px;border-radius:3px;background:#0006;color:#ffe08a;font:800 .58rem/1.3 var(--body)}
 .tally .juice i:last-child{box-shadow:0 2px 0 #000a,inset 0 1px 0 #ffffff40,0 0 12px var(--jg,#3d8cf0aa)}
 .tally .juice i.mul:last-child{--jg:#ff6a3daa}
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:landscape){
  .tally .juice{flex-direction:column;align-items:stretch;max-width:66px;gap:2px}
  .tally .juice i{font-size:.5rem;padding:2px 4px;overflow:hidden;text-overflow:ellipsis;text-align:center}
  .tally .juice i:nth-last-child(n+4){display:none}
 }
 @media (prefers-reduced-motion:reduce){.tally .juice i{animation:none}}
-@media (orientation:landscape) and (max-height:520px){.tally:has(.juice){max-width:66px;padding:3px 3px;margin-right:4px}.tally .juice{width:100%}}
+@media (orientation:landscape){.tally:has(.juice){max-width:66px;padding:3px 3px;margin-right:4px}.tally .juice{width:100%}}
 .card[data-n="Moment of Clarity"] .head b{white-space:normal;text-overflow:clip;line-height:1.05;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* sound toggle, shown with the "?" info */
@@ -843,20 +843,20 @@ body{margin:0}
 .hero-pick .muted{font-size:.74rem;line-height:1.35;color:#d8cdb6}
 .hero-pick .muted+.muted{color:#b8ad96;font-size:.68rem}
 .hero-pick:hover,.hero-pick:focus-visible{transform:translateY(-4px);box-shadow:0 0 0 1px #000,0 0 0 2px var(--hc),0 0 44px var(--hg),0 24px 40px #000e}
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:landscape){
  .screen.heroes h2{font-size:1.1rem;margin:0}.screen.heroes>p{font-size:.7rem;margin:0 0 4px}
- .hero-pick{width:250px;min-height:0;height:calc(100dvh - 150px)}
+ .hero-pick{width:250px;min-height:0;height:calc(var(--pw-vh,100dvh) - 150px)}
  .hero-pick .muted+.muted{display:none}
 }
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .screen.heroes .choices{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
  .hero-pick{width:100%;min-height:210px;background-position:center 22%!important}
 }
-@media (max-width:620px) and (orientation:portrait){.battle .hand .card .head b{font-size:.5rem;letter-spacing:-.01em}}
+@media (orientation:portrait){.battle .hand .card .head b{font-size:.5rem;letter-spacing:-.01em}}
 
 /* M3a fixes: Elspeth goes wide. Landscape keeps every ally on one line and shrinks frames as the count grows */
 :is(body[data-hero=W],#app:has(.hero[data-n^="Elspeth"])) .chain{display:none}
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:landscape){
  .side.you{flex-wrap:nowrap;gap:4px;align-items:end}
  .field:has(.side.you .unit:nth-child(3)){grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
  .field:has(.side.you .unit:nth-child(5)){grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:6px}
@@ -870,9 +870,9 @@ body{margin:0}
 }
 .unit .art>.stats{position:absolute;right:4px;bottom:4px;z-index:2;line-height:1.2}
 .unit.ally .art>.stats{right:50%;transform:translateX(50%);bottom:3px}
-@media (orientation:landscape) and (max-height:520px){.battle .hand .card .head b{font-size:.56rem;letter-spacing:-.02em}}
-@media (orientation:landscape) and (max-height:520px){.battle .hand .card .head b{font-size:.5rem;letter-spacing:-.02em}}
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:landscape){.battle .hand .card .head b{font-size:.56rem;letter-spacing:-.02em}}
+@media (orientation:landscape){.battle .hand .card .head b{font-size:.5rem;letter-spacing:-.02em}}
+@media (orientation:portrait){
  .field:has(.side.you .unit:nth-child(4)){grid-template-columns:minmax(0,1fr);row-gap:26px}
  .field:has(.side.you .unit:nth-child(4)) .side.you{order:1;flex-wrap:nowrap;justify-content:center;gap:4px}
  .field:has(.side.you .unit:nth-child(4)) .side.foe{justify-content:center}
@@ -882,13 +882,13 @@ body{margin:0}
  .side.you:has(.unit:nth-child(6)) .ally .name{display:none}
  .battle .hand .card .head b{font-size:.46rem}
 }
-@media (orientation:landscape) and (max-height:520px),(max-width:620px) and (orientation:portrait){.battle .hand .card .head{gap:1px;padding-left:4px;padding-right:2px}.battle .hand .card .head b{text-overflow:clip}}
-@media (max-width:620px) and (orientation:portrait){.battle .hand .card .head b{font-size:.43rem;letter-spacing:-.03em}}
+@media (orientation:landscape),(orientation:portrait){.battle .hand .card .head{gap:1px;padding-left:4px;padding-right:2px}.battle .hand .card .head b{text-overflow:clip}}
+@media (orientation:portrait){.battle .hand .card .head b{font-size:.43rem;letter-spacing:-.03em}}
 .battle .hand .card[data-n="Baneslayer Angel"] .head b{letter-spacing:-.06em}
 
 /* ===== UI director pass: every screen fits the phone in both orientations ===== */
 /* card choices (reward, treasure) stay a row of cards in portrait, never a single column */
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .screen .choices:has(>.card){display:flex;flex-wrap:nowrap;justify-content:center;gap:6px}
  .screen .choices>.card{flex:0 1 108px;width:auto;min-width:0;min-height:0;font-size:.6rem;padding:4px;grid-template-rows:auto 64px auto 1fr}
  .screen .choices>.card .head b{font-size:.56rem;white-space:normal;line-height:1.05}
@@ -901,7 +901,7 @@ body{margin:0}
  .maprow{gap:10px}
 }
 /* shop: the wares scroll sideways inside their own row; the page itself never scrolls */
-@media (max-width:620px) and (orientation:portrait),(orientation:landscape) and (max-height:520px){
+@media (orientation:portrait),(orientation:landscape){
  .screen .choices:has(>.buy){display:flex;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;gap:8px;padding:4px 4px 8px;width:100%;scrollbar-width:none}
  .screen .choices:has(>.buy)::-webkit-scrollbar{display:none}
  .screen .choices>.buy{flex:none;scroll-snap-align:start;display:grid;justify-items:center;gap:4px}
@@ -910,16 +910,16 @@ body{margin:0}
  .screen .choices>.buy>.card .kind{font-size:.46rem;padding:2px 5px}
  .screen .choices>.buy .price{height:24px;font-size:.72rem}
 }
-@media (orientation:landscape) and (max-height:520px){
- .battle,.map{height:calc(100dvh - 66px)}
- .screen{max-height:calc(100dvh - 60px);overflow-y:auto;overscroll-behavior:contain}
+@media (orientation:landscape){
+ .battle,.map{height:calc(var(--pw-vh,100dvh) - 66px)}
+ .screen{max-height:calc(var(--pw-vh,100dvh) - 60px);overflow-y:auto;overscroll-behavior:contain}
  .screen .summary{gap:4px;margin:0}.screen .summary span{font-size:.6rem;padding:1px 8px}
  .screen .choices>.card{width:118px;min-height:0;grid-template-rows:auto 66px auto 1fr;font-size:.6rem}
  :is(.bosspick,.actstart) .option{max-width:200px;padding:6px 10px;font-size:.72rem}
  :is(.bosspick,.actstart)>p{margin:0 0 4px;font-size:.7rem}
  .screen>.btn{min-height:40px;margin-top:4px}
 }
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .field:has(.side.foe .unit:nth-child(3)){grid-template-columns:minmax(0,1fr);gap:22px;padding-top:0}
  .field:has(.side.foe .unit:nth-child(3)) .side.foe{order:-1;justify-content:center;flex-wrap:nowrap}
  .field:has(.side.foe .unit:nth-child(3)) .side.you{justify-content:center}
@@ -928,21 +928,21 @@ body{margin:0}
  .map .node:not(.boss)::before{width:40px;height:40px}
  .map .node:not(.boss) b{top:9px;width:22px;height:22px;margin-left:-11px}
 }
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .map .node:not(.boss){--nd:36px!important}
  .map .node.boss{--nd:80px!important}
  .battle .hand .card{height:84px!important}
  .battle{gap:4px}
  .controls .log{padding:2px 8px;font-size:.62rem}
 }
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  #app{padding-bottom:max(2px,env(safe-area-inset-bottom))}
  .map{padding:8px 6px}
  .battle{padding-bottom:4px}
- .screen:has(.buy){max-height:calc(100dvh - 68px);overflow-y:auto;overscroll-behavior:contain}
+ .screen:has(.buy){max-height:calc(var(--pw-vh,100dvh) - 68px);overflow-y:auto;overscroll-behavior:contain}
 }
-@media (orientation:landscape) and (max-height:520px){.screen{max-height:calc(100dvh - 68px)}}
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:landscape){.screen{max-height:calc(var(--pw-vh,100dvh) - 68px)}}
+@media (orientation:landscape){
  :is(.bosspick,.actstart) .choices{flex-wrap:nowrap;gap:8px}
  :is(.bosspick,.actstart) .option{flex:1 1 0;max-width:196px;min-width:0}
  .screen .option:has(>.emb){display:grid;grid-template-columns:32px minmax(0,1fr);column-gap:8px;align-items:center}
@@ -969,7 +969,7 @@ body{margin:0}
 .hero:has(>.ward) .art{box-shadow:0 0 0 2px #0b0d12,0 0 0 4px var(--pw-gold),inset 0 0 0 2px #8cc4ff99,0 0 26px #6fb4ff66,0 16px 26px #000e}
 .incoming.shielded{background:#0e1d33f2;border-color:#8cc4ff;color:#dcecff;box-shadow:0 0 14px #6fb4ff55}
 @media (prefers-reduced-motion:no-preference){.hero>.ward{animation:pw-juice .3s cubic-bezier(.2,.9,.3,1.3) both}}
-@media (orientation:landscape) and (max-height:520px),(max-width:620px) and (orientation:portrait){.hero>.ward{font-size:.62rem;padding:0 5px;left:-6px}}
+@media (orientation:landscape),(orientation:portrait){.hero>.ward{font-size:.62rem;padding:0 5px;left:-6px}}
 .pw-zoom .ward{display:none}
 /* colorless artifacts keep a steel frame whatever the hero's color */
 .card[data-n="Mirror Shield"]{background:linear-gradient(160deg,#5a5f66,#15171a 40%,#3a3e44)!important}
@@ -1001,7 +1001,7 @@ body{margin:0}
 .pw-paths line.walked{stroke-width:2.2}
 .pw-paths line.ahead{stroke:#f2d496cc;stroke-width:1.6;stroke-dasharray:4 4}
 
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:landscape){
  .map{align-items:stretch;justify-content:space-between;padding:22px 26px 14px;gap:0}
  .map>.maprow{display:grid;grid-auto-rows:1fr;align-items:center;justify-items:center;gap:0;width:auto;flex:1 1 0}
  .map>.maprow:has(.boss){flex:0 0 auto;align-content:center;padding-left:8px}
@@ -1011,7 +1011,7 @@ body{margin:0}
  .map .maprow:nth-of-type(odd) .node[data-l="0"]{translate:4px 0}.map .maprow:nth-of-type(even) .node[data-l="2"]{translate:-4px 0}
  .map .maprow:nth-of-type(3n) .node[data-l="1"]{translate:0 6px}
 }
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .map{display:flex;flex-direction:column;justify-content:space-between;align-items:stretch;padding:10px 10px 8px;gap:0}
  .map>.maprow{display:grid;grid-template-columns:repeat(3,1fr);justify-items:center;align-items:center;flex:1 1 0;width:100%;gap:0}
  .map>.maprow:has(.boss){grid-template-columns:1fr;flex:0 0 auto;margin:4px 0}
@@ -1021,9 +1021,9 @@ body{margin:0}
  .map>.plane{text-align:center}
 }
 .map .node.boss .heal{display:block;margin-top:2px;padding:0 7px;border-radius:99px;font:800 .5rem/1.6 var(--body);letter-spacing:.04em;color:#9fe3b0;background:#0d1a10e6;border:1px solid #6fcf8a88;white-space:nowrap}
-@media (max-width:620px) and (orientation:portrait){.map{height:calc(100dvh - 70px);min-height:0}}
+@media (orientation:portrait){.map{height:calc(var(--pw-vh,100dvh) - 70px);min-height:0}}
 .map .node.boss{grid-column:1/-1;justify-self:center}
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .map .node[data-t=elite],.map .node[data-t=shop],.map .node[data-t=bargain],.map .node.open{--ns:40px;--is:20px}
  .map .node[data-t=event],.map .node[data-t=treasure]{--ns:34px;--is:16px}
  .map .node{font-size:0!important}
@@ -1053,23 +1053,23 @@ body{margin:0}
 .screen.bonfire .option .minis span{width:30px;height:40px;border-radius:5px;background:var(--img) center/cover,#222;box-shadow:0 0 0 1px #000,inset 0 0 0 1px #d6ad6455}
 .node .heal{position:absolute;left:50%;top:100%;transform:translate(-50%,4px);white-space:nowrap;font:800 .54rem var(--body);color:#9fe3b0;background:#0d1a10e6;border:1px solid #6fcf8a88;border-radius:99px;padding:0 6px}
 
-@media (orientation:landscape) and (max-height:520px){.screen.bonfire .option{min-width:0;flex:1 1 0;max-width:220px}}
-@media (max-width:620px) and (orientation:portrait){.screen.bonfire .option{max-width:none}}
+@media (orientation:landscape){.screen.bonfire .option{min-width:0;flex:1 1 0;max-width:220px}}
+@media (orientation:portrait){.screen.bonfire .option{max-width:none}}
 /* pick-a-card lists (burn, foil, remove): 5+ cards wrap into a tidy grid of compact cards; long-press shows the full card */
 .screen .choices:has(>.card:nth-child(5)){display:grid!important;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;justify-items:center;align-items:start}
 .screen .choices:has(>.card:nth-child(5))>.card{width:100%;max-width:110px;min-height:0;height:auto;padding:4px;grid-template-rows:auto 56px auto;font-size:.56rem;margin:0}
 .screen .choices:has(>.card:nth-child(5))>.card>span:last-child{display:none}
 .screen .choices:has(>.card:nth-child(5))>.card .head b{font-size:.54rem;white-space:normal;line-height:1.05}
 .screen .choices:has(>.card:nth-child(5))>.card .kind{font-size:.44rem;padding:2px 5px}
-@media (max-width:620px) and (orientation:portrait){.screen .choices:has(>.card:nth-child(5)){grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}}
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:portrait){.screen .choices:has(>.card:nth-child(5)){grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}}
+@media (orientation:landscape){
  .screen .choices:has(>.card:nth-child(5)){grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
  .screen .choices>.card:not(:nth-child(5)) >span:last-child{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
  .screen h2{margin:0}
 }
-@media (orientation:landscape) and (max-height:520px){.screen .choices>.card{grid-template-rows:auto 52px auto 1fr!important}.screen .choices>.card:not(:nth-child(5))>span:last-child{-webkit-line-clamp:2}.screen h2{font-size:1.05rem}.screen>p{margin:2px 0}}
-@media (orientation:landscape) and (max-height:520px){.screen>.btn:last-child{position:sticky;bottom:2px;z-index:4;box-shadow:0 0 0 1px #000,0 -6px 18px #0b0b0ee6}}
-@media (orientation:landscape) and (max-height:520px){.screen{position:relative}.screen:has(>.choices>.card)>.btn:last-child{position:absolute;right:10px;top:8px;bottom:auto;min-height:36px;padding:4px 14px;box-shadow:none}}
+@media (orientation:landscape){.screen .choices>.card{grid-template-rows:auto 52px auto 1fr!important}.screen .choices>.card:not(:nth-child(5))>span:last-child{-webkit-line-clamp:2}.screen h2{font-size:1.05rem}.screen>p{margin:2px 0}}
+@media (orientation:landscape){.screen>.btn:last-child{position:sticky;bottom:2px;z-index:4;box-shadow:0 0 0 1px #000,0 -6px 18px #0b0b0ee6}}
+@media (orientation:landscape){.screen{position:relative}.screen:has(>.choices>.card)>.btn:last-child{position:absolute;right:10px;top:8px;bottom:auto;min-height:36px;padding:4px 14px;box-shadow:none}}
 /* grouped duplicates and two-tap remove */
 .screen .choices>.card[data-count]{position:relative;box-shadow:4px -4px 0 -1px #0b0d12,5px -5px 0 0 #d6ad6488,0 0 0 1px #000,inset 0 0 0 1px #d6ad6455}
 .screen .choices>.card[hidden]{display:none!important}
@@ -1077,12 +1077,12 @@ body{margin:0}
  font:800 .66rem var(--body);background:linear-gradient(180deg,#f3e2a8,#c9a352);color:#1a140a;box-shadow:0 0 0 2px #0b0d12}
 .screen .choices>.card.pw-armed{outline:2px solid #ff6b7d;outline-offset:2px;box-shadow:0 0 22px #ff6b7d88,0 0 0 1px #000}
 .screen .choices>.card>.pw-confirm{display:grid!important;place-items:center;z-index:6;position:absolute;left:4px;right:4px;bottom:4px;z-index:6;padding:4px 2px;border-radius:6px;text-align:center;font:800 .56rem/1.2 var(--body);color:#fff;background:#b3263af2;box-shadow:0 2px 8px #000a}
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .screen .choices:has(>.card:nth-child(5)){grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px 8px}
  .screen .choices:has(>.card:nth-child(5))>.card .head b{font-size:.56rem;letter-spacing:-.01em;overflow:visible;text-overflow:clip;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal}
 }
 /* reward choices show their full rules text: the text is the decision */
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:landscape){
  .screen .choices:not(:has(>.card:nth-child(5)))>.card{width:148px!important;grid-template-rows:auto 46px auto auto!important;font-size:.58rem;height:auto}
  .screen .choices:not(:has(>.card:nth-child(5)))>.card>span:last-child{display:block!important;-webkit-line-clamp:unset!important;overflow:visible;line-height:1.3;padding-bottom:4px}
  .screen:has(>.choices>.card) .summary{margin:0}
@@ -1121,11 +1121,11 @@ body{margin:0}
 .unit:has(>.pv.dies) .art,.unit:has(>.pv.fail) .art{filter:saturate(.55) brightness(.85)}
 .incoming.overflow{background:#2a0a0cf2!important;border-color:#ff6b7d!important;color:#ffd0d6!important;box-shadow:0 0 14px #ff6b7d66}
 .tramp,.intent .tr{color:#ff9f43;font-weight:800}
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .side.formation .unit .name{white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.1;max-width:100%;word-break:normal}
 }
-@media (max-width:620px) and (orientation:portrait){.battle:has(.formation) .log{padding-block:3px;font-size:.68rem;line-height:1.3}}
-@media (orientation:landscape) and (max-height:520px){
+@media (orientation:portrait){.battle:has(.formation) .log{padding-block:3px;font-size:.68rem;line-height:1.3}}
+@media (orientation:landscape){
  .field:has(.side.you.formation):not(:has(.side.foe .unit:nth-child(4))){grid-template-columns:max-content minmax(0,1fr)!important}
  .side.you.formation{flex-wrap:nowrap;width:max-content}
  .side.foe.formation .unit.front::before{display:none}
@@ -1138,14 +1138,14 @@ body{margin:0}
  display:grid;place-items:center;font:800 .62rem var(--body);background:linear-gradient(180deg,#f3e2a8,#c9a352);color:#1a140a;box-shadow:0 0 0 2px #0b0d12,0 2px 6px #000a;pointer-events:none}
 .side.formation .unit.group.front .art{box-shadow:3px -3px 0 -1px #0b0d12,4px -4px 0 0 #d6ad6499,6px -6px 0 -1px #0b0d12,7px -7px 0 0 #d6ad6455,0 0 0 2px #0b0d12,0 0 0 3.5px var(--pw-gold),0 0 16px #e8b95b77,0 10px 18px #000d}
 .unit.group::after{left:-5px!important;right:auto!important;top:-5px!important;bottom:auto!important;transform:none!important;width:auto!important;height:18px!important;}
-@media (max-width:620px) and (orientation:portrait){.battle:has(.formation) .field{padding-top:2px!important;margin-top:-15px}}
-@media (max-width:620px) and (orientation:portrait){.screen.heroes>p{display:none}.btn.formtoggle{margin-top:6px}
+@media (orientation:portrait){.battle:has(.formation) .field{padding-top:2px!important;margin-top:-15px}}
+@media (orientation:portrait){.screen.heroes>p{display:none}.btn.formtoggle{margin-top:6px}
  .battle:has(.formation) .side .unit .name{font-size:.5rem}}
 /* preview chips sit under the blocker (over its name), never over enemy intents */
 .pv{top:auto!important;bottom:4px!important;max-width:none}
 .unit:has(>.pv) .name{visibility:hidden}
 .unit.group::after{left:auto!important;right:-6px!important}
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .battle:has(.formation) .side .unit .name{font-size:.48rem;line-height:1.05}
  .battle:has(.formation) .side.foe .unit:not(.boss){width:52px!important}
  .battle:has(.formation) .side.you .unit.ally{width:48px!important}
@@ -1198,10 +1198,36 @@ svg.pw-guards circle{fill:#8fc7ff}
 /* enrage growth sits inside its intent chip as a second line, so it never collides */
 .intent:has(>.grow){display:inline-flex!important;flex-direction:column;align-items:center;gap:1px;line-height:1.15}
 .intent>.grow{position:static!important;margin:0!important;padding:0 4px;font-size:.44rem;border-radius:99px}
-@media (max-width:620px) and (orientation:portrait){
+@media (orientation:portrait){
  .intent:has(>.grow){display:inline-flex!important;flex-direction:row}
  .intent>.grow{position:absolute!important;left:50%!important;right:auto!important;top:calc(100% + 3px)!important;bottom:auto!important;transform:translateX(-50%);box-shadow:0 0 0 1.5px #0b0d12}
 }
+
+/* tablets and foldables: the phone layouts, scaled up by touch.js (zoom on #app, --pw-vh = usable height in zoomed px) */
+#app[data-pw-zoom]{zoom:var(--pw-zoom,1)}
+/* landscape with room to spare (fold, tablet, desktop): 4+ foes get their own lane above your line */
+@media (orientation:landscape){
+ #app[data-pw-tall] .field:has(.side.foe .unit:nth-child(4)){grid-template-columns:minmax(0,1fr)!important;row-gap:22px;align-content:space-evenly}
+ #app[data-pw-tall] .field:has(.side.foe .unit:nth-child(4)) .side.foe{order:-1;justify-content:center;flex-wrap:nowrap;width:auto!important}
+ #app[data-pw-tall] .field:has(.side.foe .unit:nth-child(4)) .side.you{justify-content:center;width:auto!important;margin:0 auto}
+ #app[data-pw-tall] .field:has(.side.foe .unit:nth-child(4)) .side.foe .unit:not(.boss){width:60px!important}
+}
+.pw-rotbtn{font-size:.72rem;padding-inline:10px;border-color:#e8b95b88!important;color:#f3d48a}
+@media (orientation:portrait){.screen.heroes>h2{font-size:1.15rem;margin-block:2px 8px}}
+/* tall upright phones: the board grows into the spare height, bigger hand */
+@media (orientation:portrait){
+ #app[data-pw-tallp] .battle{min-height:calc(var(--pw-vh,100dvh) - 84px);grid-template-rows:minmax(0,1fr) auto auto}
+ #app[data-pw-tallp] .battle .field{align-content:space-evenly}
+ #app[data-pw-tallp] .battle .hand .card{height:150px!important}
+ #app[data-pw-tallp] .battle .side .unit:not(.hero){width:64px!important}
+ #app[data-pw-tallp] .battle .side .hero{width:76px!important}
+ .side.you{justify-content:center!important}
+}
+@media (orientation:landscape){
+ #app[data-pw-tall] .battle .log{white-space:normal;text-overflow:clip;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+ #app[data-pw-tall] .field:has(.side.foe .unit:nth-child(4)) .side.foe{width:max-content!important;max-width:100%;margin:0 auto}
+}
+.side.you.formation>.slot{display:none!important}
 
 
 /* ---------- art (Scryfall art crops, artists credited in the note below the game) ---------- */
@@ -2169,6 +2195,22 @@ if(!resumeRun())newRun();
    h+=`<path d="M${x1} ${y1} Q${cx} ${cy} ${x2} ${y2}"/><circle cx="${x2}" cy="${y2}" r="2.5"/>`}
   s.innerHTML=h};
  const q=()=>{if(!raf)raf=requestAnimationFrame(draw)};const mine=n=>n&&n.nodeType===1&&(n.matches('svg.pw-guards')||!!n.closest('svg.pw-guards'));new MutationObserver(ms=>{if(ms.some(m=>!mine(m.target)&&![...m.addedNodes,...m.removedNodes].every(mine)||m.type==='attributes'))q()}).observe(app,{childList:true,subtree:true,attributes:true,attributeFilter:['data-guard']});addEventListener('resize',q);q()})();
+// Tablets and foldables: reuse the phone layouts and scale them up so they fill the screen instead of clipping.
+(()=>{const app=document.getElementById('app');if(!app)return;const de=document.documentElement;
+ const fit=()=>{const W=innerWidth,H=innerHeight,port=H>=W,coarse=matchMedia('(pointer:coarse)').matches;let z=1;
+  z=port?Math.min(W/400,H/700):Math.min(W/640,H/470);
+  z=Math.max(1,Math.min(2.4,Math.round(z*100)/100));
+  if(z>1){app.dataset.pwZoom='';de.style.setProperty('--pw-zoom',z)}else{delete app.dataset.pwZoom;de.style.removeProperty('--pw-zoom')}
+  de.style.setProperty('--pw-vh',(H/z)+'px');if(!port&&H/z>=430)app.dataset.pwTall='';else delete app.dataset.pwTall;if(port&&H/z>=760)app.dataset.pwTallp='';else delete app.dataset.pwTallp;window.dispatchEvent(new Event('pw-fit'))};
+ addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeout(fit,120));fit()})();
+// Upright phones: one tap goes sideways (fullscreen + landscape lock where the browser allows it; Android Chrome and the app).
+(()=>{const app=document.getElementById('app');if(!app)return;const so=screen.orientation;
+ const can=()=>so&&so.lock&&document.documentElement.requestFullscreen&&matchMedia('(pointer:coarse) and (orientation:portrait)').matches&&Math.min(screen.width,screen.height)<=600;
+ const add=()=>{const top=app.querySelector('.top');if(!top)return;let b=top.querySelector('.pw-rotbtn');
+  if(!can()){if(b)b.remove();return}if(b)return;b=document.createElement('button');b.className='btn pw-rotbtn';b.type='button';b.textContent='⟳ Sideways';b.setAttribute('aria-label','Play sideways in full screen');
+  b.addEventListener('click',async()=>{try{await document.documentElement.requestFullscreen({navigationUI:'hide'});await so.lock('landscape')}catch(e){b.remove()}});
+  const ref=top.querySelector('.pw-infobtn');ref?top.insertBefore(b,ref):top.appendChild(b)};
+ new MutationObserver(add).observe(app,{childList:true});addEventListener('resize',add);add()})();
 
 </script>
 </body>
