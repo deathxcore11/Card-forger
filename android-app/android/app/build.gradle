@@ -7,8 +7,8 @@ android {
         applicationId "com.cardstashy.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 27
-        versionName "0.11.3-beta"
+        versionCode 28
+        versionName "0.11.4-beta"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
             noCompress 'gzip'
