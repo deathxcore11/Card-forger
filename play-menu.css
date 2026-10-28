@@ -481,3 +481,5 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-sheet .play-selected-cover::after{background:linear-gradient(180deg,#080b1000 35%,#080b10e0)}
 @media(max-width:480px){.pl-lobby .play-deck-choices{grid-template-columns:1fr 1fr!important;gap:10px}.pl-lobby .play-deck-choice>.deck-tile{height:180px}.pl-lobby .play-deck-choice .tile-body b{font-size:14px}.pl-lobby .play-deck-choice .tile-body small{display:none}}
 @media(max-width:420px){.pl-lobby .play-source-tabs{gap:0;padding:3px;justify-content:space-between}.pl-lobby .play-source-tabs>button{padding:8px 6px;font-size:11.5px}}
+.pl-lobby .play-library-scroll{scrollbar-gutter:auto}
+@media(max-width:480px){.pl-lobby .play-workspace--single .play-deck-choice>.deck-tile{height:auto;aspect-ratio:1/1}.pl-backs{opacity:.5}.pl-seat--cpu .pl-seat-copy p{max-width:24ch;text-wrap:balance}}
