@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-deck-page-tokens-v347";
+const CACHE = "cardforge-shell-warm-match-start-v348";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",
