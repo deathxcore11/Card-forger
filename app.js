@@ -18,7 +18,7 @@ import {FORGE_PLAY_TEST_ENABLED} from './play-forge-feature.js';
 import {forgeDeckSupport,forgeCpuDeckComplete} from './play-forge-setup-review.js';
 import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
-import {cyclePlaymatChoice,nextPlaymat} from './play-playmats.js';
+import {cyclePlaymatChoice,mountPlaymatScene,nextPlaymat,unmountPlaymatScene} from './play-playmats.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {createPlayerMat} from './play-player-mat.js';
 import {createPlayUpdateGate} from './play-update-gate.js';
@@ -1566,7 +1566,7 @@ A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profil
 // pass. The account/table lifecycle below is testable independently of activation.
 const PLAY_MATCH_RELEASE_READY=true;
 let playerMatHost=null,playerMatRoot=null,practicePregame=null,playStarting=false;
-function closePlayerMat(){setMusic("play",null);practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
+function closePlayerMat(){setMusic("play",null);practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;unmountPlaymatScene();document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
 // A failed Play download must never leave the app inert behind an empty layer.
 // The screen offers Return (restores the app) and Reload (fetches the current
 // release, which also covers an old page asking for a chunk a deploy removed).
@@ -1590,7 +1590,7 @@ A.playStartCandidate=async()=>{
  const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
  if(await playUpdates.beforeMatch())return; // The page reopens Play on the current release.
  if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
- playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
+ playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
  const beginGame=async options=>{
   practicePregame?.destroy();practicePregame=null;
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
