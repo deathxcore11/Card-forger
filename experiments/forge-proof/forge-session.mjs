@@ -138,6 +138,24 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
  if(typeof request!=='function')throw Error('FORGE_TRANSPORT_REQUIRED');
  let native=null,status=null,selected=null,draft=null,error=null,actionError=null,sending=false,awaitRevision=null,closed=false,timer=null,refreshing=null,boundViewer=null,lastAcceptedRevision=-1;
  const listeners=new Set();
+ // Forge reports Hand, Battlefield and the other zones but not its Stack zone, so a card being paid
+ // for, or resolving while its stack item is still listed, can be missing from a snapshot taken while
+ // Forge works. Keep it where it was, inert, until Forge places it: it no longer blinks out and back.
+ // Only your own hand and the public battlefield, only while Forge is busy (capped) or you are paying.
+ const TRANSIT_MS=2500,transit=new Map();
+ const holdInTransit=(projection,next)=>{
+  const prev=status?.surface,view=projection.surface,paying=view.decision.kind==='ManaPayment';
+  if(!prev||projection.failure||projection.terminal||prev.seat!==view.seat||!(next.busy===true||paying)){transit.clear();return projection;}
+  const now=Date.now(),ids=new Set(view.cards.map(c=>c.id)),kept=[],hand=[...view.hand];
+  for(const c of prev.cards){
+   if(ids.has(c.id)||!c.known||!(c.zone==='Battlefield'||c.zone==='Hand'&&c.zoneHolder===view.seat))continue;
+   const since=transit.get(c.id)??now;if(!paying&&now-since>TRANSIT_MS)continue;
+   kept.push({...c,inTransit:true});if(c.zone==='Hand')hand.splice(Math.min(Math.max(prev.hand.indexOf(c.id),0),hand.length),0,c.id);
+  }
+  for(const k of [...transit.keys()])if(!kept.some(c=>c.id===k))transit.delete(k);
+  for(const c of kept)if(!transit.has(c.id))transit.set(c.id,now);
+  return kept.length?{...projection,surface:{...view,cards:[...view.cards,...kept],hand}}:projection;
+ };
  const effectiveDraft=()=>draft||(native?.prompt?.method==='order'&&native.prompt.ordered===true?{revision:native.revision,promptId:native.prompt.id,indexes:[...list(native.prompt.destinationIndexes)],remember:false}:null);
  const snapshot=()=>({status,selected,pending:null,busy:sending||awaitRevision!==null||!!native?.busy||transportStatus().blocked===true,error:status?.failure?'NATIVE_PROJECTION_UNAVAILABLE':!status&&error?'FORGE_PROJECTION_UNAVAILABLE':null,clock:null,native,nativeDraft:effectiveDraft(),transportError:transportStatus().error||actionError||error});
  // The transport state last shown. A lost action settled without a new board changes only
@@ -145,7 +163,7 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
  let shownTransport='';
  const transportKey=()=>{const t=transportStatus();return (t.blocked===true)+'|'+(t.error||'');};
  const emit=()=>{shownTransport=transportKey();for(const fn of listeners)fn(snapshot());};
- const clearPrivateState=()=>{native=null;status=null;selected=null;draft=null;awaitRevision=null;};
+ const clearPrivateState=()=>{transit.clear();native=null;status=null;selected=null;draft=null;awaitRevision=null;};
  const acceptState=next=>{
   if(closed)return false;
   if(boundViewer!==null&&next?.viewer!==boundViewer){clearPrivateState();error='Forge viewer identity changed.';emit();throw Error(error);}
@@ -159,7 +177,7 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
   if(!projection)return false;
   boundViewer=next.viewer;lastAcceptedRevision=next.revision;
   if(native?.revision!==next.revision){draft=null;actionError=null;}
-  native=retainProjectedNative(next,projection);status=projection;
+  native=retainProjectedNative(next,projection);status=holdInTransit(projection,next);
   if(awaitRevision!==null&&next.revision>awaitRevision)awaitRevision=null;
   if(selected!==null&&!status?.surface.cards.some(c=>c.id===selected&&c.known))selected=null;
   emit();return true;
@@ -192,7 +210,7 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
   if(snapshot().busy)throw Error('MATCH_NOT_READY');
   if(expectedRevision!==native?.revision)throw Error('STALE_CHOICE');
   if(native?.prompt){if(kind!=='card')throw Error('Use the native dialog options.');const matches=list(native.prompt.options).filter(o=>optionCardId(o.value)===nativeId);if(matches.length!==1)throw Error('Choose the specific native option below.');selectPrompt(matches[0].index);return;}
-  const known=kind==='card'?status?.surface.cards.some(c=>c.id===nativeId):kind==='player'?native?.players.some(p=>p.id===nativeId):kind==='stack'?native?.stack.some(s=>s.id===nativeId):false;
+  const known=kind==='card'?status?.surface.cards.some(c=>c.id===nativeId&&!c.inTransit):kind==='player'?native?.players.some(p=>p.id===nativeId):kind==='stack'?native?.stack.some(s=>s.id===nativeId):false;
   if(!known)throw Error('STALE_CHOICE');return send(kind,{id:nativeId},expectedRevision);
  };
  return {snapshot,acceptState,refresh,subscribe(fn){listeners.add(fn);fn(snapshot());return()=>listeners.delete(fn);},

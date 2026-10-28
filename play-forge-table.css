@@ -1446,3 +1446,6 @@
 /* Arena frustrations: the lands Forge's Auto would tap wear a gold ring while you pay by hand. */
 :where(body.practice-table-open) .play-match-table[data-stage][data-forge-native] .play-match-battlefields .play-match-card[data-auto-tap=true][data-instance]{border-color:#e8b95b;box-shadow:0 0 0 2px #e8b95b,0 0 20px 4px #e8b95b99}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-auto-tap=true]::before{content:'Auto';position:absolute;left:50%;bottom:6px;translate:-50% 0;z-index:5;padding:2px 8px;border-radius:999px;background:linear-gradient(180deg,#f6dc9a,#d9a64a);color:#1b1406;font:800 10px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.06em;pointer-events:none}
+/* A card Forge is moving (being paid for, or resolving) stays put, dimmed and inert, instead of blinking out and back. */
+:where(body.practice-table-open) .play-match-card[data-in-transit]{opacity:.6;filter:saturate(.7);pointer-events:none;animation:none!important;transition:opacity .2s ease}
+:where(body.practice-table-open) .play-match-card-wrap:has(>.play-match-card[data-in-transit]){pointer-events:none}
