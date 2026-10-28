@@ -3,6 +3,7 @@
 // runs when the view changes (body[data-view]), never on ordinary re-renders, and uses transform
 // and opacity alone. Reduced motion turns it off; low power keeps the page fade and drops the cascade.
 import {createMotion} from './experiments/forge-proof/motion-kit.mjs';
+import {sfx} from './audio.js';
 const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 const lowPower=(()=>{let p='';try{p=localStorage.getItem('cardstashy.lowPower')||'';}catch{}if(p==='on')return true;if(p==='off')return false;
  const n=navigator,ua=n.userAgent||'';return window.Capacitor?.getPlatform?.()==='android'||/Android/i.test(ua)&&/; wv\)/.test(ua)||!!(n.deviceMemory&&n.deviceMemory<=3);})();
@@ -43,11 +44,11 @@ function versus(stage){
  setTimeout(()=>{if(!stage.isConnected)return;const M=kit();
   for(const seat of stage.querySelectorAll('.forge-intro-seat')){const s=document.createElement('span');s.className='cs-vs-sheen';s.setAttribute('aria-hidden','true');seat.append(s);}
   if(vs?.offsetParent){M.ring(vs,GOLD,560);M.flash(vs,.8);M.sparks(vs,{n:10,color:GOLD,spread:70});}
-  M.shake(row,lowPower?3:6,320);haptic(18);},560);
+  M.shake(row,lowPower?3:6,320);haptic(18);sfx('QP-007');},560);
 }
 function landed(toss){
  const coin=toss.querySelector('.forge-intro-coin'),you=coin?.dataset.result==='you',c=you?YOU:CPU,M=kit();
- M.ring(coin,c,620);M.sparks(coin,{n:10,color:c,spread:64});haptic(you?20:12);
+ M.ring(coin,c,620);M.sparks(coin,{n:10,color:c,spread:64});haptic(you?20:12);sfx(you?'QP-010':'QP-011');
  toss.querySelector('h2')?.animate([{opacity:0,transform:'scale(1.5)'},{opacity:1,transform:'scale(.96)',offset:.6},{transform:'none'}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)'});
 }
 function result(panel){

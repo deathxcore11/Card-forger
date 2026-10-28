@@ -258,3 +258,7 @@
 .password-rules li[data-ok="true"]>span {background:var(--gold);border-color:var(--gold);}
 .password-rules li[data-ok="true"]>span::after {content:"";width:6px;height:3px;border:solid var(--gold-ink);border-width:0 0 1.6px 1.6px;transform:translateY(-1px) rotate(-45deg);}
 @media (prefers-reduced-motion:reduce) {.password-rules li,.password-rules li>span {transition:none;}}
+
+/* Sound: effects and music volume sliders under the Sound & music switch. */
+.settings-volume{display:flex;align-items:center;gap:12px;margin:6px 0 0 30px;font-size:.92rem}
+.settings-volume input[type=range]{flex:1;max-width:260px;accent-color:var(--accent,#d8b25a)}
