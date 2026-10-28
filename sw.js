@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-playable-glow-guard-v372";
+const CACHE = "cardforge-shell-play-modes-home-v373";
 const ASSETS = [
   "./play-forge-feature.js",
   "./audio.js",
