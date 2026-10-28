@@ -1,4 +1,4 @@
-// Planeswalk inside the app: sideways, full screen and awake for the whole run, with the phone's own
+// Planeswalk inside the app: full screen and awake for the whole run, with the phone's own
 // haptics and a Back that returns to Play (the run saves itself). Planeswalk is its own page, so this
 // loads Capacitor's core next to it; the page itself is the website's, unchanged.
 (() => {

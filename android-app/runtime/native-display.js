@@ -1,5 +1,5 @@
-// A Forge match takes the whole phone: sideways, no system bars, screen kept awake. Everything else
-// gives the phone back. The app marks an open match with body.practice-table-open.
+// A Forge match takes the whole screen: no system bars, screen kept awake. Everything else gives the
+// bars back. The app marks an open match with body.practice-table-open.
 export function installNativeDisplay({ plugin, root = document.body } = {}) {
   let current = null;
   const sync = () => {
