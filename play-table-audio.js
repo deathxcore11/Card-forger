@@ -23,7 +23,9 @@ export function createTableAudio(root=null){
   slot=0;
   const terminal=next.status?.terminal;
   if(terminal){if(!ended){ended=true;const w=terminal.winner,won=w===b.seat,draw=w===null||w===undefined;
-   play(draw?'QP-019':won?'QP-017':'QP-018');setMusic('play',draw?'MUS-TBL-08':won?'MUS-TBL-06':'MUS-TBL-07',{loop:draw,then:'MUS-TBL-08'});}return;}
+   play(draw?'QP-019':won?'QP-017':'QP-018');
+   // The result gets its short win or loss sting and then silence: no music under the results screen.
+   setMusic('play',draw?null:won?'MUS-TBL-06':'MUS-TBL-07',{loop:false});}return;}
   music(b);
   const a=prev?.status?.surface;if(!a)return;
   const was=new Map(a.cards.map(c=>[c.id,c]));
