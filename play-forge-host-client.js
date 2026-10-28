@@ -24,6 +24,12 @@ const ACTION_REJECTIONS=Object.freeze({
  exact_initialization_unverified:'The match is not ready to accept actions.',
  native_action_rejected:'Forge did not accept that action. Review the current table before choosing again.',
 });
+// The host's startup steps for the loading screen: names and milliseconds only.
+export function startupProgress(p){
+ if(!p||typeof p!=='object'||typeof p.step!=='string'||!/^[a-z]{1,16}$/.test(p.step))return null;
+ const ms={};for(const [k,v] of Object.entries(p.ms&&typeof p.ms==='object'?p.ms:{}))if(/^[a-z]{1,16}$/.test(k)&&Number.isSafeInteger(v)&&v>=0&&v<600000)ms[k]=v;
+ return {warm:p.warm===true,step:p.step,ms};
+}
 export const forgeAccountKey=a=>JSON.stringify([a?.user?.id,a?.accountGeneration??a?.generation??null,!!a?.locked,!!a?.switching]);
 export async function exactDigest(value){
  const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
@@ -115,7 +121,7 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
    if(closed||!allocation)throw fail('MATCH_NOT_OPEN');
    if(nextReadAt>Date.now())await new Promise(r=>setTimeout(r,nextReadAt-Date.now()));if(closed)throw fail('MATCH_NOT_OPEN');nextReadAt=Date.now()+300;
    try{const {status:code,data}=await request('/api/play/matches/'+allocation.matchId);bind(data);
-    if(code===202&&data.status==='initializing'){if(terminal)throw fail('INVALID_NATIVE_TERMINAL_RECEIPT');return {status:'initializing'};}
+    if(code===202&&data.status==='initializing'){if(terminal)throw fail('INVALID_NATIVE_TERMINAL_RECEIPT');const progress=startupProgress(data.progress);return {status:'initializing',...(progress?{progress}:{})};}
     if(code===200&&data.status==='finished'){
      const hasViewer=Object.hasOwn(data,'viewerId'),terminalViewer=hasViewer?data.viewerId:expectedViewer;
      if(hasViewer&&(!Number.isSafeInteger(terminalViewer)||terminalViewer<0||expectedViewer!==null&&terminalViewer!==expectedViewer||knownPlayers&&!knownPlayers.includes(terminalViewer)))throw fail('INVALID_NATIVE_TERMINAL_RECEIPT');

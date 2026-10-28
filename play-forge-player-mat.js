@@ -186,7 +186,16 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   // saying it can take a minute (then why, after 25 s). It all stops when the table opens
   // or the start ends.
   // A warm engine started loading while the player picked decks (the host keeps it 3 minutes).
-  const tick=()=>{if(requestedAt===null||!intro)return;const seconds=Math.max(0,Math.floor((now()-requestedAt)/1000)),warm=forgeWarmedAt(),head=warm!==null&&warm<=requestedAt&&requestedAt-warm<180000?Math.floor((requestedAt-warm)/1000):null;intro.elapsed?.(`${seconds} s`);intro.note?.(seconds>=25?'Still setting up. The first match after an update takes longer.':head!==null?`The engine started loading ${head} s before you pressed Start.`:'Setting up a table can take up to a minute. Keep this page open.');};
+  const tick=()=>{if(requestedAt===null||!intro)return;const seconds=Math.max(0,Math.floor((now()-requestedAt)/1000)),warm=forgeWarmedAt(),head=warm!==null&&warm<=requestedAt&&requestedAt-warm<180000?Math.floor((requestedAt-warm)/1000):null;intro.elapsed?.(`${seconds} s`);if(progress){intro.note?.(stepsLine(progress));return;}intro.note?.(seconds>=25?'Still setting up. The first match after an update takes longer.':head!==null?`The engine started loading ${head} s before you pressed Start.`:'Setting up a table can take up to a minute. Keep this page open.');};
+  // Where a slow start spends its time, from the host's own step times: a warm engine or
+  // a fresh one, then the container and the engine. Shown while it starts, and briefly
+  // once the table opens.
+  let progress=null;
+  const secs=ms=>(ms/1000).toFixed(1)+' s';
+  const stepsLine=(p,totalMs=null)=>{const m=p.ms,parts=[p.warm?'Warm engine':'Fresh engine'];
+   if(m.bootstrap!==undefined)parts.push(m.ready!==undefined?'container '+secs(m.ready-m.bootstrap):'container…');
+   if(m.ready!==undefined)parts.push(m.confirm!==undefined?'engine '+secs(m.confirm-m.ready):'engine loading…');
+   if(totalMs!==null)parts.unshift('Ready in '+secs(totalMs));return parts.join(' · ');};
   const stopTicker=()=>{if(ticker!==null)view?.clearInterval?.(ticker);ticker=null;intro?.elapsed?.('');intro?.note?.('');};
   try{
    matchup=structuredClone(setup);matchPolicy=forgeCpuPolicy(setup.match.difficulty);
@@ -210,6 +219,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    while(current()&&Date.now()<deadline){
     try{state=await client.read();}catch(e){if(![429,503].includes(e.status))throw e;await wait(e.retryAfterMs||1000);continue;}
     const waitingForFirst=state.status==='running'&&!forgeStartingPlayer(state.snapshot)&&state.snapshot.turn===0&&!state.snapshot.prompt&&(state.snapshot.busy===true||state.snapshot.inputType==='InputLockUI');
+    if(state.status==='initializing'&&state.progress){progress=state.progress;tick();}
     if(state.status!=='initializing'&&!waitingForFirst)break;
     if(waitingForFirst)intro.status('Choosing the starting player…');
     await wait(startupPollMs); // the client spaces reads at least 300 ms apart
@@ -232,7 +242,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    await intro?.reveal(state.snapshot);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}intro?.destroy();intro=null;
    session.acceptState(state.snapshot);session.subscribe(s=>{updateExit();if(!disposed&&ticket===generation&&last?.phase!=='finished')publish({phase:'playing',game:s});});
    // The engine and website build stay identifiable on screen and in diagnostics.
-   root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true,tracker:trackerDeck(setup,artwork)}});warn(true);await session.start({readInitial:false});return last;
+   root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true,tracker:trackerDeck(setup,artwork)}});if(progress){const chip=node('div',stepsLine(progress,startupMs));chip.className='forge-startup-chip';chip.setAttribute('role','status');root.append(chip);view?.setTimeout?.(()=>chip.remove(),7000);}warn(true);await session.start({readInitial:false});return last;
   }catch(e){stopTicker();if(current()){session?.close();warn(false);message('Your match could not start',[forgeMatchError(e),'Your selected decks are unchanged.',...(e.details||[])],{diagnostic:forgeDiagnostic(e)+(requestedAt===null?'':` · ${Math.round((now()-requestedAt)/1000)}s after the table was requested`)});publish({phase:'session-ended',error:e.code||e.message});}throw e;}
   finally{stopTicker();opening=false;}
  }

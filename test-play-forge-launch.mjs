@@ -159,3 +159,9 @@ test('while the server starts the match the intro shows the stage and the second
  assert.ok(later>calls.findIndex(c=>c[0]==='elapsed'&&c[1]==='25 s'),'the longer-wait line comes after 25 seconds');
  assert.equal(tickFn,null,'no timer is left running once the start ends');
 });
+test('startup progress from the host keeps only step names and bounded milliseconds',async()=>{
+ const {startupProgress}=await import('./play-forge-host-client.js');
+ assert.deepEqual(startupProgress({warm:true,step:'ready',ms:{claim:0,bootstrap:40,ready:900,'<b>':1,big:9e9,neg:-1},extra:'x'}),{warm:true,step:'ready',ms:{claim:0,bootstrap:40,ready:900}});
+ assert.equal(startupProgress({step:'<script>'}),null);assert.equal(startupProgress(null),null);
+ assert.deepEqual(startupProgress({step:'start',warm:'yes'}),{warm:false,step:'start',ms:{}});
+});
