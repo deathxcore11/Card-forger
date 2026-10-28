@@ -8,7 +8,8 @@
 const KEY = "cardstashy-audio", CACHE = "cardstashy-audio-v1", SITE = "https://cardstashy.com";
 const DEFAULTS = { on: true, sfx: 0.7, music: 0.4 };
 // Which cues have a file: prefix → [last number, ...numbers that are music rows instead].
-const RANGES = { APP: [20, 2], COL: [10], PACK: [13, 1], QP: [24, 1, 3], TT: [10], CARD: [31], CMB: [21], PW: [33, 1], PWB: [20], AMB: [7] };
+const RANGES = { APP: [20, 2], COL: [10], PACK: [13, 1], QP: [24, 1, 3], TT: [10], CARD: [31], CMB: [21], PW: [33, 1], PWB: [20], AMB: [7], RAV: [6] };
+// RAV-001…006: Planeswalk Ravnica drafts (dungeon gate, vault lock, vault reveal, room advance, ante shatter, signature reveal).
 const hasCue = (id) => { const m = /^([A-Z]+)-(\d{3})$/.exec(id || ""), r = m && RANGES[m[1]], n = m && +m[2]; return !!r && n >= 1 && n <= r[0] && !r.slice(1).includes(n); };
 // Stingers duck the music for a moment so they read over it.
 const STINGERS = new Set(["APP-001", "PACK-009", "PACK-013", "QP-006", "QP-007", "QP-016", "QP-017", "QP-018", "QP-019", "TT-001", "TT-002", "PW-003", "PW-004", "PW-009", "PW-010", "PW-011", "PW-014", "PW-029", "PW-030", "PW-031"]);
