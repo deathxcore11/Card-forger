@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.14",
-  "commit": "66c2b12e9305347a5abd3fc1eb1a28e6b1855622",
-  "tree": "792f824167155505228dde04c72cd71fef834df3",
+  "version": "4.3.15",
+  "commit": "2e581b5d58ed7a19c1e87a68081e13e6d00b6c01",
+  "tree": "cef98c023d8ad37301231be4cefcf3e818f0da50",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -589,7 +589,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "6d0f98a18025ae8cc108c75a8ad873bcbf82873ec244f2b719e165ddc7762424"
+      "sha256": "cfd7aeac9167ea9741612deccd72ca8022b98a3eb8a5a2ff37571aca557f1675"
     },
     {
       "path": "core.js",
@@ -2244,7 +2244,7 @@
     {
       "path": "package.json",
       "bytes": 11594,
-      "sha256": "4258541ae034113dba74bedef9d7a7fd51733d9c96bdddfae83f73ba18b45c8f"
+      "sha256": "bbe46d49e39d45212c3bec7c1c379d03b74e2fc98207c077f39d03c7a5ec20f6"
     },
     {
       "path": "pairing.js",
@@ -2353,8 +2353,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 287340,
-      "sha256": "01c1952f337d2afe3a261065ed3b2886ec6b5cf74d6b523f9393586946f1b0f1"
+      "bytes": 288590,
+      "sha256": "31982f84699de096edbe6617955b5f39bbd53a5940c06d839a46c87fac79cd8a"
     },
     {
       "path": "play-menu.css",
@@ -2578,8 +2578,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1624,
-      "sha256": "198ce434b4b75b8f0a10cd90ea5e864eb10a7c4220fbcb638328949745fdca08"
+      "bytes": 640,
+      "sha256": "5de039270fd635efb450fcc50a9020d1cb828cb81af0b084e956938928f1ae40"
     },
     {
       "path": "release-status.js",
@@ -2899,7 +2899,7 @@
     {
       "path": "sw.js",
       "bytes": 15114,
-      "sha256": "109c3c66babbc0f3346e087327e3df4dddb85dd8c8d7ef0ba9dda81adb4f9bbb"
+      "sha256": "ff9537fe10867e2cc8e6d32b05e3e174541c03eb4ee153fb8f9d2eed47ec7c91"
     },
     {
       "path": "sync-merge.js",
