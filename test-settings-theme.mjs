@@ -28,7 +28,7 @@ memory.set(THEME_KEY,'light');listeners.get('storage')({key:THEME_KEY,storageAre
 memory.clear();listeners.get('storage')({key:null,storageArea:storage});assert.equal(document.documentElement.dataset.theme,'dark');
 stop();assert.equal(listeners.size,0);
 
-assert.deepEqual(SETTINGS_TABS.map(x=>x[1]),['Profile & account','Appearance & behavior','Backup & downloads','About & help']);
+assert.deepEqual(SETTINGS_TABS.map(x=>x[1]),['Profile & account','Appearance','Backup','Help']);
 assert.equal(normalizeSettingsTab('backup'),'recovery');assert.equal(normalizeSettingsTab('anything'),'account');
 for (const [tab] of SETTINGS_TABS) {
   const html=settingsTabs(tab);assert.equal((html.match(/role="tab"/g)||[]).length,4);

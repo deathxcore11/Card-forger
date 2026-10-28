@@ -5,8 +5,8 @@ import {gridSettings} from './grid-settings.js';
 // Never save a theme through the account store or trigger an inventory sync.
 export const THEME_KEY = 'cardstashy-theme';
 export const SETTINGS_TABS = Object.freeze([
-  ['account', 'Profile & account'], ['app', 'Appearance & behavior'],
-  ['recovery', 'Backup & downloads'], ['info', 'About & help']
+  ['account', 'Profile & account'], ['app', 'Appearance'],
+  ['recovery', 'Backup'], ['info', 'Help']
 ]);
 const storageDefault = () => { try { return globalThis.localStorage; } catch { return null; } };
 export const normalizeTheme = value => ['light','dark','aura'].includes(value) ? value : 'dark';

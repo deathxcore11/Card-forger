@@ -9,7 +9,7 @@ test('native setup exposes one normal CPU with no difficulty control or tier lab
  const setup=createPlaySetup({readAccount:()=>({user:{id:'owner'},profile:{username:'Randall'}}),readDecks:()=>[],parseImport:()=>({})});
  const html=playMenuMarkup(setup.snapshot(),{engine:'forge',matchReleaseReady:true});
  assert.doesNotMatch(html,/id="playDifficulty"|data-play-option="difficulty"|Experimental beta|Medium CPU|Easy CPU|Hard CPU|CPU piloting/);
- assert.match(html,/Quick Play/);assert.match(html,/Practice/);assert.match(html,/@Randall/);
+ assert.match(html,/Practice/);assert.match(html,/@Randall/);const home=playMenuMarkup(setup.snapshot(),{engine:'forge',matchReleaseReady:true,view:'home'});assert.match(home,/Quick Play/);assert.match(home,/Practice/);assert.match(home,/Planeswalk/);
  assert.deepEqual(readCpuOptions({engine:'forge'}),['Medium']);
  assert.deepEqual(forgeCpuPolicy(),{difficulty:'Medium',difficultyPolicyVersion:'forge-heuristic-medium-beta-v1',label:'CPU'});
  assert.throws(()=>forgeCpuPolicy('Hard'),error=>error.code==='FORGE_CPU_DIFFICULTY_UNAVAILABLE');

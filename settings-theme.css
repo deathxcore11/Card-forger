@@ -262,3 +262,22 @@
 /* Sound: effects and music volume sliders under the Sound & music switch. */
 .settings-volume{display:flex;align-items:center;gap:12px;margin:6px 0 0 30px;font-size:.92rem}
 .settings-volume input[type=range]{flex:1;max-width:260px;accent-color:var(--accent,#d8b25a)}
+
+/* 4.3.22 Friends is one row: the Friends panel already holds requests and adding friends. */
+.account-hub-actions{display:block;padding:14px 20px 18px}
+.account-hub-friends{display:flex;align-items:center;gap:14px;width:100%;min-height:60px;padding:12px 16px;border:1px solid var(--line);border-radius:16px;background:color-mix(in srgb,var(--surface-2) 55%,transparent);color:var(--text);text-align:left;font:inherit;cursor:pointer}
+.account-hub-friends:hover,.account-hub-friends:focus-visible{border-color:color-mix(in srgb,var(--gold) 60%,var(--line))}
+.account-hub-friends:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.account-hub-friends>span:nth-child(2){flex:1;min-width:0;display:grid;gap:2px}
+.account-hub-friends b{font-size:14px;display:flex;align-items:center;gap:8px}
+.account-hub-friends small{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.account-hub-friends-icon{flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:color-mix(in srgb,var(--gold) 14%,transparent);color:var(--gold)}
+.account-hub-friends-icon .ico{width:20px;height:20px}
+.account-hub-go{flex:none;font-size:22px;color:var(--gold);line-height:1}
+@media (max-width:520px){.account-hub-actions{display:block}}
+/* The save state is one quiet line by the title instead of a box above the tabs. */
+.settings-page .settings-save-overview{padding:6px 0;margin:0 0 10px;border-bottom:0;gap:8px}
+.settings-page .settings-save-overview .settings-save-symbol .ico{width:16px;height:16px}
+.settings-page .settings-save-overview small{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.settings-page .settings-save-overview .save-status{font-weight:600;color:var(--muted)}
+.account-hub-meta{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px}.account-hub-meta .link{min-height:32px}

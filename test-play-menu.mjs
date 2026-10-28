@@ -14,8 +14,8 @@ test('menu preserves supplied shared renderers and keeps match creation unavaila
   const tile='<button class="deck-tile" data-act="go" data-to="#deck/one">Shared deck tile</button>';
   const preview='<section class="deck-viewer" data-deck-view="stacks">Shared card rows</section>';
   const html=playMenuMarkup(state,{avatarMarkup:'<span class="profile-avatar">Shared avatar</span>',deckTiles:new Map([['one',tile]]),deckPreview:preview});
-  assert(html.includes(tile));assert(html.includes(preview));assert.match(html,/A Player/);assert.match(html,/@player/);
-  assert.match(html,/<button class="btn cs-plate"[^>]*disabled[^>]*><span class="cs-plate-label">Play vs CPU<\/span><\/button>/);assert.doesNotMatch(html,/private-account-id|data-act="(?:startMatch|playCpu)"/);
+  assert(html.includes(tile));assert(html.includes(preview));assert.match(html,/@player/);
+  assert.match(html,/<button class="btn cs-plate[^"]*"[^>]*disabled[^>]*><span class="cs-plate-label">Play vs CPU<\/span><\/button>/);assert.doesNotMatch(html,/private-account-id|data-act="(?:startMatch|playCpu)"/);
 });
 test('profile, deck names and pasted text cannot inject markup',()=>{
   const s=base();s.profile.displayName='<img src=x onerror=alert(1)>';s.profile.username='evil" onfocus="x';
@@ -60,10 +60,12 @@ test('selected import is displayed once and exposes a focus destination',()=>{
 });
 
 
-test('desktop setup has one persistent inspector and only Standard/Commander formats',()=>{
- const html=playMenuMarkup(base());assert.match(html,/class="play-workspace"/);assert.match(html,/<aside class="panel play-inspector"/);
+test('lobby inspects in a sheet and offers only formats the engine plays',()=>{
+ const html=playMenuMarkup(base());assert.match(html,/class="play-workspace play-workspace--single"/);assert.match(html,/<aside class="panel play-inspector pl-sheet"[^>]*hidden>/);
+ assert.match(playMenuMarkup(base(),{inspectOpen:true}),/<aside class="panel play-inspector pl-sheet" aria-labelledby="playInspectorTitle" >/);
+ assert.match(html,/<button class="pl-format-opt" disabled aria-disabled="true"><b>Pioneer<\/b>/);
  assert.match(html,/data-play-value="Standard"/);assert.match(html,/data-play-value="Commander"/);assert.doesNotMatch(html,/data-play-value="(?:Modern|Draft)"/);
- assert.match(html,/data-play-style="quick"/);assert.match(html,/data-play-style="practice"/);assert.doesNotMatch(html,/data-play-style="social"|Coming later/);assert.match(html,/<option value="Easy">Easy<\/option>/);assert.match(html,/<option value="Medium" selected>Medium<\/option>/);assert.match(html,/<option value="Hard">Hard<\/option>/);
+ const home=playMenuMarkup(base(),{view:'home'});assert.match(home,/data-act="playOpenMode" data-play-style="quick"/);assert.match(home,/data-act="playOpenMode" data-play-style="practice"/);assert.match(home,/href="\/planeswalk.html"/);assert.doesNotMatch(home+html,/data-play-style="social"|Coming later/);assert.doesNotMatch(html,/data-play-style=/);assert.match(html,/<option value="Easy">Easy<\/option>/);assert.match(html,/<option value="Medium" selected>Medium<\/option>/);assert.match(html,/<option value="Hard">Hard<\/option>/);
 });
 test('shelf filters exact format and search without deleting the selected deck preview',()=>{
  const s=base();s.decks=[{id:'a',name:'Alpha',format:'Standard'},{id:'b',name:'Beta',format:'Commander'},{id:'c',name:'Gamma',format:'Standard'}];s.browse.query='alpha';
