@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "f8cb5204b1e988484a190144306f845e79f15d37",
-  "sourceVersion": "4.3.19",
+  "commit": "23a88fd7ebc05972dba62ea9f16dcfcd8b262ba4",
+  "sourceVersion": "4.3.20",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -2375,7 +2375,7 @@
     {
       "path": "config.js",
       "bytes": 628,
-      "sha256": "408f09aa3346da877cbc10b0719db045c6be37bd9a181ef6dc7b842ea2679d16"
+      "sha256": "85cab791ca740e5672ce1825fac54ea4038ca3e937bcbd6b8bb94c3fd2bb9c42"
     },
     {
       "path": "core.js",
@@ -4089,8 +4089,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 4542478,
-      "sha256": "cde148d8f27843bb4ccbc3a9a6981b6ccd49a3242fec191971d7c0ad7861f43d"
+      "bytes": 4542698,
+      "sha256": "6e1339fd22e373ee070d42510ee306a4de1621e57b2aa83f356476edccd36b91"
     },
     {
       "path": "planner.js",
@@ -4414,8 +4414,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1030,
-      "sha256": "150bd9a6326937f89fc78d791d1d3a19ff724e3644673e3f67c39ee5402fd1d4"
+      "bytes": 875,
+      "sha256": "d72113c2fc38efc660d1e95c78a41901d7d597746dfe95d0bcd19092fed26a9c"
     },
     {
       "path": "release-status.js",
@@ -4484,23 +4484,23 @@
     },
     {
       "path": "scan-batch.js",
-      "bytes": 5363,
-      "sha256": "ff2b4856b846f408e9a9ef008b4dd31e80c534bcdbfa8264c220b7a95939110b"
+      "bytes": 5646,
+      "sha256": "cff6f6255fd31ef6d4cb84bd67b45088d9b1ddf4bf849d98a6947dbbf855fa02"
     },
     {
       "path": "scan-catalog.js",
-      "bytes": 11151,
-      "sha256": "274ab177f78b371a31e8516d420d82c2f1b24c7b4a748dbf54edf286f0904985"
+      "bytes": 11458,
+      "sha256": "3ad3414772cbd01563ba1c71e6b5178bc36b3f2eb8975d971c4bb0ec966bae6c"
     },
     {
       "path": "scan-collector.js",
-      "bytes": 11093,
-      "sha256": "d38c4fffbba1450abb11cacf67ec01c039989e28e8a91e22506e92339020f458"
+      "bytes": 11600,
+      "sha256": "15b1b1dbe984ffc4838a5c005c077101e72ba075add91480537ccf3cad5901db"
     },
     {
       "path": "scan-signals.js",
-      "bytes": 10803,
-      "sha256": "b9765a12a56dc0a0ee0b1a886520cf6fd2b9f19b83eeb8f6e294b55e8f393ef3"
+      "bytes": 11286,
+      "sha256": "0f0f0e96e9802c43660c56589c62956ecebd9011ed8c4ce964f1122c0bafb9ec"
     },
     {
       "path": "scan-vision.js",
@@ -4509,8 +4509,8 @@
     },
     {
       "path": "scan.js",
-      "bytes": 24910,
-      "sha256": "2d1ab54b7bd16b123913eafbb9c0a4f8aeba8792728be5eab19ae447dee9cc8a"
+      "bytes": 27723,
+      "sha256": "e7c8056677064d6d4d3fe41839b39fef76859ea19d52f5860221914cb86a5a4f"
     },
     {
       "path": "scanart.js",
@@ -4519,8 +4519,8 @@
     },
     {
       "path": "scancam.js",
-      "bytes": 151234,
-      "sha256": "579b559593190866f269e02c33cacf1aada8d3e692ee52c67d56dbcc7da8d15b"
+      "bytes": 152753,
+      "sha256": "3ac46abc010f62d4136f35b9682ec364047d917907bbac3a540e4415eb15d27b"
     },
     {
       "path": "scanidx/catalog-manifest.json",
@@ -4594,8 +4594,8 @@
     },
     {
       "path": "scanner-lookup.js",
-      "bytes": 9938,
-      "sha256": "5339316ba00433866de1949d83e4235cae05838003f907bb764e2f4bf90da1bf"
+      "bytes": 13285,
+      "sha256": "bf2026a0c6b8f81f18d3a552807e1619aad8c507c6dbdbf8a1208f0ec8e52ff0"
     },
     {
       "path": "scanner-printing.js",
@@ -4604,8 +4604,8 @@
     },
     {
       "path": "scanner-review.js",
-      "bytes": 10835,
-      "sha256": "64e08efec228cdeeb711b6d32fe018a72a203eb9fb2949505f1a5ebfafb4f84d"
+      "bytes": 11144,
+      "sha256": "4c52b8525781cc166ddef8d01d9666128ea642eec31d6ba5fa07f51a15d4ce60"
     },
     {
       "path": "scansession.js",
