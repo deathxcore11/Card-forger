@@ -1600,3 +1600,8 @@ body.practice-table-open:has(#practicePlayerMat.play-match-table[data-forge-nati
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-tabs>button span{letter-spacing:0;color:inherit;opacity:.75;font-size:11px}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-close{flex:none;width:34px;height:34px;border:0;border-radius:50%;background:#ffffff0d;color:#cfd3da;font:400 20px/1 'DM Sans',system-ui,sans-serif}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-close:hover{background:#ffffff1a;color:#fff}
+/* The effect layers sit above the table (2300) and its arrows (2400), under the cast spotlight and peek. */
+body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
+/* Keep the banner's light sweep inside the banner's painted shape. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-turn-banner::after{-webkit-mask:url(assets/play/turn-you.webp) center/100% 100% no-repeat;mask:url(assets/play/turn-you.webp) center/100% 100% no-repeat}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-turn-banner[data-owner=cpu]::after{-webkit-mask-image:url(assets/play/turn-cpu.webp);mask-image:url(assets/play/turn-cpu.webp)}
