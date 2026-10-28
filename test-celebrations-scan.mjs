@@ -8,15 +8,23 @@ import {samePrintingFamily,printingRows,printingFacets} from './printing-picker.
 import {createScannerPrintingPicker} from './scanner-printing.js';
 import {normalizePtcg,ptcgSource} from './ptcg.js';
 import {setContextCard} from './tcg.js';
+import {resolvedEntry} from './scan-batch.js';
 
 // Real checked-in identities from the photographed card; no image/OCR or live
 // price claims. Exercise number evidence, public adapters and the actual picker.
 const pack=compileCatalog(JSON.parse(gunzipSync(readFileSync('scanidx/ptcg-catalog-v1.json.gz'))));
 for(const name of ["Professor's Research",'Professor’s Research',"Professor's Research\nProfessor Oak"]){
- for(const code of ['023/025','23/25','O23/O25','023 / 025 ★']){
+ for(const code of ['023/025','23/25','023 / 025 ★']){
   const read={name,code},out=lookupCatalog(pack,read).cands;
   assert.deepEqual(out.map(c=>c.id),['cel25-23']);assert.equal(out[0].exact,true);assert(textVerifiedMatch('ptcg',out[0],read));
  }
+ const repaired={name,code:'O23/O25'},suggested=lookupCatalog(pack,repaired).cands;
+ assert.deepEqual(suggested.map(c=>c.id),['cel25-23']);
+ assert.equal(suggested[0].exact,false,'repaired digits suggest the card without claiming exact printed evidence');
+ assert.equal(suggested[0].identifierUncertain,true);
+ assert.equal(textVerifiedMatch('ptcg',suggested[0],repaired),false);
+ const entry=resolvedEntry({id:'repaired-celebrations'},'ptcg',suggested,repaired,c=>textVerifiedMatch('ptcg',c,repaired),{finishConfirmed:true,finish:'holo'});
+ assert.equal(entry.status,'review');assert.equal(entry.printingVerified,false);
 }
 assert.deepEqual(lookupCatalog(pack,{name:"Professor's Research",code:'024/025'}).cands.map(c=>c.id),['cel25-24'],'Neighbor full art remains a different printing');
 for(const read of [{name:"Professor's Research",code:'023/025\n024/025'},{name:'Professor Oak',code:'023/025'},{name:"Professor's Research ex",code:'023/025'},{name:"Professor's Research",code:'023/078'}]){

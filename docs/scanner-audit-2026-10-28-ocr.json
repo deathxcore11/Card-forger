@@ -1,0 +1,663 @@
+{
+  "kind": "native-tesseract-public-card-characterization",
+  "engine": "tesseract 5.3.4",
+  "limitations": [
+    "Two public catalogue scans and one public retailer photograph; not the owner's physical phone camera.",
+    "Native Tesseract and Pillow approximate preprocessing; not browser Tesseract.js/WASM or end-to-end app testing.",
+    "Four deterministic image variants per game plus a manually cropped YGO control; not a representative accuracy estimate.",
+    "Production geometry/parser/evidence are exercised; candidate catalogue completeness, provider lookup, auto capture and collection saving are outside this runner.",
+    "These are fixed-band experiments, not a replay of the app fallback sequence. For rejected geometry the app starts with original-image recovery; direct band results here are diagnostic only.",
+    "Full-card OCR is recorded separately; no failed band is selectively replaced when calculating band evidence."
+  ],
+  "sources": [
+    {
+      "game": "mtg",
+      "metadataURL": "https://api.scryfall.com/cards/7673784e-db4b-43a1-8d55-1bb9fc1e284f",
+      "imageURL": "https://cards.scryfall.io/normal/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.jpg?1783903008",
+      "imageSHA256": "ac5db5d4b9719e6ac1c386745db35b248dc5154a26fc1aa1f4289f41c961bc35",
+      "metadataSHA256": "a41edbb08fb9e9764fb6d672aed7e8893e6a00d69d607a1a89b1f5d33f79e501"
+    },
+    {
+      "game": "ptcg",
+      "metadataURL": "https://api.tcgdex.net/v2/en/cards/cel25-3",
+      "imageURL": "https://assets.tcgdex.net/en/swsh/cel25/3/high.webp",
+      "imageSHA256": "33d22aba9bbde966da2790d84d18434085d3547986c7067d10fa6df5c9b57dd3",
+      "metadataSHA256": "0ca166f700ed14396edc296007c7cef966f4a106a947b3e28594d320c702d1ec"
+    },
+    {
+      "game": "ygo",
+      "metadataURL": "https://db.ygoprodeck.com/api/v7/cardinfo.php?id=9753964",
+      "imageURL": "https://www.cardempire.com/cdn/shop/products/image_69145d8a-89d2-4817-a517-0a2ca3f15c03_1200x1200.jpg?v=1644061652",
+      "imageSHA256": "52d78269b653db4f80ff895976feaf88a27686cfdaf2731997b91a2c721d3831",
+      "metadataSHA256": "ac7dd87fb2d1a8cdce1d6cbeeec4289516b642cb01d6c0360e168c7f15e60f0b"
+    }
+  ],
+  "summary": {
+    "cases": 13,
+    "titleExact": 1,
+    "identifierPresent": 4,
+    "conflictingEvidence": 0,
+    "identifierMatchesExpected": 3,
+    "nameAndIdentifierMatchExpected": 0
+  },
+  "results": [
+    {
+      "game": "mtg",
+      "variant": "original",
+      "imageSize": [
+        488,
+        680
+      ],
+      "expected": {
+        "id": "7673784e-db4b-43a1-8d55-1bb9fc1e284f",
+        "name": "Lightning Bolt",
+        "set": "msc",
+        "collector_number": "806",
+        "mana_cost": "{R}",
+        "power": null,
+        "toughness": null
+      },
+      "title": {
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 1
+      },
+      "identifiers": {
+        "observations": [
+          {
+            "set": "msc",
+            "number": "806"
+          }
+        ],
+        "identifierUncertain": false,
+        "identifierConflict": false
+      },
+      "evidence": {
+        "conflicts": [],
+        "agrees": [
+          "set / collector number"
+        ],
+        "score": 20,
+        "identifierConflict": false,
+        "identifierUncertain": false,
+        "signalConflict": false,
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 1
+      }
+    },
+    {
+      "game": "mtg",
+      "variant": "width480",
+      "imageSize": [
+        480,
+        669
+      ],
+      "expected": {
+        "id": "7673784e-db4b-43a1-8d55-1bb9fc1e284f",
+        "name": "Lightning Bolt",
+        "set": "msc",
+        "collector_number": "806",
+        "mana_cost": "{R}",
+        "power": null,
+        "toughness": null
+      },
+      "title": {
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 1
+      },
+      "identifiers": {
+        "observations": [
+          {
+            "set": "msc",
+            "number": "806"
+          }
+        ],
+        "identifierUncertain": false,
+        "identifierConflict": false
+      },
+      "evidence": {
+        "conflicts": [],
+        "agrees": [
+          "set / collector number"
+        ],
+        "score": 20,
+        "identifierConflict": false,
+        "identifierUncertain": false,
+        "signalConflict": false,
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 1
+      }
+    },
+    {
+      "game": "mtg",
+      "variant": "blur1.2",
+      "imageSize": [
+        480,
+        669
+      ],
+      "expected": {
+        "id": "7673784e-db4b-43a1-8d55-1bb9fc1e284f",
+        "name": "Lightning Bolt",
+        "set": "msc",
+        "collector_number": "806",
+        "mana_cost": "{R}",
+        "power": null,
+        "toughness": null
+      },
+      "title": {
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 1
+      },
+      "identifiers": {
+        "observations": [],
+        "identifierUncertain": false,
+        "identifierConflict": false
+      },
+      "evidence": {
+        "conflicts": [],
+        "agrees": [],
+        "score": 0,
+        "identifierConflict": false,
+        "identifierUncertain": false,
+        "signalConflict": false,
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 1
+      }
+    },
+    {
+      "game": "mtg",
+      "variant": "jpeg40",
+      "imageSize": [
+        480,
+        669
+      ],
+      "expected": {
+        "id": "7673784e-db4b-43a1-8d55-1bb9fc1e284f",
+        "name": "Lightning Bolt",
+        "set": "msc",
+        "collector_number": "806",
+        "mana_cost": "{R}",
+        "power": null,
+        "toughness": null
+      },
+      "title": {
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 1
+      },
+      "identifiers": {
+        "observations": [
+          {
+            "set": "msc",
+            "number": "806"
+          }
+        ],
+        "identifierUncertain": false,
+        "identifierConflict": false
+      },
+      "evidence": {
+        "conflicts": [],
+        "agrees": [
+          "set / collector number"
+        ],
+        "score": 20,
+        "identifierConflict": false,
+        "identifierUncertain": false,
+        "signalConflict": false,
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 1
+      }
+    },
+    {
+      "game": "ptcg",
+      "variant": "original",
+      "imageSize": [
+        600,
+        825
+      ],
+      "expected": {
+        "id": "cel25-3",
+        "name": "Kyogre",
+        "hp": 130,
+        "stage": "Basic",
+        "set": {
+          "id": "cel25",
+          "number": "3",
+          "total": 25
+        }
+      },
+      "title": {
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 2
+      },
+      "identifiers": {
+        "observations": [],
+        "readings": [],
+        "identifierUncertain": false,
+        "identifierConflict": false
+      },
+      "evidence": {
+        "conflicts": [],
+        "agrees": [],
+        "score": 0,
+        "identifierConflict": false,
+        "identifierUncertain": false,
+        "signalConflict": false,
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 2
+      }
+    },
+    {
+      "game": "ptcg",
+      "variant": "width480",
+      "imageSize": [
+        480,
+        660
+      ],
+      "expected": {
+        "id": "cel25-3",
+        "name": "Kyogre",
+        "hp": 130,
+        "stage": "Basic",
+        "set": {
+          "id": "cel25",
+          "number": "3",
+          "total": 25
+        }
+      },
+      "title": {
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 2
+      },
+      "identifiers": {
+        "observations": [],
+        "readings": [],
+        "identifierUncertain": false,
+        "identifierConflict": false
+      },
+      "evidence": {
+        "conflicts": [],
+        "agrees": [],
+        "score": 0,
+        "identifierConflict": false,
+        "identifierUncertain": false,
+        "signalConflict": false,
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 2
+      }
+    },
+    {
+      "game": "ptcg",
+      "variant": "blur1.2",
+      "imageSize": [
+        480,
+        660
+      ],
+      "expected": {
+        "id": "cel25-3",
+        "name": "Kyogre",
+        "hp": 130,
+        "stage": "Basic",
+        "set": {
+          "id": "cel25",
+          "number": "3",
+          "total": 25
+        }
+      },
+      "title": {
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 2
+      },
+      "identifiers": {
+        "observations": [],
+        "readings": [],
+        "identifierUncertain": false,
+        "identifierConflict": false
+      },
+      "evidence": {
+        "conflicts": [],
+        "agrees": [],
+        "score": 0,
+        "identifierConflict": false,
+        "identifierUncertain": false,
+        "signalConflict": false,
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 2
+      }
+    },
+    {
+      "game": "ptcg",
+      "variant": "jpeg40",
+      "imageSize": [
+        480,
+        660
+      ],
+      "expected": {
+        "id": "cel25-3",
+        "name": "Kyogre",
+        "hp": 130,
+        "stage": "Basic",
+        "set": {
+          "id": "cel25",
+          "number": "3",
+          "total": 25
+        }
+      },
+      "title": {
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 2
+      },
+      "identifiers": {
+        "observations": [],
+        "readings": [],
+        "identifierUncertain": false,
+        "identifierConflict": false
+      },
+      "evidence": {
+        "conflicts": [],
+        "agrees": [],
+        "score": 0,
+        "identifierConflict": false,
+        "identifierUncertain": false,
+        "signalConflict": false,
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 2
+      }
+    },
+    {
+      "game": "ygo",
+      "variant": "original",
+      "imageSize": [
+        1080,
+        1080
+      ],
+      "expected": {
+        "id": 9753964,
+        "name": "Hot Red Dragon Archfiend Abyss",
+        "atk": 3200,
+        "def": 2500,
+        "level": 9,
+        "printingCode": "HSRD-EN041"
+      },
+      "title": {
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 8
+      },
+      "identifiers": {
+        "observations": [],
+        "readings": [],
+        "passcodes": [],
+        "identifierUncertain": false,
+        "identifierConflict": false
+      },
+      "evidence": {
+        "conflicts": [],
+        "agrees": [],
+        "score": 0,
+        "identifierConflict": false,
+        "identifierUncertain": false,
+        "signalConflict": false,
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 8
+      }
+    },
+    {
+      "game": "ygo",
+      "variant": "width480",
+      "imageSize": [
+        480,
+        480
+      ],
+      "expected": {
+        "id": 9753964,
+        "name": "Hot Red Dragon Archfiend Abyss",
+        "atk": 3200,
+        "def": 2500,
+        "level": 9,
+        "printingCode": "HSRD-EN041"
+      },
+      "title": {
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 4
+      },
+      "identifiers": {
+        "observations": [],
+        "readings": [],
+        "passcodes": [],
+        "identifierUncertain": false,
+        "identifierConflict": false
+      },
+      "evidence": {
+        "conflicts": [],
+        "agrees": [],
+        "score": 0,
+        "identifierConflict": false,
+        "identifierUncertain": false,
+        "signalConflict": false,
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 4
+      }
+    },
+    {
+      "game": "ygo",
+      "variant": "blur1.2",
+      "imageSize": [
+        480,
+        480
+      ],
+      "expected": {
+        "id": 9753964,
+        "name": "Hot Red Dragon Archfiend Abyss",
+        "atk": 3200,
+        "def": 2500,
+        "level": 9,
+        "printingCode": "HSRD-EN041"
+      },
+      "title": {
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 2
+      },
+      "identifiers": {
+        "observations": [],
+        "readings": [],
+        "passcodes": [],
+        "identifierUncertain": false,
+        "identifierConflict": false
+      },
+      "evidence": {
+        "conflicts": [],
+        "agrees": [],
+        "score": 0,
+        "identifierConflict": false,
+        "identifierUncertain": false,
+        "signalConflict": false,
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 2
+      }
+    },
+    {
+      "game": "ygo",
+      "variant": "jpeg40",
+      "imageSize": [
+        480,
+        480
+      ],
+      "expected": {
+        "id": 9753964,
+        "name": "Hot Red Dragon Archfiend Abyss",
+        "atk": 3200,
+        "def": 2500,
+        "level": 9,
+        "printingCode": "HSRD-EN041"
+      },
+      "title": {
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 3
+      },
+      "identifiers": {
+        "observations": [],
+        "readings": [],
+        "passcodes": [],
+        "identifierUncertain": false,
+        "identifierConflict": false
+      },
+      "evidence": {
+        "conflicts": [],
+        "agrees": [],
+        "score": 0,
+        "identifierConflict": false,
+        "identifierUncertain": false,
+        "signalConflict": false,
+        "exactMatch": false,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 0,
+        "weakObservations": 3
+      }
+    },
+    {
+      "game": "ygo",
+      "variant": "manual-crop-control",
+      "imageSize": [
+        595,
+        869
+      ],
+      "expected": {
+        "id": 9753964,
+        "name": "Hot Red Dragon Archfiend Abyss",
+        "atk": 3200,
+        "def": 2500,
+        "level": 9,
+        "printingCode": "HSRD-EN041"
+      },
+      "title": {
+        "exactMatch": true,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 1,
+        "weakObservations": 0
+      },
+      "identifiers": {
+        "observations": [
+          "ASRD-ENO4"
+        ],
+        "readings": [
+          {
+            "raw": "ASRD-ENO4",
+            "code": "ASRD-ENO4",
+            "corrected": false
+          }
+        ],
+        "passcodes": [],
+        "identifierUncertain": false,
+        "identifierConflict": false
+      },
+      "evidence": {
+        "conflicts": [],
+        "agrees": [],
+        "score": 30,
+        "identifierConflict": false,
+        "identifierUncertain": false,
+        "signalConflict": false,
+        "exactMatch": true,
+        "weakMatch": false,
+        "nameConflict": false,
+        "titleConflict": false,
+        "observations": 1,
+        "weakObservations": 0
+      }
+    }
+  ]
+}

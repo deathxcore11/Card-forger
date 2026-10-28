@@ -3,7 +3,7 @@
 // "12", "NEO", "12 NEO", "NEO 12", "neo12", "#0012 · NEO", "56/111", "LOB-EN001",
 // "LOB 001", "001 LOB". Partial descriptors only narrow a list of printings;
 // they never verify one on their own.
-import {parseYgoSetCode} from './scan.js';
+import {parseYgoSetCode,ptcgIdentifierKey,scanCollectorKey} from './scan.js';
 import {collectorKey} from './scan-signals.js';
 
 const LANGS=new Set(['en','es','fr','de','it','pt','ja','jp','ko','ru','zhs','zht','cs','ph']);
@@ -50,8 +50,14 @@ export function collectorQuery(game,value,{releases=null}={}){
  const known=code=>releases?releases.codes.has(code):/^[a-z0-9]{2,6}$/.test(code)&&/[a-z]/.test(code);
  const unknown=[];
  for(const token of words(raw).replace(/[#•·,;:()]/g,' ').split(/[\s-]+/).filter(Boolean)){
-  const fraction=token.match(/^([a-z]{0,2}\d{1,4}[a-z★☆†]{0,2})\/(\d{1,4})$/);
-  if(fraction){query.numbers.push({number:fraction[1],total:fraction[2]});continue;}
+  const fraction=token.match(/^([a-z]{0,2}\d{1,4}[a-z★☆†]{0,2})\/([a-z]{0,2}\d{1,4})$/);
+  if(fraction){
+   // Gallery/vault identifiers print their namespace on both halves. Keep
+   // TG03/TG30 intact; it must not narrow to the unrelated printing 3/30.
+   if(game==='ptcg'&&!ptcgIdentifierKey(fraction[1],fraction[2]))return null;
+   if(game!=='ptcg'&&!/^\d+$/.test(fraction[2]))return null;
+   query.numbers.push({number:fraction[1],total:fraction[2]});continue;
+  }
   if(/^\d/.test(token)&&COLLECTOR.test(token)&&!known(token)){
    query.numbers.push({number:token,total:''});
    // "151" can be a card number or the 151 set; a set reading is a fallback.
@@ -99,6 +105,7 @@ export function printingFacts(game,c){
 }
 // Yu-Gi-Oh!: "46" matches 046 and B46; "B38" only matches B38.
 const sameNumber=(game,a,b)=>{
+ if(game==='ptcg')return scanCollectorKey(a)===scanCollectorKey(b);
  if(game!=='ygo')return collectorKey(a)===collectorKey(b);
  const x=String(a||'').toLowerCase(),y=String(b||'').toLowerCase(),digits=v=>String(Number((v.match(/\d+$/)||[])[0]));
  return /^[a-z]/.test(y)?x.replace(/^([a-z])0*/,'$1')===y.replace(/^([a-z])0*/,'$1'):digits(x)===digits(y);
@@ -109,7 +116,7 @@ export function collectorMatches(game,facts,q){
  if(q.code)return facts.code===q.code;
  if(q.prefix&&facts.set!==q.prefix)return false;
  if(q.sets.length&&!q.sets.includes(facts.set))return false;
- if(q.numbers.length&&!q.numbers.some(n=>sameNumber(game,facts.number,n.number)&&(!n.total||String(Number(facts.total))===String(Number(n.total)))))return false;
+ if(q.numbers.length&&!q.numbers.some(n=>sameNumber(game,facts.number,n.number)&&(!n.total||(game==='ptcg'?ptcgIdentifierKey(facts.number,facts.total)===ptcgIdentifierKey(n.number,n.total):String(Number(facts.total))===String(Number(n.total))))))return false;
  return true;
 }
 export function describeCollector(game,q){

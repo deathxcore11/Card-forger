@@ -1,4 +1,4 @@
-import {pokemonTitleReadings,shortTrainerNames,pokemonTitleLabel,scanNameKey,scanCardNameKey,ptcgNumbers,ptcgNumberMatches,ptcgIdentifierKey,scanCollectorKey,mtgIdentifierEvidence,ygoCodeReadings,ygoPasscodes} from './scan.js';
+import {pokemonTitleReadings,pokemonTitleLine,shortTrainerNames,pokemonTitleLabel,scanNameKey,scanCardNameKey,ptcgNumberReadings,ptcgNumberMatches,ptcgIdentifierKey,scanCollectorKey,mtgIdentifierEvidence,ygoCodeReadings,ygoPasscodes} from './scan.js';
 import {pokemonTrainerSubtitle,pokemonIdentityNames} from './pokemon-identity.js';
 export const collectorKey=value=>String(value??'').trim().replace(/^0+(?=\d)/,'').toLowerCase();
 // Evidence is independent of which observations happen to exist in the local
@@ -6,16 +6,20 @@ export const collectorKey=value=>String(value??'').trim().replace(/^0+(?=\d)/,''
 export function scanIdentifierEvidence(g,read={}){
  const sources=[String(read.code||''),String(read.full||'')];
  if(g==='mtg'){const evidence=mtgIdentifierEvidence(read.code,read.full);return {...evidence,identifierConflict:evidence.observations.length>1};}
- if(g==='ptcg'){const observations=[...new Map(sources.flatMap(ptcgNumbers).map(n=>[ptcgIdentifierKey(n.num,n.total)||scanCollectorKey(n.num)+'/'+scanCollectorKey(n.total),n])).values()];return {observations,identifierConflict:observations.length>1};}
+ if(g==='ptcg'){const readings=sources.flatMap(ptcgNumberReadings),observations=[...new Map(readings.map(({num,total})=>[ptcgIdentifierKey(num,total)||scanCollectorKey(num)+'/'+scanCollectorKey(total),{num,total}])).values()];return {observations,readings,identifierUncertain:readings.some(r=>r.corrected),identifierConflict:observations.length>1};}
  const readings=[...new Map(sources.flatMap(ygoCodeReadings).map(r=>[r.raw,r])).values()],observations=[...new Set(readings.map(r=>r.code))],passcodes=[...new Set(sources.flatMap(ygoPasscodes))];
  return {observations,readings,passcodes,identifierUncertain:readings.some(r=>r.corrected),identifierConflict:readings.length>1||passcodes.length>1};
 }
 export function readScanSignals(g,read={}){
  const header=String(read.name||''),stats=String(read.stats||''),text=header+'\n'+stats+'\n'+String(read.full||'');
  const number=(regex,source=text)=>{const m=source.match(regex);return m?Number(m[1]):null;};
+ // The detail crop includes rules text, so an inline "create a 1/1 ... token"
+ // is not this card's power/toughness. Only an isolated, unambiguous stat line
+ // can veto a candidate; absent or conflicting standalone fractions are unknown.
+ const pts=g==='mtg'?[...new Map([...stats.matchAll(/^[ \t]*(\d{1,2})[ \t]*\/[ \t]*(\d{1,2})[ \t]*\r?$/gm)].map(m=>[m[1]+'/'+m[2],m.slice(1).map(Number)])).values()]:[];
  // Symbols that OCR did not actually read are absent evidence, never an invented mismatch.
  const mana=g==='mtg'?(String(read.mana||header).match(/(?:\{(?:\d+|[WUBRGCSXP]|[WUBRG]\/[WUBRGP]|2\/[WUBRG])\})+/gi)||[]).join('').toUpperCase():'';
- return {hp:g==='ptcg'?number(/\bHP\s*(\d{2,3})\b/i,header)??number(/\b(\d{2,3})\s*HP\b/i,header):null,atk:g==='ygo'?number(/\bATK\s*[/:]?\s*(\d{1,5})(?![\d/])\b/i):null,def:g==='ygo'?number(/\bDEF\s*[/:]?\s*(\d{1,5})(?![\d/])\b/i):null,level:g==='ygo'?number(/\b(?:LEVEL|LV[.]?)\s*[:/]?\s*(\d{1,2})\b/i,header+'\n'+String(read.level||'')):null,stage:g==='ptcg'?header.match(/\b(STAGE\s*[12]|BASIC)\b/i)?.[1]?.replace(/\s/g,'').toLowerCase()||'':'',mana,pt:g==='mtg'?stats.match(/\b(\d{1,2})\s*\/\s*(\d{1,2})\b/)?.slice(1).map(Number):null,text};
+ return {hp:g==='ptcg'?number(/\bHP\s*(\d{2,3})\b/i,header)??number(/\b(\d{2,3})\s*HP\b/i,header):null,atk:g==='ygo'?number(/\bATK\s*[/:]?\s*(\d{1,5})(?![\d/])\b/i):null,def:g==='ygo'?number(/\bDEF\s*[/:]?\s*(\d{1,5})(?![\d/])\b/i):null,level:g==='ygo'?number(/\b(?:LEVEL|LV[.]?)\s*[:/]?\s*(\d{1,2})\b/i,header+'\n'+String(read.level||'')):null,stage:g==='ptcg'?header.match(/\b(STAGE\s*[12]|BASIC)\b/i)?.[1]?.replace(/\s/g,'').toLowerCase()||'':'',mana,pt:pts.length===1?pts[0]:null,text};
 }
 // Keep primary title readings separate from search substrings and from rules/footer
 // hints. A fuzzy search hit is not evidence that a different printed title agrees.
@@ -25,14 +29,14 @@ export function scanTitleEvidence(g,card,read={}){
  const primary=[],weak=[];
  // Recognition already caps observations; never discard a later contradictory title.
  for(const observation of observations){
-  const lines=String(observation.text||'').split(/\r?\n/).map(line=>line.replace(/\{[^}]*\}/g,'').replace(g==='ptcg'?/^\s*(?:BASIC|STAGE\s*[12])\s+/i:/^$/,'').replace(g==='ptcg'?/\bH\s?P\s*\d+.*$/i:/^$/,'').trim()).map(line=>g==='ptcg'?(pokemonTitleReadings(line).find(n=>faces.includes(nameKey(n)))||line):line).filter(line=>!(g==='ptcg'&&pokemonTitleLabel(line))).filter(line=>!subtitle||scanNameKey(line)!==subtitle)
-   .filter(line=>line&&!/^(?:BASIC|STAGE\s*[12]|HP\s*\d+|\d+\s*HP|TRAINER|ITEM|SUPPORTER|STADIUM|INSTANT|SORCERY|LAND|SPELL CARD|TRAP CARD)\W*$/i.test(line)&&!/^evolves from\b|^©|^copyright|^illus\b|^ATK\b|^DEF\b|^\[/i.test(line)&&(faces.includes(scanNameKey(line))||!(g==='mtg'?/^(?:legendary|creature|artifact|enchantment|planeswalker|battle)\b/i:g==='ygo'?/^(?:DARK|LIGHT|EARTH|FIRE|WATER|WIND|DIVINE|LEVEL\s*\d+)$/i:/^(?:weakness|resistance|retreat|ability)$/i).test(line)));
+  const lines=String(observation.text||'').split(/\r?\n/).map(line=>line.replace(/\{[^}]*\}/g,'')).map(line=>g==='ptcg'?pokemonTitleLine(line):line.trim()).map(line=>g==='ptcg'?(pokemonTitleReadings(line).find(n=>faces.includes(nameKey(n)))||line):line).filter(line=>!(g==='ptcg'&&pokemonTitleLabel(line))).filter(line=>!subtitle||scanNameKey(line)!==subtitle)
+   .filter(line=>line&&!/^(?:BASIC|STAGE\s*[12]|HP\s*\d+|\d+\s*HP|TRAINER|ITEM|SUPPORTER|STADIUM|INSTANT|SORCERY|LAND|SPELL CARD|TRAP CARD)\W*$/i.test(line)&&!/^evolves from\b|^©|^copyright|^illus\b|^ATK\b|^DEF\b|^\[/i.test(line)&&(faces.includes(nameKey(line))||!(g==='mtg'?/^(?:legendary|creature|artifact|enchantment|planeswalker|battle)\b/i:g==='ygo'?/^(?:DARK|LIGHT|EARTH|FIRE|WATER|WIND|DIVINE|LEVEL\s*\d+)$/i:/^(?:weakness|resistance|retreat|ability)$/i).test(line)));
   const combined=nameKey(lines.join(' ')),strong=observation.source!=='full-hint'&&observation.source!=='orientation'&&(observation.confidence==null||observation.confidence>=70);
   // Wrapped titles and split-card faces are one observation. Keep meaningful
   // digits, slashes, qualifiers and suffixes; fuzzy search fragments never count.
   if(lines.length&&faces.includes(combined)&&(g!=='ptcg'||combined.length>=3||shortTrainerNames(read).some(n=>nameKey(n)===combined))){(strong?primary:weak).push(combined);continue;}
   for(const line of lines){
-   const clean=/^[A-Za-zÀ-ž][A-Za-zÀ-ž0-9 ,'’.:!&/–—-]*$/.test(line)&&(!/[A-Za-z]\d|\d[A-Za-z]/.test(line)||faces.includes(nameKey(line))),key=nameKey(line);if(!key||(key.length<3&&!(g==='ptcg'&&(/^(?:n|az)$/.test(nameKey(canonical))||shortTrainerNames({...read,name:line}).some(n=>nameKey(n)===key)))))continue;
+   const clean=(/^[A-Za-zÀ-ž][A-Za-zÀ-ž0-9 ,'’.:!&/–—-]*$/.test(line)||(g==='ptcg'&&/^(?:Nidoran\s*[♀♂]|Unown\s*[!?])$/i.test(line)))&&(!/[A-Za-z]\d|\d[A-Za-z]/.test(line)||faces.includes(nameKey(line))),key=nameKey(line);if(!key||(key.length<3&&!(g==='ptcg'&&(/^(?:n|az)$/.test(nameKey(canonical))||shortTrainerNames({...read,name:line}).some(n=>nameKey(n)===key)))))continue;
    (strong&&clean?primary:weak).push(key);
   }
  }

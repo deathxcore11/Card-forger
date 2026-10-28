@@ -1,0 +1,352 @@
+{
+  "base_commit": "ef1773a56bbd0c24ebed369e706f3d8dc5ffbb02",
+  "date": "2026-10-28",
+  "timezone": "America/New_York",
+  "status": "review-candidate-not-deployed",
+  "command": "npm run test:scanner-audit",
+  "commands": 48,
+  "passed": 48,
+  "failed": 0,
+  "tests": [
+    {
+      "command": "node test-batch-scan-core.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-batch-scan-pipeline.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-batch-scan-vikavolt.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-build-printing-recovery.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-celebrations-scan.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-collector-search.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-import-pricing-printings.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-import-pricing-proven-printings.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-import-pricing-scan-save.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-magic-printing-budget.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-magic-printing-flow.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-printing-picker.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-adapter-bounds.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-adapter-options.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-bounded-recognition.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-capture-lifecycle.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-catalog-digital.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-catalog-retry.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-catalog.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-collector.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-confirm.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-fullcard-boundaries.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-geometry-regression.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-identifier-conflicts.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-identity-details.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-live-refinement.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-printing-evidence.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-release-identity.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-sensor-coverage.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-trainers.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scanart.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scancam.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scandetect.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scanner-game-switch.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scanner-inline.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scanner-printing.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scansession.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-tcg-printing-integration.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-ygo-ra01-printing.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-ygo-scanner-codes.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-parser-audit.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-catalog-audit.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-camera-audit.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-edition-audit.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-ai-set-audit.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-aquapolis-audit.mjs",
+      "status": "PASS"
+    },
+    {
+      "command": "node test-scan-ocr-confidence-audit.mjs",
+      "status": "PASS"
+    }
+  ],
+  "other_checks": [
+    {
+      "command": "node tests/scanner-printing-browser.mjs --validate-fixtures",
+      "status": "PASS",
+      "layer": "fixture-validation-only"
+    },
+    {
+      "command": "node tests/scanner-adversarial-browser.mjs --validate-fixtures",
+      "status": "PASS",
+      "layer": "fixture-validation-only"
+    },
+    {
+      "name": "shared Android source transform",
+      "status": "PASS",
+      "layer": "source-transform-only"
+    },
+    {
+      "name": "actual-browser execution",
+      "status": "NOT TESTED",
+      "reason": "matching Chromium absent; exact-version install returned invalid/truncated archive"
+    },
+    {
+      "name": "physical-phone camera",
+      "status": "NOT TESTED"
+    },
+    {
+      "name": "APK install/device",
+      "status": "NOT TESTED"
+    },
+    {
+      "name": "full app-wide npm test",
+      "status": "NOT TESTED"
+    }
+  ],
+  "files": [
+    {
+      "path": "package.json",
+      "sha256": "5dd142fd4bc5f31802eeda81350a5355eea1813344f52a9f012fd31870bd36e4",
+      "base_blob_sha": "75fbe116d6b145dc6098f7a7a77878462a18a9a3"
+    },
+    {
+      "path": "scan-batch.js",
+      "sha256": "cff6f6255fd31ef6d4cb84bd67b45088d9b1ddf4bf849d98a6947dbbf855fa02",
+      "base_blob_sha": "206464a087bc068c8910e9dbbcfa33577364ecbe"
+    },
+    {
+      "path": "scan-catalog.js",
+      "sha256": "3ad3414772cbd01563ba1c71e6b5178bc36b3f2eb8975d971c4bb0ec966bae6c",
+      "base_blob_sha": "f7436ca622bbef51fd64a5fe5f655e1071e11be5"
+    },
+    {
+      "path": "scan-collector.js",
+      "sha256": "15b1b1dbe984ffc4838a5c005c077101e72ba075add91480537ccf3cad5901db",
+      "base_blob_sha": "7e783fbd14d2d7aa5bc930a36d40eec978603363"
+    },
+    {
+      "path": "scan-signals.js",
+      "sha256": "0f0f0e96e9802c43660c56589c62956ecebd9011ed8c4ce964f1122c0bafb9ec",
+      "base_blob_sha": "536939e3302ed84fa248fd4383bb81188141d3db"
+    },
+    {
+      "path": "scan.js",
+      "sha256": "e7c8056677064d6d4d3fe41839b39fef76859ea19d52f5860221914cb86a5a4f",
+      "base_blob_sha": "c29b13d6e389edc638a01c90c37b49a5db968174"
+    },
+    {
+      "path": "scancam.js",
+      "sha256": "6cfe8793cffdfa04f16097f6a72a30906e6a99b09c68d95287d0d1c3c3d04da1",
+      "base_blob_sha": "d8c9ba2b85872b5d3a89c672b1543384d982103a"
+    },
+    {
+      "path": "scanner-lookup.js",
+      "sha256": "bf2026a0c6b8f81f18d3a552807e1619aad8c507c6dbdbf8a1208f0ec8e52ff0",
+      "base_blob_sha": "ef13af2ac5e65cde4a032f97eacbcbca2b4acc34"
+    },
+    {
+      "path": "scanner-review.js",
+      "sha256": "9c19612308428d911ee289f11c622b0fa12e6aee1eba108acb8643322382b5fd",
+      "base_blob_sha": "6a4956d8cb72c6931837f609c9793647c555ee54"
+    },
+    {
+      "path": "test-scan-live-refinement.mjs",
+      "sha256": "34de96bfc02e8c9fcd311dc742f33a3114ac840e7e7814e0307c85f9e7367e20",
+      "base_blob_sha": "f49e61b024ba375a779ab23dbc62cdfca4640db8"
+    },
+    {
+      "path": "test-celebrations-scan.mjs",
+      "sha256": "2f169ab43686a8cfb490a6439148ee859c97b60155973af7f446aefe62f9306d",
+      "base_blob_sha": "6cce5f522a6fb75837824bb9a595c0286efd9356"
+    },
+    {
+      "path": "test-scan-ai-set-audit.mjs",
+      "sha256": "f0066deffadbc24999e7f98f66ad36c6dee7e387c7e32c348cbbd2371f59e992",
+      "base_blob_sha": null
+    },
+    {
+      "path": "test-scan-aquapolis-audit.mjs",
+      "sha256": "f0f360423f13da9eb3e64a19e100b69355eff833cbf2bf776b85d45cc009a78a",
+      "base_blob_sha": null
+    },
+    {
+      "path": "test-scan-camera-audit.mjs",
+      "sha256": "114555cfff266921ef6f163774d211d029fc56685f3fbab3b758a1b150507d06",
+      "base_blob_sha": null
+    },
+    {
+      "path": "test-scan-catalog-audit.mjs",
+      "sha256": "2b6ada1e906cc77492d81b9db35409d47bb861a179e9e5215fda09c00f384772",
+      "base_blob_sha": null
+    },
+    {
+      "path": "test-scan-edition-audit.mjs",
+      "sha256": "85ff988f335ef2c7470450ad5e03c42cd3de07f488fb85dcea113647179b6f6d",
+      "base_blob_sha": null
+    },
+    {
+      "path": "test-scan-ocr-confidence-audit.mjs",
+      "sha256": "b158f02170b660daadbc983e77b5d9c9fddcb683bd18f9b5deac537a341bd7e2",
+      "base_blob_sha": null
+    },
+    {
+      "path": "test-scan-parser-audit.mjs",
+      "sha256": "49cf74696a34aac0f53028a23caee11691557a24783f1b125f5afa7e301d2198",
+      "base_blob_sha": null
+    },
+    {
+      "path": "scripts/test-scanner-audit.mjs",
+      "sha256": "bec31c4ec9ce7213ab32c1952599e3787c9bbc41b1782613aaca0fad6460e3c4",
+      "base_blob_sha": null
+    },
+    {
+      "path": "scripts/audit-scanner-real-ocr.py",
+      "sha256": "ef1f680ea27f4ff668a3550d8ac5fadbdb7ca1f1de9b80606d015721284a5cc1",
+      "base_blob_sha": null
+    },
+    {
+      "path": "scripts/audit-scanner-ocr-evidence.mjs",
+      "sha256": "bcca65703789e9896c752fdf2e0f6a2f4ab69a7d4b19e39eea05580f097a1846",
+      "base_blob_sha": null
+    }
+  ],
+  "remote_write": {
+    "status": "BLOCKED",
+    "operation": "create GitHub review tree",
+    "reason": "Automatic approval review classified it as an unapproved external upload",
+    "alternative": "user-requested downloadable data packet with patch and changed source",
+    "production_changed": false
+  }
+}

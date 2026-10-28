@@ -49,8 +49,16 @@ export function actualFinishes(g,c) {
 export function resolveScanFinish(g,c,prefs={},read={}) {
   const valid=actualFinishes(g,c);
   if(prefs.finishConfirmed && (valid.includes(prefs.finish)||(g==='ptcg'&&pokemonVariantChoices(c?.card,prefs.finish).some(v=>v.key===prefs.finish&&!/unconfirmed/i.test(v.label||'')))||(g==='ygo'&&isYgoEdition(prefs.finish))))return prefs.finish;
-  if(g==='ygo'&&/\blimited\s+edition\b/i.test(`${read.code||''}\n${read.full||''}\n${read.stats||''}`))return 'limited';
-  if(g==='ygo'&&/\b1st\s+edition\b/i.test(`${read.code||''}\n${read.full||''}\n${read.stats||''}`))return '1st-edition';
+  if(g==='ygo'){
+    const text=`${read.code||''}\n${read.full||''}\n${read.stats||''}`;
+    const limited=/\blimited\s+edition\b/i.test(text),first=/\b1st\s+edition\b/i.test(text);
+    // Independent OCR observations can disagree on the stamp. A code does not
+    // resolve edition, and source order is not evidence. Explicitly confirmed
+    // batch defaults above remain the user's choice; otherwise ask for review.
+    if(limited&&first)return '';
+    if(limited)return 'limited';
+    if(first)return '1st-edition';
+  }
   // A coarse 'First Edition · finish unconfirmed' bucket is not an exact finish.
   if(valid.length===1 && !/unconfirmed/i.test(c?.card?.variants?.find(v=>v.key===valid[0])?.label||''))return valid[0];
   return '';

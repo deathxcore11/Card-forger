@@ -12,6 +12,11 @@ export function pokemonTitleReadings(value) {
   const stripTail=s=>s.replace(/\s+(?:SUPPORTER|ITEM|STADIUM|POKEMON TOOL)$/i,'').trim();
   return [...new Set([stripTail(withoutTrainer),withoutTrainer,stripTail(withoutType),withoutType,raw])].filter(Boolean);
 }
+export const pokemonTitleLine=value=>String(value||'')
+  // Modern Basic Fire Energy is the title itself, while BASIC Pikachu is a
+  // stage label followed by a title. Do not collapse these distinct names.
+  .replace(/^\s*(?:BASIC\s+(?!\S+\s+Energy\b)|STAGE\s*[12]\s+)/i,'')
+  .replace(/\(?\bH\s?P(?![A-Za-z]).*$/i,'');
 // A one/two-letter OCR fragment is not generally a title. Only these known
 // Trainer names may enter lookup, and only alongside one independent number.
 export function shortTrainerNames(read={}) {
@@ -23,31 +28,45 @@ export function scanLookupNames(game,read={}) {
   return [...new Set([...(game==='ptcg'?shortTrainerNames(read):[]),...nameCandidates(game,read.name||read.full||'')])];
 }
 
-const clean = (s) =>
-  s
+const clean = (s, preserveTitle = false) =>
+  s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
     // Suffix glued on with a misread hyphen: "MewtwolGX" / "Mewtwo-GX" → "Mewtwo GX".
     .replace(/([a-z])[lI1|\-–]?(GX|EX|VMAX|VSTAR)\b/g, "$1 $2")
     .replace(/([a-z])[\-–|]V\b/g, "$1 V")
     // A border mark read as a capital stuck to the name: "JMewtwo" → "Mewtwo".
-    .replace(/(^|\s)[A-Z](?=[A-Z][a-z]{2,})/g, "$1")
+    .replace(/(^|\s)[A-Z](?=[A-Z][a-z]{2,})/g, (m,space) => preserveTitle ? m : space)
     // The Pokémon "ex" logo often reads as @X / €X / eX (a lone € or © is just noise).
     .replace(/\s*[@€©]\s*[X?x×](?![A-Za-z])|\s*@(?![A-Za-z])|\s*\beX\b/g, " ex")
     .replace(/\{[^}]*\}/g, "")
     .replace(/[|©®™]/g, " ")
-    .replace(/^[^A-Za-z]+/, "")
-    .replace(/[^A-Za-z0-9 ,.'’\-&!?]/g, " ")
+    .replace(/^[^A-Za-z]+/, m=>preserveTitle&&/^\+?\d/.test(m)?m:'')
+    .replace(/[^A-Za-z0-9 ,.'’\-+&!?♀♂]/g, " ")
     .replace(/\s+/g, " ")
     .replace(/\s+\d{5,}\s*$/, "")
     .trim()
     // Stray one- or two-letter fragments after the name (glare, set symbols): "DARK MAGICIAN HE".
-    .replace(/(\s+[A-Za-z]{1,2})+$/, (m,_letters,_offset,whole) => (/^Unown [A-Z!?]$/i.test(whole)||/\s(ex|EX|GX|V|Up|UP|G|FB|C)$/.test(m) ? m : ""))
+    .replace(/(\s+[A-Za-z]{1,2})+$/, (m,_letters,_offset,whole) => (preserveTitle||/^Unown [A-Z!?]$/i.test(whole)||/\s(ex|EX|GX|V|Up|UP|G|FB|C)$/.test(m) ? m : ""))
     .trim();
 
 const IGNORE = {
-  mtg: /^(?:creature|legendary|artifact|enchantment|instant|sorcery|land|planeswalker|battle|token|flying|haste|trample|vigilance|copyright|illustration|illus|wizards|the gathering)\b/i,
-  ygo: /^(?:effect|normal|ritual|fusion|synchro|xyz|link|pendulum|tuner|flip|spell card|trap card|quick-play|continuous|equip|field|counter|atk|def|level|rank|konami|limited edition|1st edition|this card|you can|once per turn|when|if|during|target|special summon|send|spellcaster|dragon|warrior|machine|fiend|zombie|beast|fairy|aqua|pyro|rock|plant|insect|thunder|reptile|psychic|wyrm|cyberse|dinosaur|winged beast|sea serpent|beast-warrior|divine-beast|illusion|fish)\b/i,
-  ptcg: /^(?:basic|stage ?[12]|evolves|illus|rule|ex rule|vstar|vmax|hp|nintendo|creatures|game freak|put|search|attach|discard|draw|flip|this attack|your opponent|once during)\b/i,
+  mtg: /^(?:copyright|illustration|illus|wizards of the coast|the gathering)\b/i,
+  ygo: /^(?:atk|def|level\s*\d|rank\s*\d|konami|limited edition|1st edition|this card|you can|once per turn|when|if|during|target|special summon|send)\b/i,
+  ptcg: /^(?:basic(?!\s+\S+\s+Energy\b)|stage ?[12]|evolves|illus|rule|ex rule|vstar|vmax|hp|nintendo|creatures|game freak|put|search|attach|discard|draw\s+(?:a|\d+|one|two|three|cards?)\b|flip|this attack|your opponent|once during)\b/i,
 };
+
+// Type labels are structural only when the whole line has that shape. Prefix
+// blacklists discard real titles such as Land Tax, Flying Men, Fusion Destiny
+// and Dragon Master Knight before the catalogue gets a chance to match them.
+function typeLine(game, value) {
+  const line=String(value).trim();
+  if(game==='mtg')return /^(?:(?:basic|legendary|snow|world|ongoing|token)\s+)*(?:(?:artifact|battle|creature|enchantment|instant|kindred|land|planeswalker|sorcery|tribal)(?:\s+|$))+(?:[-–—].*)?$/i.test(line);
+  if(game==='ygo'){
+    const type='(?:effect|normal|ritual|fusion|synchro|xyz|link|pendulum|tuner|flip|spell card|trap card|quick-play|continuous|equip|field|counter|spellcaster|dragon|warrior|machine|fiend|zombie|beast|fairy|aqua|pyro|rock|plant|insect|thunder|reptile|psychic|wyrm|cyberse|dinosaur|winged beast|sea serpent|beast-warrior|divine-beast|illusion|fish)';
+    // Unbracketed multiword titles such as Thunder Dragon are not type lines.
+    return /^\[.*\]$/.test(line)||new RegExp('^'+type+'(?:\\s*/\\s*'+type+')*$','i').test(line);
+  }
+  return false;
+}
 
 export function scanNamesFor(g, text) {
   const ignore = IGNORE[g] || IGNORE.mtg;
@@ -55,13 +74,21 @@ export function scanNamesFor(g, text) {
     ...new Set(
       String(text)
         .split(/\r?\n/)
-        .map((s) => (g === "ptcg" ? s.replace(/^\s*(?:BASIC|STAGE\s*[12])\s+/i, "").replace(/\(?\bH\s?P(?![A-Za-z]).*$/i, "") : s))
+        .map((s) => (g === "ptcg" ? pokemonTitleLine(s) : s))
         // Keep suffixes (ex/GX/V) but remove mixed digit/text OCR fragments
         // before a title: "snce1 Eldegoss". Do not strip legitimate words.
-        .map((s) => s.replace(/^(?:\s*[A-Za-z]*\d+[A-Za-z]*\s+)+(?=[A-Za-z])/g, ""))
+        .flatMap((s) => {
+          const repaired=s.replace(/^(?:\s*[A-Za-z]*\d+[A-Za-z]*\s+)+(?=[A-Za-z])/g, "");
+          // Keep numeric title content (7 Colored Fish, D2 Shield). Lowercase
+          // digit scraps and damaged border punctuation still try repair first.
+          return /^[A-Za-zÀ-ž0-9\s,.'’\-+&!?♀♂]+$/.test(s)&&!/^\s*[a-z]+\d/.test(s)?[s,repaired]:[repaired,s];
+        })
+        .filter(s=>!typeLine(g,s))
         .flatMap(s=>g==="ptcg"?pokemonTitleReadings(s):[s])
-        .map(clean)
-        .filter((s) => s.length >= 3 && s.length <= 60 && /[a-z]/i.test(s) && !ignore.test(s) && !(g==="ptcg"&&pokemonTitleLabel(s)) && (s.match(/[A-Za-z]/g) || []).length >= 3),
+        // Keep the literal title as another search key when a noise repair
+        // removes a meaningful short suffix or a capital from a real name.
+        .flatMap(s=>/^[A-Za-zÀ-ž0-9\s,.'’\-+&!?♀♂]+$/.test(s)?[clean(s,true),clean(s)]:[clean(s),clean(s,true)])
+        .filter((s) => s.length >= 3 && s.length <= 160 && /[a-z]/i.test(s) && !ignore.test(s) && !(g==="ptcg"&&pokemonTitleLabel(s)) && (s.match(/[A-Za-z]/g) || []).length >= 3),
     ),
   ].slice(0, 5);
 }
@@ -202,7 +229,7 @@ export function ygoCodeReadings(text) {
 // flag above must survive in evidence; a repaired key never verifies a printing.
 export const ygoSetCodes=text=>[...new Set(ygoCodeReadings(text).map(reading=>reading.code))];
 // The 8-digit passcode printed bottom-left identifies the card itself.
-export const ygoPasscodes = (text) => [...new Set([...String(text).matchAll(/(?<!\d)(\d{8})(?!\d)/g)].map((m) => String(Number(m[1]))))].slice(0, 2);
+export const ygoPasscodes = (text) => [...new Set([...String(text).matchAll(/(?<![A-Za-z0-9_\/-])(\d{8})(?![A-Za-z0-9_\/-])/g)].map((m) => String(Number(m[1]))))].slice(0, 2);
 
 // Keep the entire printed token: SV038/SV122, TG03/TG30 and 24a/119
 // must never become the unrelated numeric printings 38/122, 3/30 or 24/119.
@@ -217,7 +244,7 @@ export const ptcgNumberMatches = (card, observation) => {
   const observed = ptcgIdentifierKey(observation.num, observation.total);
   return !!observed && observed === ptcgIdentifierKey(card?.set?.number, card?.set?.total);
 };
-export function ptcgNumbers(text) {
+export function ptcgNumberReadings(text) {
   const out = [];
   const knownPrefix = /^(?:AR|BW|CC|DP|GG|H|HGSS|RC|RT|SH|SL|SM|SV|SWSH|TG|XY)\d/i;
   const fix = token => {
@@ -229,11 +256,17 @@ export function ptcgNumbers(text) {
     const num=fix(m[1]),total=fix(m[2]);
     // Preserve even a conflicting denominator suffix as an observation. It cannot
     // match a catalogue row, but must not disappear beside another valid reading.
-    if (/^[A-Za-z]{0,5}\d{1,4}[A-Za-z]?$/.test(num) && /^[A-Za-z]{0,5}\d{1,4}[A-Za-z]?$/.test(total) && Number(num.match(/\d+/)[0])>0 && Number(total.match(/\d+/)[0])>=10) out.push({num,total});
+    if (/^[A-Za-z]{0,5}\d{1,4}[A-Za-z]?$/.test(num) && /^[A-Za-z]{0,5}\d{1,4}[A-Za-z]?$/.test(total) && Number(num.match(/\d+/)[0])>0 && Number(total.match(/\d+/)[0])>=10) out.push({raw:m[0].replace(/[ \t]/g,''),num,total,corrected:num!==m[1]||total!==m[2]||m[0].includes('\\')});
   }
   // The small slash often reads as 7, 1 or l: "0537128" → 053/128.
-  if (!out.length) for (const m of String(text).matchAll(/(?<![A-Za-z0-9])(\d{3})[71l|I](\d{3})(?![A-Za-z0-9])/g)) if (Number(m[1]) > 0 && Number(m[2]) >= 10) out.push({ num: m[1], total: m[2] });
-  return [...new Map(out.map(n => [ptcgIdentifierKey(n.num,n.total) || scanCollectorKey(n.num)+'/'+scanCollectorKey(n.total),n])).values()];
+  // A clear read must not hide a different repaired read from another retry.
+  // Preserve both so the shared evidence gate can keep the printing in review.
+  for (const m of String(text).matchAll(/(?<![A-Za-z0-9])(\d{3})[71l|I](\d{3})(?![A-Za-z0-9])/g)) if (Number(m[1]) > 0 && Number(m[2]) >= 10) out.push({raw:m[0],num:m[1],total:m[2],corrected:true});
+  return [...new Map(out.map(n => [n.raw,n])).values()];
+}
+export function ptcgNumbers(text) {
+  const observations=ptcgNumberReadings(text).map(({num,total})=>({num,total}));
+  return [...new Map(observations.map(n => [ptcgIdentifierKey(n.num,n.total) || scanCollectorKey(n.num)+'/'+scanCollectorKey(n.total),n])).values()];
 }
 
 // Magic footer observations must keep a number beside its own set/language line.
@@ -342,7 +375,14 @@ export function nameCandidates(g, text, max = 6) {
       s = s.replace(/\s+/g, " ").trim();
       if (s.length >= 3 && (s.match(/[A-Za-z]/g) || []).length >= 3 && !out.includes(s)) out.push(s);
     };
-  for (const name of scanNamesFor(g, text)) {
+  const names=scanNamesFor(g,text);
+  // Complete title readings must fit before substring suggestions: otherwise
+  // a repair of the first line can crowd a later intact title out of the budget.
+  for(const name of names){
+    if(/^[a-z]{1,3} [A-Z]/.test(name))push(name.replace(/^[a-z]{1,3}\s+/,""));
+    push(name);
+  }
+  for (const name of names) {
     // Preserve the intact title before generating lossy search alternatives.
     // Digits, Up and short form designations can be semantic card content.
     if(/^[a-z]{1,3} [A-Z]/.test(name))push(name.replace(/^[a-z]{1,3}\s+/,""));
@@ -386,7 +426,13 @@ export const prefixQuery = (name, n = 3) =>
 // Automatic recognition must not turn a substring search into identification.
 // Ignore punctuation/spacing, but preserve GX/ex/V and other meaningful words.
 export const scanNameKey = name => String(name || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
-export const scanCardNameKey=(game,name)=>scanNameKey(game==='ptcg'?pokemonPrintedName(name):name);
+export const scanCardNameKey=(game,name)=>{
+  if(game!=='ptcg')return scanNameKey(name);
+  // These printed symbols distinguish cards, unlike ordinary title punctuation.
+  const title=pokemonPrintedName(name).replace(/♀/g,' female ').replace(/♂/g,' male ')
+    .replace(/^(Unown)\s*([!?])$/i,(_,base,symbol)=>base+' '+(symbol==='!'?'exclamation':'question'));
+  return scanNameKey(title);
+};
 export function scanCandidateMatches(card, name, numbers = []) {
   if (!card || !pokemonIdentityNames(card).some(n=>scanCardNameKey('ptcg',n)===scanCardNameKey('ptcg',name))) return false;
   if (!numbers.length) return true;
