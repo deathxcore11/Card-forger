@@ -7,6 +7,7 @@ import {CpuActionPlaybackQueue,createPlaybackSession,tableActivity} from './cpu-
 import {tileBadges,tileLayerHtml,badgeSummary,currentKeywords,counterList,playerCounterBadges,playerCountersHtml} from '../../play-board-badges.js';
 import {boardIcon} from '../../play-board-icons.js';
 import {drawnArtwork,frameTone,surfaceColors} from '../../play-token-art.js';
+import {cachedTokenArt,loadTokenArt,tokenArtKey} from '../../play-token-printing.js';
 import {sym,symbolName,symbolText,manaCost,esc} from '../../ui.js';
 // Outline icons from the CardStashy UI packet (24-unit grid, currentColor).
 const ZONE_ICONS={Library:'M6 3h14v16H6zM3 6v16h14M10 7h6M10 11h6',Graveyard:'M6 20V9a6 6 0 0 1 12 0v11M3 20h18M9 10h6M12 7v7',Exile:'m12 2 10 10-10 10L2 12zM8 12h14M17 7l5 5-5 5',Command:'M3 6l5 5 4-8 4 8 5-5-2 14H5zM5 16h14'};
@@ -44,8 +45,21 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  const failedArt=new Set(),castShow=doc.createElement('div');castShow.className='forge-cast';castShow.setAttribute('role','status');castShow.setAttribute('aria-live','polite');castShow.dataset.open='false';doc.body.append(castShow);
  // Whose move it is and what just happened, from the accepted state and the playback alone.
  const activity=doc.createElement('div');activity.className='forge-activity';activity.setAttribute('role','status');activity.setAttribute('aria-live','polite');activity.hidden=true;doc.body.append(activity);let playback=null;
+ // Tokens have no deck printing: show a real one from Scryfall once it is found, in place of the crest.
+ const tokenArtwork=card=>{
+  if(!card?.isToken||card.known!==true||presentation.tokenArt===false||typeof win.fetch!=='function')return null;
+  const known=cachedTokenArt(card,win);if(known!==undefined)return known;
+  loadTokenArt(card,win).then(art=>{if(art&&!closed)showTokenArt(tokenArtKey(card),art);});return null;
+ };
+ const showTokenArt=(key,art)=>{for(const node of root.querySelectorAll('[data-token-art]')){
+  if(node.dataset.tokenArt!==key)continue;delete node.dataset.tokenArt;
+  const drawn=node.querySelector('.play-drawn-art');if(!drawn)continue;
+  const battlefield=node.dataset.presentation==='battlefield',img=doc.createElement('img');img.alt='';img.className='card-img';
+  const sources=battlefield?[art.artImageUrl,...art.imageSources]:art.imageSources;img.src=sources[0];img.dataset.artSources=JSON.stringify(sources);img.dataset.artIndex='0';
+  if(battlefield){const box=doc.createElement('span');box.className='play-match-piece-art';box.append(img);drawn.replaceWith(box);}else drawn.replaceWith(img);
+ }};
  const table=mountMatchTable(root,{session,format,profile,title,allowConcede:false,onExit,pileIdentical:presentation.hosted===true,...hooks,
-  resolveCard(card){const artwork=resolvePracticeArtwork(card);return {...artwork,oracleText:card.text};},
+  resolveCard(card){const artwork=resolvePracticeArtwork(card)||tokenArtwork(card);return {...artwork,oracleText:card.text};},
   // Frame every piece in its own colors; tokens and cards without a printing get a drawn crest instead of an empty tile.
   decorateCard(node,card){hooks.decorateCard(node,card);
    // Your foils shimmer on the table: a light, composited sheen on battlefield pieces (the hand keeps
@@ -54,9 +68,9 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
    if(finish==='etched'){for(const a of [...node.attributes])if(a.name.startsWith('data-finish'))node.removeAttribute(a.name);node.classList.remove('play-match-art-surface');delete node.dataset.csFoil;}
    else if(finish&&finish!=='nonfoil'&&node.dataset.presentation==='battlefield'){node.dataset.csFoil=finish;if(!node.querySelector(':scope>.cs-foil')){const sheen=doc.createElement('span');sheen.className='cs-foil';sheen.setAttribute('aria-hidden','true');sheen.style.animationDelay=`-${(Number(card.id)||0)%7}s`;node.append(sheen);}}
    else{delete node.dataset.csFoil;node.querySelector(':scope>.cs-foil')?.remove();}
-const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.length))>=10)node.dataset.nameLength='word';else if(name.length>13)node.dataset.nameLength='long';const colors=surfaceColors(card,resolvePracticeArtwork(card)?.card),tone=frameTone(colors);if(tone){node.dataset.colors=tone.key;node.style.setProperty('--frame-a',tone.a);node.style.setProperty('--frame-b',tone.b);}if(card.isToken)node.dataset.token='true';const blank=node.querySelector('.play-match-card-back');if(blank){const art=drawnArtwork(doc,card,colors);if(node.dataset.presentation!=='battlefield')art.classList.add('play-drawn-full');blank.replaceWith(art);}},
+const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.length))>=10)node.dataset.nameLength='word';else if(name.length>13)node.dataset.nameLength='long';const colors=surfaceColors(card,resolvePracticeArtwork(card)?.card),tone=frameTone(colors);if(tone){node.dataset.colors=tone.key;node.style.setProperty('--frame-a',tone.a);node.style.setProperty('--frame-b',tone.b);}if(card.isToken)node.dataset.token='true';const blank=node.querySelector('.play-match-card-back');if(blank){const art=drawnArtwork(doc,card,colors);if(node.dataset.presentation!=='battlefield')art.classList.add('play-drawn-full');blank.replaceWith(art);if(card.isToken&&tokenArtKey(card))node.dataset.tokenArt=tokenArtKey(card);}},
   renderOracleText(text){const el=doc.createElement('p');el.textContent=text;el.className='play-match-rules';return el;},
-  decorateInspector(panel,card){hooks.decorateInspector(panel,card);panel.querySelector('a[href^="#wiki/"]')?.remove();if(card.type){const type=doc.createElement('p');type.className='forge-current-type';type.setAttribute('aria-label','Current native type');type.textContent=card.type;panel.append(type);}const note=doc.createElement('p');note.className='forge-art-note';note.textContent=card.printing?(presentation.hosted?'Catalogue artwork; exact per-instance printing may be unavailable. Current text, types and state come from Forge.':'Artwork is a public reference printing. Rules text and current state above come from Forge.'):'Native Forge text; artwork is not available for this card.';panel.append(note);},
+  decorateInspector(panel,card){hooks.decorateInspector(panel,card);panel.querySelector('a[href^="#wiki/"]')?.remove();if(card.type){const type=doc.createElement('p');type.className='forge-current-type';type.setAttribute('aria-label','Current native type');type.textContent=card.type;panel.append(type);}const note=doc.createElement('p');note.className='forge-art-note';note.textContent=!card.printing&&card.isToken&&cachedTokenArt(card,win)?'Token artwork is a public reference printing. Rules text and current state above come from Forge.':card.printing?(presentation.hosted?'Catalogue artwork; exact per-instance printing may be unavailable. Current text, types and state come from Forge.':'Artwork is a public reference printing. Rules text and current state above come from Forge.'):'Native Forge text; artwork is not available for this card.';panel.append(note);},
   renderPlayerPortrait(own){return practicePlayerPortrait(doc,own,profile);},
   renderMatchBackdrop(){const box=doc.createElement('div');for(const c of session.snapshot().status?.surface.cards.filter(c=>c.commander)||[]){const url=resolvePracticeArtwork(c)?.artImageUrl;if(url){const img=doc.createElement('img');img.src=url;img.alt='';img.referrerPolicy='no-referrer';box.append(img);}}return box.childNodes.length?box:null;}
  });

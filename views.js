@@ -1094,8 +1094,9 @@ export function deckPage() {
     v = deckValue(d.cards, S.catalog, S.state.priceChoices),
     fm = formatOf(d),
     target = fm.size,
-    tab = S.ui.deckTab,
-    tabs = [["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["engine", "Power", "trophy"], ["matchups", "Matchups", "sword"], ["upgrade", "Upgrade lab", "build"], ["versions", "Versions", "viewStacks"], ["playtest", "Playtest", "random"], ["shop", t.missing ? `Shop · ${t.missing}` : "Shop", "bag"]];
+    // No shopping on the Deck page: what is missing is a collection filter, not a store.
+    tab = S.ui.deckTab === "shop" ? "cards" : S.ui.deckTab,
+    tabs = [["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["engine", "Power", "trophy"], ["matchups", "Matchups", "sword"], ["upgrade", "Upgrade lab", "build"], ["versions", "Versions", "viewStacks"], ["playtest", "Playtest", "random"]];
   const power = shownPower(mtgPower(d)), countOk = fm.exact ? mainCopies === target : mainCopies >= target;
   return `<section class="deck-hero deck-hero--feature">${img(coverOf(d), d.name, "hero-art")}<div class="hero-shade"></div>
     <div class="hero-body">
@@ -1179,15 +1180,29 @@ function mtgDeckEmblems(d) {
   });
 }
 
+// The card area, Arena style: one toolbar (search, filter chips, grouping, view), the cards,
+// then what the deck needs and how to take it to the table. Adding a card opens from the toolbar.
+const DECK_CHIPS = [["all", "All"], ["creatures", "Creatures"], ["spells", "Spells"], ["lands", "Lands"], ["missing", "Missing"]];
 function deckCards(d, t) {
-  const target = formatOf(d).size, mainCopies = sumQty(d.cards);
-  return `${viewControl("mtg","deck")}<div class="add-row"><input id="deckAddName" placeholder="Add a card by name" data-enter="deckAdd" aria-label="Card name to add" autocomplete="off"><button class="btn" data-act="deckAdd">Add</button></div>
-  <div class="cover-line"><span><b>${t.covered}</b>/${t.copies} owned${t.missing ? ` · <b>${t.missing}</b> missing · <b>${usd(t.pricedGap)}</b>${t.unpriced ? "+" : ""} ${mainCopies < target ? "for listed cards" : "to finish"}` : " · listed cards owned ✓"}</span>${mainCopies < target ? (d.format === "Commander" ? `<button class="link" data-act="deckTab" data-id="upgrade">Fill ${target - mainCopies} slots →</button>` : `<button class="link" data-act="formatSearch">Find ${esc(formatOf(d).name)} cards →</button>`) : ""}</div>
-  ${bar(t.copies ? t.covered / t.copies : 0)}
-  <div class="toolbar"><input type="search" value="${esc(S.ui.q.deck)}" placeholder="Search this deck" data-input="deckSearch" aria-label="Search deck"><select data-change="deckFilter" aria-label="Show">${options([["all", "All"], ["missing", "Missing"], ["owned", "Owned"], ["unresolved", "Unresolved"]], S.ui.deckFilter)}</select><select data-change="deckSort" aria-label="Group by">${options([["type", "By type"], ["mv", "By mana value"], ["role", "By role"], ["price", "By price"]], S.ui.deckSort)}</select></div>
-  ${mtgDeckEmblems(d)}
+  const target = formatOf(d).size, mainCopies = sumQty(d.cards), short = mainCopies < target;
+  const filter = DECK_CHIPS.some(([id]) => id === S.ui.deckFilter) ? S.ui.deckFilter : "all";
+  const chips = DECK_CHIPS.filter(([id]) => id !== "missing" || t.missing).map(([id, label]) => `<button type="button" class="deck-chip${id === filter ? " on" : ""}" data-act="deckChip" data-id="${id}" aria-pressed="${id === filter}">${label}${id === "missing" ? ` <b>${t.missing}</b>` : ""}</button>`).join("");
+  const fill = short ? (d.format === "Commander" ? `<button class="btn ghost" data-act="deckTab" data-id="upgrade">Fill ${target - mainCopies} slots</button>` : `<button class="btn ghost" data-act="formatSearch">Find ${esc(formatOf(d).name)} cards</button>`) : "";
+  const need = t.missing ? `<b>${t.missing}</b> not in your collection yet` : "Every listed card is in your collection";
+  return `<div class="deck-toolbar">
+    <input type="search" value="${esc(S.ui.q.deck)}" placeholder="Search this deck" data-input="deckSearch" aria-label="Search deck">
+    <div class="deck-chips" role="group" aria-label="Show">${chips}</div>
+    <select class="deck-group" data-change="deckSort" aria-label="Group by">${options([["type", "By type"], ["mv", "By mana value"], ["role", "By role"], ["price", "By price"]], S.ui.deckSort)}</select>
+    <button type="button" class="deck-add-toggle" data-act="deckAddToggle" aria-expanded="false" aria-controls="deckAddRow" title="Add a card">+ Add</button>
+    ${viewControl("mtg","deck")}
+  </div>
+  <div class="add-row deck-add-row" id="deckAddRow" hidden><input id="deckAddName" placeholder="Add a card by name" data-enter="deckAdd" aria-label="Card name to add" autocomplete="off"><button class="btn" data-act="deckAdd">Add</button></div>
   ${deckViewer("mtg",`<div id="deckList">${deckList(d)}</div>${mtgSideboard(d)}`,{controls:false})}
-  ${t.missing ? `<div class="sticky-bar"><span><b>${t.missing}</b> to get · ${usd(t.pricedGap, 0)}</span><span><button class="btn ghost small" data-act="deckTab" data-id="shop">Shop</button><button class="btn small" data-act="acquire">I got cards</button></span></div>` : ""}`;
+  ${mtgDeckEmblems(d)}
+  <section class="deck-table-footer" aria-label="Take it to the table">
+    <div><h3>Take it to the table</h3><p><span>${t.covered}/${t.copies} owned</span> · ${need}</p>${bar(t.copies ? t.covered / t.copies : 0)}</div>
+    <div class="deck-table-actions">${fill}${t.missing ? `<button class="btn ghost" data-act="acquire">I got cards</button>` : ""}<button class="btn ghost" data-act="deckCopy">Copy list</button><button class="btn" data-act="deckExport">Export list</button></div>
+  </section>`;
 }
 
 // Matchups: this deck against the decks winning in its format, then the games you log.
@@ -1264,6 +1279,9 @@ export function deckList(d = currentDeck(), opts = {}) {
       (!q || r.name.toLowerCase().includes(q)) &&
       (unfiltered || S.ui.deckFilter === "all" ||
         (S.ui.deckFilter === "missing" && r.missing > 0) ||
+        (S.ui.deckFilter === "creatures" && /Creature/.test(meta(r.name)?.type_line || "")) ||
+        (S.ui.deckFilter === "lands" && /\bLand\b/.test(meta(r.name)?.type_line || "")) ||
+        (S.ui.deckFilter === "spells" && !!meta(r.name) && !/Creature|\bLand\b/.test(meta(r.name)?.type_line || "")) ||
         (S.ui.deckFilter === "owned" && r.missing === 0) ||
         (S.ui.deckFilter === "unresolved" && !meta(r.name))),
   );

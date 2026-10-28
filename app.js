@@ -5172,6 +5172,19 @@ I.deckSearch = (t) => {
   $("#deckList").innerHTML = V.deckList();
   syncDeckViewers();
 };
+A.deckChip = (t) => {
+  S.ui.deckFilter = t.dataset.id || "all";
+  for (const b of $$(".deck-chip")) { const on = b.dataset.id === S.ui.deckFilter; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }
+  $("#deckList").innerHTML = V.deckList();
+  syncDeckViewers();
+};
+A.deckAddToggle = (t) => {
+  const row = $("#deckAddRow");
+  if (!row) return;
+  row.hidden = !row.hidden;
+  t.setAttribute("aria-expanded", String(!row.hidden));
+  if (!row.hidden) $("#deckAddName")?.focus();
+};
 C.deckFilter = (t) => {
   S.ui.deckFilter = t.value;
   $("#deckList").innerHTML = V.deckList();

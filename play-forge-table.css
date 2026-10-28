@@ -234,7 +234,7 @@
 /* A drawn token says so with a dashed gold ring instead of a chip over its crest;
    the chip stays for screen readers. A card without art keeps a solid ring. */
 .play-match-card[data-token=true] .play-drawn-crest{outline:1.5px dashed #f2dda6;outline-offset:4px}
-.play-match-card[data-token=true]:has(.play-drawn-art) .play-state-chip:not(.play-tapped-chip,.play-marked-damage,.play-counter){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.play-match-card[data-token=true] .play-state-chip:not(.play-tapped-chip,.play-marked-damage,.play-counter){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .play-drawn-art.play-drawn-full{position:absolute;inset:0;border-radius:inherit;overflow:hidden;border:2px solid var(--drawn-a)}
 .play-drawn-art.play-drawn-full .play-drawn-crest{width:min(46cqw,40cqh,96px);margin:0 0 6cqh}
 

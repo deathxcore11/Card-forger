@@ -57,7 +57,7 @@ for(const budget of [25,10000,Infinity])for(const landMode of (budget===Infinity
  await run.A.ideaSaveAll();
  const saved=S.state.decks[0];assert.equal(sumQty(saved.cards),64);assert.match(run.commits.at(-1).msg,/Saved incomplete draft \(64\/100 cards\)/);assert.match(saved.fixtureSnapshotLabel,/incomplete draft/);
  const reloaded=JSON.parse(JSON.stringify(S.state));S.state=reloaded;S.ui.deckId=reloaded.decks[0].id;
- const reopened=deckPage();assert.match(reopened,/64\/100/);assert.match(reopened,/power unavailable/);assert.match(reopened,/Incomplete draft: 36 slots remain/);assert.match(reopened,/for listed cards/);assert.doesNotMatch(reopened,/<b>55<\/b>power|<b>null<\/b>/);
+ const reopened=deckPage();assert.match(reopened,/64\/100/);assert.match(reopened,/power unavailable/);assert.match(reopened,/Incomplete draft: 36 slots remain/);assert.match(reopened,/not in your collection yet/);assert.doesNotMatch(reopened,/to finish/);assert.doesNotMatch(reopened,/<b>55<\/b>power|<b>null<\/b>/);
  assert.equal(shownPower(mtgPower(S.state.decks[0])),null,'save + serialized reopen cannot restore a numeric Power');
  const panel=powerPanel(mtgPower(S.state.decks[0]));assert.match(panel,/Finish the deck before rating Power/);
 }
