@@ -259,11 +259,25 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // battlefield, a lane change) glides from where it was to where Forge put it, and a
  // permanent that appears from nowhere fades in. Purely visual; placement is Forge's.
  const positions=()=>{const m=new Map();for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const w=el.closest('.play-match-card-wrap')||el,r=w.getBoundingClientRect();if(r.width)m.set(el.dataset.instance,{r,hand:!!el.closest('.play-match-hand'),battlefield:el.dataset.presentation==='battlefield'});}return m;};
+ // A card played from your hand lands with weight: it rises off where it was (or where your finger let go
+ // of a drag: the drag code sets lastDrop just before it sends the play, and this clears it), hangs for a beat, slams down
+ // with a slight overshoot, kicks up a dust ring and nudges its neighbours. Transform only.
+
+ function land(w,id,dx,dy,s){
+  const r=w.getBoundingClientRect(),drop=lastDrop&&lastDrop.instance===id&&Date.now()-lastDrop.at<3000?lastDrop.rect:null;lastDrop=null;
+  if(drop){dx=drop.left-r.left;dy=drop.top-r.top;s=Math.max(.4,Math.min(2.2,drop.width/r.width));}
+  const tilt=Math.max(-8,Math.min(8,-dx/40)),ms=MOTION.land+200;
+  // Let the card leave its clipped lane while it flies, as a strike does.
+  root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+ms);setTimeout(()=>{if(Date.now()>=strikeEnd-20)delete root.dataset.csStriking;},ms+40);
+  w.animate([{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${tilt}deg)`,zIndex:50,easing:'cubic-bezier(.2,.7,.3,1)'},{transform:`translate(${dx*.12}px,${dy*.12-26}px) scale(1.2) rotate(${tilt*.3}deg)`,zIndex:50,offset:.5,easing:'cubic-bezier(.6,0,.9,.5)'},{transform:'translateY(3px) scale(.95)',zIndex:50,offset:.8,easing:'ease-out'},{transform:'translateY(-1px) scale(1.01)',zIndex:50,offset:.9},{transform:'none',zIndex:50}],{duration:ms});
+  setTimeout(()=>{if(!w.isConnected)return;motion.ring(w,'#f0d48a',420);motion.sparks(w,{n:6,spread:40,color:'#f0d48a'});
+   for(const n of w.parentElement?.children||[]){if(n===w)continue;const nr=n.getBoundingClientRect(),side=Math.sign(nr.left-r.left);if(!side||Math.abs(nr.left-r.left)>r.width*2.4)continue;n.animate([{transform:'none'},{transform:`translateX(${side*5}px)`,offset:.35},{transform:'none'}],{duration:260,easing:'ease-out'});}},ms*.8);
+ }
  const glide=before=>{
   if(!before.size||reducedMotion())return;let moved=0;
   for(const el of root.querySelectorAll('.play-match-card[data-instance]')){
    const w=el.closest('.play-match-card-wrap')||el,prev=before.get(el.dataset.instance),r=w.getBoundingClientRect();if(!r.width||moved>24)continue;
-   if(prev){const dx=prev.r.left-r.left,dy=prev.r.top-r.top;if(Math.hypot(dx,dy)<6)continue;const s=Math.max(.4,Math.min(2.2,prev.r.width/r.width));moved++;const played=prev.hand&&el.dataset.presentation==='battlefield';w.animate(played?[{transform:`translate(${dx}px,${dy}px) scale(${s})`,zIndex:50},{transform:'translateY(-12px) scale(1.14)',filter:'brightness(1.3) drop-shadow(0 0 14px #f0c46a)',zIndex:50,offset:.68},{transform:'none',filter:'none',zIndex:50}]:[{transform:`translate(${dx}px,${dy}px) scale(${s})`,zIndex:50},{transform:'none',zIndex:50}],{duration:played?600:380,easing:'cubic-bezier(.2,.8,.2,1)'});}
+   if(prev){const dx=prev.r.left-r.left,dy=prev.r.top-r.top;if(Math.hypot(dx,dy)<6)continue;const s=Math.max(.4,Math.min(2.2,prev.r.width/r.width));moved++;const played=prev.hand&&el.dataset.presentation==='battlefield';if(played){land(w,el.dataset.instance,dx,dy,s);continue;}w.animate([{transform:`translate(${dx}px,${dy}px) scale(${s})`,zIndex:50},{transform:'none',zIndex:50}],{duration:380,easing:'cubic-bezier(.2,.8,.2,1)'});}
    else if(el.dataset.presentation==='battlefield'){moved++;w.animate([{opacity:0,transform:'translateY(-14px) scale(.86)'},{opacity:1,transform:'none'}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)'});}
   }
  };
@@ -356,6 +370,15 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // art of the element the redraw just replaced on a plain frame.
   if(leaving?.size){let broke=0;const at=combat?MOTION.lunge*.62:0;for(const c of a.cards){if(!onField(c)||broke>=4)continue;const now=b.cards.find(x=>x.id===c.id);if(now&&!/^(Graveyard|Exile)$/.test(now.zone))continue;
    const old=leaving.get(String(c.id)),r=before?.get(String(c.id))?.r;if(!old||!r)continue;broke++;const src=old.querySelector('img')?.currentSrc||old.querySelector('img')?.src||'',shot={rect:{left:r.left,top:r.top,width:r.width,height:r.height},html:`<div class="forge-shard-face" style="background-image:${src?`url(&quot;${esc(src)}&quot;)`:'none'}"></div>`};setTimeout(()=>motion.shatter(shot),at+broke*60);}}
+  // 5b. Cast: your card lifts as it goes on the stack (it waits in hand, dimmed, until Forge confirms),
+  // and a spell that resolves from your hand flies to the middle of the table and bursts there.
+  for(const c of b.cards){if(!c.inTransit||was.get(c.id)?.inTransit||c.controller!==b.seat)continue;const el=cardEl(c.id);if(!el)continue;
+   el.closest('.play-match-card-wrap')?.animate([{transform:'none'},{transform:'translateY(-22px) scale(1.08)',offset:.45},{transform:'none'}],{duration:420,easing:'cubic-bezier(.2,.8,.3,1)'});pulse(el,'cast');}
+  const middle=rectOf(root.querySelector('.play-match-battlefields')),discarding=/\bdiscard/i.test(String(prev?.native?.message||''));
+  if(middle&&!discarding&&leaving?.size){let cast=0;for(const c of a.cards){if(c.zone!=='Hand'||c.controller!==a.seat||cast>=2)continue;const now=b.cards.find(x=>x.id===c.id);if(now&&!/^(Graveyard|Exile)$/.test(now.zone))continue;
+   const old=leaving.get(String(c.id)),r=before?.get(String(c.id))?.r;if(!old||!r)continue;cast++;const src=old.querySelector('img')?.currentSrc||old.querySelector('img')?.src||'';
+   const to={left:middle.left+middle.width/2-r.width/2,top:middle.top+middle.height/2-r.height/2,width:r.width,height:r.height},shot=motion.ghost?.(to,`<div class="forge-shard-face" style="background-image:${src?`url(&quot;${esc(src)}&quot;)`:'none'}"></div>`);
+   if(shot){motion.arc(shot,r,{ms:380,lift:70,mid:1.15,s1:1.05})?.finished.then(()=>{shot.animate([{opacity:1,transform:'scale(1.05)'},{opacity:0,transform:'scale(1.35)'}],{duration:220}).finished.then(()=>shot.remove(),()=>shot.remove());motion.flash(to,1.1);motion.ring(to,'#f0d48a',480);motion.sparks(to,{n:10,spread:60});},()=>shot.remove());}}}
   // 6. Draw: a card new to your hand turns face up on its way in from your side of the table.
   const mySeat=root.querySelector(`.play-match-seat[data-player-seat="${b.seat}"]`),seatBox=rectOf(mySeat);let drawn=0;
   if(seatBox)for(const c of b.cards){if(c.zone!=='Hand'||c.controller!==b.seat||before?.has(String(c.id))||was.get(c.id)?.zone==='Hand'||drawn>=3)continue;const el=cardEl(c.id),w=el?.closest('.play-match-card-wrap'),r=rectOf(el);if(!w||!r)continue;
@@ -453,7 +476,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function renderAccepted(s,blocked=false){
   const previous=displayed,lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
   const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null;
-  const before=presentation.hosted?positions():null,leaving=presentation.hosted?new Map([...root.querySelectorAll('.play-match-battlefields .play-match-card[data-instance]')].map(el=>[el.dataset.instance,el.closest('.play-match-card-wrap')||el])):null;
+  const before=presentation.hosted?positions():null,leaving=presentation.hosted?new Map([...root.querySelectorAll('.play-match-card[data-instance]')].map(el=>[el.dataset.instance,el.closest('.play-match-card-wrap')||el])):null;
   localError='';table.render(session.snapshot());enhance();
   // The stylesheet scopes the Forge table by this attribute. It changes only when the
   // native panel comes or goes, unlike a :has() test that rechecks the whole table each redraw.

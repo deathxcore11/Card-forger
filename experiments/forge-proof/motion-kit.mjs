@@ -53,13 +53,15 @@ function createMotion({doc=document,win=doc.defaultView,lowPower=false,reduced=(
    done(w.animate([{transform:'none',opacity:1},{transform:`translate(${cx*.4}px,${cy*.3}px) rotate(${r*.3}deg)`,opacity:1,offset:.25},{transform:`translate(${cx}px,${cy}px) rotate(${r}deg) scale(.7)`,opacity:0}],{duration:620,easing:'cubic-bezier(.2,.6,.3,1)'}),w);});
   for(let i=0;i<embers;i++){const e=bit('cs-mk-dot',left+Math.random()*width,top+height*(.2+Math.random()*.7),'--c:#ff8a3d');if(!e)break;
    done(e.animate([{opacity:0,transform:'none'},{opacity:1,offset:.2},{opacity:0,transform:`translate(${(Math.random()-.5)*30}px,${-50-Math.random()*40}px) scale(.4)`}],{duration:700+Math.random()*300,delay:80+i*30,fill:'backwards'}),e);}}
+ // A stand-in drawn at a viewport rect (a card that a redraw removed), for the caller to move and remove.
+ function ghost(rect,html){if(off())return null;const w=doc.createElement('div');w.style.cssText=`left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px`;w.innerHTML=html;const c=w.firstElementChild;if(c){c.style.width='100%';c.style.height='100%';}layer.append(w);return w;}
  // Tick a number from one value to another (life totals, gold, the tally).
  function countUp(n,from,to,ms=420){if(!n)return Promise.resolve();if(off()||from===to){n.textContent=String(to);return Promise.resolve();}
   const t0=win.performance.now();return new Promise(res=>{const step=t=>{const p=Math.min(1,(t-t0)/ms);n.textContent=String(Math.round(from+(to-from)*(1-(1-p)**2)));p<1?win.requestAnimationFrame(step):res();};win.requestAnimationFrame(step);});}
  // A face-down card turning face up: the element holds both faces (the back is rotated 180deg).
  function flip(n,{ms=380,delay=0,settle=1}={}){if(!n)return null;if(off()){n.style.transform='rotateY(180deg)';return null;}
   return n.animate([{transform:'rotateY(0)'},{transform:'rotateY(90deg) scale(1.12)',offset:.5},{transform:`rotateY(180deg) scale(${settle})`}],{duration:ms,delay,easing:'cubic-bezier(.3,.1,.3,1)',fill:'both'});}
- return {layer,lowPower,arc,strike,number,shatter,snapshot,sparks,flash,ring,shake,bump,countUp,flip,destroy(){layer.remove();}};
+ return {layer,lowPower,ghost,arc,strike,number,shatter,snapshot,sparks,flash,ring,shake,bump,countUp,flip,destroy(){layer.remove();}};
 }
 if(typeof window!=='undefined')window.CSMotion={createMotion};
 export {createMotion};export default createMotion;
