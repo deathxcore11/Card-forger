@@ -620,7 +620,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  }
  function showPeek(el,pinned=false){
   if(pinned)clearTimeout(peekTimer);const c=surfaceCard(el);if(!c?.known||drag?.active){hidePeek();return;}
-  const keyNow=JSON.stringify([c.id,c.name,c.text,c.power,c.toughness,c.damage,c.counters,c.tapped,c.attacking,c.blocking,c.summoningSick,c.keywords,c.attachedTo,c.attachments,c.zone]);
+  const keyNow=JSON.stringify([c.id,c.name,c.type,c.manaCost,c.isToken,c.commander,c.text,c.power,c.toughness,c.damage,c.counters,c.tapped,c.attacking,c.blocking,c.summoningSick,c.keywords,c.attachedTo,c.attachments,c.zone]);
   const fill=reference=>{if(peekFor!==el)return;peek.innerHTML=peekHtml(c,reference);peekKey=keyNow;peekAction(el);placePeek(el);};
   if(peekFor&&peekFor!==el)peekFor.removeAttribute('aria-describedby');
   peekFor=el;peekPinned=pinned;el.setAttribute('aria-describedby',peek.id);
@@ -691,6 +691,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Touch has no hover: a tap on your portrait opens the mana pool and a tap anywhere else closes it.
   // A seat that is a target stays a target.
   if(presentation.hosted&&(e.pointerType||lastPointerType)!=='mouse'){const portrait=e.target.closest?.('.play-match-seat[data-seat=you]:not([data-forge-role=target]) .play-match-profile-badge');if(portrait||manaOpen){manaOpen=!!portrait&&!manaOpen;root.querySelector('.play-match-seat[data-seat=you]')?.toggleAttribute('data-mana-open',manaOpen);if(portrait){e.preventDefault();e.stopImmediatePropagation();return;}}}
+  // A card listed in the Zones menu opens its preview here: the shared inspector stays hidden on this table.
+  const listed=presentation.hosted&&e.target.closest?.('button[data-focus-key^="zone-card-"],button[data-focus-key^="revealed-card-"]');
+  if(listed&&root.contains(listed)){e.preventDefault();e.stopImmediatePropagation();listed.dataset.instance=listed.dataset.focusKey.replace(/^\D+/,'');pinned===listed?hidePeek():showPeek(listed,true);return;}
   const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot(),cardId=Number(card.dataset.instance);if(previewOnly(card,snapshot,(e.pointerType||lastPointerType)==='touch')){pinned===card?hidePeek():showPeek(card,true);}else if(!snapshot.busy){card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);act(()=>session.nativeSelect('card',cardId));}return;}
   // A button inside the seat (Smart, Full Control, Auto-pay, the zone counts) is its own control, never a pick
   // of that player; and on the hosted table a seat is picked only while Forge offers players.
