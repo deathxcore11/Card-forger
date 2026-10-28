@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.18",
-  "commit": "9f1dc7f3da297392a0eecd1f1a8032db4061fcd2",
-  "tree": "1ce9adb09cc93db4f35b1ba084077fc88e41d193",
+  "version": "4.3.19",
+  "commit": "f8cb5204b1e988484a190144306f845e79f15d37",
+  "tree": "1da6dd726fd96bfb674eaf38a9a1ff24264d556c",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -103,8 +103,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 441065,
-      "sha256": "33c02435457ce296fdfea3404130e8892393d227dbcb55a3879ca25d5fb003f2"
+      "bytes": 441145,
+      "sha256": "303c36d28ecd7deb1faaadefa233047c6a30f78891e732b8cb48939f1721ecbe"
     },
     {
       "path": "artwork.js",
@@ -1353,8 +1353,8 @@
     },
     {
       "path": "audio.js",
-      "bytes": 12010,
-      "sha256": "87899241d8998ee5b0b9c4fcea8a36caacaf665d0505ec9134e4655dca2e9846"
+      "bytes": 12035,
+      "sha256": "36d22025a0c011b305b9369dbe0270c4516be858b0ed2beae79faa6baafcb82b"
     },
     {
       "path": "aura.css",
@@ -1544,7 +1544,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "8a2219b3104e24785c5a267295d237c887bfe5bff1c39a3130534842bbb5bad8"
+      "sha256": "04c71d030118e16b893c5ab8294ef8b4e0944840764060c52739c923f740119e"
     },
     {
       "path": "core.js",
@@ -3198,13 +3198,13 @@
     },
     {
       "path": "pack-preview.js",
-      "bytes": 44709,
-      "sha256": "b445cf492bf6d88d952245375a7631b6b85f8546dbd329b9bee33e8fd516059d"
+      "bytes": 47016,
+      "sha256": "2f6572745a2e0591a8d976f695c91b2336614a94edc9518988c3d01a747b0657"
     },
     {
       "path": "package.json",
       "bytes": 11594,
-      "sha256": "c2d0d3ea016ceb13b191aa7ff942dcc53e75c33820d37dccdcf7a142c2efcf57"
+      "sha256": "224cb74deddc267db1c828e382ab52b1059778b01d060f43d571883e274cbdb1"
     },
     {
       "path": "pairing.js",
@@ -3223,8 +3223,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 4534279,
-      "sha256": "fa7416618c6465418f4e10c902c1c1b69ee6dc0bb58528f02e4da6ecb2b6964a"
+      "bytes": 4542433,
+      "sha256": "e0bd1656350615569f4ead2e8429c73e21d5809c4732a2c1e58487880dd5908c"
     },
     {
       "path": "planner.js",
@@ -3323,8 +3323,8 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 48479,
-      "sha256": "a8984f8491e698b428b6e68c96dafdeeafdaa31a5d28c419982e1d09f4e94d5c"
+      "bytes": 48911,
+      "sha256": "f42f39f1f2fdd8960fd6ff08b1dff22d5b1e0e14731e029bc1d138d613546b5d"
     },
     {
       "path": "play-menu.js",
@@ -3548,8 +3548,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 655,
-      "sha256": "a7b64e109d5754cd4fddbb22cd02a8d337e5ee428f1281fb4fdced62807e9118"
+      "bytes": 1030,
+      "sha256": "150bd9a6326937f89fc78d791d1d3a19ff724e3644673e3f67c39ee5402fd1d4"
     },
     {
       "path": "release-status.js",
@@ -3788,8 +3788,8 @@
     },
     {
       "path": "sets-ui.css",
-      "bytes": 37092,
-      "sha256": "78acb2b47385dbec2b9b69ae86f4db688fd6c578edd0a51bacd68e7f9c155c70"
+      "bytes": 37593,
+      "sha256": "179957c5ceb3e7da372c852c9c8ca46b5c7558679129fd4f16e295964ea8a4fa"
     },
     {
       "path": "settings-dialog.js",
@@ -3868,8 +3868,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15391,
-      "sha256": "281e3cc21d1737b402497fc32ca9f3e1890ab435700ea3c762a0086f9286cd99"
+      "bytes": 15380,
+      "sha256": "eb0936e8cee96af7406baf8e3d98d1e0f1103f098a0cadd1dd20c49aa9e47de6"
     },
     {
       "path": "sync-merge.js",
@@ -5508,8 +5508,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 198612,
-      "sha256": "6a7a83ab4c8e7e009a2501593a5051e1bc8ef10408bd102df9934c208d2cd6a5"
+      "bytes": 198814,
+      "sha256": "56efc0fbbb447bb6f15e040d4623d11588dcd925cafcf7d03e0fe5d1fe76bed0"
     },
     {
       "path": "wiki-article-content.js",
