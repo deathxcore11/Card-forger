@@ -141,14 +141,17 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const dockEl=root.querySelector('.play-match-decisions');if(dockEl!==dockObserved){dockObserver?.disconnect();dockObserved=dockEl;if(dockEl&&typeof ResizeObserver==='function'){dockObserver??=new ResizeObserver(([entry])=>{const h=Math.ceil(entry?.borderBoxSize?.[0]?.blockSize??entry?.contentRect.height??0);if(root.style.getPropertyValue('--dock-live')!==h+'px')root.style.setProperty('--dock-live',h+'px');});dockObserver.observe(dockEl);}}
    // Upright tablets set your hand beside your commander's card instead of under it.
    const yourCommander=String(!!root.querySelector('.play-command-zone[data-seat=you]'));if(root.dataset.yourCommander!==yourCommander)root.dataset.yourCommander=yourCommander;
-   // Each player's public zone counts sit beside their portrait; a count opens that list in the Zones menu.
+   // Each player's public zone counts sit beside their portrait; a count opens just that list in the Zones menu.
    for(const p of surface.players){
     const own=p.seat===surface.seat,count=zone=>surface.cards.filter(c=>c.zone===zone&&c.owner===p.seat).length;
     const counts=[['Library',p.libraryCount],['Graveyard',count('Graveyard')],['Exile',count('Exile')],['Command',count('Command')]],key=counts.map(c=>c[1]).join(',');
+    // Library and graveyard always show; exile and the command zone only once something is there.
+    const shown=counts.filter(([zone,value])=>zone==='Library'||zone==='Graveyard'||value>0);
     let row=mat?.querySelector(`.forge-zone-row[data-seat="${own?'you':'cpu'}"]`);
     if(mat&&!row){row=doc.createElement('nav');row.className='forge-zone-row';row.dataset.seat=own?'you':'cpu';row.setAttribute('aria-label',own?'Your zones':'CPU zones');mat.append(row);}
-    if(row&&row.dataset.counts!==key){row.dataset.counts=key;row.replaceChildren(...counts.map(([zone,value])=>{const b=doc.createElement('button');b.type='button';b.dataset.zone=zone;b.dataset.nativeKey=`zone-${own?'you':'cpu'}-${zone}`;b.setAttribute('aria-label',`${own?'Your':'CPU'} ${zone.toLowerCase()}: ${value}`);b.innerHTML=`${boardIcon('zone-'+zone.toLowerCase(),'cs-icon cs-zone-icon')||outlineIcon(ZONE_ICONS[zone])}<span>${ZONE_LABELS[zone]}</span><b>${value}</b>`;return b;}));}
+    if(row&&row.dataset.counts!==key){row.dataset.counts=key;row.replaceChildren(...shown.map(([zone,value])=>{const b=doc.createElement('button');b.type='button';b.dataset.zone=zone;b.dataset.count=String(value);b.dataset.nativeKey=`zone-${own?'you':'cpu'}-${zone}`;b.setAttribute('aria-label',`${own?'Your':'CPU'} ${zone.toLowerCase()}: ${value}`);b.innerHTML=`${boardIcon('zone-'+zone.toLowerCase(),'cs-icon cs-zone-icon')||outlineIcon(ZONE_ICONS[zone])}<span>${ZONE_LABELS[zone]}</span><b>${value}</b>`;return b;}));}
    }
+   applyZoneFocus();
    // Deck tracker, the untapped way but quieter: Deck lists what is left in your library with the
    // chance each card is your next draw; Opponent lists every card the CPU has shown. Each toggles.
    if(Array.isArray(presentation.tracker)&&presentation.tracker.length)renderTracker(surface,mat);
@@ -506,13 +509,14 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // Engine and transport codes in plain words; a refusal Forge explains stays as Forge said it.
  const plainError=msg=>/ordered-source|order/i.test(msg)&&/unavailable|not supported/i.test(msg)?'These can\u2019t be reordered here yet, so they\u2019ll resolve in the default order.':/contract is unavailable|is not supported/i.test(msg)?'That choice isn\u2019t available on this table yet.':msg==='MATCH_NOT_READY'?'One moment, the table is catching up.':msg==='STALE_CHOICE'?'That choice ran out. Try again.':/^(CHOICE_INCOMPLETE)$/.test(msg)?'Pick everything this asks for first.':msg==='CHOICE_FULL'?'You\u2019ve already picked the most allowed.':msg;
  // Arena's combat line: while you choose attackers or blockers, a gold line runs across the
- // middle of the board with the question on it and a running count.
+ // middle of the board, with a small running count at its right end once you have picked one.
+ // It never carries text over your creatures; the dock already says what is being asked.
  function renderCombatLine(n,surface){
   const zone=root.querySelector('.play-match-battlefields .play-match-zone[data-owner=you]'),mode=n.inputType==='InputAttack'?'attack':n.inputType==='InputBlock'?'block':'';
   let line=combatLine;if(!mode||!zone){line?.remove();combatLine=null;return;}
   const mine=surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===surface.seat),k=mode==='attack'?mine.filter(c=>c.attacking).length:mine.filter(c=>c.blockingIds?.length||c.blocking).length;
   const key=`${mode}|${k}`;if(!line){line=combatLine=doc.createElement('div');line.className='forge-combat-line';line.setAttribute('aria-hidden','true');}const mat=root.querySelector('.play-match-mat');if(mat&&line.parentElement!==mat){if(line.parentElement||line.dataset.key)line.dataset.settled='';mat.append(line);}
-  if(line.dataset.key!==key){line.dataset.key=key;line.dataset.mode=mode;line.innerHTML=`<i></i><span><b>${mode==='attack'?'Choose attackers':'Choose blockers'}</b><small>${k?`${k} ${mode==='attack'?'attacking':'blocking'}`:mode==='attack'?'Tap or drag a creature':'Tap your creature, then its attacker'}</small></span><i></i>`;}
+  if(line.dataset.key!==key){line.dataset.key=key;line.dataset.mode=mode;line.innerHTML=k?`<i></i><span><b>${k}</b><small>${mode==='attack'?'attacking':'blocking'}</small></span>`:'<i></i><i></i>';}
   const r=zone.getBoundingClientRect(),v=`${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}`;if(line.dataset.at!==v){line.dataset.at=v;line.style.left=Math.round(r.left)+'px';line.style.top=Math.round(r.top)+'px';line.style.width=Math.round(r.width)+'px';}
  }
  let manaOpen=false;
@@ -535,9 +539,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const hit=[c.name,...faces].find(n=>listed.has(n)),name=hit?listed.get(hit):c.name;trackerIdentity.set(c.id,name);return name;
  }
  try{const saved=JSON.parse(win.localStorage?.getItem('cardstashy.tracker')||'{}');trackerOpen.deck=saved.deck===true;trackerOpen.opponent=saved.opponent===true;}catch{}
- const EYE='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',EYE_OFF='M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.1 3.9M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 4.2-1M9.9 9.9a3 3 0 0 0 4.2 4.2';
  const pct=(n,d)=>d>0?Math.round(n/d*100)+'%':'0%';
- let trackerCache={key:null,bar:'',nodes:[]},trackerToggled=null,combatLine=null;
+ let trackerCache={key:null,bar:'',nodes:[]},trackerToggled=null,combatLine=null,zoneOnly=null;
  function renderTracker(surface,mat){
   const header=root.querySelector('.play-match-header');if(!header||!mat)return;
   let bar=header.querySelector(':scope>.forge-tracker-toggles');
@@ -551,24 +554,35 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // The CPU's cards, remembered once shown so a card that leaves play still counts.
   for(const c of surface.cards)if(c.known&&c.owner!==surface.seat&&c.zone!=='Library'&&c.zone!=='Hand'&&!c.isToken)trackerSeen.set(c.id,{name:c.name,art:resolvePracticeArtwork(c)?.artImageUrl||'',cost:c.manaCost||''});
   const seen=new Map();for(const v of trackerSeen.values()){const e=seen.get(v.name)||{...v,n:0};e.n++;seen.set(v.name,e);}
+  // One round button opens one tracker panel, with Library and Opponent as tabs and a close button,
+  // instead of two look-alike eye toggles and a loose land percentage.
+  const open=trackerOpen.deck||trackerOpen.opponent,side=trackerOpen.opponent?'opponent':'deck';
   if(!bar){bar=doc.createElement('div');bar.className='forge-tracker-toggles';bar.setAttribute('role','group');bar.setAttribute('aria-label','Deck tracker');header.append(bar);
-   bar.addEventListener('click',e=>{const b=e.target.closest('button[data-tracker]');if(!b)return;trackerOpen[b.dataset.tracker]=!trackerOpen[b.dataset.tracker];trackerToggled=b.dataset.tracker;try{win.localStorage?.setItem('cardstashy.tracker',JSON.stringify(trackerOpen));}catch{}bar.dataset.key='';renderTracker(session.snapshot().status.surface,root.querySelector('.play-match-mat'));});}
-  const key=[trackerOpen.deck,trackerOpen.opponent,lib,left.map(r=>r.left).join(','),[...seen.values()].map(v=>v.n).join(',')].join('|');
+   bar.addEventListener('click',e=>{if(!e.target.closest('button[data-tracker]'))return;setTracker(trackerOpen.deck||trackerOpen.opponent?null:'deck');});}
+  const key=[open,side,lib,left.map(r=>r.left).join(','),[...seen.values()].map(v=>v.n).join(',')].join('|');
   // The table redraws the mat and header on every board change. Reuse the open panels as they were,
   // so they don't pop in again and reload their art; only a panel you just opened plays its entrance.
   if(trackerCache.key===key){if(bar.dataset.key!==key){bar.dataset.key=key;bar.innerHTML=trackerCache.bar;}for(const el of mat.querySelectorAll(':scope>.forge-tracker'))if(!trackerCache.nodes.includes(el))el.remove();for(const p of trackerCache.nodes)if(p.parentElement!==mat){p.dataset.settled='';mat.append(p);}return placeTracker(mat);}
   bar.dataset.key=key;
-  bar.innerHTML=[['deck','Deck'],['opponent','Opponent']].map(([k,l])=>`<button type="button" data-tracker="${k}" aria-pressed="${trackerOpen[k]}">${outlineIcon(trackerOpen[k]?EYE:EYE_OFF)}<span>${l}</span></button>`).join('')+`<span class="forge-tracker-land" title="Chance your next draw is a land">${outlineIcon('M3 20l6-10 4 6 3-4 5 8z')}<b>${pct(landsLeft,lib)}</b></span>`;
+  bar.innerHTML=`<button type="button" data-tracker="toggle" aria-pressed="${open}" aria-label="${open?'Close deck tracker':'Open deck tracker'}" title="Deck tracker">${outlineIcon('M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM9 9h6M9 13h6')}</button>`;
   for(const el of mat.querySelectorAll(':scope>.forge-tracker'))el.remove();
   const row=(art,name,cost,count,sub)=>`<li${count?'':' data-out="true"'}><span class="forge-tracker-art">${art?`<img src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:''}</span><span class="forge-tracker-name"><b>${esc(name)}</b>${cost?`<i>${manaCost({mana_cost:cost})}</i>`:''}</span><span class="forge-tracker-num"><b>${count}</b>${sub?`<small>${sub}</small>`:''}</span></li>`;
-  if(trackerOpen.deck){const p=doc.createElement('section');p.className='forge-tracker';p.dataset.side='deck';if(trackerToggled!=='deck')p.dataset.settled='';p.setAttribute('aria-label','Your library');
-   const rows=[...left.filter(r=>!r.land)].sort((a,b)=>(b.left>0)-(a.left>0)||a.name.localeCompare(b.name));
-   p.innerHTML=`<header><strong>Library</strong><span>${lib} cards</span></header><ul>${rows.map(r=>row(r.art,r.name,r.cost,r.left,r.left?pct(r.left,lib):'')).join('')}</ul><footer>${outlineIcon('M3 20l6-10 4 6 3-4 5 8z')}<span>Lands</span><b>${landsLeft}/${landsTotal}</b><small>${pct(landsLeft,lib)}</small></footer>`;mat.append(p);}
-  if(trackerOpen.opponent){const p=doc.createElement('section');p.className='forge-tracker';p.dataset.side='opponent';if(trackerToggled!=='opponent')p.dataset.settled='';p.setAttribute('aria-label','Cards the CPU has shown');
-   p.innerHTML=`<header><strong>Opponent</strong><span>${trackerSeen.size} seen</span></header>${seen.size?`<ul>${[...seen.values()].map(v=>row(v.art,v.name,v.cost,v.n,'')).join('')}</ul>`:'<p>Nothing shown yet.</p>'}`;mat.append(p);}
+  if(open){const p=doc.createElement('section');p.className='forge-tracker';p.dataset.side='deck';p.dataset.view=side;if(trackerToggled!=='open')p.dataset.settled='';p.setAttribute('aria-label',side==='deck'?'Your library':'Cards the CPU has shown');
+   const tabs=`<header><nav class="forge-tracker-tabs" role="tablist">${[['deck','Library',lib],['opponent','Opponent',trackerSeen.size]].map(([k,l,n])=>`<button type="button" role="tab" data-tracker-tab="${k}" aria-selected="${side===k}">${l}<span>${n}</span></button>`).join('')}</nav><button type="button" class="forge-tracker-close" data-tracker-close aria-label="Close deck tracker">\u00d7</button></header>`;
+   if(side==='deck'){const rows=[...left.filter(r=>!r.land)].sort((a,b)=>(b.left>0)-(a.left>0)||a.name.localeCompare(b.name));
+    p.innerHTML=`${tabs}<ul>${rows.map(r=>row(r.art,r.name,r.cost,r.left,r.left?pct(r.left,lib):'')).join('')}</ul><footer>${outlineIcon('M3 20l6-10 4 6 3-4 5 8z')}<span>Lands</span><b>${landsLeft}/${landsTotal}</b><small>${pct(landsLeft,lib)}</small></footer>`;}
+   else p.innerHTML=`${tabs}${seen.size?`<ul>${[...seen.values()].map(v=>row(v.art,v.name,v.cost,v.n,'')).join('')}</ul>`:'<p>Nothing shown yet.</p>'}`;
+   mat.append(p);}
   trackerToggled=null;trackerCache={key,bar:bar.innerHTML,nodes:[...mat.querySelectorAll(':scope>.forge-tracker')]};placeTracker(mat);
  }
- // The deck list sits under the table controls on the left; the CPU's list under its zone counts on the right.
+ function setTracker(side,animate=true){
+  trackerOpen.deck=side==='deck';trackerOpen.opponent=side==='opponent';trackerToggled=side&&animate?'open':null;
+  try{win.localStorage?.setItem('cardstashy.tracker',JSON.stringify(trackerOpen));}catch{}
+  const bar=root.querySelector('.play-match-header>.forge-tracker-toggles');if(bar)bar.dataset.key='';const s=session.snapshot();if(s.status?.surface)renderTracker(s.status.surface,root.querySelector('.play-match-mat'));
+ }
+ const trackerClick=e=>{const tab=e.target.closest?.('.forge-tracker [data-tracker-tab]'),close=e.target.closest?.('.forge-tracker [data-tracker-close]');if(!tab&&!close)return;e.preventDefault();e.stopPropagation();if(close)setTracker(null);else if(tab.getAttribute('aria-selected')!=='true')setTracker(tab.dataset.trackerTab,false);};
+ root.addEventListener('click',trackerClick,true);
+ // The tracker sits under the table controls on the left.
  function placeTracker(mat){
   const head=root.querySelector('.play-match-header')?.getBoundingClientRect(),seat=root.querySelector('.play-match-seat[data-seat=you]')?.getBoundingClientRect(),cmd=root.querySelector('.play-command-zone[data-seat=you]')?.getBoundingClientRect(),cpuRow=root.querySelector('.forge-zone-row[data-seat=cpu]')?.getBoundingClientRect(),dock=root.querySelector('.play-match-decisions')?.getBoundingClientRect();
   const deck=mat.querySelector(':scope>.forge-tracker[data-side=deck]'),opp=mat.querySelector(':scope>.forge-tracker[data-side=opponent]');
@@ -638,7 +652,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  <header><h3>${esc(c.name)}</h3>${c.manaCost?manaCost({mana_cost:c.manaCost}):''}</header>
  ${c.type?`<p class="forge-peek-type">${esc(c.type)}</p>`:''}
  ${creature&&c.power!==null&&c.power!==undefined||chips.length?`<div class="forge-peek-state">${creature&&c.power!==null&&c.power!==undefined?`<span class="forge-peek-pt">${stat(c.power,face.power)}<i>/</i>${stat(c.toughness,face.toughness)}</span>`:''}${chips.map(([k,t,icon])=>`<span class="forge-peek-chip" data-kind="${k}">${boardIcon(icon||chipIcon[k],'cs-icon forge-peek-icon')}${t}</span>`).join('')}</div>`:''}
- ${keywords.length?`<ul class="forge-peek-keywords">${keywords.map(k=>{const hint=keywordHint(k,reference);return `<li><b>${boardIcon(kwIcon.get(k),'cs-icon forge-peek-icon')}${esc(k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/:/g,' '))}</b>${hint?`<span>${symbolText(hint)}</span>`:''}</li>`;}).join('')}</ul>`:''}
+ ${keywords.length?`<ul class="forge-peek-keywords">${keywords.map(k=>{const hint=keywordHint(k,reference);return `<li><b>${boardIcon(kwIcon.get(k),'cs-icon forge-peek-icon')}${symbolText(k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/:/g,' '))}</b>${hint?`<span>${symbolText(hint)}</span>`:''}</li>`;}).join('')}</ul>`:''}
  ${lines.length?`<div class="forge-peek-rules">${lines.map(l=>`<p>${rule(l)}</p>`).join('')}</div>`:''}
  ${attached.length||withCards.length?`<p class="forge-peek-attached">${[...attached,withCards.length?`With ${withCards.join(', ')}`:''].filter(Boolean).join(' \u00b7 ')}</p>`:''}
 </section>`;
@@ -741,15 +755,30 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // of that player; and on the hosted table a seat is picked only while Forge offers players.
   const player=e.target.closest?.('[data-player-seat]'),inner=player&&e.target.closest?.('button,a,input,select,summary,[role=button]:not([data-player-seat])');
   if(player&&root.contains(player)&&!(inner&&player.contains(inner))&&(!presentation.hosted||playerOffered(player))){e.preventDefault();e.stopImmediatePropagation();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(player.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));return;}
-  const zone=e.target.closest?.('.forge-zone-row button[data-zone]');if(zone&&root.contains(zone)){openZone(zone.closest('.forge-zone-row').dataset.seat,zone.dataset.zone);}
+  const zone=e.target.closest?.('.forge-zone-row button[data-zone]');if(zone&&root.contains(zone)){openZone(zone.closest('.forge-zone-row').dataset.seat,zone.dataset.zone,Number(zone.dataset.count));}
  };
- // Opens the existing Zones menu at that player's list; nothing new is revealed.
- function openZone(seat,zone){
-  const menu=root.querySelector('.play-match-zones-menu');if(!menu)return;menu.open=true;
+ // Opens the existing Zones menu on just that player's list, beside the count you tapped; nothing
+ // new is revealed. The library and an empty zone have no list, so their counts open nothing.
+ function openZone(seat,zone,count){
+  const menu=root.querySelector('.play-match-zones-menu');if(!menu||zone==='Library'||!(count>0))return;
   const heading=[...menu.querySelectorAll('h3')].find(h=>h.textContent.startsWith(seat==='you'?'Your':'CPU'));
-  for(let el=heading?.nextElementSibling;el&&el.tagName!=='H3';el=el.nextElementSibling)if(el.tagName==='DETAILS'&&el.querySelector('summary')?.textContent.startsWith(zone==='Command'?'Command zone':zone)){el.open=true;el.querySelector('summary')?.focus();return;}
-  menu.querySelector('summary')?.focus();
+  for(let el=heading?.nextElementSibling;el&&el.tagName!=='H3';el=el.nextElementSibling)if(el.tagName==='DETAILS'&&el.querySelector('summary')?.textContent.startsWith(zone==='Command'?'Command zone':zone)){
+   zoneOnly={seat,zone};menu.open=true;applyZoneFocus();el.querySelector('summary')?.focus();return;}
  }
+ // The table redraws the menu on every update, so the one list you opened is marked again each time.
+ function applyZoneFocus(){
+  const menu=root.querySelector('.play-match-zones-menu');if(!menu)return;
+  if(!zoneOnly||!menu.open){if(menu.dataset.only)delete menu.dataset.only;return;}
+  const heading=[...menu.querySelectorAll('h3')].find(h=>h.textContent.startsWith(zoneOnly.seat==='you'?'Your':'CPU'));
+  for(let el=heading?.nextElementSibling;el&&el.tagName!=='H3';el=el.nextElementSibling)if(el.tagName==='DETAILS'&&el.querySelector('summary')?.textContent.startsWith(zoneOnly.zone==='Command'?'Command zone':zoneOnly.zone)){
+   if(el.dataset.zoneFocus!=='true'){for(const x of menu.querySelectorAll('[data-zone-focus]'))delete x.dataset.zoneFocus;el.dataset.zoneFocus='true';}
+   el.open=true;menu.dataset.only=zoneOnly.seat;return;}
+  zoneOnly=null;delete menu.dataset.only;
+ }
+ // The Zones menu closes on any tap outside it, and opening it from its own button shows every list.
+ const closeZones=e=>{const menu=root.querySelector('.play-match-zones-menu[open]');if(menu&&!menu.contains(e.target)&&!e.target.closest?.('.forge-zone-row')){menu.open=false;}};
+ const zonesToggled=e=>{const menu=e.target;if(!menu?.classList?.contains('play-match-zones-menu')||menu.open)return;zoneOnly=null;delete menu.dataset.only;for(const x of menu.querySelectorAll('[data-zone-focus]'))delete x.dataset.zoneFocus;};
+ if(presentation.hosted){doc.addEventListener('pointerdown',closeZones,true);root.addEventListener('toggle',zonesToggled,true);}
  // Combat by drag, the way Arena does it: a blocker dropped on an attacker blocks it, and an
  // attacker dropped on a player or planeswalker attacks it. While you drag, what you could drop
  // on is lit; Forge still judges the pairing, and tapping one card then the other still works.
@@ -827,5 +856,5 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const pressCancel=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}cancel();};
  const key=e=>{if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&seat===e.target&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
  root.addEventListener('click',click,true);root.addEventListener('pointerdown',down);doc.addEventListener('pointermove',move,{passive:false});doc.addEventListener('pointerup',up);doc.addEventListener('pointercancel',pressCancel);doc.addEventListener('keydown',key);win.addEventListener('blur',cancel);
- return {destroy(){closed=true;clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
