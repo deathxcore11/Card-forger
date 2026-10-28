@@ -2,6 +2,7 @@ import {forgeDeckSupport,reviewForgeSetup} from './play-forge-setup-review.js';
 import {readCpuOptions} from './play-cpu-options.js';
 import {brandMark} from './brand.js';
 import {PLAY_DECK_SOURCES,playDeckSupport} from './play-deck-sources.js';
+import {playmatButtonMarkup} from './play-playmats.js';
 import {reviewPracticeSetup} from './experiments/phase-engine/practice-preflight.mjs';
 // Desktop setup only. Format preferences do not certify engine,
 // construction legality, card support or a working opponent connection.
@@ -38,6 +39,7 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
       <div class="play-profile">${avatarMarkup}<div><b>${esc(p.displayName || (signedIn ? 'Player' : 'Your player profile'))}</b>${p.username ? `<span class="small muted">@${esc(p.username)}</span>` : ''}<span class="small muted">${signedIn ? 'Your seat · 1v1' : 'Sign in to prepare your match'}</span></div></div>
       ${soloTile}
       <nav class="play-paths" aria-label="Play mode">${[['quick','Quick Play'],['practice','Practice']].map(([value,label])=>`<button class="btn ghost" data-act="playStyle" data-play-style="${value}" aria-pressed="${(match.mode==='friends'?'social':state.playStyle||'practice')===value}">${label}</button>`).join('')}</nav>
+      ${playmatButtonMarkup()}
       ${match.mode === 'cpu' ? native?`<div class="play-mode-summary"><span class="play-mode-orb" aria-hidden="true"></span><div><strong>${quick?'Quick Play':'Practice'}</strong><span>${quick?'A matched CPU deck':'Your chosen CPU deck'}</span></div></div>`:`<label class="play-difficulty">Difficulty<select id="playDifficulty" data-change="playMatchOption" data-play-option="difficulty">${['Easy','Medium','Hard'].map(level => `<option value="${level}"${match.difficulty === level ? ' selected' : ''}${cpuDifficulties.includes(level)?'':' disabled'}>${level}${cpuDifficulties.includes(level)?'':' · Coming later'}</option>`).join('')}</select></label>` : '<p class="small muted play-friends-note">Private matches<br>Coming after CPU practice</p>'}
       <div class="play-start">${signedIn?`<button class="btn cs-plate" data-act="playStartCandidate" ${canStart?'':'disabled'} aria-describedby="playMatchStatus"><span class="cs-plate-label">${match.mode === 'friends' ? 'Play with friends' : quickStatus.busy?'Finding a CPU deck…':'Play vs CPU'}</span></button>`:'<button class="btn cs-plate" data-act="menu"><span class="cs-plate-label">Sign in to play</span></button>'}</div>
       <div id="playMatchStatus" class="small muted" role="status"><p>${esc(footerText)}</p>${quick&&state.quickMatch?`<p>${state.quickMatch.candidateCount} compatible list${state.quickMatch.candidateCount===1?'':'s'} considered · ${native?'CPU opponent ready':`CPU piloting: ${esc(match.difficulty)}`}</p>`:''}${Object.entries(review.seats||{}).map(([seat,s])=>notices(s.unsupported,(seat==='player'?'Your deck':'CPU deck')+': card rules unavailable')).join('')}</div>
@@ -52,6 +54,7 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
       <div class="play-feature-art play-lobby-seat play-lobby-cpu"><span class="play-lobby-backs" aria-hidden="true"><i></i><i></i><i></i></span><div class="play-feature-copy"><p class="eyebrow">CPU · Random deck</p><h2>Random CPU</h2><p>${state.quickMatch?`${state.quickMatch.candidateCount} compatible list${state.quickMatch.candidateCount===1?'':'s'} considered`:'Picked when you start'}</p></div></div>
       <div class="play-feature-side play-lobby-bar">
         <nav class="play-paths play-feature-paths" aria-label="Play mode">${[['quick','Quick Play'],['practice','Practice']].map(([value,label])=>`<button class="btn ghost" data-act="playStyle" data-play-style="${value}" aria-pressed="${state.playStyle===value}">${label}</button>`).join('')}</nav>
+        ${playmatButtonMarkup()}
         ${signedIn?startButton:'<button class="btn play-feature-start cs-plate" data-act="menu"><span class="cs-plate-label">Sign in to play</span></button>'}
         <div id="playMatchStatus" class="small muted play-feature-status" role="status"><p>${esc(footerText)}</p>${Object.entries(review.seats||{}).map(([seat,s])=>notices(s.unsupported,(seat==='player'?'Your deck':'CPU deck')+': card rules unavailable')).join('')}</div>
       </div>
