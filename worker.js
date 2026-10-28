@@ -381,6 +381,10 @@ export default {
     }
     const admission = await checkNativeBackendRequest(request, { verifyBearer });
     if (!admission.allowed) return admission.response;
+    if (admission.route?.play) {
+      try { return withNativeResponseHeaders(await proxyForgePlayRequest(admission.request, env), admission); }
+      finally { releaseNativeAdmission(admission.request); }
+    }
     try { return withNativeResponseHeaders(await handlers.fetch(request, env, ctx), admission); }
     finally { releaseNativeAdmission(request); }
   },

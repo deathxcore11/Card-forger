@@ -1621,6 +1621,31 @@ function warmForgeEngine(state,{afterMatch=false}={}){
  forgeWarmAt=Date.now();
  void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});
 }
+// The Android app gets Play ready from launch: it warms the engine as soon as the account
+// is signed in, again whenever the app comes back to the screen, and every few minutes while
+// someone is using it (the host keeps a warm engine for 3 minutes). It also fetches the art
+// of the deck Play would start with, so the matchup and table open with their pictures.
+// After 10 minutes without a touch it stops asking, so an idle phone holds no engine.
+const NATIVE_WARM_IDLE_MS=600000;
+function warmNativePlay(){
+ let native=false;try{native=!!window.Capacitor?.isNativePlatform?.();}catch{}
+ if(!native||!FORGE_PLAY_TEST_ENABLED||!PLAY_MATCH_RELEASE_READY)return;
+ let lastTouch=Date.now(),artFor='';
+ const touched=()=>{lastTouch=Date.now();};
+ for(const type of ['pointerdown','keydown'])addEventListener(type,touched,{passive:true,capture:true});
+ const tick=()=>{
+  if(document.hidden||accountLocked||T.game()!=='mtg'||Date.now()-lastTouch>NATIVE_WARM_IDLE_MS)return;
+  const state=playSetup.snapshot();if(!state.profile?.signedIn)return;
+  warmForgeEngine(state);
+  const deck=state.selected,names=[...new Set([...(deck?.cards||[]),...(deck?.side||[])].map(row=>row?.name).filter(name=>typeof name==='string'))];
+  const id=JSON.stringify([deck?.id,names.length]);if(!names.length||id===artFor)return;artFor=id;
+  void resolveNames(names,()=>{},false,()=>!accountLocked).then(()=>{
+   for(const name of names){const c=meta(name),face=c?.card_faces?.[0];for(const url of [c?.image_uris?.normal||face?.image_uris?.normal,c?.image_uris?.art_crop||face?.image_uris?.art_crop])if(url)new Image().src=url;}
+  }).catch(()=>{artFor='';});
+ };
+ setTimeout(tick,2000);setInterval(tick,30000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){touched();tick();}});
+}
 function renderPlayPage() {
   if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>Choose Magic in the game selector to prepare a CPU match.</p><a class="btn" href="#home">Return Home</a></section>';
   const device=syncDesktopPlayEntries('mtg');
@@ -6676,6 +6701,7 @@ async function boot() {
     // another route. Setup state remains in playSetup across the device guard.
     if(!accountLocked&&!playStarting&&!playerMatRoot&&S.ui.view==='play'&&T.game()==='mtg')refreshPlayMenu();
   }});
+  warmNativePlay();
   let accountOpenedOnce=false;
   initCloud({
     accountFirst:true,

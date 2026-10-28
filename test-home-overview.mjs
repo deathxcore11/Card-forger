@@ -45,7 +45,9 @@ syncDesktopPlayEntries('mtg',root,view);for(const n of nodes){assert.equal(n.hid
 syncDesktopPlayEntries('ptcg',root,view);for(const n of nodes)assert.equal(n.hidden,true);
 // Phones keep the nav Play (it took Community's place); the Play route explains the guard.
 syncDesktopPlayEntries('mtg',root,{...view,navigator:{userAgent:'Android',platform:'Linux'}});for(const n of nodes){assert.equal(n.hidden,false);assert.equal(n.dataset.playReadiness,'device-guard');}
-syncDesktopPlayEntries('mtg',root,{...view,Capacitor:{isNativePlatform:()=>true}});for(const n of nodes)assert.equal(n.hidden,true);
+// The Android app plays by the touch rules, and keeps Play closed without a touchscreen.
+syncDesktopPlayEntries('mtg',root,{...view,Capacitor:{isNativePlatform:()=>true}});for(const n of nodes)assert.equal(n.hidden,false);
+syncDesktopPlayEntries('mtg',root,{...view,Capacitor:{isNativePlatform:()=>true},matchMedia:q=>({matches:!q.includes('coarse')})});for(const n of nodes)assert.equal(n.hidden,true);
 // A wide Chrome tablet is admitted through the touch entries and the nav Play.
 const touchNodes=[{dataset:{touchPlayEntry:'practice'},hidden:true,disabled:true}],tabletRoot={querySelectorAll:selector=>selector.includes('touch')?touchNodes:selector.includes('desktop')?nodes:[],documentElement:{clientWidth:820,clientHeight:1180}};
 const tablet={navigator:{userAgent:'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',platform:'Linux armv8l',maxTouchPoints:10},matchMedia:query=>({matches:query.includes('coarse')}),CSS:{supports:()=>true},PointerEvent:function(){}};

@@ -32,7 +32,6 @@ export function playTableSupported(view=globalThis) {
   try{const css=view.CSS;return !!(css?.supports?.('container-type','size')&&css.supports('selector(:has(a))')&&typeof view.PointerEvent==='function');}catch{return false;}
 }
 export function playDeviceEligibility({native=false,ua='',platform='',mobile,maxTouchPoints=0,anyFine=false,anyHover=false,anyCoarse=false,width=0,height=0,tableSupported=true,screenMin=0,typing=false}={}) {
-  if(native)return {eligible:false,reason:'native',entry:null};
   const touch=Number.isFinite(maxTouchPoints)&&maxTouchPoints>0||anyCoarse===true;
   const mobileDevice=mobile===true||/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(ua)||(platform==='MacIntel'&&maxTouchPoints>1);
   const touchEntry=()=>{
@@ -41,6 +40,9 @@ export function playDeviceEligibility({native=false,ua='',platform='',mobile,max
     if(!playScreenFits(width,height,{screenMin,typing}))return {eligible:false,reason:playPhoneSideways(height,width)?'touch-rotate':'touch-space',entry:'touch'};
     return {eligible:true,reason:'wide-touch-candidate',entry:'touch'};
   };
+  // The Android app plays by the touch rules: Forge runs on the host, which the app reaches
+  // through its native transport. Without a touchscreen the app has no Play entry.
+  if(native)return touch?touchEntry():{eligible:false,reason:'uncertain',entry:null};
   if(mobileDevice){
     // Known mobile/tablet web devices can discover Play even on their cover
     // screen. The route explains the guard instead of promising phone gameplay.
@@ -64,7 +66,6 @@ export function readPlayDeviceEligibility(view=globalThis,root=view.document) {
 }
 // One title and one line per reason, shown in place of the start button.
 export function playDeviceGate(result={}) {
-  if(result.reason==='native')return {title:'Play is coming to the app',line:'Play in the Android app is coming with its next update.'};
   if(result.reason==='touch-rotate')return {title:'Turn your phone sideways',line:'Play runs sideways on a phone, the way Arena does.'};
   if(result.reason==='touch-space'||result.reason==='viewport-unknown')return {title:'Play needs a bigger screen',line:'Unfold your device, or use a tablet or a computer.'};
   if(result.reason==='touch-browser')return {title:'Play needs a newer browser',line:'Update your browser, or open CardStashy in Chrome or Safari.'};

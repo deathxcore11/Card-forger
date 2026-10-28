@@ -79,8 +79,18 @@ test('public reference admission does not broaden API routes, methods or credent
   }
   for(const input of ['/api/reference/other','/api/reference/mtg%2Dwiki','/api/reference/%77iki','/api/reference/wiki-extra'])assert.throws(()=>resolve(input));
 });
-// Play is web-only: the app keeps its entry closed, so the Forge host routes stay out of the native inventory.
-test('the Forge host routes Play uses on the web are not native services', () => {
+// The app plays Forge through the host: each Play path takes only the methods the client sends, with the bearer.
+test('the Forge host routes Play uses are native services that require sign-in', () => {
   const match = '00000000-0000-4000-8000-000000000000';
-  for(const path of ['/api/play/matches','/api/play/matches/'+match,'/api/play/matches/'+match+'/actions'])assert.throws(()=>resolve(path),/Unknown service route/);
+  const expected = { '/api/play/warm': ['POST'], '/api/play/matches': ['POST'], ['/api/play/matches/'+match]: ['GET','DELETE'], ['/api/play/matches/'+match+'/actions']: ['POST'] };
+  for (const [path, methods] of Object.entries(expected)) {
+    const route = resolve(path);
+    assert.deepEqual([...route.methods], methods); assert.equal(route.play, true); assert.equal(route.authorizationAllowed, true);
+  }
+  for (const path of ['/api/play', '/api/play/matches/not-a-uuid', '/api/play/matches/'+match+'/actions/extra', '/api/play/warmup']) assert.throws(() => resolve(path), /Unknown service route/);
+  assert.throws(() => resolve('/api/play/matches?x=1'), /no query/);
+  assert.throws(() => plan('/api/play/warm', { method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json' } }), /Sign in/);
+  const planned = plan('/api/play/matches', { method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer a.b.c', 'Idempotency-Key': match } });
+  assert.equal(planned.request.headers.get('idempotency-key'), match);
+  assert.throws(() => plan('/api/prices/recent', { headers: { 'Idempotency-Key': match } }), /not allowed/);
 });

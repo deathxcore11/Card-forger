@@ -64,12 +64,13 @@ test('the top bar and pop-ups stay clear of the status bar', async () => {
 });
 // Play's engine runtime (~55 MB) stays on the website and its Forge host is not a native service, so the
 // app relies on desktop-play.js keeping Play closed natively; only the Play modules the website serves ship.
-test('Play stays web-only: its entry is closed in the app and its engine runtime is not packaged', async () => {
-  const { readPlayDeviceEligibility, playDeviceGuardText } = await import(pathToFileURL(path.join(root, 'www/desktop-play.js')));
-  const view = { Capacitor: { isNativePlatform: () => true }, navigator: { userAgent: 'Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0.0.0', maxTouchPoints: 0 }, matchMedia: () => ({ matches: true }) };
-  const result = readPlayDeviceEligibility(view, { documentElement: { clientWidth: 1600, clientHeight: 1000 } });
-  assert.deepEqual([result.eligible, result.reason], [false, 'native']);
-  assert.match(playDeviceGuardText(result), /Android app/);
+test('Play opens in the app by the touch rules and stays closed without a touchscreen', async () => {
+  const { readPlayDeviceEligibility } = await import(pathToFileURL(path.join(root, 'www/desktop-play.js')));
+  const phone = { Capacitor: { isNativePlatform: () => true }, screen: { width: 915, height: 412 }, navigator: { userAgent: 'Mozilla/5.0 (Linux; Android 16; wv) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36', maxTouchPoints: 5 }, matchMedia: q => ({ matches: q.includes('coarse') }) };
+  const sideways = readPlayDeviceEligibility(phone, { documentElement: { clientWidth: 915, clientHeight: 412 } });
+  assert.deepEqual([sideways.eligible, sideways.entry], [true, 'touch']);
+  const noTouch = { ...phone, navigator: { ...phone.navigator, maxTouchPoints: 0 }, matchMedia: () => ({ matches: false }) };
+  assert.equal(readPlayDeviceEligibility(noTouch, { documentElement: { clientWidth: 1600, clientHeight: 1000 } }).eligible, false);
   const experiments = JSON.parse(await readFile(path.join(root, 'bundle-manifest.json'), 'utf8')).files.map(file => file.path).filter(file => file.startsWith('experiments/'));
   assert.ok(experiments.includes('experiments/forge-proof/forge-session.mjs'));
   for (const file of experiments) assert.match(file, /^experiments\/(phase-engine|forge-proof)\/(?!test-)[a-z-]+\.(mjs|css)$/);

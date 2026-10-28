@@ -27,7 +27,7 @@ export async function checkNativeBackendRequest(request, { verifyBearer } = {}) 
     if (!native) return reject(403);
     const method = request.headers.get('Access-Control-Request-Method');
     if (!route.methods.includes(method)) return reject(405);
-    const permitted = ['accept', 'content-type', ...(route.authorizationAllowed ? ['authorization'] : [])];
+    const permitted = ['accept', 'content-type', ...(route.authorizationAllowed ? ['authorization'] : []), ...(route.play ? ['idempotency-key'] : [])];
     const requested = (request.headers.get('Access-Control-Request-Headers') || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
     if (requested.some(name => !permitted.includes(name))) return reject(403);
     const headers = { ...corsHeaders(), 'Access-Control-Allow-Methods': method,
@@ -52,6 +52,16 @@ export async function checkNativeBackendRequest(request, { verifyBearer } = {}) 
     try { user = await verifyBearer(authorization); } catch { return reject(401); }
     if (!validUser(user)) return reject(401);
   }
+  if (native && route.play) {
+    // The host accepts only its own origin. The Worker vouches for the app's origin and passes
+    // the bearer through unchanged; the host still verifies it. No Sec-Fetch-Site is forwarded.
+    if (!bearer(authorization)) return reject(401);
+    const headers = new Headers({ Origin: SERVICE_ORIGIN, Authorization: authorization });
+    for (const name of ['Content-Type', 'Idempotency-Key']) if (request.headers.has(name)) headers.set(name, request.headers.get(name));
+    const forwarded = new Request(request, { headers });
+    admissions.add(forwarded);
+    return { allowed: true, native, route, user, request: forwarded };
+  }
   if (native) admissions.add(request);
   return { allowed: true, native, route, user, request };
 }
@@ -65,6 +75,8 @@ export function withNativeResponseHeaders(response, admission) {
   headers.delete('Access-Control-Allow-Credentials');
   headers.delete('Access-Control-Allow-Headers');
   headers.delete('Access-Control-Allow-Methods');
+  // Play backs off on 429/503 by Retry-After, which CORS hides unless exposed.
+  if (admission.route?.play) headers.set('Access-Control-Expose-Headers', 'Retry-After');
   const vary = new Set((headers.get('Vary') || '').split(',').map(x => x.trim()).filter(Boolean));
   if (![...vary].some(x => x.toLowerCase() === 'origin')) vary.add('Origin');
   headers.set('Vary', [...vary].join(', '));

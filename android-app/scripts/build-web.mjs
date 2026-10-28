@@ -46,8 +46,8 @@ const rules = (await readFile(path.join(source, '.assetsignore'), 'utf8')).split
 });
 const ignoredEntry = (entry, dir) => rules.reduce((ignored, rule) => (!rule.dir || dir) && rule.test.test(entry) ? !rule.negate : ignored, false);
 const served = file => file.split('/').every((_, i, parts) => !ignoredEntry(parts.slice(0, i + 1).join('/'), i < parts.length - 1));
-// The Play engine runtime (~55 MB of WASM and card rules) stays on the website; the app's Play entry
-// is web-only (desktop-play.js treats the native app as ineligible), so it is never needed here.
+// The Play engine runtime (~55 MB of WASM and card rules) stays on the website: the app plays Forge
+// on the host through its native transport (native-service-policy.js Play routes), so it is never needed here.
 const banned = file => /(^|\/)(\.|node_modules|tests?|scripts|review|supabase)(\/|$)/.test(file) || /(^|\/)(\.env|\.dev\.vars)/.test(file) || /\.(zip|patch|bundle|log)$/.test(file) || ['worker.js', 'sw.js', 'wrangler.jsonc', 'package.json'].includes(file) || file.startsWith('experiments/phase-engine/runtime/') || !served(file);
 const allowed = new Set();
 const queue = [...seeds, ...extras];

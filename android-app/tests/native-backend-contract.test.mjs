@@ -35,3 +35,21 @@ test('Supabase verifier uses only existing public config and rejects failures/an
   for(const fetcher of [async()=>new Response('',{status:401}),async()=>Response.json({id:'anon',is_anonymous:true}),async()=>{throw Error('network');}])assert.equal(await createSupabaseBearerVerifier({url:'https://example.supabase.co',key:'existing-public-key',fetcher})('Bearer test.jwt'),null);
   assert.throws(()=>createSupabaseBearerVerifier({url:'http://example.supabase.co',key:'key',fetcher:()=>{}}));
 });
+
+test('app Play requests reach the host as the website origin with the bearer unchanged', async () => {
+  const match = '00000000-0000-4000-8000-000000000000';
+  const preflight = await check(new Request(SERVICE_ORIGIN + '/api/play/matches', { method: 'OPTIONS', headers: { Origin: NATIVE_ORIGIN, 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'authorization, content-type, idempotency-key' } }));
+  assert.equal(preflight.response.status, 204);
+  assert.equal(preflight.response.headers.get('Access-Control-Allow-Headers'), 'authorization, content-type, idempotency-key');
+  assert.equal((await check(new Request(SERVICE_ORIGIN + '/api/play/matches/' + match, { method: 'OPTIONS', headers: { Origin: NATIVE_ORIGIN, 'Access-Control-Request-Method': 'PUT' } }))).response.status, 405);
+  assert.equal((await check(new Request(SERVICE_ORIGIN + '/api/play/warm', { method: 'POST', body: '{}', headers: { Origin: NATIVE_ORIGIN } }))).response.status, 401);
+  const admitted = await check(new Request(SERVICE_ORIGIN + '/api/play/matches/' + match + '/actions', { method: 'POST', body: '{}', headers: { Origin: NATIVE_ORIGIN, 'Sec-Fetch-Site': 'cross-site', Authorization: 'Bearer a.b.c', 'Content-Type': 'application/json' } }));
+  assert.equal(admitted.allowed, true);
+  assert.equal(admitted.request.headers.get('Origin'), SERVICE_ORIGIN);
+  assert.equal(admitted.request.headers.get('Authorization'), 'Bearer a.b.c');
+  assert.equal(admitted.request.headers.has('Sec-Fetch-Site'), false);
+  assert.equal(await admitted.request.text(), '{}');
+  const wrapped = wrap(new Response('{}', { status: 429, headers: { 'Retry-After': '2' } }), admitted);
+  assert.equal(wrapped.headers.get('Access-Control-Allow-Origin'), NATIVE_ORIGIN);
+  assert.equal(wrapped.headers.get('Access-Control-Expose-Headers'), 'Retry-After');
+});
