@@ -1,0 +1,5 @@
+# Cloudflare static asset headers. The Android app (its own origin) streams music from the website,
+# so the audio files answer any origin; they are public and never carry cookies.
+/assets/audio/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=604800

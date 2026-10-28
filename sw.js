@@ -1,6 +1,9 @@
-const CACHE = "cardforge-shell-upright-opening-hand-v362";
+const CACHE = "cardforge-shell-sound-v363";
 const ASSETS = [
   "./play-forge-feature.js",
+  "./audio.js",
+  "./play-table-audio.js",
+  "./planeswalk-audio.js",
   "./play-update-gate.js",
   "./play-precon-formats.js",
   "./play-forge-cpu-policy.js",
@@ -319,6 +322,8 @@ self.addEventListener("fetch", (e) => {
   if (url.pathname.startsWith("/api/")) return;
   // App downloads go straight to the network (a navigation would otherwise be saved as the start page).
   if (url.pathname.startsWith("/downloads/")) return;
+  // Sound and music keep their own cache (audio.js, cardstashy-audio-v1), which outlives app updates.
+  if (url.pathname.startsWith("/assets/audio/")) return;
   // Tour videos stream with range requests, which the shell cache cannot store.
   if (/\.(mp4|webm)$/.test(url.pathname)) return;
   // The instant-scan index is large and changes rarely: serve the saved copy at once and refresh
