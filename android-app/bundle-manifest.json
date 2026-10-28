@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "997c52e9e3ee6c20603cb87d375c82e6ce83acb9",
-  "sourceVersion": "4.3.6",
+  "commit": "65db1ed0c4b167754512af69b2ab8f184237b854",
+  "sourceVersion": "4.3.9",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -31,6 +31,7 @@
     "ai-ui.js",
     "android-beta.js",
     "app-info.js",
+    "app-motion.js",
     "app.js",
     "artwork.js",
     "ask-navigation.js",
@@ -47,6 +48,24 @@
     "assets/planeswalk-tile.jpg",
     "assets/play/mat-obsidian-arcane.webp",
     "assets/play/mat-obsidian-gold.webp",
+    "assets/play/playmat-ashen-forge-tall.webp",
+    "assets/play/playmat-ashen-forge-thumb.webp",
+    "assets/play/playmat-ashen-forge.webp",
+    "assets/play/playmat-forest-temple-tall.webp",
+    "assets/play/playmat-forest-temple-thumb.webp",
+    "assets/play/playmat-forest-temple.webp",
+    "assets/play/playmat-gothic-stone-tall.webp",
+    "assets/play/playmat-gothic-stone-thumb.webp",
+    "assets/play/playmat-gothic-stone.webp",
+    "assets/play/playmat-hedron-garden-tall.webp",
+    "assets/play/playmat-hedron-garden-thumb.webp",
+    "assets/play/playmat-hedron-garden.webp",
+    "assets/play/playmat-moonlit-courtyard-tall.webp",
+    "assets/play/playmat-moonlit-courtyard-thumb.webp",
+    "assets/play/playmat-moonlit-courtyard.webp",
+    "assets/play/playmat-star-observatory-tall.webp",
+    "assets/play/playmat-star-observatory-thumb.webp",
+    "assets/play/playmat-star-observatory.webp",
     "assets/play/result-draw.webp",
     "assets/play/result-loss.webp",
     "assets/play/result-win.webp",
@@ -290,6 +309,7 @@
     "experiments/forge-proof/cpu-action-playback.mjs",
     "experiments/forge-proof/forge-session.mjs",
     "experiments/forge-proof/forge-table.mjs",
+    "experiments/forge-proof/motion-kit.mjs",
     "experiments/forge-proof/native-panel.mjs",
     "experiments/phase-engine/card-placement.mjs",
     "experiments/phase-engine/card-stats.mjs",
@@ -441,6 +461,7 @@
     "play-menu.js",
     "play-opponent-build.js",
     "play-player-mat.js",
+    "play-playmats.js",
     "play-precon-formats.js",
     "play-pregame.js",
     "play-quick-match.js",
@@ -680,8 +701,8 @@
     },
     {
       "path": "android-beta.js",
-      "bytes": 372,
-      "sha256": "9897e0568a4cf5543158eccce5e69067b0747b3f27cccf43393e2205bcdbed95"
+      "bytes": 2004,
+      "sha256": "4fe3fbc1796f9986b2283162d2ca70be0e37ada7f87a3632eff4433c2e7539fc"
     },
     {
       "path": "app-info.js",
@@ -689,9 +710,14 @@
       "sha256": "a8b808b310d40462a45c077983f6ee4196bde474b58275caf5effc2c2a1871dd"
     },
     {
+      "path": "app-motion.js",
+      "bytes": 2676,
+      "sha256": "d755f7e299c8f631ebe6d6daf67ffcfcb210c337196351a454c8e0e0de9d295e"
+    },
+    {
       "path": "app.js",
-      "bytes": 444747,
-      "sha256": "75b792b3fa64e1001a0589683c18080df0524f5c83ae917c3230047a7d80a003"
+      "bytes": 444958,
+      "sha256": "992c7b73d33be117d890efb48dda4feb55f88b16ac5eba7a791ca05f829f6067"
     },
     {
       "path": "artwork.js",
@@ -769,6 +795,96 @@
       "sha256": "87a0dd57c996b9d9394e33f26f2aa07ca0c6c677515480e5b6abaeece8b82028"
     },
     {
+      "path": "assets/play/playmat-ashen-forge-tall.webp",
+      "bytes": 35740,
+      "sha256": "3e038a42313014d9436077b60801df0e62aa8ccecbb14faa9bd37009fc95511c"
+    },
+    {
+      "path": "assets/play/playmat-ashen-forge-thumb.webp",
+      "bytes": 8750,
+      "sha256": "ac4752001f583445569ee30e92c6592f43d8a47cfa7d52bba66a6cc23860a9fa"
+    },
+    {
+      "path": "assets/play/playmat-ashen-forge.webp",
+      "bytes": 100226,
+      "sha256": "6270ea404714bdb97aa41d7b6d995f7d07ebef6091e2a52656fc3e4f204977bb"
+    },
+    {
+      "path": "assets/play/playmat-forest-temple-tall.webp",
+      "bytes": 66892,
+      "sha256": "327cb598ab66d3dd13ce69de875021b7774af9e6c9652b81912dc7cc15ea6ecf"
+    },
+    {
+      "path": "assets/play/playmat-forest-temple-thumb.webp",
+      "bytes": 10928,
+      "sha256": "b144ddfbdb5076cf21faf6a33ba1f12cd5ec4518f2009f4f3b3ff881512325e2"
+    },
+    {
+      "path": "assets/play/playmat-forest-temple.webp",
+      "bytes": 141862,
+      "sha256": "182b772a4b32525e99cb6304a2bfde10772d72cacd63a1adfb1bd08a7c11ecc4"
+    },
+    {
+      "path": "assets/play/playmat-gothic-stone-tall.webp",
+      "bytes": 54194,
+      "sha256": "b503e6881399a29e00e218b35b0f04304d3b1922de2750a9117013bf6f96ca2f"
+    },
+    {
+      "path": "assets/play/playmat-gothic-stone-thumb.webp",
+      "bytes": 7854,
+      "sha256": "6eb26aa2b520b58b29c8ac22483ec597db2afc89bec25a9e8aecee4f7b30fe8b"
+    },
+    {
+      "path": "assets/play/playmat-gothic-stone.webp",
+      "bytes": 109322,
+      "sha256": "0d4863109ad274b1a3f8e4b1a309f03d79679f47cde99d57aa72ceace3b86114"
+    },
+    {
+      "path": "assets/play/playmat-hedron-garden-tall.webp",
+      "bytes": 45430,
+      "sha256": "570a803da7f130118fed302634703ff7100c4e8519f5cfe287763a12649aa529"
+    },
+    {
+      "path": "assets/play/playmat-hedron-garden-thumb.webp",
+      "bytes": 8268,
+      "sha256": "b071051b1c81e4643b8413b27cddfcf815459c3cca063ec3e67ccea2dc73ba53"
+    },
+    {
+      "path": "assets/play/playmat-hedron-garden.webp",
+      "bytes": 96878,
+      "sha256": "8196e019c9d5ca1260bf219b9bf5638783de6689a21f4ebf51205fa2401ab977"
+    },
+    {
+      "path": "assets/play/playmat-moonlit-courtyard-tall.webp",
+      "bytes": 54640,
+      "sha256": "5d955b23b3d0344fe54ae93e17e5f154b9141846d2c2c80ebe916f63990811f2"
+    },
+    {
+      "path": "assets/play/playmat-moonlit-courtyard-thumb.webp",
+      "bytes": 10002,
+      "sha256": "b241630db1cdeb51d3b72c96d36702ba7a6d519aff9459f49c9120f54d82fb8e"
+    },
+    {
+      "path": "assets/play/playmat-moonlit-courtyard.webp",
+      "bytes": 142944,
+      "sha256": "583f3caf28753c2deacf02e90789f25a051b6a40c268c1ca476cccb19bcbb48c"
+    },
+    {
+      "path": "assets/play/playmat-star-observatory-tall.webp",
+      "bytes": 38554,
+      "sha256": "0d8dcb39dab90c35213f2120ab2bc00d12bc85a038ad498cec15f5a5634deed5"
+    },
+    {
+      "path": "assets/play/playmat-star-observatory-thumb.webp",
+      "bytes": 9374,
+      "sha256": "f98a11d48006ad59209b938bac03c6924b26a0f906eea4d58402f6209574bd0e"
+    },
+    {
+      "path": "assets/play/playmat-star-observatory.webp",
+      "bytes": 104308,
+      "sha256": "882a7c8df074980f153ad46ff66acc2653709f4e93eecdb2cea746ec3eab9446"
+    },
+    {
       "path": "assets/play/result-draw.webp",
       "bytes": 13458,
       "sha256": "64a36a3bf4879979074255a2007b46b9cffa05575c6a304e68f1c1fd2b731846"
@@ -820,8 +936,8 @@
     },
     {
       "path": "brand-motion.css",
-      "bytes": 4211,
-      "sha256": "fa16a3ce3b92687c505ea2df2158418631686e2a84c37a95eaad0d9b0e309578"
+      "bytes": 4523,
+      "sha256": "9a7587b599db66acc52256937c573a62ff20f2a5d5af373ffa10ebc9c603c1e4"
     },
     {
       "path": "brand.js",
@@ -981,7 +1097,7 @@
     {
       "path": "config.js",
       "bytes": 626,
-      "sha256": "a5e4b5a3a269ed576fb39fc39790a743b9a381ae9db02149afb2eb3dbc225dca"
+      "sha256": "27f88a6b28a29cc4f66e88f426c581b407686e76c14d6d69629e54e5c605112f"
     },
     {
       "path": "core.js",
@@ -1950,8 +2066,8 @@
     },
     {
       "path": "desktop-play.js",
-      "bytes": 10586,
-      "sha256": "98dfb28a6245b29a03bec5a6b18d2fe95b61f1562e2efbb540f6ad526a6ecced"
+      "bytes": 10779,
+      "sha256": "dda68942faa2f80744f607c637e039d0b7ea3287a645d02edffeeca104c3e3dd"
     },
     {
       "path": "dialog.js",
@@ -1975,18 +2091,23 @@
     },
     {
       "path": "experiments/forge-proof/forge-session.mjs",
-      "bytes": 25558,
-      "sha256": "c658dd76ae8735ede902428cfd496244cfbe50a134071ac896c1ef68e9a59750"
+      "bytes": 26387,
+      "sha256": "4d86500285d64518381edaa6aa9cebd8996f2a6f198475bc684ca9421430c536"
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 101943,
-      "sha256": "206b38ab496ae950e308a05873befd4b4baf70f4694dd997da913a2ebde02590"
+      "bytes": 106385,
+      "sha256": "905bd381dc9cfcb5e28760485bd5e631fd42193fce56206cea056f31a9045075"
+    },
+    {
+      "path": "experiments/forge-proof/motion-kit.mjs",
+      "bytes": 9690,
+      "sha256": "a3e3add128620b6df57864ed1168335a3f4389887832b5986d07450937f121af"
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
-      "bytes": 41065,
-      "sha256": "9ba43889990cb100a2f3a4270da700516f53d6ba89b55e078d999fa81f4e0d86"
+      "bytes": 43130,
+      "sha256": "529d0a383e4b37399d24370171c069042fd72c36e31badb00f14a5fd8d132c03"
     },
     {
       "path": "experiments/phase-engine/card-placement.mjs",
@@ -2614,19 +2735,29 @@
       "sha256": "b0805097672e90234a4d5c38c47eb61d88701bdca30c35f39144e7245c3656e8"
     },
     {
+      "path": "native-display.js",
+      "bytes": 675,
+      "sha256": "23e566fd7581beaa596fb675c843d91728a016574f835d97e64adefb6d47a50c"
+    },
+    {
       "path": "native-documents.js",
       "bytes": 4998,
       "sha256": "aaf17353f622bf3f0ad34c9b375de39ea1572d8ff2d48b10ee660f019a09f7f4"
     },
     {
       "path": "native-entry.js",
-      "bytes": 4485,
-      "sha256": "8f3d5f6b102147e4b129defcc0331508ee9dd44010d6863793770efb4342a192"
+      "bytes": 4637,
+      "sha256": "5dfbc9a83c14a6f94f498ea84fa40b8bc8ed342c9d1da7e0a025a9491f152978"
     },
     {
       "path": "native-integration.css",
       "bytes": 3010,
       "sha256": "865a2acf3f7ad99b0ee1b449889016014b02b3f9382611db8bdf3e533556fb32"
+    },
+    {
+      "path": "native-planeswalk.js",
+      "bytes": 1385,
+      "sha256": "93a259a0d21465715da26d73373e32e6df71fa009a2f9be3f1aaf974ae185216"
     },
     {
       "path": "native-service-policy.js",
@@ -2660,8 +2791,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 2963686,
-      "sha256": "fd6dcc2908ca9b5e9b289bdeca6493e384850c14eaafdb01a5f27a54d92dd579"
+      "bytes": 4956254,
+      "sha256": "4de12325ce62ae4682f1c6a4fef4fdde5f28739fa80339e8778a027d9b7f6ba4"
     },
     {
       "path": "planner.js",
@@ -2675,8 +2806,8 @@
     },
     {
       "path": "play-board-icons.js",
-      "bytes": 15469,
-      "sha256": "79e2fe9ec5ae03cfc8cac7333fbd5309cb57684eb98536a535a3b3fc05518713"
+      "bytes": 16100,
+      "sha256": "61ba95f710f436b51f2f927608e4bbcc147d0f3113f3a44a7d7001518dbc89fc"
     },
     {
       "path": "play-card-preparation.js",
@@ -2710,8 +2841,8 @@
     },
     {
       "path": "play-deck-import.js",
-      "bytes": 17629,
-      "sha256": "3bf31b969ebf948dbb31b17e0747a567d6c5c6c46f69e9a5a0304c4152136303"
+      "bytes": 17776,
+      "sha256": "3daf9cc64d4123ade573100c8481c0420e1ae5b27dad9ae767ba750c7984b4de"
     },
     {
       "path": "play-deck-sources.js",
@@ -2740,8 +2871,8 @@
     },
     {
       "path": "play-forge-player-mat.js",
-      "bytes": 27870,
-      "sha256": "6c3b159c7782a800e945a968ada5404d2fb50343c8b30bfdc6557df0e3ac897d"
+      "bytes": 29278,
+      "sha256": "d4ddad36077e93d22d7e34836eeb09e5357cd1daa75ce9976f3132f7e1de1328"
     },
     {
       "path": "play-forge-pregame.js",
@@ -2755,18 +2886,18 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 240631,
-      "sha256": "6a5326e3b1e435ec0a4311b771d5c6160b31d02017231a93391bc04b9637b376"
+      "bytes": 253260,
+      "sha256": "421bd05071140136cf75f67b801ad832b8acebcaad32e32a25ff7fab7393489a"
     },
     {
       "path": "play-menu.css",
-      "bytes": 44643,
-      "sha256": "c5a0cef7d7ca2270b1a3619a84e1a9052dd786a5741541473e5c60eb45bd9335"
+      "bytes": 47653,
+      "sha256": "4a6622ca17c8f84f2387cb2f993d75d9f7af33a7b95957ed9cc9976e5bba6b6f"
     },
     {
       "path": "play-menu.js",
-      "bytes": 22902,
-      "sha256": "e0b91cdb905a27b6c2e0956ef826f79b1b5a45d97ce42117e15734c31d3ebbad"
+      "bytes": 23177,
+      "sha256": "2181a9bd5b3b3f7546940f9bb46458c7a6c65df39410de4724e1882746f98b46"
     },
     {
       "path": "play-opponent-build.js",
@@ -2777,6 +2908,11 @@
       "path": "play-player-mat.js",
       "bytes": 17777,
       "sha256": "92508dfa4539442cf513cd246a5859c94ea6708d66eb7727b0da3a0114eca361"
+    },
+    {
+      "path": "play-playmats.js",
+      "bytes": 1850,
+      "sha256": "35ac2b0fa0d53f882451d122eb17c1ce054ba07c6a39c15f377df9053ab30b8d"
     },
     {
       "path": "play-precon-formats.js",
@@ -2790,8 +2926,8 @@
     },
     {
       "path": "play-quick-match.js",
-      "bytes": 3190,
-      "sha256": "0e76b59405f6e05f17d4551548318fafa8d9dda45bfe7e3646e05c342a877be3"
+      "bytes": 3380,
+      "sha256": "623671470c6b6bec32632c43ee78e048ac8088ef08e15993bac1123fef7ccc8b"
     },
     {
       "path": "play-setup.js",
@@ -2975,8 +3111,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 848,
-      "sha256": "f0a900531a8ea37c5991cd37c358bc02f6e9c08d5b491df2831459140d5f1401"
+      "bytes": 1236,
+      "sha256": "f1b1cec1deec8cd7691dc5dd5f4d57b6646c97a880dd5619f7fbc3d7c20a7186"
     },
     {
       "path": "release-status.js",
