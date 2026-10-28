@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.9",
-  "commit": "65db1ed0c4b167754512af69b2ab8f184237b854",
-  "tree": "7590995ab67b7def82b087bf249ccdf8cbc73267",
+  "version": "4.3.11",
+  "commit": "4e1a7c8cd386ac30392609ddc12e63e3ba1dbfef",
+  "tree": "a9a31dc286742f32f4961f897514b0485a61f1b6",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -483,8 +483,8 @@
     },
     {
       "path": "config.js",
-      "bytes": 600,
-      "sha256": "5f08da77467450d3daddf60b36a9751cd47204a551f28e970b1f7850e8243812"
+      "bytes": 601,
+      "sha256": "f9499c9760b715f0d2e1a7803e3fd104971973e7f32d020d2cd6930b0b3db802"
     },
     {
       "path": "core.js",
@@ -1483,13 +1483,13 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 106385,
-      "sha256": "905bd381dc9cfcb5e28760485bd5e631fd42193fce56206cea056f31a9045075"
+      "bytes": 111980,
+      "sha256": "6f2203410d892b93a62a1318fb33a6ae3e62f50f864dc7ef2917e693c6534478"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
-      "bytes": 9690,
-      "sha256": "a3e3add128620b6df57864ed1168335a3f4389887832b5986d07450937f121af"
+      "bytes": 10108,
+      "sha256": "f1895d754ed7a01cb696e220c893f4f61da6ebe8335944505439fccb08edb5ca"
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
@@ -2108,8 +2108,8 @@
     },
     {
       "path": "mtg-wiki-reference.js",
-      "bytes": 24348,
-      "sha256": "955fea63245ce7e2b14ca4a34ee06c849f11624baed28e375f53f96c38580bd2"
+      "bytes": 24828,
+      "sha256": "12daf34b8acb5ea37f58a64f40377deff558102af742485671df3a18b51316c3"
     },
     {
       "path": "mtg-wiki-ui.js",
@@ -2128,8 +2128,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 11593,
-      "sha256": "a01606778b34aa3f342f9bd18fe03f9a230cafa5c02098ecc7214abf5f38b844"
+      "bytes": 11594,
+      "sha256": "2714b0e03906485e6b6e121d55309f1cb2d6ec5fec602d60f358176f34750d1b"
     },
     {
       "path": "pairing.js",
@@ -2143,8 +2143,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 4956209,
-      "sha256": "45efe33946c766a1d880e6d473d36863ab5aababfbbfb782456f0f8afab7f882"
+      "bytes": 3858059,
+      "sha256": "954b9ebbc115a098ba8309c856bb20eb071771c3c802c30cfd43810853167f26"
     },
     {
       "path": "planner.js",
@@ -2238,8 +2238,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 252945,
-      "sha256": "d68e29a7bacd481e55fe52851d1a33dc6073e27b7b29d37c8ac80385bf6bef1c"
+      "bytes": 264449,
+      "sha256": "ce7fcc61df4c9996c0d335dfa2b35f31ee424ff20092df287b9c89ec473fa2b4"
     },
     {
       "path": "play-menu.css",
@@ -2368,8 +2368,8 @@
     },
     {
       "path": "polish.css",
-      "bytes": 28004,
-      "sha256": "91d7eca4cfb1d08102111a6ae4ecad448fd7bc0fe246e8901e6c6e2eb9c8322e"
+      "bytes": 28377,
+      "sha256": "9082aa48ae8ec2b0ab912e1debb8ceaad22da596cb884a51ae946797683888a9"
     },
     {
       "path": "power.js",
@@ -2463,8 +2463,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1236,
-      "sha256": "f1b1cec1deec8cd7691dc5dd5f4d57b6646c97a880dd5619f7fbc3d7c20a7186"
+      "bytes": 817,
+      "sha256": "eb796f7a0d1d8f4c44d9f65e1b320f9bc11663e56e310b49d5f2ed1f993dd326"
     },
     {
       "path": "release-status.js",
@@ -2672,6 +2672,11 @@
       "sha256": "26c4ad3ffcf6e335abecdbea84b701ded51b6c3c4c76969b333ae064b9fc85e0"
     },
     {
+      "path": "search-fan.js",
+      "bytes": 1152,
+      "sha256": "5f3323611e5763e288839ae908c8a92cc5492218abfdf48aff51e646b86ef259"
+    },
+    {
       "path": "search-hints.js",
       "bytes": 4250,
       "sha256": "f39a23b1a9ff29c5c52b13f3f162d057c628145014ef197e0be2b4bd70314644"
@@ -2778,8 +2783,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15060,
-      "sha256": "5af08937667f99beb9ce07c948dc2bdff4b198fb2210e38a005a0c84a4142f91"
+      "bytes": 15084,
+      "sha256": "6d1e61b2ab81915907b283322582f8ac28fde3de5544cb51d2c1137f200cb80a"
     },
     {
       "path": "sync-merge.js",
@@ -2803,8 +2808,8 @@
     },
     {
       "path": "tcg.js",
-      "bytes": 367222,
-      "sha256": "622158ffd4c2ca1fe379a6fa3262e1452d50865162e428144be260c30ae670a7"
+      "bytes": 367930,
+      "sha256": "c430534c10cd128b8ceda2c9b7dbc09b7c86abd6f88d7d654e17f7763501ae3f"
     },
     {
       "path": "tcgbuild.js",
@@ -4418,8 +4423,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 198641,
-      "sha256": "b99a2cd9dba2218d4431a914564ec743ff8e9c116b104b06e2fef403ad0bf85d"
+      "bytes": 197838,
+      "sha256": "3d16d189b04b552f446a62ca6346c421760d2804f73276f59bf06e9e57ed076f"
     },
     {
       "path": "wiki-article-content.js",
