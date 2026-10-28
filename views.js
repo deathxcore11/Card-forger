@@ -275,7 +275,7 @@ export function search() {
             return `<button class="grid-card" ${finishAttrs('mtg',c,{})} data-act="card" data-name="${esc(c.name)}" ${tierAttrs(tierOf("mtg", c.rarity, c.prices?.usd ?? c.prices?.usd_foil))}>${img(cardImage(c), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">${esc(c.name)} ${setBadge(c)}</span><span>${usd(c.prices?.usd ?? c.prices?.usd_foil)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
           })
           .join("")}</div>`
-      : `${searchFan()}<div class="hints"><p class="muted small">Try:</p>${[["Cheap card draw", "o:\"draw a card\" usd<1"], ["Angels", "t:angel"], ["Red legends", "t:legendary t:creature id=r"], ["Token makers", "o:\"create\" o:token"]]
+      : `${!db.term.trim() && !db.busy && !db.error ? searchFan() : ""}<div class="hints"><p class="muted small">Try:</p>${[["Cheap card draw", "o:\"draw a card\" usd<1"], ["Angels", "t:angel"], ["Red legends", "t:legendary t:creature id=r"], ["Token makers", "o:\"create\" o:token"]]
           .map(([l, q]) => `<button class="chip" data-act="dbTry" data-q="${esc(q)}">${esc(l)}</button>`)
           .join("")}</div>`
   }${db.next ? `<button class="btn ghost block" data-act="dbMore" ${db.busy ? "disabled" : ""}>${db.busy ? "Loading…" : db.error ? "Retry loading more" : "Load more"}</button>` : ""}`;

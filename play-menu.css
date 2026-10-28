@@ -305,8 +305,8 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .play-lobby-seat{border:1px solid var(--glass-line,#d6ad6433);border-radius:24px;overflow:hidden;box-shadow:0 26px 54px #0009;min-height:300px}
 .play-lobby-seat.play-feature-art:after{background:linear-gradient(180deg,#0c0c0e00 35%,#0c0c0ef0 92%)}
 .play-lobby-seat .play-feature-copy{padding-bottom:44px}
-.play-lobby-cpu{background:radial-gradient(70% 60% at 50% 35%,#1f3248,#0c0e13 70%)}
-.play-lobby-cpu .eyebrow{color:#9fd0ff!important}
+.play-lobby-seat.play-lobby-cpu{background:radial-gradient(70% 60% at 50% 35%,#1f3248,#0c0e13 70%)}
+.play-lobby-seat.play-lobby-cpu .eyebrow{color:#9fd0ff!important}
 .play-lobby-backs{position:absolute;left:50%;top:44%;z-index:-1;width:0;height:0}
 .play-lobby-backs i{position:absolute;width:118px;height:165px;margin:-82px 0 0 -59px;border-radius:10px;border:2px solid #d6ad6488;background:radial-gradient(circle at 50% 50%,#d6ad6433 0 18px,transparent 19px),repeating-linear-gradient(45deg,#16243a 0 6px,#1b2c46 6px 12px);box-shadow:0 16px 30px #000a}
 .play-lobby-backs i:nth-child(1){transform:rotate(-12deg) translateX(-46px)}.play-lobby-backs i:nth-child(3){transform:rotate(12deg) translateX(46px)}
