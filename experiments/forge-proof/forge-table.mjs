@@ -986,7 +986,12 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // A long press's 60 s click guard ends with that press even when a redraw, scroll or
  // resize already closed its preview; otherwise the table would ignore taps for a minute.
  const pressCancel=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}cancel();};
- const key=e=>{if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&seat===e.target&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
+ // Like Arena on PC, Space or Enter presses the main button (Next, Pass, Attack, Done), even after
+ // clicking a card, unless another control has focus, where those keys already mean that control.
+ const mainKey=e=>{if(e.key!==' '&&e.key!=='Enter'||e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.shiftKey||!presentation.hosted||root.dataset.stage!=='match'||drag?.active)return false;
+  if(!e.target?.closest?.('.play-match-card')&&e.target?.closest?.('input,textarea,select,button,a[href],summary,dialog,[contenteditable],[role=button],[role=dialog],[tabindex]:not([tabindex="-1"])')||doc.querySelector('dialog[open]'))return false;
+  const ok=root.querySelector('.play-match-decisions [data-native-key=ok]');if(!ok||ok.disabled||!ok.getClientRects().length)return false;e.preventDefault();ok.click();return true;};
+ const key=e=>{if(mainKey(e))return;if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&seat===e.target&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
  // Arena's hand: it rests low, tucked above your profile strip, and rises into full view while
  // a thumb is on it or the mouse is over it, then settles back once you let go. The rise is just
  // enough to clear the strip and the screen edge, measured each time, so nothing else moves; on a
