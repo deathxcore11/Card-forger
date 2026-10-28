@@ -1112,7 +1112,7 @@ export function deckPage() {
             ${reviewBadge(d)}
           </div>
         </div>
-        <div class="deck-hero-cta"><button class="btn deck-play-cpu" data-act="deckPlayCpu" data-id="${esc(d.id)}" data-desktop-play-entry="practice" hidden disabled>Play vs CPU<span aria-hidden="true"> →</span></button></div>
+        <div class="deck-hero-cta"><button class="btn deck-play-cpu cs-plate" data-act="deckPlayCpu" data-id="${esc(d.id)}" data-desktop-play-entry="practice" hidden disabled><span class="cs-plate-label">Play vs CPU</span></button></div>
       </div>
     </div>
   </section>

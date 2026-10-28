@@ -40,7 +40,7 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
       ${match.mode==='cpu'?'<p class="play-session-note small muted">Keep this page open: refreshing or leaving ends the match. In-game Exit asks before conceding.</p>':''}
     </footer>`;
   // Quick Play: one selected deck, a random CPU and one Play button. Practice keeps the full setup.
-  const startButton=`<button class="btn play-feature-start" data-act="playStartCandidate" ${canStart?'':'disabled'} aria-describedby="playMatchStatus">${quickStatus.busy?'Finding a CPU deck…':'Play vs CPU'}</button>`;
+  const startButton=`<button class="btn play-feature-start cs-plate" data-act="playStartCandidate" ${canStart?'':'disabled'} aria-describedby="playMatchStatus"><span class="cs-plate-label">${quickStatus.busy?'Finding a CPU deck…':'Play vs CPU'}</span></button>`;
   const quickFeature=`<section class="play-feature" aria-label="Quick Play">
       <div class="play-feature-art">${matchupArt.player||''}<div class="play-feature-copy"><p class="eyebrow">${state.selected?'Your deck · '+esc(match.format):esc(match.format)}</p><h2 id="playSelectedTitle" tabindex="-1">${esc(state.selected?.name||'Choose a deck below')}</h2><p>${state.selected?esc([state.selected.commander,count(state.selected.cards)+' cards'].filter(Boolean).join(' · ')):'Your selection carries straight into the match.'}</p></div></div>
       <div class="play-feature-side">
