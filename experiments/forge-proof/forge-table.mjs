@@ -301,7 +301,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const MANA_TINT={W:'#f4ecc8',U:'#6fb7ff',B:'#b48ad8',R:'#ff7a52',G:'#5fd37e',C:'#cfd3da'};
  const fx=doc.createElement('div');fx.className='forge-fx';fx.setAttribute('aria-hidden','true');doc.body.append(fx);
  // The shared motion kit (also used by Planeswalk) does the hit-stop, numbers and shatter.
- const motion=createMotion({doc,win,lowPower,reduced:reducedMotion}),tableAudio=createTableAudio();
+ const motion=createMotion({doc,win,lowPower,reduced:reducedMotion}),tableAudio=createTableAudio(root);
  const rectOf=el=>{const b=el&&(el.closest('.play-match-card-wrap')||el).getBoundingClientRect();return b&&b.width>0?b:null;};
  const cardEl=id=>root.querySelector(`.play-match-card[data-instance="${id}"]`);
  const sourceTint=c=>{if(!c?.known)return MANA_TINT.C;const basic=Object.entries({Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'}).find(([t])=>new RegExp('\\b'+t+'\\b').test(c.type||''));if(basic)return MANA_TINT[basic[1]];const pip=/\{([WUBRG])\}/.exec(c.text||'');return MANA_TINT[pip?.[1]]||'#e3bb68';};

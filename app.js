@@ -137,7 +137,7 @@ import { attachSuggest } from "./suggest.js";
 import { shouldTour, openTour, resetOnboarding, markGuide, guidePrompt } from "./tour.js";
 import { tourScenes } from "./tour-scenes.js";
 import { haptic, hapticFor, flyToCollection, captureCollectionFlight, countUp, ripple, setHaptics, attachGestures, attachTilt } from "./feel.js";
-import { setAudioSettings, viewMusic } from "./audio.js";
+import { setAudioSettings, viewMusic, setMusic } from "./audio.js";
 import { alertSheet, setAlert, onAlert, alertText, priceSeries } from "./pricehist.js";
 import { onSharedPrices, watchCards } from "./sharedprices.js";
 import { mtgCollector, nameCandidates, textPhrases } from "./scan.js";
@@ -1558,7 +1558,7 @@ A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profil
 // pass. The account/table lifecycle below is testable independently of activation.
 const PLAY_MATCH_RELEASE_READY=true;
 let playerMatHost=null,playerMatRoot=null,practicePregame=null,playStarting=false;
-function closePlayerMat(){practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
+function closePlayerMat(){setMusic("play",null);practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
 // A failed Play download must never leave the app inert behind an empty layer.
 // The screen offers Return (restores the app) and Reload (fetches the current
 // release, which also covers an old page asking for a chunk a deploy removed).

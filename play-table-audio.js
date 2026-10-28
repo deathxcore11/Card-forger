@@ -8,12 +8,17 @@ const has=(c,t)=>!!c?.types?.includes(t)||new RegExp(`\\b${t}\\b`).test(c?.type|
 const counters=c=>Object.values(c?.counters||{}).reduce((n,v)=>n+(Number(v?.count??v)||0),0);
 const WARM=['CARD-001','CARD-005','CARD-006','CARD-008','CARD-010','CMB-002','CMB-003','CMB-004','CMB-005','CMB-009','TT-001','TT-002'];
 
-export function createTableAudio(){
- let warmed=false,lowSeen=false,ended=false;
+export function createTableAudio(root=null){
+ let warmed=false,lowSeen=false,ended=false,watch=0;
+ // The table's music lasts only while the table is on screen: once the match is over and the table
+ // closes, hides, or you go to another screen, it stops, whether or not destroy() is called.
+ const onTable=()=>{const el=root||document.querySelector('.play-match-table');return !!el?.isConnected&&el.getClientRects().length>0&&(!document.body.dataset.view||document.body.dataset.view==='play');};
+ const stop=()=>{clearInterval(watch);watch=0;setMusic('play',null);};
+ const guard=()=>{if(!watch)watch=setInterval(()=>{if(!onTable())stop();},800);};
  // Several sounds from one update are spaced a little so they read as a sequence, not a chord.
  let slot=0;const play=(id,o={})=>{sfx(id,{...o,delay:(o.delay||0)+slot++*70});};
  function update(prev,next){
-  const b=next?.status?.surface;if(!b)return;
+  const b=next?.status?.surface;if(!b)return;guard();
   if(!warmed){warmed=true;preload(WARM);}
   slot=0;
   const terminal=next.status?.terminal;
@@ -62,5 +67,5 @@ export function createTableAudio(){
  }
  // Early turns, then the fuller table, then the low-life track once anyone is close to losing.
  function music(b){setMusic('play',b.players.some(p=>p.life<=5)?'MUS-TBL-05':(b.turn||0)<=8?'MUS-TBL-03':'MUS-TBL-04');}
- return {update,destroy(){setMusic('play',null);}};
+ return {update,destroy:stop};
 }
