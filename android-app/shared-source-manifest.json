@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.20",
-  "commit": "23a88fd7ebc05972dba62ea9f16dcfcd8b262ba4",
-  "tree": "64053d3c6d807210b611409c7cf35d8bafe1d51f",
+  "version": "4.3.21",
+  "commit": "f134d68e1a83c504b5f53b7337d99e4d7a76d815",
+  "tree": "92a40b877e03e53c80c9c3ea602d3075ae2cf6e8",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -1544,7 +1544,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "2d4b5232afb912fbc8b281d57a48abd413a03814a809c872d8c3762ecd85cc92"
+      "sha256": "edfb71884388113334c31d4916bd2df99aa575705ab9d69032435d40e36d6d7f"
     },
     {
       "path": "core.js",
@@ -2543,8 +2543,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 132258,
-      "sha256": "f6ed4f011e3b7c8eee53a697382a686499c372ad59b627de0f53b04a8093c1a2"
+      "bytes": 136696,
+      "sha256": "63aa8ba40ce93739abc4c955c576a3a2451c526e5195f001ad877a148e52fb8a"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -3204,7 +3204,7 @@
     {
       "path": "package.json",
       "bytes": 11917,
-      "sha256": "4247208bd95705518fb1762fce953f21e40e1e35b8b5fe70ba656c7bd42a3853"
+      "sha256": "6c0b4b26a03fa2e41ed31fa3fcc4c48d894dd20547df1bd3a6d130f76dd6b960"
     },
     {
       "path": "pairing.js",
@@ -3548,8 +3548,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 875,
-      "sha256": "d72113c2fc38efc660d1e95c78a41901d7d597746dfe95d0bcd19092fed26a9c"
+      "bytes": 625,
+      "sha256": "d092322215f74f7ad419d928909e523bf5416f364b0fa2759f3454bd2f784bcb"
     },
     {
       "path": "release-status.js",
@@ -3868,8 +3868,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15374,
-      "sha256": "5a1683c14896b9f164659c03c4c63b0e7a540d2ec1e0eab0e781b23f7563aeef"
+      "bytes": 15370,
+      "sha256": "e1db4d40f1d243ca0c19d9c4667c54c621ade8893aea637d8540f4252c4bc157"
     },
     {
       "path": "sync-merge.js",
