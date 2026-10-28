@@ -1173,6 +1173,35 @@ body{margin:0}
 .intent.enrage{border-color:#ff9f43!important;box-shadow:0 0 10px #ff9f4344}
 .unit.token .art::before{content:"Token";position:absolute;left:3px;bottom:3px;z-index:3;padding:0 4px;border-radius:4px;font:800 .4rem/1.5 var(--body);letter-spacing:.1em;text-transform:uppercase;background:#0b0d12d9;color:#b8c0c8;border:1px solid #b8c0c866;pointer-events:none}
 .pv.all{background:#0d1a10f2;border-color:#6fcf8a;color:#c9f5d4}
+.actstart[data-actnum="2"]{--pw-bg:var(--pw-bg-map2)}
+.unit.token .art::before{content:none!important}
+.unit.token .art .stats{border-color:#b8c0c8aa!important;background:#22262cf0!important;color:#e6ebf0}
+.unit.token .art .stats::before{content:"◇";margin-right:2px;font-size:.8em;color:#b8c0c8}
+.intent:has(>.grow){position:relative}
+.intent>.grow{position:absolute;right:-8px;top:-11px;margin:0;padding:0 4px;font-size:.46rem;line-height:1.5;background:#2a1606f2;white-space:nowrap}
+/* Guard (formation): ally[data-guard=<enemy id>] is linked to that enemy; touch.js draws svg.pw-guards in .field */
+.field{position:relative}
+svg.pw-guards{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;overflow:visible}
+svg.pw-guards path{fill:none;stroke:#8fc7ff;stroke-width:1.6;stroke-dasharray:4 3;filter:drop-shadow(0 0 3px #8fc7ff88)}
+svg.pw-guards circle{fill:#8fc7ff}
+.unit[data-guard] .art{box-shadow:0 0 0 2px #0b0d12,0 0 0 3.5px #8fc7ff,0 0 14px #8fc7ff66,0 10px 18px #000d!important}
+.unit.guarded .art{outline:1.5px dashed #8fc7ffcc;outline-offset:2px}
+.gd{position:absolute;left:-2px;right:-2px;bottom:-8px;z-index:5;padding:1px 3px;border-radius:6px;text-align:center;white-space:normal;
+ font:800 .46rem/1.2 var(--body);background:#0a1626f2;border:1px solid #8fc7ff;color:#d6ecff;box-shadow:0 0 10px #8fc7ff44;pointer-events:none}
+.unit:has(>.gd) .name{visibility:hidden}
+.unit:has(>.pv)>.gd{display:none}
+@media (prefers-reduced-motion:no-preference){svg.pw-guards path{animation:pw-gd 1.2s linear infinite}}
+@keyframes pw-gd{to{stroke-dashoffset:-14}}
+.intent>.grow{top:auto!important;bottom:-10px}
+.intent:has(>.grow){z-index:7!important}.intent>.grow{z-index:7}
+.intent>.grow{background:#2a1606!important;opacity:1}
+/* enrage growth sits inside its intent chip as a second line, so it never collides */
+.intent:has(>.grow){display:inline-flex!important;flex-direction:column;align-items:center;gap:1px;line-height:1.15}
+.intent>.grow{position:static!important;margin:0!important;padding:0 4px;font-size:.44rem;border-radius:99px}
+@media (max-width:620px) and (orientation:portrait){
+ .intent:has(>.grow){display:inline-flex!important;flex-direction:row}
+ .intent>.grow{position:absolute!important;left:50%!important;right:auto!important;top:calc(100% + 3px)!important;bottom:auto!important;transform:translateX(-50%);box-shadow:0 0 0 1.5px #0b0d12}
+}
 
 
 /* ---------- art (Scryfall art crops, artists credited in the note below the game) ---------- */
@@ -1290,6 +1319,7 @@ let uid=0;
 // ---------- red pool from the beta card pool sheet ----------
 // e = energy (from mana value), r = rarity. Foil adds a small upgrade.
 const C={
+ ambush:{name:'Ambush',e:1,r:'S',aim:'enemy',kind:'Instant',g:'⌖',text:f=>`Brand target enemy. If it attacks this turn, it takes ${f?5:4} damage first.`,play:(f,t)=>{if(t){t.brand=(t.brand||0)+(f?5:4)}}},
  shock:{name:'Shock',e:1,r:'S',aim:'enemy',kind:'Instant',g:'ϟ',text:f=>`Deal ${f?5:3} damage.`,play:(f,t)=>hit(t,f?5:3)},
  rgoblin:{name:'Raging Goblin',e:1,r:'S',kind:'Creature · Goblin',g:'G',ally:f=>({p:f?2:1,t:f?2:1,haste:1,goblin:1}),text:f=>`${f?'2/2':'1/1'}. Haste.`},
  piker:{name:'Goblin Piker',e:1,r:'S',kind:'Creature · Goblin',g:'G',ally:f=>({p:3,t:f?2:1,goblin:1,noblock:1}),text:f=>`3/${f?2:1}. Can't block.`},
@@ -1327,7 +1357,7 @@ Object.assign(C,{
  vanguard:{name:'Elite Vanguard',e:1,r:'S',kind:'Creature · Soldier',g:'V',ally:f=>({p:2,t:f?2:1,soldier:1}),text:f=>`2/${f?2:1}.`},
  salve:{name:'Healing Salve',e:1,r:'S',kind:'Instant',g:'✚',text:f=>`Heal ${f?5:3}.`,play:f=>heal(f?5:3)},
  pacifism:{name:'Pacifism',e:2,r:'S',aim:'enemy',kind:'Enchantment',g:'☮',text:f=>`Target enemy can't attack. Its other intents still happen. A legendary or planeswalker shakes it off after one attack and can't be pacified again this fight.${f?' Draw a card.':''}`,play:(f,t)=>{if(t.pacImmune)c.log=`${t.name} already shook off a Pacifism this fight.`;else t.pacified=1;if(f)draw(1)}},
- pguard:{name:'Palace Guard',e:2,r:'S',kind:'Creature · Soldier',g:'P',ally:f=>({p:1,t:f?4:3,reach:1,soldier:1}),text:f=>`1/${f?4:3}. Reach.`},
+ pguard:{name:'Palace Guard',e:2,r:'S',kind:'Creature · Soldier',g:'P',ally:f=>({p:1,t:f?4:3,reach:1,soldier:1,steadfast:f?1:0}),text:f=>`1/${f?4:3}. Reach.${f?' Even a trampler can\'t get past it.':''}`},
  alarm:{name:'Raise the Alarm',e:1,r:'C',kind:'Instant',g:'⚑',tokens:1,text:f=>`Summon ${f?'three':'two'} 1/1 Soldiers.`,play:f=>{for(let i=0;i<(f?3:2);i++)soldier()}},
  pridemate:{name:"Ajani's Pridemate",e:1,r:'C',kind:'Creature · Cat',g:'A',ally:f=>({p:f?2:1,t:2,pride:1}),text:f=>`${f?2:1}/2. Whenever you heal, it gets +1/+1 for the rest of the fight.`},
  stance:{name:'Valorous Stance',e:1,r:'C',aim:'ally',needAlly:1,kind:'Instant',g:'◈',text:f=>`Target ally gets +${f?1:0}/+4 until your next turn.`,play:(f,t)=>{t.temp+=0;t.tough4=(t.tough4||0)+4;if(f)t.temp1=(t.temp1||0)+1}},
@@ -1362,12 +1392,12 @@ for(const k in C)C[k].col=C[k].col||'W';
 // ---------- heroes ----------
 const HEROES={
  R:{key:'R',fury:1,name:'Chandra, Torch of Defiance',short:'Chandra',color:'Red',life:75,energy:3,loyalty:2,theme:'Haste, burn and Goblins. Chain spells into Fury.',
-  starter:['shock','shock','shock','rgoblin','rgoblin','rgoblin','piker','piker','giant','giant'],
+  starter:['shock','shock','ambush','rgoblin','rgoblin','rgoblin','piker','piker','giant','giant'],
   plusAim:'enemy',plusLabel:()=>`+1 · Deal ${2+(run&&run.emblems.includes('pyre')?2:0)}`,minusLabel:'−3 · 3 to each enemy',ultLabel:'−6 · Every spell burns all',
   plus:t=>{const n=2+(run.emblems.includes('pyre')?2:0);hit(t,n);return `Chandra +1: ${n} damage to ${t.name}.`},
   minus:()=>{c.enemies.forEach(e=>hit(e,3));return 'Chandra −3: 3 damage to each enemy.'},
   ult:()=>{c.ult=true;c.callout='Emblem of the Inferno';return 'Chandra −6: for the rest of this fight, every spell deals 3 to each enemy.'}},
- W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',get life(){return FORM?63:58},energy:3,loyalty:2,theme:'Soldiers, lifegain and flyers. Go wide, then make them huge.',
+ W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',get life(){return FORM?70:58},energy:3,loyalty:2,theme:'Soldiers, lifegain and flyers. Go wide, then make them huge.',
   starter:['vanguard','vanguard','vanguard','salve','salve','grace','pacifism','pacifism','pguard','pguard'],
   plusAim:null,plusLabel:()=>`+1 · Summon ${run&&run.emblems.includes('dawn')?'two 2/1 Soldiers':'a Soldier'}`,minusLabel:'−3 · Allies +2/+2',ultLabel:'−6 · Allies +2/+2 and fly',
   plus:()=>{if(run.emblems.includes('dawn')){summon({p:2,t:1,soldier:1},'Soldier token');summon({p:2,t:1,soldier:1},'Soldier token')}else soldier();return 'Elspeth +1: Soldiers join you.'},
@@ -1463,7 +1493,9 @@ const HARD=[['ironsmith'],['patrol','interloper'],['patrol','geist'],['cultist',
 // Enemies get tougher as you climb: depth 0 at the bottom of the map, up to 2 near the top.
 // Without formation, enemies carry 1.2x life to pay for the act-start item pick.
 const FOE_HP=typeof PW_FOEHP!=='undefined'?PW_FOEHP:FORM?1:1.2;
-const foe=(key,depth=0)=>{const d=E[key];const hp=Math.round(FOE_HP*d.hp*(d.rank==='elite'?1.1:1)*Math.min(d.rank==='elite'?1.35:9,1+(d.rank?.3:.3)*depth));return {id:++uid,key,name:d.name,g:d.g,hp,max:hp,pow:d.pow,fly:!!d.fly,rank:d.rank||'',i:0,buff:d.rank==='elite'?depth:Math.floor(depth*.75),shield:0,loyalty:d.loyalty||0,zombie:!!d.zombie,token:!!d.token}};
+// With formation, Act 1 enemies carry the item-pick tax locally instead.
+const actHp=()=>FORM&&run&&(run.act||1)===1?1.2:1;
+const foe=(key,depth=0)=>{const d=E[key];const hp=Math.round(FOE_HP*actHp()*d.hp*(d.rank==='elite'?1.1:1)*Math.min(d.rank==='elite'?1.35:9,1+(d.rank?.3:.3)*depth));return {id:++uid,key,name:d.name,g:d.g,hp,max:hp,pow:d.pow,fly:!!d.fly,rank:d.rank||'',i:0,buff:d.rank==='elite'?depth:Math.floor(depth*.75),shield:0,loyalty:d.loyalty||0,zombie:!!d.zombie,token:!!d.token}};
 
 // ---------- run ----------
 let run, c, view, reward;
@@ -1512,7 +1544,7 @@ function startFight(keys,kind,depth=0){
  view='battle'; startTurn(); render();
 }
 function startTurn(){
- c.turn++; c.allies.forEach(a=>{a.dmg=0;a.temp=0;a.temp1=0;a.tough4=0;if(a.lifelinkTemp){a.lifelink=0;a.lifelinkTemp=0}a.sick=false;a.tapped=false;a.swung=false;a.attacks=0});
+ c.turn++; c.enemies.forEach(e=>{e.brand=0}); c.allies.forEach(a=>{a.dmg=0;a.temp=0;a.temp1=0;a.tough4=0;if(a.lifelinkTemp){a.lifelink=0;a.lifelinkTemp=0}a.sick=false;a.tapped=false;a.swung=false;a.attacks=0});
  c.twinned=0;c.legioned=0;c.embered=0;c.healedTurn=0;c.ward=0;c.turnStart=c.stats.dealt;c.juice=[];
  for(const m of c.allies.filter(a=>a.mob)){const n=c.allies.filter(a=>a.goblin).length;for(let k=0;k<n&&roomFor('Goblin token');k++)summon({p:1,t:1,goblin:1,sick:0},'Goblin token')}
  if(run.emblems.includes('season'))summon({p:1,t:1},'Spirit token');
@@ -1668,8 +1700,8 @@ function endTurn(){if(c)c.arrange=false;
 // M3.5 formation (behind a flag): the front ally (last in line, nearest the enemy) blocks first,
 // a creature that blocks soaks the whole hit, a token soaks only up to its toughness, a blocker that
 // dies to a trampler soaks nothing, and bypass attackers skip the line.
-const pickBlocker=(e,can)=>FORM?(E[e.key].bypass?null:c.allies.find(a=>a.defender&&can(a))||[...c.allies].reverse().find(can)):c.allies.find(a=>a.defender&&can(a))||c.allies.find(can);
-const spill=(e,n,room,b)=>!FORM?n-room:E[e.key].trample?n:b&&/token$/.test(b.name)?n-room:0;
+const pickBlocker=(e,can)=>FORM?c.allies.find(a=>a.guard===e.id&&can(a))||(E[e.key].bypass?null:c.allies.find(a=>a.defender&&can(a))||[...c.allies].reverse().find(can)):c.allies.find(a=>a.defender&&can(a))||c.allies.find(can);
+const spill=(e,n,room,b)=>!FORM?n-room:E[e.key].trample&&!(b&&b.steadfast)?n:b&&/token$/.test(b.name)?n-room:0;
 function blocker(e){
  const can=a=>!a.tapped&&a.dmg<tough(a)&&!a.noblock&&(!e.fly||a.flying||a.reach);
  return pickBlocker(e,can);
@@ -1693,6 +1725,7 @@ function addFoe(k){const n=foe(k,c.depth);c.enemies.push(n);c.enemies.forEach(x=
 function enemyTurn(){const ob=c.enemies.find(e=>E[e.key].pact&&e.hp>0),ns=c.nSpell||0,nc=c.nCre||0;c.pact=!ob?null:ob.phase2?(ns*1.25>=nc?'spell':'creature'):(ns>=nc&&ns>1?'spell':null);c.notes=[];c.queue=c.enemies.map(e=>e.id);step()}
 function act(e){if(FORM&&E[e.key].enrage)e.buff+=E[e.key].enrage;
  const [t,v,loy]=intentOf(e);let msg='';
+ if((t==='atk'||t==='annihilate')&&e.brand){const bd=e.brand;e.brand=0;hit(e,bd);if(e.hp<=0){return `${e.name} is branded and burns for ${bd} before it can swing.`}}
  if(t==='atk'){msg=strike(e,v+e.buff)}
  else if(t==='drain'){hurt(v,'drain');e.hp=Math.min(e.max,e.hp+v);e.heal=v;msg=`${e.name} drains ${v} life from ${HERO.short}.`}
  else if(t==='buff'){e.buff+=v;msg=`${e.name} grows stronger (+${v} attack).`}
@@ -1737,7 +1770,8 @@ function treasureCards(){const r=mythOr(pick(POOL.filter(k=>C[k].r==='R')));cons
 // Rarity with a pity timer: every card offered that isn't rare raises the next rare chance.
 function rollCard(minRare){const x=rng(),rare=.04+run.pity+(minRare?.2:0);let r;
  if(minRare==='R'||x<rare){r=rng()<(minRare==='R'?.1:.08)&&POOL.some(k=>C[k].r==='M')?'M':'R';run.pity=0}else{run.pity+=.02;r=minRare||x<rare+.3?'U':'C'}
- return pick(POOL.filter(k=>C[k].r===r))}
+ const pl=POOL.filter(k=>C[k].r===r);if(r==='U'&&pl.includes('eagle'))pl.push('eagle','eagle');
+ return pick(pl)}
 function win(){
  run.fights++; if(run.emblems.includes('hearth'))heal(4); run.loyalty=Math.min(8,c.loyalty+1);
  if(c.kind==='boss'){if((run.act||1)<ACTS.length-1)return nextAct('');view='victory';return render()}
@@ -1751,19 +1785,20 @@ function win(){
 function forecast(){
  const dmg=new Map(c.allies.map(a=>[a.id,a.dmg]));let you=0,over=0;const dead=new Set(),took=new Map();
  for(const e of alive()){const [t,v]=intentOf(e);if(e.pacified&&PACIFIED.includes(t))continue;let n=0;
+  if((t==='atk'||t==='annihilate')&&e.brand&&e.hp+(e.shield||0)<=e.brand)continue;
   if(t==='atk')n=v+e.buff;else if(t==='drain'){you+=v;continue}else if(t==='sac'){if(c.enemies.some(x=>x!==e&&x.hp>0&&!x.rank)){you+=v;continue}n=2}else if(t==='annihilate')n=v+e.buff;else if(t==='sweep'){c.allies.forEach(a=>{const d2=dmg.get(a.id)+v;dmg.set(a.id,d2);if(d2>=tough(a))dead.add(a.id)});continue}else continue;
   const can=a=>!a.tapped&&dmg.get(a.id)<tough(a)&&!a.noblock&&(!e.fly||a.flying||a.reach);
   const b=pickBlocker(e,can);
   if(!b){you+=n;continue}const room=tough(b)-dmg.get(b.id);
   const t0=took.get(b.id)||{n:0,o:0,fail:0};t0.n+=n;took.set(b.id,t0);
-  if(n>=room){dmg.set(b.id,tough(b));dead.add(b.id);const o=spill(e,n,room,b);you+=o;t0.o+=o;if(FORM&&E[e.key].trample)t0.fail=1;if(o>0)over+=o}else dmg.set(b.id,dmg.get(b.id)+n)}
+  if(n>=room){dmg.set(b.id,tough(b));dead.add(b.id);const o=spill(e,n,room,b);you+=o;t0.o+=o;if(FORM&&E[e.key].trample&&!b.steadfast)t0.fail=1;if(o>0)over+=o}else dmg.set(b.id,dmg.get(b.id)+n)}
  return {you:Math.max(0,you-(c.ward||0)),dead,took,over};
 }
 // ---------- rendering ----------
 // Pacifism stops attack intents only; buffs, summons and drains still happen.
 const PACIFIED=['atk','annihilate','sac'];
 const intentLabel=e=>{if(e.pacified&&PACIFIED.includes(intentOf(e)[0]))return `<span class="intent stun" title="Pacified: it can't attack">☮ can't attack</span>`;const [t,v,loy]=intentOf(e);const L='';
- if(t==='atk'){const by=FORM&&E[e.key].bypass,tr=FORM&&E[e.key].trample;return `<span class="intent${by?' bypass':''}${FORM&&E[e.key].enrage?' enrage':''}" title="${by?'Bypass: skips your line and hits you':e.fly?'Flying: only your flying or reach allies can block it':FORM?'Hits your front untapped blocker, or you'+(tr?'. Trample: a blocker that dies to it soaks nothing':''):'Hits your first untapped blocker, or you'}">${L}⚔ ${v+e.buff}${by?' ⤳':e.fly?' ↷':''}${tr?' ⇶':''}${FORM&&E[e.key].enrage?`<span class="grow">+${E[e.key].enrage}/turn</span>`:''}</span>`}
+ if(t==='atk'){const by=FORM&&E[e.key].bypass,tr=FORM&&E[e.key].trample;return `<span class="intent${by?' bypass':''}${FORM&&E[e.key].enrage?' enrage':''}" title="${by?'Bypass: skips your line and hits you, unless an ally guards against it':e.fly?'Flying: only your flying or reach allies can block it':FORM?'Hits your front untapped blocker, or you'+(tr?'. Trample: a blocker that dies doesn\'t stop this hit':''):'Hits your first untapped blocker, or you'}">${L}⚔ ${v+e.buff}${by?' ⤳':e.fly?' ↷':''}${tr?' ⇶':''}${FORM&&E[e.key].enrage?`<span class="grow">+${E[e.key].enrage}/turn</span>`:''}</span>`}
  if(t==='drain')return `<span class="intent drain" title="Hits ${HERO.short} directly and heals itself">${L}✦ drain ${v}</span>`;
  if(t==='buff')return `<span class="intent buff" title="Its attacks get stronger">▲ +${v}</span>`;
  if(t==='guard')return `<span class="intent buff" title="Absorbs the next ${v} damage">◈ guard ${v}</span>`;
@@ -1780,7 +1815,7 @@ const intentLabel=e=>{if(e.pacified&&PACIFIED.includes(intentOf(e)[0]))return `<
  if(t==='pay')return `<span class="intent buff" title="Pays ${v} life for +${v} attack">▲ pay ${v}</span>`;
  return `<span class="intent transform" title="Night falls">☾ transform</span>`};
 const ACT={scion:()=>'empower the biggest enemy',process:v=>`process an exiled card into ${v} Spawn`,sweep:v=>`${v} damage to each of your allies`,bolster:v=>`give an ally +${v} attack`,rally:v=>`all enemies +${v} attack`,annihilate:v=>`attack for ${v}, then destroy your weakest ally`,pay:v=>`pay ${v} life for +${v} attack`,atk:v=>`attack for ${v}`,drain:v=>`drain ${v} life`,buff:v=>`gain +${v} attack`,guard:v=>`guard ${v}`,haunt:()=>'haunt (you draw 1 fewer)',summon:v=>`summon a ${E[v]?E[v].name:v}`,sac:v=>`sacrifice a minion to hit you for ${v}`,transform:()=>'transform at night'};
-function enemyInfo(e){const d=E[e.key];const tr=[e.pacified&&(e.rank?'Pacified: its next attack is stopped, then it shakes it off.':'Pacified: it can\'t attack this fight.'),e.pacImmune&&'Immune to Pacifism for the rest of this fight.',d.fly&&'Flying: only flying or reach allies can block it.',FORM&&d.bypass&&'Bypass: skips your line and hits you.',FORM&&d.enrage&&`Enrage: its attacks grow by ${d.enrage} each turn it lives.`,FORM&&d.trample&&'Trample: a blocker that dies to it soaks nothing, so the full hit reaches you.',d.first&&'First strike: hits your attacker first.',d.tax&&'Your noncreature spells cost 1 more.',d.raise&&'Dead minions come back as Zombies.',d.feed&&'Gets +1 attack each time a creature she damaged dies.',d.crawl&&'Returns once while another Zombie stands.',d.phase2&&'Below half life: shield 10 and a harder pattern.',d.loyalty&&'Loyalty: ultimate at 8. Each creature hit removes 1.',d.ingest&&'Unblocked hits exile the top card of your draw pile for this fight.',d.spawnDie&&'When it dies, other Eldrazi get +1 attack.',d.landfall&&`Gets +${d.landfall} attack whenever another enemy enters.`,d.rage&&`Deals ${d.rage} to you whenever another enemy enters.`,d.pact&&'If you have played at least as many spells as creatures this fight, he names spells, and each one costs you 3 life. Below half life he names whichever type you have played more.'].filter(Boolean);
+function enemyInfo(e){const d=E[e.key];const tr=[e.pacified&&(e.rank?'Pacified: its next attack is stopped, then it shakes it off.':'Pacified: it can\'t attack this fight.'),e.pacImmune&&'Immune to Pacifism for the rest of this fight.',d.fly&&'Flying: only flying or reach allies can block it.',FORM&&d.bypass&&'Bypass: skips your line and hits you, unless one of your allies guards against it.',FORM&&d.intents.some(x=>x[0]==='sac')&&'Its sacrifice hits you directly. Guard can\'t stop that.',FORM&&d.enrage&&`Enrage: its attacks grow by ${d.enrage} each turn it lives.`,FORM&&d.trample&&'Trample: a blocker that dies doesn\'t stop this hit.',d.first&&'First strike: hits your attacker first.',d.tax&&'Your noncreature spells cost 1 more.',d.raise&&'Dead minions come back as Zombies.',d.feed&&'Gets +1 attack each time a creature she damaged dies.',d.crawl&&'Returns once while another Zombie stands.',d.phase2&&'Below half life: shield 10 and a harder pattern.',d.loyalty&&'Loyalty: ultimate at 8. Each creature hit removes 1.',d.ingest&&'Unblocked hits exile the top card of your draw pile for this fight.',d.spawnDie&&'When it dies, other Eldrazi get +1 attack.',d.landfall&&`Gets +${d.landfall} attack whenever another enemy enters.`,d.rage&&`Deals ${d.rage} to you whenever another enemy enters.`,d.pact&&'If you have played at least as many spells as creatures this fight, he names spells, and each one costs you 3 life. Below half life he names whichever type you have played more.'].filter(Boolean);
  const list=(e.phase2?d.phase2:d.intents).map(([t,v])=>(ACT[t]||(()=>t))(['atk','annihilate'].includes(t)?v+e.buff:v)).join(' → ')+(e.buff?` (includes +${e.buff} from buffs)`:'');
  return `<div class="inspect" role="dialog" aria-label="${e.name}"><b>${e.name}</b><span class="muted"> · ${e.rank==='boss'?'Planeswalker':e.rank==='elite'?'Legendary':'Minion'} · ⚔ ${e.pow+e.buff} · ♥ ${Math.max(0,e.hp)}/${e.max}${e.shield?` · ◈ ${e.shield}`:''}</span><p>Pattern: ${list}</p>${tr.length?`<p>${tr.join(' ')}</p>`:''}<button class="btn" data-act="closeinspect">Close</button></div>`}
 const popOf=o=>{let s='';if(o.pop)s+=`<span class="pop${o.pop>=8?' big':''}" style="font-size:${(1.1+Math.min(o.pop,20)/14).toFixed(2)}rem">−${o.pop}</span>`;if(o.heal)s+=`<span class="pop heal">+${o.heal}</span>`;o.pop=0;o.heal=0;return s};
@@ -1813,9 +1848,9 @@ const P=c.pending;const F=c.busy?{you:0,dead:new Set(),took:new Map(),over:0}:fo
  const AR=FORM&&c.arrange&&!c.busy,fid=FORM?([...c.allies].reverse().find(a=>!a.tapped&&a.dmg<tough(a)&&!a.noblock)||{}).id:null,SG=stacks(),nA=SG.length;
  const allies=(FORM?'<div class="slot" aria-hidden="true"></div>'.repeat(Math.max(0,Math.min(2,4-nA))):'')+SG.map((g,i)=>{const a=(P&&P.aim==='ally'?null:g.find(x=>ready(x)))||g[g.length-1];const fl=g.some(x=>x.flash);g.forEach(x=>{x.flash=0});a.flash=0;const r=P&&P.aim==='ally'?true:ready(a);const sel=P&&P.kind==='atk'&&P.id===a.id;const doom=g.some(x=>F.dead.has(x.id));const tks=g.map(x=>F.took&&F.took.get(x.id)).filter(Boolean),nd=g.filter(x=>F.dead.has(x.id)).length,ov=tks.reduce((s,t)=>s+t.o,0),fl2=tks.some(t=>t.fail);
   const pv=!FORM||!tks.length?'':fl2?'chump fails vs trample':nd?`${g.length>1?`${nd} ${a.name.replace(/ token$/,'')}${nd>1?'s die':' dies'}`:'dies'}${ov?` → ${ov} to you`:' · blocks all'}${g.length>nd&&g.length>1?` (×${g.length-nd} left)`:''}`:`takes ${tks.reduce((s,t)=>s+t.n,0)}`;const st=doom?'☠ Doomed':a.defender?'Defender':a.sick&&!hasty(a)?'Zzz':a.tapped?'Tapped':sel?'Attacking':hasty(a)&&c.allies.length&&!a.swung?'Haste!':'Ready';
-  return `<button data-n="${a.name}" class="unit ally${fl?' struck':''}${doom?' doom':''}${a.sick&&!hasty(a)?' sick':''}${a.tapped?' tapped':''}${r?' ready':''}${sel?' chosen':''}${g.some(x=>x.id===fid)?' front':''}${AR?' arrange':''}${g.length>1?' group':''}${/token$/.test(a.name)?' token':''}"${g.length>1?` data-count="${g.length}"`:''} data-act="${P&&P.aim==='ally'?'target-ally':AR?'front':'atk'}" data-id="${a.id}"${FORM?` data-pos="${Math.max(1,4-(nA-1-i))}"`:''} ${r||AR?'':'disabled'} title="${a.sick&&!hasty(a)?'Just arrived: can block, attacks next turn':a.tapped?'Attacked this turn: cannot block':r?'Tap, then choose an enemy to attack':''}">${pv?`<span class="pv${fl2?' fail':nd&&!ov?' dies all':nd?' dies':''}">${pv}</span>`:''}<div class="art"><span class="tag">${st}</span><span class="glyph">${a.name[0]}</span><span class="stats">${pow(a)}/${tough(a)-a.dmg}</span></div><span class="name">${a.name}</span><span class="kw">${kws(a)}</span></button>`}).join('')+(FORM?'':'<div class="slot" aria-hidden="true"></div>'.repeat(Math.max(0,Math.min(2,4-c.allies.length))));
+  return `<button data-n="${a.name}" class="unit ally${fl?' struck':''}${doom?' doom':''}${a.sick&&!hasty(a)?' sick':''}${a.tapped?' tapped':''}${r?' ready':''}${sel?' chosen':''}${g.some(x=>x.id===fid)?' front':''}${AR?' arrange':''}${c.guardSel&&g.some(x=>x.id===c.guardSel)?' chosen':''}${g.length>1?' group':''}${/token$/.test(a.name)?' token':''}"${g.length>1?` data-count="${g.length}"`:''}${FORM&&a.guard&&c.enemies.some(e=>e.id===a.guard&&e.hp>0)?` data-guard="${a.guard}"`:''} data-act="${P&&P.aim==='ally'?'target-ally':AR?'front':'atk'}" data-id="${a.id}"${FORM?` data-pos="${Math.max(1,4-(nA-1-i))}"`:''} ${r||AR?'':'disabled'} title="${a.sick&&!hasty(a)?'Just arrived: can block, attacks next turn':a.tapped?'Attacked this turn: cannot block':r?'Tap, then choose an enemy to attack':''}">${pv?`<span class="pv${fl2?' fail':nd&&!ov?' dies all':nd?' dies':''}">${pv}</span>`:''}<div class="art"><span class="tag">${st}</span><span class="glyph">${a.name[0]}</span><span class="stats">${pow(a)}/${tough(a)-a.dmg}</span></div><span class="name">${a.name}</span><span class="kw">${kws(a)}</span>${FORM&&a.guard&&c.enemies.some(e=>e.id===a.guard&&e.hp>0)?`<span class="gd">guards ${c.enemies.find(e=>e.id===a.guard).name}</span>`:''}</button>`}).join('')+(FORM?'':'<div class="slot" aria-hidden="true"></div>'.repeat(Math.max(0,Math.min(2,4-c.allies.length))));
  const ffid=FORM?(alive()[0]||{}).id:null;
- const foes=c.enemies.map((e,i)=>`<button data-n="${e.name}"${FORM?` data-pos="${Math.max(1,4-i)}"`:''} class="unit ${e.rank}${e.id===ffid?' front':''}${FORM&&E[e.key].bypass?' bypass':''} ${P&&P.aim==='enemy'?'aim':''}${e.acting?' acting':''}" data-act="target" data-id="${e.id}" aria-label="${P&&P.aim==='enemy'?'Target':'Inspect'} ${e.name}">${popOf(e)}${e.rank==='boss'?`<span class="loyal" title="Loyalty. Ultimate at 8. Each creature that hits him removes 1.">${e.loyalty}${(d=>d?`<small class="loyd">${d>0?'+':''}${d}</small>`:'')(intentOf(e)[2]||0)}</span>`:''}${intentLabel(e)}<div class="art"><span class="tag">${e.rank==='boss'?'Planeswalker':e.rank==='elite'?'Legendary':'Minion'}${e.fly?' · Flying':''}</span><span class="glyph">${e.g}</span><span class="stats hp" title="Power ${e.pow}">${e.hp}</span></div><span class="name">${e.name}</span>${e.shield?`<span class="shield">◈ ${e.shield}</span>`:''}<div class="bar"><i style="width:${Math.max(0,e.hp)/e.max*100}%"></i></div></button>`).join('');
+ const foes=c.enemies.map((e,i)=>`<button data-n="${e.name}"${FORM?` data-pos="${Math.max(1,4-i)}"`:''} class="unit ${e.rank}${e.id===ffid?' front':''}${FORM&&E[e.key].bypass?' bypass':''}${FORM&&c.allies.some(a=>a.guard===e.id)?' guarded':''} ${P&&P.aim==='enemy'?'aim':''}${e.acting?' acting':''}" data-act="target" data-id="${e.id}" aria-label="${P&&P.aim==='enemy'?'Target':'Inspect'} ${e.name}">${popOf(e)}${e.rank==='boss'?`<span class="loyal" title="Loyalty. Ultimate at 8. Each creature that hits him removes 1.">${e.loyalty}${(d=>d?`<small class="loyd">${d>0?'+':''}${d}</small>`:'')(intentOf(e)[2]||0)}</span>`:''}${intentLabel(e)}${e.brand&&e.hp>0?(()=>{const [t,v]=intentOf(e);const sw=t==='atk'||t==='annihilate';return `<span class="pv brand${sw&&e.hp+(e.shield||0)<=e.brand?' dies':''}">${!sw?`branded ${e.brand} (only if it attacks)`:e.hp+(e.shield||0)<=e.brand?'branded: dies before it swings':`takes ${e.brand}, then hits for ${v+e.buff}`}</span>`})():''}<div class="art"><span class="tag">${e.rank==='boss'?'Planeswalker':e.rank==='elite'?'Legendary':'Minion'}${e.fly?' · Flying':''}</span><span class="glyph">${e.g}</span><span class="stats hp" title="Power ${e.pow}">${e.hp}</span></div><span class="name">${e.name}</span>${e.shield?`<span class="shield">◈ ${e.shield}</span>`:''}<div class="bar"><i style="width:${Math.max(0,e.hp)/e.max*100}%"></i></div></button>`).join('');
  const anyReady=c.allies.some(ready);
  const q=c.quake;c.quake=0;const co=c.callout;c.callout='';
  return `<section class="battle${q?' quake'+q:''}${c.ult?' inferno':''}${c.wings?' dawnlit':''}" aria-label="Battle">${c.pact&&c.enemies.some(e=>e.hp>0&&E[e.key].pact)?`<div class="pact">Demonic Pact · <b>${c.pact==='creature'?'Creatures':'Spells'}</b> cost 3 life this turn</div>`:''}${co?`<div class="callout">${co}</div>`:''}
@@ -1901,7 +1936,7 @@ function render(){
  if(view==='over'||view==='victory')endRun(view==='victory');
  if(view==='heroes'){document.getElementById('app').innerHTML=heroesView();return}
  const body=view==='actstart'?actStartView():view==='bossreward'?bossRewardView():view==='shop'?shopView():view==='map'?mapView():view==='battle'?battleView():view==='reward'?rewardView():view==='rest'?restView():view==='event'?eventView():endView(view==='victory');
- document.getElementById('app').innerHTML=topBar()+body+`<details class="howto"><summary>How to play</summary><p class="note">You get 3 energy a turn, and up to 2 unused energy carries over. ${HERO.short}'s loyalty carries between fights: spend it now or save 6 for the ultimate. Play 4 cards in one turn for Fury. The chip over ${HERO.short} shows what the enemies will do if you end your turn now. New creatures are asleep: they can block but not attack, unless they have haste. Tap a glowing creature, then an enemy, to attack. Targeted spells work the same way. Enemies strike back, and tapped creatures can't block. Your run saves on the map after every node.</p></details><p class="note record">Runs ${profile.runs} · Wins ${profile.wins} · Best turn ${profile.bestTurn}</p>`;
+ document.getElementById('app').innerHTML=topBar()+body+`<details class="howto"><summary>How to play</summary><p class="note">You get 3 energy a turn, and up to 2 unused energy carries over. ${HERO.short}'s loyalty carries between fights: spend it now or save 6 for the ultimate. Play 4 cards in one turn for Fury. The chip over ${HERO.short} shows what the enemies will do if you end your turn now. New creatures are asleep: they can block but not attack, unless they have haste. Tap a glowing creature, then an enemy, to attack. Targeted spells work the same way. Enemies strike back, and tapped creatures can't block. Your run saves on the map after every node.</p>${FORM?`<p class="note">Formation: your front ally blocks first. Tap ⇄ Formation, then an ally, then an enemy, to have that ally guard against it. ↷ flying: only flying or reach allies can block it. ⤳ bypass: skips your line unless an ally guards against it. ⇶ trample: a blocker that dies doesn't stop the hit. +N/turn: enrage, its attack grows every turn. A creature that dies blocking soaks the whole hit; a token soaks only its toughness.</p>`:''}</details><p class="note record">Runs ${profile.runs} · Wins ${profile.wins} · Best turn ${profile.bestTurn}</p>`;
  saveRun();
 }
 const toMap=()=>{view='map';reward=null;c=null;render()};
@@ -1920,13 +1955,13 @@ document.getElementById('app').addEventListener('click',ev=>{
  if(a==='hero')return newRun(reward&&reward.seed,b.dataset.k);
  if(a==='go')return enter(+b.dataset.r,+b.dataset.l);
  if(a==='closeinspect'){c.inspect=null;return render()}
- if(a==='target'){const t=c.enemies.find(e=>e.id===+b.dataset.id),P=c.pending;if(!t)return;if(!P){c.inspect=c.inspect===t.id?null:t.id;return render()}c.inspect=null;if(P.kind==='card')return play(c.hand.findIndex(h=>h.id===P.cid),t);if(P.kind==='atk'){const x=c.allies.find(y=>y.id===P.id);return x&&attack(x,t)}if(P.kind==='plus')return ability(false,t);if(P.kind==='sacT')return bombard(c.allies.find(y=>y.id===P.sac),t);return}
+ if(a==='target'){const t=c.enemies.find(e=>e.id===+b.dataset.id),P=c.pending;if(!t)return;if(FORM&&c.arrange&&c.guardSel){const g=c.allies.find(y=>y.id===c.guardSel);c.guardSel=null;if(g){c.allies.forEach(y=>{if(y.guard===t.id&&y!==g)y.guard=null});g.guard=t.id;c.log=`${g.name} guards against ${t.name}.`}return render()}if(!P){c.inspect=c.inspect===t.id?null:t.id;return render()}c.inspect=null;if(P.kind==='card')return play(c.hand.findIndex(h=>h.id===P.cid),t);if(P.kind==='atk'){const x=c.allies.find(y=>y.id===P.id);return x&&attack(x,t)}if(P.kind==='plus')return ability(false,t);if(P.kind==='sacT')return bombard(c.allies.find(y=>y.id===P.sac),t);return}
  if(a==='target-ally'){const t=c.allies.find(y=>y.id===+b.dataset.id);if(!t)return;if(c.pending.kind==='sac'){const only=solo();if(only)return bombard(t,only);c.pending={kind:'sacT',aim:'enemy',sac:t.id};c.log=`Fling ${t.name} at which enemy?`;return render()}return play(c.hand.findIndex(h=>h.id===c.pending.cid),t)}
  if(a==='cancel'){c.pending=null;c.log='Cancelled.';return render()}
  if(a==='atk'){const x=c.allies.find(y=>y.id===+b.dataset.id);return x&&attack(x)}
  if(a==='formtoggle'){try{localStorage.setItem('pw-form',FORM?'0':'1')}catch(e){}location.reload();return}
- if(a==='arrange'){c.arrange=!c.arrange;c.log=c.arrange?'Tap an ally to move it to the front. The front ally blocks first.':'Formation set.';return render()}
- if(a==='front'){const x=c.allies.find(y=>y.id===+b.dataset.id);const g=x&&(stacks().find(g=>g.includes(x))||[x]);if(x){c.allies=c.allies.filter(y=>!g.includes(y)).concat(g);c.log=`${x.name} moves to the front.`}return render()}
+ if(a==='arrange'){c.arrange=!c.arrange;c.guardSel=null;c.log=c.arrange?'Tap an ally to move it to the front, then an enemy to have it guard against that one.':'Formation set.';return render()}
+ if(a==='front'){const x=c.allies.find(y=>y.id===+b.dataset.id);if(x&&!x.tapped){c.guardSel=x.id}const g=x&&(stacks().find(g=>g.includes(x))||[x]);if(x){c.allies=c.allies.filter(y=>!g.includes(y)).concat(g);c.log=`${x.name} moves to the front.${x.tapped?'':' Tap an enemy to have it guard against that one.'}`}return render()}
  if(a==='all')return attackAll();
  if(a==='play'){const i=+b.dataset.i;if(c.pending&&c.pending.kind==='card'&&c.hand[i]?.id===c.pending.cid){c.pending=null;c.log='Cancelled.';return render()}return play(i)}
  if(a==='plus')return ability(false);
@@ -2112,6 +2147,20 @@ if(!resumeRun())newRun();
   c.classList.add('pw-armed');const s=document.createElement('span');s.className='pw-confirm';s.textContent=c.dataset.act==='shopremove'?'Tap again to remove':'Tap again to burn';c.append(s);window.pwHaptic?.(15)},true);
  new MutationObserver(tidy).observe(app,{childList:true});tidy();
 })();
+// Guard links: draw a dashed arc from each ally[data-guard] to the enemy it guards.
+(()=>{const app=document.getElementById('app');if(!app)return;let raf=0;
+ const draw=()=>{raf=0;const f=app.querySelector('.field');if(!f)return;let s=f.querySelector(':scope>svg.pw-guards');
+  const gs=[...f.querySelectorAll('.unit[data-guard]')];if(!gs.length){if(s)s.remove();return}
+  if(!s){s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('class','pw-guards');s.setAttribute('aria-hidden','true');f.appendChild(s)}
+  const R=f.getBoundingClientRect();let h='';
+  for(const a of gs){const e=f.querySelector(`.side.foe .unit[data-id="${a.dataset.guard}"]`);if(!e)continue;
+   const A=(a.querySelector('.art')||a).getBoundingClientRect(),B=(e.querySelector('.art')||e).getBoundingClientRect();
+   const ax=A.left+A.width/2,ay=A.top+A.height/2,bx=B.left+B.width/2,by=B.top+B.height/2,side=Math.abs(bx-ax)>Math.abs(by-ay);let x1,y1,x2,y2,cx,cy;
+   if(side){x1=(bx>ax?A.right:A.left)-R.left;y1=A.bottom-8-R.top;x2=bx-R.left;y2=B.bottom-R.top;cx=(x1+x2)/2;cy=Math.max(y1,y2)+26}
+   else{x1=ax-R.left;y1=(by>ay?A.bottom:A.top)-R.top;x2=bx-R.left;y2=(by>ay?B.top:B.bottom)-R.top;cx=(x1+x2)/2+18;cy=(y1+y2)/2}
+   h+=`<path d="M${x1} ${y1} Q${cx} ${cy} ${x2} ${y2}"/><circle cx="${x2}" cy="${y2}" r="2.5"/>`}
+  s.innerHTML=h};
+ const q=()=>{if(!raf)raf=requestAnimationFrame(draw)};const mine=n=>n&&n.nodeType===1&&(n.matches('svg.pw-guards')||!!n.closest('svg.pw-guards'));new MutationObserver(ms=>{if(ms.some(m=>!mine(m.target)&&![...m.addedNodes,...m.removedNodes].every(mine)||m.type==='attributes'))q()}).observe(app,{childList:true,subtree:true,attributes:true,attributeFilter:['data-guard']});addEventListener('resize',q);q()})();
 
 </script>
 </body>
