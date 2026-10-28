@@ -1122,7 +1122,7 @@ Object.assign(E,{
  drana:{name:'Drana, Liberator of Malakir',hp:36,pow:4,g:'Dr',rank:'elite',fly:1,first:1,intents:[['atk',7],['rally',1],['atk',9]]},
  kozilek:{name:"Kozilek's Herald",hp:40,pow:5,g:'Kz',rank:'elite',eldrazi:1,intents:[['annihilate',7],['summon','spawn'],['atk',6]]},
  omnath:{name:'Omnath, Locus of Rage',hp:38,pow:4,g:'Om',rank:'elite',rage:2,intents:[['summon','spawn'],['atk',7],['summon','scion']]},
- ob:{name:'Ob Nixilis Reignited',hp:70,pow:5,g:'Ob',rank:'boss',loyalty:5,ultFx:'kill',
+ ob:{name:'Ob Nixilis Reignited',hp:82,pow:5,g:'Ob',rank:'boss',loyalty:5,ultFx:'kill',
   intents:[['atk',11,2],['pay',3,1],['drain',7,-3]],phase2:[['atk',13,2],['pay',4,1],['summon','spawn',1],['drain',8,-3]],pact:1},
 });
 // Each act: map rows, enemy groups, elites and boss. Depth scaling restarts every act.
@@ -1168,7 +1168,7 @@ const open=(r,l)=>r===7?run.pos?.r===6:!run.pos?r===0:r===run.pos.r+1&&Math.abs(
 function enter(r,l){
  if(!open(r,l))return; run.pos={r,l}; run.done.push(r+':'+l);
  const t=r===7?'boss':run.map[r][l];
- const depth=(r<=1?0:r<=3?1:2)+((run.act||1)-1)*(t==='fight'||t==='elite'?.35:1);const A=ACTS[run.act||1],ez=A.easy||EASY,hd=A.hard||HARD;
+ const depth=(r<=1?0:r<=3?1:2)+((run.act||1)-1)*(t==='fight'||t==='elite'?.8:1);const A=ACTS[run.act||1],ez=A.easy||EASY,hd=A.hard||HARD;
  if(t==='fight')startFight(pick(r<=1?ez:r>=4?hd:[...ez,...hd]),'fight',depth);
  else if(t==='elite')startFight([pick(A.elites)],'elite',depth);
  else if(t==='boss')startFight([A.boss],'boss',(run.act||1)>1?1:0);
@@ -1527,8 +1527,8 @@ function shopView(){const sh=reward.shop;
  ${sh.emb&&!sh.emb.sold?`<button class="option" data-act="buyemb" ${run.gold<sh.emb.price?'disabled':''}>${embSvg(sh.emb.k)}<b>${EMB[sh.emb.k].name} · ◎ ${sh.emb.price}</b><span class="muted">${EMB[sh.emb.k].text}</span></button>`:''}</div>
  <button class="btn main" data-act="leave">Leave the market</button></section>`}
 function bossRewardView(){
- return `<section class="screen bosspick"><h2>${E[ACTS[run.act].boss].name} is defeated</h2><p>Take one boss emblem. Each is powerful, and each has a cost.</p><div class="choices">${reward.boss.map(k=>`<button class="option" data-act="bossemb" data-k="${k}">${embSvg(k)}<b>${EMB[k].name}</b><span class="muted">${EMB[k].gain||EMB[k].text}</span>${EMB[k].cost?`<span class="costline">Cost: ${k==='contract'?`max life ${run.max} → ${run.max-4}`:EMB[k].cost}</span>`:''}</button>`).join('')}</div><button class="btn" data-act="bossemb" data-k="">Take none</button></section>`}
-function nextAct(k){if(k)run.emblems.push(k);if(k==='contract'){run.max-=4;run.hp=Math.min(run.hp,run.max)}run.act=(run.act||1)+1;run.hp=Math.min(run.max,run.hp+Math.ceil((run.max-run.hp)*.5));run.map=genMap(run.act);run.pos=null;run.done=[];toMap()}
+ return `<section class="screen bosspick"><h2>${E[ACTS[run.act].boss].name} is defeated</h2><p>You are healed to full. Take one boss emblem. Each is powerful, and each has a cost.</p><div class="choices">${reward.boss.map(k=>`<button class="option" data-act="bossemb" data-k="${k}">${embSvg(k)}<b>${EMB[k].name}</b><span class="muted">${EMB[k].gain||EMB[k].text}</span>${EMB[k].cost?`<span class="costline">Cost: ${k==='contract'?`max life ${run.max} → ${run.max-4}`:EMB[k].cost}</span>`:''}</button>`).join('')}</div><button class="btn" data-act="bossemb" data-k="">Take none</button></section>`}
+function nextAct(k){if(k)run.emblems.push(k);if(k==='contract'){run.max-=4;run.hp=Math.min(run.hp,run.max)}run.act=(run.act||1)+1;run.hp=run.max;run.map=genMap(run.act);run.pos=null;run.done=[];toMap()}
 function heroesView(){
  return `<header class="top"><h1>Planeswalk</h1><span class="spacer"></span>${inApp?'<a class="btn" href="/#play">Exit</a>':''}</header><section class="screen heroes"><h2>Choose your planeswalker</h2><p>Each hero has their own starter deck, card pool, abilities and emblems.</p><div class="choices">${Object.values(HEROES).map(h=>`<button class="option hero-pick" data-act="hero" data-k="${h.key}" data-n="${h.name}"><b>${h.name}</b><span class="muted">${h.color} · ${h.life} life · ${h.theme}</span><span class="muted">${h.plusLabel()} · ${h.minusLabel} · ${h.ultLabel}</span></button>`).join('')}</div></section>`;
 }
