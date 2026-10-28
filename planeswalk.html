@@ -1327,7 +1327,7 @@ const C={
  bolt:{name:'Lightning Bolt',e:1,r:'C',aim:'enemy',kind:'Instant',g:'ϟ',text:f=>`Deal ${f?6:4} damage.`,play:(f,t)=>hit(t,f?6:4)},
  fanatic:{name:'Mogg Fanatic',e:1,r:'C',kind:'Creature · Goblin',g:'G',ally:f=>({p:1,t:1,goblin:1,deathBurn:f?5:3}),text:f=>`1/1. When it dies, deal ${f?5:3} to the front enemy.`},
  krenko:{name:"Krenko's Command",e:1,r:'C',kind:'Sorcery',g:'G',tokens:1,text:f=>`Summon two ${f?'2/1':'1/1'} Goblins.`,play:f=>{for(let i=0;i<2;i++)summon({p:f?2:1,t:1,goblin:1},'Goblin token')}},
- brute:{name:'Brute Force',e:1,r:'C',aim:'ally',kind:'Instant',g:'+',needAlly:1,text:f=>`Target ally gets +${f?4:3}/+${f?4:3} until your next turn. Untap it: it can attack again this turn.`,play:(f,t)=>{t.temp+=f?4:3;t.tapped=false}},
+ brute:{name:'Brute Force',e:1,r:'C',aim:'ally',kind:'Instant',g:'+',needAlly:1,text:f=>`Target ally gets +${f?4:3}/+${f?4:3} until your next turn. Untap it: it can attack again this turn.`,play:(f,t)=>{t.temp+=f?4:3;untap(t)}},
  marauder:{name:'Borderland Marauder',e:1,r:'C',kind:'Creature · Warrior',g:'M',ally:f=>({p:1,t:f?3:2,raid:2}),text:f=>`1/${f?3:2}. Gets +2/+0 while attacking.`},
  dasher:{name:'Valley Dasher',e:1,r:'C',kind:'Creature · Berserker',g:'V',ally:f=>({p:f?3:2,t:3,haste:1,must:1}),text:f=>`${f?3:2}/3. Haste. Attacks by itself at end of turn if you didn't.`},
  guide:{name:'Goblin Guide',e:1,r:'U',kind:'Creature · Goblin',g:'G',ally:f=>({p:f?3:2,t:2,haste:1,goblin:1}),text:f=>`${f?3:2}/2. Haste.`},
@@ -1397,7 +1397,7 @@ const HEROES={
   plus:t=>{const n=2+(run.emblems.includes('pyre')?2:0);hit(t,n);return `Chandra +1: ${n} damage to ${t.name}.`},
   minus:()=>{c.enemies.forEach(e=>hit(e,3));return 'Chandra −3: 3 damage to each enemy.'},
   ult:()=>{c.ult=true;c.callout='Emblem of the Inferno';return 'Chandra −6: for the rest of this fight, every spell deals 3 to each enemy.'}},
- W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',get life(){return FORM?70:58},energy:3,loyalty:2,theme:'Soldiers, lifegain and flyers. Go wide, then make them huge.',
+ W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',get life(){return FORM?74:58},energy:3,loyalty:2,theme:'Soldiers, lifegain and flyers. Go wide, then make them huge.',
   starter:['vanguard','vanguard','vanguard','salve','salve','grace','pacifism','pacifism','pguard','pguard'],
   plusAim:null,plusLabel:()=>`+1 · Summon ${run&&run.emblems.includes('dawn')?'two 2/1 Soldiers':'a Soldier'}`,minusLabel:'−3 · Allies +2/+2',ultLabel:'−6 · Allies +2/+2 and fly',
   plus:()=>{if(run.emblems.includes('dawn')){summon({p:2,t:1,soldier:1},'Soldier token');summon({p:2,t:1,soldier:1},'Soldier token')}else soldier();return 'Elspeth +1: Soldiers join you.'},
@@ -1411,11 +1411,11 @@ const setHero=k=>{HERO=HEROES[k]||HEROES.R;POOL=POOL_ALL.filter(x=>C[x].col===HE
 // Emblems tagged with a hero colour only appear for that hero.
 const forHero=k=>!EMB[k].col||EMB[k].col===HERO.key;
 const mk=key=>({id:++uid,key,foil:false});
-// M3.5 formation rules are behind this flag (hero-screen toggle, ?form=1 or localStorage pw-form=1).
-const FORM=typeof PW_FORM!=='undefined'?!!PW_FORM:(()=>{try{return /[?&]form=1/.test(location.search)||localStorage.getItem('pw-form')==='1'}catch(e){return false}})();
+// Formation is the combat model. The hero-screen toggle (or ?form=0, localStorage pw-form=0) turns on the old rules.
+const FORM=typeof PW_FORM!=='undefined'?!!PW_FORM:(()=>{try{if(/[?&]form=0/.test(location.search))return false;if(/[?&]form=1/.test(location.search))return true;return localStorage.getItem('pw-form')!=='0'}catch(e){return true}})();
 const MAXA=6;
 // Identical tokens stack, up to 3 to a slot; MAXA counts slots, and a fight holds at most 8 bodies.
-const tokKey=a=>/token$/.test(a.name)?[a.name,a.p,a.t,a.temp,a.temp1||0,a.dmg,a.tapped?1:0,a.sick&&!hasty(a)?1:0,a.flying?1:0,a.first?1:0,a.lifelink?1:0].join('|'):null;
+const tokKey=a=>/token$/.test(a.name)?[a.name,a.p,a.t,a.temp,a.temp1||0,a.dmg,a.tapped?1:0,a.sick&&!hasty(a)?1:0,a.flying?1:0,fst(a)?1:0,llk(a)?1:0].join('|'):null;
 function stacks(){const out=[];for(const a of c.allies){const k=tokKey(a);const g=k&&out.find(g=>g.k===k&&g.m.length<3);if(g)g.m.push(a);else out.push({k,m:[a]})}return out.map(g=>g.m)}
 const MAXBODIES=8;
 const roomFor=name=>c.allies.length<MAXBODIES&&(stacks().length<MAXA||(/token$/.test(name||'')&&stacks().some(g=>g.length<3&&g[0].name===name)));
@@ -1430,7 +1430,7 @@ const EMB={
  pyre:{col:'R',name:'Emblem of the Pyre',g:'▲',text:"Chandra's +1 deals 2 more damage."},
  hearth:{name:'Emblem of the Hearth',g:'♥',text:'Heal 4 life after every fight.'},
  font:{name:'Font of Agonies',g:'♨',r:'R',text:'Whenever you lose life on your turn, your next hit deals 1 more. Below 30% life, your hits deal 50% more.'},
- twin:{name:'Emblem of Echoes',g:'∞',r:'R',text:'The first noncreature spell you cast each turn is cast twice.'},
+ twin:{name:'Emblem of Echoes',g:'∞',r:'R',text:'The first instant or sorcery you cast each turn is cast twice.'},
  surge:{name:'Emblem of the Surge',g:'⚡',r:'R',text:'You get 1 extra energy on odd turns (1st, 3rd, 5th...).'},
  furnace:{name:'Emblem of the Furnace',g:'✹',r:'M',text:'Once you have played 2 cards in a turn, your spells deal double damage and everything else deals 50% more. Each hit you take deals 1 extra.',gain:'Once you have played 2 cards in a turn, your spells deal double damage and everything else deals 50% more.',cost:'Each hit you take deals 1 extra.'},
  season:{name:'Emblem of Doubling Season',g:'❖',r:'M',text:'At the start of your turn, summon a 1/1 token. Whenever you summon a token, summon a second one. Your tokens have haste.'},
@@ -1492,7 +1492,8 @@ const EASY=[['diregraf','diregraf'],['interloper','diregraf'],['crawler','crawle
 const HARD=[['ironsmith'],['patrol','interloper'],['patrol','geist'],['cultist','diregraf','diregraf'],['patrol','crawler','crawler']];
 // Enemies get tougher as you climb: depth 0 at the bottom of the map, up to 2 near the top.
 // Without formation, enemies carry 1.2x life to pay for the act-start item pick.
-const FOE_HP=typeof PW_FOEHP!=='undefined'?PW_FOEHP:FORM?1:1.2;
+// 0.9 with formation since every enemy now acts each turn (audit bug 13).
+const FOE_HP=typeof PW_FOEHP!=='undefined'?PW_FOEHP:FORM?.9:1;
 // With formation, Act 1 enemies carry the item-pick tax locally instead.
 const actHp=()=>FORM&&run&&(run.act||1)===1?1.2:1;
 const foe=(key,depth=0)=>{const d=E[key];const hp=Math.round(FOE_HP*actHp()*d.hp*(d.rank==='elite'?1.1:1)*Math.min(d.rank==='elite'?1.35:9,1+(d.rank?.3:.3)*depth));return {id:++uid,key,name:d.name,g:d.g,hp,max:hp,pow:d.pow,fly:!!d.fly,rank:d.rank||'',i:0,buff:d.rank==='elite'?depth:Math.floor(depth*.75),shield:0,loyalty:d.loyalty||0,zombie:!!d.zombie,token:!!d.token}};
@@ -1544,7 +1545,7 @@ function startFight(keys,kind,depth=0){
  view='battle'; startTurn(); render();
 }
 function startTurn(){
- c.turn++; c.enemies.forEach(e=>{e.brand=0}); c.allies.forEach(a=>{a.dmg=0;a.temp=0;a.temp1=0;a.tough4=0;if(a.lifelinkTemp){a.lifelink=0;a.lifelinkTemp=0}a.sick=false;a.tapped=false;a.swung=false;a.attacks=0});
+ c.turn++; c.enemies.forEach(e=>{e.brand=0}); c.allies.forEach(a=>{a.dmg=0;a.temp=0;a.temp1=0;a.tough4=0;if(a.lifelinkTemp){a.lifelink=0;a.lifelinkTemp=0}a.sick=false;a.tapped=false;a.swung=false;a.attacks=0;a.extra=0});
  c.twinned=0;c.legioned=0;c.embered=0;c.healedTurn=0;c.ward=0;c.turnStart=c.stats.dealt;c.juice=[];
  for(const m of c.allies.filter(a=>a.mob)){const n=c.allies.filter(a=>a.goblin).length;for(let k=0;k<n&&roomFor('Goblin token');k++)summon({p:1,t:1,goblin:1,sick:0},'Goblin token')}
  if(run.emblems.includes('season'))summon({p:1,t:1},'Spirit token');
@@ -1561,15 +1562,19 @@ const pow=a=>a.p+a.temp+(a.temp1||0)+2*lords(a)+marshals(a), tough=a=>a.t+a.temp
 // Granted haste is read from the board now, so summon order and a lord leaving both count.
 const granted=a=>a.goblin&&c.allies.some(x=>x.dmg<tough(x)&&(x.chief||(x.lord&&x!==a)));
 const hasty=a=>a.haste||granted(a);
-// One attack per turn, plus at most one extra from an untap effect.
-const ready=a=>(!a.sick||hasty(a))&&!a.tapped&&!a.defender&&!c.busy&&(a.attacks||0)<2;
+// One attack per turn, plus at most one extra from an untap effect. Vigilance only means it stays untapped to block.
+const ready=a=>(!a.sick||hasty(a))&&!a.tapped&&!a.defender&&!c.busy&&(a.attacks||0)<1+(a.extra?1:0);
+const untap=a=>{if(a.attacks)a.extra=1;a.tapped=false};
+// Akroma's grant is read from the board, so it ends when she dies.
+const akr=a=>!!(a.flying&&c&&c.allies.some(x=>x.akroma&&x!==a&&x.dmg<tough(x)));
+const fst=a=>!!a.first||akr(a),llk=a=>!!a.lifelink||akr(a);
 const alive=()=>c.enemies.filter(e=>e.hp>0);
 const solo=()=>alive().length===1?alive()[0]:null;
 function hit(e,n){if(!e||e.hp<=0||n<=0)return 0;if(c&&c.font&&!c.busy){n+=c.font;juice(`+${c.font} Agony`);c.font=0}if(run.emblems.includes('font')&&run.hp<=run.max*.3){n=Math.ceil(n*1.5);juice('×1.5 Agony',1)}if(run.emblems.includes('furnace')&&c&&c.chain>=2){n=c.casting?n*2:Math.ceil(n*1.5);juice(c.casting?'×2 Furnace':'×1.5 Furnace',1)}if(e.shield){const s=Math.min(e.shield,n);e.shield-=s;n-=s}e.hp-=n;e.pop=(e.pop||0)+n;if(E[e.key].phase2&&!e.phase2&&e.hp>0&&e.hp<=e.max/2){e.phase2=true;e.i=0;e.shield+=10;if(c){c.callout='Bloodlord form';c.log='Sorin drops below half: he raises a 10 shield and his attacks grow. Burst through it or outlast it.'}}if(c&&!c.busy){c.burst=(c.burst||0)+n;c.stats.dealt+=n}return n}
 // In a fight, healing is capped per turn so life gain sustains a plan instead of replacing one.
 const HEAL_CAP=5;
 function heal(n){if(n<=0)return;if(run.emblems.includes('signet')&&!(c&&view==='battle'))return;if(c&&view==='battle'){n=Math.min(n,HEAL_CAP-(c.healedTurn||0));if(n<=0)return;c.healedTurn=(c.healedTurn||0)+n}run.hp=Math.min(run.max,run.hp+n);run.heal=(run.heal||0)+n;
- if(c&&view==='battle'){c.allies.forEach(a=>{if(a.pride){a.p++;a.t++}});if(c.allies.some(a=>a.thune)&&c.thuneT!==c.turn){c.thuneT=c.turn;c.allies.forEach(a=>{a.p++;a.t++})}if(run.emblems.includes('beacon')&&!c.beaconing){c.beaconing=1;const bn=c.beaconT!==c.turn?2:1;c.beaconT=c.turn;c.enemies.forEach(e=>hit(e,bn));c.beaconing=0}}}
+ if(c&&view==='battle'){c.allies.forEach(a=>{if(a.pride){a.p++;a.t++}});const th=c.allies.filter(a=>a.thune&&a.dmg<tough(a)).length;if(th&&c.thuneT!==c.turn){c.thuneT=c.turn;c.allies.forEach(a=>{a.p+=th;a.t+=th})}if(run.emblems.includes('beacon')&&!c.beaconing){c.beaconing=1;const bn=c.beaconT!==c.turn?2:1;c.beaconT=c.turn;c.enemies.forEach(e=>hit(e,bn));c.beaconing=0}}}
 // Shield (Block in StS): soaks enemy damage before life until your next turn. Life you pay yourself ignores it.
 function shield(n){if(!c||n<=0)return;c.ward=(c.ward||0)+n;juice(`◈ +${n} Shield`)}
 function hurt(n,why){if(n<=0)return;if(run.emblems.includes('furnace'))n+=1;if(c&&view==='battle'&&c.busy&&c.ward){const a=Math.min(c.ward,n);c.ward-=a;n-=a;c.warded=(c.warded||0)+a;if(n<=0)return}if(typeof PW_DMG!=='undefined')PW_DMG[why||'other']=(PW_DMG[why||'other']||0)+n;run.hp-=n;run.pop=(run.pop||0)+n;if(c&&view==='battle'&&!c.busy&&run.emblems.includes('font'))c.font=(c.font||0)+1}
@@ -1583,15 +1588,14 @@ function summon(base,name){
   a.sick=!a.haste; c.allies.push(a);
  if(run.emblems.includes('season')&&/token|Elemental/.test(name)){a.haste=1;a.sick=false}
  if(run.emblems.includes('season')&&/token|Elemental/.test(name)&&!c.seasoning){c.seasoning=1;summon({...base},name);c.seasoning=0}
- if(a.goblin&&run.emblems.includes('legion')&&!c.legioned&&name!=='Goblin token'){c.legioned=1;summon({p:2,t:1,goblin:1,haste:1},'Goblin token')}
+ if(a.goblin&&run.emblems.includes('legion')&&!c.legioned&&!base.legion){c.legioned=1;summon({p:2,t:1,goblin:1,haste:1,legion:1},'Goblin token')}
  if(c.wings)a.flying=1;
  if(c.tremors)c.enemies.forEach(e=>hit(e,c.tremors));
  c.allies.forEach(x=>{if(x!==a&&x.warden)heal(x.warden)});
  if(c.crusade)c.allies.forEach(x=>{x.p+=c.crusade});
  if(a.titan)alive().forEach(e=>hit(e,a.titan));
- else if(c.allies.some(x=>x.titan&&x!==a))alive().forEach(e=>hit(e,1));
- if(c.allies.some(x=>x.akroma))c.allies.forEach(x=>{if(x.flying){x.first=1;x.lifelink=1}});
- if(a.drawOn)draw(1);
+ c.allies.filter(x=>x.titan&&x!==a&&x.dmg<tough(x)).forEach(()=>alive().forEach(e=>hit(e,1)));
+  if(a.drawOn)draw(1);
  if(a.squire)summon({p:1,t:1,soldier:1},'Soldier token');
 }
 function canPlay(card){
@@ -1616,7 +1620,7 @@ function play(i,t){
   if(run.emblems.includes('twin')&&!c.twinned&&!d.power){c.twinned=1;c.callout='Echo!';juice('×2 Echo',1);
    const t2=d.aim==='enemy'?(t&&t.hp>0?t:alive()[0]):d.aim==='ally'?(c.allies.includes(t)?t:c.allies[0]):t;
    if(d.e==='X')hit(t2,c.lastX*(card.foil?4:3));else if(t2||!d.aim)d.play(card.foil,t2)}
-  if(run.emblems.includes('paradox'))c.allies.forEach(a=>{a.tapped=false;a.p++;a.t++});
+  if(run.emblems.includes('paradox'))c.allies.forEach(a=>{untap(a);a.p++;a.t++});
   for(const a of [...c.allies]){if(a.snipe)c.enemies.forEach(e=>hit(e,a.snipe));if(a.pyro)summon({p:1,t:1,haste:1},'Elemental')}
  }
  c.hand.splice(i,1);if(!d.power)c.discard.push(card);
@@ -1633,10 +1637,10 @@ function attack(a,t){
  if(!ready(a))return;
  if(!t){t=solo();if(!t){c.pending={kind:'atk',id:a.id,aim:'enemy'};c.log=`${a.name}: choose an enemy to attack.`;return render()}}
  c.pending=null;
- const dmg=pow(a)+(a.raid||0), eFirst=E[t.key].first&&!a.first;
+ const dmg=pow(a)+(a.raid||0), eFirst=E[t.key].first&&!fst(a);
  const back=()=>{if(a.flying&&!t.fly)return;a.dmg+=t.pow;if(E[t.key].feed&&a.dmg>=tough(a))t.pow++};
  if(eFirst){back();if(a.dmg>=tough(a)){a.tapped=true;c.log=`${a.name} is struck down by first strike.`;return after()}}
- if(a.first){deal(a,t,dmg);if(t.hp>0&&!eFirst)back()}
+ if(fst(a)){deal(a,t,dmg);if(t.hp>0&&!eFirst)back()}
  else{deal(a,t,dmg);if(!eFirst)back()}
  if(t.rank==='boss')t.loyalty=Math.max(0,t.loyalty-1);
  if(!a.vigilance)a.tapped=true; a.swung=true; a.attacks=(a.attacks||0)+1;
@@ -1645,7 +1649,7 @@ function attack(a,t){
 function deal(a,t,n){
  const before=t.hp; let done=hit(t,n);
  if(a.deathtouch){if(!t.rank)t.hp=0;else done+=hit(t,3)}
- if(a.lifelink)heal(done);
+ if(llk(a))heal(done);
  if(a.trample&&t.hp<0){const next=alive().find(e=>e!==t);if(next)hit(next,-t.hp)}
  return before-t.hp;
 }
@@ -1677,6 +1681,7 @@ function cleanup(){
  }
 }
 function after(){
+ if(run.hp<=0){run.hp=0;c.busy=false;view='over';return render()}
  const before=c.enemies.filter(e=>e.hp>0).length+c.enemies.filter(e=>e.hp<=0).length;
  const dying=c.enemies.filter(e=>e.hp<=0);const over=dying.reduce((m,e)=>Math.max(m,-e.hp),0);
  cleanup();
@@ -1694,7 +1699,7 @@ function endTurn(){if(c)c.arrange=false;
  {const t=c.stats.dealt-c.turnStart;c.stats.bestTurn=Math.max(c.stats.bestTurn||0,t);run.bestTurn=Math.max(run.bestTurn||0,t)}
  c.discard.push(...c.hand);c.hand=[];
  c.busy=true;c.log='Enemy turn…';render();
- setTimeout(enemyTurn,stepMs()/2);
+ later(enemyTurn,stepMs()/2);
 }
 // Untapped allies block. Enemy flyers can only be blocked by flying or reach allies.
 // M3.5 formation (behind a flag): the front ally (last in line, nearest the enemy) blocks first,
@@ -1750,16 +1755,19 @@ function step(){
  c.enemies.forEach(e=>e.acting=false);
  if(run.hp<=0){run.hp=0;c.busy=false;view='over';return render()}
  if(!c.queue.length){c.busy=false;if(!c.enemies.length)return win();startTurn();if(!c.enemies.length)return win();c.log='Your turn.';return render()}
- const e=c.enemies.find(x=>x.id===c.queue.shift());
+ const qid=c.queue.shift(),e=c.enemies.find(x=>x.id===qid);
  if(!e||e.hp<=0)return step();
- if(e.pacified&&PACIFIED.includes(intentOf(e)[0])){e.i++;if(e.rank){e.pacified=0;e.pacImmune=1}c.log=`${e.name} is pacified and can't attack${e.rank?'. It shakes the Pacifism off':''}.`;render();return setTimeout(step,stepMs())}
+ if(e.pacified&&PACIFIED.includes(intentOf(e)[0])){e.i++;if(e.rank){e.pacified=0;e.pacImmune=1}c.log=`${e.name} is pacified and can't attack${e.rank?'. It shakes the Pacifism off':''}.`;render();return later(step,stepMs())}
  e.acting=true; c.log=act(e); cleanup(); render();
  if(!c.enemies.length&&run.hp>0){c.queue=[]}
- setTimeout(step,stepMs());
+ later(step,stepMs());
 }
+// Timers belong to the fight that scheduled them, so New run or a new fight drops stale ones.
+const later=(f,ms)=>{const own=c;setTimeout(()=>{if(c&&c===own&&view==='battle')f()},ms)};
 let STEP_MS=600;const stepMs=()=>c&&c.fast?120:STEP_MS;
 function offerEmblems(){const out=[];const left=k=>!run.emblems.includes(k)&&!out.includes(k)&&!BOSSEMB[k]&&forHero(k);
  for(let n=0;n<3;n++){const x=rng(),want=x<.12?'M':x<.34?'R':undefined;let pool=Object.keys(EMB).filter(k=>left(k)&&EMB[k].r===want);if(!pool.length)pool=Object.keys(EMB).filter(left);if(pool.length)out.push(pick(pool))}return out}
+const shrinePool=()=>Object.keys(EMB).filter(k=>!run.emblems.includes(k)&&!EMB[k].r&&forHero(k));
 const PRICE={C:25,U:40,R:70,M:110};
 const mythOr=k=>{const m=POOL.filter(x=>C[x].r==='M');return m.length&&rng()<.1?pick(m):k};
 function makeShop(){const pickR=r=>shuffle(POOL.filter(k=>C[k].r===r));const cards=[...pickR('C').slice(0,2),...pickR('U').slice(0,2),mythOr(pickR('R')[0])];
@@ -1773,7 +1781,9 @@ function rollCard(minRare){const x=rng(),rare=.04+run.pity+(minRare?.2:0);let r;
  const pl=POOL.filter(k=>C[k].r===r);if(r==='U'&&pl.includes('eagle'))pl.push('eagle','eagle');
  return pick(pl)}
 function win(){
- run.fights++; if(run.emblems.includes('hearth'))heal(4); run.loyalty=Math.min(8,c.loyalty+1);
+ if(run.hp<=0){run.hp=0;c.busy=false;view='over';return render()}
+ {const t=c.stats.dealt-c.turnStart;c.stats.bestTurn=Math.max(c.stats.bestTurn||0,t);run.bestTurn=Math.max(run.bestTurn||0,t)}
+ run.fights++; if(run.emblems.includes('hearth')){const h=Math.min(4,run.max-run.hp);run.hp+=h;run.heal=(run.heal||0)+h} run.loyalty=Math.min(8,c.loyalty+1);
  if(c.kind==='boss'){if((run.act||1)<ACTS.length-1)return nextAct('');view='victory';return render()}
  const cards=[];let guard=0;while(cards.length<3&&guard++<50){const k=rollCard(c.kind==='elite'&&cards.length===0?'R':false);if(!cards.includes(k))cards.push(k)}
  const embs=c.kind==='elite'?offerEmblems():[];
@@ -1786,7 +1796,8 @@ function forecast(){
  const dmg=new Map(c.allies.map(a=>[a.id,a.dmg]));let you=0,over=0;const dead=new Set(),took=new Map();
  for(const e of alive()){const [t,v]=intentOf(e);if(e.pacified&&PACIFIED.includes(t))continue;let n=0;
   if((t==='atk'||t==='annihilate')&&e.brand&&e.hp+(e.shield||0)<=e.brand)continue;
-  if(t==='atk')n=v+e.buff;else if(t==='drain'){you+=v;continue}else if(t==='sac'){if(c.enemies.some(x=>x!==e&&x.hp>0&&!x.rank)){you+=v;continue}n=2}else if(t==='annihilate')n=v+e.buff;else if(t==='sweep'){c.allies.forEach(a=>{const d2=dmg.get(a.id)+v;dmg.set(a.id,d2);if(d2>=tough(a))dead.add(a.id)});continue}else continue;
+  const rage=FORM&&E[e.key].enrage||0;
+  if(t==='atk')n=v+e.buff+rage;else if(t==='drain'){you+=v;continue}else if(t==='sac'){if(c.enemies.some(x=>x!==e&&x.hp>0&&!x.rank)){you+=v;continue}n=2}else if(t==='annihilate')n=v+e.buff+rage;else if(t==='sweep'){c.allies.forEach(a=>{const d2=dmg.get(a.id)+v;dmg.set(a.id,d2);if(d2>=tough(a))dead.add(a.id)});continue}else continue;
   const can=a=>!a.tapped&&dmg.get(a.id)<tough(a)&&!a.noblock&&(!e.fly||a.flying||a.reach);
   const b=pickBlocker(e,can);
   if(!b){you+=n;continue}const room=tough(b)-dmg.get(b.id);
@@ -1798,7 +1809,7 @@ function forecast(){
 // Pacifism stops attack intents only; buffs, summons and drains still happen.
 const PACIFIED=['atk','annihilate','sac'];
 const intentLabel=e=>{if(e.pacified&&PACIFIED.includes(intentOf(e)[0]))return `<span class="intent stun" title="Pacified: it can't attack">☮ can't attack</span>`;const [t,v,loy]=intentOf(e);const L='';
- if(t==='atk'){const by=FORM&&E[e.key].bypass,tr=FORM&&E[e.key].trample;return `<span class="intent${by?' bypass':''}${FORM&&E[e.key].enrage?' enrage':''}" title="${by?'Bypass: skips your line and hits you, unless an ally guards against it':e.fly?'Flying: only your flying or reach allies can block it':FORM?'Hits your front untapped blocker, or you'+(tr?'. Trample: a blocker that dies doesn\'t stop this hit':''):'Hits your first untapped blocker, or you'}">${L}⚔ ${v+e.buff}${by?' ⤳':e.fly?' ↷':''}${tr?' ⇶':''}${FORM&&E[e.key].enrage?`<span class="grow">+${E[e.key].enrage}/turn</span>`:''}</span>`}
+ if(t==='atk'){const by=FORM&&E[e.key].bypass,tr=FORM&&E[e.key].trample;return `<span class="intent${by?' bypass':''}${FORM&&E[e.key].enrage?' enrage':''}" title="${by?'Bypass: skips your line and hits you, unless an ally guards against it':e.fly?'Flying: only your flying or reach allies can block it':FORM?'Hits your front untapped blocker, or you'+(tr?'. Trample: a blocker that dies doesn\'t stop this hit':''):'Hits your first untapped blocker, or you'}">${L}⚔ ${v+e.buff+(FORM&&E[e.key].enrage||0)}${by?' ⤳':e.fly?' ↷':''}${tr?' ⇶':''}${FORM&&E[e.key].enrage?`<span class="grow">+${E[e.key].enrage}/turn</span>`:''}</span>`}
  if(t==='drain')return `<span class="intent drain" title="Hits ${HERO.short} directly and heals itself">${L}✦ drain ${v}</span>`;
  if(t==='buff')return `<span class="intent buff" title="Its attacks get stronger">▲ +${v}</span>`;
  if(t==='guard')return `<span class="intent buff" title="Absorbs the next ${v} damage">◈ guard ${v}</span>`;
@@ -1820,7 +1831,7 @@ function enemyInfo(e){const d=E[e.key];const tr=[e.pacified&&(e.rank?'Pacified: 
  return `<div class="inspect" role="dialog" aria-label="${e.name}"><b>${e.name}</b><span class="muted"> · ${e.rank==='boss'?'Planeswalker':e.rank==='elite'?'Legendary':'Minion'} · ⚔ ${e.pow+e.buff} · ♥ ${Math.max(0,e.hp)}/${e.max}${e.shield?` · ◈ ${e.shield}`:''}</span><p>Pattern: ${list}</p>${tr.length?`<p>${tr.join(' ')}</p>`:''}<button class="btn" data-act="closeinspect">Close</button></div>`}
 const popOf=o=>{let s='';if(o.pop)s+=`<span class="pop${o.pop>=8?' big':''}" style="font-size:${(1.1+Math.min(o.pop,20)/14).toFixed(2)}rem">−${o.pop}</span>`;if(o.heal)s+=`<span class="pop heal">+${o.heal}</span>`;o.pop=0;o.heal=0;return s};
 const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Common',U:'Uncommon',R:'Rare',M:'Mythic',K:'Curse'}[d.r];return `<button class="card${card.foil?' foil':''}" data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" ${attrs}><span class="head"><b>${d.name}${card.foil?' ✦':''}</b><span class="cost">${c&&view==='battle'?costOf(card):d.e}</span></span><span class="pic">${d.g}</span><span class="kind">${d.r==='K'?d.kind:d.kind+' · '+r}</span><span>${d.text(card.foil)}</span></button>`};
-const kws=a=>['haste','flying','reach','first','vigilance','deathtouch','lifelink','trample','defender'].filter(k=>a[k]).map(k=>k==='first'?'first strike':k).join(' · ');
+const kws=a=>['haste','flying','reach','first','vigilance','deathtouch','lifelink','trample','defender'].filter(k=>a[k]||(k==='first'||k==='lifelink')&&akr(a)).map(k=>k==='first'?'first strike':k).join(' · ');
 
 function topBar(){
  const counts={};run.deck.forEach(x=>{const k=C[x.key].name+(x.foil?' ✦':'');counts[k]=(counts[k]||0)+1});
@@ -1889,7 +1900,7 @@ function eventView(){
   <button class="option" data-act="pactcurse">${reward.rare?embSvg(reward.rare):''}<b>Take the curse${reward.rare?': '+EMB[reward.rare].name:''}</b>${embBody(reward.rare)}<span class="costline">Cost: a Doubt curse joins your deck</span>${cardHtml({key:'doubt'}).replace(/^<button/,'<span').replace(/<\/button>$/,'</span>')}</button>
   <button class="option" data-act="leave"><b>Refuse</b><span class="muted">Nothing happens.</span></button></div></section>`;
  if(reward.ev==='shrine')return `<section class="screen"><h2>The crossroads shrine</h2><p class="note">A shrine to Avacyn, cracked down the middle. Something in the stone still answers prayers, for a price.</p><div class="choices">
-  <button class="option" data-act="blood" ${run.emblems.length>=Object.keys(EMB).length?'disabled':''}><b>Offer blood</b><span class="muted">Lose 10 life. Gain a random emblem.</span></button>
+  <button class="option" data-act="blood" ${shrinePool().length?'':'disabled'}><b>Offer blood</b><span class="muted">Lose 10 life. Gain a random emblem.</span></button>
   <button class="option" data-act="burn"><b>Burn a card</b><span class="muted">Remove one card from your deck.</span></button>
   <button class="option" data-act="leave"><b>Walk on</b><span class="muted">Nothing happens.</span></button></div></section>`;
  if(reward.ev==='cathar')return `<section class="screen"><h2>A wounded cathar</h2><p class="note">A cathar of Thraben sits against a gravestone, his blade across his knees. The thing that hurt him is still out there.</p><div class="choices">
@@ -1926,7 +1937,7 @@ function actStart(){const out=[];const left=k=>!run.emblems.includes(k)&&!out.in
  run.startPick=out;if(!out.length){run.startPick=null;return toMap()}view='actstart';reward=null;render()}
 function actStartView(){const A=ACTS[run.act||1];return `<section class="screen actstart" data-actnum="${run.act||1}"><h2>Act ${A.num}: ${A.name}</h2>${(run.act||1)>1?`<p>${E[ACTS[run.act-1].boss].name} is defeated. You are healed to full.</p>`:''}<p>Before you set out, take one item. It lasts the whole run.</p><div class="choices">${run.startPick.map(k=>`<button class="option" data-act="startemb" data-k="${k}" data-rar="${EMB[k].r||'C'}">${embSvg(k)}<b>${EMB[k].name}</b><span class="muted">${EMB[k].gain||EMB[k].text}</span>${EMB[k].cost?`<span class="costline">Cost: ${k==='contract'?`max life ${run.max} → ${run.max-4}`:EMB[k].cost}</span>`:''}<span class="rar">${{M:'Mythic',R:'Rare',B:'Boss'}[EMB[k].r]||'Common'}</span></button>`).join('')}</div></section>`}
 function heroesView(){
- return `<header class="top"><h1>Planeswalk</h1><span class="spacer"></span>${inApp?'<a class="btn" href="/#play">Exit</a>':''}</header><section class="screen heroes"><h2>Choose your planeswalker</h2><p>Each hero has their own starter deck, card pool, abilities and emblems.</p><div class="choices">${Object.values(HEROES).map(h=>`<button class="option hero-pick" data-act="hero" data-k="${h.key}" data-n="${h.name}"><b>${h.name}</b><span class="muted">${h.color} · ${h.life} life · ${h.theme}</span><span class="muted">${h.plusLabel()} · ${h.minusLabel} · ${h.ultLabel}</span></button>`).join('')}</div><button class="btn formtoggle${FORM?' chosen':''}" data-act="formtoggle" title="Beta rules: your front ally blocks first, and you can rearrange your line">${FORM?'✓ Formation blocking (beta) is on':'Try formation blocking (beta)'}</button></section>`;
+ return `<header class="top"><h1>Planeswalk</h1><span class="spacer"></span>${inApp?'<a class="btn" href="/#play">Exit</a>':''}</header><section class="screen heroes"><h2>Choose your planeswalker</h2><p>Each hero has their own starter deck, card pool, abilities and emblems.</p><div class="choices">${Object.values(HEROES).map(h=>`<button class="option hero-pick" data-act="hero" data-k="${h.key}" data-n="${h.name}"><b>${h.name}</b><span class="muted">${h.color} · ${h.life} life · ${h.theme}</span><span class="muted">${h.plusLabel()} · ${h.minusLabel} · ${h.ultLabel}</span></button>`).join('')}</div><button class="btn formtoggle${FORM?' chosen':''}" data-act="formtoggle" title="Formation: your front ally blocks first, and you can rearrange your line. Turn it off for the old blocking rules.">${FORM?'✓ Formation blocking is on':'Formation blocking is off (old rules)'}</button></section>`;
 }
 function endView(won){
  return `<section class="screen"><h2>${won?E[ACTS[run.act||1].boss].name.split(',')[0]+' falls':HERO.short+' falls'}</h2><p>${won?`You cleared ${(run.act||1)>1?'Innistrad and Zendikar':'Innistrad'} with ${run.deck.length} cards and ${run.emblems.length} emblems, after ${run.fights} fights. Biggest hit: ${run.best}. Best turn: ${run.bestTurn||0} damage.`:`The run ends after ${run.fights} fights. Biggest hit: ${run.best}. Best turn: ${run.bestTurn||0} damage. Try a new seed, or replay this one.`}</p>
@@ -1989,7 +2000,7 @@ document.getElementById('app').addEventListener('click',ev=>{
  if(a==='foilpick'){reward={foil:1};return render()}
  if(a==='restburn'){reward={removing:1};return render()}
  if(a==='foil'){const x=run.deck.find(d=>d.id===+b.dataset.id);if(x)x.foil=true;return toMap()}
- if(a==='blood'){run.hp-=10;if(run.hp<=0){run.hp=0;view='over';return render()}const left=Object.keys(EMB).filter(k=>!run.emblems.includes(k)&&!EMB[k].r&&forHero(k));if(left.length)run.emblems.push(pick(left));return toMap()}
+ if(a==='blood'){if(!shrinePool().length)return;run.hp-=10;if(run.hp<=0){run.hp=0;view='over';return render()}const left=shrinePool();if(left.length)run.emblems.push(pick(left));return toMap()}
  if(a==='burn'){reward.removing=1;return render()}
  if(a==='remove'){run.deck=run.deck.filter(d=>d.id!==+b.dataset.id);return toMap()}
  if(a==='loot'){run.deck.push(mk(pick(POOL.filter(k=>C[k].r==='C'))));return toMap()}
@@ -2003,7 +2014,7 @@ function evChoice(a){
  if(a==='hedron'){if(hurtRun(8))return;const xs=run.deck.filter(d=>!d.foil&&C[d.key]&&C[d.key].kind!=='Curse');if(xs.length)pick(xs).foil=true}
  if(a==='dig'){if(rng()<.5)run.deck.push(mk(pick(POOL.filter(k=>C[k].r==='R'))));else if(hurtRun(10))return}
  return toMap()}
-const inApp=typeof window!=='undefined'&&window.self===window.top&&/planeswalk\.html$/.test(location.pathname);
+const inApp=typeof window!=='undefined'&&window.self===window.top&&/\/planeswalk(\.html)?\/?$/.test(location.pathname);
 if(!resumeRun())newRun();
 </script>
 
@@ -2029,7 +2040,7 @@ if(!resumeRun())newRun();
    if(typeof c==='undefined'||!c)return null;const id=+el.dataset.id;
    if(el.closest('.side.foe')&&typeof enemyInfo==='function'){const e=c.enemies.find(x=>x.id===id);return e?panel(enemyInfo(e)):null}
    if(el.classList.contains('hero')){const ab=[...document.querySelectorAll('.controls [data-act=plus],.controls [data-act=minus],.controls [data-act=ult]')].map(b=>esc(b.textContent.trim()));
-    return panel(`<b>Chandra</b><span class="muted"> · Planeswalker · Loyalty ${esc(c.loyalty)}</span>${ab.length?`<p>${ab.join('<br>')}</p>`:''}<p>Loyalty carries between fights.</p>`)}
+    return panel(`<b>${esc(typeof HERO!=='undefined'&&HERO?HERO.name:'Planeswalker')}</b><span class="muted"> · Planeswalker · Loyalty ${esc(c.loyalty)}</span>${ab.length?`<p>${ab.join('<br>')}</p>`:''}<p>Loyalty carries between fights.</p>`)}
    if(el.classList.contains('ally')){const a=c.allies.find(x=>x.id===id);if(!a)return null;
     const d=typeof C!=='undefined'&&Object.values(C).find(x=>x.name===a.name);const kw=typeof kws==='function'?kws(a):'';
     const st=a.sick?'Just arrived: can block, attacks next turn.':a.tapped?'Attacked this turn: cannot block.':'Ready to attack.';
@@ -2071,15 +2082,12 @@ if(!resumeRun())newRun();
   if(closeZoom(true))return;
   const deck=document.querySelector('details.deck[open]');if(deck){deck.open=false;return guard()}
   const insp=document.querySelector('[data-act="closeinspect"]');if(insp){insp.click();return guard()}
-  const inRun=typeof run!=='undefined'&&run&&typeof view!=='undefined'&&!['victory','defeat'].includes(view);
+  const inRun=typeof run!=='undefined'&&run&&typeof view!=='undefined'&&!['victory','defeat','over'].includes(view);
   if(inRun&&!confirm('Leave Planeswalk? Your run is saved, so you can pick it up later.'))return guard();
   const A=window.Capacitor?.Plugins?.App;if(A?.exitApp)A.exitApp();else history.back();
  });
 
- // New run in the top bar throws the current run away: ask first, on every orientation.
- app.addEventListener('click',e=>{const b=e.target.closest('.top [data-act=new]');if(!b)return;
-  const inRun=typeof run!=='undefined'&&run&&typeof view!=='undefined'&&!['victory','defeat','over'].includes(view);
-  if(inRun&&!confirm('Abandon this run? Your progress in it will be lost.')){e.stopImmediatePropagation();e.preventDefault()}},true);
+ // New run asks once, in the game's own handler (it only asks when the run has progress).
 
  // Haptics on the big moments, read from what the game renders.
  const infoBtn=()=>{const top=app.querySelector('.top');if(!top||top.querySelector('.pw-infobtn'))return;
