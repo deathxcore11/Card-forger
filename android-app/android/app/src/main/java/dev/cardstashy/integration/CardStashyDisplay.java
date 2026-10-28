@@ -62,4 +62,5 @@ public class CardStashyDisplay extends Plugin {
         for (Display.Mode m : display.getSupportedModes())
             if (m.getPhysicalWidth() == now.getPhysicalWidth() && m.getPhysicalHeight() == now.getPhysicalHeight() && m.getRefreshRate() > best.getRefreshRate()) best = m;
         return best.getModeId();
+    }
 }
