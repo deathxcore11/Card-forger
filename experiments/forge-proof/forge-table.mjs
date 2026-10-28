@@ -23,6 +23,37 @@ const MANA_ORDER=['W','U','B','R','G','C'];
 // to the key sentence of the bundled Comprehensive Rules entry, loaded on first use.
 const KEYWORD_HINTS={flying:'Can only be blocked by creatures with flying or reach.',reach:'Can block creatures with flying.',haste:'Can attack and use {T} abilities the turn it arrives.',vigilance:'Attacking doesn\u2019t tap it.',trample:'Combat damage beyond what kills its blockers hits the player.',deathtouch:'Any damage it deals to a creature destroys that creature.',lifelink:'Damage it deals also gains you that much life.','first strike':'Deals combat damage before creatures without first strike.','double strike':'Deals first-strike and regular combat damage.',menace:'Can\u2019t be blocked except by two or more creatures.',hexproof:'Can\u2019t be the target of your opponents\u2019 spells or abilities.',shroud:'Can\u2019t be the target of any spell or ability.',indestructible:'Lethal damage and \u201cdestroy\u201d effects don\u2019t destroy it.',defender:'Can\u2019t attack.',flash:'Can be cast any time you could cast an instant.',ward:'Opponents\u2019 spells and abilities that target it are countered unless they pay the ward cost.',prowess:'Gets +1/+1 until end of turn whenever you cast a noncreature spell.',protection:'Can\u2019t be blocked, targeted, dealt damage, enchanted or equipped by anything with that quality.',infect:'Deals damage to creatures as -1/-1 counters and to players as poison counters.',fear:'Can only be blocked by artifact or black creatures.',intimidate:'Can only be blocked by artifact creatures or creatures that share a color with it.',flanking:'Creatures without flanking that block it get -1/-1 until end of turn.',changeling:'Is every creature type.',toxic:'Combat damage to a player also gives them that many poison counters.'};
 const COUNTER_NAMES={P1P1:'+1/+1',M1M1:'\u22121/\u22121',LOYALTY:'Loyalty',DEFENSE:'Defense',CHARGE:'Charge',LORE:'Lore',TIME:'Time',SHIELD:'Shield',STUN:'Stun',OIL:'Oil',POISON:'Poison'};
+// The host's glow is only as good as its payment check, which keeps a card lit whenever it can't be
+// sure (one unusual cost effect anywhere on the table is enough). A hand card also stays dark when your
+// mana plainly can't pay it: a fixed cost, nothing on the table that lowers or replaces costs, and every
+// untapped source of yours readable. Anything unclear keeps the glow; Forge still validates every play.
+const COST_BENDERS=/\bcosts?\b[^.]*\bless\b|\breduc|without paying|rather than pay|alternative|convoke|delve|improvise|affinity|evoke|emerge|offering|assist|spectacle|surge|prowl|\bdash\b|blitz|madness|foretell|\bplot\b|bestow|mutate|overload|prototype|flashback|escape|unearth|cycling|channel|ninjutsu|morph|disguise|\bwarp\b|sneak|freerunning|impending|mayhem|from your hand|discard this card|exile this card|reveal this card/i;
+const MANA_SYMBOL=/^(?:\d+|[WUBRGC])$/;
+function manaSources(card){
+ const lines=String(card.text||'').split(/\n|(?<=\.)\s+(?=[A-Z{])/).map(l=>l.trim().replace(/^\((.*)\)$/,'$1')).filter(l=>/\badd\b/i.test(l));
+ if(!lines.length){if(!card.types?.includes('Land'))return [];const basic={Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'},colors=Object.entries(basic).filter(([t])=>new RegExp(`\\b${t}\\b`).test(card.type||'')).map(([,c])=>c);return colors.length?[colors.map(c=>[c])]:null;}
+ const options=[];
+ for(const line of lines){const [cost,effect]=line.split(/:\s*/,2);if(effect===undefined)return null;
+  const parts=cost.split(/,\s*/).map(x=>x.trim());if(!parts.every(x=>x==='{T}'||/^sacrifice (?:this|~|it|cardname)/i.test(x)||/^sacrifice /i.test(x)&&x.toLowerCase().includes(String(card.name).toLowerCase())))return null;
+  if(parts.includes('{T}')&&card.summoningSick&&card.types?.includes('Creature'))continue;
+  const add=effect.replace(/\.?\s*(?:\(.*\))?$/,'').match(/^add (.+)$/i);if(!add)return null;const what=add[1].trim();
+  if(/^one mana of any color$/i.test(what)){options.push(['WUBRG'.split('')]);continue;}
+  const alts=what.split(/,\s*(?:or\s+)?|\s+or\s+/);const parsed=alts.map(a=>(a.match(/^(?:\{[WUBRGC]\})+$/)?a.match(/[WUBRGC]/g):null));if(parsed.some(x=>!x))return null;
+  for(const tokens of parsed)options.push(tokens.map(c=>[c]));}
+ return options.length?options:[];}
+export function provenUnaffordable(card,surface,pool={}){
+ if(!card?.known||card.zone!=='Hand'||card.types?.includes('Land')||COST_BENDERS.test(card.text||''))return false;
+ const symbols=(String(card.manaCost||'').match(/\{[^}]+\}/g)||[]).map(x=>x.slice(1,-1));if(!symbols.length||!symbols.every(x=>MANA_SYMBOL.test(x)))return false;
+ const generic=symbols.filter(x=>/\d/.test(x)).reduce((a,x)=>a+Number(x),0),colored=symbols.filter(x=>!/\d/.test(x));
+ const table=surface.cards.filter(c=>c.zone==='Battlefield'||c.zone==='Command');if(table.some(c=>!c.known||COST_BENDERS.test(c.text||'')&&!/from your hand|discard this card|exile this card|reveal this card|cycling|channel/i.test(c.text||'')))return false;
+ if(surface.cards.some(c=>c.zone==='Hand'&&c.controller===surface.seat&&c.id!==card.id&&/from your hand[^.]*:\s*add|:\s*add[^.]*\bfrom your hand/i.test(c.text||'')))return false;
+ const floating=Object.entries(pool||{}).flatMap(([c,n])=>Array(Math.max(0,Number(n)||0)).fill([String(c).toUpperCase()]));
+ const sources=[];for(const c of table){if(c.controller!==surface.seat||c.zone!=='Battlefield'||c.tapped)continue;const o=manaSources(c);if(o===null)return false;if(o.length)sources.push(o);}
+ if(sources.length>14||sources.reduce((a,o)=>a*o.length,1)>4096)return false;
+ const pays=tokens=>{if(tokens.length<generic+colored.length)return false;const used=new Array(tokens.length).fill(false);
+  const fit=i=>{if(i===colored.length)return true;for(let k=0;k<tokens.length;k++)if(!used[k]&&tokens[k].includes(colored[i])){used[k]=true;if(fit(i+1))return true;used[k]=false;}return false;};return fit(0);};
+ const walk=(i,tokens)=>i===sources.length?pays(tokens):sources[i].some(opt=>walk(i+1,tokens.concat(opt)));
+ return !walk(0,floating);}
 const keywordKey=k=>String(k||'').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/[:_]/g,' ').replace(/\s+/g,' ').trim().toLowerCase();
 let keywordReference=null;
 const loadKeywordReference=()=>keywordReference||(keywordReference=import('../../mtg-keyword-reference.js').then(m=>m.KEYWORD_REFERENCE).catch(()=>({})));
@@ -104,6 +135,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   }
   const ids=list=>new Set((list||[]).filter(r=>r.kind==='card').map(r=>r.id));
   const blockedWhy=new Map((n.selection?.blocked||[]).filter(b=>b?.kind==='card'&&typeof b.reason==='string').map(b=>[Number(b.id),b.reason])),actionable=ids(n.selection?.actionable),targets=ids(n.selection?.targets),choices=ids(n.selection?.cards),chosen=ids(n.selection?.chosen);
+  if(presentation.hosted&&!n.prompt){const sf=snap.status.surface,you=n.players?.find(p=>p.id===sf.players.find(p=>p.seat===sf.seat)?.nativeId);for(const id of [...actionable]){const card=snap.status.surface.cards.find(c=>c.id===id);if(card&&card.controller===snap.status.surface.seat&&provenUnaffordable(card,snap.status.surface,you?.mana)){actionable.delete(id);if(!blockedWhy.has(id))blockedWhy.set(id,'Not enough mana');}}}
   for(const index of snap.nativeDraft?.indexes||[]){const o=n.prompt?.options.find(o=>o.index===index);const cardId=optionCardId(o?.value);if(cardId!==null)chosen.add(cardId);}
   // Forge's own hint lists, shown by meaning: something you can play or use now,
   // a target for the spell or ability being cast, a card this prompt asks about,
