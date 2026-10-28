@@ -3,7 +3,7 @@
 import {APP_VERSION} from './config.js';
 import {capturePracticeArtwork} from './play-card-surface.js';
 import {forgeCpuPolicy} from './play-forge-cpu-policy.js';
-import {createForgeHostClient,exactForgeInput,forgeAccountKey} from './play-forge-host-client.js';
+import {createForgeHostClient,exactForgeInput,forgeAccountKey,forgeWarmedAt} from './play-forge-host-client.js';
 import {createForgePresentationSession} from './experiments/forge-proof/forge-session.mjs';
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {nativePromptUnanswerable} from './experiments/forge-proof/native-panel.mjs';
@@ -72,7 +72,7 @@ export function forgeMatchError(error){
  })[code]||'The game could not open this match. Review any card or format details below, then return to setup.';
 }
 
-export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,lookup,prepareArtwork=async()=>{},onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,createClient=createForgeHostClient,mountTable=mountForgeTable,mountIntro=mountForgeMatchIntro,pollMs=500,wait=ms=>new Promise(r=>setTimeout(r,ms)),now=()=>Date.now()}={}){
+export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,lookup,prepareArtwork=async()=>{},onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onFinished=()=>{},createClient=createForgeHostClient,mountTable=mountForgeTable,mountIntro=mountForgeMatchIntro,pollMs=500,startupPollMs=250,wait=ms=>new Promise(r=>setTimeout(r,ms)),now=()=>Date.now()}={}){
  if(!root||[readAccount,readSetup,getAccessToken,lookup].some(f=>typeof f!=='function'))throw Error('FORGE_PLAYER_MAT_READERS_REQUIRED');
  const doc=root.ownerDocument,view=doc.defaultView;
  let generation=0,opening=false,startupMs=null,client=null,session=null,table=null,last=null,warning=false,viewer=null,matchup=null,matchPolicy=null,matchAccount=null,intro=null,exitDialog=null,exitConfirm=null,exitSubmitting=false,disposed=false;
@@ -128,6 +128,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   // The final board is kept as a still copy for Inspect board: only what this viewer already saw.
   const board=table&&root.dataset.engine==='forge-hosted'&&root.childElementCount?{nodes:[...root.children].map(el=>el.cloneNode(true)),className:root.className}:null;
   session?.close();warn(false);exitDialog?.remove();exitDialog=null;exitConfirm=null;
+  try{onFinished();}catch{/* warming the next match is best effort */}
   if(Number.isSafeInteger(terminalViewer)&&terminalViewer>=0)viewer=terminalViewer;
   const outcome=result.draw?'draw':viewer===null?null:result.winnerPlayerId===viewer?'win':'loss';
   const title=outcome==='draw'?'Draw':outcome==='win'?'You won':outcome==='loss'?'CPU won':'Your result is not yet identified';
@@ -184,7 +185,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   // While the server starts the match: the honest stage, the seconds so far and a line
   // saying it can take a minute (then why, after 25 s). It all stops when the table opens
   // or the start ends.
-  const tick=()=>{if(requestedAt===null||!intro)return;const seconds=Math.max(0,Math.floor((now()-requestedAt)/1000));intro.elapsed?.(`${seconds} s`);intro.note?.(seconds>=25?'Still setting up. The first match after an update takes longer.':'Setting up a table can take up to a minute. Keep this page open.');};
+  // A warm engine started loading while the player picked decks (the host keeps it 3 minutes).
+  const tick=()=>{if(requestedAt===null||!intro)return;const seconds=Math.max(0,Math.floor((now()-requestedAt)/1000)),warm=forgeWarmedAt(),head=warm!==null&&warm<=requestedAt&&requestedAt-warm<180000?Math.floor((requestedAt-warm)/1000):null;intro.elapsed?.(`${seconds} s`);intro.note?.(seconds>=25?'Still setting up. The first match after an update takes longer.':head!==null?`The engine started loading ${head} s before you pressed Start.`:'Setting up a table can take up to a minute. Keep this page open.');};
   const stopTicker=()=>{if(ticker!==null)view?.clearInterval?.(ticker);ticker=null;intro?.elapsed?.('');intro?.note?.('');};
   try{
    matchup=structuredClone(setup);matchPolicy=forgeCpuPolicy(setup.match.difficulty);
@@ -210,7 +212,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
     const waitingForFirst=state.status==='running'&&!forgeStartingPlayer(state.snapshot)&&state.snapshot.turn===0&&!state.snapshot.prompt&&(state.snapshot.busy===true||state.snapshot.inputType==='InputLockUI');
     if(state.status!=='initializing'&&!waitingForFirst)break;
     if(waitingForFirst)intro.status('Choosing the starting player…');
-    await wait(pollMs);
+    await wait(startupPollMs); // the client spaces reads at least 300 ms apart
    }
    if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
    if(state?.status==='finished'){finish(state.result,state.viewerId);return last;}
