@@ -475,3 +475,9 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
  .pl-arena{gap:12px}.pl-vs{height:12px}.pl-seat--cpu{padding-top:34px}
  .pl-lobby .play-source-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.pl-lobby .play-source-tabs>button{flex:0 0 auto}
 }
+@media(min-width:701px){.pl-startbar{flex-direction:column;align-items:center;text-align:center;gap:8px;padding:14px 20px;width:min(720px,100%);justify-self:center}.pl-startbar .pl-start{order:-1;min-width:260px}.pl-startbar .play-difficulty{order:-1}}
+.pl-sheet.play-inspector{background:var(--surface)}
+.pl-sheet .play-selected-cover{min-height:190px}
+.pl-sheet .play-selected-cover::after{background:linear-gradient(180deg,#080b1000 35%,#080b10e0)}
+@media(max-width:480px){.pl-lobby .play-deck-choices{grid-template-columns:1fr 1fr!important;gap:10px}.pl-lobby .play-deck-choice>.deck-tile{height:180px}.pl-lobby .play-deck-choice .tile-body b{font-size:14px}.pl-lobby .play-deck-choice .tile-body small{display:none}}
+@media(max-width:420px){.pl-lobby .play-source-tabs{gap:0;padding:3px;justify-content:space-between}.pl-lobby .play-source-tabs>button{padding:8px 6px;font-size:11.5px}}

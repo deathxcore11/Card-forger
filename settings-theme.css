@@ -281,3 +281,4 @@
 .settings-page .settings-save-overview small{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .settings-page .settings-save-overview .save-status{font-weight:600;color:var(--muted)}
 .account-hub-meta{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px}.account-hub-meta .link{min-height:32px}
+.account-hub-identity b{text-shadow:0 1px 10px #000c}
