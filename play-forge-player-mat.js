@@ -80,7 +80,13 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  const beforeUnload=e=>{e.preventDefault();e.returnValue='';};
  const warn=enabled=>{if(enabled===warning)return;warning=enabled;view[enabled?'addEventListener':'removeEventListener']('beforeunload',beforeUnload);};
  // Closing or leaving the tab ends an open server table, including one whose start failed.
- const pageHide=()=>{client?.release?.();};view?.addEventListener?.('pagehide',pageHide);
+ let released=false;const pageHide=()=>{if(client?.release?.()===true)released=true;};view?.addEventListener?.('pagehide',pageHide);
+ // Back/forward can restore this page from the browser's cache after pagehide already ended the server
+ // table. Say so plainly instead of showing a board that can no longer move; never claim to resume it.
+ const pageShow=e=>{if(!e?.persisted||!released||disposed)return;released=false;if(['finished','session-ended','account-changed'].includes(last?.phase))return;
+  generation++;unwatch();intro?.destroy();intro=null;session?.close();warn(false);exitDialog?.remove();exitDialog=null;
+  message('Match ended',['This match closed when you left the page. No win or loss was recorded.']);publish({phase:'session-ended',error:'PAGE_RESTORED'});};
+ view?.addEventListener?.('pageshow',pageShow);
  // Retain the launched policy with every result/stat consumer; never reread a
  // newer setup preference to label an earlier match. No persistence is added.
  const publish=value=>{if(['finished','session-ended','account-changed'].includes(value?.phase))unwatch();last={...value,...(startupMs===null?{}:{startup:{requestedToRunningMs:startupMs}}),...(matchPolicy?{matchContext:{format:matchup.match.format,difficulty:matchPolicy.difficulty,difficultyPolicyVersion:matchPolicy.difficultyPolicyVersion}}:{})};onChange(structuredClone(last));};
@@ -248,6 +254,6 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  }
  return {start,snapshot:()=>last?structuredClone(last):null,requestExit,
   reconcile(){if(matchAccount&&forgeAccountKey(readAccount())!==matchAccount){client?.detach();stopped({code:'ACCOUNT_CHANGED'});return false;}return true;},
-  detach(){if(disposed)return;unwatch();disposed=true;generation++;warn(false);view?.removeEventListener?.('pagehide',pageHide);session?.close();intro?.destroy();intro=null;table?.destroy();table=null;exitDialog?.remove();exitDialog=null;void client?.close().catch(()=>{}).finally(()=>client?.detach());root.replaceChildren();last=null;},
+  detach(){if(disposed)return;unwatch();disposed=true;generation++;warn(false);view?.removeEventListener?.('pagehide',pageHide);view?.removeEventListener?.('pageshow',pageShow);session?.close();intro?.destroy();intro=null;table?.destroy();table=null;exitDialog?.remove();exitDialog=null;void client?.close().catch(()=>{}).finally(()=>client?.detach());root.replaceChildren();last=null;},
  };
 }
