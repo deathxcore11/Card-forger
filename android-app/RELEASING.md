@@ -56,6 +56,16 @@ CARDSTASHY_SIGNING=/secure/path/signing.properties ./gradlew :app:testDebugUnitT
 `signing.properties` holds `storeFile`, `storePassword`, `keyAlias` and `keyPassword`. Without it the
 release build is unsigned and must not be published.
 
+If `app-release.apk` is 25 MiB or larger, Cloudflare will not serve it. Repack it smaller with the
+same contents, then re-sign it with the same key:
+
+```sh
+python3 scripts/zopfli-repack.py app/build/outputs/apk/release/app-release.apk /tmp/z.apk
+zipalign -f -p 4 /tmp/z.apk /tmp/za.apk
+apksigner sign --ks <storeFile> --ks-key-alias <keyAlias> --min-sdk-version 24 \
+  --v1-signing-enabled false --v3-signing-enabled false --out app-release.apk /tmp/za.apk
+```
+
 Then, in the website repo:
 
 1. Copy `android/app/build/outputs/apk/release/app-release.apk` to
