@@ -1650,6 +1650,20 @@ function warmNativePlay(){
  };
  setTimeout(()=>tick(true),2000);setInterval(()=>tick(),30000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){touched();tick(true);}});
+ setTimeout(()=>void saveDeckArtOffline(),20000);
+}
+// The app keeps every Magic picture it shows on the phone (CardStashyWebViewClient), so once per launch,
+// in the background, it loads the art of all your Magic decks: tables and deck screens then open with
+// their pictures, offline too. A few at a time, and never with Data Saver on.
+async function saveDeckArtOffline(){
+ try{if(navigator.connection?.saveData)return;}catch{}
+ const names=[...new Set(S.state.decks.filter(d=>!d.game).flatMap(d=>[...(d.cards||[]),...(d.side||[])]).map(row=>row?.name).filter(name=>typeof name==='string'))];
+ if(!names.length)return;
+ try{await resolveNames(names,()=>{},false,()=>!accountLocked);}catch{}
+ const urls=[...new Set(names.flatMap(name=>{const c=meta(name),faces=c?.card_faces||[];return [c?.image_uris?.normal,c?.image_uris?.art_crop,...faces.flatMap(f=>[f.image_uris?.normal,f.image_uris?.art_crop])];}).filter(url=>typeof url==='string'&&url.startsWith('https://cards.scryfall.io/')))].slice(0,3000);
+ let next=0;
+ const load=url=>new Promise(done=>{const img=new Image();img.onload=img.onerror=()=>done();img.src=url;});
+ await Promise.all(Array.from({length:3},async()=>{while(next<urls.length&&!accountLocked){if(document.hidden){await new Promise(r=>setTimeout(r,5000));continue;}await load(urls[next++]);}}));
 }
 function renderPlayPage() {
   if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>Choose Magic in the game selector to prepare a CPU match.</p><a class="btn" href="#home">Return Home</a></section>';

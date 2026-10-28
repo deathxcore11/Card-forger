@@ -1,7 +1,7 @@
-// Website 4.3.11 ships with Android 0.9.1 beta, which bundles this same website.
+// Website 4.3.12 ships with Android 0.10.0 beta, which bundles this same website.
 export const RELEASE = Object.freeze({
- id:'web-4.3.11-smooth-glow-planeswalk-2026-android-0.9.1',date:'2026-10-28',webVersion:'4.3.11',
- changes:["Smoother Play table: the playable and ready glows breathe without repainting every card, and taps and CPU plays no longer stutter on phones.","Planeswalk gets its 2026 look: new painted art, smoother touch controls and motion throughout the run.","Android app 0.9.1 beta brings these to the app."],
+ id:'web-4.3.12-touch-haptics-offline-art-android-0.10.0',date:'2026-10-28',webVersion:'4.3.12',
+ changes:["Play feels it: a light tick when you pick up a card or slide over a spot it can go, a tap when it lands, and a thump on big hits (where your device supports vibration).","Android app 0.10.0 beta: matches and Planeswalk run at your phone's highest refresh rate, your decks' card art is saved on the phone so decks look right offline, and the launch splash stays until the app is ready."],
 
- android:Object.freeze({version:'0.9.1 beta',versionName:'0.9.1-beta',versionCode:18,interfaceVersion:'4.3.11',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.9.1.apk',bytes:25804837,sha256:'968cfacc80dfded47cda633e3b22768a1516cde88394866cb436b91aafb21553'})
+ android:Object.freeze({version:'0.10.0 beta',versionName:'0.10.0-beta',versionCode:19,interfaceVersion:'4.3.12',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.10.0.apk',bytes:0,sha256:'0000000000000000000000000000000000000000000000000000000000000000'})
 });

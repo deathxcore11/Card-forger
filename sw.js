@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-smooth-glow-planeswalk-2026-v357";
+const CACHE = "cardforge-shell-touch-haptics-offline-art-v358";
 const ASSETS = [
   "./play-forge-feature.js",
   "./play-update-gate.js",

@@ -1,14 +1,22 @@
 package dev.cardstashy.integration;
 
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.webkit.WebView;
 import androidx.activity.OnBackPressedCallback;
+import androidx.core.splashscreen.SplashScreen;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     private boolean backPending = false;
 
+    // The launch splash stays until the app's first screen is drawn, so there is no blank flash.
+    // It never stays longer than this, even if the page fails to say it is ready.
+    private static final long SPLASH_MAX_MS = 5000;
+
     @Override public void onCreate(Bundle savedInstanceState) {
+        long started = SystemClock.uptimeMillis();
+        SplashScreen.installSplashScreen(this).setKeepOnScreenCondition(() -> !CardStashyDisplay.ready && SystemClock.uptimeMillis() - started < SPLASH_MAX_MS);
         registerPlugin(CardStashyPlatform.class);
         registerPlugin(CardStashyArtwork.class);
         registerPlugin(CardStashyAuth.class);

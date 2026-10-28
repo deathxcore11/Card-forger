@@ -22,12 +22,17 @@ import java.util.regex.Pattern;
 final class ImageCache {
     static final String ORIGIN = "https://cardstashy.com";
     // Mirrors imagePath() in runtime/native-service-policy.js (decoded path).
-    private static final Pattern[] ROUTES = {
+    static final Pattern[] ROUTES = {
         Pattern.compile("^/img/(?:pack|back)/(?:mtg|ptcg|ygo)\\.jpg$"),
         Pattern.compile("^/img/mtg-set/[a-zA-Z0-9]{2,8}\\.jpg$"),
         Pattern.compile("^/img/ygo/(?:s/|a/)?\\d{1,12}\\.jpg$"),
         Pattern.compile("^/img/pks/(?:s|r)/[a-z0-9_-]{1,80}\\.png$"),
         Pattern.compile("^/img/ptcg/(?:s|l)/[A-Za-z0-9.!?_-]{1,80}\\.jpg$"),
+    };
+    // Scryfall's card picture sizes, so a saved deck's art still shows with no connection.
+    static final String SCRYFALL = "https://cards.scryfall.io";
+    static final Pattern[] SCRYFALL_ROUTES = {
+        Pattern.compile("^/(?:normal|large|small|art_crop|border_crop|png)/(?:front|back)/[0-9a-f]/[0-9a-f]/[0-9a-f-]{36}\\.(?:jpg|png)$"),
     };
     private static final Pattern QUERY = Pattern.compile("^[A-Za-z0-9=&._%-]{0,200}$");
     private static final Pattern TYPE = Pattern.compile("^image/(?:jpeg|png|webp|gif|avif)$");
@@ -40,23 +45,29 @@ final class ImageCache {
     interface Sleeper { void sleep(long ms) throws InterruptedException; }
 
     private final File dir; private final Fetcher fetcher; private final Sleeper sleeper; private final int maxFiles;
+    private final String origin; private final Pattern[] routes;
     // A gallery asks for dozens of pictures at once; a few at a time keeps the server from refusing them.
     private final Semaphore upstream = new Semaphore(4, true);
 
-    ImageCache(File dir, Fetcher fetcher, Sleeper sleeper, int maxFiles) {
+    ImageCache(File dir, Fetcher fetcher, Sleeper sleeper, int maxFiles) { this(dir, fetcher, sleeper, maxFiles, ORIGIN, ROUTES); }
+
+    ImageCache(File dir, Fetcher fetcher, Sleeper sleeper, int maxFiles, String origin, Pattern[] routes) {
         this.dir = dir; this.fetcher = fetcher; this.sleeper = sleeper; this.maxFiles = maxFiles;
+        this.origin = origin; this.routes = routes;
     }
 
-    static boolean allowed(String decodedPath, String encodedQuery) {
+    static boolean allowed(String decodedPath, String encodedQuery) { return allowed(ROUTES, decodedPath, encodedQuery); }
+
+    static boolean allowed(Pattern[] routes, String decodedPath, String encodedQuery) {
         if (decodedPath == null || (encodedQuery != null && !QUERY.matcher(encodedQuery).matches())) return false;
-        for (Pattern route : ROUTES) if (route.matcher(decodedPath).matches()) return true;
+        for (Pattern route : routes) if (route.matcher(decodedPath).matches()) return true;
         return false;
     }
 
     /** Cached or freshly fetched picture, or null when it cannot be had (the page then tries its next source). */
     Response get(String decodedPath, String encodedPath, String encodedQuery) {
-        if (!allowed(decodedPath, encodedQuery)) return null;
-        String url = ORIGIN + encodedPath + (encodedQuery == null || encodedQuery.isEmpty() ? "" : "?" + encodedQuery);
+        if (!allowed(routes, decodedPath, encodedQuery)) return null;
+        String url = origin + encodedPath + (encodedQuery == null || encodedQuery.isEmpty() ? "" : "?" + encodedQuery);
         File file = new File(dir, key(url)), type = new File(dir, key(url) + ".type");
         Response hit = read(file, type);
         if (hit != null) return hit;

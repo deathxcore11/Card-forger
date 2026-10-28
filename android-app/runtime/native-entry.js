@@ -52,5 +52,8 @@ await plugin.addListener('lifecycle', event => {
   if (event.state !== 'memory-pressure') document.documentElement.dataset.nativeAppState = event.state;
   globalThis.dispatchEvent(new CustomEvent('cardstashy-native-lifecycle', { detail: { state: event.state } }));
 });
-installNativeDisplay({ plugin: globalThis.Capacitor.registerPlugin('CardStashyDisplay') });
-await import('./app.js');
+const displayPlugin = globalThis.Capacitor.registerPlugin('CardStashyDisplay');
+installNativeDisplay({ plugin: displayPlugin });
+// The launch splash stays up until the first screen has painted (Android lets it go after 5 s regardless).
+try { await import('./app.js'); }
+finally { requestAnimationFrame(() => requestAnimationFrame(() => { displayPlugin.ready().catch(() => {}); })); }

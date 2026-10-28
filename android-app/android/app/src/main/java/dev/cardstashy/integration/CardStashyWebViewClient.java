@@ -15,15 +15,17 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Serves the website's card-art routes at the app's own origin from {@link ImageCache}. */
+/** Serves the website's card-art routes at the app's own origin, and keeps Scryfall card art, from {@link ImageCache}. */
 public class CardStashyWebViewClient extends BridgeWebViewClient {
     static final String APP_HOST = "android-integration.cardstashy.invalid";
     private static final int MAX_BYTES = 8 * 1024 * 1024;
-    private final ImageCache images;
+    private final ImageCache images, scryfall;
 
     public CardStashyWebViewClient(Bridge bridge) {
         super(bridge);
         images = new ImageCache(new java.io.File(bridge.getContext().getCacheDir(), "card-art"), CardStashyWebViewClient::download, Thread::sleep, 3000);
+        // Scryfall art the app has shown or saved for a deck, kept so decks still look right offline.
+        scryfall = new ImageCache(new java.io.File(bridge.getContext().getCacheDir(), "scryfall-art"), CardStashyWebViewClient::download, Thread::sleep, 6000, ImageCache.SCRYFALL, ImageCache.SCRYFALL_ROUTES);
     }
 
     @Override
@@ -38,10 +40,20 @@ public class CardStashyWebViewClient extends BridgeWebViewClient {
             if (r == null) return new WebResourceResponse("text/plain", "utf-8", 404, "Not Found", headers, new ByteArrayInputStream(new byte[0]));
             return new WebResourceResponse(r.type, null, 200, "OK", headers, new ByteArrayInputStream(r.body));
         }
+        if ("GET".equals(request.getMethod()) && "https".equals(u.getScheme()) && "cards.scryfall.io".equals(u.getHost()) && u.getPort() == -1
+            && ImageCache.allowed(ImageCache.SCRYFALL_ROUTES, u.getPath(), u.getEncodedQuery())) {
+            ImageCache.Response r = scryfall.get(u.getPath(), u.getEncodedPath(), u.getEncodedQuery());
+            // Unavailable here: let the WebView try the network itself, exactly as before.
+            if (r == null) return super.shouldInterceptRequest(view, request);
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Cache-Control", "public, max-age=2592000");
+            headers.put("Access-Control-Allow-Origin", "*");
+            return new WebResourceResponse(r.type, null, 200, "OK", headers, new ByteArrayInputStream(r.body));
+        }
         return super.shouldInterceptRequest(view, request);
     }
 
-    // Plain GET to the fixed website origin: no cookies, credentials or app session are sent.
+    // Plain GET to a fixed picture origin: no cookies, credentials or app session are sent.
     static ImageCache.Response download(String url) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         try {

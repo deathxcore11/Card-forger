@@ -35,6 +35,18 @@ public class ImageCacheTest {
         assertTrue("disallowed paths never reach the network", fetched.isEmpty());
     }
 
+    @Test public void scryfallArtIsKeptOnlyForCardPictures() {
+        String path = "/normal/front/6/d/6da045f8-6278-4c84-9d39-025adf0789c1.jpg";
+        assertTrue(ImageCache.allowed(ImageCache.SCRYFALL_ROUTES, path, "1562404626"));
+        assertTrue(ImageCache.allowed(ImageCache.SCRYFALL_ROUTES, "/art_crop/back/0/a/0a2012ad-6425-4935-83af-fc7309ec2ece.jpg", null));
+        for (String bad : new String[]{"/normal/front/6/d/../x.jpg", "/file/sets/abc.svg", "/normal/front/6/d/6da045f8.jpg", path + "/x"})
+            assertFalse(bad, ImageCache.allowed(ImageCache.SCRYFALL_ROUTES, bad, null));
+        ImageCache c = new ImageCache(dir, url -> { fetched.add(url); return jpeg(url); }, slept::add, 10, ImageCache.SCRYFALL, ImageCache.SCRYFALL_ROUTES);
+        assertNotNull(c.get(path, path, "1562404626"));
+        assertEquals("https://cards.scryfall.io" + path + "?1562404626", fetched.get(0));
+        assertNull("the website's own routes are not Scryfall's", c.get("/img/ygo/1.jpg", "/img/ygo/1.jpg", null));
+    }
+
     @Test public void eachPictureIsDownloadedOnceThenServedFromThePhone() {
         ImageCache c = cache(url -> jpeg("art:" + url), 10);
         ImageCache.Response a = c.get("/img/ygo/s/42.jpg", "/img/ygo/s/42.jpg", null), b = c.get("/img/ygo/s/42.jpg", "/img/ygo/s/42.jpg", null);
