@@ -310,12 +310,14 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  }
  // One motion scale for the table, tunable in one place: press, move, land, lunge.
  const MOTION={press:120,move:220,land:360,lunge:500,stagger:140};
- let strikeEnd=0;
+ let strikeEnd=0,hitAt=0;
  function strike(el,to,{face=false,delay=0,big=false}={}){
   const w=el?.closest('.play-match-card-wrap');if(!w||!rectOf(el)||!rectOf(to))return;
   // The battlefields clip their overflow; let the striker leave its lane for the flight.
   const ms=MOTION.lunge+20;root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+delay+ms);
-  setTimeout(()=>{if(Date.now()>=strikeEnd-20)delete root.dataset.csStriking;},delay+ms+40);
+  // The arrows would point from where the striker was; hide them for the flight and bring them back after.
+  arrows.style.opacity='0';setTimeout(()=>{if(Date.now()>=strikeEnd-20){delete root.dataset.csStriking;arrows.style.opacity='';}},delay+ms+40);
+  if(!delay||hitAt<Date.now())hitAt=Date.now()+delay+ms*.55;
   w.dataset.csStriker='true';setTimeout(()=>delete w.dataset.csStriker,delay+ms+20);
   // Wind-up, lunge, a short freeze on contact (hit-stop), then spring back. The target shakes on contact,
   // and a big hit (5 or more) nudges the whole board unless low power is on.
@@ -372,8 +374,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // 5. Death: a permanent that went to a graveyard or exile (or a token that ceased to exist) breaks
   // into shards where it stood. The shards sit outside the table's scoped styles, so they carry the
   // art of the element the redraw just replaced on a plain frame.
-  if(leaving?.size){let broke=0;const at=combat?MOTION.lunge*.62:0;for(const c of a.cards){if(!onField(c)||broke>=4)continue;const now=b.cards.find(x=>x.id===c.id);if(now&&!/^(Graveyard|Exile)$/.test(now.zone))continue;
-   const old=leaving.get(String(c.id)),r=before?.get(String(c.id))?.r;if(!old||!r)continue;broke++;const src=old.querySelector('img')?.currentSrc||old.querySelector('img')?.src||'',shot={rect:{left:r.left,top:r.top,width:r.width,height:r.height},html:`<div class="forge-shard-face" style="background-image:${src?`url(&quot;${esc(src)}&quot;)`:'none'}"></div>`};setTimeout(()=>motion.shatter(shot),at+broke*60);}}
+  if(leaving?.size){let broke=0;const at=Math.max(0,hitAt-Date.now()+80);for(const c of a.cards){if(!onField(c)||broke>=4)continue;const now=b.cards.find(x=>x.id===c.id);if(now&&!/^(Graveyard|Exile)$/.test(now.zone))continue;
+   const old=leaving.get(String(c.id)),r=before?.get(String(c.id))?.r;if(!old||!r)continue;broke++;const src=old.querySelector('img')?.currentSrc||old.querySelector('img')?.src||'',shot={rect:{left:r.left,top:r.top,width:r.width,height:r.height},html:`<div class="forge-shard-face" style="background-image:${src?`url(&quot;${esc(src)}&quot;)`:'none'}"></div>`};
+   // Until the blow that kills it lands, a stand-in holds its place so it never just blinks out.
+   const wait=at+broke*60,stand=wait>30?motion.ghost(shot.rect,shot.html):null;setTimeout(()=>{stand?.remove();motion.shatter(shot);},wait);}}
   // 5b. Cast: your card lifts as it goes on the stack (it waits in hand, dimmed, until Forge confirms),
   // and a spell that resolves from your hand flies to the middle of the table and bursts there.
   for(const c of b.cards){if(!c.inTransit||was.get(c.id)?.inTransit||c.controller!==b.seat)continue;const el=cardEl(c.id);if(!el)continue;
@@ -487,7 +491,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   root.toggleAttribute('data-forge-native',!!root.querySelector('.forge-native-panel'));
   doc.body.toggleAttribute('data-forge-search',!!root.querySelector('.forge-zone-search'));
   if(before&&!blocked){glide(before);boardEffects(previous,s,before,leaving);}
-  if(presentation.hosted&&!reducedMotion())for(const p of s.status?.surface?.players||[]){const was=lifeBefore.get(p.seat);if(was===undefined||was===p.life)continue;const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`),life=seat?.querySelector('.play-match-life strong');if(!seat||!life)continue;const delta=p.life-was,badge=doc.createElement('span');badge.className='forge-life-delta';badge.dataset.dir=delta<0?'down':'up';badge.textContent=(delta>0?'+':'\u2212')+Math.abs(delta);badge.setAttribute('aria-hidden','true');seat.append(badge);badge.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(-4px)',offset:.25},{opacity:1,transform:'translateY(-10px)',offset:.75},{opacity:0,transform:'translateY(-18px)'}],{duration:1300,fill:'both'}).finished.then(()=>badge.remove(),()=>badge.remove());life.animate([{transform:'scale(1)'},{transform:'scale(1.22)',color:delta<0?'#ff9a8a':'#8fe7a3',offset:.35},{transform:'scale(1)'}],{duration:700});if(Math.abs(delta)>1)motion.countUp(life,was,p.life,Math.min(700,240+Math.abs(delta)*40));}
+  if(presentation.hosted&&!reducedMotion())for(const p of s.status?.surface?.players||[]){const was=lifeBefore.get(p.seat);if(was===undefined||was===p.life)continue;const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`),life=seat?.querySelector('.play-match-life strong');if(!seat||!life)continue;const delta=p.life-was,wait=Math.max(0,hitAt-Date.now()),badge=doc.createElement('span');badge.className='forge-life-delta';badge.dataset.dir=delta<0?'down':'up';badge.textContent=(delta>0?'+':'\u2212')+Math.abs(delta);badge.setAttribute('aria-hidden','true');seat.append(badge);badge.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(-4px)',offset:.25},{opacity:1,transform:'translateY(-10px)',offset:.75},{opacity:0,transform:'translateY(-18px)'}],{duration:1300,delay:wait,fill:'both'}).finished.then(()=>badge.remove(),()=>badge.remove());life.animate([{transform:'scale(1)'},{transform:'scale(1.22)',color:delta<0?'#ff9a8a':'#8fe7a3',offset:.35},{transform:'scale(1)'}],{duration:700,delay:wait});
+   // During combat the total changes when the blow lands, not when the board updates.
+   if(wait)life.textContent=String(was);setTimeout(()=>{if(!life.isConnected)return;if(Math.abs(delta)>1)motion.countUp(life,was,p.life,Math.min(700,240+Math.abs(delta)*40));else life.textContent=String(p.life);},wait);}
   // A redraw that replaced the card's element keeps its open preview on the new one.
   if(peekFor&&!peekFor.isConnected){const again=root.querySelector(`.play-match-card[data-instance="${CSS.escape(peekFor.dataset.instance||'')}"]`);if(again){peekFor.removeAttribute('aria-describedby');peekFor=again;}}
   if(peekFor){if(!peekFor.isConnected||!surfaceCard(peekFor)?.known)hidePeek();else showPeek(peekFor,peekPinned);}
