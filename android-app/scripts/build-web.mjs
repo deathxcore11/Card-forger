@@ -30,7 +30,9 @@ if (!literal) throw Error('Shell asset list could not be parsed.');
 const seeds = JSON.parse(literal.replace(/,\s*\]/g, ']')).filter(x => x !== './');
 const extras = ['assets/cards/miscp-001.webp', 'assets/finishes/stamp-first-movie.png',
   'vendor/tesseract.min.js', 'vendor/worker.min.js', 'vendor/TESSERACT-LICENSE.txt', 'vendor/SUPABASE-LICENSE.txt',
-  'scanidx/catalog-manifest.json', 'scanidx/TCGDEX-LICENSE.txt', 'rulebooks/manifest.json'];
+  'scanidx/catalog-manifest.json', 'scanidx/TCGDEX-LICENSE.txt', 'rulebooks/manifest.json',
+  // Planeswalk, the solo roguelite: one self-contained page that saves runs on the phone.
+  'planeswalk.html'];
 for (const game of ['mtg', 'ptcg', 'ygo']) extras.push(`scanidx/${game}.bin`, `scanidx/${game}-ids.txt`, `scanidx/${game}-catalog-v1.json.gz`, `scanidx/${game}-signals-v1.json.gz`, `rulebooks/${game}-rules-v1.json.gz`);
 // The tour lists WebM first and Android's WebView plays it, so the MP4 copies (for Safari) stay off the APK:
 // they would only add ~1.9 MB and push the download past Cloudflare's 25 MiB per-file limit.
@@ -129,6 +131,9 @@ const csp = ["default-src 'self'", "script-src 'self' 'unsafe-inline' 'wasm-unsa
   "worker-src 'self' blob:", "media-src 'self' blob:", "object-src 'none'", "frame-src 'none'", "form-action 'none'", "base-uri 'self'"].join('; ');
 html = html.replace('<head>', `<head>\n<meta http-equiv="Content-Security-Policy" content="${csp}">\n<link rel="stylesheet" href="native-integration.css">`);
 await writeFile(path.join(output, 'index.html'), html);
+// Planeswalk falls back to Georgia and the system font, so it needs no web fonts offline.
+const planeswalk = path.join(output, 'planeswalk.html');
+await writeFile(planeswalk, (await readFile(planeswalk, 'utf8')).replace(/<link\b[^>]*href="https?:\/\/[^>]*>\s*/g, ''));
 for (const file of await readdir(path.join(root, 'runtime'))) await copyFile(path.join(root, 'runtime', file), path.join(output, file));
 // Android WebViews report the status and navigation bars through Capacitor's --safe-area-inset-*
 // variables rather than env(), so the app uses whichever is larger and HUD buttons clear them.
