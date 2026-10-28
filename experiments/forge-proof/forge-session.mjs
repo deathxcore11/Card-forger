@@ -134,9 +134,11 @@ export function createForgeSession({baseUrl,token,fetchImpl=globalThis.fetch,pol
 }
 // Transport injection keeps the local bearer boundary intact. The hosted client
 // supplies same-origin account requests, never a remote bridge URL or token.
+const SETTINGS_OPS=new Set(['controlMode','autoPay','phaseStop','yieldSource']),AWAIT_STALE_MS=4000;
+const settingsKey=n=>JSON.stringify([n?.controlMode??null,n?.autoPay??null,n?.phaseStops??null,(n?.stack||[]).map(x=>x?.yielded===true)]);
 export function createForgePresentationSession({request,pollMs=350,lookupArtwork=()=>null,onClose=()=>{},allowControlMode=false,transportStatus=()=>({blocked:false,error:null})}={}){
  if(typeof request!=='function')throw Error('FORGE_TRANSPORT_REQUIRED');
- let native=null,status=null,selected=null,draft=null,error=null,actionError=null,sending=false,awaitRevision=null,closed=false,timer=null,refreshing=null,boundViewer=null,lastAcceptedRevision=-1;
+ let awaitSince=0,native=null,status=null,selected=null,draft=null,error=null,actionError=null,sending=false,awaitRevision=null,closed=false,timer=null,refreshing=null,boundViewer=null,lastAcceptedRevision=-1;
  const listeners=new Set();
  // Forge reports Hand, Battlefield and the other zones but not its Stack zone, so a card being paid
  // for, or resolving while its stack item is still listed, can be missing from a snapshot taken while
@@ -171,7 +173,10 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
   // A snapshot at the same revision is normally a repeat. Forge can still finish working without
   // a new revision (busy clears and a payment step opens), so a change of busy, input or prompt
   // is taken; otherwise the table would sit on "applying your play" with no Cancel.
-  if(id(next?.revision)&&next.revision===lastAcceptedRevision&&!(native&&((native.busy===true)!==(next.busy===true)||(native.inputType||'')!==(next.inputType||'')||(native.prompt?.id??null)!==(next.prompt?.id??null))))return false;
+  // Bounded: an accepted action that never shows a newer revision cannot hold the table forever once Forge is idle.
+  if(awaitRevision!==null&&!sending&&next?.busy!==true&&id(next?.revision)&&next.revision===lastAcceptedRevision&&Date.now()-awaitSince>AWAIT_STALE_MS){awaitRevision=null;emit();}
+  // Settings (Smart / Full Control, auto-pay, stops, yields) can also change without a new revision.
+  if(id(next?.revision)&&next.revision===lastAcceptedRevision&&!(native&&((native.busy===true)!==(next.busy===true)||(native.inputType||'')!==(next.inputType||'')||(native.prompt?.id??null)!==(next.prompt?.id??null)||settingsKey(native)!==settingsKey(next))))return false;
   let projection;
   try{projection=projectForge(next,{lookupArtwork});}catch(e){clearPrivateState();error=e.message;emit();throw e;}
   if(!projection)return false;
@@ -197,7 +202,8 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
    // A concurrent poll may already have observed this action's advancement
    // before its receipt arrived. Do not wait again for an already accepted
    // revision: repeated snapshots are deliberately ignored by acceptState.
-   awaitRevision=lastAcceptedRevision>expectedRevision?null:expectedRevision;draft=null;
+   // A settings command is done once accepted: Forge need not start a new revision for it.
+   awaitRevision=SETTINGS_OPS.has(op)||lastAcceptedRevision>expectedRevision?null:expectedRevision;awaitSince=Date.now();draft=null;
    await refresh();
   }catch(e){draft=null;awaitRevision=null;actionError=e.message;emit();try{await refresh();}catch{}actionError=e.message;}
   finally{sending=false;emit();}

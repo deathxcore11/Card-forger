@@ -197,3 +197,15 @@ test('a payment step that opens without a new revision still reaches the table',
   assert.equal(session.snapshot().native.buttons.cancelEnabled, true);
   assert.equal(session.acceptState({ ...base, revision: 4 }), false, 'older revisions stay ignored');
 });
+
+test('an accepted settings change settles at the same revision instead of locking the table', async () => {
+  const { createForgePresentationSession } = await import('./experiments/forge-proof/forge-session.mjs');
+  const players = [{ id: 1, name: 'You', isViewer: true, life: 20, zones: {} }, { id: 2, name: 'CPU', isViewer: false, life: 20, zones: {} }];
+  const base = { schema: 'cardstashy.forge-proof.v1', revision: 7, viewer: 1, status: 'running', turn: 2, players, stack: [], controlMode: 'smart', inputType: 'InputPassPriority' };
+  const replies = [{ ...base, autoPay: false }];
+  const session = createForgePresentationSession({ allowControlMode: true, request: async path => path === '/action' ? { accepted: true } : replies.shift() ?? null });
+  session.acceptState({ ...base, autoPay: true });
+  await session.setAutoPay(false);
+  assert.equal(session.snapshot().busy, false, 'the table is free again');
+  assert.equal(session.snapshot().native.autoPay, false, 'and shows Auto-pay off');
+});
