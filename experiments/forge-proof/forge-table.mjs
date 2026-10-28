@@ -486,7 +486,15 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const step=PHASE_STEPS[at]?.[0]||'';track.setAttribute('aria-label',`${owner==='you'?'Your':'CPU'} turn ${surface.turn}${step?', '+step:''}`);
   track.innerHTML=`<b>${owner==='you'?'You':'CPU'} · T${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
  }
- const trackerSeen=new Map(),trackerOpen={deck:false,opponent:false};
+ const trackerSeen=new Map(),trackerOpen={deck:false,opponent:false},trackerIdentity=new Map();
+ // The deck-list name of one physical card. Forge keeps a card's id when it transforms or becomes a
+ // copy, so the name it first showed under is kept; a card first seen on its other face is matched by
+ // that face. Tokens are never deck cards.
+ function deckCardName(c,listed){
+  if(trackerIdentity.has(c.id))return trackerIdentity.get(c.id);
+  const faces=c.printing?.playArtwork?.card?.card_faces?.map(f=>f?.name).filter(Boolean)||[];
+  const hit=[c.name,...faces].find(n=>listed.has(n)),name=hit?listed.get(hit):c.name;trackerIdentity.set(c.id,name);return name;
+ }
  try{const saved=JSON.parse(win.localStorage?.getItem('cardstashy.tracker')||'{}');trackerOpen.deck=saved.deck===true;trackerOpen.opponent=saved.opponent===true;}catch{}
  const EYE='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',EYE_OFF='M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.1 3.9M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 4.2-1M9.9 9.9a3 3 0 0 0 4.2 4.2';
  const pct=(n,d)=>d>0?Math.round(n/d*100)+'%':'0%';
@@ -496,7 +504,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   let bar=header.querySelector(':scope>.forge-tracker-toggles');
   const me=surface.players.find(p=>p.seat===surface.seat),lib=Math.max(0,Number(me?.libraryCount)||0);
   // Your library: the deck list minus every copy you can see anywhere else.
-  const out=new Map();for(const c of surface.cards)if(c.known&&c.owner===surface.seat&&c.zone!=='Library')out.set(c.name,(out.get(c.name)||0)+1);
+  // Each listed name, and each face of a two-faced listed name, leads to the list row.
+  const listed=new Map();for(const r of presentation.tracker)for(const n of [r.name,...String(r.name).split(' // ')])if(!listed.has(n))listed.set(n,r.name);const out=new Map();
+  for(const c of surface.cards)if(c.known&&c.owner===surface.seat&&!c.isToken&&c.zone!=='Library'){const name=deckCardName(c,listed);out.set(name,(out.get(name)||0)+1);}
   const left=presentation.tracker.map(r=>({...r,left:Math.max(0,r.qty-(out.get(r.name)||0))}));
   const landsLeft=left.filter(r=>r.land).reduce((n,r)=>n+r.left,0),landsTotal=left.filter(r=>r.land).reduce((n,r)=>n+r.qty,0);
   // The CPU's cards, remembered once shown so a card that leaves play still counts.
