@@ -157,6 +157,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // chance each card is your next draw; Opponent lists every card the CPU has shown. Each toggles.
    if(Array.isArray(presentation.tracker)&&presentation.tracker.length)renderTracker(surface,mat);
    foldMenu();
+   renderCrests(surface,mat);
    // One turn statement: the dock says whose move it is; this track on the divider says where the turn is.
    renderPhaseTrack(surface,mat);
    renderCombatLine(n,surface);
@@ -179,7 +180,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // The CPU has no profile picture; its commander's art becomes its portrait.
    const cpuBadge=root.querySelector('.play-match-seat[data-seat=cpu] .play-match-profile-badge');
    const cpuCommander=surface.cards.find(c=>c.commander===true&&c.owner!==surface.seat&&c.known),cpuArt=cpuCommander?resolvePracticeArtwork(cpuCommander)?.artImageUrl:null;
-   if(cpuBadge&&cpuArt&&cpuBadge.dataset.portrait!==cpuArt){cpuBadge.dataset.portrait=cpuArt;let img=cpuBadge.querySelector('img.forge-seat-portrait');if(!img){img=doc.createElement('img');img.className='forge-seat-portrait';img.alt='';img.referrerPolicy='no-referrer';img.onerror=()=>{img.hidden=true;};cpuBadge.append(img);}img.src=cpuArt;}
+   if(cpuBadge&&cpuArt&&!(presentation.hosted&&format==='Commander')&&cpuBadge.dataset.portrait!==cpuArt){cpuBadge.dataset.portrait=cpuArt;let img=cpuBadge.querySelector('img.forge-seat-portrait');if(!img){img=doc.createElement('img');img.className='forge-seat-portrait';img.alt='';img.referrerPolicy='no-referrer';img.onerror=()=>{img.hidden=true;};cpuBadge.append(img);}img.src=cpuArt;}
    // The turn-change notice gets its banner art: whose turn large, the turn number small.
    const banner=root.querySelector('.play-match-turn-banner');
    if(banner&&!banner.dataset.owner){const [who,...rest]=banner.textContent.split(' · ');banner.dataset.owner=who==='Your turn'?'you':'cpu';const big=doc.createElement('strong'),small=doc.createElement('span');big.textContent=who;small.textContent=rest.join(' · ');banner.replaceChildren(big,small);}
@@ -248,7 +249,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     const fit=`${Math.max(1,rows.c[0]).toFixed(2)},${rows.c[1]},${Math.max(1,rows.o[0]).toFixed(2)},${rows.o[1]}`;
     if(zone.dataset.fit!==fit){zone.dataset.fit=fit;const [cu,cg,ou,og]=fit.split(',');zone.style.setProperty('--fit-cu',cu);zone.style.setProperty('--fit-cg',cg+'px');zone.style.setProperty('--fit-ou',ou);zone.style.setProperty('--fit-og',og+'px');}
    }
-   fitRails();
+   fitRails();fitBoard();
    // A gentle arc: cards further from the middle of the hand sit a little lower.
    // The count lets the hand tighten its spacing only when it would not fit.
    const hand=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')],handRow=root.querySelector('.play-match-hand .play-match-card-row');if(handRow&&handRow.style.getPropertyValue('--hand-count')!==String(hand.length))handRow.style.setProperty('--hand-count',String(hand.length));hand.forEach((w,i)=>{const lift=Math.abs(i-(hand.length-1)/2);const v=`${Math.min(Math.round(lift*lift*2.2),22)}px`;if(w.style.getPropertyValue('--arc-drop')!==v)w.style.setProperty('--arc-drop',v);});
@@ -489,6 +490,31 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const floors=layers.map(layer=>{const el=layer.parentElement,rail=layer.querySelector(':scope>.cs-counters'),name=el.querySelector('.play-match-card-name'),floor=el.querySelector('.play-current-stats')||layer.querySelector(':scope>.cs-plaque');if(!rail||!name||!floor)return null;const n=rail.childElementCount,floorTop=topIn(floor,el),need=topIn(name,el)+name.offsetHeight+3+n*(rail.firstElementChild?.offsetHeight||0)+(n-1)*2;return need>floorTop-2?`${el.clientHeight-floorTop+3}px`:null;});
   layers.forEach((layer,i)=>{const v=floors[i];layer.toggleAttribute('data-rail-row',!!v);if(v&&layer.style.getPropertyValue('--cs-floor')!==v)layer.style.setProperty('--cs-floor',v);});
  }
+ // A full board always fits its half of the table (Randall, 28 Oct): rows wrap instead of
+ // scrolling sideways, and a side that is still too tall or wide scales down as one piece,
+ // laid out wider by the same factor so it uses the whole width. The CPU's side stays
+ // against the middle line. Transforms keep hit testing, drag and arrows on real rects.
+ function fitBoard(){
+  boardFrame=0;if(closed||!presentation.hosted)return;
+  for(const area of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area')){
+   const zone=area.querySelector(':scope>.play-match-zone');if(!zone)continue;
+   zone.style.removeProperty('transform');zone.style.removeProperty('width');delete zone.dataset.scaled;
+   // Your side stops above your hand; the CPU's stops below its row of card backs.
+   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=[...root.querySelectorAll(own?'.play-match-hand .play-match-card-wrap':'.play-match-opponent-fan')].map(n=>n.getBoundingClientRect()).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
+   const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+4)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
+   const W=area.clientWidth,H=Math.min(area.clientHeight,Math.round(bottom-top));if(!W||H<=0)continue;
+   // Side-by-side lanes (a grid) have fixed boxes: a row that spills out of its lane shrinks inside it.
+   const fitRows=()=>{for(const row of zone.querySelectorAll('.play-match-card-row')){row.style.removeProperty('transform');const lane=row.closest('.play-match-lane'),h=lane?.clientHeight||0;
+    const kr=Math.min(1,h&&row.scrollHeight>h+1?h/row.scrollHeight:1,row.scrollWidth>row.clientWidth+1?row.clientWidth/row.scrollWidth:1);if(kr<.995){row.style.transformOrigin='top center';row.style.transform=`scale(${kr.toFixed(3)})`;}}};
+   fitRows();let k=1;for(let i=0;i<6;i++){const next=Math.max(.4,Math.min(1,H/zone.scrollHeight,W/zone.scrollWidth));if(Math.abs(next-k)<.01&&i)break;k=next;zone.style.width=`${W/k}px`;}
+   if(k>=.995){zone.style.removeProperty('width');fitRows();continue;}
+   fitRows();
+   const h=zone.scrollHeight*k,lift=own?0:Math.max(0,area.clientHeight-h);
+   zone.dataset.scaled='true';zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
+  }
+ }
+ const queueBoard=()=>{if(!boardFrame)boardFrame=win.requestAnimationFrame(fitBoard);};
+ win.addEventListener('resize',queueBoard);
  const queueRails=()=>{if(!railFrame)railFrame=win.requestAnimationFrame(fitRails);};
  win.addEventListener('resize',queueRails);
  function renderAccepted(s,blocked=false){
@@ -554,7 +580,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  }
  try{const saved=JSON.parse(win.localStorage?.getItem('cardstashy.tracker')||'{}');trackerOpen.deck=saved.deck===true;trackerOpen.opponent=saved.opponent===true;}catch{}
  const pct=(n,d)=>d>0?Math.round(n/d*100)+'%':'0%';
- let trackerCache={key:null,bar:'',nodes:[]},trackerToggled=null,combatLine=null,zoneOnly=null;
+ let boardFrame=0,trackerCache={key:null,bar:'',nodes:[]},trackerToggled=null,combatLine=null,zoneOnly=null;
  function renderTracker(surface,mat){
   const header=root.querySelector('.play-match-header');if(!header||!mat)return;
   let bar=header.querySelector('.forge-tracker-toggles');
@@ -598,6 +624,44 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const history=root.querySelector('.play-match-header>button[data-focus-key=table-details]'),bar=root.querySelector('.play-match-header>.forge-tracker-toggles');
   if(history)panel.prepend(history);if(bar)(history||panel.firstChild)?.after?.(bar)??panel.prepend(bar);
   const summary=menu.querySelector(':scope>summary'),count=String(session.snapshot().native?.stack?.length||'');if(summary&&(summary.dataset.count||'')!==count){if(count)summary.dataset.count=count;else delete summary.dataset.count;}
+ }
+ // Commander presence (Randall, 28 Oct): each commander rides on the left of its player's profile
+ // in a crowned gold crest that holds its art. In the command zone the crest is the card itself, so
+ // hover, tap, drag and casting work as before; anywhere else the crest stays, dimmed, and opens
+ // that card's preview. The profile photo and name stay the player's identity, online or not.
+ const CREST_ZONE={Battlefield:'On field',Graveyard:'Graveyard',Exile:'Exiled',Hand:'In hand',Library:'Library',Stack:'Casting'};
+ function crestArt(c,tone){
+  const url=resolvePracticeArtwork(c)?.artImageUrl||'',id=`crest-${c.id}`;
+  return `<svg class="forge-crest-frame" viewBox="0 0 62 74" aria-hidden="true" data-tone="${tone}"><defs><linearGradient id="${id}-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2c4"/><stop offset=".45" stop-color="#e8b95b"/><stop offset="1" stop-color="#8a5f1c"/></linearGradient><clipPath id="${id}-c"><path d="M31 13 49 19V40c0 12-8 20-18 25C21 60 13 52 13 40V19z"/></clipPath></defs>
+<path d="M9 24C2 26 0 34 3 41c2-5 5-7 9-7M53 24c7 2 9 10 6 17-2-5-5-7-9-7M10 46c-4 3-4 9 0 13 0-4 2-6 6-7M52 46c4 3 4 9 0 13 0-4-2-6-6-7" fill="none" stroke="url(#${id}-g)" stroke-width="2" stroke-linecap="round"/>
+<path d="M31 8 54 15.5V40c0 15-10 24-23 30C18 64 8 55 8 40V15.5z" fill="#120d06" stroke="url(#${id}-g)" stroke-width="3"/>
+<g clip-path="url(#${id}-c)"><rect x="5" y="9" width="52" height="60" fill="#2a2418"/>${url?`<image class="forge-crest-art" href="${esc(url)}" x="5" y="9" width="52" height="60" preserveAspectRatio="xMidYMid slice"/>`:`<text x="31" y="45" text-anchor="middle" fill="#e8d6a8" font-size="20" font-family="Cinzel,Georgia,serif">${esc(String(c.name||'?').charAt(0))}</text>`}<path d="M13 52c6 6 12 9 18 13 6-4 12-7 18-13v16H13z" fill="#0008"/></g>
+<path d="M31 13 49 19V40c0 12-8 20-18 25C21 60 13 52 13 40V19z" fill="none" stroke="#fff2c455" stroke-width=".8"/>
+<path d="M18 9 20 0l5.5 5L31-2l5.5 7L42 0l2 9z" class="forge-crest-crown" stroke="#fff2c9" stroke-width="1.1" stroke-linejoin="round"/><circle cx="31" cy="4.5" r="1.8" fill="#fff"/>
+<path d="M31 64l5 5-5 5-5-5z" class="forge-crest-jewel" stroke="url(#${id}-g)" stroke-width="1.4"/></svg>`;
+ }
+ function renderCrests(surface,mat){
+  if(!presentation.hosted||format!=='Commander'||!mat)return;
+  const ledger=surface.commander?.commanders||[],tax=id=>{const t=ledger.find(e=>e.id===id)?.tax;return Number.isSafeInteger(t)&&t>0?t:0;};
+  for(const own of [true,false]){
+   const seat=own?'you':'cpu',tone=own?'you':'cpu',commanders=surface.cards.filter(c=>c.commander===true&&c.known&&(c.owner===surface.seat)===own);
+   let zone=mat.querySelector(`:scope>.play-command-zone[data-seat=${seat}]:not(.forge-crest-away)`),away=mat.querySelector(`:scope>.forge-crest-away[data-seat=${seat}]`);
+   if(zone){away?.remove();zone.classList.add('forge-crest');
+    for(const wrap of zone.querySelectorAll('.play-match-card-wrap')){const el=wrap.querySelector('.play-match-card[data-instance]'),c=surface.cards.find(x=>x.id===Number(el?.dataset.instance));if(!c)continue;
+     const key=`${c.id}:${tax(c.id)}`;if(wrap.dataset.crest===key)continue;wrap.dataset.crest=key;wrap.querySelector(':scope>.forge-crest-frame')?.remove();wrap.querySelector(':scope>.forge-crest-tax')?.remove();
+     wrap.insertAdjacentHTML('beforeend',crestArt(c,tone));if(tax(c.id)){const t=doc.createElement('span');t.className='forge-crest-tax';t.textContent=`+${tax(c.id)}`;t.setAttribute('aria-hidden','true');wrap.append(t);}}
+    continue;}
+   const c=commanders[0];if(!c){away?.remove();continue;}
+   const key=`${c.id}:${c.zone}:${tax(c.id)}`;if(away?.dataset.crest===key)continue;
+   if(!away){away=doc.createElement('section');away.className='play-command-zone forge-crest forge-crest-away';away.dataset.seat=seat;mat.append(away);}
+   away.dataset.crest=key;const b=doc.createElement('button');b.type='button';b.className='forge-crest-away-button';b.dataset.nativeKey=`crest-${seat}`;b.setAttribute('aria-label',`${c.name} · ${CREST_ZONE[c.zone]||c.zone}`);
+   b.innerHTML=`${crestArt(c,tone)}<span class="forge-crest-where">${esc(CREST_ZONE[c.zone]||'')}</span>${tax(c.id)?`<span class="forge-crest-tax">+${tax(c.id)}</span>`:''}`;
+   const target=()=>root.querySelector(`.play-match-battlefields .play-match-card[data-instance="${c.id}"]`)||root.querySelector(`.play-match-card[data-instance="${c.id}"]`);
+   b.addEventListener('click',e=>{e.stopPropagation();const el=target();if(el)peekFor===el&&peekPinned?hidePeek():showPeek(el,true);});
+   b.addEventListener('pointerenter',e=>{if(e.pointerType==='touch'||peekPinned)return;const el=target();if(el){clearTimeout(peekTimer);peekTimer=setTimeout(()=>showPeek(el),200);}});
+   b.addEventListener('pointerleave',e=>{if(e.pointerType==='touch'||peekPinned)return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>{if(!peekPinned)hidePeek();},90);});
+   away.replaceChildren(b);
+  }
  }
  function setTracker(side,animate=true){
   trackerOpen.deck=side==='deck';trackerOpen.opponent=side==='opponent';trackerToggled=side&&animate?'open':null;
@@ -648,6 +712,15 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // tap a card you can't act on, or press I. It only reads the current native state.
  peek.className='forge-peek';peek.id=`forge-peek-${Date.now().toString(36)}`;peek.setAttribute('role','tooltip');peek.dataset.open='false';doc.body.append(peek);
  const surfaceCard=el=>session.snapshot().status?.surface.cards.find(c=>c.id===Number(el?.dataset.instance))||null;
+ // A commander's preview says where it is, what casting it from the command zone costs with tax,
+ // and the commander damage it has dealt, from Forge's own ledger only.
+ function commanderFacts(c){
+  const surface=session.snapshot().status?.surface,data=surface?.commander,entry=data?.commanders?.find(e=>e.id===c.id),tax=Number.isSafeInteger(entry?.tax)&&entry.tax>0?entry.tax:0;
+  const where={Command:'In the command zone',Battlefield:'On the battlefield',Graveyard:'In the graveyard',Exile:'In exile',Hand:'In hand',Library:'In the library',Stack:'Being cast'}[c.zone];
+  const facts=[where,c.zone==='Command'?(tax?`Cast for its cost + ${tax} tax`:'Cast for its mana cost'):''];
+  for(const d of data?.damage||[])if(d.commanderId===c.id&&Number.isSafeInteger(d.amount)&&d.amount>0)facts.push(`${d.amount}/21 commander damage to ${d.player===surface.seat?'you':'CPU'}`);
+  const shown=facts.filter(Boolean);return shown.length?`<ul class="forge-peek-commander">${shown.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>`:'';
+ }
  function peekHtml(c,reference){
   const art=resolvePracticeArtwork(c),printed=art?.card||{},face=printed.card_faces?.[0]&&!printed.mana_cost?printed.card_faces[0]:printed;
   const number=v=>v===null||v===undefined||v===''?null:Number(v),stat=(now,was)=>{const n=number(now),w=number(was);return `<b data-shift="${Number.isFinite(n)&&Number.isFinite(w)?(n>w?'up':n<w?'down':''):''}">${esc(String(now??'?'))}</b>`;};
@@ -678,6 +751,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  ${creature&&c.power!==null&&c.power!==undefined||chips.length?`<div class="forge-peek-state">${creature&&c.power!==null&&c.power!==undefined?`<span class="forge-peek-pt">${stat(c.power,face.power)}<i>/</i>${stat(c.toughness,face.toughness)}</span>`:''}${chips.map(([k,t,icon])=>`<span class="forge-peek-chip" data-kind="${k}">${boardIcon(icon||chipIcon[k],'cs-icon forge-peek-icon')}${t}</span>`).join('')}</div>`:''}
  ${keywords.length?`<ul class="forge-peek-keywords">${keywords.map(k=>{const hint=keywordHint(k,reference);return `<li><b>${boardIcon(kwIcon.get(k),'cs-icon forge-peek-icon')}${symbolText(k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/:/g,' '))}</b>${hint?`<span>${symbolText(hint)}</span>`:''}</li>`;}).join('')}</ul>`:''}
  ${lines.length?`<div class="forge-peek-rules">${lines.map(l=>`<p>${rule(l)}</p>`).join('')}</div>`:''}
+ ${c.commander?commanderFacts(c):''}
  ${attached.length||withCards.length?`<p class="forge-peek-attached">${[...attached,withCards.length?`With ${withCards.join(', ')}`:''].filter(Boolean).join(' \u00b7 ')}</p>`:''}
 </section>`;
  }

@@ -61,6 +61,8 @@ if (STATE === 'dense' || STATE === 'crowded') {
   BASE.cpu.battlefield.push(['Talrand, Sky Summoner'], ['Delver of Secrets'], ['Snapcaster Mage'], ['Frost Titan'], ['Phantasmal Image'], ...Array.from({length: 3}, () => ['Island']), ['Command Tower'], ['Fellwar Stone']);
 }
 if (STATE === 'discard') BASE.you.hand.push('Shock');
+// Your commander out on the battlefield: its crest stays beside your profile, dimmed.
+if (STATE === 'cmdfield') { BASE.you.command = []; BASE.you.battlefield.push(['Klothys, God of Destiny', {commander: true}]); }
 // A Commander-sized hand and a pile of identical triggers (View full hand, the ×N stack badge).
 if (STATE === 'crowded') BASE.you.hand.push('Shock', 'Opt', 'Brainstorm', 'Lightning Bolt', 'Ponder', 'Counterspell');
 // The owner's real early board: the CPU went first and played a land; you played Forest

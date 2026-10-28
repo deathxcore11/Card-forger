@@ -266,7 +266,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
    const count=Number.isSafeInteger(handCount)&&handCount>=0?handCount:null,section=element('section',undefined,'play-match-opponent-hand');
    const label=count===null?'CPU hand · count unavailable':`CPU hand · ${count} ${count===1?'card':'cards'}`;
    section.setAttribute('aria-label',label);section.append(element('span',label,'play-match-opponent-hand-count'));
-   const fan=element('div',undefined,'play-match-opponent-fan');fan.setAttribute('aria-hidden','true');
+   const fan=element('div',undefined,'play-match-opponent-fan');fan.setAttribute('aria-hidden','true');if(count!==null)fan.dataset.count=String(count);
    const shown=Math.min(count||0,10);section.dataset.compact=String(count>10);
    for(let i=0;i<shown;i++){const back=element('span',undefined,'play-match-card-back');back.style.setProperty('--back-angle',`${(i-(shown-1)/2)*2}deg`);fan.append(back);}
    section.append(fan);return section;
