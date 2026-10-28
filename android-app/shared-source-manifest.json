@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "version": "4.3.16",
-  "commit": "1a8a6817c79f986fa3c0edb61e02ca9688b262df",
-  "tree": "0d334a96126c3104fc488efc94e5d59340c4906f",
+  "commit": "6f2f5056c43add84996bd9d3c9bc02cc608fcccd",
+  "tree": "06c7e38e0d5315f67a33f89a307135078d73b9ec",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -2852,6 +2852,11 @@
       "sha256": "cee1b308d381ea0f7909979a01d0b2f2fc8221d0cdce53a89aa42c7421d6af13"
     },
     {
+      "path": "game-glossary-data.js",
+      "bytes": 15762,
+      "sha256": "50ba6080cb759709be3208edb27b3f4cf3d1a1483e09501988966a047ed0fa6a"
+    },
+    {
       "path": "game-navigation.js",
       "bytes": 5408,
       "sha256": "b2a8a79fa5501a42550ded849e425bf5e0e917605be89e1ca75188a2890843b1"
@@ -2883,8 +2888,8 @@
     },
     {
       "path": "game-wiki-knowledge.js",
-      "bytes": 10784,
-      "sha256": "69aed5f6152e8c765dd15d883e5f0b5d9e90b6755541e3c82c18b94ad089ead8"
+      "bytes": 13171,
+      "sha256": "2b9657834916f2581cef245d868fda76c26c53b39ca149dd964b62aa22370f57"
     },
     {
       "path": "games.js",
@@ -2993,8 +2998,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 19642,
-      "sha256": "0890ae6483901af7c07afc1ac7b744df01094e511450db327fb61dc1c7f959a6"
+      "bytes": 19698,
+      "sha256": "980a4741c72524fae895bc0a2630502257eea8999861e23c987f8c61d4618104"
     },
     {
       "path": "insights.js",
@@ -3183,8 +3188,8 @@
     },
     {
       "path": "mtg-wiki-ui.js",
-      "bytes": 27834,
-      "sha256": "56e1e114db3ff869fde28dc1530d47f0a3be7b53a315926b944cbfde10146c4d"
+      "bytes": 30249,
+      "sha256": "56613db25fc60cb30591add992fb4c02a43a6436f4eaf204ae28124cb1e7b31a"
     },
     {
       "path": "native-service-policy.js",
@@ -3543,8 +3548,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1265,
-      "sha256": "0a389ea4318832f5a7a1841cad751f0f3f812861da12ce203efcbea2c380b88f"
+      "bytes": 1381,
+      "sha256": "9043c754b2de0df60a5ebcb3c76ec490565281d185723ecae3efb9bffe840cb4"
     },
     {
       "path": "release-status.js",
@@ -3853,8 +3858,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 540859,
-      "sha256": "4403c5c36287621a1ac4fbe7a62e9c958efc8853e7ac923a0f512630751aab22"
+      "bytes": 541601,
+      "sha256": "018ec83565f914eedc176544ff99757b6df00fcdf1d63f3b6c1cdda278cd7dec"
     },
     {
       "path": "suggest.js",
@@ -3863,8 +3868,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15329,
-      "sha256": "ca036bcfea51794a223934be755f3e540d3506803709bf54d4c6c032fdd8eda3"
+      "bytes": 15365,
+      "sha256": "5093b712dda4e07e1e9b085e6979ab284b6c04ba0a834ba83d9829fa639a2212"
     },
     {
       "path": "sync-merge.js",

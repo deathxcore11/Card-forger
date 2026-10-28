@@ -1,6 +1,6 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "1a8a6817c79f986fa3c0edb61e02ca9688b262df",
+  "commit": "6f2f5056c43add84996bd9d3c9bc02cc608fcccd",
   "sourceVersion": "4.3.16",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
@@ -582,6 +582,7 @@
     "format-upgrades.js",
     "formats.js",
     "game-changers.js",
+    "game-glossary-data.js",
     "game-navigation.js",
     "game-tab-mtg.jpg",
     "game-tab-ptcg.jpg",
@@ -3682,6 +3683,11 @@
       "sha256": "cee1b308d381ea0f7909979a01d0b2f2fc8221d0cdce53a89aa42c7421d6af13"
     },
     {
+      "path": "game-glossary-data.js",
+      "bytes": 15762,
+      "sha256": "50ba6080cb759709be3208edb27b3f4cf3d1a1483e09501988966a047ed0fa6a"
+    },
+    {
       "path": "game-navigation.js",
       "bytes": 5408,
       "sha256": "b2a8a79fa5501a42550ded849e425bf5e0e917605be89e1ca75188a2890843b1"
@@ -3713,8 +3719,8 @@
     },
     {
       "path": "game-wiki-knowledge.js",
-      "bytes": 10784,
-      "sha256": "69aed5f6152e8c765dd15d883e5f0b5d9e90b6755541e3c82c18b94ad089ead8"
+      "bytes": 13171,
+      "sha256": "2b9657834916f2581cef245d868fda76c26c53b39ca149dd964b62aa22370f57"
     },
     {
       "path": "games.js",
@@ -3823,8 +3829,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 19203,
-      "sha256": "1ecd1d0e58a1c73b0da8ad41a81d0ed7b20fe2198f715473e66aeb6ec733312e"
+      "bytes": 19259,
+      "sha256": "912e2039f451dca6c506b52a7017f877dead9aa879b717984a188308f25d0197"
     },
     {
       "path": "insights.js",
@@ -4008,8 +4014,8 @@
     },
     {
       "path": "mtg-wiki-ui.js",
-      "bytes": 27834,
-      "sha256": "56e1e114db3ff869fde28dc1530d47f0a3be7b53a315926b944cbfde10146c4d"
+      "bytes": 30249,
+      "sha256": "56613db25fc60cb30591add992fb4c02a43a6436f4eaf204ae28124cb1e7b31a"
     },
     {
       "path": "native-art-storage.js",
@@ -4408,8 +4414,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1265,
-      "sha256": "0a389ea4318832f5a7a1841cad751f0f3f812861da12ce203efcbea2c380b88f"
+      "bytes": 1381,
+      "sha256": "9043c754b2de0df60a5ebcb3c76ec490565281d185723ecae3efb9bffe840cb4"
     },
     {
       "path": "release-status.js",
@@ -4718,8 +4724,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 542792,
-      "sha256": "49a76b458a28303b41f3b31cee063e84c67d41533fa136dbaf15fc340ac352cf"
+      "bytes": 543534,
+      "sha256": "aee6ee7d440598489191dbfe0f0d5c289daa5c68b121aa9ecdcb15ae570dbf62"
     },
     {
       "path": "suggest.js",

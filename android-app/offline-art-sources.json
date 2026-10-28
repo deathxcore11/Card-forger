@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "sourceCommit": "1a8a6817c79f986fa3c0edb61e02ca9688b262df",
+  "sourceCommit": "6f2f5056c43add84996bd9d3c9bc02cc608fcccd",
   "scope": "Narrow retained-image allowlist for an isolated private Android preview. No network acquisition. This manifest does not establish publisher redistribution rights or authorize public release. Images are reference art, not evidence of physical editions, finish availability or ownership.",
   "entries": [
     {
