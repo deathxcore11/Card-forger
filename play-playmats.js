@@ -1,6 +1,6 @@
-// Table playmats: Randall's four painted mats. A player picks one, or gets a new one each
+// Table playmats: Randall's six painted mats. A player picks one, or gets a new one each
 // match (never the same twice in a row). The choice is a look only; it never touches the game.
-export const PLAYMATS=[['moonlit-courtyard','Moonlit Courtyard'],['ashen-forge','Ashen Forge'],['star-observatory','Star Observatory'],['forest-temple','Forest Temple']];
+export const PLAYMATS=[['moonlit-courtyard','Moonlit Courtyard'],['ashen-forge','Ashen Forge'],['star-observatory','Star Observatory'],['forest-temple','Forest Temple'],['gothic-stone','Gothic Stone'],['hedron-garden','Hedron Garden']];
 const CHOICE='cardstashy.playmat',LAST='cardstashy.playmat.last';
 const store=()=>{try{return globalThis.localStorage||null;}catch{return null;}};
 const get=(key,s)=>{try{return s?.getItem(key)||'';}catch{return '';}};
