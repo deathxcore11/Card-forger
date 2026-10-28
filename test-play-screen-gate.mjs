@@ -5,7 +5,9 @@ import {playScreenFits,playTyping,playDeviceEligibility,playDeviceGate,playScree
 
 // Shortest side 600 CSS px or more, in either orientation.
 for(const [w,h] of [[820,1180],[1180,820],[884,1104],[1104,884],[744,1133],[1024,768],[600,600]])assert.equal(playScreenFits(w,h),true,`${w}x${h} fits`);
-for(const [w,h] of [[390,844],[844,390],[915,412],[932,430],[412,915],[599,1200]])assert.equal(playScreenFits(w,h),false,`${w}x${h} is too small`);
+for(const [w,h] of [[390,844],[412,915],[599,1200],[560,380],[700,520]])assert.equal(playScreenFits(w,h),false,`${w}x${h} is too small`);
+// A phone held sideways plays on the compact phone table, the way Arena does.
+for(const [w,h] of [[844,390],[915,412],[932,430],[740,360]])assert.equal(playScreenFits(w,h),true,`${w}x${h} phone sideways fits`);
 for(const [w,h] of [[0,800],[800,0],[NaN,800],[800,Infinity]])assert.equal(playScreenFits(w,h),null,'an unknown size is not judged');
 
 const chromeTablet={ua:'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',platform:'Linux armv8l',maxTouchPoints:10,anyCoarse:true};
@@ -13,12 +15,14 @@ const fold={...chromeTablet,ua:'Mozilla/5.0 (Linux; Android 15; SM-F956U) AppleW
 assert.deepEqual(playDeviceEligibility({...chromeTablet,width:820,height:1180}),{eligible:true,reason:'wide-touch-candidate',entry:'touch'});
 assert.equal(playDeviceEligibility({...fold,width:1104,height:884}).eligible,true,'an unfolded fold plays in landscape');
 assert.equal(playDeviceEligibility({...fold,width:884,height:1104}).eligible,true,'an unfolded fold plays in portrait');
-for(const [w,h] of [[412,915],[915,412]])assert.deepEqual(playDeviceEligibility({...fold,width:w,height:h}),{eligible:false,reason:'touch-space',entry:'touch'},`a phone or cover screen at ${w}x${h} sees the notice`);
+assert.deepEqual(playDeviceEligibility({...fold,width:412,height:915}),{eligible:false,reason:'touch-rotate',entry:'touch'},'an upright phone or cover screen is asked to turn sideways');
+assert.equal(playDeviceEligibility({...fold,width:915,height:412}).eligible,true,'a phone or cover screen held sideways plays');
+assert.deepEqual(playDeviceGate({reason:'touch-rotate'}),{title:'Turn your phone sideways',line:'Play runs sideways on a phone, the way Arena does.'});
 assert.deepEqual(playDeviceGate({reason:'touch-space'}),{title:'Play needs a bigger screen',line:'Unfold your device, or use a tablet or a computer.'});
 
 // A tablet held sideways loses height to the browser's bars; its screen still decides.
 assert.equal(playScreenFits(1024,560,{screenMin:640}),true,'Galaxy Tab S9 sideways with the address bar');
-assert.equal(playScreenFits(915,360,{screenMin:412}),false,'a phone held sideways stays gated');
+assert.equal(playScreenFits(915,360,{screenMin:412}),true,'a phone held sideways with its bars still plays');
 assert.equal(playScreenFits(500,900,{screenMin:800}),false,'a narrow split-screen window stays gated');
 // While a text field is in use only the width counts (an on-screen keyboard takes height).
 assert.equal(playScreenFits(928,420,{typing:true}),true);assert.equal(playScreenFits(412,300,{typing:true}),false);
@@ -66,4 +70,4 @@ assert.equal(playScreenPauseApplies({Capacitor:{isNativePlatform:()=>true},navig
  quiet.update(false);quiet.destroy();advance(5000);assert.deepEqual(events,[],'a destroyed pause never expires');
 }
 assert.equal(PLAY_SMALL_SCREEN_LIMIT_MS,5*60*1000);
-console.log('PASS: tablets and unfolded foldables play in both orientations in every current browser, phones see the notice, desktops never pause, and the pause resumes, ticks and expires once.');
+console.log('PASS: tablets and unfolded foldables play in both orientations in every current browser, upright phones are asked to turn sideways and sideways phones play, desktops never pause, and the pause resumes, ticks and expires once.');

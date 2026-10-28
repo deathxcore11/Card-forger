@@ -197,7 +197,7 @@
    piece size follows the zone height (creatures on one row, lands and other
    permanents on the next), crowded rows scroll sideways instead of hiding a row
    under the hand, and the CPU's creatures face yours across the centre line. */
-@media (min-width:901px) and (min-height:400px),(min-width:600px) and (min-height:600px){
+@media (min-width:901px) and (min-height:400px),(min-width:600px) and (min-height:600px),(min-width:640px) and (min-height:300px) and (max-height:599px) and (min-aspect-ratio:3/2){
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone{container-type:size;overflow:hidden auto;scrollbar-width:thin}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone-groups{--play-piece:clamp(64px,calc((100cqh - 44px) / 1.76),150px);display:flex;flex-direction:row;flex-wrap:wrap;align-content:center;justify-content:center;gap:4px 22px;min-height:calc(100% - 20px)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-lane{min-width:0;max-width:100%}
@@ -385,7 +385,7 @@
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native].forge-dragging .forge-native-panel{outline:0}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-drag-ghost{opacity:.92;box-shadow:0 0 0 2px var(--ob-play),0 0 30px #5cc8ffaa,0 24px 40px #000c;border-radius:10px}
 
-@media (min-width:901px) and (min-height:400px),(min-width:600px) and (min-height:600px){
+@media (min-width:901px) and (min-height:400px),(min-width:600px) and (min-height:600px),(min-width:640px) and (min-height:300px) and (max-height:599px) and (min-aspect-ratio:3/2){
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]{--hud:clamp(236px,16vw,318px);--edge:clamp(16px,1.25vw,26px);--seat-h:88px;--portrait-w:60px;--play-hand:clamp(104px,15dvh,166px)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-brand{position:absolute;top:0;left:4px;width:max-content;max-width:calc(100vw - var(--hud)*2 - 120px);margin:0;font:700 15px/1.2 Cinzel,Georgia,serif;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ob-gold);text-shadow:0 2px 8px #000}
 
@@ -473,7 +473,7 @@
     target, red = pick one to discard, gold check = already chosen. Attacking red and blocking blue stay as they are. */
 }
 @keyframes forge-turn-banner{0%{opacity:0;transform:translateX(-50%) translateY(10px) scale(.97)}18%,72%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}100%{opacity:0;visibility:hidden;transform:translateX(-50%) translateY(-6px) scale(1)}}
-@media (min-width:901px) and (min-height:400px) and (prefers-reduced-motion:reduce),(min-width:600px) and (min-height:600px) and (prefers-reduced-motion:reduce){
+@media (min-width:901px) and (min-height:400px) and (prefers-reduced-motion:reduce),(min-width:600px) and (min-height:600px) and (prefers-reduced-motion:reduce),(min-width:640px) and (min-height:300px) and (max-height:599px) and (min-aspect-ratio:3/2) and (prefers-reduced-motion:reduce){
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card-wrap,:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card{transition:none}
 }
 
@@ -481,7 +481,7 @@
    side, a tablet in split screen): the same table, compact. The page's stacked
    small-screen layout is undone here so the board, both players, your hand and the
    decision all stay on one screen. */
-@media (hover:hover) and (min-width:901px) and (min-height:400px) and (max-height:619px),(hover:hover) and (min-width:600px) and (max-width:900px) and (min-height:600px) and (min-aspect-ratio:23/20){
+@media (hover:hover) and (min-width:901px) and (min-height:400px) and (max-height:619px),(hover:hover) and (min-width:600px) and (max-width:900px) and (min-height:600px) and (min-aspect-ratio:23/20),(min-width:640px) and (min-height:300px) and (max-height:599px) and (min-aspect-ratio:3/2){
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]{display:block;padding:0;gap:0;height:100dvh;--hud:clamp(200px,21vw,250px);--edge:12px;--seat-h:62px;--portrait-w:42px;--play-hand:clamp(78px,19dvh,112px)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-header{position:absolute;order:0;flex-shrink:1;gap:5px;padding-top:24px}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-brand{display:block;font-size:12px}
@@ -734,7 +734,7 @@
 /* Touch tablets and unfolded foldables: the battlefield owns four bounded tracks. A zone must never
    inherit the phone layout's 180px minimum and escape its half of the table. Rows
    scroll horizontally when crowded; they never grow through the hand tray. */
-@media (hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:400px){
+@media (hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px){
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields{display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:0}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat-area{display:block;min-height:0;height:100%;margin:0;padding:0}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone{height:100%;min-height:0;overflow:clip;padding:5px 8px;scrollbar-gutter:auto;container-type:size}
@@ -758,7 +758,7 @@
 /* Touch screens, Arena style: the board takes the height, your hand is tucked along the
    bottom edge between your seat and a compact decision corner, and a tall prompt
    overlays the board instead of shrinking it. With a mouse the 4.2.5 table is unchanged. */
-@media (hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:400px){
+@media (hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px){
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]{--edge:12px;--hud:clamp(170px,24vw,216px);--seat-h:72px;--portrait-w:46px;--zones-h:44px;--play-hand:clamp(82px,12dvh,114px);--top-band:146px;--dock-w:clamp(250px,30vw,300px);--table-bottom:max(calc(var(--play-hand)*1.394 + 12px),calc(min(var(--dock-live,128px),240px) + 24px));display:block;height:100dvh;padding:0;overflow:clip}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-main,
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-mat,
@@ -833,7 +833,7 @@
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .forge-cast{display:flex;transition:none}}
 /* Narrow touch tablets (600-779 px wide): the menus take three rows, and the decision
    card keeps your seat's width, stacked, so the hand keeps a usable strip between them. */
-@media (hover:none) and (pointer:coarse) and (min-width:600px) and (max-width:779px) and (min-height:400px){
+@media (hover:none) and (pointer:coarse) and (min-width:600px) and (max-width:779px) and (min-height:480px){
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]{--top-band:160px;--dock-w:var(--hud);--play-hand:clamp(76px,10dvh,96px);--table-bottom:max(calc(var(--play-hand)*1.394 + 12px),calc(min(var(--dock-live,250px),300px) + 24px))}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel,:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel[data-compact-status=true]{grid-template-columns:minmax(0,1fr)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel>*,:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel[data-compact-status=true]>:is(.forge-native-context,.forge-native-mode){grid-column:1;grid-row:auto;justify-self:stretch}
@@ -842,7 +842,7 @@
 /* Narrow and short touch screens (a tablet in split screen): menus on one row with the
    CPU's hand under them, and the two-row decision corner beside your hand, so the board
    keeps its height. */
-@media (hover:none) and (pointer:coarse) and (min-width:600px) and (max-width:779px) and (min-height:400px) and (max-height:700px){
+@media (hover:none) and (pointer:coarse) and (min-width:600px) and (max-width:779px) and (min-height:480px) and (max-height:700px){
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]{--top-band:120px;--seat-h:56px;--portrait-w:40px;--dock-w:clamp(240px,36vw,280px);--play-hand:clamp(72px,11dvh,90px);--table-bottom:max(calc(var(--play-hand)*1.394 + 12px),calc(min(var(--dock-live,128px),184px) + 24px))}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-header{width:calc(100vw - var(--hud) - 36px);max-width:none;flex-wrap:nowrap}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-hand{top:56px;left:12px;right:calc(var(--hud) + 24px);height:56px}
@@ -857,7 +857,7 @@
 /* Short touch screens (a tablet on its side under the browser's bars): one top row, with
    the menus, the CPU's hand, its zone counts and its seat side by side, so the board
    keeps the height. */
-@media (hover:none) and (pointer:coarse) and (min-width:900px) and (min-height:400px) and (max-height:650px){
+@media (hover:none) and (pointer:coarse) and (min-width:900px) and (min-height:480px) and (max-height:650px){
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]{--seat-h:56px;--portrait-w:40px;--top-band:80px}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-header{width:340px;max-width:340px;flex-wrap:nowrap}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-hand{left:364px;right:calc(var(--hud) + 228px)}
@@ -872,7 +872,7 @@
 @media (hover:none) and (pointer:coarse){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card-wrap:focus-within:not(:has(:focus-visible)){z-index:auto}}
 /* Floating mana sits just above your seat as a slim row of the colours you have, and
    only while mana floats; the decision corner stays two rows high. */
-@media (hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:400px){
+@media (hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px){
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-mana-panel:not([hidden]){position:fixed;left:12px;bottom:calc(64px + var(--seat-h) + 6px);width:auto;max-width:var(--hud);padding:6px 10px;z-index:21}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-mana-panel h3,:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-mana-sources,:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-mana-panel>div>span[data-zero=true]{display:none}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-mana-panel>div{display:flex;gap:10px}
@@ -1013,11 +1013,11 @@
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row button{grid-template-rows:auto auto;align-content:center;min-height:44px}
 /* A bigger board: pieces grow into the space they have, up to a larger cap, and on touch screens
    they fit the width too instead of running off the edge of a lane. */
-@media (min-width:901px) and (min-height:400px),(min-width:600px) and (min-height:600px){
+@media (min-width:901px) and (min-height:400px),(min-width:600px) and (min-height:600px),(min-width:640px) and (min-height:300px) and (max-height:599px) and (min-aspect-ratio:3/2){
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone-groups{--play-piece:clamp(48px,max(min(var(--fit-h1),var(--fit-c1),var(--fit-o)),min(var(--fit-h2),var(--fit-c2),var(--fit-o))),190px)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-command-zone .play-match-card-wrap{width:clamp(72px,6vw,112px);height:calc(clamp(72px,6vw,112px)*1.394)}
 }
-@media (hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:400px){
+@media (hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px){
  /* Creatures take one row when it fits, or two rows when one would make them too small. */
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone-groups{--fit-h1:calc((100cqh - 24px)*.55);--fit-h2:calc((100cqh*.6 - 22px) / 1.8);--fit-c1:calc((100cqw - 40px - var(--fit-cg,0px)) / var(--fit-cu,1));--fit-c2:calc((100cqw - 40px - var(--fit-cg,0px) / 2) / (var(--fit-cu,1) / 2 + .6));--fit-o:calc((100cqw - 56px - var(--fit-og,0px)) / var(--fit-ou,1) * 1.6);--play-piece:clamp(56px,max(min(var(--fit-h1),var(--fit-c1),var(--fit-o)),min(var(--fit-h2),var(--fit-c2),var(--fit-o))),168px)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-lane[data-card-group=creatures] .play-match-card-row{flex-wrap:wrap;align-content:center;row-gap:8px}
@@ -1370,3 +1370,50 @@
 :where(body.practice-table-open) .play-match-table[data-low-power] .play-match-card>.cs-foil{display:none}
 :where(body.practice-table-open) .play-match-table[data-low-power][data-stage=match] .play-match-hand .play-match-card[data-forge-role=playable]{animation:none;box-shadow:0 0 0 1.5px #8fdcff,0 0 18px 3px #5cc8ff99,0 10px 24px #000c}
 :where(body.practice-table-open) .play-match-table[data-low-power] :is(.forge-tracker,.forge-phase-track,.forge-combat-line>span,.forge-mana-panel){background-color:#0f1218ee}
+
+/* 4.3.0 Phones held sideways, the way Arena plays on a phone: the compact landscape table
+   with slimmer side columns, a lower hand that rises when touched, a compact dock, and
+   board pieces that drop their name bar when small (art and P/T; the name is on long-press). */
+@media (min-width:640px) and (max-width:959px) and (min-height:300px) and (max-height:599px) and (min-aspect-ratio:3/2){
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]{--hud:clamp(168px,19vw,214px);--edge:8px;--play-hand:clamp(64px,17dvh,92px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields{top:46px;bottom:calc(var(--play-hand)*1.394*.62 + 4px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand-area,:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-main[data-details=true] .play-match-hand-area{bottom:calc(var(--play-hand)*1.394*-.36)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-hand{height:40px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-fan{height:40px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-fan .play-match-card-back{flex-basis:24px;width:24px;height:34px;margin-left:-7px}
+ /* Portrait and life say who is who on a phone, as in Arena; the name gives its room to the emblems. */
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .play-match-player>strong{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-row{padding:3px 4px}
+ /* The dock: just the buttons. */
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel{padding:8px;gap:5px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel h2{font-size:14px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-response{display:none}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-actions [data-native-key=ok]{min-height:44px;font-size:15px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-actions button{min-height:36px}
+ /* Seats and zone counts a size down; the commander card tucks in beside your seat. */
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat{--seat-h:54px;padding:6px 8px 6px calc(var(--portrait-w) + 14px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-life strong{font-size:22px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row button{min-height:30px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-command-zone .play-match-card-wrap{width:38px;height:53px}
+ :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-phase-track{display:none}
+ :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker{width:210px}
+ :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line b{font-size:13px}
+ :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-combat-line small{display:none}
+ /* The opening hand fits the short screen. */
+ :where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-hand .play-match-card-wrap{width:clamp(84px,calc((100dvh - 262px) / 1.394),150px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-hand-area{height:auto;min-height:0;overflow:visible;flex:0 0 auto}
+ :where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .forge-native-panel [data-native-key=decision-title]{margin-bottom:8px;font-size:13px}
+ :where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-decisions .forge-native-panel .forge-native-actions>button{min-height:44px;font-size:17px!important;flex-basis:170px!important;width:170px!important}
+}
+/* Any short landscape screen (phones, tablets sideways under their browser bars): the board
+   spends less on padding so its pieces stay large enough to show their art. */
+@media (min-width:640px) and (min-height:300px) and (max-height:599px) and (min-aspect-ratio:3/2){
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone-groups{gap:4px 14px;--fit-h1:calc((100cqh - 16px) / 1.6);--fit-h2:calc((100cqh - 22px) / 2.4)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat-area[data-seat=you] .play-match-zone-groups{padding-top:4px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat-area[data-seat=cpu] .play-match-zone-groups{padding-bottom:4px}
+}
+/* Small pieces show art and P/T only; the name stays in the card's label and on long-press. */
+@container (max-height:150px){
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card[data-presentation=battlefield] .play-match-card-name{display:none}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card[data-presentation=battlefield] .play-match-piece-art{inset:3px}
+}

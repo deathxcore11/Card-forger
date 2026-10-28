@@ -3,14 +3,18 @@
 // The name stays compatible with desktop callers and their existing placement.
 export const PLAY_TOUCH_MIN_EDGE = 600;
 // On touch devices the table fits when its shortest side has room: tablets and
-// unfolded foldables in either orientation. A phone fits in neither orientation
-// (held sideways its board is too small to read). Size alone decides: browsers
+// unfolded foldables in either orientation. A phone (or a folded cover screen) fits
+// held sideways, where the table has its own compact phone layout, the way Arena
+// plays on a phone; upright it is asked to turn. Size alone decides: browsers
 // report no hinge or fold state.
+export const PLAY_PHONE_MIN = {width:640, height:300, ratio:1.5};
+export const playPhoneSideways=(width,height)=>width>=PLAY_PHONE_MIN.width&&height>=PLAY_PHONE_MIN.height&&width>=height*PLAY_PHONE_MIN.ratio;
 export function playScreenFits(width, height, {screenMin=0, typing=false}={}) {
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return null;
   // An on-screen keyboard only takes height, so while a text field is in use the width decides.
   if(typing)return width>=PLAY_TOUCH_MIN_EDGE;
   if(Math.min(width,height)>=PLAY_TOUCH_MIN_EDGE)return true;
+  if(playPhoneSideways(width,height))return true;
   // A tablet held sideways loses height to the browser's own bars; its screen still decides.
   return screenMin>=PLAY_TOUCH_MIN_EDGE&&width>=PLAY_TOUCH_MIN_EDGE&&height>=520;
 }
@@ -34,7 +38,7 @@ export function playDeviceEligibility({native=false,ua='',platform='',mobile,max
   const touchEntry=()=>{
     if(tableSupported===false)return {eligible:false,reason:'touch-browser',entry:'touch'};
     if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return {eligible:false,reason:'viewport-unknown',entry:'touch'};
-    if(!playScreenFits(width,height,{screenMin,typing}))return {eligible:false,reason:'touch-space',entry:'touch'};
+    if(!playScreenFits(width,height,{screenMin,typing}))return {eligible:false,reason:playPhoneSideways(height,width)?'touch-rotate':'touch-space',entry:'touch'};
     return {eligible:true,reason:'wide-touch-candidate',entry:'touch'};
   };
   if(mobileDevice){
@@ -61,6 +65,7 @@ export function readPlayDeviceEligibility(view=globalThis,root=view.document) {
 // One title and one line per reason, shown in place of the start button.
 export function playDeviceGate(result={}) {
   if(result.reason==='native')return {title:'Play is coming to the app',line:'Play in the Android app is coming with its next update.'};
+  if(result.reason==='touch-rotate')return {title:'Turn your phone sideways',line:'Play runs sideways on a phone, the way Arena does.'};
   if(result.reason==='touch-space'||result.reason==='viewport-unknown')return {title:'Play needs a bigger screen',line:'Unfold your device, or use a tablet or a computer.'};
   if(result.reason==='touch-browser')return {title:'Play needs a newer browser',line:'Update your browser, or open CardStashy in Chrome or Safari.'};
   return {title:'Play isn’t available in this browser',line:'Use Chrome on a tablet or unfolded phone, or a computer with a mouse or trackpad.'};
