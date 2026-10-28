@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-master-volume-pw-f3-pack-hand-v370";
+const CACHE = "cardforge-shell-scanner-audit-pw-labels-v371";
 const ASSETS = [
   "./play-forge-feature.js",
   "./audio.js",
