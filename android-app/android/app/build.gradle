@@ -7,7 +7,7 @@ android {
         applicationId "com.cardstashy.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 23
+        versionCode 24
         versionName "0.11.0-beta"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
