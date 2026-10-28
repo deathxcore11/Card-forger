@@ -14,7 +14,7 @@ import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
 import {syncDesktopPlayEntries,playDeviceGate,watchPlayDeviceEligibility} from './desktop-play.js';
 import {createPlaySetup} from './play-setup.js';
 import {FORGE_PLAY_TEST_ENABLED} from './play-forge-feature.js';
-import {forgeDeckSupport} from './play-forge-setup-review.js';
+import {forgeDeckSupport,forgeCpuDeckComplete} from './play-forge-setup-review.js';
 import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
@@ -1516,7 +1516,7 @@ A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBu
 A.playFindOpponent=async()=>{
  const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
- try{const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck)];
+ try{const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck));
  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
@@ -3350,7 +3350,7 @@ A.finderPrecons = async (format) => {
       render();
       try {
         const p = mtgjsonDeck(await fetchJSON("https://mtgjson.com/api/v5/decks/" + d.fileName.replace(/\.json$/, "") + ".json"));
-        F.precons.push({ file: d.fileName, name: p.name || d.name, commander: p.commander, released: d.releaseDate || "", format: "Commander", cards: p.cards.map((c) => ({ name: c.name, qty: c.qty })) });
+        F.precons.push({ file: d.fileName, name: p.name || d.name, commander: p.commander, ...(p.multipleCommanders ? { commanders: p.commanders.map((name) => ({ name, qty: 1 })) } : {}), released: d.releaseDate || "", format: "Commander", cards: p.cards.map((c) => ({ name: c.name, qty: c.qty })) });
       } catch {}
     }
     F.msg = "Loading prices…";
