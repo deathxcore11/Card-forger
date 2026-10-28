@@ -57,3 +57,8 @@
 @media (forced-colors:active) {
   :is(.ask-launch,.home-ai-submit) {color:ButtonText!important;background:ButtonFace!important;border-color:ButtonText!important;animation:none!important;}
 }
+/* The first "Loading…" line breathes so a slow start never looks frozen (app-motion.js does page moves). */
+@media (prefers-reduced-motion:no-preference) {
+  #content > p.muted.center.pad:only-child { animation:cs-load-breathe 1.4s ease-in-out infinite; }
+}
+@keyframes cs-load-breathe { 50% { opacity:.45 } }

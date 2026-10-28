@@ -1,3 +1,4 @@
+import './app-motion.js';
 import {cardDiscoverySpec} from './card-discovery.js';
 import {checkRelease,acknowledgeRelease,onReleaseChange,releaseDot,releaseState} from './release-status.js';
 import {createDeckPipeline} from './deck-pipeline.js';
