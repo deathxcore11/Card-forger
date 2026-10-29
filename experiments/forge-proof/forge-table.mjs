@@ -68,7 +68,7 @@ function keywordHint(name,reference){
 export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName:'You'},format='Commander',title='CardStashy · Local Forge proof',presentation={}}){
  const authority=session;let displayed=authority.snapshot(),playbackBusy=false,activeBeat=null;
  session=createPlaybackSession(authority,{displayed:()=>displayed,busy:()=>playbackBusy});
- const doc=root.ownerDocument,win=doc.defaultView,hooks=practiceArtworkHooks();let handLiftTimer=0,handFocus=null,handFocusId=null,handPointer=null,handSifted=false,localError='',panelKey='',drag=null,ghost=null,ghostFrame=0,suppressUntil=0,closed=false,nativeValueDraft=null,openingFocused=false;
+ const doc=root.ownerDocument,win=doc.defaultView,hooks=practiceArtworkHooks();let handFocusRect=null,handDownAt=null,handTap=null,handLiftTimer=0,handFocus=null,handFocusId=null,handPointer=null,handSifted=false,localError='',panelKey='',drag=null,ghost=null,ghostFrame=0,suppressUntil=0,closed=false,nativeValueDraft=null,openingFocused=false;
  const reducedMotion=()=>win.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  let dockObserver=null,dockObserved=null;
  // Low power: Android's web view, reduced motion, or a small device trades blur, drifting fog and
@@ -804,10 +804,18 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Wide screens dock the preview in the open space on the right, between the CPU seat and
   // the dock, so it never covers the board; narrow screens keep it beside the card.
   const top=Math.max(...['.play-match-seat[data-seat=cpu]','.forge-zone-row[data-seat=cpu]'].map(q=>root.querySelector(q)?.getBoundingClientRect().bottom||0)),bottom=root.querySelector('.play-match-decisions')?.getBoundingClientRect().top||win.innerHeight;
-  const docked=presentation.hosted&&win.innerWidth>=1200&&win.innerWidth/win.innerHeight>=1.3&&bottom-top>=320;
+  const solo=presentation.hosted&&!!handFocus&&handFocus.contains(anchor)&&!!handFocusRect;peek.dataset.solo=String(solo);
+  const docked=!solo&&presentation.hosted&&win.innerWidth>=1200&&win.innerWidth/win.innerHeight>=1.3&&bottom-top>=320;
   peek.dataset.docked=String(docked);if(docked)peek.style.setProperty('--peek-dock-h',`${Math.round(bottom-top-90)}px`);
   const r=anchor.getBoundingClientRect(),vw=win.innerWidth,vh=win.innerHeight,pw=peek.offsetWidth,ph=peek.offsetHeight,gap=14;
+  // A focused hand card is already the big card: show only the glass info beside it (the side with room,
+  // else above it), never a second copy of the card on top of it.
   let x,y;
+  if(solo){const f=handFocusRect,w=peek.offsetWidth,h=peek.offsetHeight;
+   if(vw-f.right-gap-8>=w){x=f.right+gap;y=f.top+(f.bottom-f.top)/2-h/2;}
+   else if(f.left-gap-8>=w){x=f.left-gap-w;y=f.top+(f.bottom-f.top)/2-h/2;}
+   else{x=(f.left+f.right)/2-w/2;y=f.top-h-gap;if(y<8)y=Math.min(vh-h-8,f.bottom+gap);}
+   x=Math.max(8,Math.min(vw-w-8,x));y=Math.max(8,Math.min(vh-h-8,y));peek.dataset.docked='false';peek.style.setProperty('--peek-x',`${Math.round(x)}px`);peek.style.setProperty('--peek-y',`${Math.round(y)}px`);return;}
   if(docked){x=vw-pw-24;y=Math.max(top+16,Math.min(bottom-ph-12,top+16));}
   else if(anchor.closest('.play-match-hand')){x=r.left+r.width/2-pw/2;y=r.top-ph-gap;}
   else{x=r.right+gap;if(x+pw>vw-8)x=r.left-gap-pw;y=r.top+r.height/2-ph/2;}
@@ -864,7 +872,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   act(async()=>{await session.setAutoPay(false);manualPay={seen:false,at:Date.now()};await session.nativeSelect('card',id);});});
  const peekCard=e=>{const card=e.target.closest?.('.play-match-card[data-instance]');return card&&root.contains(card)&&!card.closest('.forge-drag-ghost')?card:null;};
  const over=e=>{if(e.pointerType==='touch'||peekPinned)return;const card=peekCard(e);if(!card||e.pointerType==='mouse'&&presentation.hosted&&card.closest?.('.play-match-hand'))return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>showPeek(card),peekFor?40:240);};
- const out=e=>{if(e.pointerType==='touch'||peekPinned)return;const card=peekCard(e);if(!card||card.contains(e.relatedTarget))return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>{if(!peekPinned)hidePeek();},90);};
+ const out=e=>{if(e.pointerType==='touch'||peekPinned)return;const card=peekCard(e);if(!card||card.contains(e.relatedTarget)||e.pointerType==='mouse'&&presentation.hosted&&card.closest?.('.play-match-hand'))return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>{if(!peekPinned)hidePeek();},90);};
  const contextMenu=e=>{const card=peekCard(e);if(!card)return;e.preventDefault();e.stopImmediatePropagation();if(e.pointerType!=='touch'&&!pressAt)peekFor===card&&peekPinned?hidePeek():showPeek(card,true);};
  const peekKeys=e=>{const card=peekCard(e);if(card&&(e.key==='i'||e.key==='I')&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();e.stopImmediatePropagation();peekFor===card&&peekPinned?hidePeek():showPeek(card,true);return;}if(e.key==='Escape'&&peekFor){hidePeek();}};
  // Arrows are drawn in viewport coordinates, so a scrolling lane moves the cards under them.
@@ -1027,7 +1035,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const sx=xl=>ox+(box.left+xl-ox)*K,sy=yl=>oy-R+(box.top+yl-oy)*K;return {area,wraps,box,K,R,ox,oy,local,sx,sy};}
  function layoutHand(){const g=handGeometry();if(!g)return;const fi=g.wraps.indexOf(handFocus);
   for(const w of g.wraps){if(w!==handFocus)w.removeAttribute('data-hand-focus');}
-  if(fi<0)delete root.dataset.handFocused;else root.dataset.handFocused='true';
+  if(fi<0){delete root.dataset.handFocused;handFocusRect=null;}else root.dataset.handFocused='true';
   if(fi<0){for(const w of g.wraps)for(const v of ['--shove','--focus-k','--focus-x','--focus-y'])w.style.removeProperty(v);return;}
   const W=win.innerWidth,H=win.innerHeight,L=g.wraps.map(g.local),f=L[fi],K=g.K,touch=handPointer!==null&&lastPointerType!=='mouse';
   const restTop=g.sy(f.y),restBottom=g.sy(f.y+f.h),cx=g.sx(f.x+f.w/2),bottom=Math.min(touch?restTop+f.h*K*.25:restBottom,H-8);
@@ -1043,10 +1051,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    handFocus.style.transition='none';handFocus.style.removeProperty('--shove');handFocus.setAttribute('data-hand-focus','true');set(fk,fx,fy);
    const ar=g.area.getBoundingClientRect(),cs=ar.width/g.box.w||1,cr=card.getBoundingClientRect(),toX=x=>g.sx((x-ar.left)/cs),toY=y=>g.sy((y-ar.top)/cs);
    const L=toX(cr.left),Rr=toX(cr.right),T=toY(cr.top),B=toY(cr.bottom),shrink=Math.min(1,(W-16)/Math.max(1,Rr-L),(B-12)/Math.max(1,B-T));
-   const c=(L+Rr)/2,half=(Rr-L)/2*shrink,shift=Math.max(8-(c-half),Math.min(0,W-8-(c+half)));fk=Math.max(1,fk*shrink);fx+=shift/K;
+   const c=(L+Rr)/2,half=(Rr-L)/2*shrink,shift=Math.max(8-(c-half),Math.min(0,W-8-(c+half)));fk=Math.max(1,fk*shrink);fx+=shift/K;handFocusRect={left:c-half+shift,right:c+half+shift,top:B-(B-T)*shrink,bottom:B};
    if(wasFocus){keep.forEach((v,i)=>{const p=['--focus-k','--focus-x','--focus-y'][i];if(v)handFocus.style.setProperty(p,v);else handFocus.style.removeProperty(p);});}else{handFocus.removeAttribute('data-hand-focus');for(const p of ['--focus-k','--focus-x','--focus-y'])handFocus.style.removeProperty(p);if(shove)handFocus.style.setProperty('--shove',shove);}
    void handFocus.offsetWidth;handFocus.style.removeProperty('transition');}
-  handFocus.setAttribute('data-hand-focus','true');handFocus.style.removeProperty('--shove');handFocus.style.setProperty('--focus-k',fk.toFixed(3));handFocus.style.setProperty('--focus-x',`${fx.toFixed(1)}px`);handFocus.style.setProperty('--focus-y',`${fy.toFixed(1)}px`);
+  handFocus.setAttribute('data-hand-focus','true');handFocus.style.removeProperty('--shove');handFocus.style.setProperty('--focus-k',fk.toFixed(3));handFocus.style.setProperty('--focus-x',`${fx.toFixed(1)}px`);handFocus.style.setProperty('--focus-y',`${fy.toFixed(1)}px`);if(peekFor&&peek.dataset.open==='true'&&handFocus.contains(peekFor))placePeek(peekFor);
   {const hk=f.w*K*fk/2;half=hk;dx=fx*K;}
   for(const side of [-1,1]){const idx=[];for(let i=fi+side;i>=0&&i<L.length;i+=side)idx.push(i);if(!idx.length)continue;
    const s=Math.abs(L[idx[0]].x-f.x)*K,first=Math.min(f.w*K*1.2,Math.max(0,side*dx+half-s+f.w*K/2+4));const sh=idx.map((_,j)=>first*Math.max(0,1-j*.34));
@@ -1065,18 +1073,24 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(on){const r=handRaise(),k=handScale();if(r<4&&k<1.02)return;root.style.setProperty('--hand-raise',`${r}px`);root.style.setProperty('--hand-scale',k.toFixed(3));root.dataset.handLift='true';layoutHand();}else{delete root.dataset.handLift;focusHand(null);}};
  // A preview opened from the hand keeps it up until the preview closes.
  const dropHandLift=(ms=260)=>{clearTimeout(handLiftTimer);handLiftTimer=setTimeout(()=>{if(!drag?.active&&!(peek.dataset.open==='true'&&peekFor?.closest?.('.play-match-hand')))setHandLift(false);},ms);};
- const handDown=e=>{if(e.pointerType==='mouse'||e.isPrimary===false||!e.target.closest?.('.play-match-hand-area'))return;lastPointerType=e.pointerType;handPointer=e.pointerId;handSifted=false;focusHand(handWrapAt(e.clientX));setHandLift(true);};
+ const handDown=e=>{if(e.pointerType==='mouse'||e.isPrimary===false||!e.target.closest?.('.play-match-hand-area'))return;lastPointerType=e.pointerType;handPointer=e.pointerId;handSifted=false;handDownAt={x:e.clientX,y:e.clientY};focusHand(handWrapAt(e.clientX));setHandLift(true);};
  // Once a card is carried up out of the hand, the hand settles so the whole board shows; bringing
  // it back down over the hand raises it again. The gap between the two lines keeps it from flickering.
  const handSift=e=>{if(drag?.active&&drag.pointerId===e.pointerId&&drag.source.closest?.('.play-match-hand')){const a=root.querySelector('.play-match-hand-area')?.getBoundingClientRect();if(!a)return;const lifted=root.dataset.handLift==='true';
    if(lifted&&e.clientY<a.top-36)setHandLift(false);else if(!lifted&&e.clientY>a.top+12)setHandLift(true);return;}
   if(e.pointerId!==handPointer||drag?.active)return;const w=handWrapAt(e.clientX);if(w===handFocus)return;handSifted=true;focusHand(w);if(pressShown&&peekPinned){const c=w?.querySelector('.play-match-card[data-instance]');if(c)showPeek(c,true);}};
- const handUp=e=>{if(e.pointerType==='mouse'||e.pointerId!==handPointer)return;handPointer=null;const played=!!drag?.active;if(handSifted&&!played)suppressUntil=Math.max(suppressUntil,Date.now()+300);if(played||!(pressShown||peek.dataset.open==='true'))focusHand(null);if(root.dataset.handLift==='true')dropHandLift(played?90:1600);};
+ // A tap belongs to the card that rose under the thumb. The rise moves cards under the finger, so the
+ // browser's own click would land on whatever slid there; it is swallowed and the focused card is clicked.
+ const handUp=e=>{if(e.pointerType==='mouse'||e.pointerId!==handPointer)return;handPointer=null;const played=!!drag?.active;if(handSifted&&!played)suppressUntil=Math.max(suppressUntil,Date.now()+300);
+  const tap=!played&&!handSifted&&!!handDownAt&&Math.hypot(e.clientX-handDownAt.x,e.clientY-handDownAt.y)<12&&handFocus?.querySelector('.play-match-card[data-instance]');handDownAt=null;
+  if(tap){handTap=tap;win.setTimeout(()=>{if(handTap===tap){handTap=null;if(tap.isConnected)tap.click();}},0);}
+  else if(played||!(pressShown||peek.dataset.open==='true'))focusHand(null);if(root.dataset.handLift==='true')dropHandLift(played?90:1600);};
+ const swallowTapClick=e=>{if(!handTap||!e.isTrusted)return;e.preventDefault();e.stopImmediatePropagation();};
  const handHover=e=>{if(e.pointerType!=='mouse'||drag?.active)return;const area=root.querySelector('.play-match-hand-area');if(!area)return;const a=area.getBoundingClientRect(),lifted=root.dataset.handLift==='true';
   const f=handFocus?.getBoundingClientRect(),onFocus=!!f&&e.clientX>=f.left&&e.clientX<=f.right&&e.clientY>=f.top&&e.clientY<=f.bottom;
   const inside=root.contains(e.target)&&(onFocus||e.clientX>=a.left&&e.clientX<=a.right&&e.clientY>=a.top-(lifted?8:0));
-  if(inside){clearTimeout(handLiftTimer);if(!lifted)handLiftTimer=setTimeout(()=>setHandLift(true),90);focusHand(handWrapAt(e.clientX));}else{focusHand(null);if(lifted)dropHandLift(180);else clearTimeout(handLiftTimer);}};
- root.addEventListener('pointerdown',handDown,true);doc.addEventListener('pointerup',handUp,true);doc.addEventListener('pointercancel',handUp,true);doc.addEventListener('pointermove',handHover,{passive:true});doc.addEventListener('pointermove',handSift,{passive:true});root.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')dropHandLift(180);});
+  if(inside){clearTimeout(handLiftTimer);if(!lifted)handLiftTimer=setTimeout(()=>setHandLift(true),90);focusHand(handWrapAt(e.clientX));if(presentation.hosted&&!peekPinned){const c=handFocus?.querySelector('.play-match-card[data-instance]');if(c&&c!==peekFor){clearTimeout(peekTimer);peekTimer=setTimeout(()=>{if(c.isConnected&&handFocus?.contains(c)&&!drag?.active)showPeek(c);},peek.dataset.open==='true'?40:320);}}}else{if(presentation.hosted&&!peekPinned&&peekFor?.closest?.('.play-match-hand')){clearTimeout(peekTimer);hidePeek();}focusHand(null);if(lifted)dropHandLift(180);else clearTimeout(handLiftTimer);}};
+ doc.addEventListener('click',swallowTapClick,true);root.addEventListener('pointerdown',handDown,true);doc.addEventListener('pointerup',handUp,true);doc.addEventListener('pointercancel',handUp,true);doc.addEventListener('pointermove',handHover,{passive:true});doc.addEventListener('pointermove',handSift,{passive:true});root.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')dropHandLift(180);});
  root.addEventListener('click',click,true);root.addEventListener('pointerdown',down);doc.addEventListener('pointermove',move,{passive:false});doc.addEventListener('pointerup',up);doc.addEventListener('pointercancel',pressCancel);doc.addEventListener('keydown',key);win.addEventListener('blur',cancel);
- return {destroy(){closed=true;tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
