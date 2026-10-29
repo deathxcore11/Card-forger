@@ -1835,3 +1835,5 @@ body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
 /* Trouble toasts sit top-center under the opponent's row, never over a life total. */
 :where(body.practice-table-open) .forge-native-panel .forge-toast{left:50%!important;right:auto!important;translate:-50% 0;top:calc(max(env(safe-area-inset-top),6px) + 84px)!important}
 @media (max-aspect-ratio:17/20){:where(body.practice-table-open) .forge-native-panel .forge-toast{top:calc(max(env(safe-area-inset-top),6px) + 150px)!important}}
+/* A dragged card keeps its name on one line. */
+:where(body.practice-table-open) .forge-drag-ghost .play-match-card-name{display:block;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis;word-break:normal!important;overflow-wrap:normal!important;max-width:100%;height:auto!important}
