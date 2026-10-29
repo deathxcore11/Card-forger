@@ -1,7 +1,7 @@
 import {mountMatchTable} from '../phase-engine/match-table.mjs';
 import {practiceArtworkHooks,resolvePracticeArtwork} from '../../play-card-surface.js';
 import {practicePlayerPortrait} from '../../play-player-mat.js';
-import {mountNativePanel} from './native-panel.mjs';
+import {mountNativePanel,nativePayment,owesAttack} from './native-panel.mjs';
 import {createMotion} from './motion-kit.mjs';
 import {optionCardId} from './forge-session.mjs';
 import {CpuActionPlaybackQueue,createPlaybackSession,tableActivity} from './cpu-action-playback.mjs';
@@ -40,18 +40,26 @@ function manaSources(card,tapped=false){
   // A tapped source still counts when an ability of its needs no tap ("Sacrifice this: Add {W}.").
   if(parts.includes('{T}')&&(tapped||card.summoningSick&&card.types?.includes('Creature')))continue;
   const add=effect.replace(/\.?\s*(?:\(.*\))?$/,'').match(/^add (.+)$/i);if(!add)return null;const what=add[1].trim();
-  if(/^one mana of any color$/i.test(what)){options.push(['WUBRG'.split('')]);continue;}
+  {const any=what.match(/^(one|two|three) mana of any (?:one )?(?:color|type)\b(?:[^.]*\bcommander'?s? color identity)?$/i);if(any){options.push(Array({one:1,two:2,three:3}[any[1].toLowerCase()]).fill('WUBRGC'.split('')));continue;}}
   const alts=what.split(/,\s*(?:or\s+)?|\s+or\s+/);const parsed=alts.map(a=>(a.match(/^(?:\{[WUBRGC]\})+$/)?a.match(/[WUBRGC]/g):null));if(parsed.some(x=>!x))return null;
   for(const tokens of parsed)options.push(tokens.map(c=>[c]));}
  return options.length?options:[];}
+// What a land whose text this reader can't follow could make at most: any colour, as many mana as its
+// longest Add clause names (a fetch land counts as one). Anything that scales (X, "for each") stays unknown.
+function landCeiling(card){
+ if(!card.types?.includes('Land')||card.tapped)return null;const text=String(card.text||'');if(/for each|\bX\b|amount|double|twice|additional|instead/i.test(text))return null;
+ const adds=[...text.matchAll(/\badd ([^.]+)/gi)].map(m=>Math.max((m[1].match(/\{[^}]+\}/g)||[]).length,/\btwo\b/i.test(m[1])?2:/\bthree\b/i.test(m[1])?3:1));
+ return [Array(Math.max(1,...adds)).fill('WUBRGC'.split(''))];}
+// Only an effect that changes what your spells cost (or how they can be paid) keeps a card lit.
+const TABLE_BENDERS=/\bcosts?\b[^.]*\bless\b|\breduc|without paying|rather than pay|alternative cost|as though it were mana|spend mana as though|convoke|improvise|affinity|\bdelve\b/i;
 export function provenUnaffordable(card,surface,pool={}){
  if(!card?.known||card.zone!=='Hand'||card.types?.includes('Land')||COST_BENDERS.test(card.text||''))return false;
  const symbols=(String(card.manaCost||'').match(/\{[^}]+\}/g)||[]).map(x=>x.slice(1,-1));if(!symbols.length||!symbols.every(x=>MANA_SYMBOL.test(x)))return false;
  const generic=symbols.filter(x=>/\d/.test(x)).reduce((a,x)=>a+Number(x),0),colored=symbols.filter(x=>!/\d/.test(x));
- const table=surface.cards.filter(c=>c.zone==='Battlefield'||c.zone==='Command');if(table.some(c=>!c.known||COST_BENDERS.test(c.text||'')&&!/from your hand|discard this card|exile this card|reveal this card|cycling|channel/i.test(c.text||'')))return false;
+ const table=surface.cards.filter(c=>c.zone==='Battlefield'||c.zone==='Command');if(table.some(c=>!c.known||TABLE_BENDERS.test(c.text||'')))return false;
  if(surface.cards.some(c=>c.zone==='Hand'&&c.controller===surface.seat&&c.id!==card.id&&/from your hand[^.]*:\s*add|:\s*add[^.]*\bfrom your hand/i.test(c.text||'')))return false;
  const floating=Object.entries(pool||{}).flatMap(([c,n])=>Array(Math.max(0,Number(n)||0)).fill([String(c).toUpperCase()]));
- const sources=[];for(const c of table){if(c.controller!==surface.seat||c.zone!=='Battlefield')continue;const o=manaSources(c,c.tapped===true);if(o===null)return false;if(o.length)sources.push(o);}
+ const sources=[];for(const c of table){if(c.controller!==surface.seat||c.zone!=='Battlefield')continue;const o=manaSources(c,c.tapped===true)??landCeiling(c);if(o===null)return false;if(o.length)sources.push(o);}
  if(sources.length>14||sources.reduce((a,o)=>a*o.length,1)>4096)return false;
  const pays=tokens=>{if(tokens.length<generic+colored.length)return false;const used=new Array(tokens.length).fill(false);
   const fit=i=>{if(i===colored.length)return true;for(let k=0;k<tokens.length;k++)if(!used[k]&&tokens[k].includes(colored[i])){used[k]=true;if(fit(i+1))return true;used[k]=false;}return false;};return fit(0);};
@@ -72,6 +80,8 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  const doc=root.ownerDocument,win=doc.defaultView,hooks=practiceArtworkHooks();let handFocusRect=null,handDownAt=null,handTap=null,handLiftTimer=0,handFocus=null,handFocusId=null,handPointer=null,handSifted=false,localError='',panelKey='',drag=null,ghost=null,ghostFrame=0,suppressUntil=0,closed=false,nativeValueDraft=null,openingFocused=false;
  const reducedMotion=()=>win.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  let dockObserver=null,dockObserved=null;
+ // Cards whose payment came up short, with the mana you had when you tried (see enhance).
+ const shortCasts=new Map();let shortSig='';
  // Low power: Android's web view, reduced motion, or a small device trades blur, drifting fog and
  // foil sheen for flat glass. localStorage 'cardstashy.lowPower' = 'on' or 'off' overrides it.
  const lowPower=(()=>{let pref='';try{pref=win.localStorage?.getItem('cardstashy.lowPower')||'';}catch{}if(pref==='on')return true;if(pref==='off')return false;
@@ -81,6 +91,26 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  let lastDrop=null;
  const peek=doc.createElement('div');let peekFor=null,peekPinned=false,peekTimer=0,pressTimer=0,pressAt=null,pressShown=false,peekKey='',lastPointerType='mouse';
  const failedArt=new Set(),castShow=doc.createElement('div');castShow.className='forge-cast';castShow.setAttribute('role','status');castShow.setAttribute('aria-live','polite');castShow.dataset.open='false';doc.body.append(castShow);
+ // Your own spell while you choose its targets or pay for it. Forge has already moved it to the stack but lists it
+ // there only once it is cast, so until then it is shown here, large, the way Arena lifts the card you are casting.
+ const ownCast=doc.createElement('div');ownCast.className='forge-cast forge-own-cast';ownCast.dataset.open='false';ownCast.dataset.kind='own';ownCast.setAttribute('aria-hidden','true');doc.body.append(ownCast);
+ let ownCastKey='',aim=null;const seenInHand=new Map();
+ function pendingCast(n,surface){
+  const input=String(n?.inputType||'');if(!presentation.hosted||!(input==='InputSelectTargets'||input.startsWith('InputPayMana')||n?.prompt))return null;
+  const events=Array.isArray(n.events?.items)?n.events.items:[],last=new Map();for(const e of events)if(e?.type==='zone'&&e.card?.kind==='card')last.set(e.card.id,e);
+  const ev=[...last.values()].filter(e=>e.to==='Stack'&&e.from==='Hand'&&e.player===n.viewer).sort((a,b)=>b.seq-a.seq)[0];if(!ev)return null;
+  if((n.stack||[]).some(x=>x.id===ev.card.id||x.source?.id===ev.card.id)||surface.cards.some(c=>c.id===ev.card.id&&c.zone!=='Stack'))return null;
+  return seenInHand.get(ev.card.id)||{id:ev.card.id,name:ev.card.name,known:true,zone:'Stack'};
+ }
+ function paintOwnCast(n,surface){
+  for(const c of surface.cards)if(c.zone==='Hand'&&c.known&&c.controller===surface.seat)seenInHand.set(c.id,c);
+  const c=pendingCast(n,surface),key=c?`${c.id}:${c.name}`:'';if(key===ownCastKey)return;ownCastKey=key;
+  if(!c){ownCast.dataset.open='false';root.removeAttribute('data-own-cast');aim=null;queueArrows();return;}
+  const art=resolvePracticeArtwork(c);
+  ownCast.innerHTML=`<figure>${art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:''}</figure><p><span>Casting</span><strong>${esc(c.name)}</strong></p>`;
+  if(!art?.imageUrl)ownCast.querySelector('figure').append(drawnArtwork(doc,c,surfaceColors(c)));
+  ownCast.dataset.open='true';root.dataset.ownCast=String(c.id);
+ }
  // Whose move it is and what just happened, from the accepted state and the playback alone.
  const activity=doc.createElement('div');activity.className='forge-activity';activity.setAttribute('role','status');activity.setAttribute('aria-live','polite');activity.hidden=true;doc.body.append(activity);let playback=null;
  // Tokens have no deck printing: show a real one from Scryfall once it is found, in place of the crest.
@@ -140,7 +170,12 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const blockedWhy=new Map((n.selection?.blocked||[]).filter(b=>b?.kind==='card'&&typeof b.reason==='string').map(b=>[Number(b.id),b.reason])),actionable=ids(n.selection?.actionable),
   // Newer hosts say how sure they are per action; 'unavailable' is blocked, 'unknown' gets the quiet rim, 'available' the halo.
   affordability=new Map((n.selection?.actionable||[]).filter(r=>r?.kind==='card'&&typeof r.affordability==='string').map(r=>[Number(r.id),r.affordability])),targets=ids(n.selection?.targets),choices=ids(n.selection?.cards),chosen=ids(n.selection?.chosen);
-  if(presentation.hosted&&!n.prompt){const sf=snap.status.surface,you=n.players?.find(p=>p.id===sf.players.find(p=>p.seat===sf.seat)?.nativeId);for(const id of [...actionable]){const card=snap.status.surface.cards.find(c=>c.id===id);if(card&&card.controller===snap.status.surface.seat&&(affordability.get(id)==='unavailable'||affordability.get(id)!=='available'&&provenUnaffordable(card,snap.status.surface,you?.mana))){actionable.delete(id);if(!blockedWhy.has(id))blockedWhy.set(id,'Not enough mana');}}}
+  paintOwnCast(n,snap.status.surface);
+  // A spell whose payment Forge couldn't finish stays dark until your mana changes (a land, a new turn, floating mana).
+  if(presentation.hosted){const sf=snap.status.surface,you=n.players?.find(p=>p.id===sf.players.find(p=>p.seat===sf.seat)?.nativeId),sig=JSON.stringify([n.turn,sf.cards.filter(c=>c.controller===sf.seat&&c.zone==='Battlefield'&&!c.tapped).map(c=>c.id),you?.mana||{}]),paying=String(n.inputType||'').startsWith('InputPayMana')?nativePayment(n,sf.cards):null;
+   if(paying?.short&&paying.forCard!==null&&sf.cards.find(c=>c.id===paying.forCard)?.zone!=='Battlefield')shortCasts.set(paying.forCard,shortSig);
+   if(!paying){shortSig=sig;for(const [id,was]of shortCasts)if(was!==sig)shortCasts.delete(id);}}
+  if(presentation.hosted&&!n.prompt){const sf=snap.status.surface,you=n.players?.find(p=>p.id===sf.players.find(p=>p.seat===sf.seat)?.nativeId);for(const id of [...actionable]){const card=snap.status.surface.cards.find(c=>c.id===id);if(card&&card.controller===snap.status.surface.seat&&(affordability.get(id)==='unavailable'||shortCasts.has(id)||affordability.get(id)!=='available'&&provenUnaffordable(card,snap.status.surface,you?.mana))){actionable.delete(id);if(!blockedWhy.has(id))blockedWhy.set(id,'Not enough mana');}}}
   for(const index of snap.nativeDraft?.indexes||[]){const o=n.prompt?.options.find(o=>o.index===index);const cardId=optionCardId(o?.value);if(cardId!==null)chosen.add(cardId);}
   // Forge's own hint lists, shown by meaning: something you can play or use now,
   // a target for the spell or ability being cast, a card this prompt asks about,
@@ -151,7 +186,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const combatInput=n.inputType==='InputAttack'||n.inputType==='InputBlock';
   for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);const dragOk=combatInput&&!!combatDrops(cardId);if((el.dataset.forgeDrag==='true')!==dragOk){if(dragOk)el.dataset.forgeDrag='true';else delete el.dataset.forgeDrag;}el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));if(actionable.has(cardId)&&el.closest('.play-match-hand')){const c=snap.status.surface.cards.find(x=>x.id===cardId);const a=affordability.get(cardId);el.dataset.forgeSure=String(a?a==='available':!(c&&COST_BENDERS.test(c.text||'')));}else delete el.dataset.forgeSure;
    // A creature Forge says must attack this combat wears a tag until it is in the attack.
-   const must=n.inputType==='InputAttack'&&!!snap.status.surface.cards.find(x=>x.id===cardId&&x.mustAttack===true);if(must&&el.dataset.forgeMust!=='true'){el.dataset.forgeMust='true';const tag=doc.createElement('span');tag.className='forge-must-tag';tag.textContent='Must attack';el.append(tag);}else if(!must&&el.dataset.forgeMust){delete el.dataset.forgeMust;el.querySelector(':scope>.forge-must-tag')?.remove();}el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
+   const must=n.inputType==='InputAttack'&&!!snap.status.surface.cards.find(x=>x.id===cardId&&owesAttack(x));if(must&&el.dataset.forgeMust!=='true'){el.dataset.forgeMust='true';const tag=doc.createElement('span');tag.className='forge-must-tag';tag.textContent='Must attack';el.append(tag);}else if(!must&&el.dataset.forgeMust){delete el.dataset.forgeMust;el.querySelector(':scope>.forge-must-tag')?.remove();}el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
   const surface=snap.status.surface,nativePlayer=seat=>n.players.find(p=>p.id===surface.players.find(p=>p.seat===seat)?.nativeId);
   // Floating mana is the native pool only, never untapped lands or potential production.
   const manaEntries=player=>Object.entries(player?.mana||{}).map(([color,amount])=>[String(color).toUpperCase(),Number(amount)||0]);
@@ -227,6 +262,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // The turn-change notice gets its banner art: whose turn large, the turn number small.
    const banner=root.querySelector('.play-match-turn-banner');
    if(banner&&!banner.dataset.owner){const [who,...rest]=banner.textContent.split(' · ');banner.dataset.owner=who==='Your turn'?'you':'cpu';const big=doc.createElement('strong'),small=doc.createElement('span');big.textContent=who;small.textContent=rest.join(' · ');banner.replaceChildren(big,small);}
+   // A CPU-turn banner still playing back never sits over a dock that already says it is your move.
+   if(banner?.dataset.owner==='cpu'&&n.activePlayer===n.viewer&&n.priorityPlayer===n.viewer&&!playbackBusy)banner.remove();
    // Ambience: the board's corners breathe a soft fog in each player's colours, read from their
    // known cards (mana symbols and basic land types). Yours along the bottom, the CPU's along the top.
    const main=root.querySelector('.play-match-main');
@@ -507,7 +544,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(n.inputType==='InputSelectTargets'){
    const named=String(n.message||'').match(/targets? for ([^\n]+)/i)?.[1]?.trim(),mine=c=>c.known&&c.controller===surface.seat;
    const source=cards.filter(c=>mine(c)&&c.zone==='Stack').sort((a,b)=>b.id-a.id)[0]||(named&&(cards.find(c=>mine(c)&&c.zone==='Battlefield'&&c.name===named)||cards.find(c=>mine(c)&&c.zone==='Hand'&&c.name===named)));
-   if(source)for(const r of n.selection?.chosen||[]){const to=r.kind==='card'?byCard(r.id):r.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:byCard(source.id),to});}
+   const from=source?byCard(source.id):ownCast.dataset.open==='true'?{kind:'own'}:null;
+   // Arena's aiming line: until every target is chosen, a curved line runs from the spell to your finger or pointer.
+   if(from&&aim&&(n.selection?.chosen||[]).length<Math.max(1,n.selection?.max||1))out.push({kind:'aim',from,to:{kind:'point',x:aim.x,y:aim.y}});
+   if(from)for(const r of n.selection?.chosen||[]){const to=r.kind==='card'?byCard(r.id):r.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from,to});}
   }
   // The top spell or ability on the stack points from its line in the decision card to
   // its targets, when Forge names them. Only the top of the stack draws, and none while you are picking your own.
@@ -517,7 +557,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   return out;
  }
  function anchorRect(ref){
-  const el=ref.kind==='spotlight'?castShow:ref.kind==='seat'?root.querySelector(`.play-match-seat[data-player-seat="${ref.seat}"]`):ref.kind==='stack'?root.querySelector(`[data-native-key="stack-${ref.id}"]`):root.querySelector(`.play-match-card[data-instance="${ref.id}"]`);
+  if(ref.kind==='point')return {left:ref.x-1,top:ref.y-1,width:2,height:2};
+  const el=ref.kind==='spotlight'?castShow:ref.kind==='own'?ownCast.querySelector('figure'):ref.kind==='seat'?root.querySelector(`.play-match-seat[data-player-seat="${ref.seat}"]`):ref.kind==='stack'?root.querySelector(`[data-native-key="stack-${ref.id}"]`):root.querySelector(`.play-match-card[data-instance="${ref.id}"]`);
   const box=el&&(el.closest('.play-match-card-wrap')||el).getBoundingClientRect();return box&&box.width>0?box:null;
  }
  function drawArrows(){
@@ -527,10 +568,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const ax=a.left+a.width/2,ay=a.top+a.height/2,bx=b.left+b.width/2,by=b.top+b.height/2,len=Math.hypot(bx-ax,by-ay);if(len<20)continue;
    // Start at the source's edge, stop short of the target's edge, and bow the line a little.
    const ux=(bx-ax)/len,uy=(by-ay)/len,start=Math.min(a.width,a.height)*.42,stop=Math.min(b.width,b.height)*.48+4;
-   const sx=ax+ux*start,sy=ay+uy*start,ex=bx-ux*stop,ey=by-uy*stop,bend=Math.min(60,len*.16),cx=(sx+ex)/2-uy*bend,cy=(sy+ey)/2+ux*bend;
+   const sx=ax+ux*start,sy=ay+uy*start,ex=r.kind==='aim'?bx:bx-ux*stop,ey=r.kind==='aim'?by:by-uy*stop,bend=Math.min(60,len*.16),cx=(sx+ex)/2-uy*bend,cy=(sy+ey)/2+ux*bend;
    // Arena-style: a thin line from the source to a ring around the target, with a small dot where it leaves the
    // source. Combat keeps a (thinner) arrowhead so attackers and blockers still read at a glance.
-   const rx=Math.min(14,b.width*.18);paths.push(`<path class="forge-arrow" data-kind="${r.kind}" d="M${sx.toFixed(1)} ${sy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}"${r.kind==='target'?'':` marker-end="url(#forge-head-${r.kind})"`}/><circle class="forge-arrow-dot" data-kind="${r.kind}" cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="3.5"/><rect class="forge-target-ring" data-kind="${r.kind}" x="${(b.left-4).toFixed(1)}" y="${(b.top-4).toFixed(1)}" width="${(b.width+8).toFixed(1)}" height="${(b.height+8).toFixed(1)}" rx="${rx.toFixed(1)}"/>`);
+   const rx=Math.min(14,b.width*.18);paths.push(`<path class="forge-arrow" data-kind="${r.kind}" d="M${sx.toFixed(1)} ${sy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}"${r.kind==='target'||r.kind==='aim'?'':` marker-end="url(#forge-head-${r.kind})"`}/><circle class="forge-arrow-dot" data-kind="${r.kind}" cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="3.5"/>${r.kind==='aim'?`<circle class="forge-aim-reticle" cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="9"/>`:`<rect class="forge-target-ring" data-kind="${r.kind}" x="${(b.left-4).toFixed(1)}" y="${(b.top-4).toFixed(1)}" width="${(b.width+8).toFixed(1)}" height="${(b.height+8).toFixed(1)}" rx="${rx.toFixed(1)}"/>`}`);
    // While you block, your block line is a control: a wide invisible stroke and a small x at its middle undo it.
    if(r.kind==='block'&&blocking&&r.from.kind==='card'&&r.to.kind==='card'&&mineOnBoard(r.from.id)){const mx=(sx+2*cx+ex)/4,my=(sy+2*cy+ey)/4,ids=`data-blocker="${r.from.id}" data-attacker="${r.to.id}"`;
     paths.push(`<path class="forge-arrow-hit" ${ids} d="M${sx.toFixed(1)} ${sy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}"/><g class="forge-unblock" ${ids} transform="translate(${mx.toFixed(1)} ${my.toFixed(1)})"><circle r="11"/><path d="M-4 -4L4 4M4 -4L-4 4"/></g>`);}
@@ -564,6 +605,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const away=e=>{if(!tray.contains(e.target))closeLaneTray();};doc.addEventListener('pointerdown',away,true);tray._away=away;
  }
  function closeLaneTray(){const tray=root.querySelector(':scope>.forge-lane-tray');if(!tray)return;doc.removeEventListener('pointerdown',tray._away,true);tray.remove();}
+ const growLimit=()=>Math.min(win.innerWidth,win.innerHeight)<600&&win.matchMedia?.('(pointer:coarse)').matches?1.7:1;
  function fitBoard(){
   boardFrame=0;if(closed||!presentation.hosted)return;
   // Your side stops above your hand where it rests, not where a lift or a popped card has carried it, so
@@ -596,12 +638,14 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
      fold(keep);while(keep>1&&scaleOf()<.72){keep--;fold(keep);}kr=scaleOf();}
     else if(more)more.remove();
     if(kr<.995){row.style.transformOrigin='top center';row.style.transform=`scale(${kr.toFixed(3)})`;}}};
-   fitRows();let k=1;for(let i=0;i<6;i++){const next=Math.max(.4,Math.min(1,H/zone.scrollHeight,W/zone.scrollWidth));if(Math.abs(next-k)<.01&&i)break;k=next;zone.style.width=`${W/k}px`;}
+   // On a phone the pieces start small; a board with room to spare grows them to fill it (Arena's cards fill the table).
+   // The largest scale whose reflowed layout (rows wrap at width W/k) still fits both ways, found by halving.
+   fitRows();const fitsAt=k=>{zone.style.width=`${W/k}px`;return zone.scrollHeight*k<=H+1&&zone.scrollWidth*k<=W+1;};let k=growLimit();if(!fitsAt(k)){let lo=.4,hi=k;for(let i=0;i<6;i++){const mid=(lo+hi)/2;if(fitsAt(mid))lo=mid;else hi=mid;}k=lo;}
    fits.push({area,zone,own,W,k,fitRows});
   }
-  const k=Math.min(1,...fits.map(f=>f.k));
+  const k=Math.min(growLimit(),...fits.map(f=>f.k));
   for(const f of fits){const {area,zone,own,W,fitRows}=f;
-   if(k>=.995){zone.style.removeProperty('width');fitRows();continue;}
+   if(Math.abs(k-1)<.005){zone.style.removeProperty('width');fitRows();continue;}
    zone.style.width=`${W/k}px`;fitRows();
    const h=zone.scrollHeight*k,lift=own?0:Math.max(0,area.clientHeight-h);
    zone.dataset.scaled='true';zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
@@ -790,7 +834,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function autoDeclareMust(s){
   const n=s?.native,surface=s?.status?.surface;
   if(!presentation.hosted||!n||!surface||s.busy||s.transportError||n.prompt||n.inputType!=='InputAttack')return;
-  const card=surface.cards.find(c=>c.zone==='Battlefield'&&c.controller===surface.seat&&c.mustAttack===true&&c.attacking!==true&&!mustDeclared.has(`${n.turn}:${c.id}`));
+  const card=surface.cards.find(c=>c.zone==='Battlefield'&&c.controller===surface.seat&&owesAttack(c)&&c.attacking!==true&&!mustDeclared.has(`${n.turn}:${c.id}`));
   if(!card)return;mustDeclared.add(`${n.turn}:${card.id}`);
   act(()=>session.nativeSelect('card',card.id));
  }
@@ -863,11 +907,13 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const lines=printedSame?[]:String(c.text||'').split(/\n+/).map(x=>x.trim()).filter(Boolean).filter(line=>!line.replace(/\([^)]*\)/g,'').trim().split(/,\s*|\s+and\s+/).every(part=>explained.has(keywordKey(part.replace(/\.$/,'')))));
   const rule=line=>symbolText(line).replace(/\(([^)]*)\)/g,'<i>($1)</i>');
   const image=art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:'';
+  // Over the printed card its own power and toughness only repeat what it shows; a changed one still says so.
+  const showPT=creature&&c.power!==null&&c.power!==undefined&&(!image||String(c.power)!==String(face?.power)||String(c.toughness)!==String(face?.toughness));
   return `<figure class="forge-peek-card" data-art="${image?'image':'drawn'}">${image}</figure>
 <section class="forge-peek-info">
  <header><h3>${esc(c.name)}</h3>${c.manaCost?manaCost({mana_cost:c.manaCost}):''}</header>
  ${c.type?`<p class="forge-peek-type">${esc(c.type)}</p>`:''}
- ${creature&&c.power!==null&&c.power!==undefined||chips.length?`<div class="forge-peek-state">${creature&&c.power!==null&&c.power!==undefined?`<span class="forge-peek-pt">${stat(c.power,face.power)}<i>/</i>${stat(c.toughness,face.toughness)}</span>`:''}${chips.map(([k,t,icon])=>`<span class="forge-peek-chip" data-kind="${k}">${boardIcon(icon||chipIcon[k],'cs-icon forge-peek-icon')}${t}</span>`).join('')}</div>`:''}
+ ${showPT||chips.length?`<div class="forge-peek-state">${showPT?`<span class="forge-peek-pt">${stat(c.power,face.power)}<i>/</i>${stat(c.toughness,face.toughness)}</span>`:''}${chips.map(([k,t,icon])=>`<span class="forge-peek-chip" data-kind="${k}">${boardIcon(icon||chipIcon[k],'cs-icon forge-peek-icon')}${t}</span>`).join('')}</div>`:''}
  ${keywords.length?`<ul class="forge-peek-keywords">${keywords.map(k=>{const hint=keywordHint(k,reference);return `<li><b>${boardIcon(kwIcon.get(k),'cs-icon forge-peek-icon')}${symbolText(k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/:/g,' '))}</b>${hint?`<span>${symbolText(hint)}</span>`:''}</li>`;}).join('')}</ul>`:''}
  ${lines.length?`<div class="forge-peek-rules">${lines.map(l=>`<p>${rule(l)}</p>`).join('')}</div>`:''}
  ${c.commander?commanderFacts(c):''}
@@ -1105,7 +1151,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // A drop that plays nothing floats the card back to its slot instead of vanishing.
  const returnGhost=(el,source)=>{const r=source?.isConnected&&source.getBoundingClientRect();if(!r||typeof el.animate!=='function'||win.matchMedia?.('(prefers-reduced-motion: reduce)').matches){el.remove();return;}const [x,y]=(el.style.translate||'0px 0px').split(' ').map(parseFloat);const a=el.animate([{translate:`${x}px ${y}px`,scale:1},{translate:`${r.left+r.width/2}px ${r.top+r.height/2}px`,scale:.9,opacity:.6}],{duration:220,easing:'cubic-bezier(.3,.7,.2,1)'});a.onfinish=a.oncancel=()=>el.remove();};
  const cancel=(back=false)=>{if(ghostFrame)win.cancelAnimationFrame(ghostFrame);ghostFrame=0;drag?.source?.classList.remove('forge-drag-source');if(ghost){if(back)returnGhost(ghost,drag?.source);else ghost.remove();}drag=null;ghost=null;root.classList.remove('forge-dragging');delete root.dataset.playLine;markTapPreview(null);for(const el of root.querySelectorAll('[data-forge-lane-drop]'))el.removeAttribute('data-forge-lane-drop');markDrops();};
- const down=e=>{lastPointerType=e.pointerType||'mouse';if(e.button!==0||e.isPrimary===false)return;const card=e.target.closest?.('.play-match-card[data-instance]'),s=session.snapshot();
+ const down=e=>{lastPointerType=e.pointerType||'mouse';
+  // Two fingers, like a physical table: while one thumb holds a card open to read it, another can drag a card.
+  const second=e.isPrimary===false;if(e.button!==0||second&&!(pressAt&&pressAt.id!==e.pointerId&&!drag?.active))return;const card=e.target.closest?.('.play-match-card[data-instance]'),s=session.snapshot();
+  if(second){if(!card||s.busy||s.native?.prompt||s.native?.inputType==='InputConfirmMulligan'||s.status?.terminal)return;drag={id:Number(card.dataset.instance),revision:s.status.revision,pointerId:e.pointerId,x:e.clientX,y:e.clientY,source:card,active:false,intent:'',ax:e.clientX,ay:e.clientY,second:true};return;}
   // In your hand a still hold reads the card under your thumb (it follows as you slide); elsewhere it reads the card you pressed.
   if(card&&e.pointerType!=='mouse'&&presentation.hosted&&card.closest('.play-match-hand')){clearTimeout(pressTimer);pressAt={x:e.clientX,y:e.clientY,id:e.pointerId};pressShown=false;pressTimer=setTimeout(()=>{if(drag?.active||drag?.intent==='browse')return;const c=handFocus?.querySelector('.play-match-card[data-instance]')||card;if(!c.isConnected)return;showPeek(c,true);pressShown=true;haptic('tick');suppressUntil=Date.now()+60000;},HAND_HOLD);}
   if(card&&e.pointerType!=='mouse'&&!(presentation.hosted&&card.closest('.play-match-hand'))){clearTimeout(pressTimer);pressAt={x:e.clientX,y:e.clientY,id:e.pointerId};pressShown=false;pressTimer=setTimeout(()=>{if(drag?.active)return;showPeek(card,true);pressShown=true;suppressUntil=Date.now()+60000;},420);}
@@ -1116,7 +1165,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // HAND_PLAY px plays, so the arc of a sliding thumb never grabs a card. Playable cards grab no sooner.
  const HAND_HOLD=380,HAND_SIDE=10,HAND_UP=22,HAND_PLAY=40;
  function handIntent(e){
-  const c=handFocus?.querySelector('.play-match-card[data-instance]');if(c&&c!==drag.source){drag.source=c;drag.id=Number(c.dataset.instance);}
+  const c=drag.second?null:handFocus?.querySelector('.play-match-card[data-instance]');if(c&&c!==drag.source){drag.source=c;drag.id=Number(c.dataset.instance);}
   const dx=e.clientX-drag.ax,up=drag.ay-e.clientY;
   if(!drag.intent){if(Math.abs(dx)>=HAND_SIDE&&Math.abs(dx)>up*1.2)drag.intent='browse';else if(up>=HAND_UP&&up>Math.abs(dx)*1.4)drag.intent='play';}
   else if(drag.intent==='browse'){
@@ -1146,13 +1195,19 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const TOUCH_SLOP=14;
  // Drift cancels a press only before its preview opens; after that the press is kept so
  // its release or cancel still ends the 60 s click guard.
- const move=e=>{if(pressAt?.id===e.pointerId&&!pressShown&&Math.hypot(e.clientX-pressAt.x,e.clientY-pressAt.y)>(e.pointerType==='mouse'?8:TOUCH_SLOP)){clearTimeout(pressTimer);pressAt=null;}
-  if(!drag||drag.pointerId!==e.pointerId)return;if(attackSwipe(e)){if(e.cancelable)e.preventDefault();return;}if(peekFor&&drag.active)hidePeek();if(drag.revision!==session.snapshot().status?.revision&&!session.snapshot().status?.surface.cards.some(c=>c.id===drag.id)){cancel();return;}if(!drag.active&&e.pointerType!=='mouse'&&drag.source.closest('.play-match-hand')&&!handIntent(e))return;
-  if(!drag.active&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>(pressShown&&pressAt?.id===e.pointerId?18:e.pointerType==='mouse'?8:TOUCH_SLOP+2)){drag.active=true;drag.combat=combatDrops(drag.id);haptic('tick');}if(!drag.active)return;if(e.cancelable)e.preventDefault();if(!ghost){ghost=drag.source.cloneNode(true);ghost.removeAttribute('data-instance');ghost.classList.add('forge-drag-ghost');ghost.setAttribute('aria-hidden','true');ghost.setAttribute('inert','');const sr=drag.source.getBoundingClientRect();ghost.style.width=Math.min(sr.width,drag.source.offsetWidth||sr.width)+'px';ghost.style.left='0px';ghost.style.top='0px';drag.g={x:sr.left+sr.width/2,y:sr.top+sr.height/2,tx:e.clientX,ty:e.clientY,tilt:0};ghost.style.translate=`${drag.g.x}px ${drag.g.y}px`;root.append(ghost);drag.source.classList.add('forge-drag-source');root.classList.add('forge-dragging');}drag.g.tx=e.clientX;drag.g.ty=e.clientY;if(!ghostFrame)ghostFrame=win.requestAnimationFrame(followGhost);markPlayDrop(e);if(drag.combat){const over=dropTargetAt(e.clientX,e.clientY);if(over!==drag.over||!root.querySelector('[data-forge-drop]')){if(over&&over!==drag.over)haptic('tick');drag.over=over;markDrops();}}};
+ const move=e=>{if(root.dataset.forgeInput==='InputSelectTargets'&&presentation.hosted&&(e.pointerType==='mouse'||e.buttons)){aim={x:e.clientX,y:e.clientY};queueArrows();}else if(aim&&root.dataset.forgeInput!=='InputSelectTargets'){aim=null;queueArrows();}
+  if(pressAt?.id===e.pointerId&&!pressShown&&Math.hypot(e.clientX-pressAt.x,e.clientY-pressAt.y)>(e.pointerType==='mouse'?8:TOUCH_SLOP)){clearTimeout(pressTimer);pressAt=null;}
+  if(!drag||drag.pointerId!==e.pointerId)return;if(attackSwipe(e)){if(e.cancelable)e.preventDefault();return;}if(peekFor&&drag.active&&!(drag.second&&pressShown))hidePeek();if(drag.revision!==session.snapshot().status?.revision&&!session.snapshot().status?.surface.cards.some(c=>c.id===drag.id)){cancel();return;}if(!drag.active&&e.pointerType!=='mouse'&&drag.source.closest('.play-match-hand')&&!handIntent(e))return;
+  if(!drag.active&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>(pressShown&&pressAt?.id===e.pointerId?18:e.pointerType==='mouse'?8:TOUCH_SLOP+2)){drag.active=true;drag.combat=combatDrops(drag.id);haptic('tick');}if(!drag.active)return;if(e.cancelable)e.preventDefault();if(!ghost){ghost=drag.source.cloneNode(true);ghost.removeAttribute('data-instance');ghost.classList.add('forge-drag-ghost');ghost.setAttribute('aria-hidden','true');ghost.setAttribute('inert','');const sr=drag.source.getBoundingClientRect();ghost.style.width=Math.min(sr.width,drag.source.offsetWidth||sr.width)+'px';ghost.style.left='0px';ghost.style.top='0px';drag.g={x:sr.left+sr.width/2,y:sr.top+sr.height/2,ox:sr.left+sr.width/2,oy:sr.top+sr.height/2,tx:e.clientX,ty:e.clientY,tilt:0};drag.rubber=presentation.hosted&&!!drag.source.closest('.play-match-hand')&&!drag.combat&&drag.source.dataset.forgeRole!=='playable';if(drag.rubber)ghost.classList.add('forge-rubber');ghost.style.translate=`${drag.g.x}px ${drag.g.y}px`;root.append(ghost);drag.source.classList.add('forge-drag-source');root.classList.add('forge-dragging');}{const t=e.timeStamp||Date.now(),dt=Math.max(1,t-(drag.vt||t-16));drag.vy=.6*(drag.vy||0)+.4*((drag.vly??e.clientY)-e.clientY)/dt;drag.vt=t;drag.vly=e.clientY;}
+  // A card you can't play now stretches a little toward your finger and springs back: it never leaves the hand.
+  if(drag.rubber){const dx=e.clientX-drag.x,dy=e.clientY-drag.y,d=Math.hypot(dx,dy)||1,reach=44*(1-Math.exp(-d/110));drag.g.tx=drag.g.ox+dx/d*reach;drag.g.ty=drag.g.oy+dy/d*reach;if(!drag.rubberSaid){drag.rubberSaid=true;haptic('tick');}}
+  else{drag.g.tx=e.clientX;drag.g.ty=e.clientY;}if(!ghostFrame)ghostFrame=win.requestAnimationFrame(followGhost);if(!drag.rubber)markPlayDrop(e);if(drag.combat){const over=dropTargetAt(e.clientX,e.clientY);if(over!==drag.over||!root.querySelector('[data-forge-drop]')){if(over&&over!==drag.over)haptic('tick');drag.over=over;markDrops();}}};
  // Like Arena, a card dragged out of your hand plays when released anywhere above
  // the hand; Forge decides where it goes. Other drags keep their drop targets.
  const up=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;if(pressShown){pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}}
-  if(!drag||drag.pointerId!==e.pointerId)return;if(drag.swipe){suppressUntil=Date.now()+350;for(const el of root.querySelectorAll('[data-forge-swiped]'))el.removeAttribute('data-forge-swiped');cancel();return;}const pending=drag,target=doc.elementFromPoint(e.clientX,e.clientY)?.closest('[data-placement-zone=battlefield],.forge-native-panel'),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top,fromHand=!!pending.source.closest('.play-match-hand'),overHand=!!doc.elementFromPoint(e.clientX,e.clientY)?.closest('.play-match-hand-area'),aboveHand=presentation.hosted&&fromHand&&handTop!==undefined&&e.clientY<handTop&&!overHand;if(pending.active)suppressUntil=Date.now()+300;const combatTarget=pending.active?dropTargetAt(e.clientX,e.clientY):null;const plays=pending.active&&!combatTarget&&(presentation.hosted&&fromHand?pending.source.dataset.forgeRole==='playable'&&playDropAt(e.clientX,e.clientY):target&&root.contains(target)||aboveHand);if(plays&&ghost)lastDrop={instance:String(pending.id),rect:ghost.getBoundingClientRect(),at:Date.now()};cancel(pending.active&&!plays&&!combatTarget);if(plays||combatTarget)haptic('tap');if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(plays){const now=session.snapshot().status?.revision,go=()=>act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));const plan=tapPlan(pending.id),warn=plan?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go,plan.amount);else go();}};
+  if(!drag||drag.pointerId!==e.pointerId)return;if(drag.swipe){suppressUntil=Date.now()+350;for(const el of root.querySelectorAll('[data-forge-swiped]'))el.removeAttribute('data-forge-swiped');cancel();return;}const pending=drag,target=doc.elementFromPoint(e.clientX,e.clientY)?.closest('[data-placement-zone=battlefield],.forge-native-panel'),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top,fromHand=!!pending.source.closest('.play-match-hand'),overHand=!!doc.elementFromPoint(e.clientX,e.clientY)?.closest('.play-match-hand-area'),aboveHand=presentation.hosted&&fromHand&&handTop!==undefined&&e.clientY<handTop&&!overHand;if(pending.active)suppressUntil=Date.now()+300;const combatTarget=pending.active?dropTargetAt(e.clientX,e.clientY):null;// A quick upward flick plays a playable card even when it is let go short of the play line.
+  const flick=presentation.hosted&&fromHand&&pending.active&&!pending.rubber&&(pending.vy||0)>.55&&pending.y-e.clientY>=36;
+  const plays=pending.active&&!combatTarget&&(presentation.hosted&&fromHand?pending.source.dataset.forgeRole==='playable'&&(playDropAt(e.clientX,e.clientY)||flick):target&&root.contains(target)||aboveHand);if(plays&&ghost)lastDrop={instance:String(pending.id),rect:ghost.getBoundingClientRect(),at:Date.now()};cancel(pending.active&&!plays&&!combatTarget);if(plays||combatTarget)haptic('tap');if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(plays){const now=session.snapshot().status?.revision,go=()=>act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));const plan=tapPlan(pending.id),warn=plan?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go,plan.amount);else go();}};
  // A press that the browser takes over (a scroll, a system gesture) ends the preview and its click guard.
  // A long press's 60 s click guard ends with that press even when a redraw, scroll or
  // resize already closed its preview; otherwise the table would ignore taps for a minute.
@@ -1298,5 +1353,5 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   rope.style.setProperty('--burn',(left/ROPE_RUN).toFixed(3));rope.dataset.hot=String(secs<=10);const b=rope.querySelector('b');if(secs<=10&&b.textContent!==String(secs)){b.textContent=String(secs);if(secs<=5)haptic('tick');}else if(secs>10)b.textContent='';
  },200):0;
  doc.addEventListener('pointerdown',ropeReset,true);doc.addEventListener('keydown',ropeReset,true);doc.addEventListener('visibilitychange',ropeReset);
- return {destroy(){closed=true;doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }

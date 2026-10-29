@@ -481,6 +481,12 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 /* Arena's result moment: the final board stays behind a dimmed glass, the banner lands over it,
    Rematch is the gold primary. Inspect board still opens the board on its own. */
 #practicePlayerMat.play-result-over-board{overflow:hidden;isolation:isolate}
+/* The final board keeps its playmat behind the result and on Inspect board. */
+:where(body.practice-table-open) #practicePlayerMat:is(.play-result-over-board,.play-result-inspect)[data-playmat]+.playmat-scene{display:block}
+#practicePlayerMat:is(.play-result-over-board,.play-result-inspect)[data-playmat]{background:transparent}
+#practicePlayerMat.play-result-over-board>[data-result-backdrop]{background:#05060a66}
+#practicePlayerMat.play-result-inspect{overflow:hidden;isolation:isolate}
+#practicePlayerMat.play-result-inspect>[data-result-board]{position:absolute;inset:0}
 #practicePlayerMat.play-result-over-board>[data-result-backdrop]{position:absolute!important;inset:0!important;z-index:0!important;pointer-events:none;filter:saturate(.7) brightness(.55) blur(1.5px);animation:play-result-dim .7s ease-out both}
 #practicePlayerMat.play-result-over-board>.play-match-result{position:absolute;left:50%;top:50%;translate:-50% -50%;z-index:60;width:min(600px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;margin:0;background:linear-gradient(180deg,#14141acc,#0b0b0fe6);border:1px solid #d6ad6440;border-radius:22px;backdrop-filter:blur(6px);box-shadow:0 30px 90px #000c;box-sizing:border-box;animation:play-message-in .45s .25s cubic-bezier(.2,.8,.2,1) both}
 #practicePlayerMat .play-match-result .play-result-actions{order:3;display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:18px}
@@ -566,3 +572,8 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 @media(min-width:701px){.pl-startbar .pl-cpu-level{order:-1}}
 @media(max-width:700px){.pl-cpu-level{flex-basis:100%}.pl-cpu-level>button{flex:1;min-width:0}}
 @media(max-width:700px){.pl-startbar .pl-status{order:3}}
+/* 4.3.34 Play sweep: lobby polish. */
+.play-source-tabs>button{min-width:44px}
+.play-library .deck-format-emblem,.pl-sheet .deck-format-emblem,.play-menu .deck-format-emblem{max-width:none;overflow:visible;text-overflow:clip;white-space:nowrap;flex:none}
+/* Play shows the deck you'll play, not what it costs. */
+.play-inspector :is(.art-price,.grid-meta>span:last-child,.group>summary>.muted.small,.pick-side>b){display:none}

@@ -2157,3 +2157,44 @@ body.practice-table-open img{-webkit-user-drag:none}
 .forge-rope s{top:16px}
 @media (max-aspect-ratio:9/10){:where(body.practice-table-open) .play-match-table[data-forge-native][data-rope-on=true] .forge-native-actions>[data-native-key=cancel]{translate:0 -10px}}
 @media (max-aspect-ratio:9/10){:where(body.practice-table-open) .play-match-table[data-forge-native][data-rope-on=true] .forge-native-panel .forge-native-actions[data-state]::before{translate:0 -10px}}
+/* 4.3.34 Play sweep. Trigger order: a centred sheet that always fits the screen, cards sized by height too, Done always visible. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-decisions:has(.forge-order-cards){position:fixed!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;translate:-50% -50%!important;width:min(760px,calc(100vw - 16px))!important;max-height:calc(100dvh - 16px)!important;z-index:2600!important;display:flex;flex-direction:column}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-decisions .forge-native-panel:has(.forge-order-cards){display:flex!important;flex-direction:column;align-items:center;max-height:calc(100dvh - 16px);min-height:0;overflow:hidden;padding:clamp(12px,2.4dvh,22px) clamp(12px,3vw,24px);gap:clamp(6px,1.4dvh,14px);width:100%;box-sizing:border-box}
+:where(body.practice-table-open) .forge-native-panel:has(.forge-order-cards) h2{font-size:clamp(18px,3.2dvh,24px);white-space:normal}
+:where(body.practice-table-open) .forge-native-panel:has(.forge-order-cards) .forge-order-hint{max-width:100%;overflow-wrap:anywhere}
+:where(body.practice-table-open) .forge-native-panel .forge-order-cards{flex:1 1 auto;min-height:0;max-height:none!important;width:100%;gap:clamp(12px,2.4dvh,22px);padding-top:14px}
+:where(body.practice-table-open) .forge-native-panel .forge-order-card{width:clamp(92px,min(18vw,26dvh),180px)}
+:where(body.practice-table-open) .forge-native-panel .forge-order-actions{flex:0 0 auto;flex-wrap:wrap}
+:where(body.practice-table-open) .forge-native-panel .forge-order-actions>[data-native-key=auto-order]{min-height:46px;border-radius:23px;padding-inline:22px}
+:where(body.practice-table-open) .play-match-table[data-forge-native]:has(.forge-order-cards) :is(.play-command-zone,.forge-rope){z-index:auto}
+@media (max-width:480px){:where(body.practice-table-open) .forge-native-panel .forge-order-actions>[data-native-key=confirm-prompt]{min-width:0;flex:1 1 100%}}
+/* A payment your mana can't finish: Cancel takes the main button's place. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions .forge-native-panel .forge-native-actions [data-native-key=cancel][data-primary]{flex:1 1 100%;min-height:52px;border-radius:28px;border:1px solid #f6dfa8;background:linear-gradient(180deg,#f2d18e,#c99a4b);color:#1b1408;font:800 17px/1 'DM Sans',system-ui,sans-serif;translate:none}
+/* One reason per card: the open preview already says why a card can't be played, so the card's own chip steps aside. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card[data-forge-blocked]:is([aria-describedby],.forge-drag-source)::after,:where(body.practice-table-open) .play-match-table[data-forge-native][data-hand-lift=true] .play-match-hand .play-match-card[data-forge-blocked]::after{display:none}
+/* The ×N pile count sits on the card's left edge, clear of its name. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-wrap>.play-match-pile-count{left:-10px;right:auto;top:50%;translate:0 -50%}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-wrap:has(>.play-match-card[data-tapped=true])>.play-match-pile-count{left:50%;top:-12px;translate:-50% 0}
+/* The spell you are casting shows beside the board, in gold, while you choose its targets or pay for it. */
+:where(body.practice-table-open) .forge-own-cast{border-color:#f0c27aaa;box-shadow:0 0 26px #f0c27a55,0 16px 36px #000b}
+:where(body.practice-table-open) .forge-own-cast p>span{color:#f0c27a}
+:where(body.practice-table-open) .forge-own-cast figure{background:#141418}
+@media (max-width:600px),(max-height:520px){:where(body.practice-table-open) .forge-own-cast{inset:auto auto auto 10px;top:40%;width:108px;max-width:30vw;padding:6px;gap:5px}:where(body.practice-table-open) .forge-own-cast figure{max-height:150px}:where(body.practice-table-open) .forge-own-cast p>strong{font-size:12px}}
+/* While you choose targets, every legal one glows in the target colour with a slow, quiet pulse. */
+@keyframes cs-target-pulse{0%,100%{box-shadow:0 0 0 2px var(--ob-target,#ff9d5c),0 0 14px 2px #ff9d5c66,0 10px 22px #000b}50%{box-shadow:0 0 0 2px var(--ob-target,#ff9d5c),0 0 26px 6px #ff9d5caa,0 10px 22px #000b}}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-forge-input=InputSelectTargets] :is(.play-match-battlefields,.play-command-zone) .play-match-card[data-forge-role=choice]{box-shadow:0 0 0 2px var(--ob-target,#ff9d5c),0 0 18px 4px #ff9d5c88,0 10px 22px #000b;animation:cs-target-pulse 1.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-forge-role=choice]{animation:none!important}}
+/* An Equipment or Aura you can pick slides out from under its creature so it can be tapped. */
+:where(body.practice-table-open) .play-match-attach-group>.play-match-card-wrap[data-attached]:has(>.play-match-card:is([data-forge-role=choice],[data-forge-role=target],[data-forge-role=chosen])){z-index:3;filter:none;transform:translate(calc(30px + var(--attach-i,0)*14px),calc(-50% - 34px - var(--attach-i,0)*14px))}
+/* Aiming: a curved gold line from the spell you are casting to your finger or pointer, ending in a small reticle. */
+:where(body.practice-table-open) .forge-arrow[data-kind=aim]{stroke:#f0c27a;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:7 6;fill:none;filter:drop-shadow(0 0 6px #f0c27a99);animation:none}
+:where(body.practice-table-open) .forge-arrow-dot[data-kind=aim]{fill:#f0c27a}
+:where(body.practice-table-open) .forge-aim-reticle{fill:#f0c27a22;stroke:#f6dc9a;stroke-width:2}
+/* A card you can't play stretches toward your finger and springs back; it reads as held, not lifted. */
+:where(body.practice-table-open) .forge-drag-ghost.forge-rubber{filter:saturate(.7) brightness(.85);box-shadow:0 0 0 1.5px #ff9a7a88,0 10px 24px #000b}
+/* The table keeps every touch for itself (no pinch zoom or page pull) so two fingers can hold and drag at once. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] :is(.play-match-battlefields,.play-match-card,.play-command-zone){touch-action:none}
+/* Short landscape screens (a folded phone sideways): the ask line rides the top edge, clear of your creatures and hand. */
+@media (max-height:520px) and (min-width:641px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-ask=true]::before{top:max(env(safe-area-inset-top),8px)!important;translate:-50% 0!important;max-width:min(360px,calc(100vw - 260px))!important}}
+/* Wide screens: the CPU activity card hangs below the phase track instead of centring on it, so the two never overlap. */
+@media (min-width:641px) and (min-aspect-ratio:9/10){:where(body.practice-table-open) .forge-activity{top:calc(50% + 26px);transform:none}}

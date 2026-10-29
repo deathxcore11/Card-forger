@@ -15,7 +15,7 @@ export function nextPlaymat(s=store(),random=Math.random){
 }
 // Practice's playmat drop-down: the current mat on the button, every mat as a painted tile in the sheet.
 export function playmatPickerMarkup(choice=readPlaymatChoice()){
-  const name=choice==='rotate'?'New each match':PLAYMATS.find(([id])=>id===choice)[1];
+  const name=choice==='rotate'?'Random':PLAYMATS.find(([id])=>id===choice)[1];
   const tile=(id,label)=>`<button type="button" class="pl-mat-opt" data-act="playPlaymat" data-playmat="${id}" aria-pressed="${choice===id}"><span class="pl-mat-art" aria-hidden="true"></span><b>${label}</b></button>`;
   return `<details class="pl-format pl-mat" data-playmat="${choice}"><summary aria-label="Playmat: ${name}. Change playmat"><span class="pl-mat-art" aria-hidden="true"></span><span class="pl-mat-now"><small>Playmat</small><b>${name}</b></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="pl-format-sheet pl-mat-sheet" role="group" aria-label="Playmat"><p class="pl-format-group">Choose your playmat</p><div class="pl-mat-grid">${tile('rotate','New each match')}${PLAYMATS.map(([id,label])=>tile(id,label)).join('')}</div></div></details>`;
 }

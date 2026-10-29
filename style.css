@@ -5204,3 +5204,5 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .community-profile-header{overflow:hidden}
 .community-profile-header--card>img{transform:scale(1.32);transform-origin:50% 30%;object-position:50% 26%}
 .community-profile-header:before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,#0000004d,transparent 18%,transparent 82%,#0000004d)}
+/* Header Sets and Wiki meet the 44px touch size. */
+#desktopSearch :is(.header-sets,.header-wiki,.btn){min-height:44px}

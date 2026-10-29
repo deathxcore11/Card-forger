@@ -17,7 +17,9 @@ export function createTableEmotes({root,doc=root.ownerDocument,win=doc.defaultVi
   b.innerHTML=`<span class="forge-emote-sr">${who==='you'?'You':'CPU'}: </span>${text.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c])}`;
   doc.body.append(b);bubbles.add(b);
   const w=b.offsetWidth,h=b.offsetHeight,vw=win.innerWidth,vh=win.innerHeight;
-  const left=Math.min(Math.max(8,r.left+r.width/2-w/2),vw-w-8),top=who==='you'?Math.max(8,r.top-h-10):Math.min(vh-h-8,r.bottom+18);
+  // Your line rises above your portrait; the CPU's drops below its name (over its face-down hand), never over the name.
+  const name=seat(who)?.querySelector('.play-match-player>strong,.play-match-player-name'),nb=name?.getBoundingClientRect(),below=Math.max(r.bottom,nb&&nb.height?nb.bottom:r.bottom+16);
+  const left=Math.min(Math.max(8,r.left+r.width/2-w/2),vw-w-8),top=who==='you'?Math.max(8,r.top-h-10):Math.min(vh-h-8,below+8);
   b.style.left=left+'px';b.style.top=top+'px';
   later(()=>{b.dataset.leaving='true';later(()=>{b.remove();bubbles.delete(b);},260);},2600);
  }
