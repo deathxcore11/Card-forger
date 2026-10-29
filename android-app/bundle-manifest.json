@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "643fbbc393f3a10ef756f7c51b54ece1c5fba79e",
-  "sourceVersion": "4.3.29",
+  "commit": "2da0fed4d325496e86b633f9e7269549253026a6",
+  "sourceVersion": "4.3.30",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -2769,7 +2769,7 @@
     {
       "path": "config.js",
       "bytes": 628,
-      "sha256": "61a5c8882f9eeccb79e5771d3eb2f37678c0168e1ab53789018538b0bfdf152d"
+      "sha256": "ba2729569b75c84140c852955bcb8cff7e3df96063f7482adbca9140e31f0b32"
     },
     {
       "path": "core.js",
@@ -3768,8 +3768,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 147589,
-      "sha256": "96221a61cab45f041855901f1aa0c213b30fa37a52fdb87b201d4301a84e1bb4"
+      "bytes": 150356,
+      "sha256": "e158f1b4f633a7ad7467963661bffdcd4e9d9a535e2450b5f7865ef401a4fdbc"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -3778,8 +3778,8 @@
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
-      "bytes": 44233,
-      "sha256": "deeca1ab592fb71ca43c33bc58d702b43e728f87dcdc73792fc04252947562bb"
+      "bytes": 46135,
+      "sha256": "ca97fcecb7b41ac2314045e39f5814c8e771d6776a99a0409b26bd3f07afa68c"
     },
     {
       "path": "experiments/forge-proof/table-emotes.mjs",
@@ -4593,8 +4593,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 335813,
-      "sha256": "231a610e926470593ffb27ca34858cc1ccad1cea9351f15487ce6674778c762d"
+      "bytes": 342623,
+      "sha256": "067c7905141de571ded239de85db812d80df94a80b04052cdf4ca4ec9c4f9011"
     },
     {
       "path": "play-match-record.js",
@@ -4828,8 +4828,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 666,
-      "sha256": "de06e25ceb01be23e4103b9e26567878df64d7a5e782bb3c1c7a96c4e93ce7c5"
+      "bytes": 876,
+      "sha256": "5a233963385f905f7fd976d290099ef96d11f62d11cda36ef37f68c9fb4772f0"
     },
     {
       "path": "release-status.js",

@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.29",
-  "commit": "643fbbc393f3a10ef756f7c51b54ece1c5fba79e",
-  "tree": "3dc30e33d3806351590789993317bb4221d158e1",
+  "version": "4.3.30",
+  "commit": "2da0fed4d325496e86b633f9e7269549253026a6",
+  "tree": "33184257b13f1cb69be3c2da012336fa94847b08",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -1869,7 +1869,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "83f4a3592665855ca061cadb0223db3d9d0960c2e5b617f3620afce33927cd7a"
+      "sha256": "32edfd99722c8bd8ff22c531b39822680d5cdcdcb071ba9a744b65b3858c28d3"
     },
     {
       "path": "core.js",
@@ -2868,8 +2868,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 147589,
-      "sha256": "96221a61cab45f041855901f1aa0c213b30fa37a52fdb87b201d4301a84e1bb4"
+      "bytes": 150356,
+      "sha256": "e158f1b4f633a7ad7467963661bffdcd4e9d9a535e2450b5f7865ef401a4fdbc"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -2878,8 +2878,8 @@
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
-      "bytes": 44233,
-      "sha256": "deeca1ab592fb71ca43c33bc58d702b43e728f87dcdc73792fc04252947562bb"
+      "bytes": 46135,
+      "sha256": "ca97fcecb7b41ac2314045e39f5814c8e771d6776a99a0409b26bd3f07afa68c"
     },
     {
       "path": "experiments/forge-proof/table-emotes.mjs",
@@ -3534,7 +3534,7 @@
     {
       "path": "package.json",
       "bytes": 11917,
-      "sha256": "74f7e642d6495da383000a06c03e341a914ef70d32caeb2db62c55ccf52ac5dc"
+      "sha256": "5b1b705f051b5ece4bce2133faed8eedc11f2e5c207d46de21a0536b778905d9"
     },
     {
       "path": "pairing.js",
@@ -3658,8 +3658,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 335186,
-      "sha256": "4d20a533f65ecbe8229e46175afdb1d76578f0ede4591d1e93e4c309e638ebf6"
+      "bytes": 341996,
+      "sha256": "74b17785c2980adaae47bd69141fe7ed141d499451cd95b7c3a182404cca8160"
     },
     {
       "path": "play-match-record.js",
@@ -3893,8 +3893,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 666,
-      "sha256": "de06e25ceb01be23e4103b9e26567878df64d7a5e782bb3c1c7a96c4e93ce7c5"
+      "bytes": 876,
+      "sha256": "5a233963385f905f7fd976d290099ef96d11f62d11cda36ef37f68c9fb4772f0"
     },
     {
       "path": "release-status.js",
@@ -4213,8 +4213,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15502,
-      "sha256": "68074dcb45e4b075c13a4583373ee6bb171989f9c0dc0d32f08db4ccd61cfa71"
+      "bytes": 15498,
+      "sha256": "f3e3465eebee05ceed2475d6aacd170cbd5e97cf6feed607bcb5be25f8e4f003"
     },
     {
       "path": "sync-merge.js",
