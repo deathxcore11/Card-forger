@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.33",
-  "commit": "174e5f9e9b93561762ade665609abc3414a616af",
-  "tree": "db4f459d01875761661c2e081ea2b460ba88a056",
+  "version": "4.3.34",
+  "commit": "e20298345ab61cd8d3db253bb4ac101d5b15b5fa",
+  "tree": "44e0454f44e1895b7640c708bcf0dbba8a2a84ba",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -103,8 +103,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 446715,
-      "sha256": "056b8d8813018cbe3f980bbe5d69dfe0350e9c0e67b408e2392e3d53519774b5"
+      "bytes": 447046,
+      "sha256": "bf954bbc9a30baccaa5350172da1b0da8e1903f79e7c0b3aa6e830edb873c715"
     },
     {
       "path": "artwork.js",
@@ -1117,6 +1117,66 @@
       "sha256": "c233d03e173490b20e1e90dd475b2ce6c0c182715e7d8ca99fc37fac9dfcb324"
     },
     {
+      "path": "assets/fonts/LICENSE.txt",
+      "bytes": 189,
+      "sha256": "4481f649b26fb76441ac39f9ef119e28377c1bd8aea1ebdb3e8a293a65767247"
+    },
+    {
+      "path": "assets/fonts/cinzel-latin-1.woff2",
+      "bytes": 25904,
+      "sha256": "09941fb1c169c38fd414536b37690057fc01b3117a5c63dd6571186540c8f370"
+    },
+    {
+      "path": "assets/fonts/cinzel-latin-ext-0.woff2",
+      "bytes": 14540,
+      "sha256": "8fc2606f8ae6c569f444e138dba052d9a6e3f0657f9031796503bbb94eced600"
+    },
+    {
+      "path": "assets/fonts/dm-sans-latin-1.woff2",
+      "bytes": 62724,
+      "sha256": "ca72d2bcea8f4daa783dbdfa2d9b46068c3ce38168e05918fb867aa453b4f890"
+    },
+    {
+      "path": "assets/fonts/dm-sans-latin-ext-0.woff2",
+      "bytes": 31292,
+      "sha256": "5d18d31d23ada61ebee1d589b11d5da30db9e158f589d5e35221ba2b1a45de54"
+    },
+    {
+      "path": "assets/fonts/fonts.css",
+      "bytes": 8095,
+      "sha256": "add2d608a3a4b9ea3f6bebb9eba3aa96eb4417bc20af295682a647fd56a317e0"
+    },
+    {
+      "path": "assets/fonts/manrope-latin-1.woff2",
+      "bytes": 24532,
+      "sha256": "8c2def024c1bf31aacf3624ae3c4d701269b4ec3dc765c04830839f0d36b2d9e"
+    },
+    {
+      "path": "assets/fonts/manrope-latin-ext-0.woff2",
+      "bytes": 15160,
+      "sha256": "2f7335119075b2079f1d882530bbc18728461612bf90743203d73a74a48f4d9b"
+    },
+    {
+      "path": "assets/fonts/spectral-latin-1.woff2",
+      "bytes": 22936,
+      "sha256": "33faca8b5795a0de1af77cbc43a050a3655c4b1e03e04847fdef4d19d2e361d2"
+    },
+    {
+      "path": "assets/fonts/spectral-latin-3.woff2",
+      "bytes": 23036,
+      "sha256": "5276f202cce67e8caa9f697800e11cfc9d708da67d47f6f5507dcadcf1e11c11"
+    },
+    {
+      "path": "assets/fonts/spectral-latin-ext-0.woff2",
+      "bytes": 20824,
+      "sha256": "dea6bd9ca650814af1f750b7474d7205b7fe0e4c79a6b58c6f7157d90dc8815c"
+    },
+    {
+      "path": "assets/fonts/spectral-latin-ext-1.woff2",
+      "bytes": 20824,
+      "sha256": "9b5a5be420405c68cf73fcdd06fa4c9978dcd8fb8b87b0e187e107cfb7a5da29"
+    },
+    {
       "path": "assets/planeswalk-tile.jpg",
       "bytes": 34429,
       "sha256": "39480f393ebb9f24292c0d17ddeaaa2f758c594f5be3d7985e1bf5219bbc60a8"
@@ -1838,8 +1898,8 @@
     },
     {
       "path": "community-profile.js",
-      "bytes": 26027,
-      "sha256": "25bdb8b1c4eeebaa14c7af98e9832ae3277d78e897317dbbd9beb1b87fb834dd"
+      "bytes": 25710,
+      "sha256": "56a23395311e2ea04bf39c7779d55d7c733e35f0dd230223c9407e541ecae4ae"
     },
     {
       "path": "community-sources.js",
@@ -1869,7 +1929,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "6c0aa57a43d270a14626c5d5583f02b5bdeaaead21b9e4710f15428d98e30b4a"
+      "sha256": "4a0e3c9692b5fa1c958d5a5a03113dda458e94691844f408d0a11b7488158a1c"
     },
     {
       "path": "core.js",
@@ -3258,8 +3318,8 @@
     },
     {
       "path": "home-overview.css",
-      "bytes": 10253,
-      "sha256": "214c65a9c72e1357bb52eb12125daf06a877da8a4b4aad286ebefbe831af531f"
+      "bytes": 13098,
+      "sha256": "6c24a62a13e9432ceaffe90b3c3ad441964b3dfa798ed4e39e188df05be2d012"
     },
     {
       "path": "home-search.js",
@@ -3278,8 +3338,8 @@
     },
     {
       "path": "home-ui.js",
-      "bytes": 39114,
-      "sha256": "25812dc402b8bc602d99241c8e8852287482e047a8e52d9d46dfc3ec1b1c535b"
+      "bytes": 38941,
+      "sha256": "bf6e28e2bd7fa01413d3edac7368c5fe959d258429ee9f5ae6189b2457598a91"
     },
     {
       "path": "icon-192.png",
@@ -3328,8 +3388,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 19713,
-      "sha256": "b78ac8280f0582e565cecb2c97e9c6d0b374045782623a5ffd48c7439f966996"
+      "bytes": 19949,
+      "sha256": "49e99fec4fa55b6217f0d2a32d908d438a52071be49ef7716a9e4139ad964b97"
     },
     {
       "path": "insights.js",
@@ -3518,8 +3578,8 @@
     },
     {
       "path": "mtg-wiki-ui.js",
-      "bytes": 30249,
-      "sha256": "56613db25fc60cb30591add992fb4c02a43a6436f4eaf204ae28124cb1e7b31a"
+      "bytes": 30311,
+      "sha256": "fcf3846a6a2a2f35e06586197e688a9a1db39b8e78dfb9dec43313db271320af"
     },
     {
       "path": "native-service-policy.js",
@@ -3534,7 +3594,7 @@
     {
       "path": "package.json",
       "bytes": 11917,
-      "sha256": "d1366738448e5e8913948a4bfd5035852d997f62a74121201cbfdf887ac4f2b2"
+      "sha256": "0cf0f01bc952c0b9253fb3da743a3a6db66b3c0567a75516e053586626899f7d"
     },
     {
       "path": "pairing.js",
@@ -3553,8 +3613,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 4574343,
-      "sha256": "5da176469fa76bbfd308144e794e6dbf418b474af102e39a6eaee1ed955235b4"
+      "bytes": 4575038,
+      "sha256": "c597286c4283e68f66d788aaaba90e8f872cc29af6ad8d55ed4239409c9e54f7"
     },
     {
       "path": "planner.js",
@@ -3658,8 +3718,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 396977,
-      "sha256": "ae66c3223249bafe788fac239d1e72a16f09ccaf0954aacc38892c681bee2ae9"
+      "bytes": 396931,
+      "sha256": "6f2f5bb7a2a8a67483e2fac88545253679f53a7d85325f73e00de9307604462d"
     },
     {
       "path": "play-match-record.js",
@@ -3668,13 +3728,13 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 78488,
-      "sha256": "93f41b64ac7ba3e736b234b91cca170daef0a354fd5e55910248eaa824d3dc97"
+      "bytes": 85179,
+      "sha256": "cec17de6b518bb5afa9b450dae28b8cb1711282945c4c3ee72cff9f489bbcf08"
     },
     {
       "path": "play-menu.js",
-      "bytes": 26071,
-      "sha256": "538237711354ecdafc07d42b76c04d3d40173c36b12eeb83ecca1c164f921ea9"
+      "bytes": 26323,
+      "sha256": "c2ccd2f2f55ffdaca00d989c2dedddb457b3e0abdc90557c3c1a650579b5ac87"
     },
     {
       "path": "play-opponent-build.js",
@@ -3798,8 +3858,8 @@
     },
     {
       "path": "polish.css",
-      "bytes": 28377,
-      "sha256": "9082aa48ae8ec2b0ab912e1debb8ceaad22da596cb884a51ae946797683888a9"
+      "bytes": 31113,
+      "sha256": "9533f88052a46fe227f12f274b8dd714915688ca196007fb3170218f8905203f"
     },
     {
       "path": "power.js",
@@ -3893,8 +3953,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1165,
-      "sha256": "70b0e3dccb8cd98c8632fde150cda05fe63a79d9d50d86cc02d862ff8faef900"
+      "bytes": 766,
+      "sha256": "02eed4f1e5925529af0c7f5dfa9c9d868d57214f78fcdf1469e38e9b3cb9ca5b"
     },
     {
       "path": "release-status.js",
@@ -3923,8 +3983,8 @@
     },
     {
       "path": "rule-learning.js",
-      "bytes": 22787,
-      "sha256": "bb1acd831209b75649019d1cd876c2eda4861e2ff96d5bb1dfcfc6ad266b0307"
+      "bytes": 22647,
+      "sha256": "fe89c6738f0afd122548ffc584403250dbefcd446096b306caa364ed4d3879e6"
     },
     {
       "path": "rule-lessons.js",
@@ -3958,8 +4018,8 @@
     },
     {
       "path": "rules.js",
-      "bytes": 6186,
-      "sha256": "61b91cd104d9fbbf6150653942ca6773b502f98620fa707db2503c79c7e88a38"
+      "bytes": 6389,
+      "sha256": "3af66ea6f7c8f24de14aa0bce5419a5a319bf3cbabb923f803b2b3c55995c04f"
     },
     {
       "path": "scan-batch.js",
@@ -3998,8 +4058,8 @@
     },
     {
       "path": "scancam.js",
-      "bytes": 151068,
-      "sha256": "36d1c58d7a0cdd3c96a22bfcf9ae2d0cb210fc9135abce0f0f31352fe80509f8"
+      "bytes": 150994,
+      "sha256": "3b2a1b2b36e19ab18863276cf0912a9c49fab40770f79cfb7fa756d885490c92"
     },
     {
       "path": "scanidx/TCGDEX-LICENSE.txt",
@@ -4113,8 +4173,8 @@
     },
     {
       "path": "set-browser.js",
-      "bytes": 10148,
-      "sha256": "0cdcdca5eae68c397cc542dd04eae4839101a5acafbca37dd88d2906ab50e239"
+      "bytes": 10435,
+      "sha256": "5ca91913bab139de67d267bd8bb9624ab7cc249a0e561d76c33a02c11885f5f2"
     },
     {
       "path": "set-experience.js",
@@ -4123,8 +4183,8 @@
     },
     {
       "path": "set-list-ui.js",
-      "bytes": 11735,
-      "sha256": "c1e5d738bf8c8e8a1a413d1f296c7268a3cdacf64c5822eed676bc9f55466304"
+      "bytes": 11675,
+      "sha256": "25e0e20f19c30cb6711762fc8efe38bab8c28e8cc94696b853b647f78b34cd3b"
     },
     {
       "path": "set-release-metadata.js",
@@ -4133,8 +4193,8 @@
     },
     {
       "path": "sets-ui.css",
-      "bytes": 37593,
-      "sha256": "179957c5ceb3e7da372c852c9c8ca46b5c7558679129fd4f16e295964ea8a4fa"
+      "bytes": 37856,
+      "sha256": "66df28f135e82b7e51ef269d5c3e74528269274932ebefacd1e37d4d8b08b518"
     },
     {
       "path": "settings-dialog.js",
@@ -4213,8 +4273,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15497,
-      "sha256": "8d92f09f1783a48bf079142367fcbb3075a8dcf7313ad27a25fcb320bd5c6cc7"
+      "bytes": 15529,
+      "sha256": "5861d88394c118787ee664d6671f7eb18d19685b1d839c71d392deaeaf55d6a1"
     },
     {
       "path": "sync-merge.js",
@@ -4238,8 +4298,8 @@
     },
     {
       "path": "tcg.js",
-      "bytes": 367930,
-      "sha256": "c430534c10cd128b8ceda2c9b7dbc09b7c86abd6f88d7d654e17f7763501ae3f"
+      "bytes": 367724,
+      "sha256": "e89b75a83ea55d1e7cf86ae4b69fd2fc3a9db93b98bce53c20ab69f7832ebe38"
     },
     {
       "path": "tcgbuild.js",
@@ -5853,8 +5913,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 199060,
-      "sha256": "2b3b965e3bb0dc0fb048a6c21cbd9c232fd29ef5faa3071fe3348372fd64d088"
+      "bytes": 198736,
+      "sha256": "72071ae68735dfdddf42c4dfa9e8991de43526f02ed5645a73cf93385158185a"
     },
     {
       "path": "wiki-article-content.js",
