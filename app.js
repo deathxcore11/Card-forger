@@ -1673,6 +1673,8 @@ function warmNativePlay(){
  setTimeout(()=>tick(true),2000);setInterval(()=>tick(),30000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){touched();tick(true);}});
  if(native)setTimeout(()=>void saveDeckArtOffline(),20000);
+ // The phone's engine fetches this week's rules data once per launch (a few MB, only when newer).
+ if(native)setTimeout(()=>void import('./play-forge-local-client.js').then(local=>local.updateLocalRules()).catch(()=>{}),15000);
 }
 // The app keeps every Magic picture it shows on the phone (CardStashyWebViewClient), so once per launch,
 // in the background, it loads the art of all your Magic decks: tables and deck screens then open with
