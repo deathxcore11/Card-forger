@@ -45,12 +45,14 @@
 @keyframes pack-rip-jolt{0%,62%{transform:none}78%{transform:translateY(-7px) scale(1.035)}100%{transform:none}}
 .pack-ghost{z-index:70;pointer-events:none;cursor:default}
 .pack-ghost .pack-body{animation:none}
-.pack-ghost .pack-crimp.top,.pack-ghost .pack-slice,.pack-ghost .pack-flash{display:none}
+.pack-ghost .pack-crimp.top,.pack-ghost .pack-slice,.pack-ghost .pack-flash,.pack-ghost .pack-sheen{display:none}
 .pack-ghost .pack-wrap-art,.pack-ghost .pack-sheen{clip-path:inset(8.5% 0 0 0 round 0 0 6px 6px)}
 .pack-ghost::before{content:"";position:absolute;z-index:6;left:6%;right:6%;top:2%;height:14%;pointer-events:none;border-radius:50%;background:radial-gradient(ellipse at 50% 60%,#fffbe8cc 0,#ffe3a055 38%,transparent 72%);filter:blur(5px);animation:pack-mouth .9s ease-out both}
 @keyframes pack-mouth{0%{opacity:0;transform:scaleX(.4)}35%{opacity:1;transform:none}100%{opacity:.55}}
 .pack-flying .pack-card{transition:none!important}
 .pack-focus-card.pack-await{opacity:0}
+/* A big pull's glow stays under the header: it may spread sideways and down, never over the title and buttons. */
+.pack-focus{clip-path:inset(-4px -40px -80px -40px)}
 /* Flip: a quick turn with a soft settle, lifting off the table as it goes (the lift is set in pack-preview.js). */
 @media (prefers-reduced-motion:no-preference){.pack-focus-card>span{transition:transform .6s cubic-bezier(.3,1.18,.45,1)}.pack-card>span{transition:transform .5s cubic-bezier(.3,1.18,.45,1)}}
 .pack-focus-card.pack-rising{animation:pack-rise .46s cubic-bezier(.2,.8,.2,1) both}
