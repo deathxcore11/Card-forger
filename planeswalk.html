@@ -1958,6 +1958,47 @@ html.pw-calm *,html.pw-calm *::before,html.pw-calm *::after{animation-duration:.
 /* Attack all reads as a real secondary button everywhere, and its label wraps instead of clipping */
 #app .battle .controls>[data-act=all]{background:#1d1711!important;border:1px solid #c99c5999!important;color:#efe6d2!important;opacity:1!important;white-space:normal;line-height:1.15;padding-inline:8px!important;text-wrap:balance}
 #app .battle .controls>[data-act=all]:disabled{color:#9a8f7c!important;border-color:#c99c5944!important}
+/* ---------- G2 map (29 Oct, Randall picked all six ideas from the map design PDF) ---------- */
+/* paths: curves; walked = brass, open ways forward flow gold, future faint, behind you almost gone */
+.pw-paths path{fill:none;stroke-linecap:round;transition:opacity .18s ease-out,stroke-width .18s ease-out}
+.pw-paths path.future{stroke:#c9b48a;stroke-opacity:.32;stroke-width:1.6;stroke-dasharray:2 6}
+.pw-paths path.behind{stroke:#c9b48a;stroke-opacity:.1;stroke-width:1.2;stroke-dasharray:2 6}
+.pw-paths path.walked{stroke:#b08a4a;stroke-opacity:.85;stroke-width:3;filter:drop-shadow(0 0 2px #00000099)}
+.pw-paths path.ahead{stroke:#ffd98a;stroke-width:3;stroke-dasharray:10 8;filter:drop-shadow(0 0 4px #e8b95bcc);animation:pw-flow 1.1s linear infinite}
+@keyframes pw-flow{to{stroke-dashoffset:-18}}
+@media (prefers-reduced-motion:reduce){.pw-paths path.ahead{animation:none}}
+html.pw-calm .pw-paths path.ahead{animation:none}
+/* route preview while a node is hovered, focused or held */
+.map.pw-cascade .pw-paths path{opacity:.12}
+.map.pw-cascade .pw-paths path.pw-reach{opacity:1;stroke:#ffe2a0;stroke-opacity:.95;stroke-width:3.2;stroke-dasharray:none;filter:drop-shadow(0 0 5px #e8b95bcc)}
+.map.pw-cascade .node[data-r]:not(.pw-reach){opacity:.38;transition:opacity .18s}
+.map.pw-cascade .node.pw-reach{opacity:1}
+/* empty cells keep the grid's spacing but show nothing */
+#app .map .node.pw-gap{visibility:hidden!important;pointer-events:none}
+/* node offsets: a little jitter, and each row drifts like a road (landscape: lanes are rows of the screen, kept low so the sky and the cathedral stay clear) */
+@media (min-aspect-ratio:4/5){
+ #app .map .maprow>.node[data-r]:not(.boss){translate:calc(var(--ja,0) * 12px) calc(var(--jb,0) * 9px + var(--m,0) * 16px + (2 - var(--lane,1)) * 26px)!important}
+}
+@media (max-aspect-ratio:3999/5000){
+ #app .map .maprow>.node[data-r]:not(.boss){translate:calc(var(--ja,0) * 9px + var(--m,0) * 14px) calc(var(--jb,0) * 8px)!important}
+}
+/* labels: the medallion says what a node is; the name stays for screen readers, the title and the hold card */
+#app .map .node .nl{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important;margin:-1px!important;padding:0!important}
+/* three tiers by stakes: plain fights and events small, shops/rests/treasure medium, legends and dungeons large */
+#app .map .maprow>.node[data-r]:is([data-t=fight],[data-t=event]){--ns:30px;--is:15px}
+#app .map .maprow>.node[data-r]:is([data-t=rest],[data-t=shop],[data-t=treasure],[data-t=bargain]){--ns:38px;--is:19px}
+#app .map .maprow>.node[data-r]:is([data-t=elite],[data-t=dungeon]){--ns:46px;--is:24px}
+#app .map .maprow>.node[data-r][data-t=elite]::before{box-shadow:0 0 0 2px #7a1a14,0 0 16px #c8303099}
+#app .map .maprow>.node[data-r][data-t=dungeon]::before{box-shadow:0 0 0 2px #2e4a6a,0 0 14px #6fa0d899}
+/* the soft dark band behind the route keeps medallions readable on the painting */
+#app .map>svg.pw-paths{background:radial-gradient(ellipse 62% 44% at 50% 62%,#00000066,transparent 72%)}
+@media (max-aspect-ratio:3999/5000){#app .map>svg.pw-paths{background:radial-gradient(ellipse 55% 60% at 50% 55%,#0000005c,transparent 74%)}}
+/* audit G2 minors: future medallions a touch brighter on dark ground, solid Full heal chip off the link line, boss clear of the act title */
+#app .map .node[data-r]:disabled:not(.past):not(.done)::before{filter:brightness(1.18)}
+#app .map .node.boss .heal{background:#0d1a10!important;box-shadow:0 0 0 2px #0b0d12,0 2px 6px #000a;translate:0 6px}
+@media (min-aspect-ratio:4/5){#app .map .maprow>.node.boss{margin-inline-end:12px!important}}
+/* node info card: a lighter dim so the lit route still shows behind it */
+.pw-zoom.pw-node-zoom{background:#0000008c!important;backdrop-filter:none!important}
 
 </style>
 
@@ -2193,7 +2234,7 @@ function newRun(s,hk){
  if(!hk){view='heroes';c=null;run=null;reward={seed:s};return render()}
  setHero(hk);
  seed=s??Math.floor(Math.random()*1e6); rng=mulberry(seed); uid=0;
- run={hero:HERO.key,hp:HERO.life,max:HERO.life,loyalty:HERO.loyalty,best:0,gold:0,pity:0,act:1,deck:HERO.starter.map(mk),emblems:[],map:genMap(1),pos:null,done:[],fights:0};
+ run={hero:HERO.key,hp:HERO.life,max:HERO.life,loyalty:HERO.loyalty,best:0,gold:0,pity:0,act:1,deck:HERO.starter.map(mk),emblems:[],map:genMap(1),pos:null,done:[],fights:0};run.edges=genEdges(run.map);
  c=null; actStart();
 }
 // Random but act-shaped, like Slay the Spire: each act sets its own odds, no elites in the first rows,
@@ -2212,16 +2253,39 @@ function genMap(act=1){
  for(let r=0;r<7;r++){const row=[];for(let l=0;l<3;l++){let t;const x=rng();
   if(r===0)t='fight';else if(r===6)t='rest';else if(r===1)t=x<w.event+.1?'event':'fight';
   else t=x<w.elite?'elite':x<w.elite+w.rest&&r!==5?'rest':x<w.elite+w.rest+w.event?'event':'fight';row.push(t)}rows.push(row)}
- rows[4][Math.floor(rng()*3)]='treasure';
+ // pacing: every route passes one mid-act treasure (row 4 is all treasure)
+ rows[4]=['treasure','treasure','treasure'];
  rows[2+Math.floor(rng()*2)][Math.floor(rng()*3)]='shop';
  rows[5][Math.floor(rng()*3)]='shop';
  if(act>=2)rows[3][Math.floor(rng()*3)]='bargain';
  for(let r=1;r<6;r++)for(let l=0;l<3;l++){const t=rows[r][l];if(['elite','rest','shop'].includes(t)&&[l-1,l,l+1].some(k=>rows[r-1][k]===t))rows[r][l]=t==='shop'?'event':'fight'}
  if(!rows.flat().includes('elite')){const l=Math.floor(rng()*3);rows[3][l]='elite';[2,4].forEach(r=>[l-1,l,l+1].forEach(k=>{if(rows[r][k]==='elite')rows[r][k]='fight'}))}
- if(FEAT.dun&&DUN[act]){const spots=[];for(let r=2;r<=4;r++)for(let l=0;l<3;l++)if(l!==1&&['fight','event'].includes(rows[r][l]))spots.push([r,l]);if(spots.length){const [r,l]=spots[Math.floor(rng()*spots.length)];rows[r][l]='dungeon'}}
+ if(FEAT.dun&&DUN[act]){const spots=[];for(let r=2;r<=3;r++)for(let l=0;l<3;l++)if(l!==1&&['fight','event'].includes(rows[r][l]))spots.push([r,l]);if(spots.length){const [r,l]=spots[Math.floor(rng()*spots.length)];rows[r][l]='dungeon'}}
+ pruneMap(rows);
  return rows;
 }
-const open=(r,l)=>r===7?run.pos?.r===6:!run.pos?r===0:r===run.pos.r+1&&Math.abs(l-run.pos.l)<=1;
+// The map is a forward-only graph on the 3-lane grid: a few cells are left empty so it doesn't read as a
+// table, and each node links to 1-2 neighbours in the next row. Links never cross (no X shapes).
+// Every route now passes a treasure, so a treasure offers emblems only some of the time (sim: keeps win rates near live).
+const TREASURE_EMB=.25;
+function pruneMap(rows){
+ for(let r=1;r<=5;r++)if(r!==4&&rng()<.45){const l=Math.floor(rng()*3);if(!['elite','dungeon','bargain'].includes(rows[r][l])||rows[r].filter(t=>t==='shop').length>1)rows[r][l]=null}
+ if(rng()<.35)rows[0][Math.floor(rng()*3)]=null;
+ if(!rows.flat().includes('elite')){const l=rows[3].findIndex(t=>t&&t!=='dungeon');if(l>=0)rows[3][l]='elite'}
+}
+function genEdges(rows){const E2=[];
+ for(let r=0;r<6;r++){const A=[0,1,2].filter(l=>rows[r][l]),B=[0,1,2].filter(l=>rows[r+1][l]);let best=null;
+  for(let tries=0;tries<30&&!best;tries++){const es=[];
+   for(const a of A){const near=B.filter(b=>Math.abs(a-b)<=1);const pool=near.length?near:[B.reduce((m,b)=>Math.abs(a-b)<Math.abs(a-m)?b:m,B[0])];
+    const k=pool.length>1&&rng()<.4?2:1;shuffle([...pool]).slice(0,k).forEach(b=>es.push([a,b]))}
+   for(const b of B)if(!es.some(e=>e[1]===b)){const near=A.filter(a=>Math.abs(a-b)<=1);const a=near.length?pick(near):A.reduce((m,a)=>Math.abs(a-b)<Math.abs(m-b)?a:m,A[0]);es.push([a,b])}
+   const crosses=es.some(([a1,b1])=>es.some(([a2,b2])=>(a1-a2)*(b1-b2)<0));if(!crosses)best=es}
+  // fallback: straight up where possible, never crossing
+  E2.push(best||A.flatMap(a=>{const b=B.includes(a)?a:B.reduce((m,b)=>Math.abs(a-b)<Math.abs(a-m)?b:m,B[0]);return [[a,b]]}).concat(B.filter(b=>!A.includes(b)).map(b=>[A.reduce((m,a)=>Math.abs(a-b)<Math.abs(m-b)?a:m,A[0]),b])))}
+ return E2}
+// Old saves have no links: there every node leads to its neighbours in the next row.
+const linked=(r,l,l2)=>run.map[r+1]&&run.map[r+1][l2]&&(run.edges?run.edges[r].some(([a,b])=>a===l&&b===l2):Math.abs(l-l2)<=1);
+const open=(r,l)=>r===7?run.pos?.r===6:!run.pos?r===0&&!!run.map[0][l]:r===run.pos.r+1&&linked(run.pos.r,run.pos.l,l);
 function enter(r,l){
  if(!open(r,l))return; run.pos={r,l}; run.done.push(r+':'+l);
  const t=r===7?'boss':run.map[r][l];
@@ -2233,7 +2297,7 @@ function enter(r,l){
  else if(t==='bargain'){const mp=Object.keys(EMB).filter(k=>EMB[k].r==='M'&&!run.emblems.includes(k)&&forHero(k)),rp=Object.keys(EMB).filter(k=>EMB[k].r==='R'&&!run.emblems.includes(k)&&!BOSSEMB[k]&&forHero(k));view='event';reward={ev:'bargain',myth:mp.length?pick(mp):null,rare:rp.length?pick(rp):null};render()}
  else if(t==='rest'){view='rest';render()}
  else if(t==='shop'){c=null;reward={shop:makeShop()};view='shop';render()}
- else if(t==='treasure'){c=null;reward={cards:treasureCards(),embs:treasureEmblems(),treasure:1};view='reward';render()}
+ else if(t==='treasure'){c=null;reward={cards:treasureCards(),embs:rng()<TREASURE_EMB?treasureEmblems():[],treasure:1};view='reward';render()}
  else {view='event';reward={ev:pick(ACTS[run.act||1].events||['shrine','cart'])};render()}
 }
 
@@ -2531,7 +2595,7 @@ function win(){if(SIM)return;
 let SIM=null;
 function simulate(fn){if(SIM)return null;
  const keep={c,run,view,uid,rs,reward};let out;
- try{const cp=structuredClone({c,run});c=cp.c;run=cp.run;SIM={you:0,took:new Map()};out=fn()}catch(err){out={unsure:1}}
+ try{const cp=typeof structuredClone==='function'?structuredClone({c,run}):JSON.parse(JSON.stringify({c,run}));c=cp.c;run=cp.run;SIM={you:0,took:new Map()};out=fn()}catch(err){out={unsure:1}}
  finally{SIM=null;({c,run,view,uid,rs,reward}=keep)}
  return out}
 function forecast(){
@@ -2589,8 +2653,11 @@ function topBar(){
 }
 function mapView(){
  const label={bargain:['✝','Bargain'],fight:['⚔','Minions'],elite:['♛','Legendary'],rest:['✦','Rest'],event:['?','Event'],treasure:['◆','Treasure'],shop:['◎','Shop'],dungeon:['⛫','Dungeon']};
- const row=r=>`<div class="maprow">${run.map[r].map((t,l)=>{const k=r+':'+l,isOpen=open(r,l),done=run.done.includes(k),past=run.pos&&r<=run.pos.r&&!done;
-  return `<button data-t="${t}" class="node ${isOpen?'open':''} ${done?'done':''} ${past?'past':''}" data-act="go" data-r="${r}" data-l="${l}" ${isOpen?'':'disabled'}><b>${label[t][0]}</b>${label[t][1]}</button>`}).join('')}</div>`;
+ // Each node sits a little off the grid (same offsets for a seed), and each row drifts like a road.
+ const h=(r,l,k)=>{let x=Math.imul(seed^(r*73856093)^(l*19349663)^(k*83492791)^((run.act||1)*2654435761),2246822519);x^=x>>>13;x=Math.imul(x,3266489917);return ((x^x>>>16)>>>0)/4294967296*2-1};
+ const road=r=>(Math.sin(r*1.1+h(9,9,run.act||1)*3)).toFixed(2);
+ const row=r=>`<div class="maprow" style="--m:${road(r)}">${run.map[r].map((t,l)=>{if(!t)return `<button class="node pw-gap" disabled tabindex="-1" aria-hidden="true"><b></b></button>`;const k=r+':'+l,isOpen=open(r,l),done=run.done.includes(k),past=run.pos&&r<=run.pos.r&&!done;
+  return `<button data-t="${t}" class="node ${isOpen?'open':''} ${done?'done':''} ${past?'past':''}" data-act="go" data-r="${r}" data-l="${l}" style="--ja:${h(r,l,1).toFixed(2)};--jb:${h(r,l,2).toFixed(2)};--lane:${l}" aria-label="${label[t][1]}" title="${label[t][1]}" ${isOpen?'':'disabled'}><b>${label[t][0]}</b><span class="nl">${label[t][1]}</span></button>`}).join('')}</div>`;
  const bossOpen=open(7,1);
  let rows=`<div class="maprow"><button data-t="boss" class="node boss ${bossOpen?'open':''}" data-act="go" data-r="7" data-l="1" ${bossOpen?'':'disabled'}><b>☠</b>${ACTS[run.act||1].bossShort}<span class="heal">Full heal ♥</span></button></div>`;
  for(let r=6;r>=0;r--)rows+=row(r);
@@ -2679,7 +2746,7 @@ function shopView(){const sh=reward.shop;
  <button class="btn main" data-act="leave">Leave the market</button></section>`}
 function bossRewardView(){
  return `<section class="screen bosspick"><h2>${E[ACTS[run.act].boss].name} is defeated</h2><p>You are healed to full. Take one boss emblem. Each is powerful, and each has a cost.</p><div class="choices">${reward.boss.map(k=>`<button class="option" data-act="bossemb" data-k="${k}">${embSvg(k)}<b>${EMB[k].name}</b><span class="muted">${EMB[k].gain||EMB[k].text}</span>${EMB[k].cost?`<span class="costline">Cost: ${k==='contract'?`max life ${run.max} → ${run.max-4}`:EMB[k].cost}</span>`:''}</button>`).join('')}</div><button class="btn" data-act="bossemb" data-k="">Take none</button></section>`}
-function nextAct(k){if(k)run.emblems.push(k);if(k==='contract'){run.max-=4;run.hp=Math.min(run.hp,run.max)}run.act=(run.act||1)+1;run.hp=run.max;run.map=genMap(run.act);run.pos=null;run.done=[];c=null;actStart()}
+function nextAct(k){if(k)run.emblems.push(k);if(k==='contract'){run.max-=4;run.hp=Math.min(run.hp,run.max)}run.act=(run.act||1)+1;run.hp=run.max;run.map=genMap(run.act);run.edges=genEdges(run.map);run.pos=null;run.done=[];c=null;actStart()}
 // Each act opens with a pick of 1 of 3 items: mostly common, sometimes rare, rarely mythic.
 const START_ODDS={M:.05,R:.2};
 function actStart(){const out=[];const left=k=>!run.emblems.includes(k)&&!out.includes(k)&&!BOSSEMB[k]&&forHero(k);
@@ -2819,16 +2886,14 @@ if(!resumeRun())newRun();
  function zoom(el){
   closeZoom();
   if(el.matches('.node')){const box=document.createElement('div');box.className='pw-zoom has-info';box.setAttribute('role','dialog');
-   const name=[...el.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim()||el.dataset.t;box.append(panel(`<b>${esc(name)}</b><p>${esc(NODE[el.dataset.t]||'')}</p>`));
-   const hint=document.createElement('p');hint.className='pw-zoom-hint';hint.textContent='Tap anywhere to close';box.append(hint);
+   const name=el.querySelector('.nl')?.textContent.trim()||[...el.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim()||el.dataset.t;box.classList.add('pw-node-zoom');box.append(panel(`<b>${esc(name)}</b><p>${esc((NODE[el.dataset.t]||'').replace(/^[^:]+:\s*/,'').replace(/^./,m=>m.toUpperCase()))}</p>`));
    box.addEventListener('click',()=>closeZoom());back=el;xBtn(box);document.body.append(box);history.pushState({pwZoom:1},'');buzz(10);return}
   const box=document.createElement('div');box.className='pw-zoom';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
   const copy=document.createElement('div');copy.className=el.className.replace(/\b(struck|acting|aim|chosen|ready)\b/g,'');
   for(const a of ['data-n','data-rar'])if(el.hasAttribute(a))copy.setAttribute(a,el.getAttribute(a));
   copy.innerHTML=el.innerHTML;copy.querySelectorAll('.pop,.incoming').forEach(x=>x.remove());
   const info=describe(el);if(info){box.classList.add('has-info');}
-  const hint=document.createElement('p');hint.className='pw-zoom-hint';hint.textContent='Tap anywhere to close';
-  box.append(copy);if(info)box.append(info);box.append(hint);box.addEventListener('click',()=>closeZoom());back=el;xBtn(box);
+  box.append(copy);if(info)box.append(info);box.addEventListener('click',()=>closeZoom());back=el;xBtn(box);
   document.body.append(box);history.pushState({pwZoom:1},'');buzz(10);
  }
 
@@ -2902,10 +2967,15 @@ if(!resumeRun())newRun();
   if(k<last||!n)step=0;last=k}).observe(app,{childList:true});
 })();
 
-/* Map paths: the map markup is a grid of nodes, and each node leads to the 1-3 nodes above it
-   (same lane or a neighbour; every last-row node leads to the boss). Draw those links under the
-   medallions: the path already walked in gold, the ways forward from where you stand bright. */
+/* Map paths: each node links to 1-2 nodes in the next row (run.edges; old saves link every neighbour,
+   every last-row node leads to the boss). Links are curves: walked ones brass, the ways forward from where
+   you stand flow gold, the rest stay faint. Hovering or holding a node lights every route it leads to. */
 (()=>{const app=document.getElementById('app');if(!app)return;const NS='http://www.w3.org/2000/svg';
+ const R=()=>typeof run!=='undefined'?run:null;
+ const nexts=(r,l)=>{const g=R();if(!g)return [];if(r===6)return ['7:1'];if(r>6)return [];
+  const row=g.map[r+1]||[];return [0,1,2].filter(x=>row[x]&&(g.edges?g.edges[r].some(([a,b])=>a===l&&b===x):Math.abs(l-x)<=1)).map(x=>(r+1)+':'+x)};
+ // a stable wobble per link, so curves don't change between redraws
+ const wob=k=>{let x=0;for(const ch of k+(typeof seed!=='undefined'?seed:0))x=Math.imul(x^ch.charCodeAt(0),2654435761);x^=x>>>15;return ((x>>>0)%1000)/1000-.5};
  const draw=()=>{const map=app.querySelector('.map');if(!map)return;let svg=map.querySelector(':scope>svg.pw-paths');
   if(!svg){svg=document.createElementNS(NS,'svg');svg.setAttribute('class','pw-paths');svg.setAttribute('aria-hidden','true');map.prepend(svg)}
   const mr=map.getBoundingClientRect();svg.setAttribute('viewBox',`0 0 ${mr.width} ${mr.height}`);
@@ -2913,15 +2983,31 @@ if(!resumeRun())newRun();
   const nodes={};map.querySelectorAll('.node[data-r]').forEach(n=>{const r=n.getBoundingClientRect(),k=n.offsetWidth?r.width/n.offsetWidth:1,cs=getComputedStyle(n,'::before');
    const ns=parseFloat(cs.height)||r.width/k,mt=parseFloat(cs.marginTop)||0,pt=parseFloat(getComputedStyle(n).paddingTop)||0;
    nodes[n.dataset.r+':'+n.dataset.l]={el:n,x:r.left+r.width/2-mr.left,y:r.top+(pt+mt+ns/2)*k-mr.top}});
-  const done=new Set((typeof run!=='undefined'&&run?.done)||[]);const pos=typeof run!=='undefined'&&run?.pos?run.pos.r+':'+run.pos.l:null;
-  let out='';const line=(a,b,cls)=>{out+=`<line class="${cls}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`};
-  for(let r=0;r<7;r++)for(let l=0;l<3;l++){const a=nodes[r+':'+l];if(!a)continue;
-   const nexts=r===6?['7:1']:[l-1,l,l+1].filter(x=>x>=0&&x<3).map(x=>(r+1)+':'+x);
-   for(const k of nexts){const b=nodes[k];if(!b)continue;const walked=done.has(r+':'+l)&&done.has(k);const ahead=pos===r+':'+l&&b.el.classList.contains('open');
-    line(a,b,walked?'walked':ahead?'ahead':'')}}
-  svg.innerHTML=out};
+  const g=R();const done=new Set(g?.done||[]);const pos=g?.pos?g.pos.r+':'+g.pos.l:null;const startOpen=!pos;
+  let out='';
+  for(const key of Object.keys(nodes)){const [r,l]=key.split(':').map(Number);if(r>6)continue;const a=nodes[key];
+   for(const k of nexts(r,l)){const b=nodes[k];if(!b)continue;const walked=done.has(key)&&done.has(k);const ahead=pos===key&&b.el.classList.contains('open');
+    const behind=g?.pos&&r<g.pos.r&&!walked;
+    const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len,d=wob(key+'>'+k)*len*.32;
+    const p1=[a.x+dx/3+nx*d,a.y+dy/3+ny*d],p2=[a.x+dx*2/3-nx*d,a.y+dy*2/3-ny*d];
+    out+=`<path class="${walked?'walked':ahead?'ahead':behind?'behind':'future'}" data-a="${key}" data-b="${k}" d="M${a.x.toFixed(1)} ${a.y.toFixed(1)} C${p1[0].toFixed(1)} ${p1[1].toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}"/>`}}
+  svg.innerHTML=out;if(lit)light(lit)};
+ // route preview: everything reachable from the node under the pointer (or finger) stays lit, the rest dims
+ let lit=null;
+ const light=key=>{const map=app.querySelector('.map');if(!map)return;lit=key;const reach=new Set([key]),q=[key];
+  while(q.length){const [r,l]=q.shift().split(':').map(Number);for(const k of nexts(r,l))if(!reach.has(k)){reach.add(k);q.push(k)}}
+  map.classList.add('pw-cascade');map.querySelectorAll('.node[data-r]').forEach(n=>n.classList.toggle('pw-reach',reach.has(n.dataset.r+':'+n.dataset.l)));
+  map.querySelectorAll('svg.pw-paths path').forEach(p=>p.classList.toggle('pw-reach',reach.has(p.dataset.a)&&reach.has(p.dataset.b)))};
+ const unlight=()=>{lit=null;const map=app.querySelector('.map');if(!map)return;map.classList.remove('pw-cascade');map.querySelectorAll('.pw-reach').forEach(x=>x.classList.remove('pw-reach'))};
+ const nodeOf=e=>e.target.closest?.('.map .node[data-r]');
+ app.addEventListener('pointerover',e=>{const n=nodeOf(e);if(n&&e.pointerType==='mouse')light(n.dataset.r+':'+n.dataset.l)});
+ app.addEventListener('pointerout',e=>{const n=nodeOf(e);if(n&&e.pointerType==='mouse'&&!n.contains(e.relatedTarget))unlight()});
+ app.addEventListener('pointerdown',e=>{const n=nodeOf(e);if(n&&e.pointerType!=='mouse')light(n.dataset.r+':'+n.dataset.l)},{passive:true});
+ for(const t of ['pointerup','pointercancel'])addEventListener(t,e=>{if(e.pointerType!=='mouse'&&lit)unlight()},{passive:true});
+ app.addEventListener('focusin',e=>{const n=nodeOf(e);if(n)light(n.dataset.r+':'+n.dataset.l)});
+ app.addEventListener('focusout',e=>{if(nodeOf(e))unlight()});
  let raf=0;const later=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(draw)};
- new MutationObserver(()=>{later();setTimeout(later,350)}).observe(app,{childList:true});addEventListener('resize',later);document.fonts?.ready.then(later);later();
+ new MutationObserver(()=>{lit=null;later();setTimeout(later,350)}).observe(app,{childList:true});addEventListener('resize',later);addEventListener('pw-fit',later);document.fonts?.ready.then(later);later();
 })();
 
 /* Deck pick lists: identical cards share one tile with a ×N badge (foiled copies stay separate),
