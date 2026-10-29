@@ -9,6 +9,7 @@ import {mountPtcgFoil} from './ptcg-foil.js';
 import {ygoRarityEffect,ygoRarityRank,ygoRaritySwatch} from './ygo-foil-recipes.js';
 import {quoteForContext} from './pricing-presentation.js';
 import {mountFinishPop} from './foil-fx.js';
+import {mtgHoloStamp} from './mtg-foil-recipes.js';
 export {finishChoices,finishEffect,resolveFinish,selectPreviewFinish,finishArtworkCard} from './finish-effects.js';
 const KEY='cardstashy-finish-effects';
 export const finishEffectsOn=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
@@ -19,7 +20,16 @@ export function entryFinishContext(game,e={}){return game==='mtg'?{priceFinish:e
 export function finishAttrs(game,c,ctx={},view='large'){
  const p=resolveFinish(game,c,ctx);
  p.materialProfile=finishMaterialProfile(game,c,p);
- return `data-finish-game="${esc(game)}" data-finish-surface="${view}" data-finish-effect="${esc(p.effect)}" data-finish-model="${esc(JSON.stringify(p))}"`;
+ return `data-finish-game="${esc(game)}" data-finish-surface="${view}" data-finish-effect="${esc(p.effect)}" data-finish-model="${esc(JSON.stringify(p))}"${game==='mtg'&&mtgOvalStamp(c)?' data-holostamp="1"':''}`;
+}
+// Magic rares and mythics in the modern frame (2015 on) carry a holographic oval security stamp at the bottom
+// centre, foil or not. Printings Scryfall marks with another stamp (triangle, acorn, heart...) or none are left alone.
+export const mtgOvalStamp=c=>mtgHoloStamp(c)&&(c.security_stamp?c.security_stamp==='oval':true)&&!c.full_art&&(c.layout||'normal')!=='art_series';
+// Any MTG card face (grids and lists included, never the compact list or symbols) can show its stamp, even
+// where the full foil overlay is not drawn.
+export function stampEligible(el){
+ if(el?.dataset?.holostamp!=='1'||el.dataset.finishGame!=='mtg'||el.hidden||el.closest?.('[hidden]'))return false;
+ return ['large','card','detail','zoom','pack'].includes(el.dataset.finishSurface)&&!el.closest?.('.view-compact,.view-symbols');
 }
 // Yu-Gi-Oh! reprints one card in many rarities. Instead of a printing list first, the Finish row
 // offers each rarity this card exists in (plainest first, with a swatch of its foil). A tap picks a
@@ -111,7 +121,7 @@ export function attachFinishPreview(root){
  const on=(el,type,fn,options)=>{el?.addEventListener?.(type,fn,options);cleanups.push(()=>el?.removeEventListener?.(type,fn,options));};
  const visible=el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom>0&&r.top<(globalThis.innerHeight||Infinity)&&r.right>0&&r.left<(globalThis.innerWidth||Infinity);};
  const foreground=el=>{const top=foregroundDialog();return !top||top.contains(el);};
- const allowed=el=>finishEffectsOn()&&!reduced()&&!globalThis.document?.hidden&&finishEligible(el)&&el.isConnected!==false&&foreground(el);
+ const allowed=el=>finishEffectsOn()&&!reduced()&&!globalThis.document?.hidden&&(finishEligible(el)||stampEligible(el))&&el.isConnected!==false&&foreground(el);
  const unmount=el=>{const m=mounted.get(el);if(m){ro?.unobserve(m.img);m.nameFoil?.dispose();m.rarityFoil?.dispose();m.overlay.remove();m.pop?.remove();mounted.delete(el);}};
  const size=el=>{
   const m=mounted.get(el);if(!m)return;
@@ -129,7 +139,11 @@ export function attachFinishPreview(root){
   if(!allowed(el)||!visible(el))return unmount(el);
   // A standalone card face only foils once it is big enough to read as a card.
   if(el.dataset.finishSurface==='card'&&el.getBoundingClientRect().width<90)return unmount(el);
-  const p=modelOf(el),detail=['detail','zoom'].includes(el.dataset.finishSurface);if(!p.layers?.length&&!detail)return unmount(el);
+  // full: the card's whole finish. Otherwise (a grid outside the gallery view) only its holo stamp shows.
+  const full=finishEligible(el),model=modelOf(el),p=full?model:{game:model.game,printingId:model.printingId,effect:'plain',layers:[]},detail=full&&['detail','zoom'].includes(el.dataset.finishSurface);
+  // On a foil the WebGL foil already lights the stamp; the rainbow sits over it more faintly so it still reads as holo.
+  const stamp=stampEligible(el),onFoil=!!(p.game==='mtg'&&p.treatment);
+  if(!p.layers?.length&&!detail&&!stamp)return unmount(el);
   if(mounted.has(el)){const old=mounted.get(el);if(old.model===el.dataset.finishModel&&old.src===old.img.currentSrc&&old.overlay.isConnected)return size(el);unmount(el);}
   const img=el.querySelector?.('img'),host=el.dataset.finishSurface==='detail'?(el.querySelector('.cd-zoom')||el):el;
   if(!img||!img.complete||!img.naturalWidth||img.hidden)return;
@@ -142,6 +156,7 @@ export function attachFinishPreview(root){
   if(['large','card'].includes(el.dataset.finishSurface)){const phase=String(p.printingId||'').split('').reduce((n,c)=>n+c.charCodeAt(0),0)%80;overlay.style.animationDelay=`-${phase/10}s`;}
   overlay.setAttribute('aria-hidden','true');
   if(detail){const light=img.ownerDocument.createElement('span');light.className='finish-spotlight';overlay.append(light);}
+  if(stamp){const holo=img.ownerDocument.createElement('span');holo.className='finish-holostamp'+(onFoil?' on-foil':'');overlay.append(holo);}
   for(const l of layers){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];overlay.append(part);}
   if(hasFinishPattern(p.materialProfile)&&FINISH_MASKS[layers[0]?.mask]){const pattern=img.ownerDocument.createElement('span');pattern.className='finish-pattern';pattern.style.clipPath=FINISH_MASKS[layers[0].mask];overlay.append(pattern);}
   // Foil pass: every real foil (not a plain card) gets the pop layer over the whole card face: rim, glare,
@@ -171,9 +186,9 @@ export function attachFinishPreview(root){
   pending=false;
   for(const rail of choiceRails)if(rail.isConnected===false){ro?.unobserve(rail);choiceRails.delete(rail);}
   for(const rail of root.querySelectorAll?.('.finish-choice-rail')||[]){if(!choiceRails.has(rail)){choiceRails.add(rail);ro?.observe(rail);}syncFinishChoiceRail(rail);}
-  for(const el of watched)if(!el.isConnected||!finishEligible(el)){io?.unobserve(el);watched.delete(el);unmount(el);}
+  for(const el of watched)if(!el.isConnected||!(finishEligible(el)||stampEligible(el))){io?.unobserve(el);watched.delete(el);unmount(el);}
   for(const el of root.querySelectorAll?.('[data-finish-surface]')||[]){
-   if(!finishEligible(el))continue;
+   if(!finishEligible(el)&&!stampEligible(el))continue;
    if(!watched.has(el)){watched.add(el);io?.observe(el);}
    mount(el);
   }

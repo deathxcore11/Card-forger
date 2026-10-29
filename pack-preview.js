@@ -10,7 +10,7 @@ import {ygoSetReference} from './ygo-set-prices.js';
 import {pkCatalogueSymbolSources} from './emblems.js';
 import {drawMtgBooster} from './mtg-boosters.js';
 import {haptic,cancelHaptics} from './feel.js';
-import {addGlints,catchLight,burstGlints} from './foil-fx.js';
+import {catchLight} from './foil-fx.js';
 // A discovery sampler. No collation, print-run odds, purchases or ownership are implied.
 export function sampleSetCards(cards,count=10,random=packRandom){
  const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),c])).values()];
@@ -301,8 +301,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  document.body.append(dialog);dialog.tabIndex=-1;dialog.showModal();dialog.focus({preventScroll:true});
  const status=dialog.querySelector('.pack-status'),focusCard=dialog.querySelector('.pack-focus-card'),face=focusCard.querySelector('.pack-face'),faceImg=face.querySelector('img'),meta=dialog.querySelector('.pack-focus-meta');
  const ref=i=>({game,card:picks[i],dataset:{}});
- // Foil pass: glints and a light catch live on the big card; they show on foils and better pulls.
- addGlints(face,{n:10,seed:set?.id||set?.name||game});
+ // Foil pass: a light catch crosses the big card when it is revealed (no sparkle stars over the real foil).
  // Each card box takes its picture's own proportions (scans are not all exactly 63:88), so the price
  // frame hugs the printed card instead of leaving a gap above and below it.
  const fit=(box,img)=>{if(img.naturalWidth&&img.naturalHeight)box.style.aspectRatio=`${img.naturalWidth}/${img.naturalHeight}`;};
@@ -345,7 +344,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   if(big){showcase=performance.now();if(!raf)raf=requestAnimationFrame(light);
    // On a phone that can tilt but hasn't turned it on, the tilt button glows to invite playing with the foil.
    const tb=dialog.querySelector('.pack-tilt');if(tb&&!tb.hidden&&tb.getAttribute('aria-pressed')!=='true')tb.classList.add('pack-tilt-hint');}
-  catchLight(focusCard);const t2=t>=2||packRarity(game,picks[i]).rank>=2;if(t2||focusCard.classList.contains('pack-foil'))burstGlints(face);focusCard.classList.remove('pack-pop','pack-hit-big');void focusCard.offsetWidth;focusCard.classList.add('pack-pop');if(big)focusCard.classList.add('pack-hit-big');
+  catchLight(focusCard);focusCard.classList.remove('pack-pop','pack-hit-big');void focusCard.offsetWidth;focusCard.classList.add('pack-pop');if(big)focusCard.classList.add('pack-hit-big');
   later(()=>focusCard.classList.remove('pack-pop'),450);later(()=>focusCard.classList.remove('pack-hit-big'),1700);};
  fill();
  // Feel: the tear as the seam opens, a few dry contacts as the cards settle (not one per card, which would blur into
