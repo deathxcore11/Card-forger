@@ -141,8 +141,8 @@ export function attachFinishPreview(root){
   if(el.dataset.finishSurface==='card'&&el.getBoundingClientRect().width<90)return unmount(el);
   // full: the card's whole finish. Otherwise (a grid outside the gallery view) only its holo stamp shows.
   const full=finishEligible(el),model=modelOf(el),p=full?model:{game:model.game,printingId:model.printingId,effect:'plain',layers:[]},detail=full&&['detail','zoom'].includes(el.dataset.finishSurface);
-  // The stamp is drawn here unless the card's own WebGL foil already draws it.
-  const stamp=stampEligible(el)&&!(p.game==='mtg'&&p.treatment);
+  // On a foil the WebGL foil already lights the stamp; the rainbow sits over it more faintly so it still reads as holo.
+  const stamp=stampEligible(el),onFoil=!!(p.game==='mtg'&&p.treatment);
   if(!p.layers?.length&&!detail&&!stamp)return unmount(el);
   if(mounted.has(el)){const old=mounted.get(el);if(old.model===el.dataset.finishModel&&old.src===old.img.currentSrc&&old.overlay.isConnected)return size(el);unmount(el);}
   const img=el.querySelector?.('img'),host=el.dataset.finishSurface==='detail'?(el.querySelector('.cd-zoom')||el):el;
@@ -156,7 +156,7 @@ export function attachFinishPreview(root){
   if(['large','card'].includes(el.dataset.finishSurface)){const phase=String(p.printingId||'').split('').reduce((n,c)=>n+c.charCodeAt(0),0)%80;overlay.style.animationDelay=`-${phase/10}s`;}
   overlay.setAttribute('aria-hidden','true');
   if(detail){const light=img.ownerDocument.createElement('span');light.className='finish-spotlight';overlay.append(light);}
-  if(stamp){const holo=img.ownerDocument.createElement('span');holo.className='finish-holostamp';overlay.append(holo);}
+  if(stamp){const holo=img.ownerDocument.createElement('span');holo.className='finish-holostamp'+(onFoil?' on-foil':'');overlay.append(holo);}
   for(const l of layers){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];overlay.append(part);}
   if(hasFinishPattern(p.materialProfile)&&FINISH_MASKS[layers[0]?.mask]){const pattern=img.ownerDocument.createElement('span');pattern.className='finish-pattern';pattern.style.clipPath=FINISH_MASKS[layers[0].mask];overlay.append(pattern);}
   // Foil pass: every real foil (not a plain card) gets the pop layer over the whole card face: rim, glare,
