@@ -2156,3 +2156,4 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-lane-tray .forge-lane-tray-close{width:44px;height:44px;border-radius:50%;border:1px solid #ffffff22;background:#1d2028;color:#f3ead6;font:700 22px/1 'DM Sans',system-ui,sans-serif}
 .forge-rope s{top:16px}
 @media (max-aspect-ratio:9/10){:where(body.practice-table-open) .play-match-table[data-forge-native][data-rope-on=true] .forge-native-actions>[data-native-key=cancel]{translate:0 -10px}}
+@media (max-aspect-ratio:9/10){:where(body.practice-table-open) .play-match-table[data-forge-native][data-rope-on=true] .forge-native-panel .forge-native-actions[data-state]::before{translate:0 -10px}}
