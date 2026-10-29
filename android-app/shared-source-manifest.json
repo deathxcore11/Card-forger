@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.30",
-  "commit": "2da0fed4d325496e86b633f9e7269549253026a6",
-  "tree": "33184257b13f1cb69be3c2da012336fa94847b08",
+  "version": "4.3.31",
+  "commit": "ac71ec5852937aacc73de2aee8766e111e40b559",
+  "tree": "be0d3147716c70c635b3824b7b02cb01278e1a7c",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -1869,7 +1869,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "32edfd99722c8bd8ff22c531b39822680d5cdcdcb071ba9a744b65b3858c28d3"
+      "sha256": "df41da62ed83787f915764445dfefbf2bcccac3de35a17308a0c1ef8992402f9"
     },
     {
       "path": "core.js",
@@ -2863,13 +2863,13 @@
     },
     {
       "path": "experiments/forge-proof/forge-session.mjs",
-      "bytes": 26527,
-      "sha256": "9e0ff4990604ff558fadadc68be04045c42198044f4e815f8682b04df923776a"
+      "bytes": 26573,
+      "sha256": "55b4b8977233c8738b72b41c6f285c6216a0f4f3188df8384293a76ea4722c94"
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 150356,
-      "sha256": "e158f1b4f633a7ad7467963661bffdcd4e9d9a535e2450b5f7865ef401a4fdbc"
+      "bytes": 155429,
+      "sha256": "83ab29a30de4b99d665ecc0d575e0d377bde473c10eba428be20a869accc1985"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -2878,8 +2878,8 @@
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
-      "bytes": 46135,
-      "sha256": "ca97fcecb7b41ac2314045e39f5814c8e771d6776a99a0409b26bd3f07afa68c"
+      "bytes": 53833,
+      "sha256": "098992e1f96b371ef4fabaa653d4170a6f9e485e2e902d44ac8cd433a880e32a"
     },
     {
       "path": "experiments/forge-proof/table-emotes.mjs",
@@ -3534,7 +3534,7 @@
     {
       "path": "package.json",
       "bytes": 11917,
-      "sha256": "5b1b705f051b5ece4bce2133faed8eedc11f2e5c207d46de21a0536b778905d9"
+      "sha256": "28ac1a93b68c05f097d3d13e7cbb4674f6154a98d3efc746ee28b93d679e7850"
     },
     {
       "path": "pairing.js",
@@ -3623,8 +3623,8 @@
     },
     {
       "path": "play-forge-cpu-policy.js",
-      "bytes": 652,
-      "sha256": "ccf98df9aff60832797530b6c06a693d7f29e3eb33baa0ce4e38f2fa2bac5abc"
+      "bytes": 1032,
+      "sha256": "cfc4033aafb67226bb5debd2010754c4fc71df58c479ff204a8195f4ac9065fe"
     },
     {
       "path": "play-forge-feature.js",
@@ -3633,8 +3633,8 @@
     },
     {
       "path": "play-forge-host-client.js",
-      "bytes": 19198,
-      "sha256": "46c104ba33d609bb220386b60e79c32ff64b2a45c9b97c0bbd5d4c34e6f7d185"
+      "bytes": 19224,
+      "sha256": "ef7c6bf5f35ed99b2eaf8e7928c787159ae36c0552f95655771d0543b802e3d0"
     },
     {
       "path": "play-forge-local-client.js",
@@ -3643,8 +3643,8 @@
     },
     {
       "path": "play-forge-player-mat.js",
-      "bytes": 34902,
-      "sha256": "32e7de727d1815a6bbf3e5aa2ffdc1c42da788fe7599604cbdbc531314dc7428"
+      "bytes": 34928,
+      "sha256": "79295f8fc11229cdd5d7668c08e46d96b2086098350b495d0bcb4f5d51927f58"
     },
     {
       "path": "play-forge-pregame.js",
@@ -3658,8 +3658,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 341996,
-      "sha256": "74b17785c2980adaae47bd69141fe7ed141d499451cd95b7c3a182404cca8160"
+      "bytes": 359941,
+      "sha256": "9d96571db9a8871e5ee0f43a96577e71f9323e4e6e7f8b64d2fa89e84a55bb11"
     },
     {
       "path": "play-match-record.js",
@@ -3668,13 +3668,13 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 75028,
-      "sha256": "b3150f60815be2a772ac73e315db4f6d894b5a14e27e591fadfbef9c3bdabfda"
+      "bytes": 76018,
+      "sha256": "913c3ccded3eb1ac6a1968da55dd17adaa41f7eccebe6c9fa5b175489f176ab2"
     },
     {
       "path": "play-menu.js",
-      "bytes": 23874,
-      "sha256": "99a430179a89d30bcf6098c1a82cc06f9259ff08f0e5330d6d732778989f0cc9"
+      "bytes": 24348,
+      "sha256": "2cc41e5d7cd7a4ce331b51a998b75260460172f172b1cd0886cef231da5c7e76"
     },
     {
       "path": "play-opponent-build.js",
@@ -3708,8 +3708,8 @@
     },
     {
       "path": "play-setup.js",
-      "bytes": 18408,
-      "sha256": "7c8e8c3a3a8b843bb3f0a0df87f16941412d5b4e099fdae6a4adef4b4f278081"
+      "bytes": 18821,
+      "sha256": "4457951e6e6b7c03c821e8a01467d5327da1578877aba7c8b3a96104e34e8d88"
     },
     {
       "path": "play-starter-deck.js",
@@ -3893,8 +3893,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 876,
-      "sha256": "5a233963385f905f7fd976d290099ef96d11f62d11cda36ef37f68c9fb4772f0"
+      "bytes": 787,
+      "sha256": "929184931fc9a5156c94758f4f7afe3088b6d56708c4ea59621ec936137d0328"
     },
     {
       "path": "release-status.js",
@@ -4213,8 +4213,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15498,
-      "sha256": "f3e3465eebee05ceed2475d6aacd170cbd5e97cf6feed607bcb5be25f8e4f003"
+      "bytes": 15508,
+      "sha256": "931dcffabdf747b68ba13a1d472017984f53a5bedcfe09c8c0be74fd90f03352"
     },
     {
       "path": "sync-merge.js",
