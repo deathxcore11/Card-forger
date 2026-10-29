@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-practice-mats-recap-v376";
+const CACHE = "cardforge-shell-emotes-goals-v377";
 const ASSETS = [
   "./play-forge-feature.js",
   "./audio.js",
