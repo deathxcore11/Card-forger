@@ -55,6 +55,9 @@ android {
     }
 }
 
+// Forge brings full Guava, which already holds AndroidX's ListenableFuture.
+if (withForgeEngine) configurations.configureEach { exclude group: 'com.google.guava', module: 'listenablefuture' }
+
 repositories {
     flatDir{
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'

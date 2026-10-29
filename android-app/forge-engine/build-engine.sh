@@ -48,7 +48,7 @@ cp -r "$W/fp/cpu/runtime-classes/." "$W/fp/human/runtime-classes/." "$W/classes/
 rm -f "$J"/META-INF/*.SF "$J"/META-INF/*.RSA "$J"/META-INF/*.DSA
 (cd "$J" && "$JAVA_HOME/bin/jar" --create --file "$OUT/android/libs/forge-engine.jar" .)
 # Forge's libraries, minus network play (netty, jetty, UPnP) which the app never starts.
-tr ':' '\n' < "$FORGE_SRC/forge-gui/target/runtime-classpath.txt" | grep -Ev '/(netty|jetty|org\.jupnp|jakarta|javax\.servlet|forge-(core|game|ai|gui)-)' | while read -r jar; do
+tr ':' '\n' < "$FORGE_SRC/forge-gui/target/runtime-classpath.txt" | grep -Ev '/(netty|jetty|org\.jupnp|jakarta|javax\.servlet|forge-(core|game|ai|gui)-|listenablefuture-)' | while read -r jar; do
   [ -f "$jar" ] && cp "$jar" "$OUT/android/libs/"
 done
 
