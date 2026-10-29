@@ -206,7 +206,7 @@ export function tableActivity(s,{beat=null,overlay=false,recent=[]}={}){
 }
 
 export class CpuActionPlaybackQueue {
- constructor({present,beat=()=>{},clear=()=>{},reducedMotion=()=>false,schedule=(fn,ms)=>setTimeout(fn,ms),cancel=id=>clearTimeout(id)}={}){Object.assign(this,{present,beat,clear,reducedMotion,schedule,cancel});this.current=null;this.latest=null;this.pending=[];this.timer=null;this.running=false;this.overlay=false;this.closed=false;this.recent=[];this.seenSeq=-1;this.loggedSeq=-1;}
+ constructor({present,beat=()=>{},clear=()=>{},reducedMotion=()=>false,speed=()=>1,schedule=(fn,ms)=>setTimeout(fn,ms),cancel=id=>clearTimeout(id)}={}){Object.assign(this,{present,beat,clear,reducedMotion,speed,schedule,cancel});this.current=null;this.latest=null;this.pending=[];this.timer=null;this.running=false;this.overlay=false;this.closed=false;this.recent=[];this.seenSeq=-1;this.loggedSeq=-1;}
  // Overlay playback runs over a board that already asks the player something; it never blocks.
  get busy(){return this.running&&!this.overlay||this.pending.length>0;}
  // The last dozen things that happened, in plain sentences, for the activity line.
@@ -255,7 +255,8 @@ export class CpuActionPlaybackQueue {
     return;
    }
    if(Number.isSafeInteger(beat.seq))this.seenSeq=Math.max(this.seenSeq,beat.seq);
-   this.beat(beat,next);this.timer=this.schedule(step,this.reducedMotion()?250:this.pending.length?Math.round(beat.duration/2):beat.duration);
+   this.beat(beat,next);// speed() is read per beat, so switching to Fast also hurries the beats already queued.
+   this.timer=this.schedule(step,this.reducedMotion()?250:Math.max(180,Math.round((this.pending.length?beat.duration/2:beat.duration)*this.speed())));
   };step();
  }
  stop(){this.cancel(this.timer);this.timer=null;this.running=false;this.overlay=false;this.clear();}

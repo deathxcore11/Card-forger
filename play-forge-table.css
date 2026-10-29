@@ -1885,3 +1885,8 @@ body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
 @media (max-aspect-ratio:17/20){:where(body.practice-table-open) .forge-native-panel .forge-toast{top:calc(max(env(safe-area-inset-top),6px) + 150px)!important}}
 /* A dragged card keeps its name on one line. */
 :where(body.practice-table-open) .forge-drag-ghost .play-match-card-name{display:block;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis;word-break:normal!important;overflow-wrap:normal!important;max-width:100%;height:auto!important}
+/* CPU speed on the activity line: the only part of it that takes a tap. */
+:where(body.practice-table-open) .forge-activity .forge-speed{pointer-events:auto;justify-self:start;margin-top:4px;min-height:26px;padding:3px 10px;border:1px solid #ffffff2e;border-radius:999px;background:#ffffff0f;color:#d9d3c4;font:700 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.04em;cursor:pointer}
+:where(body.practice-table-open) .forge-activity .forge-speed[aria-pressed=true]{border-color:#f0c27a99;background:#f0c27a22;color:#f2d18e}
+:where(body.practice-table-open) .forge-activity .forge-speed:focus-visible{outline:2px solid #f0c27a;outline-offset:2px}
+@media (hover:none){:where(body.practice-table-open) .forge-activity .forge-speed{min-height:32px;padding-inline:12px}}

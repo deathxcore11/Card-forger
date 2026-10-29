@@ -12,6 +12,7 @@ const ASSETS = [
   "./play-forge-artwork.js",
   "./play-forge-player-mat.js",
   "./play-forge-pregame.js",
+  "./play-match-record.js",
   "./play-forge-table.css",
   "./experiments/forge-proof/forge-session.mjs",
   "./experiments/forge-proof/forge-table.mjs",

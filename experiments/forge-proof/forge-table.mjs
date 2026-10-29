@@ -457,11 +457,15 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  }
  function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
  let activityKey='';
+ // Like Snap and Master Duel, CPU turns can play at Normal or Fast; the choice stays on this device.
+ const SPEED_KEY='cardstashy-cpu-speed';let cpuSpeed='normal';try{if(win.localStorage?.getItem(SPEED_KEY)==='fast')cpuSpeed='fast';}catch{/* blocked storage keeps Normal */}
+ activity.addEventListener('click',e=>{if(!e.target.closest?.('.forge-speed'))return;cpuSpeed=cpuSpeed==='fast'?'normal':'fast';try{win.localStorage?.setItem(SPEED_KEY,cpuSpeed);}catch{/* the choice lasts this match */}activityKey='';updateActivity();});
  function updateActivity(){
   const a=presentation.hosted&&root.dataset.stage==='match'&&playback?tableActivity(displayed,{beat:activeBeat,overlay:playback.overlay,recent:playback.recent}):null;
-  const key=a?`${a.kind}|${a.label}|${a.detail}`:'';if(key===activityKey)return;activityKey=key;
+  const key=a?`${a.kind}|${a.label}|${a.detail}|${cpuSpeed}`:'';if(key===activityKey)return;activityKey=key;
   activity.hidden=!a||a.kind==='decision';if(activity.hidden)return;
-  activity.dataset.kind=a.kind;activity.innerHTML=`<strong>${esc(a.label)}</strong>${a.detail?`<span>${esc(a.detail)}</span>`:''}`;
+  const fast=cpuSpeed==='fast',speed=['replay','thinking'].includes(a.kind)?`<button type="button" class="forge-speed" aria-pressed="${fast}" aria-label="CPU speed: ${fast?'Fast':'Normal'}. Tap to switch.">${fast?'▶▶ Fast':'▶ Normal'}</button>`:'';
+  activity.dataset.kind=a.kind;activity.innerHTML=`<strong>${esc(a.label)}</strong>${a.detail?`<span>${esc(a.detail)}</span>`:''}${speed}`;
   activity.title=playback.recent.join('\n');
  }
  // Arrows, Arena style: attackers to whom they attack, blockers to what they block, and
@@ -740,7 +744,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(idleKey===key)return;idleKey=key;clearTimeout(idleTimer);
   idleTimer=setTimeout(()=>{idleTimer=0;const now=session.snapshot();if(closed||!idleReady(now)||now.native.revision!==n.revision)return;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?250:900);
  }
- playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,reducedMotion});
+ playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,reducedMotion,speed:()=>cpuSpeed==='fast'?.45:1});
  // A tap skips held playback. Playback over a decision never holds the board, so a tap there
  // only clears the spotlight and goes on to whatever was tapped.
  const skipPlayback=e=>{if(!playback.running||e.button>0)return;if(playback.overlay){playback.stop();return;}suppressUntil=Date.now()+400;playback.flush();};
