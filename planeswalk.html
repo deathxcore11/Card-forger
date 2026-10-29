@@ -1931,11 +1931,33 @@ html.pw-calm *,html.pw-calm *::before,html.pw-calm *::after{animation-duration:.
 .pw-gift-box>.btn.main{min-width:180px;min-height:46px;justify-content:center}
 @keyframes pw-gift-in{0%{opacity:0;transform:perspective(600px) rotateY(90deg) scale(.8)}60%{opacity:1}100%{transform:none}}
 @media (prefers-reduced-motion:reduce){.pw-gift-box>.card{animation:none}}
-/* combat log: the ≡ button beside the message line opens this fight's last messages */
-#app .battle .pw-histbtn{grid-column:2;grid-row:2;justify-self:end;align-self:center;z-index:4;display:grid;place-items:center;width:44px!important;height:44px!important;min-width:0!important;min-height:0!important;padding:0!important;border-radius:50%!important;font-size:1rem;line-height:1}
-#app .battle .pw-hist{max-height:min(320px,60vh);overflow:auto}
-#app .battle .pw-hist ol{margin:6px 0 8px;padding-left:1.3em;display:grid;gap:3px;font-size:.72rem;line-height:1.3;text-align:left}
+/* combat log: ≡ leads the message line; the log opens as a panel under the HUD */
+#app .battle .controls .log{pointer-events:auto}
+#app .battle .log .pw-histbtn{display:inline-grid;place-items:center;vertical-align:middle;width:26px;height:26px;margin:-4px 8px -4px -6px;padding:0;border:0;border-radius:50%;background:#2a2016;color:#f3d48a;font:700 .8rem/1 var(--body);box-shadow:0 0 0 1px #c99c5999;cursor:pointer;position:relative}
+#app .battle .log .pw-histbtn::after{content:"";position:absolute;inset:-9px}
+#app .battle .log .pw-histbtn.chosen{background:linear-gradient(var(--pw-gold-hi),var(--pw-gold));color:#1b1610}
+#app .battle .log .pw-histbtn:focus-visible{outline:2px solid var(--pw-gold);outline-offset:2px}
+#app .battle .pw-hist{position:fixed;z-index:60;top:calc(var(--pw-hud-h,48px) + 10px);left:50%;translate:-50% 0;box-sizing:border-box;width:min(520px,calc(100vw/var(--pw-zoom,1) - 24px));max-height:calc(var(--pw-vh,100dvh) - 230px);overflow:auto;overscroll-behavior:contain;padding:14px 56px 12px 16px;border-radius:14px;background:linear-gradient(#1b1610f7,#0d0b08f7);box-shadow:0 0 0 1px #c99c5999,0 18px 40px #000d;color:#efe6d2;text-align:left;animation:pw-menu-card .18s ease-out}
+#app .battle .pw-hist>b{font:700 .8rem/1.2 Cinzel,serif;letter-spacing:.12em;text-transform:uppercase;color:var(--pw-gold)}
+#app .battle .pw-hist ol{margin:8px 0 0;padding-left:1.3em;display:grid;gap:4px;font:500 .74rem/1.35 var(--body)}
 #app .battle .pw-hist li:last-child{color:#f3d48a}
+#app .battle .pw-hist>.pw-x{top:6px;right:6px}
+/* phone upright: one action band (Attack all, End turn) on the right, the whole hand above the bottom edge, readable small text */
+@media (max-aspect-ratio:3999/5000){
+ #app .battle .controls{grid-template-columns:minmax(0,1fr) auto minmax(150px,auto)!important;align-items:center}
+ #app .battle .controls>[data-act=all]{grid-column:2!important;grid-row:2;justify-self:end;min-height:44px;padding:0 14px;background:#1d1711;border:1px solid #c99c5999;color:#efe6d2;opacity:1}
+ #app .battle .controls>[data-act=all]:disabled{color:#9a8f7c;border-color:#c99c5944}
+ #app .battle .controls>[data-act=end]{grid-column:3!important;grid-row:2;width:100%}
+ #app .battle .controls>:is([data-act=arrange],[data-act=sac]){grid-column:1!important;grid-row:2;justify-self:start}
+ #app .battle .controls>[data-act=cancel]{grid-column:1/-1!important;grid-row:3}
+ #app .battle .hand{padding-bottom:max(10px,env(safe-area-inset-bottom,0px))!important}
+ #app .battle .hand>.card{translate:0 0!important;transform-origin:50% 100%}
+ #app .battle .hand .card .head b{font-size:.62rem!important;letter-spacing:0!important}
+ #app .battle .piles>span{font-size:.7rem!important}
+}
+/* Attack all reads as a real secondary button everywhere, and its label wraps instead of clipping */
+#app .battle .controls>[data-act=all]{background:#1d1711!important;border:1px solid #c99c5999!important;color:#efe6d2!important;opacity:1!important;white-space:normal;line-height:1.15;padding-inline:8px!important;text-wrap:balance}
+#app .battle .controls>[data-act=all]:disabled{color:#9a8f7c!important;border-color:#c99c5944!important}
 
 </style>
 
@@ -2595,12 +2617,12 @@ const P=c.pending;const F=c.busy?{you:0,dead:new Set(),took:new Map(),over:0}:fo
    <button class="btn ult" data-act="ult" ${c.used||c.busy||c.loyalty<6?'disabled':''} title="Loyalty carries between fights. Save up for this.">${HERO.ultLabel}</button>
    <button class="btn" data-act="all" ${anyReady?'':'disabled'}>Attack with all ready</button>${FORM&&c.allies.length>1?`<button class="btn${c.arrange?' chosen':''}" data-act="arrange" ${c.busy?'disabled':''} title="Tap an ally to move it to the front. The front ally blocks first.">${c.arrange?'✓ Done':'⇄ Formation'}</button>`:''}${c.bombard?`<button class="btn ult" data-act="sac" ${c.busy||!c.allies.length?'disabled':''}>✸ Sacrifice for ${c.bombard}</button>`:''}
    ${P?'<button class="btn" data-act="cancel">Cancel</button>':''}<span class="spacer"></span>
-   ${(c.inspect&&c.enemies.find(e=>e.id===c.inspect))?enemyInfo(c.enemies.find(e=>e.id===c.inspect)):''}${c.showHist?`<div class="inspect pw-hist" role="dialog" aria-label="Combat log"><b>This fight</b><ol>${c.hist.slice(-14).map(l=>`<li>${l}</li>`).join('')}</ol><button class="btn" data-act="closeinspect">Close</button></div>`:''}<span class="log" role="status">${c.log}</span><button class="btn pw-histbtn${c.showHist?' chosen':''}" data-act="hist" aria-label="Combat log" aria-expanded="${!!c.showHist}" title="Combat log">≡</button>
+   ${(c.inspect&&c.enemies.find(e=>e.id===c.inspect))?enemyInfo(c.enemies.find(e=>e.id===c.inspect)):''}${c.showHist?`<div class="pw-hist" role="dialog" aria-label="Combat log"><button type="button" class="pw-x" data-act="closeinspect" aria-label="Close">✕</button><b>This fight</b><ol>${c.hist.slice(-14).map(l=>`<li>${l}</li>`).join('')}</ol></div>`:''}<span class="log" role="status"><button type="button" class="pw-histbtn${c.showHist?' chosen':''}" data-act="hist" aria-label="Combat log" aria-expanded="${!!c.showHist}" title="Combat log">≡</button><span class="pw-logt">${c.log}</span></span>
    <button class="btn main" data-act="end" ${c.busy?'disabled':''}>End turn</button>
   </div>
   <div class="foot"><div class="tally" title="Damage you've dealt this turn"><small>This turn</small>${c.stats.dealt-c.turnStart}${(c.juice||[]).length?`<span class="juice">${c.juice.map(j=>`<i class="${j.mul?'mul':'add'}">${j.t}${j.n>1?` <b>x${j.n}</b>`:''}</i>`).join('')}</span>`:''}</div><div class="energy" title="Energy this turn. Up to 2 unused energy carries to next turn.">${c.energy}${c.banked?`<small>+${c.banked} saved</small>`:''}</div>${HERO.fury?`<div class="chain" title="Every 4th card you play in a turn: ${HERO.short} deals 3 to each enemy, then 6 on the 8th, 9 on the 12th. Save energy to get there.">${[1,2,3,4].map(n=>`<i class="${(c.chain%4||(c.chain?4:0))>=n?'on':''}"></i>`).join('')}<span>${c.chain>=4?`Fury · ${c.chain}`:'Fury'}</span></div>`:''}
    <div class="hand">${c.hand.map((card,i)=>cardHtml(card,`data-act="play" data-i="${i}" ${canPlay(card)?'':'disabled'} ${P&&P.kind==='card'&&P.cid===card.id?'data-chosen="1"':''}`)).join('')}</div>
-   <div class="piles"><span>Draw ${c.draw.length}</span><span>Discard ${c.discard.length}</span>${!c.busy&&c.energy?`<span class="bankhint">Unused: ${Math.min(2,c.energy)} saved</span>`:''}${c.tax?'<span style="color:var(--red)">Thalia: spells +1</span>':''}</div></div>
+   <div class="piles"><span>Draw ${c.draw.length}</span><span>Discard ${c.discard.length}</span>${!c.busy&&c.energy?`<span class="bankhint">${Math.min(2,c.energy)} energy saved</span>`:''}${c.tax?'<span style="color:var(--red)">Thalia: spells +1</span>':''}</div></div>
  </section>`;
 }
 const anteCard=card=>cardHtml(card).replace(/^<button/,'<span').replace(/<\/button>$/,'</span>');
@@ -3020,7 +3042,7 @@ if(!resumeRun())newRun();
 })();
 /* The game's opening hint teaches tapping; the skin teaches drag (tap still works). */
 (()=>{const app=document.getElementById('app');if(!app)return;const OLD='Your turn. Play a card, or tap a glowing creature and then an enemy to attack.',NEW='Your turn. Drag a card onto a target · drag a creature onto an enemy to attack.';
- const fix=()=>{const l=app.querySelector('.battle .controls .log');if(l&&l.textContent.trim()===OLD)l.textContent=NEW};
+ const fix=()=>{const l=app.querySelector('.battle .controls .log .pw-logt')||app.querySelector('.battle .controls .log');if(l&&l.textContent.trim()===OLD)l.textContent=NEW};
  new MutationObserver(fix).observe(app,{childList:true,subtree:true});fix()})();
 /* The game's long-press inspect lists keywords as plain words; show each with its icon and what it does. */
 (()=>{const app=document.getElementById('app');if(!app)return;
