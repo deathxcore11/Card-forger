@@ -147,10 +147,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // and what you have already picked. Forge still validates every click.
   const discarding=!n.prompt&&choices.size>0&&/\bdiscard\b/i.test(String(n.message||''));
   const role=id=>chosen.has(id)?'chosen':targets.has(id)?'target':choices.has(id)?(discarding?'discard':'choice'):actionable.has(id)?'playable':'';
+  const inputName=String(n.inputType||'');if(root.dataset.forgeInput!==inputName)root.dataset.forgeInput=inputName;
   const combatInput=n.inputType==='InputAttack'||n.inputType==='InputBlock';
   for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);const dragOk=combatInput&&!!combatDrops(cardId);if((el.dataset.forgeDrag==='true')!==dragOk){if(dragOk)el.dataset.forgeDrag='true';else delete el.dataset.forgeDrag;}el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));if(actionable.has(cardId)&&el.closest('.play-match-hand')){const c=snap.status.surface.cards.find(x=>x.id===cardId);const a=affordability.get(cardId);el.dataset.forgeSure=String(a?a==='available':!(c&&COST_BENDERS.test(c.text||'')));}else delete el.dataset.forgeSure;
    // A creature Forge says must attack this combat wears a tag until it is in the attack.
-   const must=n.inputType==='InputAttack'&&!!snap.status.surface.cards.find(x=>x.id===cardId&&x.mustAttack===true&&x.attacking!==true);if(must&&el.dataset.forgeMust!=='true'){el.dataset.forgeMust='true';const tag=doc.createElement('span');tag.className='forge-must-tag';tag.textContent='Must attack';el.append(tag);}else if(!must&&el.dataset.forgeMust){delete el.dataset.forgeMust;el.querySelector(':scope>.forge-must-tag')?.remove();}el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
+   const must=n.inputType==='InputAttack'&&!!snap.status.surface.cards.find(x=>x.id===cardId&&x.mustAttack===true);if(must&&el.dataset.forgeMust!=='true'){el.dataset.forgeMust='true';const tag=doc.createElement('span');tag.className='forge-must-tag';tag.textContent='Must attack';el.append(tag);}else if(!must&&el.dataset.forgeMust){delete el.dataset.forgeMust;el.querySelector(':scope>.forge-must-tag')?.remove();}el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
   const surface=snap.status.surface,nativePlayer=seat=>n.players.find(p=>p.id===surface.players.find(p=>p.seat===seat)?.nativeId);
   // Floating mana is the native pool only, never untapped lands or potential production.
   const manaEntries=player=>Object.entries(player?.mana||{}).map(([color,amount])=>[String(color).toUpperCase(),Number(amount)||0]);
@@ -294,7 +295,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    fitRails();fitBoard();
    // A gentle arc: cards further from the middle of the hand sit a little lower.
    // The count lets the hand tighten its spacing only when it would not fit.
-   const hand=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')],handRow=root.querySelector('.play-match-hand .play-match-card-row');if(handRow&&handRow.style.getPropertyValue('--hand-count')!==String(hand.length))handRow.style.setProperty('--hand-count',String(hand.length));hand.forEach((w,i)=>{const lift=Math.abs(i-(hand.length-1)/2);const v=`${Math.min(Math.round(lift*lift*2.2),22)}px`;if(w.style.getPropertyValue('--arc-drop')!==v)w.style.setProperty('--arc-drop',v);});if(handFocusId!==null&&!handFocus?.isConnected)refocusHand();
+   const hand=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')],handRow=root.querySelector('.play-match-hand .play-match-card-row');if(handRow&&handRow.style.getPropertyValue('--hand-count')!==String(hand.length))handRow.style.setProperty('--hand-count',String(hand.length));hand.forEach((w,i)=>{const lift=Math.abs(i-(hand.length-1)/2);const v=`${Math.min(Math.round(lift*lift*2.2),22)}px`;if(w.style.getPropertyValue('--arc-drop')!==v)w.style.setProperty('--arc-drop',v);});if(handFocusId!==null&&!handFocus?.isConnected)refocusHand();fitHandFan(hand);
    // Past eight cards a toggle lays the whole hand out in two rows, so a big hand never overlaps into a mis-tap.
    const handArea=root.querySelector('.play-match-hand-area');let fan=handArea?.querySelector(':scope>.forge-hand-expand');
    if(hand.length>8&&handArea){if(!fan){fan=doc.createElement('button');fan.type='button';fan.className='forge-hand-expand';fan.dataset.nativeKey='hand-expand';fan.addEventListener('click',()=>{root.dataset.handExpanded=String(root.dataset.handExpanded!=='true');paintFan();});handArea.append(fan);}
@@ -604,7 +605,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(drag?.active)markDrops();
   restoreAutoPay(s);
   markAutoTap(s);
-  if(!blocked){autoPassOwnStack(s);autoPassIdle(s);}
+  if(!blocked){autoPassOwnStack(s);autoPassIdle(s);autoDeclareMust(s);}
  }
  // Engine and transport codes in plain words; a refusal Forge explains stays as Forge said it.
  const plainError=msg=>/ordered-source|order/i.test(msg)&&/unavailable|not supported/i.test(msg)?'These can\u2019t be reordered here yet, so they\u2019ll resolve in the default order.':/contract is unavailable|is not supported/i.test(msg)?'That choice isn\u2019t available on this table yet.':msg==='MATCH_NOT_READY'?'One moment, the table is catching up.':msg==='STALE_CHOICE'?'That choice ran out. Try again.':/^(CHOICE_INCOMPLETE)$/.test(msg)?'Pick everything this asks for first.':msg==='CHOICE_FULL'?'You\u2019ve already picked the most allowed.':/attack declaration invalid/i.test(msg)?'That attack isn\u2019t allowed. A creature that must attack this turn has to be in it.':/block declaration invalid/i.test(msg)?'Those blocks aren\u2019t allowed. Check creatures that must block or can\u2019t.':String(msg).replace(/^message:\s*/i,'');
@@ -747,6 +748,16 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    ||n.inputType!=='InputPassPriority'||n.priorityPlayer!==n.viewer||top.activatingPlayer!==n.viewer||n.buttons?.okEnabled!==true)return;
   const key=`${n.revision}:${top.id}:${n.stack.length}`;if(autoPassed===key)return;autoPassed=key;
   act(()=>session.nativeButton('ok',n.revision));
+ }
+ // Arena puts a creature that must attack into the attack for you, so "N must attack" stays rare.
+ // Once per creature per turn: if Forge takes it back out, the tag and the disabled button explain why.
+ const mustDeclared=new Set();
+ function autoDeclareMust(s){
+  const n=s?.native,surface=s?.status?.surface;
+  if(!presentation.hosted||!n||!surface||s.busy||s.transportError||n.prompt||n.inputType!=='InputAttack')return;
+  const card=surface.cards.find(c=>c.zone==='Battlefield'&&c.controller===surface.seat&&c.mustAttack===true&&c.attacking!==true&&!mustDeclared.has(`${n.turn}:${c.id}`));
+  if(!card)return;mustDeclared.add(`${n.turn}:${card.id}`);
+  act(()=>session.nativeSelect('card',card.id));
  }
  // Smart also moves on when your main phase has nothing left to play, as Arena does:
  // after your last land or spell resolves, a short beat to see it land, then Next.
@@ -1051,6 +1062,15 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const lifted=root.dataset.handLift==='true',K=lifted?Number(root.style.getPropertyValue('--hand-scale'))||1:1,R=lifted?Number(root.style.getPropertyValue('--hand-raise').replace('px',''))||0:0,ox=box.left+box.w/2,oy=box.top+box.h;
   const local=el=>{let x=0,y=0,n=el;while(n&&n!==area){x+=n.offsetLeft;y+=n.offsetTop;n=n.offsetParent;}return {x,y,w:el.offsetWidth,h:el.offsetHeight};};
   const sx=xl=>ox+(box.left+xl-ox)*K,sy=yl=>oy-R+(box.top+yl-oy)*K;return {area,wraps,box,K,R,ox,oy,local,sx,sy};}
+ // On a narrow screen a big hand squeezes its fan to sit inside the 16px gutters instead of running off the edge;
+ // "View full hand" shows every card at full size.
+ function fitHandFan(hand){
+  for(const w of hand)w.style.removeProperty('margin-left');
+  if(hand.length<2||root.dataset.handExpanded==='true'||win.innerWidth>640)return;
+  const rect=w=>(w.querySelector('.play-match-card')||w).getBoundingClientRect(),a=rect(hand[0]),b=rect(hand[hand.length-1]),over=b.right-a.left-(win.innerWidth-32);
+  if(over<=0)return;const step=over/(hand.length-1);
+  hand.slice(1).forEach(w=>w.style.setProperty('margin-left',`${(parseFloat(getComputedStyle(w).marginLeft)||0)-step}px`));
+ }
  function layoutHand(){const g=handGeometry();if(!g)return;const fi=g.wraps.indexOf(handFocus);
   for(const w of g.wraps){if(w!==handFocus)w.removeAttribute('data-hand-focus');}
   if(fi<0){delete root.dataset.handFocused;handFocusRect=null;}else root.dataset.handFocused='true';

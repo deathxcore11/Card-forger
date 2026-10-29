@@ -2027,7 +2027,7 @@ body.practice-table-open img{-webkit-user-drag:none}
 /* The ask line: one short instruction over your battlefield while Forge waits for a pick on the table. */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ask-line{position:fixed;z-index:31;translate:-50% -50%;max-width:min(360px,calc(100vw - 24px));padding:7px 14px;border-radius:999px;border:1px solid #f2d18e88;background:#14161df0;color:#fbf3df;font:700 13px/1.3 'DM Sans',system-ui,sans-serif;text-align:center;box-shadow:0 8px 24px #000a,0 0 18px #f2d18e33;pointer-events:none;animation:forge-emote-pop .25s cubic-bezier(.2,.9,.3,1.3) both}
 /* A creature that must attack wears a small red tag until it is in the attack. */
-:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card>.forge-must-tag{position:absolute;left:50%;bottom:-8px;translate:-50% 0;z-index:13;padding:2px 7px;border-radius:999px;background:#9e2a1e;border:1px solid #ff8a6a;color:#fff1ec;font:800 9px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 8px #000a;pointer-events:none}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card>.forge-must-tag{position:absolute;left:50%;bottom:-8px;translate:-50% 0;z-index:13;padding:2px 7px;border-radius:999px;background:#9e2a1e;border:1px solid #ff8a6a;color:#fff1ec;font:800 10.5px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 8px #000a;pointer-events:none}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-forge-must=true]{outline:2px solid #ff6a4a;outline-offset:3px}
 /* The chosen tick sits on the ring's corner, off the card's name. */
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-battlefields .play-match-card[data-forge-role=chosen]:before{top:-11px;left:auto;right:-11px}
@@ -2050,3 +2050,16 @@ body.practice-table-open img{-webkit-user-drag:none}
 /* The decisions column scrolls (and clips) on wide screens, so the ask floats above the hand there. */
 @media (min-width:641px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-ask=true]::before{position:fixed;left:50%;right:auto;bottom:auto;top:calc(var(--forge-hand-top,60vh) - 12px);translate:-50% -100%;text-align:center;max-width:min(420px,calc(100vw - 24px))}}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-native-panel .forge-native-stack .forge-stack-item .forge-stack-head{padding-right:40px!important}
+/* Phones: with the stack strip fixed above the hand, the action column keeps its own band below the hand
+   and "View full hand" stays available. */
+@media (max-width:640px) and (orientation:portrait){
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions[data-complex=false]:has(.forge-native-stack){bottom:calc(var(--b) + 10px)!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]:has(.play-match-decisions[data-complex=false] .forge-native-stack) .forge-hand-expand{visibility:visible!important}
+}
+@media (max-width:640px) and (orientation:portrait){
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]:has(.forge-hand-expand) .forge-native-panel .forge-native-stack{top:calc(var(--forge-hand-top,60vh) - 46px)!important}
+}
+/* Wide boards are drawn scaled down (about 0.7), so the tag is set larger there to read at 10-11px. */
+@media (min-width:641px){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card>.forge-must-tag{font-size:15px;padding:3px 10px;bottom:-11px}}
+/* While you pick a target the hand is inert, and dims so it reads that way. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-forge-input=InputSelectTargets] .play-match-hand-area{opacity:.6;transition:opacity .2s}
