@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-match-close-retry-v378";
+const CACHE = "cardforge-shell-match-close-retry-bgmusic-v379";
 const ASSETS = [
   "./play-forge-feature.js",
   "./audio.js",
