@@ -15,9 +15,16 @@ public final class NativeDeckAdmission {
   public boolean admitted(){return Boolean.TRUE.equals(receipt.get("legal"))&&Boolean.TRUE.equals(receipt.get("supported"));}
  }
  static Map<String,Object> map(Object...v){return ForgeHttpBridge.obj(v);}
+ // A warm engine's input is a pipe. JDK 21 readNBytes asks the channel for its
+ // position and size, which a pipe cannot seek ("Illegal seek"), so read plainly.
+ static byte[] readBounded(java.io.InputStream in,int limit)throws java.io.IOException{
+  var out=new java.io.ByteArrayOutputStream();byte[] chunk=new byte[8192];int n;
+  while(out.size()<limit&&(n=in.read(chunk,0,Math.min(chunk.length,limit-out.size())))>0)out.write(chunk,0,n);
+  return out.toByteArray();
+ }
  public static Admission loadBootstrap(Path path)throws Exception{
   try(var stream=Files.newInputStream(path)){
-   byte[] bytes=stream.readNBytes(262145);if(bytes.length>262144)throw new IllegalArgumentException("bootstrap_body_too_large");
+   byte[] bytes=readBounded(stream,262145);if(bytes.length>262144)throw new IllegalArgumentException("bootstrap_body_too_large");
    JsonObject envelope=JsonParser.parseString(new String(bytes,StandardCharsets.UTF_8)).getAsJsonObject();
    if(!envelope.keySet().equals(Set.of("input")))throw new IllegalArgumentException("bootstrap_requires_only_input");
    JsonObject input=envelope.getAsJsonObject("input");

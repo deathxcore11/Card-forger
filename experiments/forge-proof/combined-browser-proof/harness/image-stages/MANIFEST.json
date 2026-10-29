@@ -11,7 +11,7 @@
     },
     "SHA256SUMS": {
       "bytes": 1550,
-      "sha256": "f0ed277637d11ef961261e66aca6271868785bc3b99962f4895c76f76a912957"
+      "sha256": "455957e356f77acba9a8a0346b9c6d51ee7dcc5cfcb9a8f83e2fae45667587ef"
     },
     "build-and-probe.mjs": {
       "bytes": 10849,
@@ -43,7 +43,7 @@
     },
     "pins.mjs": {
       "bytes": 1210,
-      "sha256": "a37c283474cd0010e33315f2929a9f22338b4bf02d5f38bdf8bb3656285a2152"
+      "sha256": "8d3d6be6cc9b24ae0930a8c2d233e5d1236ad836dbd560bb32c84b5712d12644"
     },
     "probe-image.mjs": {
       "bytes": 9828,
@@ -80,9 +80,9 @@
   },
   "dependencies": {
     "candidate": "experiments/forge-proof/combined-browser-proof/candidate",
-    "nativeManifestSha256": "b83b8d9bbfdcdcae7ed4ba9929e4a46c80aad9822a95322e2f3fae1d66ee88b5",
+    "nativeManifestSha256": "a7e00040ba248e3844769abe48a7dd0f30a9951d43dc9c8829025b59cc848bc6",
     "hostManifestSha256": "081328e30088a73cad89d0c37cef36350ce9a3da9a9fe3b227ce35d208884935",
-    "contextManifestSha256": "4157a9f87165b09cc631a9625b3955924df6f4415350b2d16d816e375fae605f",
+    "contextManifestSha256": "283b1e3fb8ba2766e79797ca27ed384f46871f9a81261d1510411593c0e3f4a9",
     "localOciManifestSha256": "cffe234779cf3647d699122eb1fb7b984b194744a7ae99bb6d647b27f75290ed"
   },
   "budgetsSeconds": {
