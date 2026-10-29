@@ -257,7 +257,13 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    client=createClient({readAccount,getAccessToken});
    intro.status('Starting the rules engine…');
    requestedAt=now();tick();if(typeof view?.setInterval==='function')ticker=view.setInterval(tick,1000);
-   await client.create(input);warn(true);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
+   // Right after a match the host may still be closing it (previous_match_ending, 503).
+   // Nothing reached an engine yet, so wait as asked and start again, quietly.
+   for(let ending=0;;ending++){
+    try{await client.create(input);break;}
+    catch(e){if(e.status!==503||e.code!=='previous_match_ending'||ending>=4||!current())throw e;intro.status('Closing your last match…');await wait(e.retryAfterMs||5000);if(!current())throw Error('SELECTION_CHANGED');client=createClient({readAccount,getAccessToken});}
+   }
+   warn(true);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
    let state,deadline=Date.now()+125000,allocationRetries=0;
    while(current()&&Date.now()<deadline){
     try{state=await client.read();}catch(e){

@@ -58,8 +58,13 @@ function unlock() {
 }
 if (typeof document !== "undefined") {
   for (const type of ["pointerdown", "keydown", "touchend"]) addEventListener(type, unlock, { capture: true, passive: true });
-  // Nothing plays behind another app or tab; it picks up again on return.
-  document.addEventListener("visibilitychange", () => { if (!ctx) return; if (document.hidden) ctx.suspend().catch(() => {}); else if (!silent()) ctx.resume().catch(() => {}); });
+  // Nothing plays behind another app or tab. On return, music only comes back if the screen that asked
+  // for it is still showing (a match or Planeswalk); anything else is dropped before the sound resumes.
+  const away = () => { if (ctx && ctx.state === "running") ctx.suspend().catch(() => {}); };
+  const back = () => { if (!ctx || document.hidden) return; prune(); if (!silent()) ctx.resume().then(playWanted, () => {}); };
+  document.addEventListener("visibilitychange", () => (document.hidden ? away() : back()));
+  // The Android app also reports pause/resume (Capacitor), which can come without a visibility change.
+  for (const [type, fn] of [["pause", away], ["resume", back], ["freeze", away], ["pagehide", away], ["pageshow", back]]) { document.addEventListener(type, fn); addEventListener(type, fn); }
 }
 export const audioReady = () => !!ctx && ctx.state === "running";
 
@@ -120,16 +125,30 @@ export function duck(ms = 1200, depth = 0.4) {
 // so closing a pack falls back to whatever the screen under it wanted.
 const LAYERS = ["app", "play", "pack", "overlay"], wants = {};
 let playing = null, pending = "";
-export function setMusic(layer, id, { loop = true, then = "" } = {}) {
-  wants[layer] = id ? { id, loop, then } : null;
+// alive(): optional check that the screen asking for this music is still showing; once it says no,
+// the layer is cleared (checked every second while music plays, and on returning to the app).
+export function setMusic(layer, id, { loop = true, then = "", alive = null } = {}) {
+  wants[layer] = id ? { id, loop, then, alive } : null;
   playWanted();
 }
+function prune() {
+  let changed = false;
+  for (const l of LAYERS) { const w = wants[l]; try { if (w?.alive && !w.alive()) { wants[l] = null; changed = true; } } catch {} }
+  if (changed) playWanted();
+}
+if (typeof setInterval !== "undefined") setInterval(() => { if (playing || pending) prune(); }, 1000);
 const wanted = () => { for (const l of [...LAYERS].reverse()) if (wants[l]) return wants[l]; return null; };
 function playWanted() {
-  if (!ctx || ctx.state !== "running") return;
+  if (!ctx) return;
   const w = silent() ? null : wanted(), key = w ? `${w.id}|${w.loop}` : "";
+  // Stopping works even while the sound is suspended (in the background), so it can't resume later.
+  if (!w) {
+    if (ctx.state === "running") fadeOut(playing);
+    else if (playing) try { playing.src.onended = null; playing.src.stop(); } catch {}
+    playing = null; pending = ""; return;
+  }
   if (key === (playing?.key || "") || key === pending) return;
-  if (!w) { fadeOut(playing); playing = null; pending = ""; return; }
+  if (ctx.state !== "running") { if (playing) try { playing.src.onended = null; playing.src.stop(); } catch {} playing = null; return; }
   pending = key;
   load(musicURL(w.id), true).then((buf) => {
     if (pending !== key) return; pending = "";
