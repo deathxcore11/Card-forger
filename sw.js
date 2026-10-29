@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-planeswalk-playtest-v385";
+const CACHE = "cardforge-shell-planeswalk-packs-v385";
 const ASSETS = [
   "./play-forge-feature.js",
   "./audio.js",
