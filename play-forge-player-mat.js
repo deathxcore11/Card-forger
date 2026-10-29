@@ -2,7 +2,7 @@
 // rules engine, external artwork query, or persisted private match state.
 import {APP_VERSION} from './config.js';
 import {capturePracticeArtwork} from './play-card-surface.js';
-import {forgeCpuPolicy} from './play-forge-cpu-policy.js';
+import {forgeCpuPolicy,forgeMatchDifficulty} from './play-forge-cpu-policy.js';
 import {createForgeHostClient,exactForgeInput,forgeAccountKey,forgeWarmedAt} from './play-forge-host-client.js';
 import {createForgePresentationSession} from './experiments/forge-proof/forge-session.mjs';
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
@@ -241,7 +241,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    if(totalMs!==null)parts.unshift('Ready in '+secs(totalMs));return parts.join(' · ');};
   const stopTicker=()=>{if(ticker!==null)view?.clearInterval?.(ticker);ticker=null;intro?.elapsed?.('');intro?.note?.('');};
   try{
-   matchup=structuredClone(setup);playedFrom=ownFirst=lastSurface=null;conceding=recorded=false;matchPolicy=forgeCpuPolicy(setup.match.difficulty);
+   matchup=structuredClone(setup);playedFrom=ownFirst=lastSurface=null;conceding=recorded=false;matchPolicy=forgeCpuPolicy(forgeMatchDifficulty(setup));
    if(!current()||setup.profile?.ownerId!==readAccount()?.user?.id)throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
    intro=mountIntro({root,setup,lookup,onCancel:requestExit,wait,isCurrent:current});watchScreen();
    // Card art is needed only once the table opens, so it loads while the server starts

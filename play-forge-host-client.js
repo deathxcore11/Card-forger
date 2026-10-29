@@ -1,7 +1,7 @@
 // Same-origin host transport only. No local bridge credential, URL override,
 // persistence, automatic command retry, or card-provider request is supported.
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-import {forgeCpuPolicy} from './play-forge-cpu-policy.js';
+import {forgeCpuPolicy,forgeMatchDifficulty} from './play-forge-cpu-policy.js';
 export const FORGE_REVISION='e5a0f8156da70ffc7866f923bed371c0111707cd';
 const SCHEMA='cardstashy.forge-proof.v1';
 // The acceptance page is mounted on the same account origin. Its private
@@ -37,8 +37,8 @@ export async function exactDigest(value){
 }
 export function exactForgeInput(setup,{startingPlayer=setup?.match?.startingPlayer??'random'}={}){
  if(setup?.match?.mode!=='cpu'||!setup.selected||!setup.opponent||!['Commander','Standard','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'].includes(setup.match.format))throw fail('FORGE_SETUP_INCOMPLETE');
- const {difficultyPolicyVersion}=forgeCpuPolicy(setup.match.difficulty);
  const playStyle=setup.playStyle==='quick'?'quick':'practice';
+ const {difficultyPolicyVersion}=forgeCpuPolicy(forgeMatchDifficulty(setup));
  if(!['random','first','second'].includes(startingPlayer))throw fail('FORGE_STARTING_PLAYER_INVALID');
  if(playStyle==='quick')startingPlayer='random';
  // Preserve both exact snapshots. The host binds the opening preference and

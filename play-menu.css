@@ -557,3 +557,12 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 @media (max-height:480px){#practicePlayerMat .play-result-goals>li{padding-block:2px;font-size:11px}}
 @media (prefers-reduced-motion:reduce){#practicePlayerMat .play-result-goals>li[data-just=true]{animation:none}}
 #practicePlayerMat .play-result-goals>li[data-done=true]{padding-left:4px}
+/* Practice CPU level: one segmented pill, Normal is the Quick Play level. */
+.pl-cpu-level{display:flex;align-items:center;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--surface-2) 65%,transparent)}
+.pl-cpu-level-label{padding:0 8px 0 10px;font-size:10.5px;font-weight:800;letter-spacing:.14em;color:var(--muted)}
+.pl-cpu-level>button{min-width:72px;min-height:44px;padding:0 14px;border:1px solid transparent;border-radius:999px;background:transparent;color:var(--muted);font:700 13px inherit;cursor:pointer}
+.pl-cpu-level>button[aria-pressed=true]{background:linear-gradient(130deg,#e3c37c25,#c4a85c0a);color:var(--gold);border-color:#d8b76c66;box-shadow:0 3px 15px #0002}
+.pl-cpu-level>button:not([aria-pressed=true]):hover{color:var(--text)}
+.pl-cpu-level>button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media(min-width:701px){.pl-startbar .pl-cpu-level{order:-1}}
+@media(max-width:700px){.pl-cpu-level{flex-basis:100%}.pl-cpu-level>button{flex:1;min-width:0}}
