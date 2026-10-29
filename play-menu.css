@@ -649,3 +649,8 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-cpu-levels .pl-cpu-tag{flex:none;width:76px;min-width:0;box-sizing:border-box}
 .pl-lobby .play-search>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(min-width:701px){.pl-startbar:has(.pl-status[data-empty]){background:none;backdrop-filter:none;padding-block:4px}}
+/* VS medallion: a solid obsidian disc behind the diamond covers the seam hairlines, and its glow is a
+   circular halo (radial gradient) instead of a box-shadow band that lit the gap between the seats. */
+.pl-vs::before{content:"";position:absolute;left:50%;top:50%;width:112px;height:112px;translate:-50% -50%;border-radius:50%;background:radial-gradient(circle,#e8b95b3d 0,#e8b95b14 38%,#e8b95b00 62%);pointer-events:none;z-index:0}
+.pl-vs b{box-shadow:0 0 0 6px #0c0d10,0 0 0 7px #e8b95b26;z-index:1}
+@media(max-width:700px){.pl-vs::before{width:92px;height:92px}}
