@@ -103,7 +103,7 @@ export function nativeActionLabel(n,op,raw){
   return n.activePlayer===n.viewer?NEXT_STEP[n.phase]||'Pass priority':'Pass';
  }
  if(input==='InputAttack'&&op==='ok'){const k=count('attacking'),must=mine.filter(c=>c?.mustAttack===true&&c?.attacking!==true).length;if(must)return `${must} must attack`;return k?`Attack with ${k}`:'No attacks';}
- if(input==='InputBlock'&&op==='ok'){const k=count('blocking');return k?`Confirm ${k} block${k===1?'':'s'}`:'No blocks';}
+ if(input==='InputBlock'&&op==='ok'){const k=count('blocking');return k?`Block with ${k}`:'No blocks';}
  if(input.startsWith('InputPayMana')&&op==='ok'&&/^auto$/i.test(label))return 'Pay automatically';
  if(input==='InputSelectTargets'&&op==='ok')return 'Confirm targets';
  return label;
@@ -336,6 +336,9 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    if(presentation.hosted&&presentation.shortNext===true&&/^Next: /.test(label)){action.textContent=SHORT_STEP[label]||'Next';action.setAttribute('aria-label',label);action.title=label.replace(/^Next: /,'Next step: ');}
    actions.append(action);
   }
+  // Arena's "Attack all": every creature Forge offers as an attacker joins, one click each, in order.
+  if(presentation.hosted&&n.inputType==='InputAttack'&&!n.prompt){const offered=(n.selection?.cards||[]).filter(r=>r?.kind==='card').map(r=>s.status.surface.cards.find(c=>c.id===r.id)).filter(c=>c&&c.zone==='Battlefield'&&c.controller===s.status.surface.seat&&c.attacking!==true);
+   if(offered.length&&(n.selection?.cards||[]).filter(r=>r?.kind==='card').length>=2){const all=button('Attack all',async()=>{for(const c of offered){const now=session.snapshot();if(now.native?.inputType!=='InputAttack'||now.native?.prompt||now.native?.lastActionError)break;if(now.status?.surface.cards.find(x=>x.id===c.id)?.attacking)continue;await session.nativeSelect('card',c.id);for(let i=0;i<60&&session.snapshot().busy;i++)await new Promise(r=>setTimeout(r,50));}},false,'attack-all');all.className='forge-attack-all';actions.prepend(all);}}
   // Phones hide the phase track, so the main action carries one quiet line of where you are: "CPU turn · Main · Your response".
   if(presentation.hosted&&actions.childNodes.length&&n.inputType==='InputPassPriority'&&!n.prompt){const where=PHASE_SHORT[n.phase]||'',yours=n.activePlayer===n.viewer,why=n.stack?.length&&n.stack[0]?.activatingPlayer!==n.viewer?'Your response':yours?'Your move':'Your response';actions.dataset.state=[yours?'':'CPU turn',where,why].filter(Boolean).join(' · ');}
   if(actions.childNodes.length||actions.dataset.ask==='true')panel.append(actions);
@@ -355,7 +358,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const compact=(item,top,count)=>{const mine=item.activatingPlayer===n.viewer,raw=plainText(item.text||''),src=item.source?.name||raw.match(/^([^-\u2014:]{1,40}?)\s+[-\u2014:]\s/)?.[1]||'',body=src&&raw.startsWith(src)?raw.slice(src.length).replace(/^\s*[-\u2014:]\s*/,''):raw;
     const short=body.replace(/\s*\([^)]*\)/g,'').trim(),first=short.match(/^.*?[.!?](?=\s|$)/)?.[0]||short,summary=first.length>110?first.slice(0,107).replace(/\s+\S*$/,'')+'…':first;
     const card=node('article',undefined,'forge-stack-item');card.dataset.top=String(top);card.dataset.mine=String(mine);if(item.yielded)card.dataset.yielded='true';
-    const head=button('',()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`);head.className='forge-stack-head';head.append(node('span',`${mine?'Your':'CPU'} ${item.ability===true?'ability':'spell'}${top?' · Next':''}`,'forge-stack-kind'),node('strong',src||summary||`Stack item ${item.id}`,'forge-stack-name'));
+    const head=button('',()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`);head.className='forge-stack-head';const kind=node('span',`${mine?'Your':'CPU'} ${item.ability===true?'ability':'spell'}${top?' · Next':''}`,'forge-stack-kind');kind.dataset.short=`${mine?'You':'CPU'}${top?' · Next':''}`;head.append(kind,node('strong',src||summary||`Stack item ${item.id}`,'forge-stack-name'));
     if(count>1){const c=node('b',`×${count}`,'forge-stack-count');head.append(c);head.setAttribute('aria-label',`${count} identical: ${src||summary}`);}card.append(head);
     if(src&&summary)card.append(node('p',symbols?undefined:summary,'forge-stack-summary'));if(src&&summary&&symbols)card.lastChild.innerHTML=symbols(summary);
     const tg=(Array.isArray(item.targets)?item.targets:[]).map(r=>named(r?.id)).filter(Boolean);if(tg.length){const row=node('p',undefined,'forge-stack-targets');row.append(node('span','→ '),...tg.map((t,k)=>node('span',(k?', ':'')+t,'forge-stack-target')));card.append(row);}
@@ -364,7 +367,8 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
     return card;};
    if(presentation.hosted){const list=node('div',undefined,'forge-stack-list');let top=true,shown=0;for(const run of stackRuns(n)){if(run.length<3)for(const item of run){list.append(compact(item,top,1));top=false;shown++;}else{list.append(compact(run[0],top,run.length));top=false;shown++;}}stack.append(list);
     // Phones show only the top item; a +N chip opens the rest (the open state survives redraws).
-    if(shown>1){const more=button(`+${shown-1} more`,()=>{stackOpen=!stackOpen;stack.dataset.open=String(stackOpen);more.textContent=stackOpen?'Show less':`+${shown-1} more`;},false,'stack-more');more.className='forge-stack-more-count';if(stackOpen){stack.dataset.open='true';more.textContent='Show less';}stack.append(more);}else stackOpen=false;panel.append(stack);}
+    // On a portrait screen the strip shows one line per item until opened, so a lone item gets "Details" too.
+    {const label=shown>1?`+${shown-1} more`:'Details',more=button(label,()=>{stackOpen=!stackOpen;stack.dataset.open=String(stackOpen);more.textContent=stackOpen?'Show less':label;},false,'stack-more');more.className='forge-stack-more-count';if(shown<2)more.dataset.solo='true';if(stackOpen){stack.dataset.open='true';more.textContent='Show less';}stack.append(more);}panel.append(stack);}
    else{for(const run of stackRuns(n))if(run.length<3)for(const item of run)stack.append(withYield(button(item.text||`Stack item ${item.id}`,()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`),item));else{const top=run[0],b=button(top.text||`Stack item ${top.id}`,()=>session.nativeSelect('stack',top.id,n.revision),false,`stack-${top.id}`),count=node('b',`×${run.length}`,'forge-stack-count');b.dataset.stackCount=String(run.length);b.setAttribute('aria-label',`${run.length} identical: ${top.text||'stack item'}`);b.append(count);stack.append(withYield(b,top));}panel.append(stack);}}
   const selected=presentation.hosted?null:s.status.surface.cards.find(c=>c.id===s.selected);if(selected)panel.append(button(copy(`Select ${selected.known?selected.name:'card'}`,`Send ${selected.known?selected.name:'card'} click to Forge`),()=>session.nativeSelect('card',selected.id,n.revision),false,'click-inspected'));
  }
