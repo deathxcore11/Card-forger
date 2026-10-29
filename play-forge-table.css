@@ -2064,3 +2064,13 @@ body.practice-table-open img{-webkit-user-drag:none}
 /* While you pick a target the hand is inert, and dims so it reads that way. */
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-forge-input=InputSelectTargets] .play-match-hand-area{opacity:.6;transition:opacity .2s}
 @media (max-width:640px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-ask=true]:has(button)::before{max-width:118px;font-size:12px}}
+/* Touch: a slim slider above a big hand walks through it card by card (slideHand). */
+.forge-hand-slider{display:none}
+@media (pointer:coarse){
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]>.forge-hand-slider{display:block;position:fixed;left:16px;right:16px;top:calc(var(--forge-hand-top,60vh) - 18px);height:24px;z-index:33;touch-action:none;transition:top .3s cubic-bezier(.2,.8,.2,1),opacity .2s}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-hand-lift=true]>.forge-hand-slider{top:calc(var(--forge-hand-top,60vh) - 18px - var(--hand-raise,0px))}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]:is(.forge-dragging,[data-hand-expanded=true])>.forge-hand-slider{opacity:0;pointer-events:none}
+:where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-hand-slider::before{content:'';position:absolute;left:0;right:0;top:10px;height:4px;border-radius:2px;background:#f2d18e2e}
+:where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-hand-slider>i{position:absolute;top:6px;left:calc(var(--pos,.5)*(100% - 32px));width:32px;height:12px;border-radius:6px;background:#f2d18e;opacity:.45;box-shadow:0 2px 8px #000a;transition:left .12s ease-out,opacity .2s}
+:where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-hand-slider[data-active=true]>i{opacity:1}
+}
