@@ -23,6 +23,8 @@ public class CardStashyForge extends Plugin {
     private static volatile Future<?> loading;
     private static volatile String error;
     private static volatile long unpackMs = -1, loadStartedAt;
+    // The bundled rules data is dated (about a week); past it the server plays the match instead.
+    private static volatile String rulesValidUntil;
     private static LocalEngine.Session session;
 
     private synchronized void beginLoading() {
@@ -50,7 +52,7 @@ public class CardStashyForge extends Plugin {
         String version;
         try (InputStream in = getContext().getAssets().open(VERSION)) { version = new String(readAll(in), "UTF-8").trim(); }
         File root = new File(getContext().getFilesDir(), "forge-engine/" + version), done = new File(root, ".unpacked");
-        if (done.isFile()) { unpackMs = 0; return root; }
+        if (done.isFile()) { unpackMs = 0; readRulesDate(root); return root; }
         File parent = root.getParentFile();
         File[] old = parent == null ? null : parent.listFiles();
         if (old != null) for (File f : old) if (!f.getName().equals(version)) deleteTree(f);
@@ -67,7 +69,15 @@ public class CardStashyForge extends Plugin {
         }
         if (!done.createNewFile() && !done.isFile()) throw new IOException("pack_marker_unwritable");
         unpackMs = System.currentTimeMillis() - t0;
+        readRulesDate(root);
         return root;
+    }
+
+    private static void readRulesDate(File root) {
+        try (InputStream in = new FileInputStream(new File(root, "rules-data/current/manifest.json"))) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"validUntilExclusive\"\\s*:\\s*\"(\\d{4}-\\d{2}-\\d{2})\"").matcher(new String(readAll(in), "UTF-8"));
+            rulesValidUntil = m.find() ? m.group(1) : null;
+        } catch (IOException e) { rulesValidUntil = null; }
     }
 
     private static byte[] readAll(InputStream in) throws IOException {
@@ -90,6 +100,7 @@ public class CardStashyForge extends Plugin {
         r.put("error", error);
         r.put("unpackMs", unpackMs);
         r.put("loadMs", LocalEngine.initMs());
+        r.put("rulesValidUntil", rulesValidUntil);
         r.put("sinceLoadStartMs", loadStartedAt == 0 ? -1 : System.currentTimeMillis() - loadStartedAt);
         r.put("heapMb", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) >> 20);
         r.put("maxHeapMb", Runtime.getRuntime().maxMemory() >> 20);

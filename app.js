@@ -1603,7 +1603,7 @@ A.playStartCandidate=async()=>{
    let createForgePlayerMat,localClient;
    try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));
     // The Android app plays on the Forge engine inside the phone when it has one.
-    const local=await import('./play-forge-local-client.js');if(local.localForgeAvailable())localClient=local.createForgeLocalClient;}
+    const local=await import('./play-forge-local-client.js');if(local.localForgeAvailable()&&await local.localForgeCurrent())localClient=local.createForgeLocalClient;}
    catch(e){if(playerMatRoot)playModuleFailed(e);return;}
    if(!current()||!playerMatRoot)return;
    const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
