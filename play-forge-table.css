@@ -1955,3 +1955,5 @@ body.practice-table-open img{-webkit-user-drag:none}
 @keyframes forge-rope-spark{50%{transform:scale(1.35)}}
 @keyframes forge-rope-beat{0%,100%{transform:scale(1)}15%{transform:scale(1.18)}}
 @media (prefers-reduced-motion:reduce){.forge-rope i::after,.forge-rope[data-hot=true] b{animation:none}}
+/* The notice floats centred just above your resting hand, clear of every control, and wraps rather than cuts off. */
+:where(body.practice-table-open) .play-match-table>.forge-notice{position:fixed;left:50%;top:calc(var(--forge-hand-top,70vh) - 52px);transform:translateX(-50%);z-index:55;margin:0;padding:7px 14px;border-radius:16px;border:1px solid #d6ad6444;background:#14161ded;color:#efe7d6;font:600 13px/1.3 'DM Sans',system-ui,sans-serif;width:max-content;max-width:min(420px,calc(100vw - 24px));text-align:center;pointer-events:none;box-shadow:0 8px 24px #0009;animation:forge-notice-fade 5s ease forwards}

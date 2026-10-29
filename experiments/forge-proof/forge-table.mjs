@@ -539,7 +539,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Your side stops above your hand where it rests, not where a lift or a popped card has carried it, so
   // hovering the hand never shrinks the board. Both sides then share one scale, so cards read the same size.
   const g=handGeometry(),rest=g?g.wraps.map(w=>{const l=g.local(w);return {top:g.box.top+l.y,left:g.box.left+l.x,right:g.box.left+l.x+l.w,width:l.w};}):[];
-  const fits=[];
+  const fits=[];if(rest.length)root.style.setProperty('--forge-hand-top',`${Math.round(Math.min(...rest.map(r=>r.top)))}px`);
   for(const area of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area')){
    const zone=area.querySelector(':scope>.play-match-zone');if(!zone)continue;
    zone.style.removeProperty('transform');zone.style.removeProperty('width');delete zone.dataset.scaled;

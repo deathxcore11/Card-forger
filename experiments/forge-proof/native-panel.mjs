@@ -104,6 +104,8 @@ export function nativeActionLabel(n,op,raw){
  return label;
 }
 const revealAuto={key:null,timer:0};
+// Forge names the AI as "Forge AI — <deck> · <commander>"; the hosted table calls it the CPU.
+const cpuName=msg=>String(msg).replace(/Forge AI\b.*?\s(?=(?:revealed|reveals|picked|picks|chose|chooses|named|names|casts?|plays?|looked|looks)\b)/,'CPU ').replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU');
 export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
  const doc=container.ownerDocument,s=snapshot,n=s.native;if(!n)return;
  const copy=(player,proof)=>presentation.hosted?player:proof;
@@ -113,7 +115,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  // Overlord · Uldaros picked Incarnation"). The hosted table says only what happened: "Cavern of Souls: CPU chose Incarnation".
  const noticeNode=nt=>{const title=String(nt.title||nt.method||'Forge').replace(/\s*\(\d+\)/g,'').trim();let msg=String(nt.message||'').replace(/\s*\(\d+\)/g,'').trim();
   if(!presentation.hosted){const p=node('p',`${title}: ${msg}`,'forge-diagnostic');p.setAttribute('role','status');return p;}
-  const picked=msg.match(/\b(?:picked|chose|chooses|named|names)\s+(.+?)\.?$/i);if(/\bForge AI\b/.test(msg))msg=picked?`CPU chose ${picked[1]}`:msg.replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU');
+  const picked=msg.match(/\b(?:picked|chose|chooses|named|names)\s+(.+?)\.?$/i);if(/\bForge AI\b/.test(msg))msg=picked?`CPU chose ${picked[1]}`:cpuName(msg);
   const p=node('p',title&&title!=='Forge'?`${title}: ${msg}`:msg,'forge-notice');p.setAttribute('role','status');return p;};
  const run=fn=>()=>{try{const out=fn();if(out?.catch)out.catch(e=>onLocalError(e.message));}catch(e){onLocalError(e.message);}};
  // Phase stops on top of Smart: one tap stops the next time that step comes, a second tap
@@ -181,7 +183,10 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   // Auto-pay is its own switch: Full Control can keep it, Smart can pay by hand.
   if(typeof n.autoPay==='boolean'&&typeof session.setAutoPay==='function'){const b=button(n.autoPay?'Auto-pay mana: on':'Auto-pay mana: off',()=>session.setAutoPay(!n.autoPay),!!n.prompt||n.inputType==='InputLockUI','auto-pay');b.setAttribute('aria-pressed',String(n.autoPay));b.title='Pay mana costs automatically. Turn off to tap each source yourself.';group.append(b);}
  }
- if(n.notification?.message){const notice=noticeNode(n.notification);panel.append(notice);}
+ if(n.notification?.message){const notice=noticeNode(n.notification);
+  // The hosted table floats the notice above your hand (the table places it), kept across redraws so its fade runs once.
+  const host=presentation.hosted?container.closest('.play-match-table'):null;
+  if(host){const was=host.querySelector(':scope>.forge-notice');if(was?.textContent!==notice.textContent){was?.remove();host.append(notice);}}else panel.append(notice);}
  // On the hosted table, trouble is one small toast in plain words with Retry, never a raw code.
  if(presentation.hosted&&(s.transportError||n.lastActionError)){
   const toast=node('div',undefined,'forge-toast');toast.setAttribute('role','alert');toast.title=String(s.transportError||n.lastActionError);
@@ -264,7 +269,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   }else if(p.acknowledgeOnly===true&&p.method==='getChoices'){
    const revealed=node('ul');for(const option of p.options||[])revealed.append(node('li',plainText(optionLabel(option.value))));
    // On the hosted table a reveal is a short look, like Arena's: a labelled strip that moves on by itself.
-   if(presentation.hosted){revealed.className='forge-reveal-list';const label=node('p',plainText(String(p.message||'Revealed').split('\n')[0]).replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU'),'forge-reveal-label');panel.append(label);
+   if(presentation.hosted){revealed.className='forge-reveal-list';const label=node('p',cpuName(plainText(String(p.message||'Revealed').split('\n')[0])),'forge-reveal-label');panel.append(label);
     const key=`${n.revision}:${p.id}`;if(revealAuto.key!==key){clearTimeout(revealAuto.timer);revealAuto.key=key;revealAuto.timer=setTimeout(()=>{if(revealAuto.key===key&&session.snapshot().native?.prompt?.id===p.id)run(()=>session.confirmPrompt())();},3200);}}
    panel.append(revealed,button(presentation.hosted?'OK':copy('Continue','Acknowledge native reveal'),()=>{clearTimeout(revealAuto.timer);session.confirmPrompt();},false,'acknowledge-prompt'));
   }else if(OPTION_METHODS.has(p.method)){
