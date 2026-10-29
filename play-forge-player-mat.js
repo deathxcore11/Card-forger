@@ -244,21 +244,33 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    // the match instead of before it. The matchup waits briefly so cached deck art shows.
    // Art is read only once its preparation has finished; before that the lookup refuses.
    const preparing=Promise.resolve().then(()=>prepareArtwork(setup,{isCurrent:current}));preparing.then(()=>{artReady=true;try{if(current())intro?.refreshArtwork();}catch{/* the matchup keeps its placeholder */}},()=>{});
+   // The table is requested as soon as the starting player is known: Quick Play knows at
+   // once, so the host starts while the matchup shows; Practice asks first.
+   let input,created=null;
+   const request=startingPlayer=>{
+    input=exactForgeInput(setup,{startingPlayer});
+    client=createClient({readAccount,getAccessToken});
+    requestedAt=now();tick();if(typeof view?.setInterval==='function')ticker=view.setInterval(tick,1000);
+    created=(async()=>{
+     // Right after a match the host may still be closing it (previous_match_ending, 503).
+     // Nothing reached an engine yet, so wait as asked and start again, quietly.
+     for(let ending=0;;ending++){
+      try{await client.create(input);break;}
+      catch(e){if(e.status!==503||e.code!=='previous_match_ending'||ending>=4||!current())throw e;intro?.status('Closing your last match…');await wait(e.retryAfterMs||5000);if(!current())throw Error('SELECTION_CHANGED');client=createClient({readAccount,getAccessToken});}
+     }
+    })();created.catch(()=>{});
+   };
+   if(setup.playStyle==='quick')request('random');
    await Promise.race([preparing,wait(1200)]);
    if(!current())throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
    await intro.showMatchup?.();
-   const startingPlayer=await intro.chooseStartingPlayer();
-   if(!current()||startingPlayer===null)throw Object.assign(Error('SELECTION_CHANGED'),{code:'SELECTION_CHANGED'});
-   const input=exactForgeInput(setup,{startingPlayer});
-   client=createClient({readAccount,getAccessToken});
-   intro.status('Starting the rules engine…');
-   requestedAt=now();tick();if(typeof view?.setInterval==='function')ticker=view.setInterval(tick,1000);
-   // Right after a match the host may still be closing it (previous_match_ending, 503).
-   // Nothing reached an engine yet, so wait as asked and start again, quietly.
-   for(let ending=0;;ending++){
-    try{await client.create(input);break;}
-    catch(e){if(e.status!==503||e.code!=='previous_match_ending'||ending>=4||!current())throw e;intro.status('Closing your last match…');await wait(e.retryAfterMs||5000);if(!current())throw Error('SELECTION_CHANGED');client=createClient({readAccount,getAccessToken});}
+   if(!created){
+    const startingPlayer=await intro.chooseStartingPlayer();
+    if(!current()||startingPlayer===null)throw Object.assign(Error('SELECTION_CHANGED'),{code:'SELECTION_CHANGED'});
+    request(startingPlayer);
    }
+   intro.status('Starting the rules engine…');
+   await created;
    warn(true);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
    let state,deadline=Date.now()+125000,allocationRetries=0;
    while(current()&&Date.now()<deadline){
