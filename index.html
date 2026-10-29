@@ -9,14 +9,14 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg?v=3.91.2" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png?v=3.91.2">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Card data and images: warm the connections every screen uses (APIs and foil copies are CORS; plain images are not). -->
 <link rel="preconnect" href="https://api.scryfall.com" crossorigin>
 <link rel="preconnect" href="https://cards.scryfall.io">
 <link rel="preconnect" href="https://api.tcgdex.net" crossorigin>
 <link rel="preconnect" href="https://assets.tcgdex.net">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&family=Cinzel:wght@600;700&display=swap">
+<link rel="preload" href="assets/fonts/cinzel-latin-1.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/dm-sans-latin-1.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="community-curation.css">
 <link rel="stylesheet" href="magic-matchups.css">
@@ -81,8 +81,10 @@
 <link rel="modulepreload" href="ai-ui.js">
 <link rel="modulepreload" href="android-beta.js">
 <link rel="modulepreload" href="app-info.js">
+<link rel="modulepreload" href="app-motion.js">
 <link rel="modulepreload" href="artwork.js">
 <link rel="modulepreload" href="ask-navigation.js">
+<link rel="modulepreload" href="audio.js">
 <link rel="modulepreload" href="aura.js">
 <link rel="modulepreload" href="auth-form.js">
 <link rel="modulepreload" href="auto-browse.js">
@@ -136,6 +138,7 @@
 <link rel="modulepreload" href="dialog.js">
 <link rel="modulepreload" href="emblems.js">
 <link rel="modulepreload" href="engine-map.js">
+<link rel="modulepreload" href="experiments/forge-proof/motion-kit.mjs">
 <link rel="modulepreload" href="experiments/phase-engine/catalog-admission.mjs">
 <link rel="modulepreload" href="experiments/phase-engine/cpu-difficulty-config.mjs">
 <link rel="modulepreload" href="experiments/phase-engine/match-input.mjs">
@@ -147,14 +150,15 @@
 <link rel="modulepreload" href="finish-effects.js">
 <link rel="modulepreload" href="finish-materials.js">
 <link rel="modulepreload" href="finish-preview.js">
+<link rel="modulepreload" href="foil-fx.js">
 <link rel="modulepreload" href="foil-gl.js">
 <link rel="modulepreload" href="format-upgrades.js">
 <link rel="modulepreload" href="formats.js">
 <link rel="modulepreload" href="game-changers.js">
+<link rel="modulepreload" href="game-glossary-data.js">
 <link rel="modulepreload" href="game-navigation.js">
 <link rel="modulepreload" href="game-wiki-article.js">
 <link rel="modulepreload" href="game-wiki-knowledge.js">
-<link rel="modulepreload" href="game-glossary-data.js">
 <link rel="modulepreload" href="games.js">
 <link rel="modulepreload" href="glass-select.js">
 <link rel="modulepreload" href="goldfish.js">
@@ -219,6 +223,7 @@
 <link rel="modulepreload" href="play-menu.js">
 <link rel="modulepreload" href="play-opponent-build.js">
 <link rel="modulepreload" href="play-player-mat.js">
+<link rel="modulepreload" href="play-playmats.js">
 <link rel="modulepreload" href="play-precon-formats.js">
 <link rel="modulepreload" href="play-pregame.js">
 <link rel="modulepreload" href="play-quick-match.js">
@@ -274,6 +279,7 @@
 <link rel="modulepreload" href="scansession.js">
 <link rel="modulepreload" href="scouting.js">
 <link rel="modulepreload" href="scryfall-client.js">
+<link rel="modulepreload" href="search-fan.js">
 <link rel="modulepreload" href="search-hints.js">
 <link rel="modulepreload" href="set-browser.js">
 <link rel="modulepreload" href="set-experience.js">

@@ -1,5 +1,5 @@
 /* Native table additions only. No global page, layout or connection-form reset. */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Spectral:wght@600;700&display=swap');
+/* Cinzel and Spectral load from assets/fonts/fonts.css (index.html). */
 
 /* Match introduction: the two decks face off across the Obsidian mat. Deck art is
    real (each deck's own commander or feature card) and every name and choice sits

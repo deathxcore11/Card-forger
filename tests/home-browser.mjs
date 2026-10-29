@@ -940,7 +940,7 @@ try {
   for(const game of GAME_IDS){
     const work=await openApp({game,twoSavedDecks:true,noWorkHistory:true}),p=work.page;
     assert.equal(await p.locator('[data-resume-deck]').count(),0,'unrecorded/created decks are not claimed as last-worked');
-    assert.match(await p.locator('[data-home-resume]').innerText(),/Choose a deck/);
+    assert.equal(await p.locator('[data-home-deck-pick]').count(),1,'one of the saved decks is shown, not labelled as last worked');
     const route=`#${game==='mtg'?'deck':'tdeck'}/saved-${game}/cards`;
     await p.evaluate(route=>{location.hash=route;},route);
     await p.waitForFunction(game=>document.body.dataset.view===(game==='mtg'?'deck':'tdeck')&&window.__homeTestState.ui[game==='mtg'?'deckId':'tdeckId']===`saved-${game}`,game);

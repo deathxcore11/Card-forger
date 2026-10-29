@@ -1,5 +1,6 @@
 const CACHE = "cardforge-shell-big-patch-v386";
 const ASSETS = [
+  "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
   "./audio.js",
   "./play-table-audio.js",

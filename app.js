@@ -1521,6 +1521,8 @@ A.playPlaymat=t=>{setPlaymatChoice(t.dataset.playmat);refreshPlayMenu();document
 let playView='home',playInspectOpen=false;
 A.playOpenMode=t=>{playView='lobby';playInspectOpen=false;A.playStyle(t);scrollTo({top:0});document.getElementById('playTitle')?.focus?.({preventScroll:true});};
 A.playHome=()=>{playView='home';playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});};
+// The empty Quick Play seat takes you straight to your decks.
+A.playFocusDecks=()=>{const list=document.getElementById('playDecksTitle');list?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'});document.getElementById('playDeckSearch')?.focus?.({preventScroll:true});};
 A.playOpenInspect=t=>{playSetup.inspectSeat(t.dataset.playSeat);playInspectOpen=true;refreshPlayMenu();document.querySelector('.pl-sheet-close')?.focus({preventScroll:true});};
 A.playCloseInspect=()=>{if(!playInspectOpen)return;playInspectOpen=false;refreshPlayMenu();};
 // The playmat sheet opens with the chosen mat in view.

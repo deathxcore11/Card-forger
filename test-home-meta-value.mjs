@@ -119,7 +119,7 @@ for(const game of ['mtg','ygo','ptcg']) for(const progress of ['new','cards','sa
   assert(order.every((position,i)=>position>=0 && (!i || position>order[i-1])), 'value, resume, Meta, then news');
   assert.doesNotMatch(html,/home-deck-section|home-start|homeRandomDeck|Build from my cards/);
   assert.match(html,/data-home-resume=/);
-  if(progress==='saved')assert.match(html,/Choose a deck/,'an unrecorded deck is not falsely called recently worked');
+  if(progress==='saved'){assert.match(html,/data-home-deck-pick=/);assert.doesNotMatch(html,/Last worked on/,'an unrecorded deck is not falsely called recently worked');}
   if(progress==='new')assert.match(html,/No saved decks yet/);
   assert.equal(JSON.stringify(S.state),before,'presentation does not create decks or edit collection');
 }

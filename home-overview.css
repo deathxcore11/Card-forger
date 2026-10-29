@@ -149,3 +149,32 @@ body[data-view="home"] .home-intro .home-value {
 }
 @media(prefers-reduced-motion:reduce) { .home-intro * { transition:none!important; } }
 @media(prefers-reduced-transparency:reduce) { body .topbar,body.glass .topbar { background:var(--bg); backdrop-filter:none; } }
+/* 4.3.34 design pass: Home never dresses an empty or offline feed up as content.
+   No Meta lists: one quiet line with the link, no art, no carousel bar. No news: one quiet line, no 0/0 pager. */
+.home-meta:has(.home-meta-empty:not([data-meta-state="loading"])) .home-meta-footer { display:none; }
+.home-meta-empty:not([data-meta-state="loading"]) { min-height:0; padding:14px 18px; background:color-mix(in srgb,var(--surface) 60%,transparent); border:1px solid var(--line); box-shadow:none; }
+.home-meta-empty:not([data-meta-state="loading"]) .community-art,
+.home-meta-empty:not([data-meta-state="loading"]) .home-meta-copy > p { display:none; }
+.home-meta-empty:not([data-meta-state="loading"]) .home-meta-copy { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px 16px; max-width:none; padding:0; }
+.home-meta-empty:not([data-meta-state="loading"]) h3 { margin:0; font-size:14px; font-weight:600; color:var(--muted); }
+.home-meta-empty:not([data-meta-state="loading"]) .link { min-height:44px; display:inline-flex; align-items:center; }
+.home-community:has(.community-empty) .community-footer { display:none; }
+.home-community .community-empty { margin-top:0; padding:14px 18px; border-style:solid; text-align:left; width:auto; max-width:none; min-height:0; }
+.home-community .community-empty h3 { margin:0; font-size:14px; font-weight:600; color:var(--muted); }
+.home-community .community-empty .community-summary { display:none; }
+.home-community:has(.community-empty) .community-stage { min-height:0; }
+.home-community:has(.community-empty) .community-page,.home-community:has(.community-empty) .community-stage > * { grid-template-columns:minmax(0,1fr); }
+/* Fold and small tablets: three saved decks sit in one row instead of two plus a stretched orphan. */
+@media(min-width:700px) and (max-width:999px) {
+  .home-personal-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .home-personal-grid>.home-personal-deck:last-child:nth-child(3) { grid-column:auto; }
+}
+/* The value and its counts read as one group, not two ends of a 1100px strip. */
+@media(min-width:700px) {
+  body[data-view="home"] .home-value { justify-content:flex-start; gap:56px; }
+  body[data-view="home"] .home-value-counts button { justify-items:start; }
+}
+#content .home-meta-empty:not([data-meta-state="loading"]),#content .home-community .community-empty { min-height:0!important; height:auto!important; padding:6px 18px!important; grid-column:1/-1; width:auto; max-width:none; }
+#content .home-community .community-empty .community-feature-copy { padding:12px 0; }
+#content .home-meta-empty:not([data-meta-state="loading"]) .home-meta-copy { padding:12px 0!important; margin:0!important; min-height:0!important; }
+#content .home-meta-empty:not([data-meta-state="loading"]) .home-meta-copy > * { margin:0!important; }
