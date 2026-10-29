@@ -2198,3 +2198,12 @@ body.practice-table-open img{-webkit-user-drag:none}
 @media (max-height:520px) and (min-width:641px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-ask=true]::before{top:max(env(safe-area-inset-top),8px)!important;translate:-50% 0!important;max-width:min(360px,calc(100vw - 260px))!important}}
 /* Wide screens: the CPU activity card hangs below the phase track instead of centring on it, so the two never overlap. */
 @media (min-width:641px) and (min-aspect-ratio:9/10){:where(body.practice-table-open) .forge-activity{top:calc(50% + 26px);transform:none}}
+/* CPU spotlight: the photo loads over drawn art, and phones get a readable width. */
+:where(body.practice-table-open) .forge-cast:not(.forge-own-cast) figure{position:relative}
+:where(body.practice-table-open) .forge-cast:not(.forge-own-cast) figure>img{position:absolute;inset:0}
+:where(body.practice-table-open) .forge-cast:not(.forge-own-cast) figure>:not(img){display:block;width:100%;height:100%}
+@media (max-width:640px){:where(body.practice-table-open) .forge-cast:not(.forge-own-cast){max-width:min(175px,38vw)}:where(body.practice-table-open) .forge-cast-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;max-height:none}}
+/* A card dragged out of the hand closes its slot, so the fan slides together instead of splitting. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card-wrap[data-hand-gone]{margin-right:calc(-1 * var(--gone-w,0px));opacity:0;pointer-events:none;transition:margin-right .24s cubic-bezier(.3,1.25,.4,1),opacity .12s ease}
+/* In the fan the next card covers each card's right side, so "New" sits on the visible left edge, under the name. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-new-card{top:16%;right:auto;left:4px;padding:2px 6px;font-size:10px;line-height:1.2}

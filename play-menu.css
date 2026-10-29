@@ -577,3 +577,9 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .play-library .deck-format-emblem,.pl-sheet .deck-format-emblem,.play-menu .deck-format-emblem{max-width:none;overflow:visible;text-overflow:clip;white-space:nowrap;flex:none}
 /* Play shows the deck you'll play, not what it costs. */
 .play-inspector :is(.art-price,.grid-meta>span:last-child,.group>summary>.muted.small,.pick-side>b){display:none}
+/* Phones: a slimmer Play bar, and the inspect sheet's rows, view switch and sections are full 44px targets. */
+@media(max-width:700px){.pl-startbar{padding:8px 10px;gap:8px}.pl-startbar .pl-status{margin:0}}
+.play-inspector .deck-view-switch>button{min-width:44px;min-height:44px}
+.play-inspector .group>summary{min-height:44px;display:flex;align-items:center}
+.play-inspector .lot-name{position:static}.play-inspector .lot-info{position:relative}
+.play-inspector .lot-name::after{content:"";position:absolute;inset:-13px -6px}
