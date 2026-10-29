@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.34",
-  "commit": "e20298345ab61cd8d3db253bb4ac101d5b15b5fa",
-  "tree": "44e0454f44e1895b7640c708bcf0dbba8a2a84ba",
+  "version": "4.3.35",
+  "commit": "93997e345b57ad5542ada378affa20a776960439",
+  "tree": "ccc8ba1d57bcd4b4b15c4d1fef9497842e74d195",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -103,8 +103,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 447046,
-      "sha256": "bf954bbc9a30baccaa5350172da1b0da8e1903f79e7c0b3aa6e830edb873c715"
+      "bytes": 448421,
+      "sha256": "85d8773de8bda37eeeec328dc8ff671dc462c4014e6aacba1bf27d3cf41cdce4"
     },
     {
       "path": "artwork.js",
@@ -1929,7 +1929,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "4a0e3c9692b5fa1c958d5a5a03113dda458e94691844f408d0a11b7488158a1c"
+      "sha256": "06668745eb72d13b331d1ee24e74e8f0a9042f77363ed642999d2aacdd8a007f"
     },
     {
       "path": "core.js",
@@ -3227,6 +3227,11 @@
       "sha256": "d41e88f3484f5bcaf14c931eb0e7095414b2d4aca2c260f7e86a6051fc1c5568"
     },
     {
+      "path": "forge-card-names-e5a0f815.txt",
+      "bytes": 629569,
+      "sha256": "3de55c2fdddac8fe91a78affed7b0a743793fcfd56e8e9d1e7ed4987bba01850"
+    },
+    {
       "path": "format-upgrades.js",
       "bytes": 3779,
       "sha256": "2ed23fd8c63219a5095055650483fba7a40b0b9c0ffcba41714ca146e1c6d99e"
@@ -3388,8 +3393,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 19949,
-      "sha256": "49e99fec4fa55b6217f0d2a32d908d438a52071be49ef7716a9e4139ad964b97"
+      "bytes": 20004,
+      "sha256": "ae21b477562042da24378203d867116821351e9276d85ab89af5ca4a720225de"
     },
     {
       "path": "insights.js",
@@ -3593,8 +3598,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 11917,
-      "sha256": "0cf0f01bc952c0b9253fb3da743a3a6db66b3c0567a75516e053586626899f7d"
+      "bytes": 11952,
+      "sha256": "8c43c0636d966d2480b817f5b2a5e4d95c7c77efa098aaf11a6edd1d25e1f91b"
     },
     {
       "path": "pairing.js",
@@ -3677,6 +3682,11 @@
       "sha256": "e0f1d3e7ccf0bad0d3f7a827ac6924cb8b90994ce82a0e5fb837b50ec8b3e8ef"
     },
     {
+      "path": "play-engine-names.js",
+      "bytes": 3184,
+      "sha256": "282e73caeb51112d02e77691e7894c71bcf400d5d181c4c8550d0ba78953501a"
+    },
+    {
       "path": "play-forge-artwork.js",
       "bytes": 3765,
       "sha256": "674569a79ad2ed8019ff9d6efbe10691f235dbdfe351473cf1289e3be5b5c685"
@@ -3693,8 +3703,8 @@
     },
     {
       "path": "play-forge-host-client.js",
-      "bytes": 20532,
-      "sha256": "645051f82f3b6a52ee422024d347f96c8c4e0203d58493afd5c4f3c9af42656f"
+      "bytes": 20722,
+      "sha256": "cdc455560b02353e69357da8b8d56ee48074dd7b85f386ac7e794caf796c1efe"
     },
     {
       "path": "play-forge-local-client.js",
@@ -3953,8 +3963,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 766,
-      "sha256": "02eed4f1e5925529af0c7f5dfa9c9d868d57214f78fcdf1469e38e9b3cb9ca5b"
+      "bytes": 739,
+      "sha256": "82f48b1f3fd4f08da0b3d49159cd33f6056f8f639f65960ae592dd30f8276817"
     },
     {
       "path": "release-status.js",
@@ -4273,8 +4283,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15529,
-      "sha256": "5861d88394c118787ee664d6671f7eb18d19685b1d839c71d392deaeaf55d6a1"
+      "bytes": 15558,
+      "sha256": "328e3bdf991466b0284dc5356834cff8722f502e362dbe0e863c14a89e82c4e0"
     },
     {
       "path": "sync-merge.js",

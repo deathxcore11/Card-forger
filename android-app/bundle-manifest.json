@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "e20298345ab61cd8d3db253bb4ac101d5b15b5fa",
-  "sourceVersion": "4.3.34",
+  "commit": "93997e345b57ad5542ada378affa20a776960439",
+  "sourceVersion": "4.3.35",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -656,6 +656,7 @@
     "foil-fx.css",
     "foil-fx.js",
     "foil-gl.js",
+    "forge-card-names-e5a0f815.txt",
     "format-upgrades.js",
     "formats.js",
     "game-changers.js",
@@ -743,6 +744,7 @@
     "play-deck-context.js",
     "play-deck-import.js",
     "play-deck-sources.js",
+    "play-engine-names.js",
     "play-forge-artwork.js",
     "play-forge-cpu-policy.js",
     "play-forge-feature.js",
@@ -1014,8 +1016,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 452674,
-      "sha256": "44c7b25198dc0152766f19066322bfc9ff66ce7e3ef75528b0a0ce74654e33d5"
+      "bytes": 454049,
+      "sha256": "703f680037d9a0e4986c5d453eb8ec3d30f1c31944f2a91c88ecdc9d87ed3933"
     },
     {
       "path": "artwork.js",
@@ -2835,7 +2837,7 @@
     {
       "path": "config.js",
       "bytes": 628,
-      "sha256": "4da250602b850dbcdeeb2a4bf35f6a06522bc888d410066cf8d983997655ac03"
+      "sha256": "1c55066a22e179a106a83d5b364563d3ec0512707b73ab822bddada6ae27195c"
     },
     {
       "path": "core.js",
@@ -4133,6 +4135,11 @@
       "sha256": "62e300dc3da080eeab3b77631f55c19f42b87a56216e0f87a224456a3fc2e99f"
     },
     {
+      "path": "forge-card-names-e5a0f815.txt",
+      "bytes": 629569,
+      "sha256": "3de55c2fdddac8fe91a78affed7b0a743793fcfd56e8e9d1e7ed4987bba01850"
+    },
+    {
       "path": "format-upgrades.js",
       "bytes": 3779,
       "sha256": "2ed23fd8c63219a5095055650483fba7a40b0b9c0ffcba41714ca146e1c6d99e"
@@ -4294,8 +4301,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 19841,
-      "sha256": "f578cbe559f7f33587a9f9510ddb68c18e4f4d4c170825346513ff0cc2df5be6"
+      "bytes": 19896,
+      "sha256": "03e3611092a9e9878ab9dc1f3b1ffee04e256e542a67690ffdaffe2e4ab61cae"
     },
     {
       "path": "insights.js",
@@ -4618,6 +4625,11 @@
       "sha256": "e0f1d3e7ccf0bad0d3f7a827ac6924cb8b90994ce82a0e5fb837b50ec8b3e8ef"
     },
     {
+      "path": "play-engine-names.js",
+      "bytes": 3184,
+      "sha256": "282e73caeb51112d02e77691e7894c71bcf400d5d181c4c8550d0ba78953501a"
+    },
+    {
       "path": "play-forge-artwork.js",
       "bytes": 3765,
       "sha256": "674569a79ad2ed8019ff9d6efbe10691f235dbdfe351473cf1289e3be5b5c685"
@@ -4634,8 +4646,8 @@
     },
     {
       "path": "play-forge-host-client.js",
-      "bytes": 20532,
-      "sha256": "645051f82f3b6a52ee422024d347f96c8c4e0203d58493afd5c4f3c9af42656f"
+      "bytes": 20722,
+      "sha256": "cdc455560b02353e69357da8b8d56ee48074dd7b85f386ac7e794caf796c1efe"
     },
     {
       "path": "play-forge-local-client.js",
@@ -4894,8 +4906,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 766,
-      "sha256": "02eed4f1e5925529af0c7f5dfa9c9d868d57214f78fcdf1469e38e9b3cb9ca5b"
+      "bytes": 739,
+      "sha256": "82f48b1f3fd4f08da0b3d49159cd33f6056f8f639f65960ae592dd30f8276817"
     },
     {
       "path": "release-status.js",
