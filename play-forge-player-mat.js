@@ -165,8 +165,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  function recap(row){
   const r=deckRecord(row.deck),box=node('div');box.className='play-result-recap';
   const mins=row.durationMs===null?null:Math.max(1,Math.round(row.durationMs/60000));
-  const stats=[[row.turns===null?'–':String(row.turns),'Turns'],[mins===null?'–':mins+' min','Time'],[row.life===null?'–':`${row.life} – ${row.opponentLife??'–'}`,'Life'],[row.onPlay===null?'–':row.onPlay?'Play':'Draw','On the']];
-  const list=node('dl');for(const [v,k]of stats){const cell=node('div');cell.append(node('dt',k),node('dd',v));list.append(cell);}
+  const stats=[[row.turns===null?'–':String(row.turns),'Turns'],[mins===null?'–':mins+' min','Time'],[row.life===null?'–':`${row.life} – ${row.opponentLife??'–'}`,'Life','You · CPU'],[row.onPlay===null?'–':row.onPlay?'Play':'Draw','On the']];
+  const list=node('dl');for(const [v,k,note]of stats){const cell=node('div');cell.append(node('dt',k),node('dd',v));if(note)cell.append(node('small',note));list.append(cell);}
   const deck=node('p');deck.className='play-result-record';
   const streak=Math.abs(r.streak)>1?` · ${Math.abs(r.streak)} ${r.streak>0?'wins':'losses'} in a row`:'';
   deck.append(node('b',row.deck.name||'This deck'),node('span',` ${recordLine(r)}${streak}`));

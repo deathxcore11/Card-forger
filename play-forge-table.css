@@ -1890,3 +1890,6 @@ body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
 :where(body.practice-table-open) .forge-activity .forge-speed[aria-pressed=true]{border-color:#f0c27a99;background:#f0c27a22;color:#f2d18e}
 :where(body.practice-table-open) .forge-activity .forge-speed:focus-visible{outline:2px solid #f0c27a;outline-offset:2px}
 @media (hover:none){:where(body.practice-table-open) .forge-activity .forge-speed{min-height:32px;padding-inline:12px}}
+/* The chip looks small but takes a 44px tap. */
+:where(body.practice-table-open) .forge-activity .forge-speed{position:relative}
+:where(body.practice-table-open) .forge-activity .forge-speed::after{content:'';position:absolute;left:-8px;right:-8px;top:50%;height:44px;translate:0 -50%}
