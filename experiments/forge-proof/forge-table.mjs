@@ -812,8 +812,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // else above it), never a second copy of the card on top of it.
   let x,y;
   if(solo){const f=handFocusRect,w=peek.offsetWidth,h=peek.offsetHeight;
-   if(vw-f.right-gap-8>=w){x=f.right+gap;y=f.top+(f.bottom-f.top)/2-h/2;}
-   else if(f.left-gap-8>=w){x=f.left-gap-w;y=f.top+(f.bottom-f.top)/2-h/2;}
+   if(vw-f.right-gap-8>=w){x=f.right+gap;y=f.top;}
+   else if(f.left-gap-8>=w){x=f.left-gap-w;y=f.top;}
    else{x=(f.left+f.right)/2-w/2;y=f.top-h-gap;if(y<8)y=Math.min(vh-h-8,f.bottom+gap);}
    x=Math.max(8,Math.min(vw-w-8,x));y=Math.max(8,Math.min(vh-h-8,y));peek.dataset.docked='false';peek.style.setProperty('--peek-x',`${Math.round(x)}px`);peek.style.setProperty('--peek-y',`${Math.round(y)}px`);return;}
   if(docked){x=vw-pw-24;y=Math.max(top+16,Math.min(bottom-ph-12,top+16));}
@@ -839,11 +839,12 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Why Forge would not let you play or use it right now ("Need 2 mana"), before you try.
   if(el.dataset.forgeBlocked){const why=doc.createElement('p');why.className='forge-peek-blocked';why.setAttribute('role','note');why.textContent=el.dataset.forgeBlocked;(peek.querySelector('.forge-peek-info')||peek).append(why);}peek.setAttribute('role',peekPinned?'dialog':'tooltip');
   // A press-and-hold preview closes when the finger lifts, so it never offers a button.
-  const n=session.snapshot().native;if(!peekPinned||pressAt||!presentation.hosted||el.dataset.forgeHint!=='true'||n?.inputType!=='InputPassPriority'||n?.prompt)return;
+  const n=session.snapshot().native;
+  // On touch a hand card plays by dragging it up, like Arena; the glass shows no hint line for it.
+  if(lastPointerType!=='mouse'&&el.closest('.play-match-hand'))return;
+  if(!peekPinned||pressAt||!presentation.hosted||el.dataset.forgeHint!=='true'||n?.inputType!=='InputPassPriority'||n?.prompt)return;
   const b=doc.createElement('button');b.type='button';b.className='forge-peek-play';b.dataset.peekPlay='true';b.textContent=el.closest('.play-match-hand')?'Play':'Use';
   const row=doc.createElement('div');row.className='forge-peek-actions';row.append(b);(peek.querySelector('.forge-peek-info')||peek).append(row);
-  // On touch a hand card plays by dragging it up, like Arena; the preview only says so.
-  if(lastPointerType!=='mouse'&&el.closest('.play-match-hand')){b.disabled=true;b.className='forge-peek-hint';b.removeAttribute('data-peek-play');b.textContent='Drag up to play';}
   // Never trust the auto-tapper: cast this one with auto-pay off, tap the lands you want, then
   // Forge's own Auto pays whatever is left. Auto-pay comes back once the payment is over.
   const cost=session.snapshot().status?.surface.cards.find(c=>c.id===Number(el.dataset.instance))?.manaCost||'';

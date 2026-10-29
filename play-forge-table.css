@@ -1914,3 +1914,6 @@ body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
 :where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-card{display:none!important}
 :where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-info{width:min(260px,calc(100vw - 16px))!important;max-width:min(260px,calc(100vw - 16px))!important;max-height:none!important}
 :where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-info :is(header,.forge-peek-type){display:revert!important}
+/* The hover-only glass never catches the mouse on its way along the hand; emote bubbles step aside while a card is up. */
+:where(body.practice-table-open) .forge-peek[data-solo=true][data-pinned=false]{pointer-events:none}
+body.practice-table-open:has([data-hand-focused=true]) .forge-emote-bubble{opacity:0;transition:opacity .15s}
