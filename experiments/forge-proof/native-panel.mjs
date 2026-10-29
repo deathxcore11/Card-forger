@@ -103,11 +103,18 @@ export function nativeActionLabel(n,op,raw){
  if(input==='InputSelectTargets'&&op==='ok')return 'Confirm targets';
  return label;
 }
+const revealAuto={key:null,timer:0};
 export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
  const doc=container.ownerDocument,s=snapshot,n=s.native;if(!n)return;
  const copy=(player,proof)=>presentation.hosted?player:proof;
  const phaseNames={UNTAP:'Untap',UPKEEP:'Upkeep',DRAW:'Draw',MAIN1:'Main phase',COMBAT_BEGIN:'Beginning of combat',COMBAT_DECLARE_ATTACKERS:'Choose attackers',COMBAT_DECLARE_BLOCKERS:'Choose blockers',COMBAT_FIRST_STRIKE_DAMAGE:'First strike damage',COMBAT_DAMAGE:'Combat damage',COMBAT_END:'End of combat',MAIN2:'Second main phase',END_OF_TURN:'End step',CLEANUP:'Cleanup'};
  const node=(tag,text,cls)=>{const e=doc.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
+ // Forge's own notices name the AI by its seat and deck and carry card ids ("Cavern of Souls (85): Forge AI —
+ // Overlord · Uldaros picked Incarnation"). The hosted table says only what happened: "Cavern of Souls: CPU chose Incarnation".
+ const noticeNode=nt=>{const title=String(nt.title||nt.method||'Forge').replace(/\s*\(\d+\)/g,'').trim();let msg=String(nt.message||'').replace(/\s*\(\d+\)/g,'').trim();
+  if(!presentation.hosted){const p=node('p',`${title}: ${msg}`,'forge-diagnostic');p.setAttribute('role','status');return p;}
+  const picked=msg.match(/\b(?:picked|chose|chooses|named|names)\s+(.+?)\.?$/i);if(/\bForge AI\b/.test(msg))msg=picked?`CPU chose ${picked[1]}`:msg.replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU');
+  const p=node('p',title&&title!=='Forge'?`${title}: ${msg}`:msg,'forge-notice');p.setAttribute('role','status');return p;};
  const run=fn=>()=>{try{const out=fn();if(out?.catch)out.catch(e=>onLocalError(e.message));}catch(e){onLocalError(e.message);}};
  // Phase stops on top of Smart: one tap stops the next time that step comes, a second tap
  // pins it for the whole match (📌), a third clears it. Opened from the turn line in the dock.
@@ -174,7 +181,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   // Auto-pay is its own switch: Full Control can keep it, Smart can pay by hand.
   if(typeof n.autoPay==='boolean'&&typeof session.setAutoPay==='function'){const b=button(n.autoPay?'Auto-pay mana: on':'Auto-pay mana: off',()=>session.setAutoPay(!n.autoPay),!!n.prompt||n.inputType==='InputLockUI','auto-pay');b.setAttribute('aria-pressed',String(n.autoPay));b.title='Pay mana costs automatically. Turn off to tap each source yourself.';group.append(b);}
  }
- if(n.notification?.message){const notice=node('p',`${n.notification.title||n.notification.method||'Forge'}: ${n.notification.message}`,'forge-diagnostic');notice.setAttribute('role','status');panel.append(notice);}
+ if(n.notification?.message){const notice=noticeNode(n.notification);panel.append(notice);}
  // On the hosted table, trouble is one small toast in plain words with Retry, never a raw code.
  if(presentation.hosted&&(s.transportError||n.lastActionError)){
   const toast=node('div',undefined,'forge-toast');toast.setAttribute('role','alert');toast.title=String(s.transportError||n.lastActionError);
@@ -219,7 +226,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    if(buttons.ok!==undefined)actions.append(button('Confirm selection',()=>session.nativeButton('ok',n.revision),buttons.okEnabled!==true,'ok'));
    if(buttons.cancel!==undefined&&buttons.cancelEnabled===true){cancel=()=>session.nativeButton('cancel',n.revision);actions.append(button(nativeActionLabel(n,'cancel',buttons.cancel)||'Cancel',cancel,false,'cancel'));}
   }
-  if(n.notification?.message){const notice=node('p',`${n.notification.title||n.notification.method||'Forge'}: ${n.notification.message}`,'forge-diagnostic');notice.setAttribute('role','status');dialog.append(notice);}
+  if(n.notification?.message){const notice=noticeNode(n.notification);dialog.append(notice);}
   if(n.lastActionError){const refused=node('p',`Forge did not accept that: ${n.lastActionError}`,'forge-diagnostic');refused.setAttribute('role','alert');dialog.append(refused);}
   if(s.busy)dialog.append(node('p','Forge is updating the choice…','forge-zone-search-hint'));
   dialog.append(actions);overlay.append(dialog);panel.append(overlay);
@@ -255,7 +262,11 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    input.required=true;input.disabled=s.busy;input.dataset.nativeKey='native-value';input.setAttribute('aria-label',p.message||'Forge input');label.append(input);form.append(label);
    const submit=node('button',copy('Confirm','Submit native value'));submit.type='submit';submit.disabled=s.busy;submit.dataset.nativeKey='submit-value';form.append(submit);form.addEventListener('submit',e=>{e.preventDefault();if(form.reportValidity())run(()=>session.replyValue(input.value))();});panel.append(form);
   }else if(p.acknowledgeOnly===true&&p.method==='getChoices'){
-   const revealed=node('ul');for(const option of p.options||[])revealed.append(node('li',optionLabel(option.value)));panel.append(revealed,button(copy('Continue','Acknowledge native reveal'),()=>session.confirmPrompt(),false,'acknowledge-prompt'));
+   const revealed=node('ul');for(const option of p.options||[])revealed.append(node('li',plainText(optionLabel(option.value))));
+   // On the hosted table a reveal is a short look, like Arena's: a labelled strip that moves on by itself.
+   if(presentation.hosted){revealed.className='forge-reveal-list';const label=node('p',plainText(String(p.message||'Revealed').split('\n')[0]).replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU'),'forge-reveal-label');panel.append(label);
+    const key=`${n.revision}:${p.id}`;if(revealAuto.key!==key){clearTimeout(revealAuto.timer);revealAuto.key=key;revealAuto.timer=setTimeout(()=>{if(revealAuto.key===key&&session.snapshot().native?.prompt?.id===p.id)run(()=>session.confirmPrompt())();},3200);}}
+   panel.append(revealed,button(presentation.hosted?'OK':copy('Continue','Acknowledge native reveal'),()=>{clearTimeout(revealAuto.timer);session.confirmPrompt();},false,'acknowledge-prompt'));
   }else if(OPTION_METHODS.has(p.method)){
    const indexes=s.nativeDraft?.revision===n.revision&&s.nativeDraft?.promptId===p.id?s.nativeDraft.indexes:[],options=p.options||[];
    if(hostedOrder){

@@ -462,7 +462,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const SPEED_KEY='cardstashy-cpu-speed';let cpuSpeed='normal';try{if(win.localStorage?.getItem(SPEED_KEY)==='fast')cpuSpeed='fast';}catch{/* blocked storage keeps Normal */}
  activity.addEventListener('click',e=>{if(!e.target.closest?.('.forge-speed'))return;cpuSpeed=cpuSpeed==='fast'?'normal':'fast';try{win.localStorage?.setItem(SPEED_KEY,cpuSpeed);}catch{/* the choice lasts this match */}activityKey='';updateActivity();});
  function updateActivity(){
-  const a=presentation.hosted&&root.dataset.stage==='match'&&playback?tableActivity(displayed,{beat:activeBeat,overlay:playback.overlay,recent:playback.recent}):null;
+  let a=presentation.hosted&&root.dataset.stage==='match'&&playback?tableActivity(displayed,{beat:activeBeat,overlay:playback.overlay,recent:playback.recent}):null;
+  // Like Arena, no running commentary: the CPU's moves show on the board, so this only says the CPU is
+  // playing (with its speed switch) or that the connection or match needs attention.
+  if(a){if(['working','resolving'].includes(a.kind))a=null;else if(['thinking','replay'].includes(a.kind))a={...a,label:a.label==='Your turn'?'Your turn':'CPU playing',detail:''};}
   const key=a?`${a.kind}|${a.label}|${a.detail}|${cpuSpeed}`:'';if(key===activityKey)return;activityKey=key;
   activity.hidden=!a||a.kind==='decision';if(activity.hidden)return;
   const fast=cpuSpeed==='fast',speed=['replay','thinking'].includes(a.kind)?`<button type="button" class="forge-speed" aria-pressed="${fast}" aria-label="CPU speed: ${fast?'Fast':'Normal'}. Tap to switch.">${fast?'▶▶ Fast':'▶ Normal'}</button>`:'';
@@ -745,7 +748,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(idleKey===key)return;idleKey=key;clearTimeout(idleTimer);
   idleTimer=setTimeout(()=>{idleTimer=0;const now=session.snapshot();if(closed||!idleReady(now)||now.native.revision!==n.revision)return;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?250:900);
  }
- playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,reducedMotion,speed:()=>cpuSpeed==='fast'?.45:1});
+ playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,reducedMotion,speed:()=>cpuSpeed==='fast'?.45:1.3});
  // A tap skips held playback. Playback over a decision never holds the board, so a tap there
  // only clears the spotlight and goes on to whatever was tapped.
  const skipPlayback=e=>{if(!playback.running||e.button>0)return;if(playback.overlay){playback.stop();return;}suppressUntil=Date.now()+400;playback.flush();};
@@ -811,7 +814,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A focused hand card is already the big card: show only the glass info beside it (the side with room,
   // else above it), never a second copy of the card on top of it.
   let x,y;
-  if(solo){const f=handFocusRect,w=peek.offsetWidth,h=peek.offsetHeight;
+  if(solo){const f=handFocusRect,room=Math.max(vw-f.right,f.left)-gap-8;
+   // Beside the card wherever 140px fit (narrowed to the room), so on phones it covers the hand, not the board.
+   peek.style.setProperty('--solo-max',`${Math.round(Math.min(260,Math.max(140,room)))}px`);const w=peek.offsetWidth,h=peek.offsetHeight;
    if(vw-f.right-gap-8>=w){x=f.right+gap;y=f.top;}
    else if(f.left-gap-8>=w){x=f.left-gap-w;y=f.top;}
    else{x=(f.left+f.right)/2-w/2;y=f.top-h-gap;if(y<8)y=Math.min(vh-h-8,f.bottom+gap);}
@@ -1093,5 +1098,21 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(inside){clearTimeout(handLiftTimer);if(!lifted)handLiftTimer=setTimeout(()=>setHandLift(true),90);focusHand(handWrapAt(e.clientX));if(presentation.hosted&&!peekPinned){const c=handFocus?.querySelector('.play-match-card[data-instance]');if(c&&c!==peekFor){clearTimeout(peekTimer);peekTimer=setTimeout(()=>{if(c.isConnected&&handFocus?.contains(c)&&!drag?.active)showPeek(c);},peek.dataset.open==='true'?40:320);}}}else{if(presentation.hosted&&!peekPinned&&peekFor?.closest?.('.play-match-hand')){clearTimeout(peekTimer);hidePeek();}focusHand(null);if(lifted)dropHandLift(180);else clearTimeout(handLiftTimer);}};
  doc.addEventListener('click',swallowTapClick,true);root.addEventListener('pointerdown',handDown,true);doc.addEventListener('pointerup',handUp,true);doc.addEventListener('pointercancel',handUp,true);doc.addEventListener('pointermove',handHover,{passive:true});doc.addEventListener('pointermove',handSift,{passive:true});root.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')dropHandLift(180);});
  root.addEventListener('click',click,true);root.addEventListener('pointerdown',down);doc.addEventListener('pointermove',move,{passive:false});doc.addEventListener('pointerup',up);doc.addEventListener('pointercancel',pressCancel);doc.addEventListener('keydown',key);win.addEventListener('blur',cancel);
- return {destroy(){closed=true;tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ // Arena's rope: your decision clock runs quietly; after ROPE_IDLE with no touch or key, a gold fuse appears over
+ // Next and burns down for ROPE_RUN (red, counting, in its last 10 s). When it runs out, Next is pressed for you,
+ // which is a pass, or your attacks or blocks as they stand. Any touch, click or key starts the clock over.
+ const ROPE_IDLE=45000,ROPE_RUN=20000,rope=doc.createElement('div');rope.className='forge-rope';rope.hidden=true;rope.setAttribute('aria-hidden','true');rope.innerHTML='<i></i><b></b>';root.append(rope);
+ let ropeKey='',ropeSince=Date.now();const ropeReset=()=>{ropeSince=Date.now();};
+ const ropeLoop=presentation.hosted?win.setInterval(()=>{
+  const s=session.snapshot(),n=s.native,ok=root.querySelector('.forge-native-panel [data-native-key=ok]');
+  const timed=root.dataset.stage==='match'&&!s.busy&&!s.status?.terminal&&['InputPassPriority','InputAttack','InputBlock'].includes(n?.inputType)&&!n?.prompt&&!!ok&&!ok.disabled;
+  const key=timed?`${n.revision}|${n.inputType}`:'';if(key!==ropeKey){ropeKey=key;ropeReset();}
+  const left=timed?ROPE_IDLE+ROPE_RUN-(Date.now()-ropeSince):Infinity;
+  if(!timed||left>ROPE_RUN||drag?.active){if(!rope.hidden){rope.hidden=true;delete rope.dataset.hot;}return;}
+  if(left<=0){rope.hidden=true;ropeReset();ok.click();return;}
+  const r=ok.getBoundingClientRect(),secs=Math.ceil(left/1000);rope.hidden=false;rope.style.left=`${Math.round(r.left)}px`;rope.style.top=`${Math.round(r.top-12)}px`;rope.style.width=`${Math.round(r.width)}px`;
+  rope.style.setProperty('--burn',(left/ROPE_RUN).toFixed(3));rope.dataset.hot=String(secs<=10);const b=rope.querySelector('b');if(secs<=10&&b.textContent!==String(secs)){b.textContent=String(secs);if(secs<=5)haptic('tick');}else if(secs>10)b.textContent='';
+ },200):0;
+ doc.addEventListener('pointerdown',ropeReset,true);doc.addEventListener('keydown',ropeReset,true);
+ return {destroy(){closed=true;win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }

@@ -1912,8 +1912,46 @@ body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
 @media (prefers-reduced-motion:reduce){.forge-emote-menu,.forge-emote-bubble{animation:none}}
 /* A focused hand card is the big card; its preview is just the glass info beside it. */
 :where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-card{display:none!important}
-:where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-info{width:fit-content!important;min-width:150px;max-width:min(260px,calc(100vw - 16px))!important;max-height:none!important}
+:where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-info{width:fit-content!important;min-width:0;max-width:min(var(--solo-max,260px),calc(100vw - 16px))!important;max-height:none!important}
 :where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-info :is(header,.forge-peek-type){display:revert!important}
 /* The hover-only glass never catches the mouse on its way along the hand; emote bubbles step aside while a card is up. */
 :where(body.practice-table-open) .forge-peek[data-solo=true][data-pinned=false]{pointer-events:none}
 body.practice-table-open:has([data-hand-focused=true]) .forge-emote-bubble{opacity:0;transition:opacity .15s}
+/* A table, not a page: holding a card never starts a text selection or the copy menu. */
+body.practice-table-open :where(*:not(input,textarea,select,[contenteditable=true])){-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body.practice-table-open{-webkit-tap-highlight-color:transparent}
+body.practice-table-open img{-webkit-user-drag:none}
+/* Forge's notices, cleaned to one quiet line ("Cavern of Souls: CPU chose Incarnation") that fades. */
+:where(body.practice-table-open) .forge-native-panel .forge-notice{margin:0;padding:6px 12px;border-radius:999px;border:1px solid #d6ad6433;background:#14161dcc;color:#e9dfcb;font:600 12.5px/1.3 'DM Sans',system-ui,sans-serif;width:fit-content;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:forge-notice-fade 5s ease forwards}
+@keyframes forge-notice-fade{0%,80%{opacity:1}100%{opacity:0;visibility:hidden}}
+/* A reveal: label plus the revealed names as gold chips; it moves on by itself. */
+:where(body.practice-table-open) .forge-native-panel .forge-reveal-label{margin:0 0 6px;color:#cdbf9f;font:600 12px/1.3 'DM Sans',system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase}
+:where(body.practice-table-open) .forge-native-panel .forge-reveal-list{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+:where(body.practice-table-open) .forge-native-panel .forge-reveal-list li{padding:6px 12px;border-radius:999px;background:#2a2316;border:1px solid #d6ad6488;color:#f2d18e;font:700 14px/1.2 'DM Sans',system-ui,sans-serif;animation:forge-emote-pop .22s cubic-bezier(.2,.9,.3,1.3) both}
+/* With real art the big card already shows its name, cost, type and P/T: the glass keeps only what the card
+   can't say (keyword meanings, changed rules, state), Arena-style, and hides itself when that is nothing. */
+:where(body.practice-table-open) .forge-peek[data-solo=true]:has(.forge-peek-card[data-art=image]) .forge-peek-info>:is(header,.forge-peek-type){display:none!important}
+:where(body.practice-table-open) .forge-peek[data-solo=true]:has(.forge-peek-card[data-art=image]) .forge-peek-pt{display:none!important}
+:where(body.practice-table-open) .forge-peek[data-solo=true]:has(.forge-peek-card[data-art=image]):not(:has(.forge-peek-keywords,.forge-peek-rules,.forge-peek-chip,.forge-peek-blocked,.forge-peek-actions,.forge-peek-commander)){visibility:hidden!important}
+:where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-info{padding:10px 12px!important;font-size:12.5px}
+:where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-keywords li{padding:7px 9px!important;font-size:12.5px!important;line-height:1.3!important}
+:where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-keywords li b{font-size:13.5px!important}
+/* Hand feel: the touched card springs up with a small overshoot, its neighbours ease aside, and the
+   whole hand rises on a soft spring; the lifted card casts a deeper shadow so it reads as in-hand. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card-wrap{transition:transform .2s cubic-bezier(.25,.9,.3,1),translate .22s cubic-bezier(.22,1.1,.36,1),filter .2s}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card-wrap[data-hand-focus]{transition:transform .28s cubic-bezier(.2,1.32,.42,1),translate .22s cubic-bezier(.22,1.1,.36,1),filter .2s;filter:drop-shadow(0 18px 22px #000b)}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand-area{transition:translate .34s cubic-bezier(.2,1.12,.36,1),scale .34s cubic-bezier(.2,1.12,.36,1)}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] :is(.play-match-hand .play-match-card-wrap,.play-match-hand .play-match-card-wrap[data-hand-focus],.play-match-hand-area){transition:none}}
+:where(body.practice-table-open) .play-match-table[data-low-power] .play-match-hand .play-match-card-wrap[data-hand-focus]{filter:none}
+/* The rope: a thin gold fuse over Next that burns right to left, turning red with a count in its last seconds. */
+.forge-rope{position:fixed;z-index:60;height:6px;border-radius:999px;background:#0008;box-shadow:0 0 0 1px #d6ad6440;pointer-events:none;animation:forge-emote-pop .25s ease both}
+.forge-rope[hidden]{display:none}
+.forge-rope i{position:absolute;inset:0;right:auto;width:calc(var(--burn,1)*100%);border-radius:inherit;background:linear-gradient(90deg,#b8862d,#f2d18e);box-shadow:0 0 10px #f2c27a99;transition:width .2s linear}
+.forge-rope i::after{content:'';position:absolute;right:-3px;top:50%;width:9px;height:9px;margin-top:-4.5px;border-radius:50%;background:radial-gradient(circle,#fff6d8,#ffb547 55%,#ff6a2a00 72%);animation:forge-rope-spark .3s steps(2) infinite}
+.forge-rope[data-hot=true] i{background:linear-gradient(90deg,#9e2a1e,#ff6a4a);box-shadow:0 0 12px #ff5a3aaa}
+.forge-rope b{position:absolute;right:0;bottom:10px;min-width:24px;padding:2px 7px;border-radius:999px;background:#1a0d0bdd;border:1px solid #ff6a4a88;color:#ffd2c6;font:800 13px/1.2 'DM Sans',system-ui,sans-serif;text-align:center}
+.forge-rope b:empty{display:none}
+.forge-rope[data-hot=true] b{animation:forge-rope-beat 1s ease-in-out infinite}
+@keyframes forge-rope-spark{50%{transform:scale(1.35)}}
+@keyframes forge-rope-beat{0%,100%{transform:scale(1)}15%{transform:scale(1.18)}}
+@media (prefers-reduced-motion:reduce){.forge-rope i::after,.forge-rope[data-hot=true] b{animation:none}}
