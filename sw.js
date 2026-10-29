@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-phone-engine-v380";
+const CACHE = "cardforge-shell-rules-download-v381";
 const ASSETS = [
   "./play-forge-feature.js",
   "./audio.js",
