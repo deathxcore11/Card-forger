@@ -11,122 +11,109 @@ concurrency:
   group: tests-${{ github.ref }}
   cancel-in-progress: true
 
+# The suite runs as three jobs instead of one per area: each job installs
+# Node and the test browser once, which keeps billed Actions minutes low.
+# Every test step still runs after an earlier one fails.
 jobs:
-  mana-warning-browser:
+  checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Validate synthetic mana-warning fixtures without provider calls
-        run: node tests/mana-warning-browser.mjs --validate-fixtures
-      - name: Test actual mana warning evidence and Engine payment choices
-        run: node tests/mana-warning-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: mana-warning-browser-evidence
-          path: test-results/mana-warning-*
-
-  collection-display-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Test price origins and responsive native grid gestures
-        run: node tests/collection-display-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: collection-display-browser-evidence
-          path: test-results/
-  pricing-worker-runtime:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install pinned Workers runtime test harness
-        run: npm install --no-save --package-lock=false miniflare@4.20260730.0
-      - name: Reproduce and guard condition pricing in the actual runtime
-        run: node tests/condition-worker-runtime.mjs
-      - name: Guard exact Yu-Gi-Oh set prices in the actual runtime
-        run: node tests/ygo-price-worker-runtime.mjs
-  deployment-verifier:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Test static deployment verifier without contacting production
+      # --- pricing-worker-runtime ---
+      - if: ${{ !cancelled() }}
+        name: Install pinned Workers runtime test harness
+        run: npm install --no-save --package-lock=false miniflare@4.20260730.0
+      - if: ${{ !cancelled() }}
+        name: Reproduce and guard condition pricing in the actual runtime
+        run: node tests/condition-worker-runtime.mjs
+      - if: ${{ !cancelled() }}
+        name: Guard exact Yu-Gi-Oh set prices in the actual runtime
+        run: node tests/ygo-price-worker-runtime.mjs
+      # --- deployment-verifier ---
+      - if: ${{ !cancelled() }}
+        name: Test static deployment verifier without contacting production
         run: python -m unittest discover -s tests -p 'test_verify_deployed_assets.py' -v
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Syntax check
+      # --- test ---
+      - if: ${{ !cancelled() }}
+        name: Syntax check
         run: for f in *.js *.mjs; do node --check "$f"; done
-      - name: Unit and action tests
+      - if: ${{ !cancelled() }}
+        name: Unit and action tests
         run: |
           mkdir -p test-results
           npm test
         env:
           POWER_BENCH_REPORT: test-results/power-benchmark.json
-      - name: Retain explicit Power benchmark assertion accounting
+      # --- database-safety ---
+      - if: ${{ !cancelled() }}
+        name: Install disposable PostgreSQL test runtime
+        run: npm install --no-save --package-lock=false --ignore-scripts @electric-sql/pglite@0.5.10
+      - if: ${{ !cancelled() }}
+        name: Exercise actual quota SQL without contacting production
+        run: CARDSTASHY_PGLITE_MODULE="$PWD/node_modules/@electric-sql/pglite/dist/index.js" node test-server-safety-history-sql.mjs
+      - if: ${{ !cancelled() }}
+        name: Exercise community snapshot and account ownership SQL in isolation
+        run: CARDSTASHY_PGLITE_MODULE="$PWD/node_modules/@electric-sql/pglite/dist/index.js" node test-community-sql.mjs
+      - name: Keep test evidence
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: power-benchmark-accounting
-          path: test-results/power-benchmark.json
-  dropdown-browser:
+          name: checks-evidence
+          path: test-results/
+          if-no-files-found: ignore
+  browser-1:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Fetch the known broken version for regression proof
+      - name: Install pinned browser test runner and test browser
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+          npx playwright install --with-deps chromium
+      # --- mana-warning-browser ---
+      - if: ${{ !cancelled() }}
+        name: Validate synthetic mana-warning fixtures without provider calls
+        run: node tests/mana-warning-browser.mjs --validate-fixtures
+      - if: ${{ !cancelled() }}
+        name: Test actual mana warning evidence and Engine payment choices
+        run: node tests/mana-warning-browser.mjs
+      # --- dropdown-browser ---
+      - if: ${{ !cancelled() }}
+        name: Fetch the known broken version for regression proof
         run: git fetch --depth=1 origin a570fb034b61f508b48427200bb3d69aab5323a6
-      - name: Install pinned browser test runner
-        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - name: Install test browser
-        run: npx playwright install --with-deps chromium
       - name: Test ownership controls and condition values in the real app
         if: ${{ !cancelled() }}
         run: node tests/owned-browser.mjs
-      - name: Test dropdown gestures before release
+      - if: ${{ !cancelled() }}
+        name: Test dropdown gestures before release
         run: node tests/dropdown-browser.mjs
-      - name: Fetch tilt regression baseline
+      - if: ${{ !cancelled() }}
+        name: Fetch tilt regression baseline
         run: git fetch --depth=1 origin b1fc1fd79b0c9e7b9e46feb0101ca5c485d586c6
-      - name: Test card tilt with browser orientation events
+      - if: ${{ !cancelled() }}
+        name: Test card tilt with browser orientation events
         run: node tests/tilt-browser.mjs
-      - name: Test discovery, learning and responsive AI identity
+      - if: ${{ !cancelled() }}
+        name: Test discovery, learning and responsive AI identity
         run: node tests/discovery-browser.mjs
-      - name: Validate exact Rules and detail provider fixtures
+      - if: ${{ !cancelled() }}
+        name: Validate exact Rules and detail provider fixtures
         run: |
           node tests/rules-browser.mjs --validate-fixtures
           node tests/detail-rules-browser.mjs --validate-fixtures
@@ -146,24 +133,9 @@ jobs:
       - name: Test responsive Community and the default printing carousel
         if: ${{ !cancelled() }}
         run: node tests/community-carousel-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: rules-detail-deck-browser-evidence
-          path: test-results/
-  scanner-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install pinned browser test runner
-        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - name: Install test browser
-        run: npx playwright install --with-deps chromium
-      - name: Test real reference images through scanner and collection
+      # --- scanner-browser ---
+      - if: ${{ !cancelled() }}
+        name: Test real reference images through scanner and collection
         run: node tests/scanner-browser.mjs
       - name: Test nonblocking mixed-game capture and mobile layout
         if: ${{ !cancelled() }}
@@ -171,31 +143,15 @@ jobs:
       - name: Test price outage recovery and honest mobile totals
         if: ${{ !cancelled() }}
         run: node tests/pricing-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: scanner-browser-evidence
-          path: test-results/
-  scanner-adversarial-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Validate public scanner lifecycle fixture contract without a browser
+      # --- scanner-adversarial-browser ---
+      - if: ${{ !cancelled() }}
+        name: Validate public scanner lifecycle fixture contract without a browser
         run: |
           node tests/scanner-adversarial-browser.mjs --validate-fixtures
           node tests/scanner-printing-browser.mjs --validate-fixtures
           node tests/condition-refresh-browser.mjs --validate-fixtures
-      - name: Install pinned browser test runner
-        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - name: Install test browser
-        run: npx playwright install --with-deps chromium
-      - name: Test accepted frame pixels, durable queue and expired reader isolation
+      - if: ${{ !cancelled() }}
+        name: Test accepted frame pixels, durable queue and expired reader isolation
         run: node tests/scanner-adversarial-browser.mjs
       - name: Test scanner review through shared all-game printing picker
         if: ${{ !cancelled() }}
@@ -203,619 +159,61 @@ jobs:
       - name: Test bounded exact-condition refresh and large collections
         if: ${{ !cancelled() }}
         run: node tests/condition-refresh-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: scanner-adversarial-evidence
-          path: test-results/
-  home-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install pinned browser test runner
-        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - name: Install test browser
-        run: npx playwright install --with-deps chromium
-      - name: Test card-art profile crop and compact navigation
-        if: ${{ !cancelled() }}
-        run: node tests/profile-art-browser.mjs
-      - name: Test real Home shell, game tabs, community slides and responsive layouts
-        run: node tests/home-browser.mjs
-      - name: Test integrated search, action tutorials, Settings Info and local tabletop
-        if: ${{ !cancelled() }}
-        run: node tests/home-guide-browser.mjs
-      - name: Validate and test exact Home value updates with synthetic quotes
-        if: ${{ !cancelled() }}
-        run: |
-          node tests/home-value-browser.mjs --validate-fixtures
-          node tests/home-value-browser.mjs
-      - name: Test exact all-game artwork recovery and exhaustion
-        if: ${{ !cancelled() }}
-        run: node tests/card-artwork-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: home-browser-evidence
-          path: test-results/
-  card-polish-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Validate exact card and set-symbol fixtures without a browser
-        run: node tests/card-polish-browser.mjs --validate-fixtures
-      - name: Install pinned browser test runner
-        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - name: Install test browser
-        run: npx playwright install --with-deps chromium
-      - name: Test exact YGO rarity, honest price history and Pokemon set symbols
-        run: node tests/card-polish-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: card-polish-browser-evidence
-          path: |
-            test-results/card-polish-*.png
-            test-results/card-polish-browser.json
-  ygo-history-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Validate exact history fixtures without a browser
+      # --- ygo-history-browser ---
+      - if: ${{ !cancelled() }}
+        name: Validate exact history fixtures without a browser
         run: node tests/ygo-history-browser.mjs --validate-fixtures
-      - name: Install pinned browser test runner
-        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - name: Install test browser
-        run: npx playwright install --with-deps chromium
-      - name: Test exact editions, history identity and interrupted selections in the real shell
+      - if: ${{ !cancelled() }}
+        name: Test exact editions, history identity and interrupted selections in the real shell
         run: node tests/ygo-history-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ygo-history-browser-evidence
-          path: |
-            test-results/ygo-history-*.png
-            test-results/ygo-history-browser.json
-  sets-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Validate exact set-release fixtures without a browser
-        run: node tests/sets-browser.mjs --validate-fixtures
-      - name: Install pinned browser test runner
-        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - name: Install test browser
-        run: npx playwright install --with-deps chromium
-      - name: Verify compact set layout on phone, tablet and desktop
-        run: node tests/compact-set-browser.mjs
-      - name: Inspect public bulk set price coverage (read only)
-        run: node tests/probe-ygo-set-prices.mjs
-      - name: Test exact releases, ownership, filters and responsive Sets
-        run: node tests/sets-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: sets-browser-evidence
-          path: test-results/
-  search-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Validate exact Search and printing fixtures without a browser
+      # --- search-browser ---
+      - if: ${{ !cancelled() }}
+        name: Validate exact Search and printing fixtures without a browser
         run: node tests/search-browser.mjs --validate-fixtures
-      - name: Install pinned browser test runner
-        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - name: Install test browser
-        run: npx playwright install --with-deps chromium
-      - name: Test replacement-safe Search and exact same-name printing choices
+      - if: ${{ !cancelled() }}
+        name: Test replacement-safe Search and exact same-name printing choices
         run: node tests/search-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: search-printing-browser-evidence
-          path: test-results/
-  game-switch-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Validate bounded navigation and scanner lifecycle fixtures
-        run: node tests/game-switch-browser.mjs --validate-fixtures
-      - name: Install pinned browser test runner
-        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - name: Install test browser
-        run: npx playwright install --with-deps chromium
-      - name: Test semantic game navigation, history, dirty editors and scanner retries
-        run: node tests/game-switch-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: game-switch-browser-evidence
-          path: |
-            test-results/game-switch-browser.json
-            test-results/game-switch-*.png
-          if-no-files-found: warn
-  database-safety:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install disposable PostgreSQL test runtime
-        run: npm install --no-save --package-lock=false --ignore-scripts @electric-sql/pglite@0.5.10
-      - name: Exercise actual quota SQL without contacting production
-        run: CARDSTASHY_PGLITE_MODULE="$PWD/node_modules/@electric-sql/pglite/dist/index.js" node test-server-safety-history-sql.mjs
-
-      - name: Exercise community snapshot and account ownership SQL in isolation
-        run: CARDSTASHY_PGLITE_MODULE="$PWD/node_modules/@electric-sql/pglite/dist/index.js" node test-community-sql.mjs
-
-  responsive-card-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Validate responsive fixtures without a browser
+      # --- responsive-card-browser ---
+      - if: ${{ !cancelled() }}
+        name: Validate responsive fixtures without a browser
         run: node tests/card-responsive-browser.mjs --validate-fixtures
-      - name: Install pinned browser test runner
-        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - name: Install test browser
-        run: npx playwright install --with-deps chromium
-      - name: Test actual first-open touch, motion and mounted-dialog resizing
+      - if: ${{ !cancelled() }}
+        name: Test actual first-open touch, motion and mounted-dialog resizing
         run: node tests/card-responsive-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: responsive-card-browser-evidence
-          path: test-results/card-responsive-*
-
-  deck-box-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install pinned browser test runner
-        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - name: Install test browser
-        run: npx playwright install --with-deps chromium
-      - name: Test editable deck boxes and navigation animation
-        run: node tests/deck-box-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: deck-box-browser-evidence
-          path: test-results/synthetic-search-deck-box-*
-
-  finish-effects-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Check finish controls across phone, foldable, tablet and desktop widths
-        run: |
-          node tests/finish-effects-browser.mjs
-      - name: Check Pokémon tournament formats and native-compatible service paths
-        if: ${{ !cancelled() }}
-        run: node tests/pokemon-meta-browser.mjs
-      - name: Check pack-to-card details foil and phone tilt
-        if: ${{ !cancelled() }}
-        run: node tests/pack-detail-effects-browser.mjs
-      - name: Inspect actual printing masks and moving detail light
-        if: ${{ !cancelled() }}
-        run: node tests/visual-repair-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: finish-effects-browser-evidence
-          path: |
-            test-results/finish-effects-*
-            test-results/pokemon-meta-*
-
-  account-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Check quiet account sync, username and player profile popups
-        run: node tests/account-browser.mjs
-      - name: Stress actual cross-tab storage and SDK failure recovery
-        if: ${{ !cancelled() }}
-        run: node tests/audit-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: account-browser-evidence
-          path: test-results/synthetic-search-*
-
-  collection-polish-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install pinned browser test runner
-        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - name: Install test browser
-        run: npx playwright install --with-deps chromium
-      - name: Test Collection sorting
-        run: node tests/collection-sort-browser.mjs
-      - name: Test Pokemon card surfaces
-        if: ${{ !cancelled() }}
-        run: node tests/pokemon-card-surface-browser.mjs
-      - name: Test all-game rule hover previews
-        if: ${{ !cancelled() }}
-        run: node test-rule-hover-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: collection-polish-browser-evidence
-          path: |
-            test-results/collection-sort-*
-            test-results/pokemon-*
-            test-results/rule-hover-*
-
-  value-page-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Inspect shared all-game Value pages in actual app
+      # --- value-page-browser ---
+      - if: ${{ !cancelled() }}
+        name: Inspect shared all-game Value pages in actual app
         run: node tests/value-page-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: value-page-browser-evidence
-          path: test-results/value-page-*
-
-  rule-hover-app-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Trace actual native dialog Escape handling
-        run: node tests/rule-hover-app-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: rule-hover-app-browser-evidence
-          path: test-results/rule-hover-app-*
-
-  magic-matchups-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Inspect explicit Magic AI Matchups with synthetic responses
+      # --- magic-matchups-browser ---
+      - if: ${{ !cancelled() }}
+        name: Inspect explicit Magic AI Matchups with synthetic responses
         run: node tests/magic-matchups-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: magic-matchups-browser-evidence
-          path: test-results/magic-matchups-*
-
-  recovery-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Inspect synthetic device recovery and restore controls
-        run: node tests/recovery-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: recovery-browser-evidence
-          path: test-results/recovery-*
-
-  binder-cover-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Test exact binder cover selections in the actual app
+      # --- binder-cover-browser ---
+      - if: ${{ !cancelled() }}
+        name: Test exact binder cover selections in the actual app
         run: node tests/binder-cover-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: binder-cover-browser-evidence
-          path: test-results/binder-cover-*
-
-  pokemon-promos-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Test exact promo identities and Trainer finish coverage
-        run: node tests/pokemon-promos-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: pokemon-promos-browser-evidence
-          path: test-results/pokemon-promos-*
-
-  chishiro-etched-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Inspect exact NEC etched profile and motion controls
+      # --- chishiro-etched-browser ---
+      - if: ${{ !cancelled() }}
+        name: Inspect exact NEC etched profile and motion controls
         run: node tests/chishiro-etched-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: chishiro-etched-browser-evidence
-          path: test-results/chishiro-etched/
-
-  magic-owned-detail-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Test saved Magic printing identity through every detail entry path
-        run: node tests/magic-owned-detail-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: magic-owned-detail-browser-evidence
-          path: test-results/magic-owned-detail-*
-
-  ai-deck-build-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Test shared AI deck sheets, exact cards, export and explicit save
-        run: node tests/ai-deck-build-browser.mjs
-      - name: Test four deck views across games, sizes, filters and persisted preferences
-        run: node tests/deck-viewer-browser.mjs
-      - name: Test categorized stacks, compact card surfaces and fitted columns
-        run: node tests/deck-stacks-layout-browser.mjs
-      - name: Test build progress, cancellation and shared generated-deck design
-        run: node tests/deck-build-presentation-browser.mjs
-      - name: Test expanded rules, typed discovery and source-card Back
-        run: node tests/deck-knowledge-browser.mjs
-      - name: Test homepage defaults, unsupported requirements and missing-data failures
-        if: ${{ !cancelled() }}
-        run: node tests/ai-request-recovery-browser.mjs
-      - name: Test all-game Wiki home, article replacement and shared Ask
-        if: ${{ !cancelled() }}
-        run: node tests/wiki-reader-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ai-deck-build-browser-evidence
-          path: |
-            test-results/ai-deck-build-*
-            test-results/ai-request-recovery-*
-            test-results/deck-build-presentation-browser.json
-            test-results/deck-viewer-browser.json
-            test-results/deck-stacks-*
-            test-results/deck-view-*
-            test-results/deck-building-*
-            test-results/deck-built-*
-            test-results/ai-deck-building-*
-            test-results/deck-knowledge-*
-            test-results/wiki-reader-browser.json
-            test-results/synthetic-search-wiki-reader-*
-  news-curation-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Test shared source-backed News cards and provenance
+      # --- news-curation-browser ---
+      - if: ${{ !cancelled() }}
+        name: Test shared source-backed News cards and provenance
         run: node tests/news-curation-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: news-curation-browser-evidence
-          path: test-results/news-*
-
-  power-release-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Validate public Power fixtures without provider calls
+      # --- power-release-browser ---
+      - if: ${{ !cancelled() }}
+        name: Validate public Power fixtures without provider calls
         run: node tests/power-release-browser.mjs --validate-fixtures
-      - name: Test actual Power, deck goals, budgets and cancellation
+      - if: ${{ !cancelled() }}
+        name: Test actual Power, deck goals, budgets and cancellation
         run: node tests/power-release-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: power-release-browser-evidence
-          path: test-results/power-release-*
-
-  ygo-saved-presentation-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Test exact saved YGO printing and measured card bounds
-        run: node tests/ygo-saved-presentation-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ygo-saved-presentation-browser-evidence
-          path: test-results/synthetic-ygo-saved-*
-
-  aura-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - name: Test Aura and existing themes in the actual app
+      # --- aura-browser ---
+      - if: ${{ !cancelled() }}
+        name: Test Aura and existing themes in the actual app
         run: node tests/aura-browser.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: aura-browser-evidence
-          path: test-results/
-
-  context-and-anniversary-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
-      - run: node tests/context-menu-browser.mjs
+      # --- context-and-anniversary-browser ---
+      - if: ${{ !cancelled() }}
+        run: node tests/context-menu-browser.mjs
       - run: node tests/anniversary-frame-browser.mjs
         if: ${{ !cancelled() }}
       - run: node tests/ygo-name-foil-browser.mjs
@@ -834,14 +232,158 @@ jobs:
         if: ${{ !cancelled() }}
       - run: node tests/board-badges-browser.mjs
         if: ${{ !cancelled() }}
-      - uses: actions/upload-artifact@v4
+      - name: Keep test evidence
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: context-and-anniversary-evidence
-          path: |
-            test-results/context-menu-*
-            test-results/anniversary-frame-*
-            test-results/ygo-name-foil/
-            test-results/pokemon-frame-*
-            test-results/shiny-vault-*
-            test-results/news-edition-*
+          name: browser-1-evidence
+          path: test-results/
+          if-no-files-found: ignore
+  browser-2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned browser test runner and test browser
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+          npx playwright install --with-deps chromium
+      # --- collection-display-browser ---
+      - if: ${{ !cancelled() }}
+        name: Test price origins and responsive native grid gestures
+        run: node tests/collection-display-browser.mjs
+      # --- home-browser ---
+      - name: Test card-art profile crop and compact navigation
+        if: ${{ !cancelled() }}
+        run: node tests/profile-art-browser.mjs
+      - if: ${{ !cancelled() }}
+        name: Test real Home shell, game tabs, community slides and responsive layouts
+        run: node tests/home-browser.mjs
+      - name: Test integrated search, action tutorials, Settings Info and local tabletop
+        if: ${{ !cancelled() }}
+        run: node tests/home-guide-browser.mjs
+      - name: Validate and test exact Home value updates with synthetic quotes
+        if: ${{ !cancelled() }}
+        run: |
+          node tests/home-value-browser.mjs --validate-fixtures
+          node tests/home-value-browser.mjs
+      - name: Test exact all-game artwork recovery and exhaustion
+        if: ${{ !cancelled() }}
+        run: node tests/card-artwork-browser.mjs
+      # --- card-polish-browser ---
+      - if: ${{ !cancelled() }}
+        name: Validate exact card and set-symbol fixtures without a browser
+        run: node tests/card-polish-browser.mjs --validate-fixtures
+      - if: ${{ !cancelled() }}
+        name: Test exact YGO rarity, honest price history and Pokemon set symbols
+        run: node tests/card-polish-browser.mjs
+      # --- sets-browser ---
+      - if: ${{ !cancelled() }}
+        name: Validate exact set-release fixtures without a browser
+        run: node tests/sets-browser.mjs --validate-fixtures
+      - if: ${{ !cancelled() }}
+        name: Verify compact set layout on phone, tablet and desktop
+        run: node tests/compact-set-browser.mjs
+      - if: ${{ !cancelled() }}
+        name: Inspect public bulk set price coverage (read only)
+        run: node tests/probe-ygo-set-prices.mjs
+      - if: ${{ !cancelled() }}
+        name: Test exact releases, ownership, filters and responsive Sets
+        run: node tests/sets-browser.mjs
+      # --- game-switch-browser ---
+      - if: ${{ !cancelled() }}
+        name: Validate bounded navigation and scanner lifecycle fixtures
+        run: node tests/game-switch-browser.mjs --validate-fixtures
+      - if: ${{ !cancelled() }}
+        name: Test semantic game navigation, history, dirty editors and scanner retries
+        run: node tests/game-switch-browser.mjs
+      # --- deck-box-browser ---
+      - if: ${{ !cancelled() }}
+        name: Test editable deck boxes and navigation animation
+        run: node tests/deck-box-browser.mjs
+      # --- finish-effects-browser ---
+      - if: ${{ !cancelled() }}
+        name: Check finish controls across phone, foldable, tablet and desktop widths
+        run: |
+          node tests/finish-effects-browser.mjs
+      - name: Check Pokémon tournament formats and native-compatible service paths
+        if: ${{ !cancelled() }}
+        run: node tests/pokemon-meta-browser.mjs
+      - name: Check pack-to-card details foil and phone tilt
+        if: ${{ !cancelled() }}
+        run: node tests/pack-detail-effects-browser.mjs
+      - name: Inspect actual printing masks and moving detail light
+        if: ${{ !cancelled() }}
+        run: node tests/visual-repair-browser.mjs
+      # --- account-browser ---
+      - if: ${{ !cancelled() }}
+        name: Check quiet account sync, username and player profile popups
+        run: node tests/account-browser.mjs
+      - name: Stress actual cross-tab storage and SDK failure recovery
+        if: ${{ !cancelled() }}
+        run: node tests/audit-browser.mjs
+      # --- collection-polish-browser ---
+      - if: ${{ !cancelled() }}
+        name: Test Collection sorting
+        run: node tests/collection-sort-browser.mjs
+      - name: Test Pokemon card surfaces
+        if: ${{ !cancelled() }}
+        run: node tests/pokemon-card-surface-browser.mjs
+      - name: Test all-game rule hover previews
+        if: ${{ !cancelled() }}
+        run: node test-rule-hover-browser.mjs
+      # --- rule-hover-app-browser ---
+      - if: ${{ !cancelled() }}
+        name: Trace actual native dialog Escape handling
+        run: node tests/rule-hover-app-browser.mjs
+      # --- recovery-browser ---
+      - if: ${{ !cancelled() }}
+        name: Inspect synthetic device recovery and restore controls
+        run: node tests/recovery-browser.mjs
+      # --- pokemon-promos-browser ---
+      - if: ${{ !cancelled() }}
+        name: Test exact promo identities and Trainer finish coverage
+        run: node tests/pokemon-promos-browser.mjs
+      # --- magic-owned-detail-browser ---
+      - if: ${{ !cancelled() }}
+        name: Test saved Magic printing identity through every detail entry path
+        run: node tests/magic-owned-detail-browser.mjs
+      # --- ai-deck-build-browser ---
+      - if: ${{ !cancelled() }}
+        name: Test shared AI deck sheets, exact cards, export and explicit save
+        run: node tests/ai-deck-build-browser.mjs
+      - if: ${{ !cancelled() }}
+        name: Test four deck views across games, sizes, filters and persisted preferences
+        run: node tests/deck-viewer-browser.mjs
+      - if: ${{ !cancelled() }}
+        name: Test categorized stacks, compact card surfaces and fitted columns
+        run: node tests/deck-stacks-layout-browser.mjs
+      - if: ${{ !cancelled() }}
+        name: Test build progress, cancellation and shared generated-deck design
+        run: node tests/deck-build-presentation-browser.mjs
+      - if: ${{ !cancelled() }}
+        name: Test expanded rules, typed discovery and source-card Back
+        run: node tests/deck-knowledge-browser.mjs
+      - name: Test homepage defaults, unsupported requirements and missing-data failures
+        if: ${{ !cancelled() }}
+        run: node tests/ai-request-recovery-browser.mjs
+      - name: Test all-game Wiki home, article replacement and shared Ask
+        if: ${{ !cancelled() }}
+        run: node tests/wiki-reader-browser.mjs
+      # --- ygo-saved-presentation-browser ---
+      - if: ${{ !cancelled() }}
+        name: Test exact saved YGO printing and measured card bounds
+        run: node tests/ygo-saved-presentation-browser.mjs
+      - name: Keep test evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-2-evidence
+          path: test-results/
+          if-no-files-found: ignore
