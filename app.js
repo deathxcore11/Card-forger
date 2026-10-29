@@ -18,7 +18,7 @@ import {FORGE_PLAY_TEST_ENABLED} from './play-forge-feature.js';
 import {forgeDeckSupport,forgeCpuDeckComplete} from './play-forge-setup-review.js';
 import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
-import {cyclePlaymatChoice,mountPlaymatScene,nextPlaymat,unmountPlaymatScene} from './play-playmats.js';
+import {setPlaymatChoice,mountPlaymatScene,nextPlaymat,unmountPlaymatScene} from './play-playmats.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {createPlayerMat} from './play-player-mat.js';
 import {createPlayUpdateGate} from './play-update-gate.js';
@@ -1516,13 +1516,15 @@ const savedPlayCopy=deck=>playSaver.savedId(deck);
 async function savePlayDeck(deck){const id=await playSaver.save(deck);refreshPlayMenu();return id;}
 const cancelPlayBuilds=()=>{for(const builder of Object.values(playBuilders))builder.cancel();};
 let quickStatus={busy:false,error:null},quickSequence=0;
-A.playPlaymat=()=>{cyclePlaymatChoice();refreshPlayMenu();};
+A.playPlaymat=t=>{setPlaymatChoice(t.dataset.playmat);refreshPlayMenu();document.querySelector('.pl-mat>summary')?.focus({preventScroll:true});};
 // Play home picks the mode; Quick Play and Practice then share one lobby. Inspect is a sheet over it.
 let playView='home',playInspectOpen=false;
 A.playOpenMode=t=>{playView='lobby';playInspectOpen=false;A.playStyle(t);scrollTo({top:0});document.getElementById('playTitle')?.focus?.({preventScroll:true});};
 A.playHome=()=>{playView='home';playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});};
 A.playOpenInspect=t=>{playSetup.inspectSeat(t.dataset.playSeat);playInspectOpen=true;refreshPlayMenu();document.querySelector('.pl-sheet-close')?.focus({preventScroll:true});};
 A.playCloseInspect=()=>{if(!playInspectOpen)return;playInspectOpen=false;refreshPlayMenu();};
+// The playmat sheet opens with the chosen mat in view.
+document.addEventListener('toggle',e=>{if(e.target.matches?.('.pl-mat[open]'))e.target.querySelector('.pl-mat-opt[aria-pressed="true"]')?.scrollIntoView({block:'nearest'});},true);
 document.addEventListener('click',e=>{for(const d of document.querySelectorAll('.pl-format[open]'))if(!d.contains(e.target))d.open=false;});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const d of document.querySelectorAll('.pl-format[open]'))d.open=false;if(e.key==='Escape'&&playInspectOpen&&S.ui.view==='play'){e.preventDefault();A.playCloseInspect();}});
 A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBuilds();playSetup.configure({mode:t.dataset.playStyle==='social'?'friends':'cpu'});if(t.dataset.playStyle!=='social')playSetup.setPlayStyle(t.dataset.playStyle);refreshPlayMenu();};

@@ -2,7 +2,7 @@ import {forgeDeckSupport,reviewForgeSetup} from './play-forge-setup-review.js';
 import {readCpuOptions} from './play-cpu-options.js';
 import {brandMark} from './brand.js';
 import {PLAY_DECK_SOURCES,playDeckSupport} from './play-deck-sources.js';
-import {playmatButtonMarkup} from './play-playmats.js';
+import {playmatPickerMarkup} from './play-playmats.js';
 import {reviewPracticeSetup} from './experiments/phase-engine/practice-preflight.mjs';
 // Desktop setup only. Format preferences do not certify engine,
 // construction legality, card support or a working opponent connection.
@@ -52,7 +52,7 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
   const MODE_ART={quick:'https://cards.scryfall.io/art_crop/front/b/f/bf1ef8ec-d915-41f2-b087-3d6d82e3db85.jpg?1783931206',practice:'https://cards.scryfall.io/art_crop/front/b/8/b8c5e74c-96e7-4a1f-93b7-14d776fe4b2d.jpg?1787563091'};
   const modeArt=(deckArt,key)=>deckArt?`<span class="pl-mode-art pl-mode-art--deck" aria-hidden="true">${deckArt}</span>`:`<span class="pl-mode-art" style="background-image:url(${MODE_ART[key]});background-position:center 25%" aria-hidden="true"></span>`;
   if(view==='home')return `<section class="play-menu play-menu--forge pl-home" aria-labelledby="playTitle">
-    <header class="pl-home-head"><div><p class="eyebrow">Your next match</p><h1 id="playTitle">Play</h1></div>${playmatButtonMarkup()}</header>
+    <header class="pl-home-head"><div><p class="eyebrow">Your next match</p><h1 id="playTitle">Play</h1></div></header>
     <div class="pl-modes">
       <button class="pl-mode pl-mode--quick pl-seam" data-act="playOpenMode" data-play-style="quick">${modeArt(matchupArt.player,'quick')}<span class="pl-mode-tag">Fastest</span><span class="pl-mode-name">Quick Play</span><span class="pl-mode-copy">Pick your deck. We find a CPU deck in the same format and flip for first turn.</span><span class="pl-mode-foot"><span>${state.selected?`Your deck <b>${esc(state.selected.name)}</b>`:esc(match.format)}</span><span class="pl-mode-cta">Play</span></span></button>
       <button class="pl-mode" data-act="playOpenMode" data-play-style="practice">${modeArt(matchupArt.opponent,'practice')}<span class="pl-mode-tag">Test a matchup</span><span class="pl-mode-name">Practice</span><span class="pl-mode-copy">Choose both decks yourself, then who goes first.</span><span class="pl-mode-foot"><span>${esc(match.format)}</span><span class="pl-mode-cta pl-mode-cta--ghost">Set up</span></span></button>
@@ -60,7 +60,7 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
     </div>
   </section>`;
   return `<section class="play-menu play-menu--forge pl-lobby${native?'':' pl-lobby--phase'}" data-play-mode="${quick?'quick':'practice'}" aria-labelledby="playTitle">
-    <header class="pl-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">Play</p><h1 id="playTitle">${quick?'Quick Play':'Practice'}</h1></div><div class="pl-head-tools">${formatPicker}${playmatButtonMarkup()}</div>${matchReleaseReady?'':'<span class="chip">In development</span>'}</header>
+    <header class="pl-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">Play</p><h1 id="playTitle">${quick?'Quick Play':'Practice'}</h1></div><div class="pl-head-tools">${formatPicker}${quick?'':playmatPickerMarkup()}</div>${matchReleaseReady?'':'<span class="chip">In development</span>'}</header>
     <section class="pl-arena" aria-label="Selected matchup">${seat('player')}<span class="pl-vs" aria-hidden="true"><b>VS</b></span>${match.mode==='cpu'?seat('opponent'):'<div class="pl-seat pl-seat--cpu"><div class="pl-seat-copy"><span class="pl-seat-who">Friends</span><h2>Coming later</h2><p>Friend matches are not available yet.</p></div></div>'}</section>
     <div class="pl-startbar">${status}${difficulty}${start}</div>
     <div class="play-workspace play-workspace--single">

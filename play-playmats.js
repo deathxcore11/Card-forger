@@ -7,16 +7,17 @@ const get=(key,s)=>{try{return s?.getItem(key)||'';}catch{return '';}};
 const set=(key,value,s)=>{try{s?.setItem(key,value);}catch{}};
 const known=id=>PLAYMATS.some(([key])=>key===id);
 export function readPlaymatChoice(s=store()){const v=get(CHOICE,s);return known(v)?v:'rotate';}
-// Rotate -> each mat in turn -> rotate.
-export function cyclePlaymatChoice(s=store()){const order=['rotate',...PLAYMATS.map(([id])=>id)],next=order[(order.indexOf(readPlaymatChoice(s))+1)%order.length];set(CHOICE,next,s);return next;}
+export function setPlaymatChoice(choice,s=store()){const next=known(choice)?choice:'rotate';set(CHOICE,next,s);return next;}
 export function nextPlaymat(s=store(),random=Math.random){
   const choice=readPlaymatChoice(s);if(choice!=='rotate'){set(LAST,choice,s);return choice;}
   const last=get(LAST,s),pool=PLAYMATS.map(([id])=>id).filter(id=>id!==last),pick=pool[Math.min(pool.length-1,Math.floor(random()*pool.length))];
   set(LAST,pick,s);return pick;
 }
-export function playmatButtonMarkup(choice=readPlaymatChoice()){
+// Practice's playmat drop-down: the current mat on the button, every mat as a painted tile in the sheet.
+export function playmatPickerMarkup(choice=readPlaymatChoice()){
   const name=choice==='rotate'?'New each match':PLAYMATS.find(([id])=>id===choice)[1];
-  return `<button type="button" class="btn ghost play-playmat" data-act="playPlaymat" data-playmat="${choice}" aria-label="Playmat: ${name}. Tap to change."><span class="play-playmat-thumb" aria-hidden="true"></span><span><small>Playmat</small><b>${name}</b></span></button>`;
+  const tile=(id,label)=>`<button type="button" class="pl-mat-opt" data-act="playPlaymat" data-playmat="${id}" aria-pressed="${choice===id}"><span class="pl-mat-art" aria-hidden="true"></span><b>${label}</b></button>`;
+  return `<details class="pl-format pl-mat" data-playmat="${choice}"><summary aria-label="Playmat: ${name}. Change playmat"><span class="pl-mat-art" aria-hidden="true"></span><span class="pl-mat-now"><small>Playmat</small><b>${name}</b></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="pl-format-sheet pl-mat-sheet" role="group" aria-label="Playmat"><p class="pl-format-group">Choose your playmat</p><div class="pl-mat-grid">${tile('rotate','New each match')}${PLAYMATS.map(([id,label])=>tile(id,label)).join('')}</div></div></details>`;
 }
 // Scene effects drawn over the painting (the glow comes in two halves that flicker out of step, so candles never blink together), in painting pixels (1672x941): floating hedron cut-outs on the two Zendikar mats,
 // soft halos on moons, orbs and the sun, sparkle crossfades cut from the art (moonlit waves, stars, lava rivers, city lights),
