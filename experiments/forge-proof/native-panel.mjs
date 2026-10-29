@@ -75,6 +75,8 @@ export function nativePayment(n,cards=[]){
   verb='Activate';const abilities=String(card.text||'').split(/\n+/).map(line=>line.trim()).filter(line=>/^[^:"“]*\{[^}]+\}[^:"“]*:/.test(line));if(abilities.length===1)ability=abilities[0];
  }else if(card&&['Stack','Hand','Command','Graveyard','Exile'].includes(card.zone))verb='Cast';
  const detail=lines.filter(line=>line!==owedLine&&!/^\(?click (on|a)\b/i.test(line)&&line!==name&&line!==ability&&!/^input\w+$/i.test(line));
+ // Newer hosts send the real cost for the chosen target (Ride's End is {1}{W} against a tapped one).
+ const costNow=costText(n.payment?.costNow?.mana);if(costNow&&card?.manaCost&&costNow!==String(card.manaCost).replace(/\s+/g,''))detail.unshift(`Costs ${costNow} for this target (printed ${card.manaCost})`);
  // Nothing left to tap and nothing floating: say so instead of leaving the player to wonder.
  const pool=Object.values(n.players?.find(p=>p.id===n.viewer)?.mana||{}).some(v=>Number(v)>0),sources=(n.selection?.actionable||[]).length>0;
  if(remaining&&!pool&&!sources)detail.unshift('You have no untapped mana to pay this. Cancel to back out.');
@@ -100,7 +102,7 @@ export function nativeActionLabel(n,op,raw){
   if(!attacking&&['COMBAT_DECLARE_ATTACKERS','COMBAT_DECLARE_BLOCKERS','COMBAT_FIRST_STRIKE_DAMAGE','COMBAT_DAMAGE'].includes(n.phase))return n.activePlayer===n.viewer?'Next: Second main':'Pass';
   return n.activePlayer===n.viewer?NEXT_STEP[n.phase]||'Pass priority':'Pass';
  }
- if(input==='InputAttack'&&op==='ok'){const k=count('attacking');return k?`Attack with ${k}`:'No attacks';}
+ if(input==='InputAttack'&&op==='ok'){const k=count('attacking'),must=mine.filter(c=>c?.mustAttack===true&&c?.attacking!==true).length;if(must)return k?`Add ${must} required attacker${must===1?'':'s'}`:`${must} creature${must===1?'':'s'} must attack`;return k?`Attack with ${k}`:'No attacks';}
  if(input==='InputBlock'&&op==='ok'){const k=count('blocking');return k?`Confirm ${k} block${k===1?'':'s'}`:'No blocks';}
  if(input.startsWith('InputPayMana')&&op==='ok'&&/^auto$/i.test(label))return 'Pay automatically';
  if(input==='InputSelectTargets'&&op==='ok')return 'Confirm targets';
@@ -315,7 +317,9 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const label=presentation.hosted?nativeActionLabel(n,op,buttons[op]):String(buttons[op]||op),enabled=buttons[op+'Enabled']===true;
    // An unavailable Cancel/End turn is noise in the dock; an unavailable confirmation still shows what is pending.
    if(presentation.hosted&&!enabled&&(op==='cancel'||!label))continue;
-   const action=button(label||op,()=>session.nativeButton(op,n.revision),!enabled,op);
+   // A declaration Forge would refuse (a must-attack creature left out) is not offered as a live button.
+   const mustLeft=n.inputType==='InputAttack'&&op==='ok'&&(n.players?.find(p=>p.id===n.viewer)?.zones?.Battlefield?.cards||[]).some(c=>c?.mustAttack===true&&c?.attacking!==true);
+   const action=button(label||op,()=>session.nativeButton(op,n.revision),!enabled||mustLeft,op);if(mustLeft)action.title='A creature that must attack this turn is not attacking yet.';
    // The hosted dock names where Next goes in two words ("To combat"); the full step stays in its name and tooltip.
    if(presentation.hosted&&presentation.shortNext===true&&/^Next: /.test(label)){action.textContent=SHORT_STEP[label]||'Next';action.setAttribute('aria-label',label);action.title=label.replace(/^Next: /,'Next step: ');}
    actions.append(action);
