@@ -654,3 +654,17 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-vs::before{content:"";position:absolute;left:50%;top:50%;width:112px;height:112px;translate:-50% -50%;border-radius:50%;background:radial-gradient(circle,#e8b95b3d 0,#e8b95b14 38%,#e8b95b00 62%);pointer-events:none;z-index:0}
 .pl-vs b{box-shadow:0 0 0 6px #0c0d10,0 0 0 7px #e8b95b26;z-index:1}
 @media(max-width:700px){.pl-vs::before{width:92px;height:92px}}
+/* Zero-gap seats: the two cards share one edge with a single hairline, so nothing shows through
+   behind the VS medallion. Inner corners are square; outer corners keep their radius. */
+.pl-arena:not(.pl-arena--pod){grid-template-columns:minmax(0,1fr) 0 minmax(0,1fr);gap:0}
+.pl-arena:not(.pl-arena--pod) .pl-vs{width:0;height:auto;overflow:visible}
+.pl-arena:not(.pl-arena--pod) .pl-seat[data-seat=player]{border-right:0;border-top-right-radius:0;border-bottom-right-radius:0}
+.pl-arena:not(.pl-arena--pod) .pl-seat--cpu{border-top-left-radius:0;border-bottom-left-radius:0}
+.pl-vs::before{z-index:2}.pl-vs b{z-index:3}
+@media(max-width:700px){
+ .pl-arena:not(.pl-arena--pod){grid-template-columns:1fr;grid-template-rows:1fr 0 1fr}
+ .pl-arena:not(.pl-arena--pod) .pl-vs{width:auto;height:0}
+ .pl-arena:not(.pl-arena--pod) .pl-seat[data-seat=player]{border-right:1px solid #d6ad6440;border-bottom:0;border-radius:18px 18px 0 0}
+ .pl-arena:not(.pl-arena--pod) .pl-seat--cpu{border-radius:0 0 18px 18px}
+ .pl-arena:not(.pl-arena--pod) .pl-seat.pl-seat--set[data-seat=player]{border-right-color:#d6ad6455}
+}
