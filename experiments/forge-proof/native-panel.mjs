@@ -102,13 +102,13 @@ export function nativeActionLabel(n,op,raw){
   if(!attacking&&['COMBAT_DECLARE_ATTACKERS','COMBAT_DECLARE_BLOCKERS','COMBAT_FIRST_STRIKE_DAMAGE','COMBAT_DAMAGE'].includes(n.phase))return n.activePlayer===n.viewer?'Next: Second main':'Pass';
   return n.activePlayer===n.viewer?NEXT_STEP[n.phase]||'Pass priority':'Pass';
  }
- if(input==='InputAttack'&&op==='ok'){const k=count('attacking'),must=mine.filter(c=>c?.mustAttack===true&&c?.attacking!==true).length;if(must)return k?`Add ${must} required attacker${must===1?'':'s'}`:`${must} creature${must===1?'':'s'} must attack`;return k?`Attack with ${k}`:'No attacks';}
+ if(input==='InputAttack'&&op==='ok'){const k=count('attacking'),must=mine.filter(c=>c?.mustAttack===true&&c?.attacking!==true).length;if(must)return `${must} must attack`;return k?`Attack with ${k}`:'No attacks';}
  if(input==='InputBlock'&&op==='ok'){const k=count('blocking');return k?`Confirm ${k} block${k===1?'':'s'}`:'No blocks';}
  if(input.startsWith('InputPayMana')&&op==='ok'&&/^auto$/i.test(label))return 'Pay automatically';
  if(input==='InputSelectTargets'&&op==='ok')return 'Confirm targets';
  return label;
 }
-const revealAuto={key:null,timer:0},errSeen={text:null,revision:0};
+const revealAuto={key:null,timer:0},errSeen={text:null,revision:0};let stackOpen=false;
 // Forge names the AI as "Forge AI — <deck> · <commander>"; the hosted table calls it the CPU.
 const cpuName=msg=>String(msg).replace(/Forge AI\b.*?\s(?=(?:revealed|reveals|picked|picks|chose|chooses|named|names|casts?|plays?|looked|looks)\b)/,'CPU ').replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU');
 export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
@@ -313,7 +313,19 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   }else panel.append(node('p',`Unsupported native dialog: ${p.method}. No reply sent.`,'forge-diagnostic'));
  }else{
   const buttons=n.buttons||{},actions=node('div',undefined,'forge-native-actions');actions.setAttribute('role','group');actions.setAttribute('aria-label',copy('Match actions','Native actions'));
+  // A pick on the table (targets, the legend rule, a sacrifice) is asked in one line above these buttons, so
+  // nothing covers the cards you can pick. A required single target commits on the click, like Arena, so no
+  // Confirm is offered then; an optional one offers "No target" instead.
+  const picks=(n.selection?.cards?.length||0)+(n.selection?.targets?.length||0),input=String(n.inputType||'');
+  const asking=presentation.hosted&&!n.prompt&&picks>0&&!['InputPassPriority','InputAttack','InputBlock','InputConfirmMulligan','InputLockUI'].includes(input)&&!input.startsWith('InputPayMana')&&!discard;
+  const oneTarget=asking&&input==='InputSelectTargets'&&n.selection?.max===1&&!(n.selection?.chosen||[]).length;
+  if(asking){const first=lines.find(l=>!/^(Priority|Turn|Phase|Stack):/.test(l))||'';let ask=cpuName(first).replace(/\s*\[Phase: [^\]]*\]/g,'').trim();
+   if(/legend(ary)? rule|same name|choose .* to keep|keep one/i.test(ask))ask='Two legendary permanents share a name. Choose the one to keep.';
+   if(!ask)ask=input==='InputSelectTargets'?'Choose a target':'Choose a card on the table';if(oneTarget)ask=ask.replace(/^Select targets? for/i,'Tap a target for');
+   actions.dataset.state=ask;actions.dataset.ask='true';}
   for(const op of ['ok','cancel'])if(buttons[op]!==undefined){
+   if(asking&&op==='ok'&&buttons.okEnabled!==true)continue;
+   if(oneTarget&&op==='ok'){if(n.selection?.min===0&&buttons.okEnabled===true){const none=button('No target',()=>session.nativeButton('ok',n.revision),false,'ok');actions.append(none);}continue;}
    const label=presentation.hosted?nativeActionLabel(n,op,buttons[op]):String(buttons[op]||op),enabled=buttons[op+'Enabled']===true;
    // An unavailable Cancel/End turn is noise in the dock; an unavailable confirmation still shows what is pending.
    if(presentation.hosted&&!enabled&&(op==='cancel'||!label))continue;
@@ -325,8 +337,8 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    actions.append(action);
   }
   // Phones hide the phase track, so the main action carries one quiet line of where you are: "CPU turn · Main · Your response".
-  if(presentation.hosted&&actions.childNodes.length&&n.inputType==='InputPassPriority'&&!n.prompt){const where=PHASE_SHORT[n.phase]||'',who=n.activePlayer===n.viewer?'Your turn':'CPU turn',why=n.stack?.length&&n.stack[0]?.activatingPlayer!==n.viewer?'Your response':n.activePlayer===n.viewer?'Your move':'Your response';actions.dataset.state=[who,where,why].filter(Boolean).join(' · ');}
-  if(actions.childNodes.length)panel.append(actions);
+  if(presentation.hosted&&actions.childNodes.length&&n.inputType==='InputPassPriority'&&!n.prompt){const where=PHASE_SHORT[n.phase]||'',yours=n.activePlayer===n.viewer,why=n.stack?.length&&n.stack[0]?.activatingPlayer!==n.viewer?'Your response':yours?'Your move':'Your response';actions.dataset.state=[yours?'':'CPU turn',where,why].filter(Boolean).join(' · ');}
+  if(actions.childNodes.length||actions.dataset.ask==='true')panel.append(actions);
   const refs=[...(n.selection?.cards||[]),...(n.selection?.targets||[]),...(n.selection?.actionable||[])],unique=new Map(refs.map(r=>[r.kind+':'+r.id,r]));
   if(unique.size&&!presentation.hosted){const selection=node('details',undefined,'forge-native-hints'),summary=node('summary',`${presentation.hosted?'Highlighted choices':'Native selection guidance'} · ${unique.size}`);selection.append(summary,node('p',copy('You can select these cards or players here, or directly on the table.','These are Forge’s UI hints, not a complete legal-action list. The engine validates each click.')));
    for(const r of unique.values()){const c=s.status.surface.cards.find(c=>c.id===r.id),player=n.players.find(p=>p.id===r.id),stack=n.stack.find(x=>x.id===r.id);const label=r.kind==='card'?(c?.known?c.name:c?'Face-down card':null):r.kind==='player'?player?.name:r.kind==='stack'?stack?.text:null;if(label)selection.append(button(label,()=>session.nativeSelect(r.kind,r.id,n.revision),false,`ref-${r.kind}-${r.id}`));}panel.append(selection);}
@@ -343,14 +355,16 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const compact=(item,top,count)=>{const mine=item.activatingPlayer===n.viewer,raw=plainText(item.text||''),src=item.source?.name||raw.match(/^([^-\u2014:]{1,40}?)\s+[-\u2014:]\s/)?.[1]||'',body=src&&raw.startsWith(src)?raw.slice(src.length).replace(/^\s*[-\u2014:]\s*/,''):raw;
     const short=body.replace(/\s*\([^)]*\)/g,'').trim(),first=short.match(/^.*?[.!?](?=\s|$)/)?.[0]||short,summary=first.length>110?first.slice(0,107).replace(/\s+\S*$/,'')+'…':first;
     const card=node('article',undefined,'forge-stack-item');card.dataset.top=String(top);card.dataset.mine=String(mine);if(item.yielded)card.dataset.yielded='true';
-    const head=button('',()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`);head.className='forge-stack-head';head.append(node('span',`${mine?'Your':'CPU'} ${item.ability===true?'ability':'spell'}${top?' · Resolves next':''}`,'forge-stack-kind'),node('strong',src||summary||`Stack item ${item.id}`,'forge-stack-name'));
+    const head=button('',()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`);head.className='forge-stack-head';head.append(node('span',`${mine?'Your':'CPU'} ${item.ability===true?'ability':'spell'}${top?' · Next':''}`,'forge-stack-kind'),node('strong',src||summary||`Stack item ${item.id}`,'forge-stack-name'));
     if(count>1){const c=node('b',`×${count}`,'forge-stack-count');head.append(c);head.setAttribute('aria-label',`${count} identical: ${src||summary}`);}card.append(head);
     if(src&&summary)card.append(node('p',symbols?undefined:summary,'forge-stack-summary'));if(src&&summary&&symbols)card.lastChild.innerHTML=symbols(summary);
     const tg=(Array.isArray(item.targets)?item.targets:[]).map(r=>named(r?.id)).filter(Boolean);if(tg.length){const row=node('p',undefined,'forge-stack-targets');row.append(node('span','→ '),...tg.map((t,k)=>node('span',(k?', ':'')+t,'forge-stack-target')));card.append(row);}
     if(body&&body!==summary){const more=node('details',undefined,'forge-stack-more'),sum=node('summary','Full effect');more.append(sum);const full=node('p',symbols?undefined:body);if(symbols)full.innerHTML=symbols(body);else full.textContent=body;more.append(full);card.append(more);}
     if(canYield&&item.ability===true){const menu=node('details',undefined,'forge-stack-menu'),sum=node('summary','⋯');sum.setAttribute('aria-label','More for this ability');menu.append(sum);const y=button(item.yielded?'Stop auto-passing this ability':'Auto-pass this ability until end of turn',()=>session.yieldSource(item.id,!item.yielded),!!n.prompt||n.inputType==='InputLockUI',`yield-${item.id}`);y.className='forge-stack-yield';y.setAttribute('aria-pressed',String(item.yielded===true));menu.append(y,node('small','Targets and choices still stop you.'));card.append(menu);}
     return card;};
-   if(presentation.hosted){const list=node('div',undefined,'forge-stack-list');let top=true;for(const run of stackRuns(n)){if(run.length<3)for(const item of run){list.append(compact(item,top,1));top=false;}else{list.append(compact(run[0],top,run.length));top=false;}}stack.append(list);panel.append(stack);}
+   if(presentation.hosted){const list=node('div',undefined,'forge-stack-list');let top=true,shown=0;for(const run of stackRuns(n)){if(run.length<3)for(const item of run){list.append(compact(item,top,1));top=false;shown++;}else{list.append(compact(run[0],top,run.length));top=false;shown++;}}stack.append(list);
+    // Phones show only the top item; a +N chip opens the rest (the open state survives redraws).
+    if(shown>1){const more=button(`+${shown-1} more`,()=>{stackOpen=!stackOpen;stack.dataset.open=String(stackOpen);more.textContent=stackOpen?'Show less':`+${shown-1} more`;},false,'stack-more');more.className='forge-stack-more-count';if(stackOpen){stack.dataset.open='true';more.textContent='Show less';}stack.append(more);}else stackOpen=false;panel.append(stack);}
    else{for(const run of stackRuns(n))if(run.length<3)for(const item of run)stack.append(withYield(button(item.text||`Stack item ${item.id}`,()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`),item));else{const top=run[0],b=button(top.text||`Stack item ${top.id}`,()=>session.nativeSelect('stack',top.id,n.revision),false,`stack-${top.id}`),count=node('b',`×${run.length}`,'forge-stack-count');b.dataset.stackCount=String(run.length);b.setAttribute('aria-label',`${run.length} identical: ${top.text||'stack item'}`);b.append(count);stack.append(withYield(b,top));}panel.append(stack);}}
   const selected=presentation.hosted?null:s.status.surface.cards.find(c=>c.id===s.selected);if(selected)panel.append(button(copy(`Select ${selected.known?selected.name:'card'}`,`Send ${selected.known?selected.name:'card'} click to Forge`),()=>session.nativeSelect('card',selected.id,n.revision),false,'click-inspected'));
  }

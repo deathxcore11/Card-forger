@@ -150,7 +150,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const combatInput=n.inputType==='InputAttack'||n.inputType==='InputBlock';
   for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);const dragOk=combatInput&&!!combatDrops(cardId);if((el.dataset.forgeDrag==='true')!==dragOk){if(dragOk)el.dataset.forgeDrag='true';else delete el.dataset.forgeDrag;}el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));if(actionable.has(cardId)&&el.closest('.play-match-hand')){const c=snap.status.surface.cards.find(x=>x.id===cardId);const a=affordability.get(cardId);el.dataset.forgeSure=String(a?a==='available':!(c&&COST_BENDERS.test(c.text||'')));}else delete el.dataset.forgeSure;
    // A creature Forge says must attack this combat wears a tag until it is in the attack.
-   const must=n.inputType==='InputAttack'&&!!snap.status.surface.cards.find(x=>x.id===cardId&&x.mustAttack===true&&x.attacking!==true);if(must)el.dataset.forgeMust='true';else if(el.dataset.forgeMust)delete el.dataset.forgeMust;el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
+   const must=n.inputType==='InputAttack'&&!!snap.status.surface.cards.find(x=>x.id===cardId&&x.mustAttack===true&&x.attacking!==true);if(must&&el.dataset.forgeMust!=='true'){el.dataset.forgeMust='true';const tag=doc.createElement('span');tag.className='forge-must-tag';tag.textContent='Must attack';el.append(tag);}else if(!must&&el.dataset.forgeMust){delete el.dataset.forgeMust;el.querySelector(':scope>.forge-must-tag')?.remove();}el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
   const surface=snap.status.surface,nativePlayer=seat=>n.players.find(p=>p.id===surface.players.find(p=>p.seat===seat)?.nativeId);
   // Floating mana is the native pool only, never untapped lands or potential production.
   const manaEntries=player=>Object.entries(player?.mana||{}).map(([color,amount])=>[String(color).toUpperCase(),Number(amount)||0]);
@@ -198,7 +198,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    renderCrests(surface,mat);
    // One turn statement: the dock says whose move it is; this track on the divider says where the turn is.
    renderPhaseTrack(surface,mat);
-   renderCombatLine(n,surface);renderAskLine(n,surface);
+   renderCombatLine(n,surface);
    // The history button carries the stack size as a badge.
    const history=root.querySelector('.play-match-header [data-focus-key=table-details]'),stackCount=n.stack?.length?String(n.stack.length):'';if(history&&(history.dataset.count||'')!==stackCount){if(stackCount)history.dataset.count=stackCount;else delete history.dataset.count;}
    // Smart, Full Control and auto-pay are small emblems under your name, the way Arena keeps them by your portrait.
@@ -506,9 +506,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const source=cards.filter(c=>mine(c)&&c.zone==='Stack').sort((a,b)=>b.id-a.id)[0]||(named&&(cards.find(c=>mine(c)&&c.zone==='Battlefield'&&c.name===named)||cards.find(c=>mine(c)&&c.zone==='Hand'&&c.name===named)));
    if(source)for(const r of n.selection?.chosen||[]){const to=r.kind==='card'?byCard(r.id):r.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:byCard(source.id),to});}
   }
-  // A spell or ability on the stack points from its line in the decision card to its
-  // targets, when Forge names them.
-  for(const item of n.stack||[])for(const r of Array.isArray(item.targets)?item.targets:[]){const to=r?.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r?.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'stack',id:item.id},to});}
+  // The top spell or ability on the stack points from its line in the decision card to
+  // its targets, when Forge names them. Only the top of the stack draws, and none while you are picking your own.
+  const topItem=String(n.inputType||'')==='InputSelectTargets'?null:(n.stack||[])[0];
+  for(const item of topItem?[topItem]:[])for(const r of Array.isArray(item.targets)?item.targets:[]){const to=r?.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r?.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'stack',id:item.id},to});}
   if(activeBeat&&castShow.dataset.open==='true')for(const r of activeBeat.targets||[]){const to=r.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'spotlight'},to});}
   return out;
  }
@@ -617,24 +618,6 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const key=`${mode}|${k}`;if(!line){line=combatLine=doc.createElement('div');line.className='forge-combat-line';line.setAttribute('aria-hidden','true');}const mat=root.querySelector('.play-match-mat');if(mat&&line.parentElement!==mat){if(line.parentElement||line.dataset.key)line.dataset.settled='';mat.append(line);}
   if(line.dataset.key!==key){line.dataset.key=key;line.dataset.mode=mode;line.innerHTML=k?`<i></i><span><b>${k}</b><small>${mode==='attack'?'attacking':'blocking'}</small></span>`:'<i></i><i></i>';}
   const r=zone.getBoundingClientRect(),v=`${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}`;if(line.dataset.at!==v){line.dataset.at=v;line.style.left=Math.round(r.left)+'px';line.style.top=Math.round(r.top)+'px';line.style.width=Math.round(r.width)+'px';}
- }
- // Arena's ask line: when Forge needs you to pick something on the table that isn't combat (the legend rule, a
- // sacrifice, targets), one short instruction sits over your battlefield, so a click is never a guess.
- let askLine=null;
- function renderAskLine(n,surface){
-  const picks=(n?.selection?.cards?.length||0)+(n?.selection?.targets?.length||0),input=String(n?.inputType||'');
-  const show=presentation.hosted&&root.dataset.stage==='match'&&!n?.prompt&&picks>0&&!['InputPassPriority','InputAttack','InputBlock','InputConfirmMulligan','InputLockUI'].includes(input)&&!input.startsWith('InputPayMana')&&surface?.prioritySeat!==undefined;
-  const zone=root.querySelector('.play-match-battlefields .play-match-zone[data-owner=you]'),mat=root.querySelector('.play-match-mat');
-  if(!show||!zone||!mat){askLine?.remove();askLine=null;return;}
-  const first=String(n.message||'').split('\n').map(l=>l.trim()).find(l=>l&&!/^(Priority|Turn|Phase|Stack):/.test(l))||'';
-  let text=first.replace(/ \(\d+\)(?=[\s,.:;!?)]|$)/g,'').replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU').replace(/\s*\[Phase: [^\]]*\]/g,'').trim();
-  if(/legend(ary)? rule|same name|choose .* to keep/i.test(text))text='Two legendary permanents share a name. Choose the one to keep.';
-  if(!text)text=input==='InputSelectTargets'?'Choose a target':'Choose a card on the table';
-  const max=Number.isSafeInteger(n.selection?.max)&&n.selection.max>1?` · up to ${n.selection.max}`:'';
-  if(!askLine){askLine=doc.createElement('div');askLine.className='forge-ask-line';askLine.setAttribute('role','status');}
-  if(askLine.parentElement!==mat)mat.append(askLine);
-  const label=text+max;if(askLine.textContent!==label)askLine.textContent=label;
-  const r=zone.getBoundingClientRect(),v=`${Math.round(r.left+r.width/2)}|${Math.round(r.top)}`;if(askLine.dataset.at!==v){askLine.dataset.at=v;askLine.style.left=Math.round(r.left+r.width/2)+'px';askLine.style.top=Math.round(r.top)+'px';}
  }
  let manaOpen=false;
  const PHASE_STEPS=[['Upkeep',['Untap','Upkeep']],['Draw',['Draw']],['Main',['PreCombatMain']],['Combat',['BeginningOfCombat','DeclareAttackers','DeclareBlockers','FirstStrikeDamage','CombatDamage','EndCombat']],['Main 2',['PostCombatMain']],['End',['End','Cleanup']]];
