@@ -1999,6 +1999,34 @@ html.pw-calm .pw-paths path.ahead{animation:none}
 @media (min-aspect-ratio:4/5){#app .map .maprow>.node.boss{margin-inline-end:12px!important}}
 /* node info card: a lighter dim so the lit route still shows behind it */
 .pw-zoom.pw-node-zoom{background:#0000008c!important;backdrop-filter:none!important}
+/* ---------- H2 hand touch (29 Oct): flick, rubber band, aim arrow, two-finger peek ---------- */
+#app .battle .hand>.card.pw-rub{translate:var(--rbx,0) var(--rby,0)!important;transition:none!important}
+#app .battle .hand>.card.pw-snap{transition:translate .45s cubic-bezier(.34,1.56,.64,1)!important}
+.pw-short{animation:pw-short .5s ease-out}
+@keyframes pw-short{30%{box-shadow:0 0 0 3px #ff5a4a,0 0 20px 4px #ff5a4acc;scale:1.15}}
+.pw-arrow{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9998;overflow:visible}
+.pw-arrow path,.pw-arrow circle{fill:none;stroke-linecap:round;stroke-linejoin:round;transition:stroke .12s,fill .12s}
+.pw-arrow-glow{stroke:#ffd27a40;stroke-width:13}
+.pw-arrow-line{stroke:#ffe2a0;stroke-width:5;stroke-dasharray:13 9;animation:pw-march .45s linear infinite}
+.pw-arrow .pw-arrow-head{fill:#ffe2a0;stroke:#4a2e08;stroke-width:1.5}
+.pw-arrow-ring{stroke:#ffe2a066;stroke-width:2}
+.pw-arrow.pw-hot .pw-arrow-glow{stroke:#ff6a3c55}
+.pw-arrow.pw-hot .pw-arrow-line{stroke:#ff9a6a}
+.pw-arrow.pw-hot .pw-arrow-head{fill:#ff9a6a}
+.pw-arrow.pw-hot .pw-arrow-ring{stroke:#ff9a6a;stroke-width:3}
+@keyframes pw-march{to{stroke-dashoffset:-22}}
+#app .battle .hand>.card.pw-lifted.pw-aiming{opacity:1!important;translate:0 -16px!important;box-shadow:0 0 0 2px #ffe2a0,0 0 24px 4px #ffd27a77!important}
+.pw-ghost.pw-flung{transition:translate .18s ease-in,opacity .18s ease-in!important;translate:0 -150px!important;opacity:0!important}
+.pw-zoom.pw-holding{pointer-events:none}
+.pw-zoom.pw-peek{inset:auto;left:50%;translate:-50% 0;display:block;width:max-content;max-width:calc(100vw - 24px);padding:0;background:none!important;backdrop-filter:none!important;border:0;box-shadow:none;pointer-events:none;z-index:9997;animation:none}
+.pw-zoom.pw-peek>.pw-info{margin:0;box-sizing:border-box;width:auto;max-width:min(380px,calc(100vw - 24px));padding:10px 14px;font:500 13px/1.4 var(--body);background:#0b0a0cf2;box-shadow:0 10px 30px #000b}
+.pw-zoom.pw-peek>.pw-info b{font-size:14px}
+.pw-zoom.pw-peek>.pw-info p{margin:4px 0 0;font-size:13px}
+#app .pw-peeked{outline:2px solid #ffd27a;outline-offset:3px;border-radius:10px}
+#app .battle .hand>.card.pw-rub:disabled{filter:brightness(.85) saturate(.8)}
+#app .battle .card .cost.pw-short-on{background:#d8402f!important;color:#fff!important;box-shadow:0 0 0 2px #ff9a8a,0 0 12px #ff5a4a!important;scale:1.2;opacity:1!important}
+#app .battle .energy.pw-short-on{box-shadow:0 0 0 3px #ff5a4a,0 0 22px 4px #ff5a4acc!important}
+@media (prefers-reduced-motion:reduce){.pw-arrow-line{animation:none}.pw-snap{transition-duration:.2s!important}.pw-short{animation-duration:.3s}}
 
 </style>
 
@@ -2854,7 +2882,7 @@ if(!resumeRun())newRun();
    Reads the game's globals (view, run) only to decide whether a run is in progress. */
 (()=>{
  const app=document.getElementById('app');if(!app)return;
- const LP=420;let timer=0,sx=0,sy=0,fired=false,skipPop=false,lastBuzz=0;
+ const LP=420;let fired=false,skipPop=false,lastBuzz=0,liftAt=0;const held=new Map();let zoomPid=null;
 
  const buzz=ms=>{const now=Date.now();if(now-lastBuzz<150)return;lastBuzz=now;
   try{const H=window.Capacitor?.Plugins?.Haptics;if(H)H.impact({style:ms>=50?'HEAVY':ms>=25?'MEDIUM':'LIGHT'});else navigator.vibrate?.(ms)}catch{}};
@@ -2877,14 +2905,15 @@ if(!resumeRun())newRun();
   }catch{}
   return null;
  }
- const zoomOpen=()=>document.querySelector('.pw-zoom');
+ const zoomOpen=()=>document.querySelector('.pw-zoom:not(.pw-peek)');
+ const unpeek=()=>{document.querySelectorAll('.pw-zoom.pw-peek').forEach(x=>x.remove());document.querySelectorAll('.pw-peeked').forEach(x=>x.classList.remove('pw-peeked'))};
  let back=null;
  function closeZoom(fromPop){const o=zoomOpen();if(!o)return false;o.remove();if(!fromPop&&history.state?.pwZoom){skipPop=true;history.back()}
   const b=back;back=null;if(b&&b.isConnected)try{b.focus({preventScroll:true})}catch{}return true}
  const xBtn=box=>{const x=document.createElement('button');x.type='button';x.className='pw-x';x.setAttribute('aria-label','Close');x.textContent='✕';box.prepend(x);setTimeout(()=>x.focus({preventScroll:true}),0)};
  const NODE={fight:'Minions: a normal fight. Win a card reward.',elite:'Legendary: a dangerous fight. Better rewards, including emblems.',rest:'Rest: heal, foil a card, or burn one.',event:'Event: a stranger offer. Read carefully.',treasure:'Treasure: a free emblem.',shop:'Shop: buy cards and emblems, or pay to remove a card.',bargain:'Bargain: power for a price.',boss:'The act boss. Beat them to heal to full and move on.'};
- function zoom(el){
-  closeZoom();
+ function zoom(el,pid){
+  closeZoom();unpeek();zoomPid=pid??null;
   if(el.matches('.node')){const box=document.createElement('div');box.className='pw-zoom has-info';box.setAttribute('role','dialog');
    const name=el.querySelector('.nl')?.textContent.trim()||[...el.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim()||el.dataset.t;box.classList.add('pw-node-zoom');box.append(panel(`<b>${esc(name)}</b><p>${esc((NODE[el.dataset.t]||'').replace(/^[^:]+:\s*/,'').replace(/^./,m=>m.toUpperCase()))}</p>`));
    box.addEventListener('click',()=>closeZoom());back=el;xBtn(box);document.body.append(box);history.pushState({pwZoom:1},'');buzz(10);return}
@@ -2893,19 +2922,36 @@ if(!resumeRun())newRun();
   for(const a of ['data-n','data-rar'])if(el.hasAttribute(a))copy.setAttribute(a,el.getAttribute(a));
   copy.innerHTML=el.innerHTML;copy.querySelectorAll('.pop,.incoming').forEach(x=>x.remove());
   const info=describe(el);if(info){box.classList.add('has-info');}
-  box.append(copy);if(info)box.append(info);box.addEventListener('click',()=>closeZoom());back=el;xBtn(box);
+  box.append(copy);if(info)box.append(info);box.addEventListener('click',()=>{if(Date.now()-liftAt>400)closeZoom()});back=el;xBtn(box);
+  // while the finger that opened it is still down, a second finger reaches the board through it
+  if(zoomPid!=null)box.classList.add('pw-holding');
   document.body.append(box);history.pushState({pwZoom:1},'');buzz(10);
  }
 
- app.addEventListener('pointerdown',e=>{const el=e.target.closest('.card,.unit,.map .node');fired=false;clearTimeout(timer);if(!el||e.button>0)return;
-  sx=e.clientX;sy=e.clientY;timer=setTimeout(()=>{fired=true;zoom(el)},LP)},{passive:true});
- app.addEventListener('pointermove',e=>{if(Math.hypot(e.clientX-sx,e.clientY-sy)>10)clearTimeout(timer)},{passive:true});
- for(const k of ['pointerup','pointercancel'])app.addEventListener(k,()=>clearTimeout(timer),{passive:true});
- app.addEventListener('click',e=>{if(fired){fired=false;e.stopPropagation();e.preventDefault()}},true);
+ // Two fingers: one finger holds a card or creature to read it while another drags a card.
+ // A zoom held open becomes a small read-only peek once a drag starts; it goes when that finger lifts.
+ window.pwPeek=()=>{const o=zoomOpen();if(!o||zoomPid==null||!o.classList.contains('pw-holding'))return false;
+  const el=back,pid=zoomPid;o.remove();if(history.state?.pwZoom){skipPop=true;history.back()}back=null;if(el&&el.isConnected){peekAt(el);zoomPid=pid}return true};
+ // the peek is a small text box under the HUD, so life, the board and the arrow stay in view
+ const peekAt=el=>{let info=describe(el);
+  if(!info&&el.matches('.card')){const t=q=>esc(el.querySelector(q)?.textContent.trim()||'');
+   info=panel(`<b>${esc(el.dataset.n||t('.head b'))}</b><span class="muted"> · ${t('.cost')} energy · ${t('.kind')}</span><p>${t(':scope>span:last-child')}</p>`)}
+  if(!info)return;const o=document.createElement('div');o.className='pw-zoom pw-peek';o.setAttribute('aria-hidden','true');o.append(info);
+  const hud=document.querySelector('#app .top');o.style.top=Math.round((hud?hud.getBoundingClientRect().bottom:48)+8)+'px';
+  document.body.append(o);el.classList.add('pw-peeked');buzz(10)};
+ app.addEventListener('pointerdown',e=>{const el=e.target.closest('.card,.unit,.map .node');if(!held.size)fired=false;if(!el||e.button>0)return;
+  const h={el,sx:e.clientX,sy:e.clientY,t:0};held.set(e.pointerId,h);
+  h.t=setTimeout(()=>{h.t=0;if(zoomOpen())return;fired=true;
+   if(document.documentElement.classList.contains('pw-dragging')){unpeek();peekAt(el);zoomPid=e.pointerId}
+   else zoom(el,e.pointerType==='mouse'?null:e.pointerId)},LP)},{passive:true});
+ app.addEventListener('pointermove',e=>{const h=held.get(e.pointerId);if(h&&h.t&&Math.hypot(e.clientX-h.sx,e.clientY-h.sy)>10){clearTimeout(h.t);h.t=0}},{passive:true});
+ for(const k of ['pointerup','pointercancel'])addEventListener(k,e=>{const h=held.get(e.pointerId);if(h){clearTimeout(h.t);held.delete(e.pointerId)}
+  if(e.pointerId===zoomPid){zoomPid=null;liftAt=Date.now();unpeek();document.querySelector('.pw-zoom.pw-holding')?.classList.remove('pw-holding')}},{passive:true});
+ app.addEventListener('click',e=>{if(fired&&e.isTrusted){fired=false;e.stopPropagation();e.preventDefault()}},true);
  addEventListener('keydown',e=>{if(e.key!=='Escape')return;
   const top=closeZoom()||closeHelp()||(()=>{const b=document.querySelector('[data-act=giftok],[data-act=closeinspect]');if(b){b.click();return true}})();
   if(top){e.preventDefault();e.stopImmediatePropagation()}});
- app.addEventListener('contextmenu',e=>{const el=e.target.closest('.card,.unit,.map .node');if(!el)return;e.preventDefault();if(!fired)zoom(el)});
+ app.addEventListener('contextmenu',e=>{const el=e.target.closest('.card,.unit,.map .node');if(!el)return;e.preventDefault();if(!fired&&!document.documentElement.classList.contains('pw-dragging'))zoom(el)});
 
  // Android back button: Capacitor and the WebView both route it through history.
  history.replaceState({pwBase:1},'');history.pushState({pwGuard:1},'');
@@ -3080,34 +3126,67 @@ if(!resumeRun())newRun();
   if(D.kind==='card')return true;
   if(D.kind==='ally'){if(u.closest('.side.foe'))return D.ready;return u.classList.contains('ally')&&u!==D.el&&u.classList.contains('front')&&!!app.querySelector('.controls [data-act=arrange]')}
   return false};
- app.addEventListener('pointerdown',e=>{if(e.button>0||!e.isPrimary)return;
+ // which drags aim: targeted spells and attacking creatures get a curved arrow instead of a flying card
+ const aimOf=D=>{if(D.kind==='ally')return D.ready?'enemy':null;try{const h=G()?.hand?.[+D.i];return h&&typeof C!=='undefined'?C[h.key]?.aim||null:null}catch{return null}};
+ const NS='http://www.w3.org/2000/svg';let arrow=null;
+ const arrowOn=()=>{if(arrow)return arrow;const s=document.createElementNS(NS,'svg');s.setAttribute('class','pw-arrow');s.setAttribute('aria-hidden','true');
+  s.innerHTML='<defs><mask id="pw-arrow-m" maskUnits="userSpaceOnUse"><rect x="-1e4" y="-1e4" width="2e4" height="2e4" fill="#fff"/><rect class="pw-arrow-hole" fill="#333"/></mask></defs><g mask="url(#pw-arrow-m)"><path class="pw-arrow-glow"/><path class="pw-arrow-line"/><path class="pw-arrow-head"/><circle class="pw-arrow-ring" r="15"/></g>';document.body.append(s);return arrow=s};
+ const arrowOff=()=>{arrow?.remove();arrow=null};
+ // a bow from the card (or creature) to the finger, bending up and toward the middle like Slay the Spire
+ const aimAt=(D,x,y,hot)=>{const s=arrowOn();const r=D.el.getBoundingClientRect();const ax=r.left+r.width/2,ay=D.kind==='ally'?r.top+r.height/2:r.top+8;
+  const dx=x-ax,dy=y-ay,len=Math.hypot(dx,dy)||1;const bend=Math.min(140,len*.45);
+  const c1x=ax+dx*.15,c1y=ay-bend,c2x=x-dx*.35,c2y=y-bend*.35;
+  const d=`M${ax},${ay} C${c1x},${c1y} ${c2x},${c2y} ${x},${y}`;s.querySelector('.pw-arrow-glow').setAttribute('d',d);s.querySelector('.pw-arrow-line').setAttribute('d',d);
+  const a=Math.atan2(y-c2y,x-c2x),L=18,W=11;const p=(l,w)=>`${x-Math.cos(a)*l-Math.sin(a)*w},${y-Math.sin(a)*l+Math.cos(a)*w}`;
+  s.querySelector('.pw-arrow-head').setAttribute('d',`M${x+Math.cos(a)*4},${y+Math.sin(a)*4} L${p(L,W)} L${p(L-6,0)} L${p(L,-W)} Z`);
+  const m=app.querySelector('.battle .controls .log'),hole=s.querySelector('.pw-arrow-hole');if(m){const R=m.getBoundingClientRect();for(const [k,v] of [['x',R.left],['y',R.top],['width',R.width],['height',R.height]])hole.setAttribute(k,v)}
+  const ring=s.querySelector('.pw-arrow-ring');ring.setAttribute('cx',x);ring.setAttribute('cy',y);s.classList.toggle('pw-hot',!!hot)};
+ // a card you can't play stretches toward the finger a little, then springs back
+ const poorOf=D=>{try{const h=G()?.hand?.[+D.i];return !!h&&typeof costOf==='function'&&(costOf(h)==='X'?G().energy<1:costOf(h)>G().energy)}catch{return false}};
+ const shorts=D=>[D.el.querySelector('.cost'),app.querySelector('.battle .energy')].filter(Boolean);
+ const rubber=(D,dx,dy)=>{if(!D.el.classList.contains('pw-rub')&&poorOf(D))shorts(D).forEach(x=>x.classList.add('pw-short-on'));const k=v=>Math.sign(v)*Math.min(26,Math.sqrt(Math.abs(v))*2.6);D.el.classList.add('pw-rub');D.el.style.setProperty('--rbx',k(dx)*.4+'px');D.el.style.setProperty('--rby',Math.min(0,k(dy))+'px')};
+ const unrubber=D=>{const el=D.el;el.classList.replace('pw-rub','pw-snap');el.style.removeProperty('--rbx');el.style.removeProperty('--rby');setTimeout(()=>el.classList.remove('pw-snap'),480);
+  for(const x of shorts(D)){x.classList.remove('pw-short-on');if(poorOf(D)){x.classList.remove('pw-short');void x.offsetWidth;x.classList.add('pw-short')}}window.pwHaptic?.(12)};
+ app.addEventListener('pointerdown',e=>{if(e.button>0||d)return;
   const card=e.target.closest('.battle .hand>.card[data-act=play]');const ally=!card&&e.target.closest('.battle .side.you .unit.ally');
-  if(!card&&!ally||(card&&card.disabled))return;
-  d={el:card||ally,kind:card?'card':'ally',sx:e.clientX,sy:e.clientY,on:false,id:ally?ally.dataset.id:null,i:card?card.dataset.i:null,
-   ready:!!(ally&&ally.dataset.act==='atk'&&!ally.disabled),pid:e.pointerId}},{passive:true});
+  if(!card&&!ally)return;
+  d={el:card||ally,kind:card?'card':'ally',sx:e.clientX,sy:e.clientY,on:false,id:ally?ally.dataset.id:null,i:card?card.dataset.i:null,dead:!!(card&&card.disabled),
+   ready:!!(ally&&ally.dataset.act==='atk'&&!ally.disabled),pid:e.pointerId,trail:[[e.timeStamp,e.clientY]]}},{passive:true});
  const peek=x=>{app.querySelectorAll('.battle .hand>.card.pw-peek').forEach(c=>{if(c!==x)c.classList.remove('pw-peek')});if(x)x.classList.add('pw-peek')};
  addEventListener('pointermove',e=>{if(!d||e.pointerId!==d.pid)return;
-  if(document.querySelector('.pw-zoom')){d=null;peek(null);return}
+  d.trail.push([e.timeStamp,e.clientY]);if(d.trail.length>8)d.trail.shift();
+  if(document.querySelector('.pw-zoom:not(.pw-peek)')&&!(d.on||d.rub)&&!window.pwPeek?.()){d=null;peek(null);return}
+  if(d.rub){rubber(d,e.clientX-d.sx,e.clientY-d.sy);return}
   if(!d.on){const dx=e.clientX-d.sx,dy=e.clientY-d.sy;
    const finger=e.pointerType!=='mouse';
    if(finger&&d.kind==='card'&&(d.browse||Math.abs(dx)>=TH&&Math.abs(dx)>Math.abs(dy)*1.2)){d.browse=true;const el=document.elementFromPoint(e.clientX,e.clientY);peek(el&&el.closest('.battle .hand>.card'));return}
    if(Math.hypot(dx,dy)<TH)return;
    if(finger&&d.kind==='card'&&dy>0){d=null;return}
+   if(d.dead){d.rub=true;rubber(d,dx,dy);return}
    if(d.kind==='ally'&&!d.ready&&!app.querySelector('.controls [data-act=arrange]')){d=null;return}
-   d.on=true;const r=d.el.getBoundingClientRect(),z=zoom();const g=d.el.cloneNode(true);g.classList.add('pw-ghost');g.removeAttribute('data-act');
+   d.on=true;d.aim=aimOf(d);const r=d.el.getBoundingClientRect(),z=zoom();const g=d.el.cloneNode(true);g.classList.add('pw-ghost');g.removeAttribute('data-act');
    g.style.cssText=`position:fixed;left:0;top:0;width:${r.width/z}px;height:${r.height/z}px;margin:0;zoom:${z};pointer-events:none;z-index:9999;transform:none;translate:none`;
    d.ox=e.clientX-r.left;d.oy=e.clientY-r.top;d.g=g;document.body.append(g);d.el.classList.add('pw-lifted');de.classList.add('pw-dragging');window.pwHaptic?.(8)}
   const z=zoom();d.g.style.left=(e.clientX-d.ox)/z+'px';d.g.style.top=(e.clientY-d.oy)/z+'px';
-  const u=under(e.clientX,e.clientY);clear();if(valid(u)){u.classList.add('pw-drop');preview(u,d)}
+  const u=under(e.clientX,e.clientY);clear();const ok=valid(u);if(ok){u.classList.add('pw-drop');preview(u,d)}
   const hand=app.querySelector('.battle .hand');const out=d.kind==='ally'||(hand&&e.clientY<hand.getBoundingClientRect().top-10);
+  // aimed drags: out of the hand the card waits in place and an arrow follows the finger
+  if(d.aim&&out){d.g.style.visibility='hidden';d.el.classList.add('pw-aiming');aimAt(d,e.clientX,e.clientY,ok&&u.closest(d.aim==='ally'?'.side.you':'.side.foe'));return}
+  if(d.aim){d.g.style.visibility='';d.el.classList.remove('pw-aiming');arrowOff()}
   // out of the hand the card shrinks to a chip above the finger, so the target stays visible
   d.g.classList.toggle('pw-chip',out);if(out){d.g.style.left=(e.clientX-d.g.offsetWidth*z/2)/z+'px';d.g.style.top=(e.clientY-d.g.offsetHeight*z-34)/z+'px'}
   d.g.classList.toggle('pw-will-play',d.kind==='card'&&!u&&out)},{passive:true});
- const end=e=>{if(!d||e.pointerId!==d.pid)return;const D=d;d=null;peek(null);if(!D.on)return;
+ // a quick upward flick plays the card even if it is let go inside the hand; a slow drag has to leave the hand
+ const flicked=D=>{const t=D.trail,b=t[t.length-1];const a=t.find(x=>b[0]-x[0]<=90)||t[0];const dt=b[0]-a[0];
+  return dt>0&&(a[1]-b[1])/dt>=.55&&D.sy-b[1]>=28};
+ const end=e=>{if(!d||e.pointerId!==d.pid)return;const D=d;d=null;peek(null);
+  if(D.rub){unrubber(D);return}if(!D.on)return;
   swallow=true;
-  D.g.remove();D.el.classList.remove('pw-lifted');de.classList.remove('pw-dragging');
+  D.el.classList.remove('pw-lifted','pw-aiming');de.classList.remove('pw-dragging');arrowOff();
   const u=e.type==='pointercancel'?null:under(e.clientX,e.clientY);const hand=app.querySelector('.battle .hand');
-  const inHand=hand&&e.clientY>=hand.getBoundingClientRect().top-10;const ok=valid(u,D);clear();
+  let inHand=hand&&e.clientY>=hand.getBoundingClientRect().top-10;const ok=valid(u,D);clear();
+  const flick=D.kind==='card'&&inHand&&!u&&e.type!=='pointercancel'&&flicked(D);if(flick)inHand=false;
+  if(flick){const g=D.g;g.classList.add('pw-flung');setTimeout(()=>g.remove(),200)}else D.g.remove();
   // act after the browser's own click for this pointerup has been swallowed
   setTimeout(()=>{swallow=false;if(e.type==='pointercancel')return;drop(D,u,inHand,ok)},0)};
  const drop=(D,u,inHand,ok)=>{
