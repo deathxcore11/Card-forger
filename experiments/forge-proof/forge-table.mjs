@@ -98,7 +98,8 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  function pendingCast(n,surface){
   const input=String(n?.inputType||'');if(!presentation.hosted||!(input==='InputSelectTargets'||input.startsWith('InputPayMana')||n?.prompt))return null;
   const events=Array.isArray(n.events?.items)?n.events.items:[],last=new Map();for(const e of events)if(e?.type==='zone'&&e.card?.kind==='card')last.set(e.card.id,e);
-  const ev=[...last.values()].filter(e=>e.to==='Stack'&&e.from==='Hand'&&e.player===n.viewer).sort((a,b)=>b.seq-a.seq)[0];if(!ev)return null;
+  // The engine leaves the player off some casts; a card that was in your hand is yours.
+  const ev=[...last.values()].filter(e=>e.to==='Stack'&&e.from==='Hand'&&(e.player===n.viewer||e.player==null&&seenInHand.has(e.card.id))).sort((a,b)=>b.seq-a.seq)[0];if(!ev)return null;
   if((n.stack||[]).some(x=>x.id===ev.card.id||x.source?.id===ev.card.id)||surface.cards.some(c=>c.id===ev.card.id&&c.zone!=='Stack'))return null;
   return seenInHand.get(ev.card.id)||{id:ev.card.id,name:ev.card.name,known:true,zone:'Stack'};
  }

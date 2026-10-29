@@ -342,6 +342,8 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    else if(named)ask=named[2];
    if(!ask)ask=input==='InputSelectTargets'?'Choose a target':'Choose a card on the table';if(oneTarget)ask=ask.replace(/^(Select|Choose) (a )?targets? for/i,'Tap a target for');
    actions.dataset.state=ask;actions.dataset.ask='true';}
+  // A payment your mana can't finish says so above the hand; Cancel is the way out.
+  else if(presentation.hosted&&paying?.short){actions.dataset.state=`Not enough mana${paying.name?` for ${paying.name}`:''}`;actions.dataset.ask='true';actions.dataset.askShort='true';}
   for(const op of ['ok','cancel'])if(buttons[op]!==undefined){
    if(asking&&op==='ok'&&buttons.okEnabled!==true)continue;
    if(oneTarget&&op==='ok'){if(n.selection?.min===0&&buttons.okEnabled===true){const none=button('No target',()=>session.nativeButton('ok',n.revision),false,'ok');actions.append(none);}continue;}

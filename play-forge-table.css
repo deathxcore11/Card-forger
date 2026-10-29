@@ -2169,7 +2169,7 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table[data-forge-native]:has(.forge-order-cards) :is(.play-command-zone,.forge-rope){z-index:auto}
 @media (max-width:480px){:where(body.practice-table-open) .forge-native-panel .forge-order-actions>[data-native-key=confirm-prompt]{min-width:0;flex:1 1 100%}}
 /* A payment your mana can't finish: Cancel takes the main button's place. */
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions .forge-native-panel .forge-native-actions [data-native-key=cancel][data-primary]{flex:1 1 100%;min-height:52px;border-radius:28px;border:1px solid #f6dfa8;background:linear-gradient(180deg,#f2d18e,#c99a4b);color:#1b1408;font:800 17px/1 'DM Sans',system-ui,sans-serif;translate:none}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions .forge-native-panel .forge-native-actions [data-native-key=cancel][data-primary]{flex:1 1 100%!important;min-height:52px!important;padding:0 22px!important;border-radius:28px!important;border:1px solid #f6dfa8!important;background:linear-gradient(180deg,#f2d18e,#c99a4b)!important;color:#1b1408!important;font:800 17px/1 'DM Sans',system-ui,sans-serif!important;translate:none!important}
 /* One reason per card: the open preview already says why a card can't be played, so the card's own chip steps aside. */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card[data-forge-blocked]:is([aria-describedby],.forge-drag-source)::after,:where(body.practice-table-open) .play-match-table[data-forge-native][data-hand-lift=true] .play-match-hand .play-match-card[data-forge-blocked]::after{display:none}
 /* The ×N pile count sits on the card's left edge, clear of its name. */
@@ -2207,3 +2207,5 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card-wrap[data-hand-gone]{margin-right:calc(-1 * var(--gone-w,0px));opacity:0;pointer-events:none;transition:margin-right .24s cubic-bezier(.3,1.25,.4,1),opacity .12s ease}
 /* In the fan the next card covers each card's right side, so "New" sits on the visible left edge, under the name. */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-new-card{top:16%;right:auto;left:4px;padding:2px 6px;font-size:10px;line-height:1.2}
+/* "Not enough mana" sits centred above the hand on phones too, clear of the library and graveyard pills. */
+@media (max-width:640px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-ask-short=true]::before{position:fixed;left:50%;right:auto;bottom:auto;top:calc(var(--forge-hand-top,60vh) - 12px);translate:-50% -100%;max-width:calc(100vw - 32px);text-align:center}}
