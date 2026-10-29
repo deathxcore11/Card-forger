@@ -2,6 +2,7 @@
 // persistence, automatic command retry, or card-provider request is supported.
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import {forgeCpuPolicy,forgeMatchDifficulty} from './play-forge-cpu-policy.js';
+import {engineDeck} from './play-engine-names.js';
 export const FORGE_REVISION='e5a0f8156da70ffc7866f923bed371c0111707cd';
 const SCHEMA='cardstashy.forge-proof.v1';
 // The acceptance page is mounted on the same account origin. Its private
@@ -44,7 +45,8 @@ export function exactForgeInput(setup,{startingPlayer=setup?.match?.startingPlay
  // Preserve both exact snapshots. The host binds the opening preference and
  // Forge reports the actual starting player before the opening hand.
  // Forge calls 60-card Standard Brawl just Brawl; only the format label changes.
- const format=setup.match.format==='Standard Brawl'?'Brawl':setup.match.format,seat=deck=>format===deck.format?deck:{...deck,format};
+ // Every name is sent in Forge's spelling ("Wear/Tear" becomes "Wear // Tear"); see play-engine-names.js.
+ const format=setup.match.format==='Standard Brawl'?'Brawl':setup.match.format,seat=d=>{const deck=engineDeck(d);return format===deck.format?deck:{...deck,format};};
  const input={format,humanDeck:seat(setup.selected),opponentDeck:seat(setup.opponent),difficultyPolicyVersion,startingPlayer,playStyle};
  // A Commander pod: one or two more CPU seats, each with its own deck and level. Four full
  // saved decks can pass the host's size limit, so pod decks travel as the rows Forge reads.

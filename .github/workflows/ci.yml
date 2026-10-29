@@ -54,6 +54,10 @@ jobs:
           npm test
         env:
           POWER_BENCH_REPORT: test-results/power-benchmark.json
+      # --- engine card names (release question: can the engine load every deck the app can pick?) ---
+      - if: ${{ !cancelled() && startsWith(github.ref, 'refs/heads/claude/release-') }}
+        name: Check today's Quick Play decks against the engine's card names
+        run: node scripts/check-live-deck-names.mjs
       # --- database-safety ---
       - if: ${{ !cancelled() }}
         name: Install disposable PostgreSQL test runtime

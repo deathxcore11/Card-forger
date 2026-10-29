@@ -33,7 +33,9 @@ const extras = ['assets/cards/miscp-001.webp', 'assets/finishes/stamp-first-movi
   'vendor/tesseract.min.js', 'vendor/worker.min.js', 'vendor/TESSERACT-LICENSE.txt', 'vendor/SUPABASE-LICENSE.txt',
   'scanidx/catalog-manifest.json', 'scanidx/TCGDEX-LICENSE.txt', 'rulebooks/manifest.json',
   // Planeswalk, the solo roguelite: one self-contained page that saves runs on the phone.
-  'planeswalk.html'];
+  'planeswalk.html',
+  // Card names the bundled Forge accepts (play-engine-names.js), so Play checks decks offline.
+  'forge-card-names-e5a0f815.txt'];
 for (const game of ['mtg', 'ptcg', 'ygo']) extras.push(`scanidx/${game}.bin`, `scanidx/${game}-ids.txt`, `scanidx/${game}-catalog-v1.json.gz`, `scanidx/${game}-signals-v1.json.gz`, `rulebooks/${game}-rules-v1.json.gz`);
 // The tour lists WebM first and Android's WebView plays it, so the MP4 copies (for Safari) stay off the APK:
 // they would only add ~1.9 MB and push the download past Cloudflare's 25 MiB per-file limit.

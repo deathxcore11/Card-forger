@@ -49,6 +49,7 @@ import {createAccountWorkspaces} from './account-workspaces.js';
 import {mountFeedback} from './feedback-layer.js';
 import {playSourceEntries,createPlayDeckSaver} from './play-deck-sources.js';
 import {chooseQuickOpponent} from './play-quick-match.js';
+import {loadEngineCardNames,engineUnknownCards} from './play-engine-names.js';
 import {readCpuOptions} from './play-cpu-options.js';
 import {capturePracticeDeckContext} from './play-deck-context.js';
 import {createCommunity,incomingRequestCount,sharedDeckCopy} from './community-profile.js';
@@ -1535,16 +1536,21 @@ A.playFindOpponent=async()=>{
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
  // Random means every source: fetch the format's tournament lists too if this page has none yet (bounded wait).
  try{const metaKey='mtg:'+(state.match.format==='Commander'?'EDH':state.match.format);if(!metaState(metaKey).data)await Promise.race([loadMetaData(metaKey).catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);
- const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck));
+ // Only lists the engine can load are offered: a source that spells a card its own way, or a card newer than the engine, never reaches the table.
+ const names=FORGE_PLAY_TEST_ENABLED?await loadEngineCardNames():null,unknown=engineUnknownCards(state.selected,names);if(unknown.length)throw Error(engineMissingText('Your deck',unknown));
+ const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length);
  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
 };
+// Names the engine would refuse, said plainly; the first few are named.
+const engineMissingText=(label,names)=>label+' has '+(names.length===1?'a card':names.length+' cards')+' this version of the rules engine can’t load yet: '+names.slice(0,3).join(', ')+(names.length>3?'…':'')+'.';
 async function pickPodDecks(state,count){
  try{if(!metaState('mtg:EDH').data)await Promise.race([loadMetaData('mtg:EDH').catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);}catch{}
+ const names=FORGE_PLAY_TEST_ENABLED?await loadEngineCardNames():null;
  const cardsOf=deck=>JSON.stringify([deck.commander||'',(deck.cards||[]).map(r=>String(r?.name||'').toLowerCase()).sort()]);
  const taken=new Set([state.selected,state.opponent].map(cardsOf)),picks=[];
- let pool=[...S.state.decks,...Object.values(readPlaySources()).flat().map(x=>x.deck)].filter(deck=>deck?.format==='Commander'&&(!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)));
+ let pool=[...S.state.decks,...Object.values(readPlaySources()).flat().map(x=>x.deck)].filter(deck=>deck?.format==='Commander'&&(!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length));
  for(let i=0;i<count;i++){
   const candidates=pool.filter(deck=>!taken.has(cardsOf(deck)));
   const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:'Medium',...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>deck===state.selected||forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{candidateEligible:()=>true})});
@@ -1613,6 +1619,8 @@ A.playStartCandidate=async()=>{
   if(globalThis.matchMedia?.('(pointer:coarse) and (max-width:900px)')?.matches&&levels.filter(l=>l==='Hard').length>1)return toast('Phones run one Hard CPU per game. Set the others to Easy or Normal.');
   try{await pickPodDecks(source,size-2);}catch(e){return toast(e.message);}
  }
+ // Every list must load in the engine before the table opens; a refused name is said here, not on a failed table.
+ if(FORGE_PLAY_TEST_ENABLED){const names=await loadEngineCardNames(),seats=playSetup.snapshot();for(const [deck,label] of [[seats.selected,'Your deck'],[seats.opponent,'The CPU deck'],...(seats.extraOpponents||[]).map(o=>[o.deck,'A CPU deck'])]){const unknown=engineUnknownCards(deck,names);if(unknown.length)return toast(engineMissingText(label,unknown));}}
  if(await playUpdates.beforeMatch())return; // The page reopens Play on the current release.
  if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
