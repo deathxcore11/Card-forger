@@ -1702,7 +1702,7 @@ A.playSelectDeck=t=>{cancelPlayBuilds();playSetup.selectDeck(t.dataset.playDeck,
 A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu();};
 A.playClearSelection=()=>{cancelPlayBuilds();playSetup.clearSelection(playSetup.snapshot().inspectedSeat);refreshPlayMenu();};
 // Play vs CPU from a deck page: Quick Play with this saved deck in its own format.
-A.deckPlayCpu=t=>{const d=deckById(t.dataset.id);if(!d)return;cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};if(['Standard','Commander','Modern'].includes(d.format))playSetup.configure({format:d.format,mode:'cpu'});playSetup.setPlayStyle('quick');playSetup.selectDeck(d.id,'player');go('#play');};
+A.deckPlayCpu=t=>{const d=deckById(t.dataset.id);if(!d)return;cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};if(['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'].includes(d.format))playSetup.configure({format:d.format,mode:'cpu'});playSetup.setPlayStyle('quick');playSetup.selectDeck(d.id,'player');go('#play');};
 A.playTogglePaste=t=>{const d=document.getElementById('playImportDisclosure');if(!d)return;d.open=!d.open;t.setAttribute('aria-expanded',String(d.open));if(d.open){d.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});document.getElementById('playImportText')?.focus({preventScroll:true});}};
 A.playConfigure=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};playSetup.configure({[t.dataset.playOption]:t.dataset.playValue});refreshPlayMenu();document.querySelector(`[data-act="playConfigure"][aria-pressed="true"]`)?.focus({preventScroll:true});};
 C.playMatchOption=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};const key=t.dataset.playOption,value=t.value;playSetup.configure({[key]:value});refreshPlayMenu();document.querySelector(`[data-play-option="${key}"]${key==='mode'?':checked':''}`)?.focus({preventScroll:true});};
@@ -3381,9 +3381,9 @@ A.finderMore = () => {
   render();
 };
 // Download the next 10 Commander precons from MTGJSON and keep just their card lists.
-// Play's Standard/Modern tabs check the next 10 published 60-card products instead.
+// Play's 60-card constructed tabs check the next 10 published 60-card products instead.
 A.finderPrecons = async (format) => {
-  if (format === "Standard" || format === "Modern") return loadConstructedPrecons(format);
+  if (["Standard", "Pioneer", "Modern", "Legacy", "Vintage", "Pauper"].includes(format)) return loadConstructedPrecons(format);
   const commit=scopedCommit();
   const F = S.ui.finder,
     P = S.ui.precon;

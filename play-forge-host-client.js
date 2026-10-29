@@ -36,14 +36,16 @@ export async function exactDigest(value){
  return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(canonical(value)))))].map(n=>n.toString(16).padStart(2,'0')).join('');
 }
 export function exactForgeInput(setup,{startingPlayer=setup?.match?.startingPlayer??'random'}={}){
- if(setup?.match?.mode!=='cpu'||!setup.selected||!setup.opponent||!['Commander','Standard','Modern'].includes(setup.match.format))throw fail('FORGE_SETUP_INCOMPLETE');
+ if(setup?.match?.mode!=='cpu'||!setup.selected||!setup.opponent||!['Commander','Standard','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'].includes(setup.match.format))throw fail('FORGE_SETUP_INCOMPLETE');
  const {difficultyPolicyVersion}=forgeCpuPolicy(setup.match.difficulty);
  const playStyle=setup.playStyle==='quick'?'quick':'practice';
  if(!['random','first','second'].includes(startingPlayer))throw fail('FORGE_STARTING_PLAYER_INVALID');
  if(playStyle==='quick')startingPlayer='random';
  // Preserve both exact snapshots. The host binds the opening preference and
  // Forge reports the actual starting player before the opening hand.
- return structuredClone({format:setup.match.format,humanDeck:setup.selected,opponentDeck:setup.opponent,difficultyPolicyVersion,startingPlayer,playStyle});
+ // Forge calls 60-card Standard Brawl just Brawl; only the format label changes.
+ const format=setup.match.format==='Standard Brawl'?'Brawl':setup.match.format,seat=deck=>format===deck.format?deck:{...deck,format};
+ return structuredClone({format,humanDeck:seat(setup.selected),opponentDeck:seat(setup.opponent),difficultyPolicyVersion,startingPlayer,playStyle});
 }
 // Ask the host to start the engine for this account's next match while the player
 // is still choosing decks. Best effort and idempotent on the server: it never ends a

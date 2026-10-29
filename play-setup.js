@@ -87,7 +87,7 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
  }
  function configure(partial){
   sync();
-  const allowed={format:['Standard','Commander','Modern'],mode:['cpu','friends'],difficulty:['Easy','Medium','Hard'],startingPlayer:['random','first','second']};
+  const allowed={format:['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'],mode:['cpu','friends'],difficulty:['Easy','Medium','Hard'],startingPlayer:['random','first','second']};
   if(!partial||Array.isArray(partial)||typeof partial!=='object'||Object.entries(partial).some(([k,v])=>!Object.hasOwn(allowed,k)||!allowed[k].includes(v))){error='Choose an available format, opponent and starting player.';return value();}
   if(partial.format&&partial.format!==match.format){
    operation++;selectedId=null;selectedImport=null;candidate=null;opponent=null;inspectedSeat='player';selectedKind=null;opponentSource=null;busy=false;importStatus='idle';warnings=[];importErrors=[];unresolved=[];
