@@ -19,7 +19,10 @@ const version = JSON.parse(git('show', `${commit}:package.json`)).version;
 
 const manifestFile = path.join(root, 'shared-source-manifest.json');
 const manifest = JSON.parse(await readFile(manifestFile, 'utf8'));
-const paths = [...new Set([...manifest.files.map(f => f.path), ...extra])].sort();
+// Files the website has since deleted drop out of the snapshot (build-web.mjs still refuses a missing one it needs).
+const inCommit = new Set(git('ls-tree', '-r', '--name-only', commit).toString().split('\n'));
+const dropped = manifest.files.map(f => f.path).filter(file => !inCommit.has(file));
+const paths = [...new Set([...manifest.files.map(f => f.path), ...extra])].filter(file => inCommit.has(file) || extra.includes(file)).sort();
 const source = path.join(root, 'shared-source');
 await rm(source, { recursive: true, force: true });
 const files = [];
@@ -35,4 +38,4 @@ const baselineFile = path.join(root, 'source-baseline.json');
 await writeFile(baselineFile, JSON.stringify({ ...JSON.parse(await readFile(baselineFile, 'utf8')), commit, version }, null, 2) + '\n');
 const artFile = path.join(root, 'offline-art-sources.json');
 await writeFile(artFile, JSON.stringify({ ...JSON.parse(await readFile(artFile, 'utf8')), sourceCommit: commit }, null, 2) + '\n');
-console.log(`shared-source pinned to ${version} (${commit}), ${files.length} files.`);
+console.log(`shared-source pinned to ${version} (${commit}), ${files.length} files${dropped.length ? `, ${dropped.length} deleted files dropped` : ''}.`);

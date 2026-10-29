@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.22",
-  "commit": "a62802bf3d342543434fbc34ebc67e6c7987652c",
-  "tree": "a07dda76e08b9bd7b6cda09ad5c54d88dd0baa64",
+  "version": "4.3.23",
+  "commit": "f75f2f1122eaa46b0d99e9e677c032b922763ecd",
+  "tree": "2aa7817c37f000988cc769af8f1b2ae55a973e84",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -103,8 +103,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 442264,
-      "sha256": "e03621e7cc1f3f809fa321ef2e25ca9f0ff4caaef9b95bf3d64d54e5284e2558"
+      "bytes": 442357,
+      "sha256": "1359549879bbb5d66880d42523aee338b7552f94fb88e2d319116aaf0f80c108"
     },
     {
       "path": "artwork.js",
@@ -1132,199 +1132,524 @@
       "sha256": "87a0dd57c996b9d9394e33f26f2aa07ca0c6c677515480e5b6abaeece8b82028"
     },
     {
-      "path": "assets/play/playmat-ancient-coast-tall.webp",
-      "bytes": 54752,
-      "sha256": "492c682e575acbf3076623eea90cd57ac522b1c6c0991bc2ebe4bfa9b192a967"
+      "path": "assets/play/playmat-artifact-vault-glow-b-tall.webp",
+      "bytes": 15832,
+      "sha256": "799fa4ff45c8f825fc43d4122a9766edb67962c05092f57c660e3cbf26d6481d"
     },
     {
-      "path": "assets/play/playmat-ancient-coast-thumb.webp",
-      "bytes": 10152,
-      "sha256": "8213990f64ae149caabdda88e2a7b0c90f14122b128780212d24cf47a38414e5"
+      "path": "assets/play/playmat-artifact-vault-glow-b.webp",
+      "bytes": 32872,
+      "sha256": "66a68bcbddd53da5ec7f4585643561968aa2aef4157c496af86ca3772eb41277"
     },
     {
-      "path": "assets/play/playmat-ancient-coast.webp",
-      "bytes": 150848,
-      "sha256": "02fcc2b8df12199b5980c8561ce6e68c1cc4c6d4b7989762ccdc25b4b7a50fd7"
+      "path": "assets/play/playmat-artifact-vault-glow-tall.webp",
+      "bytes": 16000,
+      "sha256": "b2e6d59b7e925e98bb52ac83dfa8a36128087c9d3476d96334e76657451d142c"
     },
     {
-      "path": "assets/play/playmat-ancient-woods-tall.webp",
-      "bytes": 65648,
-      "sha256": "43e1fcd8b6a7e96e8c011d43b82500f15ec3f0be1b18b77233c40f42bf8f5f49"
+      "path": "assets/play/playmat-artifact-vault-glow.webp",
+      "bytes": 30172,
+      "sha256": "d86cc328f3c5045900548f9bc2cead12f4ab05147b43d57e0757badc3bb3baaf"
     },
     {
-      "path": "assets/play/playmat-ancient-woods-thumb.webp",
-      "bytes": 10642,
-      "sha256": "f3445eee65f02ef7ed5ef971d8bec8962b0bfff2d673bb22a6d5160df48da221"
+      "path": "assets/play/playmat-artifact-vault-tall.webp",
+      "bytes": 83714,
+      "sha256": "2dd46427d2d3471be326580ea64de44bf6e0ac9813d2f50c36eb8d80440e7e10"
     },
     {
-      "path": "assets/play/playmat-ancient-woods.webp",
-      "bytes": 172480,
-      "sha256": "e19699af22e53796f9e085cb9456ed1561a3388fea622154b80e65252297466a"
+      "path": "assets/play/playmat-artifact-vault-thumb.webp",
+      "bytes": 14810,
+      "sha256": "1a8c89616e1c2cf6918b040042a177c08fa18fcc3c15124b27d4207f8e109855"
+    },
+    {
+      "path": "assets/play/playmat-artifact-vault.webp",
+      "bytes": 228478,
+      "sha256": "1a0e7ac6e5a5b35332c76af0d8889bc6d0a187689f172eeef68e58a35944dfbb"
+    },
+    {
+      "path": "assets/play/playmat-ashen-forge-glow-b-tall.webp",
+      "bytes": 18084,
+      "sha256": "2ab6387aae0d202b74906b772d25b850b140252915eca4746ea391bc77617ce7"
+    },
+    {
+      "path": "assets/play/playmat-ashen-forge-glow-b.webp",
+      "bytes": 44508,
+      "sha256": "bd1abbd95dbefee12eefefc5edcb22d0abda9a2fcd97b5f356bb6a02cafb488d"
+    },
+    {
+      "path": "assets/play/playmat-ashen-forge-glow-tall.webp",
+      "bytes": 18974,
+      "sha256": "1249db46449567b0d167ab05335887b732b38abab7b18da73525a392d2dff43e"
+    },
+    {
+      "path": "assets/play/playmat-ashen-forge-glow.webp",
+      "bytes": 44308,
+      "sha256": "e9ce1f4a4335badd8e3a0765617a5a7fd25c61b6860548fe3670a4f886a92df3"
     },
     {
       "path": "assets/play/playmat-ashen-forge-tall.webp",
-      "bytes": 35740,
-      "sha256": "3e038a42313014d9436077b60801df0e62aa8ccecbb14faa9bd37009fc95511c"
+      "bytes": 47216,
+      "sha256": "40bd6b9cc1caccba45ffb01ed056db1e65fa4a18433ee770eabcfeb5db54f544"
     },
     {
       "path": "assets/play/playmat-ashen-forge-thumb.webp",
-      "bytes": 8750,
-      "sha256": "ac4752001f583445569ee30e92c6592f43d8a47cfa7d52bba66a6cc23860a9fa"
+      "bytes": 10834,
+      "sha256": "562d260abd9891262310fc6701e1228ac8b18c0e04f4f50e75c79f45dbb26f51"
     },
     {
       "path": "assets/play/playmat-ashen-forge.webp",
-      "bytes": 100226,
-      "sha256": "6270ea404714bdb97aa41d7b6d995f7d07ebef6091e2a52656fc3e4f204977bb"
+      "bytes": 140856,
+      "sha256": "5810ef962aa31e74314b681a33e68712278458053caf07386e9cafc04ccc1f7e"
+    },
+    {
+      "path": "assets/play/playmat-black-ossuary-glow-b-tall.webp",
+      "bytes": 3990,
+      "sha256": "d45e970234ed3088e4eb1c03e2486a2ccf53bbe808e40e6f94fae73cfcb20d16"
+    },
+    {
+      "path": "assets/play/playmat-black-ossuary-glow-b.webp",
+      "bytes": 20770,
+      "sha256": "e5e30fcb651ac723065389c343de8acd4995e6e3925cceaa2180dc16a8f141a0"
+    },
+    {
+      "path": "assets/play/playmat-black-ossuary-glow-tall.webp",
+      "bytes": 4950,
+      "sha256": "ad510279fcdf529064c12e9b3f5dcd96a83c961b23e623800ad918c30347302a"
+    },
+    {
+      "path": "assets/play/playmat-black-ossuary-glow.webp",
+      "bytes": 22160,
+      "sha256": "60e0a69a8e5e2d5cf9e97736208e0921ebf91d4ec38ed0befe4bb149a09a0fb9"
+    },
+    {
+      "path": "assets/play/playmat-black-ossuary-tall.webp",
+      "bytes": 70980,
+      "sha256": "9d6a60608e27458d6f87c8ef7ec39f51ef350c445f2e984edbe080047cec0542"
+    },
+    {
+      "path": "assets/play/playmat-black-ossuary-thumb.webp",
+      "bytes": 12884,
+      "sha256": "eee5660c34ad0adc9fd052de2a8ff3c6c0402b1e4df0f580e9a305a97ccbd7f0"
+    },
+    {
+      "path": "assets/play/playmat-black-ossuary.webp",
+      "bytes": 189666,
+      "sha256": "0ae4fb5fb17e841749baad572cfd3523e6030e59d2f87f5fef2de8e452cd76e2"
+    },
+    {
+      "path": "assets/play/playmat-charcoal-table-glow-b-tall.webp",
+      "bytes": 8886,
+      "sha256": "1a26981d1479ad9c64c5fc7ab90bc67796ff5ef795de3ddb8c268b9639989bd6"
+    },
+    {
+      "path": "assets/play/playmat-charcoal-table-glow-b.webp",
+      "bytes": 20672,
+      "sha256": "a484197ae06b8759a07e9f4179c02a7cb98d38db15b3f18596497517a1d4a3e4"
+    },
+    {
+      "path": "assets/play/playmat-charcoal-table-glow-tall.webp",
+      "bytes": 8544,
+      "sha256": "e82d12b03f32ad547c9c729c04c534e4140ed18cd6a22a8fff4aed3e1f6c95ba"
+    },
+    {
+      "path": "assets/play/playmat-charcoal-table-glow.webp",
+      "bytes": 22144,
+      "sha256": "45f82475f2b16b19e4fe1f3593a2cb1eecbe5c52d3632b115bfb561df9d6f78d"
+    },
+    {
+      "path": "assets/play/playmat-charcoal-table-tall.webp",
+      "bytes": 82336,
+      "sha256": "3353e3ffa07b2113083385e2107383127ee2b4926a5357d7a195e44ee4b89405"
+    },
+    {
+      "path": "assets/play/playmat-charcoal-table-thumb.webp",
+      "bytes": 12034,
+      "sha256": "2cb5ef52ff12edd8099d8bf0c129038c20689a563566eff056429dac4d82469f"
+    },
+    {
+      "path": "assets/play/playmat-charcoal-table.webp",
+      "bytes": 183414,
+      "sha256": "66105d0fe307abb56dfdc06932d714c29752633a727a95ea317724c29ad9884d"
+    },
+    {
+      "path": "assets/play/playmat-drowned-archive-glow-b-tall.webp",
+      "bytes": 1678,
+      "sha256": "6cfd5e2321aec4aaad34ac25c66c141d7d8af838d61d7c5b6bb518fbe5d00311"
+    },
+    {
+      "path": "assets/play/playmat-drowned-archive-glow-b.webp",
+      "bytes": 20298,
+      "sha256": "283f1c8439461312ed7278921502d6f762f6d2577dd3879a79cf203ef5df179d"
+    },
+    {
+      "path": "assets/play/playmat-drowned-archive-glow-tall.webp",
+      "bytes": 1730,
+      "sha256": "291d84fc160a2a23a397ac2a9836c57ecb8fad6455581b735d7626f677fb2e60"
+    },
+    {
+      "path": "assets/play/playmat-drowned-archive-glow.webp",
+      "bytes": 18134,
+      "sha256": "96e7ae2ad0dfbe95b82cca5f6b9314d14f9bbb499f3e6e2bd0f8578437d23b47"
+    },
+    {
+      "path": "assets/play/playmat-drowned-archive-tall.webp",
+      "bytes": 75520,
+      "sha256": "bbd1bd4ca63f815f444d30ba4c33a6ba6af705b8068469e576042415bc041757"
+    },
+    {
+      "path": "assets/play/playmat-drowned-archive-thumb.webp",
+      "bytes": 13222,
+      "sha256": "6f12badcda878c063995e1010201951620d1e0ea9b4ed62f3b5cb5efd00cc615"
+    },
+    {
+      "path": "assets/play/playmat-drowned-archive.webp",
+      "bytes": 209378,
+      "sha256": "ea4b9841c9d8609aaa9de1a1964d0f81d4718bb4e1bf2ed5ea804d9151e4de21"
+    },
+    {
+      "path": "assets/play/playmat-forest-temple-glow-b-tall.webp",
+      "bytes": 16732,
+      "sha256": "086b35c9031b4954285c51c9b4efe4e31479c8bf8b808d0ea5f15b2a8d6c9d4c"
+    },
+    {
+      "path": "assets/play/playmat-forest-temple-glow-b.webp",
+      "bytes": 28214,
+      "sha256": "c84560ed44ae5a429ac782415337997485957bfe78b10eb610250ee35f3c464c"
+    },
+    {
+      "path": "assets/play/playmat-forest-temple-glow-tall.webp",
+      "bytes": 16802,
+      "sha256": "99012cfd5ca52d1ac1d3aae42c7ccaa59af0b517e6515f18be7d7e682630c6d4"
+    },
+    {
+      "path": "assets/play/playmat-forest-temple-glow.webp",
+      "bytes": 31038,
+      "sha256": "b9d1aff389c92d98317991c81c527e3d70a769b9e252fddf6f816cfc9230b8be"
     },
     {
       "path": "assets/play/playmat-forest-temple-tall.webp",
-      "bytes": 66892,
-      "sha256": "327cb598ab66d3dd13ce69de875021b7774af9e6c9652b81912dc7cc15ea6ecf"
+      "bytes": 83856,
+      "sha256": "e58456007ebfb169b93f5baca12db4715db9295b6c954bcac4cbacc6ba2e4ec2"
     },
     {
       "path": "assets/play/playmat-forest-temple-thumb.webp",
-      "bytes": 10928,
-      "sha256": "b144ddfbdb5076cf21faf6a33ba1f12cd5ec4518f2009f4f3b3ff881512325e2"
+      "bytes": 13510,
+      "sha256": "5fd98e01372a6588b1f0c4e5296f9e96511e86a09e354ee113841347d52b90d3"
     },
     {
       "path": "assets/play/playmat-forest-temple.webp",
-      "bytes": 141862,
-      "sha256": "182b772a4b32525e99cb6304a2bfde10772d72cacd63a1adfb1bd08a7c11ecc4"
+      "bytes": 193516,
+      "sha256": "434f838f684a344b5614588be1fbb473098d302cb51cee07180da04325fa874a"
     },
     {
-      "path": "assets/play/playmat-forgotten-graves-tall.webp",
-      "bytes": 70064,
-      "sha256": "2a75d5042b28325067ec5d82170bde84eb79e4eb14cf8ecf5bc70601079c27be"
+      "path": "assets/play/playmat-fx-cloud.webp",
+      "bytes": 13904,
+      "sha256": "733e9df590d565c1ee007af194e943671a627aecb86f0de698f97639f8795f2d"
     },
     {
-      "path": "assets/play/playmat-forgotten-graves-thumb.webp",
-      "bytes": 11338,
-      "sha256": "71cb7065a42819fb85c3aaa7552e5c93e4ff1baf1522c184d7265acda504ae11"
+      "path": "assets/play/playmat-fx-dust.webp",
+      "bytes": 4148,
+      "sha256": "5548700023656ce6aff745b03f46b6980537af0d18a741b2aabf01b62e68aba0"
     },
     {
-      "path": "assets/play/playmat-forgotten-graves.webp",
-      "bytes": 185350,
-      "sha256": "499ae0bf635b051fb8c116aae66638f160efcec0ae63ebb2a7e732663be9bd14"
+      "path": "assets/play/playmat-fx-embers.webp",
+      "bytes": 7038,
+      "sha256": "173ee5ebb5024e679e57c68cd6a0a5e837fde4271c84c0d00ebd9eb645223d57"
     },
     {
-      "path": "assets/play/playmat-gothic-stone-tall.webp",
-      "bytes": 54194,
-      "sha256": "b503e6881399a29e00e218b35b0f04304d3b1922de2750a9117013bf6f96ca2f"
+      "path": "assets/play/playmat-fx-fireflies.webp",
+      "bytes": 5010,
+      "sha256": "9849b69927d1163cc7e37d79fccb8840de109b3c2776f35d5fbb3da747ed9df0"
     },
     {
-      "path": "assets/play/playmat-gothic-stone-thumb.webp",
-      "bytes": 7854,
-      "sha256": "6eb26aa2b520b58b29c8ac22483ec597db2afc89bec25a9e8aecee4f7b30fe8b"
+      "path": "assets/play/playmat-fx-mist.webp",
+      "bytes": 11378,
+      "sha256": "5d3841b284f5efb0a06915c27f5237372725517a7b9dff4856efcd5abdbfe1f1"
     },
     {
-      "path": "assets/play/playmat-gothic-stone.webp",
-      "bytes": 109322,
-      "sha256": "0d4863109ad274b1a3f8e4b1a309f03d79679f47cde99d57aa72ceace3b86114"
+      "path": "assets/play/playmat-fx-stardust.webp",
+      "bytes": 5918,
+      "sha256": "adc7b7befc3622bbf16d353e6acdd14ce4c5b5ae8761c1e3c32525c866652661"
     },
     {
-      "path": "assets/play/playmat-haunted-chapel-tall.webp",
-      "bytes": 41582,
-      "sha256": "cfaa5526a66aae40bc0c007de35f45b641c8e386b4acdbd0fe00d4cae5d1db86"
+      "path": "assets/play/playmat-innistrad-graveyard-glow-b-tall.webp",
+      "bytes": 906,
+      "sha256": "f7f1112c27b871ba9ab9ea26dd6044d9bb8bff452743cdbffa3f9b238d28ab6d"
     },
     {
-      "path": "assets/play/playmat-haunted-chapel-thumb.webp",
-      "bytes": 8364,
-      "sha256": "7001660cd50fe0d83af4f0c80410a23c8572bae4b5a4f98bab2d5e5b27f3928c"
+      "path": "assets/play/playmat-innistrad-graveyard-glow-b.webp",
+      "bytes": 22052,
+      "sha256": "f221139dba771a28dc73cfc4a12c74f294740e94ec3290ed26f85237d5fe5363"
     },
     {
-      "path": "assets/play/playmat-haunted-chapel.webp",
-      "bytes": 130632,
-      "sha256": "a163fb98b0b6280e0a2874f027e431c526fe27130d6bc657e397bce49b5718e0"
+      "path": "assets/play/playmat-innistrad-graveyard-glow-tall.webp",
+      "bytes": 1158,
+      "sha256": "d6d8b18dc455127346aa04d8ddfddb5d4884b4c3e7426d29ef61aab2a31443f7"
     },
     {
-      "path": "assets/play/playmat-hedron-garden-tall.webp",
-      "bytes": 45430,
-      "sha256": "570a803da7f130118fed302634703ff7100c4e8519f5cfe287763a12649aa529"
+      "path": "assets/play/playmat-innistrad-graveyard-glow.webp",
+      "bytes": 19238,
+      "sha256": "bd82534d9207f36e7f07c77e3c04a5436772e0d25722ff7ad38f656a23a8af4a"
     },
     {
-      "path": "assets/play/playmat-hedron-garden-thumb.webp",
-      "bytes": 8268,
-      "sha256": "b071051b1c81e4643b8413b27cddfcf815459c3cca063ec3e67ccea2dc73ba53"
+      "path": "assets/play/playmat-innistrad-graveyard-tall.webp",
+      "bytes": 95528,
+      "sha256": "d8a1ebddf45595b157bb29fd454ab22bc86f9456d8d6b7abc105bcb0d53dfcc7"
     },
     {
-      "path": "assets/play/playmat-hedron-garden.webp",
-      "bytes": 96878,
-      "sha256": "8196e019c9d5ca1260bf219b9bf5638783de6689a21f4ebf51205fa2401ab977"
+      "path": "assets/play/playmat-innistrad-graveyard-thumb.webp",
+      "bytes": 15116,
+      "sha256": "d6308d398c933160cf0870b9189b72e6a918762b07f7d73324f8c457e2970531"
+    },
+    {
+      "path": "assets/play/playmat-innistrad-graveyard.webp",
+      "bytes": 236334,
+      "sha256": "97233a7d18c7fdd41e0438005f182674cc0b2451ed52da9ac2e1dd8d2f354537"
+    },
+    {
+      "path": "assets/play/playmat-keldon-battlefield-glow-b-tall.webp",
+      "bytes": 38434,
+      "sha256": "bdbe7ba1f7cf5684b32b5ce084bd255868d4966e359eb63465d4583e42420c84"
+    },
+    {
+      "path": "assets/play/playmat-keldon-battlefield-glow-b.webp",
+      "bytes": 71596,
+      "sha256": "eea7db304e145283295f17917863778c7edc764d10f628b5775357d1f28029a2"
+    },
+    {
+      "path": "assets/play/playmat-keldon-battlefield-glow-tall.webp",
+      "bytes": 40178,
+      "sha256": "9a3eaaacb9fcfd57ec120a699d62452a4dc21fd40328efd5118770784ac56bff"
+    },
+    {
+      "path": "assets/play/playmat-keldon-battlefield-glow.webp",
+      "bytes": 71368,
+      "sha256": "4574c1b1c0def7fd95ad35dec52b869fb0d8cf82a84f0ba33a2d4f4bba650f64"
+    },
+    {
+      "path": "assets/play/playmat-keldon-battlefield-tall.webp",
+      "bytes": 80292,
+      "sha256": "0113b11ec25684ee6a186482c2082c7c4964d3abbc13a0b3a13fadaca567d24b"
+    },
+    {
+      "path": "assets/play/playmat-keldon-battlefield-thumb.webp",
+      "bytes": 13950,
+      "sha256": "13d49923ce769339d2d5d847dbce641cf57dab19ca82ed7f9dd2391688cbc36c"
+    },
+    {
+      "path": "assets/play/playmat-keldon-battlefield.webp",
+      "bytes": 203968,
+      "sha256": "f2450f76eb92920cce26ced01a0b824e6ee94e26e336530f2a07e7e88b2969d4"
+    },
+    {
+      "path": "assets/play/playmat-moonlit-courtyard-glow-b-tall.webp",
+      "bytes": 3350,
+      "sha256": "a059739fcff0ab285e78d7f59710b0055bbd0c84929295b5509da3f46be816aa"
+    },
+    {
+      "path": "assets/play/playmat-moonlit-courtyard-glow-b.webp",
+      "bytes": 25318,
+      "sha256": "94b0397fe8afa67373f6d2b5fb870781fcd7468c8fd353c91eebd36c23e6f289"
+    },
+    {
+      "path": "assets/play/playmat-moonlit-courtyard-glow-tall.webp",
+      "bytes": 4538,
+      "sha256": "72b29a50b3452a47e739e3268d545fb3575bdfc32c5fddf2d953a0d8c80774e4"
+    },
+    {
+      "path": "assets/play/playmat-moonlit-courtyard-glow.webp",
+      "bytes": 24906,
+      "sha256": "a23b6819eb7097bacaeab6f3bb17e5d8d21cb29327bd0f05319c36c7b25cc0c0"
     },
     {
       "path": "assets/play/playmat-moonlit-courtyard-tall.webp",
-      "bytes": 54640,
-      "sha256": "5d955b23b3d0344fe54ae93e17e5f154b9141846d2c2c80ebe916f63990811f2"
+      "bytes": 68640,
+      "sha256": "4ac009f4f5f591e3df42958ecda79149d1b3fc511e336bec7addc9d557738c52"
     },
     {
       "path": "assets/play/playmat-moonlit-courtyard-thumb.webp",
-      "bytes": 10002,
-      "sha256": "b241630db1cdeb51d3b72c96d36702ba7a6d519aff9459f49c9120f54d82fb8e"
+      "bytes": 12400,
+      "sha256": "402787c009d605325835c5d93f40265006145e3354795b1d2df02200b29f2bbc"
     },
     {
       "path": "assets/play/playmat-moonlit-courtyard.webp",
-      "bytes": 142944,
-      "sha256": "583f3caf28753c2deacf02e90789f25a051b6a40c268c1ca476cccb19bcbb48c"
+      "bytes": 195000,
+      "sha256": "f2d92b60f711b6e82e7f106c5aed2699410d26f04d9bd37e4ec034647a2e9e60"
     },
     {
-      "path": "assets/play/playmat-ruined-shrine-tall.webp",
-      "bytes": 89928,
-      "sha256": "8fd1f18b70ac1692ae7b1bdb6366785acc5152469e69a2844df0c9753fddd3b8"
+      "path": "assets/play/playmat-ravnica-guild-city-glow-b-tall.webp",
+      "bytes": 13840,
+      "sha256": "a2de6a8c069160667ae0160fe3cf58c93b99397b7742ab97f98efe40ed918562"
     },
     {
-      "path": "assets/play/playmat-ruined-shrine-thumb.webp",
-      "bytes": 14366,
-      "sha256": "7286281789662935d3c217a2101754188e286be3be67b12ba852ffa22577a47e"
+      "path": "assets/play/playmat-ravnica-guild-city-glow-b.webp",
+      "bytes": 47288,
+      "sha256": "442f6f6211b3df9de7cfda7718f32606bdd16700a889d0864fd0f8e501e41e8a"
     },
     {
-      "path": "assets/play/playmat-ruined-shrine.webp",
-      "bytes": 236756,
-      "sha256": "47230d9be16668a58ccf4e48ddca5db084a4f6ff0827b3217bdb71034995f333"
+      "path": "assets/play/playmat-ravnica-guild-city-glow-tall.webp",
+      "bytes": 13482,
+      "sha256": "1a94dc0855b69e9d18d70a7d2d1115d0814d9f7655954deec2e511c7530af49e"
     },
     {
-      "path": "assets/play/playmat-sky-ruins-tall.webp",
-      "bytes": 64802,
-      "sha256": "ab643cf7a662deb2a78bb276cf946d9f2b4b7b1bd8e0ebdffbd528d9776965a5"
+      "path": "assets/play/playmat-ravnica-guild-city-glow.webp",
+      "bytes": 49148,
+      "sha256": "d62ae3b3446b7e9b78c7f3b9315a0f054f30bfc8fb516014ac9d402127921583"
     },
     {
-      "path": "assets/play/playmat-sky-ruins-thumb.webp",
-      "bytes": 11794,
-      "sha256": "46d1514d6156ba67bec52039e27642c33cb1d92bba383ed1e3e3c7e40b5a95e4"
+      "path": "assets/play/playmat-ravnica-guild-city-tall.webp",
+      "bytes": 98328,
+      "sha256": "dd9adef7abdd30edb21dd087ccf57204a15280a0f1400bacd76b73b0dc303cd8"
     },
     {
-      "path": "assets/play/playmat-sky-ruins.webp",
-      "bytes": 176046,
-      "sha256": "188e41b456b231fc65bbad321dafb310736897c62cf940cdd125ddbb8461c51c"
+      "path": "assets/play/playmat-ravnica-guild-city-thumb.webp",
+      "bytes": 15678,
+      "sha256": "3ea26efc358132df296bbffc0691751d3db36f84f742375dec61fd4672c675a6"
+    },
+    {
+      "path": "assets/play/playmat-ravnica-guild-city.webp",
+      "bytes": 250342,
+      "sha256": "263b1ce7329f029c1d3b7918f0d61ee4ff1cd5c8848cd0bb1c327b71accbdb2a"
+    },
+    {
+      "path": "assets/play/playmat-star-observatory-glow-b-tall.webp",
+      "bytes": 3444,
+      "sha256": "bb9f895a5ae035622b5b4da7c66c3adb83c967c82654259e31d0d12cdb584d7f"
+    },
+    {
+      "path": "assets/play/playmat-star-observatory-glow-b.webp",
+      "bytes": 22282,
+      "sha256": "e61aa7d5b93dc01eac0df4d83a380b7df3dd843d39707a7aae522aee65a9d5b0"
+    },
+    {
+      "path": "assets/play/playmat-star-observatory-glow-tall.webp",
+      "bytes": 3378,
+      "sha256": "af3b9df282e1c167045d13e73d3395bd849eee98d9c2b62f651b7aeb5b489a5a"
+    },
+    {
+      "path": "assets/play/playmat-star-observatory-glow.webp",
+      "bytes": 21450,
+      "sha256": "17e3f765d6c993a5757a697353fcba29a093c9f7b46693fed047385fc39cfaea"
     },
     {
       "path": "assets/play/playmat-star-observatory-tall.webp",
-      "bytes": 38554,
-      "sha256": "0d8dcb39dab90c35213f2120ab2bc00d12bc85a038ad498cec15f5a5634deed5"
+      "bytes": 49144,
+      "sha256": "8e023b35c9921978a548d96fc0300d065a5ecf0d90ad9a5f61c30a8b3de9e45e"
     },
     {
       "path": "assets/play/playmat-star-observatory-thumb.webp",
-      "bytes": 9374,
-      "sha256": "f98a11d48006ad59209b938bac03c6924b26a0f906eea4d58402f6209574bd0e"
+      "bytes": 11710,
+      "sha256": "af9a40fd938d62ee166c844cdc0206adc79d3be0bb97c0518108f0ac63bfa4fa"
     },
     {
       "path": "assets/play/playmat-star-observatory.webp",
-      "bytes": 104308,
-      "sha256": "882a7c8df074980f153ad46ff66acc2653709f4e93eecdb2cea746ec3eab9446"
+      "bytes": 144922,
+      "sha256": "646171fa8969eb1443cb444290e4830454b8f45fde16335f1716d4bf452748c9"
     },
     {
-      "path": "assets/play/playmat-volcanic-plain-tall.webp",
-      "bytes": 48244,
-      "sha256": "cc1620c0a00b7fd344e8a83231f4de328ffa5c670cb3f2672a46dbd4af29e969"
+      "path": "assets/play/playmat-white-sanctuary-glow-b-tall.webp",
+      "bytes": 24428,
+      "sha256": "b213eadf588fb1a3b0f27c364e06eb8b51fe0feff9380a7709d843f953b07a30"
     },
     {
-      "path": "assets/play/playmat-volcanic-plain-thumb.webp",
-      "bytes": 9830,
-      "sha256": "afd53c861b951fa5f6e9dccccc395e42b57b4bba093c4729c72ec3787e494db0"
+      "path": "assets/play/playmat-white-sanctuary-glow-b.webp",
+      "bytes": 68476,
+      "sha256": "f5d3853af1ae0ac2e1a6b94575d01d803655914c78d9dfa8dfaf25b01747491d"
     },
     {
-      "path": "assets/play/playmat-volcanic-plain.webp",
-      "bytes": 130264,
-      "sha256": "0f22bc3d3d8bf758252f590ba66af71ccd7f040fd55d8d9afa8d2cbf3c7973d5"
+      "path": "assets/play/playmat-white-sanctuary-glow-tall.webp",
+      "bytes": 24796,
+      "sha256": "5b720feff4a314f6d9a73b88c3b852ce58d4ec422e1f97a21fbae7788edb37b8"
+    },
+    {
+      "path": "assets/play/playmat-white-sanctuary-glow.webp",
+      "bytes": 71048,
+      "sha256": "15f5507a8df99988fb0c1fddd8538e78d16e8b30b472385da030ca1693a2221c"
+    },
+    {
+      "path": "assets/play/playmat-white-sanctuary-tall.webp",
+      "bytes": 99502,
+      "sha256": "e95916370a565c119ab05b0271f40bdfdd7d732a29a0c873ac4c2774ae09a619"
+    },
+    {
+      "path": "assets/play/playmat-white-sanctuary-thumb.webp",
+      "bytes": 17330,
+      "sha256": "1c85c3e4f709f6660a89481bafa05ad9a46a285b5830b8a65a834f9662274899"
+    },
+    {
+      "path": "assets/play/playmat-white-sanctuary.webp",
+      "bytes": 262080,
+      "sha256": "08411a19bb5347db409e16b041d115f01c94e38d08bf2e45be17403c0d6b3215"
+    },
+    {
+      "path": "assets/play/playmat-wild-hedrons-glow-b-tall.webp",
+      "bytes": 4868,
+      "sha256": "6e482051c2ae139c0b052c8288eec2980473d9a1e73a3d8bb86b0e679378e3ec"
+    },
+    {
+      "path": "assets/play/playmat-wild-hedrons-glow-b.webp",
+      "bytes": 28522,
+      "sha256": "70a642b50aa95f614b78a4fd020cba28a07a1e2af87a39e7de3b3c1d8838e411"
+    },
+    {
+      "path": "assets/play/playmat-wild-hedrons-glow-tall.webp",
+      "bytes": 5658,
+      "sha256": "34902442d461687c9362a4725475e8a6f426629c0680e592ab1c0edbe8b9acb8"
+    },
+    {
+      "path": "assets/play/playmat-wild-hedrons-glow.webp",
+      "bytes": 29470,
+      "sha256": "e8bd029c9ed6c3a16e344beb3d4011575b6dcd70840cb04089ffd2051ce76efc"
+    },
+    {
+      "path": "assets/play/playmat-wild-hedrons-tall.webp",
+      "bytes": 71080,
+      "sha256": "7798f0800884b72dbdc0ad462395c82b01be89b83fb70196cde869c732b0c111"
+    },
+    {
+      "path": "assets/play/playmat-wild-hedrons-thumb.webp",
+      "bytes": 15990,
+      "sha256": "df7175b2084e855291d85702d488dafada89cdf2587707de79ddf73386b445b5"
+    },
+    {
+      "path": "assets/play/playmat-wild-hedrons.webp",
+      "bytes": 205922,
+      "sha256": "aba168995f5397c23a380af410bc573a535089a9761f9f804c8c26321da08547"
+    },
+    {
+      "path": "assets/play/playmat-zendikar-expedition-glow-b-tall.webp",
+      "bytes": 5310,
+      "sha256": "f9627866972865ac06e1b695e2b03ce06431b3ab069d7db95e0b6b1a7706dd0c"
+    },
+    {
+      "path": "assets/play/playmat-zendikar-expedition-glow-b.webp",
+      "bytes": 36772,
+      "sha256": "7d30186be7e21dc816cd081fad1e07f60e04c1a7788365fd79d6dcd18e563beb"
+    },
+    {
+      "path": "assets/play/playmat-zendikar-expedition-glow-tall.webp",
+      "bytes": 5144,
+      "sha256": "6db411314d82342fed7ba6cbc4861dbc096ee1848e12d9cbd76a5c3b67be63a5"
+    },
+    {
+      "path": "assets/play/playmat-zendikar-expedition-glow.webp",
+      "bytes": 36934,
+      "sha256": "b44db0b26ba254128f505b9fb6536f2c1b6166f574b11e44ebadd33fcf73bf4a"
+    },
+    {
+      "path": "assets/play/playmat-zendikar-expedition-tall.webp",
+      "bytes": 98338,
+      "sha256": "362ba765098d01c8b97ad6335db897b5cb6ba583c50b1b7c09fc51d262322b72"
+    },
+    {
+      "path": "assets/play/playmat-zendikar-expedition-thumb.webp",
+      "bytes": 19262,
+      "sha256": "a3e358895e130607eb5928cb688d73f2ce949e195492c75935cf8b7af7b4309f"
+    },
+    {
+      "path": "assets/play/playmat-zendikar-expedition.webp",
+      "bytes": 241694,
+      "sha256": "85b21fdaee6a7e4d996aba59284e63fb04e9e0b95aa36b995917d643acb89a36"
     },
     {
       "path": "assets/play/result-draw.webp",
@@ -1544,7 +1869,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "6fed570868311c0dbe7eac5e02b462306e853ccd8274d298c677099d2b447500"
+      "sha256": "b35e0217c459f41832f7810f25e032ab1047b716a08942efec00706ebfcd885e"
     },
     {
       "path": "core.js",
@@ -3204,7 +3529,7 @@
     {
       "path": "package.json",
       "bytes": 11917,
-      "sha256": "41692021122855f500be2d9554901c2884a544273c74bac4eb80801f5201dd2d"
+      "sha256": "e8a7bc2356cb1724e7d42fddc2494a9eb28017132f67690e15a5131629268741"
     },
     {
       "path": "pairing.js",
@@ -3318,13 +3643,13 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 323665,
-      "sha256": "20cfc517387fc4747d7de3253739e1cd94c68a2d8edbbfa91cf5b99025def289"
+      "bytes": 330330,
+      "sha256": "a25fcc559f2599b59a142215d06e47b7d31bde84f03937ddf61d2dd334b152ca"
     },
     {
       "path": "play-menu.css",
-      "bytes": 66506,
-      "sha256": "bde378867baa93f8607a561eb621dd240557f914bd8de695c325a987ea7c0dc5"
+      "bytes": 66688,
+      "sha256": "32e388c522808bc6bf540408ea221342d4e70c8aa3296fd00ce08c436f3130fa"
     },
     {
       "path": "play-menu.js",
@@ -3343,8 +3668,8 @@
     },
     {
       "path": "play-playmats.js",
-      "bytes": 2133,
-      "sha256": "f19c35115e8056130e683614d9ccbcdf1b65f848c5128ca3f3b7b3d250a25298"
+      "bytes": 5703,
+      "sha256": "9419236c6094bfea717099ed0562f0d6c3a9ef5ea6c291fa9ca30a31bbd0f554"
     },
     {
       "path": "play-precon-formats.js",
@@ -3548,8 +3873,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1040,
-      "sha256": "d68297682fc788dba60d2a7f10f660129cbbd9f265d7e74abf667b3241ba4a47"
+      "bytes": 875,
+      "sha256": "cfd3fa250344d9693168e9790caae124c0255d622ce08366c237daa34b8e84f8"
     },
     {
       "path": "release-status.js",
@@ -3868,8 +4193,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15366,
-      "sha256": "a1fc7cb9ad69cf44d875d45439488fb2fc13c08716412f93c0caff657bec0d8c"
+      "bytes": 15368,
+      "sha256": "f0b34e376e600d2cf7ba43806ad1fb251884eaf98a3a7e8816e32854ebf742a7"
     },
     {
       "path": "sync-merge.js",
