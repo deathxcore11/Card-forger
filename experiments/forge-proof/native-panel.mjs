@@ -106,7 +106,7 @@ export function nativeActionLabel(n,op,raw){
  if(input==='InputSelectTargets'&&op==='ok')return 'Confirm targets';
  return label;
 }
-const revealAuto={key:null,timer:0};
+const revealAuto={key:null,timer:0},errSeen={text:null,revision:0};
 // Forge names the AI as "Forge AI — <deck> · <commander>"; the hosted table calls it the CPU.
 const cpuName=msg=>String(msg).replace(/Forge AI\b.*?\s(?=(?:revealed|reveals|picked|picks|chose|chooses|named|names|casts?|plays?|looked|looks)\b)/,'CPU ').replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU');
 export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
@@ -191,7 +191,10 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   const host=presentation.hosted?container.closest('.play-match-table'):null;
   if(host){const was=host.querySelector(':scope>.forge-notice');if(was?.textContent!==notice.textContent){was?.remove();host.append(notice);}}else panel.append(notice);}
  // On the hosted table, trouble is one small toast in plain words with Retry, never a raw code.
- if(presentation.hosted&&(s.transportError||n.lastActionError)){
+ // A refused move's note clears once the next move goes through (the match's revision moves on).
+ if(n.lastActionError){if(errSeen.text!==n.lastActionError){errSeen.text=n.lastActionError;errSeen.revision=n.revision;}}else errSeen.text=null;
+ const staleError=!!n.lastActionError&&Number.isFinite(n.revision)&&n.revision>errSeen.revision;
+ if(presentation.hosted&&(s.transportError||n.lastActionError&&!staleError)){
   const toast=node('div',undefined,'forge-toast');toast.setAttribute('role','alert');toast.title=String(s.transportError||n.lastActionError);
   const text=s.transportError?(/TIMEOUT/i.test(String(s.transportError))?'The table is slow to answer.':'Lost touch with the table.'):'That move didn\u2019t go through.';
   toast.append(node('i'),node('span',text));if(s.transportError){const retry=button('Retry',()=>session.refresh(),false,'refresh');retry.disabled=false;toast.append(retry);}panel.append(toast);
@@ -330,7 +333,21 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   if(n.stack?.length){const stack=presentation.hosted?node('section',undefined,'forge-native-stack'):node('details');stack.append(node(presentation.hosted?'h3':'summary',presentation.hosted?'On the stack':`Native stack · ${n.stack.length}`));if(presentation.hosted)stack.setAttribute('aria-label','On the stack');// Any ability on the stack can be yielded to until end of turn; Forge then passes while it is on top.
    const canYield=presentation.hosted&&typeof session.yieldSource==='function';
    const withYield=(b,item)=>{if(!canYield||item.ability!==true)return b;const row=node('div',undefined,'forge-stack-row'),y=button(item.yielded?'Yielding':'Yield',()=>session.yieldSource(item.id,!item.yielded),!!n.prompt||n.inputType==='InputLockUI',`yield-${item.id}`);y.className='forge-stack-yield';y.setAttribute('aria-pressed',String(item.yielded===true));y.title=item.yielded?'Stop yielding to this ability':'Pass on this ability every time it is on top, until end of turn. Targets and choices still stop.';row.append(b,y);return row;};
-   for(const run of stackRuns(n))if(run.length<3)for(const item of run)stack.append(withYield(button(item.text||`Stack item ${item.id}`,()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`),item));else{const top=run[0],b=button(top.text||`Stack item ${top.id}`,()=>session.nativeSelect('stack',top.id,n.revision),false,`stack-${top.id}`),count=node('b',`×${run.length}`,'forge-stack-count');b.dataset.stackCount=String(run.length);b.setAttribute('aria-label',`${run.length} identical: ${top.text||'stack item'}`);b.append(count);stack.append(withYield(b,top));}panel.append(stack);}
+   // The hosted table shows each item as a compact card: who, what, whom; the engine's full text waits behind
+   // "Full effect", and Yield (with its real scope) sits in a small menu. The top item is marked as resolving next.
+   const named=id=>{const c=s.status?.surface?.cards?.find(c=>c.id===id);if(c)return c.known?c.name:'Face-down card';const pl=n.players?.find(p=>p.id===id);return pl?(pl.isViewer?'You':'CPU'):null;};
+   const compact=(item,top,count)=>{const mine=item.activatingPlayer===n.viewer,raw=plainText(item.text||''),src=item.source?.name||raw.match(/^([^-\u2014:]{1,40}?)\s+[-\u2014:]\s/)?.[1]||'',body=src&&raw.startsWith(src)?raw.slice(src.length).replace(/^\s*[-\u2014:]\s*/,''):raw;
+    const short=body.replace(/\s*\([^)]*\)/g,'').trim(),first=short.match(/^.*?[.!?](?=\s|$)/)?.[0]||short,summary=first.length>110?first.slice(0,107).replace(/\s+\S*$/,'')+'…':first;
+    const card=node('article',undefined,'forge-stack-item');card.dataset.top=String(top);card.dataset.mine=String(mine);if(item.yielded)card.dataset.yielded='true';
+    const head=button('',()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`);head.className='forge-stack-head';head.append(node('span',`${mine?'Your':'CPU'} ${item.ability===true?'ability':'spell'}${top?' · Resolves next':''}`,'forge-stack-kind'),node('strong',src||summary||`Stack item ${item.id}`,'forge-stack-name'));
+    if(count>1){const c=node('b',`×${count}`,'forge-stack-count');head.append(c);head.setAttribute('aria-label',`${count} identical: ${src||summary}`);}card.append(head);
+    if(src&&summary)card.append(node('p',symbols?undefined:summary,'forge-stack-summary'));if(src&&summary&&symbols)card.lastChild.innerHTML=symbols(summary);
+    const tg=(Array.isArray(item.targets)?item.targets:[]).map(r=>named(r?.id)).filter(Boolean);if(tg.length){const row=node('p',undefined,'forge-stack-targets');row.append(node('span','→ '),...tg.map((t,k)=>node('span',(k?', ':'')+t,'forge-stack-target')));card.append(row);}
+    if(body&&body!==summary){const more=node('details',undefined,'forge-stack-more'),sum=node('summary','Full effect');more.append(sum);const full=node('p',symbols?undefined:body);if(symbols)full.innerHTML=symbols(body);else full.textContent=body;more.append(full);card.append(more);}
+    if(canYield&&item.ability===true){const menu=node('details',undefined,'forge-stack-menu'),sum=node('summary','⋯');sum.setAttribute('aria-label','More for this ability');menu.append(sum);const y=button(item.yielded?'Stop auto-passing this ability':'Auto-pass this ability until end of turn',()=>session.yieldSource(item.id,!item.yielded),!!n.prompt||n.inputType==='InputLockUI',`yield-${item.id}`);y.className='forge-stack-yield';y.setAttribute('aria-pressed',String(item.yielded===true));menu.append(y,node('small','Targets and choices still stop you.'));card.append(menu);}
+    return card;};
+   if(presentation.hosted){const list=node('div',undefined,'forge-stack-list');let top=true;for(const run of stackRuns(n)){if(run.length<3)for(const item of run){list.append(compact(item,top,1));top=false;}else{list.append(compact(run[0],top,run.length));top=false;}}stack.append(list);panel.append(stack);}
+   else{for(const run of stackRuns(n))if(run.length<3)for(const item of run)stack.append(withYield(button(item.text||`Stack item ${item.id}`,()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`),item));else{const top=run[0],b=button(top.text||`Stack item ${top.id}`,()=>session.nativeSelect('stack',top.id,n.revision),false,`stack-${top.id}`),count=node('b',`×${run.length}`,'forge-stack-count');b.dataset.stackCount=String(run.length);b.setAttribute('aria-label',`${run.length} identical: ${top.text||'stack item'}`);b.append(count);stack.append(withYield(b,top));}panel.append(stack);}}
   const selected=presentation.hosted?null:s.status.surface.cards.find(c=>c.id===s.selected);if(selected)panel.append(button(copy(`Select ${selected.known?selected.name:'card'}`,`Send ${selected.known?selected.name:'card'} click to Forge`),()=>session.nativeSelect('card',selected.id,n.revision),false,'click-inspected'));
  }
  if(presentation.hosted){container.replaceChildren(panel);if(keepStripLeft){const strip=panel.querySelector('.forge-zone-search-cards');if(strip)strip.scrollLeft=keepStripLeft;}return;}

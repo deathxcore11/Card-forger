@@ -31,13 +31,14 @@ const COUNTER_NAMES={P1P1:'+1/+1',M1M1:'\u22121/\u22121',LOYALTY:'Loyalty',DEFEN
 // untapped source of yours readable. Anything unclear keeps the glow; Forge still validates every play.
 const COST_BENDERS=/\bcosts?\b[^.]*\bless\b|\breduc|without paying|rather than pay|alternative|convoke|delve|improvise|affinity|evoke|emerge|offering|assist|spectacle|surge|prowl|\bdash\b|blitz|madness|foretell|\bplot\b|bestow|mutate|overload|prototype|flashback|escape|unearth|cycling|channel|ninjutsu|morph|disguise|\bwarp\b|sneak|freerunning|impending|mayhem|from your hand|discard this card|exile this card|reveal this card/i;
 const MANA_SYMBOL=/^(?:\d+|[WUBRGC])$/;
-function manaSources(card){
+function manaSources(card,tapped=false){
  const lines=String(card.text||'').split(/\n|(?<=\.)\s+(?=[A-Z{])/).map(l=>l.trim().replace(/^\((.*)\)$/,'$1')).filter(l=>/\badd\b/i.test(l));
- if(!lines.length){if(!card.types?.includes('Land'))return [];const basic={Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'},colors=Object.entries(basic).filter(([t])=>new RegExp(`\\b${t}\\b`).test(card.type||'')).map(([,c])=>c);return colors.length?[colors.map(c=>[c])]:null;}
+ if(!lines.length){if(!card.types?.includes('Land')||tapped)return [];const basic={Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'},colors=Object.entries(basic).filter(([t])=>new RegExp(`\\b${t}\\b`).test(card.type||'')).map(([,c])=>c);return colors.length?[colors.map(c=>[c])]:null;}
  const options=[];
  for(const line of lines){const [cost,effect]=line.split(/:\s*/,2);if(effect===undefined)return null;
   const parts=cost.split(/,\s*/).map(x=>x.trim());if(!parts.every(x=>x==='{T}'||/^sacrifice (?:this|~|it|cardname)/i.test(x)||/^sacrifice /i.test(x)&&x.toLowerCase().includes(String(card.name).toLowerCase())))return null;
-  if(parts.includes('{T}')&&card.summoningSick&&card.types?.includes('Creature'))continue;
+  // A tapped source still counts when an ability of its needs no tap ("Sacrifice this: Add {W}.").
+  if(parts.includes('{T}')&&(tapped||card.summoningSick&&card.types?.includes('Creature')))continue;
   const add=effect.replace(/\.?\s*(?:\(.*\))?$/,'').match(/^add (.+)$/i);if(!add)return null;const what=add[1].trim();
   if(/^one mana of any color$/i.test(what)){options.push(['WUBRG'.split('')]);continue;}
   const alts=what.split(/,\s*(?:or\s+)?|\s+or\s+/);const parsed=alts.map(a=>(a.match(/^(?:\{[WUBRGC]\})+$/)?a.match(/[WUBRGC]/g):null));if(parsed.some(x=>!x))return null;
@@ -50,7 +51,7 @@ export function provenUnaffordable(card,surface,pool={}){
  const table=surface.cards.filter(c=>c.zone==='Battlefield'||c.zone==='Command');if(table.some(c=>!c.known||COST_BENDERS.test(c.text||'')&&!/from your hand|discard this card|exile this card|reveal this card|cycling|channel/i.test(c.text||'')))return false;
  if(surface.cards.some(c=>c.zone==='Hand'&&c.controller===surface.seat&&c.id!==card.id&&/from your hand[^.]*:\s*add|:\s*add[^.]*\bfrom your hand/i.test(c.text||'')))return false;
  const floating=Object.entries(pool||{}).flatMap(([c,n])=>Array(Math.max(0,Number(n)||0)).fill([String(c).toUpperCase()]));
- const sources=[];for(const c of table){if(c.controller!==surface.seat||c.zone!=='Battlefield'||c.tapped)continue;const o=manaSources(c);if(o===null)return false;if(o.length)sources.push(o);}
+ const sources=[];for(const c of table){if(c.controller!==surface.seat||c.zone!=='Battlefield')continue;const o=manaSources(c,c.tapped===true);if(o===null)return false;if(o.length)sources.push(o);}
  if(sources.length>14||sources.reduce((a,o)=>a*o.length,1)>4096)return false;
  const pays=tokens=>{if(tokens.length<generic+colored.length)return false;const used=new Array(tokens.length).fill(false);
   const fit=i=>{if(i===colored.length)return true;for(let k=0;k<tokens.length;k++)if(!used[k]&&tokens[k].includes(colored[i])){used[k]=true;if(fit(i+1))return true;used[k]=false;}return false;};return fit(0);};
@@ -145,7 +146,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const discarding=!n.prompt&&choices.size>0&&/\bdiscard\b/i.test(String(n.message||''));
   const role=id=>chosen.has(id)?'chosen':targets.has(id)?'target':choices.has(id)?(discarding?'discard':'choice'):actionable.has(id)?'playable':'';
   const combatInput=n.inputType==='InputAttack'||n.inputType==='InputBlock';
-  for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);const dragOk=combatInput&&!!combatDrops(cardId);if((el.dataset.forgeDrag==='true')!==dragOk){if(dragOk)el.dataset.forgeDrag='true';else delete el.dataset.forgeDrag;}el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
+  for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);const dragOk=combatInput&&!!combatDrops(cardId);if((el.dataset.forgeDrag==='true')!==dragOk){if(dragOk)el.dataset.forgeDrag='true';else delete el.dataset.forgeDrag;}el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));if(actionable.has(cardId)&&el.closest('.play-match-hand')){const c=snap.status.surface.cards.find(x=>x.id===cardId);el.dataset.forgeSure=String(!(c&&COST_BENDERS.test(c.text||'')));}else delete el.dataset.forgeSure;el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
   const surface=snap.status.surface,nativePlayer=seat=>n.players.find(p=>p.id===surface.players.find(p=>p.seat===seat)?.nativeId);
   // Floating mana is the native pool only, never untapped lands or potential production.
   const manaEntries=player=>Object.entries(player?.mana||{}).map(([color,amount])=>[String(color).toUpperCase(),Number(amount)||0]);
@@ -193,7 +194,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    renderCrests(surface,mat);
    // One turn statement: the dock says whose move it is; this track on the divider says where the turn is.
    renderPhaseTrack(surface,mat);
-   renderCombatLine(n,surface);
+   renderCombatLine(n,surface);renderAskLine(n,surface);
    // The history button carries the stack size as a badge.
    const history=root.querySelector('.play-match-header [data-focus-key=table-details]'),stackCount=n.stack?.length?String(n.stack.length):'';if(history&&(history.dataset.count||'')!==stackCount){if(stackCount)history.dataset.count=stackCount;else delete history.dataset.count;}
    // Smart, Full Control and auto-pay are small emblems under your name, the way Arena keeps them by your portrait.
@@ -481,7 +482,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // certain are drawn: an attack goes to the player unless they also control something
  // attackable, and a block is paired only when Forge names the attacker or there is one.
  const SVG='http://www.w3.org/2000/svg',arrows=doc.createElementNS(SVG,'svg');arrows.setAttribute('class','forge-arrows');arrows.setAttribute('aria-hidden','true');doc.body.append(arrows);let arrowFrame=0;
- arrows.innerHTML=['attack','block','target'].map(k=>`<marker id="forge-head-${k}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="forge-head-${k}"/></marker>`).join('').replace(/^/,'<defs>').replace(/$/,'</defs>');
+ arrows.innerHTML=['attack','block','target'].map(k=>`<marker id="forge-head-${k}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="forge-head-${k}"/></marker>`).join('').replace(/^/,'<defs>').replace(/$/,'</defs>');
  function relations(snap){
   const n=snap.native,surface=snap.status?.surface;if(!n||!surface||root.dataset.stage!=='match')return [];
   const out=[],cards=surface.cards,bySeat=seat=>({kind:'seat',seat}),byCard=id=>({kind:'card',id}),playerSeat=nativeId=>surface.players.find(p=>p.nativeId===nativeId)?.seat;
@@ -519,7 +520,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // Start at the source's edge, stop short of the target's edge, and bow the line a little.
    const ux=(bx-ax)/len,uy=(by-ay)/len,start=Math.min(a.width,a.height)*.42,stop=Math.min(b.width,b.height)*.48+4;
    const sx=ax+ux*start,sy=ay+uy*start,ex=bx-ux*stop,ey=by-uy*stop,bend=Math.min(60,len*.16),cx=(sx+ex)/2-uy*bend,cy=(sy+ey)/2+ux*bend;
-   paths.push(`<path class="forge-arrow" data-kind="${r.kind}" d="M${sx.toFixed(1)} ${sy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}" marker-end="url(#forge-head-${r.kind})"/>`);
+   // Arena-style: a thin line from the source to a ring around the target, with a small dot where it leaves the
+   // source. Combat keeps a (thinner) arrowhead so attackers and blockers still read at a glance.
+   const rx=Math.min(14,b.width*.18);paths.push(`<path class="forge-arrow" data-kind="${r.kind}" d="M${sx.toFixed(1)} ${sy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}"${r.kind==='target'?'':` marker-end="url(#forge-head-${r.kind})"`}/><circle class="forge-arrow-dot" data-kind="${r.kind}" cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="3.5"/><rect class="forge-target-ring" data-kind="${r.kind}" x="${(b.left-4).toFixed(1)}" y="${(b.top-4).toFixed(1)}" width="${(b.width+8).toFixed(1)}" height="${(b.height+8).toFixed(1)}" rx="${rx.toFixed(1)}"/>`);
   }
   const defs=arrows.querySelector('defs')?.outerHTML||'',html=defs+paths.join('');if(arrows.dataset.html!==html){arrows.dataset.html=html;arrows.innerHTML=html;}
  }
@@ -599,7 +602,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(!blocked){autoPassOwnStack(s);autoPassIdle(s);}
  }
  // Engine and transport codes in plain words; a refusal Forge explains stays as Forge said it.
- const plainError=msg=>/ordered-source|order/i.test(msg)&&/unavailable|not supported/i.test(msg)?'These can\u2019t be reordered here yet, so they\u2019ll resolve in the default order.':/contract is unavailable|is not supported/i.test(msg)?'That choice isn\u2019t available on this table yet.':msg==='MATCH_NOT_READY'?'One moment, the table is catching up.':msg==='STALE_CHOICE'?'That choice ran out. Try again.':/^(CHOICE_INCOMPLETE)$/.test(msg)?'Pick everything this asks for first.':msg==='CHOICE_FULL'?'You\u2019ve already picked the most allowed.':msg;
+ const plainError=msg=>/ordered-source|order/i.test(msg)&&/unavailable|not supported/i.test(msg)?'These can\u2019t be reordered here yet, so they\u2019ll resolve in the default order.':/contract is unavailable|is not supported/i.test(msg)?'That choice isn\u2019t available on this table yet.':msg==='MATCH_NOT_READY'?'One moment, the table is catching up.':msg==='STALE_CHOICE'?'That choice ran out. Try again.':/^(CHOICE_INCOMPLETE)$/.test(msg)?'Pick everything this asks for first.':msg==='CHOICE_FULL'?'You\u2019ve already picked the most allowed.':/attack declaration invalid/i.test(msg)?'That attack isn\u2019t allowed. A creature that must attack this turn has to be in it.':/block declaration invalid/i.test(msg)?'Those blocks aren\u2019t allowed. Check creatures that must block or can\u2019t.':String(msg).replace(/^message:\s*/i,'');
  // Arena's combat line: while you choose attackers or blockers, a gold line runs across the
  // middle of the board, with a small running count at its right end once you have picked one.
  // It never carries text over your creatures; the dock already says what is being asked.
@@ -611,6 +614,24 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(line.dataset.key!==key){line.dataset.key=key;line.dataset.mode=mode;line.innerHTML=k?`<i></i><span><b>${k}</b><small>${mode==='attack'?'attacking':'blocking'}</small></span>`:'<i></i><i></i>';}
   const r=zone.getBoundingClientRect(),v=`${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}`;if(line.dataset.at!==v){line.dataset.at=v;line.style.left=Math.round(r.left)+'px';line.style.top=Math.round(r.top)+'px';line.style.width=Math.round(r.width)+'px';}
  }
+ // Arena's ask line: when Forge needs you to pick something on the table that isn't combat (the legend rule, a
+ // sacrifice, targets), one short instruction sits over your battlefield, so a click is never a guess.
+ let askLine=null;
+ function renderAskLine(n,surface){
+  const picks=(n?.selection?.cards?.length||0)+(n?.selection?.targets?.length||0),input=String(n?.inputType||'');
+  const show=presentation.hosted&&root.dataset.stage==='match'&&!n?.prompt&&picks>0&&!['InputPassPriority','InputAttack','InputBlock','InputConfirmMulligan','InputLockUI'].includes(input)&&!input.startsWith('InputPayMana')&&surface?.prioritySeat!==undefined;
+  const zone=root.querySelector('.play-match-battlefields .play-match-zone[data-owner=you]'),mat=root.querySelector('.play-match-mat');
+  if(!show||!zone||!mat){askLine?.remove();askLine=null;return;}
+  const first=String(n.message||'').split('\n').map(l=>l.trim()).find(l=>l&&!/^(Priority|Turn|Phase|Stack):/.test(l))||'';
+  let text=first.replace(/ \(\d+\)(?=[\s,.:;!?)]|$)/g,'').replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU').replace(/\s*\[Phase: [^\]]*\]/g,'').trim();
+  if(/legend(ary)? rule|same name|choose .* to keep/i.test(text))text='Two legendary permanents share a name. Choose the one to keep.';
+  if(!text)text=input==='InputSelectTargets'?'Choose a target':'Choose a card on the table';
+  const max=Number.isSafeInteger(n.selection?.max)&&n.selection.max>1?` · up to ${n.selection.max}`:'';
+  if(!askLine){askLine=doc.createElement('div');askLine.className='forge-ask-line';askLine.setAttribute('role','status');}
+  if(askLine.parentElement!==mat)mat.append(askLine);
+  const label=text+max;if(askLine.textContent!==label)askLine.textContent=label;
+  const r=zone.getBoundingClientRect(),v=`${Math.round(r.left+r.width/2)}|${Math.round(r.top)}`;if(askLine.dataset.at!==v){askLine.dataset.at=v;askLine.style.left=Math.round(r.left+r.width/2)+'px';askLine.style.top=Math.round(r.top)+'px';}
+ }
  let manaOpen=false;
  const PHASE_STEPS=[['Upkeep',['Untap','Upkeep']],['Draw',['Draw']],['Main',['PreCombatMain']],['Combat',['BeginningOfCombat','DeclareAttackers','DeclareBlockers','FirstStrikeDamage','CombatDamage','EndCombat']],['Main 2',['PostCombatMain']],['End',['End','Cleanup']]];
  function renderPhaseTrack(surface,mat){
@@ -619,7 +640,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(!track){track=doc.createElement('div');track.className='forge-phase-track';track.setAttribute('role','status');mat.append(track);}
   if(track.dataset.key===key)return;track.dataset.key=key;track.dataset.owner=owner;
   const step=PHASE_STEPS[at]?.[0]||'';track.setAttribute('aria-label',`${owner==='you'?'Your':'CPU'} turn ${surface.turn}${step?', '+step:''}`);
-  track.innerHTML=`<b>${owner==='you'?'You':'CPU'} · T${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
+  track.innerHTML=`<b>${owner==='you'?'You':'CPU'} · Turn ${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
  }
  const trackerSeen=new Map(),trackerOpen={deck:false,opponent:false},trackerIdentity=new Map();
  // The deck-list name of one physical card. Forge keeps a card's id when it transforms or becomes a
@@ -1052,7 +1073,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A playable card already sits a few pixels up inside its slot; count that so the popped card's top
   // edge (its name) stays on screen. Short screens keep it nearer 1.5x.
   const lift=-Math.min(0,parseFloat(String(getComputedStyle(handFocus.querySelector('.play-match-card')||handFocus).translate).split(' ')[1])||0),top=12;
-  let k=Math.max(1,Math.min(H<500||W<600&&H>W?2:3,Math.max(1.5,230/(f.w*K)),(bottom-top)/((f.h+lift)*K),(W-12)/(f.w*K))),half=f.w*K*k/2,dx=Math.max(6+half-cx,Math.min(0,W-6-half-cx));
+  // While you pick targets or pay a cost the board must stay visible, so the pop is small then.
+  const picking=(()=>{const i=String(session.snapshot().native?.inputType||'');return i==='InputSelectTargets'||i.startsWith('InputPayMana');})();
+  let k=Math.max(1,Math.min(picking?1.2:H<500||W<600&&H>W?2:3,Math.max(1.5,230/(f.w*K)),(bottom-top)/((f.h+lift)*K),(W-12)/(f.w*K))),half=f.w*K*k/2,dx=Math.max(6+half-cx,Math.min(0,W-6-half-cx));
   let fk=k,fx=dx/K,fy=(bottom-restBottom)/K;
   // Then check against the real box: try the target with transitions off, measure the card, pull it back
   // inside 8px of every edge (shrinking it if it can't fit), and let it animate from where it was.
