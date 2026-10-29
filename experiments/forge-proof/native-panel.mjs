@@ -121,6 +121,8 @@ export const seatWords=msg=>String(msg??'').replace(/\bCardStashy, you are going
 const cpuName=msg=>String(seatWords(msg)).replace(/Forge AI\b.*?\s(?=(?:revealed|reveals|picked|picks|chose|chooses|named|names|casts?|plays?|looked|looks)\b)/,'CPU ').replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU');
 export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
  const doc=container.ownerDocument,s=snapshot,n=s.native;if(!n)return;
+ // On phones the dock is transformed, so a fixed ask line inside it can't float above the hand; this body-level line does.
+ const askLine=text=>{if(!doc.body)return;let line=doc.body.querySelector(':scope>.forge-ask-line');if(!line){line=doc.createElement('div');line.className='forge-ask-line';line.setAttribute('role','status');line.setAttribute('aria-live','polite');doc.body.append(line);}line.textContent=text;line.hidden=!text;};askLine('');
  const copy=(player,proof)=>presentation.hosted?player:proof;
  const phaseNames={UNTAP:'Untap',UPKEEP:'Upkeep',DRAW:'Draw',MAIN1:'Main phase',COMBAT_BEGIN:'Beginning of combat',COMBAT_DECLARE_ATTACKERS:'Choose attackers',COMBAT_DECLARE_BLOCKERS:'Choose blockers',COMBAT_FIRST_STRIKE_DAMAGE:'First strike damage',COMBAT_DAMAGE:'Combat damage',COMBAT_END:'End of combat',MAIN2:'Second main phase',END_OF_TURN:'End step',CLEANUP:'Cleanup'};
  const node=(tag,text,cls)=>{const e=doc.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
@@ -342,9 +344,9 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    else if(input==='InputSelectTargets'&&named)ask=`Choose a target for ${named[1]}`;
    else if(named)ask=named[2];
    if(!ask)ask=input==='InputSelectTargets'?'Choose a target':'Choose a card on the table';if(oneTarget)ask=ask.replace(/^(Select|Choose) (a )?targets? for/i,'Tap a target for');
-   actions.dataset.state=ask;actions.dataset.ask='true';}
+   actions.dataset.state=ask;actions.dataset.ask='true';askLine(ask);}
   // A payment your mana can't finish says so above the hand; Cancel is the way out.
-  else if(presentation.hosted&&paying?.short){actions.dataset.state=`Not enough mana${paying.name?` for ${paying.name}`:''}`;actions.dataset.ask='true';}
+  else if(presentation.hosted&&paying?.short){actions.dataset.state=`Not enough mana${paying.name?` for ${paying.name}`:''}`;actions.dataset.ask='true';askLine(actions.dataset.state);}
   for(const op of ['ok','cancel'])if(buttons[op]!==undefined){
    if(asking&&op==='ok'&&buttons.okEnabled!==true)continue;
    if(oneTarget&&op==='ok'){if(n.selection?.min===0&&buttons.okEnabled===true){const none=button('No target',()=>session.nativeButton('ok',n.revision),false,'ok');actions.append(none);}continue;}

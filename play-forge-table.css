@@ -2215,3 +2215,9 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions[data-complex]:has(.forge-order-cards) .forge-native-panel{background:#0d1016f6!important;border:1px solid #d6ad6444!important;border-radius:20px!important;box-shadow:0 0 0 100vmax #05060ab8,0 30px 70px #000d!important;padding:clamp(12px,2.4dvh,22px) clamp(12px,3vw,24px)!important;backdrop-filter:blur(8px)}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions[data-complex]:has(.forge-order-cards) .forge-native-context{display:grid!important;justify-items:center}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions[data-complex]:has(.forge-order-cards) .forge-native-context>:not(h2){display:none}
+/* Phones: the ask line ("Tap a target for X", "Not enough mana for X") floats centred above the hand from <body>, since the dock is transformed there. */
+.forge-ask-line{display:none}
+@media (max-width:640px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-ask=true]::before{display:none!important}
+ :where(body.practice-table-open) .forge-ask-line{display:block;position:fixed;left:50%;top:calc(var(--forge-ask-top,var(--forge-hand-top,60vh)) - 10px);translate:-50% -100%;z-index:2545;width:max-content;max-width:calc(100vw - 32px);padding:7px 14px;border:1px solid #ffffff22;border-radius:999px;background:#101319ee;color:#fbf3df;font:700 13px/1.3 'DM Sans',system-ui,sans-serif;text-align:center;box-shadow:0 8px 24px #0008;pointer-events:none}
+ :where(body.practice-table-open) .forge-ask-line[hidden]{display:none}
+ :where(body.practice-table-open[data-forge-search]) .forge-ask-line,:where(body.practice-table-open) .play-match-table[data-forge-native]:has(.forge-order-cards)~.forge-ask-line{visibility:hidden}}
