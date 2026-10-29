@@ -174,7 +174,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   if(r.onPlay.games&&r.onDraw.games)deck.append(node('small',`On the play ${r.onPlay.wins}/${r.onPlay.games} · On the draw ${r.onDraw.wins}/${r.onDraw.games}`));
   box.append(list,deck);if(row.conceded)box.append(node('p','You conceded.'));
   const goals=node('ul');goals.className='play-result-goals';goals.setAttribute('aria-label','Goals');
-  for(const g of goalProgress()){const li=node('li');li.setAttribute('data-done',String(g.done));if(g.justDone)li.setAttribute('data-just','true');li.append(node('span',g.done?'✓':`${g.have}/${g.need}`),node('b',g.justDone?`${g.label} · done!`:g.label));goals.append(li);}
+  for(const g of goalProgress()){const li=node('li');li.setAttribute('data-done',String(g.done));if(g.justDone)li.setAttribute('data-just','true');if(g.done)li.append(node('span','✓'));li.append(node('b',g.justDone?`${g.label} · done!`:g.done?g.label:`${g.label} · ${g.have}/${g.need}`));goals.append(li);}
   box.append(goals);return box;
  }
  // Inspect board swaps the result for the frozen final table, read only, with a way back.

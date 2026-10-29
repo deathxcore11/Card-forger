@@ -1894,7 +1894,7 @@ body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
 :where(body.practice-table-open) .forge-activity .forge-speed{position:relative}
 :where(body.practice-table-open) .forge-activity .forge-speed::after{content:'';position:absolute;left:-8px;right:-8px;top:50%;height:44px;translate:0 -50%}
 /* Emotes: a small round button on your seat, a menu above it, and short speech bubbles by each portrait. */
-:where(body.practice-table-open) .play-match-seat[data-seat=you]>.forge-emote-button{position:absolute;top:-10px;right:-10px;z-index:6;width:30px!important;height:30px!important;min-width:0!important;min-height:0!important;padding:0!important;display:grid;place-items:center;border-radius:50%;border:1px solid #d6ad6466;background:#14161dd9;color:#e9dfcb;box-shadow:0 4px 12px #0009;cursor:pointer;backdrop-filter:blur(4px)}
+:where(body.practice-table-open) .play-match-seat[data-seat=you]>.forge-emote-button{position:absolute;top:-15px;right:-15px;z-index:6;width:30px!important;height:30px!important;min-width:0!important;min-height:0!important;padding:0!important;display:grid;place-items:center;border-radius:50%;border:1px solid #d6ad6466;background:#14161dd9;color:#e9dfcb;box-shadow:0 4px 12px #0009;cursor:pointer;backdrop-filter:blur(4px)}
 :where(body.practice-table-open) .play-match-seat[data-seat=you]>.forge-emote-button::after{content:'';position:absolute;inset:-7px}
 :where(body.practice-table-open) .play-match-seat[data-seat=you]>.forge-emote-button svg{width:17px;height:17px}
 :where(body.practice-table-open) .play-match-seat[data-seat=you]>.forge-emote-button:is(:hover,[aria-expanded=true]){border-color:#f0c27a;color:#f2d18e}
