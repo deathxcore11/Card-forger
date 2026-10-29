@@ -516,14 +516,14 @@ public final class ForgeHttpBridge implements IRemote {
         var input=controller==null?null:controller.getInputProxy().getInput();
         if(!(input instanceof forge.gamemodes.match.input.InputPassPriority)||failure!=null||concessionRequested||game==null){blockedInput=null;blocked=List.of();affordability=Map.of();return;}
         if(input==blockedInput)return;
-        List<Map<String,Object>> out=new ArrayList<>();Map<Integer,Map<String,Object>> afford=new HashMap<>();
+        List<Map<String,Object>> out=new ArrayList<>();Map<Integer,Map<String,Object>> afford=new HashMap<>();Map<Integer,SpellAbility> plans=new HashMap<>();
         try{
             Player p=controller.getPlayer();Set<Integer> glowing=new HashSet<>();
             for(CardView c:sel.actionable())glowing.add(c.getId());
             long deadline=System.nanoTime()+BLOCKED_BUDGET_MS*1_000_000L;
             p.runWithController(()->{
                 for(ZoneType zone:List.of(ZoneType.Hand,ZoneType.Battlefield,ZoneType.Command,ZoneType.Flashback))for(var c:p.getCardsIn(zone)){
-                    if(glowing.contains(c.getId())&&System.nanoTime()<deadline)afford.put(c.getId(),affordability(c,p,deadline));
+                    if(glowing.contains(c.getId())&&System.nanoTime()<deadline)afford.put(c.getId(),affordability(c,p,deadline,plans));
                 }
                 for(ZoneType zone:List.of(ZoneType.Hand,ZoneType.Battlefield,ZoneType.Command,ZoneType.Flashback))for(var c:p.getCardsIn(zone)){
                     if(System.nanoTime()>=deadline)return;
@@ -532,23 +532,48 @@ public final class ForgeHttpBridge implements IRemote {
                     if(reason!=null)out.add(obj("kind","card","id",c.getId(),"reason",reason));
                 }
             },new forge.ai.PlayerControllerAi(game,p,p.getOriginalLobbyPlayer()));
-        }catch(RuntimeException ignored){out.clear();afford.clear();}
+        }catch(RuntimeException ignored){out.clear();afford.clear();plans.clear();}
         blocked=List.copyOf(out);affordability=Map.copyOf(afford);blockedInput=input;
+        if(!plans.isEmpty())planTapsLater(input,plans);
+    }
+    /** Tap previews cost a cold planner run, so they are worked out just after the prompt is
+     *  shown and added to that same publication (same revision): an action sent meanwhile stays valid. */
+    void planTapsLater(forge.gamemodes.match.input.Input input,Map<Integer,SpellAbility> plans){
+        forge.gui.FThreads.invokeInEdtLater(()->{
+            if(input!=blockedInput||controller==null||input!=controller.getInputProxy().getInput()||failure!=null||concessionRequested)return;
+            Map<Integer,Map<String,Object>> extra=new HashMap<>();
+            try{
+                Player p=controller.getPlayer();
+                p.runWithController(()->{
+                    for(var e:plans.entrySet()){Map<String,Object> m=new LinkedHashMap<>();tapPlan(e.getValue(),p,m);if(!m.isEmpty())extra.put(e.getKey(),m);}
+                },new forge.ai.PlayerControllerAi(game,p,p.getOriginalLobbyPlayer()));
+            }catch(RuntimeException ignored){return;}
+            if(extra.isEmpty())return;
+            synchronized(lock){
+                if(input!=blockedInput||input!=publishedInput||busy||commandInFlight||pending!=null||failure!=null||concessionRequested)return;
+                Map<Integer,Map<String,Object>> merged=new HashMap<>(affordability);
+                for(var e:extra.entrySet()){Map<String,Object> m=new LinkedHashMap<>(merged.getOrDefault(e.getKey(),Map.of()));m.putAll(e.getValue());merged.put(e.getKey(),m);}
+                affordability=Map.copyOf(merged);
+                if(!(published.get().get("selection") instanceof Map<?,?> sel))return;
+                Map<String,Object> nextSel=new LinkedHashMap<>();for(var e:sel.entrySet())nextSel.put((String)e.getKey(),e.getValue());
+                nextSel.put("actionable",actionableRefs());
+                Map<String,Object> next=new LinkedHashMap<>(published.get());next.put("selection",nextSel);published.set(next);
+            }
+        });
     }
     /** affordability: "available" when one usable ability of the card is proven payable now, otherwise "unknown". */
-    static Map<String,Object> affordability(forge.game.card.Card c,Player p,long deadline){
+    static Map<String,Object> affordability(forge.game.card.Card c,Player p,long deadline,Map<Integer,SpellAbility> plans){
         SpellAbility first=null;
         for(SpellAbility sa:c.getAllPossibleAbilities(p,true)){
             if(sa.isManaAbility()||c.isInPlay()&&(sa.isSpell()||sa.isLandAbility()))continue;
             if(sa.isLandAbility())return obj("affordability","available");
             if(first==null)first=sa;
             if(forge.ai.HumanActionAffordability.assess(sa,p,deadline)==forge.ai.HumanActionAffordability.Assessment.AVAILABLE){
-                Map<String,Object> m=obj("affordability","available");tapPlan(sa,p,m);return m;
+                plans.put(c.getId(),sa);return obj("affordability","available");
             }
         }
-        Map<String,Object> m=obj("affordability","unknown");
-        if(first!=null)tapPlan(first,p,m);
-        return m;
+        if(first!=null)plans.put(c.getId(),first);
+        return obj("affordability","unknown");
     }
     /** The sources Forge's own Auto would tap for this ability (Auto runs the same planner), and a
      *  warning when that plan costs life (pain lands) or sacrifices a source (Treasure). */

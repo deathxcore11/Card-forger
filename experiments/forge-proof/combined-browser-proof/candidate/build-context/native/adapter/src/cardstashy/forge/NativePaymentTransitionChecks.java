@@ -66,7 +66,14 @@ public final class NativePaymentTransitionChecks {
   var task=new FutureTask<Boolean>(()->{var choices=c.ctrl.chooseSpellAbilityToPlay();return choices!=null&&choices.size()==1&&c.ctrl.playChosenSpellAbility(choices.get(0));});new Thread(task,"native-payment-fixture").start();
   long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(8);
   while(!(c.ctrl.getInputProxy().getInput() instanceof InputPassPriority)&&System.nanoTime()<deadline)Thread.sleep(1);
-  SwingUtilities.invokeAndWait(()->{});Thread.sleep(25); // settle initial prompt before starting the measured operation
+  // Settle the initial prompt before the measured operation: its receipt is published, idle,
+  // and unchanged for 25 ms (a cold first prompt can publish after a fixed 25 ms sleep).
+  SwingUtilities.invokeAndWait(()->{});
+  for(long rev=-1,since=System.nanoTime();System.nanoTime()<deadline;Thread.sleep(1)){
+   var snap=c.bridge.published.get();long now=((Number)snap.get("revision")).longValue();
+   if(now!=rev){rev=now;since=System.nanoTime();continue;}
+   if("InputPassPriority".equals(snap.get("inputType"))&&!Boolean.TRUE.equals(snap.get("busy"))&&System.nanoTime()-since>=TimeUnit.MILLISECONDS.toNanos(25))break;
+  }
   Set<Integer> answeredPrompts=new HashSet<>();List<Object> actions=new ArrayList<>(),rejectionChecks=new ArrayList<>();actions.add(send(c,port,"card",Map.of("id",mimic.getId())));
   int obsoleteAutoWindows=0,observedPending=0,missingBusy=0,manualCommands=0;boolean paymentWindow=false;
   long lastRevision=-1,stableSince=System.nanoTime();
