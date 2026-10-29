@@ -1342,28 +1342,38 @@ export function registerScanner(ctx) {
       if (c) Object.assign(box.style, { left: c.x * 100 + "%", top: c.y * 100 + "%", width: c.w * 100 + "%", height: c.h * 100 + "%" });
     };
     show();
-    let start = null;
+    // One finger owns a crop drag. A second finger is ignored, and a cancelled drag (a system gesture, an app
+    // switch, a rotation) puts back the crop it started from instead of leaving a half-drawn box or a live drag.
+    let start = null, owner = null, before = null;
     const pt = (e) => {
       const r = wrap.getBoundingClientRect();
       return { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) };
     };
     wrap.onpointerdown = (e) => {
-      if(!current())return;
-      start = pt(e);
-      wrap.setPointerCapture(e.pointerId);
+      if(!current()||owner!==null||e.isPrimary===false)return;
+      start = pt(e);owner = e.pointerId;before = s().crop ? { ...s().crop } : null;
+      wrap.setPointerCapture?.(e.pointerId);
       e.preventDefault();
     };
     wrap.onpointermove = (e) => {
-      if (!current()||!start) return;
+      if (!current()||!start||e.pointerId!==owner) return;
       const p = pt(e);
       s().crop = { x: Math.min(start.x, p.x), y: Math.min(start.y, p.y), w: Math.abs(p.x - start.x), h: Math.abs(p.y - start.y) };
       show();
     };
-    wrap.onpointerup = () => {
+    wrap.onpointerup = (e) => {
+      if(e.pointerId!==owner)return;
+      start = null;owner = null;before = null;
       if(!current())return;
-      start = null;
       const c = s().crop;
       if (c && (c.w < 0.08 || c.h < 0.08)) s().crop = null;
+      show();
+    };
+    wrap.onpointercancel = wrap.onlostpointercapture = (e) => {
+      if(e.pointerId!==owner)return;
+      start = null;owner = null;
+      if(current())s().crop = before;
+      before = null;
       show();
     };
   };

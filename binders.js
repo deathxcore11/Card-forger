@@ -125,7 +125,7 @@ export function animateTurn(root, oldPage, dir, { dragged = false } = {}) {
 // it turns, otherwise it settles back. Taps still open cards; the edges and ← → keys turn too.
 export function attachBinderDrag(root,onTurn) {
   const page=root.querySelector('.stash-pocket-page'); if (!page) return ()=>{};
-  let drag=null,timer=null,disposed=false,swallowClick=false;
+  let drag=null,timer=null,disposed=false,swallowUntil=0;
   const view=root.ownerDocument?.defaultView || window, reduced=prefersReduced(view);
   const can=dir=>{const edge=root.querySelector(`[data-page-edge="${dir}"]`);return !!edge && !edge.disabled;};
   const reset=()=>{page.style.transition='transform 220ms ease, opacity 220ms ease';page.style.transform='rotateY(0deg)';page.style.opacity='1';page.style.setProperty?.('--turn','0');setTimeout(()=>{page.classList?.remove('turning');root.querySelectorAll?.('.stash-under').forEach(u=>{u.hidden=true;});},230);};
@@ -166,7 +166,9 @@ export function attachBinderDrag(root,onTurn) {
     if(!drag || e.pointerId!==drag.id)return;
     const d=drag;drag=null;
     const elapsed=Math.max(1,Date.now()-d.start), tap=d.moved<6&&elapsed<450, flick=d.progress*d.width/elapsed>.45&&d.progress*d.width>30;
-    if(d.live) swallowClick=true;
+    // Only a real lift is followed by a click; a cancelled swipe (a system gesture, folding) never gets one,
+    // so it must not leave the next tap swallowed. The window is short either way.
+    if(d.live && e.type!=='pointercancel') swallowUntil=Date.now()+400;
     if(!d.live && !(d.edge && tap)) return;
     const dir=d.dir;
     if(e.type==='pointercancel' || !can(dir) || !(d.edge&&tap || d.progress>.3 || flick)) return reset();
@@ -177,7 +179,7 @@ export function attachBinderDrag(root,onTurn) {
   };
   // After a swipe, the click that follows must not open the card under the finger.
   const click=e=>{
-    if(swallowClick){swallowClick=false;e.preventDefault?.();e.stopPropagation?.();return;}
+    if(Date.now()<swallowUntil){swallowUntil=0;e.preventDefault?.();e.stopPropagation?.();return;}
     const edge=e.target.closest?.('[data-page-edge]');if(edge&&!edge.disabled&&e.detail===0&&!drag&&!timer)onTurn(Number(edge.dataset.pageEdge));
   };
   const key=e=>{
