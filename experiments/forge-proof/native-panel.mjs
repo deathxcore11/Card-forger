@@ -336,6 +336,9 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    if(presentation.hosted&&presentation.shortNext===true&&/^Next: /.test(label)){action.textContent=SHORT_STEP[label]||'Next';action.setAttribute('aria-label',label);action.title=label.replace(/^Next: /,'Next step: ');}
    actions.append(action);
   }
+  // Arena's "Attack all": every creature Forge offers as an attacker joins, one click each, in order.
+  if(presentation.hosted&&n.inputType==='InputAttack'&&!n.prompt){const offered=(n.selection?.cards||[]).filter(r=>r?.kind==='card').map(r=>s.status.surface.cards.find(c=>c.id===r.id)).filter(c=>c&&c.zone==='Battlefield'&&c.controller===s.status.surface.seat&&c.attacking!==true);
+   if(offered.length&&(n.selection?.cards||[]).filter(r=>r?.kind==='card').length>=2){const all=button('Attack all',async()=>{for(const c of offered){const now=session.snapshot();if(now.native?.inputType!=='InputAttack'||now.native?.prompt||now.native?.lastActionError)break;if(now.status?.surface.cards.find(x=>x.id===c.id)?.attacking)continue;await session.nativeSelect('card',c.id);for(let i=0;i<60&&session.snapshot().busy;i++)await new Promise(r=>setTimeout(r,50));}},false,'attack-all');all.className='forge-attack-all';actions.prepend(all);}}
   // Phones hide the phase track, so the main action carries one quiet line of where you are: "CPU turn · Main · Your response".
   if(presentation.hosted&&actions.childNodes.length&&n.inputType==='InputPassPriority'&&!n.prompt){const where=PHASE_SHORT[n.phase]||'',yours=n.activePlayer===n.viewer,why=n.stack?.length&&n.stack[0]?.activatingPlayer!==n.viewer?'Your response':yours?'Your move':'Your response';actions.dataset.state=[yours?'':'CPU turn',where,why].filter(Boolean).join(' · ');}
   if(actions.childNodes.length||actions.dataset.ask==='true')panel.append(actions);

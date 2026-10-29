@@ -2110,3 +2110,6 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .forge-arrows .forge-unblock{pointer-events:all;cursor:pointer}
 :where(body.practice-table-open) .forge-arrows .forge-unblock circle{fill:#14161df0;stroke:#ff8a6a;stroke-width:1.5}
 :where(body.practice-table-open) .forge-arrows .forge-unblock path{stroke:#fff1ec;stroke-width:2;stroke-linecap:round}
+/* Swipe-to-attack: a creature your thumb has passed glows red until Forge confirms it. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-forge-swiped=true]{outline:2px solid #ff8a6a;outline-offset:2px}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-native-actions>.forge-attack-all{background:#14161de6!important;color:#ffd9cf!important;border:1px solid #ff8a6a88!important}
