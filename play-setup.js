@@ -12,7 +12,9 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
  const MAX_ROWS=2500,MAX_TEXT=100000,MAX_DECK_BYTES=2000000;
  let key=null,epoch=0,operation=0,owner=null,locked=false,account={},saved=[],selectedId=null,selectedImport=null,candidate=null,opponent=null,inspectedSeat='player',selectedKind=null,opponentSource=null,playStyle='practice',quickMatch=null,quickPlayerKey=null;
  let draft={name:'',text:'',format:''},importStatus='idle',error=null,warnings=[],importErrors=[],unresolved=[],busy=false;
- let match={format:'Commander',mode:'cpu',difficulty:savedCpuLevel(),startingPlayer:'random'},browse={query:'',source:'yours'};
+ let match={format:'Commander',mode:'cpu',difficulty:savedCpuLevel(),startingPlayer:'random',podSize:'2',cpu3Level:'Medium',cpu4Level:'Medium'},browse={query:'',source:'yours'};
+ // Commander pods (Practice only): the extra CPUs' random decks, picked when the match starts.
+ let extraOpponents=[];
  const text=(v,max)=>typeof v==='string'&&v.length<=max?v:'';
  const identity=v=>(typeof v==='string'||typeof v==='number')&&String(v).length>0&&String(v).length<=160?String(v):null;
  function clone(value){
@@ -73,9 +75,14 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
   if(selectedId!==null){const source=saved.find(d=>identity(d?.id)===selectedId);if(source)selected=inspectDeck(source).deck;}
   else if(selectedImport)selected=clone(selectedImport);
   if(quickMatch&&JSON.stringify(selected)!==quickPlayerKey){opponent=null;opponentSource=null;quickMatch=null;}
-  return {profile:profile(),decks,selected,opponent:opponent?clone(opponent):null,inspectedSeat,playStyle,quickMatch:quickMatch?clone(quickMatch):null,match:{...match},browse:{...browse},importCandidate:candidate?clone(candidate):null,reviewDeck:candidate?clone(candidate):null,selectedSource:selectedId!==null?'saved':selectedImport?(selectedKind||'import'):null,opponentSource,importStatus,error,warnings:[...warnings],importErrors:[...importErrors],unresolved:[...unresolved],busy,draft:{...draft},readiness:{ready:false,code:'engine-verification-pending',reason:'Matches are unavailable while the rules engine, CPU and recovery checks are being verified.'}};
+  return {profile:profile(),decks,selected,opponent:opponent?clone(opponent):null,inspectedSeat,playStyle,quickMatch:quickMatch?clone(quickMatch):null,match:{...match},extraOpponents:pod()?extraOpponents.map(x=>({deck:clone(x.deck),difficulty:x.difficulty})):[],browse:{...browse},importCandidate:candidate?clone(candidate):null,reviewDeck:candidate?clone(candidate):null,selectedSource:selectedId!==null?'saved':selectedImport?(selectedKind||'import'):null,opponentSource,importStatus,error,warnings:[...warnings],importErrors:[...importErrors],unresolved:[...unresolved],busy,draft:{...draft},readiness:{ready:false,code:'engine-verification-pending',reason:'Matches are unavailable while the rules engine, CPU and recovery checks are being verified.'}};
  }
  function snapshot(){sync();return value();}
+ const pod=()=>match.format==='Commander'&&playStyle==='practice'&&match.mode==='cpu'&&Number(match.podSize)>2;
+ // The pod's extra seats, in seat order (CPU 3 then CPU 4), each with its own level.
+ function setExtraOpponents(decks){sync();if(!pod())throw Error('Four-player games are Commander Practice only.');const want=Number(match.podSize)-2;
+  if(!Array.isArray(decks)||decks.length!==want||decks.some(d=>inspectDeck(d).issues.length||d?.format!=='Commander'))throw Error('Each extra CPU needs a complete Commander deck.');
+  extraOpponents=decks.map((d,i)=>({deck:clone(d),difficulty:i===0?match.cpu3Level:match.cpu4Level}));return value();}
  function notify(){onChange?.(value());}
  function reconcile(){const changed=sync();if(changed)notify();return value();}
  function requireAccount(){if(!owner||locked){error=locked?'Account switching is in progress.':'Sign in to choose or import a Magic deck.';return false;}return true;}
@@ -90,15 +97,18 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
  }
  function configure(partial){
   sync();
-  const allowed={format:['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'],mode:['cpu','friends'],difficulty:['Easy','Medium','Hard'],startingPlayer:['random','first','second']};
+  const allowed={format:['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'],mode:['cpu','friends'],difficulty:['Easy','Medium','Hard'],startingPlayer:['random','first','second'],podSize:['2','3','4'],cpu3Level:['Easy','Medium','Hard'],cpu4Level:['Easy','Medium','Hard']};
   if(!partial||Array.isArray(partial)||typeof partial!=='object'||Object.entries(partial).some(([k,v])=>!Object.hasOwn(allowed,k)||!allowed[k].includes(v))){error='Choose an available format, opponent and starting player.';return value();}
   if(partial.format&&partial.format!==match.format){
    operation++;selectedId=null;selectedImport=null;candidate=null;opponent=null;inspectedSeat='player';selectedKind=null;opponentSource=null;busy=false;importStatus='idle';warnings=[];importErrors=[];unresolved=[];
    draft={...draft,format:partial.format};
   }
   if(partial.mode==='friends')inspectedSeat='player';
+  extraOpponents=[];
   if(partial.difficulty&&partial.difficulty!==match.difficulty){retireQuick();try{globalThis.localStorage?.setItem(CPU_LEVEL_KEY,partial.difficulty);}catch{/* this device only */}}
-  quickMatch=partial.format?null:quickMatch;match={...match,...partial,...(playStyle==='quick'?{startingPlayer:'random'}:{})};error=null;notify();return value();
+  quickMatch=partial.format?null:quickMatch;match={...match,...partial,...(playStyle==='quick'?{startingPlayer:'random'}:{})};
+  // Pods are Commander and Practice only.
+  if(match.format!=='Commander'||playStyle==='quick'||match.mode!=='cpu')match.podSize='2';error=null;notify();return value();
  }
  function searchDecks(query){sync();if(typeof query==='string'&&query.length<=160)browse={...browse,query};return value();}
  function setSource(source){sync();if(!['yours','precons','community','meta','random'].includes(source))throw Error('Unknown deck source.');browse={source,query:''};notify();return value();}
@@ -162,5 +172,5 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
  function setPlayStyle(style){sync();if(!['quick','practice'].includes(style))throw Error('Unknown play style.');playStyle=style;quickMatch=null;inspectedSeat='player';if(style==='quick'){opponent=null;opponentSource=null;match={...match,startingPlayer:'random'};}notify();return value();}
  function setQuickOpponent(result){sync();if(!requireAccount()||match.mode!=='cpu'||playStyle!=='quick'||result?.difficulty!==match.difficulty)throw Error('The matchup changed. Find a CPU deck again.');chooseOpponent(result.deck);opponentSource='quick';inspectedSeat='player';quickPlayerKey=JSON.stringify(value().selected);quickMatch={reason:String(result.reason||''),candidateCount:result.candidateCount,estimated:result.estimated,difficulty:result.difficulty};notify();return value();}
  function inspectSeat(seat){sync();if(!['player','opponent'].includes(seat))throw Error('Unknown seat.');inspectedSeat=seat;return value();}
- return {snapshot,reconcile,refresh:reconcile,selectDeck,chooseTemporary,chooseOpponent,setPlayStyle,setQuickOpponent,inspectSeat,configure,searchDecks,setSource,updateDraft,importPaste,importDraft:()=>{sync();return importPaste(draft.text,{name:draft.name,format:draft.format});},reviewImport,clearImport,clearSelection};
+ return {snapshot,setExtraOpponents,reconcile,refresh:reconcile,selectDeck,chooseTemporary,chooseOpponent,setPlayStyle,setQuickOpponent,inspectSeat,configure,searchDecks,setSource,updateDraft,importPaste,importDraft:()=>{sync();return importPaste(draft.text,{name:draft.name,format:draft.format});},reviewImport,clearImport,clearSelection};
 }

@@ -49,8 +49,10 @@ export function eventPlaybackBeats(before,after){
  const b=after?.status?.surface;
  if(!b||after.status.terminal||after.status.failure)return [];
  const events=eventsSince(before,after);if(events===null)return null;
- const cpuSeat=b.players.find(p=>p.seat!==b.seat),cpu=cpuSeat?.nativeId,me=b.players.find(p=>p.seat===b.seat)?.nativeId;
- if(cpu===undefined)return [];
+ // Every opponent is a CPU; in a Commander pod each one is told by name (its commander).
+ const rivals=b.players.filter(p=>p.seat!==b.seat),pod=rivals.length>1,me=b.players.find(p=>p.seat===b.seat)?.nativeId;
+ if(!rivals.length)return [];
+ const rival=id=>rivals.find(p=>p.nativeId===id),isCpu=id=>!!rival(id),cpuName=id=>pod?rival(id)?.label||'CPU':'CPU',CPU=id=>cpuName(id).toUpperCase();
  const now=new Map(b.cards.map(c=>[c.id,c])),was=new Map((before?.status?.surface?.cards||[]).map(c=>[c.id,c]));
  // The board's own copy of a card when it can be seen; otherwise the name the log gave it.
  const cardFor=ref=>{
@@ -58,61 +60,63 @@ export function eventPlaybackBeats(before,after){
   const c=now.get(ref.id)?.known?now.get(ref.id):was.get(ref.id)?.known?was.get(ref.id):null;if(c)return c;
   return typeof ref.name==='string'&&ref.name?{id:ref.id,name:ref.name,known:true,types:[],type:'',text:''}:null;
  };
- const who=id=>id===cpu?'CPU':id===me?'You':null;
- const nameOf=ref=>ref?.kind==='player'?(ref.id===me?'you':ref.id===cpu?'the CPU':null):cardFor(ref)?.name||null;
+ const who=id=>isCpu(id)?cpuName(id):id===me?'You':null;
+ const nameOf=ref=>ref?.kind==='player'?(ref.id===me?'you':isCpu(ref.id)?(pod?cpuName(ref.id):'the CPU'):null):cardFor(ref)?.name||null;
  // Spells the CPU has on the stack: ones already there, and ones cast in this batch.
- const cpuSources=new Set((before?.status?.surface?.stack||[]).filter(s=>s.controller===cpuSeat.seat&&Number.isSafeInteger(s.source)).map(s=>s.source));
+ const cpuSources=new Set((before?.status?.surface?.stack||[]).filter(s=>s.controller!==b.seat&&Number.isSafeInteger(s.source)).map(s=>s.source));
  const beats=[],shown=new Set();
- const push=(e,beat)=>beats.push({seq:e.seq,targets:[],text:'',...beat});
+ const push=(e,beat)=>beats.push({seq:e.seq,targets:[],text:'',...(isCpu(e.player)?{actor:cpuName(e.player)}:{}),...beat});
  for(let i=0;i<events.length;i++){
   const e=events[i];
   const run=test=>{const out=[e];while(i+1<events.length&&test(events[i+1]))out.push(events[++i]);return out;};
-  if(e.type==='turn'){push(e,{kind:'phase',tone:'turn',label:e.player===cpu?'OPPONENT’S TURN':'YOUR TURN',line:e.player===cpu?`CPU's turn ${e.number??''}`.trim()+'.':'Your turn.',duration:600});continue;}
-  if(e.type==='land'&&e.player===cpu){
+  if(e.type==='turn'){push(e,{kind:'phase',tone:'turn',label:isCpu(e.player)?(pod?`${CPU(e.player)}’S TURN`:'OPPONENT’S TURN'):'YOUR TURN',line:isCpu(e.player)?`${cpuName(e.player)}'s turn ${e.number??''}`.trim()+'.':'Your turn.',duration:600});continue;}
+  if(e.type==='land'&&isCpu(e.player)){
    // A land never gets a spell's spotlight: it settles into its row when the board updates,
    // and the log says so. A zero-length beat keeps its place in the order without holding.
    const card=cardFor(e.card);if(!card)continue;shown.add(card.id);
-   push(e,{kind:'log',label:'',line:`CPU played ${card.name}.`,duration:0});continue;
+   push(e,{kind:'log',label:'',line:`${cpuName(e.player)} played ${card.name}.`,duration:0});continue;
   }
-  if((e.type==='cast'||e.type==='ability')&&e.player===cpu){
+  if((e.type==='cast'||e.type==='ability')&&isCpu(e.player)){
    const card=cardFor(e.source);if(!card)continue;shown.add(card.id);cpuSources.add(card.id);
    const targets=refs(e.targets),named=targets.map(nameOf).filter(Boolean),item=after.native?.stack?.find(s=>s.id===e.stackId);
    const verb=e.type==='cast'?'cast':`activated`;
-   push(e,{kind:'spell',label:e.type==='cast'?'CPU · CASTS':'CPU · ACTIVATES',card,stackId:e.stackId,targets,
-    text:e.type==='cast'?card.text||'':item?.text||'',line:`CPU ${verb} ${card.name}${e.type==='ability'?'’s ability':''}${named.length?` targeting ${list(named)}`:''}.`,duration:named.length?1300:1100});
+   push(e,{kind:'spell',label:`${CPU(e.player)} · ${e.type==='cast'?'CASTS':'ACTIVATES'}`,card,stackId:e.stackId,targets,
+    text:e.type==='cast'?card.text||'':item?.text||'',line:`${cpuName(e.player)} ${verb} ${card.name}${e.type==='ability'?'’s ability':''}${named.length?` targeting ${list(named)}`:''}.`,duration:named.length?1300:1100});
    continue;
   }
-  if(e.type==='trigger'&&e.player===cpu){
-   const all=run(x=>x.type==='trigger'&&x.player===cpu),names=[...new Set(all.map(x=>cardFor(x.source)?.name).filter(Boolean))];
+  if(e.type==='trigger'&&isCpu(e.player)){
+   const all=run(x=>x.type==='trigger'&&x.player===e.player),names=[...new Set(all.map(x=>cardFor(x.source)?.name).filter(Boolean))];
    if(!names.length)continue;for(const x of all){const c=cardFor(x.source);if(c)cpuSources.add(c.id);}
    const card=all.length===1?cardFor(e.source):null,targets=all.length===1?refs(e.targets):[];
-   push(e,card?{kind:'spell',label:'CPU · TRIGGER',card,targets,text:after.native?.stack?.find(s=>s.id===e.stackId)?.text||'',line:`${card.name} triggered.`,duration:800}
-    :{kind:'phase',tone:'trigger',label:`${count(all.length,'CPU TRIGGER')}`.toUpperCase(),line:`${list(names)} triggered.`,duration:700});
+   push(e,card?{kind:'spell',label:`${CPU(e.player)} · TRIGGER`,card,targets,text:after.native?.stack?.find(s=>s.id===e.stackId)?.text||'',line:`${card.name} triggered.`,duration:800}
+    :{kind:'phase',tone:'trigger',label:`${count(all.length,CPU(e.player)+' TRIGGER')}`.toUpperCase(),line:`${list(names)} triggered.`,duration:700});
    continue;
   }
   if(e.type==='resolve'){
    const card=cardFor(e.source);if(!card||!cpuSources.has(card.id))continue;
-   push(e,{kind:'resolve',label:e.fizzled?'CPU · NO LEGAL TARGETS':'CPU · RESOLVES',card,text:'',line:e.fizzled?`${card.name} had no legal targets left, so it didn't resolve.`:`${card.name} resolved.`,duration:e.fizzled?800:550});
+   push(e,{kind:'resolve',label:`${pod?'':'CPU · '}${e.fizzled?'NO LEGAL TARGETS':'RESOLVES'}`,card,text:'',line:e.fizzled?`${card.name} had no legal targets left, so it didn't resolve.`:`${card.name} resolved.`,duration:e.fizzled?800:550});
    continue;
   }
-  if(e.type==='attack'&&e.player===cpu){
+  if(e.type==='attack'&&isCpu(e.player)){
    const attackers=(Array.isArray(e.attackers)?e.attackers:[]).filter(a=>Number.isSafeInteger(a?.id));if(!attackers.length)continue;
    const names=attackers.map(a=>cardFor(a)?.name).filter(Boolean);
-   push(e,{kind:'phase',tone:'attack',label:`CPU ATTACKS WITH ${count(attackers.length,'CREATURE')}`.toUpperCase(),line:`CPU attacked with ${list(names.length?names:[count(attackers.length,'creature')])}.`,duration:900});
+   // In a pod, say whom: "KRENKO ATTACKS YOU" / "Krenko attacked Giada with Goblin Guide".
+   const hit=pod?[...new Set(attackers.map(a=>a.target?.kind==='player'?nameOf(a.target):null).filter(Boolean))]:[];
+   push(e,{kind:'phase',tone:'attack',label:hit.length===1?`${CPU(e.player)} ATTACKS ${hit[0].toUpperCase()}`:`${CPU(e.player)} ATTACKS WITH ${count(attackers.length,'CREATURE')}`.toUpperCase(),line:`${cpuName(e.player)} attacked${hit.length?' '+list(hit):''} with ${list(names.length?names:[count(attackers.length,'creature')])}.`,duration:900});
    continue;
   }
-  if(e.type==='block'&&e.player===cpu){
+  if(e.type==='block'&&isCpu(e.player)){
    const blockers=(Array.isArray(e.blockers)?e.blockers:[]).filter(x=>Number.isSafeInteger(x?.id));if(!blockers.length)continue;
    const pairs=blockers.map(x=>{const a=cardFor({kind:'card',id:x.blocking}),c=cardFor(x);return c&&a?`${c.name} blocks ${a.name}`:null;}).filter(Boolean);
-   push(e,{kind:'phase',tone:'block',label:`CPU BLOCKS WITH ${count(blockers.length,'CREATURE')}`.toUpperCase(),line:pairs.length?list(pairs)+'.':`CPU blocked with ${count(blockers.length,'creature')}.`,duration:800});
+   push(e,{kind:'phase',tone:'block',label:`${CPU(e.player)} BLOCKS WITH ${count(blockers.length,'CREATURE')}`.toUpperCase(),line:pairs.length?list(pairs)+'.':`${cpuName(e.player)} blocked with ${count(blockers.length,'creature')}.`,duration:800});
    continue;
   }
   if(e.type==='damage'){
    const all=run(x=>x.type==='damage');
    const toYou=all.filter(x=>x.target?.kind==='player'&&x.target.id===me).reduce((t,x)=>t+(x.amount||0),0);
-   const toCpu=all.filter(x=>x.target?.kind==='player'&&x.target.id===cpu).reduce((t,x)=>t+(x.amount||0),0);
+   const toCpu=rivals.map(r=>[r.nativeId,all.filter(x=>x.target?.kind==='player'&&x.target.id===r.nativeId).reduce((t,x)=>t+(x.amount||0),0)]).filter(([,n])=>n);
    const creatures=new Set(all.filter(x=>x.target?.kind==='card').map(x=>x.target.id)).size;
-   const parts=[toYou&&`you take ${toYou}`,toCpu&&`CPU takes ${toCpu}`,creatures&&`${count(creatures,'creature')} damaged`].filter(Boolean);
+   const parts=[toYou&&`you take ${toYou}`,...toCpu.map(([id,n])=>`${cpuName(id)} takes ${n}`),creatures&&`${count(creatures,'creature')} damaged`].filter(Boolean);
    if(!parts.length)continue;
    const combat=all.some(x=>x.combat===true||x.kind==='Combat');
    push(e,{kind:'phase',tone:'damage',label:(combat?'COMBAT DAMAGE · ':'DAMAGE · ')+parts.join(' · ').toUpperCase(),line:`${combat?'Combat damage':'Damage'}: ${parts.join(', ')}.`,duration:900});
@@ -134,9 +138,9 @@ export function eventPlaybackBeats(before,after){
    continue;
   }
   // A permanent put onto the battlefield some other way (not cast, not a token) gets a short beat.
-  if(e.type==='zone'&&e.to==='Battlefield'&&e.from!=='Stack'&&e.player===cpu){
+  if(e.type==='zone'&&e.to==='Battlefield'&&e.from!=='Stack'&&isCpu(e.player)){
    const card=cardFor(e.card);if(!card||shown.has(card.id)||card.isToken)continue;
-   shown.add(card.id);push(e,{kind:'arrival',label:'CPU · ENTERED BATTLEFIELD',card,text:card.text||'',line:`${card.name} entered the battlefield under the CPU's control.`,duration:850});
+   shown.add(card.id);push(e,{kind:'arrival',label:`${CPU(e.player)} · ENTERED BATTLEFIELD`,card,text:card.text||'',line:`${card.name} entered the battlefield under ${pod?cpuName(e.player)+'\'s':'the CPU\'s'} control.`,duration:850});
   }
  }
  // Only the latest turn change is worth a banner; earlier ones would only flash past. Your own
@@ -144,11 +148,12 @@ export function eventPlaybackBeats(before,after){
  const lastTurn=beats.findLastIndex(x=>x.tone==='turn');
  const kept=beats.filter((x,i)=>x.tone!=='turn'||i===lastTurn);
  const shownBeats=kept.filter(x=>x.kind!=='log');
- return paced(shownBeats.length===1&&shownBeats[0].label==='YOUR TURN'?kept.filter(x=>x.kind==='log'):kept.slice(-12));
+ // Three CPUs take turns between yours, so a pod's playback runs quicker and shorter.
+ return paced(shownBeats.length===1&&shownBeats[0].label==='YOUR TURN'?kept.filter(x=>x.kind==='log'):kept.slice(pod?-8:-12),pod?2200:3600,pod?.7:1);
 }
 // One update never plays for more than about 3.6 s; longer runs speed up evenly.
-function paced(beats,budget=3600){
- const total=beats.reduce((t,x)=>t+x.duration,0),scale=total>budget?budget/total:1;
+function paced(beats,budget=3600,pace=1){
+ const total=beats.reduce((t,x)=>t+x.duration*pace,0),scale=pace*(total>budget?budget/total:1);
  return scale<1?beats.map(x=>x.kind==='log'?x:{...x,duration:Math.max(350,Math.round(x.duration*scale))}):beats;
 }
 const onScreen=beats=>beats.filter(b=>b.kind!=='log');
@@ -158,31 +163,32 @@ export function playbackBeats(before,after){return eventPlaybackBeats(before,aft
 export function cpuPlaybackBeats(before, after) {
  const a=before?.status?.surface,b=after?.status?.surface;
  if(!a||!b||after.status.terminal||after.status.failure)return [];
- const cpu=b.players.find(p=>p.seat!==b.seat)?.seat;if(cpu===undefined)return [];
+ const rivals=b.players.filter(p=>p.seat!==b.seat),pod=rivals.length>1;if(!rivals.length)return [];
+ const isCpu=seat=>seat!==b.seat&&rivals.some(p=>p.seat===seat),cpuName=seat=>pod?rivals.find(p=>p.seat===seat)?.label||'CPU':'CPU';
  const oldCards=new Map(a.cards.map(c=>[c.id,c])),oldStack=new Set(a.stack.map(s=>s.id));
  const beats=[],turn=a.activeSeat!==b.activeSeat||a.turn!==b.turn;
  const phase=!turn&&a.phase!==b.phase&&['BeginningOfCombat','DeclareAttackers'].includes(b.phase)&&!['BeginningOfCombat','DeclareAttackers'].includes(a.phase);
- const banner=turn?{kind:'phase',label:b.activeSeat===b.seat?'YOUR TURN':"OPPONENT’S TURN",line:b.activeSeat===b.seat?'Your turn.':"CPU's turn.",duration:600}:phase?{kind:'phase',label:'COMBAT',line:'Combat.',duration:600}:null;
+ const banner=turn?{kind:'phase',label:b.activeSeat===b.seat?'YOUR TURN':pod?`${cpuName(b.activeSeat).toUpperCase()}’S TURN`:"OPPONENT’S TURN",line:b.activeSeat===b.seat?'Your turn.':`${cpuName(b.activeSeat)}'s turn.`,actor:b.activeSeat===b.seat?undefined:cpuName(b.activeSeat),duration:600}:phase?{kind:'phase',label:'COMBAT',line:'Combat.',duration:600}:null;
  if(banner&&b.activeSeat!==b.seat)beats.push(banner);
  const shown=new Set();
  for(const item of b.stack){
-  if(item.controller!==cpu||oldStack.has(item.id))continue;
+  if(!isCpu(item.controller)||oldStack.has(item.id))continue;
   const card=b.cards.find(c=>c.id===item.source&&c.known);if(!card)continue;
   const nativeItem=after.native?.stack?.find(s=>s.id===item.id);
-  beats.push({kind:'spell',label:'CPU · SPELL / ABILITY',card,stackId:item.id,text:item.text||card.text||'',targets:(nativeItem?.targets||[]).filter(t=>t&&['card','player'].includes(t.kind)&&Number.isSafeInteger(t.id)),line:`CPU put ${card.name} on the stack.`,duration:1100});shown.add(card.id);
+  beats.push({kind:'spell',label:`${cpuName(item.controller).toUpperCase()} · SPELL / ABILITY`,actor:cpuName(item.controller),card,stackId:item.id,text:item.text||card.text||'',targets:(nativeItem?.targets||[]).filter(t=>t&&['card','player'].includes(t.kind)&&Number.isSafeInteger(t.id)),line:`${cpuName(item.controller)} put ${card.name} on the stack.`,duration:1100});shown.add(card.id);
  }
  // Lands and new permanents get a beat each, but tokens arrive with the board, and at most
  // three arrivals are shown: a token swarm never holds the table.
  let arrivals=0;
  for(const card of b.cards){
-  if(!card.known||card.isToken||card.controller!==cpu||card.zone!=='Battlefield'||oldCards.get(card.id)?.zone==='Battlefield'||shown.has(card.id)||arrivals>=3)continue;
+  if(!card.known||card.isToken||!isCpu(card.controller)||card.zone!=='Battlefield'||oldCards.get(card.id)?.zone==='Battlefield'||shown.has(card.id)||arrivals>=3)continue;
   // A source that was on the preceding stack has already had its spotlight.
   if(a.stack.some(s=>s.source===card.id))continue;
   const land=card.types?.includes('Land')||/\bLand\b/.test(card.type||'');
-  arrivals++;beats.push({kind:land?'land':'arrival',label:land?'CPU · LAND PLAYED':'CPU · ENTERED BATTLEFIELD',card,text:card.text||'',targets:[],line:`${card.name} is now on the CPU's battlefield.`,duration:land?700:850});
+  arrivals++;beats.push({kind:land?'land':'arrival',label:`${cpuName(card.controller).toUpperCase()} · ${land?'LAND PLAYED':'ENTERED BATTLEFIELD'}`,actor:cpuName(card.controller),card,text:card.text||'',targets:[],line:`${card.name} is now on ${pod?cpuName(card.controller)+'\'s':'the CPU\'s'} battlefield.`,duration:land?700:850});
  }
  if(banner&&b.activeSeat===b.seat)beats.push(banner);
- return paced(beats,2600);
+ return paced(beats,pod?1800:2600,pod?.7:1);
 }
 
 // What the table is doing right now, in words a player can trust. Only the accepted state and
@@ -193,7 +199,7 @@ export function tableActivity(s,{beat=null,overlay=false,recent=[]}={}){
  if(!surface||s.status.terminal)return null;
  if(s.transportError)return {kind:'connection',label:'Waiting for connection',detail:''};
  if(s.status.failure||n?.status==='failed')return {kind:'stopped',label:'Match stopped',detail:''};
- if(beat&&!overlay)return {kind:'replay',label:beat.label?.startsWith('YOUR')?'Your turn':'CPU’s play',detail:beat.line||''};
+ if(beat&&!overlay)return {kind:'replay',label:beat.label?.startsWith('YOUR')?'Your turn':`${beat.actor||'CPU'}’s play`,detail:beat.line||''};
  if(isPlayerDecision(s)){
   const top=n?.stack?.[0],cpuTop=top&&top.activatingPlayer!==n.viewer;
   const what=n?.prompt?'Choose':{InputConfirmMulligan:'Keep or mulligan',InputAttack:'Declare attackers',InputBlock:'Declare blockers',InputPayMana:'Pay the cost',InputSelectTargets:'Choose targets'}[n?.inputType]
@@ -202,7 +208,8 @@ export function tableActivity(s,{beat=null,overlay=false,recent=[]}={}){
  }
  const cpuPriority=surface.prioritySeat!=null&&surface.prioritySeat!==surface.seat;
  if(n?.stack?.length&&!cpuPriority)return {kind:'resolving',label:'Resolving effects',detail};
- return cpuPriority||surface.activeSeat!==surface.seat?{kind:'thinking',label:'CPU thinking',detail}:{kind:'working',label:'Forge is applying your play',detail};
+ const thinker=surface.players?.length>2?surface.players.find(p=>p.seat===(cpuPriority?surface.prioritySeat:surface.activeSeat))?.label:null;
+ return cpuPriority||surface.activeSeat!==surface.seat?{kind:'thinking',label:`${thinker||'CPU'} thinking`,detail}:{kind:'working',label:'Forge is applying your play',detail};
 }
 
 export class CpuActionPlaybackQueue {
