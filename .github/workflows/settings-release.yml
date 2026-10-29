@@ -32,6 +32,7 @@ jobs:
             test-results/shared-deck-*
             test-results/synthetic-search-shared-deck-*
             test-results/synthetic-search-settings-release-*
+          retention-days: 2
 
   foil-compatibility:
     runs-on: ubuntu-latest
@@ -51,3 +52,4 @@ jobs:
         with:
           name: settings-foil-compatibility
           path: test-results/ygo-rarity-foil/
+          retention-days: 2

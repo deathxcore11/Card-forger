@@ -23,3 +23,4 @@ jobs:
         with:
           name: sv-reverse-evidence
           path: test-results/
+          retention-days: 2
