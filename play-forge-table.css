@@ -2113,3 +2113,18 @@ body.practice-table-open img{-webkit-user-drag:none}
 /* Swipe-to-attack: a creature your thumb has passed glows red until Forge confirms it. */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-forge-swiped=true]{outline:2px solid #ff8a6a;outline-offset:2px}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-native-actions>.forge-attack-all{background:#14161de6!important;color:#ffd9cf!important;border:1px solid #ff8a6a88!important}
+/* A crowded lane folds what will not fit readably into a "+N" chip; the tray shows those cards full size. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card-row>.play-match-card-wrap[hidden]{display:none!important}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card-row>.forge-lane-more{flex:none;align-self:center;min-width:44px;min-height:44px;padding:0 10px;border-radius:12px;border:1px solid #e8b95b88;background:#14161de6;color:#f4d78f;font:800 15px/1 'DM Sans',system-ui,sans-serif;box-shadow:0 4px 12px #000a}
+:where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-lane-tray{position:fixed;z-index:2300;display:flex;flex-wrap:wrap;gap:8px;max-width:min(92vw,560px);max-height:50dvh;overflow:auto;padding:10px;border-radius:16px;border:1px solid #d6ad6466;background:#0d1016f2;box-shadow:0 18px 40px #000c}
+:where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-lane-tray>.play-match-card-wrap{flex:none;width:84px;margin:0!important;transform:none!important;translate:none!important}
+@media (max-aspect-ratio:9/10){
+/* The one-line strip uses the short label ("CPU · Next") so the name always fits beside it. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-stack:not([data-open=true]) .forge-stack-head .forge-stack-kind[data-short]{font-size:0!important;letter-spacing:0}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-stack:not([data-open=true]) .forge-stack-head .forge-stack-kind[data-short]::before{content:attr(data-short);font:700 10px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.14em}
+
+}
+:where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-lane-tray>.play-match-card-wrap{width:104px}
+:where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-lane-tray .play-match-card-name{font-size:11px!important;overflow-wrap:normal;word-break:normal;hyphens:none}
+/* An opened Fold: the state line sits beside End turn, below the fan, instead of on the fan's last card. */
+@media (max-aspect-ratio:9/10) and (min-width:641px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-state]:not([data-ask=true])::before{bottom:auto;top:8px;right:calc(100% + 10px)}}

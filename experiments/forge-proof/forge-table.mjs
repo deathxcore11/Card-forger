@@ -551,6 +551,16 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // scrolling sideways, and a side that is still too tall or wide scales down as one piece,
  // laid out wider by the same factor so it uses the whole width. The CPU's side stays
  // against the middle line. Transforms keep hit testing, drag and arrows on real rects.
+ // The folded cards of a crowded lane, at full size, in a tray above the board. Each copy acts like the card
+ // (tap to read or pick it); any other touch, or the next board update, closes the tray.
+ function openLaneTray(hidden,chip){
+  closeLaneTray();const tray=doc.createElement('div');tray.className='forge-lane-tray';tray.setAttribute('role','dialog');tray.setAttribute('aria-label','More cards');
+  for(const w of hidden){const copy=w.cloneNode(true);copy.hidden=false;copy.removeAttribute('style');tray.append(copy);}
+  root.append(tray);const r=chip.getBoundingClientRect(),t=tray.getBoundingClientRect();
+  tray.style.left=`${Math.round(Math.max(8,Math.min(win.innerWidth-8-t.width,r.left+r.width/2-t.width/2)))}px`;tray.style.top=`${Math.round(Math.max(8,r.top-t.height-10))}px`;
+  const away=e=>{if(!tray.contains(e.target))closeLaneTray();};doc.addEventListener('pointerdown',away,true);tray._away=away;
+ }
+ function closeLaneTray(){const tray=root.querySelector(':scope>.forge-lane-tray');if(!tray)return;doc.removeEventListener('pointerdown',tray._away,true);tray.remove();}
  function fitBoard(){
   boardFrame=0;if(closed||!presentation.hosted)return;
   // Your side stops above your hand where it rests, not where a lift or a popped card has carried it, so
@@ -571,7 +581,18 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const W=area.clientWidth,H=Math.min(area.clientHeight,Math.round(bottom-top));if(!W||H<=0)continue;
    // Side-by-side lanes (a grid) have fixed boxes: a row that spills out of its lane shrinks inside it.
    const fitRows=()=>{for(const row of zone.querySelectorAll('.play-match-card-row')){row.style.removeProperty('transform');const lane=row.closest('.play-match-lane'),h=lane?.clientHeight||0;
-    const kr=Math.min(1,h&&row.scrollHeight>h+1?h/row.scrollHeight:1,row.scrollWidth>row.clientWidth+1?row.clientWidth/row.scrollWidth:1);if(kr<.995){row.style.transformOrigin='top center';row.style.transform=`scale(${kr.toFixed(3)})`;}}};
+    const scaleOf=()=>Math.min(1,h&&row.scrollHeight>h+1?h/row.scrollHeight:1,row.scrollWidth>row.clientWidth+1?row.clientWidth/row.scrollWidth:1);
+    // A lane that would have to shrink its tiles past readable keeps the ones that fit and folds the rest
+    // into a "+N" chip; tapping it lays them out at full size in a tray above the board.
+    // (The chip is only added or removed when that changes: the table redraws on any child change.)
+    const wraps=[...row.querySelectorAll(':scope>.play-match-card-wrap')];let more=row.querySelector(':scope>.forge-lane-more');for(const w of wraps)if(w.hidden)w.hidden=false;
+    let kr=scaleOf();
+    if(kr<.62&&wraps.length>=4){let keep=Math.max(1,Math.floor(wraps.length*(kr/.75)**2)-1);
+     if(!more){more=doc.createElement('button');more.type='button';more.className='forge-lane-more';more.dataset.nativeKey='lane-more';more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const row=more.parentElement,k=Number(more.dataset.keep)||0;openLaneTray([...row.querySelectorAll(':scope>.play-match-card-wrap')].slice(k),more);});row.append(more);}
+     const fold=k=>{wraps.forEach((w,i)=>{const hide=i>=k;if(w.hidden!==hide)w.hidden=hide;});const label=`+${wraps.length-k}`;if(more.textContent!==label){more.textContent=label;more.setAttribute('aria-label',`${wraps.length-k} more cards`);}more.dataset.keep=String(k);};
+     fold(keep);while(keep>1&&scaleOf()<.72){keep--;fold(keep);}kr=scaleOf();}
+    else if(more)more.remove();
+    if(kr<.995){row.style.transformOrigin='top center';row.style.transform=`scale(${kr.toFixed(3)})`;}}};
    fitRows();let k=1;for(let i=0;i<6;i++){const next=Math.max(.4,Math.min(1,H/zone.scrollHeight,W/zone.scrollWidth));if(Math.abs(next-k)<.01&&i)break;k=next;zone.style.width=`${W/k}px`;}
    fits.push({area,zone,own,W,k,fitRows});
   }
