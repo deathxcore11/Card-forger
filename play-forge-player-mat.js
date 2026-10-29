@@ -229,9 +229,13 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    intro.status('Starting the rules engine…');
    requestedAt=now();tick();if(typeof view?.setInterval==='function')ticker=view.setInterval(tick,1000);
    await client.create(input);warn(true);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
-   let state,deadline=Date.now()+125000;
+   let state,deadline=Date.now()+125000,allocationRetries=0;
    while(current()&&Date.now()<deadline){
-    try{state=await client.read();}catch(e){if(![429,503].includes(e.status))throw e;await wait(e.retryAfterMs||1000);continue;}
+    try{state=await client.read();}catch(e){
+     // Cloudflare sometimes has no container free for a second or two. That refusal
+     // comes before the engine got the decks, so a fresh start is safe: twice, quietly.
+     if(e.status===410&&/no container instance/i.test(e.failure||'')&&allocationRetries<2&&current()){allocationRetries++;await client.close().catch(()=>{});await wait(1500*allocationRetries);if(!current())throw Error('SELECTION_CHANGED');client=createClient({readAccount,getAccessToken});await client.create(input);deadline=Date.now()+125000;continue;}
+     if(![429,503].includes(e.status))throw e;await wait(e.retryAfterMs||1000);continue;}
     const waitingForFirst=state.status==='running'&&!forgeStartingPlayer(state.snapshot)&&state.snapshot.turn===0&&!state.snapshot.prompt&&(state.snapshot.busy===true||state.snapshot.inputType==='InputLockUI');
     if(state.status==='initializing'&&state.progress){progress=state.progress;tick();}
     if(state.status!=='initializing'&&!waitingForFirst)break;
