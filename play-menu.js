@@ -48,7 +48,18 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
   const startLabel=match.mode==='friends'?'Play with friends':quickStatus.busy?'Finding a CPU deck…':'Play vs CPU';
   const start=signedIn?`<button class="btn cs-plate pl-start" data-act="playStartCandidate" ${canStart?'':'disabled'} aria-describedby="playMatchStatus"><span class="cs-plate-label">${startLabel}</span></button>`:'<button class="btn cs-plate pl-start" data-act="menu"><span class="cs-plate-label">Sign in to play</span></button>';
   // Quick Play always meets the Normal CPU; Practice picks the level.
-  const cpuLevel=native&&practice?`<div class="pl-cpu-level" role="group" aria-label="CPU difficulty">${cpuDifficulties.map(level=>`<button data-act="playConfigure" data-play-option="difficulty" data-play-value="${level}" aria-pressed="${match.difficulty===level}">${FORGE_CPU_LABELS[level]||level}</button>`).join('')}</div>`:'';
+  // Commander Practice can seat up to three CPUs, each with its own level; the extra CPUs get random
+  // Commander decks when you press Play. Phones run at most one Hard CPU (its look-ahead is the slow part).
+  const pod=native&&practice&&match.format==='Commander'&&match.mode==='cpu',podSize=pod?Number(match.podSize)||2:2;
+  const phone=!!globalThis.matchMedia?.('(pointer:coarse) and (max-width:900px)')?.matches;
+  const seats=[['difficulty','CPU 2'],['cpu3Level','CPU 3'],['cpu4Level','CPU 4']].slice(0,podSize-1);
+  const levelGroup=([option,tag])=>{const others=seats.filter(([o])=>o!==option).some(([o])=>match[o]==='Hard');
+   return `<div class="pl-cpu-level" role="group" aria-label="${podSize>2?tag+' difficulty':'CPU difficulty'}">${podSize>2?`<span class="pl-cpu-tag">${tag}</span>`:''}${cpuDifficulties.map(level=>{const capped=phone&&level==='Hard'&&others&&match[option]!=='Hard';
+    return `<button data-act="playConfigure" data-play-option="${option}" data-play-value="${level}" aria-pressed="${match[option]===level}"${capped?' disabled title="One Hard CPU per game on phones"':''}>${FORGE_CPU_LABELS[level]||level}</button>`;}).join('')}</div>`;};
+  const podPicker=pod?`<div class="pl-cpu-level pl-pod-size" role="group" aria-label="Players"><span class="pl-cpu-tag">Players</span>${['2','3','4'].map(n=>`<button data-act="playConfigure" data-play-option="podSize" data-play-value="${n}" aria-pressed="${String(podSize)===n}">${n}</button>`).join('')}</div>`:'';
+  const cpuLevel=native&&practice?`<div class="pl-cpu-levels">${podPicker}${seats.map(levelGroup).join('')}${podSize>2&&phone&&seats.some(([o])=>match[o]==='Hard')?'<p class="pl-pod-note">One Hard CPU on phones.</p>':''}</div>`:'';
+  // The extra pod seats, so the setup reads like the table: you, CPU 2's chosen deck, then the random ones.
+  const podSeats=podSize>2?`<div class="pl-pod-seats" aria-label="More CPU seats">${seats.slice(1).map(([option,tag])=>`<span class="pl-pod-seat"><b>${tag}</b> Random Commander · ${FORGE_CPU_LABELS[match[option]]||match[option]}</span>`).join('')}</div>`:'';
   const difficulty=!native&&match.mode==='cpu'?`<label class="play-difficulty">Difficulty<select id="playDifficulty" data-change="playMatchOption" data-play-option="difficulty">${['Easy','Medium','Hard'].map(level => `<option value="${level}"${match.difficulty === level ? ' selected' : ''}${cpuDifficulties.includes(level)?'':' disabled'}>${level}${cpuDifficulties.includes(level)?'':' · Coming later'}</option>`).join('')}</select></label>`:'';
   const status=`<div id="playMatchStatus" class="pl-status" role="status"><p>${esc(footerText)}</p>${Object.entries(review.seats||{}).map(([seatKey,s])=>notices(s.unsupported,(seatKey==='player'?'Your deck':'CPU deck')+': card rules unavailable')).join('')}</div>`;
   // Mode cards lead with a deck's own art when one is chosen, otherwise a fixed card illustration.
@@ -64,7 +75,7 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
   </section>`;
   return `<section class="play-menu play-menu--forge pl-lobby${native?'':' pl-lobby--phase'}" data-play-mode="${quick?'quick':'practice'}" aria-labelledby="playTitle">
     <header class="pl-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">Play</p><h1 id="playTitle">${quick?'Quick Play':'Practice'}</h1></div><div class="pl-head-tools">${formatPicker}${quick?'':playmatPickerMarkup()}</div>${matchReleaseReady?'':'<span class="chip">In development</span>'}</header>
-    <section class="pl-arena" aria-label="Selected matchup">${seat('player')}<span class="pl-vs" aria-hidden="true"><b>VS</b></span>${match.mode==='cpu'?seat('opponent'):'<div class="pl-seat pl-seat--cpu"><div class="pl-seat-copy"><span class="pl-seat-who">Friends</span><h2>Coming later</h2><p>Friend matches are not available yet.</p></div></div>'}</section>
+    <section class="pl-arena${podSize>2?' pl-arena--pod':''}" aria-label="Selected matchup">${seat('player')}<span class="pl-vs" aria-hidden="true"><b>VS</b></span>${match.mode==='cpu'?seat('opponent'):'<div class="pl-seat pl-seat--cpu"><div class="pl-seat-copy"><span class="pl-seat-who">Friends</span><h2>Coming later</h2><p>Friend matches are not available yet.</p></div></div>'}</section>${podSeats}
     <div class="pl-startbar">${status}${cpuLevel}${difficulty}${start}</div>
     <div class="play-workspace play-workspace--single">
       <section class="panel play-library" aria-labelledby="playDecksTitle">

@@ -45,7 +45,25 @@ export function exactForgeInput(setup,{startingPlayer=setup?.match?.startingPlay
  // Forge reports the actual starting player before the opening hand.
  // Forge calls 60-card Standard Brawl just Brawl; only the format label changes.
  const format=setup.match.format==='Standard Brawl'?'Brawl':setup.match.format,seat=deck=>format===deck.format?deck:{...deck,format};
- return structuredClone({format,humanDeck:seat(setup.selected),opponentDeck:seat(setup.opponent),difficultyPolicyVersion,startingPlayer,playStyle});
+ const input={format,humanDeck:seat(setup.selected),opponentDeck:seat(setup.opponent),difficultyPolicyVersion,startingPlayer,playStyle};
+ // A Commander pod: one or two more CPU seats, each with its own deck and level. Four full
+ // saved decks can pass the host's size limit, so pod decks travel as the rows Forge reads.
+ const extra=Array.isArray(setup.extraOpponents)?setup.extraOpponents.filter(o=>o?.deck):[];
+ if(extra.length){
+  if(format!=='Commander'||playStyle!=='practice'||extra.length>2)throw fail('FORGE_POD_INVALID');
+  input.humanDeck=podDeck(input.humanDeck);input.opponentDeck=podDeck(input.opponentDeck);
+  input.extraOpponents=extra.map(o=>({deck:podDeck(seat(o.deck)),difficultyPolicyVersion:forgeCpuPolicy(o.difficulty||'Medium').difficultyPolicyVersion}));
+ }
+ return structuredClone(input);
+}
+const POD_ROW=['name','qty','set','setCode','collectorNumber','collector_number','foil','finish'];
+const podRow=r=>Object.fromEntries(POD_ROW.filter(k=>r?.[k]!==undefined&&r[k]!==null).map(k=>[k,r[k]]));
+export function podDeck(deck){
+ const out={format:deck.format};for(const k of ['name','commander','companion'])if(deck[k]!==undefined&&deck[k]!==null)out[k]=deck[k];
+ out.cards=(deck.cards||[]).map(podRow);
+ for(const k of ['side','commanders'])if(Array.isArray(deck[k])&&deck[k].length)out[k]=deck[k].map(podRow);
+ if(Array.isArray(deck.errors)&&deck.errors.length)out.errors=deck.errors;
+ return out;
 }
 // Ask the host to start the engine for this account's next match while the player
 // is still choosing decks. Best effort and idempotent on the server: it never ends a
@@ -138,7 +156,7 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
     const s=data.snapshot;
     // An action whose reply was lost is settled by the server: either the board moved past
     // the revision it was built from, or the server released it. Only then may the next action go.
-    if(unsettled&&code===200&&data.status==='running'&&Number.isSafeInteger(s?.revision)&&(data.commandPending===false||s.revision!==unsettled.revision)){unsettled=null;if(!blocked)error=null;}if(code!==200||data.status!=='running'||s?.schema!==SCHEMA||s.forgeRevision!==FORGE_REVISION||!Number.isSafeInteger(s.revision)||!Number.isSafeInteger(s.viewer)||!Array.isArray(s.players)||s.players.length!==2||s.players.some(p=>!Number.isSafeInteger(p?.id))||new Set(s.players.map(p=>p.id)).size!==2||s.players.filter(p=>p.isViewer).length!==1||s.players.filter(p=>p.isViewer&&p.id===s.viewer).length!==1)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');
+    if(unsettled&&code===200&&data.status==='running'&&Number.isSafeInteger(s?.revision)&&(data.commandPending===false||s.revision!==unsettled.revision)){unsettled=null;if(!blocked)error=null;}if(code!==200||data.status!=='running'||s?.schema!==SCHEMA||s.forgeRevision!==FORGE_REVISION||!Number.isSafeInteger(s.revision)||!Number.isSafeInteger(s.viewer)||!Array.isArray(s.players)||s.players.length<2||s.players.length>4||s.players.some(p=>!Number.isSafeInteger(p?.id))||new Set(s.players.map(p=>p.id)).size!==s.players.length||s.players.filter(p=>p.isViewer).length!==1||s.players.filter(p=>p.isViewer&&p.id===s.viewer).length!==1)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');
     if(expectedViewer!==null&&s.viewer!==expectedViewer)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');expectedViewer=s.viewer;knownPlayers=s.players.map(p=>p.id);
     if(s.pregame!==undefined&&s.pregame!==null){
      const p=s.pregame;

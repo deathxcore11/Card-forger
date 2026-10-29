@@ -6,8 +6,8 @@ import {cardKey} from './core.js';
 export function forgeStartingPlayer(snapshot){
  const receipt=snapshot?.pregame,players=snapshot?.players;
  if(receipt?.schema!=='cardstashy.forge-pregame.v1'||!['random','first','second'].includes(receipt.selection)||!['quick','practice'].includes(receipt.playStyle)
-   ||!Number.isSafeInteger(receipt.firstPlayerId)||!Array.isArray(players)||players.length!==2
-   ||players.some(p=>!Number.isSafeInteger(p?.id))||new Set(players.map(p=>p.id)).size!==2
+   ||!Number.isSafeInteger(receipt.firstPlayerId)||!Array.isArray(players)||players.length<2||players.length>4
+   ||players.some(p=>!Number.isSafeInteger(p?.id))||new Set(players.map(p=>p.id)).size!==players.length
    ||!players.some(p=>p.id===receipt.firstPlayerId)||players.filter(p=>p.isViewer===true).length!==1||players.filter(p=>p.id===snapshot.viewer&&p.isViewer===true).length!==1
    ||receipt.playStyle==='quick'&&receipt.selection!=='random')return null;
  return {firstPlayerId:receipt.firstPlayerId,ownFirst:receipt.firstPlayerId===snapshot.viewer,selection:receipt.selection};

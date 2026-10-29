@@ -1538,6 +1538,19 @@ A.playFindOpponent=async()=>{
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
 };
+async function pickPodDecks(state,count){
+ try{if(!metaState('mtg:EDH').data)await Promise.race([loadMetaData('mtg:EDH').catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);}catch{}
+ const cardsOf=deck=>JSON.stringify([deck.commander||'',(deck.cards||[]).map(r=>String(r?.name||'').toLowerCase()).sort()]);
+ const taken=new Set([state.selected,state.opponent].map(cardsOf)),picks=[];
+ let pool=[...S.state.decks,...Object.values(readPlaySources()).flat().map(x=>x.deck)].filter(deck=>deck?.format==='Commander'&&(!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)));
+ for(let i=0;i<count;i++){
+  const candidates=pool.filter(deck=>!taken.has(cardsOf(deck)));
+  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:'Medium',...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>deck===state.selected||forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{candidateEligible:()=>true})});
+  if(taken.has(cardsOf(result.deck)))throw Error('Four-player games need more Commander decks. Load Precons or Meta in Practice, then try again.');
+  taken.add(cardsOf(result.deck));picks.push(result.deck);
+ }
+ playSetup.setExtraOpponents(picks);
+}
 A.playSaveDeck=async()=>{const state=playSetup.snapshot(),deck=state.inspectedSeat==='opponent'?state.opponent:state.selected;if(!deck)return;try{const job=savePlayDeck(deck);refreshPlayMenu();await job;}catch(e){toast(e.message);}finally{refreshPlayMenu();}};
 A.playDeckSource=async t=>{playSetup.setSource(t.dataset.playSource);refreshPlayMenu();const source=t.dataset.playSource;if(['precons','community','meta'].includes(source)&&!(readPlaySources()[source]||[]).length)await A.playLoadSource();};
 A.playLoadSource=async()=>{
@@ -1592,6 +1605,12 @@ A.playStartCandidate=async()=>{
  if(initial.playStyle==='quick'&&initial.match.mode==='cpu'&&!initial.quickMatch){if(!await A.playFindOpponent())return;}
  if(T.game()!=='mtg'||S.ui.view!=='play'||!syncDesktopPlayEntries('mtg').eligible)return;
  const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
+ // A Commander pod: the extra CPUs get random Commander decks (not yours, not CPU 2's, not each other's).
+ if(source.playStyle==='practice'&&source.match.format==='Commander'&&Number(source.match.podSize)>2){
+  const size=Number(source.match.podSize),levels=[source.match.difficulty,source.match.cpu3Level,source.match.cpu4Level].slice(0,size-1);
+  if(globalThis.matchMedia?.('(pointer:coarse) and (max-width:900px)')?.matches&&levels.filter(l=>l==='Hard').length>1)return toast('Phones run one Hard CPU per game. Set the others to Easy or Normal.');
+  try{await pickPodDecks(source,size-2);}catch(e){return toast(e.message);}
+ }
  if(await playUpdates.beforeMatch())return; // The page reopens Play on the current release.
  if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;

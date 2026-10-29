@@ -161,7 +161,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const seatRole=!player?'':playerChosen.has(player.id)?'chosen':playerTargets.has(player.id)?'target':'';if(presentation.hosted&&(el.dataset.forgeRole||'')!==seatRole)el.dataset.forgeRole=seatRole;
    if(presentation.hosted){
     // A targetable player is a real control for keyboard and screen readers too.
-    if(seatRole==='target'&&el.tabIndex!==0){el.tabIndex=0;el.setAttribute('role','button');el.dataset.nativeKey=`seat-${el.dataset.seat}`;}else if(seatRole!=='target'&&el.hasAttribute('role')){el.removeAttribute('tabindex');el.removeAttribute('role');delete el.dataset.nativeKey;}
+    if(el.classList.contains('play-pod-chip')){}
+    else if(seatRole==='target'&&el.tabIndex!==0){el.tabIndex=0;el.setAttribute('role','button');el.dataset.nativeKey=`seat-${el.dataset.seat}`;}else if(seatRole!=='target'&&el.hasAttribute('role')){el.removeAttribute('tabindex');el.removeAttribute('role');delete el.dataset.nativeKey;}
     // The player's commander art (or your profile picture) glows softly behind the panel.
     const own=el.dataset.seat==='you',commander=surface.cards.find(c=>c.commander===true&&c.known&&(c.owner===surface.seat)===own),artUrl=(commander&&resolvePracticeArtwork(commander)?.artImageUrl)||(own&&/^https?:/.test(profile.avatarUrl||'')?profile.avatarUrl:''),art=failedArt.has(artUrl)?'':artUrl;
     let glass=el.querySelector(':scope>.forge-seat-glass');
@@ -182,7 +183,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // Upright tablets set your hand beside your commander's card instead of under it.
    const yourCommander=String(!!root.querySelector('.play-command-zone[data-seat=you]'));if(root.dataset.yourCommander!==yourCommander)root.dataset.yourCommander=yourCommander;
    // Each player's public zone counts sit beside their portrait; a count opens just that list in the Zones menu.
-   for(const p of surface.players){
+   // In a Commander pod only the opponent on show has a seat panel, so only that one gets counts.
+   const shownCpu=Number(root.querySelector('.play-match-seat[data-seat=cpu]')?.dataset.playerSeat);
+   for(const p of surface.players.filter(p=>p.seat===surface.seat||p.seat===shownCpu)){
     const own=p.seat===surface.seat,count=zone=>surface.cards.filter(c=>c.zone===zone&&c.owner===p.seat).length;
     const counts=[['Library',p.libraryCount],['Graveyard',count('Graveyard')],['Exile',count('Exile')],['Command',count('Command')]],key=counts.map(c=>c[1]).join(',');
     // Library and graveyard always show; exile and the command zone only once something is there.
@@ -222,8 +225,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    }
    // The CPU has no profile picture; its commander's art becomes its portrait.
    const cpuBadge=root.querySelector('.play-match-seat[data-seat=cpu] .play-match-profile-badge');
-   const cpuCommander=surface.cards.find(c=>c.commander===true&&c.owner!==surface.seat&&c.known),cpuArt=cpuCommander?resolvePracticeArtwork(cpuCommander)?.artImageUrl:null;
+   const cpuSeat=Number(cpuBadge?.closest('.play-match-seat')?.dataset.playerSeat),cpuCommander=surface.cards.find(c=>c.commander===true&&c.owner!==surface.seat&&(surface.players.length===2||c.owner===cpuSeat)&&c.known),cpuArt=cpuCommander?resolvePracticeArtwork(cpuCommander)?.artImageUrl:null;
    if(cpuBadge&&cpuArt&&!(presentation.hosted&&format==='Commander')&&cpuBadge.dataset.portrait!==cpuArt){cpuBadge.dataset.portrait=cpuArt;let img=cpuBadge.querySelector('img.forge-seat-portrait');if(!img){img=doc.createElement('img');img.className='forge-seat-portrait';img.alt='';img.referrerPolicy='no-referrer';img.onerror=()=>{img.hidden=true;};cpuBadge.append(img);}img.src=cpuArt;}
+   // Each pod chip wears its CPU's commander art.
+   for(const face of root.querySelectorAll('.play-pod-chip .play-pod-face')){const seat=Number(face.closest('.play-pod-chip').dataset.playerSeat),c=surface.cards.find(c=>c.commander===true&&c.owner===seat&&c.known),url=c?resolvePracticeArtwork(c)?.artImageUrl:null;
+    if(url&&face.dataset.art!==url){face.dataset.art=url;const img=doc.createElement('img');img.alt='';img.referrerPolicy='no-referrer';img.onerror=()=>{img.remove();delete face.dataset.art;};img.src=url;face.querySelector('img')?.remove();face.append(img);}}
    // The turn-change notice gets its banner art: whose turn large, the turn number small.
    const banner=root.querySelector('.play-match-turn-banner');
    if(banner&&!banner.dataset.owner){const [who,...rest]=banner.textContent.split(' · ');banner.dataset.owner=who==='Your turn'?'you':'cpu';const big=doc.createElement('strong'),small=doc.createElement('span');big.textContent=who;small.textContent=rest.join(' · ');banner.replaceChildren(big,small);}
@@ -348,6 +354,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const motion=createMotion({doc,win,lowPower,reduced:reducedMotion}),tableAudio=createTableAudio(root),emotes=presentation.hosted?createTableEmotes({root,doc,win}):null;
  const rectOf=el=>{const b=el&&(el.closest('.play-match-card-wrap')||el).getBoundingClientRect();return b&&b.width>0?b:null;};
  const cardEl=id=>root.querySelector(`.play-match-card[data-instance="${id}"]`);
+ // A player's seat panel, or in a Commander pod the chip of an opponent whose board is not on show.
+ const seatEl=seat=>root.querySelector(`.play-match-seat[data-player-seat="${seat}"]`)||root.querySelector(`.play-pod-chip[data-player-seat="${seat}"]`);
+ // Whom an attacker is attacking: its declared target, or in a duel simply the other player.
+ const defenderOf=(players,c)=>players.find(p=>p.nativeId===c.attackTarget?.id)?.seat??(players.length===2?players.find(p=>p.seat!==c.controller)?.seat:undefined);
  const sourceTint=c=>{if(!c?.known)return MANA_TINT.C;const basic=Object.entries({Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'}).find(([t])=>new RegExp('\\b'+t+'\\b').test(c.type||''));if(basic)return MANA_TINT[basic[1]];const pip=/\{([WUBRG])\}/.exec(c.text||'');return MANA_TINT[pip?.[1]]||'#e3bb68';};
  function stream(from,to,tint,delay){
   const a=rectOf(from),b=to&&(to.getBoundingClientRect?.()||to);if(!a||!b?.width)return;
@@ -407,7 +417,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const blockerOf=new Map();for(const c of [...a.cards,...b.cards])for(const id of c.blockingIds||[])if(!blockerOf.has(id))blockerOf.set(id,c.id);
    let struck=0;
    for(const c of a.cards.filter(c=>c.attacking&&b.cards.some(x=>x.id===c.id))){const el=cardEl(c.id);if(!el)continue;
-    const seat=root.querySelector(`.play-match-seat[data-player-seat="${b.players.find(p=>p.nativeId===c.attackTarget?.id)?.seat??b.players.find(p=>p.seat!==c.controller)?.seat}"]`);
+    const seat=seatEl(defenderOf(b.players,c));
     const blocker=blockerOf.has(c.id)?cardEl(blockerOf.get(c.id)):null,to=blocker||(c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seat);
     strike(el,to,{face:!blocker&&to===seat,delay:struck++*MOTION.stagger,big:(c.power||0)>=5,power:c.power||0});}
    damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=c.damage-(was.get(c.id)?.damage||0);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},MOTION.lunge*.58+i*60));
@@ -417,7 +427,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const lean=(el,to,amount,ms)=>{const w=el?.closest('.play-match-card-wrap'),r=rectOf(el),t=rectOf(to);if(!w||!r)return;const dx=t?(t.left+t.width/2-(r.left+r.width/2))*amount:0,dy=t?(t.top+t.height/2-(r.top+r.height/2))*amount:0;
    w.animate([{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(1.08)`,offset:.45},{transform:'none'}],{duration:ms,easing:'cubic-bezier(.3,.1,.3,1)'});};
   b.cards.filter(c=>onField(c)&&c.attacking&&was.get(c.id)?.zone==='Battlefield'&&!was.get(c.id)?.attacking).slice(0,8).forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(!el?.isConnected)return;
-   const to=c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):root.querySelector(`.play-match-seat[data-player-seat="${b.players.find(p=>p.nativeId===c.attackTarget?.id)?.seat??b.players.find(p=>p.seat!==c.controller)?.seat}"]`);
+   const to=c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seatEl(defenderOf(b.players,c));
    lean(el,to,.1,460);pulse(el,'attack');},i*70));
   b.cards.filter(c=>onField(c)&&c.blockingIds?.length&&(c.blockingIds.length>(was.get(c.id)?.blockingIds?.length||0))).slice(0,8).forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(!el?.isConnected)return;lean(el,cardEl(c.blockingIds[c.blockingIds.length-1]),.22,520);pulse(el,'block');},i*70));
   // 4. Attach: an Equipment or Aura that joined a host glides there (the card glide does the travel);
@@ -495,7 +505,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const out=[],cards=surface.cards,bySeat=seat=>({kind:'seat',seat}),byCard=id=>({kind:'card',id}),playerSeat=nativeId=>surface.players.find(p=>p.nativeId===nativeId)?.seat;
   const attackers=cards.filter(c=>c.zone==='Battlefield'&&c.attacking);
   for(const a of attackers){
-   const defending=surface.players.find(p=>p.seat!==a.controller)?.seat;
+   const defending=defenderOf(surface.players,a);
    const t=a.attackTarget,attackable=cards.some(c=>c.zone==='Battlefield'&&c.controller===defending&&/Planeswalker|Battle/.test(c.type||''));
    const to=t?.kind==='card'&&cards.some(c=>c.id===t.id)?byCard(t.id):t?.kind==='player'&&playerSeat(t.id)!==undefined?bySeat(playerSeat(t.id)):!attackable&&defending!==undefined?bySeat(defending):null;
    if(to)out.push({kind:'attack',from:byCard(a.id),to});
@@ -517,7 +527,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   return out;
  }
  function anchorRect(ref){
-  const el=ref.kind==='spotlight'?castShow:ref.kind==='seat'?root.querySelector(`.play-match-seat[data-player-seat="${ref.seat}"]`):ref.kind==='stack'?root.querySelector(`[data-native-key="stack-${ref.id}"]`):root.querySelector(`.play-match-card[data-instance="${ref.id}"]`);
+  const el=ref.kind==='spotlight'?castShow:ref.kind==='seat'?seatEl(ref.seat):ref.kind==='stack'?root.querySelector(`[data-native-key="stack-${ref.id}"]`):root.querySelector(`.play-match-card[data-instance="${ref.id}"]`);
   const box=el&&(el.closest('.play-match-card-wrap')||el).getBoundingClientRect();return box&&box.width>0?box:null;
  }
  function drawArrows(){
@@ -574,14 +584,15 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // slider instead of running under them, so both sides lay out in the room that is left.
   {const bf=root.querySelector('.play-match-battlefields');if(bf){bf.style.removeProperty('bottom');const floats=[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()).filter(r=>r.height);
    if(floats.length&&getComputedStyle(bf).position==='absolute'){const top=Math.min(...floats.map(r=>r.top)),b=bf.getBoundingClientRect();if(b.bottom>top-6)bf.style.setProperty('bottom',`${Math.round(parseFloat(getComputedStyle(bf).bottom)+b.bottom-top+6)}px`,'important');}}}
-  for(const area of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area')){
-   const zone=area.querySelector(':scope>.play-match-zone');if(!zone)continue;
-   zone.style.removeProperty('transform');zone.style.removeProperty('width');delete zone.dataset.scaled;
+  // A Commander pod's CPU side holds one board per opponent: the one on show, or all of them side by side.
+  const zonesOf=area=>{const all=[...area.querySelectorAll(':scope>.play-match-zone')];for(const z of all){z.style.removeProperty('transform');z.style.removeProperty('width');delete z.dataset.scaled;}return all.filter(z=>z.getClientRects().length);};
+  for(const area of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area'))for(const zone of zonesOf(area)){
+   const columns=area.querySelectorAll(':scope>.play-match-zone').length>1&&getComputedStyle(area).display==='grid';
    // Your side stops above your hand; the CPU's stops below its row of card backs.
    // On a portrait screen the stack strip and the hand slider float over your side, so it stops above them too.
-   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect())]:[...root.querySelectorAll('.play-match-opponent-fan')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
+   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect())]:[...root.querySelectorAll('.play-match-opponent-fan,.play-pod-rail')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
    const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+4)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
-   const W=area.clientWidth,H=Math.min(area.clientHeight,Math.round(bottom-top));if(!W||H<=0)continue;
+   const W=columns?Math.floor(zone.getBoundingClientRect().width):area.clientWidth,H=Math.min(area.clientHeight,Math.round(bottom-top))-(columns?22:0);if(!W||H<=0)continue;
    // Side-by-side lanes (a grid) have fixed boxes: a row that spills out of its lane shrinks inside it.
    const fitRows=()=>{for(const row of zone.querySelectorAll('.play-match-card-row')){row.style.removeProperty('transform');const lane=row.closest('.play-match-lane'),h=lane?.clientHeight||0;
     const scaleOf=()=>Math.min(1,h&&row.scrollHeight>h+1?h/row.scrollHeight:1,row.scrollWidth>row.clientWidth+1?row.clientWidth/row.scrollWidth:1);
@@ -603,7 +614,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   for(const f of fits){const {area,zone,own,W,fitRows}=f;
    if(k>=.995){zone.style.removeProperty('width');fitRows();continue;}
    zone.style.width=`${W/k}px`;fitRows();
-   const h=zone.scrollHeight*k,lift=own?0:Math.max(0,area.clientHeight-h);
+   const h=zone.scrollHeight*k,lift=own||area.querySelectorAll(':scope>.play-match-zone').length>1?0:Math.max(0,area.clientHeight-h);
    zone.dataset.scaled='true';zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
   }
  }
@@ -623,8 +634,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(before&&!blocked){glide(before);boardEffects(previous,s,before,leaving);}
   if(presentation.hosted)tableAudio.update(previous,s);
   // Arena's low-life state: under 10 life the portrait cracks, under 6 it also bleeds a slow red glow.
-  if(presentation.hosted)for(const p of s.status?.surface?.players||[]){const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`),band=typeof p.life!=='number'?'':p.life<=5?'critical':p.life<10?'low':'';if(seat&&(seat.dataset.lifeBand||'')!==band){if(band)seat.dataset.lifeBand=band;else delete seat.dataset.lifeBand;}}
-  if(presentation.hosted&&!reducedMotion())for(const p of s.status?.surface?.players||[]){const was=lifeBefore.get(p.seat);if(was===undefined||was===p.life)continue;const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`),life=seat?.querySelector('.play-match-life strong');if(!seat||!life)continue;const delta=p.life-was,wait=Math.max(0,hitAt-Date.now()),badge=doc.createElement('span');badge.className='forge-life-delta';badge.dataset.dir=delta<0?'down':'up';badge.textContent=(delta>0?'+':'\u2212')+Math.abs(delta);badge.setAttribute('aria-hidden','true');seat.append(badge);badge.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(-4px)',offset:.25},{opacity:1,transform:'translateY(-10px)',offset:.75},{opacity:0,transform:'translateY(-18px)'}],{duration:1300,delay:wait,fill:'both'}).finished.then(()=>badge.remove(),()=>badge.remove());life.animate([{transform:'scale(1)'},{transform:'scale(1.22)',color:delta<0?'#ff9a8a':'#8fe7a3',offset:.35},{transform:'scale(1)'}],{duration:700,delay:wait});
+  if(presentation.hosted)for(const p of s.status?.surface?.players||[]){const seat=seatEl(p.seat),band=typeof p.life!=='number'?'':p.life<=5?'critical':p.life<10?'low':'';if(seat&&(seat.dataset.lifeBand||'')!==band){if(band)seat.dataset.lifeBand=band;else delete seat.dataset.lifeBand;}}
+  if(presentation.hosted&&!reducedMotion())for(const p of s.status?.surface?.players||[]){const was=lifeBefore.get(p.seat);if(was===undefined||was===p.life)continue;const seat=seatEl(p.seat),life=seat?.querySelector('.play-match-life strong,.play-pod-life');if(!seat||!life)continue;const delta=p.life-was,wait=Math.max(0,hitAt-Date.now()),badge=doc.createElement('span');badge.className='forge-life-delta';badge.dataset.dir=delta<0?'down':'up';badge.textContent=(delta>0?'+':'\u2212')+Math.abs(delta);badge.setAttribute('aria-hidden','true');seat.append(badge);badge.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(-4px)',offset:.25},{opacity:1,transform:'translateY(-10px)',offset:.75},{opacity:0,transform:'translateY(-18px)'}],{duration:1300,delay:wait,fill:'both'}).finished.then(()=>badge.remove(),()=>badge.remove());life.animate([{transform:'scale(1)'},{transform:'scale(1.22)',color:delta<0?'#ff9a8a':'#8fe7a3',offset:.35},{transform:'scale(1)'}],{duration:700,delay:wait});
    // During combat the total changes when the blow lands, not when the board updates.
    if(wait)life.textContent=String(was);setTimeout(()=>{if(!life.isConnected)return;if(Math.abs(delta)>1)motion.countUp(life,was,p.life,Math.min(700,240+Math.abs(delta)*40));else life.textContent=String(p.life);},wait);}
   // A redraw that replaced the card's element keeps its open preview on the new one.
@@ -739,7 +750,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function renderCrests(surface,mat){
   if(!presentation.hosted||format!=='Commander'||!mat)return;
   const ledger=surface.commander?.commanders||[],tax=id=>{const t=ledger.find(e=>e.id===id)?.tax;return Number.isSafeInteger(t)&&t>0?t:0;};
-  for(const own of [true,false]){
+  for(const own of surface.players.length>2?[true]:[true,false]){
    const seat=own?'you':'cpu',tone=own?'you':'cpu',commanders=surface.cards.filter(c=>c.commander===true&&c.known&&(c.owner===surface.seat)===own);
    let zone=mat.querySelector(`:scope>.play-command-zone[data-seat=${seat}]:not(.forge-crest-away)`),away=mat.querySelector(`:scope>.forge-crest-away[data-seat=${seat}]`);
    if(zone){away?.remove();zone.classList.add('forge-crest');
@@ -1014,25 +1025,27 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const s=session.snapshot(),n=s.native,surface=s.status?.surface;if(!n||n.prompt||!surface)return null;
   const card=surface.cards.find(c=>c.id===cardId);
   if(!card?.known||card.zone!=='Battlefield'||card.controller!==surface.seat||!card.types?.includes('Creature'))return null;
-  const opponent=surface.players.find(p=>p.seat!==surface.seat);if(!opponent)return null;
-  if(n.inputType==='InputBlock'&&!card.attacking){const attackers=surface.cards.filter(c=>c.zone==='Battlefield'&&c.attacking&&c.controller===opponent.seat);return attackers.length?{mode:'block',targets:attackers.map(a=>({kind:'card',id:a.id}))}:null;}
-  if(n.inputType==='InputAttack')return {mode:'attack',targets:[{kind:'player',seat:opponent.seat,nativeId:opponent.nativeId},...surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===opponent.seat&&/\b(Planeswalker|Battle)\b/.test(c.type||'')).map(c=>({kind:'card',id:c.id}))]};
+  // In a Commander pod every opponent still in the game can be attacked, on its seat or its chip.
+  const opponents=surface.players.filter(p=>p.seat!==surface.seat&&!p.lost),theirs=new Set(opponents.map(p=>p.seat));if(!opponents.length)return null;
+  if(n.inputType==='InputBlock'&&!card.attacking){const attackers=surface.cards.filter(c=>c.zone==='Battlefield'&&c.attacking&&c.controller!==surface.seat);return attackers.length?{mode:'block',targets:attackers.map(a=>({kind:'card',id:a.id}))}:null;}
+  if(n.inputType==='InputAttack')return {mode:'attack',targets:[...opponents.map(p=>({kind:'player',seat:p.seat,nativeId:p.nativeId})),...surface.cards.filter(c=>c.zone==='Battlefield'&&theirs.has(c.controller)&&/\b(Planeswalker|Battle)\b/.test(c.type||'')).map(c=>({kind:'card',id:c.id}))]};
   return null;
  }
- const dropElement=t=>t.kind==='player'?root.querySelector(`.play-match-seat[data-player-seat="${t.seat}"]`):root.querySelector(`.play-match-card[data-instance="${t.id}"]`);
+ const dropElement=t=>t.kind==='player'?seatEl(t.seat):root.querySelector(`.play-match-card[data-instance="${t.id}"]`);
+ const dropElements=t=>t.kind==='player'?[...root.querySelectorAll(`.play-match-seat[data-player-seat="${t.seat}"],.play-pod-chip[data-player-seat="${t.seat}"]`)]:[dropElement(t)].filter(Boolean);
  // Re-applied after every redraw, so a board update during a drag keeps the lit targets.
  function markDrops(){
   for(const el of root.querySelectorAll('[data-forge-drop]'))el.removeAttribute('data-forge-drop');
   if(!drag?.active||!drag.combat){delete root.dataset.forgeDragMode;return;}
   root.dataset.forgeDragMode=drag.combat.mode;
-  for(const t of drag.combat.targets){const el=dropElement(t);if(el)el.dataset.forgeDrop=drag.over===t?'over':'true';}
+  for(const t of drag.combat.targets)for(const el of dropElements(t))el.dataset.forgeDrop=drag.over===t?'over':'true';
  }
  // A target counts a little past its edges (more for small, tapped or crowded cards), so a drop just outside
  // an attacker still lands; the nearest one wins.
  const DROP_SLACK=22;
  const dropTargetAt=(x,y)=>{if(!drag?.combat)return null;const hit=doc.elementFromPoint(x,y);
-  const direct=hit&&drag.combat.targets.find(t=>{const el=dropElement(t);return el&&(el===hit||el.contains(hit)||(el.closest('.play-match-card-wrap')||el).contains(hit));});if(direct)return direct;
-  let best=null,bestD=Infinity;for(const t of drag.combat.targets){const r=dropElement(t)?.getBoundingClientRect();if(!r?.width)continue;const dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-y,0,y-r.bottom),d=Math.hypot(dx,dy);if(d<=DROP_SLACK&&d<bestD){best=t;bestD=d;}}return best;};
+  const direct=hit&&drag.combat.targets.find(t=>dropElements(t).some(el=>el===hit||el.contains(hit)||(el.closest('.play-match-card-wrap')||el).contains(hit)));if(direct)return direct;
+  let best=null,bestD=Infinity;for(const t of drag.combat.targets)for(const el of dropElements(t)){const r=el.getBoundingClientRect();if(!r?.width)continue;const dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-y,0,y-r.bottom),d=Math.hypot(dx,dy);if(d<=DROP_SLACK&&d<bestD){best=t;bestD=d;}}return best;};
  // Waits until the table is ready for the next click of a two-click pairing.
  const settled=(ms=4000)=>new Promise(resolve=>{let off=null,timer=0;const done=ok=>{clearTimeout(timer);off?.();resolve(ok);};const check=s=>{if(!s.busy&&!playbackBusy)done(true);};off=authority.subscribe(check);timer=setTimeout(()=>done(false),ms);});
  async function dropCombat(plan,cardId,target){
@@ -1148,7 +1161,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // its release or cancel still ends the 60 s click guard.
  const move=e=>{if(pressAt?.id===e.pointerId&&!pressShown&&Math.hypot(e.clientX-pressAt.x,e.clientY-pressAt.y)>(e.pointerType==='mouse'?8:TOUCH_SLOP)){clearTimeout(pressTimer);pressAt=null;}
   if(!drag||drag.pointerId!==e.pointerId)return;if(attackSwipe(e)){if(e.cancelable)e.preventDefault();return;}if(peekFor&&drag.active)hidePeek();if(drag.revision!==session.snapshot().status?.revision&&!session.snapshot().status?.surface.cards.some(c=>c.id===drag.id)){cancel();return;}if(!drag.active&&e.pointerType!=='mouse'&&drag.source.closest('.play-match-hand')&&!handIntent(e))return;
-  if(!drag.active&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>(pressShown&&pressAt?.id===e.pointerId?18:e.pointerType==='mouse'?8:TOUCH_SLOP+2)){drag.active=true;drag.combat=combatDrops(drag.id);haptic('tick');}if(!drag.active)return;if(e.cancelable)e.preventDefault();if(!ghost){ghost=drag.source.cloneNode(true);ghost.removeAttribute('data-instance');ghost.classList.add('forge-drag-ghost');ghost.setAttribute('aria-hidden','true');ghost.setAttribute('inert','');const sr=drag.source.getBoundingClientRect();ghost.style.width=Math.min(sr.width,drag.source.offsetWidth||sr.width)+'px';ghost.style.left='0px';ghost.style.top='0px';drag.g={x:sr.left+sr.width/2,y:sr.top+sr.height/2,tx:e.clientX,ty:e.clientY,tilt:0};ghost.style.translate=`${drag.g.x}px ${drag.g.y}px`;root.append(ghost);drag.source.classList.add('forge-drag-source');root.classList.add('forge-dragging');}drag.g.tx=e.clientX;drag.g.ty=e.clientY;if(!ghostFrame)ghostFrame=win.requestAnimationFrame(followGhost);markPlayDrop(e);if(drag.combat){const over=dropTargetAt(e.clientX,e.clientY);if(over!==drag.over||!root.querySelector('[data-forge-drop]')){if(over&&over!==drag.over)haptic('tick');drag.over=over;markDrops();}}};
+  if(!drag.active&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>(pressShown&&pressAt?.id===e.pointerId?18:e.pointerType==='mouse'?8:TOUCH_SLOP+2)){drag.active=true;drag.combat=combatDrops(drag.id);haptic('tick');}if(!drag.active)return;if(e.cancelable)e.preventDefault();if(!ghost){ghost=drag.source.cloneNode(true);ghost.removeAttribute('data-instance');ghost.classList.add('forge-drag-ghost');ghost.setAttribute('aria-hidden','true');ghost.setAttribute('inert','');const sr=drag.source.getBoundingClientRect();ghost.style.width=Math.min(sr.width,drag.source.offsetWidth||sr.width)+'px';ghost.style.left='0px';ghost.style.top='0px';drag.g={x:sr.left+sr.width/2,y:sr.top+sr.height/2,tx:e.clientX,ty:e.clientY,tilt:0};ghost.style.translate=`${drag.g.x}px ${drag.g.y}px`;root.append(ghost);drag.source.classList.add('forge-drag-source');root.classList.add('forge-dragging');
+  // An attacker or blocker rides above the finger (below it at the top edge), so the player or creature under it stays in view.
+  drag.lift=drag.combat?Math.round((ghost.offsetHeight||60)/2+(e.pointerType==='mouse'?14:36)):0;}drag.g.tx=e.clientX;drag.g.ty=drag.lift&&e.clientY-drag.lift<drag.lift?e.clientY+drag.lift+8:e.clientY-(drag.lift||0);if(!ghostFrame)ghostFrame=win.requestAnimationFrame(followGhost);markPlayDrop(e);if(drag.combat){const over=dropTargetAt(e.clientX,e.clientY);if(over!==drag.over||!root.querySelector('[data-forge-drop]')){if(over&&over!==drag.over)haptic('tick');drag.over=over;markDrops();}}};
  // Like Arena, a card dragged out of your hand plays when released anywhere above
  // the hand; Forge decides where it goes. Other drags keep their drop targets.
  const up=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;if(pressShown){pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}}
@@ -1162,7 +1177,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const mainKey=e=>{if(e.key!==' '&&e.key!=='Enter'||e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.shiftKey||!presentation.hosted||root.dataset.stage!=='match'||drag?.active)return false;
   if(!e.target?.closest?.('.play-match-card')&&e.target?.closest?.('input,textarea,select,button,a[href],summary,dialog,[contenteditable],[role=button],[role=dialog],[tabindex]:not([tabindex="-1"])')||doc.querySelector('dialog[open]'))return false;
   const ok=root.querySelector('.play-match-decisions [data-native-key=ok]');if(!ok||ok.disabled||!ok.getClientRects().length)return false;e.preventDefault();ok.click();return true;};
- const key=e=>{if(mainKey(e))return;if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&seat===e.target&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
+ const key=e=>{if(mainKey(e))return;if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&seat===e.target&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')&&(!seat.classList.contains('play-pod-chip')||playerOffered(seat))){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
  // Arena's hand: it rests low, tucked above your profile strip, and rises into full view while
  // a thumb is on it or the mouse is over it, then settles back once you let go. The rise is just
  // enough to clear the strip and the screen edge, measured each time, so nothing else moves; on a
