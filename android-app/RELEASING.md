@@ -86,3 +86,14 @@ Then, in the website repo:
 
 Keep the copy of this folder in the repo in step with what was built: copy back any changed
 native source or `android/app/build.gradle` version.
+
+## Forge engine rules data (weekly)
+
+The engine inside the app checks dated rules data (valid for at most 7 days). Once per launch the app
+fetches https://cardstashy.com/forge-rules/current/manifest.json and, when its validUntilExclusive is
+later than the bundle in use, downloads cards.json and official-format-facts.json, verifies them with
+the engine's own NativeRulesData.load (engine revision, dates, sha256 of each file) and uses them for
+new matches. Each weekly host rules refresh (deploy/forge-host/scripts/refresh-rules-data.py) must also
+copy the three files of the new rules-data/current into forge-rules/current/ on the website in the same
+release. If the website's bundle lapses, the app plays CPU matches on the server until it is updated.
+The bundle only applies while its engineRevision matches the engine in the app.

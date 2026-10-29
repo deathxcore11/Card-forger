@@ -13,6 +13,9 @@ export const localForgeAvailable=()=>!!plugin();
 // Unpack the engine (first launch only) and load the card database in the background.
 // Safe to call often; it returns at once while loading and when already loaded.
 export async function prepareLocalForge(){const p=plugin();if(!p)return null;try{return await p.prepare();}catch{return null;}}
+// Each week's rules bundle comes from the website, so the app stays current without a new APK.
+// It waits for the engine to unpack first (that is when the app knows which bundle it has).
+export async function updateLocalRules(){const p=plugin();if(!p)return null;for(let i=0;i<20;i++){let s=null;try{s=await p.status();}catch{return null;}if(s.error)return null;if(s.ready||s.rulesVersion)break;await new Promise(r=>setTimeout(r,3000));}try{return await p.updateRules();}catch{return null;}}
 // The engine's bundled rules data is dated; on or after its last day (UTC) Forge refuses new
 // matches, so those play on the server until the app has newer rules.
 export async function localForgeCurrent(today=new Date().toISOString().slice(0,10)){const s=await prepareLocalForge();return !!s&&!s.error&&(typeof s.rulesValidUntil!=='string'||today<s.rulesValidUntil);}
