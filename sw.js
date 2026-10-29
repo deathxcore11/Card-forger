@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-table-touch-autotap-v384";
+const CACHE = "cardforge-shell-planeswalk-playtest-v385";
 const ASSETS = [
   "./play-forge-feature.js",
   "./audio.js",
