@@ -2077,3 +2077,5 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]:has(>.forge-hand-slider) .forge-hand-expand{top:-40px}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]:has(>.forge-hand-slider) .forge-native-panel .forge-native-stack{top:calc(var(--forge-hand-top,60vh) - 68px)!important}
 }
+/* The mana emblem's name ("Red mana") is for screen readers; it never shows beside the emblem. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat .forge-mana-emblem{font-size:0!important}

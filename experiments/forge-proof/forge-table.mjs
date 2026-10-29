@@ -554,11 +554,16 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // hovering the hand never shrinks the board. Both sides then share one scale, so cards read the same size.
   const g=handGeometry(),rest=g?g.wraps.map(w=>{const l=g.local(w);return {top:g.box.top+l.y,left:g.box.left+l.x,right:g.box.left+l.x+l.w,width:l.w};}):[];
   const fits=[];if(rest.length)root.style.setProperty('--forge-hand-top',`${Math.round(Math.min(...rest.map(r=>r.top)))}px`);
+  // Where the board is laid out on its own (a Fold opened up), it ends above the stack strip and the hand
+  // slider instead of running under them, so both sides lay out in the room that is left.
+  {const bf=root.querySelector('.play-match-battlefields');if(bf){bf.style.removeProperty('bottom');const floats=[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()).filter(r=>r.height);
+   if(floats.length&&getComputedStyle(bf).position==='absolute'){const top=Math.min(...floats.map(r=>r.top)),b=bf.getBoundingClientRect();if(b.bottom>top-6)bf.style.setProperty('bottom',`${Math.round(parseFloat(getComputedStyle(bf).bottom)+b.bottom-top+6)}px`,'important');}}}
   for(const area of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area')){
    const zone=area.querySelector(':scope>.play-match-zone');if(!zone)continue;
    zone.style.removeProperty('transform');zone.style.removeProperty('width');delete zone.dataset.scaled;
    // Your side stops above your hand; the CPU's stops below its row of card backs.
-   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?rest:[...root.querySelectorAll('.play-match-opponent-fan')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
+   // On a portrait screen the stack strip and the hand slider float over your side, so it stops above them too.
+   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect())]:[...root.querySelectorAll('.play-match-opponent-fan')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
    const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+4)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
    const W=area.clientWidth,H=Math.min(area.clientHeight,Math.round(bottom-top));if(!W||H<=0)continue;
    // Side-by-side lanes (a grid) have fixed boxes: a row that spills out of its lane shrinks inside it.
