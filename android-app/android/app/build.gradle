@@ -14,8 +14,8 @@ android {
         applicationId "com.cardstashy.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 40
-        versionName "0.12.4-beta"
+        versionCode 41
+        versionName "0.12.5-beta"
         if (withForgeEngine) minSdkVersion 26 // Forge's own Android minimum (java.nio.file)
         if (project.hasProperty('forgeEngineTest')) { applicationIdSuffix ".forgetest"; versionNameSuffix "-forge-test" }
         manifestPlaceholders = [largeHeap: withForgeEngine ? "true" : "false"]
