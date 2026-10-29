@@ -2162,7 +2162,7 @@ body.practice-table-open img{-webkit-user-drag:none}
    board on show; the active one carries the turn glow; a knocked-out one is greyed. */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-opponent-hand[data-pod]{background:none!important;border:0!important;box-shadow:none!important;pointer-events:auto;height:auto!important;max-height:none!important;overflow:visible!important;display:flex;align-items:center;justify-content:center;z-index:30}
 :where(body.practice-table-open) .play-pod-rail{display:flex;gap:6px;width:100%;max-width:640px;justify-content:center}
-:where(body.practice-table-open) .play-pod-chip{flex:1 1 0;min-width:0;max-width:210px;display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:6px;height:44px;padding:4px 8px 4px 4px;border-radius:12px;background:#0d0f15d9;border:1px solid #ffffff1f;color:#efe6d2;cursor:pointer;box-shadow:0 4px 14px #0007;transition:border-color .2s,box-shadow .2s,opacity .2s;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+:where(body.practice-table-open) .play-pod-chip{position:relative;flex:1 1 0;min-width:0;max-width:210px;display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:6px;height:44px;padding:4px 8px 4px 4px;border-radius:12px;background:#0d0f15d9;border:1px solid #ffffff1f;color:#efe6d2;cursor:pointer;box-shadow:0 4px 14px #0007;transition:border-color .2s,box-shadow .2s,opacity .2s;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 :where(body.practice-table-open) .play-pod-chip[data-focused=true]{border-color:#e8b95bb3;background:linear-gradient(180deg,#2a2112e6,#0d0f15e6)}
 :where(body.practice-table-open) .play-pod-chip[data-active=true]{box-shadow:0 0 0 1px #8fc6ff99,0 0 16px #4f9dff66}
 :where(body.practice-table-open) .play-pod-chip[data-lost=true]{opacity:.45;filter:grayscale(1)}
@@ -2172,7 +2172,7 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-pod-initial{font:700 14px/1 Cinzel,Georgia,serif;color:#e8d6a8}
 :where(body.practice-table-open) .play-pod-text{display:grid;gap:1px;min-width:0}
 :where(body.practice-table-open) .play-pod-name{font:700 12px/1.15 Manrope,'DM Sans',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-:where(body.practice-table-open) .play-pod-meta{display:flex;gap:6px;font:600 11px/1 'DM Sans',sans-serif;color:#cfc6b4}
+:where(body.practice-table-open) .play-pod-meta{display:flex;gap:6px;white-space:nowrap;overflow:hidden;font:600 11px/1 'DM Sans',sans-serif;color:#cfc6b4}
 :where(body.practice-table-open) .play-pod-hand::before{content:"";display:inline-block;width:7px;height:10px;margin-right:3px;border-radius:2px;background:#3d5c9e;border:1px solid #9fb8e8;vertical-align:-1px}
 :where(body.practice-table-open) .play-pod-cmd{color:#ffb08f}
 :where(body.practice-table-open) .play-pod-cmd::after{content:" cmd";font-weight:500;opacity:.85}
@@ -2185,17 +2185,27 @@ body.practice-table-open img{-webkit-user-drag:none}
 /* Phones and narrow tablets show the focused opponent's board only. */
 :where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]>.play-match-zone[data-focused=false]{display:none}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-pod-chip{transition:none}:where(body.practice-table-open) .play-pod-chip[data-forge-drop=over]{transform:none}}
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-hand[data-pod]{left:12px!important;right:12px!important;width:auto!important;max-width:none!important;transform:none!important}
-@media (max-width:599px){:where(body.practice-table-open) .play-pod-chip{grid-template-columns:minmax(0,1fr) auto;padding:4px 9px}:where(body.practice-table-open) .play-pod-face{display:none}}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-hand[data-pod]{position:absolute!important;top:8px!important;left:60px!important;right:8px!important;width:auto!important;max-width:none!important;transform:none!important}
+@media (max-width:599px){:where(body.practice-table-open) .play-pod-chip{grid-template-columns:24px minmax(0,1fr) auto;gap:5px;padding:4px 7px 4px 5px}:where(body.practice-table-open) .play-pod-face{width:24px;height:24px}:where(body.practice-table-open) .play-pod-initial{font-size:12px}}
 @media (min-width:901px) and (hover:hover){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-hand[data-pod]{left:50%!important;right:auto!important;width:min(680px,calc(100% - 660px))!important;transform:translateX(-50%)!important}}
 /* Monitors and an opened Fold: all the opponents' boards side by side under the rail, the focused one lit. */
 @media (min-width:1280px) and (min-height:700px) and (hover:hover),(min-width:820px) and (min-height:960px){
  :where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]{display:grid;grid-template-columns:repeat(var(--pod-cols,3),minmax(0,1fr));gap:14px}
  :where(body.practice-table-open) .play-match-table[data-pod=true][data-pod-seats="2"] .play-match-seat-area[data-seat=cpu]{--pod-cols:2}
  :where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]>.play-match-zone[data-focused=false]{display:block}
- :where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]>.play-match-zone{position:relative;min-width:0;border-radius:16px;border:1px solid #ffffff10;padding-top:22px}
+ :where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]>.play-match-zone{position:relative;min-width:0;border-radius:16px;border:1px solid #ffffff24;padding-top:22px}
+ :where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]>.play-match-zone .play-match-zone-groups{align-content:start;justify-content:center;--play-piece:clamp(56px,min(calc((100cqh - 56px) / 2.6),calc((100cqw - 40px) / 2.9)),132px)}
+ :where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]>.play-match-zone .play-match-card-row{flex-wrap:wrap;justify-content:center;row-gap:6px}
  :where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]>.play-match-zone[data-focused=true]{border-color:#e8b95b55;background:radial-gradient(ellipse 70% 90% at 50% 0%,#e8b95b14,transparent 70%)}
  :where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]>.play-match-zone[data-lost=true]{opacity:.4;filter:grayscale(1)}
  :where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]>.play-match-zone::before{content:attr(data-pod-label);position:absolute;top:4px;left:12px;font:700 12px/1.2 Manrope,'DM Sans',sans-serif;color:#cfc6b4;letter-spacing:.02em}
 }
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-opponent-hand[data-pod]::before,:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-opponent-hand[data-pod]::after{display:none!important}
+/* Touch screens: the chips already name each board, and a scaled-down label would be too small to read. */
+@media (hover:none){:where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]>.play-match-zone::before{content:none}:where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]>.play-match-zone{padding-top:6px}}
+/* Phones: with no CPU seat panel above it, the rail moves up beside the menu button. */
+@media (max-width:599px){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-hand[data-pod]{position:absolute!important;top:8px!important;left:60px!important;right:8px!important}:where(body.practice-table-open) .play-pod-chip{grid-template-columns:24px minmax(0,1fr) auto;padding:4px 6px 4px 4px}:where(body.practice-table-open) .play-pod-meta{gap:4px;font-size:10.5px}:where(body.practice-table-open) .play-pod-life{font-size:15px;min-width:18px}}
+@media (max-width:599px){:where(body.practice-table-open) .play-pod-chip{grid-template-columns:24px minmax(0,1fr) auto;grid-template-rows:auto auto;grid-template-areas:"face name life" "face meta meta";row-gap:1px}:where(body.practice-table-open) .play-pod-face{grid-area:face}:where(body.practice-table-open) .play-pod-text{display:contents}:where(body.practice-table-open) .play-pod-name{grid-area:name}:where(body.practice-table-open) .play-pod-meta{grid-area:meta;align-self:center}:where(body.practice-table-open) .play-pod-life{grid-area:life;font-size:14px;line-height:1}}
+@media (max-width:599px){:where(body.practice-table-open) .play-pod-rail{gap:4px}:where(body.practice-table-open) .play-pod-chip{column-gap:4px;padding:4px 6px 4px 4px}:where(body.practice-table-open) .play-pod-name{font-size:11px}:where(body.practice-table-open) .play-pod-life{font-size:13px;min-width:0}:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-hand[data-pod]{left:56px!important;right:6px!important}}
+/* With no CPU seat or hand fan above it, a pod's CPU board starts just under the rail. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-pod=true] .play-match-mat{padding-top:calc(var(--t,0px) + 64px)!important}
