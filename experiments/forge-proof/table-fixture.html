@@ -168,12 +168,15 @@ const phase = STATE === 'attack' ? 'COMBAT_DECLARE_ATTACKERS' : STATE === 'block
 const inputType = {targets: 'InputSelectTargets', attack: 'InputAttack', block: 'InputBlock', cpu: 'InputPassPriority', discard: '', opening: 'InputConfirmMulligan', pay: 'InputPayManaOfCostPayment'}[STATE] ?? 'InputPassPriority';
 const castable = ['Lightning Bolt', 'Monastery Swiftspear', 'Play with Fire', 'Skewer the Critics', 'Forest', 'Llanowar Elves'];
 const selection = {cards: [], targets: [], chosen: [], actionable: []};
+let castEvent = null;
 if (STATE === 'main' || STATE === 'dense' || STATE === 'crowded') {
   selection.actionable = [...youZones.Hand.cards.filter(c => castable.includes(c.name)), ...byName(youZones.Battlefield, 'Arcane Signet')].map(ref);
 } else if (STATE === 'targets') {
   selection.targets = [...cpuZones.Battlefield.cards.filter(c => /Creature/.test(c.type)), ...youZones.Battlefield.cards.filter(c => /Creature/.test(c.type))].map(ref);
   selection.targets.push({kind: 'player', id: CPU}, {kind: 'player', id: YOU});
   selection.chosen = [ref(byName(cpuZones.Battlefield, 'Hill Giant')[0])];
+  // The Bolt has left the hand for the stack (Forge holds it there until its targets are locked in).
+  castEvent = (() => { const i = youZones.Hand.cards.findIndex(c => c.name === 'Lightning Bolt'); const [bolt] = i < 0 ? [] : youZones.Hand.cards.splice(i, 1); if (bolt) { bolt.zone = 'Stack'; youZones.Stack = {cards: [bolt]}; } return bolt ? {seq: 1, type: 'zone', turn, phase: 'MAIN1', card: {kind: 'card', id: bolt.id, name: bolt.name}, from: 'Hand', to: 'Stack', player: YOU, token: false} : null; })();
 } else if (STATE === 'discard') {
   Object.assign(selection, {cards: youZones.Hand.cards.map(ref), min: 1, max: 1});
 } else if (STATE === 'pay') {
@@ -202,7 +205,7 @@ const prompt = STATE === 'search' ? {id: 'fixture-many-partings', supported: tru
   // Two of your triggers fire together: Forge asks for their order.
   : STATE === 'triggers' ? {id: 'fixture-triggers', supported: true, method: 'order', ordered: true, min: 2, max: 2, remainingMin: 2, remainingMax: 2, sourceIndexes: [0, 1], destinationIndexes: [], rememberAllowed: false, topLabel: 'Resolve first',
     message: 'Select order for simultaneous abilities — Resolve first', options: [
-      {index: 0, value: {kind: 'ability', id: 917, description: 'Tireless Provisioner (49): Landfall — Whenever a land you control enters, create a Food token or a Treasure token. [Zone Changer: Forest (78)]', card: nativeCard('Grizzly Bears', 'Battlefield', YOU)}},
+      {index: 0, value: {kind: 'ability', id: 917, description: 'Grizzly Bears (49): Whenever a land you control enters, create a Food token or a Treasure token. (Food is an artifact with "{2}, {T}, Sacrifice this token: You gain 3 life.") [Zone Changer: Forest (78)]', card: nativeCard('Grizzly Bears', 'Battlefield', YOU)}},
       {index: 1, value: {kind: 'ability', id: 918, description: 'Hill Giant (50): Whenever a land you control enters, you may draw a card. [Zone Changer: Forest (78)]', card: nativeCard('Hill Giant', 'Battlefield', YOU)}}]} : null;
 const stackCard = STATE === 'targets' ? nativeCard('Counterspell', 'Stack', CPU) : null;
 const native = {
@@ -220,7 +223,7 @@ const native = {
     : STATE === 'block' ? {ok: 'OK', okEnabled: true, cancel: '', cancelEnabled: false}
     : STATE === 'pay' ? {ok: 'Auto', okEnabled: false, cancel: 'Cancel', cancelEnabled: true}
     : yourTurn ? {ok: 'OK', okEnabled: true, cancel: 'End turn', cancelEnabled: true} : {},
-  selection,
+  selection, events: {schema: 1, latest: castEvent ? 1 : 0, items: castEvent ? [castEvent] : []},
   ...(STATE === 'pay' ? {payment: {remaining: '{2}', forCard: {kind: 'card', id: byName(youZones.Battlefield, 'Food')[0].id, name: 'Food Token'}}} : {}),
 };
 

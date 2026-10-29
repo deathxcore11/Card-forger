@@ -343,7 +343,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    if((input==='InputSelectTargets'||input==='InputSelectStackItems')&&stackOnly){const what=(named?.[2]||ask).match(/\btarget ([a-z -]{3,40}?(?:spell|ability)(?: or ability)?)\b/i)?.[1];ask=/\bcounter target\b/i.test(named?.[2]||ask)?'Choose a spell to counter':what?`Choose a${/^[aeiou]/i.test(what)?'n':''} ${what.toLowerCase()} on the stack`:'Choose a spell or ability on the stack';}
    else if(input==='InputSelectTargets'&&named)ask=`Choose a target for ${named[1]}`;
    else if(named)ask=named[2];
-   if(!ask)ask=input==='InputSelectTargets'?'Choose a target':'Choose a card on the table';if(oneTarget)ask=ask.replace(/^(Select|Choose) (a )?targets? for/i,'Tap a target for');
+   if(!ask)ask=input==='InputSelectTargets'?'Choose a target':'Choose a card on the table';if(oneTarget)ask=ask.replace(/^(Select|Choose) (a )?targets? for/i,'Tap a target for');else ask=ask.replace(/^Select\b/,'Choose');
    actions.dataset.state=ask;actions.dataset.ask='true';askLine(ask);}
   // A payment your mana can't finish says so above the hand; Cancel is the way out.
   else if(presentation.hosted&&paying?.short){actions.dataset.state=`Not enough mana${paying.name?` for ${paying.name}`:''}`;actions.dataset.ask='true';askLine(actions.dataset.state);}

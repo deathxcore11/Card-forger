@@ -1157,7 +1157,7 @@
 :where(body.practice-table-open) .forge-native-panel .forge-order-card[aria-pressed=true] .forge-order-num{background:linear-gradient(180deg,#f6dc9a,#d9a64a);border:0;color:#1b1406;animation:cs-order-pop .3s cubic-bezier(.3,1.6,.5,1)}
 :where(body.practice-table-open) .forge-native-panel .forge-order-cap{display:grid;gap:2px;min-width:0}
 :where(body.practice-table-open) .forge-native-panel .forge-order-cap b{font:700 14px/1.2 'DM Sans',system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-:where(body.practice-table-open) .forge-native-panel .forge-order-cap small{font-size:12px;line-height:1.3;color:#9aa2b1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+:where(body.practice-table-open) .forge-native-panel .forge-order-cap small{font-size:12px;line-height:1.3;color:#d6dbe4;display:block;overflow-wrap:anywhere}
 :where(body.practice-table-open) .forge-native-panel .forge-order-actions{display:flex;gap:10px;justify-content:center;width:100%}
 :where(body.practice-table-open) .forge-native-panel .forge-order-actions>[data-native-key=confirm-prompt]{min-width:160px;min-height:46px;border-radius:23px;font-weight:800;font-size:16px}
 :where(body.practice-table-open) .forge-native-panel .forge-order-actions>[data-native-key=clear-prompt]{min-height:46px;border-radius:23px;padding-inline:22px}
@@ -2179,7 +2179,7 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .forge-own-cast{border-color:#f0c27aaa;box-shadow:0 0 26px #f0c27a55,0 16px 36px #000b}
 :where(body.practice-table-open) .forge-own-cast p>span{color:#f0c27a}
 :where(body.practice-table-open) .forge-own-cast figure{background:#141418}
-@media (max-width:600px),(max-height:520px){:where(body.practice-table-open) .forge-own-cast{inset:auto auto auto 10px;top:40%;width:108px;max-width:30vw;padding:6px;gap:5px}:where(body.practice-table-open) .forge-own-cast figure{max-height:150px}:where(body.practice-table-open) .forge-own-cast p>strong{font-size:12px}}
+@media (max-width:600px),(max-height:520px){:where(body.practice-table-open) .forge-own-cast{inset:auto auto auto 8px;top:58px;width:76px;max-width:24vw;padding:4px;gap:3px}:where(body.practice-table-open) .forge-own-cast figure{max-height:150px}:where(body.practice-table-open) .forge-own-cast p>strong{font-size:12px}}
 /* While you choose targets, every legal one glows in the target colour with a slow, quiet pulse. */
 @keyframes cs-target-pulse{0%,100%{box-shadow:0 0 0 2px var(--ob-target,#ff9d5c),0 0 14px 2px #ff9d5c66,0 10px 22px #000b}50%{box-shadow:0 0 0 2px var(--ob-target,#ff9d5c),0 0 26px 6px #ff9d5caa,0 10px 22px #000b}}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-forge-input=InputSelectTargets] :is(.play-match-battlefields,.play-command-zone) .play-match-card[data-forge-role=choice]{box-shadow:0 0 0 2px var(--ob-target,#ff9d5c),0 0 18px 4px #ff9d5c88,0 10px 22px #000b;animation:cs-target-pulse 1.6s ease-in-out infinite}
@@ -2217,7 +2217,16 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions[data-complex]:has(.forge-order-cards) .forge-native-context>:not(h2){display:none}
 /* Phones: the ask line ("Tap a target for X", "Not enough mana for X") floats centred above the hand from <body>, since the dock is transformed there. */
 .forge-ask-line{display:none}
-@media (max-width:640px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-ask=true]::before{display:none!important}
+@media (max-width:640px),(max-height:520px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-ask=true]::before{display:none!important}
  :where(body.practice-table-open) .forge-ask-line{display:block;position:fixed;left:50%;top:calc(var(--forge-ask-top,var(--forge-hand-top,60vh)) - 10px);translate:-50% -100%;z-index:2545;width:max-content;max-width:calc(100vw - 32px);padding:7px 14px;border:1px solid #ffffff22;border-radius:999px;background:#101319ee;color:#fbf3df;font:700 13px/1.3 'DM Sans',system-ui,sans-serif;text-align:center;box-shadow:0 8px 24px #0008;pointer-events:none}
  :where(body.practice-table-open) .forge-ask-line[hidden]{display:none}
  :where(body.practice-table-open[data-forge-search]) .forge-ask-line,:where(body.practice-table-open) .play-match-table[data-forge-native]:has(.forge-order-cards)~.forge-ask-line{visibility:hidden}}
+/* Trigger text is read in full (you can't order what you can't read); long lists scroll inside the sheet. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions[data-complex]:has(.forge-order-cards) .forge-order-cards{overflow:auto!important;overscroll-behavior:contain;align-content:start}
+:where(body.practice-table-open) .forge-native-panel .forge-order-cap b{white-space:normal}
+:where(body.practice-table-open) .forge-native-panel .forge-order-hint{text-align:center;white-space:normal}
+/* 44px hit areas on the small round and pill controls, without changing how they look. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] :is(.forge-control-emblem,.forge-emote-button,.forge-attack-all,[data-native-key=cancel],[data-native-key^=zone-]){position:relative}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-emote-button{position:absolute}
+:where(body.practice-table-open) .play-match-table[data-forge-native] :is(.forge-control-emblem,.forge-emote-button)::before{content:"";position:absolute;inset:-7px;border-radius:50%}
+:where(body.practice-table-open) .play-match-table[data-forge-native] :is(.forge-attack-all,[data-native-key=cancel],[data-native-key^=zone-])::before{content:"";position:absolute;inset:-8px 0}

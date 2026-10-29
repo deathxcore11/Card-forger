@@ -101,7 +101,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   // The engine leaves the player off some casts; a card that was in your hand is yours.
   const ev=[...last.values()].filter(e=>e.to==='Stack'&&e.from==='Hand'&&(e.player===n.viewer||e.player==null&&seenInHand.has(e.card.id))).sort((a,b)=>b.seq-a.seq)[0];if(!ev)return null;
   if((n.stack||[]).some(x=>x.id===ev.card.id||x.source?.id===ev.card.id)||surface.cards.some(c=>c.id===ev.card.id&&c.zone!=='Stack'))return null;
-  return seenInHand.get(ev.card.id)||{id:ev.card.id,name:ev.card.name,known:true,zone:'Stack'};
+  return seenInHand.get(ev.card.id)||surface.cards.find(c=>c.id===ev.card.id)||{id:ev.card.id,name:ev.card.name,known:true,zone:'Stack'};
  }
  function paintOwnCast(n,surface){
   for(const c of surface.cards)if(c.zone==='Hand'&&c.known&&c.controller===surface.seat)seenInHand.set(c.id,c);
@@ -110,7 +110,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
   const art=resolvePracticeArtwork(c);
   ownCast.innerHTML=`<figure>${art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:''}</figure><p><span>Casting</span><strong>${esc(c.name)}</strong></p>`;
   if(!art?.imageUrl)ownCast.querySelector('figure').append(drawnArtwork(doc,c,surfaceColors(c)));
-  ownCast.dataset.open='true';root.dataset.ownCast=String(c.id);
+  ownCast.dataset.open='true';root.dataset.ownCast=String(c.id);queueArrows();
  }
  // Whose move it is and what just happened, from the accepted state and the playback alone.
  const activity=doc.createElement('div');activity.className='forge-activity';activity.setAttribute('role','status');activity.setAttribute('aria-live','polite');activity.hidden=true;doc.body.append(activity);let playback=null;
@@ -546,7 +546,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(n.inputType==='InputSelectTargets'){
    const named=String(n.message||'').match(/targets? for ([^\n]+)/i)?.[1]?.trim(),mine=c=>c.known&&c.controller===surface.seat;
    const source=cards.filter(c=>mine(c)&&c.zone==='Stack').sort((a,b)=>b.id-a.id)[0]||(named&&(cards.find(c=>mine(c)&&c.zone==='Battlefield'&&c.name===named)||cards.find(c=>mine(c)&&c.zone==='Hand'&&c.name===named)));
-   const from=source?byCard(source.id):ownCast.dataset.open==='true'?{kind:'own'}:null;
+   // A spell being cast has no tile on the table, so its arrows start from the Casting panel.
+   const from=source&&cardEl(source.id)?byCard(source.id):ownCast.dataset.open==='true'?{kind:'own'}:null;
    // Arena's aiming line: until every target is chosen, a curved line runs from the spell to your finger or pointer.
    if(from&&aim&&(n.selection?.chosen||[]).length<Math.max(1,n.selection?.max||1))out.push({kind:'aim',from,to:{kind:'point',x:aim.x,y:aim.y}});
    if(from)for(const r of n.selection?.chosen||[]){const to=r.kind==='card'?byCard(r.id):r.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from,to});}
