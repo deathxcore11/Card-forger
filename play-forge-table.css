@@ -2100,3 +2100,13 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-stack:not([data-open=true]) .forge-stack-item .forge-stack-head{min-height:30px!important}
 }
 @media (max-aspect-ratio:9/10){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-stack:not([data-open=true]) .forge-stack-menu{top:50%;translate:0 -50%}}
+/* Dragging a card from your hand: a soft line a little above the hand marks where it starts to play; it
+   brightens gold once the card is past it (markPlayDrop). */
+:where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-play-line{position:fixed;left:6%;right:6%;height:2px;z-index:30;pointer-events:none;opacity:0;border-radius:2px;background:linear-gradient(90deg,transparent,#8fdcff 18%,#8fdcff 82%,transparent);box-shadow:0 0 12px #5cc8ff88;transition:opacity .15s,background .15s,box-shadow .15s}
+:where(body.practice-table-open) .play-match-table[data-forge-native][data-play-line=lift]>.forge-play-line{opacity:.75}
+:where(body.practice-table-open) .play-match-table[data-forge-native][data-play-line=ready]>.forge-play-line{opacity:1;background:linear-gradient(90deg,transparent,#ffd27a 18%,#ffd27a 82%,transparent);box-shadow:0 0 16px #ffc56aaa}
+/* Your block lines are controls while you block: tap the line or its x to take the block back. */
+:where(body.practice-table-open) .forge-arrows .forge-arrow-hit{fill:none;stroke:transparent;stroke-width:30;pointer-events:stroke;cursor:pointer}
+:where(body.practice-table-open) .forge-arrows .forge-unblock{pointer-events:all;cursor:pointer}
+:where(body.practice-table-open) .forge-arrows .forge-unblock circle{fill:#14161df0;stroke:#ff8a6a;stroke-width:1.5}
+:where(body.practice-table-open) .forge-arrows .forge-unblock path{stroke:#fff1ec;stroke-width:2;stroke-linecap:round}
