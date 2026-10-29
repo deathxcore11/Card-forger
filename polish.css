@@ -35,7 +35,7 @@ nav.tabs > button { flex: none; padding: 8px 14px; white-space: nowrap; }
 /* The tabs */
 :is(.seg, .set-browser-quick, nav.tabs) > button, .cs-tabs > button {
   position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  min-height: 40px; border: 0; border-radius: 999px; background: transparent; box-shadow: none;
+  min-height: 44px; border: 0; border-radius: 999px; background: transparent; box-shadow: none;
   color: var(--muted); font-weight: 650; letter-spacing: -.01em; cursor: pointer;
   transition: color .35s var(--glide-ease), transform .2s var(--glide-ease);
 }
@@ -192,7 +192,7 @@ input[data-home-search].hint-out::placeholder { opacity: 0; }
 }
 .searchbar.search-query > input::placeholder { color: var(--muted); opacity: .85; }
 .searchbar.search-query > .search-go {
-  grid-area: 1 / 2; position: relative; display: grid; place-items: center; width: 40px; height: 40px; min-height: 0;
+  grid-area: 1 / 2; position: relative; display: grid; place-items: center; width: 44px; height: 44px; min-height: 0;
   margin-right: 6px; padding: 0; border: 0; border-radius: 50%; background: var(--gold); color: var(--gold-ink);
   box-shadow: inset 0 1px 0 #ffffff59, 0 6px 16px -6px color-mix(in srgb, var(--gold) 75%, transparent);
   transition: transform .15s ease, filter .15s ease;
@@ -397,3 +397,53 @@ body[data-view="settings"] .profile-menu>.release-dot{display:none}
 /* Next-patch minors from the 29 Oct gate: Scan's idle panel keeps the page gutters; seat badge rows match. */
 #app .scan-workspace.is-camera:not(.is-live)>.scan-panel{margin-inline:var(--page-edge);border-radius:18px;border:1px solid var(--line)}
 .pl-seat-who{min-height:30px}
+
+/* ---- Design-gate cleanup (29 Oct): structural fixes ---- */
+/* Ambient art: the oversized, blurred layer is a pseudo-element so the host element stays inside the viewport (nothing off-screen, nothing clipped). */
+body.glass #ambient .amb-art{inset:0;transform:none;background-size:0 0;overflow:visible}
+body.glass #ambient .amb-art::before{content:"";position:absolute;inset:-8%;background-image:inherit;background-size:cover;background-position:center 30%;transform:scale(1.08)}
+/* A closed disclosure has no box: its menu options are neither tappable nor measurable until it opens. */
+details:not([open])>:not(summary){display:none}
+/* Phone bottom nav: solid enough that the page under it does not read through the gesture band. */
+:is(body,body.glass) .bottom-nav{background:color-mix(in srgb,var(--bg) 94%,transparent)}
+/* 44px hit area for compact controls (chips, text links, small buttons): an invisible pseudo extends the touch target without changing the look. */
+:is(button,a,summary).chip,.chip[data-act],.chip[role=button],button.link,a.link,.link[data-act],.btn.small{position:relative}
+:is(:is(button,a,summary).chip,.chip[data-act],.chip[role=button],button.link,a.link,.link[data-act],.btn.small):not(.cs-plate)::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);translate:-50% -50%;border-radius:inherit}
+/* Text floor: nothing under 11px (eyebrows, set codes, mode tags, pill labels). */
+.eyebrow,.pl-home-head .eyebrow,.pl-head .eyebrow,.play-menu--forge .play-heading .eyebrow,.home-personal-resume .home-resume .eyebrow,.home-value-main>.eyebrow,.home-ai-label,body .topbar .home-ai-label,.home-meta-heading .link.small,.pl-mode-tag,.set-code-mark,.pl-mat-now small,.pl-format-opt em,.pl-format-opt small,.pl-format-group,.set-tile-progress-label,.home-value-note,.home-value-movement,.pl-mat-sheet small,.pl-mat-opt small,.pl-cpu-tag{font-size:11px}
+@media(max-width:380px){.set-tile-progress-label,.home-value-note{font-size:11px}}
+/* Search pill: the label has its own row above the field instead of floating over the field's box. */
+.home-search-pill{grid-template-rows:auto minmax(0,1fr);align-items:stretch}
+.home-search-pill>.home-ai-label{position:static;grid-column:1;grid-row:1;align-self:end;padding:10px 0 0 20px;line-height:1}
+.home-search-pill>input{grid-column:1;grid-row:2;align-self:start;padding-top:4px;min-height:44px}
+.home-search-pill>:not(.home-ai-label):not(input){grid-row:1/3;align-self:center}
+body .topbar .home-search-pill>.home-ai-label{padding-left:12px}
+/* Scan on a landscape phone: the page flows and scrolls instead of squeezing the drop zone to a sliver. */
+@media(max-height:520px) and (orientation:landscape){
+ body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)){height:auto;min-height:100dvh;overflow:visible}
+ body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live))>#content{overflow:visible;flex:none;min-height:0}
+ #app .scan-workspace.is-camera:not(.is-live){flex:none}
+ #app .scan-workspace.is-camera:not(.is-live)>.scan-toolbar{position:static;margin:8px var(--page-edge) 0}
+ #app .scan-workspace.is-camera:not(.is-live)>.scan-panel{flex:none;min-height:0;margin-bottom:12px}
+ #app .scan-workspace.is-camera:not(.is-live) .cam-wrap{flex:none;min-height:0}
+ #app .scan-workspace.is-camera:not(.is-live) .scan-drop{position:relative;inset:auto;margin:16px auto;min-height:0}
+}
+
+/* Desktop top nav, home counters and disclosure rows reach 44px; the gesture pad under the nav is solid. */
+.top-nav button{min-width:44px;min-height:44px}
+.home-value-counts button{min-width:44px;min-height:44px}
+:is(.filters,details.more,.group,.side-group,.glossary,.play-import,details.note,.set-browser-more,.rule-learning details) > summary{min-height:44px;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;box-sizing:border-box}
+.bottom-nav{box-shadow:inset 0 calc(-1 * env(safe-area-inset-bottom)) 0 var(--bg)}
+body[data-view="settings"] .profile-menu>.sr-only{display:none}
+.wiki-daily .hh-body{padding-right:72px}
+/* Seat tap overlays stop short of the VS medallion on the seam; VS stays above them. */
+.pl-arena:not(.pl-arena--pod) .pl-seat:not(.pl-seat--cpu) .pl-seat-hit{right:40px}
+.pl-arena:not(.pl-arena--pod) .pl-seat--cpu .pl-seat-hit{left:40px}
+@media(max-width:700px){.pl-arena:not(.pl-arena--pod) .pl-seat:not(.pl-seat--cpu) .pl-seat-hit{right:0;bottom:36px}.pl-arena:not(.pl-arena--pod) .pl-seat--cpu .pl-seat-hit{left:0;top:36px}}
+#content .eyebrow,.hh-body .eyebrow,.set-progress-top .eyebrow,.set-overview .set-progress-top .eyebrow,.settings-dialog-head .eyebrow,.settings-profile-inline>.eyebrow,.settings-section-intro .eyebrow,.settings-card-heading .eyebrow,.flavor .eyebrow{font-size:11px}
+.community-source-links a{position:relative}
+.community-source-links a::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);translate:-50% -50%}
+/* Seat avatar initial fits its ring at 130% text. */
+.pl-seat .profile-avatar>span{font-size:16px;line-height:1}
+/* Scan drop zone (camera off): no shutter row to reserve, so the frame can hold 130% text. */
+#app .scan-workspace.is-camera:not(.is-live) .scan-drop{inset:64px 16px 24px}

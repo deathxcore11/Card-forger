@@ -228,7 +228,7 @@ export function mtgFilterChips(f) {
   return chips;
 }
 export const chipRow = (chips, act, clearAct) =>
-  chips.length ? `<div class="filter-chips" aria-label="Active filters">${chips.map(([k, l]) => `<button class="fchip" data-act="${act}" data-field="${esc(k)}" aria-label="Remove ${esc(l)}">${esc(l)} <span aria-hidden="true">×</span></button>`).join("")}<button class="link small" data-act="${clearAct}">Clear all</button></div>` : "";
+  chips.length ? `<div class="filter-chips" aria-label="Active filters">${chips.map(([k, l]) => `<button class="fchip" data-act="${act}" data-field="${esc(k)}" aria-label="Remove ${esc(l)}"><span class="fchip-label">${esc(l)}</span> <span aria-hidden="true">×</span></button>`).join("")}<button class="link small" data-act="${clearAct}">Clear all</button></div>` : "";
 export const savedRow = (list, runAct, delAct) =>
   list.length ? `<div class="saved-searches"><span class="muted small">Saved:</span>${list.map((x, i) => `<span class="schip"><button data-act="${runAct}" data-i="${i}">${esc(x.label)}</button><button data-act="${delAct}" data-i="${i}" aria-label="Delete saved search ${esc(x.label)}">×</button></span>`).join("")}</div>` : "";
 

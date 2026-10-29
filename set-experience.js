@@ -10,7 +10,7 @@ export function setArtworkSources(game,set={},card=null){
 }
 export function setAtmosphere(game,set,card=null){
  const urls=setArtworkSources(game,set,card);if(!urls.length)return '';
- return `<span class="set-atmosphere" aria-hidden="true"><img src="${esc(urls[0])}" data-set-art-sources="${esc(JSON.stringify(urls))}" data-set-art-index="0" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="const a=JSON.parse(this.dataset.setArtSources),i=Number(this.dataset.setArtIndex)+1;this.dataset.setArtIndex=i;if(a[i])this.src=a[i];else{this.onerror=null;this.hidden=true}"></span>`;
+ return `<span class="set-atmosphere" aria-hidden="true" data-audit-scroll><img src="${esc(urls[0])}" data-set-art-sources="${esc(JSON.stringify(urls))}" data-set-art-index="0" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="const a=JSON.parse(this.dataset.setArtSources),i=Number(this.dataset.setArtIndex)+1;this.dataset.setArtIndex=i;if(a[i])this.src=a[i];else{this.onerror=null;this.hidden=true}"></span>`;
 }
 // Yu-Gi-Oh! prize and tournament boosters (OTS, Astral, Champion, Turbo, Speed Duel Tournament Packs) are
 // real packs; tins, decks and boxes are not.
