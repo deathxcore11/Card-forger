@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "0654342122947752ec13f307a80cfd4b20c25129",
-  "sourceVersion": "4.3.27",
+  "commit": "b208f37215c29455b58d59f4250e20a58fa3bb96",
+  "sourceVersion": "4.3.28",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -736,6 +736,7 @@
     "play-forge-cpu-policy.js",
     "play-forge-feature.js",
     "play-forge-host-client.js",
+    "play-forge-local-client.js",
     "play-forge-player-mat.js",
     "play-forge-pregame.js",
     "play-forge-setup-review.js",
@@ -1002,8 +1003,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 448730,
-      "sha256": "22692e4f09294f1db04559284a33ebed8036fe1894ebde7b27c38b560cbb0908"
+      "bytes": 449663,
+      "sha256": "500b708f1b657e6787c468200c02c0010fdf3a7e41919d1c4d78fe5ee74e3ad5"
     },
     {
       "path": "artwork.js",
@@ -2577,8 +2578,8 @@
     },
     {
       "path": "audio.js",
-      "bytes": 12035,
-      "sha256": "36d22025a0c011b305b9369dbe0270c4516be858b0ed2beae79faa6baafcb82b"
+      "bytes": 13469,
+      "sha256": "bc55295c732505e82abbaac53b74c70fe38b851dabf1a02fa75f620f77197bbc"
     },
     {
       "path": "aura.css",
@@ -2767,8 +2768,8 @@
     },
     {
       "path": "config.js",
-      "bytes": 629,
-      "sha256": "a8f182a8cd34040414d7ed8bb3c83d8424c08297c3ed62ac6cd14ac407935bc5"
+      "bytes": 628,
+      "sha256": "66b4bf4f10edf178872ad93fe7f5d9103c1517ebba53e0b056150596ac12b0ff"
     },
     {
       "path": "core.js",
@@ -3767,8 +3768,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 145414,
-      "sha256": "22c1b8f20230b2120d793f9fa90b623807e2f6fc58ec295c4cf06e86eaba0fc2"
+      "bytes": 147589,
+      "sha256": "96221a61cab45f041855901f1aa0c213b30fa37a52fdb87b201d4301a84e1bb4"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -4567,13 +4568,18 @@
     },
     {
       "path": "play-forge-host-client.js",
-      "bytes": 19191,
-      "sha256": "9d4bd1c529a84015b6c55a04c76d522eedea5c68e5b192ca4e5c0e6f6a65a576"
+      "bytes": 19198,
+      "sha256": "46c104ba33d609bb220386b60e79c32ff64b2a45c9b97c0bbd5d4c34e6f7d185"
+    },
+    {
+      "path": "play-forge-local-client.js",
+      "bytes": 5558,
+      "sha256": "88aa95dfa6a8715e46f21497d96c0fb924f28d4b0da57b2dfbe6f62fc017700e"
     },
     {
       "path": "play-forge-player-mat.js",
-      "bytes": 33833,
-      "sha256": "6f95c6c322728886719b571f6e5e79995933849bcf583608efa5ba911f901fba"
+      "bytes": 34902,
+      "sha256": "32e7de727d1815a6bbf3e5aa2ffdc1c42da788fe7599604cbdbc531314dc7428"
     },
     {
       "path": "play-forge-pregame.js",
@@ -4587,8 +4593,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 334956,
-      "sha256": "8af0376ef2d8c6a8dccedcf588796d684c16432ddea778ccc8eec9dabaac33b5"
+      "bytes": 335813,
+      "sha256": "231a610e926470593ffb27ca34858cc1ccad1cea9351f15487ce6674778c762d"
     },
     {
       "path": "play-match-record.js",
@@ -4652,8 +4658,8 @@
     },
     {
       "path": "play-table-audio.js",
-      "bytes": 5445,
-      "sha256": "e385c7ca52bfe0856dd29a123a812412257bf1d8d379c3c3eae515c312ffb6d3"
+      "bytes": 5475,
+      "sha256": "691c31db83b97e2cb88d58f0b0a917b2ef558857ebab63852a0cc0bc458682df"
     },
     {
       "path": "play-token-art.js",
@@ -4822,8 +4828,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 684,
-      "sha256": "6d11c377c75780815ee70d5822d20b30e814952fba8f9973da701923e87d6f80"
+      "bytes": 1089,
+      "sha256": "205f187e9ffaeb4bad31e6e8d9463b7249c6b58e5431b5ca15b93e003ccd8369"
     },
     {
       "path": "release-status.js",

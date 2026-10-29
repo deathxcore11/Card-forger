@@ -1639,8 +1639,10 @@ function warmForgeEngine(state,{afterMatch=false}={}){
  if(!FORGE_PLAY_TEST_ENABLED||!PLAY_MATCH_RELEASE_READY||state.match.mode!=='cpu'||!state.profile?.signedIn||playStarting||!afterMatch&&(playerMatHost||Date.now()-forgeWarmAt<150000))return;
  forgeWarmAt=Date.now();
  // The phone's own engine loads its card database once and keeps it; the server engine is warmed per match.
+ // Refused (usually "busy": the last warm engine is still waiting), ask again in 30 s
+ // instead of 150 s, so a fresh one follows soon after the 3-minute one ends.
  void import('./play-forge-local-client.js').then(local=>local.localForgeAvailable()?local.prepareLocalForge()
-  :import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken}))).catch(()=>{});
+  :import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).then(ok=>{if(!ok)forgeWarmAt=Date.now()-120000;})).catch(()=>{});
 }
 // The Android app gets Play ready from launch: it warms the engine as soon as the account
 // is signed in, again whenever the app comes back to the screen, and every few minutes while
@@ -1650,13 +1652,15 @@ function warmForgeEngine(state,{afterMatch=false}={}){
 const NATIVE_WARM_IDLE_MS=600000;
 function warmNativePlay(){
  let native=false;try{native=!!window.Capacitor?.isNativePlatform?.();}catch{}
- if(!native||!FORGE_PLAY_TEST_ENABLED||!PLAY_MATCH_RELEASE_READY)return;
+ // The website does the same while Play is open (never from launch), so a player who
+ // reads decks for a few minutes still starts on a warm engine and cached deck art.
+ if(!FORGE_PLAY_TEST_ENABLED||!PLAY_MATCH_RELEASE_READY)return;
  let lastTouch=Date.now(),artFor='';
  const touched=()=>{lastTouch=Date.now();};
  for(const type of ['pointerdown','keydown'])addEventListener(type,touched,{passive:true,capture:true});
  // Launch and return-to-app warm once; the repeating tick only keeps a warm engine while Play is open.
  const tick=(once=false)=>{
-  if(!once&&S.ui.view!=='play')return;
+  if((!once||!native)&&S.ui.view!=='play')return;
   if(document.hidden||accountLocked||T.game()!=='mtg'||Date.now()-lastTouch>NATIVE_WARM_IDLE_MS)return;
   const state=playSetup.snapshot();if(!state.profile?.signedIn)return;
   warmForgeEngine(state);
@@ -1668,7 +1672,7 @@ function warmNativePlay(){
  };
  setTimeout(()=>tick(true),2000);setInterval(()=>tick(),30000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){touched();tick(true);}});
- setTimeout(()=>void saveDeckArtOffline(),20000);
+ if(native)setTimeout(()=>void saveDeckArtOffline(),20000);
 }
 // The app keeps every Magic picture it shows on the phone (CardStashyWebViewClient), so once per launch,
 // in the background, it loads the art of all your Magic decks: tables and deck screens then open with
