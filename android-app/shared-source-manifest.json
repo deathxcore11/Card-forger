@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.23",
-  "commit": "f75f2f1122eaa46b0d99e9e677c032b922763ecd",
-  "tree": "2aa7817c37f000988cc769af8f1b2ae55a973e84",
+  "version": "4.3.24",
+  "commit": "96e18c90b164760045fc88afabbba112573370c8",
+  "tree": "64f5512e477e95bfa9165b18f800edd8254ea7d6",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -1869,7 +1869,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "b35e0217c459f41832f7810f25e032ab1047b716a08942efec00706ebfcd885e"
+      "sha256": "2c116925a19d0bf8384c17c1589fd0a8b7d34530f4ce51ddfe6b4b522e799127"
     },
     {
       "path": "core.js",
@@ -2868,8 +2868,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 142115,
-      "sha256": "ddca43ea2623bf7aa8bfe7c4ab984601e6e04bf70073bfc644c621d6edbf2311"
+      "bytes": 144388,
+      "sha256": "7ebd9d11018d7bc9036c402e2c8e16b7a43bca2b4e2c0f581ee1de9717955e27"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -3529,7 +3529,7 @@
     {
       "path": "package.json",
       "bytes": 11917,
-      "sha256": "e8a7bc2356cb1724e7d42fddc2494a9eb28017132f67690e15a5131629268741"
+      "sha256": "7ee1a6d72ebd2ea4673b8545a40ae81e3356b0ea45ebc6d10557d59f9f4532d8"
     },
     {
       "path": "pairing.js",
@@ -3628,8 +3628,8 @@
     },
     {
       "path": "play-forge-player-mat.js",
-      "bytes": 29843,
-      "sha256": "c30f0654580a80af32410f79b994f0b88bedac714e90861e65521bd08970cfbc"
+      "bytes": 30397,
+      "sha256": "0bde5b4d6989d02c909876e34eec02c8e3c9b49db885a0b4e569262b0235e4b2"
     },
     {
       "path": "play-forge-pregame.js",
@@ -3643,8 +3643,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 330330,
-      "sha256": "a25fcc559f2599b59a142215d06e47b7d31bde84f03937ddf61d2dd334b152ca"
+      "bytes": 330641,
+      "sha256": "226c5cdbafd20ccaca168231617e2e175e8ff168b8b44f87eda90afcd1876f50"
     },
     {
       "path": "play-menu.css",
@@ -3873,8 +3873,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 875,
-      "sha256": "cfd3fa250344d9693168e9790caae124c0255d622ce08366c237daa34b8e84f8"
+      "bytes": 838,
+      "sha256": "d1d44cad5d538aa5edfc83a4e6965e5124e53c48eff8c4b07d5e750a7d4549d1"
     },
     {
       "path": "release-status.js",
@@ -4193,8 +4193,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15368,
-      "sha256": "f0b34e376e600d2cf7ba43806ad1fb251884eaf98a3a7e8816e32854ebf742a7"
+      "bytes": 15365,
+      "sha256": "4fc0c6d1150e1c5f931790b416470e8cefb5d4d71899570a9c4fbcedae0b6c55"
     },
     {
       "path": "sync-merge.js",
