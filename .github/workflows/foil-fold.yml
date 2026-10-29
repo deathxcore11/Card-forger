@@ -27,3 +27,4 @@ jobs:
         with:
           name: foil-fold-evidence
           path: test-results/
+          retention-days: 2

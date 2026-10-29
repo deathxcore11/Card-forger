@@ -1087,7 +1087,6 @@ export function tcgDecks() {
     st = gs(g),
     tab = ["ideas", "inspiration"].includes(S.ui.decksTab) ? S.ui.decksTab : "mine";
   return `<div class="page-head"><h1>Decks</h1><div class="row"><button class="btn small" data-act="tImport">↥ Import</button><button class="btn ghost small" data-act="tNewDeck">＋ New</button></div></div>
-  <div class="random-tools"><button class="btn ghost small" data-act="learnGame">How to play · keywords</button><button class="btn ghost small" data-act="tabletop">Tabletop · play together</button></div>
   ${segmented("decksTab", tab, [["mine", "My decks", "decks"], ["ideas", "Ideas", "ideas"], ["inspiration", "Meta decks", "trophy"]])}
   <div class="random-tools"><button class="btn ghost small" data-act="randomDeckOptions" data-home="1">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView(g) : tab === "inspiration" ? metaView(g) : st.decks.length ? `<div class="deck-grid">${st.decks.slice().reverse().map((d) => deckTile(g, d)).join("")}</div>` : empty("No decks yet", `Pick a format and start adding cards, build from cards you own in Ideas, or copy a tournament deck from Meta decks.`, `<button class="btn" data-act="decksTab" data-id="ideas">✧ Ideas from my cards</button><button class="btn ghost" data-act="decksTab" data-id="inspiration">🏆 Meta decks</button>`)}`;

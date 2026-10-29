@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "0654342122947752ec13f307a80cfd4b20c25129",
-  "sourceVersion": "4.3.27",
+  "commit": "93997e345b57ad5542ada378affa20a776960439",
+  "sourceVersion": "4.3.35",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -235,6 +235,17 @@
     "assets/finishes/stamp-first-movie.png",
     "assets/finishes/starlight.svg",
     "assets/finishes/water-pattern.svg",
+    "assets/fonts/cinzel-latin-1.woff2",
+    "assets/fonts/cinzel-latin-ext-0.woff2",
+    "assets/fonts/dm-sans-latin-1.woff2",
+    "assets/fonts/dm-sans-latin-ext-0.woff2",
+    "assets/fonts/fonts.css",
+    "assets/fonts/manrope-latin-1.woff2",
+    "assets/fonts/manrope-latin-ext-0.woff2",
+    "assets/fonts/spectral-latin-1.woff2",
+    "assets/fonts/spectral-latin-3.woff2",
+    "assets/fonts/spectral-latin-ext-0.woff2",
+    "assets/fonts/spectral-latin-ext-1.woff2",
     "assets/planeswalk-tile.jpg",
     "assets/play/mat-obsidian-arcane.webp",
     "assets/play/mat-obsidian-gold.webp",
@@ -645,6 +656,7 @@
     "foil-fx.css",
     "foil-fx.js",
     "foil-gl.js",
+    "forge-card-names-e5a0f815.txt",
     "format-upgrades.js",
     "formats.js",
     "game-changers.js",
@@ -732,10 +744,12 @@
     "play-deck-context.js",
     "play-deck-import.js",
     "play-deck-sources.js",
+    "play-engine-names.js",
     "play-forge-artwork.js",
     "play-forge-cpu-policy.js",
     "play-forge-feature.js",
     "play-forge-host-client.js",
+    "play-forge-local-client.js",
     "play-forge-player-mat.js",
     "play-forge-pregame.js",
     "play-forge-setup-review.js",
@@ -1002,8 +1016,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 448730,
-      "sha256": "22692e4f09294f1db04559284a33ebed8036fe1894ebde7b27c38b560cbb0908"
+      "bytes": 454049,
+      "sha256": "703f680037d9a0e4986c5d453eb8ec3d30f1c31944f2a91c88ecdc9d87ed3933"
     },
     {
       "path": "artwork.js",
@@ -2016,6 +2030,61 @@
       "sha256": "c233d03e173490b20e1e90dd475b2ce6c0c182715e7d8ca99fc37fac9dfcb324"
     },
     {
+      "path": "assets/fonts/cinzel-latin-1.woff2",
+      "bytes": 25904,
+      "sha256": "09941fb1c169c38fd414536b37690057fc01b3117a5c63dd6571186540c8f370"
+    },
+    {
+      "path": "assets/fonts/cinzel-latin-ext-0.woff2",
+      "bytes": 14540,
+      "sha256": "8fc2606f8ae6c569f444e138dba052d9a6e3f0657f9031796503bbb94eced600"
+    },
+    {
+      "path": "assets/fonts/dm-sans-latin-1.woff2",
+      "bytes": 62724,
+      "sha256": "ca72d2bcea8f4daa783dbdfa2d9b46068c3ce38168e05918fb867aa453b4f890"
+    },
+    {
+      "path": "assets/fonts/dm-sans-latin-ext-0.woff2",
+      "bytes": 31292,
+      "sha256": "5d18d31d23ada61ebee1d589b11d5da30db9e158f589d5e35221ba2b1a45de54"
+    },
+    {
+      "path": "assets/fonts/fonts.css",
+      "bytes": 8095,
+      "sha256": "add2d608a3a4b9ea3f6bebb9eba3aa96eb4417bc20af295682a647fd56a317e0"
+    },
+    {
+      "path": "assets/fonts/manrope-latin-1.woff2",
+      "bytes": 24532,
+      "sha256": "8c2def024c1bf31aacf3624ae3c4d701269b4ec3dc765c04830839f0d36b2d9e"
+    },
+    {
+      "path": "assets/fonts/manrope-latin-ext-0.woff2",
+      "bytes": 15160,
+      "sha256": "2f7335119075b2079f1d882530bbc18728461612bf90743203d73a74a48f4d9b"
+    },
+    {
+      "path": "assets/fonts/spectral-latin-1.woff2",
+      "bytes": 22936,
+      "sha256": "33faca8b5795a0de1af77cbc43a050a3655c4b1e03e04847fdef4d19d2e361d2"
+    },
+    {
+      "path": "assets/fonts/spectral-latin-3.woff2",
+      "bytes": 23036,
+      "sha256": "5276f202cce67e8caa9f697800e11cfc9d708da67d47f6f5507dcadcf1e11c11"
+    },
+    {
+      "path": "assets/fonts/spectral-latin-ext-0.woff2",
+      "bytes": 20824,
+      "sha256": "dea6bd9ca650814af1f750b7474d7205b7fe0e4c79a6b58c6f7157d90dc8815c"
+    },
+    {
+      "path": "assets/fonts/spectral-latin-ext-1.woff2",
+      "bytes": 20824,
+      "sha256": "9b5a5be420405c68cf73fcdd06fa4c9978dcd8fb8b87b0e187e107cfb7a5da29"
+    },
+    {
       "path": "assets/planeswalk-tile.jpg",
       "bytes": 34429,
       "sha256": "39480f393ebb9f24292c0d17ddeaaa2f758c594f5be3d7985e1bf5219bbc60a8"
@@ -2577,8 +2646,8 @@
     },
     {
       "path": "audio.js",
-      "bytes": 12035,
-      "sha256": "36d22025a0c011b305b9369dbe0270c4516be858b0ed2beae79faa6baafcb82b"
+      "bytes": 13469,
+      "sha256": "bc55295c732505e82abbaac53b74c70fe38b851dabf1a02fa75f620f77197bbc"
     },
     {
       "path": "aura.css",
@@ -2602,8 +2671,8 @@
     },
     {
       "path": "binders.js",
-      "bytes": 20720,
-      "sha256": "14ed61dda2bb6a21e84808d79b3cd621b609ffbc2ca767bfc4c6f06541fa4415"
+      "bytes": 20955,
+      "sha256": "3cec6e12204de0810948274da8968f3767f3f0041dd5f0558009bb48dcb3eece"
     },
     {
       "path": "brand-motion.css",
@@ -2737,8 +2806,8 @@
     },
     {
       "path": "community-profile.js",
-      "bytes": 26027,
-      "sha256": "25bdb8b1c4eeebaa14c7af98e9832ae3277d78e897317dbbd9beb1b87fb834dd"
+      "bytes": 25710,
+      "sha256": "56a23395311e2ea04bf39c7779d55d7c733e35f0dd230223c9407e541ecae4ae"
     },
     {
       "path": "community-sources.js",
@@ -2767,8 +2836,8 @@
     },
     {
       "path": "config.js",
-      "bytes": 629,
-      "sha256": "a8f182a8cd34040414d7ed8bb3c83d8424c08297c3ed62ac6cd14ac407935bc5"
+      "bytes": 628,
+      "sha256": "1c55066a22e179a106a83d5b364563d3ec0512707b73ab822bddada6ae27195c"
     },
     {
       "path": "core.js",
@@ -3757,18 +3826,18 @@
     },
     {
       "path": "experiments/forge-proof/cpu-action-playback.mjs",
-      "bytes": 19599,
-      "sha256": "31ac1d33c466b447d816556ec5a2ad9441161fded32a8176c37935e1715d2c5a"
+      "bytes": 21440,
+      "sha256": "aca76d527dc20cda7ce9a4e16e885385816e5ffed41e09394130cdcc8ec46e75"
     },
     {
       "path": "experiments/forge-proof/forge-session.mjs",
-      "bytes": 26527,
-      "sha256": "9e0ff4990604ff558fadadc68be04045c42198044f4e815f8682b04df923776a"
+      "bytes": 27492,
+      "sha256": "79300d2b0d72c961d2ab839902a06a4ead88a829d9af5323a4744c08666e8173"
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 145414,
-      "sha256": "22c1b8f20230b2120d793f9fa90b623807e2f6fc58ec295c4cf06e86eaba0fc2"
+      "bytes": 187708,
+      "sha256": "5c802e8d08873044ff6aa3780b6e68420311208b87f8dae16b2a579f3477c3ca"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -3777,13 +3846,13 @@
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
-      "bytes": 44233,
-      "sha256": "deeca1ab592fb71ca43c33bc58d702b43e728f87dcdc73792fc04252947562bb"
+      "bytes": 58898,
+      "sha256": "d2a09224d016d0bbf4f7206d628e9310073f05262eef4f7e7865e986ae306b38"
     },
     {
       "path": "experiments/forge-proof/table-emotes.mjs",
-      "bytes": 5257,
-      "sha256": "a0348cd87d85a7e6f64a59c40d4ab575e12da13a9d3d43b51e9716a7d9595d6b"
+      "bytes": 5560,
+      "sha256": "7a3593c898fb84069a10e6e51c26cf8d42c36b235b8fa99bd5cffee9376b5df2"
     },
     {
       "path": "experiments/phase-engine/card-placement.mjs",
@@ -3902,8 +3971,8 @@
     },
     {
       "path": "experiments/phase-engine/match-table.mjs",
-      "bytes": 69576,
-      "sha256": "1c681368d6e4734fb4d3ef1b48a072dbc01bf51c1dfcae582651538779035a08"
+      "bytes": 74163,
+      "sha256": "18e510a7b06df361b8d467cc289fc50fbbf75523c2f1ccf392c70a4ade2f18c4"
     },
     {
       "path": "experiments/phase-engine/practice-authority.mjs",
@@ -4032,8 +4101,8 @@
     },
     {
       "path": "finish-effects.css",
-      "bytes": 19312,
-      "sha256": "d1ff9a1b4da5ac87ce58efd0702182bae09cc54404efd265024ac8fd35377d98"
+      "bytes": 20468,
+      "sha256": "ff2f0f4b01674d5156560add265c84abddb161e317329c6d8abce3b12fe6b400"
     },
     {
       "path": "finish-effects.js",
@@ -4047,23 +4116,28 @@
     },
     {
       "path": "finish-preview.js",
-      "bytes": 20226,
-      "sha256": "eab7313c134320de04cff0c5afd33f3898db5b352b870372efbb2fe48bb91eac"
+      "bytes": 21782,
+      "sha256": "6bc3da23fedb2ca81de41d455f5b5b721fa4bb3d7386cdf4ebc831fe52c98d50"
     },
     {
       "path": "foil-fx.css",
-      "bytes": 7767,
-      "sha256": "6788ce4eff28da5f99159cf5757229cbee8a36b21873a2bb47dda2a79ed10599"
+      "bytes": 9406,
+      "sha256": "37ccbe5173c8821c2fd3134acfed789478d14e10a7e60196c1b1d54466415abc"
     },
     {
       "path": "foil-fx.js",
-      "bytes": 2178,
-      "sha256": "e5b3fc3b05f02f5ba82833e3f37fd757ad9367909ba3ae5528dd8b7f732f65dc"
+      "bytes": 2090,
+      "sha256": "a2cf4b1ae4367c31ea52381ea561ad05c720b6f43e7f7894cfcec90d4486dbb3"
     },
     {
       "path": "foil-gl.js",
       "bytes": 14922,
       "sha256": "62e300dc3da080eeab3b77631f55c19f42b87a56216e0f87a224456a3fc2e99f"
+    },
+    {
+      "path": "forge-card-names-e5a0f815.txt",
+      "bytes": 629569,
+      "sha256": "3de55c2fdddac8fe91a78affed7b0a743793fcfd56e8e9d1e7ed4987bba01850"
     },
     {
       "path": "format-upgrades.js",
@@ -4157,8 +4231,8 @@
     },
     {
       "path": "home-overview.css",
-      "bytes": 10291,
-      "sha256": "e27defa765ce33edd574db07e4296451f9e5dc137c9f35041b523f946cd195b8"
+      "bytes": 13136,
+      "sha256": "c68273fe1321539585a8e16ce160657070a15607b8ecf11c72017a278946e4f6"
     },
     {
       "path": "home-search.js",
@@ -4177,8 +4251,8 @@
     },
     {
       "path": "home-ui.js",
-      "bytes": 39114,
-      "sha256": "25812dc402b8bc602d99241c8e8852287482e047a8e52d9d46dfc3ec1b1c535b"
+      "bytes": 38941,
+      "sha256": "bf6e28e2bd7fa01413d3edac7368c5fe959d258429ee9f5ae6189b2457598a91"
     },
     {
       "path": "icon-192.png",
@@ -4227,8 +4301,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 19259,
-      "sha256": "912e2039f451dca6c506b52a7017f877dead9aa879b717984a188308f25d0197"
+      "bytes": 19896,
+      "sha256": "03e3611092a9e9878ab9dc1f3b1ffee04e256e542a67690ffdaffe2e4ab61cae"
     },
     {
       "path": "insights.js",
@@ -4412,8 +4486,8 @@
     },
     {
       "path": "mtg-wiki-ui.js",
-      "bytes": 30249,
-      "sha256": "56613db25fc60cb30591add992fb4c02a43a6436f4eaf204ae28124cb1e7b31a"
+      "bytes": 30311,
+      "sha256": "fcf3846a6a2a2f35e06586197e688a9a1db39b8e78dfb9dec43313db271320af"
     },
     {
       "path": "native-art-storage.js",
@@ -4467,8 +4541,8 @@
     },
     {
       "path": "pack-preview.js",
-      "bytes": 47016,
-      "sha256": "2f6572745a2e0591a8d976f695c91b2336614a94edc9518988c3d01a747b0657"
+      "bytes": 52204,
+      "sha256": "b29c6d6b4c5be78836ab9e2debaaa35485c1bc57c2b212f37268c8af94aff933"
     },
     {
       "path": "pairing.js",
@@ -4487,8 +4561,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 4542698,
-      "sha256": "6e1339fd22e373ee070d42510ee306a4de1621e57b2aa83f356476edccd36b91"
+      "bytes": 4575083,
+      "sha256": "6732bff1aa298ed785b3e532f6cc7a8e6336e49f5d4a47d39a2c986ac97a7ec4"
     },
     {
       "path": "planner.js",
@@ -4551,14 +4625,19 @@
       "sha256": "e0f1d3e7ccf0bad0d3f7a827ac6924cb8b90994ce82a0e5fb837b50ec8b3e8ef"
     },
     {
+      "path": "play-engine-names.js",
+      "bytes": 3184,
+      "sha256": "282e73caeb51112d02e77691e7894c71bcf400d5d181c4c8550d0ba78953501a"
+    },
+    {
       "path": "play-forge-artwork.js",
       "bytes": 3765,
       "sha256": "674569a79ad2ed8019ff9d6efbe10691f235dbdfe351473cf1289e3be5b5c685"
     },
     {
       "path": "play-forge-cpu-policy.js",
-      "bytes": 652,
-      "sha256": "ccf98df9aff60832797530b6c06a693d7f29e3eb33baa0ce4e38f2fa2bac5abc"
+      "bytes": 1032,
+      "sha256": "cfc4033aafb67226bb5debd2010754c4fc71df58c479ff204a8195f4ac9065fe"
     },
     {
       "path": "play-forge-feature.js",
@@ -4567,18 +4646,23 @@
     },
     {
       "path": "play-forge-host-client.js",
-      "bytes": 19191,
-      "sha256": "9d4bd1c529a84015b6c55a04c76d522eedea5c68e5b192ca4e5c0e6f6a65a576"
+      "bytes": 20722,
+      "sha256": "cdc455560b02353e69357da8b8d56ee48074dd7b85f386ac7e794caf796c1efe"
+    },
+    {
+      "path": "play-forge-local-client.js",
+      "bytes": 6052,
+      "sha256": "ca5ba49b54935327af0c9e606483ca31bfe7fa8f50f257126a884b210c090022"
     },
     {
       "path": "play-forge-player-mat.js",
-      "bytes": 33833,
-      "sha256": "6f95c6c322728886719b571f6e5e79995933849bcf583608efa5ba911f901fba"
+      "bytes": 35562,
+      "sha256": "518a1141f52a3982f258c77c4a3556a85485813381fd7bc16ef56c36ced47a52"
     },
     {
       "path": "play-forge-pregame.js",
-      "bytes": 10727,
-      "sha256": "aded002e4f2c20cac09709bc9d4eb920d61520dc920dfce2386c9e336a6783b4"
+      "bytes": 10756,
+      "sha256": "1bc16102678856a8e6e6b73096b4dbd98b81220b1752c2a25c8563aba47d12db"
     },
     {
       "path": "play-forge-setup-review.js",
@@ -4587,8 +4671,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 334956,
-      "sha256": "8af0376ef2d8c6a8dccedcf588796d684c16432ddea778ccc8eec9dabaac33b5"
+      "bytes": 397596,
+      "sha256": "42d6b45c66e5b030c0ca8729c13910242893c57fb8162f7b3b59c83977e0d71e"
     },
     {
       "path": "play-match-record.js",
@@ -4597,13 +4681,13 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 75268,
-      "sha256": "e9ef4f9c2520f836c5998c234f3da98a0b46f75331e43b1994b8994fe2b3257b"
+      "bytes": 85419,
+      "sha256": "26b136142cd4ef514418e636fcd10e4729e7b0ee6c7c520958c1c4bc3698ce3b"
     },
     {
       "path": "play-menu.js",
-      "bytes": 23874,
-      "sha256": "99a430179a89d30bcf6098c1a82cc06f9259ff08f0e5330d6d732778989f0cc9"
+      "bytes": 26323,
+      "sha256": "c2ccd2f2f55ffdaca00d989c2dedddb457b3e0abdc90557c3c1a650579b5ac87"
     },
     {
       "path": "play-opponent-build.js",
@@ -4617,8 +4701,8 @@
     },
     {
       "path": "play-playmats.js",
-      "bytes": 6231,
-      "sha256": "3d47196447a2728bdd035afb5722ea88eb6a46c75a67487601bec2570ad6ff16"
+      "bytes": 6215,
+      "sha256": "dab12efdfa932696dd9137527aaf65de358f8c84cbbb3a4ca351911df886a1ce"
     },
     {
       "path": "play-precon-formats.js",
@@ -4637,8 +4721,8 @@
     },
     {
       "path": "play-setup.js",
-      "bytes": 18408,
-      "sha256": "7c8e8c3a3a8b843bb3f0a0df87f16941412d5b4e099fdae6a4adef4b4f278081"
+      "bytes": 20000,
+      "sha256": "a1f61ac6533ba51a7556ffd86d8d9f8c47a0641e6e1d5e85ab9b59ad31a307e8"
     },
     {
       "path": "play-starter-deck.js",
@@ -4652,8 +4736,8 @@
     },
     {
       "path": "play-table-audio.js",
-      "bytes": 5445,
-      "sha256": "e385c7ca52bfe0856dd29a123a812412257bf1d8d379c3c3eae515c312ffb6d3"
+      "bytes": 5475,
+      "sha256": "691c31db83b97e2cb88d58f0b0a917b2ef558857ebab63852a0cc0bc458682df"
     },
     {
       "path": "play-token-art.js",
@@ -4727,8 +4811,8 @@
     },
     {
       "path": "polish.css",
-      "bytes": 28377,
-      "sha256": "9082aa48ae8ec2b0ab912e1debb8ceaad22da596cb884a51ae946797683888a9"
+      "bytes": 31113,
+      "sha256": "9533f88052a46fe227f12f274b8dd714915688ca196007fb3170218f8905203f"
     },
     {
       "path": "power.js",
@@ -4822,8 +4906,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 684,
-      "sha256": "6d11c377c75780815ee70d5822d20b30e814952fba8f9973da701923e87d6f80"
+      "bytes": 739,
+      "sha256": "82f48b1f3fd4f08da0b3d49159cd33f6056f8f639f65960ae592dd30f8276817"
     },
     {
       "path": "release-status.js",
@@ -4852,8 +4936,8 @@
     },
     {
       "path": "rule-learning.js",
-      "bytes": 22787,
-      "sha256": "bb1acd831209b75649019d1cd876c2eda4861e2ff96d5bb1dfcfc6ad266b0307"
+      "bytes": 22647,
+      "sha256": "fe89c6738f0afd122548ffc584403250dbefcd446096b306caa364ed4d3879e6"
     },
     {
       "path": "rule-lessons.js",
@@ -4887,8 +4971,8 @@
     },
     {
       "path": "rules.js",
-      "bytes": 6186,
-      "sha256": "61b91cd104d9fbbf6150653942ca6773b502f98620fa707db2503c79c7e88a38"
+      "bytes": 6389,
+      "sha256": "3af66ea6f7c8f24de14aa0bce5419a5a319bf3cbabb923f803b2b3c55995c04f"
     },
     {
       "path": "scan-batch.js",
@@ -4927,8 +5011,8 @@
     },
     {
       "path": "scancam.js",
-      "bytes": 152753,
-      "sha256": "3ac46abc010f62d4136f35b9682ec364047d917907bbac3a540e4415eb15d27b"
+      "bytes": 153333,
+      "sha256": "dfdc3360b978b49bd64ea3df8ecc4bd9c7a4182ba7d4c8a5bf2999f9e23a5eaf"
     },
     {
       "path": "scanidx/catalog-manifest.json",
@@ -5042,8 +5126,8 @@
     },
     {
       "path": "set-browser.js",
-      "bytes": 10148,
-      "sha256": "0cdcdca5eae68c397cc542dd04eae4839101a5acafbca37dd88d2906ab50e239"
+      "bytes": 10435,
+      "sha256": "5ca91913bab139de67d267bd8bb9624ab7cc249a0e561d76c33a02c11885f5f2"
     },
     {
       "path": "set-experience.js",
@@ -5052,8 +5136,8 @@
     },
     {
       "path": "set-list-ui.js",
-      "bytes": 11735,
-      "sha256": "c1e5d738bf8c8e8a1a413d1f296c7268a3cdacf64c5822eed676bc9f55466304"
+      "bytes": 11675,
+      "sha256": "25e0e20f19c30cb6711762fc8efe38bab8c28e8cc94696b853b647f78b34cd3b"
     },
     {
       "path": "set-release-metadata.js",
@@ -5062,8 +5146,8 @@
     },
     {
       "path": "sets-ui.css",
-      "bytes": 37593,
-      "sha256": "179957c5ceb3e7da372c852c9c8ca46b5c7558679129fd4f16e295964ea8a4fa"
+      "bytes": 37856,
+      "sha256": "66df28f135e82b7e51ef269d5c3e74528269274932ebefacd1e37d4d8b08b518"
     },
     {
       "path": "settings-dialog.js",
@@ -5132,8 +5216,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 543534,
-      "sha256": "aee6ee7d440598489191dbfe0f0d5c289daa5c68b121aa9ecdcb15ae570dbf62"
+      "bytes": 543655,
+      "sha256": "1f0f71b100b722607f21e7e580e04059e79cf7ccc765f49168e85a7ace34ffd0"
     },
     {
       "path": "suggest.js",
@@ -5162,8 +5246,8 @@
     },
     {
       "path": "tcg.js",
-      "bytes": 367944,
-      "sha256": "b4112beb9f1e000c279088bde7317e237f31df6654e9bddbaf5c19b0eae0e97a"
+      "bytes": 367738,
+      "sha256": "202aed233627b4d532c061fed61f404baeedba002910c359d3ea1ea417fb750c"
     },
     {
       "path": "tcgbuild.js",
@@ -5312,8 +5396,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 199805,
-      "sha256": "fff4ec8945b61b289495125630f52b670202ceea98676fff501813fd9750d238"
+      "bytes": 199481,
+      "sha256": "0835e7378795dfa9afe1362dc10a5d7d6690799037a0e485ef989047019b0b23"
     },
     {
       "path": "wiki-card-handoff.js",

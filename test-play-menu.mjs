@@ -15,7 +15,7 @@ test('menu preserves supplied shared renderers and keeps match creation unavaila
   const preview='<section class="deck-viewer" data-deck-view="stacks">Shared card rows</section>';
   const html=playMenuMarkup(state,{avatarMarkup:'<span class="profile-avatar">Shared avatar</span>',deckTiles:new Map([['one',tile]]),deckPreview:preview});
   assert(html.includes(tile));assert(html.includes(preview));assert.match(html,/@player/);
-  assert.match(html,/<button class="btn cs-plate[^"]*"[^>]*disabled[^>]*><span class="cs-plate-label">Play vs CPU<\/span><\/button>/);assert.doesNotMatch(html,/private-account-id|data-act="(?:startMatch|playCpu)"/);
+  assert.match(html,/<button class="btn cs-plate[^"]*"[^>]*disabled[^>]*><span class="cs-plate-label">Pick the CPU deck<\/span><\/button>/);assert.doesNotMatch(html,/private-account-id|data-act="(?:startMatch|playCpu)"/);
 });
 test('profile, deck names and pasted text cannot inject markup',()=>{
   const s=base();s.profile.displayName='<img src=x onerror=alert(1)>';s.profile.username='evil" onfocus="x';

@@ -1,5 +1,12 @@
 apply plugin: 'com.android.application'
 
+// The Forge rules engine inside the app, built by ../../forge-engine/build-engine.sh. Without that
+// build output this is the regular app, whose matches run on the Forge server. With it, CPU matches
+// run on the phone. -PforgeEngineTest gives the test build its own package, so it installs beside
+// the regular app instead of over it.
+def forgeEngine = file('../../forge-engine/build/android')
+def withForgeEngine = forgeEngine.directory
+
 android {
     namespace = "dev.cardstashy.integration"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +14,11 @@ android {
         applicationId "com.cardstashy.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 35
-        versionName "0.11.11-beta"
+        versionCode 43
+        versionName "0.12.7-beta"
+        if (withForgeEngine) minSdkVersion 26 // Forge's own Android minimum (java.nio.file)
+        if (project.hasProperty('forgeEngineTest')) { applicationIdSuffix ".forgetest"; versionNameSuffix "-forge-test" }
+        manifestPlaceholders = [largeHeap: withForgeEngine ? "true" : "false"]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
             noCompress 'gzip'
@@ -30,11 +40,23 @@ android {
             if (signingFile?.exists()) signingConfig signingConfigs.release
             // R8 drops unused AndroidX code (proguard-rules.pro keeps the app, Capacitor and Cordova whole)
             // so the APK fits Cloudflare's 25 MiB download limit.
-            minifyEnabled true
+            // Forge looks up many classes by name, so the engine build is not shrunk.
+            minifyEnabled !withForgeEngine
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
+    if (withForgeEngine) {
+        sourceSets.main.java.srcDirs += '../../forge-engine/android/java'
+        sourceSets.main.assets.srcDirs += "${forgeEngine}/assets"
+        // Forge's libraries repeat license files; their service registrations are merged.
+        packaging.resources.excludes += ['META-INF/LICENSE*', 'META-INF/NOTICE*', 'META-INF/DEPENDENCIES', 'META-INF/*.kotlin_module', 'META-INF/versions/**', 'module-info.class']
+        packaging.resources.merges += ['META-INF/services/**']
+    }
 }
+
+// Forge brings full Guava, which already holds AndroidX's ListenableFuture.
+if (withForgeEngine) configurations.configureEach { exclude group: 'com.google.guava', module: 'listenablefuture' }
 
 repositories {
     flatDir{
@@ -44,6 +66,7 @@ repositories {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+    if (withForgeEngine) implementation fileTree(include: ['*.jar'], dir: "${forgeEngine}/libs")
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"

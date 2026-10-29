@@ -318,3 +318,7 @@ body:not(.glass) .set-atmosphere{display:none}
  .set-card-toolbar .set-controls>select,.set-card-toolbar .set-controls>.glass-select{width:100%}
  .set-card-toolbar .set-controls>.view-switch{justify-self:end;max-width:100%;margin-left:0}
 }
+/* 4.3.34: filters fold behind one pill, as on Search. */
+.set-browser-more{display:grid;gap:12px;min-width:0}
+.set-browser-more[open]>summary{margin-bottom:4px}
+.set-browser-more>.set-browser-freshness{margin:0;color:var(--muted);font-size:11px;line-height:1.6}

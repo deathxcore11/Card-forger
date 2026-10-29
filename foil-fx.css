@@ -33,13 +33,28 @@
 .pack-flash{position:absolute;inset:-30%;pointer-events:none;z-index:5;opacity:0;background:radial-gradient(circle at 50% 20%,#fff 0%,#fff8 22%,transparent 60%)}
 .pack-wrapper.tearing .pack-flash{animation:pack-flash .5s .3s ease-out both}
 .pack-wrapper.tearing .pack-crimp.top{animation:pack-strip .42s .3s cubic-bezier(.3,.6,.4,1) forwards}
-.pack-wrapper.tearing .pack-body{animation:pack-rip-down .68s cubic-bezier(.4,0,.2,1) forwards}
+.pack-wrapper.tearing .pack-body{animation:pack-rip-jolt .44s cubic-bezier(.4,0,.2,1) forwards}
 @keyframes pack-slice{0%{transform:scaleX(0);opacity:1}100%{transform:scaleX(1);opacity:1}}
 @keyframes pack-flash{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
 @keyframes pack-rip-down{0%,45%{transform:translateY(0) scale(1)}55%{transform:translateY(-8px) scale(1.04)}100%{transform:translateY(60%) scale(.88);opacity:0}}
 /* Deal: the cards rise out of the pack as one stack, then fan into the hand. */
 .pack-dialog:not(.pack-dealt) .pack-card{transform:translate(calc((var(--pack-n,10) / 2 - var(--i)) * 100% * .55),-60%) scale(.8);opacity:0}
 .pack-dealt .pack-card{transition:transform .5s cubic-bezier(.2,.8,.2,1),opacity .25s,filter .3s;transition-delay:calc(var(--i) * 40ms + 60ms),calc(var(--i) * 40ms),0s}
+/* Open: the pack jolts as its top tears off and stays put; the cards fly out of the opening one by one and
+   arc down into the hand face down, then the torn pack sinks away and the big card comes up. */
+@keyframes pack-rip-jolt{0%,62%{transform:none}78%{transform:translateY(-7px) scale(1.035)}100%{transform:none}}
+.pack-ghost{z-index:70;pointer-events:none;cursor:default}
+.pack-ghost .pack-body{animation:none}
+.pack-ghost .pack-crimp.top,.pack-ghost .pack-slice,.pack-ghost .pack-flash,.pack-ghost .pack-sheen{display:none}
+.pack-ghost .pack-wrap-art,.pack-ghost .pack-sheen{clip-path:inset(8.5% 0 0 0 round 0 0 6px 6px)}
+.pack-ghost::before{content:"";position:absolute;z-index:6;left:6%;right:6%;top:2%;height:14%;pointer-events:none;border-radius:50%;background:radial-gradient(ellipse at 50% 60%,#fffbe8cc 0,#ffe3a055 38%,transparent 72%);filter:blur(5px);animation:pack-mouth .9s ease-out both}
+@keyframes pack-mouth{0%{opacity:0;transform:scaleX(.4)}35%{opacity:1;transform:none}100%{opacity:.55}}
+.pack-flying .pack-card{transition:none!important}
+.pack-focus-card.pack-await{opacity:0}
+/* A big pull's glow stays under the header: it may spread sideways and down, never over the title and buttons. */
+.pack-focus{clip-path:inset(-4px -40px -80px -40px)}
+/* Flip: a quick turn with a soft settle, lifting off the table as it goes (the lift is set in pack-preview.js). */
+@media (prefers-reduced-motion:no-preference){.pack-focus-card>span{transition:transform .6s cubic-bezier(.3,1.18,.45,1)}.pack-card>span{transition:transform .5s cubic-bezier(.3,1.18,.45,1)}}
 .pack-focus-card.pack-rising{animation:pack-rise .46s cubic-bezier(.2,.8,.2,1) both}
 @keyframes pack-rise{0%{transform:translateY(42%) scale(.82);opacity:0}70%{transform:translateY(-2%) scale(1.03);opacity:1}100%{transform:none;opacity:1}}
 /* Reveal: the flip lands with a light catch and a burst of glints; better pulls rise with a glow, the best get rays. */
@@ -65,7 +80,7 @@
 @keyframes pack-under-prev{from{translate:0 5%;scale:.92;opacity:.35}to{translate:0 0;scale:1;opacity:1}}
 .pack-fling{position:absolute;pointer-events:none;z-index:20;border-radius:4.6%/3.3%;overflow:hidden;box-shadow:0 24px 40px #000a}
 .pack-fling>img{display:block;width:100%;height:100%;object-fit:contain}
-@media (prefers-reduced-motion:reduce){.pack-dialog .pack-sheen::before,.pack-wrapper.tearing *,.pack-dealt .pack-focus-card,.pack-focus-card.pack-pop,.pack-focus-card>.pack-rays,.pack-focus-card.revealed~.pack-focus-meta .pack-rarity>*{animation:none!important}.pack-fling{display:none}}
+@media (prefers-reduced-motion:reduce){.pack-ghost{display:none}.pack-focus-card.pack-await{opacity:1}.pack-dialog .pack-sheen::before,.pack-wrapper.tearing *,.pack-dealt .pack-focus-card,.pack-focus-card.pack-pop,.pack-focus-card>.pack-rays,.pack-focus-card.revealed~.pack-focus-meta .pack-rarity>*{animation:none!important}.pack-fling{display:none}}
 .pack-face>.finish-pop .fx-glints{display:none}
 /* A big pull invites the phone tilt: the button glows gold until it is used. */
 .pack-tilt.pack-tilt-hint:not([aria-pressed="true"]){color:var(--gold,#e8b95b);border-color:#e8b95b99;animation:pack-tilt-hint 1.2s ease-in-out infinite alternate}

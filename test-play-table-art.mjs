@@ -53,10 +53,10 @@ test("Forge's generic buttons are named for what they do; other labels stay verb
   const n = (extra = {}) => ({ viewer: 1, activePlayer: 1, phase: 'MAIN1', inputType: 'InputPassPriority', stack: [], players: [{ id: 1, zones: { Battlefield: { cards: [{ attacking: true }, { attacking: true }, { blocking: true }] } } }], ...extra });
   assert.equal(nativeActionLabel(n(), 'ok', 'OK'), 'Next: Combat');
   assert.equal(nativeActionLabel(n(), 'cancel', 'End Turn'), 'End turn');
-  assert.equal(nativeActionLabel(n({ stack: [{}] }), 'ok', 'OK'), 'Pass · let it resolve');
+  assert.equal(nativeActionLabel(n({ stack: [{}] }), 'ok', 'OK'), 'No response');
   assert.equal(nativeActionLabel(n({ activePlayer: 2 }), 'ok', 'OK'), 'Pass');
   assert.equal(nativeActionLabel(n({ inputType: 'InputAttack' }), 'ok', 'OK'), 'Attack with 2');
-  assert.equal(nativeActionLabel(n({ inputType: 'InputBlock' }), 'ok', 'OK'), 'Confirm 1 block');
+  assert.equal(nativeActionLabel(n({ inputType: 'InputBlock' }), 'ok', 'OK'), 'Block with 1');
   assert.equal(nativeActionLabel(n({ inputType: 'InputPayManaOfCostPayment' }), 'ok', 'Auto'), 'Pay automatically');
   assert.equal(nativeActionLabel(n({ inputType: 'InputSelectTargets' }), 'ok', 'OK'), 'Confirm targets');
   assert.equal(nativeActionLabel(n({ inputType: 'InputConfirmMulligan' }), 'ok', 'Keep'), 'Keep');

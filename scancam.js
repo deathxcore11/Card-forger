@@ -412,7 +412,7 @@ export function scanView(g, gameName) {
   const s=S.ui.scan,p=loadPrefs(g),live=(s.mode||"live")==="live",list=loadSession(g);
   const rail=`<div class="cam-rail">${s.torchCap?`<button class="${s.torch?"on":""}" data-act="scanTorch" aria-pressed="${!!s.torch}" aria-label="Flashlight">${TORCH}</button>`:""}<button data-act="scanSettings" aria-label="Scanner settings">${GEAR}</button></div>`;
   return `<div class="scan-workspace ${live?'is-camera':''} ${s.camOn?'is-live':''}"><div class="scan-toolbar"><h1>Scan</h1><span class="scan-auto-game">Auto game</span><button class="btn ghost small" data-act="scanMode" data-id="${live?'photo':'live'}">${live?'Photo':'Camera'}</button>${s.camOn?`<button class="icon" data-act="scanStop" aria-label="Stop camera">${STOP}</button>`:`<button class="icon" data-act="scanSettings" aria-label="Scanner settings">${GEAR}</button>`}</div>
-  <section class="panel scan-panel">${live?`<div class="cam-wrap ${s.camOn?'immersive':''}" id="camWrap">${s.camOn?`<div id="camSlot"></div><div class="cam-status" id="camStatus" role="status"><i class="cam-dot" aria-hidden="true"></i>${esc(s.guide?.msg||'Show one whole card anywhere')}</div>${rail}<div class="scan-flash" id="scanFlash" aria-live="polite"></div><button class="scan-shutter" id="scanCaptureBtn" data-act="scanCapture" aria-label="Capture card now">${CAMERA}</button>`:`<div class="scan-drop"><span class="scan-ghost" aria-hidden="true"></span><b>Ready for your next find.</b><span class="muted small">Magic, Pokémon and Yu-Gi-Oh! — recognised as you scan.</span><button class="btn scan-go" data-act="scanStart">${CAMERA} Start camera</button><small class="muted">Keep the whole card in view, with good light.</small><p class="scan-status-line" id="scanStatus" role="status">${esc(s.status||'')}</p></div>`}</div>`:`<div class="actions wrap"><label class="btn">${CAMERA} Take photo<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label></div>${s.url?`<div class="crop-wrap" id="cropWrap"><img id="cropImg" src="${esc(s.url)}" alt="Your photo"><div class="crop-box" id="cropBox"></div></div><div class="actions wrap"><button class="btn ghost small" data-act="scanRotate">Rotate</button><button class="btn ghost small" data-act="scanCropReset">Whole photo</button><button class="btn" data-act="scanRead" ${s.busy||s.photoLoading?'disabled':''}>${s.busy||s.photoLoading?'Reading…':'Read card'}</button></div>`:''}`}
+  <section class="panel scan-panel">${live?`<div class="cam-wrap ${s.camOn?'immersive':''}" id="camWrap">${s.camOn?`<div id="camSlot"></div><div class="cam-status" id="camStatus" role="status"><i class="cam-dot" aria-hidden="true"></i>${esc(s.guide?.msg||'Show one whole card anywhere')}</div>${rail}<div class="scan-flash" id="scanFlash" aria-live="polite"></div><button class="scan-shutter" id="scanCaptureBtn" data-act="scanCapture" aria-label="Capture card now">${CAMERA}</button>`:`<div class="scan-drop"><span class="scan-ghost" aria-hidden="true"></span><b>Ready for your next find.</b><span class="muted small">Magic, Pokémon and Yu-Gi-Oh! — recognised as you scan.</span><button class="btn scan-go" data-act="scanStart">${CAMERA} Start camera</button><p class="scan-status-line" id="scanStatus" role="status">${esc(s.status||'')}</p></div>`}</div>`:`<div class="actions wrap"><label class="btn">${CAMERA} Take photo<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label></div>${s.url?`<div class="crop-wrap" id="cropWrap"><img id="cropImg" src="${esc(s.url)}" alt="Your photo"><div class="crop-box" id="cropBox"></div></div><div class="actions wrap"><button class="btn ghost small" data-act="scanRotate">Rotate</button><button class="btn ghost small" data-act="scanCropReset">Whole photo</button><button class="btn" data-act="scanRead" ${s.busy||s.photoLoading?'disabled':''}>${s.busy||s.photoLoading?'Reading…':'Read card'}</button></div>`:''}`}
   ${!live||s.camOn?`<p class="scan-status-line" id="scanStatus" role="status">${esc(s.status||(s.camOn?'Move closer until the name and bottom number are clear. Keep all four edges visible.':'Capture first. Review only what needs checking.'))}</p>`:''}</section>
   ${batchTray(s)}${scanConfirmation(s.confirm?.game||g,s,p)}
   ${!live?`<p class="scan-disclosure">Finish and condition are not detected from a photo. ${p.finishConfirmed?`Batch finish: ${esc(finishLabel(g,null,p.finish))}.`:'Choose the finish during review, or set a batch default in settings.'}</p>`:''}
@@ -1342,28 +1342,38 @@ export function registerScanner(ctx) {
       if (c) Object.assign(box.style, { left: c.x * 100 + "%", top: c.y * 100 + "%", width: c.w * 100 + "%", height: c.h * 100 + "%" });
     };
     show();
-    let start = null;
+    // One finger owns a crop drag. A second finger is ignored, and a cancelled drag (a system gesture, an app
+    // switch, a rotation) puts back the crop it started from instead of leaving a half-drawn box or a live drag.
+    let start = null, owner = null, before = null;
     const pt = (e) => {
       const r = wrap.getBoundingClientRect();
       return { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) };
     };
     wrap.onpointerdown = (e) => {
-      if(!current())return;
-      start = pt(e);
-      wrap.setPointerCapture(e.pointerId);
+      if(!current()||owner!==null||e.isPrimary===false)return;
+      start = pt(e);owner = e.pointerId;before = s().crop ? { ...s().crop } : null;
+      wrap.setPointerCapture?.(e.pointerId);
       e.preventDefault();
     };
     wrap.onpointermove = (e) => {
-      if (!current()||!start) return;
+      if (!current()||!start||e.pointerId!==owner) return;
       const p = pt(e);
       s().crop = { x: Math.min(start.x, p.x), y: Math.min(start.y, p.y), w: Math.abs(p.x - start.x), h: Math.abs(p.y - start.y) };
       show();
     };
-    wrap.onpointerup = () => {
+    wrap.onpointerup = (e) => {
+      if(e.pointerId!==owner)return;
+      start = null;owner = null;before = null;
       if(!current())return;
-      start = null;
       const c = s().crop;
       if (c && (c.w < 0.08 || c.h < 0.08)) s().crop = null;
+      show();
+    };
+    wrap.onpointercancel = wrap.onlostpointercapture = (e) => {
+      if(e.pointerId!==owner)return;
+      start = null;owner = null;
+      if(current())s().crop = before;
+      before = null;
       show();
     };
   };

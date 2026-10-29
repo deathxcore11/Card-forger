@@ -1,7 +1,8 @@
 // Same-origin host transport only. No local bridge credential, URL override,
 // persistence, automatic command retry, or card-provider request is supported.
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-import {forgeCpuPolicy} from './play-forge-cpu-policy.js';
+import {forgeCpuPolicy,forgeMatchDifficulty} from './play-forge-cpu-policy.js';
+import {engineDeck} from './play-engine-names.js';
 export const FORGE_REVISION='e5a0f8156da70ffc7866f923bed371c0111707cd';
 const SCHEMA='cardstashy.forge-proof.v1';
 // The acceptance page is mounted on the same account origin. Its private
@@ -10,7 +11,7 @@ const API_PREFIX=new URL(import.meta.url).pathname.startsWith('/__forge-acceptan
 const fail=code=>Object.assign(Error(code),{code});
 // Shown while the server settles an action whose reply was lost; the table unlocks by itself.
 const OUTCOME_PENDING='Checking whether your last action went through. The table will update in a moment.';
-const ACTION_REJECTIONS=Object.freeze({
+export const ACTION_REJECTIONS=Object.freeze({
  stale_revision:'The game has moved on. Review the current table before choosing again.',
  stale_prompt:'That choice has changed. Review the current prompt before choosing again.',
  native_engine_busy:'Forge is still completing your previous action. Wait for the table to update.',
@@ -37,15 +38,34 @@ export async function exactDigest(value){
 }
 export function exactForgeInput(setup,{startingPlayer=setup?.match?.startingPlayer??'random'}={}){
  if(setup?.match?.mode!=='cpu'||!setup.selected||!setup.opponent||!['Commander','Standard','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'].includes(setup.match.format))throw fail('FORGE_SETUP_INCOMPLETE');
- const {difficultyPolicyVersion}=forgeCpuPolicy(setup.match.difficulty);
  const playStyle=setup.playStyle==='quick'?'quick':'practice';
+ const {difficultyPolicyVersion}=forgeCpuPolicy(forgeMatchDifficulty(setup));
  if(!['random','first','second'].includes(startingPlayer))throw fail('FORGE_STARTING_PLAYER_INVALID');
  if(playStyle==='quick')startingPlayer='random';
  // Preserve both exact snapshots. The host binds the opening preference and
  // Forge reports the actual starting player before the opening hand.
  // Forge calls 60-card Standard Brawl just Brawl; only the format label changes.
- const format=setup.match.format==='Standard Brawl'?'Brawl':setup.match.format,seat=deck=>format===deck.format?deck:{...deck,format};
- return structuredClone({format,humanDeck:seat(setup.selected),opponentDeck:seat(setup.opponent),difficultyPolicyVersion,startingPlayer,playStyle});
+ // Every name is sent in Forge's spelling ("Wear/Tear" becomes "Wear // Tear"); see play-engine-names.js.
+ const format=setup.match.format==='Standard Brawl'?'Brawl':setup.match.format,seat=d=>{const deck=engineDeck(d);return format===deck.format?deck:{...deck,format};};
+ const input={format,humanDeck:seat(setup.selected),opponentDeck:seat(setup.opponent),difficultyPolicyVersion,startingPlayer,playStyle};
+ // A Commander pod: one or two more CPU seats, each with its own deck and level. Four full
+ // saved decks can pass the host's size limit, so pod decks travel as the rows Forge reads.
+ const extra=Array.isArray(setup.extraOpponents)?setup.extraOpponents.filter(o=>o?.deck):[];
+ if(extra.length){
+  if(format!=='Commander'||playStyle!=='practice'||extra.length>2)throw fail('FORGE_POD_INVALID');
+  input.humanDeck=podDeck(input.humanDeck);input.opponentDeck=podDeck(input.opponentDeck);
+  input.extraOpponents=extra.map(o=>({deck:podDeck(seat(o.deck)),difficultyPolicyVersion:forgeCpuPolicy(o.difficulty||'Medium').difficultyPolicyVersion}));
+ }
+ return structuredClone(input);
+}
+const POD_ROW=['name','qty','set','setCode','collectorNumber','collector_number','foil','finish'];
+const podRow=r=>Object.fromEntries(POD_ROW.filter(k=>r?.[k]!==undefined&&r[k]!==null).map(k=>[k,r[k]]));
+export function podDeck(deck){
+ const out={format:deck.format};for(const k of ['name','commander','companion'])if(deck[k]!==undefined&&deck[k]!==null)out[k]=deck[k];
+ out.cards=(deck.cards||[]).map(podRow);
+ for(const k of ['side','commanders'])if(Array.isArray(deck[k])&&deck[k].length)out[k]=deck[k].map(podRow);
+ if(Array.isArray(deck.errors)&&deck.errors.length)out.errors=deck.errors;
+ return out;
 }
 // Ask the host to start the engine for this account's next match while the player
 // is still choosing decks. Best effort and idempotent on the server: it never ends a
@@ -138,7 +158,7 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
     const s=data.snapshot;
     // An action whose reply was lost is settled by the server: either the board moved past
     // the revision it was built from, or the server released it. Only then may the next action go.
-    if(unsettled&&code===200&&data.status==='running'&&Number.isSafeInteger(s?.revision)&&(data.commandPending===false||s.revision!==unsettled.revision)){unsettled=null;if(!blocked)error=null;}if(code!==200||data.status!=='running'||s?.schema!==SCHEMA||s.forgeRevision!==FORGE_REVISION||!Number.isSafeInteger(s.revision)||!Number.isSafeInteger(s.viewer)||!Array.isArray(s.players)||s.players.length!==2||s.players.some(p=>!Number.isSafeInteger(p?.id))||new Set(s.players.map(p=>p.id)).size!==2||s.players.filter(p=>p.isViewer).length!==1||s.players.filter(p=>p.isViewer&&p.id===s.viewer).length!==1)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');
+    if(unsettled&&code===200&&data.status==='running'&&Number.isSafeInteger(s?.revision)&&(data.commandPending===false||s.revision!==unsettled.revision)){unsettled=null;if(!blocked)error=null;}if(code!==200||data.status!=='running'||s?.schema!==SCHEMA||s.forgeRevision!==FORGE_REVISION||!Number.isSafeInteger(s.revision)||!Number.isSafeInteger(s.viewer)||!Array.isArray(s.players)||s.players.length<2||s.players.length>4||s.players.some(p=>!Number.isSafeInteger(p?.id))||new Set(s.players.map(p=>p.id)).size!==s.players.length||s.players.filter(p=>p.isViewer).length!==1||s.players.filter(p=>p.isViewer&&p.id===s.viewer).length!==1)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');
     if(expectedViewer!==null&&s.viewer!==expectedViewer)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');expectedViewer=s.viewer;knownPlayers=s.players.map(p=>p.id);
     if(s.pregame!==undefined&&s.pregame!==null){
      const p=s.pregame;

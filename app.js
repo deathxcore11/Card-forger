@@ -49,6 +49,7 @@ import {createAccountWorkspaces} from './account-workspaces.js';
 import {mountFeedback} from './feedback-layer.js';
 import {playSourceEntries,createPlayDeckSaver} from './play-deck-sources.js';
 import {chooseQuickOpponent} from './play-quick-match.js';
+import {loadEngineCardNames,engineUnknownCards} from './play-engine-names.js';
 import {readCpuOptions} from './play-cpu-options.js';
 import {capturePracticeDeckContext} from './play-deck-context.js';
 import {createCommunity,incomingRequestCount,sharedDeckCopy} from './community-profile.js';
@@ -1521,6 +1522,8 @@ A.playPlaymat=t=>{setPlaymatChoice(t.dataset.playmat);refreshPlayMenu();document
 let playView='home',playInspectOpen=false;
 A.playOpenMode=t=>{playView='lobby';playInspectOpen=false;A.playStyle(t);scrollTo({top:0});document.getElementById('playTitle')?.focus?.({preventScroll:true});};
 A.playHome=()=>{playView='home';playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});};
+// The empty Quick Play seat takes you straight to your decks.
+A.playFocusDecks=()=>{const list=document.getElementById('playDecksTitle');list?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'});document.getElementById('playDeckSearch')?.focus?.({preventScroll:true});};
 A.playOpenInspect=t=>{playSetup.inspectSeat(t.dataset.playSeat);playInspectOpen=true;refreshPlayMenu();document.querySelector('.pl-sheet-close')?.focus({preventScroll:true});};
 A.playCloseInspect=()=>{if(!playInspectOpen)return;playInspectOpen=false;refreshPlayMenu();};
 // The playmat sheet opens with the chosen mat in view.
@@ -1533,11 +1536,29 @@ A.playFindOpponent=async()=>{
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
  // Random means every source: fetch the format's tournament lists too if this page has none yet (bounded wait).
  try{const metaKey='mtg:'+(state.match.format==='Commander'?'EDH':state.match.format);if(!metaState(metaKey).data)await Promise.race([loadMetaData(metaKey).catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);
- const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck));
+ // Only lists the engine can load are offered: a source that spells a card its own way, or a card newer than the engine, never reaches the table.
+ const names=FORGE_PLAY_TEST_ENABLED?await loadEngineCardNames():null,unknown=engineUnknownCards(state.selected,names);if(unknown.length)throw Error(engineMissingText('Your deck',unknown));
+ const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length);
  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
 };
+// Names the engine would refuse, said plainly; the first one is named.
+const engineMissingText=(label,names)=>label+' has '+(names.length===1?'a card the rules engine can’t load yet: ':names.length+' cards the rules engine can’t load yet, including ')+names[0]+'.';
+async function pickPodDecks(state,count){
+ try{if(!metaState('mtg:EDH').data)await Promise.race([loadMetaData('mtg:EDH').catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);}catch{}
+ const names=FORGE_PLAY_TEST_ENABLED?await loadEngineCardNames():null;
+ const cardsOf=deck=>JSON.stringify([deck.commander||'',(deck.cards||[]).map(r=>String(r?.name||'').toLowerCase()).sort()]);
+ const taken=new Set([state.selected,state.opponent].map(cardsOf)),picks=[];
+ let pool=[...S.state.decks,...Object.values(readPlaySources()).flat().map(x=>x.deck)].filter(deck=>deck?.format==='Commander'&&(!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length));
+ for(let i=0;i<count;i++){
+  const candidates=pool.filter(deck=>!taken.has(cardsOf(deck)));
+  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:'Medium',...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>deck===state.selected||forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{candidateEligible:()=>true})});
+  if(taken.has(cardsOf(result.deck)))throw Error('Four-player games need more Commander decks. Load Precons or Meta in Practice, then try again.');
+  taken.add(cardsOf(result.deck));picks.push(result.deck);
+ }
+ playSetup.setExtraOpponents(picks);
+}
 A.playSaveDeck=async()=>{const state=playSetup.snapshot(),deck=state.inspectedSeat==='opponent'?state.opponent:state.selected;if(!deck)return;try{const job=savePlayDeck(deck);refreshPlayMenu();await job;}catch(e){toast(e.message);}finally{refreshPlayMenu();}};
 A.playDeckSource=async t=>{playSetup.setSource(t.dataset.playSource);refreshPlayMenu();const source=t.dataset.playSource;if(['precons','community','meta'].includes(source)&&!(readPlaySources()[source]||[]).length)await A.playLoadSource();};
 A.playLoadSource=async()=>{
@@ -1592,6 +1613,14 @@ A.playStartCandidate=async()=>{
  if(initial.playStyle==='quick'&&initial.match.mode==='cpu'&&!initial.quickMatch){if(!await A.playFindOpponent())return;}
  if(T.game()!=='mtg'||S.ui.view!=='play'||!syncDesktopPlayEntries('mtg').eligible)return;
  const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
+ // A Commander pod: the extra CPUs get random Commander decks (not yours, not CPU 2's, not each other's).
+ if(source.playStyle==='practice'&&source.match.format==='Commander'&&Number(source.match.podSize)>2){
+  const size=Number(source.match.podSize),levels=[source.match.difficulty,source.match.cpu3Level,source.match.cpu4Level].slice(0,size-1);
+  if(globalThis.matchMedia?.('(pointer:coarse) and (max-width:900px)')?.matches&&levels.filter(l=>l==='Hard').length>1)return toast('Phones run one Hard CPU per game. Set the others to Easy or Normal.');
+  try{await pickPodDecks(source,size-2);}catch(e){return toast(e.message);}
+ }
+ // Every list must load in the engine before the table opens; a refused name is said in the Play status line, not on a failed table.
+ if(FORGE_PLAY_TEST_ENABLED){const names=await loadEngineCardNames(),seats=playSetup.snapshot();for(const [deck,label] of [[seats.selected,'Your deck'],[seats.opponent,'The CPU deck'],...(seats.extraOpponents||[]).map(o=>[o.deck,'A CPU deck'])]){const unknown=engineUnknownCards(deck,names);if(unknown.length){quickStatus={busy:false,error:engineMissingText(label,unknown)};return refreshPlayMenu();}}}
  if(await playUpdates.beforeMatch())return; // The page reopens Play on the current release.
  if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
@@ -1600,14 +1629,16 @@ A.playStartCandidate=async()=>{
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
   if(FORGE_PLAY_TEST_ENABLED){
    if(!document.getElementById('forgeHostedTableStyles')){const css=document.createElement('link');css.id='forgeHostedTableStyles';css.rel='stylesheet';css.href='play-forge-table.css';document.head.append(css);}
-   let createForgePlayerMat;
-   try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));}
+   let createForgePlayerMat,localClient;
+   try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));
+    // The Android app plays on the Forge engine inside the phone when it has one.
+    const local=await import('./play-forge-local-client.js');if(local.localForgeAvailable()&&await local.localForgeCurrent())localClient=local.createForgeLocalClient;}
    catch(e){if(playerMatRoot)playModuleFailed(e);return;}
    if(!current()||!playerMatRoot)return;
    const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
     resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
     lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
-   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,
+   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,createClient:localClient,
     prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();},
     // A finished match frees its engine after cleanup; warm the next one for a rematch.
     onFinished:()=>setTimeout(()=>warmForgeEngine(playSetup.snapshot(),{afterMatch:true}),4000)});
@@ -1636,7 +1667,11 @@ let forgeWarmAt=0;
 function warmForgeEngine(state,{afterMatch=false}={}){
  if(!FORGE_PLAY_TEST_ENABLED||!PLAY_MATCH_RELEASE_READY||state.match.mode!=='cpu'||!state.profile?.signedIn||playStarting||!afterMatch&&(playerMatHost||Date.now()-forgeWarmAt<150000))return;
  forgeWarmAt=Date.now();
- void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});
+ // The phone's own engine loads its card database once and keeps it; the server engine is warmed per match.
+ // Refused (usually "busy": the last warm engine is still waiting), ask again in 30 s
+ // instead of 150 s, so a fresh one follows soon after the 3-minute one ends.
+ void import('./play-forge-local-client.js').then(local=>local.localForgeAvailable()?local.prepareLocalForge()
+  :import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).then(ok=>{if(!ok)forgeWarmAt=Date.now()-120000;})).catch(()=>{});
 }
 // The Android app gets Play ready from launch: it warms the engine as soon as the account
 // is signed in, again whenever the app comes back to the screen, and every few minutes while
@@ -1646,13 +1681,15 @@ function warmForgeEngine(state,{afterMatch=false}={}){
 const NATIVE_WARM_IDLE_MS=600000;
 function warmNativePlay(){
  let native=false;try{native=!!window.Capacitor?.isNativePlatform?.();}catch{}
- if(!native||!FORGE_PLAY_TEST_ENABLED||!PLAY_MATCH_RELEASE_READY)return;
+ // The website does the same while Play is open (never from launch), so a player who
+ // reads decks for a few minutes still starts on a warm engine and cached deck art.
+ if(!FORGE_PLAY_TEST_ENABLED||!PLAY_MATCH_RELEASE_READY)return;
  let lastTouch=Date.now(),artFor='';
  const touched=()=>{lastTouch=Date.now();};
  for(const type of ['pointerdown','keydown'])addEventListener(type,touched,{passive:true,capture:true});
  // Launch and return-to-app warm once; the repeating tick only keeps a warm engine while Play is open.
  const tick=(once=false)=>{
-  if(!once&&S.ui.view!=='play')return;
+  if((!once||!native)&&S.ui.view!=='play')return;
   if(document.hidden||accountLocked||T.game()!=='mtg'||Date.now()-lastTouch>NATIVE_WARM_IDLE_MS)return;
   const state=playSetup.snapshot();if(!state.profile?.signedIn)return;
   warmForgeEngine(state);
@@ -1664,7 +1701,9 @@ function warmNativePlay(){
  };
  setTimeout(()=>tick(true),2000);setInterval(()=>tick(),30000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){touched();tick(true);}});
- setTimeout(()=>void saveDeckArtOffline(),20000);
+ if(native)setTimeout(()=>void saveDeckArtOffline(),20000);
+ // The phone's engine fetches this week's rules data once per launch (a few MB, only when newer).
+ if(native)setTimeout(()=>void import('./play-forge-local-client.js').then(local=>local.updateLocalRules()).catch(()=>{}),15000);
 }
 // The app keeps every Magic picture it shows on the phone (CardStashyWebViewClient), so once per launch,
 // in the background, it loads the art of all your Magic decks: tables and deck screens then open with
@@ -1677,7 +1716,7 @@ async function saveDeckArtOffline(){
  const urls=[...new Set(names.flatMap(name=>{const c=meta(name),faces=c?.card_faces||[];return [c?.image_uris?.normal,c?.image_uris?.art_crop,...faces.flatMap(f=>[f.image_uris?.normal,f.image_uris?.art_crop])];}).filter(url=>typeof url==='string'&&url.startsWith('https://cards.scryfall.io/')))].slice(0,3000);
  let next=0;
  const load=url=>new Promise(done=>{const img=new Image();img.onload=img.onerror=()=>done();img.src=url;});
- await Promise.all(Array.from({length:3},async()=>{while(next<urls.length&&!accountLocked){if(document.hidden){await new Promise(r=>setTimeout(r,5000));continue;}await load(urls[next++]);}}));
+ await Promise.all(Array.from({length:3},async()=>{while(next<urls.length&&!accountLocked){if(document.hidden||playStarting||playerMatHost){await new Promise(r=>setTimeout(r,5000));continue;}await load(urls[next++]);}}));
 }
 function renderPlayPage() {
   if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>Choose Magic in the game selector to prepare a CPU match.</p><a class="btn" href="#home">Return Home</a></section>';
@@ -1697,8 +1736,11 @@ const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const disclosure=document.getElementById('playImportDisclosure');if(disclosure&&importOpen!==undefined)disclosure.open=importOpen;
   if(disclosure)document.querySelector('.play-paste-pill')?.setAttribute('aria-expanded',String(disclosure.open));
 }};
-function focusNextPlaySelection(){const state=playSetup.snapshot();const target=state.match.mode==='cpu'&&state.playStyle!=='quick'&&state.selected&&!state.opponent?document.querySelector('[data-act="playInspectSeat"][data-play-seat="opponent"]'):document.getElementById('playSelectedTitle');target?.focus({preventScroll:true});}
-A.playSelectDeck=t=>{cancelPlayBuilds();playSetup.selectDeck(t.dataset.playDeck,playSetup.snapshot().playStyle==='quick'?'player':playSetup.snapshot().inspectedSeat);refreshPlayMenu();focusNextPlaySelection();};
+function focusNextPlaySelection(){const state=playSetup.snapshot();const target=state.match.mode==='cpu'&&state.playStyle!=='quick'&&state.selected&&!state.opponent?document.querySelector('[data-act="playInspectSeat"][data-play-seat="opponent"]'):document.getElementById('playSelectedTitle');target?.focus({preventScroll:true});
+ // On a phone the sticky Play bar would cover the CPU seat that is up next, so bring it to the middle.
+ if(target?.dataset.playSeat==='opponent'&&matchMedia('(max-width:700px)').matches)target.closest('.pl-seat')?.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}
+// In Practice, once your deck is in, the next pick goes to the CPU's seat (it used to replace yours).
+A.playSelectDeck=t=>{cancelPlayBuilds();const before=playSetup.snapshot(),seat=before.playStyle==='quick'?'player':before.inspectedSeat;playSetup.selectDeck(t.dataset.playDeck,seat);const after=playSetup.snapshot();if(after.playStyle!=='quick'&&after.match.mode==='cpu'&&seat!=='opponent'&&after.selected&&!after.opponent)playSetup.inspectSeat('opponent');refreshPlayMenu();focusNextPlaySelection();};
 A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu();};
 A.playClearSelection=()=>{cancelPlayBuilds();playSetup.clearSelection(playSetup.snapshot().inspectedSeat);refreshPlayMenu();};
 // Play vs CPU from a deck page: Quick Play with this saved deck in its own format.

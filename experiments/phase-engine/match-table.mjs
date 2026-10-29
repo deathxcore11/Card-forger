@@ -15,7 +15,7 @@ export function commanderDetailLines(view,cardId){
  const lines=['Commander'];
  if(Number.isSafeInteger(entry.tax)&&entry.tax>=0)lines.push(`Command-zone tax: ${entry.tax} generic mana`);
  if(Number.isSafeInteger(entry.castCount)&&entry.castCount>=0)lines.push(`Cast from command zone: ${entry.castCount}`);
- for(const damage of data.damage||[])if(damage.commanderId===cardId&&Number.isSafeInteger(damage.amount)&&damage.amount>=0&&[0,1].includes(damage.player))lines.push(`Commander damage to ${damage.player===view.seat?'you':'CPU'}: ${damage.amount}`);
+ for(const damage of data.damage||[])if(damage.commanderId===cardId&&Number.isSafeInteger(damage.amount)&&damage.amount>=0&&Number.isSafeInteger(damage.player))lines.push(`Commander damage to ${damage.player===view.seat?'you':seatLabel(view,damage.player)}: ${damage.amount}`);
  return lines;
 }
 // Mana rocks (an artifact whose current text taps for mana) sit with the lands, Arena style.
@@ -42,13 +42,17 @@ export function tuckAttachments(cards){
   if(host?.known===true&&!Number.isSafeInteger(host.attachedTo)){if(!tucked.has(host.id))tucked.set(host.id,[]);tucked.get(host.id).push(c);}else loose.push(c);}
  return {loose,tucked};
 }
+// What the table calls a seat: "You", "CPU" in a duel, or a pod CPU by its commander.
+export const seatLabel=(view,seat)=>seat===view?.seat?'You':view?.players?.find(p=>p.seat===seat)?.label||'CPU';
+const turnOwner=(view,seat)=>seat===view.seat?'Your':view.players?.length>2?seatLabel(view,seat)+'’s':'CPU';
 export function playerStateEmblem(snapshot,seat){
  const view=snapshot?.status?.surface;
  if(!view)return {active:false,title:'Preparing match',phase:''};
  if(snapshot.status.terminal)return {active:false,title:'Match finished',phase:''};
  if(view.decision?.kind==='MulliganDecision')return {active:false,title:'Opening hand',phase:'Review your cards'};
  const active=seat===view.activeSeat;
- if(active)return {active,title:`${seat===view.seat?'Your':'CPU'} turn · ${view.turn}`,phase:matchPhaseLabel(view.phase)};
+ if(active)return {active,title:`${turnOwner(view,seat)} turn · ${view.turn}`,phase:matchPhaseLabel(view.phase)};
+ if(view.players?.find(p=>p.seat===seat)?.lost)return {active:false,title:'Knocked out',phase:''};
  const activity=matchActivity(snapshot),needsChoice=seat===view.seat&&activity.actor==='you';
  return {active,title:needsChoice?'Your response':'Waiting',phase:needsChoice&&view.decision.kind!=='Priority'?activity.label:''};
 }
@@ -100,7 +104,7 @@ export function matchActivity({status,busy=false,error=null,native=null,transpor
  if(transportError)return {actor:'none',label:'Match update needs attention'};
  if(busy)return {actor:'none',label:native?.busy===true?'Resolving game actions…':'Waiting for the table…'};
  if(human){const kind=view.decision?.kind;return {actor:'you',label:kind==='Priority'?(view.stack?.length||view.activeSeat!==view.seat?'Your response':'You can act'):labels[kind]||matchPhaseLabel(kind)||'Your decision'};}
- return {actor:'cpu',label:'Waiting for CPU'};
+ return {actor:'cpu',label:view.players?.length>2?`Waiting for ${seatLabel(view,view.prioritySeat??view.activeSeat)}`:'Waiting for CPU'};
 }
 const actionNames={tapLandForMana:'Tap for mana',cancelCast:'Cancel casting',passPriority:'Pass priority',castSpell:'Cast spell',activateAbility:'Activate ability',mulliganDecision:'Opening hand'};
 const actionText=(c,kind)=>c.presentationUnavailable?'Choice details unavailable':c.label||c.surfaces.map(s=>s.type==='player'?`Player ${s.seat+1}`:s.type==='action'?(kind==='ManaPayment'&&s.code==='passPriority'?'Pay selected mana':actionNames[s.code]||s.code.replace(/([a-z])([A-Z])/g,'$1 $2')):s.type==='value'&&s.role==='abilityIndex'?`Ability ${Number(s.value)+1}`:s.type==='value'&&s.role==='paymentMode'?(s.value==='manual'?'Manual mana':'Automatic mana'):s.name||s.value||'').filter(Boolean).join(' · ')||'Choose';
@@ -128,7 +132,7 @@ export function cardActionCues(snapshot,instanceId){
  return cues;
 }
 export function mountMatchTable(root,{session,profile={displayName:'You'},renderPlayerPortrait=()=>null,renderPlayerBackdrop=()=>null,renderMatchBackdrop=()=>null,format=null,resolveCard=()=>null,decorateCard=()=>{},decorateInspector=()=>{},renderOracleText=null,renderMatchContext=()=>null,allowConcede=false,title='CardStashy · Private rules test',mountEffects=()=>()=>{},onExit=()=>{},pileIdentical=false}){
- const disposeEffects=mountEffects(root),cardNodes=new Map(),bandDrafts=new Map();let bandRevision=null;let inspectorContent=null;let menu=null,exitOpen=false,advancedOpen=false,lastRevision=-1,inspectorHidden=false,detailsOpen=false,showAllCombatLines=false,focusedCombatCard=null;const log=[];let lastRenderKey=null,lastTurnKey=null,turnBanner=null,turnBannerStarted=0,linkLayer=null,boardLinks=[],combatSourceId=null,combatReplace=false,controlError='';let oneClickChoices=true;
+ const disposeEffects=mountEffects(root),cardNodes=new Map(),bandDrafts=new Map();let bandRevision=null;let inspectorContent=null;let menu=null,exitOpen=false,advancedOpen=false,lastRevision=-1,inspectorHidden=false,detailsOpen=false,showAllCombatLines=false,focusedCombatCard=null;const log=[];let lastRenderKey=null,lastTurnKey=null,turnBanner=null,turnBannerStarted=0,linkLayer=null,boardLinks=[],combatSourceId=null,combatReplace=false,controlError='';let oneClickChoices=true;let podFocus=null,podFollow=null;
  let previousHand=null,previousDraw=null;const newHandCards=new Map();
  // A closed/reset session must not retain detached card art or inspector content.
  function clearPresentationCaches(){cardNodes.clear();bandDrafts.clear();inspectorContent=null;menu=null;inspectorOriginKey=null;previousHand=null;previousDraw=null;newHandCards.clear();seatAttentionKeys.clear();boardLinks=[];linkLayer=null;turnBanner=null;lastTurnKey=null;lastRevision=-1;bandRevision=null;log.length=0;}
@@ -182,7 +186,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
  function render(snapshot){
   placement.reconcile();
   const {status,selected,pending,busy,error,clock}=snapshot;
-  const renderKey=JSON.stringify([status?.revision,status?.surface,status?.outcomes,selected,pending,busy,error,menu,exitOpen,advancedOpen,inspectorHidden,detailsOpen,showAllCombatLines,combatSourceId,combatReplace,snapshot.turnFlow,controlError,oneClickChoices]);
+  const renderKey=JSON.stringify([status?.revision,status?.surface,status?.outcomes,selected,pending,busy,error,menu,exitOpen,advancedOpen,inspectorHidden,detailsOpen,showAllCombatLines,combatSourceId,combatReplace,snapshot.turnFlow,controlError,oneClickChoices,podFocus]);
   if(renderKey===lastRenderKey){updateClock(clock);return;}lastRenderKey=renderKey;
   const focused=root.contains(document.activeElement)?document.activeElement.dataset.focusKey:null;
   const disclosures=[...root.querySelectorAll('details[data-keep-open]')].map(n=>[n.dataset.keepOpen,n.open]);
@@ -198,7 +202,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
   const handNow=new Set(view.hand);if(previousHand&&!openingHand)for(const id of handNow)if(!previousHand.has(id))newHandCards.set(id,performance.now());previousHand=handNow;for(const [id,time]of newHandCards)if(!handNow.has(id)||performance.now()-time>12000)newHandCards.delete(id);
   root.dataset.stage=openingHand?'opening':'match';root.dataset.decision=view.decision.kind;if(format)root.dataset.format=format;
   const turnKey=openingHand?null:JSON.stringify([view.turn,view.activeSeat]);
-  if(turnKey!==lastTurnKey){lastTurnKey=turnKey;turnBanner=null;if(turnKey&&!status.terminal){turnBanner=element('div',`${view.activeSeat===view.seat?'Your turn':'CPU turn'} · Turn ${view.turn}`,'play-match-turn-banner');turnBanner.setAttribute('aria-hidden','true');turnBannerStarted=performance.now();}}
+  if(turnKey!==lastTurnKey){lastTurnKey=turnKey;turnBanner=null;if(turnKey&&!status.terminal){turnBanner=element('div',`${turnOwner(view,view.activeSeat)} turn · Turn ${view.turn}`,'play-match-turn-banner');turnBanner.setAttribute('aria-hidden','true');turnBannerStarted=performance.now();}}
   if(status.revision!==lastRevision){log.push(`Turn ${view.turn} · ${labels[view.decision.kind]||view.decision.kind}`);lastRevision=status.revision;}
   const header=element('header',undefined,'play-match-header');
   header.append(element('strong',title,'play-match-brand'));
@@ -240,10 +244,29 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
    const info=element('div',undefined,'play-match-player');info.append(element('strong',name));const phase=element('div',undefined,'play-match-seat-phase'),sigil=element('span',undefined,'play-seat-emblem');sigil.setAttribute('aria-hidden','true');sigil.innerHTML=actionIcon(attention==='response'?'ideas':attention==='turn'?'refresh':'more');phase.append(sigil,element('strong',emblem.title));if(emblem.phase)phase.append(element('span',emblem.phase));info.append(phase);if(player.poison)info.append(element('span',`${player.poison} poison`,'play-seat-poison'));
    const life=element('div',undefined,'play-match-life');life.setAttribute('aria-label',`${player.life} life`);life.append(element('strong',String(player.life)),element('span','LIFE'));panel.append(info,life);return panel;
   }
+  // The pod's opponent rail: one chip per CPU with its life, hand size, the commander damage it has
+  // dealt you and whether it is out. Chips are drop targets for attacks and pick targets when Forge
+  // offers players; otherwise a tap shows that opponent's board.
+  function podRail(){
+   const rail=element('nav',undefined,'play-pod-rail');rail.setAttribute('aria-label','Opponents');
+   for(const p of rivals){
+    const cmd=Math.max(0,...(you.commanderDamage||[]).filter(d=>d.from===p.seat).map(d=>d.damage)),chip=element('div',undefined,'play-pod-chip');
+    chip.setAttribute('role','button');chip.tabIndex=0;chip.dataset.playerSeat=String(p.seat);chip.dataset.focusKey='pod-chip-'+p.seat;chip.dataset.focused=String(p.seat===podFocus);chip.dataset.active=String(p.seat===view.activeSeat);chip.dataset.lost=String(!!p.lost);if(cmd>=15)chip.dataset.cmdDanger='true';
+    chip.setAttribute('aria-label',`${p.label}: ${p.lost?'knocked out':`${p.life} life`}, ${p.handCount??0} in hand${cmd?`, ${cmd} commander damage to you`:''}${p.seat===view.activeSeat?', taking their turn':''}`);chip.setAttribute('aria-pressed',String(p.seat===podFocus));
+    const face=element('span',undefined,'play-pod-face');face.append(element('span',(p.label||'C').charAt(0),'play-pod-initial'));
+    const text=element('span',undefined,'play-pod-text'),meta=element('span',undefined,'play-pod-meta');text.append(element('strong',p.label,'play-pod-name'));
+    meta.append(element('span',String(p.handCount??0),'play-pod-hand'));if(cmd)meta.append(element('span',String(cmd),'play-pod-cmd'));text.append(meta);
+    chip.append(face,text,element('span',p.lost?'Out':String(p.life),'play-pod-life'));
+    const pick=()=>{if(podFocus===p.seat)return;podFocus=p.seat;render(session.snapshot());};
+    chip.addEventListener('click',pick);chip.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target===chip&&chip.dataset.forgeRole!=='target'){e.preventDefault();pick();}});
+    rail.append(chip);
+   }
+   return rail;
+  }
   function zonesMenu(){
    const zones=element('details',undefined,'play-match-zones-menu');zones.dataset.keepOpen='known-zones';zones.append(element('summary',format==='Commander'?'Zones · Commander':'Zones'));
    const body=element('div');if(view.commander?.coverage==='public-designation-ledger'){const ledger=element('details');ledger.append(element('summary','Commander record'));for(const entry of view.commander.commanders||[]){ledger.append(element('h3',entry.name||'Commander'));for(const line of commanderDetailLines(view,entry.id))ledger.append(element('p',line));}body.append(ledger);}for(const player of view.players){
-    body.append(element('h3',player.seat===view.seat?'Your zones':'CPU zones'),element('p',`${player.handCount??0} in hand · ${player.libraryCount} in library`));
+    body.append(element('h3',player.seat===view.seat?'Your zones':`${seatLabel(view,player.seat)} zones`),element('p',`${player.handCount??0} in hand · ${player.libraryCount} in library`));
     // Only the presentation adapter's current, evidence-authorized zone list is
     // inspectable here. Ownership, deck lists and past revelations grant nothing.
     for(const revealed of view.revealedZones||[]){
@@ -262,18 +285,31 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
    }zones.append(body);return zones;
   }
   // This surface receives only the public count, never card objects or IDs.
-  function opponentHand(handCount){
+  function opponentHand(handCount,name='CPU'){
    const count=Number.isSafeInteger(handCount)&&handCount>=0?handCount:null,section=element('section',undefined,'play-match-opponent-hand');
-   const label=count===null?'CPU hand · count unavailable':`CPU hand · ${count} ${count===1?'card':'cards'}`;
+   const label=count===null?`${name} hand · count unavailable`:`${name} hand · ${count} ${count===1?'card':'cards'}`;
    section.setAttribute('aria-label',label);section.append(element('span',label,'play-match-opponent-hand-count'));
    const fan=element('div',undefined,'play-match-opponent-fan');fan.setAttribute('aria-hidden','true');if(count!==null)fan.dataset.count=String(count);
    const shown=Math.min(count||0,10);section.dataset.compact=String(count>10);
    for(let i=0;i<shown;i++){const back=element('span',undefined,'play-match-card-back');back.style.setProperty('--back-angle',`${(i-(shown-1)/2)*2}deg`);fan.append(back);}
    section.append(fan);return section;
   }
-  const opponent=view.players.find(p=>p.seat!==view.seat),you=view.players.find(p=>p.seat===view.seat),battlefields=element('div',undefined,'play-match-battlefields');battlefields.dataset.keepScroll='battlefields';if(!openingHand)table.append(opponentHand(opponent.handCount));
-  for(const own of [false,true]){const area=element('div',undefined,'play-match-seat-area');area.dataset.seat=own?'you':'cpu';const field=zone(own?'Your battlefield':'CPU battlefield',view.cards.filter(c=>c.zone==='Battlefield'&&(c.controller===view.seat)===own));field.dataset.keepScroll=own?'your-battlefield':'cpu-battlefield';area.append(field);battlefields.append(area);}
-  const handArea=element('div',undefined,'play-match-hand-area');handArea.append(zone('Your hand',view.hand.map(id=>cardById.get(id)).filter(Boolean),{hand:true}));table.append(battlefields,handArea,seatPanel(opponent,'CPU',false),seatPanel(you,profile.displayName||'You',true));if(!openingHand&&format==='Commander'){for(const own of [false,true]){const commandCards=view.cards.filter(c=>c.zone==='Command'&&(c.owner===view.seat)===own);if(!commandCards.length)continue;const area=element('section',undefined,'play-command-zone');area.dataset.seat=own?'you':'cpu';area.setAttribute('aria-label',own?'Your command zone':'CPU command zone');area.append(element('strong',own?'Your command zone':'CPU command zone'));const row=element('div');for(const c of commandCards)row.append(card(c));area.append(row);table.append(area);}}if(!openingHand||view.revealedZones?.length)header.append(zonesMenu());
+  // A Commander pod shows one opponent's seat and board at a time (all three side by side where the
+  // screen is wide enough). The focus follows whoever is taking their turn or attacking; tapping a
+  // chip in the opponent rail switches it until the next turn or attack.
+  const rivals=view.players.filter(p=>p.seat!==view.seat),pod=rivals.length>1,you=view.players.find(p=>p.seat===view.seat);
+  if(pod){const alive=rivals.filter(p=>!p.lost),attacker=view.cards.find(c=>c.zone==='Battlefield'&&c.attacking&&c.controller!==view.seat)?.controller,follow=JSON.stringify([view.turn,view.activeSeat,attacker??null]);
+   if(follow!==podFollow){podFollow=follow;const want=attacker??(view.activeSeat!==view.seat?view.activeSeat:null);if(want!==null&&rivals.some(p=>p.seat===want))podFocus=want;}
+   const current=rivals.find(p=>p.seat===podFocus);if(!current||current.lost&&alive.length)podFocus=(alive[0]||rivals[0]).seat;}
+  const opponent=pod?rivals.find(p=>p.seat===podFocus):rivals[0],battlefields=element('div',undefined,'play-match-battlefields');battlefields.dataset.keepScroll='battlefields';root.dataset.pod=String(pod);if(pod)root.dataset.podSeats=String(rivals.length);else delete root.dataset.podSeats;
+  // The rail takes the opponent hand's place on the mat (each chip shows its own hand size).
+  if(!openingHand){if(pod){const slot=element('section',undefined,'play-match-opponent-hand');slot.dataset.pod='true';slot.append(podRail());table.append(slot);}else table.append(opponentHand(opponent.handCount));}
+  for(const own of [false,true]){const area=element('div',undefined,'play-match-seat-area');area.dataset.seat=own?'you':'cpu';
+   if(own||!pod){const field=zone(own?'Your battlefield':'CPU battlefield',view.cards.filter(c=>c.zone==='Battlefield'&&(c.controller===view.seat)===own));field.dataset.keepScroll=own?'your-battlefield':'cpu-battlefield';area.append(field);}
+   else for(const p of rivals){const field=zone(`${p.label} battlefield`,view.cards.filter(c=>c.zone==='Battlefield'&&c.controller===p.seat));field.dataset.owner='cpu';field.dataset.podSeat=String(p.seat);field.dataset.podLabel=p.lost?`${p.label} · out`:p.label;field.dataset.focused=String(p.seat===podFocus);field.dataset.lost=String(!!p.lost);field.dataset.keepScroll='cpu-battlefield-'+p.seat;area.append(field);}
+   battlefields.append(area);}
+  const handArea=element('div',undefined,'play-match-hand-area');handArea.append(zone('Your hand',view.hand.map(id=>cardById.get(id)).filter(Boolean),{hand:true}));// In a pod the chips carry each opponent's life, hand and commander, so there is no CPU seat panel or command zone.
+  table.append(battlefields,handArea,...(pod?[]:[seatPanel(opponent,opponent.label||'CPU',false)]),seatPanel(you,profile.displayName||'You',true));if(!openingHand&&format==='Commander'){for(const own of pod?[true]:[false,true]){const commandCards=view.cards.filter(c=>c.zone==='Command'&&(own?c.owner===view.seat:c.owner===opponent.seat));if(!commandCards.length)continue;const area=element('section',undefined,'play-command-zone');area.dataset.seat=own?'you':'cpu';area.setAttribute('aria-label',own?'Your command zone':'CPU command zone');area.append(element('strong',own?'Your command zone':'CPU command zone'));const row=element('div');for(const c of commandCards)row.append(card(c));area.append(row);table.append(area);}}if(!openingHand||view.revealedZones?.length)header.append(zonesMenu());
   const stack=element('section',undefined,'play-match-stack');stack.dataset.placementZone='stack';stack.append(element('h2',`Stack · ${view.stack.length}`));for(const entry of view.stack)stack.append(element('p',cardById.get(entry.source)?.name||'Ability or spell'));if(!view.stack.length)stack.append(element('p','No spells or abilities waiting','play-match-stack-empty'));if(!openingHand)rail.append(stack);
   const matchContext=!openingHand?renderMatchContext():null;if(matchContext)rail.append(matchContext);
   const history=element('details');history.dataset.keepOpen='game-progress';history.append(element('summary','Game progress'));const entries=element('ol');for(const row of log.slice(-20))entries.append(element('li',row));history.append(entries);if(!openingHand)rail.append(history);
@@ -295,7 +331,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
   const timer=element('output',clock?.remainingSeconds!==null&&clock?.remainingSeconds!==undefined?`${clock.remainingSeconds}s to respond`:clock?.needsChoice?'Your choice is required':'');timer.className=clock?.warning?'play-match-warning':'';timer.setAttribute('aria-label','Response time');decisionHeading.append(timer);for(const label of ['Inactivity time','Turn time']){const limit=element('output');limit.setAttribute('aria-label',label);decisionHeading.append(limit);}updateClock(clock);
   const flowNote=turnFlowMessage(snapshot);if(flowNote)footer.append(element('p',flowNote,'play-turn-flow-note'));if(controlError){const note=element('p',controlError,'play-match-error');note.setAttribute('role','alert');footer.append(note);}
   if(error){const reason=element('p',error==='CHOICE_REJECTED'?'The move could not be completed. Review your choices and try again.':'This match has stopped. Return to Play to start a new match.','play-match-error');reason.setAttribute('role','alert');footer.append(reason);}
-  if(status.terminal)footer.append(element('p',status.terminal.winner===null?'Draw':status.terminal.winner===view.seat?'You won':'CPU won'));
+  if(status.terminal)footer.append(element('p',status.terminal.winner===null?'Draw':status.terminal.winner===view.seat?'You won':`${seatLabel(view,status.terminal.winner)} won`));
   const controls=element('div',undefined,'play-match-actions');footer.dataset.complex=String(view.interaction?.opportunities?.some(o=>['assignDamage','number','text','sequence'].includes(o.type))||false);
   if(!status.terminal){
    for(const choice of view.interaction?.opportunities?.some(o=>o.type==='relations')?[]:view.choices)controls.append(button(choice.kind==='PassPriority'?(view.stack.length?'Pass response':'Continue'):choice.label,()=>session.choose(choice.token),{blockWhileBusy:true,disabled:busy||!!error&&error!=='CHOICE_REJECTED',key:choice.token}));
@@ -310,7 +346,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
      if(pending?.interactionId===o.interactionId)mode.value=pending.mode;
      if(o.modes.length>1){const label=element('label','Assignment mode');label.append(mode);group.append(label);}
      for(const c of o.choices.filter(c=>c.available)){
-      const target=c.surfaces.map(s=>s.type==='player'?(s.seat===view.seat?'You':'CPU'):s.name||'Creature').join(' · '),label=element('label',target),input=element('input');input.type='number';input.min=String(c.min);input.max=String(c.max);input.step='1';input.disabled=blocked;input.setAttribute('aria-label','Damage to '+target);input.dataset.focusKey=`damage-${c.id}`;input.dataset.damageChoice=c.id;
+      const target=c.surfaces.map(s=>s.type==='player'?seatLabel(view,s.seat):s.name||'Creature').join(' · '),label=element('label',target),input=element('input');input.type='number';input.min=String(c.min);input.max=String(c.max);input.step='1';input.disabled=blocked;input.setAttribute('aria-label','Damage to '+target);input.dataset.focusKey=`damage-${c.id}`;input.dataset.damageChoice=c.id;
       const old=pending?.interactionId===o.interactionId?pending.assignments.find(a=>a.choiceId===c.id):null;input.value=old?String(old.amount):'';label.append(input);group.append(label);inputs.push({choiceId:c.id,input});
      }
      const read=()=>inputs.map(({choiceId,input})=>({choiceId,amount:input.value===''?NaN:input.valueAsNumber}));
@@ -322,7 +358,7 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
     if(o.type==='relations'){
      const attacking=view.decision.kind==='DeclareAttackers',group=element('fieldset',undefined,'play-combat-choices');group.append(element('legend',attacking?'Choose attackers':'Choose blockers'));group.dataset.combatKind=attacking?'attack':'block';
      const draft=pending?.interactionId===o.interactionId?pending.relations:null,blocked=busy||!!error&&error!=='CHOICE_REJECTED',byId=new Map(o.choices.map(c=>[c.id,c]));
-     const choiceName=id=>{const c=byId.get(id);return c?.surfaces.map(s=>s.type==='player'?(s.seat===view.seat?'You':'CPU'):s.type==='object'?`${s.name||'Card'}`:s.value||'').filter(Boolean).join(' · ')||'Card';};
+     const choiceName=id=>{const c=byId.get(id);return c?.surfaces.map(s=>s.type==='player'?seatLabel(view,s.seat):s.type==='object'?`${s.name||'Card'}`:s.value||'').filter(Boolean).join(' · ')||'Card';};
      let confirmCombat;const bandKey=source=>o.interactionId+':'+source;
      const validBands=()=>!draft?.some(r=>bandDrafts.get(bandKey(r.sourceId))?.valid===false);const clearBands=()=>{for(const edge of o.edges)bandDrafts.delete(bandKey(edge.sourceId));};
      const rowsBox=element('div',undefined,'play-combat-rows');
@@ -421,5 +457,5 @@ export function mountMatchTable(root,{session,profile={displayName:'You'},render
   if(e.target.closest?.('.play-match-inspector')&&(!inspectorHidden||detailsOpen)){e.preventDefault();e.stopPropagation();closeInspector();}
  };
  root.addEventListener('keydown',keydown);
- return {render,requestExit(){if(!allowConcede||session.snapshot().status?.terminal)return onExit();exitOpen=true;render(session.snapshot());},destroy(){placement.destroy();disposeEffects();resize?.disconnect();root.removeEventListener('scroll',drawDraftLinks,true);root.removeEventListener('pointerover',focusCombat);root.removeEventListener('focusin',focusCombat);clearPresentationCaches();root.removeEventListener('keydown',keydown);root.replaceChildren();}};
+ return {render,focusSeat(seat){if(podFocus===seat)return;podFocus=seat;render(session.snapshot());},requestExit(){if(!allowConcede||session.snapshot().status?.terminal)return onExit();exitOpen=true;render(session.snapshot());},destroy(){placement.destroy();disposeEffects();resize?.disconnect();root.removeEventListener('scroll',drawDraftLinks,true);root.removeEventListener('pointerover',focusCombat);root.removeEventListener('focusin',focusCombat);clearPresentationCaches();root.removeEventListener('keydown',keydown);root.replaceChildren();}};
 }

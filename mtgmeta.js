@@ -4,6 +4,7 @@
 //   · Commander: MTGTop8 (mtgtop8.com), competitive Commander results with full decklists.
 // Neither allows cross-site browser calls, so the Worker fetches them a few times a day and
 // caches the result. Pure functions here are shared with the tests.
+import { engineCardName } from "./play-engine-names.js";
 
 export const MTGO_SLUGS = { Standard: "standard", Pioneer: "pioneer", Modern: "modern", Legacy: "legacy", Vintage: "vintage", Pauper: "pauper", Premodern: "premodern", "Duel Commander": "duel-commander" };
 export const MTGO_INDEX = "https://www.mtgo.com/decklists";
@@ -44,7 +45,8 @@ const placeLabel = (n) => (n === 1 ? "1st" : n === 2 ? "2nd" : n <= 4 ? "Top 4" 
 const cards = (list) => {
   const by = new Map();
   for (const c of list || []) {
-    const name = c.card_attributes?.card_name;
+    // MTGO writes split cards "Wear/Tear"; keep the name every other source and the engine use.
+    const name = c.card_attributes?.card_name && engineCardName(c.card_attributes.card_name);
     if (!name) continue;
     const r = by.get(name) || { qty: 0, name, land: /LAND/.test(c.card_attributes?.card_type || "") };
     r.qty += Number(c.qty) || 0;
@@ -244,7 +246,7 @@ export function parseMtgtop8Export(text, realName = (name) => name) {
     }
     const m = /^(\d+)\s+(.+)$/.exec(line);
     if (!m) continue;
-    const name = realName(m[2].includes("//") ? m[2] : m[2].replace(/\s*\/\s*/, " // "));
+    const name = realName(engineCardName(m[2]));
     (side ? commanders : main).push({ qty: Number(m[1]), name, ...(side ? {} : { land: BASIC.test(name) }) });
   }
   const total = [...main, ...commanders].reduce((a, r) => a + r.qty, 0);

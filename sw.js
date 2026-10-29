@@ -1,5 +1,6 @@
-const CACHE = "cardforge-shell-match-close-retry-bgmusic-v379";
+const CACHE = "cardforge-shell-engine-names-bgmusic-score-v389";
 const ASSETS = [
+  "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
   "./audio.js",
   "./play-table-audio.js",
@@ -9,6 +10,7 @@ const ASSETS = [
   "./play-forge-cpu-policy.js",
   "./play-forge-setup-review.js",
   "./play-forge-host-client.js",
+  "./play-forge-local-client.js",
   "./play-forge-artwork.js",
   "./play-forge-player-mat.js",
   "./play-forge-pregame.js",
@@ -33,6 +35,7 @@ const ASSETS = [
   "./experiments/phase-engine/priority-flow.mjs",
   "./play-deck-sources.js",
   "./play-quick-match.js",
+  "./play-engine-names.js",
   "./play-cpu-options.js",
   "./play-turn-controls.js",
   "./experiments/phase-engine/commander-projection.mjs",

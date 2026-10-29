@@ -365,3 +365,35 @@ body[data-view="scan"] #content>.context-guide{margin:12px 14px 0}
 .search-fan p{margin:0}
 .search-fan+.hints,.search-fan+.center{justify-content:center;text-align:center}
 @media(prefers-reduced-motion:reduce){.search-fan-card{transition:none}}
+/* 4.3.34 design pass: one page container. Every top-level screen puts its content and title on the
+   same left edge (16px on phones, the 1196px column on desktop, 85px at 1366). */
+:root{--page-max:1196px;--page-edge:max(var(--gutter),calc((100% - var(--page-max)) / 2))}
+@media(min-width:1200px){
+ body:is([data-view="home"],[data-view="play"]) #content{max-width:1240px;margin-inline:auto;padding-inline:22px}
+}
+/* Scan: the floating title bar only floats over a live camera. Before that it is a plain page header. */
+body[data-view="scan"] #content>.context-guide{margin:12px var(--page-edge) 0}
+#app .scan-workspace.is-camera:not(.is-live)>.scan-toolbar{left:var(--page-edge);right:var(--page-edge);padding:6px 0;border-color:transparent;background:none;backdrop-filter:none;box-shadow:none}
+.scan-pile-tray[data-batch-count="0"]{display:none}
+/* Settings: the account column fills the page instead of leaving an empty second column. */
+.settings-page{max-width:none}
+.settings-account-layout:not(:has(.settings-aside)){grid-template-columns:minmax(0,1fr)}
+/* Rules: the lesson column starts on the page edge like its title. */
+.rule-learning{max-width:none;margin-inline:0}
+/* Primary actions are gold everywhere (Settings, the deck builder, scan chips), never lavender. */
+:root{--brand-action:#e8b95b;--brand-action-ink:#1b1406}
+/* Settings: the save status line under the title already says "Sync needs your decision"; the account card says it once. */
+.settings-page:has(#settings-account:not([hidden])) .settings-save-overview{display:none}
+/* Wiki shares the page column with every other screen. */
+.wiki-page,.wiki-page-head{max-width:none}
+/* Phones: an empty screen's one message sits in the middle of the free space instead of leaving half the screen dark. */
+@media(max-width:700px){
+ #content>.empty:last-child,#content>section>.empty:last-child{display:flex;flex-direction:column;justify-content:center;min-height:min(46vh,420px)}
+}
+/* Inside Settings the Backup tab's dot is the one pointer to unread release notes; the header dot waits outside. */
+body[data-view="settings"] .profile-menu>.release-dot{display:none}
+/* Wiki: the daily topic's refresh is a small corner control, not a third link on the Read article row. */
+.wiki-daily{position:relative}.wiki-daily .wiki-daily-refresh{position:absolute;top:10px;right:10px;z-index:3;width:44px;height:44px;border-radius:50%;background:#0c0e13a6;color:#f1e9d8;backdrop-filter:blur(8px)}
+/* Next-patch minors from the 29 Oct gate: Scan's idle panel keeps the page gutters; seat badge rows match. */
+#app .scan-workspace.is-camera:not(.is-live)>.scan-panel{margin-inline:var(--page-edge);border-radius:18px;border:1px solid var(--line)}
+.pl-seat-who{min-height:30px}

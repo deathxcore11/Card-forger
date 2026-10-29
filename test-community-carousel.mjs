@@ -14,7 +14,7 @@ const clean=showcaseItem({key:'deck:x',kind:'deck',game:'ptcg',title:'Friends',n
 assert(!JSON.stringify(clean).includes('PRIVATE'));assert(!JSON.stringify(clean).includes('manualValue'));
 const page=communityPage({account:{user:{id:'A'},profile:{display_name:'Old display',username:'player_a'}},data:{people:[{id:'B',display_name:'Pending',relationship:'pending'},{id:'C',display_name:'Friend',relationship:'accepted'}],items:[]}});
 assert.match(page,/<h1>player_a<\/h1>/);assert.doesNotMatch(page,/Old display/);
-assert.match(page,/Showcase<\/span><small>Coming soon/);assert.match(page,/Deck discussions<\/span><small>Coming soon/);assert.match(page,/data-community-person="C"/);assert.doesNotMatch(page,/data-community-person="B"/);
+assert.doesNotMatch(page,/Coming soon/,'unreleased sections are not shown as tabs');assert.match(page,/data-community-person="C"/);assert.doesNotMatch(page,/data-community-person="B"/);
 console.log('PASS: normalized collector fractions, exact number prefixes, grouped finish identities, explicit finish choice, private showcase fields and accepted-friend-only profiles');
 
 const grouped=showcaseSections([clean,{...clean,key:'binder:z',kind:'binder'}],true);
