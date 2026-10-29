@@ -9,7 +9,7 @@
   "sourceRetrievedAt": "2026-10-27T22:21:32.000Z",
   "sourceUrl": "https://data.scryfall.io/oracle-cards/oracle-cards-20261027210243.jsonl.gz",
   "sourceSha256": "2f8afacba1b8f5375723cdeec3bc00adb3c6b97d038acc6406fa774129d7cf0a",
-  "indexSha256": "26baf849dfbb177b2ea6ce807ce518006f5b634599c45a8c55483302eb5ad1fe",
+  "indexSha256": "597669e0b0722873e79145ae58239097bef73b167215b7f79c0aef8c63c07939",
   "indexRows": 33334,
   "nativeExportSha256": "ea0a2c4bcca4c8e75a85df0b82e621e3573a4aa192f63119af37ba49b3eb0221",
   "officialFactsSha256": "97005c10913252558ed4093645fbd7a2cec6f60c6c1dfaf12b848aa9da07d8ce",
@@ -20,9 +20,14 @@
     "latestAnnouncement": "https://magic.wizards.com/en/news/announcements/banned-and-restricted-october-12-2026"
   },
   "formatDefinitionDigests": {
+    "Brawl": "76c8698d94163c5e6ed7735b1e4f4c02272570fe73d7db525c5167e2a96e8d48",
     "Commander": "b95292a637356dcc5766f2176500138f06bd9c5c993fe911e0dc430245c3fb8f",
+    "Legacy": "5f54d526df3eee24cde5387179c950df6d23d0f2a0678e5f0bd3e864236af600",
     "Modern": "cebc9ba45753abc6a2b9db92ba1c2eb5b5cd695ebcafb64cdfd41e3e6694cc89",
-    "Standard": "464d65e07eb566c0029b6149ff2c8a5adacf5b52d8ed3fe188b65309b2295162"
+    "Pauper": "6bd4fb6d3937951bae89cefbc347cf69ac276441ce5046b8fcc3b05b778dc057",
+    "Pioneer": "ecb5aee0461fece0cb32304db2eec3cc0ea2297d15a2b3214db5849685dc4954",
+    "Standard": "464d65e07eb566c0029b6149ff2c8a5adacf5b52d8ed3fe188b65309b2295162",
+    "Vintage": "d1db20f22e2b6668d3a81248df43da1c03bc139b7437351f0f4026d9ff97f52f"
   },
   "aliases": {
     "Ratonhnhaké:ton": {

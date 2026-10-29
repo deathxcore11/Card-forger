@@ -23,6 +23,9 @@ public final class NativeFormatChecks {
    reports.put(name,a.receipt());reports.put(name+"NativeDefinition",f.definition());
   }
   var commander=NativeDeckAdmission.admit(load(args[0]+"/bootstrap-existing.json"));check(commander.admitted(),"Commander baseline still admitted");
+  var digests=NativeRulesData.current().manifest().getAsJsonObject("formatDefinitionDigests");
+  for(var f:NativeMatchFormat.values())check(digests.has(f.name())&&digests.get(f.name()).getAsString().equals(NativeDeckInput.digest(NativeDeckInput.JSON.toJsonTree(f.definition()))),f.name()+" native definition matches bundled digest");
+  check(NativeMatchFormat.Brawl.register(commander.human().deck()).getStartingLife()==25,"Brawl native two-player 25 life");
   Files.writeString(Path.of(args[1]),NativeDeckInput.JSON.toJson(reports));System.out.println("PASS three-format native checks");System.exit(0);
  }
 }

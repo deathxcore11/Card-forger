@@ -3,8 +3,8 @@
 
 The pinned engine's card identities stay exactly as they are (same native names, same
 Oracle IDs, same unmapped/ambiguous exclusions, same aliases); only each identity's
-source facts are re-read from the new bulk: its name, release date and its Standard,
-Modern and Commander legality. Official format facts are re-checked by a person and
+source facts are re-read from the new bulk: its name, release date and its legality in
+every format the host admits (Scryfall's standardbrawl is paper Brawl). Official format facts are re-checked by a person and
 passed in with --facts; this tool never invents or extends them.
 
 Prove the tool against the bundle it replaces first:
@@ -16,7 +16,8 @@ must rebuild the existing cards.json byte for byte. Then:
 """
 import argparse, datetime, gzip, hashlib, json, os, pathlib, sys
 
-FORMATS = {'Commander': 'commander', 'Modern': 'modern', 'Standard': 'standard'}
+FORMATS = {'Brawl': 'standardbrawl', 'Commander': 'commander', 'Legacy': 'legacy', 'Modern': 'modern',
+           'Pauper': 'pauper', 'Pioneer': 'pioneer', 'Standard': 'standard', 'Vintage': 'vintage'}
 VERDICTS = {'legal', 'not_legal', 'banned', 'restricted'}
 MAX_DAYS = 7
 SOURCE_LIMIT = 64 * 1024 * 1024

@@ -57,7 +57,7 @@ test('SYNTHETIC policy retains CPU/rules/roster checks; never production-selecta
 test('attestation, native source and manifest evidence cannot be replaced',async()=>{const f=await syntheticOCI();try{const {args}=await syntheticPolicy(f);for(const key of ['reviewedManifestBytes','imageSourceBytes','imageCheckpointBytes','buildAttestationBytes','runtimeIndexBytes'])await assert.rejects(createLocalTestPolicy({...args,[key]:Buffer.from('{}')}),undefined,key);}finally{await f.cleanup();}});
 test('production CPU/rules predicates are copied verbatim; production has no local selector',async()=>{
  const production=await readFile(path.join(reviewedHostRoot,'src/release-policy.mjs'),'utf8'),local=await readFile(new URL('./local-test-policy.mjs',import.meta.url),'utf8');
- assert.equal(sha256(production),'5d97d7a61ddf703a274f08635c21a13775c62204799fe75c8092897855a965bd');
+ assert.equal(sha256(production),'382e64701a45da51b8b539ae0f6e557ff6362ef8ce6abba971fe23c9f3ac5457');
  const start='  const policy = selectedPolicy(input?.difficultyPolicyVersion)';assert.equal(local.slice(local.indexOf(start)),production.slice(production.indexOf(start)));
  for(const file of ['worker.mjs','native-adapter-next.mjs','release-policy.mjs']){const text=await readFile(path.join(reviewedHostRoot,'src',file),'utf8');assert(!/local-oci|LOCAL_TEST_NOT_DEPLOYABLE|local-test-policy/.test(text));}
 });

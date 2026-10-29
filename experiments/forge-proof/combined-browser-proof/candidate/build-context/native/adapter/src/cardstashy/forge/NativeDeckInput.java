@@ -118,11 +118,11 @@ public final class NativeDeckInput {
         List<String> legality=new ArrayList<>();String problem=format.deckFormat.getDeckConformanceProblem(deck);if(problem!=null)legality.add(problem);
         Set<String> illegalCards=new LinkedHashSet<>(),aiWarnings=new LinkedHashSet<>();
         for(Row row:java.util.stream.Stream.concat(cards.stream(),side.stream()).toList()){
-            if(!(format.commander()?DeckFormat.Commander.isLegalCard(row.card):format.pool().getFilterRules().test(row.card)))illegalCards.add(row.card.getName());
+            if(!(format==NativeMatchFormat.Commander?DeckFormat.Commander.isLegalCard(row.card):format.pool().getFilterRules().test(row.card)))illegalCards.add(row.card.getName());
             if(cpu&&row.card.getRules().getAiHints().getRemAIDecks())aiWarnings.add(row.card.getName());
         }
         if(!illegalCards.isEmpty())legality.add("Cards not admitted by pinned native "+format.name()+" card pool: "+String.join(", ",illegalCards));
-        if(!format.commander()){String poolProblem=format.pool().getDeckConformanceProblem(deck);if(poolProblem!=null&&illegalCards.isEmpty())legality.add(poolProblem);}
+        if(format!=NativeMatchFormat.Commander){String poolProblem=format.pool().getDeckConformanceProblem(deck);if(poolProblem!=null&&illegalCards.isEmpty())legality.add(poolProblem);}
         int inputCount=cards.stream().mapToInt(Row::qty).sum();
         if(deck.getMain().countAll()+NativeMatchFormat.count(deck,DeckSection.Commander)!=inputCount)throw new IllegalStateException("exact_count_changed");
         Map<String,Object> report=map("nativeRoster",roster(deck),"nativeRosterDigest",digest(JSON.toJsonTree(roster(deck))),"sourceDigest",digest(source),"format",format.name(),"nativeFormatRevision",ForgeHttpBridge.REV,"nativeFormatDefinitionDigest",digest(JSON.toJsonTree(format.definition())),"legalityScope","pinned native format definitions; not a live official ban/rotation service","legal",legality.isEmpty(),"legalityProblems",legality,"nativeDefinitionsLoaded",true,"interactionCoverage","not-fully-certified; unknown native prompts fail closed","cpuWarnings",aiWarnings,"mainCount",deck.getMain().countAll(),"commanderCount",NativeMatchFormat.count(deck,DeckSection.Commander),"sideCount",side.stream().mapToInt(Row::qty).sum(),"resolved",map("main",mainReport,"commanders",commandReport,"sideboard",sideReport));

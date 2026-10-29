@@ -39,3 +39,6 @@ Official Standard/Modern bans and current pool facts were checked against Wizard
 - Prior0228 genuine native terminal games: Standard turn10, Modern turn16. Prior0146 exact Angels/Keen terminal turn30 after allowing the real21s CPU window. The admission-only gate does not manufacture or replace those gameplay results.
 
 Logs in proof root: `rules-gate-checks.log`, `rules-startup-checks.log`, `rules-startup-*-state.json`, `rules-bundle-build.log`, `rules-gate-contract-checks.log`, `rules-gate-formats-final.log`. Local receipt files contain no bearer capability and no opponent library order. This is a bounded review candidate, not a production-release claim.
+
+## More formats (2026-10-29)
+Pioneer, Legacy, Vintage and Pauper (60 cards, 20 life) and Brawl (60 cards with a commander, Forge's two-player 25 life) use the pinned Forge format files and the same gate. The bundle (same Scryfall source and dates) now carries their verdicts (Brawl from Scryfall `standardbrawl`) and their native definition digests, computed from the pinned Forge format and edition files with the canonical hashing in NativeDeckInput; the script reproduced the existing Commander, Modern and Standard digests exactly. A Vintage `restricted` verdict admits one copy across the deck. Oathbreaker still needs signature-spell support and stays off.

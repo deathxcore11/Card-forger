@@ -10,7 +10,7 @@ const only = (value, allowed) => object(value) && Object.keys(value).every(key =
 
 export function validateExactDeckInput(input) {
   if (!only(input, ['format', 'humanDeck', 'opponentDeck', 'difficultyPolicyVersion', 'startingPlayer', 'playStyle'])
-      || !['Commander', 'Standard', 'Modern'].includes(input.format)
+      || !['Commander', 'Standard', 'Modern', 'Pioneer', 'Legacy', 'Vintage', 'Pauper', 'Brawl'].includes(input.format)
       || typeof input.difficultyPolicyVersion !== 'string'
       || !/^[A-Za-z0-9._-]{1,80}$/.test(input.difficultyPolicyVersion)) fail('invalid_match_input');
   if (input.startingPlayer !== undefined || input.playStyle !== undefined) {

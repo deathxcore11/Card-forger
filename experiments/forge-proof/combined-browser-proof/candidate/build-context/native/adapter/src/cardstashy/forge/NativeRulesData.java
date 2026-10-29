@@ -32,6 +32,7 @@ public final class NativeRulesData {
   if(cached.receipt().get("mode").equals("current")&&!LocalDate.now(ZoneOffset.UTC).isBefore(LocalDate.parse((String)cached.receipt().get("validUntilExclusive"))))throw NativeDeckInput.fail("rules_data_stale");
   return cached;
  }
+ static int copies(Deck deck,String name){int n=0;for(var e:deck.getAllCardsInASinglePool())if(e.getKey().getRules().getName().equals(name))n+=e.getValue();return n;}
  static void validateDeck(Bundle bundle,NativeDeckInput.Resolution resolution){
   NativeMatchFormat f=NativeMatchFormat.parse(resolution.source().get("format").getAsString());String actual=NativeDeckInput.digest(NativeDeckInput.JSON.toJsonTree(f.definition()));
   if(!Objects.equals(actual,bundle.manifest().getAsJsonObject("formatDefinitionDigests").get(f.name()).getAsString()))throw NativeDeckInput.fail("rules_data_native_format_changed");
@@ -40,7 +41,11 @@ public final class NativeRulesData {
    for(var entry:pool){var card=entry.getKey();String name=card.getRules().getName();JsonElement found=bundle.cards().get(name);
     if(found==null||!found.isJsonObject())throw NativeDeckInput.fail("rules_data_card_unmapped:"+name);
     JsonObject row=found.getAsJsonObject();String oracle=str(row,"oracleId");if(!oracle.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"))throw NativeDeckInput.fail("rules_data_identity_invalid");
-    JsonElement verdict=row.getAsJsonObject("verdicts").get(f.name());if(verdict==null||!verdict.isJsonPrimitive()||!verdict.getAsJsonPrimitive().isString()||!verdict.getAsString().equals("legal"))throw NativeDeckInput.fail("rules_data_card_not_legal:"+name+":"+f.name());
+    JsonElement verdict=row.getAsJsonObject("verdicts").get(f.name());if(verdict==null||!verdict.isJsonPrimitive()||!verdict.getAsJsonPrimitive().isString())throw NativeDeckInput.fail("rules_data_card_not_legal:"+name+":"+f.name());
+    // A restricted card is legal as a single copy across the whole deck.
+    boolean restricted=f==NativeMatchFormat.Vintage&&verdict.getAsString().equals("restricted");
+    if(!verdict.getAsString().equals("legal")&&!restricted)throw NativeDeckInput.fail("rules_data_card_not_legal:"+name+":"+f.name());
+    if(restricted&&copies(resolution.deck(),name)>1)throw NativeDeckInput.fail("rules_data_card_restricted:"+name+":"+f.name());
     // Reject unknown/unreleased selected native printings, never substitute another print.
     CardEdition edition=StaticData.instance().getCardEdition(card.getEdition());
     if(edition==null||edition==CardEdition.UNKNOWN||edition.getCode().equals(CardEdition.UNKNOWN_CODE)||edition.getDate()==null)throw NativeDeckInput.fail("rules_data_print_release_unverified:"+name);
