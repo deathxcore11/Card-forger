@@ -72,10 +72,11 @@ test('account change while acquiring a token sends no request',async()=>{
  const creating=client.create({format:'Commander',humanDeck:s.selected,opponentDeck:s.opponent,difficultyPolicyVersion:'forge-medium-v1'});
  account={...account,accountGeneration:2};gate.resolve('token');await assert.rejects(creating,/ACCOUNT_CHANGED/);assert.equal(requests,0);
 });
-test('native Quick Play picks the same opponent list across all three CPU policies',()=>{
+test('native Quick Play picks a random opponent list, the same for every CPU policy',()=>{
  const player=setup('Modern').selected,candidates=[20,45,80].map(score=>({...structuredClone(player),id:'list-'+score,cards:[{name:'List '+score,qty:60}],score}));
- const selected=['Easy','Medium','Hard'].map(difficulty=>chooseQuickOpponent({player,candidates,difficulty,candidateEligible:()=>true,nativeValidationPending:true,estimate:d=>d.score??50}).deck);
- assert.deepEqual(selected[0],selected[1]);assert.deepEqual(selected[1],selected[2]);assert.equal(selected[0].score,45);
+ const pick=(difficulty,random)=>chooseQuickOpponent({player,candidates,difficulty,candidateEligible:()=>true,nativeValidationPending:true,estimate:d=>d.score??50,random}).deck.score;
+ assert.deepEqual([0,0.5,0.99].map(r=>pick('Medium',()=>r)),[20,45,80]);
+ assert.deepEqual(['Easy','Medium','Hard'].map(d=>pick(d,()=>0.99)),[80,80,80]);
 });
 test('real app handler takes the Forge branch and bypasses legacy pregame and catalogue admission',async()=>{
  let source=readFileSync(new URL('./app.js',import.meta.url),'utf8').match(/A\.playStartCandidate=async\(\)=>\{[\s\S]*?\n\};/)[0];

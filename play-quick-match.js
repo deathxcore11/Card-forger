@@ -1,6 +1,6 @@
-// Pick a CPU list for review. Matching is an estimate, never engine admission.
+// Pick a CPU list for review. Quick Play is a true random pick, never engine admission.
 import {playDeckSupport} from './play-deck-sources.js';
-export function chooseQuickOpponent({player,candidates=[],difficulty='Medium',estimate=()=>null,support=playDeckSupport,candidateEligible=null,nativeValidationPending=false}={}){
+export function chooseQuickOpponent({player,candidates=[],difficulty='Medium',estimate=()=>null,support=playDeckSupport,candidateEligible=null,nativeValidationPending=false,random=Math.random}={}){
  if(!['Easy','Medium','Hard'].includes(difficulty))throw Error('Choose a CPU difficulty.');
  const eligible=candidateEligible||((deck)=>support(deck).status==='pool');
  if(!player||!eligible(player))throw Error('Your selected deck needs play-support review before Quick Play.');
@@ -13,11 +13,8 @@ export function chooseQuickOpponent({player,candidates=[],difficulty='Medium',es
  // rows and printings, is still a mirror.
  const cardsKey=deck=>JSON.stringify([[deck.commander||'',...(deck.commanders||[])].map(n=>String(n?.name??n).toLowerCase()).sort(),...['cards','side'].map(z=>{const total=new Map();for(const r of deck[z]||[]){const n=String(r?.name||'').trim().toLowerCase(),q=Number(r?.qty)||0;total.set(n,(total.get(n)||0)+q);}return [...total].filter(([,q])=>q>0).map(([n,q])=>n+'×'+q).sort();})]);
  const ownKey=listKey(player),ownCards=cardsKey(player),others=rows.filter(r=>r.key!==ownKey&&cardsKey(r.deck)!==ownCards&&!(player.id&&r.deck.id===player.id));if(!others.length)throw Error('Quick Play needs a different deck for the CPU in this format. Load Precons or Meta, or pick the CPU deck in Practice.');rows.splice(0,rows.length,...others);
- let own=null;try{const n=estimate(player);if(Number.isFinite(n)&&n>=0&&n<=100)own=n;}catch{}
- // Forge difficulty changes decision policy; it must not secretly select a
- // stronger opposing list. Keep deck-strength matching independent of its tier.
- const target=own===null?null:Math.max(0,Math.min(100,own+(nativeValidationPending?0:({Easy:-10,Medium:0,Hard:10}[difficulty]))));
- const rated=target===null?[]:rows.filter(r=>r.score!==null);const pool=rated.length?rated:rows;
- if(rated.length)pool.sort((a,b)=>Math.abs(a.score-target)-Math.abs(b.score-target)||a.key.localeCompare(b.key));
- const selected=pool[0],mirror=cardsKey(selected.deck)===ownCards;return {deck:structuredClone(selected.deck),candidateCount:rows.length,estimated:!!rated.length,mirror,reason:(mirror?'CPU will use the same card list as you. ':'')+(nativeValidationPending?(rated.length?'Matched using your deck’s estimated strength.':'Selected from available decks in your format.')+' Both full lists are checked when the match opens.':(rated.length?'Matched using existing deck estimates for '+difficulty+'. Estimates do not guarantee an even game.':'Matched from available supported lists. Deck-strength estimates are unavailable.')),difficulty};
+ // Any complete list in the format, whatever its source, colours or strength: Quick Play
+ // is random on purpose. Difficulty changes only the CPU's decisions, never which list it gets.
+ const pick=Math.min(rows.length-1,Math.floor(Math.max(0,random())*rows.length));
+ const selected=rows[pick],mirror=cardsKey(selected.deck)===ownCards;return {deck:structuredClone(selected.deck),candidateCount:rows.length,estimated:false,mirror,reason:(mirror?'CPU will use the same card list as you. ':'')+'Picked at random from '+rows.length+' deck'+(rows.length===1?'':'s')+' in your format.'+(nativeValidationPending?' Both full lists are checked when the match opens.':''),difficulty};
 }
