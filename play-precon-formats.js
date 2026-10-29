@@ -1,16 +1,17 @@
 // Published 60-card products (Theme Decks, Starter Kits, Challenger Decks, …) for
-// Standard and Modern Play. A list is offered only in formats where MTGJSON reports
+// constructed Play (Standard, Pioneer, Modern, Legacy, Vintage, Pauper). A list is offered only in formats where MTGJSON reports
 // every card legal and the published quantities satisfy that format's deck rules;
 // the published list itself is never trimmed, padded or substituted.
 export const CONSTRUCTED_PRECON_TYPES = Object.freeze(['Theme Deck', 'Starter Kit', 'Challenger Deck', 'Pioneer Challenger Deck', 'Planeswalker Deck', 'Game Night Deck', 'Arena Starter Kit', 'Event Deck', 'Duel Deck', 'Clash Pack', 'Intro Pack']);
-const FORMATS = { Standard: 'standard', Modern: 'modern' };
+const FORMATS = { Standard: 'standard', Pioneer: 'pioneer', Modern: 'modern', Legacy: 'legacy', Vintage: 'vintage', Pauper: 'pauper' };
 // Standard rotates; older products are skipped instead of downloaded just to fail.
 const STANDARD_WINDOW_DAYS = 3 * 366;
 const unlimited = card => (card.supertypes || []).includes('Basic') || /any number of cards named/i.test(card.text || '');
 
 export function constructedPreconCandidates(index, format, { checked = new Set(), now = Date.now(), limit = 10 } = {}) {
   if (!FORMATS[format]) return [];
-  const earliest = format === 'Standard' ? new Date(now - STANDARD_WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10) : '2003-07-28';
+  const earliest = format === 'Standard' ? new Date(now - STANDARD_WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10)
+    : format === 'Pioneer' ? '2012-10-05' : format === 'Modern' ? '2003-07-28' : '1993-08-05';
   return (index || [])
     .filter(d => CONSTRUCTED_PRECON_TYPES.includes(d?.type) && typeof d.fileName === 'string' && /^[A-Za-z0-9_.-]+$/.test(d.fileName)
       && !checked.has(d.fileName) && String(d.releaseDate || '') >= earliest)
@@ -19,7 +20,7 @@ export function constructedPreconCandidates(index, format, { checked = new Set()
 }
 
 // payload: one MTGJSON deck file. Returns null when the list is not playable in
-// Standard or Modern as published.
+// any of these formats as published.
 export function constructedPrecon(payload, entry) {
   const d = payload?.data || payload;
   if (!d || !Array.isArray(d.mainBoard) || (d.commander || []).length) return null;
