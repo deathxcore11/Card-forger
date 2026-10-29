@@ -2128,3 +2128,21 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-lane-tray .play-match-card-name{font-size:11px!important;overflow-wrap:normal;word-break:normal;hyphens:none}
 /* An opened Fold: the state line sits beside End turn, below the fan, instead of on the fan's last card. */
 @media (max-aspect-ratio:9/10) and (min-width:641px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-state]:not([data-ask=true])::before{bottom:auto;top:8px;right:calc(100% + 10px)}}
+/* Banked timeouts sit at the fuse's left end; one flares when it is spent and the fuse starts over. */
+.forge-rope s{position:absolute;left:-4px;top:10px;text-decoration:none;font:700 12px/1 'DM Sans',system-ui,sans-serif;letter-spacing:1px;padding:2px 6px;border-radius:999px;background:#14161ddd;border:1px solid #d6ad6466;color:#f4d78f}
+.forge-rope s:empty{display:none}
+.forge-rope[data-spent=true] s{animation:forge-rope-spent 1.2s ease-out}
+@keyframes forge-rope-spent{0%{box-shadow:0 0 0 0 #f2d18e;transform:scale(1.3)}100%{box-shadow:0 0 0 14px #f2d18e00;transform:scale(1)}}
+/* Low life: the life portrait cracks under 10 and also bleeds a slow red glow at 5 or less. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat[data-life-band] .play-match-profile-badge::after{content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:2;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23ffb0a0' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M50 4 L45 22 L54 33 L44 50 L52 60'/%3E%3Cpath d='M54 33 L68 38 L80 30'/%3E%3Cpath d='M44 50 L28 56 L18 70'/%3E%3Cpath d='M96 52 L80 55 L70 66'/%3E%3C/svg%3E") center/100% 100% no-repeat;opacity:.75;mix-blend-mode:screen}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat[data-life-band] .play-match-profile-badge{box-shadow:0 0 0 2px #c2412c,0 0 14px #ff5a3a66}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat[data-life-band=critical] .play-match-profile-badge{animation:forge-life-bleed 2.4s ease-in-out infinite}
+@keyframes forge-life-bleed{0%,100%{box-shadow:0 0 0 2px #c2412c,0 0 12px #ff5a3a55}50%{box-shadow:0 0 0 2px #ff6a4a,0 0 26px 4px #ff3a2aaa}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat[data-life-band=critical] .play-match-profile-badge{animation:none}}
+/* Auto-tap preview: the lands auto-pay will use lift and glow while you carry a card. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-battlefields .play-match-card[data-forge-tap-preview=true]{translate:0 -4px;box-shadow:0 0 0 2px #ffc56a,0 0 14px #ffb54799,0 6px 12px #000a!important;transition:translate .15s,box-shadow .15s}
+/* A payment that costs life or a Treasure asks once more, in warning orange. */
+:where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-pay-warn{position:fixed;z-index:2500;display:grid;grid-template-columns:auto auto;gap:8px;padding:12px;border-radius:14px;border:1px solid #ff9a4a88;background:#16110cf2;box-shadow:0 14px 34px #000c}
+:where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-pay-warn p{grid-column:1/-1;margin:0;color:#ffe2c8;font:600 13px/1.3 'DM Sans',system-ui,sans-serif}
+:where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-pay-warn button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #ffffff33;background:#1d2028;color:#f3ead6;font:700 13px/1 'DM Sans',system-ui,sans-serif}
+:where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-pay-warn .forge-pay-warn-go{background:linear-gradient(180deg,#ffb066,#e8742c);color:#1b0d03;border-color:transparent}

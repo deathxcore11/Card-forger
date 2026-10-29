@@ -363,7 +363,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // One motion scale for the table, tunable in one place: press, move, land, lunge.
  const MOTION={press:120,move:220,land:360,lunge:500,stagger:140};
  let strikeEnd=0,hitAt=0;
- function strike(el,to,{face=false,delay=0,big=false}={}){
+ function strike(el,to,{face=false,delay=0,big=false,power=0}={}){
   const w=el?.closest('.play-match-card-wrap');if(!w||!rectOf(el)||!rectOf(to))return;
   // The battlefields clip their overflow; let the striker leave its lane for the flight.
   const ms=MOTION.lunge+20;root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+delay+ms);
@@ -372,11 +372,12 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(!delay||hitAt<Date.now())hitAt=Date.now()+delay+ms*.55;
   w.dataset.csStriker='true';setTimeout(()=>delete w.dataset.csStriker,delay+ms+20);
   setTimeout(()=>catchFoil(w),delay);
-  // Wind-up, lunge, a short freeze on contact (hit-stop), then spring back. The target shakes on contact,
-  // and a big hit (5 or more) nudges the whole board unless low power is on.
+  // Wind-up, lunge, a short freeze on contact (hit-stop), then spring back. The target shakes on contact, harder
+  // the more power behind the hit (light under 4, medium 4-7, heavy 8+); a big hit (5 or more) nudges the
+  // whole board, and a heavy one shakes it harder, unless low power is on.
   motion.strike(w,to.closest?.('.play-match-card-wrap')||to,{reach:face?.8:.5,ms,delay,onHit:()=>{if(!to.isConnected)return;pulse(to,face?'face':'hit');haptic(big||face?'warn':'tick');
-   const target=to.closest('.play-match-seat')||to.closest('.play-match-card-wrap')||to;motion.shake(target,face?9:6,360);
-   if(big)motion.shake(root.querySelector('.play-match-main')||root,4,260,{garnish:true});
+   const target=to.closest('.play-match-seat')||to.closest('.play-match-card-wrap')||to,tier=power>=8?1.6:power>=4?1.2:.8;motion.shake(target,(face?9:6)*tier,360);
+   if(big)motion.shake(root.querySelector('.play-match-main')||root,power>=8?8:4,power>=8?380:260,{garnish:true});
    if(face){target.classList.remove('cs-face-hit');void target.offsetWidth;target.classList.add('cs-face-hit');setTimeout(()=>target.classList.remove('cs-face-hit'),700);}}});
  }
  function popNumber(el,text,kind,size=''){if(rectOf(el))motion.number(el.closest('.play-match-card-wrap')||el,text,{kind,size});}
@@ -408,7 +409,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    for(const c of a.cards.filter(c=>c.attacking&&b.cards.some(x=>x.id===c.id))){const el=cardEl(c.id);if(!el)continue;
     const seat=root.querySelector(`.play-match-seat[data-player-seat="${b.players.find(p=>p.nativeId===c.attackTarget?.id)?.seat??b.players.find(p=>p.seat!==c.controller)?.seat}"]`);
     const blocker=blockerOf.has(c.id)?cardEl(blockerOf.get(c.id)):null,to=blocker||(c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seat);
-    strike(el,to,{face:!blocker&&to===seat,delay:struck++*MOTION.stagger,big:(c.power||0)>=5});}
+    strike(el,to,{face:!blocker&&to===seat,delay:struck++*MOTION.stagger,big:(c.power||0)>=5,power:c.power||0});}
    damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=c.damage-(was.get(c.id)?.damage||0);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},MOTION.lunge*.58+i*60));
   }
   // 3b. Declared: a new attacker surges forward toward what it attacks and settles; a new blocker
@@ -619,6 +620,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   doc.body.toggleAttribute('data-forge-search',!!root.querySelector('.forge-zone-search'));
   if(before&&!blocked){glide(before);boardEffects(previous,s,before,leaving);}
   if(presentation.hosted)tableAudio.update(previous,s);
+  // Arena's low-life state: under 10 life the portrait cracks, under 6 it also bleeds a slow red glow.
+  if(presentation.hosted)for(const p of s.status?.surface?.players||[]){const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`),band=typeof p.life!=='number'?'':p.life<=5?'critical':p.life<10?'low':'';if(seat&&(seat.dataset.lifeBand||'')!==band){if(band)seat.dataset.lifeBand=band;else delete seat.dataset.lifeBand;}}
   if(presentation.hosted&&!reducedMotion())for(const p of s.status?.surface?.players||[]){const was=lifeBefore.get(p.seat);if(was===undefined||was===p.life)continue;const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`),life=seat?.querySelector('.play-match-life strong');if(!seat||!life)continue;const delta=p.life-was,wait=Math.max(0,hitAt-Date.now()),badge=doc.createElement('span');badge.className='forge-life-delta';badge.dataset.dir=delta<0?'down':'up';badge.textContent=(delta>0?'+':'\u2212')+Math.abs(delta);badge.setAttribute('aria-hidden','true');seat.append(badge);badge.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(-4px)',offset:.25},{opacity:1,transform:'translateY(-10px)',offset:.75},{opacity:0,transform:'translateY(-18px)'}],{duration:1300,delay:wait,fill:'both'}).finished.then(()=>badge.remove(),()=>badge.remove());life.animate([{transform:'scale(1)'},{transform:'scale(1.22)',color:delta<0?'#ff9a8a':'#8fe7a3',offset:.35},{transform:'scale(1)'}],{duration:700,delay:wait});
    // During combat the total changes when the blow lands, not when the board updates.
    if(wait)life.textContent=String(was);setTimeout(()=>{if(!life.isConnected)return;if(Math.abs(delta)>1)motion.countUp(life,was,p.life,Math.min(700,240+Math.abs(delta)*40));else life.textContent=String(p.life);},wait);}
@@ -635,7 +638,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(drag?.active)markDrops();
   restoreAutoPay(s);
   markAutoTap(s);
-  if(!blocked){autoPassOwnStack(s);autoPassIdle(s);autoDeclareMust(s);}
+  if(!blocked){autoPassOwnStack(s);autoPassIdle(s);autoPassNoResponse(s);autoDeclareMust(s);}
  }
  // Engine and transport codes in plain words; a refusal Forge explains stays as Forge said it.
  const plainError=msg=>/ordered-source|order/i.test(msg)&&/unavailable|not supported/i.test(msg)?'These can\u2019t be reordered here yet, so they\u2019ll resolve in the default order.':/contract is unavailable|is not supported/i.test(msg)?'That choice isn\u2019t available on this table yet.':msg==='MATCH_NOT_READY'?'One moment, the table is catching up.':msg==='STALE_CHOICE'?'That choice ran out. Try again.':/^(CHOICE_INCOMPLETE)$/.test(msg)?'Pick everything this asks for first.':msg==='CHOICE_FULL'?'You\u2019ve already picked the most allowed.':/attack declaration invalid/i.test(msg)?'That attack isn\u2019t allowed. A creature that must attack this turn has to be in it.':/block declaration invalid/i.test(msg)?'Those blocks aren\u2019t allowed. Check creatures that must block or can\u2019t.':String(msg).replace(/^message:\s*/i,'');
@@ -795,6 +798,19 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  let idleTimer=0,idleKey='';
  const idleReady=s=>{const n=s?.native;return !!(presentation.hosted&&n&&n.controlMode==='smart'&&!s.busy&&!s.transportError&&!n.prompt&&!n.failure&&(n.status==='running'||n.status===undefined)
    &&n.inputType==='InputPassPriority'&&n.priorityPlayer===n.viewer&&n.activePlayer===n.viewer&&['MAIN1','MAIN2'].includes(n.phase)&&!n.stack?.length&&!(n.selection?.actionable||[]).length&&n.buttons?.okEnabled===true&&!drag?.active&&!playback?.running);};
+ // Smart's last check, as on Arena: when Forge says you have nothing you could cast or activate right now
+ // (native.canRespond false), your priority passes on its own after a short beat to see what happened, unless
+ // you set a stop on this step. Without the flag nothing changes.
+ let noResponseKey='',noResponseTimer=0;
+ const noResponseReady=s=>{const n=s?.native;if(!(presentation.hosted&&n&&n.controlMode==='smart'&&n.canRespond===false&&!s.busy&&!s.transportError&&!n.prompt&&!n.failure&&(n.status==='running'||n.status===undefined)
+   &&n.inputType==='InputPassPriority'&&n.priorityPlayer===n.viewer&&n.buttons?.okEnabled===true&&!drag?.active&&!playback?.running&&!handFocus&&peek.dataset.open!=='true'))return false;
+  const stop=n.phaseStops?.[`${n.activePlayer===n.viewer?'you':'opponent'}:${n.phase}`];return stop!==true&&stop!==false;};
+ function autoPassNoResponse(s){
+  const n=s?.native,key=n?`${n.revision}`:'';
+  if(!noResponseReady(s)){clearTimeout(noResponseTimer);noResponseTimer=0;return;}
+  if(noResponseKey===key)return;noResponseKey=key;clearTimeout(noResponseTimer);
+  noResponseTimer=setTimeout(()=>{noResponseTimer=0;const now=session.snapshot();if(closed||!noResponseReady(now)||now.native.revision!==n.revision)return;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?300:700);
+ }
  function autoPassIdle(s){
   const n=s?.native,key=n?`${n.revision}:${n.phase}`:'';
   if(!idleReady(s)){clearTimeout(idleTimer);idleTimer=0;return;}
@@ -960,7 +976,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A card listed in the Zones menu opens its preview here: the shared inspector stays hidden on this table.
   const listed=presentation.hosted&&e.target.closest?.('button[data-focus-key^="zone-card-"],button[data-focus-key^="revealed-card-"]');
   if(listed&&root.contains(listed)){e.preventDefault();e.stopImmediatePropagation();listed.dataset.instance=listed.dataset.focusKey.replace(/^\D+/,'');pinned===listed?hidePeek():showPeek(listed,true);return;}
-  const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot(),cardId=Number(card.dataset.instance);if(previewOnly(card,snapshot,(e.pointerType||lastPointerType)==='touch')){pinned===card?hidePeek():showPeek(card,true);}else if(!snapshot.busy){card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);act(()=>session.nativeSelect('card',cardId));}return;}
+  const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot(),cardId=Number(card.dataset.instance);if(previewOnly(card,snapshot,(e.pointerType||lastPointerType)==='touch')){pinned===card?hidePeek():showPeek(card,true);}else if(!snapshot.busy){card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);const go=()=>act(()=>session.nativeSelect('card',cardId)),warn=card.closest('.play-match-hand')&&tapPlan(cardId)?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go);else go();}return;}
   // A button inside the seat (Smart, Full Control, Auto-pay, the zone counts) is its own control, never a pick
   // of that player; and on the hosted table a seat is picked only while Forge offers players.
   const player=e.target.closest?.('[data-player-seat]'),inner=player&&e.target.closest?.('button,a,input,select,summary,[role=button]:not([data-player-seat])');
@@ -1049,15 +1065,31 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const laneFor=card=>{const c=surfaceCard(card);if(!c?.known)return '';return c.types?.includes('Creature')?'creatures':c.types?.includes('Land')?'lands':c.types?.some(t=>['Artifact','Enchantment','Planeswalker','Battle'].includes(t))?'other':'';};
  // One rule for the gold "ready" lift and for the release that plays: over the battlefield, or anywhere
  // above your hand that is not the decision dock. Dropping on the dock or back on the hand cancels.
+ // Arena's auto-tap preview: while you carry a card, the lands Forge's auto-pay would tap for it lift and glow
+ // (selection.actionable[].tapPreview). A payment that costs life or sacrifices a Treasure (tapWarning) asks
+ // once more, in orange, before it goes. Without those fields nothing changes.
+ const tapPlan=id=>{const row=(session.snapshot().native?.selection?.actionable||[]).find(r=>r?.kind==='card'&&Number(r.id)===Number(id));if(!row)return null;
+  return {lands:Array.isArray(row.tapPreview)?row.tapPreview.map(Number).filter(Number.isSafeInteger):null,warning:row.tapWarning==='life'||row.tapWarning==='sacrifice'?row.tapWarning:null};};
+ function markTapPreview(ids){const want=new Set(ids||[]);for(const el of root.querySelectorAll('[data-forge-tap-preview]'))if(!want.has(Number(el.dataset.instance)))el.removeAttribute('data-forge-tap-preview');
+  for(const id of want){const el=root.querySelector(`.play-match-battlefields .play-match-card[data-instance="${id}"]`);if(el&&!el.hasAttribute('data-forge-tap-preview'))el.setAttribute('data-forge-tap-preview','true');}}
+ function confirmCostly(kind,x,y,go){
+  root.querySelector(':scope>.forge-pay-warn')?.remove();const box=doc.createElement('div');box.className='forge-pay-warn';box.setAttribute('role','alertdialog');
+  const text=doc.createElement('p');text.textContent=kind==='life'?'Auto-pay will cost you life.':'Auto-pay will sacrifice a Treasure.';
+  const yes=doc.createElement('button');yes.type='button';yes.className='forge-pay-warn-go';yes.textContent=kind==='life'?'Pay life':'Sacrifice';
+  const no=doc.createElement('button');no.type='button';no.textContent='Cancel';box.append(text,no,yes);root.append(box);
+  const b=box.getBoundingClientRect();box.style.left=`${Math.round(Math.max(8,Math.min(win.innerWidth-8-b.width,x-b.width/2)))}px`;box.style.top=`${Math.round(Math.max(8,Math.min(win.innerHeight-8-b.height,y-b.height-16)))}px`;
+  const close=()=>{box.remove();doc.removeEventListener('pointerdown',away,true);},away=e=>{if(!box.contains(e.target))close();};
+  yes.addEventListener('click',()=>{close();haptic('tap');go();});no.addEventListener('click',close);doc.addEventListener('pointerdown',away,true);yes.focus();
+ }
  // A card from your hand plays once it is carried past the glowing line a little above the hand, over the
  // table; never over a control, a portrait, the stack strip or the hand itself. Elsewhere it floats back.
  const PLAY_LINE=28,playLineY=()=>{const t=parseFloat(root.style.getPropertyValue('--forge-hand-top'));return Number.isFinite(t)?t-PLAY_LINE:(root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top??win.innerHeight*.6)-PLAY_LINE;};
- const playDropAt=(x,y)=>{const hit=doc.elementFromPoint(x,y);if(hit?.closest('.play-match-decisions,.forge-native-panel,.play-match-hand-area,.forge-hand-slider,.play-match-seat,.play-command-zone,.forge-zone-row,.forge-menu-panel,button,summary'))return false;return y<playLineY()&&!!hit?.closest('.play-match-table');};
+ const playDropAt=(x,y)=>{const hit=doc.elementFromPoint(x,y);if(hit?.closest('.play-match-decisions,.forge-native-panel,.play-match-hand-area,.forge-hand-slider,.play-match-seat,.play-command-zone,.forge-zone-row,.forge-menu-panel,.forge-native-actions,button:not(.play-match-card),summary'))return false;return y<playLineY()&&!!hit?.closest('.play-match-table');};
  function markPlayDrop(e){
   if(!ghost||!drag?.active||drag.combat)return;
   const fromHand=!!drag.source.closest('.play-match-hand'),playable=drag.source.dataset.forgeRole==='playable';
   const ready=presentation.hosted&&fromHand&&playable&&playDropAt(e.clientX,e.clientY);
-  const state=ready?'ready':fromHand&&playable?'lift':'';
+  const state=ready?'ready':fromHand&&playable?'lift':'';markTapPreview(state?tapPlan(drag.id)?.lands:null);
   if(presentation.hosted){let line=root.querySelector(':scope>.forge-play-line');if(state&&!line){line=doc.createElement('div');line.className='forge-play-line';line.setAttribute('aria-hidden','true');root.append(line);}
    if(line){line.style.top=`${Math.round(playLineY())}px`;if(state)root.dataset.playLine=state;else delete root.dataset.playLine;}}if((ghost.dataset.drop||'')!==state){if(state==='ready')haptic('tick');ghost.dataset.drop=state;}
   const lane=ready?laneFor(drag.source):'';
@@ -1070,7 +1102,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const followGhost=()=>{ghostFrame=0;if(!ghost||!drag?.active)return;const g=drag.g;g.x+=(g.tx-g.x)*.62;g.y+=(g.ty-g.y)*.62;g.tilt+=(Math.max(-14,Math.min(14,(g.tx-g.x)*.5))-g.tilt)*.3;ghost.style.translate=`${g.x.toFixed(1)}px ${g.y.toFixed(1)}px`;ghost.style.setProperty('--tilt',`${g.tilt.toFixed(2)}deg`);if(Math.abs(g.tx-g.x)+Math.abs(g.ty-g.y)+Math.abs(g.tilt)>.3)ghostFrame=win.requestAnimationFrame(followGhost);};
  // A drop that plays nothing floats the card back to its slot instead of vanishing.
  const returnGhost=(el,source)=>{const r=source?.isConnected&&source.getBoundingClientRect();if(!r||typeof el.animate!=='function'||win.matchMedia?.('(prefers-reduced-motion: reduce)').matches){el.remove();return;}const [x,y]=(el.style.translate||'0px 0px').split(' ').map(parseFloat);const a=el.animate([{translate:`${x}px ${y}px`,scale:1},{translate:`${r.left+r.width/2}px ${r.top+r.height/2}px`,scale:.9,opacity:.6}],{duration:220,easing:'cubic-bezier(.3,.7,.2,1)'});a.onfinish=a.oncancel=()=>el.remove();};
- const cancel=(back=false)=>{if(ghostFrame)win.cancelAnimationFrame(ghostFrame);ghostFrame=0;drag?.source?.classList.remove('forge-drag-source');if(ghost){if(back)returnGhost(ghost,drag?.source);else ghost.remove();}drag=null;ghost=null;root.classList.remove('forge-dragging');delete root.dataset.playLine;for(const el of root.querySelectorAll('[data-forge-lane-drop]'))el.removeAttribute('data-forge-lane-drop');markDrops();};
+ const cancel=(back=false)=>{if(ghostFrame)win.cancelAnimationFrame(ghostFrame);ghostFrame=0;drag?.source?.classList.remove('forge-drag-source');if(ghost){if(back)returnGhost(ghost,drag?.source);else ghost.remove();}drag=null;ghost=null;root.classList.remove('forge-dragging');delete root.dataset.playLine;markTapPreview(null);for(const el of root.querySelectorAll('[data-forge-lane-drop]'))el.removeAttribute('data-forge-lane-drop');markDrops();};
  const down=e=>{lastPointerType=e.pointerType||'mouse';if(e.button!==0||e.isPrimary===false)return;const card=e.target.closest?.('.play-match-card[data-instance]'),s=session.snapshot();
   // In your hand a still hold reads the card under your thumb (it follows as you slide); elsewhere it reads the card you pressed.
   if(card&&e.pointerType!=='mouse'&&presentation.hosted&&card.closest('.play-match-hand')){clearTimeout(pressTimer);pressAt={x:e.clientX,y:e.clientY,id:e.pointerId};pressShown=false;pressTimer=setTimeout(()=>{if(drag?.active||drag?.intent==='browse')return;const c=handFocus?.querySelector('.play-match-card[data-instance]')||card;if(!c.isConnected)return;showPeek(c,true);pressShown=true;haptic('tick');suppressUntil=Date.now()+60000;},HAND_HOLD);}
@@ -1118,7 +1150,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // Like Arena, a card dragged out of your hand plays when released anywhere above
  // the hand; Forge decides where it goes. Other drags keep their drop targets.
  const up=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;if(pressShown){pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}}
-  if(!drag||drag.pointerId!==e.pointerId)return;if(drag.swipe){suppressUntil=Date.now()+350;for(const el of root.querySelectorAll('[data-forge-swiped]'))el.removeAttribute('data-forge-swiped');cancel();return;}const pending=drag,target=doc.elementFromPoint(e.clientX,e.clientY)?.closest('[data-placement-zone=battlefield],.forge-native-panel'),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top,fromHand=!!pending.source.closest('.play-match-hand'),overHand=!!doc.elementFromPoint(e.clientX,e.clientY)?.closest('.play-match-hand-area'),aboveHand=presentation.hosted&&fromHand&&handTop!==undefined&&e.clientY<handTop&&!overHand;if(pending.active)suppressUntil=Date.now()+300;const combatTarget=pending.active?dropTargetAt(e.clientX,e.clientY):null;const plays=pending.active&&!combatTarget&&(presentation.hosted&&fromHand?pending.source.dataset.forgeRole==='playable'&&playDropAt(e.clientX,e.clientY):target&&root.contains(target)||aboveHand);if(plays&&ghost)lastDrop={instance:String(pending.id),rect:ghost.getBoundingClientRect(),at:Date.now()};cancel(pending.active&&!plays&&!combatTarget);if(plays||combatTarget)haptic('tap');if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(plays){const now=session.snapshot().status?.revision;act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));}};
+  if(!drag||drag.pointerId!==e.pointerId)return;if(drag.swipe){suppressUntil=Date.now()+350;for(const el of root.querySelectorAll('[data-forge-swiped]'))el.removeAttribute('data-forge-swiped');cancel();return;}const pending=drag,target=doc.elementFromPoint(e.clientX,e.clientY)?.closest('[data-placement-zone=battlefield],.forge-native-panel'),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top,fromHand=!!pending.source.closest('.play-match-hand'),overHand=!!doc.elementFromPoint(e.clientX,e.clientY)?.closest('.play-match-hand-area'),aboveHand=presentation.hosted&&fromHand&&handTop!==undefined&&e.clientY<handTop&&!overHand;if(pending.active)suppressUntil=Date.now()+300;const combatTarget=pending.active?dropTargetAt(e.clientX,e.clientY):null;const plays=pending.active&&!combatTarget&&(presentation.hosted&&fromHand?pending.source.dataset.forgeRole==='playable'&&playDropAt(e.clientX,e.clientY):target&&root.contains(target)||aboveHand);if(plays&&ghost)lastDrop={instance:String(pending.id),rect:ghost.getBoundingClientRect(),at:Date.now()};cancel(pending.active&&!plays&&!combatTarget);if(plays||combatTarget)haptic('tap');if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(plays){const now=session.snapshot().status?.revision,go=()=>act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));const warn=tapPlan(pending.id)?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go);else go();}};
  // A press that the browser takes over (a scroll, a system gesture) ends the preview and its click guard.
  // A long press's 60 s click guard ends with that press even when a redraw, scroll or
  // resize already closed its preview; otherwise the table would ignore taps for a minute.
@@ -1243,19 +1275,26 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // Next and burns down for ROPE_RUN (red, counting, in its last 10 s). When it runs out it only ever passes priority:
  // attacks and blocks are never committed for you. The clock holds while you read a card, drag one, or the app is
  // in the background, and any touch, click or key starts it over.
- const ROPE_IDLE=45000,ROPE_RUN=20000,rope=doc.createElement('div');rope.className='forge-rope';rope.hidden=true;rope.setAttribute('aria-hidden','true');rope.innerHTML='<i></i><b></b>';root.append(rope);
+ const ROPE_IDLE=45000,ROPE_RUN=20000,rope=doc.createElement('div');rope.className='forge-rope';rope.hidden=true;rope.setAttribute('aria-hidden','true');rope.innerHTML='<i></i><b></b><s></s>';root.append(rope);
  let ropeKey='',ropeSince=Date.now();const ropeReset=()=>{ropeSince=Date.now();};
+ // Arena's timeouts: a small bank of extensions. When the fuse runs out with one banked, it is spent and the
+ // fuse starts over instead of passing. You start with one and earn another (up to three) for every eight
+ // decisions made before the fuse appears.
+ const ROPE_BANK_MAX=3,ROPE_EARN=8;let ropeBank=1,ropeQuick=0,ropeShown=false;
  const ropeLoop=presentation.hosted?win.setInterval(()=>{
   const s=session.snapshot(),n=s.native,ok=root.querySelector('.forge-native-panel [data-native-key=ok]');
   const timed=root.dataset.stage==='match'&&!s.busy&&!s.status?.terminal&&n?.inputType==='InputPassPriority'&&!n?.prompt&&!!ok&&!ok.disabled;
   if(doc.hidden||drag?.active||handFocus||peek.dataset.open==='true'||root.querySelector('.play-match-zones-menu[open]'))ropeReset();
-  const key=timed?`${n.revision}|${n.inputType}`:'';if(key!==ropeKey){ropeKey=key;ropeReset();}
+  if(s.status?.terminal){ropeBank=1;ropeQuick=0;}
+  const key=timed?`${n.revision}|${n.inputType}`:'';if(key!==ropeKey){if(ropeKey&&!ropeShown&&++ropeQuick>=ROPE_EARN){ropeQuick=0;ropeBank=Math.min(ROPE_BANK_MAX,ropeBank+1);}if(ropeShown)ropeQuick=0;ropeShown=false;ropeKey=key;ropeReset();}
   const left=timed?ROPE_IDLE+ROPE_RUN-(Date.now()-ropeSince):Infinity;
   if(!timed||left>ROPE_RUN){if(!rope.hidden){rope.hidden=true;delete rope.dataset.hot;}return;}
+  if(left<=0&&ropeBank>0){ropeBank--;ropeSince=Date.now()-ROPE_IDLE;rope.dataset.spent='true';setTimeout(()=>delete rope.dataset.spent,1200);haptic('tap');return;}
   if(left<=0){rope.hidden=true;ropeReset();ok.click();return;}
+  ropeShown=true;{const bank=rope.querySelector('s'),label=ropeBank?'⌛'.repeat(ropeBank):'';if(bank.textContent!==label){bank.textContent=label;bank.setAttribute('aria-label',`${ropeBank} timeouts left`);}}
   const r=ok.getBoundingClientRect(),secs=Math.ceil(left/1000);rope.hidden=false;rope.style.left=`${Math.round(r.left)}px`;rope.style.top=`${Math.round(r.top-12)}px`;rope.style.width=`${Math.round(r.width)}px`;
   rope.style.setProperty('--burn',(left/ROPE_RUN).toFixed(3));rope.dataset.hot=String(secs<=10);const b=rope.querySelector('b');if(secs<=10&&b.textContent!==String(secs)){b.textContent=String(secs);if(secs<=5)haptic('tick');}else if(secs>10)b.textContent='';
  },200):0;
  doc.addEventListener('pointerdown',ropeReset,true);doc.addEventListener('keydown',ropeReset,true);doc.addEventListener('visibilitychange',ropeReset);
- return {destroy(){closed=true;doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
