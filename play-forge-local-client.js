@@ -5,7 +5,10 @@
 import {ACTION_REJECTIONS,FORGE_REVISION,exactDigest,forgeAccountKey} from './play-forge-host-client.js';
 const SCHEMA='cardstashy.forge-proof.v1';
 const fail=code=>Object.assign(Error(code),{code});
-const plugin=()=>{try{return globalThis.Capacitor?.isNativePlatform?.()?globalThis.Capacitor.Plugins?.CardStashyForge||null:null;}catch{return null;}};
+// Capacitor only exposes a native plugin to the page once registerPlugin asks for it by name;
+// isPluginAvailable says whether this build has the engine at all.
+let cached=null;
+const plugin=()=>{try{const C=globalThis.Capacitor;if(!C?.isNativePlatform?.()||!C.isPluginAvailable?.('CardStashyForge'))return null;return cached||(cached=C.registerPlugin('CardStashyForge'));}catch{return null;}};
 export const localForgeAvailable=()=>!!plugin();
 // Unpack the engine (first launch only) and load the card database in the background.
 // Safe to call often; it returns at once while loading and when already loaded.
@@ -13,7 +16,7 @@ export async function prepareLocalForge(){const p=plugin();if(!p)return null;try
 export function createForgeLocalClient({readAccount,newId=()=>crypto.randomUUID(),now=Date.now}={}){
  const native=plugin();if(!native)throw fail('LOCAL_ENGINE_UNAVAILABLE');
  const ownerKey=forgeAccountKey(readAccount?.());
- let allocation=null,creating=false,closed=false,blocked=false,submitting=false,error=null,terminal=null,expectedViewer=null,startedAt=0;
+ let timing=null,allocation=null,creating=false,closed=false,blocked=false,submitting=false,error=null,terminal=null,expectedViewer=null,startedAt=0;
  const current=()=>{const a=readAccount?.();if(forgeAccountKey(a)!==ownerKey||a?.locked||a?.switching)throw fail('ACCOUNT_CHANGED');};
  const status=()=>({blocked:blocked||closed,outcomePending:false,error,allocation:allocation?structuredClone(allocation):null,terminal:terminal?structuredClone(terminal):null});
  const call=async(method,path,body)=>{const r=await native.request({method,path,...(body===undefined?{}:{body:JSON.stringify(body)})});return {status:r.status,data:r.body?JSON.parse(r.body):null};};
@@ -27,6 +30,7 @@ export function createForgeLocalClient({readAccount,newId=()=>crypto.randomUUID(
     const [human,opponent]=await Promise.all([exactDigest(sent.humanDeck),exactDigest(sent.opponentDeck)]);
     startedAt=now();
     const r=await native.start({input:JSON.stringify({input:sent})});
+    timing={unpack:r.unpackMs,cards:r.loadMs,waited:r.waitedForLoadMs,start:r.startMs};
     allocation={matchId:r.matchId||newId(),generation:newId(),expiresAt:now()+7200000,deckDigests:{human,opponent}};
     return structuredClone(allocation);
    }catch(e){blocked=true;error=e.code||'LOCAL_ENGINE_START_FAILED';throw e;}finally{creating=false;}
@@ -36,7 +40,7 @@ export function createForgeLocalClient({readAccount,newId=()=>crypto.randomUUID(
    current();
    const {status:code,data:s}=await call('GET','/state');
    if(code!==200||!s)throw fail('LOCAL_ENGINE_UNREADABLE');
-   if(s.status==='initializing'){const ms={engine:now()-startedAt};return {status:'initializing',progress:{warm:true,step:'engine',ms}};}
+   if(s.status==='initializing')return {status:'initializing',progress:{local:true,ms:{...timing,setup:now()-startedAt}}};
    if(s.status==='failed'){
     blocked=true;error='native_interrupted';
     const errors=Array.isArray(s.initialization?.errors)?s.initialization.errors.filter(x=>typeof x==='string').slice(0,20).map(x=>x.slice(0,512)):[];

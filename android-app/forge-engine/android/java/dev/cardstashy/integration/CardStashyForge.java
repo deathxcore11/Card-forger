@@ -96,6 +96,9 @@ public class CardStashyForge extends Plugin {
         return r;
     }
 
+    // The card database starts loading as the app opens, so it is ready before Play is.
+    @Override public void load() { beginLoading(); }
+
     @PluginMethod public void prepare(PluginCall call) { beginLoading(); call.resolve(state()); }
     @PluginMethod public void status(PluginCall call) { call.resolve(state()); }
 

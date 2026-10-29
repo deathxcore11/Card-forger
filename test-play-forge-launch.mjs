@@ -137,6 +137,9 @@ test('a Universes Within flavor name finds its printing by cost, type and stats,
  const twin={...hydro,id:'e53115a4-8959-40f0-9a31-000000000002',name:'Other Felon'};cards[twin.name]=twin;
  const both=capturedForgeArtwork({...base,selected:deck('Mine',[{name:'Other Felon',qty:1}])},name=>cards[name]||null);
  assert.equal(both('Belion, the Parched',belion),null,'two cards that fit means no art rather than the wrong art');
+ const stone={id:'09f09d0a-6054-4545-b81e-000000000003',name:'The Arkenstone // Seek the Heart',set:'hob',mana_cost:'{5} // {1}{W}',type_line:'Legendary Artifact // Sorcery',card_faces:[{name:'The Arkenstone',mana_cost:'{5}',type_line:'Legendary Artifact'},{name:'Seek the Heart',mana_cost:'{1}{W}',type_line:'Sorcery'}]};cards[stone.name]=stone;
+ const halves=capturedForgeArtwork({...base,selected:deck('Mine',[{name:stone.name,qty:1}])},name=>cards[name]||null);
+ assert.equal(halves('The Arkenstone',{name:'The Arkenstone',manaCost:'{5}',type:'Legendary Artifact'})?.card.id,stone.id,'a two-part card listed by its full name keeps its art when Forge names one half');
 });
 test('while the server starts the match the intro shows the stage and the seconds so far, then stops counting',async()=>{
  const s=setup(),{root,doc}=dom(),account={user:{id:OWNER},accountGeneration:1},calls=[];let clock=1000,tickFn=null,reads=0;
