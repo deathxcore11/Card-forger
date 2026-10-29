@@ -1912,7 +1912,7 @@ body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
 @media (prefers-reduced-motion:reduce){.forge-emote-menu,.forge-emote-bubble{animation:none}}
 /* A focused hand card is the big card; its preview is just the glass info beside it. */
 :where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-card{display:none!important}
-:where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-info{width:min(260px,calc(100vw - 16px))!important;max-width:min(260px,calc(100vw - 16px))!important;max-height:none!important}
+:where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-info{width:fit-content!important;min-width:150px;max-width:min(260px,calc(100vw - 16px))!important;max-height:none!important}
 :where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-info :is(header,.forge-peek-type){display:revert!important}
 /* The hover-only glass never catches the mouse on its way along the hand; emote bubbles step aside while a card is up. */
 :where(body.practice-table-open) .forge-peek[data-solo=true][data-pinned=false]{pointer-events:none}
