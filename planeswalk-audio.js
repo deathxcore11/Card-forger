@@ -25,8 +25,12 @@ if(app){
  const read=()=>{
   const q=s=>app.querySelector(s),act=+document.body.dataset.actnum||1;
   if(q('.screen.heroes'))return ['heroes','MUS-PW-01'];
-  if(q('section.battle[data-dungeon]'))return ['dungeon','MUS-PW-06'];
-  if(q('section.battle'))return q('section.battle .unit.boss')?['boss','MUS-PW-10']:q('section.battle .unit.elite')?['elite','MUS-PW-06']:['battle','MUS-PW-05'];
+  // Ugin's blessing in the Blind Eternities has its own music.
+  if(q('.screen.blind-eternities, [data-scene="blind-eternities"]'))return ['eternities','MUS-PW-13'];
+  // Fights have a track per act: MUS-PW-05/06/10 for Innistrad, -2 Zendikar, -3 Ravnica.
+  const A=act>1?'-'+Math.min(3,act):'';
+  if(q('section.battle[data-dungeon]'))return ['dungeon','MUS-PW-06'+A];
+  if(q('section.battle'))return q('section.battle .unit.boss')?['boss','MUS-PW-10'+A]:q('section.battle .unit.elite')?['elite','MUS-PW-06'+A]:['battle','MUS-PW-05'+A];
   if(q('section.map')||q('.screen.actstart')||q('.screen.bosspick'))return ['map',['MUS-PW-02','MUS-PW-03','MUS-PW-04'][Math.min(2,act-1)]];
   if(q('section.screen.ante'))return ['ante',''];
   if(q('.screen.shop'))return ['shop','MUS-PW-07'];
