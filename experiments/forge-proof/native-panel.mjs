@@ -79,8 +79,11 @@ export function nativePayment(n,cards=[]){
  const costNow=costText(n.payment?.costNow?.mana);if(costNow&&card?.manaCost&&costNow!==String(card.manaCost).replace(/\s+/g,''))detail.unshift(`Costs ${costNow} for this target (printed ${card.manaCost})`);
  // Nothing left to tap and nothing floating: say so instead of leaving the player to wonder.
  const pool=Object.values(n.players?.find(p=>p.id===n.viewer)?.mana||{}).some(v=>Number(v)>0),sources=(n.selection?.actionable||[]).length>0;
- if(remaining&&!pool&&!sources)detail.unshift('You have no untapped mana to pay this. Cancel to back out.');
- return {remaining,name,verb,ability,detail,stuck:remaining!==null&&!pool&&!sources};
+ // Forge offers Auto only when your untapped mana can pay the rest; when it can't, say so plainly.
+ const b=n.buttons||{},autoOff=/^auto$/i.test(String(b.ok||''))&&b.okEnabled!==true;
+ const short=!!remaining&&(autoOff||!pool&&!sources);
+ if(short)detail.unshift(!pool&&!sources?'You have no untapped mana to pay this. Cancel puts it back.':'Not enough mana to pay this. Cancel puts it back.');
+ return {remaining,name,verb,ability,detail,stuck:remaining!==null&&!pool&&!sources,short,forCard:ref?.id??null};
 }
 // Whose move it is right now, said plainly: yours, the CPU's, or nobody's while Forge resolves.
 export function nativeDecisionActor(s){
@@ -89,6 +92,9 @@ export function nativeDecisionActor(s){
  const b=n.buttons||{};
  return n.prompt||b.okEnabled===true||b.cancelEnabled===true||n.selection?.cards?.length||n.selection?.targets?.length||n.priorityPlayer===n.viewer?'you':'cpu';
 }
+// Forge lists "attacks each combat if able" creatures even when they can't attack yet (summoning sick, tapped);
+// only one that could attack now still owes an attack.
+export const owesAttack=c=>c?.mustAttack===true&&c?.attacking!==true&&c?.tapped!==true&&!(c?.summoningSick===true&&!(c.keywords||[]).some(k=>/haste/i.test(String(k))));
 export function nativeActionLabel(n,op,raw){
  const label=String(raw??'').trim();
  if(!/^(ok|auto|cancel|end turn)$/i.test(label))return label;
@@ -102,7 +108,7 @@ export function nativeActionLabel(n,op,raw){
   if(!attacking&&['COMBAT_DECLARE_ATTACKERS','COMBAT_DECLARE_BLOCKERS','COMBAT_FIRST_STRIKE_DAMAGE','COMBAT_DAMAGE'].includes(n.phase))return n.activePlayer===n.viewer?'Next: Second main':'Pass';
   return n.activePlayer===n.viewer?NEXT_STEP[n.phase]||'Pass priority':'Pass';
  }
- if(input==='InputAttack'&&op==='ok'){const k=count('attacking'),must=mine.filter(c=>c?.mustAttack===true&&c?.attacking!==true).length;if(must)return `${must} must attack`;return k?`Attack with ${k}`:'No attacks';}
+ if(input==='InputAttack'&&op==='ok'){const k=count('attacking'),must=mine.filter(owesAttack).length;if(must)return `${must} must attack`;return k?`Attack with ${k}`:'No attacks';}
  if(input==='InputBlock'&&op==='ok'){const k=count('blocking');return k?`Block with ${k}`:'No blocks';}
  if(input.startsWith('InputPayMana')&&op==='ok'&&/^auto$/i.test(label))return 'Pay automatically';
  if(input==='InputSelectTargets'&&op==='ok')return 'Confirm targets';
@@ -110,9 +116,13 @@ export function nativeActionLabel(n,op,raw){
 }
 const revealAuto={key:null,timer:0},errSeen={text:null,revision:0};let stackOpen=false;
 // Forge names the AI as "Forge AI — <deck> · <commander>"; the hosted table calls it the CPU.
-const cpuName=msg=>String(msg).replace(/Forge AI\b.*?\s(?=(?:revealed|reveals|picked|picks|chose|chooses|named|names|casts?|plays?|looked|looks)\b)/,'CPU ').replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU');
+// Forge names the human seat "CardStashy" and the CPU "Forge AI — <deck>"; players read "you" and "the CPU".
+export const seatWords=msg=>String(msg??'').replace(/\bCardStashy, you are going (first|second)!?/i,(m,w)=>`You're going ${w.toLowerCase()}.`).replace(/\s*Do you want to keep your hand\??/i,'').replace(/\bCardStashy's\b/g,'your').replace(/\bCardStashy\b/g,'You').replace(/Forge AI\s+\u2014\s+[^\n]*?'s\s+(library|hand|graveyard|deck)\b/g,'the CPU\u2019s $1').trim();
+const cpuName=msg=>String(seatWords(msg)).replace(/Forge AI\b.*?\s(?=(?:revealed|reveals|picked|picks|chose|chooses|named|names|casts?|plays?|looked|looks)\b)/,'CPU ').replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU');
 export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
  const doc=container.ownerDocument,s=snapshot,n=s.native;if(!n)return;
+ // On phones the dock is transformed, so a fixed ask line inside it can't float above the hand; this body-level line does.
+ const askLine=text=>{if(!doc.body)return;let line=doc.body.querySelector(':scope>.forge-ask-line');if(!line){line=doc.createElement('div');line.className='forge-ask-line';line.setAttribute('role','status');line.setAttribute('aria-live','polite');doc.body.append(line);}line.textContent=text;line.hidden=!text;};askLine('');
  const copy=(player,proof)=>presentation.hosted?player:proof;
  const phaseNames={UNTAP:'Untap',UPKEEP:'Upkeep',DRAW:'Draw',MAIN1:'Main phase',COMBAT_BEGIN:'Beginning of combat',COMBAT_DECLARE_ATTACKERS:'Choose attackers',COMBAT_DECLARE_BLOCKERS:'Choose blockers',COMBAT_FIRST_STRIKE_DAMAGE:'First strike damage',COMBAT_DAMAGE:'Combat damage',COMBAT_END:'End of combat',MAIN2:'Second main phase',END_OF_TURN:'End step',CLEANUP:'Cleanup'};
  const node=(tag,text,cls)=>{const e=doc.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
@@ -157,7 +167,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  // Attacks and blocks are said by the board (the gold line, the glow, the button); Forge's own
  // instruction text, which names the CPU's deck, never reaches the dock.
  const combatPick=presentation.hosted&&['InputAttack','InputBlock'].includes(n.inputType)&&!n.prompt;
- const playerDetail=zoneSearch||compactStatus||passive||combatPick||discard&&discardCount?[]:discard?lines.slice(1):opening?(presentation.hosted?lines.filter(line=>!/^keep (this|your) hand or mulligan\??$/i.test(line)):[nativeMessage]):payment?(presentation.hosted?[paying.verb&&paying.name?`${paying.verb} ${paying.name}`:paying.name,paying.ability,...paying.detail].filter(Boolean):[nativeMessage]):selectionTitle?lines:lines.slice(1);
+ const playerDetail=zoneSearch||compactStatus||passive||combatPick||discard&&discardCount?[]:discard?lines.slice(1):opening?(presentation.hosted?lines.map(seatWords).filter(line=>line&&!/^keep (this|your) hand or mulligan\??$/i.test(line)):[nativeMessage]):payment?(presentation.hosted?[paying.verb&&paying.name?`${paying.verb} ${paying.name}`:paying.name,paying.ability,...paying.detail].filter(Boolean):[nativeMessage]):selectionTitle?lines:lines.slice(1);
  // The dock's edge shows whose move it is; the table's activity line says it in words.
  panel.dataset.actor=nativeDecisionActor(s);
  const title=node('h2',presentation.hosted?playerTitle:compactStatus?(n.priorityPlayer===n.viewer?'Your priority':`Priority: ${statusLines[1]}`):nativeMessage);
@@ -211,8 +221,8 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   const wasOpen=!!container.querySelector?.('.forge-zone-search-dialog');keepStripLeft=wasOpen?container.querySelector('.forge-zone-search-cards')?.scrollLeft||0:0;
   const overlay=node('div',undefined,'forge-zone-search'),dialog=node('section',undefined,'forge-zone-search-dialog');
   dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label',`${zoneSearch.zones.join(' / ')} card selection`);
-  const heading=node('h2',lines[0]||`Choose from ${zoneSearch.zones.join(' / ')}`);heading.tabIndex=-1;heading.dataset.nativeKey='zone-search-title';dialog.append(heading);
-  if(lines.length>1)dialog.append(node('p',lines.slice(1).join('\n'),'forge-zone-search-instruction'));
+  const heading=node('h2',presentation.hosted&&lines[0]?cpuName(lines[0]):lines[0]||`Choose from ${zoneSearch.zones.join(' / ')}`);heading.tabIndex=-1;heading.dataset.nativeKey='zone-search-title';dialog.append(heading);
+  if(lines.length>1)dialog.append(node('p',presentation.hosted?lines.slice(1).map(cpuName).join('\n'):lines.slice(1).join('\n'),'forge-zone-search-instruction'));
   dialog.append(node('p',`Choose from the ${zoneSearch.choices.length} card${zoneSearch.choices.length===1?'':'s'} offered by this effect.`,'forge-zone-search-hint'));
   const selected=zoneSearch.kind==='prompt'?(s.nativeDraft?.revision===n.revision&&s.nativeDraft?.promptId===p.id?s.nativeDraft.indexes:[]):(n.selection?.chosen||[]).filter(r=>r.kind==='card').map(r=>r.id);
   const expectedRevision=n.revision,expectedPromptId=p?.id;
@@ -284,9 +294,10 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const indexes=s.nativeDraft?.revision===n.revision&&s.nativeDraft?.promptId===p.id?s.nativeDraft.indexes:[],options=p.options||[];
    if(hostedOrder){
     // Arena-style: each choice is its source card; tap them in order, tap again to take one back.
-    const cards=s.status?.surface?.cards||[],clean=t=>String(t||'').replace(/\s*\[[^\]]*\]/g,'').trim();
-    const sourceOf=o=>{const id=optionCardId(o.value);let c=id!==null?cards.find(c=>c.id===id):null;if(!c){const m=/\[[^\]]*?:\s*([^\]]+?)\s*\((\d+)\)\]/.exec(optionLabel(o.value));if(m)c=cards.find(c=>c.id===Number(m[2]))||cards.find(c=>c.known&&c.name===m[1]);}return c||null;};
-    panel.append(node('p',`Tap them in order. 1 ${/resolve/i.test(p.topLabel||'')?'resolves first':`is ${String(p.topLabel||'first').toLowerCase()}`}.${orderRemainder(p)}`,'forge-order-hint'));
+    const cards=s.status?.surface?.cards||[],clean=t=>plainText(String(t||'').replace(/\s*\[[^\]]*\]/g,'').replace(/\s*\(\s*\)/g,'')).trim();
+    const sourceOf=o=>{const id=optionCardId(o.value);let c=id!==null?cards.find(c=>c.id===id):null;if(!c&&o.value?.card?.name)c=cards.find(x=>x.known&&x.name===o.value.card.name&&x.zone==='Battlefield')||null;if(!c){const m=/\[[^\]]*?:\s*([^\]]+?)\s*\((\d+)\)\]/.exec(optionLabel(o.value));if(m)c=cards.find(c=>c.id===Number(m[2]))||cards.find(c=>c.known&&c.name===m[1]);}return c||null;};
+    // "Leave 0 in the source" only says every one must be ordered, which the Done button already shows.
+    const rest=p.remainingMax>0&&!((p.min??0)>=options.length)?orderRemainder(p):'';panel.append(node('p',`Tap them in order. 1 ${/resolve/i.test(p.topLabel||'')?'resolves first':`is ${String(p.topLabel||'first').toLowerCase()}`}.${rest}`,'forge-order-hint'));
     const grid=node('div',undefined,'forge-order-cards');
     for(const o of options){
      const at=indexes.indexOf(o.index),source=sourceOf(o),label=optionLabel(o.value),text=clean(label),described=isDescribedOption(o.value);
@@ -306,7 +317,11 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    if(p.method==='order'&&indexes.length){panel.append(node('strong',p.topLabel||'Destination order'));const order=node('ol');order.setAttribute('aria-label','Native selected order');for(const [at,index]of indexes.entries()){const row=node('li',optionLabel(options.find(o=>o.index===index)?.value));row.append(button('↑',()=>session.reorderPrompt(index,-1),at===0,`earlier-${index}`),button('↓',()=>session.reorderPrompt(index,1),at===indexes.length-1,`later-${index}`),button('Remove',()=>session.selectPrompt(index),false,`remove-${index}`));order.append(row);}panel.append(order);}
    }
    if(p.method==='order'&&p.rememberAllowed===true){const rememberLabel=node('label','Remember this order'),remember=node('input');remember.type='checkbox';remember.checked=s.nativeDraft?.remember===true;remember.disabled=s.busy;remember.dataset.nativeKey='remember-order';remember.addEventListener('change',run(()=>session.rememberPrompt(remember.checked)));rememberLabel.prepend(remember);panel.append(rememberLabel);}
-   if(hostedOrder){const actions=node('div',undefined,'forge-order-actions');actions.append(button('Reset',()=>session.clearPrompt(),!indexes.length,'clear-prompt'),button('Done',()=>session.confirmPrompt(),indexes.length<p.min||indexes.length>p.max,'confirm-prompt'));panel.append(actions);}else{
+   if(hostedOrder){const actions=node('div',undefined,'forge-order-actions');
+    // Like Arena's auto-order: keep the order they came in (the ones already tapped stay first) and go on.
+    const auto=()=>{const picked=[...indexes];for(const o of options)if(!picked.includes(o.index)&&picked.length<p.max&&isDescribedOption(o.value)){session.selectPrompt(o.index);picked.push(o.index);}return session.confirmPrompt();};
+    const fillable=Math.min(p.max,options.filter(o=>isDescribedOption(o.value)).length)>=p.min;
+    actions.append(button('Reset',()=>session.clearPrompt(),!indexes.length,'clear-prompt'),button('Auto order',auto,!fillable,'auto-order'),button('Done',()=>session.confirmPrompt(),indexes.length<p.min||indexes.length>p.max,'confirm-prompt'));panel.append(actions);}else{
    const summary=node('p',indexes.length?`Selected: ${indexes.map(index=>optionLabel(options.find(o=>o.index===index)?.value)).join(' · ')}`:'Nothing selected');summary.className='forge-native-draft';panel.append(summary);
    panel.append(button(indexes.length===0&&p.min===0?(p.cancelable?copy('Cancel','Cancel native dialog'):copy('Choose none','Submit no selections')):copy('Confirm choice','Confirm native choice'),()=>session.confirmPrompt(),indexes.length<p.min||indexes.length>p.max,'confirm-prompt'),button(copy('Clear selection','Clear draft'),()=>session.clearPrompt(),false,'clear-prompt'));
    }
@@ -321,8 +336,17 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   const oneTarget=asking&&input==='InputSelectTargets'&&n.selection?.max===1&&!(n.selection?.chosen||[]).length;
   if(asking){const first=lines.find(l=>!/^(Priority|Turn|Phase|Stack):/.test(l))||'';let ask=cpuName(first).replace(/\s*\[Phase: [^\]]*\]/g,'').trim();
    if(/legend(ary)? rule|same name|choose .* to keep|keep one/i.test(ask))ask='Two legendary permanents share a name. Choose the one to keep.';
-   if(!ask)ask=input==='InputSelectTargets'?'Choose a target':'Choose a card on the table';if(oneTarget)ask=ask.replace(/^Select targets? for/i,'Tap a target for');
-   actions.dataset.state=ask;actions.dataset.ask='true';}
+   // Forge writes "<card> - <its rules text>"; the dock says what to do, the card itself is on the stack.
+   const named=ask.match(/^(.{2,60}?) - (.+)$/);
+   const stackOnly=(n.selection?.targets||[]).length>0&&(n.selection.targets||[]).every(r=>r.kind==='stack');
+   // Forge picks stack items through two inputs; "Select target noncreature spell" becomes "Choose a noncreature spell on the stack".
+   if((input==='InputSelectTargets'||input==='InputSelectStackItems')&&stackOnly){const what=(named?.[2]||ask).match(/\btarget ([a-z -]{3,40}?(?:spell|ability)(?: or ability)?)\b/i)?.[1];ask=/\bcounter target\b/i.test(named?.[2]||ask)?'Choose a spell to counter':what?`Choose a${/^[aeiou]/i.test(what)?'n':''} ${what.toLowerCase()} on the stack`:'Choose a spell or ability on the stack';}
+   else if(input==='InputSelectTargets'&&named)ask=`Choose a target for ${named[1]}`;
+   else if(named)ask=named[2];
+   if(!ask)ask=input==='InputSelectTargets'?'Choose a target':'Choose a card on the table';if(oneTarget)ask=ask.replace(/^(Select|Choose) (a )?targets? for/i,'Tap a target for');else ask=ask.replace(/^Select\b/,'Choose');
+   actions.dataset.state=ask;actions.dataset.ask='true';askLine(ask);}
+  // A payment your mana can't finish says so above the hand; Cancel is the way out.
+  else if(presentation.hosted&&paying?.short){actions.dataset.state=`Not enough mana${paying.name?` for ${paying.name}`:''}`;actions.dataset.ask='true';askLine(actions.dataset.state);}
   for(const op of ['ok','cancel'])if(buttons[op]!==undefined){
    if(asking&&op==='ok'&&buttons.okEnabled!==true)continue;
    if(oneTarget&&op==='ok'){if(n.selection?.min===0&&buttons.okEnabled===true){const none=button('No target',()=>session.nativeButton('ok',n.revision),false,'ok');actions.append(none);}continue;}
@@ -330,8 +354,10 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    // An unavailable Cancel/End turn is noise in the dock; an unavailable confirmation still shows what is pending.
    if(presentation.hosted&&!enabled&&(op==='cancel'||!label))continue;
    // A declaration Forge would refuse (a must-attack creature left out) is not offered as a live button.
-   const mustLeft=n.inputType==='InputAttack'&&op==='ok'&&(n.players?.find(p=>p.id===n.viewer)?.zones?.Battlefield?.cards||[]).some(c=>c?.mustAttack===true&&c?.attacking!==true);
+   const mustLeft=n.inputType==='InputAttack'&&op==='ok'&&(n.players?.find(p=>p.id===n.viewer)?.zones?.Battlefield?.cards||[]).some(owesAttack);
    const action=button(label||op,()=>session.nativeButton(op,n.revision),!enabled||mustLeft,op);if(mustLeft)action.title='A creature that must attack this turn is not attacking yet.';
+   // A payment your mana can't finish: Cancel is the main button, and Pay automatically steps aside.
+   if(paying?.short&&presentation.hosted){if(op==='cancel')action.dataset.primary='true';else if(op==='ok'&&!enabled)continue;}
    // The hosted dock names where Next goes in two words ("To combat"); the full step stays in its name and tooltip.
    if(presentation.hosted&&presentation.shortNext===true&&/^Next: /.test(label)){action.textContent=SHORT_STEP[label]||'Next';action.setAttribute('aria-label',label);action.title=label.replace(/^Next: /,'Next step: ');}
    actions.append(action);

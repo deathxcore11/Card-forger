@@ -129,11 +129,11 @@ export function eventPlaybackBeats(before,after){
    push(e,cards.length===1?{kind:'arrival',label,card:cards[0],text:'',line:`${cards[0].name} went to the graveyard.`,duration:700}:{kind:'phase',tone:'death',label,line:`${list(cards.map(c=>c.name))} went to the graveyard.`,duration:800});
    continue;
   }
-  // Tokens arrive as one group per run, whoever made them: "CPU · 12 GOBLIN TOKENS".
+  // Tokens arrive as one group per run, whoever made them: "CPU · 12 GOBLIN TOKENS" (a "Treasure Token" name is not doubled).
   if(e.type==='zone'&&e.to==='Battlefield'&&e.token===true){
    const all=run(x=>x.type==='zone'&&x.to==='Battlefield'&&x.token===true&&x.player===e.player),names=[...new Set(all.map(x=>cardFor(x.card)?.name).filter(Boolean))];
    const actor=who(e.player);if(!actor||actor==='You')continue;
-   const what=names.length===1?`${count(all.length,names[0]+' token')}`:count(all.length,'token');
+   const what=names.length===1?`${count(all.length,/\btoken$/i.test(names[0])?names[0]:names[0]+' token')}`:count(all.length,'token');
    push(e,{kind:'phase',tone:'tokens',label:`${actor} · ${what}`.toUpperCase(),line:`${actor} created ${what}.`,duration:all.length>1?900:700});
    continue;
   }

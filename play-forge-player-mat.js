@@ -136,7 +136,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   if(matchAccount!==forgeAccountKey(readAccount())){client?.detach();stopped({code:'ACCOUNT_CHANGED'});return;}
   if(terminalViewer!==null&&(!Number.isSafeInteger(terminalViewer)||terminalViewer<0||viewer!==null&&terminalViewer!==viewer)){stopped({code:'INVALID_NATIVE_TERMINAL_RECEIPT'});return;}
   // The final board is kept as a still copy for Inspect board: only what this viewer already saw.
-  const board=table&&root.dataset.engine==='forge-hosted'&&root.childElementCount?{nodes:[...root.children].map(el=>el.cloneNode(true)),className:root.className}:null;
+  // The root itself is the styled table (class, data-stage and layout variables), so its attributes travel with the copy.
+  const board=table&&root.dataset.engine==='forge-hosted'&&root.childElementCount?{nodes:[...root.children].map(el=>el.cloneNode(true)),className:root.className,attrs:[...root.attributes].filter(a=>a.name!=='id'&&a.name!=='class'&&a.name!=='aria-label').map(a=>[a.name,a.value])}:null;
   session?.close();warn(false);exitDialog?.remove();exitDialog=null;exitConfirm=null;
   try{onFinished();}catch{/* warming the next match is best effort */}
   if(Number.isSafeInteger(terminalViewer)&&terminalViewer>=0)viewer=terminalViewer;
@@ -151,7 +152,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   const actions=node('div');actions.className='play-result-actions';panel.append(actions);
   if(onRematch){const b=node('button','Rematch');b.type='button';b.className='btn play-result-rematch';b.addEventListener('click',()=>{if(selectionKey(readSetup())!==selectionKey(matchup)){message('Match setup changed',['Your deck selection changed after this match opened. Review the current setup before starting another match.']);return;}onRematch();});actions.append(b);}
   if(board){const b=node('button','Inspect board');b.type='button';b.className='btn ghost';b.addEventListener('click',()=>inspectBoard(board));actions.append(b);
-   root.classList.add('play-result-over-board');root.prepend(...board.nodes.map(el=>{const copy=el.cloneNode(true);copy.setAttribute('aria-hidden','true');copy.inert=true;copy.dataset.resultBackdrop='true';return copy;}));}
+   root.classList.add('play-result-over-board');root.prepend(boardCopy(board,{backdrop:true}));}
   if(onHome){const b=node('button','Home');b.type='button';b.className='btn ghost';b.addEventListener('click',onHome);actions.append(b);}
   if(!board||!onHome){const b=node('button','Return to Play setup');b.type='button';b.className='btn ghost';b.addEventListener('click',requestExit);actions.append(b);}
   if(matchup){const decks=node('details');decks.append(node('summary','Decklists'));
@@ -166,7 +167,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  }
  // Like Snap and Hearthstone, the banner recaps the game and the deck's record so far.
  function recap(row){
-  const r=deckRecord(row.deck),box=node('div');box.className='play-result-recap';
+  // The saved row keeps only the deck's record key and name, so the record is read from the deck itself.
+  const r=deckRecord(matchup?.selected||row.deck),box=node('div');box.className='play-result-recap';
   const mins=row.durationMs===null?null:Math.max(1,Math.round(row.durationMs/60000));
   const stats=[[row.turns===null?'–':String(row.turns),'Turns'],[mins===null?'–':mins+' min','Time'],[row.life===null?'–':`${row.life} – ${row.opponentLife??'–'}`,'Life','You · CPU'],[row.onPlay===null?'–':row.onPlay?'Play':'Draw','On the']];
   const list=node('dl');for(const [v,k,note]of stats){const cell=node('div');cell.append(node('dt',k),node('dd',v));if(note)cell.append(node('small',note));list.append(cell);}
@@ -179,12 +181,19 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   for(const g of goalProgress()){const li=node('li');li.setAttribute('data-done',String(g.done));if(g.justDone)li.setAttribute('data-just','true');if(g.done)li.append(node('span','✓'));li.append(node('b',g.justDone?`${g.label} · done!`:g.done?g.label:`${g.label} · ${g.have}/${g.need}`));goals.append(li);}
   box.append(goals);return box;
  }
+ // A still copy of the final table, wrapped in an element that carries the table's own class and attributes.
+ function boardCopy(board,{backdrop=false}={}){
+  const copy=node('div');copy.className=board.className;for(const [k,v]of board.attrs||[])if(k!=='aria-busy'&&k!=='inert')copy.setAttribute(k,v);
+  copy.append(...board.nodes.map(el=>el.cloneNode(true)));
+  if(backdrop){copy.setAttribute('aria-hidden','true');copy.inert=true;copy.dataset.resultBackdrop='true';}else copy.dataset.resultBoard='true';
+  return copy;
+ }
  // Inspect board swaps the result for the frozen final table, read only, with a way back.
  function inspectBoard(board){
   const results=[...root.childNodes],resultsClass=root.className;
   const bar=node('div');bar.className='play-result-board-bar';const back=node('button','Back to results');back.type='button';back.className='btn';bar.append(node('span','Final board'),back);
   back.addEventListener('click',()=>{root.className=resultsClass;root.replaceChildren(...results);root.querySelector('.play-match-result button')?.focus();});
-  root.className=board.className;root.replaceChildren(...board.nodes.map(el=>{const copy=el.cloneNode(true);copy.setAttribute('aria-hidden','false');copy.dataset.resultBoard='true';return copy;}),bar);back.focus();
+  root.className='play-result-inspect';root.replaceChildren(boardCopy(board),bar);back.focus();
  }
  function copyDeckButton(deck){
   const b=node('button','Copy deck');b.type='button';b.className='btn ghost';
@@ -308,7 +317,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    playedFrom=now();ownFirst=forgeStartingPlayer(state.snapshot)?.ownFirst??null;
    session.acceptState(state.snapshot);session.subscribe(s=>{lastSurface=s.status?.surface||lastSurface;updateExit();if(!disposed&&ticket===generation&&last?.phase!=='finished')publish({phase:'playing',game:s});});
    // The engine and website build stay identifiable on screen and in diagnostics.
-   root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true,tracker:trackerDeck(setup,artwork)}});if(progress){const chip=node('div',stepsLine(progress,startupMs));chip.className='forge-startup-chip';chip.setAttribute('role','status');root.append(chip);view?.setTimeout?.(()=>chip.remove(),7000);}warn(true);await session.start({readInitial:false});return last;
+   root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true,tracker:trackerDeck(setup,artwork)}});// Start timings stay out of the player's view (they read like a developer readout); the console keeps them.
+   if(progress)view?.console?.info?.('[play] '+stepsLine(progress,startupMs));warn(true);await session.start({readInitial:false});return last;
   }catch(e){stopTicker();if(current()){session?.close();warn(false);message('Your match could not start',[forgeMatchError(e),'Your selected decks are unchanged.',...(e.details||[])],{diagnostic:forgeDiagnostic(e)+(requestedAt===null?'':` · ${Math.round((now()-requestedAt)/1000)}s after the table was requested`)});publish({phase:'session-ended',error:e.code||e.message});}throw e;}
   finally{stopTicker();opening=false;}
  }
