@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "079f8f5e568434f4e1cd29ac95a200211bb2f48b",
-  "sourceVersion": "4.3.25",
+  "commit": "62dedd90f3c253ea8f6782a47a9f4b053c7ccad8",
+  "sourceVersion": "4.3.26",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -588,6 +588,7 @@
     "experiments/forge-proof/forge-table.mjs",
     "experiments/forge-proof/motion-kit.mjs",
     "experiments/forge-proof/native-panel.mjs",
+    "experiments/forge-proof/table-emotes.mjs",
     "experiments/phase-engine/card-placement.mjs",
     "experiments/phase-engine/card-stats.mjs",
     "experiments/phase-engine/catalog-admission.mjs",
@@ -727,6 +728,7 @@
     "play-card-surface.js",
     "play-catalog-review.js",
     "play-cpu-options.js",
+    "play-daily-goals.js",
     "play-deck-context.js",
     "play-deck-import.js",
     "play-deck-sources.js",
@@ -2765,8 +2767,8 @@
     },
     {
       "path": "config.js",
-      "bytes": 628,
-      "sha256": "7c8f00f58c3b36ccca7e2d1641024068344ea8f80d14dd3bb55cf517b05cc21a"
+      "bytes": 629,
+      "sha256": "6b6e99f7f9eeb7b7e7104486ea9c0ce896d75b51dc959e6ed368f79d508cfcf7"
     },
     {
       "path": "core.js",
@@ -3765,8 +3767,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 145228,
-      "sha256": "0c2121a8f7325ef2ba886a00f818768faed13aea8113fa34fec8d4614e24f2fb"
+      "bytes": 145414,
+      "sha256": "22c1b8f20230b2120d793f9fa90b623807e2f6fc58ec295c4cf06e86eaba0fc2"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -3777,6 +3779,11 @@
       "path": "experiments/forge-proof/native-panel.mjs",
       "bytes": 44233,
       "sha256": "deeca1ab592fb71ca43c33bc58d702b43e728f87dcdc73792fc04252947562bb"
+    },
+    {
+      "path": "experiments/forge-proof/table-emotes.mjs",
+      "bytes": 5257,
+      "sha256": "a0348cd87d85a7e6f64a59c40d4ab575e12da13a9d3d43b51e9716a7d9595d6b"
     },
     {
       "path": "experiments/phase-engine/card-placement.mjs",
@@ -4524,6 +4531,11 @@
       "sha256": "1b3097a604fb2d18946e655451f6e367f4b0f6229bb817767ee181cc8cfe31df"
     },
     {
+      "path": "play-daily-goals.js",
+      "bytes": 2332,
+      "sha256": "c3eb8b6eb5569ac6f991eaf67a7b8b0fb096429db75e6664b1da0a9689dfbdc5"
+    },
+    {
       "path": "play-deck-context.js",
       "bytes": 2306,
       "sha256": "7094ebad2d1bcbe99fa6f54ad39d04413a83d3862b85254b8659dd4fe542226b"
@@ -4560,8 +4572,8 @@
     },
     {
       "path": "play-forge-player-mat.js",
-      "bytes": 32853,
-      "sha256": "291c9cc676b4308f7b2b62a80ddf41c83d4b84ada0da43428b3985e4be7bc3c8"
+      "bytes": 33340,
+      "sha256": "d5da76be2f023f53fc608c3975ebde49bcbae2a63126baf1936ac9bc7efb774c"
     },
     {
       "path": "play-forge-pregame.js",
@@ -4575,8 +4587,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 332328,
-      "sha256": "bf99c1813cdd457afa935496290561654b58f1d311dcb4368539876f1ae439dc"
+      "bytes": 334956,
+      "sha256": "8af0376ef2d8c6a8dccedcf588796d684c16432ddea778ccc8eec9dabaac33b5"
     },
     {
       "path": "play-match-record.js",
@@ -4585,8 +4597,8 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 73692,
-      "sha256": "d012cc13ba2327dc0017cb31522c15275f4a2b4fc405dd4f1346df4a34c5017a"
+      "bytes": 75268,
+      "sha256": "e9ef4f9c2520f836c5998c234f3da98a0b46f75331e43b1994b8994fe2b3257b"
     },
     {
       "path": "play-menu.js",
@@ -4810,8 +4822,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 907,
-      "sha256": "c83a8d72e0f081308d07217dafa79bd20666903a95157c2300eb57e992c1edd8"
+      "bytes": 708,
+      "sha256": "c78530d22c47f599f6ba5e1dd41c654d79a4b82744a682578a6e1f771a0c9d1d"
     },
     {
       "path": "release-status.js",
