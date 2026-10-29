@@ -350,7 +350,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  fill();
  // Feel: the tear as the seam opens, a few dry contacts as the cards settle (not one per card, which would blur into
  // a buzz), one contact per first reveal. Anything pending stops when the pack closes or a card page opens over it.
- const timers=new Set();let opening=false;
+ const timers=new Set();let opening=false,skipDeal=null;
  const later=(fn,ms)=>{const t=setTimeout(()=>{timers.delete(t);if(!disposed)fn();},ms);timers.add(t);};
  const quiet=()=>{for(const t of timers)clearTimeout(t);timers.clear();cancelHaptics();};
  const open=()=>{if(opening||disposed||!dialog.querySelector('.pack-content').hidden)return;opening=true;const w=dialog.querySelector('.pack-wrapper');
@@ -368,14 +368,19 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
     b.animate([{transform:`translate(${ox}px,${inside}px) scale(${k})`,zIndex:0,opacity:1,offset:0},{transform:`translate(${ox+spread*.4}px,${above}px) rotate(${(i-mid)*1.5}deg) scale(${k*.92})`,zIndex:0,opacity:1,offset:.34},{transform:`translate(${ox+spread}px,${above}px) rotate(${(i-mid)*3}deg) scale(${k*.9})`,zIndex:200,offset:.4},{zIndex:200,offset:.97}],
      {duration:fly,delay:i*gap,easing:'cubic-bezier(.3,.7,.25,1)',fill:'backwards'});
     later(()=>{if(!suspended&&(i===0||i===n-1||i%3===0))haptic('pack-land');},i*gap+fly-40);});
-   ghost.animate([{transform:'none',opacity:1},{transform:'none',opacity:1,offset:Math.min(.8,(n*gap)/(last+260))},{transform:'translateY(36%) scale(.9)',opacity:0}],{duration:last+260,easing:'cubic-bezier(.45,0,.55,1)',fill:'forwards'}).finished.catch(()=>{}).then(()=>ghost.remove());
+   // Rotating or unfolding mid-deal moves the layout away from the pack's old place: the torn pack just goes.
+   const dropGhost=()=>ghost.remove();addEventListener('resize',dropGhost,{once:true});
+   ghost.animate([{transform:'none',opacity:1},{transform:'none',opacity:1,offset:Math.min(.8,(n*gap)/(last+260))},{transform:'translateY(36%) scale(.9)',opacity:0}],{duration:last+260,easing:'cubic-bezier(.45,0,.55,1)',fill:'forwards'}).finished.catch(()=>{}).then(()=>{removeEventListener('resize',dropGhost);ghost.remove();});
    // The big card comes up once the hand has landed, face down and ready to turn over.
    focusCard.classList.add('pack-await');
-   later(()=>{dialog.classList.remove('pack-flying','pack-dealing');focusCard.classList.remove('pack-await');focusCard.classList.add('pack-rising');later(()=>focusCard.classList.remove('pack-rising'),480);},last);};
+   const landed=()=>{if(!dialog.classList.contains('pack-flying'))return;dialog.classList.remove('pack-flying','pack-dealing');focusCard.classList.remove('pack-await');focusCard.classList.add('pack-rising');later(()=>focusCard.classList.remove('pack-rising'),480);};
+   // A tap during the deal skips it, as in Arena: every card lands at once and the big card comes up.
+   skipDeal=()=>{skipDeal=null;for(const b of cards)for(const a of b.getAnimations())if(!(a instanceof CSSAnimation))a.finish();for(const a of ghost.getAnimations())a.finish();landed();};
+   later(()=>{skipDeal=null;landed();},last);};
   haptic('pack-tear');
   if(reduce()){done();return;}w.classList.add('tearing');later(done,440);};
  // Turning a card over: it lifts off the table as it flips and settles back down.
- const flipLift=(el,lift)=>{if(reduce()||!el?.animate)return;el.animate([{translate:'0 0',rotate:'0deg'},{translate:`0 ${-lift}%`,rotate:'-1.5deg',offset:.42},{translate:'0 0',rotate:'0deg'}],{duration:560,easing:'cubic-bezier(.3,.7,.3,1)'});};
+ const flipLift=(el,lift)=>{if(reduce()||!el?.animate)return;el.animate([{translate:'0 0',rotate:'0deg'},{translate:`0 ${-lift}%`,rotate:'-1.5deg',offset:.42},{translate:'0 0',rotate:'0deg'}],{duration:560,easing:'cubic-bezier(.3,.7,.3,1)',composite:'add'});};
  const close=()=>{if(disposed)return;quiet();disposed=true;cancelAnimationFrame(raf);stopTilt();dialog.close();dialog.remove();};
  // Inspecting a pulled card opens its page above the pack. The pack stays exactly as it is underneath (same pulls,
  // reveals, focused card, nothing re-dealt or replayed), paused while covered, and is back when that page closes.
@@ -434,6 +439,8 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  handEl.addEventListener('click',e=>{if(scrubbed){scrubbed=false;e.stopPropagation();e.preventDefault();}},true);
  dialog.addEventListener('keydown',e=>{if(dialog.querySelector('.pack-content').hidden)return;if(e.key==='ArrowRight'){e.preventDefault();slide(1);}else if(e.key==='ArrowLeft'){e.preventDefault();slide(-1);}});
  dialog.addEventListener('close',close);dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
+ // A tap during the deal skips it first: every card lands at once, so the tap acts on cards in their real places.
+ dialog.addEventListener('pointerdown',()=>skipDeal?.(),true);
  dialog.addEventListener('click',async e=>{const b=e.target.closest('[data-pack]');if(!b||busy)return;const action=b.dataset.pack,i=Number(b.dataset.index);
   if(action==='close')return close();
   if(!isCurrent()){status.textContent='Your account or game changed. Close this pack and open it again.';return;}
