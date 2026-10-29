@@ -4,12 +4,15 @@
 // API: snapshot/reconcile/refresh, selectDeck/clearSelection, updateDraft,
 // importPaste(text,{name,format})/importDraft, reviewImport/clearImport.
 // updateDraft is deliberately silent by default so typing need not rerender UI.
+// The Practice CPU level is remembered on this device; Quick Play ignores it.
+const CPU_LEVEL_KEY='cardstashy.practiceCpuLevel';
+function savedCpuLevel(){try{const v=globalThis.localStorage?.getItem(CPU_LEVEL_KEY);return ['Easy','Medium','Hard'].includes(v)?v:'Medium';}catch{return 'Medium';}}
 export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,onChange,getLocked}={}) {
  if(typeof readAccount!=='function'||typeof readDecks!=='function'||typeof parseImport!=='function')throw Error('Play setup requires account, deck and import readers.');
  const MAX_ROWS=2500,MAX_TEXT=100000,MAX_DECK_BYTES=2000000;
  let key=null,epoch=0,operation=0,owner=null,locked=false,account={},saved=[],selectedId=null,selectedImport=null,candidate=null,opponent=null,inspectedSeat='player',selectedKind=null,opponentSource=null,playStyle='practice',quickMatch=null,quickPlayerKey=null;
  let draft={name:'',text:'',format:''},importStatus='idle',error=null,warnings=[],importErrors=[],unresolved=[],busy=false;
- let match={format:'Commander',mode:'cpu',difficulty:'Medium',startingPlayer:'random'},browse={query:'',source:'yours'};
+ let match={format:'Commander',mode:'cpu',difficulty:savedCpuLevel(),startingPlayer:'random'},browse={query:'',source:'yours'};
  const text=(v,max)=>typeof v==='string'&&v.length<=max?v:'';
  const identity=v=>(typeof v==='string'||typeof v==='number')&&String(v).length>0&&String(v).length<=160?String(v):null;
  function clone(value){
@@ -25,7 +28,7 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
   }
   check(result);if(new TextEncoder().encode(JSON.stringify(result)).length>MAX_DECK_BYTES)throw Error('Deck data exceeds the setup review limit.');return result;
  }
- function reset(){operation++;playStyle='practice';quickMatch=null;selectedId=null;selectedImport=null;candidate=null;opponent=null;inspectedSeat='player';selectedKind=null;opponentSource=null;draft={name:'',text:'',format:''};match={format:'Commander',mode:'cpu',difficulty:'Medium',startingPlayer:'random'};browse={query:'',source:'yours'};importStatus='idle';error=null;warnings=[];importErrors=[];unresolved=[];busy=false;}
+ function reset(){operation++;playStyle='practice';quickMatch=null;selectedId=null;selectedImport=null;candidate=null;opponent=null;inspectedSeat='player';selectedKind=null;opponentSource=null;draft={name:'',text:'',format:''};match={format:'Commander',mode:'cpu',difficulty:savedCpuLevel(),startingPlayer:'random'};browse={query:'',source:'yours'};importStatus='idle';error=null;warnings=[];importErrors=[];unresolved=[];busy=false;}
  function sync(){
   let next;try{next=readAccount()||{};}catch{next={};}
   const nextOwner=identity(next.user?.id),nextLocked=Boolean(next.switching||next.locked||getLocked?.(next));
@@ -94,7 +97,7 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
    draft={...draft,format:partial.format};
   }
   if(partial.mode==='friends')inspectedSeat='player';
-  if(partial.difficulty&&partial.difficulty!==match.difficulty)retireQuick();
+  if(partial.difficulty&&partial.difficulty!==match.difficulty){retireQuick();try{globalThis.localStorage?.setItem(CPU_LEVEL_KEY,partial.difficulty);}catch{/* this device only */}}
   quickMatch=partial.format?null:quickMatch;match={...match,...partial,...(playStyle==='quick'?{startingPlayer:'random'}:{})};error=null;notify();return value();
  }
  function searchDecks(query){sync();if(typeof query==='string'&&query.length<=160)browse={...browse,query};return value();}

@@ -566,3 +566,4 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-cpu-level>button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 @media(min-width:701px){.pl-startbar .pl-cpu-level{order:-1}}
 @media(max-width:700px){.pl-cpu-level{flex-basis:100%}.pl-cpu-level>button{flex:1;min-width:0}}
+@media(max-width:700px){.pl-startbar .pl-status{order:3}}
