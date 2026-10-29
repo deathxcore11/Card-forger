@@ -1,5 +1,5 @@
 // Foil pop: motion over every foil finish (card page, zoom, gallery, deck view, pack opener). When a
-// card is shown, a light band crosses it and a few glints burst, then nothing stays on top, so the
+// card is shown, a light band crosses it (no sparkle stars), then nothing stays on top, so the
 // measured WebGL / CSS finish (art foil, Yu-Gi-Oh! lettering, stamps) looks exactly as before.
 // Each moving part animates transform or opacity only.
 const FULL=['detail','zoom','pack'];
@@ -19,8 +19,7 @@ export function mountFinishPop(host,{surface='large',seed=''}={}){
  const doc=host.ownerDocument,pop=doc.createElement('span'),full=FULL.includes(surface);
  pop.className='finish-pop';pop.dataset.pop=full?'full':'lite';pop.setAttribute('aria-hidden','true');
  pop.innerHTML='<span class="fx-catch"></span>';
- if(full)addGlints(pop,{n:surface==='pack'?10:8,seed});
  host.append(pop);
- if(!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches)requestAnimationFrame(()=>{catchLight(pop);if(full)burstGlints(pop);});
+ if(!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches)requestAnimationFrame(()=>catchLight(pop));
  return pop;
 }
