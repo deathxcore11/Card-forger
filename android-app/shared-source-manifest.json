@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.31",
-  "commit": "ac71ec5852937aacc73de2aee8766e111e40b559",
-  "tree": "be0d3147716c70c635b3824b7b02cb01278e1a7c",
+  "version": "4.3.32",
+  "commit": "4fafd83949effe99631b56c348d38308777fecd2",
+  "tree": "0b2ddbaf22bfad94b218dd26219d8f527bd52973",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -1703,8 +1703,8 @@
     },
     {
       "path": "binders.js",
-      "bytes": 20720,
-      "sha256": "14ed61dda2bb6a21e84808d79b3cd621b609ffbc2ca767bfc4c6f06541fa4415"
+      "bytes": 20955,
+      "sha256": "3cec6e12204de0810948274da8968f3767f3f0041dd5f0558009bb48dcb3eece"
     },
     {
       "path": "brand-motion.css",
@@ -1869,7 +1869,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "df41da62ed83787f915764445dfefbf2bcccac3de35a17308a0c1ef8992402f9"
+      "sha256": "9d9ad09e53fe1aa15564db75709f9c0874326398630fe255f98b561c1d0357cb"
     },
     {
       "path": "core.js",
@@ -2868,8 +2868,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 155429,
-      "sha256": "83ab29a30de4b99d665ecc0d575e0d377bde473c10eba428be20a869accc1985"
+      "bytes": 176611,
+      "sha256": "e6df896a70affb33d5d0fe386dec25f76c25b605251f7251917356d396118ac0"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -2878,8 +2878,8 @@
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
-      "bytes": 53833,
-      "sha256": "098992e1f96b371ef4fabaa653d4170a6f9e485e2e902d44ac8cd433a880e32a"
+      "bytes": 54958,
+      "sha256": "cad5ea5d643412f14748e66dfefc5711265c2e6c53d2ad27ac8975f817b00d2b"
     },
     {
       "path": "experiments/forge-proof/table-emotes.mjs",
@@ -3534,7 +3534,7 @@
     {
       "path": "package.json",
       "bytes": 11917,
-      "sha256": "28ac1a93b68c05f097d3d13e7cbb4674f6154a98d3efc746ee28b93d679e7850"
+      "sha256": "b40026e83db567f1649bde70dae001cbb4ba2e1a3fe13bad710e53c1b70a96ed"
     },
     {
       "path": "pairing.js",
@@ -3658,8 +3658,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 359941,
-      "sha256": "9d96571db9a8871e5ee0f43a96577e71f9323e4e6e7f8b64d2fa89e84a55bb11"
+      "bytes": 374352,
+      "sha256": "88f429aeba1a26a5e58685214b39cd89027d3ee23d27ca08813088baddc2b863"
     },
     {
       "path": "play-match-record.js",
@@ -3893,8 +3893,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 787,
-      "sha256": "929184931fc9a5156c94758f4f7afe3088b6d56708c4ea59621ec936137d0328"
+      "bytes": 845,
+      "sha256": "6c9340bf6d676676fcf7b39b31aa1ac66a4f7f21933f87707165801d6d242b1c"
     },
     {
       "path": "release-status.js",
@@ -3998,8 +3998,8 @@
     },
     {
       "path": "scancam.js",
-      "bytes": 150414,
-      "sha256": "6cfe8793cffdfa04f16097f6a72a30906e6a99b09c68d95287d0d1c3c3d04da1"
+      "bytes": 151068,
+      "sha256": "36d1c58d7a0cdd3c96a22bfcf9ae2d0cb210fc9135abce0f0f31352fe80509f8"
     },
     {
       "path": "scanidx/TCGDEX-LICENSE.txt",
@@ -4213,8 +4213,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15508,
-      "sha256": "931dcffabdf747b68ba13a1d472017984f53a5bedcfe09c8c0be74fd90f03352"
+      "bytes": 15507,
+      "sha256": "464b43525b231a9377a1032ae2c099a271f5771813ebb658ff0873834981eb88"
     },
     {
       "path": "sync-merge.js",

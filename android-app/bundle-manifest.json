@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "ac71ec5852937aacc73de2aee8766e111e40b559",
-  "sourceVersion": "4.3.31",
+  "commit": "4fafd83949effe99631b56c348d38308777fecd2",
+  "sourceVersion": "4.3.32",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -2603,8 +2603,8 @@
     },
     {
       "path": "binders.js",
-      "bytes": 20720,
-      "sha256": "14ed61dda2bb6a21e84808d79b3cd621b609ffbc2ca767bfc4c6f06541fa4415"
+      "bytes": 20955,
+      "sha256": "3cec6e12204de0810948274da8968f3767f3f0041dd5f0558009bb48dcb3eece"
     },
     {
       "path": "brand-motion.css",
@@ -2769,7 +2769,7 @@
     {
       "path": "config.js",
       "bytes": 628,
-      "sha256": "ada6a0561629c109fd79f16237958814dfbf3c3900f8ec159c980191965a64a6"
+      "sha256": "be1425a6038495ec22bb6b08898e2a2ff17c1aeff5d17e65e4afa300f6d7e19e"
     },
     {
       "path": "core.js",
@@ -3768,8 +3768,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 155429,
-      "sha256": "83ab29a30de4b99d665ecc0d575e0d377bde473c10eba428be20a869accc1985"
+      "bytes": 176611,
+      "sha256": "e6df896a70affb33d5d0fe386dec25f76c25b605251f7251917356d396118ac0"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -3778,8 +3778,8 @@
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
-      "bytes": 53833,
-      "sha256": "098992e1f96b371ef4fabaa653d4170a6f9e485e2e902d44ac8cd433a880e32a"
+      "bytes": 54958,
+      "sha256": "cad5ea5d643412f14748e66dfefc5711265c2e6c53d2ad27ac8975f817b00d2b"
     },
     {
       "path": "experiments/forge-proof/table-emotes.mjs",
@@ -4593,8 +4593,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 360568,
-      "sha256": "694712ccfd8f86fc597b25037779b1ae8db97bf903d694d281067f4436e973ae"
+      "bytes": 374979,
+      "sha256": "e3652153c4b04aa8951e65da7383b498abb6cc327b45169a23561b88dc4af71d"
     },
     {
       "path": "play-match-record.js",
@@ -4828,8 +4828,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 787,
-      "sha256": "929184931fc9a5156c94758f4f7afe3088b6d56708c4ea59621ec936137d0328"
+      "bytes": 845,
+      "sha256": "6c9340bf6d676676fcf7b39b31aa1ac66a4f7f21933f87707165801d6d242b1c"
     },
     {
       "path": "release-status.js",
@@ -4933,8 +4933,8 @@
     },
     {
       "path": "scancam.js",
-      "bytes": 152753,
-      "sha256": "3ac46abc010f62d4136f35b9682ec364047d917907bbac3a540e4415eb15d27b"
+      "bytes": 153407,
+      "sha256": "8ef96ae5087d729d2b3999d2b8555d37e2aa40ce0ec203c49a7ad448dc7f93e6"
     },
     {
       "path": "scanidx/catalog-manifest.json",
