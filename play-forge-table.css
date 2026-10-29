@@ -2063,3 +2063,4 @@ body.practice-table-open img{-webkit-user-drag:none}
 @media (min-width:641px){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card>.forge-must-tag{font-size:15px;padding:3px 10px;bottom:-11px}}
 /* While you pick a target the hand is inert, and dims so it reads that way. */
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-forge-input=InputSelectTargets] .play-match-hand-area{opacity:.6;transition:opacity .2s}
+@media (max-width:640px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-ask=true]:has(button)::before{max-width:118px;font-size:12px}}
