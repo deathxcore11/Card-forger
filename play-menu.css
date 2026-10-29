@@ -545,3 +545,14 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 @media(max-width:700px){.pl-mat-grid{grid-template-columns:1fr 1fr;gap:8px}.pl-mat-sheet{left:0;right:0;width:auto;max-height:calc(100dvh - 265px)}.pl-head-tools .pl-format:not(.pl-mat){flex:0 1 auto}.pl-head-tools .pl-mat{flex:1;min-width:0}.pl-mat>summary .pl-mat-art{width:46px;height:32px}}
 @media(max-height:520px) and (orientation:landscape){.pl-mat-sheet{max-height:calc(100dvh - 160px - var(--nav-h,64px))}.pl-mat-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.pl-mat-opt b{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.pl-mat[open] .pl-mat-sheet{animation:none}.pl-mat-opt .pl-mat-art,.pl-mat-opt::after{transition:none}.pl-mat-opt:hover .pl-mat-art{transform:none}}
+/* Goals under the recap: today's two and the week's one. A goal finished by this match glows once. */
+#practicePlayerMat .play-result-recap .play-result-goals{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+#practicePlayerMat .play-result-goals>li{display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:#ffffff08;border:1px solid #ffffff1a;color:#b8ad98;font-size:12px}
+#practicePlayerMat .play-result-goals>li>span{min-width:26px;height:20px;padding:0 5px;border-radius:999px;display:grid;place-items:center;background:#ffffff12;color:#e9dfcb;font:700 11px/1 'DM Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums;box-sizing:border-box}
+#practicePlayerMat .play-result-goals>li>b{font-weight:600}
+#practicePlayerMat .play-result-goals>li[data-done=true]{color:#e9dfcb;border-color:#d6ad6455}
+#practicePlayerMat .play-result-goals>li[data-done=true]>span{background:#d6ad64;color:#1b1408}
+#practicePlayerMat .play-result-goals>li[data-just=true]{color:#f2d18e;animation:play-goal-done 1.4s .9s ease-out both}
+@keyframes play-goal-done{0%{box-shadow:0 0 0 0 #f2d18e00}35%{box-shadow:0 0 0 4px #f2d18e55,0 0 18px #f2d18e66}100%{box-shadow:0 0 0 0 #f2d18e00}}
+@media (max-height:480px){#practicePlayerMat .play-result-goals>li{padding-block:2px;font-size:11px}}
+@media (prefers-reduced-motion:reduce){#practicePlayerMat .play-result-goals>li[data-just=true]{animation:none}}

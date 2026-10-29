@@ -9,6 +9,7 @@ import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {nativePromptUnanswerable} from './experiments/forge-proof/native-panel.mjs';
 import {mountForgeMatchIntro,forgeStartingPlayer} from './play-forge-pregame.js';
 import {deckRecord,recordLine,recordMatch} from './play-match-record.js';
+import {goalProgress} from './play-daily-goals.js';
 import {createPlayScreenPause,playScreenPauseApplies,readPlayScreen,watchPlayScreen,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
 const selectionKey=s=>JSON.stringify([s?.profile?.ownerId,s?.selected,s?.opponent,s?.match]);
 // Forge may name a Universes Beyond card by its Universes Within flavor name
@@ -171,7 +172,10 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   const streak=Math.abs(r.streak)>1?` · ${Math.abs(r.streak)} ${r.streak>0?'wins':'losses'} in a row`:'';
   deck.append(node('b',row.deck.name||'This deck'),node('span',` ${recordLine(r)}${streak}`));
   if(r.onPlay.games&&r.onDraw.games)deck.append(node('small',`On the play ${r.onPlay.wins}/${r.onPlay.games} · On the draw ${r.onDraw.wins}/${r.onDraw.games}`));
-  box.append(list,deck);if(row.conceded)box.append(node('p','You conceded.'));return box;
+  box.append(list,deck);if(row.conceded)box.append(node('p','You conceded.'));
+  const goals=node('ul');goals.className='play-result-goals';goals.setAttribute('aria-label','Goals');
+  for(const g of goalProgress()){const li=node('li');li.setAttribute('data-done',String(g.done));if(g.justDone)li.setAttribute('data-just','true');li.append(node('span',g.done?'✓':`${g.have}/${g.need}`),node('b',g.justDone?`${g.label} · done!`:g.label));goals.append(li);}
+  box.append(goals);return box;
  }
  // Inspect board swaps the result for the frozen final table, read only, with a way back.
  function inspectBoard(board){

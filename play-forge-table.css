@@ -1893,3 +1893,20 @@ body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
 /* The chip looks small but takes a 44px tap. */
 :where(body.practice-table-open) .forge-activity .forge-speed{position:relative}
 :where(body.practice-table-open) .forge-activity .forge-speed::after{content:'';position:absolute;left:-8px;right:-8px;top:50%;height:44px;translate:0 -50%}
+/* Emotes: a small round button on your seat, a menu above it, and short speech bubbles by each portrait. */
+:where(body.practice-table-open) .play-match-seat[data-seat=you]>.forge-emote-button{position:absolute;top:-10px;right:-10px;z-index:6;width:30px!important;height:30px!important;min-width:0!important;min-height:0!important;padding:0!important;display:grid;place-items:center;border-radius:50%;border:1px solid #d6ad6466;background:#14161dd9;color:#e9dfcb;box-shadow:0 4px 12px #0009;cursor:pointer;backdrop-filter:blur(4px)}
+:where(body.practice-table-open) .play-match-seat[data-seat=you]>.forge-emote-button::after{content:'';position:absolute;inset:-7px}
+:where(body.practice-table-open) .play-match-seat[data-seat=you]>.forge-emote-button svg{width:17px;height:17px}
+:where(body.practice-table-open) .play-match-seat[data-seat=you]>.forge-emote-button:is(:hover,[aria-expanded=true]){border-color:#f0c27a;color:#f2d18e}
+:where(body.practice-table-open) .play-match-seat[data-seat=you]>.forge-emote-button:focus-visible{outline:2px solid #f0c27a;outline-offset:2px}
+.forge-emote-menu{position:fixed;z-index:3200;display:grid;gap:4px;min-width:150px;padding:6px;border-radius:14px;border:1px solid #d6ad6444;background:#101319f0;box-shadow:0 14px 40px #000b;backdrop-filter:blur(8px);animation:forge-emote-in .16s ease-out both}
+.forge-emote-menu>button{min-height:40px;padding:0 14px;border:0;border-radius:10px;background:transparent;color:#efe7d6;font:600 14px/1 'DM Sans',system-ui,sans-serif;text-align:left;cursor:pointer}
+.forge-emote-menu>button:is(:hover,:focus-visible){background:#ffffff14;outline:none}
+.forge-emote-menu>.forge-emote-mute{margin-top:2px;border-top:1px solid #ffffff14;border-radius:0 0 10px 10px;color:#a99d86;font-size:12px}
+.forge-emote-bubble{position:fixed;z-index:3100;max-width:220px;padding:8px 14px;border-radius:16px;border:1px solid #d6ad6455;background:#f4ead6;color:#1b1408;font:700 14px/1.25 'DM Sans',system-ui,sans-serif;box-shadow:0 10px 30px #000a;pointer-events:none;animation:forge-emote-pop .22s cubic-bezier(.2,.9,.3,1.3) both}
+.forge-emote-bubble[data-who=cpu]{background:#1a1d26;color:#efe7d6;border-color:#8fb6e866}
+.forge-emote-bubble[data-leaving]{opacity:0;transform:translateY(-4px);transition:opacity .25s,transform .25s}
+.forge-emote-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@keyframes forge-emote-in{from{opacity:0;transform:translateY(6px)}}
+@keyframes forge-emote-pop{from{opacity:0;transform:scale(.8)}}
+@media (prefers-reduced-motion:reduce){.forge-emote-menu,.forge-emote-bubble{animation:none}}
