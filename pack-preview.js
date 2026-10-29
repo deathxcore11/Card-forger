@@ -12,7 +12,7 @@ import {drawMtgBooster} from './mtg-boosters.js';
 import {haptic,cancelHaptics} from './feel.js';
 import {addGlints,catchLight,burstGlints} from './foil-fx.js';
 // A discovery sampler. No collation, print-run odds, purchases or ownership are implied.
-export function sampleSetCards(cards,count=10,random=Math.random){
+export function sampleSetCards(cards,count=10,random=packRandom){
  const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),c])).values()];
  for(let i=pool.length-1;i>0;i--){const r=random();if(!Number.isFinite(r)||r<0||r>=1)throw Error('Invalid random sample');const j=Math.floor(r*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
  return pool.slice(0,Math.max(0,Math.min(20,Math.floor(count)||0)));
@@ -102,8 +102,29 @@ export function packEra(game,set={}){
 }
 const slotsFor=(game,set)=>game==='ptcg'&&PTCG_SET_RATES[String(set?.id||'').toLowerCase()]?ptcgSetSlots(PTCG_SET_RATES[String(set.id).toLowerCase()]):PACKS[game]?.[packEra(game,set)]||[];
 export const ptcgSetRates=id=>PTCG_SET_RATES[String(id||'').toLowerCase()]||null;
-// A rare Pokémon god pack: every hit slot is an illustration or special illustration rare.
+// Each pack is drawn from the device's secure random source, fresh every opening (never a fixed or saved seed);
+// Math.random is only the fallback where crypto is missing.
+export function packRandom(){
+ try{const a=new Uint32Array(2);globalThis.crypto.getRandomValues(a);return (a[0]*2**21+(a[1]>>>11))/2**53;}catch{return Math.random();}
+}
+// God packs, rare on purpose. Pokémon: every hit slot is an illustration or special illustration rare (as in
+// Scarlet & Violet god packs). Magic and Yu-Gi-Oh! have no official god pack, so theirs is a CardStashy bonus:
+// every card a rare or mythic, or every card a foil.
 const GOD_SLOT=slot({illustrationrare:2,specialillustrationrare:1},'hit'),GOD_PACK_ODDS=1/1000;
+const GOD={
+ ptcg:{odds:GOD_PACK_ODDS,slot:GOD_SLOT,all:false,text:'God pack! Every hit is an illustration rare.'},
+ mtg:{odds:1/2000,slot:slot({rare:6.4,mythic:1},'hit'),all:true,text:'God pack! Every card is a rare or mythic.'},
+ ygo:{odds:1/1500,slot:slot({superrare:6,ultrarare:3,secretrare:1.5,ultimaterare:.6,quartercenturysecretrare:.5,collectorsrare:.5,platinumsecretrare:.3},'hit'),all:true,text:'God pack! Every card is a foil.'}};
+export const godPackText=game=>GOD[game]?.text||'God pack!';
+// A Magic pack from real booster sheets becomes a god pack by swapping every card for a different rare or mythic
+// of the set; foils stay foil. Null when the set has too few rares and mythics to fill it.
+export function mtgGodPack(picks,cards,random=packRandom){
+ const pool=[...new Map([...cards].filter(c=>c?.id&&/^(rare|mythic)$/.test(c.rarity)&&!/basic land/i.test(c.type_line||'')).map(c=>[String(c.id),c])).values()];
+ if(pool.length<picks.length)return null;
+ const out=picks.map(p=>{const w=x=>x.rarity==='mythic'?1:6.4,total=pool.reduce((n,c)=>n+w(c),0);let r=random()*total,k=pool.length-1;for(let i=0;i<pool.length;i++){r-=w(pool[i]);if(r<=0){k=i;break;}}
+  const [c]=pool.splice(k,1);return {...c,packSlot:p.packSlot==='foil'||p.packFoil?'foil':'hit',...(p.packFoil?{packFoil:true}:{})};});
+ out.godPack=true;return out;
+}
 // Draft boosters: about 1 pack in 3 swaps a common for a foil of any rarity.
 const DRAFT_FOIL=slot({common:200,uncommon:30,rare:7,mythic:1},'foil'),DRAFT_FOIL_ODDS=1/3;
 export const packSize=(game,set)=>slotsFor(game,set).length||10;
@@ -129,7 +150,7 @@ export function ptcgSetRarities(setId,total,fetcher=fetch){
 const YGO_RARITY_WEIGHT={common:50,shortprint:20,rare:20,superrare:12,ultrarare:6,secretrare:3,collectorsrare:1,prismaticsecretrare:1,platinumsecretrare:.5,quartercenturysecretrare:.4,ultimaterare:1,ghostrare:.3,starlightrare:.05,goldrare:3};
 // prefer: a rarity to pull when this set printed the card in it (today's pack pulls the Card of the Day
 // in the rarity shown on Home).
-export function rollYgoPrinting(card,random=Math.random,prefer=''){
+export function rollYgoPrinting(card,random=packRandom,prefer=''){
  // A card printed once in the set is pulled in that printing too: without a chosen printing its foil
  // (and price) cannot be resolved and the card shows plain.
  const prints=(card.setContext?.printings||[]).filter(p=>p?.rarity);if(!prints.length||card.setContext?.printing)return card;
@@ -138,11 +159,13 @@ export function rollYgoPrinting(card,random=Math.random,prefer=''){
  if(wanted)chosen=wanted;else for(const p of prints){r-=weight(p);if(r<=0){chosen=p;break;}}
  return {...card,rarity:chosen.rarity,sets:[chosen],setContext:{...card.setContext,printings:[chosen],printing:chosen,printingAmbiguous:false,pulled:true}};
 }
-export function samplePack(game,cards,count,random=Math.random,set={}){
+export function samplePack(game,cards,count,random=packRandom,set={}){
  let slots=slotsFor(game,set);count??=slots.length||10;if(!slots.length)return sampleSetCards(cards,count,random);
  const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),game==='ygo'?rollYgoPrinting(c,random):c])).values()],used=new Set(),picks=[],rarityOf=c=>R(packRarity(game,c).label);
- const god=game==='ptcg'&&random()<GOD_PACK_ODDS&&pool.filter(c=>GOD_SLOT.w[rarityOf(c)]).length>=slots.filter(s=>s.role).length;
- if(god)slots=slots.map(s=>s.role?GOD_SLOT:s);
+ const g=GOD[game],godSlots=g?slots.slice(0,count).filter(s=>g.all||s.role).length:0;
+ const god=!!g&&random()<g.odds&&pool.filter(c=>g.slot.w[rarityOf(c)]).length>=godSlots;
+ // A Magic god pack keeps its foil slot foil.
+ if(god)slots=slots.map(s=>g.all||s.role?(s.role==='foil'?{...g.slot,role:'foil'}:g.slot):s);
  for(let {w,role,odds} of slots.slice(0,count)){
   if(role==='maybefoil')({w,role}=random()<(odds??DRAFT_FOIL_ODDS)?DRAFT_FOIL:slot({common:1}));
   // Odds are per rarity, not per card: roll the rarity among those this set has, then one of its cards.
@@ -254,11 +277,11 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  // verified one (display only), and its pulled printing's foil can show.
  // The pack's own release date stands in when a card's context lacks one: star and Attribute foil depend on the print era.
  const inRelease=c=>c?.setContext?.releaseId?{...c,setContext:{...c.setContext,game:'ygo',cardId:c.id,status:'resolved',date:c.setContext.date||set?.date||''}}:c;
- if(game==='ygo'){cards=cards.map(inRelease);featured=featured&&rollYgoPrinting(inRelease(featured),Math.random,featured.featuredRarity);}
- const size=packSize(game,set),draw=()=>booster?drawMtgBooster(booster.data,booster.cards,Math.random):samplePack(game,cards,size,Math.random,set);
+ if(game==='ygo'){cards=cards.map(inRelease);featured=featured&&rollYgoPrinting(inRelease(featured),packRandom,featured.featuredRarity);}
+ const size=packSize(game,set),draw=()=>{if(!booster)return samplePack(game,cards,size,packRandom,set);const p=drawMtgBooster(booster.data,booster.cards,packRandom);return packRandom()<GOD.mtg.odds&&mtgGodPack(p,[...cards,...booster.cards.values()])||p;};
  let picks=draw();
  // Today's pack: the Card of the Day takes the hit's place.
- if(featured){picks=booster?[...picks.slice(0,-1).filter(c=>String(c.id)!==String(featured.id)),featured]:[...samplePack(game,cards.filter(c=>String(c.id)!==String(featured.id)),size-1,Math.random,set).slice(0,size-1),featured];}if(!picks.length)throw Error('Load this set’s cards first.');
+ if(featured){picks=booster?[...picks.slice(0,-1).filter(c=>String(c.id)!==String(featured.id)),featured]:[...samplePack(game,cards.filter(c=>String(c.id)!==String(featured.id)),size-1,packRandom,set).slice(0,size-1),featured];}if(!picks.length)throw Error('Load this set’s cards first.');
  const dialog=document.createElement('dialog');dialog.className='pack-dialog';dialog.dataset.game=game;dialog.setAttribute('aria-label',`${set.name} pack`);
  const reduce=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  const cardArt=c=>game==='mtg'?cardImage(c,'normal'):c.imageLarge||c.image||'';
@@ -312,10 +335,10 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  // A pull feels as good as its price or its rarity, whichever is bigger, so an unpriced mythic still hits hard.
  const RARITY_FEEL=['pack-reveal','pack-reveal','pack-value-2','pack-value-3','pack-value-4'],FEELS=['pack-reveal','pack-value-2','pack-value-3','pack-value-4'];
  const feelOf=i=>{const byPrice=packRevealHaptic(trustedPackPrice(game,picks[i],ctxs[i]||{})),byRarity=RARITY_FEEL[Math.min(4,packRarity(game,picks[i]).rank)];return FEELS.indexOf(byRarity)>FEELS.indexOf(byPrice)?byRarity:byPrice;};
- const reveal=(i,{silent=false}={})=>{if(!Number.isInteger(i)||!picks[i])return;if(!revealed.has(i)){revealed.add(i);if(!silent)haptic(feelOf(i));const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');img.src=img.dataset.packSrc;b.classList.add('revealed');b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
+ const reveal=(i,{silent=false}={})=>{if(!Number.isInteger(i)||!picks[i])return;if(!revealed.has(i)){revealed.add(i);if(!silent)haptic(feelOf(i));const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');img.src=img.dataset.packSrc;b.classList.add('revealed');flipLift(b,22);if(!silent)flipLift(focusCard,3);b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
    setTier(b,tierOf(i));status.textContent=`${revealed.size} of ${picks.length} revealed`;
    if(!silent)later(()=>revealMoment(i),330);
-   if(revealed.size===picks.length){dialog.classList.add('pack-done');if(picks.godPack)status.textContent='God pack! Every hit is an illustration rare.';for(const x of dialog.querySelectorAll('.pack-actions [disabled]'))x.disabled=false;}}
+   if(revealed.size===picks.length){dialog.classList.add('pack-done');if(picks.godPack)status.textContent=godPackText(game);for(const x of dialog.querySelectorAll('.pack-actions [disabled]'))x.disabled=false;}}
   show(i);};
  // The flip lands: a light catch and a small pop; a big pull (rare+ or a high price tier) adds rays.
  const revealMoment=i=>{if(reduce()||focus!==i||!revealed.has(i))return;const t=+String(tierOf(i)).slice(1)||0,big=packRarity(game,picks[i]).rank>=3||t>=3;
@@ -327,15 +350,37 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  fill();
  // Feel: the tear as the seam opens, a few dry contacts as the cards settle (not one per card, which would blur into
  // a buzz), one contact per first reveal. Anything pending stops when the pack closes or a card page opens over it.
- const timers=new Set();let opening=false;
+ const timers=new Set();let opening=false,skipDeal=null;
  const later=(fn,ms)=>{const t=setTimeout(()=>{timers.delete(t);if(!disposed)fn();},ms);timers.add(t);};
  const quiet=()=>{for(const t of timers)clearTimeout(t);timers.clear();cancelHaptics();};
  const open=()=>{if(opening||disposed||!dialog.querySelector('.pack-content').hidden)return;opening=true;const w=dialog.querySelector('.pack-wrapper');
-  const done=()=>{opening=false;w.classList.remove('tearing');dialog.querySelector('.pack-sealed').hidden=true;dialog.querySelector('.pack-content').hidden=false;dialog.classList.add('pack-dealt','pack-dealing');later(()=>dialog.classList.remove('pack-dealing'),picks.length*55+500);show(0);focusCard.focus({preventScroll:true});
-   if(!reduce()){focusCard.classList.add('pack-rising');later(()=>focusCard.classList.remove('pack-rising'),480);}
-   if(!reduce())for(const ms of [150,320,490])later(()=>{if(!suspended)haptic('pack-land');},ms);};
+  const done=()=>{opening=false;const from=w.getBoundingClientRect(),motion=!reduce();
+   // The torn pack stays where it was while the cards fly out of its open top, then sinks away.
+   let ghost=null;if(motion){ghost=w.cloneNode(true);ghost.className='pack-wrapper pack-ghost';ghost.removeAttribute('data-pack');ghost.setAttribute('aria-hidden','true');ghost.tabIndex=-1;
+    Object.assign(ghost.style,{position:'fixed',left:from.left+'px',top:from.top+'px',width:from.width+'px',height:from.height+'px',margin:'0'});dialog.append(ghost);}
+   w.classList.remove('tearing');dialog.querySelector('.pack-sealed').hidden=true;dialog.querySelector('.pack-content').hidden=false;dialog.classList.add('pack-dealt','pack-dealing');show(0);focusCard.focus({preventScroll:true});
+   if(!motion){dialog.classList.remove('pack-dealing');return;}
+   dialog.classList.add('pack-flying');
+   const cards=[...dialog.querySelectorAll('.pack-card')],n=cards.length,mid=(n-1)/2,gap=Math.min(85,1100/Math.max(1,n)),fly=640,last=(n-1)*gap+fly;
+   cards.forEach((b,i)=>{const c=b.getBoundingClientRect(),cx=c.left+c.width/2,cy=c.top+c.height/2,ox=from.left+from.width/2-cx,k=Math.min(1.6,from.width*.78/Math.max(1,c.width));
+    // Out of the top: the card slides up from inside the pack, clears the opening, then arcs down into its place.
+    const inside=from.top+from.height*.42-cy,above=from.top-c.height*k*.32-cy,spread=(i-mid)*Math.min(14,from.width*.05);
+    b.animate([{transform:`translate(${ox}px,${inside}px) scale(${k})`,zIndex:0,opacity:1,offset:0},{transform:`translate(${ox+spread*.4}px,${above}px) rotate(${(i-mid)*1.5}deg) scale(${k*.92})`,zIndex:0,opacity:1,offset:.34},{transform:`translate(${ox+spread}px,${above}px) rotate(${(i-mid)*3}deg) scale(${k*.9})`,zIndex:200,offset:.4},{zIndex:200,offset:.97}],
+     {duration:fly,delay:i*gap,easing:'cubic-bezier(.3,.7,.25,1)',fill:'backwards'});
+    later(()=>{if(!suspended&&(i===0||i===n-1||i%3===0))haptic('pack-land');},i*gap+fly-40);});
+   // Rotating or unfolding mid-deal moves the layout away from the pack's old place: the torn pack just goes.
+   const dropGhost=()=>ghost.remove();addEventListener('resize',dropGhost,{once:true});
+   ghost.animate([{transform:'none',opacity:1},{transform:'none',opacity:1,offset:Math.min(.8,(n*gap)/(last+260))},{transform:'translateY(36%) scale(.9)',opacity:0}],{duration:last+260,easing:'cubic-bezier(.45,0,.55,1)',fill:'forwards'}).finished.catch(()=>{}).then(()=>{removeEventListener('resize',dropGhost);ghost.remove();});
+   // The big card comes up once the hand has landed, face down and ready to turn over.
+   focusCard.classList.add('pack-await');
+   const landed=()=>{if(!dialog.classList.contains('pack-flying'))return;dialog.classList.remove('pack-flying','pack-dealing');focusCard.classList.remove('pack-await');focusCard.classList.add('pack-rising');later(()=>focusCard.classList.remove('pack-rising'),480);};
+   // A tap during the deal skips it, as in Arena: every card lands at once and the big card comes up.
+   skipDeal=()=>{skipDeal=null;for(const b of cards)for(const a of b.getAnimations())if(!(a instanceof CSSAnimation))a.finish();for(const a of ghost.getAnimations())a.finish();landed();};
+   later(()=>{skipDeal=null;landed();},last);};
   haptic('pack-tear');
-  if(reduce()){done();return;}w.classList.add('tearing');later(done,700);};
+  if(reduce()){done();return;}w.classList.add('tearing');later(done,440);};
+ // Turning a card over: it lifts off the table as it flips and settles back down.
+ const flipLift=(el,lift)=>{if(reduce()||!el?.animate)return;el.animate([{translate:'0 0',rotate:'0deg'},{translate:`0 ${-lift}%`,rotate:'-1.5deg',offset:.42},{translate:'0 0',rotate:'0deg'}],{duration:560,easing:'cubic-bezier(.3,.7,.3,1)',composite:'add'});};
  const close=()=>{if(disposed)return;quiet();disposed=true;cancelAnimationFrame(raf);stopTilt();dialog.close();dialog.remove();};
  // Inspecting a pulled card opens its page above the pack. The pack stays exactly as it is underneath (same pulls,
  // reveals, focused card, nothing re-dealt or replayed), paused while covered, and is back when that page closes.
@@ -394,6 +439,8 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  handEl.addEventListener('click',e=>{if(scrubbed){scrubbed=false;e.stopPropagation();e.preventDefault();}},true);
  dialog.addEventListener('keydown',e=>{if(dialog.querySelector('.pack-content').hidden)return;if(e.key==='ArrowRight'){e.preventDefault();slide(1);}else if(e.key==='ArrowLeft'){e.preventDefault();slide(-1);}});
  dialog.addEventListener('close',close);dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
+ // A tap during the deal skips it first: every card lands at once, so the tap acts on cards in their real places.
+ dialog.addEventListener('pointerdown',()=>skipDeal?.(),true);
  dialog.addEventListener('click',async e=>{const b=e.target.closest('[data-pack]');if(!b||busy)return;const action=b.dataset.pack,i=Number(b.dataset.index);
   if(action==='close')return close();
   if(!isCurrent()){status.textContent='Your account or game changed. Close this pack and open it again.';return;}
