@@ -493,3 +493,30 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 @keyframes play-result-dim{from{filter:none}to{filter:saturate(.7) brightness(.55) blur(1.5px)}}
 @media (prefers-reduced-motion:reduce){#practicePlayerMat.play-result-over-board>[data-result-backdrop],#practicePlayerMat.play-result-over-board>.play-match-result{animation:none}}
 #practicePlayerMat.play-result-over-board .play-match-result>details{order:4}
+/* Result recap: the game in four numbers, then the deck's record on this device. */
+#practicePlayerMat .play-match-result .play-result-recap{order:2;width:min(480px,100%);display:grid;gap:12px;margin-top:14px;animation:play-message-in .4s .55s cubic-bezier(.2,.8,.2,1) both}
+#practicePlayerMat .play-result-recap dl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0}
+#practicePlayerMat .play-result-recap dl>div{display:grid;gap:2px;padding:8px 6px;border-radius:12px;background:#ffffff0a;border:1px solid #d6ad6426;text-align:center}
+#practicePlayerMat .play-result-recap dt{font:700 10px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#d6ad64b3}
+#practicePlayerMat .play-result-recap dd{margin:0;font:700 18px/1.2 Cinzel,Georgia,serif;color:#f4ead6;font-variant-numeric:tabular-nums;white-space:nowrap}
+#practicePlayerMat .play-result-recap .play-result-record{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:2px 6px;margin:0;color:#e9dfcb;font-variant-numeric:tabular-nums}
+#practicePlayerMat .play-result-recap .play-result-record b{color:#f2d18e}
+#practicePlayerMat .play-result-recap .play-result-record small{flex-basis:100%;text-align:center;color:#b8ad98;font-size:12px}
+#practicePlayerMat .play-result-recap>p:not(.play-result-record){margin:0;text-align:center;color:#b8ad98;font-size:13px}
+@media (max-width:520px),(max-height:480px){#practicePlayerMat .play-result-recap dl{gap:6px}#practicePlayerMat .play-result-recap dd{font-size:15px}#practicePlayerMat .play-match-result .play-result-recap{margin-top:8px}}
+@media (prefers-reduced-motion:reduce){#practicePlayerMat .play-match-result .play-result-recap{animation:none}}
+#practicePlayerMat .play-result-recap dl small{font-size:10px;line-height:1.2;color:#b8ad98;letter-spacing:.04em}
+/* Short screens (sideways phones): the whole result, buttons and Decklists included, fits without scrolling. */
+@media (max-height:480px){
+ #practicePlayerMat.play-result-over-board>.play-match-result{padding:12px 18px 10px;width:min(620px,calc(100% - 24px));max-height:calc(100% - 16px)}
+ #practicePlayerMat .play-match-result>h1+p{width:min(340px,100%);margin:6px 0 2px;font-size:20px}
+ #practicePlayerMat .play-match-result .play-result-recap{width:100%;gap:6px;margin-top:6px}
+ #practicePlayerMat .play-result-recap dl>div{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:0 6px;padding:5px 6px}
+ #practicePlayerMat .play-result-recap dd{font-size:14px}
+ #practicePlayerMat .play-result-recap dl small{flex-basis:100%;text-align:center}
+ #practicePlayerMat .play-result-recap .play-result-record{font-size:13px}
+ #practicePlayerMat .play-match-result .play-result-actions{margin-top:8px;gap:8px}
+ #practicePlayerMat .play-match-result .play-result-actions>.btn{min-height:44px;padding-block:0}
+ #practicePlayerMat.play-result-over-board .play-match-result>details{margin-top:4px}
+ #practicePlayerMat.play-result-over-board .play-match-result>details>summary{min-height:32px;display:flex;align-items:center;justify-content:center}
+}
