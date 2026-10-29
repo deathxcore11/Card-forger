@@ -48,6 +48,8 @@ export function nativePromptUnanswerable(p){
 }
 // Player-facing names for Forge's generic OK/Cancel/Auto buttons. Presentation only:
 // the same native button operation is sent, and unfamiliar labels stay verbatim.
+const PHASE_SHORT={UPKEEP:'Upkeep',DRAW:'Draw',MAIN1:'Main',COMBAT_BEGIN:'Combat',COMBAT_DECLARE_ATTACKERS:'Combat',COMBAT_DECLARE_BLOCKERS:'Combat',COMBAT_FIRST_STRIKE_DAMAGE:'Combat',COMBAT_DAMAGE:'Combat',COMBAT_END:'Combat',MAIN2:'Main 2',END_OF_TURN:'End step',CLEANUP:'Cleanup'};
+const SHORT_STEP={'Next: Draw':'To draw','Next: Main phase':'To main','Next: Combat':'To combat','Next: Attackers':'To attackers','Next: Blockers':'To blocks','Next: Damage':'To damage','Next: End of combat':'End combat','Next: Second main':'To main 2','Next: End step':'To end step','Next: Cleanup':'To cleanup'};
 const NEXT_STEP={UPKEEP:'Next: Draw',DRAW:'Next: Main phase',MAIN1:'Next: Combat',COMBAT_BEGIN:'Next: Attackers',COMBAT_DECLARE_ATTACKERS:'Next: Blockers',COMBAT_DECLARE_BLOCKERS:'Next: Damage',COMBAT_FIRST_STRIKE_DAMAGE:'Next: Damage',COMBAT_DAMAGE:'Next: End of combat',COMBAT_END:'Next: Second main',MAIN2:'Next: End step',END_OF_TURN:'Next: Cleanup'};
 // Forge reports an unbounded side of the order as -1; never show it as a number.
 export function orderRemainder(p){
@@ -91,7 +93,8 @@ export function nativeActionLabel(n,op,raw){
  const mine=n?.players?.find(p=>p.id===n.viewer)?.zones?.Battlefield?.cards||[],count=key=>mine.filter(c=>c?.[key]===true).length,input=String(n?.inputType||'');
  if(input==='InputPassPriority'){
   if(op==='cancel')return /^end turn$/i.test(label)?'End turn':label;
-  if(n.stack?.length)return 'Pass · let it resolve';
+  // Arena's words: with the CPU's spell or ability on top you answer it or let it go; your own just resolves.
+  if(n.stack?.length)return n.stack[0]?.activatingPlayer===n.viewer?'Resolve':'No response';
   // With nobody attacking, the rest of combat is skipped: never promise a blockers step.
   const attacking=(n.players||[]).some(p=>(p.zones?.Battlefield?.cards||[]).some(c=>c?.attacking===true));
   if(!attacking&&['COMBAT_DECLARE_ATTACKERS','COMBAT_DECLARE_BLOCKERS','COMBAT_FIRST_STRIKE_DAMAGE','COMBAT_DAMAGE'].includes(n.phase))return n.activePlayer===n.viewer?'Next: Second main':'Pass';
@@ -310,10 +313,12 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    // An unavailable Cancel/End turn is noise in the dock; an unavailable confirmation still shows what is pending.
    if(presentation.hosted&&!enabled&&(op==='cancel'||!label))continue;
    const action=button(label||op,()=>session.nativeButton(op,n.revision),!enabled,op);
-   // The hosted dock says just "Next"; the step it moves to stays in its name and tooltip.
-   if(presentation.hosted&&presentation.shortNext===true&&/^Next: /.test(label)){action.textContent='Next';action.setAttribute('aria-label',label);action.title=label.replace(/^Next: /,'Next step: ');}
+   // The hosted dock names where Next goes in two words ("To combat"); the full step stays in its name and tooltip.
+   if(presentation.hosted&&presentation.shortNext===true&&/^Next: /.test(label)){action.textContent=SHORT_STEP[label]||'Next';action.setAttribute('aria-label',label);action.title=label.replace(/^Next: /,'Next step: ');}
    actions.append(action);
   }
+  // Phones hide the phase track, so the main action carries one quiet line of where you are: "CPU turn · Main · Your response".
+  if(presentation.hosted&&actions.childNodes.length&&n.inputType==='InputPassPriority'&&!n.prompt){const where=PHASE_SHORT[n.phase]||'',who=n.activePlayer===n.viewer?'Your turn':'CPU turn',why=n.stack?.length&&n.stack[0]?.activatingPlayer!==n.viewer?'Your response':n.activePlayer===n.viewer?'Your move':'Your response';actions.dataset.state=[who,where,why].filter(Boolean).join(' · ');}
   if(actions.childNodes.length)panel.append(actions);
   const refs=[...(n.selection?.cards||[]),...(n.selection?.targets||[]),...(n.selection?.actionable||[])],unique=new Map(refs.map(r=>[r.kind+':'+r.id,r]));
   if(unique.size&&!presentation.hosted){const selection=node('details',undefined,'forge-native-hints'),summary=node('summary',`${presentation.hosted?'Highlighted choices':'Native selection guidance'} · ${unique.size}`);selection.append(summary,node('p',copy('You can select these cards or players here, or directly on the table.','These are Forge’s UI hints, not a complete legal-action list. The engine validates each click.')));

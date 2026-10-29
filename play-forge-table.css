@@ -1960,3 +1960,17 @@ body.practice-table-open img{-webkit-user-drag:none}
 /* The reveal keeps a 16px gutter, and its OK takes Next's place, so it wears Next's gold. */
 :where(body.practice-table-open) .forge-native-panel :is(.forge-reveal-label,.forge-reveal-list){padding-right:8px;max-width:calc(100vw - 32px);overflow-wrap:anywhere}
 :where(body.practice-table-open) .forge-native-panel [data-native-key=acknowledge-prompt]{min-height:48px;padding:0 22px;border:1px solid #f6dfa8!important;border-radius:999px;background:linear-gradient(180deg,#f2d18e,#c99a4b)!important;color:#1b1408!important;font:700 16px/1.2 'DM Sans',system-ui,sans-serif;box-shadow:0 8px 22px #c99a4b3d,inset 0 1px 0 #fff7}
+/* One quiet line over the main action: whose turn, which step, and that the move is yours. It floats, so it never
+   widens the controls; wide screens show the phase track instead. */
+:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-state]{position:relative}
+:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-state]::before{content:attr(data-state);position:absolute;right:2px;bottom:calc(100% + 6px);color:#d9cdb1;font:600 11.5px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.02em;white-space:nowrap;text-shadow:0 1px 3px #000c;pointer-events:none}
+@media (min-width:641px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-state]::before{display:none}}
+/* Upright phones: the response emblems fold to the one that is on; opened, they stack upward as a small glass column. */
+@media (max-width:640px) and (orientation:portrait){
+:where(body.practice-table-open) .play-match-seat[data-seat=you] .forge-control-emblems:not([data-open=true]) .forge-control-emblem:not([aria-pressed=true]):not(:only-child){display:none!important}
+:where(body.practice-table-open) .play-match-seat[data-seat=you] .forge-control-emblems:not([data-open=true]) .forge-control-emblem[data-native-key=auto-pay]{display:none!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=you] .forge-control-emblems[data-open=true]{flex-direction:column-reverse!important;align-items:stretch!important;top:auto!important;bottom:calc(100% + 40px)!important;padding:6px!important;border-radius:20px;background:#14161df2;box-shadow:0 10px 30px #000b;z-index:70}
+:where(body.practice-table-open) .play-match-seat[data-seat=you] .forge-control-emblems[data-open=true] .forge-control-emblem{display:flex!important;align-items:center;justify-content:flex-start;gap:8px;width:auto!important;min-width:0;height:44px!important;padding:0 14px!important;border-radius:22px!important;overflow:visible!important}
+:where(body.practice-table-open) .play-match-seat[data-seat=you] .forge-control-emblems[data-open=true] .forge-control-emblem::after{content:attr(data-label);position:static!important;opacity:1!important;translate:none!important;background:none!important;border:0!important;padding:0!important;box-shadow:none!important;color:#efe7d6;font:600 13px/1.2 'DM Sans',system-ui,sans-serif;white-space:nowrap}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat[data-seat=you]:has(.forge-control-emblems[data-open=true]){z-index:80!important}
+}
