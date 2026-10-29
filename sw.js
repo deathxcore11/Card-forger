@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-rules-download-v381";
+const CACHE = "cardforge-shell-match-feel-v382";
 const ASSETS = [
   "./play-forge-feature.js",
   "./audio.js",
