@@ -1600,14 +1600,16 @@ A.playStartCandidate=async()=>{
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
   if(FORGE_PLAY_TEST_ENABLED){
    if(!document.getElementById('forgeHostedTableStyles')){const css=document.createElement('link');css.id='forgeHostedTableStyles';css.rel='stylesheet';css.href='play-forge-table.css';document.head.append(css);}
-   let createForgePlayerMat;
-   try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));}
+   let createForgePlayerMat,localClient;
+   try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));
+    // The Android app plays on the Forge engine inside the phone when it has one.
+    const local=await import('./play-forge-local-client.js');if(local.localForgeAvailable())localClient=local.createForgeLocalClient;}
    catch(e){if(playerMatRoot)playModuleFailed(e);return;}
    if(!current()||!playerMatRoot)return;
    const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
     resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
     lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
-   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,
+   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,createClient:localClient,
     prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();},
     // A finished match frees its engine after cleanup; warm the next one for a rematch.
     onFinished:()=>setTimeout(()=>warmForgeEngine(playSetup.snapshot(),{afterMatch:true}),4000)});
@@ -1636,7 +1638,9 @@ let forgeWarmAt=0;
 function warmForgeEngine(state,{afterMatch=false}={}){
  if(!FORGE_PLAY_TEST_ENABLED||!PLAY_MATCH_RELEASE_READY||state.match.mode!=='cpu'||!state.profile?.signedIn||playStarting||!afterMatch&&(playerMatHost||Date.now()-forgeWarmAt<150000))return;
  forgeWarmAt=Date.now();
- void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});
+ // The phone's own engine loads its card database once and keeps it; the server engine is warmed per match.
+ void import('./play-forge-local-client.js').then(local=>local.localForgeAvailable()?local.prepareLocalForge()
+  :import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken}))).catch(()=>{});
 }
 // The Android app gets Play ready from launch: it warms the engine as soon as the account
 // is signed in, again whenever the app comes back to the screen, and every few minutes while
@@ -1677,7 +1681,7 @@ async function saveDeckArtOffline(){
  const urls=[...new Set(names.flatMap(name=>{const c=meta(name),faces=c?.card_faces||[];return [c?.image_uris?.normal,c?.image_uris?.art_crop,...faces.flatMap(f=>[f.image_uris?.normal,f.image_uris?.art_crop])];}).filter(url=>typeof url==='string'&&url.startsWith('https://cards.scryfall.io/')))].slice(0,3000);
  let next=0;
  const load=url=>new Promise(done=>{const img=new Image();img.onload=img.onerror=()=>done();img.src=url;});
- await Promise.all(Array.from({length:3},async()=>{while(next<urls.length&&!accountLocked){if(document.hidden){await new Promise(r=>setTimeout(r,5000));continue;}await load(urls[next++]);}}));
+ await Promise.all(Array.from({length:3},async()=>{while(next<urls.length&&!accountLocked){if(document.hidden||playStarting||playerMatHost){await new Promise(r=>setTimeout(r,5000));continue;}await load(urls[next++]);}}));
 }
 function renderPlayPage() {
   if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>Choose Magic in the game selector to prepare a CPU match.</p><a class="btn" href="#home">Return Home</a></section>';
