@@ -1072,7 +1072,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // A big hand also gets a slim slider above it on touch screens: sliding along it walks the whole hand
  // card by card, a steadier backup to browsing on the fan itself. It never plays a card.
  function slideHand(e){if(e.pointerType==='mouse'||e.button||e.isPrimary===false)return;e.preventDefault();e.stopPropagation();const slider=e.currentTarget,id=e.pointerId;lastPointerType=e.pointerType;slider.setPointerCapture?.(id);clearTimeout(handLiftTimer);setHandLift(true);
-  const to=ev=>{const r=slider.getBoundingClientRect(),wraps=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')];if(!wraps.length)return;const t=Math.max(0,Math.min(1,(ev.clientX-r.left)/Math.max(1,r.width)));focusHand(wraps[Math.round(t*(wraps.length-1))]);};
+  const to=ev=>{const r=slider.getBoundingClientRect(),wraps=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')];if(!wraps.length)return;const t=Math.max(0,Math.min(1,(ev.clientX-r.left-18)/Math.max(1,r.width-36)));focusHand(wraps[Math.round(t*(wraps.length-1))]);};
   const move=ev=>{if(ev.pointerId===id)to(ev);},end=ev=>{if(ev.pointerId!==id)return;slider.removeEventListener('pointermove',move);slider.removeEventListener('pointerup',end);slider.removeEventListener('pointercancel',end);suppressUntil=Math.max(suppressUntil,Date.now()+300);dropHandLift(1600);};
   slider.addEventListener('pointermove',move);slider.addEventListener('pointerup',end);slider.addEventListener('pointercancel',end);to(e);}
  const handWrapAt=x=>{const g=handGeometry();if(!g)return null;const xl=(x-g.ox)/g.K+g.ox-g.box.left;let hit=g.wraps[0];for(const w of g.wraps)if(g.local(w).x<=xl)hit=w;return hit;};
@@ -1087,19 +1087,22 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const lifted=root.dataset.handLift==='true',K=lifted?Number(root.style.getPropertyValue('--hand-scale'))||1:1,R=lifted?Number(root.style.getPropertyValue('--hand-raise').replace('px',''))||0:0,ox=box.left+box.w/2,oy=box.top+box.h;
   const local=el=>{let x=0,y=0,n=el;while(n&&n!==area){x+=n.offsetLeft;y+=n.offsetTop;n=n.offsetParent;}return {x,y,w:el.offsetWidth,h:el.offsetHeight};};
   const sx=xl=>ox+(box.left+xl-ox)*K,sy=yl=>oy-R+(box.top+yl-oy)*K;return {area,wraps,box,K,R,ox,oy,local,sx,sy};}
- // On a narrow screen a big hand squeezes its fan to sit inside the 16px gutters instead of running off the edge;
+ // On a portrait screen (a phone, or a Fold opened up) a big hand squeezes its fan to sit inside the 16px gutters instead of running off the edge;
  // "View full hand" shows every card at full size.
  function fitHandFan(hand){
   for(const w of hand)w.style.removeProperty('margin-left');
-  if(hand.length<2||root.dataset.handExpanded==='true'||win.innerWidth>640)return;
+  if(hand.length<2||root.dataset.handExpanded==='true'||win.innerWidth>win.innerHeight*.9)return;
   const rect=w=>(w.querySelector('.play-match-card')||w).getBoundingClientRect(),a=rect(hand[0]),b=rect(hand[hand.length-1]),over=b.right-a.left-(win.innerWidth-32);
   if(over<=0)return;const step=over/(hand.length-1);
   hand.slice(1).forEach(w=>w.style.setProperty('margin-left',`${(parseFloat(getComputedStyle(w).marginLeft)||0)-step}px`));
  }
- // The hand slider spans the fan itself, not the whole screen.
- function placeHandSlider(hand){const slider=root.querySelector(':scope>.forge-hand-slider');if(!slider||!hand.length)return;
-  const rects=hand.map(w=>(w.querySelector('.play-match-card')||w).getBoundingClientRect()),l=Math.max(16,Math.min(...rects.map(r=>r.left))),r=Math.min(win.innerWidth-16,Math.max(...rects.map(r=>r.right)));
-  slider.style.left=`${Math.round(l)}px`;slider.style.width=`${Math.round(Math.max(120,r-l))}px`;slider.style.right='auto';}
+ // The hand slider has its own strip above the fan, at least 8px clear of the highest card, sharing it with
+ // "View full hand" on the right; it spans the fan itself, not the whole screen. Measured at rest; a lifted
+ // hand carries it up by the same amount (CSS).
+ function placeHandSlider(hand){const slider=root.querySelector(':scope>.forge-hand-slider');if(!slider||!hand.length||root.dataset.handLift==='true')return;
+  const rects=hand.map(w=>(w.querySelector('.play-match-card')||w).getBoundingClientRect()),pill=root.querySelector('.forge-hand-expand')?.getBoundingClientRect(),cardTop=Math.min(...rects.map(r=>r.top));
+  const l=Math.max(16,Math.min(...rects.map(r=>r.left))),r=Math.min(win.innerWidth-16,Math.max(...rects.map(r=>r.right)),pill?.width?pill.left-8:Infinity),top=Math.min(pill?.height?pill.top+pill.height/2-22:Infinity,cardTop-8-44);
+  slider.style.left=`${Math.round(l)}px`;slider.style.width=`${Math.round(Math.max(120,r-l))}px`;slider.style.right='auto';slider.style.top=`${Math.round(top)}px`;}
  function layoutHand(){const g=handGeometry();if(!g)return;const fi=g.wraps.indexOf(handFocus);
   for(const w of g.wraps){if(w!==handFocus)w.removeAttribute('data-hand-focus');}
   if(fi<0){delete root.dataset.handFocused;handFocusRect=null;}else root.dataset.handFocused='true';
