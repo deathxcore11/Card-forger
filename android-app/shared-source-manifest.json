@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.27",
-  "commit": "0654342122947752ec13f307a80cfd4b20c25129",
-  "tree": "4387497fec969aeceb8233b06697ea58d9a3f7b5",
+  "version": "4.3.28",
+  "commit": "b208f37215c29455b58d59f4250e20a58fa3bb96",
+  "tree": "90b99b9412c4f2510729cd798076f45bdb91b222",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -103,8 +103,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 443102,
-      "sha256": "a60d05000b29bf815b3ba2b912d2a5a0d24249141a01226c2e48a361d5d2f85a"
+      "bytes": 444035,
+      "sha256": "14b724ffcb5c4cd9af44d9cd1bd0806a36db02e2fb9e0e47e7b3d78c9636a072"
     },
     {
       "path": "artwork.js",
@@ -1678,8 +1678,8 @@
     },
     {
       "path": "audio.js",
-      "bytes": 12035,
-      "sha256": "36d22025a0c011b305b9369dbe0270c4516be858b0ed2beae79faa6baafcb82b"
+      "bytes": 13469,
+      "sha256": "bc55295c732505e82abbaac53b74c70fe38b851dabf1a02fa75f620f77197bbc"
     },
     {
       "path": "aura.css",
@@ -1869,7 +1869,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "db4e6e6352cc34c7644d37604177c767b7fc1b90bc44cb2f53b8abc87b1d318b"
+      "sha256": "fae4e08bf8a72e8fb9d22b80fcf815d2bfb6577db87061074101bc206891d47c"
     },
     {
       "path": "core.js",
@@ -2868,8 +2868,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 145414,
-      "sha256": "22c1b8f20230b2120d793f9fa90b623807e2f6fc58ec295c4cf06e86eaba0fc2"
+      "bytes": 147589,
+      "sha256": "96221a61cab45f041855901f1aa0c213b30fa37a52fdb87b201d4301a84e1bb4"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -3534,7 +3534,7 @@
     {
       "path": "package.json",
       "bytes": 11917,
-      "sha256": "0ec11a75aba5c9e4ec1848bcc272208dde5efb48d57a2440a3da764cea34db68"
+      "sha256": "936c3da56ffe47047f382bef9ae8e7474abfa4c1319fd54462895ba7490c0b22"
     },
     {
       "path": "pairing.js",
@@ -3633,13 +3633,18 @@
     },
     {
       "path": "play-forge-host-client.js",
-      "bytes": 19191,
-      "sha256": "9d4bd1c529a84015b6c55a04c76d522eedea5c68e5b192ca4e5c0e6f6a65a576"
+      "bytes": 19198,
+      "sha256": "46c104ba33d609bb220386b60e79c32ff64b2a45c9b97c0bbd5d4c34e6f7d185"
+    },
+    {
+      "path": "play-forge-local-client.js",
+      "bytes": 5558,
+      "sha256": "88aa95dfa6a8715e46f21497d96c0fb924f28d4b0da57b2dfbe6f62fc017700e"
     },
     {
       "path": "play-forge-player-mat.js",
-      "bytes": 33833,
-      "sha256": "6f95c6c322728886719b571f6e5e79995933849bcf583608efa5ba911f901fba"
+      "bytes": 34902,
+      "sha256": "32e7de727d1815a6bbf3e5aa2ffdc1c42da788fe7599604cbdbc531314dc7428"
     },
     {
       "path": "play-forge-pregame.js",
@@ -3653,8 +3658,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 334329,
-      "sha256": "89c29df6da9d15d3802de11a5f0f336c4ec27699d8bc1d3a1494cde881240954"
+      "bytes": 335186,
+      "sha256": "4d20a533f65ecbe8229e46175afdb1d76578f0ede4591d1e93e4c309e638ebf6"
     },
     {
       "path": "play-match-record.js",
@@ -3718,8 +3723,8 @@
     },
     {
       "path": "play-table-audio.js",
-      "bytes": 5445,
-      "sha256": "e385c7ca52bfe0856dd29a123a812412257bf1d8d379c3c3eae515c312ffb6d3"
+      "bytes": 5475,
+      "sha256": "691c31db83b97e2cb88d58f0b0a917b2ef558857ebab63852a0cc0bc458682df"
     },
     {
       "path": "play-token-art.js",
@@ -3888,8 +3893,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 684,
-      "sha256": "6d11c377c75780815ee70d5822d20b30e814952fba8f9973da701923e87d6f80"
+      "bytes": 1089,
+      "sha256": "205f187e9ffaeb4bad31e6e8d9463b7249c6b58e5431b5ca15b93e003ccd8369"
     },
     {
       "path": "release-status.js",
@@ -4208,8 +4213,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15471,
-      "sha256": "de9ee2745626ffd3b58db2c77c17ce51b9c9a478aedb8929a44a3042e7c0d416"
+      "bytes": 15500,
+      "sha256": "846641a7104d6ce153a74b280c39566d95e8058ba360d3dcdeff33203e8c78cb"
     },
     {
       "path": "sync-merge.js",
