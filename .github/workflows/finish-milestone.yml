@@ -26,4 +26,4 @@ jobs:
         with:
           name: finish-milestone-visuals
           path: test-results/finish-milestone/
-          retention-days: 14
+          retention-days: 2

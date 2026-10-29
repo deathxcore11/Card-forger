@@ -24,3 +24,4 @@ jobs:
         with:
           name: foundation-pilot-evidence
           path: test-results/
+          retention-days: 2

@@ -31,3 +31,4 @@ jobs:
         with:
           name: scanner-transport-evidence
           path: test-results/
+          retention-days: 2
