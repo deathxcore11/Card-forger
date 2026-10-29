@@ -1543,8 +1543,8 @@ A.playFindOpponent=async()=>{
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
 };
-// Names the engine would refuse, said plainly; the first few are named.
-const engineMissingText=(label,names)=>label+' has '+(names.length===1?'a card':names.length+' cards')+' this version of the rules engine can’t load yet: '+names.slice(0,3).join(', ')+(names.length>3?'…':'')+'.';
+// Names the engine would refuse, said plainly; the first one is named.
+const engineMissingText=(label,names)=>label+' has '+(names.length===1?'a card the rules engine can’t load yet: ':names.length+' cards the rules engine can’t load yet, including ')+names[0]+'.';
 async function pickPodDecks(state,count){
  try{if(!metaState('mtg:EDH').data)await Promise.race([loadMetaData('mtg:EDH').catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);}catch{}
  const names=FORGE_PLAY_TEST_ENABLED?await loadEngineCardNames():null;
@@ -1619,8 +1619,8 @@ A.playStartCandidate=async()=>{
   if(globalThis.matchMedia?.('(pointer:coarse) and (max-width:900px)')?.matches&&levels.filter(l=>l==='Hard').length>1)return toast('Phones run one Hard CPU per game. Set the others to Easy or Normal.');
   try{await pickPodDecks(source,size-2);}catch(e){return toast(e.message);}
  }
- // Every list must load in the engine before the table opens; a refused name is said here, not on a failed table.
- if(FORGE_PLAY_TEST_ENABLED){const names=await loadEngineCardNames(),seats=playSetup.snapshot();for(const [deck,label] of [[seats.selected,'Your deck'],[seats.opponent,'The CPU deck'],...(seats.extraOpponents||[]).map(o=>[o.deck,'A CPU deck'])]){const unknown=engineUnknownCards(deck,names);if(unknown.length)return toast(engineMissingText(label,unknown));}}
+ // Every list must load in the engine before the table opens; a refused name is said in the Play status line, not on a failed table.
+ if(FORGE_PLAY_TEST_ENABLED){const names=await loadEngineCardNames(),seats=playSetup.snapshot();for(const [deck,label] of [[seats.selected,'Your deck'],[seats.opponent,'The CPU deck'],...(seats.extraOpponents||[]).map(o=>[o.deck,'A CPU deck'])]){const unknown=engineUnknownCards(deck,names);if(unknown.length){quickStatus={busy:false,error:engineMissingText(label,unknown)};return refreshPlayMenu();}}}
  if(await playUpdates.beforeMatch())return; // The page reopens Play on the current release.
  if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
