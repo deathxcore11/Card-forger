@@ -337,13 +337,14 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    // Forge writes "<card> - <its rules text>"; the dock says what to do, the card itself is on the stack.
    const named=ask.match(/^(.{2,60}?) - (.+)$/);
    const stackOnly=(n.selection?.targets||[]).length>0&&(n.selection.targets||[]).every(r=>r.kind==='stack');
-   if(input==='InputSelectTargets'&&stackOnly)ask=/\bcounter target\b/i.test(named?.[2]||ask)?'Choose a spell to counter':'Choose a spell or ability on the stack';
+   // Forge picks stack items through two inputs; "Select target noncreature spell" becomes "Choose a noncreature spell on the stack".
+   if((input==='InputSelectTargets'||input==='InputSelectStackItems')&&stackOnly){const what=(named?.[2]||ask).match(/\btarget ([a-z -]{3,40}?(?:spell|ability)(?: or ability)?)\b/i)?.[1];ask=/\bcounter target\b/i.test(named?.[2]||ask)?'Choose a spell to counter':what?`Choose a${/^[aeiou]/i.test(what)?'n':''} ${what.toLowerCase()} on the stack`:'Choose a spell or ability on the stack';}
    else if(input==='InputSelectTargets'&&named)ask=`Choose a target for ${named[1]}`;
    else if(named)ask=named[2];
    if(!ask)ask=input==='InputSelectTargets'?'Choose a target':'Choose a card on the table';if(oneTarget)ask=ask.replace(/^(Select|Choose) (a )?targets? for/i,'Tap a target for');
    actions.dataset.state=ask;actions.dataset.ask='true';}
   // A payment your mana can't finish says so above the hand; Cancel is the way out.
-  else if(presentation.hosted&&paying?.short){actions.dataset.state=`Not enough mana${paying.name?` for ${paying.name}`:''}`;actions.dataset.ask='true';actions.dataset.askShort='true';}
+  else if(presentation.hosted&&paying?.short){actions.dataset.state=`Not enough mana${paying.name?` for ${paying.name}`:''}`;actions.dataset.ask='true';}
   for(const op of ['ok','cancel'])if(buttons[op]!==undefined){
    if(asking&&op==='ok'&&buttons.okEnabled!==true)continue;
    if(oneTarget&&op==='ok'){if(n.selection?.min===0&&buttons.okEnabled===true){const none=button('No target',()=>session.nativeButton('ok',n.revision),false,'ok');actions.append(none);}continue;}
