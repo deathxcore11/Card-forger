@@ -410,7 +410,8 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-backs i:nth-child(3){transform:rotate(13deg) translateX(52px)}
 .pl-vs{display:grid;place-items:center;position:relative;z-index:4}
 .pl-vs b{display:grid;place-items:center;width:62px;height:62px;transform:rotate(45deg);border:2px solid var(--gold);border-radius:12px;background:linear-gradient(145deg,#2a2416,#121008);box-shadow:0 0 0 6px #e8b95b14,0 0 34px #e8b95b44;font:700 0/1 Cinzel,Georgia,serif}
-.pl-vs b::before{content:"VS";transform:rotate(-45deg);font-size:19px;color:var(--gold)}
+/* The label is a real child (one grid item), so it centres in the diamond; a pseudo-element plus the text node made two rows. */
+.pl-vs b>span{display:block;transform:rotate(-45deg) translate(.5px,.8px);font-size:19px;line-height:1;color:var(--gold)}
 .pl-startbar{display:flex;align-items:center;gap:14px;padding:12px 14px 12px 20px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:blur(14px)}
 .pl-status{flex:1;min-width:0;font-size:13px;color:var(--muted)}
 .pl-status>p{margin:0;line-height:1.5}
@@ -455,7 +456,7 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 @media(max-width:700px){
  .pl-modes{grid-template-columns:1fr;gap:12px}.pl-mode{min-height:200px;padding:14px 16px 16px;border-radius:18px}.pl-mode-name{font-size:22px}.pl-mode-copy{font-size:12.5px}.pl-mode-foot{margin-top:4px}.pl-mode-cta{min-height:44px;padding:0 18px}
  .pl-head{flex-wrap:wrap;gap:10px}.pl-head-tools{margin-left:0;flex-basis:100%;order:3}.pl-head-tools .pl-format{flex:1}.pl-format>summary{justify-content:space-between}
- .pl-arena{grid-template-columns:1fr;gap:0}.pl-seat{min-height:150px;padding:16px;border-radius:18px}.pl-vs{height:0}.pl-vs b{width:44px;height:44px;border-radius:10px}.pl-vs b::before{font-size:14px}
+ .pl-arena{grid-template-columns:1fr;gap:0}.pl-seat{min-height:150px;padding:16px;border-radius:18px}.pl-vs{height:0}.pl-vs b{width:44px;height:44px;border-radius:10px}.pl-vs b>span{font-size:14px}
  .pl-backs i{width:66px;height:92px;margin:-46px 0 0 -33px;left:26%;top:44%}.pl-backs i:nth-child(1){transform:rotate(-13deg) translateX(-28px)}.pl-backs i:nth-child(3){transform:rotate(13deg) translateX(28px)}
  .pl-seat--cpu::before{background:linear-gradient(270deg,#0c0c0ef5 0%,#0c0c0ed0 55%,#0c0c0e55 100%)}
  .pl-startbar{position:sticky;bottom:calc(var(--nav-h,64px) + env(safe-area-inset-bottom) + 8px);z-index:20;flex-wrap:wrap;padding:12px}.pl-status{flex-basis:100%;font-size:12px}.pl-start.btn{flex:1;min-width:0}

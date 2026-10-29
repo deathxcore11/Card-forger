@@ -80,7 +80,7 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
   </section>`;
   return `<section class="play-menu play-menu--forge pl-lobby${native?'':' pl-lobby--phase'}" data-play-mode="${quick?'quick':'practice'}" aria-labelledby="playTitle">
     <header class="pl-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">Play</p><h1 id="playTitle">${quick?'Quick Play':'Practice'}</h1></div><div class="pl-head-tools">${formatPicker}${quick?'':playmatPickerMarkup()}</div>${matchReleaseReady?'':'<span class="chip">In development</span>'}</header>
-    <section class="pl-arena${podSize>2?' pl-arena--pod':''}" aria-label="Selected matchup">${seat('player')}<span class="pl-vs" aria-hidden="true"><b>VS</b></span>${match.mode==='cpu'?seat('opponent'):'<div class="pl-seat pl-seat--cpu"><div class="pl-seat-copy"><span class="pl-seat-who">Friends</span><h2>Coming later</h2><p>Friend matches are not available yet.</p></div></div>'}</section>${podSeats}
+    <section class="pl-arena${podSize>2?' pl-arena--pod':''}" aria-label="Selected matchup">${seat('player')}<span class="pl-vs" aria-hidden="true"><b><span>VS</span></b></span>${match.mode==='cpu'?seat('opponent'):'<div class="pl-seat pl-seat--cpu"><div class="pl-seat-copy"><span class="pl-seat-who">Friends</span><h2>Coming later</h2><p>Friend matches are not available yet.</p></div></div>'}</section>${podSeats}
     <div class="pl-startbar">${status}${cpuLevel}${difficulty}${start}</div>
     <div class="play-workspace play-workspace--single">
       <section class="panel play-library" aria-labelledby="playDecksTitle">
