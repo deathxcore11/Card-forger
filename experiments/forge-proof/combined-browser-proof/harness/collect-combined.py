@@ -72,13 +72,13 @@ if probe:
  cp['cleanup']['status']='exited' if life.get('status')=='exited' else 'unconfirmed'
  cp['cleanup']['oomKilled']=life.get('oomKilled') is not False
 same_image=ci.get('result')==cp.get('result')=='passed' and image_id(ci.get('imageId')) and ci.get('imageId')==cp.get('sameImageId') and image_id(ci.get('ociManifestDigest')) and ci['ociManifestDigest']==cp.get('ociManifestDigest')
-expected_source='fa9ad9205b4152a763214961a3870eb44c8e3732d015fb89ec5d132867519d38'
-expected_manifest='c6f82b9245ce995ea8d16c0e1fcb5e5f4ca6fd3ad840b4f3b1c1b2867e825dac'
+expected_source='3f83e2153275128da55efd4323d6db14bda05047e82eae9972ea26c0b54d3222'
+expected_manifest='3476dbf5684eebac71b245200635e99ebbef1c23d640be15bd889aadb92f84cb'
 asserted_runtime={'humanPrioritySourceSha256':'23b9220fb5fe8646ab3784a2e19c6c43d968dabed719bc8c59c88f00cc26350c','humanPriorityClassesSha256':'61ad2c7b314ce2d091f96f1fb89dfffc1e7c6634058a019e49978904b660570e','runtimeClassSetSha256':'e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80','aiPatchsetSha256':'cd14c95185c4bfd44e90a809a6095f2027f23d102c1cf04464533ca545a0a4b1','selectedProfileSHA256':'d77ec318868fcdb8fe1dce8d8c2df336fe26d54e13b51f7aab13d259bdf70330','rulesManifestSHA256':'c61abff8809cbc8eedd9b1d4f5162c2252144f421ed2422f0f811e52b08c0d84'}
 required_digest_fields=['humanPrioritySourceSha256','humanPriorityClassesSha256','humanPriorityBuildSha256','nativeBuildAttestationSha256','runtimeClassSetSha256','aiPatchsetSha256','selectedProfileSHA256','rulesManifestSHA256','humanDigest','opponentDigest']
 valid_probe=same_image and ci.get('nativeSourceSHA256')==cp.get('sourceSHA256')==expected_source and ci.get('nativeManifestSHA256')==cp.get('nativeManifestSHA256')==expected_manifest and all(sha(cp.get(k)) for k in required_digest_fields) and cp.get('policyVersion')=='forge-heuristic-medium-beta-v1' and cp.get('buildCompilerVersion') and cp.get('runtimeJavaVersion') and all(cp.get(k) is True for k in ['exactRosterVerified','cpuRulesRuntimeVerified','humanPriorityRuntimeVerified','privacyGatePassed','registeredRosterVerified','nativeRosterVerified'])
 life=cp.get('cleanup',{})
-valid_probe=bool(valid_probe and all(cp.get(k)==v for k,v in asserted_runtime.items()) and ci.get('contextManifestSHA256')=='2f035a8697358edab0540be20b802e99a1eea0ade7d97666b4a1af7207f7b1ac' and ci.get('buildImage') and ci.get('runtimeImage') and life.get('confirmed') and life.get('privateInputRemoved') and life.get('removed') and life.get('forced') is False and life.get('starts')==life.get('destroys')==1 and life.get('status')=='exited' and life.get('exitCode')==0 and life.get('oomKilled') is False)
+valid_probe=bool(valid_probe and all(cp.get(k)==v for k,v in asserted_runtime.items()) and ci.get('contextManifestSHA256')=='630691cc1a6e5b15f4d82fdbe0db5f82281d49d8e9ad286031151fdde27d929d' and ci.get('buildImage') and ci.get('runtimeImage') and life.get('confirmed') and life.get('privateInputRemoved') and life.get('removed') and life.get('forced') is False and life.get('starts')==life.get('destroys')==1 and life.get('status')=='exited' and life.get('exitCode')==0 and life.get('oomKilled') is False)
 browser_same_image=True
 for name in ['desktop','touch750']:
  p=out/name/'summary.json'

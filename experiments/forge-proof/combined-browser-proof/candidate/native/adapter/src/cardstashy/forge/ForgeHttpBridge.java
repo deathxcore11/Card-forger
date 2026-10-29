@@ -509,13 +509,14 @@ public final class ForgeHttpBridge implements IRemote {
     static final long BLOCKED_BUDGET_MS=Long.getLong("cardstashy.blockedBudgetMs",150L);
     volatile forge.gamemodes.match.input.Input blockedInput;
     volatile List<Map<String,Object>> blocked=List.of();
-    // Per glowing card: "available" when the overlay proves the cost can be paid, else "unknown".
-    volatile Map<Integer,String> affordability=Map.of();
+    // Per glowing card: affordability ("available" when the overlay proves the cost can be paid,
+    // else "unknown"), tapPreview (the sources Forge's Auto would tap, in order) and tapWarning.
+    volatile Map<Integer,Map<String,Object>> affordability=Map.of();
     void noteBlocked(Selection sel){
         var input=controller==null?null:controller.getInputProxy().getInput();
         if(!(input instanceof forge.gamemodes.match.input.InputPassPriority)||failure!=null||concessionRequested||game==null){blockedInput=null;blocked=List.of();affordability=Map.of();return;}
         if(input==blockedInput)return;
-        List<Map<String,Object>> out=new ArrayList<>();Map<Integer,String> afford=new HashMap<>();
+        List<Map<String,Object>> out=new ArrayList<>();Map<Integer,Map<String,Object>> afford=new HashMap<>();
         try{
             Player p=controller.getPlayer();Set<Integer> glowing=new HashSet<>();
             for(CardView c:sel.actionable())glowing.add(c.getId());
@@ -534,14 +535,62 @@ public final class ForgeHttpBridge implements IRemote {
         }catch(RuntimeException ignored){out.clear();afford.clear();}
         blocked=List.copyOf(out);affordability=Map.copyOf(afford);blockedInput=input;
     }
-    /** "available" when one usable ability of the card is proven payable now, otherwise "unknown". */
-    static String affordability(forge.game.card.Card c,Player p,long deadline){
+    /** affordability: "available" when one usable ability of the card is proven payable now, otherwise "unknown". */
+    static Map<String,Object> affordability(forge.game.card.Card c,Player p,long deadline){
+        SpellAbility first=null;
         for(SpellAbility sa:c.getAllPossibleAbilities(p,true)){
             if(sa.isManaAbility()||c.isInPlay()&&(sa.isSpell()||sa.isLandAbility()))continue;
-            if(sa.isLandAbility())return "available";
-            if(forge.ai.HumanActionAffordability.assess(sa,p,deadline)==forge.ai.HumanActionAffordability.Assessment.AVAILABLE)return "available";
+            if(sa.isLandAbility())return obj("affordability","available");
+            if(first==null)first=sa;
+            if(forge.ai.HumanActionAffordability.assess(sa,p,deadline)==forge.ai.HumanActionAffordability.Assessment.AVAILABLE){
+                Map<String,Object> m=obj("affordability","available");tapPlan(sa,p,m);return m;
+            }
         }
-        return "unknown";
+        Map<String,Object> m=obj("affordability","unknown");
+        if(first!=null)tapPlan(first,p,m);
+        return m;
+    }
+    /** The sources Forge's own Auto would tap for this ability (Auto runs the same planner), and a
+     *  warning when that plan costs life (pain lands) or sacrifices a source (Treasure). */
+    static void tapPlan(SpellAbility sa,Player p,Map<String,Object> into){
+        try{
+            if(sa.getPayCosts()==null)return;
+            var cost=forge.ai.ComputerUtilMana.calculateManaCost(sa.getPayCosts(),sa,p,true,0,false);
+            if(cost==null||cost.isPaid())return;
+            var sources=forge.ai.ComputerUtilMana.getManaSourcesToPayCost(cost,sa,p,false);
+            if(sources==null||sources.isEmpty())return;
+            List<Integer> ids=new ArrayList<>();String warning=null;
+            // Life is at risk only when a coloured symbol has more copies than the planned
+            // sources can make without pain (a pain land's own colourless mana is free).
+            int[] need=new int[5],painless=new int[5];int painfulAny=0,sacrificed=0,lifePaid=0;
+            for(var shard:sa.getPayCosts().getTotalMana())if(shard.isMonoColor())
+                for(int i=0;i<5;i++)if((shard.getColorMask()&forge.card.MagicColor.WUBRG[i])!=0)need[i]++;
+            for(var src:sources){
+                if(ids.contains(src.getId()))continue;
+                ids.add(src.getId());
+                boolean allSacrifice=!src.getManaAbilities().isEmpty();int free=0;
+                for(SpellAbility ma:src.getManaAbilities()){
+                    boolean sac=false,pain=false;
+                    if(ma.getPayCosts()!=null)for(var part:ma.getPayCosts().getCostParts()){
+                        if(part instanceof forge.game.cost.CostSacrifice)sac=true;
+                        if(part instanceof forge.game.cost.CostPayLife)pain=true;
+                    }
+                    for(var sub=ma.getSubAbility();sub!=null;sub=sub.getSubAbility())
+                        if(sub.getApi()==forge.game.ability.ApiType.DealDamage||sub.getApi()==forge.game.ability.ApiType.LoseLife)pain=true;
+                    if(!sac)allSacrifice=false;
+                    int colors=0;var part=ma.getManaPart();
+                    if(part!=null)for(byte col:forge.card.MagicColor.WUBRG)if(part.canProduce(forge.card.MagicColor.toShortString(col),ma))colors|=col;
+                    if(pain)painfulAny|=colors;else free|=colors;
+                }
+                if(allSacrifice){warning="sacrifice";sacrificed++;}
+                for(int i=0;i<5;i++)if((free&forge.card.MagicColor.WUBRG[i])!=0)painless[i]++;
+            }
+            // tapWarningAmount: Treasures sacrificed, or life paid (1 per painful activation, as on pain lands).
+            if(warning==null)for(int i=0;i<5;i++)
+                if(need[i]>painless[i]&&(painfulAny&forge.card.MagicColor.WUBRG[i])!=0){warning="life";lifePaid+=need[i]-painless[i];}
+            into.put("tapPreview",ids);
+            if(warning!=null){into.put("tapWarning",warning);into.put("tapWarningAmount",warning.equals("sacrifice")?sacrificed:lifePaid);}
+        }catch(RuntimeException ignored){/* no preview; Auto still decides */}
     }
     // Creatures the human must attack with this combat (Forge's own attack requirements:
     // "attacks each combat if able", goad and the like), read while InputAttack waits.
@@ -855,7 +904,7 @@ public final class ForgeHttpBridge implements IRemote {
     List<Object> actionableRefs(){
         List<Object> out=refs(selection.actionable());
         if(publishedInput==null||publishedInput!=blockedInput)return out;
-        for(Object o:out)if(o instanceof Map<?,?> m){String a=affordability.get((Integer)m.get("id"));if(a!=null)((Map<String,Object>)m).put("affordability",a);}
+        for(Object o:out)if(o instanceof Map<?,?> m){var a=affordability.get((Integer)m.get("id"));if(a!=null)((Map<String,Object>)m).putAll(a);}
         return out;
     }
     List<Object> blockedRefs(){
@@ -965,6 +1014,9 @@ public final class ForgeHttpBridge implements IRemote {
                 }
             }catch(RuntimeException ignored){}
         }
+        // Smart mode skips a priority stop when nothing can be cast or activated. Conservative:
+        // any actionable card counts, including ones whose cost is only "unknown".
+        if(publishedInput instanceof forge.gamemodes.match.input.InputPassPriority)snapshot.put("canRespond",!selection.actionable().isEmpty());
         if(exactAdmission!=null&&exactAdmission.opponent()!=null){
             Object warnings=exactAdmission.opponent().report().get("cpuWarnings");
             int count=warnings instanceof Collection<?> values?values.size():0;
