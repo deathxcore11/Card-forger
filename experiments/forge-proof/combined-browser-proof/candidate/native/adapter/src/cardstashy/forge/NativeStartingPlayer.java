@@ -27,8 +27,10 @@ public record NativeStartingPlayer(String selection, String playStyle) {
     Player choose(Player nativeCoinWinner) {
         if(selection.equals("random"))return nativeCoinWinner;
         var players=nativeCoinWinner.getGame().getPlayers();
-        if(players.size()!=2)throw new IllegalStateException("starting_player_requires_two_seats");
+        if(players.size()<2)throw new IllegalStateException("starting_player_requires_two_seats");
         boolean wantAI=selection.equals("second");
+        // A Commander pod: "second" means the CPU seated after you starts.
+        if(players.size()>2)return wantAI?players.get(1):players.get(0);
         Player selected=null;
         for(Player p:players)if(p.isAI()==wantAI){
             if(selected!=null)throw new IllegalStateException("starting_player_seat_ambiguous");

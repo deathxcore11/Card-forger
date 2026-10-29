@@ -42,6 +42,9 @@ public final class ForgeHttpBridge implements IRemote {
     NativeStartingPlayer startingPlayer;
     volatile Map<String,Object> pregame = Map.of();
     int humanDeckCount=100,aiDeckCount=100;
+    // Deck name and size per CPU seat (native player id), so a Commander pod labels each seat.
+    final Map<Integer,String> seatDeckAlias=new ConcurrentHashMap<>();
+    final Map<Integer,Integer> seatDeckCount=new ConcurrentHashMap<>();
     static final String REV = "e5a0f8156da70ffc7866f923bed371c0111707cd";
     final AtomicReference<Map<String,Object>> published = new AtomicReference<>(Map.of("status","initializing"));
     final AtomicLong revision = new AtomicLong();
@@ -106,7 +109,12 @@ public final class ForgeHttpBridge implements IRemote {
     boolean invokeNativeConcession(){
         // Game.setGameOver uses this same monitor. Do not overwrite its completed PlayerStatistics.
         // concessionRequested already blocks bridge graph reads/queued commands before acquiring it.
-        synchronized(game){if(game.isGameOver())return false;controller.concede();return true;}
+        synchronized(game){
+            if(game.isGameOver())return false;controller.concede();
+            // In a Commander pod the CPUs would play on without you: the match ends for you here.
+            if(!game.isGameOver()&&game.getRegisteredPlayers().size()>2){game.setGameOver(forge.game.GameEndReason.AllHumansLost);controller.getInputQueue().onGameOver(true);}
+            return true;
+        }
     }
     void requestConcession(){
         concessionRequested=true;busy=true;selection=Selection.NONE;clearSmartIntent();promptGeneration.incrementAndGet();publish();
@@ -223,7 +231,15 @@ public final class ForgeHttpBridge implements IRemote {
         actualAiProfile=aiLobby.getAiProfile();
         System.out.println("AI_PROFILE "+actualAiProfile);
         RegisteredPlayer ai=format.register(reign).setPlayer(aiLobby);
-        if(exactAdmission!=null)NativeDeckAdmission.verifyRegistered(exactAdmission,human.getDeck(),ai.getDeck());
+        List<RegisteredPlayer> seats=new ArrayList<>(List.of(human,ai));
+        if(exactAdmission!=null)for(int i=0;i<exactAdmission.extras().size();i++){
+            Deck extra=exactAdmission.extras().get(i).deck();
+            var lobby=exactAdmission.extraPolicies().get(i).createLobby("Forge AI "+(i+2)+" — "+extra.getName());
+            if(startingPlayer!=null)lobby=startingPlayer.aiLobby(lobby);
+            lobby.setAvatarIndex(i+2);
+            seats.add(format.register(extra).setPlayer(lobby));
+        }
+        if(exactAdmission!=null)NativeDeckAdmission.verifyRegistered(exactAdmission,human.getDeck(),ai.getDeck(),seats.subList(2,seats.size()).stream().map(RegisteredPlayer::getDeck).toArray(Deck[]::new));
         GameRules rules=new GameRules(format.gameType);
         rules.setAppliedVariants(format.variants());
         rules.setGamesPerMatch(1);
@@ -231,7 +247,7 @@ public final class ForgeHttpBridge implements IRemote {
         // They are not rules choices and must not block the pregame toss.
         if(startingPlayer!=null)rules.setWarnAboutAICards(false);
         rules.setAllowCheatShuffle(false);
-        Match match=new Match(rules,List.of(human,ai),"CardStashy Forge proof");
+        Match match=new Match(rules,List.copyOf(seats),"CardStashy Forge proof");
         game=match.createGame();
         game.AI_FLAT_MONTE_CARLO=false;game.AI_FLAT_MONTE_CARLO_MAX=false;
         for(Player p:game.getPlayers())if(p.getController() instanceof forge.ai.PlayerControllerAi aiController){
@@ -239,6 +255,11 @@ public final class ForgeHttpBridge implements IRemote {
         }
         NativeCpuPolicyIntegration.verifyRuntime(exactAdmission,cpuPolicy,game);
         controller=(PlayerControllerHuman)game.getPlayers().get(0).getController();
+        for(int i=1;i<game.getPlayers().size();i++){
+            Deck d=i==1?reign:exactAdmission.extras().get(i-2).deck();
+            seatDeckAlias.put(game.getPlayers().get(i).getId(),d.getName());
+            seatDeckCount.put(game.getPlayers().get(i).getId(),d.getMain().countAll()+NativeMatchFormat.count(d,DeckSection.Commander));
+        }
         viewer=controller.getPlayer().getView();
         if(exactAdmission!=null)exactAdmission.receipt().put("viewerId",viewer.getId());
         // Forge's network GUI never reports a skipped phase, so the yield controller's
@@ -972,13 +993,13 @@ public final class ForgeHttpBridge implements IRemote {
                     }
                     zones.put(zone.name(),obj("count",count,"cards",visible));
                 }
-                players.add(obj("id",p.getId(),"name",p.getName(),"deckAlias",p.equals(viewer)?humanDeckAlias:aiDeckAlias,"deckCount",p.equals(viewer)?humanDeckCount:aiDeckCount,"life",p.getLife(),"isViewer",p.equals(viewer),"hasAvailableActions",p.hasAvailableActions(),"mana",mana(p),"counters",counters(p),"designations",designations(p),"zones",zones));
+                players.add(obj("id",p.getId(),"name",p.getName(),"deckAlias",p.equals(viewer)?humanDeckAlias:seatDeckAlias.getOrDefault(p.getId(),aiDeckAlias),"deckCount",p.equals(viewer)?humanDeckCount:seatDeckCount.getOrDefault(p.getId(),aiDeckCount),"lost",p.getHasLost(),"commanderDamage",commanderDamage(v,p),"life",p.getLife(),"isViewer",p.equals(viewer),"hasAvailableActions",p.hasAvailableActions(),"mana",mana(p),"counters",counters(p),"designations",designations(p),"zones",zones));
             }
             if(v.getStack()!=null)for(StackItemView si:v.getStack()){
                 exposedStack.put(si.getId(),si);
                 stack.add(obj("id",si.getId(),"text",stackText(si.getText()),"source",si.getSourceCard()==null?null:card(si.getSourceCard()),"activatingPlayer",id(si.getActivatingPlayer()),"targets",refs(stackTargets(si)),"ability",si.isAbility(),"yielded",si.isAbility()&&turnYields.contains(forge.player.AutoYieldStore.abilitySuffix(si.getKey()))));
             }
-            board=obj("schema","cardstashy.forge-proof.v1","forgeRevision",REV,"viewer",viewer.getId(),"aiProfile",actualAiProfile,"match",obj("humanDeck",humanDeckAlias,"aiDeck",aiDeckAlias),"turn",v.getTurn(),"phase",v.getPhase()==null?null:v.getPhase().name(),"activePlayer",id(v.getPlayerTurn()),"priorityPlayer",game.getPhaseHandler().getPriorityPlayer()==null?null:game.getPhaseHandler().getPriorityPlayer().getId(),"players",players,"stack",stack,"dayNight",game.isDay()?"day":game.isNight()?"night":null,"gameOver",v.isGameOver(),"winner",v.isGameOver()?v.getWinningPlayerName():null,"winnerPlayerId",winnerId(),"draw",v.isGameOver()&&game.getOutcome()!=null&&game.getOutcome().isDraw());
+            board=obj("schema","cardstashy.forge-proof.v1","forgeRevision",REV,"viewer",viewer.getId(),"aiProfile",actualAiProfile,"match",obj("humanDeck",humanDeckAlias,"aiDeck",aiDeckAlias),"turnOrder",v.getPlayers().stream().map(PlayerView::getId).toList(),"turn",v.getTurn(),"phase",v.getPhase()==null?null:v.getPhase().name(),"activePlayer",id(v.getPlayerTurn()),"priorityPlayer",game.getPhaseHandler().getPriorityPlayer()==null?null:game.getPhaseHandler().getPriorityPlayer().getId(),"players",players,"stack",stack,"dayNight",game.isDay()?"day":game.isNight()?"night":null,"gameOver",v.isGameOver(),"winner",v.isGameOver()?v.getWinningPlayerName():null,"winnerPlayerId",winnerId(),"draw",v.isGameOver()&&game.getOutcome()!=null&&game.getOutcome().isDraw());
             boardVisibility=List.copyOf(visibility);
         }catch(RuntimeException ex){failure="Projection failed: "+ex;ex.printStackTrace();}
     }}
@@ -1050,6 +1071,22 @@ public final class ForgeHttpBridge implements IRemote {
         snapshot.putAll(obj("revision",publicationRevision,"status",failure!=null?"failed":(finished||Boolean.TRUE.equals(board.get("gameOver"))?"finished":exactAdmission!=null&&(!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))||startingPlayer!=null&&pregame.isEmpty())?"initializing":"running"),"failure",failure,"message",message,"buttons",buttons,"inputType",input,"selection",select,"prompt",concessionRequested||pending==null?null:pending.dto,"busy",!(finished||Boolean.TRUE.equals(board.get("gameOver")))&&(concessionRequested||(pending!=null?pending.answer.isDone():(busy||commandInFlight||nativePaymentPending()||publishedInput==null||publishedInput instanceof forge.gamemodes.match.input.InputLockUI))),"lastActionError",lastActionError,"notification",notification,"controlMode",controlMode,"autoPay",autoPay(),"phaseStops",Map.copyOf(phaseStops),"autoPassNoActions",effectiveAutoPass,"nativeAutoPayments",nativeAutoPayments,"canConcede",failure==null&&!finished&&!concessionRequested&&!Boolean.TRUE.equals(board.get("gameOver")),"concession",obj("requested",concessionRequested,"nativeConfirmed",nativeOutcomeConfirmed,"applied",concessionApplied)));
         published.set(snapshot);
     }}
+    // Commander damage this player has taken from each opponent's commander (CR 903.10a), 0 included.
+    List<Object> commanderDamage(GameView v,PlayerView p){
+        List<Object> out=new ArrayList<>();
+        for(PlayerView q:v.getPlayers()){
+            if(q.getId()==p.getId()||q.getCommanders()==null)continue;
+            for(CardView c:q.getCommanders())out.add(obj("from",q.getId(),"commander",c.getName(),"damage",p.getCommanderDamage(c)));
+        }
+        return out;
+    }
+    // Forge plays on after you lose a multiplayer game, with only CPUs left. End it for you there:
+    // the CPUs' priority right after your loss is the first moment no rules step is still running.
+    @com.google.common.eventbus.Subscribe
+    public void onPriorityAfterViewerLoss(forge.game.event.GameEventPlayerPriority event){
+        if(game==null||controller==null||game.isGameOver()||game.getRegisteredPlayers().size()<3)return;
+        if(controller.getPlayer().hasLost())game.setGameOver(forge.game.GameEndReason.AllHumansLost);
+    }
     Integer winnerId(){if(!game.isGameOver()||game.getOutcome()==null)return null;for(Player p:game.getRegisteredPlayers())if(game.getOutcome().isWinner(p.getRegisteredPlayer()))return p.getId();return null;}
 
     Object reply(Pending p,JsonObject body) {

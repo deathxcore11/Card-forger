@@ -14,7 +14,10 @@ export function nativeAdapter(env, { now = Date.now } = {}) {
     // Pure policy preflight: reject unsupported versions before reserving or
     // charging scarce trial resources. Native exact-deck validation still owns
     // legality/support and remains mandatory in the allocated JVM.
-    validateAdmissionInput(input) { selectedPolicy(input?.difficultyPolicyVersion); },
+    validateAdmissionInput(input) {
+      selectedPolicy(input?.difficultyPolicyVersion);
+      for (const seat of Array.isArray(input?.extraOpponents) ? input.extraOpponents : []) selectedPolicy(seat?.difficultyPolicyVersion);
+    },
     async startOptions(options) {
       validateReleasePolicy(release, configuredImage, now()); selectedPolicy(options.input?.difficultyPolicyVersion);
       return transport.startOptions(options);

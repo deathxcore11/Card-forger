@@ -25,9 +25,11 @@ public final class NativeCpuPolicyIntegration {
   Map<String,Object> out=new LinkedHashMap<>(policy.receipt());out.putAll(buildReceipt);out.put("runtimeSettingsVerified",false);return out;
  }
  public static void verifyRuntime(NativeDeckAdmission.Admission admission,BoundedHeuristicPolicy policy,forge.game.Game game){
+  // Each CPU seat keeps its own level: the first CPU uses the match level, extra pod seats theirs.
+  List<BoundedHeuristicPolicy> seats=new ArrayList<>();seats.add(policy);if(admission!=null)seats.addAll(admission.extraPolicies());
   int aiPlayers=0;
-  for(var p:game.getPlayers())if(p.getController() instanceof forge.ai.PlayerControllerAi){policy.apply(p);aiPlayers++;}
-  if(aiPlayers!=1)throw new IllegalStateException("expected_exactly_one_native_cpu");
+  for(var p:game.getPlayers())if(p.getController() instanceof forge.ai.PlayerControllerAi){if(aiPlayers>=seats.size())throw new IllegalStateException("expected_one_native_cpu_per_seat");seats.get(aiPlayers).apply(p);aiPlayers++;}
+  if(aiPlayers!=seats.size())throw new IllegalStateException("expected_one_native_cpu_per_seat");
   var prefs=forge.model.FModel.getPreferences();
   if(game.getRules().isAllowCheatShuffle()||game.AI_FLAT_MONTE_CARLO||game.AI_FLAT_MONTE_CARLO_MAX||game.AI_TIMEOUT!=5||prefs.getPrefBoolean(forge.localinstance.properties.ForgePreferences.FPref.UI_ENABLE_AI_CHEATS)||prefs.getPrefBoolean(forge.localinstance.properties.ForgePreferences.FPref.FILTERED_HANDS)||prefs.getPrefBoolean(forge.localinstance.properties.ForgePreferences.FPref.MATCH_AI_FLAT_MONTE_CARLO))throw new IllegalStateException("native_ai_global_policy_mismatch");
   if(admission!=null){

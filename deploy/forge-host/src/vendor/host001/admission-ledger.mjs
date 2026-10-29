@@ -9,7 +9,7 @@ const fail = code => { throw new TypeError(code); };
 const only = (value, allowed) => object(value) && Object.keys(value).every(key => allowed.includes(key));
 
 export function validateExactDeckInput(input) {
-  if (!only(input, ['format', 'humanDeck', 'opponentDeck', 'difficultyPolicyVersion', 'startingPlayer', 'playStyle'])
+  if (!only(input, ['format', 'humanDeck', 'opponentDeck', 'difficultyPolicyVersion', 'startingPlayer', 'playStyle', 'extraOpponents'])
       || !['Commander', 'Standard', 'Modern', 'Pioneer', 'Legacy', 'Vintage', 'Pauper', 'Brawl'].includes(input.format)
       || typeof input.difficultyPolicyVersion !== 'string'
       || !/^[A-Za-z0-9._-]{1,80}$/.test(input.difficultyPolicyVersion)) fail('invalid_match_input');
@@ -17,8 +17,17 @@ export function validateExactDeckInput(input) {
     if (!['random', 'first', 'second'].includes(input.startingPlayer) || !['quick', 'practice'].includes(input.playStyle)
         || input.playStyle === 'quick' && input.startingPlayer !== 'random') fail('invalid_starting_player_selection');
   }
-  for (const role of ['humanDeck', 'opponentDeck']) {
-    const deck = input[role];
+  // A Commander pod: up to two more CPU seats, each with its own deck and level.
+  const decks = [input.humanDeck, input.opponentDeck];
+  if (input.extraOpponents !== undefined) {
+    if (input.format !== 'Commander' || !Array.isArray(input.extraOpponents) || input.extraOpponents.length < 1 || input.extraOpponents.length > 2) fail('invalid_extra_opponents');
+    for (const seat of input.extraOpponents) {
+      if (!only(seat, ['deck', 'difficultyPolicyVersion']) || typeof seat.difficultyPolicyVersion !== 'string'
+          || !/^[A-Za-z0-9._-]{1,80}$/.test(seat.difficultyPolicyVersion)) fail('invalid_extra_opponents');
+      decks.push(seat.deck);
+    }
+  }
+  for (const deck of decks) {
     // Accept the EXISTING CardStashy saved/imported snapshot. cards includes
     // declared commanders; commanders/commander designate those same copies.
     // Do not invent another deck model or split/remove/add those copies here.
