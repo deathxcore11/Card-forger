@@ -466,6 +466,7 @@ public final class ForgeHttpBridge implements IRemote {
         // buttons and message also mark a new priority input.
         if(e.getMethod()==ProtocolMethod.setSelection)noteBlocked((Selection)a[0]);
         else if(e.getMethod()==ProtocolMethod.updateButtons||e.getMethod()==ProtocolMethod.showPromptMessage)noteBlocked(selection);
+        if(e.getMethod()==ProtocolMethod.setSelection||e.getMethod()==ProtocolMethod.updateButtons||e.getMethod()==ProtocolMethod.showPromptMessage)noteMustAttack();
         synchronized(lock){ switch(e.getMethod()) {
             case showPromptMessage -> message=(String)a[1];
             case updateButtons -> { buttons=obj("ok",a[1],"cancel",a[2],"okEnabled",a[3],"cancelEnabled",a[4]); busy=false; }
@@ -508,16 +509,21 @@ public final class ForgeHttpBridge implements IRemote {
     static final long BLOCKED_BUDGET_MS=Long.getLong("cardstashy.blockedBudgetMs",150L);
     volatile forge.gamemodes.match.input.Input blockedInput;
     volatile List<Map<String,Object>> blocked=List.of();
+    // Per glowing card: "available" when the overlay proves the cost can be paid, else "unknown".
+    volatile Map<Integer,String> affordability=Map.of();
     void noteBlocked(Selection sel){
         var input=controller==null?null:controller.getInputProxy().getInput();
-        if(!(input instanceof forge.gamemodes.match.input.InputPassPriority)||failure!=null||concessionRequested||game==null){blockedInput=null;blocked=List.of();return;}
+        if(!(input instanceof forge.gamemodes.match.input.InputPassPriority)||failure!=null||concessionRequested||game==null){blockedInput=null;blocked=List.of();affordability=Map.of();return;}
         if(input==blockedInput)return;
-        List<Map<String,Object>> out=new ArrayList<>();
+        List<Map<String,Object>> out=new ArrayList<>();Map<Integer,String> afford=new HashMap<>();
         try{
             Player p=controller.getPlayer();Set<Integer> glowing=new HashSet<>();
             for(CardView c:sel.actionable())glowing.add(c.getId());
             long deadline=System.nanoTime()+BLOCKED_BUDGET_MS*1_000_000L;
             p.runWithController(()->{
+                for(ZoneType zone:List.of(ZoneType.Hand,ZoneType.Battlefield,ZoneType.Command,ZoneType.Flashback))for(var c:p.getCardsIn(zone)){
+                    if(glowing.contains(c.getId())&&System.nanoTime()<deadline)afford.put(c.getId(),affordability(c,p,deadline));
+                }
                 for(ZoneType zone:List.of(ZoneType.Hand,ZoneType.Battlefield,ZoneType.Command,ZoneType.Flashback))for(var c:p.getCardsIn(zone)){
                     if(System.nanoTime()>=deadline)return;
                     if(glowing.contains(c.getId()))continue;
@@ -525,8 +531,32 @@ public final class ForgeHttpBridge implements IRemote {
                     if(reason!=null)out.add(obj("kind","card","id",c.getId(),"reason",reason));
                 }
             },new forge.ai.PlayerControllerAi(game,p,p.getOriginalLobbyPlayer()));
-        }catch(RuntimeException ignored){out.clear();}
-        blocked=List.copyOf(out);blockedInput=input;
+        }catch(RuntimeException ignored){out.clear();afford.clear();}
+        blocked=List.copyOf(out);affordability=Map.copyOf(afford);blockedInput=input;
+    }
+    /** "available" when one usable ability of the card is proven payable now, otherwise "unknown". */
+    static String affordability(forge.game.card.Card c,Player p,long deadline){
+        for(SpellAbility sa:c.getAllPossibleAbilities(p,true)){
+            if(sa.isManaAbility()||c.isInPlay()&&(sa.isSpell()||sa.isLandAbility()))continue;
+            if(sa.isLandAbility())return "available";
+            if(forge.ai.HumanActionAffordability.assess(sa,p,deadline)==forge.ai.HumanActionAffordability.Assessment.AVAILABLE)return "available";
+        }
+        return "unknown";
+    }
+    // Creatures the human must attack with this combat (Forge's own attack requirements:
+    // "attacks each combat if able", goad and the like), read while InputAttack waits.
+    volatile Set<Integer> mustAttack=Set.of();
+    void noteMustAttack(){
+        var input=controller==null?null:controller.getInputProxy().getInput();
+        Set<Integer> ids=new HashSet<>();
+        if(input instanceof forge.gamemodes.match.input.InputAttack&&failure==null&&!concessionRequested&&game!=null){
+            try{
+                var combat=game.getCombat();var constraints=combat==null?null:combat.getAttackConstraints();
+                if(constraints!=null)for(var entry:constraints.getRequirements().entrySet())
+                    if(entry.getValue()!=null&&entry.getValue().hasRequirement()&&entry.getKey().getController()==controller.getPlayer())ids.add(entry.getKey().getId());
+            }catch(RuntimeException ignored){ids.clear();}
+        }
+        if(!ids.equals(mustAttack)){mustAttack=Set.copyOf(ids);refreshBoard();}
     }
     /** Why none of this card's abilities can be used now, or null when one can or the reason is unclear. */
     static String blockedReason(forge.game.card.Card c,Player p,long deadline){
@@ -751,6 +781,7 @@ public final class ForgeHttpBridge implements IRemote {
         if(!visible)return m;
         exposedCards.put(c.getId(),c);
         m.put("tapped",c.isTapped()); m.put("attacking",c.isAttacking());m.put("blocking",c.isBlocking());
+        if(mustAttack.contains(c.getId()))m.put("mustAttack",true);
         // Combat arrows: whom an attacker attacks, and which attackers a blocker blocks.
         var combat=game==null?null:game.getView().getCombat();
         if(combat!=null&&c.isAttacking()){
@@ -820,6 +851,12 @@ public final class ForgeHttpBridge implements IRemote {
         if(si.getTargetPlayers()!=null)for(PlayerView p:si.getTargetPlayers())all.add(p);
         if(si.getTargetStackItems()!=null)for(StackItemView t:si.getTargetStackItems())all.add(t);
         return all;
+    }
+    List<Object> actionableRefs(){
+        List<Object> out=refs(selection.actionable());
+        if(publishedInput==null||publishedInput!=blockedInput)return out;
+        for(Object o:out)if(o instanceof Map<?,?> m){String a=affordability.get((Integer)m.get("id"));if(a!=null)((Map<String,Object>)m).put("affordability",a);}
+        return out;
     }
     List<Object> blockedRefs(){
         if(publishedInput==null||publishedInput!=blockedInput)return List.of();
@@ -897,12 +934,13 @@ public final class ForgeHttpBridge implements IRemote {
         published.set(snapshot);
     }
     /** Bare asynchronous prompt/button notifications only overlay immutable projected data. */
+    SpellAbility costNowFor;Map<String,Object> costNow;
     void publish() { synchronized(lock) {
         if(failure!=null){publishFailure();return;}
         if(board.isEmpty())return;
         publishedInput=controller.getInputProxy().getInput();
         String input=publishedInput==null?null:publishedInput.getClass().getSimpleName();
-        Map<String,Object> select=obj("cards",refs(selection.cards()),"targets",refs(selection.targets()),"chosen",refs(selection.chosen()),"actionable",refs(selection.actionable()),"blocked",blockedRefs(),"min",selection.min(),"max",selection.max());
+        Map<String,Object> select=obj("cards",refs(selection.cards()),"targets",refs(selection.targets()),"chosen",refs(selection.chosen()),"actionable",actionableRefs(),"blocked",blockedRefs(),"min",selection.min(),"max",selection.max());
         Map<String,Object> snapshot=new LinkedHashMap<>(board);
         if(exactAdmission!=null)snapshot.put("initialization",new LinkedHashMap<>(exactAdmission.receipt()));
         long publicationRevision=revision.incrementAndGet();
@@ -917,7 +955,14 @@ public final class ForgeHttpBridge implements IRemote {
             try{
                 SpellAbility paidFor=controller.getPlayer().getPaidForSA();
                 var owed=paidFor==null?null:paidFor.getManaCostBeingPaid();
-                if(owed!=null)snapshot.put("payment",obj("remaining",owed.toString(),"forCard",paidFor.getHostCard()==null?null:cardRef(paidFor.getHostCard().getView())));
+                if(owed!=null){
+                    // costNow: the whole cost Forge settled on for this cast (after reductions such
+                    // as a tapped target), fixed when payment starts; cmcPaid is its mana value.
+                    if(paidFor!=costNowFor){costNowFor=paidFor;costNow=paidFor.getPayingMana().isEmpty()?obj("mana",owed.toString(),"cmcPaid",owed.getConvertedManaCost()):null;}
+                    Map<String,Object> payment=obj("remaining",owed.toString(),"forCard",paidFor.getHostCard()==null?null:cardRef(paidFor.getHostCard().getView()));
+                    if(costNow!=null)payment.put("costNow",costNow);
+                    snapshot.put("payment",payment);
+                }
             }catch(RuntimeException ignored){}
         }
         if(exactAdmission!=null&&exactAdmission.opponent()!=null){

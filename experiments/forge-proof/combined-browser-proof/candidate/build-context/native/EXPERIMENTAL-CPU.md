@@ -3,9 +3,9 @@
 Parent is the combined0334 candidate (exact existing snapshots, Commander/Standard/Modern, dated rules, native concession, native highlights). All those capabilities remain. This descendant applies the separately independently reviewed four-patch AI candidate, not an unmodified stock-AI claim.
 
 Only these policy versions are accepted:
-- `forge-heuristic-easy-beta-v1` → `CardStashyEasyBetaV1`
+- `forge-heuristic-easy-beta-v2` → `CardStashyEasyBetaV2`
 - `forge-heuristic-medium-beta-v1` → `CardStashyMediumBetaV1`
-- `forge-heuristic-hard-beta-v1` → `CardStashyHardBetaV1`
+- `forge-heuristic-hard-beta-v2` → `CardStashyHardBetaV2`
 
 Unknown, omitted, unversioned and legacy `forge-default-smart-v1` values reject. No implicit Medium/Default mapping. Existing deck snapshots do not change; the caller explicitly changes only the requested policy version. The preserved0334 image remains the separate explicit Default baseline. No runtime policy switching is provided; select a policy before a new match.
 

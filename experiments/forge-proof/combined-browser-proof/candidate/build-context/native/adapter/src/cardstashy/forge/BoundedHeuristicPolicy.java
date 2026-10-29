@@ -12,9 +12,10 @@ import java.util.*;
 
 /** Review candidate only. Experimental heuristic difficulties, not stock AI or guaranteed ranks. */
 public enum BoundedHeuristicPolicy {
-    EASY("forge-heuristic-easy-beta-v1", "CardStashyEasyBetaV1", 10, 0),
-    MEDIUM("forge-heuristic-medium-beta-v1", "CardStashyMediumBetaV1", 50, 50),
-    HARD("forge-heuristic-hard-beta-v1", "CardStashyHardBetaV1", 100, 100);
+    // Easy makes honest mistakes; Hard adds Forge's flat Monte Carlo look-ahead (hidden cards re-dealt, so no peeking).
+    EASY("forge-heuristic-easy-beta-v2", "CardStashyEasyBetaV2", 10, 0, false),
+    MEDIUM("forge-heuristic-medium-beta-v1", "CardStashyMediumBetaV1", 50, 50, false),
+    HARD("forge-heuristic-hard-beta-v2", "CardStashyHardBetaV2", 100, 100, true);
 
     public static final String FORGE_COMMIT = "e5a0f8156da70ffc7866f923bed371c0111707cd";
     public static final String AI_PATCHSET_VERSION = "cardstashy-forge-observation-survival-land-v2-review";
@@ -22,10 +23,11 @@ public enum BoundedHeuristicPolicy {
     public static final String DEFAULT_SHA256 = "fb32c2067f30cb8820eff33024e3597a036d476ef35fb312459d0106a0c82f7d";
     public final String version, profile;
     public final int tacticalChance, holdUnusedLandChance;
+    public final boolean monteCarlo;
     private static Map<String,String> installedHashes = Map.of();
 
-    BoundedHeuristicPolicy(String version, String profile, int chance, int hold) {
-        this.version=version; this.profile=profile; this.tacticalChance=chance; this.holdUnusedLandChance=hold;
+    BoundedHeuristicPolicy(String version, String profile, int chance, int hold, boolean monteCarlo) {
+        this.version=version; this.profile=profile; this.tacticalChance=chance; this.holdUnusedLandChance=hold; this.monteCarlo=monteCarlo;
     }
     public static BoundedHeuristicPolicy parseVersion(String version) {
         for (var p:values()) if(p.version.equals(version)) return p;
@@ -46,6 +48,32 @@ public enum BoundedHeuristicPolicy {
                 AiProps.MIN_CHANCE_TO_RANDOMLY_TRADE_ON_BLOCK,AiProps.MAX_CHANCE_TO_RANDOMLY_TRADE_ON_BLOCK))
             m.put(key,Integer.toString(tacticalChance));
         m.put(AiProps.HOLD_LAND_DROP_FOR_MAIN2_IF_UNUSED,Integer.toString(holdUnusedLandChance));
+        if(this==EASY) {
+            // Walks into blocks, spends tricks early, misses alpha strikes and lets small threats slide.
+            m.put(AiProps.COMBAT_ASSAULT_ATTACK_EVASION_PREDICTION,"false");
+            m.put(AiProps.TRY_TO_AVOID_ATTACKING_INTO_CERTAIN_BLOCK,"false");
+            m.put(AiProps.TRY_TO_HOLD_COMBAT_TRICKS_UNTIL_BLOCK,"false");
+            m.put(AiProps.ACTIVELY_DESTROY_IMMEDIATELY_UNBLOCKABLE,"false");
+            m.put(AiProps.MIN_SPELL_CMC_TO_COUNTER,"2");
+            m.put(AiProps.AI_IN_DANGER_THRESHOLD,"3"); m.put(AiProps.AI_IN_DANGER_MAX_THRESHOLD,"3");
+        } else if(this==HARD) {
+            // Forge's own Hard.ai search budget, plus the Experimental.ai judgement settings.
+            m.put(AiProps.FLAT_MC_ENABLED,"true"); m.put(AiProps.FLAT_MC_ATTACK,"true");
+            m.put(AiProps.COMBAT_ATTRITION_ATTACK_EVASION_PREDICTION,"true");
+            m.put(AiProps.FLAT_MC_DECISION_BUDGET_MS,"800"); m.put(AiProps.FLAT_MC_TURN_BUDGET_MS,"3500");
+            m.put(AiProps.FLAT_MC_MAX_CANDIDATES,"6"); m.put(AiProps.FLAT_MC_ROLLOUTS_PER_CANDIDATE,"5");
+            m.put(AiProps.FLAT_MC_EXTRA_ROUNDS,"3"); m.put(AiProps.FLAT_MC_MAX_PLAYOUT_PLAYS,"8");
+            m.put(AiProps.FLAT_MC_COMBO_PLAYOUT_PLAYS,"16"); m.put(AiProps.FLAT_MC_HEURISTIC_BONUS,"70");
+            m.put(AiProps.FLAT_MC_HOLD_MANA_WEIGHT,"110"); m.put(AiProps.FLAT_MC_RISK_WEIGHT,"120");
+            m.put(AiProps.AI_IN_DANGER_THRESHOLD,"5"); m.put(AiProps.AI_IN_DANGER_MAX_THRESHOLD,"5");
+            m.put(AiProps.CHANCE_TO_HOLD_COMBAT_TRICKS_UNTIL_BLOCK,"75");
+            m.put(AiProps.FLASH_CHANCE_TO_RESPOND_TO_STACK_WITH_ETB,"15");
+            m.put(AiProps.DESTROY_IMMEDIATELY_UNBLOCKABLE_ONLY_IN_DNGR,"false");
+            m.put(AiProps.CHANCE_TO_TRADE_DOWN_TO_SAVE_PLANESWALKER,"40");
+            m.put(AiProps.CHUMP_TO_SAVE_PLANESWALKER_ONLY_ON_LETHAL,"false");
+            m.put(AiProps.TOKEN_GENERATION_ABILITY_CHANCE,"100");
+            m.put(AiProps.MOVE_EQUIPMENT_TO_BETTER_CREATURES,"always");
+        }
         return Collections.unmodifiableMap(m);
     }
     /** Startup only, before any games: native profile loading is global. No opponent data is read. */
@@ -82,12 +110,15 @@ public enum BoundedHeuristicPolicy {
         Game game=player.getGame();configureRules(game.getRules());
         game.AI_FLAT_MONTE_CARLO=false;game.AI_FLAT_MONTE_CARLO_MAX=false;game.AI_TIMEOUT=5;
         AiController ai=controller.getAi();ai.setUseSimulation(null);
-        ai.setFlatMonteCarloOverride(false);ai.setFlatMonteCarloMaxOverride(false);ai.setFlatMonteCarloAttackOverride(false);
+        // Per player only: the game-wide Monte Carlo switches stay off. Forge's circuit breaker still turns it off on a slow device.
+        ai.setFlatMonteCarloOverride(monteCarlo);ai.setFlatMonteCarloMaxOverride(false);ai.setFlatMonteCarloAttackOverride(monteCarlo);
         for(var setting:settings().entrySet()) {
             String expected=setting.getValue();
             boolean ok=expected.equals("true")||expected.equals("false")
                     ? ai.getBoolProperty(setting.getKey())==Boolean.parseBoolean(expected)
-                    : ai.getIntProperty(setting.getKey())==Integer.parseInt(expected);
+                    : expected.chars().allMatch(Character::isDigit)
+                    ? ai.getIntProperty(setting.getKey())==Integer.parseInt(expected)
+                    : expected.equals(ai.getProperty(setting.getKey()));
             if(!ok) throw new IllegalStateException("Effective native profile mismatch: "+setting.getKey());
         }
     }
@@ -97,7 +128,7 @@ public enum BoundedHeuristicPolicy {
         out.put("difficultyPolicyVersion",version);out.put("aiProfile",profile);out.put("controlMode","smart");
         out.put("forgeCommit",FORGE_COMMIT);out.put("aiPatchsetVersion",AI_PATCHSET_VERSION);
         out.put("aiPatchsetSha256",AI_PATCHSET_SHA256);out.put("profileSha256",installedHashes.get(profile));
-        out.put("nativeAiModified",true);out.put("monteCarlo",false);out.put("legacySimulation",false);
+        out.put("nativeAiModified",true);out.put("monteCarlo",monteCarlo);out.put("legacySimulation",false);
         out.put("opponentDeckKnowledge","secret-current-lawful-observations-only");
         out.put("calibration","experimental-bounded-tactical-corpus-not-universal-strength-ranking");
         out.put("nativePriorityTimeoutSeconds",5);out.put("strictServiceLatencyProven",false);

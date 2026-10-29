@@ -33,8 +33,8 @@
     },
     {
       "path": "local-test-policy.mjs",
-      "bytes": 8946,
-      "sha256": "89b45a97888645be2ed6418975b7611fed21e04d04805cad450094efd8fb7917"
+      "bytes": 8958,
+      "sha256": "f2b1f7e27d8818a757a76b6c8ff8b43b8d15350872218ba0a1c0eb4f354ce722"
     },
     {
       "path": "oci-identity.mjs",
@@ -49,7 +49,7 @@
     {
       "path": "reviewed-host.mjs",
       "bytes": 2132,
-      "sha256": "5abbb8a6fc5d6b68d0a7edbbd43011c589567891e7b4977cfbbd3d3a1b28ffc5"
+      "sha256": "a550149945caca406924a88f701e60786e61f9031a04013c11868204c110062b"
     },
     {
       "path": "schema.json",
@@ -58,13 +58,13 @@
     },
     {
       "path": "test-fixtures.mjs",
-      "bytes": 7465,
-      "sha256": "31babf65f1de60ed5ded9bf7c54397485fe52889755d62c57d162019107370b8"
+      "bytes": 7478,
+      "sha256": "12b3f8a2681883bf7c1b01c65478e61839343df06b43462b074ba7188355ce15"
     },
     {
       "path": "test-local-oci.mjs",
-      "bytes": 13448,
-      "sha256": "ab6a643b8996bba5fab656a7af2b8f0a98d4aab375fd11311741d30398cbcdfd"
+      "bytes": 13461,
+      "sha256": "412657a0f98681c3fd6aa745fd1072ec93ad06f3954faf7327ead388c9dc5dbe"
     },
     {
       "path": "test-provider.mjs",

@@ -48,7 +48,7 @@ test('next CPU unknown, legacy and absent policies reject before lease, trial ch
 });
 test('all three explicit CPU policies preserve exact input through provisional admission', async () => {
   for (const tier of ['easy', 'medium', 'hard']) {
-    const f = await fixture('forge-heuristic-' + tier + '-beta-v1');
+    const f = await fixture('forge-heuristic-' + tier + (tier === 'medium' ? '-beta-v1' : '-beta-v2'));
     assert.equal(f.response.status, 202);
     assert.deepEqual(f.begins, [f.input]);
     assert.equal((await f.storage.get('leases')).length, 1);

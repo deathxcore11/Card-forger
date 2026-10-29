@@ -15,12 +15,12 @@ const release = () => ({ schema: 'cardstashy.forge-release-policy.v1', container
 const check = (receipt, policy = receipt.policyVersion, manifest = release(), instant = now) => verifyPolicyReceipt(receipt, { difficultyPolicyVersion: policy }, manifest, image, instant);
 test('all3 actual native receipt metadata match exact explicit version/profile/hash mappings', () => {
   for (const tier of ['easy','medium','hard']) {
-    const r = receipts[tier]; assert.equal(check(r).profile, 'CardStashy' + tier[0].toUpperCase() + tier.slice(1) + 'BetaV1');
+    const r = receipts[tier]; assert.equal(check(r).profile, 'CardStashy' + tier[0].toUpperCase() + tier.slice(1) + (tier === 'medium' ? 'BetaV1' : 'BetaV2'));
     assert.equal(r.cpuPolicy.strictServiceLatencyProven, false);
   }
 });
 test('unknown, oldDefault, omitted and unversioned policies never map implicitly', () => {
-  for (const version of [undefined, '', 'Easy', 'Medium', 'Hard', 'Default', 'forge-default-smart-v1', 'forge-heuristic-hard-beta-v2', '__proto__']) {
+  for (const version of [undefined, '', 'Easy', 'Medium', 'Hard', 'Default', 'forge-default-smart-v1', 'forge-heuristic-hard-beta-v9', '__proto__']) {
     assert.throws(() => selectedPolicy(version), /unsupported_explicit_cpu_policy/);
     assert.throws(() => check(receipts.easy, version === undefined ? null : version));
   }
@@ -28,7 +28,7 @@ test('unknown, oldDefault, omitted and unversioned policies never map implicitly
 test('wrong profile/tier/hash, modifiedAI/class/build provenance or runtime flags reject', () => {
   for (const [path,value] of [
     ['aiProfile','Default'],['policyVersion','forge-default-smart-v1'],['cpuPolicyRuntimeVerified',false],['nativeLegal',false],
-    ['cpuPolicy.aiProfile',CPU_POLICIES['forge-heuristic-hard-beta-v1'].profile],['cpuPolicy.profileSha256','f'.repeat(64)],
+    ['cpuPolicy.aiProfile',CPU_POLICIES['forge-heuristic-hard-beta-v2'].profile],['cpuPolicy.profileSha256','f'.repeat(64)],
     ['cpuPolicy.aiPatchsetSha256','f'.repeat(64)],['cpuPolicy.runtimeClassSetSha256','f'.repeat(64)],
     ['cpuPolicy.nativeBuildAttestationSha256','f'.repeat(64)],['cpuPolicy.buildCompilerVersion','javac 21.0.99'],
     ['cpuPolicy.runtimeJavaVersion','21.0.99+1'],['cpuPolicy.runtimeBytecodeVerified',false],['cpuPolicy.runtimeSettingsVerified',false],

@@ -72,7 +72,7 @@ export function verifyLocalPolicyReceipt(receipt, input, release, configuredImag
     || cpu.nativeBuildAttestationSha256 !== release.nativeBuildAttestationSha256 || cpu.buildCompilerVersion !== release.buildCompilerVersion
     || cpu.runtimeJavaVersion !== release.runtimeJavaVersion || cpu.runtimeBytecodeVerified !== true || cpu.runtimeSettingsVerified !== true
     || cpu.admissionAllowed !== true || cpu.admissionScope !== 'bounded-experimental-native-integration'
-    || cpu.nativeAiModified !== true || cpu.monteCarlo !== false || cpu.legacySimulation !== false
+    || cpu.nativeAiModified !== true || cpu.monteCarlo !== policy.monteCarlo || cpu.legacySimulation !== false
     || cpu.strictServiceLatencyProven !== false || cpu.nativePriorityTimeoutSeconds !== 5
     || cpu.opponentDeckKnowledge !== 'secret-current-lawful-observations-only'
     || cpu.calibration !== 'experimental-bounded-tactical-corpus-not-universal-strength-ranking') fail('native_cpu_policy_receipt_mismatch');

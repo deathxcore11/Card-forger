@@ -1,13 +1,13 @@
 package cardstashy.forge;
 import com.google.gson.*;import java.nio.file.*;import java.util.*;
-/** Startup-only strict integration of the independently reviewed MC-off beta policies. */
+/** Startup-only strict integration of the beta policies (Monte Carlo only for Hard, per player). */
 public final class NativeCpuPolicyIntegration {
  public static final String CLASS_SET_SHA="e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80";
  private static Map<String,Object> buildReceipt;
  private static final Map<String,String> PROFILE_HASHES=Map.of(
-  "CardStashyEasyBetaV1","7586f8cf57f7d454b4ef5ed46a5b7fec609429b516b4ddde31c8178246737c75",
+  "CardStashyEasyBetaV2","d82667a247770630b2b265004d8d39052e273b152686d9662c2c5c72369bc78d",
   "CardStashyMediumBetaV1","d77ec318868fcdb8fe1dce8d8c2df336fe26d54e13b51f7aab13d259bdf70330",
-  "CardStashyHardBetaV1","44aa0e6e3483c05874948813e3f3449a5cde4869885ef5e55cdee509e2891bf6");
+  "CardStashyHardBetaV2","09bdcc6003785a0abf08fde556c963d22a697b5309e5011dc6f39fefba97e63d");
  public static synchronized void install(String root)throws Exception{
   if(buildReceipt!=null)return;
   Path cpu=Path.of(root,"cpu");byte[] index=NativeRulesData.boundedRead(cpu.resolve("runtime-sha256.json"),65536);

@@ -4,9 +4,9 @@ export const AI_PATCHSET_VERSION = 'cardstashy-forge-observation-survival-land-v
 export const AI_PATCHSET_SHA256 = 'cd14c95185c4bfd44e90a809a6095f2027f23d102c1cf04464533ca545a0a4b1';
 export const AI_CLASS_SET_SHA256 = 'e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80';
 export const CPU_POLICIES = Object.freeze({
-  'forge-heuristic-easy-beta-v1': Object.freeze({ profile: 'CardStashyEasyBetaV1', profileSha256: '7586f8cf57f7d454b4ef5ed46a5b7fec609429b516b4ddde31c8178246737c75' }),
-  'forge-heuristic-medium-beta-v1': Object.freeze({ profile: 'CardStashyMediumBetaV1', profileSha256: 'd77ec318868fcdb8fe1dce8d8c2df336fe26d54e13b51f7aab13d259bdf70330' }),
-  'forge-heuristic-hard-beta-v1': Object.freeze({ profile: 'CardStashyHardBetaV1', profileSha256: '44aa0e6e3483c05874948813e3f3449a5cde4869885ef5e55cdee509e2891bf6' }),
+  'forge-heuristic-easy-beta-v2': Object.freeze({ profile: 'CardStashyEasyBetaV2', profileSha256: 'd82667a247770630b2b265004d8d39052e273b152686d9662c2c5c72369bc78d', monteCarlo: false }),
+  'forge-heuristic-medium-beta-v1': Object.freeze({ profile: 'CardStashyMediumBetaV1', profileSha256: 'd77ec318868fcdb8fe1dce8d8c2df336fe26d54e13b51f7aab13d259bdf70330', monteCarlo: false }),
+  'forge-heuristic-hard-beta-v2': Object.freeze({ profile: 'CardStashyHardBetaV2', profileSha256: '09bdcc6003785a0abf08fde556c963d22a697b5309e5011dc6f39fefba97e63d', monteCarlo: true }),
 });
 export const EXPECTED_RULES = Object.freeze({
   version: 'rules-20261028-scryfall20261027-native-e5a0f815',
@@ -45,7 +45,7 @@ export function verifyPolicyReceipt(receipt, input, release, configuredImage, no
     || cpu.nativeBuildAttestationSha256 !== release.nativeBuildAttestationSha256 || cpu.buildCompilerVersion !== release.buildCompilerVersion
     || cpu.runtimeJavaVersion !== release.runtimeJavaVersion || cpu.runtimeBytecodeVerified !== true || cpu.runtimeSettingsVerified !== true
     || cpu.admissionAllowed !== true || cpu.admissionScope !== 'bounded-experimental-native-integration'
-    || cpu.nativeAiModified !== true || cpu.monteCarlo !== false || cpu.legacySimulation !== false
+    || cpu.nativeAiModified !== true || cpu.monteCarlo !== policy.monteCarlo || cpu.legacySimulation !== false
     || cpu.strictServiceLatencyProven !== false || cpu.nativePriorityTimeoutSeconds !== 5
     || cpu.opponentDeckKnowledge !== 'secret-current-lawful-observations-only'
     || cpu.calibration !== 'experimental-bounded-tactical-corpus-not-universal-strength-ranking') fail('native_cpu_policy_receipt_mismatch');
