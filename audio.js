@@ -136,7 +136,7 @@ function prune() {
   for (const l of LAYERS) { const w = wants[l]; try { if (w?.alive && !w.alive()) { wants[l] = null; changed = true; } } catch {} }
   if (changed) playWanted();
 }
-if (typeof setInterval !== "undefined") setInterval(() => { if (playing || pending) prune(); }, 1000);
+if (typeof setInterval !== "undefined") setInterval(() => { if (playing || pending) prune(); }, 1000)?.unref?.();
 const wanted = () => { for (const l of [...LAYERS].reverse()) if (wants[l]) return wants[l]; return null; };
 function playWanted() {
   if (!ctx) return;
