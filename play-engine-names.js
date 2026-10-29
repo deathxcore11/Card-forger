@@ -3,7 +3,7 @@
 // Online writes split cards "Wear/Tear", older lists write "Æther", typed lists
 // bring curly quotes and odd spacing. Forge only knows "Wear // Tear", and an unknown name stops the match.
 import {canonicalPlayName} from './experiments/phase-engine/catalog-admission.mjs';
-// Generated from Forge e5a0f815 by scripts/check-engine-card-names.mjs: every name
+// Generated from Forge e5a0f815 by scripts/forge-engine-names/regenerate.sh: every name
 // listed was resolved by the engine itself. Replace it whenever the engine changes.
 export const ENGINE_CARD_NAMES_FILE='forge-card-names-e5a0f815.txt';
 // Real card names with a slash that is not a face separator. The release check
