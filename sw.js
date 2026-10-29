@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-cpu-levels-game-feel-v383";
+const CACHE = "cardforge-shell-table-touch-autotap-v384";
 const ASSETS = [
   "./play-forge-feature.js",
   "./audio.js",
