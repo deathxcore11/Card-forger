@@ -1381,7 +1381,7 @@
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=you][data-mana-open] .forge-mana-panel.forge-seat-mana{opacity:1;visibility:visible;translate:0 0;transition-delay:0s}
 @media (hover:none){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=you] .play-match-profile-badge{cursor:pointer;min-width:44px;min-height:44px}}
 /* Narrow screens: the dock already says whose turn it is, so the phase track steps aside. */
-@media (max-width:640px){:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-phase-track{display:none}:where(body.practice-table-open) .forge-activity{top:50%}}
+@media (max-width:640px),(max-aspect-ratio:9/10){:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-phase-track{display:none}:where(body.practice-table-open) .forge-activity{top:50%}}
 /* Low power: flat glass, still fog, no foil sweep, no breathing glow. Same look, far less GPU. */
 :where(body.practice-table-open) .play-match-table[data-low-power] *,:where(body.practice-table-open) .play-match-table[data-low-power]{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 :where(body.practice-table-open) .play-match-table[data-low-power] .forge-ambient>i{filter:none;animation:none}
@@ -1971,7 +1971,7 @@ body.practice-table-open img{-webkit-user-drag:none}
    widens the controls; wide screens show the phase track instead. */
 :where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-state]{position:relative}
 :where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-state]::before{content:attr(data-state);position:absolute;right:2px;bottom:calc(100% + 6px);color:#d9cdb1;font:600 11.5px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.02em;white-space:nowrap;text-shadow:0 1px 3px #000c;pointer-events:none}
-@media (min-width:641px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-state]::before{display:none}}
+@media (min-width:641px) and (min-aspect-ratio:9/10){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-state]::before{display:none}}
 /* Upright phones: the response emblems fold to the one that is on; opened, they stack upward as a small glass column. */
 @media (max-aspect-ratio:9/10){
 :where(body.practice-table-open) .play-match-seat[data-seat=you] .forge-control-emblems:not([data-open=true]) .forge-control-emblem:not([aria-pressed=true]):not(:only-child){display:none!important}
@@ -2079,3 +2079,24 @@ body.practice-table-open img{-webkit-user-drag:none}
 }
 /* The mana emblem's name ("Red mana") is for screen readers; it never shows beside the emblem. */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat .forge-mana-emblem{font-size:0!important}
+/* Portrait: the stack strip is one line per item ("Your ability · Next  Soul Warden ×4  Details ⋯") until
+   opened, so a crowded board keeps its room; Details or +N opens the full cards. */
+@media (max-aspect-ratio:9/10){
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-stack:not([data-open=true]) .forge-stack-item :is(.forge-stack-summary,.forge-stack-targets,.forge-stack-more){display:none!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-stack:not([data-open=true]) .forge-stack-item .forge-stack-head{display:flex!important;align-items:baseline;gap:8px;padding-right:128px!important;min-width:0}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-stack:not([data-open=true]) .forge-stack-head .forge-stack-kind{flex:none;max-width:45%}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-stack:not([data-open=true]) .forge-stack-head .forge-stack-name{flex:0 1 auto;min-width:0}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-stack:not([data-open=true]) .forge-stack-head .forge-stack-count{flex:none}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-stack:not([data-open=true]) .forge-stack-more-count{position:absolute;right:52px;top:50%;translate:0 -50%;z-index:2}
+}
+@media (max-aspect-ratio:9/10){
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-stack:not([data-open=true]) .forge-stack-head .forge-stack-kind{flex:0 1 auto;min-width:0;max-width:none}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-stack:not([data-open=true]) .forge-stack-head .forge-stack-name{flex:1 0 auto;max-width:60%}
+/* Portrait boards keep tile names even when a crowded board leaves the rows short. */
+@container (max-height:150px){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card[data-presentation=battlefield] .play-match-card-name{display:block}}
+}
+@media (max-aspect-ratio:9/10){
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-stack:not([data-open=true]) .forge-stack-item{padding-top:3px!important;padding-bottom:3px!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-stack:not([data-open=true]) .forge-stack-item .forge-stack-head{min-height:30px!important}
+}
+@media (max-aspect-ratio:9/10){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-stack:not([data-open=true]) .forge-stack-menu{top:50%;translate:0 -50%}}
