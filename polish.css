@@ -394,3 +394,6 @@ body[data-view="scan"] #content>.context-guide{margin:12px var(--page-edge) 0}
 body[data-view="settings"] .profile-menu>.release-dot{display:none}
 /* Wiki: the daily topic's refresh is a small corner control, not a third link on the Read article row. */
 .wiki-daily{position:relative}.wiki-daily .wiki-daily-refresh{position:absolute;top:10px;right:10px;z-index:3;width:44px;height:44px;border-radius:50%;background:#0c0e13a6;color:#f1e9d8;backdrop-filter:blur(8px)}
+/* Next-patch minors from the 29 Oct gate: Scan's idle panel keeps the page gutters; seat badge rows match. */
+#app .scan-workspace.is-camera:not(.is-live)>.scan-panel{margin-inline:var(--page-edge);border-radius:18px;border:1px solid var(--line)}
+.pl-seat-who{min-height:30px}
