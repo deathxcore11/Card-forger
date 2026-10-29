@@ -528,19 +528,27 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // against the middle line. Transforms keep hit testing, drag and arrows on real rects.
  function fitBoard(){
   boardFrame=0;if(closed||!presentation.hosted)return;
+  // Your side stops above your hand where it rests, not where a lift or a popped card has carried it, so
+  // hovering the hand never shrinks the board. Both sides then share one scale, so cards read the same size.
+  const g=handGeometry(),rest=g?g.wraps.map(w=>{const l=g.local(w);return {top:g.box.top+l.y,left:g.box.left+l.x,right:g.box.left+l.x+l.w,width:l.w};}):[];
+  const fits=[];
   for(const area of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area')){
    const zone=area.querySelector(':scope>.play-match-zone');if(!zone)continue;
    zone.style.removeProperty('transform');zone.style.removeProperty('width');delete zone.dataset.scaled;
    // Your side stops above your hand; the CPU's stops below its row of card backs.
-   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=[...root.querySelectorAll(own?'.play-match-hand .play-match-card-wrap':'.play-match-opponent-fan')].map(n=>n.getBoundingClientRect()).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
+   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?rest:[...root.querySelectorAll('.play-match-opponent-fan')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
    const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+4)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
    const W=area.clientWidth,H=Math.min(area.clientHeight,Math.round(bottom-top));if(!W||H<=0)continue;
    // Side-by-side lanes (a grid) have fixed boxes: a row that spills out of its lane shrinks inside it.
    const fitRows=()=>{for(const row of zone.querySelectorAll('.play-match-card-row')){row.style.removeProperty('transform');const lane=row.closest('.play-match-lane'),h=lane?.clientHeight||0;
     const kr=Math.min(1,h&&row.scrollHeight>h+1?h/row.scrollHeight:1,row.scrollWidth>row.clientWidth+1?row.clientWidth/row.scrollWidth:1);if(kr<.995){row.style.transformOrigin='top center';row.style.transform=`scale(${kr.toFixed(3)})`;}}};
    fitRows();let k=1;for(let i=0;i<6;i++){const next=Math.max(.4,Math.min(1,H/zone.scrollHeight,W/zone.scrollWidth));if(Math.abs(next-k)<.01&&i)break;k=next;zone.style.width=`${W/k}px`;}
+   fits.push({area,zone,own,W,k,fitRows});
+  }
+  const k=Math.min(1,...fits.map(f=>f.k));
+  for(const f of fits){const {area,zone,own,W,fitRows}=f;
    if(k>=.995){zone.style.removeProperty('width');fitRows();continue;}
-   fitRows();
+   zone.style.width=`${W/k}px`;fitRows();
    const h=zone.scrollHeight*k,lift=own?0:Math.max(0,area.clientHeight-h);
    zone.dataset.scaled='true';zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
   }
@@ -1021,8 +1029,20 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A playable card already sits a few pixels up inside its slot; count that so the popped card's top
   // edge (its name) stays on screen. Short screens keep it nearer 1.5x.
   const lift=-Math.min(0,parseFloat(String(getComputedStyle(handFocus.querySelector('.play-match-card')||handFocus).translate).split(' ')[1])||0),top=12;
-  const k=Math.max(1,Math.min(H<500?2:3,Math.max(1.5,230/(f.w*K)),(bottom-top)/((f.h+lift)*K),(W-12)/(f.w*K))),half=f.w*K*k/2,dx=Math.max(6+half-cx,Math.min(0,W-6-half-cx));
-  handFocus.style.setProperty('--focus-k',k.toFixed(3));handFocus.style.setProperty('--focus-x',`${(dx/K).toFixed(1)}px`);handFocus.style.setProperty('--focus-y',`${((bottom-restBottom)/K).toFixed(1)}px`);handFocus.style.removeProperty('--shove');handFocus.setAttribute('data-hand-focus','true');
+  let k=Math.max(1,Math.min(H<500||W<600&&H>W?2:3,Math.max(1.5,230/(f.w*K)),(bottom-top)/((f.h+lift)*K),(W-12)/(f.w*K))),half=f.w*K*k/2,dx=Math.max(6+half-cx,Math.min(0,W-6-half-cx));
+  let fk=k,fx=dx/K,fy=(bottom-restBottom)/K;
+  // Then check against the real box: try the target with transitions off, measure the card, pull it back
+  // inside 8px of every edge (shrinking it if it can't fit), and let it animate from where it was.
+  {const card=handFocus.querySelector('.play-match-card')||handFocus,keep=['--focus-k','--focus-x','--focus-y'].map(p=>handFocus.style.getPropertyValue(p)),wasFocus=handFocus.hasAttribute('data-hand-focus'),shove=handFocus.style.getPropertyValue('--shove');
+   const set=(a,b,c)=>{handFocus.style.setProperty('--focus-k',a.toFixed(3));handFocus.style.setProperty('--focus-x',`${b.toFixed(1)}px`);handFocus.style.setProperty('--focus-y',`${c.toFixed(1)}px`);};
+   handFocus.style.transition='none';handFocus.style.removeProperty('--shove');handFocus.setAttribute('data-hand-focus','true');set(fk,fx,fy);
+   const ar=g.area.getBoundingClientRect(),cs=ar.width/g.box.w||1,cr=card.getBoundingClientRect(),toX=x=>g.sx((x-ar.left)/cs),toY=y=>g.sy((y-ar.top)/cs);
+   const L=toX(cr.left),Rr=toX(cr.right),T=toY(cr.top),B=toY(cr.bottom),shrink=Math.min(1,(W-16)/Math.max(1,Rr-L),(B-12)/Math.max(1,B-T));
+   const c=(L+Rr)/2,half=(Rr-L)/2*shrink,shift=Math.max(8-(c-half),Math.min(0,W-8-(c+half)));fk=Math.max(1,fk*shrink);fx+=shift/K;
+   if(wasFocus){keep.forEach((v,i)=>{const p=['--focus-k','--focus-x','--focus-y'][i];if(v)handFocus.style.setProperty(p,v);else handFocus.style.removeProperty(p);});}else{handFocus.removeAttribute('data-hand-focus');for(const p of ['--focus-k','--focus-x','--focus-y'])handFocus.style.removeProperty(p);if(shove)handFocus.style.setProperty('--shove',shove);}
+   void handFocus.offsetWidth;handFocus.style.removeProperty('transition');}
+  handFocus.setAttribute('data-hand-focus','true');handFocus.style.removeProperty('--shove');handFocus.style.setProperty('--focus-k',fk.toFixed(3));handFocus.style.setProperty('--focus-x',`${fx.toFixed(1)}px`);handFocus.style.setProperty('--focus-y',`${fy.toFixed(1)}px`);
+  {const hk=f.w*K*fk/2;half=hk;dx=fx*K;}
   for(const side of [-1,1]){const idx=[];for(let i=fi+side;i>=0&&i<L.length;i+=side)idx.push(i);if(!idx.length)continue;
    const s=Math.abs(L[idx[0]].x-f.x)*K,first=Math.min(f.w*K*1.2,Math.max(0,side*dx+half-s+f.w*K/2+4));const sh=idx.map((_,j)=>first*Math.max(0,1-j*.34));
    let room=1;idx.forEach((i,j)=>{if(!sh[j])return;const edge=side>0?W-6-g.sx(L[i].x+L[i].w):g.sx(L[i].x)-6;room=Math.min(room,Math.max(0,edge)/sh[j]);});
