@@ -22,6 +22,9 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(CardStashyAuth.class);
         registerPlugin(CardStashyHaptics.class);
         registerPlugin(CardStashyDisplay.class);
+        // Builds that include the Forge engine (forge-engine/build-engine.sh) play CPU matches on the phone.
+        try { registerPlugin(Class.forName("dev.cardstashy.integration.CardStashyForge").asSubclass(com.getcapacitor.Plugin.class)); }
+        catch (ClassNotFoundException regularBuild) { /* matches run on the Forge server */ }
         super.onCreate(savedInstanceState);
         // Card art at the app's own /img/ paths, cached on the phone like the website's service worker.
         bridge.setWebViewClient(new CardStashyWebViewClient(bridge));

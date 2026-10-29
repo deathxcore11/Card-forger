@@ -10,7 +10,7 @@ const API_PREFIX=new URL(import.meta.url).pathname.startsWith('/__forge-acceptan
 const fail=code=>Object.assign(Error(code),{code});
 // Shown while the server settles an action whose reply was lost; the table unlocks by itself.
 const OUTCOME_PENDING='Checking whether your last action went through. The table will update in a moment.';
-const ACTION_REJECTIONS=Object.freeze({
+export const ACTION_REJECTIONS=Object.freeze({
  stale_revision:'The game has moved on. Review the current table before choosing again.',
  stale_prompt:'That choice has changed. Review the current prompt before choosing again.',
  native_engine_busy:'Forge is still completing your previous action. Wait for the table to update.',

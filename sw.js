@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-match-close-retry-v378";
+const CACHE = "cardforge-shell-phone-engine-v380";
 const ASSETS = [
   "./play-forge-feature.js",
   "./audio.js",
@@ -9,6 +9,7 @@ const ASSETS = [
   "./play-forge-cpu-policy.js",
   "./play-forge-setup-review.js",
   "./play-forge-host-client.js",
+  "./play-forge-local-client.js",
   "./play-forge-artwork.js",
   "./play-forge-player-mat.js",
   "./play-forge-pregame.js",

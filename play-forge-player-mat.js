@@ -34,6 +34,8 @@ export function capturedForgeArtwork(setup,lookup){
  const rows=[setup.selected,setup.opponent].flatMap(deck=>{const d=capturePracticeArtwork(deck,lookup);return [...d.cards,...(d.side||[])];});
  return (name,native)=>{
   let options=rows.filter(r=>r.name===name&&r.playArtwork).map(r=>r.playArtwork);
+  // A two-part card (The Arkenstone // Seek the Heart) is listed by its full name but Forge names it by one half.
+  if(!options.length)options=rows.filter(r=>r.playArtwork&&(r.playArtwork.card?.card_faces||[]).some(f=>String(f?.name||'').toLowerCase()===String(name||'').toLowerCase())).map(r=>r.playArtwork);
   if(!options.length&&native&&!rows.some(r=>r.name===name))options=rows.filter(r=>r.playArtwork&&sameCardFace(r.playArtwork.card,native)).map(r=>r.playArtwork);
   const sameSet=options.filter(a=>a.card?.set?.toLowerCase()===native?.setCode?.toLowerCase());
   const candidates=sameSet.length?sameSet:options,ids=new Set(candidates.map(a=>a.card.id));
@@ -232,6 +234,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   let progress=null;
   const secs=ms=>(ms/1000).toFixed(1)+' s';
   const stepsLine=(p,totalMs=null)=>{const m=p.ms,parts=[p.warm?'Warm engine':'Fresh engine'];
+   // The engine inside the app: how long the match waited for the card database, then its own setup.
+   if(p.local){parts.splice(0,1,'Phone engine',m.waited>0?'cards '+secs(m.waited):'cards ready');if(m.start>=0)parts.push('match '+secs(m.start));if(totalMs!==null)parts.unshift('Ready in '+secs(totalMs));return parts.join(' · ');}
    if(m.bootstrap!==undefined)parts.push(m.ready!==undefined?'container '+secs(m.ready-m.bootstrap):'container…');
    if(m.ready!==undefined)parts.push(m.confirm!==undefined?'engine '+secs(m.confirm-m.ready):'engine loading…');
    if(totalMs!==null)parts.unshift('Ready in '+secs(totalMs));return parts.join(' · ');};

@@ -25,7 +25,7 @@ export function createTableAudio(root=null){
   if(terminal){if(!ended){ended=true;const w=terminal.winner,won=w===b.seat,draw=w===null||w===undefined;
    play(draw?'QP-019':won?'QP-017':'QP-018');
    // The result gets its short win or loss sting and then silence: no music under the results screen.
-   setMusic('play',draw?null:won?'MUS-TBL-06':'MUS-TBL-07',{loop:false});}return;}
+   setMusic('play',draw?null:won?'MUS-TBL-06':'MUS-TBL-07',{loop:false,alive:onTable});}return;}
   music(b);
   const a=prev?.status?.surface;if(!a)return;
   const was=new Map(a.cards.map(c=>[c.id,c]));
@@ -68,6 +68,6 @@ export function createTableAudio(root=null){
   if(!lowSeen&&b.players.some(p=>p.life<=5&&p.life>0)){lowSeen=true;play('CMB-019');}
  }
  // Early turns, then the fuller table, then the low-life track once anyone is close to losing.
- function music(b){setMusic('play',b.players.some(p=>p.life<=5)?'MUS-TBL-05':(b.turn||0)<=8?'MUS-TBL-03':'MUS-TBL-04');}
+ function music(b){setMusic('play',b.players.some(p=>p.life<=5)?'MUS-TBL-05':(b.turn||0)<=8?'MUS-TBL-03':'MUS-TBL-04',{alive:onTable});}
  return {update,destroy:stop};
 }
