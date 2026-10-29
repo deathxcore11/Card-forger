@@ -198,7 +198,12 @@ const prompt = STATE === 'search' ? {id: 'fixture-many-partings', supported: tru
   options: ['Forest', 'Forest', 'Mountain', 'Mountain', 'Mountain', 'Island', 'Plains', 'Swamp', 'Forest', 'Mountain', 'Wastes', 'Forest'].map((name, index) => ({index, value: {...nativeCard(name, 'Library', YOU), kind: 'card'}}))}
   // Casting a kicker spell: Forge's many() arrives as an order prompt of optional costs.
   : STATE === 'kicker' ? {id: 'fixture-kicker', supported: true, method: 'order', ordered: true, min: 0, max: 1, remainingMin: 0, remainingMax: 1, sourceIndexes: [0], destinationIndexes: [], rememberAllowed: false, topLabel: 'Optional costs',
-    message: 'Choose optional costs — Optional costs', options: [{index: 0, value: {kind: 'optionalCost', description: 'Kicker {2}{G}'}}]} : null;
+    message: 'Choose optional costs — Optional costs', options: [{index: 0, value: {kind: 'optionalCost', description: 'Kicker {2}{G}'}}]}
+  // Two of your triggers fire together: Forge asks for their order.
+  : STATE === 'triggers' ? {id: 'fixture-triggers', supported: true, method: 'order', ordered: true, min: 2, max: 2, remainingMin: 2, remainingMax: 2, sourceIndexes: [0, 1], destinationIndexes: [], rememberAllowed: false, topLabel: 'Resolve first',
+    message: 'Select order for simultaneous abilities — Resolve first', options: [
+      {index: 0, value: {kind: 'ability', id: 917, description: 'Tireless Provisioner (49): Landfall — Whenever a land you control enters, create a Food token or a Treasure token. [Zone Changer: Forest (78)]', card: nativeCard('Grizzly Bears', 'Battlefield', YOU)}},
+      {index: 1, value: {kind: 'ability', id: 918, description: 'Hill Giant (50): Whenever a land you control enters, you may draw a card. [Zone Changer: Forest (78)]', card: nativeCard('Hill Giant', 'Battlefield', YOU)}}]} : null;
 const stackCard = STATE === 'targets' ? nativeCard('Counterspell', 'Stack', CPU) : null;
 const native = {
   schema: 'cardstashy.forge-proof.v1', revision: 7, viewer: YOU, status: 'running', busy: false,

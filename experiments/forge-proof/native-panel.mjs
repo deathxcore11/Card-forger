@@ -293,9 +293,9 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    if(hostedOrder){
     // Arena-style: each choice is its source card; tap them in order, tap again to take one back.
     const cards=s.status?.surface?.cards||[],clean=t=>plainText(String(t||'').replace(/\s*\[[^\]]*\]/g,'').replace(/\s*\(\s*\)/g,'')).trim();
-    const sourceOf=o=>{const id=optionCardId(o.value);let c=id!==null?cards.find(c=>c.id===id):null;if(!c){const m=/\[[^\]]*?:\s*([^\]]+?)\s*\((\d+)\)\]/.exec(optionLabel(o.value));if(m)c=cards.find(c=>c.id===Number(m[2]))||cards.find(c=>c.known&&c.name===m[1]);}return c||null;};
+    const sourceOf=o=>{const id=optionCardId(o.value);let c=id!==null?cards.find(c=>c.id===id):null;if(!c&&o.value?.card?.name)c=cards.find(x=>x.known&&x.name===o.value.card.name&&x.zone==='Battlefield')||null;if(!c){const m=/\[[^\]]*?:\s*([^\]]+?)\s*\((\d+)\)\]/.exec(optionLabel(o.value));if(m)c=cards.find(c=>c.id===Number(m[2]))||cards.find(c=>c.known&&c.name===m[1]);}return c||null;};
     // "Leave 0 in the source" only says every one must be ordered, which the Done button already shows.
-    const rest=p.remainingMax>0?orderRemainder(p):'';panel.append(node('p',`Tap them in order. 1 ${/resolve/i.test(p.topLabel||'')?'resolves first':`is ${String(p.topLabel||'first').toLowerCase()}`}.${rest}`,'forge-order-hint'));
+    const rest=p.remainingMax>0&&!((p.min??0)>=options.length)?orderRemainder(p):'';panel.append(node('p',`Tap them in order. 1 ${/resolve/i.test(p.topLabel||'')?'resolves first':`is ${String(p.topLabel||'first').toLowerCase()}`}.${rest}`,'forge-order-hint'));
     const grid=node('div',undefined,'forge-order-cards');
     for(const o of options){
      const at=indexes.indexOf(o.index),source=sourceOf(o),label=optionLabel(o.value),text=clean(label),described=isDescribedOption(o.value);
