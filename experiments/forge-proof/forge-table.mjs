@@ -31,13 +31,14 @@ const COUNTER_NAMES={P1P1:'+1/+1',M1M1:'\u22121/\u22121',LOYALTY:'Loyalty',DEFEN
 // untapped source of yours readable. Anything unclear keeps the glow; Forge still validates every play.
 const COST_BENDERS=/\bcosts?\b[^.]*\bless\b|\breduc|without paying|rather than pay|alternative|convoke|delve|improvise|affinity|evoke|emerge|offering|assist|spectacle|surge|prowl|\bdash\b|blitz|madness|foretell|\bplot\b|bestow|mutate|overload|prototype|flashback|escape|unearth|cycling|channel|ninjutsu|morph|disguise|\bwarp\b|sneak|freerunning|impending|mayhem|from your hand|discard this card|exile this card|reveal this card/i;
 const MANA_SYMBOL=/^(?:\d+|[WUBRGC])$/;
-function manaSources(card){
+function manaSources(card,tapped=false){
  const lines=String(card.text||'').split(/\n|(?<=\.)\s+(?=[A-Z{])/).map(l=>l.trim().replace(/^\((.*)\)$/,'$1')).filter(l=>/\badd\b/i.test(l));
- if(!lines.length){if(!card.types?.includes('Land'))return [];const basic={Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'},colors=Object.entries(basic).filter(([t])=>new RegExp(`\\b${t}\\b`).test(card.type||'')).map(([,c])=>c);return colors.length?[colors.map(c=>[c])]:null;}
+ if(!lines.length){if(!card.types?.includes('Land')||tapped)return [];const basic={Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'},colors=Object.entries(basic).filter(([t])=>new RegExp(`\\b${t}\\b`).test(card.type||'')).map(([,c])=>c);return colors.length?[colors.map(c=>[c])]:null;}
  const options=[];
  for(const line of lines){const [cost,effect]=line.split(/:\s*/,2);if(effect===undefined)return null;
   const parts=cost.split(/,\s*/).map(x=>x.trim());if(!parts.every(x=>x==='{T}'||/^sacrifice (?:this|~|it|cardname)/i.test(x)||/^sacrifice /i.test(x)&&x.toLowerCase().includes(String(card.name).toLowerCase())))return null;
-  if(parts.includes('{T}')&&card.summoningSick&&card.types?.includes('Creature'))continue;
+  // A tapped source still counts when an ability of its needs no tap ("Sacrifice this: Add {W}.").
+  if(parts.includes('{T}')&&(tapped||card.summoningSick&&card.types?.includes('Creature')))continue;
   const add=effect.replace(/\.?\s*(?:\(.*\))?$/,'').match(/^add (.+)$/i);if(!add)return null;const what=add[1].trim();
   if(/^one mana of any color$/i.test(what)){options.push(['WUBRG'.split('')]);continue;}
   const alts=what.split(/,\s*(?:or\s+)?|\s+or\s+/);const parsed=alts.map(a=>(a.match(/^(?:\{[WUBRGC]\})+$/)?a.match(/[WUBRGC]/g):null));if(parsed.some(x=>!x))return null;
@@ -50,7 +51,7 @@ export function provenUnaffordable(card,surface,pool={}){
  const table=surface.cards.filter(c=>c.zone==='Battlefield'||c.zone==='Command');if(table.some(c=>!c.known||COST_BENDERS.test(c.text||'')&&!/from your hand|discard this card|exile this card|reveal this card|cycling|channel/i.test(c.text||'')))return false;
  if(surface.cards.some(c=>c.zone==='Hand'&&c.controller===surface.seat&&c.id!==card.id&&/from your hand[^.]*:\s*add|:\s*add[^.]*\bfrom your hand/i.test(c.text||'')))return false;
  const floating=Object.entries(pool||{}).flatMap(([c,n])=>Array(Math.max(0,Number(n)||0)).fill([String(c).toUpperCase()]));
- const sources=[];for(const c of table){if(c.controller!==surface.seat||c.zone!=='Battlefield'||c.tapped)continue;const o=manaSources(c);if(o===null)return false;if(o.length)sources.push(o);}
+ const sources=[];for(const c of table){if(c.controller!==surface.seat||c.zone!=='Battlefield')continue;const o=manaSources(c,c.tapped===true);if(o===null)return false;if(o.length)sources.push(o);}
  if(sources.length>14||sources.reduce((a,o)=>a*o.length,1)>4096)return false;
  const pays=tokens=>{if(tokens.length<generic+colored.length)return false;const used=new Array(tokens.length).fill(false);
   const fit=i=>{if(i===colored.length)return true;for(let k=0;k<tokens.length;k++)if(!used[k]&&tokens[k].includes(colored[i])){used[k]=true;if(fit(i+1))return true;used[k]=false;}return false;};return fit(0);};
@@ -136,16 +137,21 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    if(focused)footer.querySelector(`[data-native-key="${CSS.escape(focused)}"]`)?.focus();
   }
   const ids=list=>new Set((list||[]).filter(r=>r.kind==='card').map(r=>r.id));
-  const blockedWhy=new Map((n.selection?.blocked||[]).filter(b=>b?.kind==='card'&&typeof b.reason==='string').map(b=>[Number(b.id),b.reason])),actionable=ids(n.selection?.actionable),targets=ids(n.selection?.targets),choices=ids(n.selection?.cards),chosen=ids(n.selection?.chosen);
-  if(presentation.hosted&&!n.prompt){const sf=snap.status.surface,you=n.players?.find(p=>p.id===sf.players.find(p=>p.seat===sf.seat)?.nativeId);for(const id of [...actionable]){const card=snap.status.surface.cards.find(c=>c.id===id);if(card&&card.controller===snap.status.surface.seat&&provenUnaffordable(card,snap.status.surface,you?.mana)){actionable.delete(id);if(!blockedWhy.has(id))blockedWhy.set(id,'Not enough mana');}}}
+  const blockedWhy=new Map((n.selection?.blocked||[]).filter(b=>b?.kind==='card'&&typeof b.reason==='string').map(b=>[Number(b.id),b.reason])),actionable=ids(n.selection?.actionable),
+  // Newer hosts say how sure they are per action; 'unavailable' is blocked, 'unknown' gets the quiet rim, 'available' the halo.
+  affordability=new Map((n.selection?.actionable||[]).filter(r=>r?.kind==='card'&&typeof r.affordability==='string').map(r=>[Number(r.id),r.affordability])),targets=ids(n.selection?.targets),choices=ids(n.selection?.cards),chosen=ids(n.selection?.chosen);
+  if(presentation.hosted&&!n.prompt){const sf=snap.status.surface,you=n.players?.find(p=>p.id===sf.players.find(p=>p.seat===sf.seat)?.nativeId);for(const id of [...actionable]){const card=snap.status.surface.cards.find(c=>c.id===id);if(card&&card.controller===snap.status.surface.seat&&(affordability.get(id)==='unavailable'||affordability.get(id)!=='available'&&provenUnaffordable(card,snap.status.surface,you?.mana))){actionable.delete(id);if(!blockedWhy.has(id))blockedWhy.set(id,'Not enough mana');}}}
   for(const index of snap.nativeDraft?.indexes||[]){const o=n.prompt?.options.find(o=>o.index===index);const cardId=optionCardId(o?.value);if(cardId!==null)chosen.add(cardId);}
   // Forge's own hint lists, shown by meaning: something you can play or use now,
   // a target for the spell or ability being cast, a card this prompt asks about,
   // and what you have already picked. Forge still validates every click.
   const discarding=!n.prompt&&choices.size>0&&/\bdiscard\b/i.test(String(n.message||''));
   const role=id=>chosen.has(id)?'chosen':targets.has(id)?'target':choices.has(id)?(discarding?'discard':'choice'):actionable.has(id)?'playable':'';
+  const inputName=String(n.inputType||'');if(root.dataset.forgeInput!==inputName)root.dataset.forgeInput=inputName;
   const combatInput=n.inputType==='InputAttack'||n.inputType==='InputBlock';
-  for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);const dragOk=combatInput&&!!combatDrops(cardId);if((el.dataset.forgeDrag==='true')!==dragOk){if(dragOk)el.dataset.forgeDrag='true';else delete el.dataset.forgeDrag;}el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
+  for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);const dragOk=combatInput&&!!combatDrops(cardId);if((el.dataset.forgeDrag==='true')!==dragOk){if(dragOk)el.dataset.forgeDrag='true';else delete el.dataset.forgeDrag;}el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));if(actionable.has(cardId)&&el.closest('.play-match-hand')){const c=snap.status.surface.cards.find(x=>x.id===cardId);const a=affordability.get(cardId);el.dataset.forgeSure=String(a?a==='available':!(c&&COST_BENDERS.test(c.text||'')));}else delete el.dataset.forgeSure;
+   // A creature Forge says must attack this combat wears a tag until it is in the attack.
+   const must=n.inputType==='InputAttack'&&!!snap.status.surface.cards.find(x=>x.id===cardId&&x.mustAttack===true);if(must&&el.dataset.forgeMust!=='true'){el.dataset.forgeMust='true';const tag=doc.createElement('span');tag.className='forge-must-tag';tag.textContent='Must attack';el.append(tag);}else if(!must&&el.dataset.forgeMust){delete el.dataset.forgeMust;el.querySelector(':scope>.forge-must-tag')?.remove();}el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
   const surface=snap.status.surface,nativePlayer=seat=>n.players.find(p=>p.id===surface.players.find(p=>p.seat===seat)?.nativeId);
   // Floating mana is the native pool only, never untapped lands or potential production.
   const manaEntries=player=>Object.entries(player?.mana||{}).map(([color,amount])=>[String(color).toUpperCase(),Number(amount)||0]);
@@ -202,7 +208,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const lock=!!n.prompt||n.inputType==='InputLockUI'||snap.busy===true,autoPay=typeof n.autoPay==='boolean'&&typeof session.setAutoPay==='function',emblemKey=[n.controlMode,autoPay?n.autoPay:'',lock].join(',');
    if(!modes||!youInfo)emblems?.remove();
    else if(!emblems||emblems.dataset.key!==emblemKey){
-    if(!emblems){emblems=doc.createElement('div');emblems.className='forge-control-emblems';emblems.setAttribute('role','group');emblems.setAttribute('aria-label','Response controls');youInfo.append(emblems);}
+    if(!emblems){emblems=doc.createElement('div');emblems.className='forge-control-emblems';emblems.setAttribute('role','group');emblems.setAttribute('aria-label','Response controls');youInfo.append(emblems);
+     // On an upright phone the three emblems fold into the one that is on, so they never sit under the main action;
+     // a tap opens them as a small column, a pick (or a tap elsewhere) folds them again.
+     emblems.addEventListener('click',e=>{if(!win.matchMedia?.('(max-width:640px) and (orientation:portrait)').matches)return;if(emblems.dataset.open!=='true'){e.preventDefault();e.stopImmediatePropagation();emblems.dataset.open='true';}else win.setTimeout(()=>{emblems.dataset.open='false';},0);},true);
+     doc.addEventListener('pointerdown',e=>{if(emblems.dataset.open==='true'&&!emblems.contains(e.target))emblems.dataset.open='false';},true);}
     emblems.dataset.key=emblemKey;
     const make=(key,label,tip,icon,on,fn)=>{const b=doc.createElement('button');b.type='button';b.className='forge-control-emblem';b.dataset.nativeKey=key;b.dataset.label=label;b.setAttribute('aria-label',label);b.setAttribute('aria-pressed',String(on));b.title=tip;b.disabled=lock;b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg>`;b.addEventListener('click',()=>act(fn));return b;};
     emblems.replaceChildren(
@@ -285,7 +295,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    fitRails();fitBoard();
    // A gentle arc: cards further from the middle of the hand sit a little lower.
    // The count lets the hand tighten its spacing only when it would not fit.
-   const hand=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')],handRow=root.querySelector('.play-match-hand .play-match-card-row');if(handRow&&handRow.style.getPropertyValue('--hand-count')!==String(hand.length))handRow.style.setProperty('--hand-count',String(hand.length));hand.forEach((w,i)=>{const lift=Math.abs(i-(hand.length-1)/2);const v=`${Math.min(Math.round(lift*lift*2.2),22)}px`;if(w.style.getPropertyValue('--arc-drop')!==v)w.style.setProperty('--arc-drop',v);});if(handFocusId!==null&&!handFocus?.isConnected)refocusHand();
+   const hand=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')],handRow=root.querySelector('.play-match-hand .play-match-card-row');if(handRow&&handRow.style.getPropertyValue('--hand-count')!==String(hand.length))handRow.style.setProperty('--hand-count',String(hand.length));hand.forEach((w,i)=>{const lift=Math.abs(i-(hand.length-1)/2);const v=`${Math.min(Math.round(lift*lift*2.2),22)}px`;if(w.style.getPropertyValue('--arc-drop')!==v)w.style.setProperty('--arc-drop',v);});if(handFocusId!==null&&!handFocus?.isConnected)refocusHand();fitHandFan(hand);
    // Past eight cards a toggle lays the whole hand out in two rows, so a big hand never overlaps into a mis-tap.
    const handArea=root.querySelector('.play-match-hand-area');let fan=handArea?.querySelector(':scope>.forge-hand-expand');
    if(hand.length>8&&handArea){if(!fan){fan=doc.createElement('button');fan.type='button';fan.className='forge-hand-expand';fan.dataset.nativeKey='hand-expand';fan.addEventListener('click',()=>{root.dataset.handExpanded=String(root.dataset.handExpanded!=='true');paintFan();});handArea.append(fan);}
@@ -477,7 +487,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // certain are drawn: an attack goes to the player unless they also control something
  // attackable, and a block is paired only when Forge names the attacker or there is one.
  const SVG='http://www.w3.org/2000/svg',arrows=doc.createElementNS(SVG,'svg');arrows.setAttribute('class','forge-arrows');arrows.setAttribute('aria-hidden','true');doc.body.append(arrows);let arrowFrame=0;
- arrows.innerHTML=['attack','block','target'].map(k=>`<marker id="forge-head-${k}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="forge-head-${k}"/></marker>`).join('').replace(/^/,'<defs>').replace(/$/,'</defs>');
+ arrows.innerHTML=['attack','block','target'].map(k=>`<marker id="forge-head-${k}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="forge-head-${k}"/></marker>`).join('').replace(/^/,'<defs>').replace(/$/,'</defs>');
  function relations(snap){
   const n=snap.native,surface=snap.status?.surface;if(!n||!surface||root.dataset.stage!=='match')return [];
   const out=[],cards=surface.cards,bySeat=seat=>({kind:'seat',seat}),byCard=id=>({kind:'card',id}),playerSeat=nativeId=>surface.players.find(p=>p.nativeId===nativeId)?.seat;
@@ -497,9 +507,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const source=cards.filter(c=>mine(c)&&c.zone==='Stack').sort((a,b)=>b.id-a.id)[0]||(named&&(cards.find(c=>mine(c)&&c.zone==='Battlefield'&&c.name===named)||cards.find(c=>mine(c)&&c.zone==='Hand'&&c.name===named)));
    if(source)for(const r of n.selection?.chosen||[]){const to=r.kind==='card'?byCard(r.id):r.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:byCard(source.id),to});}
   }
-  // A spell or ability on the stack points from its line in the decision card to its
-  // targets, when Forge names them.
-  for(const item of n.stack||[])for(const r of Array.isArray(item.targets)?item.targets:[]){const to=r?.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r?.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'stack',id:item.id},to});}
+  // The top spell or ability on the stack points from its line in the decision card to
+  // its targets, when Forge names them. Only the top of the stack draws, and none while you are picking your own.
+  const topItem=String(n.inputType||'')==='InputSelectTargets'?null:(n.stack||[])[0];
+  for(const item of topItem?[topItem]:[])for(const r of Array.isArray(item.targets)?item.targets:[]){const to=r?.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r?.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'stack',id:item.id},to});}
   if(activeBeat&&castShow.dataset.open==='true')for(const r of activeBeat.targets||[]){const to=r.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'spotlight'},to});}
   return out;
  }
@@ -515,7 +526,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // Start at the source's edge, stop short of the target's edge, and bow the line a little.
    const ux=(bx-ax)/len,uy=(by-ay)/len,start=Math.min(a.width,a.height)*.42,stop=Math.min(b.width,b.height)*.48+4;
    const sx=ax+ux*start,sy=ay+uy*start,ex=bx-ux*stop,ey=by-uy*stop,bend=Math.min(60,len*.16),cx=(sx+ex)/2-uy*bend,cy=(sy+ey)/2+ux*bend;
-   paths.push(`<path class="forge-arrow" data-kind="${r.kind}" d="M${sx.toFixed(1)} ${sy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}" marker-end="url(#forge-head-${r.kind})"/>`);
+   // Arena-style: a thin line from the source to a ring around the target, with a small dot where it leaves the
+   // source. Combat keeps a (thinner) arrowhead so attackers and blockers still read at a glance.
+   const rx=Math.min(14,b.width*.18);paths.push(`<path class="forge-arrow" data-kind="${r.kind}" d="M${sx.toFixed(1)} ${sy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}"${r.kind==='target'?'':` marker-end="url(#forge-head-${r.kind})"`}/><circle class="forge-arrow-dot" data-kind="${r.kind}" cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="3.5"/><rect class="forge-target-ring" data-kind="${r.kind}" x="${(b.left-4).toFixed(1)}" y="${(b.top-4).toFixed(1)}" width="${(b.width+8).toFixed(1)}" height="${(b.height+8).toFixed(1)}" rx="${rx.toFixed(1)}"/>`);
   }
   const defs=arrows.querySelector('defs')?.outerHTML||'',html=defs+paths.join('');if(arrows.dataset.html!==html){arrows.dataset.html=html;arrows.innerHTML=html;}
  }
@@ -592,10 +605,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(drag?.active)markDrops();
   restoreAutoPay(s);
   markAutoTap(s);
-  if(!blocked){autoPassOwnStack(s);autoPassIdle(s);}
+  if(!blocked){autoPassOwnStack(s);autoPassIdle(s);autoDeclareMust(s);}
  }
  // Engine and transport codes in plain words; a refusal Forge explains stays as Forge said it.
- const plainError=msg=>/ordered-source|order/i.test(msg)&&/unavailable|not supported/i.test(msg)?'These can\u2019t be reordered here yet, so they\u2019ll resolve in the default order.':/contract is unavailable|is not supported/i.test(msg)?'That choice isn\u2019t available on this table yet.':msg==='MATCH_NOT_READY'?'One moment, the table is catching up.':msg==='STALE_CHOICE'?'That choice ran out. Try again.':/^(CHOICE_INCOMPLETE)$/.test(msg)?'Pick everything this asks for first.':msg==='CHOICE_FULL'?'You\u2019ve already picked the most allowed.':msg;
+ const plainError=msg=>/ordered-source|order/i.test(msg)&&/unavailable|not supported/i.test(msg)?'These can\u2019t be reordered here yet, so they\u2019ll resolve in the default order.':/contract is unavailable|is not supported/i.test(msg)?'That choice isn\u2019t available on this table yet.':msg==='MATCH_NOT_READY'?'One moment, the table is catching up.':msg==='STALE_CHOICE'?'That choice ran out. Try again.':/^(CHOICE_INCOMPLETE)$/.test(msg)?'Pick everything this asks for first.':msg==='CHOICE_FULL'?'You\u2019ve already picked the most allowed.':/attack declaration invalid/i.test(msg)?'That attack isn\u2019t allowed. A creature that must attack this turn has to be in it.':/block declaration invalid/i.test(msg)?'Those blocks aren\u2019t allowed. Check creatures that must block or can\u2019t.':String(msg).replace(/^message:\s*/i,'');
  // Arena's combat line: while you choose attackers or blockers, a gold line runs across the
  // middle of the board, with a small running count at its right end once you have picked one.
  // It never carries text over your creatures; the dock already says what is being asked.
@@ -615,7 +628,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(!track){track=doc.createElement('div');track.className='forge-phase-track';track.setAttribute('role','status');mat.append(track);}
   if(track.dataset.key===key)return;track.dataset.key=key;track.dataset.owner=owner;
   const step=PHASE_STEPS[at]?.[0]||'';track.setAttribute('aria-label',`${owner==='you'?'Your':'CPU'} turn ${surface.turn}${step?', '+step:''}`);
-  track.innerHTML=`<b>${owner==='you'?'You':'CPU'} · T${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
+  track.innerHTML=`<b>${owner==='you'?'You':'CPU'} · Turn ${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
  }
  const trackerSeen=new Map(),trackerOpen={deck:false,opponent:false},trackerIdentity=new Map();
  // The deck-list name of one physical card. Forge keeps a card's id when it transforms or becomes a
@@ -735,6 +748,16 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    ||n.inputType!=='InputPassPriority'||n.priorityPlayer!==n.viewer||top.activatingPlayer!==n.viewer||n.buttons?.okEnabled!==true)return;
   const key=`${n.revision}:${top.id}:${n.stack.length}`;if(autoPassed===key)return;autoPassed=key;
   act(()=>session.nativeButton('ok',n.revision));
+ }
+ // Arena puts a creature that must attack into the attack for you, so "N must attack" stays rare.
+ // Once per creature per turn: if Forge takes it back out, the tag and the disabled button explain why.
+ const mustDeclared=new Set();
+ function autoDeclareMust(s){
+  const n=s?.native,surface=s?.status?.surface;
+  if(!presentation.hosted||!n||!surface||s.busy||s.transportError||n.prompt||n.inputType!=='InputAttack')return;
+  const card=surface.cards.find(c=>c.zone==='Battlefield'&&c.controller===surface.seat&&c.mustAttack===true&&c.attacking!==true&&!mustDeclared.has(`${n.turn}:${c.id}`));
+  if(!card)return;mustDeclared.add(`${n.turn}:${card.id}`);
+  act(()=>session.nativeSelect('card',card.id));
  }
  // Smart also moves on when your main phase has nothing left to play, as Arena does:
  // after your last land or spell resolves, a short beat to see it land, then Next.
@@ -1039,6 +1062,15 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const lifted=root.dataset.handLift==='true',K=lifted?Number(root.style.getPropertyValue('--hand-scale'))||1:1,R=lifted?Number(root.style.getPropertyValue('--hand-raise').replace('px',''))||0:0,ox=box.left+box.w/2,oy=box.top+box.h;
   const local=el=>{let x=0,y=0,n=el;while(n&&n!==area){x+=n.offsetLeft;y+=n.offsetTop;n=n.offsetParent;}return {x,y,w:el.offsetWidth,h:el.offsetHeight};};
   const sx=xl=>ox+(box.left+xl-ox)*K,sy=yl=>oy-R+(box.top+yl-oy)*K;return {area,wraps,box,K,R,ox,oy,local,sx,sy};}
+ // On a narrow screen a big hand squeezes its fan to sit inside the 16px gutters instead of running off the edge;
+ // "View full hand" shows every card at full size.
+ function fitHandFan(hand){
+  for(const w of hand)w.style.removeProperty('margin-left');
+  if(hand.length<2||root.dataset.handExpanded==='true'||win.innerWidth>640)return;
+  const rect=w=>(w.querySelector('.play-match-card')||w).getBoundingClientRect(),a=rect(hand[0]),b=rect(hand[hand.length-1]),over=b.right-a.left-(win.innerWidth-32);
+  if(over<=0)return;const step=over/(hand.length-1);
+  hand.slice(1).forEach(w=>w.style.setProperty('margin-left',`${(parseFloat(getComputedStyle(w).marginLeft)||0)-step}px`));
+ }
  function layoutHand(){const g=handGeometry();if(!g)return;const fi=g.wraps.indexOf(handFocus);
   for(const w of g.wraps){if(w!==handFocus)w.removeAttribute('data-hand-focus');}
   if(fi<0){delete root.dataset.handFocused;handFocusRect=null;}else root.dataset.handFocused='true';
@@ -1048,7 +1080,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A playable card already sits a few pixels up inside its slot; count that so the popped card's top
   // edge (its name) stays on screen. Short screens keep it nearer 1.5x.
   const lift=-Math.min(0,parseFloat(String(getComputedStyle(handFocus.querySelector('.play-match-card')||handFocus).translate).split(' ')[1])||0),top=12;
-  let k=Math.max(1,Math.min(H<500||W<600&&H>W?2:3,Math.max(1.5,230/(f.w*K)),(bottom-top)/((f.h+lift)*K),(W-12)/(f.w*K))),half=f.w*K*k/2,dx=Math.max(6+half-cx,Math.min(0,W-6-half-cx));
+  // While you pick targets or pay a cost the board must stay visible, so the pop is small then.
+  const picking=(()=>{const i=String(session.snapshot().native?.inputType||'');return i==='InputSelectTargets'||i.startsWith('InputPayMana');})();
+  let k=Math.max(1,Math.min(picking?1.2:H<500||W<600&&H>W?2:3,Math.max(1.5,230/(f.w*K)),(bottom-top)/((f.h+lift)*K),(W-12)/(f.w*K))),half=f.w*K*k/2,dx=Math.max(6+half-cx,Math.min(0,W-6-half-cx));
   let fk=k,fx=dx/K,fy=(bottom-restBottom)/K;
   // Then check against the real box: try the target with transitions off, measure the card, pull it back
   // inside 8px of every edge (shrinking it if it can't fit), and let it animate from where it was.
@@ -1088,7 +1122,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // A tap belongs to the card that rose under the thumb. The rise moves cards under the finger, so the
  // browser's own click would land on whatever slid there; it is swallowed and the focused card is clicked.
  const handUp=e=>{if(e.pointerType==='mouse'||e.pointerId!==handPointer)return;handPointer=null;const played=!!drag?.active;if(handSifted&&!played)suppressUntil=Math.max(suppressUntil,Date.now()+300);
-  const tap=!played&&!handSifted&&!!handDownAt&&Math.hypot(e.clientX-handDownAt.x,e.clientY-handDownAt.y)<12&&handFocus?.querySelector('.play-match-card[data-instance]');handDownAt=null;
+  const tap=e.type!=='pointercancel'&&!played&&!handSifted&&!!handDownAt&&Math.hypot(e.clientX-handDownAt.x,e.clientY-handDownAt.y)<12&&handFocus?.querySelector('.play-match-card[data-instance]');handDownAt=null;
   if(tap){handTap=tap;win.setTimeout(()=>{if(handTap===tap){handTap=null;if(tap.isConnected)tap.click();}},0);}
   else if(played||!(pressShown||peek.dataset.open==='true'))focusHand(null);if(root.dataset.handLift==='true')dropHandLift(played?90:1600);};
  const swallowTapClick=e=>{if(!handTap||!e.isTrusted)return;e.preventDefault();e.stopImmediatePropagation();};
@@ -1099,20 +1133,22 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  doc.addEventListener('click',swallowTapClick,true);root.addEventListener('pointerdown',handDown,true);doc.addEventListener('pointerup',handUp,true);doc.addEventListener('pointercancel',handUp,true);doc.addEventListener('pointermove',handHover,{passive:true});doc.addEventListener('pointermove',handSift,{passive:true});root.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')dropHandLift(180);});
  root.addEventListener('click',click,true);root.addEventListener('pointerdown',down);doc.addEventListener('pointermove',move,{passive:false});doc.addEventListener('pointerup',up);doc.addEventListener('pointercancel',pressCancel);doc.addEventListener('keydown',key);win.addEventListener('blur',cancel);
  // Arena's rope: your decision clock runs quietly; after ROPE_IDLE with no touch or key, a gold fuse appears over
- // Next and burns down for ROPE_RUN (red, counting, in its last 10 s). When it runs out, Next is pressed for you,
- // which is a pass, or your attacks or blocks as they stand. Any touch, click or key starts the clock over.
+ // Next and burns down for ROPE_RUN (red, counting, in its last 10 s). When it runs out it only ever passes priority:
+ // attacks and blocks are never committed for you. The clock holds while you read a card, drag one, or the app is
+ // in the background, and any touch, click or key starts it over.
  const ROPE_IDLE=45000,ROPE_RUN=20000,rope=doc.createElement('div');rope.className='forge-rope';rope.hidden=true;rope.setAttribute('aria-hidden','true');rope.innerHTML='<i></i><b></b>';root.append(rope);
  let ropeKey='',ropeSince=Date.now();const ropeReset=()=>{ropeSince=Date.now();};
  const ropeLoop=presentation.hosted?win.setInterval(()=>{
   const s=session.snapshot(),n=s.native,ok=root.querySelector('.forge-native-panel [data-native-key=ok]');
-  const timed=root.dataset.stage==='match'&&!s.busy&&!s.status?.terminal&&['InputPassPriority','InputAttack','InputBlock'].includes(n?.inputType)&&!n?.prompt&&!!ok&&!ok.disabled;
+  const timed=root.dataset.stage==='match'&&!s.busy&&!s.status?.terminal&&n?.inputType==='InputPassPriority'&&!n?.prompt&&!!ok&&!ok.disabled;
+  if(doc.hidden||drag?.active||handFocus||peek.dataset.open==='true'||root.querySelector('.play-match-zones-menu[open]'))ropeReset();
   const key=timed?`${n.revision}|${n.inputType}`:'';if(key!==ropeKey){ropeKey=key;ropeReset();}
   const left=timed?ROPE_IDLE+ROPE_RUN-(Date.now()-ropeSince):Infinity;
-  if(!timed||left>ROPE_RUN||drag?.active){if(!rope.hidden){rope.hidden=true;delete rope.dataset.hot;}return;}
+  if(!timed||left>ROPE_RUN){if(!rope.hidden){rope.hidden=true;delete rope.dataset.hot;}return;}
   if(left<=0){rope.hidden=true;ropeReset();ok.click();return;}
   const r=ok.getBoundingClientRect(),secs=Math.ceil(left/1000);rope.hidden=false;rope.style.left=`${Math.round(r.left)}px`;rope.style.top=`${Math.round(r.top-12)}px`;rope.style.width=`${Math.round(r.width)}px`;
   rope.style.setProperty('--burn',(left/ROPE_RUN).toFixed(3));rope.dataset.hot=String(secs<=10);const b=rope.querySelector('b');if(secs<=10&&b.textContent!==String(secs)){b.textContent=String(secs);if(secs<=5)haptic('tick');}else if(secs>10)b.textContent='';
  },200):0;
- doc.addEventListener('pointerdown',ropeReset,true);doc.addEventListener('keydown',ropeReset,true);
- return {destroy(){closed=true;win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ doc.addEventListener('pointerdown',ropeReset,true);doc.addEventListener('keydown',ropeReset,true);doc.addEventListener('visibilitychange',ropeReset);
+ return {destroy(){closed=true;win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
