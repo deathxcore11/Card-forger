@@ -43,6 +43,6 @@ a16268be45e39f98b44cec06a7fa252803395319ae26c6d230dc12d1719ad7da  ./decks/reign-
 ef030f50b12bdbd19922689bc122d8285bb4062e504443c415cd6a90aff74fa1  ./human/src/forge/ai/AvailableActions.java
 b851c3e64696289079c51109f51c925ce141c53ddab651fcdfb9050d695373ac  ./human/src/forge/ai/HumanActionAffordability.java
 b780a4f005b28099aace1ff9c8f811c0ddea464cc0cdec27ce7991c1f5be3365  ./human/src/forge/gamemodes/match/input/InputPayMana.java
-597669e0b0722873e79145ae58239097bef73b167215b7f79c0aef8c63c07939  ./rules-data/current/cards.json
-c61abff8809cbc8eedd9b1d4f5162c2252144f421ed2422f0f811e52b08c0d84  ./rules-data/current/manifest.json
-97005c10913252558ed4093645fbd7a2cec6f60c6c1dfaf12b848aa9da07d8ce  ./rules-data/current/official-format-facts.json
+4b3baeb06d878590ae256751fbafe96ea48f238b8d8f54a5acd31a24e4ed1caf  ./rules-data/current/cards.json
+552a8898cd563f7478b572283e006fda1d44a5da6bc0fb53fc78ffb53b1f01dd  ./rules-data/current/manifest.json
+f50602ff44f6cf037af8576cfdcd5379e58b811376435b518f129c57bbf27df1  ./rules-data/current/official-format-facts.json

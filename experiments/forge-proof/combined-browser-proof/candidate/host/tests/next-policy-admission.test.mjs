@@ -6,7 +6,7 @@ import { AdmissionService, ORIGIN } from '../src/service-core.mjs';
 import { nativeAdapter } from '../src/native-adapter-next.mjs';
 import { ENGINE_REVISION, AI_PATCHSET_SHA256, AI_CLASS_SET_SHA256, EXPECTED_RULES } from '../src/release-policy.mjs';
 const OWNER = '00000000-0000-4000-8000-000000000001';
-const NOW = Date.parse('2026-10-28T05:00:00Z');
+const NOW = Date.parse('2026-10-30T05:00:00Z');
 class Storage {
   data = new Map(); tail = Promise.resolve();
   async get(key) { return structuredClone(this.data.get(key)); }

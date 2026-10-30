@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { ENGINE_REVISION, CPU_POLICIES, AI_PATCHSET_SHA256, AI_CLASS_SET_SHA256, EXPECTED_RULES,
   validateReleasePolicy, selectedPolicy, verifyPolicyReceipt } from '../src/release-policy.mjs';
-const now = Date.parse('2026-10-28T04:00:00Z'), image = 'registry.cloudflare.com/FIXTURE/account-forge@sha256:' + 'a'.repeat(64);
+const now = Date.parse('2026-10-30T04:00:00Z'), image = 'registry.cloudflare.com/FIXTURE/account-forge@sha256:' + 'a'.repeat(64);
 const receipts = Object.fromEntries(await Promise.all(['easy', 'medium', 'hard'].map(async tier => [tier,
   JSON.parse(await readFile(new URL('./fixtures/' + tier + '-receipt.json', import.meta.url), 'utf8')).initialization])));
 const release = () => ({ schema: 'cardstashy.forge-release-policy.v1', containerImage: image, engineRevision: ENGINE_REVISION,
@@ -43,7 +43,7 @@ test('current rules data must match trusted bundle, format-engine and freshness 
   for (const [key,value] of [['mode','pinned-practice'],['decksVerified',false],['version','new-client-label'],['manifestSha256','f'.repeat(64)],['indexSha256','f'.repeat(64)],['sourceSha256','f'.repeat(64)],['engineRevision','different'],['validUntilExclusive','2099-01-01']]) {
     const r=structuredClone(receipts.easy);r.rulesData[key]=value;assert.throws(()=>check(r),undefined,key);
   }
-  for(const date of ['2026-10-27T23:59:59Z','2026-11-04T00:00:00Z'])assert.throws(()=>check(receipts.easy,receipts.easy.policyVersion,release(),Date.parse(date)),/not_current/);
+  for(const date of ['2026-10-29T23:59:59Z','2026-11-06T00:00:00Z'])assert.throws(()=>check(receipts.easy,receipts.easy.policyVersion,release(),Date.parse(date)),/not_current/);
 });
 test('worker image declaration and build provenance cannot silently drift', () => {
   assert.throws(()=>validateReleasePolicy(release(),image.replace(/a{64}/,'d'.repeat(64)),now),/unbound/);

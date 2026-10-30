@@ -15,7 +15,7 @@ async function readReviewedRuntimeIndex(){
  }
  throw Error('Reviewed candidate runtime index missing');
 }
-const now=Date.parse('2026-10-28T12:00:00Z'),version='forge-heuristic-medium-beta-v1',profile=CPU_POLICIES[version];
+const now=Date.parse('2026-10-30T12:00:00Z'),version='forge-heuristic-medium-beta-v1',profile=CPU_POLICIES[version];
 export async function syntheticOCI({gzip=false}={}){
  const root=await mkdtemp(path.join(os.tmpdir(),'SYNTHETIC-OCI-UNIT-'));await mkdir(path.join(root,'blobs','sha256'),{recursive:true});
  const blob=async(bytes,mediaType)=>{const digest='sha256:'+sha256(bytes);await writeFile(path.join(root,'blobs','sha256',digest.slice(7)),bytes);return {mediaType,digest,size:bytes.length};};

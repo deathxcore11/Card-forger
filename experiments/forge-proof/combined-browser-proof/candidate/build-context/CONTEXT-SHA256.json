@@ -1,9 +1,9 @@
 {
   ".dockerignore": "22050b43f43a2d9f93d5b863f49b10b3e45c70dfce806512a9a3a9aca1246cd9",
-  "Dockerfile": "7693730fc81a371a890ea0c8a9021836a26e1eed240dc81b43eb87fe79531fb8",
+  "Dockerfile": "9dac3fe194731664902de9bb0283ba638010e3a305f3c1e462097688b5a9def8",
   "hosting/assemble.sh": "4a631468cef0b41772b24ee82b9a34d0b05601de0faa0103608bc69936243d43",
   "hosting/bootstrap.py": "f527cdd5ba61faab856690aa72fd01a0535be9ff904efdb435eced4258d9859d",
-  "hosting/checkpoint-files.json": "ee95c23e78f4c66c7406747d312f8bc2e8d55cecfce547e163c66f6741b1f5ed",
+  "hosting/checkpoint-files.json": "6e7d79951c8834ba52a0e561dcca6efb28adff5b39bff25b07fd2cd2acc0fdec",
   "hosting/gateway.py": "d82f4d79b41e4a65dfaa4c396db255125f22f5bbade615d2044a691b6bb2fa74",
   "native/BASE-CANDIDATE.json": "8efcc09d4f3260904034aa1f2e1e9f9b8d66f1ad8aa3668c404a020b55d0dbbf",
   "native/CONTRACT.md": "3206da2ab12c8a826ff3ca7ce7852a32e82a90cfee232c7e1fe0d21c2e964462",
@@ -50,7 +50,7 @@
   "native/human/src/forge/ai/AvailableActions.java": "ef030f50b12bdbd19922689bc122d8285bb4062e504443c415cd6a90aff74fa1",
   "native/human/src/forge/ai/HumanActionAffordability.java": "b851c3e64696289079c51109f51c925ce141c53ddab651fcdfb9050d695373ac",
   "native/human/src/forge/gamemodes/match/input/InputPayMana.java": "b780a4f005b28099aace1ff9c8f811c0ddea464cc0cdec27ce7991c1f5be3365",
-  "native/rules-data/current/cards.json": "597669e0b0722873e79145ae58239097bef73b167215b7f79c0aef8c63c07939",
-  "native/rules-data/current/manifest.json": "c61abff8809cbc8eedd9b1d4f5162c2252144f421ed2422f0f811e52b08c0d84",
-  "native/rules-data/current/official-format-facts.json": "97005c10913252558ed4093645fbd7a2cec6f60c6c1dfaf12b848aa9da07d8ce"
+  "native/rules-data/current/cards.json": "4b3baeb06d878590ae256751fbafe96ea48f238b8d8f54a5acd31a24e4ed1caf",
+  "native/rules-data/current/manifest.json": "552a8898cd563f7478b572283e006fda1d44a5da6bc0fb53fc78ffb53b1f01dd",
+  "native/rules-data/current/official-format-facts.json": "f50602ff44f6cf037af8576cfdcd5379e58b811376435b518f129c57bbf27df1"
 }
