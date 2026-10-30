@@ -1,4 +1,4 @@
-import { aiFetch, invalidateAiAuth } from './ai-auth.js';
+import { aiFetch, invalidateAiAuth, hasAiSession } from './ai-auth.js';
 import {mountFeedback,removeFeedback} from './feedback-layer.js';
 import {scannerLookupHTML,scannerCandidateCarousel,scannerBrowseHTML,scannerBrowseFilters,createScannerBrowse,scanHelp} from './scanner-review.js';
 import {attachPrintingCarousel} from './printing-carousel.js';
@@ -16,7 +16,7 @@ import {catalogState,catalogManifest,initCatalog,invalidateCatalogRead,downloadC
 import { esc } from "./ui.js";
 import {conditionRetryFeedback} from './condition-value.js';
 import { scanLookupNames, shortTrainerNames, pokemonTitleLabel, nameCandidates, detectGame, anchoredNames, scanNameKey, scanCardNameKey, scanCandidateMatches, ptcgNumbers, ygoSetCodes, mtgCollector } from "./scan.js";
-import { hashCanvas, nearest } from "./scanart.js";
+import { hashCanvas, nearest, fingerprintCanvas, fingerprintUrl, likeness } from "./scanart.js";
 import { artworkHTML, artworkSources } from "./artwork.js";
 import { openZoom } from "./zoom.js";
 import { FINISHES, CONDITIONS, LANGS, QTYS, loadPrefs, savePrefs, loadSession, saveSession, addToSession, itemKey, sessionCount, sessionValue, sessionUnpriced, sessionText, feedback } from "./scansession.js";
@@ -138,7 +138,7 @@ let ocrLoading = null,
   worker = null,
   workerLang = "",
   workerLoading = null;
-export const SCAN_DEADLINES={worker:15000,ocr:12000,local:6000,remote:8000,hydration:6000,artwork:2500,total:45000};
+export const SCAN_DEADLINES={worker:15000,ocr:12000,local:6000,remote:8000,hydration:6000,artwork:2500,ai:12000,total:45000};
 export function scanDeadline(work,ms,label,onTimeout=()=>{}) {
   let timer;
   return Promise.race([Promise.resolve().then(work),new Promise((_,reject)=>{timer=setTimeout(()=>{onTimeout();const e=Error(`${label} timed out. Capture saved for retry.`);e.code='SCAN_TIMEOUT';reject(e);},ms);})]).finally(()=>clearTimeout(timer));
@@ -642,6 +642,65 @@ export function recoverScanCandidates(g, result, visual, read = {}) {
   return {...result,cands:uniquePrintings([...suggestions,...result.cands.map(c=>({...c,exact:false,...(!compatible.length?{identityConflict:true}:{})}))]),tried:[...(result.tried||[]),...(visual.tried||[])]};
 }
 
+// The AI photo reader returns printed text only. Its transcription enters the
+// same catalogue, title and identifier gates as the phone's own reading: one
+// strong title observation plus a footer string, never a card ID or a verdict.
+export const AI_GAMES=['mtg','ptcg','ygo'];
+export function aiHintsRead(g,hints={}){
+  const name=String(hints.name||'').trim(),number=String(hints.number||'').trim(),set=String(hints.set||'').trim().toUpperCase();
+  let code=number;
+  // "LOB EN001" is the same printed code as LOB-EN001.
+  if(g==='ygo')code=number.toUpperCase().replace(/\s*-\s*|\s+/g,'-');
+  if(g==='mtg'){
+    // The footer grammar reads a fraction, or a bare number beside its rarity
+    // letter, with the set and language marker on the next line. A bare number
+    // gets a placeholder rarity letter; nothing downstream reads that letter.
+    const bare=/^\d{1,4}[a-z★†]?$/i.test(number),setCode=/^[A-Z0-9]{3,5}$/.test(set)?set:'';
+    code=[number&&(bare?`${number} R`:number),setCode&&`${setCode} EN`].filter(Boolean).join('\n');
+  }
+  return {name,code,full:'',stats:'',titles:name?[{text:name,source:'ai',confidence:92}]:[],...(AI_GAMES.includes(hints.game)?{game:hints.game}:{}),ai:true};
+}
+// A verified AI read stands alone. An unverified one is extra evidence beside
+// the phone read: a differing title or number still has to be reviewed.
+export function mergeAiEvidence(r,ai){
+  if(!ai)return r;
+  if(ai.verified||!r||r.g!==ai.g)return {...ai,cands:ai.cands.map(c=>ai.verified?c:{...c,exact:false})};
+  const read={...r.read,name:[ai.read.name,r.read.name].filter(Boolean).join('\n'),code:joinReads(ai.read.code,r.read.code),titles:[...(ai.read.titles||[]),...(r.read.titles||[{text:r.read.name||'',source:'title',confidence:null}])],...(ai.read.game?{game:ai.read.game}:{})};
+  return {...r,read,cands:uniquePrintings([...ai.cands,...r.cands]),tried:[...(r.tried||[]),...(ai.tried||[])],aiAssisted:true};
+}
+// The phone reader and the AI reader run together. A verified AI read wins at
+// once and ends the phone read; a phone read that verifies first stands; any
+// other phone result waits for the AI read (its own deadline) and absorbs it.
+export async function raceReads(ocrTask,aiTask,onAiWin=()=>{}){
+  const ocr=ocrTask.then(value=>({value}),error=>({error})),ai=aiTask.then(value=>({value}),()=>({value:null}));
+  const first=await Promise.race([ocr.then(x=>({ocr:x})),ai.then(x=>({ai:x}))]);
+  if(first.ai?.value?.verified){onAiWin();return first.ai.value;}
+  const o=await ocr;if(o.error)throw o.error;
+  if(o.value?.cands?.some(c=>textVerifiedMatch(o.value.g,c,o.value.read)))return o.value;
+  return mergeAiEvidence(o.value,(await ai).value);
+}
+// Several printings share the read name and no number settled it: the picture
+// decides the order. Every candidate must compare, or the order stays as read.
+export async function rankByLikeness(g,card,cands){
+  if(typeof Image==='undefined'||cands.length<2)return cands;
+  const scan=fingerprintCanvas(card,g);
+  const scored=await Promise.all(cands.map(async c=>{const url=c.image||c.card?.image_uris?.normal||artworkSources(c.card||{},true)[0];if(!url)throw Error('No picture to compare.');return {c,score:likeness(scan,await fingerprintUrl(url,g))};}));
+  const ranked=[...scored].sort((x,y)=>y.score-x.score),[a,b]=ranked;
+  if(a.score<0.5||(b&&a.score-b.score<0.04))return cands;
+  return ranked.map(({c,score},i)=>({...c,artLikeness:score,...(i===0?{why:'Looks most like this printing · check printing'}:{})}));
+}
+// What the AI reader sees: the card at the original's resolution, cut to its
+// proposed frame with a margin, or the whole original when the frame is unsure.
+function aiCaptureImage(packet){
+  const source=packet.original,quad=packet.proposal?.cropSafe===true?packet.proposal.quad:null;
+  let sx=0,sy=0,sw=source.width,sh=source.height;
+  if(quad){const xs=quad.map(p=>p.x),ys=quad.map(p=>p.y),w=Math.max(...xs)-Math.min(...xs),h=Math.max(...ys)-Math.min(...ys);sx=Math.max(0,Math.min(...xs)-w*.04);sy=Math.max(0,Math.min(...ys)-h*.04);sw=Math.min(source.width-sx,w*1.08);sh=Math.min(source.height-sy,h*1.08);}
+  const k=Math.min(1,(quad?1024:1280)/Math.max(sw,sh)),c=document.createElement('canvas');
+  c.width=Math.max(1,Math.round(sw*k));c.height=Math.max(1,Math.round(sh*k));
+  c.getContext('2d').drawImage(source,sx,sy,sw,sh,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',.85);
+}
+
 // Conflicting OCR must be reviewed even when it yields only one candidate.
 export function initialReviewIndex(entry) {
   const candidates=entry.cands||[];
@@ -848,6 +907,25 @@ export function registerScanner(ctx) {
     try{return await scanDeadline(()=>match(G,{...read},lang,false,progress,prefs,control),Math.min(SCAN_DEADLINES.remote,budget.remaining),'Card lookup',()=>control.cancel());}
     finally{control.cancel();}
   };
+  // One AI transcription per capture, raced against the phone reader. Skipped
+  // when turned off, offline or without a signed-in profile; any failure simply
+  // leaves the phone read in charge. Its result passes the ordinary gates.
+  const aiReadFlow=async(packet,selectedGame,snapshots,lang,progress,trace,active,budget)=>{
+    if(prefs().aiRead===false||globalThis.navigator?.onLine===false||!(await hasAiSession()))return null;
+    if(!active())return null;
+    const image=aiCaptureImage(packet);
+    const hints=await trace.stage('aiRead',()=>aiFetch('/api/ai/identify-card',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(Math.max(1000,Math.min(SCAN_DEADLINES.ai,budget.remaining))),body:JSON.stringify({game:selectedGame,image})}).then(async r=>{const result=await r.json();if(!r.ok)throw Error(result.message||'AI photo help is unavailable.');return result;}));
+    if(!active()||!hints?.readable||(!hints.name&&!hints.number))return null;
+    const G=AI_GAMES.includes(hints.game)?hints.game:selectedGame,read=aiHintsRead(G,hints);
+    if(!scanLookupNames(G,read).length&&!scanIdentifierEvidence(G,read).observations.length)return null;
+    let r=await trace.stage('aiLocal',()=>scanDeadline(()=>localScanMatch(G,read),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(G)));
+    if(!r.cands.some(c=>textVerifiedMatch(G,c,read))&&active()&&scanLookupNames(G,read).length){
+      try{const remote=await budget.lookup(scanQueryKey(G,read),()=>trace.stage('aiRemote',()=>boundedMatch(G,read,lang,progress,snapshots[G]||{},active,budget)));r={...r,cands:uniquePrintings([...r.cands,...remote.cands].sort((a,b)=>Number(!!b.exact)-Number(!!a.exact))),tried:[...(r.tried||[]),...(remote.tried||[])]};}
+      catch(e){if(e.code==='SCAN_TIMEOUT'||e.code==='SCAN_BUDGET'||e.code==='SCAN_CANCELED')throw e;}
+    }
+    const cands=rankScanCandidates(G,r.cands||[],read);
+    return budget.checkpoint({...r,g:G,read,cands,ai:true,verified:cands.some(c=>textVerifiedMatch(G,c,read))});
+  };
   const readFlow = async (card, selectedGame, snapshots, lang, progress, trace, active,budget) => {
     let G=selectedGame,read;
     const cache=new Map();
@@ -1001,7 +1079,12 @@ export function registerScanner(ctx) {
       const checkpoint=budget.checkpoint.bind(budget);budget.checkpoint=result=>{if(result.cands?.length&&trace.timings.firstCandidateMs==null)trace.timings.firstCandidateMs=clockNow()-(packet.processingAt||processingAt);return checkpoint(result);};
       try {
         const rawFirst=entry.originalOnly||entry.geometryUncertain||packet.proposal?.cropSafe===false;
-        r=rawFirst?await readOriginalEvidence(packet.original,null,entry,progress,trace,current,budget):await readFlow(card,entry.game,snapshots,entry.ocrLang||'eng',progress,trace,current,budget);
+        // A verified AI read stops the phone reader at its next step; its late
+        // rejection is absorbed by the race, and its status lines stop with it.
+        let aiWon=false;const ocrActive=()=>current()&&!aiWon,ocrProgress=m=>{if(ocrActive())setStatus(m);};
+        const aiTask=aiReadFlow(packet,entry.game,snapshots,entry.ocrLang||'eng',progress,trace,current,budget).catch(()=>null);
+        const ocrTask=rawFirst?readOriginalEvidence(packet.original,null,entry,ocrProgress,trace,ocrActive,budget):readFlow(card,entry.game,snapshots,entry.ocrLang||'eng',ocrProgress,trace,ocrActive,budget);
+        r=await raceReads(ocrTask,aiTask,()=>{aiWon=true;});
         if(!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&packet.proposal?.quad&&!rawFirst)r=await readOriginalEvidence(packet.original,r,entry,progress,trace,current,budget);
         // A near-edge card can fail conservative auto geometry while still giving
         // a useful deskew hypothesis. Probe its upright title/footer after the
@@ -1025,6 +1108,8 @@ export function registerScanner(ctx) {
       const detailed=budget.expired||budget.remaining<=0?r.cands.slice(0,3).map(c=>({status:'fulfilled',value:{...c,exact:false}})):await trace.stage('hydration',()=>settleLimited(r.cands.slice(0,3),c=>{hydrationControl.check();return c.localReference?scanDeadline(()=>hydrateCandidate(G,c,{identityOnly:true,control:hydrationControl}),SCAN_DEADLINES.hydration,'Card details',()=>hydrationControl.cancel()):c;},2)).catch(e=>{recognitionError=e.message;return r.cands.slice(0,3).map(c=>({status:'fulfilled',value:{...c,exact:false}}));});
       hydrationControl.cancel();
       r.cands=rankScanCandidates(G,detailed.map((x,i)=>x.status==='fulfilled'?x.value:{...r.cands[i],exact:false}).filter(Boolean),read);
+      if(!current())return;
+      if(r.cands.length>1&&card!==packet.original&&!r.cands.some(c=>textVerifiedMatch(G,c,read)))r.cands=await trace.stage('likeness',()=>scanDeadline(()=>rankByLikeness(G,card,r.cands),SCAN_DEADLINES.artwork,'Picture comparison')).catch(()=>r.cands);
       if(!current())return;
       const resolved=resolvedEntry(entry,G,r.cands,read,c=>textVerifiedMatch(G,c,read),scanPrefs);
       if(entry.initialEvidence){resolved.status=resolved.cands.length?'review':'unresolved';resolved.reason='Clearer frame added · compare with original';resolved.printingVerified=false;resolved.finish='';}
@@ -1725,22 +1810,23 @@ export function registerScanner(ctx) {
   const settingsSheet = (cams = []) => {
     const p = prefs(),
       G = game(),
-      chk = (k, label, help = "") => `<label class="check ss-set"><input type="checkbox" data-change="scanPref" data-k="${k}" ${p[k] ? "checked" : ""}><span><b>${label}</b>${help ? `<small>${help}</small>` : ""}</span></label>`;
-    return `<div class="sheet-head"><h2>Scanner settings</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+      chk = (k, label, help = "") => `<label class="check ss-set" data-hit><input type="checkbox" data-change="scanPref" data-k="${k}" ${p[k] ? "checked" : ""}><span><b>${label}</b>${help ? `<small>${help}</small>` : ""}</span></label>`;
+    return `<div class="scan-settings"><div class="sheet-head"><h2>Scanner settings</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
       <label class="field">Camera<select data-change="scanPref" data-k="camera"><option value="">Back camera (automatic)</option>${cams.map((c, i) => `<option value="${esc(c.deviceId)}" ${p.camera === c.deviceId ? "selected" : ""}>${esc(c.label || "Camera " + (i + 1))}</option>`).join("")}</select></label>
       <p class="small muted">The camera keeps capturing while cards are read. Nothing is added to your collection until you save.</p>
-      <label class="check ss-set"><input type="checkbox" data-change="scanAuto" ${s().auto!==false?'checked':''}><span><b>Capture automatically</b><small>Turn off to capture only with the camera button.</small></span></label>
+      <label class="check ss-set" data-hit><input type="checkbox" data-change="scanAuto" ${s().auto!==false?'checked':''}><span><b>Capture automatically</b><small>Turn off to capture only with the camera button.</small></span></label>
       ${defaultsPill(G,p)}<p class="small muted">Finish and condition are your batch defaults, not camera measurements. An unsupported finish still needs review.</p>
       ${!s().torchCap?'<p class="small muted">Flashlight is not available on this camera. Use a bright light beside the card and tilt away from glare.</p>':''}
       <label class="field">Lock set<input data-change="scanPref" data-k="lockSet" value="${esc(p.lockSet)}" placeholder="${G === "mtg" ? "Set code, e.g. WOE" : G === "ygo" ? "Set code, e.g. LOB" : "Set id, e.g. sv1"}" autocapitalize="characters"><small class="muted">Sorting one set? Matches from it come first${G === "mtg" ? ", and names are looked up in it" : ""}.</small></label>
       ${G === "mtg" ? chk("ignorePromos", "Ignore promos", "Prefer the regular printing when a name match lands on a promo.") : ""}
       ${chk("preferFoil", "Prefer foil", "Start new scans as foil (you can still tap the finish).")}
+      ${chk("aiRead", "Read with AI", "Each capture is also read by AI for a faster, surer match. Off keeps reading on this device only.")}
       ${chk("sounds", "Sounds", "A short chime for each card added, a low tone when nothing matched.")}
       ${chk("haptics", "Vibration", "A tap on each card added.")}
       ${chk("showValue", "Show prices and total value")}
       <label class="field">Text recognition language<select data-change="scanLang">${[["eng", "English"], ["jpn+eng", "Japanese (+ English)"]].map(([v, l]) => `<option value="${v}" ${scanLang() === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
       <section class="scan-catalog-settings"><h3>Recognition download</h3><p class="small muted">Card names, printing codes and image references stay on this device. Current prices and full card details use the internet.</p>${catalogControl(G,s())}${catalogState(G).status==="ready" ? `<button class="link small" data-act="scanCatalogRemove">Remove this game's text pack</button>` : ""}</section>
-      <p class="small muted">Finish and condition are not detected from the photo. Choose them during review, or set a batch default above.</p><details class="settings-disclosure"><summary>Scanning tips</summary><ul class="guide-list small"><li>Plain, contrasting surface; one card at a time.</li><li>No exact alignment needed. Keep the whole card, name and bottom code readable.</li><li>Tilt slightly or use the flashlight off-axis to kill foil glare.</li><li>Sorting a single set? Lock it for faster, surer matches.</li><li>Swap cards after the capture chime; review the uncertain ones when finished.</li></ul></details>`;
+      <p class="small muted">Finish and condition are not detected from the photo. Choose them during review, or set a batch default above.</p><details class="settings-disclosure"><summary>Scanning tips</summary><ul class="guide-list small"><li>Plain, contrasting surface; one card at a time.</li><li>No exact alignment needed. Keep the whole card, name and bottom code readable.</li><li>Tilt slightly or use the flashlight off-axis to kill foil glare.</li><li>Sorting a single set? Lock it for faster, surer matches.</li><li>Swap cards after the capture chime; review the uncertain ones when finished.</li></ul></details></div>`;
   };
   A.scanSettings = async () => {
     const current=scanCurrent();

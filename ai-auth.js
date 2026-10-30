@@ -8,6 +8,9 @@ export function invalidateAiAuth() {
   accountRequests = new AbortController();
 }
 export function configureAiAuth(getToken) { readToken = getToken; }
+// Whether a signed-in profile can use AI at all. The server stays the authority;
+// this only lets the scanner skip a request that would be refused anyway.
+export async function hasAiSession() { try { const token = await readToken(); return typeof token === 'string' && token.length > 0; } catch { return false; } }
 export const AI_SIGN_IN_MESSAGE = 'Sign in to your CardStashy profile to use AI, then try again. Your cards and drafts are still here.';
 function sessionOrAbort(promise, signal) {
   return new Promise((resolve, reject) => {

@@ -29,7 +29,7 @@ const write = (k, v) => {
   } catch {}
 };
 
-export const DEFAULT_PREFS = { quick: false, sounds: true, haptics: true, showValue: true, preferFoil: false, ignorePromos: false, lockSet: "", camera: "", qty: 1, condition: "Near Mint", lang: "en", location: "" };
+export const DEFAULT_PREFS = { quick: false, aiRead: true, sounds: true, haptics: true, showValue: true, preferFoil: false, ignorePromos: false, lockSet: "", camera: "", qty: 1, condition: "Near Mint", lang: "en", location: "" };
 // Per-game finish default, shared settings otherwise.
 export function loadPrefs(g) {
   const all = read(PREFS_KEY, {}) || {};
