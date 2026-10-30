@@ -2472,6 +2472,11 @@ body>.pw-menu .pw-menu-row.pw-armed,body>.pw-menu .pw-menu-exit{background:linea
  #app .battle .piles>span[data-pile] b{bottom:-2px}
 }
 #app .battle .unit.ally .art>.stats{padding-inline:3px!important;white-space:nowrap;max-width:100%!important;box-sizing:border-box!important;min-width:0!important}
+/* mana symbols inside rules text */
+.card .ms{display:inline-flex;align-items:center;justify-content:center;width:1.1em;height:1.1em;margin:0 .04em;vertical-align:-.2em;filter:none}
+.card .ms-g{border-radius:50%;background:#cfc6b8;color:#16110c;font:800 max(11px,.78em)/1 var(--display,serif);box-shadow:0 1px 0 #0008}
+/* coloured keywords in emblem text: keep each line's glyph box clear of the next line */
+#app .option :has(>i.k){line-height:1.42}
 
 </style>
 
@@ -2516,7 +2521,10 @@ const C={
  bombard:{name:'Goblin Bombardment',e:1,r:'R',kind:'Enchantment',g:'✸',power:1,text:f=>`Any number of times: sacrifice an ally to deal ${f?4:3} damage to an enemy.`,play:f=>{c.bombard=Math.max(c.bombard||0,f?4:3)}},
  doubt:{name:'Doubt',e:1,r:'K',kind:'Curse',g:'✝',text:()=>'Does nothing. Remove it at a market, or carry it to an Act 2 chapel.',play:()=>{}},
  clarity:{name:'Moment of Clarity',e:0,r:'R',hidden:1,kind:'Sorcery',g:'☀',text:f=>`Draw ${f?3:2} cards. Gain 2 life. (Your Doubt, answered.)`,play:f=>{draw(f?3:2);heal(2)}},
- rite:{name:'Rite of Flame',e:1,r:'C',kind:'Sorcery',g:'△',text:f=>f?'Gain 1 energy. Draw a card.':'Gain 1 energy.',play:f=>{c.energy+=1;draw(f?1:0)}},
+ rite:{name:'Rite of Flame',e:1,r:'C',kind:'Sorcery',g:'△',text:f=>`Add {R}{R}, plus {R} for each Rite of Flame in your discard pile.${f?' Draw a card.':''}`,play:f=>{c.energy+=2+c.discard.filter(x=>x.key==='rite').length;draw(f?1:0)}},
+ song:{name:'Seething Song',e:3,r:'U',kind:'Instant',g:'♫',text:f=>`Add {R}{R}{R}{R}{R}${f?'{R}':''}.`,play:f=>{c.energy+=f?6:5}},
+ simian:{name:'Simian Spirit Guide',e:0,r:'C',kind:'Creature · Ape Spirit',g:'☄',text:f=>`Discard it from your hand: add {R}.${f?' Draw a card.':''}`,play:f=>{c.energy+=1;draw(f?1:0)}},
+ electro:{name:'Goblin Electromancer',e:2,r:'U',kind:'Creature · Goblin Wizard',g:'E',ally:f=>({p:f?3:2,t:2,goblin:1,electro:1}),text:f=>`${f?3:2}/2. Your instants and sorceries cost {1} less.`},
  mana:{name:'Manamorphose',e:1,r:'U',kind:'Instant',g:'◇',text:f=>f?'Gain 1 energy. Draw 2 cards.':'Gain 1 energy. Draw a card.',play:f=>{c.energy+=1;draw(f?2:1)}},
  grape:{name:'Grapeshot',e:1,r:'R',aim:'enemy',kind:'Sorcery',g:'⁂',text:f=>`Deal ${f?3:2} damage to target enemy for each card you've played this turn, counting this one.`,play:(f,t)=>hit(t,(c.chain+1)*(f?3:2))},
  glory:{name:'Glorybringer',e:3,r:'R',kind:'Creature · Dragon',g:'D',ally:f=>({p:f?4:3,t:f?5:4,flying:1,haste:1}),text:f=>`${f?'4/5':'3/4'}. Flying, haste. Costs 1 less if you control a creature with power 3 or more.`},
@@ -2526,6 +2534,8 @@ for(const k in C)C[k].col='R';
 // ---------- white pool (Elspeth): wide Soldiers, lifegain, flyers ----------
 const soldier=f=>summon({p:1,t:1,soldier:1},'Soldier token');
 Object.assign(C,{
+ mindstone:{name:'Mind Stone',e:2,r:'C',kind:'Artifact',g:'◇',text:f=>`Add {C} at the start of each of your turns this fight.${f?' Draw a card.':''}`,play:f=>{c.stone=(c.stone||0)+1;draw(f?1:0)}},
+ orchid:{name:'Knight of the White Orchid',e:2,r:'U',kind:'Creature · Knight',g:'O',ally:f=>({p:2,t:f?3:2,first:1,orchid:1}),text:f=>`2/${f?3:2}. First strike. When it enters, if the enemies outnumber your allies, you get +1 mana each turn this fight.`},
  vanguard:{name:'Elite Vanguard',e:1,r:'S',kind:'Creature · Soldier',g:'V',ally:f=>({p:2,t:f?2:1,soldier:1}),text:f=>`2/${f?2:1}.`},
  salve:{name:'Healing Salve',e:1,r:'S',kind:'Instant',g:'✚',text:f=>`Heal ${f?5:3}.`,play:f=>heal(f?5:3)},
  pacifism:{name:'Pacifism',e:2,r:'S',aim:'enemy',kind:'Enchantment',g:'☮',text:f=>`Target enemy can't attack. Its other intents still happen. A legendary or planeswalker shakes it off after one attack and can't be pacified again this fight.${f?' Draw a card.':''}`,play:(f,t)=>{if(t.pacImmune)c.log=`${t.name} already shook off a Pacifism this fight.`;else t.pacified=1;if(f)draw(1)}},
@@ -2534,18 +2544,18 @@ Object.assign(C,{
  pridemate:{name:"Ajani's Pridemate",e:1,r:'C',kind:'Creature · Cat',g:'A',ally:f=>({p:f?2:1,t:2,pride:1}),text:f=>`${f?2:1}/2. Whenever you heal, it gets +1/+1 for the rest of the fight.`},
  stance:{name:'Valorous Stance',e:1,r:'C',aim:'ally',needAlly:1,kind:'Instant',g:'◈',text:f=>`Target ally gets +${f?1:0}/+4 until your next turn.`,play:(f,t)=>{t.temp+=0;t.tough4=(t.tough4||0)+4;if(f)t.temp1=(t.temp1||0)+1}},
  heroism:{name:'Moment of Heroism',e:1,r:'C',aim:'ally',needAlly:1,kind:'Instant',g:'☀',text:f=>`Target ally gets +${f?3:2}/+${f?2:1} and lifelink until your next turn.`,play:(f,t)=>{t.temp1=(t.temp1||0)+(f?3:2);t.tough4=(t.tough4||0)+(f?2:1);if(!t.lifelink){t.lifelink=1;t.lifelinkTemp=1}}},
- knight:{name:'Attended Knight',e:2,r:'C',kind:'Creature · Knight',g:'K',ally:f=>({p:2,t:f?3:2,first:1,squire:1}),text:f=>`2/${f?3:2}. First strike. Also summon a 1/1 Soldier.`},
- overseer:{name:'Inspiring Overseer',e:2,r:'C',kind:'Creature · Angel',g:'O',ally:f=>({p:f?3:2,t:2,flying:1,drawOn:1}),text:f=>`${f?3:2}/2. Flying. When it enters, draw a card.`},
- charge:{name:'Inspired Charge',e:2,r:'C',kind:'Instant',g:'»',text:f=>`Allies get +${f?4:3}/+${f?2:1} until your next turn.`,play:f=>c.allies.forEach(a=>{a.temp1=(a.temp1||0)+(f?4:3);a.tough4=(a.tough4||0)+(f?2:1)})},
+ knight:{name:'Attended Knight',e:3,r:'C',kind:'Creature · Knight',g:'K',ally:f=>({p:2,t:f?3:2,first:1,squire:1}),text:f=>`2/${f?3:2}. First strike. Also summon a 1/1 Soldier.`},
+ overseer:{name:'Inspiring Overseer',e:3,r:'C',kind:'Creature · Angel',g:'O',ally:f=>({p:f?3:2,t:2,flying:1,drawOn:1}),text:f=>`${f?3:2}/2. Flying. When it enters, draw a card.`},
+ charge:{name:'Inspired Charge',e:3,r:'C',kind:'Instant',g:'»',text:f=>`Allies get +${f?4:3}/+${f?2:1} until your next turn.`,play:f=>c.allies.forEach(a=>{a.temp1=(a.temp1||0)+(f?4:3);a.tough4=(a.tough4||0)+(f?2:1)})},
  hawk:{name:"Healer's Hawk",e:1,r:'U',kind:'Creature · Bird',g:'H',ally:f=>({p:f?2:1,t:2,flying:1,lifelink:1}),text:f=>`${f?2:1}/2. Flying, lifelink.`},
  warden:{name:'Soul Warden',e:1,r:'U',kind:'Creature · Cleric',g:'W',ally:f=>({p:1,t:1,warden:f?2:1}),text:f=>`1/1. Whenever another ally enters, heal ${f?2:1}.`},
- banish:{name:'Banishing Light',e:2,r:'U',aim:'enemy',kind:'Enchantment',g:'☼',text:f=>`Exile target minion. Against a legendary or planeswalker, deal ${f?9:6} damage instead.`,play:(f,t)=>{if(t.rank)hit(t,f?9:6);else{t.pop=(t.pop||0)+t.hp;t.hp=0}}},
+ banish:{name:'Banishing Light',e:3,r:'U',aim:'enemy',kind:'Enchantment',g:'☼',text:f=>`Exile target minion. Against a legendary or planeswalker, deal ${f?9:6} damage instead.`,play:(f,t)=>{if(t.rank)hit(t,f?9:6);else{t.pop=(t.pop||0)+t.hp;t.hp=0}}},
  anthem:{name:'Glorious Anthem',e:1,r:'U',kind:'Enchantment',g:'♫',power:1,text:f=>f?'Allies get +1/+1 for the rest of the fight. Heal 3.':'Allies get +1/+1 for the rest of the fight.',play:f=>{c.anthem=(c.anthem||0)+1;if(f)heal(3)}},
- serra:{name:'Serra Angel',e:3,r:'U',kind:'Creature · Angel',g:'S',ally:f=>({p:f?5:4,t:4,flying:1,vigilance:1,skylord:1}),text:f=>`${f?5:4}/4. Flying, vigilance. Other allies with flying get +1/+1.`},
- eagle:{name:'Empyrean Eagle',e:2,r:'U',kind:'Creature · Bird Spirit',g:'E',ally:f=>({p:f?3:2,t:2,flying:1,skylord:1}),text:f=>`${f?3:2}/2. Flying. Other allies with flying get +1/+1.`},
- marshal:{name:'Benalish Marshal',e:2,r:'R',kind:'Creature · Knight',g:'B',ally:f=>({p:f?3:2,t:f?3:2,marshal:1}),text:f=>`${f?'3/3':'2/2'}. Other allies get +1/+1.`},
- baneslayer:{name:'Baneslayer Angel',e:4,r:'R',kind:'Creature · Angel',g:'B',ally:f=>({p:f?4:3,t:4,flying:1,first:1,lifelink:1}),text:f=>`${f?4:3}/4. Flying, first strike, lifelink.`},
- cathars:{name:"Cathars' Crusade",e:2,r:'R',kind:'Enchantment',g:'✠',power:1,text:f=>`Whenever an ally enters, each ally gets +1/+0 for the rest of the fight.${f?' Summon a 1/1 Soldier.':''}`,play:f=>{c.crusade=(c.crusade||0)+1;if(f)soldier()}},
+ serra:{name:'Serra Angel',e:4,r:'U',kind:'Creature · Angel',g:'S',ally:f=>({p:f?5:4,t:4,flying:1,vigilance:1,skylord:1}),text:f=>`${f?5:4}/4. Flying, vigilance. Other allies with flying get +1/+1.`},
+ eagle:{name:'Empyrean Eagle',e:3,r:'U',kind:'Creature · Bird Spirit',g:'E',ally:f=>({p:f?3:2,t:2,flying:1,skylord:1}),text:f=>`${f?3:2}/2. Flying. Other allies with flying get +1/+1.`},
+ marshal:{name:'Benalish Marshal',e:3,r:'R',kind:'Creature · Knight',g:'B',ally:f=>({p:f?3:2,t:f?3:2,marshal:1}),text:f=>`${f?'3/3':'2/2'}. Other allies get +1/+1.`},
+ baneslayer:{name:'Baneslayer Angel',e:5,r:'R',kind:'Creature · Angel',g:'B',ally:f=>({p:f?4:3,t:4,flying:1,first:1,lifelink:1}),text:f=>`${f?4:3}/4. Flying, first strike, lifelink.`},
+ cathars:{name:"Cathars' Crusade",e:3,r:'R',kind:'Enchantment',g:'✠',power:1,text:f=>`Whenever an ally enters, each ally gets +1/+0 for the rest of the fight.${f?' Summon a 1/1 Soldier.':''}`,play:f=>{c.crusade=(c.crusade||0)+1;if(f)soldier()}},
  sungrace:{name:"Elspeth's Rally",e:1,r:'C',kind:'Sorcery',g:'↑',text:f=>`Elspeth gains ${f?2:1} loyalty. Draw a card.`,play:f=>{c.loyalty=Math.min(8,c.loyalty+(f?2:1));draw(1)}},
 });
 Object.assign(C,{
@@ -2557,19 +2567,19 @@ Object.assign(C,{
  // Mythics: rare drops from any fight, likelier from elites, treasure and markets.
  titan:{col:'R',name:'Inferno Titan',e:4,r:'M',kind:'Creature · Giant',g:'T',ally:f=>({p:f?5:4,t:f?5:4,titan:2}),text:f=>`${f?'5/5':'4/4'}. When it enters, deal 2 damage to each enemy. Whenever another ally enters, deal 2 damage to each enemy.`},
  ignition:{col:'R',name:"Chandra's Ignition",e:3,r:'M',kind:'Sorcery',g:'✺',text:f=>`Your strongest ally deals damage equal to its power${f?' +2':''} to each enemy. With no allies, deal ${f?6:4} to each enemy.`,play:f=>{const a=[...c.allies].sort((x,y)=>pow(y)-pow(x))[0];const n=a?pow(a)+(f?2:0):(f?6:4);alive().forEach(e=>hit(e,n))}},
- thune:{col:'W',name:'Archangel of Thune',e:4,r:'M',kind:'Creature · Angel',g:'A',ally:f=>({p:f?4:3,t:4,flying:1,lifelink:1,thune:1}),text:f=>`${f?4:3}/4. Flying, lifelink. The first time you heal each turn, each ally gets +1/+1 for the fight.`},
- akroma:{col:'W',name:'Akroma, Angel of Wrath',e:4,r:'M',kind:'Legendary Creature · Angel',g:'A',ally:f=>({p:f?4:3,t:f?4:3,flying:1,first:1,lifelink:1,akroma:1}),text:f=>`${f?'4/4':'3/3'}. Flying, first strike, lifelink. Your other flyers have first strike and lifelink.`},
+ thune:{col:'W',name:'Archangel of Thune',e:5,r:'M',kind:'Creature · Angel',g:'A',ally:f=>({p:f?4:3,t:4,flying:1,lifelink:1,thune:1}),text:f=>`${f?4:3}/4. Flying, lifelink. The first time you heal each turn, each ally gets +1/+1 for the fight.`},
+ akroma:{col:'W',name:'Akroma, Angel of Wrath',e:6,r:'M',kind:'Legendary Creature · Angel',g:'A',ally:f=>({p:f?4:3,t:f?4:3,flying:1,first:1,lifelink:1,akroma:1}),text:f=>`${f?'4/4':'3/3'}. Flying, first strike, lifelink. Your other flyers have first strike and lifelink.`},
 });
 for(const k in C)C[k].col=C[k].col||'W';
 // ---------- heroes ----------
 const HEROES={
- R:{key:'R',fury:1,name:'Chandra, Torch of Defiance',short:'Chandra',color:'Red',life:75,energy:3,loyalty:2,theme:'Haste, burn and Goblins. Chain spells into Fury.',
+ R:{key:'R',fury:1,name:'Chandra, Torch of Defiance',short:'Chandra',color:'Red',life:80,energy:3,loyalty:2,theme:'Steady 3 mana. Burn, Goblins and rituals.',
   starter:['shock','shock','ambush','rgoblin','rgoblin','rgoblin','piker','piker','giant','giant'],sig:'pyre',
   plusAim:'enemy',plusLabel:()=>`+1 · Deal ${2+(run&&run.emblems.includes('pyre')?2:0)}`,minusLabel:'−3 · 3 to each enemy',ultLabel:'−6 · Every spell burns all',
   plus:t=>{const n=2+(run.emblems.includes('pyre')?2:0);hit(t,n);return `Chandra +1: ${n} damage to ${t.name}.`},
   minus:()=>{c.enemies.forEach(e=>hit(e,3));return 'Chandra −3: 3 damage to each enemy.'},
   ult:()=>{c.ult=true;c.callout='Emblem of the Inferno';return 'Chandra −6: for the rest of this fight, every spell deals 3 to each enemy.'}},
- W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',get life(){return FORM?70:58},energy:3,loyalty:2,theme:'Soldiers, lifegain and flyers. Go wide, then make them huge.',
+ W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',get life(){return FORM?64:54},energy:3,ramp:[2,7],loyalty:2,theme:'Mana grows each turn. Go wide, then go huge.',
   starter:['vanguard','vanguard','vanguard','salve','salve','grace','pacifism','pacifism','pguard','pguard'],sig:'dawn',
   plusAim:null,plusLabel:()=>`+1 · Summon ${run&&run.emblems.includes('dawn')?'two 2/1 Soldiers':'a Soldier'}`,minusLabel:'−3 · Allies +2/+2',ultLabel:'−6 · Allies +2/+2 and fly',
   plus:()=>{if(run.emblems.includes('dawn')){summon({p:2,t:1,soldier:1},'Soldier token');summon({p:2,t:1,soldier:1},'Soldier token')}else soldier();return 'Elspeth +1: Soldiers join you.'},
@@ -2623,7 +2633,7 @@ const MAXBODIES=8;
 // Room is checked against the exact body summon would add, so a token only counts as stacking if it really joins a slot.
 const roomFor=(name,base={})=>c.allies.length<MAXBODIES&&(stacks().length<MAXA||(/token$/.test(name||'')&&stacks([...c.allies,body(base,name)]).length<=MAXA));
 const isGoblinCard=k=>C[k].kind.includes('Goblin')||k==='krenko';
-const costOf=card=>{const d=C[card.key];if(d.e==='X')return 'X';let e=d.e+(c&&c.tax&&!d.ally?1:0);if(c&&c.allies&&isGoblinCard(card.key)&&c.allies.some(a=>a.chief))e=Math.max(0,e-1);if(c&&c.allies&&/Dragon/.test(d.kind)&&c.allies.some(a=>pow(a)>=3))e=Math.max(0,e-1);if(c&&c.allies&&d.koz&&c.allies.length>=3)e=Math.max(0,e-2);if(c&&c.standard&&!d.ally&&c.stdT!==c.turn)e=Math.max(0,e-1);return e};
+const costOf=card=>{const d=C[card.key];if(d.e==='X')return 'X';let e=d.e+(c&&c.tax&&!d.ally?1:0);if(c&&c.allies&&/Instant|Sorcery/.test(d.kind)&&c.allies.some(a=>a.electro))e=Math.max(0,e-1);if(c&&c.allies&&isGoblinCard(card.key)&&c.allies.some(a=>a.chief))e=Math.max(0,e-1);if(c&&c.allies&&/Dragon/.test(d.kind)&&c.allies.some(a=>pow(a)>=3))e=Math.max(0,e-1);if(c&&c.allies&&d.koz&&c.allies.length>=3)e=Math.max(0,e-2);if(c&&c.standard&&!d.ally&&c.stdT!==c.turn)e=Math.max(0,e-1);return e};
 
 // ---------- emblems ----------
 const EMB={
@@ -2812,7 +2822,7 @@ function startTurn(){
  if(run.emblems.includes('monument')&&c.turn%2===0){hurt(1);if(c.allies.length){const w=[...c.allies].sort((x,y)=>pow(x)-pow(y))[0];w.dmg=999;cleanup()}}
  
  if(c.enemies.some(e=>e.hp<=0))cleanup();
- c.energy=HERO.energy+(run.emblems.includes('signet')&&c.turn>1?1:0)+(c.turn===1&&run.emblems.includes('contract')?2:0)+(run.emblems.includes('surge')&&c.turn%2===1?1:0)+(run.emblems.includes('spark')?c.turn===1?2:c.turn===2?1:0:0)-(c.dungeon==='ruins'?1:0)+c.bank;c.eMax=c.energy; c.banked=c.bank; c.bank=0; c.chain=0; c.used=false; draw(5-c.haunt+(c.dungeon==='ruins'?1:0)+(run.emblems.includes('contract')?2:0)); c.haunt=0;
+ c.energy=(HERO.ramp?Math.min(HERO.ramp[1],HERO.ramp[0]+c.turn-1):HERO.energy)+(c.stone||0)+(c.orchid||0)+(run.emblems.includes('signet')&&c.turn>1?1:0)+(c.turn===1&&run.emblems.includes('contract')?2:0)+(run.emblems.includes('surge')&&c.turn%2===1?1:0)+(run.emblems.includes('spark')?c.turn===1?2:c.turn===2?1:0:0)-(c.dungeon==='ruins'?1:0);c.eMax=c.energy; c.banked=c.bank; c.bank=0; c.chain=0; c.used=false; draw(5-c.haunt+(c.dungeon==='ruins'?1:0)+(run.emblems.includes('contract')?2:0)); c.haunt=0;
  c.tax=c.enemies.some(e=>E[e.key].tax);
 }
 function draw(n){for(let i=0;i<n;i++){if(!c.draw.length){c.draw=shuffle(c.discard);c.discard=[];if(c.dungeon==='crypt'&&c.draw.length>1){(c.exiled=c.exiled||[]).push(c.draw.pop());c.callout='The crypt takes a card'}}if(!c.draw.length)break;c.hand.push(c.draw.pop())}}
@@ -2862,6 +2872,7 @@ function summon(base,name){
  c.allies.filter(x=>x.titan&&x!==a&&x.dmg<tough(x)).forEach(()=>alive().forEach(e=>hit(e,2)));
   if(a.drawOn)draw(1);
  if(a.squire)summon({p:1,t:1,soldier:1},'Soldier token');
+ if(a.orchid&&alive().length>c.allies.length-1)c.orchid=(c.orchid||0)+1;
 }
 function canPlay(card){
  const d=C[card.key],cost=costOf(card);
@@ -2893,7 +2904,7 @@ function play(i,t){
  if(!d.ally&&run.emblems.includes('embers')){c.enemies.forEach(e=>hit(e,1));if(!c.embered){c.embered=1;heal(1)}}
  if(!d.ally&&c.ult)c.enemies.forEach(e=>hit(e,3));
  c.chain++;c.log=`You cast ${d.name}.`;
- if(run.emblems.includes('crown')&&c.chain===4){const g=1;c.energy+=g;juice(`+${g} Crown`)}
+ if(HERO.fury&&c.chain%4===0){c.energy+=1;juice('+{R} Fury')}if(run.emblems.includes('crown')&&c.chain===4){const g=1;c.energy+=g;juice(`+${g} Crown`)}
  if(HERO.fury&&c.chain%4===0){const fz=3*c.chain/4;c.enemies.forEach(e=>hit(e,fz));c.callout=c.chain>=8?`Fury ×${c.chain/4}!`:'Fury!';juice(`+${fz} Fury`);c.log=`Card ${c.chain} this turn: ${HERO.short}'s fury deals ${fz} to each enemy.`}
  c.casting=false;
  after();
@@ -2966,7 +2977,7 @@ function endTurn(){if(c)c.arrange=false;
  c.pending=null;
  mustAttack();
  if(view!=='battle')return;
- c.bank=Math.min(2,c.energy);
+ c.bank=0;
  {const t=c.stats.dealt-c.turnStart;c.stats.bestTurn=Math.max(c.stats.bestTurn||0,t);run.bestTurn=Math.max(run.bestTurn||0,t)}
  c.discard.push(...c.hand);c.hand=[];
  c.busy=true;c.log='Enemy turn…';render();
@@ -3136,7 +3147,9 @@ function enemyInfo(e){const d=E[e.key];const tr=[e.pacified&&(e.rank?'Pacified: 
  const list=[...src.slice(at),...src.slice(0,at)].map(([t,v])=>(ACT[t]||(()=>t))(['atk','annihilate'].includes(t)?v+e.buff:v)).join(' → ')+(e.buff?` (includes +${e.buff} from buffs)`:'');
  return `<div class="inspect" role="dialog" aria-label="${e.name}" data-audit-scroll><b>${e.name}</b><span class="muted"><span class="pw-sep"> · </span>${e.rank==='boss'?'Planeswalker':e.rank==='elite'?'Legendary':'Minion'} · ⚔ ${e.pow+e.buff} · ♥ ${Math.max(0,e.hp)}/${e.max}${e.shield?` · ◈ ${e.shield}`:''}</span><p>Pattern: ${list}</p>${tr.length?`<p>${tr.join(' ')}</p>`:''}<button class="btn" data-act="closeinspect">Close</button></div>`}
 const popOf=o=>{let s='';if(o.pop)s+=`<span class="pop${o.pop>=8?' big':''}" style="font-size:${(1.1+Math.min(o.pop,20)/14).toFixed(2)}rem">−${o.pop}</span>`;if(o.heal)s+=`<span class="pop heal">+${o.heal}</span>`;o.pop=0;o.heal=0;return s};
-const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Common',U:'Uncommon',R:'Rare',M:'Mythic',K:'Curse'}[d.r];return `<button class="card${card.foil?' foil':''}" data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" ${attrs}><span class="head"><b>${d.name}${card.foil?' ✦':''}</b><span class="cost">${c&&view==='battle'?costOf(card):d.e}</span></span><span class="pic">${d.g}</span><span class="kind" data-audit-repeat>${d.r==='K'?d.kind:d.kind+' · '+r}</span><span>${d.text(card.foil)}</span></button>`};
+// {R} {W} {C} {2} in rules text become mana symbols, so the text reads like a real card.
+const manaSyms=t=>String(t).replace(/\{([WUBRGC0-9])\}/g,(m,k)=>/[WUBRG]/.test(k)?`<i class="ms pwk-mana" data-c="${k}" role="img" aria-label="${k}"></i>`:`<i class="ms ms-g" role="img" aria-label="${k==='C'?'colorless':k}">${k==='C'?'◇':k}</i>`);
+const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Common',U:'Uncommon',R:'Rare',M:'Mythic',K:'Curse'}[d.r];return `<button class="card${card.foil?' foil':''}" data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" ${attrs}><span class="head"><b>${d.name}${card.foil?' ✦':''}</b><span class="cost">${c&&view==='battle'?costOf(card):d.e}</span></span><span class="pic">${d.g}</span><span class="kind" data-audit-repeat>${d.r==='K'?d.kind:d.kind+' · '+r}</span><span>${manaSyms(d.text(card.foil))}</span></button>`};
 const kws=a=>['haste','flying','reach','first','vigilance','deathtouch','lifelink','trample','defender'].filter(k=>a[k]||(k==='first'||k==='lifelink')&&akr(a)).map(k=>k==='first'?'first strike':k).join(' · ');
 
 function topBar(){
@@ -3189,7 +3202,7 @@ const P=c.pending;const F=c.busy?{you:0,dead:new Set(),took:new Map(),over:0}:fo
    ${(c.inspect&&c.enemies.find(e=>e.id===c.inspect))?enemyInfo(c.enemies.find(e=>e.id===c.inspect)):''}${c.showHist?`<div class="pw-hist" role="dialog" aria-label="Combat log"><button type="button" class="pw-x" data-act="closeinspect" aria-label="Close">✕</button><b>This fight</b><ol>${c.hist.slice(-14).map(l=>`<li>${l}</li>`).join('')}</ol></div>`:''}
    <button class="btn main" data-act="end" ${c.busy?'disabled':''}>End turn</button>
   </div>
-  <div class="foot"><div class="tally" title="Damage you've dealt this turn"><small>This turn</small>${c.stats.dealt-c.turnStart}${(c.juice||[]).length?`<span class="juice">${c.juice.map(j=>`<i class="${j.mul?'mul':'add'}">${j.t}${j.n>1?` <b>x${j.n}</b>`:''}</i>`).join('')}</span>`:''}</div><div class="energy" title="Mana: ${c.energy} of ${eMax} left this turn. Each lit symbol is one mana to spend. Up to 2 unused mana carries to next turn."><span class="e-n">${c.energy}</span>${c.banked?`<small>+${c.banked} saved</small>`:''}<span class="pips" aria-hidden="true">${Array.from({length:Math.min(eMax,10)},(_,i)=>`<i class="${i<c.energy?'on':''}" style="--a:${((i-(Math.min(eMax,10)-1)/2)*(eMax>6?20:26)).toFixed(1)}deg"></i>`).join('')}</span></div>${HERO.fury?`<div class="chain" role="img" aria-label="Fury ${c.chain%4||(c.chain?4:0)} of 4" title="Fury: every 4th card you play in a turn, ${HERO.short} deals 3 to each enemy, then 6 on the 8th, 9 on the 12th. Cards played this turn: ${c.chain}.">${[1,2,3,4].map(n=>`<i class="${(c.chain%4||(c.chain?4:0))>=n?'on':''}">${ico('flame')}</i>`).join('')}</div>`:''}
+  <div class="foot"><div class="tally" title="Damage you've dealt this turn"><small>This turn</small>${c.stats.dealt-c.turnStart}${(c.juice||[]).length?`<span class="juice">${c.juice.map(j=>`<i class="${j.mul?'mul':'add'}">${j.t}${j.n>1?` <b>x${j.n}</b>`:''}</i>`).join('')}</span>`:''}</div><div class="energy" title="Mana: ${c.energy} of ${eMax} left this turn. Each lit symbol is one mana to spend. Unspent mana empties at the end of your turn.${HERO.ramp?` ${HERO.short} gets 1 more mana each turn, up to ${HERO.ramp[1]}.`:''}"><span class="e-n">${c.energy}</span><span class="pips" aria-hidden="true">${Array.from({length:Math.min(eMax,10)},(_,i)=>`<i class="${i<c.energy?'on':''}" style="--a:${((i-(Math.min(eMax,10)-1)/2)*(eMax>6?20:26)).toFixed(1)}deg"></i>`).join('')}</span></div>${HERO.fury?`<div class="chain" role="img" aria-label="Fury ${c.chain%4||(c.chain?4:0)} of 4" title="Fury: every 4th card you play in a turn, ${HERO.short} deals 3 to each enemy (6 on the 8th, 9 on the 12th) and adds {R}. Cards played this turn: ${c.chain}.">${[1,2,3,4].map(n=>`<i class="${(c.chain%4||(c.chain?4:0))>=n?'on':''}">${ico('flame')}</i>`).join('')}</div>`:''}
    <div class="hand" data-audit-stack>${c.hand.map((card,i)=>cardHtml(card,`data-act="play" data-i="${i}" ${canPlay(card)?'':'disabled'} ${P&&P.kind==='card'&&P.cid===card.id?'data-chosen="1"':''}`)).join('')}</div>
    <div class="piles"><span data-pile="draw" role="img" aria-label="Draw pile: ${c.draw.length} cards"><b>${c.draw.length}</b></span><span data-pile="discard" role="img" aria-label="Discard pile: ${c.discard.length} cards"><b>${c.discard.length}</b></span>${!c.busy&&c.energy?`<span class="bankhint">${Math.min(2,c.energy)} <span class="bh-e">energy </span>saved</span>`:''}${c.tax?'<span style="color:var(--red)">Thalia: spells +1</span>':''}</div></div>
  </section>`;
@@ -3267,7 +3280,7 @@ function render(){if(SIM)return;
  if(view==='over'||view==='victory')endRun(view==='victory');
  if(view==='heroes'){document.getElementById('app').innerHTML=heroesView();try{delete document.body.dataset.actnum}catch(e){}return}
  const body=view==='ante'?anteView():view==='actstart'?actStartView():view==='bossreward'?bossRewardView():view==='shop'?shopView():view==='map'?mapView():view==='battle'?battleView():view==='reward'?rewardView():view==='rest'?restView():view==='event'?eventView():endView(view==='victory');
- document.getElementById('app').innerHTML=topBar()+body+`<details class="howto"><summary>How to play</summary><p class="note">You get 3 energy a turn, and up to 2 unused energy carries over. ${HERO.short}'s loyalty carries between fights: spend it now or save 6 for the ultimate. Play 4 cards in one turn for Fury. The chip over ${HERO.short} shows what the enemies will do if you end your turn now. New creatures are asleep: they can block but not attack, unless they have haste. Tap a glowing creature, then an enemy, to attack. Targeted spells work the same way. Enemies strike back, and tapped creatures can't block. Your run saves on the map after every node.</p>${FORM?`<p class="note">Formation: your front ally blocks first. Tap ⇄ Formation, then an ally, then an enemy, to have that ally guard against it. ↷ flying: only flying or reach allies can block it. ⤳ bypass: skips your line unless an ally guards against it. ⇶ trample: a blocker that dies doesn't stop the hit. +N/turn: enrage, its attack grows every turn. A creature that dies blocking soaks the whole hit; a token soaks only its toughness.</p>`:''}</details><p class="note record">Runs ${profile.runs} · Wins ${profile.wins} · Best turn ${profile.bestTurn}</p>`+(gift&&view==='map'?`<div class="pw-gift" role="dialog" aria-modal="true" aria-label="New card"><div class="pw-gift-box"><p class="pw-gift-why">${gift.why}</p>${cardHtml({key:gift.k,foil:!!gift.foil},'tabindex="-1"')}<button class="btn main" data-act="giftok">${gift.foil?'Nice':'Keep it'}</button></div></div>`:'');
+ document.getElementById('app').innerHTML=topBar()+body+`<details class="howto"><summary>How to play</summary><p class="note">${HERO.ramp?`You get ${HERO.ramp[0]} mana on your first turn and 1 more each turn, up to ${HERO.ramp[1]}.`:`You get ${HERO.energy} mana a turn. Rituals like Rite of Flame add more for this turn only.`} Unspent mana empties at the end of your turn. ${HERO.short}'s loyalty carries between fights: spend it now or save 6 for the ultimate. ${HERO.fury?'Play 4 cards in one turn for Fury: it burns every enemy and adds {R}.':''} The chip over ${HERO.short} shows what the enemies will do if you end your turn now. New creatures are asleep: they can block but not attack, unless they have haste. Tap a glowing creature, then an enemy, to attack. Targeted spells work the same way. Enemies strike back, and tapped creatures can't block. Your run saves on the map after every node.</p>${FORM?`<p class="note">Formation: your front ally blocks first. Tap ⇄ Formation, then an ally, then an enemy, to have that ally guard against it. ↷ flying: only flying or reach allies can block it. ⤳ bypass: skips your line unless an ally guards against it. ⇶ trample: a blocker that dies doesn't stop the hit. +N/turn: enrage, its attack grows every turn. A creature that dies blocking soaks the whole hit; a token soaks only its toughness.</p>`:''}</details><p class="note record">Runs ${profile.runs} · Wins ${profile.wins} · Best turn ${profile.bestTurn}</p>`+(gift&&view==='map'?`<div class="pw-gift" role="dialog" aria-modal="true" aria-label="New card"><div class="pw-gift-box"><p class="pw-gift-why">${gift.why}</p>${cardHtml({key:gift.k,foil:!!gift.foil},'tabindex="-1"')}<button class="btn main" data-act="giftok">${gift.foil?'Nice':'Keep it'}</button></div></div>`:'');
  // Skin hooks: every screen can read the act (for its location art) and its own kind.
  try{document.body.dataset.actnum=run.act||1;const sec=document.querySelector('#app section.screen');const k=view==='shop'?'shop':view==='event'?'event':view==='reward'&&reward&&reward.treasure?'treasure':'';if(sec&&k)sec.classList.add(k)}catch(e){}
  saveRun();
@@ -3828,8 +3841,8 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
  const draw=()=>{if(!box)return;const r=G('run'),inRun=live(),H=r&&G('HERO'),s=aget(),on=sound(),f=box.contains(document.activeElement)&&document.activeElement.dataset.m;
   box.innerHTML=`<div class="pw-menu-card pwk-panel" role="dialog" aria-modal="true" aria-label="Paused" data-audit-scroll><h2 class="pwk-title"><span class="pwk-mana" aria-hidden="true"></span>Paused<span class="pwk-mana" aria-hidden="true"></span></h2>${inRun&&H?`<p class="pw-menu-sub">${H.name||''} · Act ${r.act||1} · ♥ ${r.hp}/${r.max}</p>`:''}
    <button class="btn main pwk-btn primary" data-m="resume">Resume</button>
-   <div class="pw-menu-group pw-menu-snd"><h3>Sound</h3>${tog('sound','Sound',on,on?'On':'Off')}${'master' in s?slider('master','Master'):''}${slider('music','Music')}${slider('sfx','Effects')}</div>
-   <div class="pw-menu-group pw-menu-optg"><h3>Options</h3>${tog('calm','Motion',!calm,calm?'Reduced':'Full')}${!inRun&&typeof FORM!=='undefined'?tog('form','Formation blocking',!!FORM,FORM?'On':'Off'):''}<button type="button" class="pw-menu-row" data-m="tips"><span>Show drag tips again</span></button></div>
+   <div class="pw-menu-group pw-menu-snd"><h3>Sound</h3>${tog('sound','Sound',on,on?'On':'Off')}${'master' in s?slider('master','Master'):''}${slider('music','Music')}</div>
+   <div class="pw-menu-group pw-menu-optg"><h3>Options</h3>${tog('calm','Motion',!calm,calm?'Reduced':'Full')}${!inRun&&typeof FORM!=='undefined'?tog('form','Formation blocking',!!FORM,FORM?'On':'Off'):''}<button type="button" class="pw-menu-row" data-m="tips"><span>Show drag tips again</span></button>${slider('sfx','Effects')}</div>
    <div class="pw-menu-group pw-menu-run"><h3>Run</h3>${inRun?`<button type="button" class="pw-menu-row${armed==='restart'?' pw-armed':''}" data-m="restart"><span>${armed==='restart'?'Tap again to restart with '+(H&&H.name||'this hero'):'Restart run'}</span></button>`:''}
    <button type="button" class="pw-menu-row${armed==='hero'?' pw-armed':''}" data-m="hero"><span>${armed==='hero'?'Tap again to end this run':'Change hero'}</span></button>
    <button type="button" class="pw-menu-row pw-menu-exit${armed==='exit'?' pw-armed':''}" data-m="exit"><span>${armed==='exit'?'Tap again to leave and end this run':'Exit to Play menu'}</span></button></div></div>`;
@@ -4458,7 +4471,6 @@ let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;appl
   ['.emblems .emb-art,.emblems svg',e=>`Emblem · ${(e.getAttribute('data-tip0')||e.querySelector('title')?.textContent||e.getAttribute('aria-label')||'').trim().replace(/\.$/,'')}. Emblems work for the rest of the walk.`],
   ['.battle .piles>span:first-child',()=>'Draw pile. When it runs out, your discard pile shuffles back in.'],
   ['.battle .piles>span:nth-child(2)',()=>'Discard pile. Cards you played or kept this fight wait here.'],
-  ['.battle .bankhint',()=>'Energy you did not spend. Up to 2 carries to your next turn.'],
   ['.battle .controls [data-act=all]',()=>'Every ready ally attacks. Each goes for its usual target.']
  ];
  const SEL=WORDS.map(w=>w[0]).join(',')+',[title],[data-tip]';
