@@ -451,3 +451,5 @@ body[data-view="settings"] .profile-menu>.sr-only{display:none}
 #app .scan-workspace.is-camera:not(.is-live)>.scan-toolbar{width:auto;margin-inline:0;justify-self:auto;align-self:stretch}
 /* Phones: the Play bar is laid out after the deck list, so sticky keeps it pinned all the way down and it rests at the end. */
 @media(max-width:700px){.pl-lobby .pl-startbar{order:9}}
+/* Desktop top bar: the pill's label is for screen readers; the placeholder says it, so the bar keeps its single-row height. */
+@media(min-width:1200px){body .topbar .home-search-pill>.home-ai-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}body .topbar .home-search-pill{grid-template-rows:minmax(0,1fr)}body .topbar .home-search-pill>input{grid-row:1;padding-top:9px;min-height:44px}body .topbar .home-search-pill>:not(.home-ai-label):not(input){grid-row:1}}
