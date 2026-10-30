@@ -2200,6 +2200,45 @@ body[data-hero=W]{--aim:#f1d88c;--aim-d:#b88a34;--aim-hi:#fff6d6;--aim-o:#2d1f08
 @media (min-aspect-ratio:5/4) and (max-height:500px){#app .screen.shop>.choices:not(:has(>.buy))>.option .muted{display:none!important}}
 #app .screen.shop{grid-auto-rows:max-content!important;grid-template-rows:none!important;align-content:start!important}
 #app .screen.pw-tight>p:not([class]){display:none!important}#app .screen.pw-tight:not(.heroes){overflow:auto!important}
+/* Hand names (design gate): the name owns the title bar and the cost gem sits on the art's corner, so a name only needs the strip of its card that no neighbour covers */
+#app .battle .hand>.card .head{display:block!important}
+#app .battle .hand>.card .head>b{display:-webkit-box!important;-webkit-line-clamp:3;-webkit-box-orient:vertical;white-space:normal!important;overflow:hidden;text-overflow:clip}
+#app .battle .hand>.card .head>.cost{position:absolute;top:auto;left:auto;margin-top:4px;z-index:2}
+#app .battle .hand.pw-flat{--rot:0deg}
+#app .battle .hand.pw-rows{display:grid!important;grid-template-columns:repeat(var(--cols),calc(var(--cw) / 2 + 2px));justify-content:center;align-content:end;row-gap:6px;height:auto!important}
+#app .battle .hand.pw-rows>.card{transform:none;width:var(--cw)!important;margin:0!important;justify-self:center}
+/* Turn line (design gate): a compact pill around its text; the log button is drawn small and keeps a 46px hit area */
+#app .battle .log .pw-histbtn{min-width:0!important;min-height:0!important;width:30px!important;height:30px!important}
+#app .battle .log .pw-histbtn::before{inset:auto!important;left:50%;top:50%;width:46px;height:46px;translate:-50% -50%}
+#app .battle .controls .log{justify-self:center;width:auto;max-width:100%;padding:4px 14px 4px 6px!important}
+/* the pile counts read in the game's body face, not a code font */
+#app .battle .piles,#app .battle .piles>span{font-family:var(--body)!important}
+#app .battle .piles>.bankhint{display:block!important}
+/* wide screens: the draw pile stands beside the energy orb, never on it */
+#app[data-pw-roomy] .battle .piles>span:nth-child(1){margin-left:66px!important}
+/* the loyalty diamond sits on the portrait's top corner, clear of the incoming-damage pill above it */
+#app .battle .unit.hero .loyal{top:6px!important;left:auto!important;right:6px!important;transform:none!important}
+#app[data-pw-roomy] .battle .piles>span:nth-child(1){margin-left:70px!important;letter-spacing:.02em}
+/* a unit name whose longest word can't fit even at the floor size: one line with an ellipsis, never past its art */
+#app .battle .unit>.name.pw-clip{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;display:block!important;-webkit-line-clamp:unset!important}
+/* phones: the hero's incoming-damage pill gets its own space above the portrait instead of sitting on the foes' names */
+@media (max-aspect-ratio:4/5){#app .battle .field>.side.you{padding-top:18px!important}}
+/* short landscape: the turn line moves to the top of the right-hand column, so it never sits on the crowd's name plates; the hand rides 3px higher, clear of the gesture bar */
+@media (min-aspect-ratio:5/4) and (max-height:500px){
+ #app .battle .controls .log{grid-column:3!important;grid-row:1!important;align-self:start!important;justify-self:stretch!important;margin:6px 0 0!important;translate:none!important;border-radius:14px!important;padding:4px 8px 4px 4px!important;justify-content:flex-start!important;text-align:left}
+ #app .battle .hand>.card{translate:0 -3px!important}
+}
+#app .battle .unit .tag.pw-tag-off{visibility:hidden}
+/* market on short landscape: the art takes the card's spare height, and scrolling screens end clear of the gesture bar */
+@media (min-aspect-ratio:5/4) and (max-height:500px){
+ #app .screen.shop .buy>.card{grid-template-rows:auto minmax(56px,1fr) auto!important}
+ #app .screen.shop .buy>.card>.pic{height:auto!important;min-height:56px}
+ #app .screen:is(.shop,.pw-tight){padding-bottom:calc(env(safe-area-inset-bottom,0px) + 12px)!important}
+}
+/* the Rare mark leaves the art: it heads the rules text instead */
+.screen .card[data-rar=R] .pic::after{content:none!important}
+.screen .card[data-rar=R]>span:last-child::before{content:"Rare";float:right;margin:0 0 2px 6px;background:var(--pw-gold);color:#1b1406;font:800 max(11px,.5rem)/1.6 var(--body);letter-spacing:.12em;text-transform:uppercase;padding:0 6px;border-radius:99px;box-shadow:0 0 0 1px #000}
+#app .battle .hand.pw-rows[style*="--ch"]>.card{height:var(--ch)!important}
 
 </style>
 
@@ -2832,29 +2871,29 @@ function pwPreview(kind,ref,tid){if(!c||c.busy||view!=='battle')return null;
 // ---------- rendering ----------
 // Pacifism stops attack intents only; buffs, summons and drains still happen.
 const PACIFIED=['atk','annihilate','sac'];
-const intentLabel=e=>{if(e.pacified&&PACIFIED.includes(intentOf(e)[0]))return `<span class="intent stun" title="Pacified: it can't attack">☮ can't attack</span>`;const [t,v,loy]=intentOf(e);const L='';
- if(t==='atk'){const by=FORM&&E[e.key].bypass,tr=FORM&&TRAMPLES(e);return `<span class="intent${by?' bypass':''}${FORM&&E[e.key].enrage?' enrage':''}" title="${by?'Bypass: skips your line and hits you, unless an ally guards against it':e.fly?'Flying: only your flying or reach allies can block it':FORM?'Hits your front untapped blocker, or you'+(tr?'. Trample: a blocker that dies doesn\'t stop this hit':''):'Hits your first untapped blocker, or you'}">${L}⚔ ${v+e.buff+(e.surge||0)+(FORM&&E[e.key].enrage||0)}${by?' ⤳':e.fly?' ↷':''}${tr?' ⇶':''}${FORM&&E[e.key].enrage?`<span class="grow">+${E[e.key].enrage}/turn</span>`:''}</span>`}
- if(t==='drain')return `<span class="intent drain" title="Hits ${HERO.short} directly and heals itself">${L}✦ drain ${v}</span>`;
- if(t==='buff')return `<span class="intent buff" title="Its attacks get stronger">▲ +${v}</span>`;
- if(t==='guard')return `<span class="intent buff" title="Absorbs the next ${v} damage">◈ guard ${v}</span>`;
- if(t==='haunt')return `<span class="intent drain" title="You draw 1 fewer card next turn">☁ haunt</span>`;
- if(t==='summon')return `<span class="intent summon" title="Calls another minion">${L}+ summon</span>`;
- if(t==='sac')return `<span class="intent drain" title="Sacrifices another minion to hit you for ${v}">✝ sacrifice ${v}</span>`;
- if(t==='ult')return `<span class="intent drain" title="Ultimate">★ ultimate</span>`;
- if(t==='scion')return `<span class="intent summon" title="Sacrifices itself so the biggest enemy acts again">✧ empower</span>`;
- if(t==='process')return `<span class="intent summon" title="Turns an exiled card into ${v} Spawn, or attacks for ${4+e.buff}">⟳ process</span>`;
- if(t==='sweep')return `<span class="intent drain" title="Deals ${v} damage to each of your allies">≋ sweep ${v}</span>`;
- if(t==='bolster')return `<span class="intent buff" title="Gives another enemy +${v} attack">▲ lift +${v}</span>`;
- if(t==='rally')return `<span class="intent buff" title="Every enemy gets +${v} attack">▲ rally +${v}</span>`;
- if(t==='annihilate')return `<span class="intent drain" title="Attacks, then destroys your weakest ally">⚔ ${v+e.buff} · annihilate</span>`;
- if(t==='pay')return `<span class="intent buff" title="Pays ${v} life for +${v} on its next attack">▲ pay ${v}</span>`;
- return `<span class="intent transform" title="Night falls">☾ transform</span>`};
+const intentLabel=e=>{if(e.pacified&&PACIFIED.includes(intentOf(e)[0]))return `<span data-audit-repeat class="intent stun" title="Pacified: it can't attack">☮ can't attack</span>`;const [t,v,loy]=intentOf(e);const L='';
+ if(t==='atk'){const by=FORM&&E[e.key].bypass,tr=FORM&&TRAMPLES(e);return `<span data-audit-repeat class="intent${by?' bypass':''}${FORM&&E[e.key].enrage?' enrage':''}" title="${by?'Bypass: skips your line and hits you, unless an ally guards against it':e.fly?'Flying: only your flying or reach allies can block it':FORM?'Hits your front untapped blocker, or you'+(tr?'. Trample: a blocker that dies doesn\'t stop this hit':''):'Hits your first untapped blocker, or you'}">${L}⚔ ${v+e.buff+(e.surge||0)+(FORM&&E[e.key].enrage||0)}${by?' ⤳':e.fly?' ↷':''}${tr?' ⇶':''}${FORM&&E[e.key].enrage?`<span class="grow">+${E[e.key].enrage}/turn</span>`:''}</span>`}
+ if(t==='drain')return `<span data-audit-repeat class="intent drain" title="Hits ${HERO.short} directly and heals itself">${L}✦ drain ${v}</span>`;
+ if(t==='buff')return `<span data-audit-repeat class="intent buff" title="Its attacks get stronger">▲ +${v}</span>`;
+ if(t==='guard')return `<span data-audit-repeat class="intent buff" title="Guard: absorbs the next ${v} damage">◈ ${v}</span>`;
+ if(t==='haunt')return `<span data-audit-repeat class="intent drain" title="You draw 1 fewer card next turn">☁ haunt</span>`;
+ if(t==='summon')return `<span data-audit-repeat class="intent summon" title="Calls another minion">${L}+ summon</span>`;
+ if(t==='sac')return `<span data-audit-repeat class="intent drain" title="Sacrifices another minion to hit you for ${v}">✝ sacrifice ${v}</span>`;
+ if(t==='ult')return `<span data-audit-repeat class="intent drain" title="Ultimate">★ ultimate</span>`;
+ if(t==='scion')return `<span data-audit-repeat class="intent summon" title="Sacrifices itself so the biggest enemy acts again">✧ empower</span>`;
+ if(t==='process')return `<span data-audit-repeat class="intent summon" title="Turns an exiled card into ${v} Spawn, or attacks for ${4+e.buff}">⟳ process</span>`;
+ if(t==='sweep')return `<span data-audit-repeat class="intent drain" title="Deals ${v} damage to each of your allies">≋ sweep ${v}</span>`;
+ if(t==='bolster')return `<span data-audit-repeat class="intent buff" title="Gives another enemy +${v} attack">▲ lift +${v}</span>`;
+ if(t==='rally')return `<span data-audit-repeat class="intent buff" title="Every enemy gets +${v} attack">▲ rally +${v}</span>`;
+ if(t==='annihilate')return `<span data-audit-repeat class="intent drain" title="Attacks, then destroys your weakest ally">⚔ ${v+e.buff} · annihilate</span>`;
+ if(t==='pay')return `<span data-audit-repeat class="intent buff" title="Pays ${v} life for +${v} on its next attack">▲ pay ${v}</span>`;
+ return `<span data-audit-repeat class="intent transform" title="Night falls">☾ transform</span>`};
 const ACT={scion:()=>'empower the biggest enemy',process:v=>`process an exiled card into ${v} Spawn`,sweep:v=>`${v} damage to each of your allies`,bolster:v=>`give an ally +${v} attack`,rally:v=>`all enemies +${v} attack`,annihilate:v=>`attack for ${v}, then destroy your weakest ally`,pay:v=>`pay ${v} life for +${v} attack`,atk:v=>`attack for ${v}`,drain:v=>`drain ${v} life`,buff:v=>`gain +${v} attack`,guard:v=>`guard ${v}`,haunt:()=>'haunt (you draw 1 fewer)',summon:v=>`summon a ${E[v]?E[v].name:v}`,sac:v=>`sacrifice a minion to hit you for ${v}`,transform:()=>'transform at night'};
 function enemyInfo(e){const d=E[e.key];const tr=[e.pacified&&(e.rank?'Pacified: its next attack is stopped, then it shakes it off.':'Pacified: it can\'t attack this fight.'),e.pacImmune&&'Immune to Pacifism for the rest of this fight.',d.fly&&'Flying: only flying or reach allies can block it.',FORM&&d.bypass&&'Bypass: skips your line and hits you, unless one of your allies guards against it.',FORM&&d.intents.some(x=>x[0]==='sac')&&'Its sacrifice hits you directly. Guard can\'t stop that.',FORM&&d.enrage&&`Enrage: its attacks grow by ${d.enrage} each turn it lives.`,FORM&&TRAMPLES(e)&&'Trample: a blocker that dies doesn\'t stop this hit.',d.first&&'First strike: hits your attacker first.',d.tax&&'Your noncreature spells cost 1 more.',d.raise&&'Dead minions come back as Zombies.',d.feed&&'Gets +1 attack each time a creature she damaged dies.',d.crawl&&'Returns once while another Zombie stands.',d.phase2&&'Below half life: shield 10 and a harder pattern.',d.loyalty&&'Loyalty: ultimate at 8. Each creature hit removes 1.',d.ingest&&'Unblocked hits exile the top card of your draw pile for this fight.',d.spawnDie&&'When it dies, other Eldrazi get +1 attack.',d.landfall&&`Gets +${d.landfall} attack whenever another enemy enters.`,d.rage&&`Deals ${d.rage} to you whenever another enemy enters.`,d.pact&&'If you have played at least as many spells as creatures this fight, he names spells, and each one costs you 3 life. Below half life he names whichever type you have played more.'].filter(Boolean);
  const list=(e.phase2?d.phase2:d.intents).map(([t,v])=>(ACT[t]||(()=>t))(['atk','annihilate'].includes(t)?v+e.buff:v)).join(' → ')+(e.buff?` (includes +${e.buff} from buffs)`:'');
  return `<div class="inspect" role="dialog" aria-label="${e.name}"><b>${e.name}</b><span class="muted"><span class="pw-sep"> · </span>${e.rank==='boss'?'Planeswalker':e.rank==='elite'?'Legendary':'Minion'} · ⚔ ${e.pow+e.buff} · ♥ ${Math.max(0,e.hp)}/${e.max}${e.shield?` · ◈ ${e.shield}`:''}</span><p>Pattern: ${list}</p>${tr.length?`<p>${tr.join(' ')}</p>`:''}<button class="btn" data-act="closeinspect">Close</button></div>`}
 const popOf=o=>{let s='';if(o.pop)s+=`<span class="pop${o.pop>=8?' big':''}" style="font-size:${(1.1+Math.min(o.pop,20)/14).toFixed(2)}rem">−${o.pop}</span>`;if(o.heal)s+=`<span class="pop heal">+${o.heal}</span>`;o.pop=0;o.heal=0;return s};
-const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Common',U:'Uncommon',R:'Rare',M:'Mythic',K:'Curse'}[d.r];return `<button class="card${card.foil?' foil':''}" data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" ${attrs}><span class="head"><b>${d.name}${card.foil?' ✦':''}</b><span class="cost">${c&&view==='battle'?costOf(card):d.e}</span></span><span class="pic">${d.g}</span><span class="kind">${d.r==='K'?d.kind:d.kind+' · '+r}</span><span>${d.text(card.foil)}</span></button>`};
+const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Common',U:'Uncommon',R:'Rare',M:'Mythic',K:'Curse'}[d.r];return `<button class="card${card.foil?' foil':''}" data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" ${attrs}><span class="head"><b>${d.name}${card.foil?' ✦':''}</b><span class="cost">${c&&view==='battle'?costOf(card):d.e}</span></span><span class="pic">${d.g}</span><span class="kind" data-audit-repeat>${d.r==='K'?d.kind:d.kind+' · '+r}</span><span>${d.text(card.foil)}</span></button>`};
 const kws=a=>['haste','flying','reach','first','vigilance','deathtouch','lifelink','trample','defender'].filter(k=>a[k]||(k==='first'||k==='lifelink')&&akr(a)).map(k=>k==='first'?'first strike':k).join(' · ');
 
 function topBar(){
@@ -2904,7 +2943,7 @@ const P=c.pending;const F=c.busy?{you:0,dead:new Set(),took:new Map(),over:0}:fo
    <button class="btn main" data-act="end" ${c.busy?'disabled':''}>End turn</button>
   </div>
   <div class="foot"><div class="tally" title="Damage you've dealt this turn"><small>This turn</small>${c.stats.dealt-c.turnStart}${(c.juice||[]).length?`<span class="juice">${c.juice.map(j=>`<i class="${j.mul?'mul':'add'}">${j.t}${j.n>1?` <b>x${j.n}</b>`:''}</i>`).join('')}</span>`:''}</div><div class="energy" title="Energy this turn. Up to 2 unused energy carries to next turn.">${c.energy}${c.banked?`<small>+${c.banked} saved</small>`:''}</div>${HERO.fury?`<div class="chain" title="Every 4th card you play in a turn: ${HERO.short} deals 3 to each enemy, then 6 on the 8th, 9 on the 12th. Save energy to get there.">${[1,2,3,4].map(n=>`<i class="${(c.chain%4||(c.chain?4:0))>=n?'on':''}"></i>`).join('')}<span>${c.chain>=4?`Fury · ${c.chain}`:'Fury'}</span></div>`:''}
-   <div class="hand">${c.hand.map((card,i)=>cardHtml(card,`data-act="play" data-i="${i}" ${canPlay(card)?'':'disabled'} ${P&&P.kind==='card'&&P.cid===card.id?'data-chosen="1"':''}`)).join('')}</div>
+   <div class="hand" data-audit-stack>${c.hand.map((card,i)=>cardHtml(card,`data-act="play" data-i="${i}" ${canPlay(card)?'':'disabled'} ${P&&P.kind==='card'&&P.cid===card.id?'data-chosen="1"':''}`)).join('')}</div>
    <div class="piles"><span>Draw ${c.draw.length}</span><span>Discard ${c.discard.length}</span>${!c.busy&&c.energy?`<span class="bankhint">${Math.min(2,c.energy)} <span class="bh-e">energy </span>saved</span>`:''}${c.tax?'<span style="color:var(--red)">Thalia: spells +1</span>':''}</div></div>
  </section>`;
 }
@@ -3187,7 +3226,7 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
  let helpFrom=null;
  function closeHelp(){const h=document.querySelector('.pw-help');if(!h)return false;h.remove();const b=helpFrom;helpFrom=null;if(b&&b.isConnected)try{b.focus({preventScroll:true})}catch{}return true}
  function openHelp(from){helpFrom=from;const h=document.createElement('div');h.className='pw-menu pw-help';
-  const card=document.createElement('div');card.className='pw-menu-card';card.setAttribute('role','dialog');card.setAttribute('aria-modal','true');card.setAttribute('aria-label','How to play');
+  const card=document.createElement('div');card.className='pw-menu-card';card.setAttribute('role','dialog');card.setAttribute('aria-modal','true');card.setAttribute('aria-label','How to play');card.setAttribute('data-audit-scroll','');
   card.innerHTML='<h2>How to play</h2>';app.querySelectorAll('details.howto>p').forEach(p=>card.append(p.cloneNode(true)));
   const ok=document.createElement('button');ok.type='button';ok.className='btn main';ok.textContent='Back to the game';card.append(ok);
   const rec=app.querySelector('.note.record');if(rec){const r=rec.cloneNode(true);r.classList.add('pw-credits');card.append(r)}
@@ -3497,7 +3536,9 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
  let key='',el=null,tm=0;
  const room=()=>{const b=app.querySelector('section.battle[data-room]');if(!b){if(el){el.remove();el=null;key=''}return}
   const k=b.dataset.dungeon+'|'+b.dataset.room;if(k===key&&el?.isConnected)return;const fresh=k!==key;key=k;el?.remove();
-  el=document.createElement('div');el.className='pw-room';el.setAttribute('role','status');
+  el=document.createElement('div');el.className='pw-room';
+  // a 2.4s title card over the whole battle (design gate: an overlay, so it may cover the page)
+  el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Room '+b.dataset.room);
   const rule=b.querySelector('.dungeon-rule')?.textContent.trim()||RULE[b.dataset.dungeon]||'';
   el.innerHTML=`<b>Room ${b.dataset.room} of ${b.dataset.rooms||3}</b>${rule?`<span>${rule}</span>`:''}`;
   if(!fresh){el=null;return}document.body.append(el);clearTimeout(tm);tm=setTimeout(()=>{el?.classList.add('pw-gone');setTimeout(()=>{if(el?.classList.contains('pw-gone')){el.remove();el=null}},400)},2400)};
@@ -3575,17 +3616,44 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
 (()=>{const app=document.getElementById('app');if(!app)return;
  const run=()=>{for(const b of app.querySelectorAll('.card .head b:not([title])'))b.title=b.textContent.trim()};
  let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;run()})}}).observe(app,{childList:true,subtree:true});run()})();
-/* Hand fit: when the fanned hand is wider than its row (7+ cards, big screens), the cards overlap more instead of spilling onto the piles. */
+/* Hand fit (design gate: a card's name never sits under a neighbouring card, so every name reads on the resting hand).
+   Room to spare: the cards spread apart by more than the fan tilt can close. Short of room: the cards overlap, the tilt
+   flattens and each name wraps inside the strip of its card that no neighbour covers. Still short (6+ cards on a phone):
+   the hand splits into two rows of whole cards, the second row set between the first like bricks. */
 (()=>{const app=document.getElementById('app');if(!app)return;let raf=0;
- const fit=()=>{raf=0;const h=app.querySelector('.battle .hand');if(!h)return;const cs=[...h.children].filter(x=>x.classList.contains('card'));cs.forEach(x=>{x.style.removeProperty('margin-inline');x.style.setProperty('flex-shrink','0')});if(cs.length<2)return;
-  // cards may carry their own zoom, so widths are counted in the hand's pixels
-  const zc=parseFloat(getComputedStyle(cs[0]).zoom)||1,gp=(parseFloat(getComputedStyle(h).columnGap)||0)*(cs.length-1);
-  const ow=cs.map(x=>x.offsetWidth);cs.forEach(x=>x.style.removeProperty('flex-shrink'));
-  const used=gp+cs.reduce((t,x,i)=>{const m=getComputedStyle(x);return t+(ow[i]+parseFloat(m.marginLeft)+parseFloat(m.marginRight))*zc},0),avail=h.clientWidth-44-gp;
-  let m=used<=avail+gp?null:(avail/zc-ow.reduce((t,w)=>t+w,0))/(2*cs.length);if(m!=null)cs.forEach(x=>x.style.setProperty('margin-inline',m+'px','important'));
-  // the fan tilts the outer cards past their boxes: if the tilted hand still pokes out of its row, tighten once more
-  const H=h.getBoundingClientRect(),k=H.width/(h.offsetWidth||1),rs=cs.map(x=>x.getBoundingClientRect()),over=Math.max(H.left-Math.min(...rs.map(r=>r.left)),Math.max(...rs.map(r=>r.right))-H.right);
-  if(over>1){const base=m==null?parseFloat(getComputedStyle(cs[0]).marginLeft)||0:m;m=base-over*2/k/zc/(2*(cs.length-1));cs.forEach(x=>x.style.setProperty('margin-inline',m+'px','important'))}};
+ const fit=()=>{raf=0;const h=app.querySelector('.battle .hand');if(!h)return;const cs=[...h.children].filter(x=>x.classList.contains('card'));
+  const bs=cs.map(x=>x.querySelector('.head>b'));h.classList.remove('pw-flat','pw-rows');['--cols','--cw','--ch'].forEach(p=>h.style.removeProperty(p));
+  cs.forEach((x,i)=>{['margin-inline','grid-column','grid-row'].forEach(p=>x.style.removeProperty(p));bs[i]&&['max-width','margin-left'].forEach(p=>bs[i].style.removeProperty(p))});
+  if(cs.length<2)return;
+  const n=cs.length,zc=parseFloat(getComputedStyle(cs[0]).zoom)||1,H=h.getBoundingClientRect(),k=H.width/(h.offsetWidth||1)*zc,w=cs[0].offsetWidth;
+  const set=m=>cs.forEach(x=>x.style.setProperty('margin-inline',m+'px','important'));
+  const rs=()=>cs.map(x=>x.getBoundingClientRect());
+  // beside the piles and buttons (wide screens) the outer 22px of the row stay clear
+  // the piles, orb and buttons beside the hand's row bound it (wide screens put them in the same row)
+  const r0=rs(),T=Math.min(H.top,...r0.map(q=>q.top))-2,BT=Math.max(H.bottom,...r0.map(q=>q.bottom));
+  let lo=H.left,hi=H.right;for(const e of app.querySelectorAll('.battle .piles>span,.battle .energy,.battle .controls>.btn')){const q=e.getBoundingClientRect();if(!q.width||q.bottom<=T||q.top>=BT)continue;
+   const c=(q.left+q.right)/2;if(c<H.left+H.width/4)lo=Math.max(lo,q.right+4);else if(c>H.right-H.width/4)hi=Math.min(hi,q.left-4)}
+  const pad=Math.max(lo-H.left,H.right-hi),inside=r=>Math.min(...r.map(q=>q.left))>=lo&&Math.max(...r.map(q=>q.right))<=hi;
+  // 1. spread: neighbours' boxes (tilt included) stay 4px apart
+  let r=rs(),m=parseFloat(getComputedStyle(cs[0]).marginLeft)||0;
+  const ov=Math.max(...r.slice(1).map((q,i)=>r[i].right-q.left));m+=(ov+4)/2/k;set(m);if(inside(rs()))return;
+  // 2. overlap, flat: each name keeps to the strip between the card on its left and the card on its right
+  h.classList.add('pw-flat');m=(H.width/k-n*w-(2*pad+6)/k)/(2*n);set(m);
+  // zoom and borders make the first guess approximate: measure and pull in until the row sits between its bounds
+  for(let t=0;t<3;t++){r=rs();const ex=Math.max(lo-Math.min(...r.map(q=>q.left)),Math.max(...r.map(q=>q.right))-hi);if(ex<=0)break;m-=(ex+1)/(n*k);set(m)}
+  r=rs();let ok=true;
+  bs.forEach((b,i)=>{if(!b)return;const q=b.getBoundingClientRect(),L=i?r[i-1].right+2:-1e9,R=i<n-1?r[i+1].left-2:1e9;
+   const sh=Math.max(0,L-q.left)/k;if(sh)b.style.setProperty('margin-left',sh+'px');b.style.setProperty('max-width',Math.max(0,Math.min(q.right,R)-Math.max(q.left,L))/k+'px');
+   if(b.scrollWidth>b.clientWidth+1||b.scrollHeight>b.clientHeight+1||b.clientWidth<24)ok=false});
+  if(ok||!matchMedia('(max-aspect-ratio:4/5)').matches)return;
+  // 3. two rows of whole cards
+  h.classList.remove('pw-flat');cs.forEach((x,i)=>{x.style.removeProperty('margin-inline');bs[i]&&['max-width','margin-left'].forEach(p=>bs[i].style.removeProperty(p))});
+  const per=Math.ceil(n/2),cw=Math.min(w,Math.floor((H.width/k-8)/per-4));h.classList.add('pw-rows');h.style.setProperty('--cols',2*per);h.style.setProperty('--cw',cw+'px');
+  cs.forEach((x,i)=>{const row=i<per?1:2,j=row===1?i:i-per,off=row===2&&n%2?1:0;x.style.setProperty('grid-row',row);x.style.setProperty('grid-column',`${2*j+1+off} / span 2`)});
+  // short of height for two rows: the cards get shorter art (down to 70px tall); shorter still and the battle would scroll, so back to the flat hand
+  const over=document.scrollingElement.scrollHeight-innerHeight;if(over>0){const ch=cs[0].offsetHeight-Math.ceil(over/2)-1;if(ch>=70)h.style.setProperty('--ch',ch+'px')}
+  if(document.scrollingElement.scrollHeight>innerHeight+1){h.style.removeProperty('--ch');h.classList.remove('pw-rows');h.style.removeProperty('--cols');h.style.removeProperty('--cw');cs.forEach(x=>{x.style.removeProperty('grid-row');x.style.removeProperty('grid-column')});h.classList.add('pw-flat');set(m);
+   r=rs();bs.forEach((b,i)=>{if(!b)return;const q=b.getBoundingClientRect(),L=i?r[i-1].right+2:-1e9,R=i<n-1?r[i+1].left-2:1e9;const sh=Math.max(0,L-q.left)/k;if(sh)b.style.setProperty('margin-left',sh+'px');b.style.setProperty('max-width',Math.max(0,Math.min(q.right,R)-Math.max(q.left,L))/k+'px')})}};
  const q=()=>{if(!raf)raf=requestAnimationFrame(fit)};new MutationObserver(ms=>{if(ms.some(m=>m.type==='childList'))q()}).observe(app,{childList:true,subtree:true});addEventListener('resize',q);addEventListener('pw-cam',q);document.fonts&&document.fonts.ready.then(q);q()})();
 /* Battle camera (Randall: "change aspect ratio when more monsters are on screen"): both sides of the field are zoomed as
    far as they fit, so a lone monster stands big and a crowd pulls the view back. The fit is measured, not guessed: every
@@ -3605,36 +3673,42 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
  // a unit name never splits inside a word: when big text makes its longest word wider than the plate, the name steps down to fit
  const ruler=document.createElement('span');ruler.setAttribute('aria-hidden','true');ruler.style.cssText='position:fixed;left:-9999px;top:0;visibility:hidden;white-space:nowrap;pointer-events:none';
  const fitNames=f=>{if(!ruler.isConnected)document.body.append(ruler);
-  for(const n of f.querySelectorAll('.unit>.name')){const cs=getComputedStyle(n),fs=parseFloat(cs.fontSize);if(!fs)continue;
+  for(const n of f.querySelectorAll('.unit>.name')){n.classList.remove('pw-clip');const cs=getComputedStyle(n),fs=parseFloat(cs.fontSize);if(!fs)continue;
    Object.assign(ruler.style,{fontFamily:cs.fontFamily,fontWeight:cs.fontWeight,fontSize:fs+'px',letterSpacing:cs.letterSpacing,fontVariant:cs.fontVariant,textTransform:cs.textTransform});
    const ww=Math.max(...n.textContent.trim().split(/\s+/).map(w=>{ruler.textContent=w;return ruler.getBoundingClientRect().width}))+2;
    const room=n.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);if(!(room>0)||ww<=room)continue;
    const nf=Math.min(fs,Math.max(11,Math.floor(fs*room/ww*10)/10));n.style.setProperty('font-size',nf+'px','important');
-   // still too wide at the smallest size: thinner padding and the plate may reach a few px past the art
-   const need=ww*nf/fs-room;if(need>.5){const x=Math.min(3,Math.ceil(need/2)-5+1);n.style.setProperty('padding-inline','2px','important');
-    if(x>0){n.style.setProperty('margin-inline',-x+'px','important');n.style.setProperty('max-width','none','important')}}}};
+   // still too wide at the smallest size: thinner padding, then one line that ends in an ellipsis (the full name shows on hold)
+   const need=ww*nf/fs-room;if(need>.5){n.style.setProperty('padding-inline','2px','important');if(need>4){n.classList.add('pw-clip');n.title=n.textContent.trim()}}}
+};
+ // a status tag (Zzz, Tapped) that would sit on the unit's own badges at big text steps aside: the dimmed art still shows the state
+ const hit=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top))>4;
+ const fitTags=f=>{for(const t of f.querySelectorAll('.unit .tag')){t.classList.remove('pw-tag-off');const u=t.closest('.unit'),tr=t.getBoundingClientRect();
+   for(const s of u.querySelectorAll('*'))if(s!==t&&!t.contains(s)&&!s.contains(t)&&!s.children.length&&s.textContent.trim()&&hit(tr,s.getBoundingClientRect())){t.classList.add('pw-tag-off');break}}};
  const run=()=>{if(busy)return;const f=app.querySelector('.battle .field');if(!f){key='';return}fitNames(f);
   if(de.classList.contains('pw-dragging')||document.querySelector('svg.pw-arrow')){set(f,Z);return}
   const us=units(f),k=us.map(idOf).join()+'|'+innerWidth+'x'+innerHeight+'|'+(app.dataset.pwZoom!=null);
-  set(f,Z);if(k===key)return;const fresh=!key||!key.split('|')[0].split(',').some(x=>us.some(u=>idOf(u)===x));key=k;busy=true;
+  set(f,Z);if(k===key)return fitTags(f);const fresh=!key||!key.split('|')[0].split(',').some(x=>us.some(u=>idOf(u)===x));key=k;busy=true;
   try{const before=new Map(us.map(u=>[idOf(u),u.getBoundingClientRect()]));set(f,1);const F=f.getBoundingClientRect(),o=boxes(f),A=o.all||{l:F.left,r:F.right,t:F.top,b:F.bottom};
-   const B={l:Math.min(F.left,A.l),r:Math.max(F.right,A.r),t:Math.min(F.top,A.t),b:Math.max(F.bottom,A.b)},G=Math.min(16,gap(o.sides));
+   const B={l:Math.min(F.left,A.l),r:Math.max(F.right,A.r),t:Math.min(F.top,A.t),b:Math.max(F.bottom,A.b)};const lg=app.querySelector('.battle .controls .log')?.getBoundingClientRect();
+   // where the turn pill rides up over the field's foot (wide screens), the units stay above it
+   const LB=lg&&lg.width&&lg.top<F.bottom&&lg.bottom>F.top&&lg.left<F.right&&lg.right>F.left?lg.top-4:1e9;B.b=Math.min(B.b,LB),G=Math.min(16,gap(o.sides));
    // only badges may reach past the field (the pills above the top row); a crowd that overflows pulls the camera back instead
-   const tight=A.l<F.left-1||A.r>F.right+1||A.b>F.bottom+1||gap(o.sides)<8;
+   const tight=A.l<F.left-1||A.r>F.right+1||A.b>Math.min(F.bottom,LB)+1||gap(o.sides)<8;
    // a crowd starts from the narrow crowd widths, so it may zoom further back up
    const crowd=f.querySelectorAll(':scope>.side.foe .unit').length>=4||f.querySelectorAll(':scope>.side.you .unit').length>=5;
    // never pull back so far that a unit drops under a 44px target
    const w1=Math.min(...us.map(u=>u.getBoundingClientRect().width).filter(Boolean),1e9);
-   let z=1,lo=tight?Math.min(1,Math.max(.6,44.5/w1)):1,hi=tight?1:crowd?2:1.6;if(tight){B.l=F.left;B.r=F.right;B.b=F.bottom}const g=tight?8:G;
+   let z=1,lo=tight?Math.min(1,Math.max(.6,44.5/w1)):1,hi=tight?1:crowd?2:1.6;if(tight){B.l=F.left;B.r=F.right;B.b=Math.min(F.bottom,LB)}const g=tight?8:G;
    set(f,hi);if(!tight&&fits(f,F,B,g))z=hi;else{for(let i=0;i<7;i++){const m=(lo+hi)/2;set(f,m);if(fits(f,F,B,g))lo=m;else hi=m}z=lo}
    z=Math.round(z*100)/100;if(Math.abs(z-Z)<.03&&!fresh)z=Z;set(f,z);const old=Z;Z=z;
    if(!fresh&&Math.abs(z-old)>=.03&&!matchMedia('(prefers-reduced-motion:reduce)').matches)for(const u of us){const a=before.get(idOf(u)),b=u.getBoundingClientRect();if(!a||!b.width)continue;
     const s=a.width/b.width;u.animate([{transform:`translate(${a.left+a.width/2-(b.left+b.width/2)}px,${a.top+a.height/2-(b.top+b.height/2)}px) scale(${s})`},{transform:'none'}],{duration:480,easing:'cubic-bezier(.22,.8,.24,1)'})}
   }finally{busy=false}
-  window.dispatchEvent(new Event('pw-cam'))};
+  fitTags(f);window.dispatchEvent(new Event('pw-cam'))};
  new MutationObserver(run).observe(app,{childList:true,subtree:true});addEventListener('pw-fit',()=>{key='';run()});
  // bigger system text re-flows the units, so measure again (our own zoom writes on the field itself are ignored)
- let rq=0;new MutationObserver(ms=>{if(busy||rq||!ms.some(m=>!m.target.matches('.field,.unit>.name,.hand>.card')))return;rq=requestAnimationFrame(()=>{rq=0;key='';run()})}).observe(app,{attributes:true,attributeFilter:['style'],subtree:true});run()})();
+ let rq=0;new MutationObserver(ms=>{if(busy||rq||!ms.some(m=>!m.target.matches('.field,.unit>.name')&&!m.target.closest('.hand')))return;rq=requestAnimationFrame(()=>{rq=0;key='';run()})}).observe(app,{attributes:true,attributeFilter:['style'],subtree:true});run()})();
 /* Modal focus: while a dialog is up (pause menu, help, zoom, found card, deck list, combat log) everything behind it is
    inert, so taps and keyboard focus can't reach the dimmed game, and the layout check skips what the dialog covers.
    The controls that close a dialog (the deck summary, the log button, ✕) stay live. */
@@ -3657,7 +3731,11 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
  const heroes=s=>{mine=true;s.classList.remove('pw-tight');const lim=Math.min(s.getBoundingClientRect().bottom,innerHeight-probe.offsetHeight)-6;
   // hero cards taller than the screen: the loyalty line goes first (it is shown again in the fight)
   if(Math.max(...[...s.querySelectorAll('.hero-pick')].map(e=>e.getBoundingClientRect().bottom))>lim+.5)s.classList.add('pw-tight');queueMicrotask(()=>{mine=false})};
- const run=()=>{const hs=app.querySelector('.screen.heroes');if(hs)return heroes(hs);const row=app.querySelector('.screen:not(.shop) .choices');if(!row)return;const cards=[...row.children].filter(e=>e.matches('.card,.option'));if(!cards.length)return;
+ // market: when big text makes Leave (top right) reach the wares, the strip starts below it
+ const shop=s=>{const row=s.querySelector('.choices:has(>.buy)'),lv=s.querySelector(':scope>[data-act=leave]');if(!row||!lv)return;mine=true;row.style.removeProperty('margin-top');
+  const a=lv.getBoundingClientRect();const r=[...row.children].map(e=>e.getBoundingClientRect()).find(r=>r.right>a.left-4&&r.left<a.right&&r.top<a.bottom+4&&r.bottom>a.top);
+  if(r)row.style.setProperty('margin-top',Math.ceil(parseFloat(getComputedStyle(row).marginTop)+a.bottom+6-r.top)+'px','important');queueMicrotask(()=>{mine=false})};
+ const run=()=>{const hs=app.querySelector('.screen.heroes');if(hs)return heroes(hs);const sh=app.querySelector('.screen.shop');if(sh)shop(sh);const row=app.querySelector('.screen:not(.shop) .choices');if(!row)return;const cards=[...row.children].filter(e=>e.matches('.card,.option'));if(!cards.length)return;
   mine=true;cards.forEach(c=>c.style.removeProperty('zoom'));const s=row.closest('.screen');s.classList.remove('pw-tight');
   const lim=Math.min(s.getBoundingClientRect().bottom,innerHeight-probe.offsetHeight)-6;
   const fit=()=>{for(let i=0;i<6;i++){const top=Math.min(...cards.map(c=>c.getBoundingClientRect().top)),bot=Math.max(...cards.map(c=>c.getBoundingClientRect().bottom));if(bot<=lim+.5||bot-top<40)return true;
@@ -4016,13 +4094,17 @@ const CSS=`
  text-shadow:0 1px 0 #000,0 0 6px #000,0 0 2px #000;background:none!important;padding:0!important;border:0!important;clip:auto!important;clip-path:none!important;width:auto!important;height:auto!important;overflow:visible!important;margin:0!important}
 #app .map .maprow>.node:not(.open):not(.done) b{opacity:.78!important}
 /* first-row captions sit above the stamp so they clear the "You arrive here" label */
-#app .map .maprow>.node.open[data-r="0"] .nl{top:auto!important;bottom:calc(50% + var(--ns)/2 + 2px)}
+#app .map .maprow>.node.open[data-r="0"] .nl{top:auto!important;bottom:calc(50% + var(--ns)/2 + 16px)}
+/* captions clear the rune ring, on a soft ink smudge so a trail passing behind never runs through the letters */
+@media (max-width:370px){#app .map .maprow>.node.open[data-r="0"] .nl{bottom:calc(50% + var(--ns)/2 + 9px)}}
+#app .map .maprow>.node.open .nl{background:#0b0907b3!important;box-shadow:0 0 8px 5px #0b0907b3;border-radius:6px}
 /* sideways maps: the first column is always fights and sits on the edge label, so it goes without a caption */
 @media (min-aspect-ratio:4/5){#app .map .maprow>.node.open[data-r="0"] .nl{display:none!important}}
 /* portrait seal in the HUD: hero painting in a brushed ring with its mana pip */
 #app>.top>h1{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;margin:0!important;padding:0!important;white-space:nowrap}
 @media (max-width:370px){#app>.top>.ink-hero{display:none!important}}
 #app>.top.ink-tight>.ink-hero{display:none!important}
+#app>.top.ink-tight2{gap:2px!important}#app>.top.ink-tight2 .deck>summary{padding-inline:8px!important}
 #app>.top>.ink-hero{position:relative;flex:none;width:52px;height:52px;border-radius:50%;margin-right:4px;background:var(--hero-img) center 22%/cover;box-shadow:0 0 0 3px #0a0d10,0 0 0 5px var(--ink-hero),0 3px 6px #000b}
 #app>.top>.ink-hero>i{position:absolute;right:-6px;bottom:-4px;width:22px;height:22px;border-radius:50%;background:var(--pip) center/100% no-repeat;box-shadow:0 0 0 2px #0a0d10}
 /* boss seal: Sorin's white and black pips under the ring */
@@ -4038,7 +4120,9 @@ const apply=()=>{const t=document.querySelector('#app>.top');const h=hero();
  if(t&&!t.querySelector('.ink-hero')){const p=document.createElement('span');p.className='ink-hero';p.setAttribute('aria-hidden','true');
   p.style.setProperty('--hero-img',art(h==='W'?'Elspeth, Sun\'s Champion':'Chandra, Torch of Defiance'));p.innerHTML=`<i style='--pip:${pip(h)}'></i>`;const h1=t.querySelector(':scope>h1');h1?h1.after(p):t.prepend(p)}
  // a full top bar (big text, narrow phone) drops the portrait seal before anything spills off the screen
- if(t){t.classList.remove('ink-tight');if(t.scrollWidth>t.clientWidth+1)t.classList.add('ink-tight')}
+ if(t){// the bar is tight once its items reach within 4px of the screen edge: first the portrait goes, then the gaps and the deck button slim down
+  const edge=()=>{const T=t.getBoundingClientRect();return [...t.children].some(e=>{const r=e.getBoundingClientRect();return r.width&&(r.left<T.left+4||r.right>T.right-4)})};
+  t.classList.remove('ink-tight','ink-tight2');if(edge()){t.classList.add('ink-tight');if(edge())t.classList.add('ink-tight2')}}
  const m=document.querySelector('#app .map');if(m&&!m.querySelector('.ink-vig')){const v=document.createElement('div');v.className='ink-vig';m.prepend(v)}
  const b=document.querySelector('#app .map .node.boss');if(b&&!b.querySelector('.ink-pips')){const s=document.createElement('span');s.className='ink-pips';s.setAttribute('aria-hidden','true');s.innerHTML=['W','B'].map(c=>`<i style='--pip:${pip(c)}'></i>`).join('');b.append(s)}};
 let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;apply()})}}).observe(document.getElementById('app'),{childList:true,subtree:true,attributes:true,attributeFilter:['style']});addEventListener('resize',apply);apply();
@@ -4100,6 +4184,14 @@ const apply=()=>{const h=hero(),c=h==='W'?'#f0d27a':'#e0442f',de=document.docume
  const m=document.querySelector('#app .map');if(m&&!m.querySelector('.ink-corner'))for(const k of ['tl','tr','bl','br']){const i=document.createElement('i');i.className='ink-corner '+k;i.setAttribute('aria-hidden','true');m.append(i)}};
 let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;apply()})}}).observe(document.getElementById('app'),{childList:true,subtree:true});apply();
 })();
+/* first-row captions keep clear of the stamps above them: when big text or a narrow map brings a neighbour close, the caption steps down toward its own ring */
+(()=>{const app=document.getElementById('app');if(!app)return;let raf=0;
+ const fit=()=>{raf=0;const ns=[...app.querySelectorAll('.map .maprow>.node')];if(!ns.length)return;const rs=new Map(ns.map(n=>[n,n.getBoundingClientRect()]));
+  for(const n of ns){const c=n.querySelector(':scope>.nl');if(!c||!n.classList.contains('open')||n.dataset.r!=='0')continue;
+   for(let d=0;d<=16;d+=2){c.style.setProperty('translate',`-50% ${d}px`);const r=c.getBoundingClientRect();
+    if(!ns.some(m=>{if(m===n)return false;const o=rs.get(m);return Math.min(o.right,r.right)-Math.max(o.left,r.left)>1&&Math.min(o.bottom,r.bottom)-Math.max(o.top,r.top)>1}))break}}};
+ const q=()=>{if(!raf)raf=requestAnimationFrame(fit)};
+ new MutationObserver(ms=>{if(ms.some(m=>m.type==='childList'||!m.target.matches('.nl')))q()}).observe(app,{childList:true,subtree:true,attributes:true,attributeFilter:['style']});addEventListener('resize',q);document.fonts&&document.fonts.ready.then(q);q()})();
 
 </script>
 <script type="module" src="./planeswalk-audio.js"></script>
