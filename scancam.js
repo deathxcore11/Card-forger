@@ -359,7 +359,8 @@ const CAPTION = { finish: "Finish", condition: "Condition", lang: "Language", qt
 function defaultsPill(g, p) {
   if (S.ui.scan.confirm) return "";
   const seg = (k, val) => `<button data-act="scanPick" data-k="${k}" aria-haspopup="listbox" aria-label="${CAPTION[k]}: ${esc(String(val))}"><small>${CAPTION[k]}</small><span>${esc(String(val))}<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>`;
-  return `<div class="scan-defaults" role="group" aria-label="Defaults for scanned cards">${seg("finish", label(FINISHES[g], p.finish))}${seg("condition", label(CONDITIONS, p.condition))}${seg("lang", label(LANGS, p.lang))}${seg("qty", "×" + p.qty)}</div>`;
+  // Two pairs: the row stays one line while every caption and value fits, and goes 2 × 2 (never 3 + 1) when it does not.
+  return `<div class="scan-defaults" role="group" aria-label="Defaults for scanned cards"><div class="sd-pair">${seg("finish", label(FINISHES[g], p.finish))}${seg("condition", label(CONDITIONS, p.condition))}</div><div class="sd-pair">${seg("lang", label(LANGS, p.lang))}${seg("qty", "×" + p.qty)}</div></div>`;
 }
 
 function sessionPanel(g, p, list) {
