@@ -672,6 +672,10 @@ export function mergeAiEvidence(r,ai){
 // The phone reader and the AI reader run together. A verified AI read wins at
 // once and ends the phone read; a phone read that verifies first stands; any
 // other phone result waits for the AI read (its own deadline) and absorbs it.
+// A promise that has already settled answers at once; a pending one yields the
+// sentinel. The promise must not reject (callers attach their own catch first).
+export const PENDING=Symbol('pending');
+export const settledValue=promise=>Promise.race([promise,Promise.resolve(PENDING)]);
 export async function raceReads(ocrTask,aiTask,onAiWin=()=>{}){
   const ocr=ocrTask.then(value=>({value}),error=>({error})),ai=aiTask.then(value=>({value}),()=>({value:null}));
   const first=await Promise.race([ocr.then(x=>({ocr:x})),ai.then(x=>({ai:x}))]);
@@ -927,6 +931,15 @@ export function registerScanner(ctx) {
     const cands=rankScanCandidates(G,r.cands||[],read);
     return budget.checkpoint({...r,g:G,read,cands,ai:true,verified:cands.some(c=>textVerifiedMatch(G,c,read))});
   };
+  // Every queued capture is read by AI while it waits, so a fast scanner never
+  // waits on the previous card: by the time the reader reaches it a verified
+  // answer is usually there and the phone reader is skipped altogether.
+  const prefetchAiRead=(queued,entry,G,snapshots)=>{
+    const active=()=>!suspended&&loadBatch().some(x=>x.id===entry.id&&x.captureRevision===entry.captureRevision);
+    const started=clockNow(),trace={stage:(name,fn)=>fn()};
+    queued.aiTask=aiReadFlow(queued,G,snapshots,entry.ocrLang||'eng',()=>{},trace,active,queued.budget).catch(()=>null);
+    queued.aiTask.then(()=>{queued.aiPrefetchMs=clockNow()-started;});
+  };
   const readFlow = async (card, selectedGame, snapshots, lang, progress, trace, active,budget) => {
     let G=selectedGame,read;
     const cache=new Map();
@@ -1083,9 +1096,16 @@ export function registerScanner(ctx) {
         // A verified AI read stops the phone reader at its next step; its late
         // rejection is absorbed by the race, and its status lines stop with it.
         let aiWon=false;const ocrActive=()=>current()&&!aiWon,ocrProgress=m=>{if(ocrActive())setStatus(m);};
-        const aiTask=aiReadFlow(packet,entry.game,snapshots,entry.ocrLang||'eng',progress,trace,current,budget).catch(()=>null);
-        const ocrTask=rawFirst?readOriginalEvidence(packet.original,null,entry,ocrProgress,trace,ocrActive,budget):readFlow(card,entry.game,snapshots,entry.ocrLang||'eng',ocrProgress,trace,ocrActive,budget);
-        r=await raceReads(ocrTask,aiTask,()=>{aiWon=true;});
+        const aiTask=packet.aiTask||aiReadFlow(packet,entry.game,snapshots,entry.ocrLang||'eng',progress,trace,current,budget).catch(()=>null);
+        if(packet.aiPrefetchMs!=null)trace.timings.aiPrefetchMs=packet.aiPrefetchMs;
+        // A read prefetched while this capture waited in the queue and already
+        // verified a printing needs no phone reader at all.
+        const early=packet.aiTask?await settledValue(packet.aiTask):PENDING;
+        if(early!==PENDING&&early?.verified){aiWon=true;r=early;}
+        else{
+          const ocrTask=rawFirst?readOriginalEvidence(packet.original,null,entry,ocrProgress,trace,ocrActive,budget):readFlow(card,entry.game,snapshots,entry.ocrLang||'eng',ocrProgress,trace,ocrActive,budget);
+          r=await raceReads(ocrTask,aiTask,()=>{aiWon=true;});
+        }
         if(!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&packet.proposal?.quad&&!rawFirst)r=await readOriginalEvidence(packet.original,r,entry,progress,trace,current,budget);
         // A near-edge card can fail conservative auto geometry while still giving
         // a useful deskew hypothesis. Probe its upright title/footer after the
@@ -1176,7 +1196,8 @@ export function registerScanner(ctx) {
     s().storageBlockedAt=null;s().capturePause='';s().lastCard=packet.original;
     for(let i=captureBuffer.length-1;i>=0;i--)if(captureBuffer[i].id===entry.id)captureBuffer.splice(i,1);
     enqueueCapture.lastAccepted={id:entry.id,revision:entry.captureRevision,budget};
-    captureBuffer.push({...packet,budget,refinement:capture.refinement===true,id:entry.id,captureRevision:entry.captureRevision,queuedAt:clockNow(),captureMs:clockNow()-started+(capture.captureMs||0),detectMs:capture.detectMs,frameAnalysisMs:capture.frameAnalysisMs,firstEligibleToAcceptedMs:capture.firstEligibleAt?Date.now()-capture.firstEligibleAt:0,stableMs:capture.stableMs,persistMs:clockNow()-persistStarted});s().buffered=captureBuffer.length;
+    const queued={...packet,budget,refinement:capture.refinement===true,id:entry.id,captureRevision:entry.captureRevision,queuedAt:clockNow(),captureMs:clockNow()-started+(capture.captureMs||0),detectMs:capture.detectMs,frameAnalysisMs:capture.frameAnalysisMs,firstEligibleToAcceptedMs:capture.firstEligibleAt?Date.now()-capture.firstEligibleAt:0,stableMs:capture.stableMs,persistMs:clockNow()-persistStarted};
+    prefetchAiRead(queued,entry,G,snapshots);captureBuffer.push(queued);s().buffered=captureBuffer.length;
     if(!capture.refinement)(s().queueAnimationIds ||= []).push(entry.id);
     feedback('ok',prefs());flash(capture.refinement?'Clearer frame · same capture':'Queued · next card');render();void drainCaptures();return true;
   };

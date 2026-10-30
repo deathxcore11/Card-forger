@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {gunzipSync} from 'node:zlib';
 import {compileCatalog,lookupCatalog} from './scan-catalog.js';
-import {aiHintsRead,mergeAiEvidence,raceReads,rankByLikeness,textVerifiedMatch} from './scancam.js';
+import {aiHintsRead,mergeAiEvidence,raceReads,rankByLikeness,textVerifiedMatch,settledValue,PENDING} from './scancam.js';
 import {scanInstructions,cleanScanHints} from './scan-identify-route.js';
 
 // The AI reader is a transcription source. Its hints must pass the same
@@ -99,6 +99,15 @@ assert.equal(aiHintsRead('ptcg',{game:'mtg',name:'Mountain',number:''}).game,'mt
  await assert.rejects(raceReads(Promise.reject(Error('Reader startup expired.')),Promise.resolve(null)),/Reader startup expired/);
 }
 
+// A prefetched read that already settled is used at once; a pending one is not waited for.
+{
+ const done=Promise.resolve({verified:true}).catch(()=>null);await done;
+ assert.deepEqual(await settledValue(done),{verified:true});
+ assert.equal(await settledValue(new Promise(()=>{})),PENDING);
+ assert.equal(await settledValue(Promise.reject(Error('offline')).catch(()=>null).then(v=>v)),PENDING,'a derived promise still settling is pending');
+ const failed=Promise.reject(Error('offline')).catch(()=>null);await failed;
+ assert.equal(await settledValue(failed),null,'a failed read reads as no AI result');
+}
 // Picture ranking needs a browser image loader; without one the order is kept.
 {
  const cands=[{id:'a'},{id:'b'}];
