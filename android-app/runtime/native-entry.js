@@ -54,6 +54,13 @@ await plugin.addListener('lifecycle', event => {
 });
 const displayPlugin = globalThis.Capacitor.registerPlugin('CardStashyDisplay');
 installNativeDisplay({ plugin: displayPlugin });
+// Same rotation hook as the Planeswalk page: 'landscape' holds the phone sideways, 'default' follows it again.
+// (The display sync above also turns the Magic table sideways on its own; the page's calls agree with it.)
+globalThis.PWNative = Object.freeze({ native: true, setOrientation(next) {
+  if (next !== 'landscape' && next !== 'default') return Promise.reject(new Error('Unknown orientation'));
+  return displayPlugin.setOrientation({ orientation: next }).then(() => true);
+} });
+globalThis.dispatchEvent(new Event('pwnative-ready'));
 // The launch splash stays up until the first screen has painted (Android lets it go after 5 s regardless).
 try { await import('./app.js'); }
 finally { requestAnimationFrame(() => requestAnimationFrame(() => { displayPlugin.ready().catch(() => {}); })); }
