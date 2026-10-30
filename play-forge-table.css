@@ -29,7 +29,7 @@
 .forge-intro-avatar .profile-avatar-photo{inset:0;width:100%;height:100%}
 .forge-cpu-crest{font:700 13px/1 Cinzel,Georgia,serif;letter-spacing:.12em;color:var(--ob-cpu,#f0c27a)}
 .forge-intro-name{min-width:0;text-shadow:0 2px 12px #000}
-.forge-intro-name small,.forge-intro-deck>span{font:700 10px/1.3 'DM Sans',system-ui,sans-serif;letter-spacing:.24em;color:var(--ob-you,#7fd0ff);text-shadow:0 1px 6px #000,0 0 2px #000}
+.forge-intro-name small,.forge-intro-deck>span{font:700 11px/1.3 'DM Sans',system-ui,sans-serif;letter-spacing:.24em;color:var(--ob-you,#7fd0ff);text-shadow:0 1px 6px #000,0 0 2px #000}
 .forge-intro-cpu :is(.forge-intro-name small,.forge-intro-deck>span){color:var(--ob-cpu,#f0c27a)}
 .forge-intro-name h2{font:700 clamp(19px,1.8vw,24px)/1.15 'DM Sans',system-ui,sans-serif;margin:4px 0 2px;color:#fff;overflow-wrap:anywhere}
 .forge-intro-name>span{font-size:12px;color:#d9d0be;overflow-wrap:anywhere}
@@ -114,7 +114,7 @@
  .forge-intro-avatar{width:50px;height:50px;flex-basis:50px}
  .forge-intro-name h2{font-size:17px}.forge-intro-name>span{font-size:11px}
  .forge-intro-deck h3{font-size:20px}.forge-intro-footer{margin-top:20px}
- .forge-intro-steps{font-size:9.5px;letter-spacing:.05em;width:100%}
+ .forge-intro-steps{font-size:11px;letter-spacing:.05em;width:100%}
  .forge-intro-steps li{flex:1;min-width:0}
  .forge-intro-seat:after{background:linear-gradient(180deg,#0c0c0ee0 0%,#0c0c0e99 34%,transparent 52%,#0c0c0ed9 74%,#0c0c0ef7 100%)}
  .forge-intro-start-options{grid-template-columns:1fr;gap:10px;margin:22px 0 16px}
@@ -126,7 +126,7 @@
 @media(max-height:690px) and (min-width:651px){.forge-intro-header{margin-bottom:16px}.forge-intro-header h1{font-size:32px}.forge-intro-header:after{margin-top:10px}.forge-intro-seat{min-height:240px}.forge-intro-footer{gap:8px;margin-top:14px}.forge-intro-deck{margin-top:24px}}
 @media(prefers-reduced-motion:reduce){.forge-intro-art img,.forge-intro-status:before,.forge-intro-you,.forge-intro-cpu,.forge-intro-vs,.forge-intro-toss,.forge-intro-toss>h2,.forge-intro-toss .forge-intro-coin,.forge-intro-toss .forge-intro-coin:after,.forge-intro-toss .forge-intro-coin:before,.forge-intro-toss .forge-coin-body{animation:none!important}.forge-intro-start-options button{transition:none}.forge-intro-start-options button:hover{transform:none}}
 :where(body.practice-table-open) .forge-native-panel button{min-height:42px;border-radius:9px;padding:9px 12px;border:1px solid #dfc58e70;background:#203a40;color:#edf0e8;cursor:pointer}
-:where(body.practice-table-open) .forge-proof-label{font:600 10px/1.3 system-ui;letter-spacing:.13em;color:#dfc58e}
+:where(body.practice-table-open) .forge-proof-label{font:600 11px/1.3 system-ui;letter-spacing:.13em;color:#dfc58e}
 :where(body.practice-table-open) .forge-native-panel{display:flex;flex-wrap:wrap;gap:8px;min-width:0}
 :where(body.practice-table-open) .forge-native-panel>*:not(button){width:100%;min-width:0}
 :where(body.practice-table-open) .forge-native-panel h2{font-size:17px;margin:4px 0 6px;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -210,7 +210,7 @@
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] [data-owner=cpu] .play-match-lane:not([data-card-group=creatures]){order:0}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-lane:not([data-card-group=creatures]) .play-match-card-wrap[data-presentation=battlefield]{width:calc(var(--play-piece)*.74);height:calc(var(--play-piece)*.74)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-current-stats{font-size:clamp(15px,calc(var(--play-piece)*.16),23px)}
- :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-name{font-size:clamp(10px,calc(var(--play-piece)*.085),13px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-name{font-size:clamp(11px,calc(var(--play-piece)*.085),13px)}
 }
 
 /* Identical permanents stack as one pile with a count. Every card is still its own
@@ -268,7 +268,7 @@
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card[data-name-length=long] .play-match-card-name{font-size:calc(var(--nf)*.93)}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card[data-name-length=word] .play-match-card-name{font-size:calc(var(--nf)*.88);letter-spacing:-.01em}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-current-stats{right:6px;bottom:6px;padding:1px 7px;border:1px solid #d6ad64c0;border-radius:7px;background:#111114f2;color:#fff;font:700 clamp(10px,calc(var(--play-piece)*.15),21px)/1.25 'DM Sans',system-ui,sans-serif;box-shadow:0 0 0 1px #000a,0 4px 12px #0009}
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields :is(.play-state-chip:not(.play-tapped-chip),.play-match-keywords>span){font-size:clamp(8px,calc(var(--play-piece)*.075),11px)}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields :is(.play-state-chip:not(.play-tapped-chip),.play-match-keywords>span){font-size:clamp(11px,calc(var(--play-piece)*.075),11px)}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-badges{display:none}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-piece-art{transition:transform .28s cubic-bezier(.2,.8,.2,1),filter .28s,box-shadow .28s,border-color .28s}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card[data-combat=attacking]{transform:translateY(-12px)}
@@ -314,7 +314,7 @@
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] [data-owner=cpu] .play-match-card[data-tapped=true][data-combat=attacking]{transform:translateY(12px) rotate(12deg) scale(.95)}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-battlefields .play-tapped-chip{position:absolute;inset:calc(var(--nh) + 7px) 6px auto auto;width:22px;height:22px;padding:0;display:grid;place-items:center;border:1px solid #d6ad64aa;border-radius:50%;background:#111114ee;font-size:0;line-height:0;transform:rotate(-12deg)}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-battlefields .play-tapped-chip:before{content:'\21B7';font-size:14px;line-height:1;color:var(--ob-gold-hi)}
-:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-battlefields .play-match-pile-count{min-width:clamp(22px,calc(var(--play-piece)*.22),32px);padding:clamp(1px,calc(var(--play-piece)*.025),4px) clamp(4px,calc(var(--play-piece)*.05),8px);font-size:clamp(10px,calc(var(--play-piece)*.09),13px)}
+:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-battlefields .play-match-pile-count{min-width:clamp(22px,calc(var(--play-piece)*.22),32px);padding:clamp(1px,calc(var(--play-piece)*.025),4px) clamp(4px,calc(var(--play-piece)*.05),8px);font-size:clamp(11px,calc(var(--play-piece)*.09),13px)}
 /* No magnifier buttons on the table: hover a card with a mouse, or click or tap one you can't act on, to see it larger. */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-inspect-card{display:none!important}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-hand .play-match-card{border:1px solid #000c;border-radius:calc(var(--play-hand)*.055);background:#111;box-shadow:0 10px 24px #000c;filter:none}
@@ -339,7 +339,7 @@
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-seat-phase strong,:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-seat[data-seat=you]:not([data-active=true]) .play-match-seat-phase strong{display:block;font:600 12px/1.3 'DM Sans',system-ui,sans-serif;color:var(--ob-gold)}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-seat-phase span{display:block;font-size:11.5px;color:var(--ob-muted)}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-life strong{font:700 34px/1 'DM Sans',system-ui,sans-serif;letter-spacing:-.03em;color:#fff}
-:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-life>span{margin-top:3px;font-size:9px;letter-spacing:.2em;color:var(--ob-muted)}
+:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-life>span{margin-top:3px;font-size:11px;letter-spacing:.2em;color:var(--ob-muted)}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-command-zone .play-match-card{border:1px solid var(--ob-gold);border-radius:6px;overflow:hidden;box-shadow:0 8px 18px #000b}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-native-panel{flex-shrink:0;gap:10px;padding:16px;border:1px solid #d6ad6466;border-radius:16px;background:var(--ob-panel);box-shadow:0 18px 44px #000c}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-native-panel h2{font:700 21px/1.15 Cinzel,Georgia,serif;letter-spacing:.02em;color:#f5ebd3}
@@ -348,7 +348,7 @@
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-native-panel .forge-native-status{margin:6px 0 0;font:600 11.5px/1.3 'DM Sans',system-ui,sans-serif;letter-spacing:.04em;color:var(--ob-muted)}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-native-panel .forge-native-detail{margin:6px 0 0;font-size:12.5px;line-height:1.4;color:#d9d0be}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-native-panel :is(.forge-native-stack,.forge-native-elsewhere){display:grid;gap:6px;width:100%;padding:10px;border:1px solid #d6ad6440;border-radius:12px;background:#0b0b0dcc}
-:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-native-panel :is(.forge-native-stack,.forge-native-elsewhere) h3{margin:0;font:700 10px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--ob-gold)}
+:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-native-panel :is(.forge-native-stack,.forge-native-elsewhere) h3{margin:0;font:700 11px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--ob-gold)}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-native-panel :is(.forge-native-stack,.forge-native-elsewhere) button{min-height:36px;padding:6px 10px;border:1px solid #ffffff1f;border-radius:9px;background:#ffffff0a;color:var(--ob-text);text-align:left;font:600 12.5px/1.3 'DM Sans',system-ui,sans-serif}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-native-panel :is(.forge-native-stack,.forge-native-elsewhere) button:hover:not(:disabled){border-color:var(--ob-gold);background:#1a1813}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-native-panel .forge-native-mode{display:flex;width:100%;gap:0;padding:3px;border:1px solid #ffffff14;border-radius:10px;background:#0a0a0c}
@@ -412,7 +412,7 @@
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-lane[data-card-group=creatures] .play-match-card-wrap[data-presentation=battlefield]{width:calc(var(--play-piece)*1.18);height:calc(var(--play-piece)*.9)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-lane:not([data-card-group=creatures]) .play-match-card-wrap[data-presentation=battlefield]{width:calc(var(--play-piece)*.98);height:calc(var(--play-piece)*.68)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card[data-presentation=battlefield] .play-match-piece-art{inset:calc(var(--nh) + 5px) 3px 3px}
- :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-lane:not([data-card-group=creatures]) .play-current-stats{font-size:clamp(9px,calc(var(--play-piece)*.12),17px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-lane:not([data-card-group=creatures]) .play-current-stats{font-size:clamp(11px,calc(var(--play-piece)*.12),17px)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-wrap[data-pile-index]:not([data-pile-index="0"]){margin-left:calc(var(--play-piece)*-.94)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-lane:not([data-card-group=creatures]) .play-match-card-wrap[data-pile-index]:not([data-pile-index="0"]){margin-left:calc(var(--play-piece)*-.76)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-wrap[data-pile-tight=true]{margin-left:calc(var(--play-piece)*-1.12)!important}
@@ -444,7 +444,7 @@
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row button:focus-visible{outline:2px solid var(--ob-gold-hi);outline-offset:2px}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row svg{width:17px;height:17px;color:var(--ob-gold)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row b{font:700 15px/1 'DM Sans',system-ui,sans-serif}
- :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row span{grid-column:1/-1;grid-row:2;font:600 8.5px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--ob-muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row span{grid-column:1/-1;grid-row:2;font:600 11px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--ob-muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 
  /* Commanders: a small real card beside each player's column. */
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-command-zone{width:auto;max-width:none;max-height:none;margin:0;padding:0;border:0;background:none;overflow:visible}
@@ -457,7 +457,7 @@
  /* Right column: floating mana, then the decision card with one clear next step. */
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions,:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions[data-complex=true]{right:var(--edge);bottom:var(--edge);width:var(--hud);max-height:calc(100dvh - var(--seat-h) - 230px);padding:0;border:0;border-radius:0;background:none;box-shadow:none;backdrop-filter:none;overflow:hidden auto;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:#d6ad6455 transparent}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-mana-panel:not([hidden]){display:block;flex-shrink:0;padding:11px 14px 12px;border:1px solid var(--ob-line);border-radius:14px;background:var(--ob-panel)}
- :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-mana-panel h3{margin:0 0 9px;font:600 10px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--ob-muted)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-mana-panel h3{margin:0 0 9px;font:600 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--ob-muted)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-mana-panel>div{display:flex;justify-content:space-between}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-mana-panel span{display:grid;justify-items:center;gap:5px;font:700 13px/1 'DM Sans',system-ui,sans-serif;color:#fff}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-mana-panel span img{width:22px;height:22px;filter:drop-shadow(0 1px 2px #000)}
@@ -633,7 +633,7 @@
 :where(body.practice-table-open) .forge-cast figure{width:clamp(170px,min(15vw,calc(52dvh / 1.394)),250px);aspect-ratio:488/680;margin:0;border-radius:4.8%/3.4%;overflow:hidden;box-shadow:0 0 0 1px #000a,0 0 0 3px #f0c27a66,0 0 46px #f0c27a55,0 30px 70px #000e}
 :where(body.practice-table-open) .forge-cast img{display:block;width:100%;height:100%;object-fit:cover}
 :where(body.practice-table-open) .forge-cast p{display:flex;align-items:center;gap:8px;margin:0;padding:6px 14px;border:1px solid #f0c27a66;border-radius:999px;background:#111114eb;font:700 13px/1.2 'DM Sans',system-ui,sans-serif;color:#fbf3df;box-shadow:0 10px 26px #000c}
-:where(body.practice-table-open) .forge-cast p span{font-size:10px;letter-spacing:.16em;color:#f0c27a}
+:where(body.practice-table-open) .forge-cast p span{font-size:11px;letter-spacing:.16em;color:#f0c27a}
 :where(body.practice-table-open) .forge-life-delta{position:absolute;right:74px;top:10px;z-index:5;padding:2px 9px;border-radius:999px;font:800 15px/1.3 'DM Sans',system-ui,sans-serif;color:#fff;pointer-events:none;box-shadow:0 6px 16px #000b}
 :where(body.practice-table-open) .forge-life-delta[data-dir=down]{background:#c8443a}
 :where(body.practice-table-open) .forge-life-delta[data-dir=up]{background:#2f9a55}
@@ -783,7 +783,7 @@
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-profile-badge{inset:10px auto auto 10px;width:var(--portrait-w);height:var(--portrait-w)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-player-name{font-size:13px}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat-phase strong,
- :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat-phase span{font-size:10px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat-phase span{font-size:11px}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-life strong{font-size:30px}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row{width:var(--hud);height:44px;gap:4px}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row[data-seat=cpu]{top:92px;right:12px}
@@ -831,7 +831,7 @@
 :where(body.practice-table-open)[data-forge-search] :is(.forge-cast,.forge-peek,.forge-arrows){visibility:hidden!important}
 :where(body.practice-table-open) .forge-cast figure{width:100%;max-height:235px;aspect-ratio:488/680;margin:0;border-radius:8px;box-shadow:none}
 :where(body.practice-table-open) .forge-cast p{display:block;margin:0;padding:0;text-align:left;background:none;border:0;box-shadow:none}
-:where(body.practice-table-open) .forge-cast p>span{display:block;color:#dab9f5;font-size:10px;letter-spacing:.05em;text-transform:uppercase}
+:where(body.practice-table-open) .forge-cast p>span{display:block;color:#dab9f5;font-size:11px;letter-spacing:.05em;text-transform:uppercase}
 :where(body.practice-table-open) .forge-cast p>strong{display:block;font-size:13px;color:#fff;line-height:1.3;margin-top:4px}
 :where(body.practice-table-open) .forge-cast-text{font-size:11px;line-height:1.4;color:#d6dbe4;max-height:86px;overflow:hidden}
 
@@ -940,11 +940,11 @@
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-battlefields .play-match-card{--cs-b:clamp(15px,calc(var(--play-piece,96px)*.17),24px)}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-battlefields .play-match-card>.cs-tile-layer{container-type:size}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .cs-tile-layer{--cs-b:clamp(13px,min(calc((100cqh - var(--nh,18px) - 18px) / 3.6),calc(var(--play-piece,96px)*.17)),24px)}
-:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-tile-layer{position:absolute;inset:0;pointer-events:none;z-index:4;font:700 10px/1 'DM Sans',system-ui,sans-serif}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-tile-layer{position:absolute;inset:0;pointer-events:none;z-index:4;font:700 11px/1 'DM Sans',system-ui,sans-serif}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .cs-tile-layer>*{position:absolute;display:flex;gap:2px}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .cs-badge{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:var(--cs-b);height:var(--cs-b);padding:0 calc(var(--cs-b)*.12);border:1px solid #d6ad64b8;border-radius:999px;background:#101114eb;color:#f2d496;box-shadow:0 1px 4px #000c;box-sizing:border-box}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .cs-badge .cs-icon{width:calc(var(--cs-b)*.72);height:calc(var(--cs-b)*.72);flex:none}
-:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-badge b{font-size:calc(var(--cs-b)*.52);line-height:1;color:#fff;font-variant-numeric:tabular-nums}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .cs-badge b{font-size:max(11px,calc(var(--cs-b)*.52));line-height:1;color:#fff;font-variant-numeric:tabular-nums}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .cs-corner{top:calc(var(--nh,18px) + 6px);left:5px}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .cs-ready{border-color:#7fd6f0;color:#9be6ff;box-shadow:0 0 8px #5cc8f080,0 1px 4px #000c}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .cs-state-summoning-sick{color:#c9c2ff;border-color:#a99cf0aa}
@@ -1015,7 +1015,7 @@
 /* Payment lines draw mana symbols inline. */
 :where(body.practice-table-open) .forge-native-panel h2 .ms,:where(body.practice-table-open) .forge-native-detail .ms{width:1.05em;height:1.05em;vertical-align:-.15em;margin:0 1px}
 /* Zone names stay readable under their counts. */
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row span{display:block!important;font-size:9.5px;letter-spacing:0;text-transform:none;text-overflow:clip}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row span{display:block!important;font-size:11px;letter-spacing:0;text-transform:none;text-overflow:clip}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row button{grid-template-rows:auto auto;align-content:center;min-height:44px}
 /* A bigger board: pieces grow into the space they have, up to a larger cap, and on touch screens
    they fit the width too instead of running off the edge of a lane. */
@@ -1170,7 +1170,7 @@
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .forge-mana-panel.forge-seat-mana{position:absolute;left:0;right:auto;top:auto;bottom:calc(100% + 24px);width:max-content;max-width:none;margin:0;padding:12px 14px 11px;display:grid;gap:9px;border:1px solid #e8b95b55;border-radius:16px;background:linear-gradient(180deg,#1c1d23c4,#101116cc);box-shadow:0 18px 40px #000b,inset 0 1px 0 #ffffff12;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);z-index:30;opacity:0;visibility:hidden;translate:0 6px;pointer-events:none;transition:opacity .16s ease,translate .16s ease,visibility 0s linear .16s}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .forge-mana-panel.forge-seat-mana::after{content:'';position:absolute;left:34px;top:100%;width:12px;height:12px;translate:0 -6px;rotate:45deg;border:solid #e8b95b55;border-width:0 1px 1px 0;background:#101116}
 @media (hover:hover){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=you]:is(:hover,:focus-within){z-index:40}:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=you]:is(:hover,:focus-within) .forge-mana-panel.forge-seat-mana{opacity:1;visibility:visible;translate:0 0;transition-delay:0s}}
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .forge-seat-mana h3{display:block;margin:0;font:700 10px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#e8b95b}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .forge-seat-mana h3{display:block;margin:0;font:700 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#e8b95b}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .forge-seat-mana-row{display:flex;gap:10px;padding:2px 2px 4px}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .forge-mana-emblem{position:relative;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;transition:opacity .16s,filter .16s,transform .16s}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .forge-seat-mana .forge-mana-emblem>img{width:38px!important;height:38px!important;border-radius:50%;box-shadow:0 3px 8px #000a!important}
@@ -1231,16 +1231,17 @@
 /* 4.3.0 Ambience: a slow fog in each player's colours from the board's corners, behind everything.
    Whoever's turn it is glows a little stronger and reaches further in. */
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-main>.forge-ambient{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;mix-blend-mode:screen}
-:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i{position:absolute;width:64vmax;height:64vmax;border-radius:50%;opacity:.34;filter:blur(40px);transition:opacity 1.2s ease,scale 1.2s ease;animation:cs-fog 14s ease-in-out infinite alternate}
-:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i[data-corner=tl]{left:-32vmax;top:-34vmax;background:radial-gradient(circle,var(--amb-cpu-1,#e8b95b) 0%,transparent 62%)}
-:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i[data-corner=tr]{right:-32vmax;top:-34vmax;background:radial-gradient(circle,var(--amb-cpu-2,#e8b95b) 0%,transparent 62%);animation-delay:-5s}
-:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i[data-corner=bl]{left:-32vmax;bottom:-34vmax;background:radial-gradient(circle,var(--amb-you-1,#e8b95b) 0%,transparent 62%);animation-delay:-9s}
-:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i[data-corner=br]{right:-32vmax;bottom:-34vmax;background:radial-gradient(circle,var(--amb-you-2,#e8b95b) 0%,transparent 62%);animation-delay:-2s}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i{position:absolute;inset:0;opacity:.34;transition:opacity 1.2s ease,scale 1.2s ease;animation:cs-corner-glow 14s ease-in-out infinite alternate}
+/* Each corner glow fills the table and draws its light from its own corner, so nothing sits off the screen. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i[data-corner=tl]{transform-origin:0 0;background:radial-gradient(circle 45vmax at 0 -2vmax,var(--amb-cpu-1,#e8b95b) 0%,transparent 62%)}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i[data-corner=tr]{transform-origin:100% 0;background:radial-gradient(circle 45vmax at 100% -2vmax,var(--amb-cpu-2,#e8b95b) 0%,transparent 62%);animation-delay:-5s}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i[data-corner=bl]{transform-origin:0 100%;background:radial-gradient(circle 45vmax at 0 calc(100% + 2vmax),var(--amb-you-1,#e8b95b) 0%,transparent 62%);animation-delay:-9s}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i[data-corner=br]{transform-origin:100% 100%;background:radial-gradient(circle 45vmax at 100% calc(100% + 2vmax),var(--amb-you-2,#e8b95b) 0%,transparent 62%);animation-delay:-2s}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient[data-turn=you]>i:is([data-corner=bl],[data-corner=br]),
-:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient[data-turn=cpu]>i:is([data-corner=tl],[data-corner=tr]){opacity:.55;scale:1.3}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient[data-turn=cpu]>i:is([data-corner=tl],[data-corner=tr]){opacity:.62}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient[data-turn=you]>i:is([data-corner=tl],[data-corner=tr]),
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient[data-turn=cpu]>i:is([data-corner=bl],[data-corner=br]){opacity:.16}
-@keyframes cs-fog{0%{transform:translate(0,0) scale(1)}50%{transform:translate(2.5vmax,-1.5vmax) scale(1.06)}100%{transform:translate(-2vmax,2vmax) scale(.96)}}
+@keyframes cs-corner-glow{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(.95)}}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i{animation:none;transition:none}}
 /* Foils on the battlefield (foil pass): a still prism tint and a thin holo edge that never repaint, plus
    a light band that only moves a transform. It crosses when the card lands or attacks (.cs-catch),
@@ -1304,7 +1305,7 @@
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-name i img.ms{width:12px!important;height:12px!important;margin:0 0 0 1px}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-num{display:grid;justify-items:end;line-height:1}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-num b{font:800 13px/1 'DM Sans',system-ui,sans-serif;color:#f4e3bd}
-:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-num small{margin-top:2px;font:600 10px/1 'DM Sans',system-ui,sans-serif;color:#8e96a4}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker-num small{margin-top:2px;font:600 11px/1 'DM Sans',system-ui,sans-serif;color:#8e96a4}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker>footer{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid #ffffff12;font:600 12px/1 'DM Sans',system-ui,sans-serif;color:#cfd4dc}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker>footer svg{width:15px;height:15px;color:#e8b95b}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-tracker>footer b{color:#f4e3bd}
@@ -1400,7 +1401,7 @@
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-fan{height:40px}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-fan .play-match-card-back{flex-basis:24px;width:24px;height:34px;margin-left:-7px}
  /* Portrait and life say who is who on a phone, as in Arena; the name gives its room to the emblems. */
- :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .play-match-player>strong{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .play-match-player>strong{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);text-overflow:clip;-webkit-line-clamp:unset}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-row{padding:3px 4px}
  /* The dock: just the buttons. */
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel{padding:8px;gap:5px}
@@ -1455,7 +1456,7 @@
 :where(body.practice-table-open) .forge-native-panel .forge-stops-toggle{min-height:24px;padding:3px 10px;border-radius:999px;border:1px solid #e8b95b55;background:#0f1117cc;color:#f4d78f;font:700 11px/1 'DM Sans',system-ui,sans-serif;cursor:pointer}
 :where(body.practice-table-open) .forge-native-panel .forge-stops-grid{display:grid;grid-template-columns:1fr 34px 34px;gap:4px 8px;align-items:center;width:100%;padding:8px 10px;border-radius:12px;background:#0b0d12cc;border:1px solid #ffffff14;font:600 12px/1.2 'DM Sans',system-ui,sans-serif;color:#cfd4dc}
 :where(body.practice-table-open) .forge-native-panel .forge-stops-grid[hidden]{display:none}
-:where(body.practice-table-open) .forge-native-panel .forge-stops-grid>b{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9aa2b1;text-align:center}
+:where(body.practice-table-open) .forge-native-panel .forge-stops-grid>b{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9aa2b1;text-align:center}
 :where(body.practice-table-open) .forge-native-panel .forge-stop{width:26px;height:26px;min-height:0;padding:0;justify-self:center;border-radius:50%;border:1.5px dashed #ffffff40;background:none;color:#f4d78f;font-size:12px;line-height:1}
 :where(body.practice-table-open) .forge-native-panel .forge-stop[data-state=once]{border-style:solid;border-color:#e8b95b}
 :where(body.practice-table-open) .forge-native-panel .forge-stop[data-state=pinned]{border:0;background:linear-gradient(180deg,#f6dc9a,#d9a64a)}
@@ -1741,7 +1742,7 @@ body.practice-table-open :is(.forge-fx,.cs-mk){z-index:2450}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .play-match-life>:first-child{font:800 15px/1 'DM Sans',system-ui,sans-serif!important;color:#fff4d8!important}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .play-match-life>span{display:none!important}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .play-match-player{position:static!important;margin:0!important;padding:0!important;max-width:none!important}
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .play-match-player>strong{position:absolute!important;left:50%!important;top:calc(100% + 15px)!important;transform:translateX(-50%);max-width:90px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 10px/1.2 'DM Sans',system-ui,sans-serif!important;letter-spacing:.06em;color:#cfc6b4!important;text-shadow:0 1px 3px #000}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .play-match-player>strong{position:absolute!important;left:50%!important;top:calc(100% + 15px)!important;transform:translateX(-50%);max-width:90px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 11px/1.2 'DM Sans',system-ui,sans-serif!important;letter-spacing:.06em;color:#cfc6b4!important;text-shadow:0 1px 3px #000}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat :is(.play-match-seat-phase,.forge-native-mana,.play-seat-poison){display:none!important}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .forge-seat-mana{position:absolute!important;left:50%!important;right:auto!important;top:auto!important;bottom:calc(100% + 6px)!important;transform:translateX(-50%) scale(.8)!important;transform-origin:bottom center}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat .forge-control-emblems{position:absolute!important;margin:0!important;gap:2px!important;padding:3px!important;border-radius:999px;background:#0b0c10cc;border:1px solid #ffffff1a;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
@@ -1989,7 +1990,7 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .forge-native-panel .forge-stack-item[data-top=true]{border-color:#d6ad6466;background:linear-gradient(180deg,#2a2314,#15130d)}
 :where(body.practice-table-open) .forge-native-panel .forge-stack-item[data-yielded=true]{opacity:.6}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-native-panel .forge-native-stack .forge-stack-head{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 8px;width:100%;min-height:0;margin:0;padding:0 36px 0 0;border:0;background:none;text-align:left;color:inherit}
-:where(body.practice-table-open) .forge-native-panel .forge-stack-kind{grid-column:1/-1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:700 10px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#a99c80}
+:where(body.practice-table-open) .forge-native-panel .forge-stack-kind{grid-column:1/-1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:700 11px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#a99c80}
 :where(body.practice-table-open) .forge-native-panel .forge-stack-item[data-top=true] .forge-stack-kind{color:#f2d18e}
 :where(body.practice-table-open) .forge-native-panel .forge-stack-name{font:700 15px/1.2 Spectral,Georgia,serif;color:#fbf3df;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 :where(body.practice-table-open) .forge-native-panel .forge-stack-head .forge-stack-count{grid-column:2;grid-row:2}
@@ -2121,7 +2122,7 @@ body.practice-table-open img{-webkit-user-drag:none}
 @media (max-aspect-ratio:9/10){
 /* The one-line strip uses the short label ("CPU · Next") so the name always fits beside it. */
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-stack:not([data-open=true]) .forge-stack-head .forge-stack-kind[data-short]{font-size:0!important;letter-spacing:0}
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-stack:not([data-open=true]) .forge-stack-head .forge-stack-kind[data-short]::before{content:attr(data-short);font:700 10px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.14em}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-stack:not([data-open=true]) .forge-stack-head .forge-stack-kind[data-short]::before{content:attr(data-short);font:700 11px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.14em}
 
 }
 :where(body.practice-table-open) .play-match-table[data-forge-native]>.forge-lane-tray>.play-match-card-wrap{width:104px}
@@ -2204,7 +2205,7 @@ body.practice-table-open img{-webkit-user-drag:none}
 /* Touch screens: the chips already name each board, and a scaled-down label would be too small to read. */
 @media (hover:none){:where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]>.play-match-zone::before{content:none}:where(body.practice-table-open) .play-match-table[data-pod=true] .play-match-seat-area[data-seat=cpu]>.play-match-zone{padding-top:6px}}
 /* Phones: with no CPU seat panel above it, the rail moves up beside the menu button. */
-@media (max-width:599px){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-hand[data-pod]{position:absolute!important;top:8px!important;left:60px!important;right:8px!important}:where(body.practice-table-open) .play-pod-chip{grid-template-columns:24px minmax(0,1fr) auto;padding:4px 6px 4px 4px}:where(body.practice-table-open) .play-pod-meta{gap:4px;font-size:10.5px}:where(body.practice-table-open) .play-pod-life{font-size:15px;min-width:18px}}
+@media (max-width:599px){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-hand[data-pod]{position:absolute!important;top:8px!important;left:60px!important;right:8px!important}:where(body.practice-table-open) .play-pod-chip{grid-template-columns:24px minmax(0,1fr) auto;padding:4px 6px 4px 4px}:where(body.practice-table-open) .play-pod-meta{gap:4px;font-size:11px}:where(body.practice-table-open) .play-pod-life{font-size:15px;min-width:18px}}
 @media (max-width:599px){:where(body.practice-table-open) .play-pod-chip{grid-template-columns:24px minmax(0,1fr) auto;grid-template-rows:auto auto;grid-template-areas:"face name life" "face meta meta";row-gap:1px}:where(body.practice-table-open) .play-pod-face{grid-area:face}:where(body.practice-table-open) .play-pod-text{display:contents}:where(body.practice-table-open) .play-pod-name{grid-area:name}:where(body.practice-table-open) .play-pod-meta{grid-area:meta;align-self:center}:where(body.practice-table-open) .play-pod-life{grid-area:life;font-size:14px;line-height:1}}
 @media (max-width:599px){:where(body.practice-table-open) .play-pod-rail{gap:4px}:where(body.practice-table-open) .play-pod-chip{column-gap:4px;padding:4px 6px 4px 4px}:where(body.practice-table-open) .play-pod-name{font-size:11px}:where(body.practice-table-open) .play-pod-life{font-size:13px;min-width:0}:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-opponent-hand[data-pod]{left:56px!important;right:6px!important}}
 /* With no CPU seat or hand fan above it, a pod's CPU board starts just under the rail. */
@@ -2258,7 +2259,7 @@ body.practice-table-open img{-webkit-user-drag:none}
 /* A card dragged out of the hand closes its slot, so the fan slides together instead of splitting. */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card-wrap[data-hand-gone]{margin-right:calc(-1 * var(--gone-w,0px));opacity:0;pointer-events:none;transition:margin-right .24s cubic-bezier(.3,1.25,.4,1),opacity .12s ease}
 /* In the fan the next card covers each card's right side, so "New" sits on the visible left edge, under the name. */
-:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-new-card{top:16%;right:auto;left:4px;padding:2px 6px;font-size:10px;line-height:1.2}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-new-card{top:16%;right:auto;left:4px;padding:2px 6px;font-size:11px;line-height:1.2}
 /* On phones every ask line (targets, counters, "Not enough mana") sits centred above the hand, clear of the library and graveyard pills. */
 @media (max-width:640px){:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-ask=true]:is(:has(button),:not(:has(button)))::before{font-size:13px;position:fixed;left:50%;right:auto;bottom:auto;top:calc(var(--forge-hand-top,60vh) - 12px);translate:-50% -100%;max-width:calc(100vw - 32px);text-align:center}}
 /* Phone portrait: the CPU status is one slim line centred on the board's divider, clear of both rows. */
@@ -2282,3 +2283,11 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-emote-button{position:absolute}
 :where(body.practice-table-open) .play-match-table[data-forge-native] :is(.forge-control-emblem,.forge-emote-button)::before{content:"";position:absolute;inset:-7px;border-radius:50%}
 :where(body.practice-table-open) .play-match-table[data-forge-native] :is(.forge-attack-all,[data-native-key=cancel],[data-native-key^=zone-])::before{content:"";position:absolute;inset:-8px 0}
+/* 4.3.39 Every match is sideways (Randall, 30 Oct: phones, tablets and computers all play landscape, like Slay the
+   Spire and Arena on a phone). Every control on the table is a 44px target, and identical lands carry their count on
+   the top card's corner, clear of the cards beneath. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-header>.play-match-menu>summary{min-width:44px!important;min-height:44px!important}
+:where(body.practice-table-open) .play-match-table[data-forge-native] :is(.forge-control-emblem,.forge-emote-button)::before{inset:auto;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);translate:-50% -50%}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row>button{min-width:44px!important;justify-content:center}
+:where(body.practice-table-open) .forge-toast button{min-height:44px!important}
+:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-battlefields .play-match-pile-count{left:auto;right:-10px;top:-10px}

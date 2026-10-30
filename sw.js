@@ -28,6 +28,7 @@ const ASSETS = [
   "./play-token-art.js",
   "./play-token-printing.js",
   "./play-playmats.js",
+  "./play-orientation.js",
   "./experiments/forge-proof/native-panel.mjs",
   "./experiments/phase-engine/choice-presentation.mjs",
   "./play-card-support.js",
