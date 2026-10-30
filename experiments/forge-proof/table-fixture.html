@@ -119,9 +119,13 @@ const names = [...new Set([
   ...(STATE === 'search' ? ['Forest', 'Mountain', 'Island', 'Plains', 'Swamp', 'Wastes'] : []),
 ].filter(n => n !== 'Goblin' && n !== 'Food'))];
 const scry = new Map();
+// A saved copy of the Scryfall cards this fixture uses (fixture-cards.json) loads first, so the board lays out the same
+// with or without a network (the design-gate runner only lets GET through); anything missing comes from Scryfall.
+try { for (const [name, c] of Object.entries(await (await fetch('./fixture-cards.json')).json())) scry.set(name, c); } catch {}
 try {
-  for (let i = 0; i < names.length; i += 70) {
-    const r = await fetch('https://api.scryfall.com/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({identifiers: names.slice(i, i + 70).map(name => ({name}))})});
+  const missing = names.filter(n => !scry.has(n));
+  for (let i = 0; i < missing.length; i += 70) {
+    const r = await fetch('https://api.scryfall.com/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({identifiers: missing.slice(i, i + 70).map(name => ({name}))})});
     for (const c of (await r.json()).data || []) scry.set(c.name, c);
   }
 } catch (e) { console.warn('Scryfall unavailable; fixture uses drawn crests', e); }
