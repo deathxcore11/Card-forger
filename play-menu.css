@@ -1,6 +1,6 @@
 /* Play owns desktop space; all art, cards, colors and finish rendering remain
    shared with CardStashy. These rules do not change other routes. */
-body[data-view="play"] #content{max-width:none;width:100%;padding:18px clamp(16px,2vw,40px) 20px}
+body[data-view="play"] #content{max-width:none;width:100%;padding:18px var(--page-edge,16px) 20px}
 .play-menu{display:grid;gap:16px;min-width:0}
 .play-menu .panel{margin:0;background:color-mix(in srgb,var(--surface) 84%,transparent);backdrop-filter:blur(18px) saturate(1.15);box-shadow:0 12px 40px #0001}
 .play-heading{display:flex;align-items:center;gap:24px;min-width:0}
@@ -136,7 +136,7 @@ body.practice-table-open{overflow:hidden}#practicePlayerMat{position:fixed;inset
 .play-menu--forge .play-heading h1{font-size:clamp(30px,3vw,42px);line-height:1.1;letter-spacing:-.035em;margin:2px 0 0}
 .play-menu--forge .play-heading .eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
 .play-menu--forge .play-format{margin-left:auto;flex-wrap:wrap;padding:5px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--surface) 75%,transparent)}
-.play-menu--forge .play-format .btn{border-radius:999px;min-height:40px;padding-inline:17px}
+.play-menu--forge .play-format .btn{border-radius:999px;min-height:44px;padding-inline:17px}
 .play-menu--forge .play-format [aria-pressed=true]{background:linear-gradient(125deg,#e6c88433,#b39d6c12);border-color:#d4b77c80;box-shadow:inset 0 1px 0 #fff2;color:var(--text)}
 .play-menu--forge .play-match-bar{border-radius:22px;padding:16px 20px;background:linear-gradient(115deg,#839b8b0b,#d6bc7710),color-mix(in srgb,var(--surface) 88%,transparent)}
 .play-menu--forge .play-paths{padding:4px;border:1px solid var(--line);border-radius:14px;background:#0000000c}
@@ -459,7 +459,7 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
  .pl-arena{grid-template-columns:1fr;gap:0}.pl-seat{min-height:150px;padding:16px;border-radius:18px}.pl-vs{height:0}.pl-vs b{width:44px;height:44px;border-radius:10px}.pl-vs b>span{font-size:14px}
  .pl-backs i{width:66px;height:92px;margin:-46px 0 0 -33px;left:26%;top:44%}.pl-backs i:nth-child(1){transform:rotate(-13deg) translateX(-28px)}.pl-backs i:nth-child(3){transform:rotate(13deg) translateX(28px)}
  .pl-seat--cpu::before{background:linear-gradient(270deg,#0c0c0ef5 0%,#0c0c0ed0 55%,#0c0c0e55 100%)}
- .pl-startbar{position:sticky;bottom:calc(var(--nav-h,64px) + env(safe-area-inset-bottom) + 8px);z-index:20;flex-wrap:wrap;padding:12px}.pl-status{flex-basis:100%;font-size:12px}.pl-start.btn{flex:1;min-width:0}
+ .pl-startbar{position:sticky;bottom:calc(var(--nav-h,64px) + env(safe-area-inset-bottom));z-index:20;flex-wrap:wrap;padding:12px}.pl-status{flex-basis:100%;font-size:12px}.pl-start.btn{flex:1;min-width:0}
  .pl-format-sheet{position:fixed;left:16px;right:16px;top:auto;bottom:calc(var(--nav-h,64px) + env(safe-area-inset-bottom) + 12px);width:auto;max-height:70vh;overflow:auto}.pl-format-grid{grid-template-columns:1fr 1fr}
  .pl-sheet.play-inspector{width:100%;border-radius:0}
 }

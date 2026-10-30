@@ -80,7 +80,7 @@ export function setBrowserControls(result,{game,state,prefix,source}){
  const labels={...SET_FAMILY_LABELS,companion:game==='mtg'?'Commander & companion':game==='ygo'?'Speed Duel':'Companion & subsets'};
  const quick=['main','companion','promos','all'];
  return `<section class="set-browser-controls" aria-label="Set catalogue filters"><div class="searchbar"><input type="search" value="${esc(state.q||'')}" placeholder="Search every set by name or code" data-input="${action('Search')}" aria-label="Search all sets" autocomplete="off"></div>
- <div class="set-browser-quick" role="group" aria-label="Release families">${quick.map(family=>`<button class="${f.family===family?'on':''}" data-act="${action('Family')}" data-value="${family}" aria-pressed="${f.family===family}">${labelIcon({main:'sets',companion:'cardStack',promos:'pack',all:'grid'}[family])}${esc(family==='main'?'Main releases':family==='companion'?game==='mtg'?'Commander':game==='ygo'?'Speed Duel':'Companion':family==='promos'?'Promos':'All sets')}</button>`).join('')}</div>
+ <div class="set-browser-quick" role="group" aria-label="Release families" data-audit-scroll>${quick.map(family=>`<button class="${f.family===family?'on':''}" data-act="${action('Family')}" data-value="${family}" aria-pressed="${f.family===family}">${labelIcon({main:'sets',companion:'cardStack',promos:'pack',all:'grid'}[family])}${esc(family==='main'?'Main releases':family==='companion'?game==='mtg'?'Commander':game==='ygo'?'Speed Duel':'Companion':family==='promos'?'Promos':'All sets')}</button>`).join('')}</div>
  ${(()=>{
   // Everything past the quick families lives behind one Filters pill, like Search. The type list only
   // offers families the quick row doesn't, so "Main releases" is never offered twice.

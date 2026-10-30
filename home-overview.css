@@ -125,7 +125,7 @@ body[data-view="home"] .home-intro .home-value {
   body .topbar .home-search-pill { min-height:48px; border-radius:25px; background:#ffffff08; box-shadow:none; }
   body .topbar .home-search-pill input { font-size:12px; padding-left:12px; }
   body .topbar .home-ai-label { left:12px; }
-  body .topbar #desktopSearch>.header-sets { padding:6px 9px; min-height:42px; border-radius:22px; font-size:11px; }
+  body .topbar #desktopSearch>.header-sets { padding:6px 9px; min-height:44px; border-radius:22px; font-size:11px; }
   body .topbar #desktopSearch>.header-sets svg { width:16px; height:16px; }
   .home-intro .home-today { min-height:220px; padding-top:46px; padding-bottom:26px; }
 }

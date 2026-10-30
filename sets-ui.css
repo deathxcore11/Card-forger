@@ -58,11 +58,11 @@
 .set-browser-controls>.searchbar{margin:0;min-width:0}
 .set-browser-controls .searchbar input{width:100%;min-width:0;min-height:44px}
 .set-browser-quick{display:flex;gap:4px;padding:4px;min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;border-radius:13px;background:var(--surface-2)}
-.set-browser-quick>button{flex:1 0 auto;min-width:0;min-height:42px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:8px 12px;white-space:nowrap;overflow-wrap:normal;word-break:normal}
+.set-browser-quick>button{flex:1 0 auto;min-width:0;min-height:44px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:8px 12px;white-space:nowrap;overflow-wrap:normal;word-break:normal}
 .set-browser-quick>button.on{color:var(--text);border-color:color-mix(in srgb,var(--gold) 42%,var(--line));background:var(--surface)}
 .set-browser-quick>button:focus-visible,.set-browser-summary button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 /* The shared tab track (polish.css) sets 40px tabs; release families keep their 42px touch target. */
-:is(body,body.glass) .set-browser-quick>button{min-height:42px}
+:is(body,body.glass) .set-browser-quick>button{min-height:44px}
 .set-browser-facets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;min-width:0}
 .set-browser-facets>label{display:grid;gap:6px;min-width:0;color:var(--muted);font-size:11px}
 .set-browser-facets select,.set-browser-facets .glass-select{width:100%;min-width:0;max-width:100%;min-height:44px}
@@ -98,7 +98,7 @@
 
 /* Set packaging dissolves into the glass: brightest at the far right, quiet under text. */
 .set-row,.set-hero{position:relative;isolation:isolate;overflow:hidden}
-.set-atmosphere{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden;border-radius:inherit;mask-image:linear-gradient(90deg,transparent 12%,#0003 48%,#000 100%)}
+.set-atmosphere{position:absolute;inset:0;z-index:-1;contain:paint;pointer-events:none;overflow:hidden;border-radius:inherit;mask-image:linear-gradient(90deg,transparent 12%,#0003 48%,#000 100%)}
 .set-atmosphere>img{position:absolute;right:-2%;top:-18%;width:65%;height:138%;object-fit:cover;object-position:center 35%;opacity:.24;filter:blur(1.5px) saturate(.7);transform:rotate(-7deg) scale(1.03)}
 .set-hero{border-radius:22px;padding:22px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);gap:18px;flex-wrap:wrap}
 .set-hero>.set-atmosphere>img{opacity:.3;width:58%}
