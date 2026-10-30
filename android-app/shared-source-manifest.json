@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "version": "4.3.37",
-  "commit": "43e2a4e950669ebec7bcd895174c7cb160034c7f",
-  "tree": "441727aa73270cc5e371f6410805cc9f4f4b7211",
+  "commit": "b6fd68e82772c7d9e06ef7e45d731923edd57b19",
+  "tree": "6cd6cc9cdb887d69eb8cac88c665c30e5cdc1370",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -90,6 +90,11 @@
       "path": "android-beta.js",
       "bytes": 2004,
       "sha256": "4fe3fbc1796f9986b2283162d2ca70be0e37ada7f87a3632eff4433c2e7539fc"
+    },
+    {
+      "path": "app-errors.js",
+      "bytes": 3595,
+      "sha256": "a727380d0aef8051b3d252a67e0210566bafa43470b7e39185c504fa631f27ce"
     },
     {
       "path": "app-info.js",
@@ -3398,8 +3403,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 20004,
-      "sha256": "ae21b477562042da24378203d867116821351e9276d85ab89af5ca4a720225de"
+      "bytes": 20056,
+      "sha256": "8094dd1065842f36a6b30ef945940e2fe450d888e1e3735c5a2eec7538ebcbcd"
     },
     {
       "path": "insights.js",
@@ -3620,6 +3625,11 @@
       "path": "planeswalk-audio.js",
       "bytes": 5284,
       "sha256": "9110cb746d08a74fd27c0264acba96670b255a2ba99cba574074154fd171d0ff"
+    },
+    {
+      "path": "planeswalk-cloud.js",
+      "bytes": 6809,
+      "sha256": "a3b5fdb46e7a74fa65e170c996c855882ad03a86ada5896e3a86429a9e1bd562"
     },
     {
       "path": "planeswalk.html",
@@ -3968,8 +3978,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 912,
-      "sha256": "3d712b366ebbcb8cbba4abdb32a03b437db5d833ea458774a9539ed0a6b639ba"
+      "bytes": 990,
+      "sha256": "a9bbcfef216ed33cd9c8e26778593e97b16365ec9d60d4ec13c87ebb622d8ec8"
     },
     {
       "path": "release-status.js",
@@ -4288,8 +4298,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15579,
-      "sha256": "45917dcba60d2ddaf4a719885562da97c8664bfdcba149116f709441f76db8cf"
+      "bytes": 15628,
+      "sha256": "0abe9b8a21691e0c8a1fc5e4a35844b3ca64ef15600d0bf189a8e6ba581c0d01"
     },
     {
       "path": "sync-merge.js",
