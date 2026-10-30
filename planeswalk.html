@@ -2293,7 +2293,7 @@ body[data-hero=W]{--aim:#f1d88c;--aim-d:#b88a34;--aim-hi:#fff6d6;--aim-o:#2d1f08
  #app[data-pw-zoom] .screen.shop .buy>.card>span:last-child{line-height:1.15!important}
 }
 /* long card names on narrow ware/reward cards: one notch smaller instead of breaking inside a word */
-#app .screen .choices .card .head b[data-long]{font-size:max(11px,.74em)!important;letter-spacing:-.01em!important;overflow-wrap:normal!important;hyphens:manual!important}
+#app .screen .choices .card .head b[data-long]{font-size:max(11px,.74em)!important;letter-spacing:-.01em!important;overflow-wrap:anywhere!important;hyphens:auto}
 /* zoomed tablets: the gold line duplicates the HUD coin, so it goes; services share one row with the emblem given the wider column */
 @media (min-aspect-ratio:4/5){
  #app[data-pw-zoom] .screen.shop>p.summary{display:none!important}
@@ -2694,6 +2694,12 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
 @media (min-aspect-ratio:4/5) and (max-height:500px){#app .map .node.boss .heal .t{display:none}#app .map .node.boss .heal{padding-inline:6px!important}}
 /* zoomed stages: a map node keeps a 45px finger target in screen pixels, not 45px times the zoom, so the dense middle row keeps air between nodes */
 @media (min-aspect-ratio:4/5){#app[data-pw-zoom] .map .node:not(.boss){min-width:calc(45px / var(--pw-zoom,1))!important;min-height:calc(45px / var(--pw-zoom,1))!important}}
+/* ware and reward cards: cost gem on the art's top-left corner, name band full width */
+#app .screen .choices .card .pic{position:relative}
+#app .screen .choices .card .pic>.cost{position:absolute;top:4px;left:4px;z-index:3;margin:0!important;flex:none}
+#app .screen .choices .card .head{padding-right:6px}
+#app .screen .choices .card .head b{max-width:none!important;flex:1 1 auto;min-width:0}
+#app .screen .choices .card .head b[data-long]{overflow-wrap:normal!important;hyphens:manual!important}
 
 </style>
 
@@ -2917,9 +2923,9 @@ Object.assign(E,{
  drone:{name:"Kozilek's Drone",art:"Kozilek's Herald",trample:1,hp:34,pow:4,g:'Kz',rank:'elite',eldrazi:1,intents:[['annihilate',6],['summon','spawn'],['atk',5]]},
  // The Herald is promoted to rotate with Ob Nixilis: it exiles the top card of your deck each turn, and in
  // phase 2 every card it has exiled becomes an Eldrazi Spawn on its side.
- heraldB:{name:"Kozilek's Herald, Awakened",art:"Kozilek's Herald",trample:1,hp:76,pow:5,g:'Kz',rank:'boss',eldrazi:1,mill:1,p2spawn:1,p2Name:'Awakened',intents:[['atk',10],['annihilate',6],['summon','scion']],phase2:[['atk',11],['annihilate',7],['atk',8]]},
+ heraldB:{name:"Kozilek's Herald, Awakened",art:"Kozilek's Herald",trample:1,hp:70,pow:5,g:'Kz',rank:'boss',eldrazi:1,mill:1,p2spawn:1,p2Name:'Awakened',intents:[['atk',10],['annihilate',6],['summon','scion']],phase2:[['atk',11],['annihilate',7],['atk',8]]},
  omnath:{name:'Omnath, Locus of Rage',hp:38,pow:4,g:'Om',rank:'elite',rage:2,intents:[['summon','spawn'],['atk',7],['summon','scion']]},
- ob:{name:'Ob Nixilis Reignited',enrage:1,trample:1,p2Name:'Reignited',hp:96,pow:5,g:'Ob',rank:'boss',loyalty:5,ultFx:'kill',
+ ob:{name:'Ob Nixilis Reignited',enrage:1,trample:1,p2Name:'Reignited',hp:88,pow:5,g:'Ob',rank:'boss',loyalty:5,ultFx:'kill',
   intents:[['atk',13,2],['pay',3,1],['drain',8,-3]],phase2:[['atk',15,2],['pay',4,1],['summon','spawn',1],['drain',8,-3]],pact:1},
 });
 // Each act: map rows, enemy groups, elites and boss. Depth scaling restarts every act.
@@ -3053,12 +3059,14 @@ function startFight(keys,kind,depth=0,ante=null,dun=null){
 }
 // Fight clock (playtest 30 Oct): from turn 10 the night deepens and every enemy gains +2 attack each turn.
 // Escalation (run-loop design): from turn 4 every enemy gains attack each turn (+1, +2 for elites and bosses);
-// from turn 8, Doom: +3 a turn (+4 for bosses) and trample. Each act gives it a face: Nightfall turns the Ironsmith
+// from turn 8 (turn 9 for bosses), Doom: +3 a turn (+4 for bosses) and trample. Each act gives it a face: Nightfall turns the Ironsmith
 // at turn 4; the Hunger feeds every Eldrazi 1 life a turn.
-const ESC_T=typeof PW_ET!=='undefined'?PW_ET:4,DOOM_T=typeof PW_DT!=='undefined'?PW_DT:8,ESC_K=typeof PW_EK!=='undefined'?PW_EK:1;
-const escStep=e=>Math.round(ESC_K*(c.turn>=DOOM_T?(e.rank==='boss'?4:3):c.turn>=ESC_T?(e.rank?2:1):0));
+const ESC_T=typeof PW_ET!=='undefined'?PW_ET:4,DOOM_T=typeof PW_DT!=='undefined'?PW_DT:8,DOOM_BT=typeof PW_DBT!=='undefined'?PW_DBT:9,ESC_K=typeof PW_EK!=='undefined'?PW_EK:1;
+// bosses get one more turn before Doom (design thread 30 Oct: boss fights run 6-9 turns, Doom should be rare there)
+const doomT=e=>e&&e.rank==='boss'?DOOM_BT:DOOM_T,fightDoomT=()=>c&&c.enemies&&c.enemies.some(e=>e.rank==='boss'&&e.hp>0)?DOOM_BT:DOOM_T;
+const escStep=e=>Math.round(ESC_K*(c.turn>=doomT(e)?(e.rank==='boss'?4:3):c.turn>=ESC_T?(e.rank?2:1):0));
 function startTurn(){
- c.turn++; c.enemies.forEach(e=>{e.brand=0;if(e.hp<=0)return;const n=escStep(e);if(n){e.buff+=n;e.clock=(e.clock||0)+n}if(c.turn>=DOOM_T)e.doom=1;
+ c.turn++; c.enemies.forEach(e=>{e.brand=0;if(e.hp<=0)return;const n=escStep(e);if(n){e.buff+=n;e.clock=(e.clock||0)+n}if(c.turn>=doomT(e))e.doom=1;
   if(c.turn===ESC_T&&e.key==='ironsmith')Object.assign(e,{key:'ironfang',name:E.ironfang.name,pow:E.ironfang.pow,i:0});
   if(c.turn>=ESC_T&&E[e.key].eldrazi){e.max++;e.hp++}}); c.allies.forEach(a=>{a.dmg=0;a.temp=0;a.temp1=0;a.tough4=0;if(a.lifelinkTemp){a.lifelink=0;a.lifelinkTemp=0}a.sick=false;a.tapped=false;a.swung=false;a.attacks=0;a.extra=0});
  c.twinned=0;c.legioned=0;c.embered=0;c.healedTurn=0;c.ward=0;c.turnStart=c.stats.dealt;c.juice=[];
@@ -3422,9 +3430,9 @@ const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Com
 const kws=a=>['haste','flying','reach','first','vigilance','deathtouch','lifelink','trample','defender'].filter(k=>a[k]||(k==='first'||k==='lifelink')&&akr(a)).map(k=>k==='first'?'first strike':k).join(' · ');
 
 // The escalation dial: fills toward Doom; the number is the turns left before Doom.
-function escDial(){const a=run.act||1,face=a>1?'maw':'moon',name=a>1?'The Hunger':'Nightfall',t=c.turn,doom=t>=DOOM_T,left=DOOM_T-t;
- const lab=doom?`${name}: Doom. Enemies grow fast and trample`:t>=ESC_T?`${name}: enemies grow every turn. Doom in ${left}`:`${name} comes on turn ${ESC_T}. Doom on turn ${DOOM_T}`;
- return `<span class="pw-esc${doom?' doom':t>=ESC_T?' on':''}" data-face="${face}" style="--f:${Math.min(1,t/DOOM_T).toFixed(3)}" role="img" aria-label="${lab}" title="${lab}">${ico(doom?'skull':face)}${doom?'':`<b>${left}</b>`}</span>`}
+function escDial(){const a=run.act||1,face=a>1?'maw':'moon',name=a>1?'The Hunger':'Nightfall',t=c.turn,DT=fightDoomT(),doom=t>=DT,left=DT-t;
+ const lab=doom?`${name}: Doom. Enemies grow fast and trample`:t>=ESC_T?`${name}: enemies grow every turn. Doom in ${left}`:`${name} comes on turn ${ESC_T}. Doom on turn ${DT}`;
+ return `<span class="pw-esc${doom?' doom':t>=ESC_T?' on':''}" data-face="${face}" style="--f:${Math.min(1,t/DT).toFixed(3)}" role="img" aria-label="${lab}" title="${lab}">${ico(doom?'skull':face)}${doom?'':`<b>${left}</b>`}</span>`}
 function topBar(){
  // the deck list is a strip per card, with its art, cheapest first; tap or point at one for its text
  const counts={};run.deck.forEach(x=>{const k=x.key+(x.foil?'*':'');(counts[k]=counts[k]||{key:x.key,foil:!!x.foil,q:0}).q++});
@@ -4377,6 +4385,10 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
 /* long names on the small ware/reward cards: mark them so the CSS can step the type down instead of breaking mid-word */
 (()=>{const app=document.getElementById('app');if(!app)return;
  const run=()=>{for(const b of app.querySelectorAll('.screen .choices .card .head b')){const t=b.textContent.trim();const w=t.split(/\s+/).reduce((m,x)=>Math.max(m,x.length),0);if(w>=10)b.dataset.long='';else delete b.dataset.long}};
+ let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;run()})}}).observe(app,{childList:true,subtree:true});run()})();
+/* ware and reward cards: the mana cost rides the art's corner (Slay the Spire style) so the name band keeps its whole width for long names */
+(()=>{const app=document.getElementById('app');if(!app)return;
+ const run=()=>{for(const c of app.querySelectorAll('.screen .choices .card')){const cost=c.querySelector(':scope>.head>.cost'),pic=c.querySelector(':scope>.pic');if(cost&&pic)pic.prepend(cost)}};
  let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;run()})}}).observe(app,{childList:true,subtree:true});run()})();
 
 </script>
