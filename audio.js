@@ -23,7 +23,10 @@ const base = new URL("./assets/audio/", import.meta.url);
 // The app bundles only the Opus effects; Safari (no Ogg Opus before 18.4) gets the AAC copies.
 let ext = (() => { if (native()) return "ogg"; try { return new Audio().canPlayType('audio/ogg; codecs="opus"') ? "ogg" : "m4a"; } catch { return "m4a"; } })();
 const sfxURL = (id) => new URL(`sfx/${id}.${ext}`, base).href;
-const musicURL = (id) => native() ? `${SITE}/assets/audio/music/${id}.${ext}` : new URL(`music/${id}.${ext}`, base).href;
+// The music files are cached for a week by browsers and the app's WebView, so a new score needs a new
+// address: bump MUSIC_REV whenever the tracks change under the same names.
+const MUSIC_REV = "score1";
+const musicURL = (id) => (native() ? `${SITE}/assets/audio/music/${id}.${ext}` : new URL(`music/${id}.${ext}`, base).href) + `?v=${MUSIC_REV}`;
 
 export function audioSettings() {
   try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; } catch { return { ...DEFAULTS }; }
@@ -86,7 +89,7 @@ async function load(url, keep) {
   try { return await decode(await bytes(url, keep)); }
   catch (e) {
     // A browser that said yes to Opus but cannot decode it switches to the AAC copies.
-    if (ext === "ogg" && !native()) { ext = "m4a"; return decode(await bytes(url.replace(/\.ogg$/, ".m4a"), keep)); }
+    if (ext === "ogg" && !native()) { ext = "m4a"; return decode(await bytes(url.replace(/\.ogg(?=\?|$)/, ".m4a"), keep)); }
     throw e;
   }
 }
