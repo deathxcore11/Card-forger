@@ -630,7 +630,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Where the board is laid out on its own (a Fold opened up), it ends above the stack strip and the hand
   // slider instead of running under them, so both sides lay out in the room that is left.
   {const bf=root.querySelector('.play-match-battlefields');if(bf){bf.style.removeProperty('bottom');const floats=[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()).filter(r=>r.height);
-   if(floats.length&&getComputedStyle(bf).position==='absolute'){const top=Math.min(...floats.map(r=>r.top)),b=bf.getBoundingClientRect();if(b.bottom>top-6)bf.style.setProperty('bottom',`${Math.round(parseFloat(getComputedStyle(bf).bottom)+b.bottom-top+6)}px`,'important');}}}
+   // Only a strip that runs under the board counts: a side panel beside it (the stack in a sideways
+   // phone's right column) starts above the board's middle and would otherwise squeeze the board to nothing.
+   const b=bf.getBoundingClientRect(),under=floats.filter(r=>r.right>b.left&&r.left<b.right&&r.top>b.top+b.height/2);
+   if(under.length&&getComputedStyle(bf).position==='absolute'){const top=Math.min(...under.map(r=>r.top));if(b.bottom>top-6)bf.style.setProperty('bottom',`${Math.round(parseFloat(getComputedStyle(bf).bottom)+b.bottom-top+6)}px`,'important');}}}
   // A Commander pod's CPU side holds one board per opponent: the one on show, or all of them side by side.
   const zonesOf=area=>{const all=[...area.querySelectorAll(':scope>.play-match-zone')];for(const z of all){z.style.removeProperty('transform');z.style.removeProperty('width');delete z.dataset.scaled;}return all.filter(z=>z.getClientRects().length);};
   for(const area of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area'))for(const zone of zonesOf(area)){
