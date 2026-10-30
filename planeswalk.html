@@ -1093,10 +1093,10 @@ body{margin:0}
 .side.formation .unit{position:relative}
 .side.formation .unit.front .art{box-shadow:0 0 0 2px #0b0d12,0 0 0 3.5px var(--pw-gold),0 0 16px #e8b95b77,0 10px 18px #000d}
 .side.foe.formation .unit.front .art{box-shadow:0 0 0 2px #0b0d12,0 0 0 3.5px #e0566a,0 0 16px #e0566a77,0 10px 18px #000d}
-.side.formation .unit.front::before,.side.formation .unit.arrange:not(.front)::before{content:"Front";position:absolute;left:50%;top:7px;transform:translateX(-50%);z-index:4;
- padding:0 6px;border-radius:99px;white-space:nowrap;font:800 calc(max(11px,.44rem) * var(--pw-ts,1))/1.6 var(--body);letter-spacing:.12em;text-transform:uppercase;
- background:#1a140af0;color:#f3d48a;border:1px solid #e8b95b99;pointer-events:none}
-.side.foe.formation .unit.front::before{background:#1a0a0cf0;color:#ffb3bd;border-color:#e0566a99}
+.side.formation .unit.front::before,.side.formation .unit.arrange:not(.front)::before{content:"";position:absolute;left:50%;top:7px;transform:translateX(-50%);z-index:4;
+ width:22px;height:15px;border-radius:99px;box-sizing:border-box;
+ background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23f3d48a' d='M21 12l-8-8v5l3 3-3 3v5zm-7 0l-8-8v5l3 3-3 3v5z'/%3E%3C/svg%3E") center/12px no-repeat,#1a140af0;border:1px solid #e8b95b99;pointer-events:none}
+.side.foe.formation .unit.front::before{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffb3bd' d='M3 12l8-8v5l-3 3 3 3v5zm7 0l8-8v5l-3 3 3 3v5z'/%3E%3C/svg%3E") center/12px no-repeat,#1a0a0cf0;border-color:#e0566a99}
 .side.formation .unit.front .art .tag{visibility:hidden}
 /* faint ground line under each line, brightest at the front */
 .side.you.formation{background:linear-gradient(90deg,#e8b95b00,#e8b95b55 60%,#e8b95baa) left bottom/100% 1.5px no-repeat}
@@ -1106,7 +1106,7 @@ body{margin:0}
 .side.formation .unit.bypass .art{box-shadow:0 0 0 2px #0b0d12,0 0 0 3.5px #c48cff,0 0 14px #c48cff55,0 10px 18px #000d}
 .side.formation .unit.bypass.front .art{box-shadow:0 0 0 2px #0b0d12,0 0 0 3.5px #c48cff,0 0 0 5px #e0566a,0 10px 18px #000d}
 /* arrange mode: every other ally is a dashed gold target */
-.side.formation .unit.arrange:not(.front)::before{content:"⇢ Front";letter-spacing:.04em;opacity:.9}
+.side.formation .unit.arrange:not(.front)::before{opacity:.8;border-style:dashed}
 .side.formation .unit.arrange:not(.front) .art{outline:1.5px dashed #e8b95bcc;outline-offset:3px}
 @media (prefers-reduced-motion:no-preference){.side.formation .unit.arrange:not(.front) .art{animation:pw-arr 1.4s ease-in-out infinite}}
 @keyframes pw-arr{50%{outline-color:#e8b95b44}}
@@ -1394,8 +1394,6 @@ body[data-actnum="2"] .screen{--pw-bg-screen:var(--pw-x-zen-map)}
  #app .battle .unit .pv{z-index:7}
 }
 /* doomed allies: skull only (the full state is in the long-press card) */
-#app .battle .unit.ally.doom .tag{font-size:0!important;padding:0 5px;letter-spacing:0}
-#app .battle .unit.ally.doom .tag::before{content:"☠";font-size:calc(max(11px,.78rem) * var(--pw-ts,1));line-height:1.2;color:#ffb0a8}
 /* roomy stage (fold, square tablets): the board scales up into the spare height */
 #app[data-pw-roomy] .battle .field{zoom:1.32}
 #app[data-pw-roomy] .battle{grid-template-rows:minmax(0,1fr) 24px 96px!important}
@@ -2028,6 +2026,9 @@ html.pw-calm .pw-paths path.ahead{animation:none}
 /* the boss seal's rune ring is wider than its box: room on both sides, so it sits off the last Rest row and inside the painted frame, clear of the act label */
 @media (min-aspect-ratio:4/5){#app .map .maprow>.node.boss{margin-inline:26px 44px!important}#app .map .maprow:last-of-type{margin-inline-start:20px}}
 @media (min-aspect-ratio:4/5) and (min-width:1000px){#app .map .maprow>.node.boss{margin-inline:40px 72px!important}}
+@media (min-aspect-ratio:4/5) and (min-width:1200px){#app .map .maprow>.node.boss{margin-inline:40px 104px!important}}
+/* narrow landscape maps (phones, 1024 tablets): the act caption has no column of its own, so the boss ring keeps clear of it by not having it; the act name stays on the act-start screen and the journal */
+@media (min-aspect-ratio:4/5) and (max-width:1199px){#app .map>.plane:first-of-type{display:none!important}}
 /* node info card: a lighter dim so the lit route still shows behind it */
 .pw-zoom.pw-node-zoom{background:#0000008c!important;backdrop-filter:none!important}
 /* ---------- H2 hand touch (29 Oct): flick, rubber band, aim arrow, two-finger peek ---------- */
@@ -2175,7 +2176,7 @@ body[data-hero=W]{--aim:#f1d88c;--aim-d:#b88a34;--aim-hi:#fff6d6;--aim-o:#2d1f08
 /* phone landscape: the log button draws smaller and keeps its 54px hit area, so it stays clear of the hand */
 @media (min-aspect-ratio:5/4) and (max-height:500px){#app .battle .log .pw-histbtn{min-width:0!important;min-height:0!important;width:34px!important;height:34px!important}#app .battle .log .pw-histbtn::before{inset:-10px!important}}
 /* reward on phone landscape: smaller cards so the row clears the gesture bar; Skip keeps 44px */
-@media (min-aspect-ratio:5/4) and (max-height:500px){#app .screen .choices>.card{zoom:.68}#app .screen>.summary{margin-block:2px 4px!important}#app .screen:has(>.choices){align-content:start!important}#app .screen:not(.shop)>.choices{margin-top:30px!important}#app .screen [data-act=skip],#app .screen .btn{min-height:44px!important}
+@media (min-aspect-ratio:5/4) and (max-height:500px){#app .screen .choices>.card{zoom:.8}#app .screen>.summary{margin-block:2px 4px!important}#app .screen:has(>.choices>.card){align-content:start!important}#app .screen:not(.shop)>.choices:has(>.card){margin-top:30px!important}#app .screen [data-act=skip],#app .screen .btn{min-height:44px!important}
 /* short desktop windows shrink the screen a little; Skip keeps a 44px target after that */
 
  #app .screen.heroes>h2{display:none}}
@@ -2301,6 +2302,24 @@ body[data-hero=W]{--aim:#f1d88c;--aim-d:#b88a34;--aim-hi:#fff6d6;--aim-o:#2d1f08
  #app[data-pw-zoom] .screen.shop>.choices:not(:has(>.buy)){display:grid!important;grid-template-columns:1fr 1fr 1.5fr;gap:8px!important;align-items:stretch}
  #app[data-pw-zoom] .screen.shop>.choices:not(:has(>.buy))>.option{width:auto!important;max-width:none!important;min-width:0}
 }
+
+/* sweep 30 Oct: bonfire and event options share one height; the end screens sit in the middle like every other screen */
+#app .screen:is(.bonfire,.event)>.choices{align-items:stretch!important}
+#app .screen:is(.bonfire,.event)>.choices>.option{align-content:start}
+#app .screen.event>.choices>.option{align-content:center}
+/* long-press card of a unit: no rank word chip on the art, the intent reads at full size above the art */
+.pw-zoom .unit .art .tag{display:none!important}
+.pw-zoom .pi{width:1.1em;height:1.1em;fill:currentColor;flex:none;filter:drop-shadow(0 1px 0 #000)}
+.pw-zoom .unit>.intent{position:static!important;transform:none!important;margin:0 auto 8px!important;justify-self:center;display:inline-flex!important;align-items:center;gap:5px;font-size:calc(max(11px,.95rem) * var(--pw-ts,1))!important;line-height:1.2!important;padding:4px 12px!important;max-width:none!important}
+.pw-zoom .unit>.intent .mod .pi{width:.95em;height:.95em}
+
+/* the "You arrive here" caption stays centred between the corner scrollwork */
+#app .map>.plane:last-of-type{text-align:center!important;padding-inline:clamp(48px,8vw,104px)!important;box-sizing:border-box}
+
+/* dragged card over the board: an art token (name + art), not a shrunken card with unreadable text */
+.pw-ghost.pw-chip{transform:scale(.58)!important;grid-template-rows:auto minmax(0,1fr)!important}
+.pw-ghost.pw-chip>.kind,.pw-ghost.pw-chip>span:last-child{display:none!important}
+.pw-ghost.pw-chip>.pic{min-height:0}
 
 /* Planeswalk painted UI kit (Wave 2). Stone face from Randall's Gothic Stone playmat, gold hairlines, lacquer variants.
    All decoration is background or box-shadow, so nothing sticks out of its box and nothing intercepts taps. */
@@ -2700,6 +2719,34 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
 #app .screen .choices .card .head{padding-right:6px}
 #app .screen .choices .card .head b{max-width:none!important;flex:1 1 auto;min-width:0}
 #app .screen .choices .card .head b[data-long]{overflow-wrap:normal!important;hyphens:manual!important}
+
+/* ally state as an icon chip (title/aria carry the word) */
+#app .battle .unit.ally .tag:not(:empty){display:grid;place-items:center;width:18px;height:18px;padding:0;border-radius:50%;font-size:0;line-height:0;background:#0b0d12d9;border:1px solid #ffffff38;box-shadow:0 2px 6px #0009;color:#e8e2d4}
+#app .battle .unit.ally .tag .st{display:contents}
+#app .battle .unit.ally .tag .pi{width:11px;height:11px;fill:currentColor;filter:drop-shadow(0 1px 0 #000)}
+#app .battle .unit.ally .tag:has(>.st-moon){color:#cfd5ff;border-color:#8f97d8aa}
+#app .battle .unit.ally .tag:has(>.st-skull){color:#ffb0a8;border-color:#e0566a;background:#1a0a0ce6}
+#app .battle .unit.ally .tag:has(>.st-bolt){color:#ffd27a;border-color:#e8b95b}
+#app .battle .unit.ally .tag:has(>.st-sword){color:#ffd2c4;border-color:#e8705a}
+#app .battle .unit.ally .tag:has(>.st-shield){color:#bfe3ff;border-color:#7fb6e8aa}
+#app .battle .unit.ally .tag:has(>.st-cycle){color:#d8d2c4}
+/* event options: a painted stone roundel with the action's icon, never a mana symbol */
+#app .screen.event .option>.ev-ic>.ev-ring{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#3a332b,#0f0d0b 70%),var(--pwk-stone) center/120px;box-shadow:var(--pwk-rim);color:#f3d38a}
+#app .screen.event .option>.ev-ic>.ev-ring .pi{width:22px;height:22px;fill:currentColor;filter:drop-shadow(0 1px 0 #000)}
+#app .screen.event .option:disabled>.ev-ic>.ev-ring{filter:grayscale(1) brightness(.7)}
+/* shop wares line up: one shared row grid for name, art, type and text across all cards */
+@media (min-aspect-ratio:4/5){
+#app .screen.shop>.choices:has(>.buy){display:grid!important;grid-auto-flow:column;grid-auto-columns:max-content;grid-template-rows:auto minmax(0,1fr) auto auto auto;align-items:stretch}
+#app .screen.shop>.choices>.buy{display:grid!important;grid-row:1 / span 5;grid-template-rows:subgrid;row-gap:0;justify-items:center}
+#app .screen.shop>.choices>.buy>.card{grid-row:1 / span 4;display:grid!important;grid-template-rows:subgrid!important;row-gap:0;height:auto!important;min-height:0!important;flex:none!important}
+#app .screen.shop>.choices>.buy>.price{grid-row:5;align-self:start;margin-top:8px}
+}
+@media (min-aspect-ratio:4/5) and (min-height:501px){#app .screen.shop>.choices>.buy>.card .pic{min-height:130px}}
+/* crowded landscape hands: the fit routine slims the cards (--hw) so every name keeps a readable strip */
+@media (min-aspect-ratio:4/5){#app#app .battle .hand>.card[style*="--hw"]:not(.pw-big){width:var(--hw)!important;flex:0 0 var(--hw)!important;height:calc(var(--hw) * 4 / 3)!important;min-height:0!important}}
+#app .battle .hand.pw-dense>.card{zoom:1!important}
+#app .battle .hand.pw-flat{translate:var(--hshift,0px) 0}
+#app .battle .hand.pw-nameless>.card:not(.pw-big) .head>b{display:none!important}
 
 </style>
 
@@ -3454,7 +3501,7 @@ function mapView(){
  const row=r=>`<div class="maprow" style="--m:${road(r)}">${run.map[r].map((t,l)=>{if(!t)return `<button class="node pw-gap" disabled tabindex="-1" aria-hidden="true"><b></b></button>`;const k=r+':'+l,isOpen=open(r,l),done=run.done.includes(k),past=run.pos&&r<=run.pos.r&&!done;
   return `<button data-t="${t}" class="node ${isOpen?'open':''} ${done?'done':''} ${past?'past':''}" data-act="go" data-r="${r}" data-l="${l}" style="--ja:${h(r,l,1).toFixed(2)};--jb:${h(r,l,2).toFixed(2)};--lane:${l}" aria-label="${label[t][1]}" title="${label[t][1]}" ${isOpen?'':'disabled'}><b>${label[t][0]}</b><span class="nl">${label[t][1]}</span></button>`}).join('')}</div>`;
  const bossOpen=open(7,1);
- let rows=`<div class="maprow"><button data-t="boss" class="node boss ${bossOpen?'open':''}" data-act="go" data-r="7" data-l="1" ${bossOpen?'':'disabled'}><b>☠</b>${bossShort(bossOf())}<span class="heal" title="Full heal after the boss"><span class="t">Full heal </span>♥</span></button></div>`;
+ let rows=`<div class="maprow"><button data-t="boss" class="node boss ${bossOpen?'open':''}" data-act="go" data-r="7" data-l="1" ${bossOpen?'':'disabled'}><b>☠</b><span class="bn">${bossShort(bossOf())}</span><span class="heal" title="Full heal after the boss"><span class="t">Full heal </span>♥</span></button></div>`;
  for(let r=6;r>=0;r--)rows+=row(r);
  const A=ACTS[run.act||1];return `<section class="map" aria-label="${A.name} map"><span class="plane">Act ${A.num} · ${A.name}</span>${rows}<span class="plane">You arrive here</span></section>
  <p class="note">${A.flavor.replace("{boss}",bossShort(bossOf()))}</p>`;
@@ -3468,7 +3515,7 @@ const P=c.pending;const F=c.busy?{you:0,dead:new Set(),took:new Map(),over:0}:fo
  const AR=FORM&&c.arrange&&!c.busy,fid=FORM?([...c.allies].reverse().find(a=>!a.tapped&&a.dmg<tough(a)&&!a.noblock)||{}).id:null,SG=stacks(),nA=SG.length;
  const allies=(FORM?'<div class="slot" aria-hidden="true"></div>'.repeat(Math.max(0,Math.min(2,4-nA))):'')+SG.map((g,i)=>{const a=(P&&P.aim==='ally'?null:g.find(x=>ready(x)))||g[g.length-1];const fl=g.some(x=>x.flash);g.forEach(x=>{x.flash=0});a.flash=0;const r=P&&P.aim==='ally'?true:ready(a);const sel=P&&P.kind==='atk'&&P.id===a.id;const doom=g.some(x=>F.dead.has(x.id));const tks=g.map(x=>F.took&&F.took.get(x.id)).filter(Boolean),nd=g.filter(x=>F.dead.has(x.id)).length,ov=tks.reduce((s,t)=>s+t.o,0),fl2=tks.some(t=>t.fail);
   const pvT=!FORM||!tks.length?'':fl2?'This block fails against trample':nd?`${g.length>1?`${nd} ${nd>1?'die':'dies'}`:'Dies'}${ov?`, ${ov} gets through to you`:', blocks the whole hit'}${g.length>nd&&g.length>1?`, ${g.length-nd} left`:''}`:`Takes ${tks.reduce((s,t)=>s+t.n,0)} if you end the turn now`;
-  const pv=!pvT?'':fl2?ico('trample')+ico('ban'):nd?`${ico('skull')}${g.length>1?`<b>${nd}</b>`:''}${ov?`${ico('sword')}<b>${ov}</b>`:ico('shield')}`:`${ico('sword')}<b>${tks.reduce((s,t)=>s+t.n,0)}</b>`;const st=doom?'☠ Doomed':a.defender?'Defender':a.sick&&!hasty(a)?'Zzz':a.tapped?'Tapped':sel?'Attacking':hasty(a)&&c.allies.length&&!a.swung?'Haste!':'Ready';
+  const pv=!pvT?'':fl2?ico('trample')+ico('ban'):nd?`${ico('skull')}${g.length>1?`<b>${nd}</b>`:''}${ov?`${ico('sword')}<b>${ov}</b>`:ico('shield')}`:`${ico('sword')}<b>${tks.reduce((s,t)=>s+t.n,0)}</b>`;const [sti,stl]=doom?['skull','Doomed']:a.defender?['shield','Defender']:a.sick&&!hasty(a)?['moon','Just arrived']:a.tapped?['cycle','Tapped']:sel?['sword','Attacking']:hasty(a)&&c.allies.length&&!a.swung?['bolt','Haste']:['','Ready'];const st=sti?`<i class="st st-${sti}" role="img" aria-label="${stl}" title="${stl}">${ico(sti)}</i>`:'';
   return `<button data-n="${a.name}" class="unit ally${fl?' struck':''}${doom?' doom':''}${a.sick&&!hasty(a)?' sick':''}${a.tapped?' tapped':''}${r?' ready':''}${sel?' chosen':''}${g.some(x=>x.id===fid)?' front':''}${AR?' arrange':''}${c.guardSel&&g.some(x=>x.id===c.guardSel)?' chosen':''}${g.length>1?' group':''}${/token$/.test(a.name)?' token':''}"${g.length>1?` data-count="${g.length}"`:''}${FORM&&a.guard&&c.enemies.some(e=>e.id===a.guard&&e.hp>0)?` data-guard="${a.guard}"`:''} data-act="${P&&P.aim==='ally'?'target-ally':AR?'front':'atk'}" data-id="${a.id}"${FORM?` data-pos="${Math.max(1,4-(nA-1-i))}"`:''} ${r||AR?'':'disabled'} title="${a.sick&&!hasty(a)?'Just arrived: can block, attacks next turn':a.tapped?'Attacked this turn: cannot block':r?'Tap, then choose an enemy to attack':''}">${pv?`<span class="pv${fl2?' fail':nd&&!ov?' dies all':nd?' dies':''}" role="img" aria-label="${pvT}" title="${pvT}">${pv}</span>`:''}<div class="art"><span class="tag">${st}</span><span class="glyph">${a.name[0]}</span><span class="stats">${pow(a)}/${tough(a)-a.dmg}</span></div><span class="name">${a.name}</span>${kws(a)?`<span class="kw">${['haste','flying','reach','first','vigilance','deathtouch','lifelink','trample','defender'].filter(k=>a[k]||(k==='first'||k==='lifelink')&&akr(a)).map(k=>`<i class="mod" role="img" aria-label="${KWI[k][1]}" title="${KWI[k][1]}">${ico(KWI[k][0])}</i>`).join('')}</span>`:''}${FORM&&a.guard&&c.enemies.some(e=>e.id===a.guard&&e.hp>0)?`<span class="gd">guards ${c.enemies.find(e=>e.id===a.guard).name}</span>`:''}</button>`}).join('')+(FORM?'':'<div class="slot" aria-hidden="true"></div>'.repeat(Math.max(0,Math.min(2,4-c.allies.length))));
  const ffid=FORM?(alive()[0]||{}).id:null;
  const foes=c.enemies.map((e,i)=>`<button data-n="${e.thrallOf?e.name:E[e.key].art||e.name}"${FORM?` data-pos="${Math.max(1,4-i)}"`:''} class="unit ${e.rank}${e.id===ffid?' front':''}${FORM&&E[e.key].bypass?' bypass':''}${FORM&&c.allies.some(a=>a.guard===e.id)?' guarded':''} ${P&&P.aim==='enemy'?'aim':''}${e.acting?' acting':''}" data-act="target" data-id="${e.id}" aria-label="${P&&P.aim==='enemy'?'Target':'Inspect'} ${e.name}">${popOf(e)}${e.rank==='boss'&&E[e.key].loyalty?`<span class="loyal" title="Loyalty. Ultimate at 8. Each creature that hits him removes 1.">${e.loyalty}</span>`:''}${intentLabel(e)}${LET&&LET.has(e.id)?`<span class="pw-lethal" role="img" aria-label="Dies to this card" title="Dies to this card">${ico('skull')}</span>`:''}${e.brand&&e.hp>0?(()=>{const [t,v]=intentOf(e);const sw=t==='atk'||t==='annihilate';const bt=!sw?`Branded ${e.brand}: it takes that only if it attacks`:e.hp+(e.shield||0)<=e.brand?'Branded: it dies before it swings':`Branded: it takes ${e.brand}, then hits for ${v+e.buff+(e.surge||0)}`;return `<span class="pv brand${sw&&e.hp+(e.shield||0)<=e.brand?' dies':''}" role="img" aria-label="${bt}" title="${bt}">${ico('brand')}<b>${e.brand}</b>${sw&&e.hp+(e.shield||0)<=e.brand?ico('skull'):''}</span>`})():''}<div class="art"><span class="tag">${e.rank==='boss'?'Planeswalker':e.rank==='elite'?'Legendary':'Minion'}${e.fly?' · Flying':''}</span><span class="glyph">${e.g}</span><span class="stats hp" title="Power ${e.pow}">${e.hp}</span></div><span class="name">${e.rank==='boss'?e.name.replace(/,.*$/,''):e.name}</span>${e.shield?`<span class="shield" title="Shield ${e.shield}: soaks damage before its life">${ico('shield')}<b>${e.shield}</b></span>`:''}<div class="bar"><i style="width:${Math.max(0,e.hp)/e.max*100}%"></i></div></button>`).join('');
@@ -3748,7 +3795,7 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
     return panel(`<b>${esc(typeof HERO!=='undefined'&&HERO?HERO.name:'Planeswalker')}</b><span class="muted"> · Planeswalker · Loyalty ${esc(c.loyalty)}</span>${ab.length?`<p>${ab.join('<br>')}</p>`:''}<p>Loyalty carries between fights.</p>`)}
    if(el.classList.contains('ally')){const a=c.allies.find(x=>x.id===id);if(!a)return null;
     const d=typeof C!=='undefined'&&Object.values(C).find(x=>x.name===a.name);const kw=typeof kws==='function'?kws(a):'';
-    const st=a.sick?'Just arrived: can block, attacks next turn.':a.tapped?'Attacked this turn: cannot block.':'Ready to attack.';
+    const st=(el.classList.contains('front')?'Holds the front: blocks first. ':'')+(a.sick?'Just arrived: can block, attacks next turn.':a.tapped?'Attacked this turn: cannot block.':'Ready to attack.');
     return panel(`<b>${esc(a.name)}</b><span class="muted"> · ${typeof pow==='function'?pow(a):a.p}/${typeof tough==='function'?tough(a)-a.dmg:a.t}</span>${d?`<p>${esc(d.text(false))}</p>`:''}${kw?`<p>${esc(kw)}</p>`:''}<p>${st}</p>`)}
   }catch{}
   return null;
@@ -4234,31 +4281,43 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
    flattens and each name wraps inside the strip of its card that no neighbour covers. Still short (6+ cards on a phone):
    the hand splits into two rows of whole cards, the second row set between the first like bricks. */
 (()=>{const app=document.getElementById('app');if(!app)return;let raf=0;
+ // a name's box changes height when the text size changes (settings, or a text-scale pass): the hand fits again
+ const ro=new ResizeObserver(()=>{if(raf){cancelAnimationFrame(raf)}fit()});
  const fit=()=>{raf=0;const h=app.querySelector('.battle .hand');if(!h)return;const cs=[...h.children].filter(x=>x.classList.contains('card'));
-  const bs=cs.map(x=>x.querySelector('.head>b'));h.classList.remove('pw-flat','pw-rows');['--cols','--cw','--ch'].forEach(p=>h.style.removeProperty(p));
-  cs.forEach((x,i)=>{['margin-inline','grid-column','grid-row'].forEach(p=>x.style.removeProperty(p));bs[i]&&['max-width','margin-left'].forEach(p=>bs[i].style.removeProperty(p))});
+  const bs=cs.map(x=>x.querySelector('.head>b'));bs.forEach(b=>b&&ro.observe(b));h.classList.remove('pw-flat','pw-rows','pw-dense','pw-nameless');['--cols','--cw','--ch','--hshift'].forEach(p=>h.style.removeProperty(p));
+  cs.forEach((x,i)=>{['margin-inline','grid-column','grid-row','--hw'].forEach(p=>x.style.removeProperty(p));bs[i]&&['max-width','margin-left'].forEach(p=>bs[i].style.removeProperty(p))});
   if(cs.length<2)return;
-  const n=cs.length,zc=parseFloat(getComputedStyle(cs[0]).zoom)||1,H=h.getBoundingClientRect(),k=H.width/(h.offsetWidth||1)*zc,w=cs[0].offsetWidth;
+  const n=cs.length,H=h.getBoundingClientRect(),kz=H.width/(h.offsetWidth||1);let w=cs[0].offsetWidth,k=kz*(parseFloat(getComputedStyle(cs[0]).zoom)||1);
   const set=m=>cs.forEach(x=>x.style.setProperty('margin-inline',m+'px','important'));
   const rs=()=>cs.map(x=>x.getBoundingClientRect());
-  // beside the piles and buttons (wide screens) the outer 22px of the row stay clear
   // the piles, orb and buttons beside the hand's row bound it (wide screens put them in the same row)
   const r0=rs(),T=Math.min(H.top,...r0.map(q=>q.top))-2,BT=Math.max(H.bottom,...r0.map(q=>q.bottom));
   let lo=H.left,hi=H.right;for(const e of app.querySelectorAll('.battle .piles>span,.battle .energy,.battle .controls>.btn')){const q=e.getBoundingClientRect();if(!q.width||q.bottom<=T||q.top>=BT)continue;
    const c=(q.left+q.right)/2;if(c<H.left+H.width/4)lo=Math.max(lo,q.right+4);else if(c>H.right-H.width/4)hi=Math.min(hi,q.left-4)}
   const pad=Math.max(lo-H.left,H.right-hi),inside=r=>Math.min(...r.map(q=>q.left))>=lo&&Math.max(...r.map(q=>q.right))<=hi;
-  // 1. spread: neighbours' boxes (tilt included) stay 4px apart
-  let r=rs(),m=parseFloat(getComputedStyle(cs[0]).marginLeft)||0;
-  const ov=Math.max(...r.slice(1).map((q,i)=>r[i].right-q.left));m+=(ov+4)/2/k;set(m);if(inside(rs()))return;
-  // 2. overlap, flat: each name keeps to the strip between the card on its left and the card on its right
-  h.classList.add('pw-flat');m=(H.width/k-n*w-(2*pad+6)/k)/(2*n);set(m);
-  // zoom and borders make the first guess approximate: measure and pull in until the row sits between its bounds
-  for(let t=0;t<3;t++){r=rs();const ex=Math.max(lo-Math.min(...r.map(q=>q.left)),Math.max(...r.map(q=>q.right))-hi);if(ex<=0)break;m-=(ex+1)/(n*k);set(m)}
-  r=rs();let ok=true;
-  bs.forEach((b,i)=>{if(!b)return;const q=b.getBoundingClientRect(),L=i?r[i-1].right+2:-1e9,R=i<n-1?r[i+1].left-2:1e9;
+  let r,m;
+  // each name keeps to the strip of its card that neither neighbour's box covers; true when every name fits its strip
+  const names=r=>{let ok=true;bs.forEach((b,i)=>{if(!b)return;b.style.removeProperty('max-width');b.style.removeProperty('margin-left');const q=b.getBoundingClientRect(),L=i?r[i-1].right+2:-1e9,R=i<n-1?r[i+1].left-2:1e9;
    const sh=Math.max(0,L-q.left)/k;if(sh)b.style.setProperty('margin-left',sh+'px');b.style.setProperty('max-width',Math.max(0,Math.min(q.right,R)-Math.max(q.left,L))/k+'px');
-   if(b.scrollWidth>b.clientWidth+1||b.scrollHeight>b.clientHeight+1||b.clientWidth<24)ok=false});
+   if(b.scrollWidth>b.clientWidth+1||b.scrollHeight>b.clientHeight+4||b.clientWidth<24){ok=false;if(window.PW_FIT_DEBUG)(window.__pwFit=window.__pwFit||[]).push([cs[0].style.getPropertyValue('--hw'),b.textContent,b.scrollWidth,b.clientWidth,b.scrollHeight,b.clientHeight])}});return ok};
+  const lay=()=>{h.classList.remove('pw-flat');cs.forEach(x=>x.style.removeProperty('margin-inline'));w=cs[0].offsetWidth;k=kz*(parseFloat(getComputedStyle(cs[0]).zoom)||1);
+   // 1. spread: neighbours' boxes (tilt included) stay 4px apart
+   r=rs();m=parseFloat(getComputedStyle(cs[0]).marginLeft)||0;
+   const ov=Math.max(...r.slice(1).map((q,i)=>r[i].right-q.left));m+=(ov+4)/2/k;set(m);if(inside(rs()))return true;
+   // 2. overlap, flat: each name keeps to the strip between the card on its left and the card on its right
+   // the row fills the room between its bounds (deck pile on the left, discard on the right) and slides over to sit centred in it
+   h.classList.add('pw-flat');m=((hi-lo)/k-n*w-6/k)/(2*n);set(m);h.style.setProperty('--hshift',(((lo+hi)/2-(H.left+H.right)/2)/kz)+'px');
+   // zoom and borders make the first guess approximate: measure and pull in until the row sits between its bounds
+   for(let t=0;t<3;t++){r=rs();const ex=Math.max(lo-Math.min(...r.map(q=>q.left)),Math.max(...r.map(q=>q.right))-hi);if(ex<=0)break;m-=(ex+1)/(n*k);set(m)}
+   r=rs();return names(r)};
+  let ok=lay();
+  // 2b. landscape, still short (6-7 cards on a phone): the cards slim down a step at a time until every name fits its strip
+  // 2b. landscape, still short (6-7 cards): first the roomy layout's bigger cards drop back to plain size, then the cards slim down a step at a time until every name fits its strip
+  if(!ok&&!matchMedia('(max-aspect-ratio:4/5)').matches){if(k/kz>1.01){h.classList.add('pw-dense');ok=lay()}for(let cw=w-2;cw>=48&&!ok;cw-=2){cs.forEach(x=>x.style.setProperty("--hw",cw+"px"));ok=lay()}
+   // still short: whole cards at plain size with the names off (the long press and the hover card still name them)
+   if(!ok){cs.forEach(x=>x.style.removeProperty('--hw'));h.classList.add('pw-nameless');ok=lay()}}
   if(ok||!matchMedia('(max-aspect-ratio:4/5)').matches)return;
+eturn;
   // 3. two rows of whole cards
   h.classList.remove('pw-flat');cs.forEach((x,i)=>{x.style.removeProperty('margin-inline');bs[i]&&['max-width','margin-left'].forEach(p=>bs[i].style.removeProperty(p))});
   const per=Math.ceil(n/2),cw=Math.min(w,Math.floor((H.width/k-8)/per-4));h.classList.add('pw-rows');h.style.setProperty('--cols',2*per);h.style.setProperty('--cw',cw+'px');
@@ -4266,7 +4325,7 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
   // short of height for two rows: the cards get shorter art (down to 70px tall); shorter still and the battle would scroll, so back to the flat hand
   const over=document.scrollingElement.scrollHeight-innerHeight;if(over>0){const ch=cs[0].offsetHeight-Math.ceil(over/2)-1;if(ch>=70)h.style.setProperty('--ch',ch+'px')}
   if(document.scrollingElement.scrollHeight>innerHeight+1){h.style.removeProperty('--ch');h.classList.remove('pw-rows');h.style.removeProperty('--cols');h.style.removeProperty('--cw');cs.forEach(x=>{x.style.removeProperty('grid-row');x.style.removeProperty('grid-column')});h.classList.add('pw-flat');set(m);
-   r=rs();bs.forEach((b,i)=>{if(!b)return;const q=b.getBoundingClientRect(),L=i?r[i-1].right+2:-1e9,R=i<n-1?r[i+1].left-2:1e9;const sh=Math.max(0,L-q.left)/k;if(sh)b.style.setProperty('margin-left',sh+'px');b.style.setProperty('max-width',Math.max(0,Math.min(q.right,R)-Math.max(q.left,L))/k+'px')})}};
+   r=rs();bs.forEach((b,i)=>{if(!b)return;const q=b.getBoundingClientRect(),L=-1e9,R=i<n-1?r[i+1].left-2:1e9;const sh=Math.max(0,L-q.left)/k;if(sh)b.style.setProperty('margin-left',sh+'px');b.style.setProperty('max-width',Math.max(0,Math.min(q.right,R)-Math.max(q.left,L))/k+'px');if(b.scrollWidth>b.clientWidth+1)b.style.setProperty('max-width',Math.min(w-8,b.scrollWidth+2)+'px')})}};
  const q=()=>{if(!raf)raf=requestAnimationFrame(fit)};new MutationObserver(ms=>{if(ms.some(m=>m.type==='childList'))q()}).observe(app,{childList:true,subtree:true});addEventListener('resize',q);addEventListener('pw-cam',q);document.fonts&&document.fonts.ready.then(q);q()})();
 /* Battle camera (Randall: "change aspect ratio when more monsters are on screen"): both sides of the field are zoomed as
    far as they fit, so a lone monster stands big and a crowd pulls the view back. The fit is measured, not guessed: every
@@ -4385,6 +4444,12 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
 /* long names on the small ware/reward cards: mark them so the CSS can step the type down instead of breaking mid-word */
 (()=>{const app=document.getElementById('app');if(!app)return;
  const run=()=>{for(const b of app.querySelectorAll('.screen .choices .card .head b')){const t=b.textContent.trim();const w=t.split(/\s+/).reduce((m,x)=>Math.max(m,x.length),0);if(w>=10)b.dataset.long='';else delete b.dataset.long}};
+ let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;run()})}}).observe(app,{childList:true,subtree:true});run()})();
+/* a name wider than its band (MANAMORPHOSE on a 112px ware card, or any name at a large text size) steps its type down until it fits, never below 11px */
+(()=>{const app=document.getElementById('app');if(!app)return;const MIN=11;const seen=new WeakSet();
+ const fit=b=>{if(!b.isConnected||!b.clientWidth)return;let fs=parseFloat(getComputedStyle(b).fontSize),n=0;while(b.scrollWidth>b.clientWidth+1&&fs>MIN&&n++<16){fs=Math.max(MIN,fs-.5);b.style.setProperty('font-size',fs+'px','important')}};
+ const ro=new ResizeObserver(es=>{for(const e of es)fit(e.target)});
+ const run=()=>{for(const b of app.querySelectorAll('.screen .choices .card .head b, .pw-zoom .card .head b')){if(!seen.has(b)){seen.add(b);ro.observe(b)}fit(b)}};
  let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;run()})}}).observe(app,{childList:true,subtree:true});run()})();
 /* ware and reward cards: the mana cost rides the art's corner (Slay the Spire style) so the name band keeps its whole width for long names */
 (()=>{const app=document.getElementById('app');if(!app)return;
@@ -4911,10 +4976,11 @@ let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;appl
  document.head.append(st);
  const G=k=>{try{return eval(k)}catch{return undefined}};
  // event choices get an icon: walking on is a back arrow, burning is the pyre, the rest wear the hero's mana
- const ICON={leave:'<span class="pwk-back"></span>',burn:'pyre',remove:'pyre'};
+ const ICON={leave:'<span class="pwk-back"></span>',burn:'pyre',remove:'pyre',heal:'heart',bandage:'heart',bless:'heart',tend:'drop',blood:'drop',loot:'plus',dig:'star',hedron:'cycle',purify:'ban',sac:'skull',take:'plus',claim:'plus'};
+ const ring=k=>typeof ico==='function'&&typeof PWI!=='undefined'&&PWI[k]?`<span class="ev-ring">${ico(k)}</span>`:'<span class="ev-ring"></span>';
  function evIcons(){for(const o of app.querySelectorAll('.screen.event .option:not(:has(>.emb-art,>svg,>.ev-ic))')){const k=ICON[o.dataset.act];const i=document.createElement('span');i.className='ev-ic';i.setAttribute('aria-hidden','true');
-  i.innerHTML=k==='pyre'&&window.PW_EMB_ART?.html?PW_EMB_ART.html('pyre'):k||'<span class="pwk-mana"></span>';o.prepend(i)}
-  const h=app.querySelector('.screen.event>h2:not(.pwk-ribbon)');if(h){h.classList.add('pwk-ribbon','hero');h.insertAdjacentHTML('afterbegin','<span class="pwk-mana" aria-hidden="true"></span>')}}
+  i.innerHTML=k==='pyre'&&window.PW_EMB_ART?.html?PW_EMB_ART.html('pyre'):k&&k.startsWith('<')?k:ring(k||'star');o.prepend(i)}
+  const h=app.querySelector('.screen.event>h2:not(.pwk-ribbon)');if(h){h.classList.add('pwk-ribbon','hero')}}
  function tick(){const v=G('view');
   if(v==='event')evIcons()}
  let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;tick()})}}).observe(app,{childList:true,subtree:true});tick();
