@@ -1,6 +1,6 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "f24a5a425d927db7c0a686f5d9edbb8f3d402dcd",
+  "commit": "bb92e3e0a7ea6db919143895c69b105f09d15758",
   "sourceVersion": "4.3.38",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
@@ -955,8 +955,8 @@
     },
     {
       "path": "ai-auth.js",
-      "bytes": 2237,
-      "sha256": "e49db54b41542d3c5749a66f1703e1da639420ab7d58d04aaa2f11e9148f133f"
+      "bytes": 2554,
+      "sha256": "7f24434ce3ca7c118f450e7e5dc8c08bf7fcbe902b9d49003f88318937928b96"
     },
     {
       "path": "ai-build-contract.js",
@@ -4315,8 +4315,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 19948,
-      "sha256": "d606a5ec3b40dd0a9084734173106941d090f09a2e702f8e4325c5ba4c0d5414"
+      "bytes": 19966,
+      "sha256": "e91014c1dfc41bce4eb4d8d2f75671aca457b0603731803dd8f4d168bad36475"
     },
     {
       "path": "insights.js",
@@ -4930,8 +4930,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 739,
-      "sha256": "afdac68a4a0ee9868b863f49f0a0c26823df9d5cb953e835b8d2182791ae03c9"
+      "bytes": 956,
+      "sha256": "712a8cac8efdd4796058306b13e8912d510f4ce29f2c609adca55e65d3ceccdb"
     },
     {
       "path": "release-status.js",
@@ -5035,8 +5035,8 @@
     },
     {
       "path": "scancam.js",
-      "bytes": 153333,
-      "sha256": "dfdc3360b978b49bd64ea3df8ecc4bd9c7a4182ba7d4c8a5bf2999f9e23a5eaf"
+      "bytes": 160966,
+      "sha256": "f1f1929f273e5a5daacff8fd9a75ac5be04e3a344fdf5b3b08a85b0bc42eabce"
     },
     {
       "path": "scanidx/catalog-manifest.json",
@@ -5125,8 +5125,8 @@
     },
     {
       "path": "scansession.js",
-      "bytes": 4981,
-      "sha256": "db344ebb83f2acbb726fb1d30667b8e9282f68f869aa6b2d3f95c51d9bbac688"
+      "bytes": 4995,
+      "sha256": "b2c3af4685e9667dae1c4180ceebce1d38a3c9a093f4d50e082959130c5533f9"
     },
     {
       "path": "scouting.js",
@@ -5240,8 +5240,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 543878,
-      "sha256": "6f446a37856a181282d765327cab3087d12b7b8b90b7d99b71668e292a87027f"
+      "bytes": 545175,
+      "sha256": "72f49b9b1af27befdf78560a41eeec5193da94922dface4d4f19247dfb785e2d"
     },
     {
       "path": "suggest.js",
