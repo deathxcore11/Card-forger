@@ -34,6 +34,8 @@ const extras = ['assets/cards/miscp-001.webp', 'assets/finishes/stamp-first-movi
   'scanidx/catalog-manifest.json', 'scanidx/TCGDEX-LICENSE.txt', 'rulebooks/manifest.json',
   // Planeswalk, the solo roguelite: one self-contained page that saves runs on the phone.
   'planeswalk.html',
+  // Zendikar's art, split out of the page so the first load is lighter; the game fetches it near the end of Act 1.
+  'planeswalk-art-zen.css',
   // Card names the bundled Forge accepts (play-engine-names.js), so Play checks decks offline.
   'forge-card-names-e5a0f815.txt'];
 for (const game of ['mtg', 'ptcg', 'ygo']) extras.push(`scanidx/${game}.bin`, `scanidx/${game}-ids.txt`, `scanidx/${game}-catalog-v1.json.gz`, `scanidx/${game}-signals-v1.json.gz`, `rulebooks/${game}-rules-v1.json.gz`);
