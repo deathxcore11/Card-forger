@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-engine-names-bgmusic-score-loops-v390";
+const CACHE = "cardforge-shell-original-score-v391";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
