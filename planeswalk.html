@@ -2532,9 +2532,9 @@ body>.pw-menu .pw-menu-text b{flex:none;width:38px;text-align:center;font:700 ca
 #app .pw-runs{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 #app .pw-run{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--pw-line,#ffffff22);border-radius:10px;background:linear-gradient(180deg,#1b1b20f2,#0f0f12f5);text-align:left}
 #app .pw-run[data-won="1"]{border-color:#e8b45a88}
-#app .pw-run-r{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#3e0806;color:#ffd2c4;box-shadow:0 0 0 1.5px #e8705a}
-#app .pw-run[data-won="1"] .pw-run-r{background:#3a2a08;color:#ffe7b0;box-shadow:0 0 0 1.5px #e8b45a}
-#app .pw-run-r .pi{width:18px;height:18px}
+#app .pw-run-r{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:radial-gradient(#5a120c,#2a0504);color:#f3e6cc;box-shadow:0 0 0 1.5px #e8705a}
+#app .pw-run[data-won="1"] .pw-run-r{background:radial-gradient(#5a420e,#2a1d04);color:#ffe7b0;box-shadow:0 0 0 1.5px #e8b45a}
+#app .pw-run-r .pi{width:24px;height:24px}
 #app .pw-run-t{display:grid;gap:2px;min-width:0}
 #app .pw-run-t b{font:700 calc(max(11px,.86rem) * var(--pw-ts,1)) var(--display);overflow-wrap:anywhere}
 #app .pw-run-t .muted{font-size:calc(max(11px,.74rem) * var(--pw-ts,1));line-height:1.3}
@@ -2554,7 +2554,7 @@ body>.pw-menu .pw-menu-text b{flex:none;width:38px;text-align:center;font:700 ca
 #app .pw-jemb.pw-sil{width:64px;height:64px;justify-self:center;place-items:center;display:grid;border-radius:50%;background:radial-gradient(#25252b,#0d0d10);border:1px dashed #ffffff2e}
 #app .pw-jemb.pw-sil .pw-sil-q{font-size:calc(max(11px,1.2rem) * var(--pw-ts,1))}
 /* Rank bar on the run-end screen */
-#app .pw-rank{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;width:min(420px,100%);margin:2px auto 0}
+#app .pw-rank{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;width:min(420px,100%);box-sizing:border-box;padding-inline:6px;margin:2px auto 0}
 #app .pw-rank-n{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:99px;background:#3a2a08;color:#ffe7b0;box-shadow:0 0 0 1.5px #e8b45a}
 #app .pw-rank-n .pi{width:15px;height:15px}
 #app .pw-rank-n b{font:800 calc(max(11px,.95rem) * var(--pw-ts,1))/1 var(--display)}
@@ -2588,6 +2588,18 @@ html.pw-calm #app .battle .pw-tut{animation:none}
 html.pw-calm #app .battle .unit.pw-tut>.art{animation:none}
 #app .top>.pw-jtop{display:grid;place-items:center;padding:0}
 #app .top>.pw-jtop .pi{width:20px;height:20px}
+/* icons outside the battle take the text colour too (the battle sets its own) */
+#app .pi,body>.pw-menu .pi{fill:currentColor}
+#app .top>.pw-jtop{color:#efe4cf}
+#app .screen.pw-end>p{text-wrap:balance}
+/* Text size: a segmented control like the other options */
+body>.pw-menu .pw-menu-text{cursor:default;padding-block:0}
+body>.pw-menu .pw-menu-text>span:first-child{flex:1;min-width:0}
+body>.pw-menu .pw-seg{display:inline-flex;flex:none;align-self:stretch;align-items:center;gap:2px}
+body>.pw-menu .pw-seg>button{min-width:44px;min-height:44px;padding:0 4px;border:0;border-radius:10px;background:#3a3127;box-shadow:inset 0 0 0 1px #c99c5955;color:#c8b8a0;font:600 calc(max(11px,.72rem) * var(--pw-ts,1))/1 var(--body);cursor:pointer}
+body>.pw-menu .pw-seg>button[aria-pressed=true]{background:linear-gradient(var(--pw-gold-hi),var(--pw-gold));color:#1b1610}
+/* a scrolling Paused panel fades out at the bottom instead of cutting a row */
+body>.pw-menu .pw-menu-card.pwk-panel::after{content:"";grid-column:1/-1;position:sticky;bottom:0;display:block;height:24px;margin-top:-24px;background:linear-gradient(#100e0c00,#100e0cf2);pointer-events:none;z-index:2}
 
 </style>
 
@@ -3247,7 +3259,7 @@ function bugReport(){const d=run?run.deck.map(x=>x.key+(x.foil?'*':'')).join(','
  return ['Planeswalk bug report',`seed ${seed} hero ${run?run.hero:'-'} act ${run?run.act||1:'-'} view ${view}${c&&view==='battle'?` turn ${c.turn} foes ${c.enemies.map(e=>e.key+':'+e.hp).join(',')}`:''}`,
   run?`life ${run.hp}/${run.max} gold ${run.gold} emblems ${run.emblems.join(',')||'-'}`:'',d?`deck ${d}`:'',`screen ${innerWidth}x${innerHeight} ${navigator.userAgent}`,'actions:',...ACTLOG].filter(Boolean).join('\n')}
 // ---------- rendering ----------
-const PWI={back:'M10 5l-7 7 7 7 1.4-1.4L6.8 13H21v-2H6.8l4.6-4.6z',book:'M3 4.6C3 3.7 3.7 3 4.6 3H11v17H4.6c-.9 0-1.6.5-1.6 1V4.6zM13 3h6.4c.9 0 1.6.7 1.6 1.6V21c0-.5-.7-1-1.6-1H13z',share:'M12 2l5 5h-3.5v7h-3V7H7zM4 12h3v7h10v-7h3v10H4z',sword:'M21 3l-1.2 4-10.2 10.2-2.8-2.8L17 4.2zM5.2 12.8l1.4-1.4 6 6-1.4 1.4zM6.3 16.3l1.4 1.4-2.8 2.8-1.4-1.4zM3.2 19.5a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6z',shield:'M12 2l8 3v6c0 5.2-3.4 9.4-8 11-4.6-1.6-8-5.8-8-11V5z',drop:'M12 2c3.8 4.6 6 8.2 6 11.6a6 6 0 0 1-12 0C6 10.2 8.2 6.6 12 2z',up:'M12 3l7.5 8.5H15V21H9v-9.5H4.5z',plus:'M10.5 3h3v7.5H21v3h-7.5V21h-3v-7.5H3v-3h7.5z',skull:'M12 2.5a8 8 0 0 0-8 8c0 2.7 1.3 4.6 3 5.8V20h2.2v-1.8h1.6V20h2.4v-1.8h1.6V20H17v-3.7c1.7-1.2 3-3.1 3-5.8a8 8 0 0 0-8-8zM8.8 9.6a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8zm6.4 0a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8z',star:'M12 2l2.9 6.6 7.1.7-5.4 4.8 1.6 7.1L12 17.5l-6.2 3.7 1.6-7.1L2 9.3l7.1-.7z',waves:'M2 7c2.5-2 5-2 7.5 0s5 2 7.5 0 3.5-1.5 5-1v3c-1.5-.5-2.5 0-5 1.5-2.5 1.5-5 1.5-7.5 0S4 9 2 10.5zM2 14c2.5-2 5-2 7.5 0s5 2 7.5 0 3.5-1.5 5-1v3c-1.5-.5-2.5 0-5 1.5-2.5 1.5-5 1.5-7.5 0S4 16 2 17.5z',moon:'M14.5 2.5A9.5 9.5 0 1 0 21.5 17 7.6 7.6 0 0 1 14.5 2.5z',ban:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 3a7 7 0 0 1 5.6 11.2L7.8 6.4A7 7 0 0 1 12 5zM6.4 7.8l9.8 9.8A7 7 0 0 1 6.4 7.8z',cycle:'M4 12a8 8 0 0 1 13.7-5.7L20 4v7h-7l2.6-2.6A5 5 0 0 0 7 12zm16 0a8 8 0 0 1-13.7 5.7L4 20v-7h7l-2.6 2.6A5 5 0 0 0 17 12z',bypass:'M3 19c0-7.5 4.8-12 12-12V3l6 6-6 6v-4c-5 0-8.5 2.8-9 8z',wing:'M2 6c6 0 11 2 14 6 2-1 4-1 6 0-2 1-3 3-3 5-5 0-9-1-12-4 2 0 3.5-.5 4.5-1.5C8 11.5 4.5 9.5 2 6z',trample:'M3 4l7 8-7 8h4l7-8-7-8zm7 0l7 8-7 8h4l7-8-7-8z',flame:'M12 2c1 3.5 5 5.5 5 10.5A5.5 5.5 0 0 1 6.5 15c0-2.4 1.3-4 2.5-5 .1 1.6.8 2.7 2 3.2C10.8 9.4 11 5.6 12 2z',ghost:'M12 2a7 7 0 0 0-7 7v12l2.3-1.8L9.7 21 12 19.2 14.3 21l2.4-1.8L19 21V9a7 7 0 0 0-7-7zM9.5 8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm5 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z',heart:'M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z',bolt:'M13 2L4 14h6l-1 8 9-12h-6z',eye:'M12 5C6.5 5 2.7 9 1.5 12c1.2 3 5 7 10.5 7s9.3-4 10.5-7C21.3 9 17.5 5 12 5zm0 3.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z',spear:'M12 2l4 6h-3v14h-2V8H8z',first:'M12 3l8 8h-5l-3-3-3 3H4zm0 7l8 8h-5l-3-3-3 3H4z',brand:'M12 2c1 3.5 5 5.5 5 10.5A5.5 5.5 0 0 1 6.5 15c0-2.4 1.3-4 2.5-5 .1 1.6.8 2.7 2 3.2C10.8 9.4 11 5.6 12 2z'};
+const PWI={crown:'M3 8l4.5 3.5L12 5l4.5 6.5L21 8l-2 11H5zM5.5 20.5h13v1.5h-13z',back:'M10 5l-7 7 7 7 1.4-1.4L6.8 13H21v-2H6.8l4.6-4.6z',book:'M12 6.6C10.2 5.1 7.4 4.5 3 4.8v13.6c4.3-.3 7 .3 9 1.8 2-1.5 4.7-2.1 9-1.8V4.8c-4.4-.3-7.2.3-9 1.8zM4.6 6.3c3-.1 5 .4 6.6 1.4v10.1c-1.8-.9-3.9-1.2-6.6-1.1zM19.4 6.3c-3-.1-5 .4-6.6 1.4v10.1c1.8-.9 3.9-1.2 6.6-1.1z',share:'M12 2l5 5h-3.5v7h-3V7H7zM4 12h3v7h10v-7h3v10H4z',sword:'M21 3l-1.2 4-10.2 10.2-2.8-2.8L17 4.2zM5.2 12.8l1.4-1.4 6 6-1.4 1.4zM6.3 16.3l1.4 1.4-2.8 2.8-1.4-1.4zM3.2 19.5a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6z',shield:'M12 2l8 3v6c0 5.2-3.4 9.4-8 11-4.6-1.6-8-5.8-8-11V5z',drop:'M12 2c3.8 4.6 6 8.2 6 11.6a6 6 0 0 1-12 0C6 10.2 8.2 6.6 12 2z',up:'M12 3l7.5 8.5H15V21H9v-9.5H4.5z',plus:'M10.5 3h3v7.5H21v3h-7.5V21h-3v-7.5H3v-3h7.5z',skull:'M12 2.5a8 8 0 0 0-8 8c0 2.7 1.3 4.6 3 5.8V20h2.2v-1.8h1.6V20h2.4v-1.8h1.6V20H17v-3.7c1.7-1.2 3-3.1 3-5.8a8 8 0 0 0-8-8zM8.8 9.6a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8zm6.4 0a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8z',star:'M12 2l2.9 6.6 7.1.7-5.4 4.8 1.6 7.1L12 17.5l-6.2 3.7 1.6-7.1L2 9.3l7.1-.7z',waves:'M2 7c2.5-2 5-2 7.5 0s5 2 7.5 0 3.5-1.5 5-1v3c-1.5-.5-2.5 0-5 1.5-2.5 1.5-5 1.5-7.5 0S4 9 2 10.5zM2 14c2.5-2 5-2 7.5 0s5 2 7.5 0 3.5-1.5 5-1v3c-1.5-.5-2.5 0-5 1.5-2.5 1.5-5 1.5-7.5 0S4 16 2 17.5z',moon:'M14.5 2.5A9.5 9.5 0 1 0 21.5 17 7.6 7.6 0 0 1 14.5 2.5z',ban:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 3a7 7 0 0 1 5.6 11.2L7.8 6.4A7 7 0 0 1 12 5zM6.4 7.8l9.8 9.8A7 7 0 0 1 6.4 7.8z',cycle:'M4 12a8 8 0 0 1 13.7-5.7L20 4v7h-7l2.6-2.6A5 5 0 0 0 7 12zm16 0a8 8 0 0 1-13.7 5.7L4 20v-7h7l-2.6 2.6A5 5 0 0 0 17 12z',bypass:'M3 19c0-7.5 4.8-12 12-12V3l6 6-6 6v-4c-5 0-8.5 2.8-9 8z',wing:'M2 6c6 0 11 2 14 6 2-1 4-1 6 0-2 1-3 3-3 5-5 0-9-1-12-4 2 0 3.5-.5 4.5-1.5C8 11.5 4.5 9.5 2 6z',trample:'M3 4l7 8-7 8h4l7-8-7-8zm7 0l7 8-7 8h4l7-8-7-8z',flame:'M12 2c1 3.5 5 5.5 5 10.5A5.5 5.5 0 0 1 6.5 15c0-2.4 1.3-4 2.5-5 .1 1.6.8 2.7 2 3.2C10.8 9.4 11 5.6 12 2z',ghost:'M12 2a7 7 0 0 0-7 7v12l2.3-1.8L9.7 21 12 19.2 14.3 21l2.4-1.8L19 21V9a7 7 0 0 0-7-7zM9.5 8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm5 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z',heart:'M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z',bolt:'M13 2L4 14h6l-1 8 9-12h-6z',eye:'M12 5C6.5 5 2.7 9 1.5 12c1.2 3 5 7 10.5 7s9.3-4 10.5-7C21.3 9 17.5 5 12 5zm0 3.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z',spear:'M12 2l4 6h-3v14h-2V8H8z',first:'M12 3l8 8h-5l-3-3-3 3H4zm0 7l8 8h-5l-3-3-3 3H4z',brand:'M12 2c1 3.5 5 5.5 5 10.5A5.5 5.5 0 0 1 6.5 15c0-2.4 1.3-4 2.5-5 .1 1.6.8 2.7 2 3.2C10.8 9.4 11 5.6 12 2z'};
 // battle icons: a small painted glyph in place of words; the words live in the tip (title) and the inspect panel
 const ico=k=>`<svg class="pi pi-${k}" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="${PWI[k]}"/></svg>`;
 const mod=(k,t)=>`<i class="mod" title="${t}">${ico(k)}</i>`;
@@ -3411,7 +3423,7 @@ function heroesView(){
 function rankBar(){if(run.xpGain==null)return '';const a=rankOf(run.xpFrom),b=rankOf(run.xpFrom+run.xpGain),up=b.n>a.n,from=up?0:a.into/a.need,to=b.into/b.need;
  return `<div class="pw-rank${up?' up':''}" role="img" aria-label="Rank ${b.n}: ${b.into} of ${b.need} toward rank ${b.n+1}"><span class="pw-rank-n">${ico('up')}<b>${b.n}</b></span><span class="pw-rank-bar"><i style="width:${(from*100).toFixed(1)}%"></i><i class="gain" style="left:${(from*100).toFixed(1)}%;width:${((to-from)*100).toFixed(1)}%"></i></span><b class="pw-rank-xp">+${run.xpGain}</b></div>`}
 function endView(won){
- return `<section class="screen"><h2>${won?E[ACTS[run.act||1].boss].name.split(',')[0]+' falls':HERO.short+' falls'}</h2><p>${won?`You cleared ${(run.act||1)>1?'Innistrad and Zendikar':'Innistrad'} with ${run.deck.length} cards and ${run.emblems.length} emblems, after ${run.fights} fights. Biggest hit: ${run.best}. Best turn: ${run.bestTurn||0} damage.`:`The run ends after ${run.fights} fights. Biggest hit: ${run.best}. Best turn: ${run.bestTurn||0} damage.`}</p>
+ return `<section class="screen pw-end"><h2>${won?E[ACTS[run.act||1].boss].name.split(',')[0]+' falls':HERO.short+' falls'}</h2><p>${won?`You cleared ${(run.act||1)>1?'Innistrad and Zendikar':'Innistrad'} with ${run.deck.length} cards and ${run.emblems.length} emblems, after ${run.fights} fights. Biggest hit: ${run.best}. Best turn: ${run.bestTurn||0} damage.`:`The run ends after ${run.fights} fights. Biggest hit: ${run.best}. Best turn: ${run.bestTurn||0} damage.`}</p>
  ${!won&&c&&c.ante?`<div class="ante-result" data-r="lost">${anteCard(c.ante)}<p>The wager is lost with the run.</p></div>`:''}${rankBar()}<div class="choices"><button class="btn main" data-act="new">New run</button><button class="btn" data-act="replay">Replay seed ${seed}</button><button class="btn pw-share" data-act="share">${ico('share')}<span>Share</span></button></div></section>`;
 }
 function render(){if(SIM)return;
@@ -3460,7 +3472,7 @@ function markSeen(){const sn=new Set(profile.seen||[]),se=new Set(profile.seenE|
 function journalView(){const t=JT;const tab=(k,l)=>`<button class="btn pw-jtab" data-act="jtab" data-k="${k}" aria-pressed="${t===k}">${l}</button>`;
  let body='';
  if(t==='runs'){const L=store.get(HIST)||[];const seen=new Set(L.map(h=>h.seed+h.hero));const all=[...L,...(CLOUDH||[]).filter(h=>!seen.has(h.seed+h.hero))].sort((a,b)=>b.at-a.at).slice(0,20);
-  body=all.length?`<ol class="pw-runs">${all.map(h=>`<li class="pw-run" data-won="${h.won?1:0}" data-hero="${h.hero}"><span class="pw-run-r" role="img" aria-label="${h.won?'Won':'Lost'}">${ico(h.won?'up':'skull')}</span><span class="pw-run-t"><b>${(HEROES[h.hero]||HERO).short} · Act ${h.act} · Floor ${h.floor}</b><span class="muted">${h.won?'Victory':h.killedBy?'Fell to '+h.killedBy:'Fell on the road'} · ${h.fights} fights · Best turn ${h.bestTurn}</span></span><button class="btn pw-run-go" data-act="replayseed" data-s="${h.seed}" data-h="${h.hero}" aria-label="Replay seed ${h.seed}">${ico('cycle')}<span>${h.seed}</span></button></li>`).join('')}</ol>`:'<p class="muted">No runs yet.</p>'}
+  body=all.length?`<ol class="pw-runs">${all.map(h=>`<li class="pw-run" data-won="${h.won?1:0}" data-hero="${h.hero}"><span class="pw-run-r" role="img" aria-label="${h.won?'Won':'Lost'}">${ico(h.won?'crown':'skull')}</span><span class="pw-run-t"><b>${(HEROES[h.hero]||HERO).short} · Act ${h.act} · Floor ${h.floor}</b><span class="muted">${h.won?'Victory':h.killedBy?'Fell to '+h.killedBy:'Fell on the road'} · ${h.fights} fights · Best turn ${h.bestTurn}</span></span><button class="btn pw-run-go" data-act="replayseed" data-s="${h.seed}" data-h="${h.hero}" aria-label="Replay seed ${h.seed}">${ico('cycle')}<span>${h.seed}</span></button></li>`).join('')}</ol>`:'<p class="muted">No runs yet.</p>'}
  else if(t==='cards'){const sn=new Set(profile.seen||[]);Object.values(HEROES).forEach(h=>h.starter.forEach(k=>sn.add(k)));
   const ks=Object.keys(C).filter(k=>!C[k].hidden&&C[k].r!=='K'),grp=[['R','Red'],['W','White'],['C','Colorless']];
   body=`<p class="pw-jcount" data-audit-repeat>${ks.filter(k=>sn.has(k)).length} / ${ks.length}</p>`+grp.map(([g,l])=>{const gk=ks.filter(k=>(C[k].col||'C')===g);return gk.length?`<h3>${l}</h3><div class="pw-comp">${gk.map(k=>sn.has(k)?cardHtml({key:k,foil:false},'tabindex="-1" data-comp'):`<span class="pw-csil pw-sil" data-rar="${C[k].r}" role="img" aria-label="Not found yet"><span class="pw-sil-q">?</span></span>`).join('')}</div>`:''}).join('')}
@@ -4042,7 +4054,7 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
    <button class="btn main pwk-btn primary" data-m="resume">Resume</button>
    <div class="pw-menu-help"><button type="button" class="pw-menu-mini" data-m="tips">Drag tips</button><button type="button" class="pw-menu-mini${copied?' pw-done':''}" data-m="bug">${copied===1?'Copied':copied===2?'Copy failed':'Report a bug'}</button></div>
    <div class="pw-menu-group pw-menu-snd"><h3>Sound</h3>${tog('sound','Sound',on,on?'On':'Off')}${'master' in s?slider('master','Master'):''}${slider('music','Music')}${slider('sfx','Effects')}</div>
-   <div class="pw-menu-group pw-menu-optg"><h3>Options</h3>${tog('calm','Motion',!calm,calm?'Reduced':'Full')}${tog('speed','Battle speed',G('SPEED')===2,G('SPEED')===2?'2x':'1x')}<button type="button" class="pw-menu-row pw-menu-tog pw-menu-text" data-m="text" aria-label="Text size ${ts}%"><span>Text size</span><em>${ts}%</em><b aria-hidden="true">A</b></button>${!inRun&&typeof FORM!=='undefined'?tog('form','Formation blocking',!!FORM,FORM?'On':'Off'):''}</div>
+   <div class="pw-menu-group pw-menu-optg"><h3>Options</h3>${tog('calm','Motion',!calm,calm?'Reduced':'Full')}${tog('speed','Battle speed',G('SPEED')===2,G('SPEED')===2?'2x':'1x')}<div class="pw-menu-row pw-menu-text" role="group" aria-label="Text size"><span>Text size</span><span class="pw-seg">${TS.map(v=>`<button type="button" data-m="text" data-v="${v}" aria-pressed="${v===ts}" aria-label="Text size ${v}%">${v}</button>`).join('')}</span></div>${!inRun&&typeof FORM!=='undefined'?tog('form','Formation blocking',!!FORM,FORM?'On':'Off'):''}</div>
    <div class="pw-menu-group pw-menu-run"><h3>Run</h3>${inRun?`<button type="button" class="pw-menu-row${armed==='restart'?' pw-armed':''}" data-m="restart"><span>${armed==='restart'?'Tap again to restart with '+(H&&H.name||'this hero'):'Restart run'}</span></button>`:''}
    <button type="button" class="pw-menu-row${armed==='hero'?' pw-armed':''}" data-m="hero"><span>${armed==='hero'?'Tap again to end this run':'Change hero'}</span></button>
    <button type="button" class="pw-menu-row pw-menu-exit${armed==='exit'?' pw-armed':''}" data-m="exit"><span>${armed==='exit'?'Tap again to leave and end this run':'Exit to Play menu'}</span></button></div></div>`;
@@ -4052,12 +4064,12 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
  document.addEventListener('change',e=>{const t=e.target;if(t.matches?.('.pw-menu [data-vol=sfx],.pw-menu [data-vol=master]'))try{A?.sfx('PWB-003',{volume:.8,gap:0})}catch{}});
  const open=()=>{if(box)return close();box=document.createElement('div');box.className='pw-menu';document.body.append(box);draw();window.pwHaptic?.(8)};
  const end=()=>{try{G('store').del(G('SAVE'))}catch{}};
- const act=m=>{const r=G('run');
+ const act=(m,b)=>{const r=G('run');
   if(m==='resume')return close();
   if(m==='sound'){setSound(!sound());return draw()}
   if(m==='calm'){calm=!calm;de.classList.toggle('pw-calm',calm);try{localStorage.setItem('pw-calm',calm?'1':'0')}catch{}return draw()}
   if(m==='speed'){G('setSpeed')(G('SPEED')===2?1:2);return draw()}
-  if(m==='text'){ts=TS[(TS.indexOf(ts)+1)%TS.length];try{localStorage.setItem('pw-text',String(ts))}catch{}applyText();return draw()}
+  if(m==='text'){ts=TS.includes(+b?.dataset.v)?+b.dataset.v:TS[(TS.indexOf(ts)+1)%TS.length];try{localStorage.setItem('pw-text',String(ts))}catch{}applyText();return draw()}
   // the seed, the run's state and the last actions go to the clipboard, so a thread can replay the run in the sim
   if(m==='bug'){const t=G('bugReport')?.()||'';const ok=()=>{copied=1;draw();setTimeout(()=>{copied=0;draw()},2200)};
    const fall=()=>{try{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.append(a);a.select();const r=document.execCommand('copy');a.remove();if(r)return ok()}catch{}copied=2;draw();setTimeout(()=>{copied=0;draw()},2200)};
@@ -4071,7 +4083,7 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
   if(m==='restart'){end();return G('newRun')(undefined,r&&r.hero)}
   if(m==='hero'){end();return G('newRun')()}
   if(m==='exit'){end();const a=app.querySelector('.top a.btn[href]');if(a&&a.getAttribute('href')){location.href=a.href;return}return G('newRun')()}};
- document.addEventListener('click',e=>{const b=e.target.closest('.pw-menu [data-m]');if(b){e.stopPropagation();act(b.dataset.m);return}
+ document.addEventListener('click',e=>{const b=e.target.closest('.pw-menu [data-m]');if(b){e.stopPropagation();act(b.dataset.m,b);return}
   if(box&&e.target===box)close()},true);
  addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(document.querySelector('.pw-zoom,.pw-coach'))return;e.preventDefault();open()});
  // the HUD button: one ☰ replaces the separate New run flag and Exit buttons
