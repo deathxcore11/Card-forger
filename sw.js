@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-score-fresh-v392";
+const CACHE = "cardforge-shell-errors-cloud-v393";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
@@ -253,6 +253,8 @@ const ASSETS = [
   "./extras.js",
   "./share.js",
   "./cloud.js",
+  "./app-errors.js",
+  "./planeswalk-cloud.js",
   "./password-auth.js",
   "./auth-form.js",
   "./config.js",
