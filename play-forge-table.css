@@ -260,7 +260,7 @@
 /* Each permanent is a small card: its own colors as the frame, the name on a pale
    title bar, the real art below, and current P/T in a dark plaque. Long names step
    down a size before they ellipsize; the inspector always has the full name. */
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields{--nh:clamp(15px,calc(var(--play-piece)*.15),22px);--nf:clamp(9.5px,calc(var(--play-piece)*.083),13px)}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields{--nh:clamp(15px,calc(var(--play-piece)*.15),22px);--nf:clamp(11px,calc(var(--play-piece)*.083),13px)}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card{border-radius:10px;background:linear-gradient(155deg,color-mix(in srgb,var(--frame-a,#8d877b) 88%,#fff),color-mix(in srgb,var(--frame-b,#5f5a51) 62%,#000));box-shadow:0 0 0 1px #000d,0 10px 22px #000b}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card:after{display:none}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-piece-art{inset:calc(var(--nh) + 5px) 3px 3px;border:0;border-radius:2px 2px 7px 7px;box-shadow:inset 0 0 0 1px #0009;background:#141418}
@@ -2288,7 +2288,7 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-header>.play-match-menu>summary{min-width:44px!important;min-height:44px!important}
 :where(body.practice-table-open) .play-match-table[data-forge-native] :is(.forge-control-emblem,.forge-emote-button)::before{inset:auto;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);translate:-50% -50%}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-zone-row>button{min-width:44px!important;justify-content:center}
-:where(body.practice-table-open) .play-match-table .forge-native-panel.forge-toast button{min-height:44px!important;height:auto!important}
+:where(body.practice-table-open) .play-match-table .forge-native-panel .forge-toast>button{min-height:44px!important;height:44px!important}
 /* The hand's heading and hint stay out of the way: the hand row itself is labelled "Cards in your hand". */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-zone-heading{display:none}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-seat .play-match-player>strong{text-overflow:clip!important;-webkit-line-clamp:unset!important}
