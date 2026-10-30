@@ -423,7 +423,7 @@ body .topbar .home-search-pill>.home-ai-label{padding-left:12px}
  body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)){height:auto;min-height:100dvh;overflow:visible}
  body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live))>#content{overflow:visible;flex:none;min-height:0}
  #app .scan-workspace.is-camera:not(.is-live){flex:none}
- #app .scan-workspace.is-camera:not(.is-live)>.scan-toolbar{position:static;margin:8px var(--page-edge) 0}
+ #app .scan-workspace.is-camera:not(.is-live)>.scan-toolbar{position:static;margin:8px 0 0;padding-inline:var(--page-edge)}
  #app .scan-workspace.is-camera:not(.is-live)>.scan-panel{flex:none;min-height:0;margin-bottom:12px}
  #app .scan-workspace.is-camera:not(.is-live) .cam-wrap{flex:none;min-height:0}
  #app .scan-workspace.is-camera:not(.is-live) .scan-drop{position:relative;inset:auto;margin:16px auto;min-height:0}
@@ -447,3 +447,7 @@ body[data-view="settings"] .profile-menu>.sr-only{display:none}
 .pl-seat .profile-avatar>span{font-size:16px;line-height:1}
 /* Scan drop zone (camera off): no shutter row to reserve, so the frame can hold 130% text. */
 #app .scan-workspace.is-camera:not(.is-live) .scan-drop{inset:64px 16px 24px}
+/* Scan title bar sits on the page edge (the centred width rule is for the live-camera pill). */
+#app .scan-workspace.is-camera:not(.is-live)>.scan-toolbar{width:auto;margin-inline:0;justify-self:auto;align-self:stretch}
+/* Phones: the Play bar is laid out after the deck list, so sticky keeps it pinned all the way down and it rests at the end. */
+@media(max-width:700px){.pl-lobby .pl-startbar{order:9}}

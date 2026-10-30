@@ -459,7 +459,7 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
  .pl-arena{grid-template-columns:1fr;gap:0}.pl-seat{min-height:150px;padding:16px;border-radius:18px}.pl-vs{height:0}.pl-vs b{width:44px;height:44px;border-radius:10px}.pl-vs b>span{font-size:14px}
  .pl-backs i{width:66px;height:92px;margin:-46px 0 0 -33px;left:26%;top:44%}.pl-backs i:nth-child(1){transform:rotate(-13deg) translateX(-28px)}.pl-backs i:nth-child(3){transform:rotate(13deg) translateX(28px)}
  .pl-seat--cpu::before{background:linear-gradient(270deg,#0c0c0ef5 0%,#0c0c0ed0 55%,#0c0c0e55 100%)}
- .pl-startbar{position:sticky;bottom:calc(var(--nav-h,64px) + env(safe-area-inset-bottom) + 8px);z-index:20;flex-wrap:wrap;padding:12px}.pl-status{flex-basis:100%;font-size:12px}.pl-start.btn{flex:1;min-width:0}
+ .pl-startbar{position:sticky;bottom:calc(var(--nav-h,64px) + env(safe-area-inset-bottom));z-index:20;flex-wrap:wrap;padding:12px}.pl-status{flex-basis:100%;font-size:12px}.pl-start.btn{flex:1;min-width:0}
  .pl-format-sheet{position:fixed;left:16px;right:16px;top:auto;bottom:calc(var(--nav-h,64px) + env(safe-area-inset-bottom) + 12px);width:auto;max-height:70vh;overflow:auto}.pl-format-grid{grid-template-columns:1fr 1fr}
  .pl-sheet.play-inspector{width:100%;border-radius:0}
 }
