@@ -2297,7 +2297,7 @@ const HEROES={
   plus:t=>{const n=2+(run.emblems.includes('pyre')?2:0);hit(t,n);return `Chandra +1: ${n} damage to ${t.name}.`},
   minus:()=>{c.enemies.forEach(e=>hit(e,3));return 'Chandra −3: 3 damage to each enemy.'},
   ult:()=>{c.ult=true;c.callout='Emblem of the Inferno';return 'Chandra −6: for the rest of this fight, every spell deals 3 to each enemy.'}},
- W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',get life(){return FORM?74:58},energy:3,loyalty:2,theme:'Soldiers, lifegain and flyers. Go wide, then make them huge.',
+ W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',get life(){return FORM?70:58},energy:3,loyalty:2,theme:'Soldiers, lifegain and flyers. Go wide, then make them huge.',
   starter:['vanguard','vanguard','vanguard','salve','salve','grace','pacifism','pacifism','pguard','pguard'],sig:'dawn',
   plusAim:null,plusLabel:()=>`+1 · Summon ${run&&run.emblems.includes('dawn')?'two 2/1 Soldiers':'a Soldier'}`,minusLabel:'−3 · Allies +2/+2',ultLabel:'−6 · Allies +2/+2 and fly',
   plus:()=>{if(run.emblems.includes('dawn')){summon({p:2,t:1,soldier:1},'Soldier token');summon({p:2,t:1,soldier:1},'Soldier token')}else soldier();return 'Elspeth +1: Soldiers join you.'},
@@ -2320,7 +2320,7 @@ Object.assign(C,{
 // Which card each enemy gives up. Legends give their own signature; minions give a pool card in the hero's colors.
 const SIG={gisa:'sig_gisa',olivia:'sig_olivia',thalia:'sig_thalia',drana:'sig_drana',kozilek:'sig_kozilek',omnath:'sig_omnath',sorin:'sig_sorin',
  diregraf:{R:'king',W:'alarm'},zombie:{R:'king',W:'alarm'},crawler:{R:'hauler',W:'stance'},interloper:{R:'guide',W:'hawk'},geist:{R:'pyro',W:'grace'},
- patrol:{R:'warchief',W:'knight'},cultist:{R:'rite',W:'grace'},ironsmith:{R:'brute',W:'stance'},ironfang:{R:'hauler',W:'overseer'},
+ patrol:{R:'warchief',W:'knight'},cultist:{R:'rite',W:'grace'},acolyte:{R:'rite',W:'grace'},ironsmith:{R:'brute',W:'stance'},ironfang:{R:'hauler',W:'overseer'},
  spawn:{R:'mana',W:'sungrace'},scion:{R:'mana',W:'sungrace'},intruder:{R:'snipe',W:'eagle'},herder:{R:'cannon',W:'charge'},baloth:{R:'warchief',W:'knight'},
  ranger:{R:'king',W:'alarm'},wolf:{R:'hauler',W:'overseer'},skyfisher:{R:'guide',W:'sungrace'}};
 // Synergy: each signature card has an archetype and partner emblems. Reward cards and emblems that pair
@@ -2379,7 +2379,9 @@ const embSvg0=k=>`<svg class="emb${EMB[k].r==='M'?' mythic':EMB[k].r==='B'?' rar
 
 // ---------- enemy roster (never draftable) ----------
 const E={
- diregraf:{name:'Diregraf Ghoul',hp:7,pow:2,g:'Z',zombie:1,intents:[['atk',3],['atk',5]]},
+ diregraf:{name:'Diregraf Ghoul',hp:7,pow:2,g:'Z',zombie:1,pair:1,intents:[['atk',3],['atk',5]],pairIntents:[['atk',5],['guard',5]]},
+ // Easy-pool Cultist (Dark Ritual race): from the back row it gains +2 attack every turn and swings past your line. Kill it by turn 3.
+ acolyte:{name:'Skirsdag Cultist',bypass:1,enrage:2,hp:11,pow:1,g:'C',intents:[['atk',1]]},
  crawler:{name:'Gravecrawler',hp:4,pow:2,g:'Z',zombie:1,crawl:1,intents:[['atk',2]]},
  interloper:{name:'Vampire Interloper',bypass:1,hp:7,pow:2,g:'V',fly:1,intents:[['atk',3],['atk',3],['atk',6]]},
  geist:{name:'Chapel Geist',bypass:1,hp:8,pow:2,g:'S',fly:1,intents:[['atk',3],['haunt',1]]},
@@ -2391,7 +2393,7 @@ const E={
  gisa:{name:'Gisa, Glorious Resurrector',trample:1,hp:40,pow:4,g:'Gi',rank:'elite',raise:1,intents:[['summon','zombie'],['atk',8],['atk',6],['buff',2]]},
  olivia:{name:'Olivia Voldaren',hp:28,pow:3,g:'Ol',rank:'elite',fly:1,feed:1,intents:[['atk',6],['drain',4],['atk',8]]},
  thalia:{name:'Thalia, Guardian of Thraben',hp:30,pow:2,g:'Th',rank:'elite',first:1,tax:1,intents:[['atk',6],['atk',6],['guard',8]]},
- sorin:{name:'Sorin, Vengeful Bloodlord',enrage:1,hp:62,pow:4,g:'So',rank:'boss',loyalty:5,intents:[['atk',8,2],['summon','interloper',1],['drain',6,-3]],phase2:[['atk',10,2],['summon','interloper',1],['guard',10,1],['drain',8,-3]]},
+ sorin:{name:'Sorin, Vengeful Bloodlord',enrage:1,hp:72,pow:4,g:'So',rank:'boss',loyalty:5,intents:[['atk',8,2],['summon','interloper',1],['drain',9,-3]],phase2:[['atk',10,2],['summon','interloper',1],['guard',10,1],['drain',8,-3]]},
 };
 Object.assign(E,{
  // Act two · Zendikar: the hungry wild. Enemies grow over the fight, so slow decks lose.
@@ -2422,15 +2424,22 @@ const BOSSEMB={
  contract:{name:"Ob Nixilis's Contract",g:'✒',r:'B',text:'Draw 2 more cards each turn. Start each fight with 2 extra energy. Gain 1 energy for each enemy you kill. Your max life is 4 lower.',gain:'Draw 2 more cards each turn. Start each fight with 2 extra energy. Gain 1 energy for each enemy you kill.',cost:'Max life −4.'},
 };
 Object.assign(EMB,BOSSEMB);
-const EASY=[['diregraf','diregraf'],['interloper','diregraf'],['crawler','crawler','diregraf'],['geist','diregraf']];
-const HARD=[['ironsmith'],['patrol','interloper'],['patrol','geist'],['cultist','diregraf','diregraf'],['patrol','crawler','crawler']];
+const EASY=[['diregraf','diregraf'],['acolyte','diregraf'],['crawler','crawler','diregraf'],['geist','diregraf']];
+// Act 1 hard pool from the approved encounter design, built from enemies that exist today (new ones come with the content wave):
+// burst, race, flyer race, taxer, kill priority.
+const HARD=[['ironsmith'],['patrol','interloper'],['interloper','interloper','interloper'],['geist','geist','cultist'],['cultist','diregraf','diregraf']];
 // Enemies get tougher as you climb: depth 0 at the bottom of the map, up to 2 near the top.
 // Without formation, enemies carry 1.2x life to pay for the act-start item pick.
 // 0.9 with formation since every enemy now acts each turn (audit bug 13).
 const FOE_HP=typeof PW_FOEHP!=='undefined'?PW_FOEHP:FORM?.9:1;
 // With formation, Act 1 enemies carry the item-pick tax locally instead.
 const actHp=()=>FORM&&run&&(run.act||1)===1?1.2:1;
-const foe=(key,depth=0)=>{const d=E[key];const hp=Math.round(FOE_HP*actHp()*d.hp*(d.rank==='elite'?((run&&run.act||1)===1?1.5:1.1):(!d.rank&&depth>=1&&(run&&run.act||1)===1?1.18:1))*Math.min(d.rank==='elite'?1.35:9,1+(d.rank?.3:.3)*depth));return {id:++uid,key,name:d.name,g:d.g,hp,max:hp,pow:d.pow,fly:!!d.fly,rank:d.rank||'',i:0,buff:d.rank==='elite'?depth:Math.floor(depth*.75),shield:0,loyalty:d.loyalty||0,zombie:!!d.zombie,token:!!d.token}};
+// Encounter design (30 Oct) drops trample from Act 1, but until the content wave brings its new Act 1 threats
+// (polluter, shields, splitting ooze) that leaves Act 1 at a 97-99% clear, so Act 1 tramplers keep trample for now.
+// Set A1_TRAMPLE=false to switch to the design's rule.
+const A1_TRAMPLE=typeof PW_A1TR!=='undefined'?!!PW_A1TR:true;
+const TRAMPLES=e=>!!E[e.key].trample&&(A1_TRAMPLE||(run&&run.act||1)>1);
+const foe=(key,depth=0)=>{const d=E[key];const hp=Math.round(FOE_HP*actHp()*d.hp*(d.rank==='elite'?((run&&run.act||1)===1?1.6:1.1):(!d.rank&&depth>=1&&(run&&run.act||1)===1?1.25:!d.rank&&(run&&run.act||1)>1?1.25:1))*Math.min(d.rank==='elite'?1.35:9,1+(d.rank?.3:.3)*depth));return {id:++uid,key,name:d.name,g:d.g,hp,max:hp,pow:d.pow,fly:!!d.fly,rank:d.rank||'',i:0,buff:d.rank==='elite'?depth:Math.floor(depth*.75),shield:0,loyalty:d.loyalty||0,zombie:!!d.zombie,token:!!d.token}};
 
 // ---------- run ----------
 let run, c, view, reward, gift=null;
@@ -2501,7 +2510,7 @@ function enter(r,l){
  else if(t==='bargain'){const mp=Object.keys(EMB).filter(k=>EMB[k].r==='M'&&!run.emblems.includes(k)&&forHero(k)),rp=Object.keys(EMB).filter(k=>EMB[k].r==='R'&&!run.emblems.includes(k)&&!BOSSEMB[k]&&forHero(k));view='event';reward={ev:'bargain',myth:mp.length?pick(mp):null,rare:rp.length?pick(rp):null};render()}
  else if(t==='rest'){view='rest';render()}
  else if(t==='shop'){c=null;reward={shop:makeShop()};view='shop';render()}
- else if(t==='treasure'){c=null;run.gold+=20+Math.floor(rng()*11);reward={cards:treasureCards(),embs:rng()<TREASURE_EMB?treasureEmblems():[],treasure:1};view='reward';render()}
+ else if(t==='treasure'){c=null;run.gold+=20+Math.floor(rng()*4);reward={cards:treasureCards(),embs:rng()<TREASURE_EMB?treasureEmblems():[],treasure:1};view='reward';render()}
  else {view='event';reward={ev:pick(ACTS[run.act||1].events||['shrine','cart'])};render()}
 }
 
@@ -2696,7 +2705,7 @@ function endTurn(){if(c)c.arrange=false;
 // a creature that blocks soaks the whole hit, a token soaks only up to its toughness, a blocker that
 // dies to a trampler soaks nothing, and bypass attackers skip the line.
 const pickBlocker=(e,can)=>FORM?c.allies.find(a=>a.guard===e.id&&can(a))||(E[e.key].bypass?null:c.allies.find(a=>a.defender&&can(a))||[...c.allies].reverse().find(can)):c.allies.find(a=>a.defender&&can(a))||c.allies.find(can);
-const spill=(e,n,room,b)=>!FORM?n-room:E[e.key].trample&&!(b&&b.steadfast)?n:b&&/token$/.test(b.name)?n-room:0;
+const spill=(e,n,room,b)=>!FORM?n-room:TRAMPLES(e)&&!(b&&b.steadfast)?n:b&&/token$/.test(b.name)?n-room:0;
 function blocker(e){
  const can=a=>!a.tapped&&a.dmg<tough(a)&&!a.noblock&&(!e.fly||a.flying||a.reach);
  return pickBlocker(e,can);
@@ -2705,14 +2714,16 @@ function strike(e,n){
  const b=blocker(e);
  if(!b){hurt(n,E[e.key].bypass&&FORM?'bypass':e.fly?'unblocked-flyer':'unblocked');if(E[e.key].ingest&&c.draw.length){(c.exiled=c.exiled||[]).push(c.draw.pop());return `${e.name} hits ${HERO.short} for ${n} and ingests the top card of your deck (this fight only).`}return `${e.name} hits ${HERO.short} for ${n}.`}
  const room=tough(b)-b.dmg;let msg;
- if(SIM){const t0=SIM.took.get(b.id)||{n:0,o:0,fail:0};t0.n+=n;if(n>=room){t0.o+=spill(e,n,room,b);if(FORM&&E[e.key].trample&&!b.steadfast)t0.fail=1}SIM.took.set(b.id,t0)}
- if(n>=room){b.dmg=tough(b);const o=spill(e,n,room,b);if(FORM&&!SIM&&typeof PW_SOAK!=='undefined'){if(/token$/.test(b.name))PW_SOAK.tokenChumps=(PW_SOAK.tokenChumps||0)+1;else if(o===0)PW_SOAK.fullSoaked=(PW_SOAK.fullSoaked||0)+n-room}hurt(o,FORM&&E[e.key].trample?'trample':'overflow');msg=`${b.name} blocks ${e.name} and dies`+(o>0?`, ${o} ${FORM&&E[e.key].trample?'tramples':'gets'} through.`:'.')}else{b.dmg+=n;msg=`${b.name} blocks ${e.name}.`}
+ if(SIM){const t0=SIM.took.get(b.id)||{n:0,o:0,fail:0};t0.n+=n;if(n>=room){t0.o+=spill(e,n,room,b);if(FORM&&TRAMPLES(e)&&!b.steadfast)t0.fail=1}SIM.took.set(b.id,t0)}
+ if(n>=room){b.dmg=tough(b);const o=spill(e,n,room,b);if(FORM&&!SIM&&typeof PW_SOAK!=='undefined'){if(/token$/.test(b.name))PW_SOAK.tokenChumps=(PW_SOAK.tokenChumps||0)+1;else if(o===0)PW_SOAK.fullSoaked=(PW_SOAK.fullSoaked||0)+n-room}hurt(o,FORM&&TRAMPLES(e)?'trample':'overflow');msg=`${b.name} blocks ${e.name} and dies`+(o>0?`, ${o} ${FORM&&TRAMPLES(e)?'tramples':'gets'} through.`:'.')}else{b.dmg+=n;msg=`${b.name} blocks ${e.name}.`}
  b.flash=1;
  if(E[e.key].feed&&b.dmg>=tough(b))e.pow++;
  if(pow(b)>0)hit(e,b.deathtouch&&!e.rank?99:pow(b));
  return msg;
 }
-const intentOf=e=>{const d=E[e.key],list=e.phase2?d.phase2:d.intents;let it=list[e.i%list.length];
+// A Diregraf pair trades roles each turn: one guards 5 while the other hits 5 (a lone Ghoul keeps its 3-then-5 swing).
+const ghoulPair=e=>{const d=E[e.key];if(!d.pair||!c)return -1;const g=c.enemies.filter(x=>x.key===e.key&&x.hp>0);return g.length>=2?g.indexOf(e):-1};
+const intentOf=e=>{const d=E[e.key],pi=ghoulPair(e),list=e.phase2?d.phase2:pi>=0?d.pairIntents:d.intents;let it=list[(e.i+Math.max(0,pi))%list.length];
  if(d.loyalty){if(e.loyalty>=8)return ['ult',2,-8];if(it[2]<0&&e.loyalty+it[2]<0)return list[0]}
  return it};
 // Enemies act one at a time so each action can be seen.
@@ -2791,7 +2802,7 @@ function win(){if(SIM)return;
  let sig=null;if(FEAT.sig&&!c.dungeon){const src=[...c.roster].sort((a,b)=>(E[b].rank?100:0)+E[b].hp-(E[a].rank?100:0)-E[a].hp)[0];const sg=sigOf(src);if(sg&&!cards.includes(sg.k)){cards[cards.length-1]=sg.k;sig={k:sg.k,from:E[src].name,fb:sg.fb,foil:!C[sg.k].sig&&C[sg.k].r!=='C'}}}
  let embs=c.kind==='elite'?offerEmblems():[];
  if(c.dungeon&&run.dun){const D=DUN[run.dun.act];const rest=offerEmblems().filter(k=>EMB[k].r&&k!==D.emb).slice(0,1);embs=[...(run.emblems.includes(D.emb)?[]:[D.emb]),...rest];run.dun=null;{const h=Math.min(Math.round(run.max*DUN_HEAL),run.max-run.hp);run.hp+=h;run.heal=(run.heal||0)+h}}
- run.gold+=Math.round((c.kind==='elite'?35:10+Math.floor(rng()*7))*((run.act||1)>1?.8:1));
+ run.gold+=Math.round((c.kind==='elite'?35:10+Math.floor(rng()*7))*((run.act||1)>1?.65:1));
  reward={cards,embs,sig,anteRes:c.ante?{card:{...(run.deck.find(x=>x.id===c.ante.id)||c.ante)},r:anteOk?'won':'lost'}:null,dungeon:c.dungeon||null,stats:{...c.stats,turns:c.turn}}; view='reward'; render();
 }
 
@@ -2822,7 +2833,7 @@ function pwPreview(kind,ref,tid){if(!c||c.busy||view!=='battle')return null;
 // Pacifism stops attack intents only; buffs, summons and drains still happen.
 const PACIFIED=['atk','annihilate','sac'];
 const intentLabel=e=>{if(e.pacified&&PACIFIED.includes(intentOf(e)[0]))return `<span class="intent stun" title="Pacified: it can't attack">☮ can't attack</span>`;const [t,v,loy]=intentOf(e);const L='';
- if(t==='atk'){const by=FORM&&E[e.key].bypass,tr=FORM&&E[e.key].trample;return `<span class="intent${by?' bypass':''}${FORM&&E[e.key].enrage?' enrage':''}" title="${by?'Bypass: skips your line and hits you, unless an ally guards against it':e.fly?'Flying: only your flying or reach allies can block it':FORM?'Hits your front untapped blocker, or you'+(tr?'. Trample: a blocker that dies doesn\'t stop this hit':''):'Hits your first untapped blocker, or you'}">${L}⚔ ${v+e.buff+(e.surge||0)+(FORM&&E[e.key].enrage||0)}${by?' ⤳':e.fly?' ↷':''}${tr?' ⇶':''}${FORM&&E[e.key].enrage?`<span class="grow">+${E[e.key].enrage}/turn</span>`:''}</span>`}
+ if(t==='atk'){const by=FORM&&E[e.key].bypass,tr=FORM&&TRAMPLES(e);return `<span class="intent${by?' bypass':''}${FORM&&E[e.key].enrage?' enrage':''}" title="${by?'Bypass: skips your line and hits you, unless an ally guards against it':e.fly?'Flying: only your flying or reach allies can block it':FORM?'Hits your front untapped blocker, or you'+(tr?'. Trample: a blocker that dies doesn\'t stop this hit':''):'Hits your first untapped blocker, or you'}">${L}⚔ ${v+e.buff+(e.surge||0)+(FORM&&E[e.key].enrage||0)}${by?' ⤳':e.fly?' ↷':''}${tr?' ⇶':''}${FORM&&E[e.key].enrage?`<span class="grow">+${E[e.key].enrage}/turn</span>`:''}</span>`}
  if(t==='drain')return `<span class="intent drain" title="Hits ${HERO.short} directly and heals itself">${L}✦ drain ${v}</span>`;
  if(t==='buff')return `<span class="intent buff" title="Its attacks get stronger">▲ +${v}</span>`;
  if(t==='guard')return `<span class="intent buff" title="Absorbs the next ${v} damage">◈ guard ${v}</span>`;
@@ -2839,7 +2850,7 @@ const intentLabel=e=>{if(e.pacified&&PACIFIED.includes(intentOf(e)[0]))return `<
  if(t==='pay')return `<span class="intent buff" title="Pays ${v} life for +${v} on its next attack">▲ pay ${v}</span>`;
  return `<span class="intent transform" title="Night falls">☾ transform</span>`};
 const ACT={scion:()=>'empower the biggest enemy',process:v=>`process an exiled card into ${v} Spawn`,sweep:v=>`${v} damage to each of your allies`,bolster:v=>`give an ally +${v} attack`,rally:v=>`all enemies +${v} attack`,annihilate:v=>`attack for ${v}, then destroy your weakest ally`,pay:v=>`pay ${v} life for +${v} attack`,atk:v=>`attack for ${v}`,drain:v=>`drain ${v} life`,buff:v=>`gain +${v} attack`,guard:v=>`guard ${v}`,haunt:()=>'haunt (you draw 1 fewer)',summon:v=>`summon a ${E[v]?E[v].name:v}`,sac:v=>`sacrifice a minion to hit you for ${v}`,transform:()=>'transform at night'};
-function enemyInfo(e){const d=E[e.key];const tr=[e.pacified&&(e.rank?'Pacified: its next attack is stopped, then it shakes it off.':'Pacified: it can\'t attack this fight.'),e.pacImmune&&'Immune to Pacifism for the rest of this fight.',d.fly&&'Flying: only flying or reach allies can block it.',FORM&&d.bypass&&'Bypass: skips your line and hits you, unless one of your allies guards against it.',FORM&&d.intents.some(x=>x[0]==='sac')&&'Its sacrifice hits you directly. Guard can\'t stop that.',FORM&&d.enrage&&`Enrage: its attacks grow by ${d.enrage} each turn it lives.`,FORM&&d.trample&&'Trample: a blocker that dies doesn\'t stop this hit.',d.first&&'First strike: hits your attacker first.',d.tax&&'Your noncreature spells cost 1 more.',d.raise&&'Dead minions come back as Zombies.',d.feed&&'Gets +1 attack each time a creature she damaged dies.',d.crawl&&'Returns once while another Zombie stands.',d.phase2&&'Below half life: shield 10 and a harder pattern.',d.loyalty&&'Loyalty: ultimate at 8. Each creature hit removes 1.',d.ingest&&'Unblocked hits exile the top card of your draw pile for this fight.',d.spawnDie&&'When it dies, other Eldrazi get +1 attack.',d.landfall&&`Gets +${d.landfall} attack whenever another enemy enters.`,d.rage&&`Deals ${d.rage} to you whenever another enemy enters.`,d.pact&&'If you have played at least as many spells as creatures this fight, he names spells, and each one costs you 3 life. Below half life he names whichever type you have played more.'].filter(Boolean);
+function enemyInfo(e){const d=E[e.key];const tr=[e.pacified&&(e.rank?'Pacified: its next attack is stopped, then it shakes it off.':'Pacified: it can\'t attack this fight.'),e.pacImmune&&'Immune to Pacifism for the rest of this fight.',d.fly&&'Flying: only flying or reach allies can block it.',FORM&&d.bypass&&'Bypass: skips your line and hits you, unless one of your allies guards against it.',FORM&&d.intents.some(x=>x[0]==='sac')&&'Its sacrifice hits you directly. Guard can\'t stop that.',FORM&&d.enrage&&`Enrage: its attacks grow by ${d.enrage} each turn it lives.`,FORM&&TRAMPLES(e)&&'Trample: a blocker that dies doesn\'t stop this hit.',d.first&&'First strike: hits your attacker first.',d.tax&&'Your noncreature spells cost 1 more.',d.raise&&'Dead minions come back as Zombies.',d.feed&&'Gets +1 attack each time a creature she damaged dies.',d.crawl&&'Returns once while another Zombie stands.',d.phase2&&'Below half life: shield 10 and a harder pattern.',d.loyalty&&'Loyalty: ultimate at 8. Each creature hit removes 1.',d.ingest&&'Unblocked hits exile the top card of your draw pile for this fight.',d.spawnDie&&'When it dies, other Eldrazi get +1 attack.',d.landfall&&`Gets +${d.landfall} attack whenever another enemy enters.`,d.rage&&`Deals ${d.rage} to you whenever another enemy enters.`,d.pact&&'If you have played at least as many spells as creatures this fight, he names spells, and each one costs you 3 life. Below half life he names whichever type you have played more.'].filter(Boolean);
  const list=(e.phase2?d.phase2:d.intents).map(([t,v])=>(ACT[t]||(()=>t))(['atk','annihilate'].includes(t)?v+e.buff:v)).join(' → ')+(e.buff?` (includes +${e.buff} from buffs)`:'');
  return `<div class="inspect" role="dialog" aria-label="${e.name}"><b>${e.name}</b><span class="muted"><span class="pw-sep"> · </span>${e.rank==='boss'?'Planeswalker':e.rank==='elite'?'Legendary':'Minion'} · ⚔ ${e.pow+e.buff} · ♥ ${Math.max(0,e.hp)}/${e.max}${e.shield?` · ◈ ${e.shield}`:''}</span><p>Pattern: ${list}</p>${tr.length?`<p>${tr.join(' ')}</p>`:''}<button class="btn" data-act="closeinspect">Close</button></div>`}
 const popOf=o=>{let s='';if(o.pop)s+=`<span class="pop${o.pop>=8?' big':''}" style="font-size:${(1.1+Math.min(o.pop,20)/14).toFixed(2)}rem">−${o.pop}</span>`;if(o.heal)s+=`<span class="pop heal">+${o.heal}</span>`;o.pop=0;o.heal=0;return s};
