@@ -3,16 +3,17 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { transformNativePlaneswalk } from '../scripts/transform-native-planeswalk.mjs';
 
-test('a match puts the phone in play mode and leaving it gives the phone back', async () => {
+test('a match puts the phone in play mode, turns it sideways, and leaving it gives the phone back', async () => {
   const observers = [];
   globalThis.MutationObserver = class { constructor(fn) { this.fn = fn; observers.push(this); } observe() {} disconnect() {} };
   const { installNativeDisplay } = await import('../runtime/native-display.js');
-  const classes = new Set(), root = { classList: { contains: c => classes.has(c) } }, modes = [];
-  installNativeDisplay({ plugin: { setMode: async ({ mode }) => { modes.push(mode); } }, root });
+  const classes = new Set(), root = { classList: { contains: c => classes.has(c) } }, modes = [], turns = [];
+  installNativeDisplay({ plugin: { setMode: async ({ mode }) => { modes.push(mode); }, setOrientation: async ({ orientation }) => { turns.push(orientation); } }, root });
   classes.add('practice-table-open'); observers[0].fn();
   observers[0].fn();
   classes.delete('practice-table-open'); observers[0].fn();
   assert.deepEqual(modes, ['app', 'play', 'app']);
+  assert.deepEqual(turns, ['default', 'landscape', 'default']);
 });
 
 test('Planeswalk in the app drops web fonts and loads its native script once', async () => {
