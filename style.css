@@ -1622,10 +1622,10 @@ body.glass .topbar { background: rgba(12, 14, 19, 0.58); }
 .cam-rail button { display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; color: #fff; cursor: pointer; }
 .cam-rail button .ico { width: 22px; height: 22px; }
 .cam-rail button.on { background: color-mix(in srgb, var(--gold) 85%, transparent); color: var(--gold-ink); }
-.scan-defaults { display: flex; justify-content: space-between; gap: 4px; padding: 5px; border-radius: 999px; background: rgba(10, 12, 16, 0.6); backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
+.scan-defaults { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px; padding: 5px; border-radius: 27px; background: rgba(10, 12, 16, 0.6); backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
 .cam-wrap .scan-defaults { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 3; width: min(92%, 380px); }
 .scan-panel > .scan-defaults, .scan-panel .actions + .scan-defaults { margin: 12px auto 0; max-width: 380px; background: var(--surface-2); }
-.scan-defaults button { flex: 1; min-height: 40px; border: 0; border-radius: 999px; background: transparent; color: #fff; font-weight: 800; font-size: 14px; letter-spacing: 0.02em; cursor: pointer; }
+.scan-defaults button { flex: 1; min-height: 44px; border: 0; border-radius: 999px; background: transparent; color: #fff; font-weight: 800; font-size: 14px; letter-spacing: 0.02em; cursor: pointer; }
 .scan-defaults button:active { background: rgba(255, 255, 255, 0.12); }
 .cam-wrap .cam-status { bottom: 70px; }
 .scan-flash { position: absolute; left: 50%; top: 14px; z-index: 4; transform: translate(-50%, -12px); opacity: 0; padding: 8px 14px; border-radius: 999px; background: color-mix(in srgb, var(--good, #3ccf91) 88%, #000); color: #04150d; font-weight: 800; font-size: 13px; white-space: nowrap; max-width: 80%; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
@@ -1655,10 +1655,14 @@ body.glass .topbar { background: rgba(12, 14, 19, 0.58); }
 
 /* Scan defaults: glass segments with a caption, opening a glass dropdown. */
 .scan-defaults button { display: grid; place-items: center; gap: 0; padding: 4px 6px; line-height: 1.1; }
-.scan-defaults button small { font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
+.scan-defaults button small { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
 .scan-defaults button span { display: inline-flex; align-items: center; gap: 2px; font-size: 15px; }
 .scan-defaults .chev { width: 14px; height: 14px; opacity: 0.7; }
 .scan-defaults button[aria-expanded="true"], .scan-defaults button:focus-visible { background: rgba(255, 255, 255, 0.12); }
+/* Pills keep whole words. Each pair is a flex item that cannot shrink below its longest caption or value, so the
+   row stays one line while all four fit and wraps to 2 × 2 the moment one does not (130% text on narrow phones). */
+.scan-defaults .sd-pair { display: flex; flex: 1 1 0; gap: inherit; }
+.scan-defaults button small, .scan-defaults button span { overflow-wrap: normal; word-break: keep-all; hyphens: manual; }
 .glass-pop { position: fixed; z-index: 60; min-width: 210px; max-width: calc(100vw - 16px); max-height: 60vh; overflow: auto; padding: 8px; border-radius: 18px;
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03) 40%), rgba(16, 18, 24, 0.72);
   backdrop-filter: blur(22px) saturate(1.6); -webkit-backdrop-filter: blur(22px) saturate(1.6);
@@ -1699,7 +1703,7 @@ body.glass .topbar { background: rgba(12, 14, 19, 0.58); }
 .ss-row.fresh { animation: row-land 1.4s ease; }
 @keyframes row-land { 0% { transform: translateY(-8px) scale(0.98); box-shadow: 0 0 0 2px color-mix(in srgb, var(--good, #3ccf91) 70%, transparent), 0 0 24px color-mix(in srgb, var(--good, #3ccf91) 45%, transparent); } 30% { transform: none; } 100% { box-shadow: 0 0 0 0 transparent; } }
 @media (prefers-reduced-motion: reduce) { .scan-sweep, .ss-row.fresh, .glass-pop { animation: none; } .scan-sweep { display: none; } }
-@media (max-width: 360px) { .scan-defaults button span { font-size: 13.5px; } .scan-defaults button small { font-size: 8.5px; } .ss-row { grid-template-columns: 34px minmax(0, 1fr) auto; grid-template-areas: "img txt qty" "img chip price"; } .ss-chip { justify-self: start; } }
+@media (max-width: 360px) { .scan-defaults button span { font-size: 13.5px; } .scan-defaults button small { font-size: 11px; letter-spacing: 0.04em; } .ss-row { grid-template-columns: 34px minmax(0, 1fr) auto; grid-template-areas: "img txt qty" "img chip price"; } .ss-chip { justify-self: start; } }
 
 /* Scanner: card from another game, Google Lens backup */
 .scan-other { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; font-size: 0.9rem; border: 1px solid color-mix(in srgb, var(--game-color) 55%, transparent); background: color-mix(in srgb, var(--game-color) 14%, transparent); }
@@ -1709,7 +1713,7 @@ body.glass .topbar { background: rgba(12, 14, 19, 0.58); }
 @media (max-width: 360px) {
   .scan-defaults { gap: 0; padding: 4px; }
   .scan-defaults button { padding: 4px 3px; }
-  .scan-defaults button small { font-size: 8.5px; letter-spacing: 0.04em; }
+  .scan-defaults button small { font-size: 11px; letter-spacing: 0.04em; }
 }
 /* Set identity: generous product art, readable titles, consistent code/symbol placement. */
 .set-row { min-height:92px; gap:16px; padding:12px 16px; }
@@ -5206,3 +5210,11 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .community-profile-header:before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,#0000004d,transparent 18%,transparent 82%,#0000004d)}
 /* Header Sets and Wiki meet the 44px touch size. */
 #desktopSearch :is(.header-sets,.header-wiki,.btn){min-height:44px}
+/* Scanner settings sheet (design gate): 44px rows and disclosure, 11px text floor,
+   and a bottom sheet that stops below the status bar on short landscape phones. */
+dialog.sheet, #sheetBody { max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top) - 10px)); }
+@media (min-width: 700px) { dialog.sheet, #sheetBody { max-height: min(92dvh, calc(100dvh - 2 * env(safe-area-inset-top) - 10px)); } }
+.scan-settings .ss-set { min-height: 44px; align-items: flex-start; padding-block: 4px; } /* box sits on the title line, not between title and note */
+.scan-settings .ss-set input { margin-top: 1px; }
+.scan-settings .field > small { font-size: 11.5px; }
+.scan-settings .settings-disclosure summary { display: flex; align-items: center; min-height: 44px; }

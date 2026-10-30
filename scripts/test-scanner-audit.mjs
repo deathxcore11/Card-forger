@@ -10,6 +10,7 @@ const files=[
   "test-batch-scan-vikavolt.mjs",
   "test-build-printing-recovery.mjs",
   "test-celebrations-scan.mjs",
+  "test-scan-ai-read.mjs",
   "test-collector-search.mjs",
   "test-import-pricing-printings.mjs",
   "test-import-pricing-proven-printings.mjs",
