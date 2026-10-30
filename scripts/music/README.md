@@ -11,4 +11,4 @@ rendered with real sampled instruments, so there is nothing to license or credit
 - `check.py` — counts semitone clashes between held notes per cue.
 
 Setup: `apt-get install fluidsynth musescore-general-soundfont-lossless && pip install mido numpy`.
-Render all: `python3 render.py && python3 encode.py`, then copy `out/*` to `assets/audio/music/`.
+Render all: `python3 render.py && python3 encode.py`, then copy `out/MUS-*` to `assets/audio/music/` and `out/audio-loops.js` to the repo root. `seam.py` checks every loop seam.

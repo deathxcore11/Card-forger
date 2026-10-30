@@ -5,7 +5,11 @@
 // kept in Cache Storage after that, so the Android download stays small. Nothing sounds until the
 // first tap or key press (browser autoplay rules). Settings: on/off, effects and music volume.
 
-const KEY = "cardstashy-audio", CACHE = "cardstashy-audio-v1", SITE = "https://cardstashy.com";
+import { LOOPS } from "./audio-loops.js";
+
+const KEY = "cardstashy-audio", CACHE = "cardstashy-audio-v2", SITE = "https://cardstashy.com";
+// v2 holds the original score; older copies (the placeholder music) are cleared once.
+try { globalThis.caches?.keys().then((keys) => keys.filter((k) => k.startsWith("cardstashy-audio-") && k !== CACHE).forEach((k) => caches.delete(k))).catch(() => {}); } catch {}
 const DEFAULTS = { on: true, master: 1, sfx: 0.7, music: 0.4 };
 // Which cues have a file: prefix → [last number, ...numbers that are music rows instead].
 const RANGES = { APP: [20, 2], COL: [10], PACK: [13, 1], QP: [24, 1, 3], TT: [10], CARD: [31], CMB: [21], PW: [33, 1], PWB: [20], AMB: [7], RAV: [6] };
@@ -153,11 +157,15 @@ function playWanted() {
   load(musicURL(w.id), true).then((buf) => {
     if (pending !== key) return; pending = "";
     const src = ctx.createBufferSource(), g = ctx.createGain(), t = ctx.currentTime;
+    // Looping tracks carry their loop points (audio-loops.js): the seam sits inside continuous audio,
+    // so it is exact whatever padding the encoder added at the file's edges.
+    const pts = w.loop && LOOPS[w.id];
     src.buffer = buf; src.loop = w.loop; src.connect(g).connect(musicBus);
+    if (pts && pts[1] <= buf.duration) { src.loopStart = pts[0]; src.loopEnd = pts[1]; }
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(1, t + 1.2);
     fadeOut(playing);
     const me = playing = { key, src, g };
-    src.start(t);
+    src.start(t, pts && pts[1] <= buf.duration ? pts[0] : 0);
     // A one-shot (victory, defeat) hands over to its follow-up track when it ends.
     if (!w.loop) src.onended = () => { if (playing !== me) return; playing = null; const layer = LAYERS.find((l) => wants[l] === w); if (layer) wants[layer] = w.then ? { id: w.then, loop: true, then: "" } : null; playWanted(); };
   }, () => { if (pending === key) pending = ""; });

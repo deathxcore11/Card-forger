@@ -2,6 +2,7 @@
 import random, mido
 
 TPB = 480
+VAR = 0  # which pass of a long loop is being built (changes melodies and humanizing)
 NOTE = {'C':0,'D':2,'E':4,'F':5,'G':7,'A':9,'B':11}
 QUAL = {'':[0,4,7],'m':[0,3,7],'dim':[0,3,6],'aug':[0,4,8],'sus2':[0,2,7],'sus4':[0,5,7],'5':[0,7],
         '7':[0,4,7,10],'m7':[0,3,7,10],'maj7':[0,4,7,11],'add9':[0,4,7,14],'madd9':[0,3,7,14],'m6':[0,3,7,9],'6':[0,4,7,9]}
@@ -25,7 +26,7 @@ def nearest(pc, around):
 class Song:
     def __init__(s, bpm, beats=4, seed=1, unit=4):
         s.bpm, s.beats, s.unit = bpm, beats, unit  # unit 4 = quarter beat, 8 = eighth beat (6/8 feel)
-        s.tracks = {}; s.rng = random.Random(seed); s.prog = {}
+        s.tracks = {}; s.rng = random.Random(seed + VAR * 7919); s.prog = {}
         s.bar_ticks = int(TPB * beats * (4 / unit))
     def ch(s, name, program, channel, vol=100, pan=64, rev=60, cho=0, bank=0):
         s.tracks[name] = dict(program=program, channel=channel, vol=vol, pan=pan, rev=rev, cho=cho, bank=bank, notes=[])
@@ -76,7 +77,7 @@ class Song:
     def melody(s, tr, prog, bars, key, mode, rhythms, low=67, high=84, vel=84, phrase=4, cadence=2.0, rest_prob=0.0, seed=None, legato=0.95):
         """Motif melody: per phrase of `phrase` bars uses rhythms[a], rhythms[a], rhythms[b], cadence.
         Strong beats take chord tones, others move by scale step toward the next target."""
-        rng = random.Random(seed if seed is not None else s.rng.random())
+        rng = random.Random((seed + VAR * 1000) if seed is not None else s.rng.random())
         scale = sorted({(key + x) % 12 for x in MODES[mode]})
         allowed = [p for p in range(low - 2, high + 3) if p % 12 in scale]
         bt = s.bar_ticks / s.beats

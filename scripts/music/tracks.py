@@ -1,4 +1,5 @@
 # CardStashy original score. Each function builds one cue and returns (Song, bars, loop).
+import engine
 from engine import Song, chord
 
 # The wandering theme (D dorian, 6/8, eighth-note beats). Shared by the title and quoted in the act maps.
@@ -262,7 +263,7 @@ def pw_blind_eternities():
     s.swell(drone, [(0, 8), (8, 16)], [36, 48], vel=70)
     s.swell(air, [(0, 16)], [72, 84], vel=40)
     import random
-    r = random.Random(5)
+    r = random.Random(5 + engine.VAR)
     for b in range(total):
         _, pcs, _, _ = chord(P[b % len(P)])
         tones = [p for p in range(74, 94) if p % 12 in pcs]
