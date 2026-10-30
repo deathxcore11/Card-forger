@@ -227,7 +227,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   const selected=zoneSearch.kind==='prompt'?(s.nativeDraft?.revision===n.revision&&s.nativeDraft?.promptId===p.id?s.nativeDraft.indexes:[]):(n.selection?.chosen||[]).filter(r=>r.kind==='card').map(r=>r.id);
   const expectedRevision=n.revision,expectedPromptId=p?.id;
   const currentPrompt=fn=>()=>{const latest=session.snapshot();if(latest.native?.revision!==expectedRevision||latest.native?.prompt?.id!==expectedPromptId)throw Error('STALE_CHOICE');return fn();};
-  const row=node('div',undefined,'forge-zone-search-cards');row.setAttribute('role','group');row.setAttribute('aria-label','Eligible cards');
+  const row=node('div',undefined,'forge-zone-search-cards');row.dataset.auditScroll='';row.setAttribute('role','group');row.setAttribute('aria-label','Eligible cards');
   for(const choice of zoneSearch.choices){
    const chosen=selected.includes(zoneSearch.kind==='prompt'?choice.index:choice.cardId),pick=zoneSearch.kind==='prompt'?currentPrompt(()=>session.selectPrompt(choice.index)):()=>session.nativeSelect('card',choice.cardId,n.revision);
    const b=button('',pick,!choice.visible,choice.key);b.className='forge-zone-search-card';b.setAttribute('aria-pressed',String(chosen));b.setAttribute('aria-label',`${choice.name} · ${choice.zone}${chosen?' · selected':''}`);
@@ -383,7 +383,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const named=id=>{const c=s.status?.surface?.cards?.find(c=>c.id===id);if(c)return c.known?c.name:'Face-down card';const pl=n.players?.find(p=>p.id===id);return pl?(pl.isViewer?'You':'CPU'):null;};
    const compact=(item,top,count)=>{const mine=item.activatingPlayer===n.viewer,raw=plainText(item.text||''),src=item.source?.name||raw.match(/^([^-\u2014:]{1,40}?)\s+[-\u2014:]\s/)?.[1]||'',body=src&&raw.startsWith(src)?raw.slice(src.length).replace(/^\s*[-\u2014:]\s*/,''):raw;
     const short=body.replace(/\s*\([^)]*\)/g,'').trim(),first=short.match(/^.*?[.!?](?=\s|$)/)?.[0]||short,summary=first.length>110?first.slice(0,107).replace(/\s+\S*$/,'')+'…':first;
-    const card=node('article',undefined,'forge-stack-item');card.dataset.top=String(top);card.dataset.mine=String(mine);if(item.yielded)card.dataset.yielded='true';
+    const card=node('article',undefined,'forge-stack-item');card.dataset.full='';card.dataset.top=String(top);card.dataset.mine=String(mine);if(item.yielded)card.dataset.yielded='true';
     const head=button('',()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`);head.className='forge-stack-head';const kind=node('span',`${mine?'Your':'CPU'} ${item.ability===true?'ability':'spell'}${top?' · Next':''}`,'forge-stack-kind');kind.dataset.short=`${mine?'You':'CPU'}${top?' · Next':''}`;head.append(kind,node('strong',src||summary||`Stack item ${item.id}`,'forge-stack-name'));
     if(count>1){const c=node('b',`×${count}`,'forge-stack-count');head.append(c);head.setAttribute('aria-label',`${count} identical: ${src||summary}`);}card.append(head);
     if(src&&summary)card.append(node('p',symbols?undefined:summary,'forge-stack-summary'));if(src&&summary&&symbols)card.lastChild.innerHTML=symbols(summary);
