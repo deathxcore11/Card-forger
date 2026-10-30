@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "b6fd68e82772c7d9e06ef7e45d731923edd57b19",
-  "sourceVersion": "4.3.37",
+  "commit": "f24a5a425d927db7c0a686f5d9edbb8f3d402dcd",
+  "sourceVersion": "4.3.38",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -732,6 +732,7 @@
     "pack-preview.js",
     "pairing.js",
     "password-auth.js",
+    "planeswalk-art-zen.css",
     "planeswalk-audio.js",
     "planeswalk-cloud.js",
     "planeswalk.html",
@@ -2849,8 +2850,8 @@
     },
     {
       "path": "config.js",
-      "bytes": 628,
-      "sha256": "3167e10f43cf40de30d0baabb45bf3ef8c22002f5e630acb27d720ca1bc7aef4"
+      "bytes": 629,
+      "sha256": "deb2a6bbc03b71a259dce3f8d75b5b49011976fc5a045c92f4392829777038ed"
     },
     {
       "path": "core.js",
@@ -4568,6 +4569,11 @@
       "sha256": "1dd7cbc9316820b7f38778fcdf1fb9f7c0aa9c8634bb8807be54237fdbf3f3cb"
     },
     {
+      "path": "planeswalk-art-zen.css",
+      "bytes": 827921,
+      "sha256": "20dc45cc46e74db778141d8da24121c41bb19f92b4a461ca6f8cffff8b91d32b"
+    },
+    {
       "path": "planeswalk-audio.js",
       "bytes": 5284,
       "sha256": "9110cb746d08a74fd27c0264acba96670b255a2ba99cba574074154fd171d0ff"
@@ -4579,8 +4585,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 5055766,
-      "sha256": "b2c746eef40017ac209716bd05ba176db9e5ba5789ce1073c229c379dcc59a5c"
+      "bytes": 4263501,
+      "sha256": "0d3ea78a372fd32a9373ae4e963e5031a7f337b26fb6e860fa1effeff516e74e"
     },
     {
       "path": "planner.js",
@@ -4924,8 +4930,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 990,
-      "sha256": "a9bbcfef216ed33cd9c8e26778593e97b16365ec9d60d4ec13c87ebb622d8ec8"
+      "bytes": 739,
+      "sha256": "afdac68a4a0ee9868b863f49f0a0c26823df9d5cb953e835b8d2182791ae03c9"
     },
     {
       "path": "release-status.js",

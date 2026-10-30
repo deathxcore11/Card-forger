@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.37",
-  "commit": "b6fd68e82772c7d9e06ef7e45d731923edd57b19",
-  "tree": "6cd6cc9cdb887d69eb8cac88c665c30e5cdc1370",
+  "version": "4.3.38",
+  "commit": "f24a5a425d927db7c0a686f5d9edbb8f3d402dcd",
+  "tree": "3772fbce6631ab5193d1d5ba2115922ea5bf1e09",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -1939,7 +1939,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "3a1dcbb6038cf08eaef82ba6da5320975eb9566c5303428d9e6bec200c58ae45"
+      "sha256": "bbcaabcf810670739109ba8c5eac97cce10e3a758dae9bb238d0c5d96b6e3d40"
     },
     {
       "path": "core.js",
@@ -3609,7 +3609,7 @@
     {
       "path": "package.json",
       "bytes": 11952,
-      "sha256": "4060814a97727b9475afc024d6c9a9fade6199446efe75380fbccb22e7f603b4"
+      "sha256": "e30c9956976861f2373424d8fdaaa0c945c2541274f0985159efb1e515ffd981"
     },
     {
       "path": "pairing.js",
@@ -3620,6 +3620,11 @@
       "path": "password-auth.js",
       "bytes": 3356,
       "sha256": "1dd7cbc9316820b7f38778fcdf1fb9f7c0aa9c8634bb8807be54237fdbf3f3cb"
+    },
+    {
+      "path": "planeswalk-art-zen.css",
+      "bytes": 827921,
+      "sha256": "20dc45cc46e74db778141d8da24121c41bb19f92b4a461ca6f8cffff8b91d32b"
     },
     {
       "path": "planeswalk-audio.js",
@@ -3633,8 +3638,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 5055721,
-      "sha256": "6ad879194b239837fd6dfd32f5b961faa1d8ffaa063e2b0fb7277b8cf69431eb"
+      "bytes": 4263456,
+      "sha256": "cd28b4fdeda658b50e8c60fbad9d1589065cbed93580c09acfc64cc02207c2f3"
     },
     {
       "path": "planner.js",
@@ -3978,8 +3983,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 990,
-      "sha256": "a9bbcfef216ed33cd9c8e26778593e97b16365ec9d60d4ec13c87ebb622d8ec8"
+      "bytes": 739,
+      "sha256": "afdac68a4a0ee9868b863f49f0a0c26823df9d5cb953e835b8d2182791ae03c9"
     },
     {
       "path": "release-status.js",
@@ -4298,8 +4303,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15628,
-      "sha256": "0abe9b8a21691e0c8a1fc5e4a35844b3ca64ef15600d0bf189a8e6ba581c0d01"
+      "bytes": 15626,
+      "sha256": "b7c2f2f54a53555fa1ccd38290367e3fe5349e3f3eb9f47ff7ad3ea005950941"
     },
     {
       "path": "sync-merge.js",
