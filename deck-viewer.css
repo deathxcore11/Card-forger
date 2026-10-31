@@ -247,6 +247,7 @@ button.ds-stat b{display:inline-grid;place-items:center;min-width:30px;padding:1
  .ds-hero .hero-body{padding:12px 14px 0}
  .ds-foot{margin:0 -14px}
  .ds-stats{padding:10px 14px 12px;gap:4px 14px}
+ .ds-stat:last-child:not(:first-child){margin-left:0}
  .ds-actions .btn{flex:1 1 0;min-width:0;padding-inline:10px}
  .ds-actions .ds-primary{flex-basis:100%}
 }
