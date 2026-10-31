@@ -531,3 +531,12 @@ body.glass :is(.guide-along-row, .guide-link) { background: linear-gradient(160d
   .cs-tabs[aria-label="Card details"] > button { padding-inline: clamp(8px, 2.6vw, 16px); gap: 0; }
   .cs-tabs[aria-label="Card details"] > button .label-ico { display: none; }
 }
+
+/* Card detail art: the frame hugs the printed card on every game.
+   Pokémon (600×825 and 734×1024) and Yu-Gi-Oh! (421×614) scans are not Magic's 488×680, so the
+   shared cover box cropped them and slid the scan's rounded corner off the clip, which let the
+   dark fill show between card and frame. Their art keeps its own shape, the way the collection
+   grid already does, and any see-through corner pixel shows the frame, never a dark fill. */
+.cd-img .cd-zoom > img.card-img[data-tier] { background: transparent; }
+.cd-img:is([data-finish-game="ptcg"], [data-finish-game="ygo"]) .card-img { height: auto; aspect-ratio: auto 600 / 825; object-fit: contain; }
+.cd-img[data-finish-game="ygo"] .card-img { aspect-ratio: auto 421 / 614; }
