@@ -120,7 +120,7 @@ export function deckResultMarkup(result,id,{coach='',saved=false,saving=false}={
    back:'<button class="icon light" data-act="closeSheet" aria-label="Back">←</button>',
    badge:random?'Random build':'AI build',format:`<span class="chip dark">${esc(request.formatName)}</span>`,
    legality:`<span class="review-badge ${result.requestSatisfied===false||draft?'warn':'ok'}">${result.requestSatisfied===false?'Checks unmet':draft?'Draft':'✓ Checked'}</span>`,
-   line:esc(sectionCounts),
+   line:`${esc(sectionCounts)}${draft?'<br>Reviewable draft · check the list before saving':''}`,
    stats:[
     {value:String(pricing.copies),label:'cards'},
     {value:`${pricing.ownedCopies}/${pricing.copies}`,label:'owned'},

@@ -145,5 +145,5 @@ export function deckShell({game,source='mine',art='',artHtml='',title='',back=''
    <div class="deck-hero-id"><p class="deck-hero-eyebrow">${badge?`<span class="chip dark ds-badge">${badge}</span>`:''}${format}${legality}</p><h1>${esc(title)}</h1>${line?`<p class="ds-line">${line}</p>`:''}</div>
    <div class="ds-foot">${stats.length?`<div class="ds-stats">${stats.map(stat).join('')}</div>`:''}${pct!==null?`<span class="ds-bar" role="img" aria-label="${pct}% owned"><i style="width:${pct}%"></i></span>`:''}</div>
   </div></section>
- <div class="ds-head">${String(lead).trim()?`<div class="ds-lead">${lead}</div>`:''}${actions.length?`<div class="ds-actions">${actions.map(act).join('')}</div>`:''}${status}${versions?`<div class="ds-versions">${versions}</div>`:''}</div>`;
+ <div class="ds-head">${String(lead).trim()?`<div class="ds-lead">${lead}</div>`:''}${actions.some(a=>a&&(a.html||a.label))?`<div class="ds-actions">${actions.filter(a=>a&&(a.html||a.label)).map(act).join('')}</div>`:''}${status}${versions?`<div class="ds-versions">${versions}</div>`:''}</div>`;
 }
