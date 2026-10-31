@@ -1,0 +1,418 @@
+/* ---------- G1 playtest fixes (29 Oct) ---------- */
+/* hero select: the Formation switch gets its own row under the heroes instead of floating over them */
+@media (min-aspect-ratio:4/5){#app .screen.heroes .hero-pick{height:calc(var(--pw-vh,100dvh) - 206px)}}
+#app .screen.heroes>.btn.formtoggle{position:static!important;justify-self:center;margin:10px auto 2px}
+/* incoming chip: never "Safe" when the game can't tell, and lethal reads as lethal */
+#app .battle .incoming.unsure{background:#2a2419e6;color:#e9dcc2;border-color:#c99c5999}
+#app .battle .incoming.lethal{background:linear-gradient(#a3261b,#5c0f0a);color:#fff2e6;border-color:#ffb199;box-shadow:0 0 0 1px #000a,0 0 12px #ff5a3c88}
+/* desktop mouse: the whole hand sits on screen, nothing tucked under the bottom edge */
+@media (hover:hover) and (pointer:fine) and (min-aspect-ratio:4/5){
+ #app .battle{grid-template-rows:minmax(0,1fr) 22px 118px!important}
+ #app[data-pw-roomy] .battle{grid-template-rows:minmax(0,1fr) 26px 142px!important}
+ #app .battle .hand{height:118px!important;align-self:end!important;align-items:end;padding:0 0 12px!important;box-sizing:border-box}
+ #app[data-pw-roomy] .battle .hand{height:142px!important}
+ #app .battle .hand>.card{translate:0 0!important;transform-origin:50% 100%}
+}
+/* touch: a sideways swipe across the hand lifts the card under the finger to read it */
+#app .battle .hand>.card.pw-peek{translate:0 -18px!important;z-index:5;transition:translate .1s ease-out}
+/* reward and shop cards: full type line and name, same height in a row */
+#app .screen .choices>.card .kind,#app .screen .choices>.buy>.card .kind{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.2;padding-block:3px}
+#app .screen .choices>.card .head b,#app .screen .choices>.buy>.card .head b{-webkit-line-clamp:2;text-overflow:clip!important;overflow-wrap:anywhere;hyphens:auto}
+#app .screen>.choices:has(>.buy){align-items:stretch}
+#app .screen>.choices>.buy{display:flex;flex-direction:column;align-items:center}
+#app .screen>.choices>.buy>.card{flex:1 1 auto}
+#app .screen:has(>.choices>.buy)>.choices:not(:has(>.buy))>.option .muted{display:block!important;-webkit-line-clamp:unset!important;overflow:visible!important;white-space:normal!important;text-overflow:clip!important}
+#app .screen:has(>.choices>.buy)>.choices>.option>b{white-space:normal;text-wrap:balance}
+/* close button for the zoomed card and the help panel */
+.pw-x{position:absolute;top:10px;right:10px;z-index:3;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:#120f0ae6;color:#f3d48a;font:700 1.05rem/1 var(--body);box-shadow:0 0 0 1px #c99c5999,0 4px 10px #000a;cursor:pointer}
+.pw-x:hover{background:#2a2016}
+.pw-x:focus-visible{outline:2px solid var(--pw-gold);outline-offset:2px}
+.pw-zoom>.pw-x{position:fixed;top:max(12px,env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px))}
+/* help: the how-to and credits open over the game */
+.pw-help .pw-menu-card{position:relative;display:block;width:min(560px,calc(100vw/var(--pw-zoom,1) - 24px));padding:18px 20px 16px}
+.pw-help .pw-menu-card>h2{margin:4px 48px 10px}
+.pw-help .pw-menu-card>p{margin:0 0 10px;font:500 .8rem/1.45 var(--body);color:#e6dac4}
+.pw-help .pw-menu-card>.btn.main{display:flex;width:100%;margin:6px 0 12px}
+.pw-help .pw-menu-card>.pw-credits{font-size:.7rem;color:#bfb3a0;margin:0}
+/* a card an event gives you is shown before you go back to the map */
+#app>.pw-gift,.pw-gift{display:grid!important;position:fixed;inset:0;z-index:10040;display:grid;place-items:center;padding:16px;background:radial-gradient(circle at 50% 45%,#0b0907aa,#000d);animation:pw-menu-in .16s ease-out}
+.pw-gift-box{display:grid;justify-items:center;gap:12px;max-width:min(320px,calc(100vw/var(--pw-zoom,1) - 32px))}
+.pw-gift-why{margin:0;font:700 .95rem/1.2 Cinzel,serif;letter-spacing:.12em;text-transform:uppercase;color:var(--pw-gold);text-align:center;text-wrap:balance}
+.pw-gift-box>.card{width:170px!important;height:236px!important;pointer-events:none;animation:pw-gift-in .5s cubic-bezier(.2,.9,.3,1.15) both;box-shadow:0 0 0 1px #e8b95b,0 0 34px #e8b95b66,0 18px 40px #000c}
+.pw-gift-box>.card .kind{white-space:normal;overflow:visible;text-overflow:clip}
+.pw-gift-box>.btn.main{min-width:180px;min-height:46px;justify-content:center}
+@keyframes pw-gift-in{0%{opacity:0;transform:perspective(600px) rotateY(90deg) scale(.8)}60%{opacity:1}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){.pw-gift-box>.card{animation:none}}
+/* combat log: ≡ leads the message line; the log opens as a panel under the HUD */
+#app .battle .controls .log{pointer-events:auto}
+#app .battle .log .pw-histbtn{display:inline-grid;place-items:center;vertical-align:middle;width:26px;height:26px;margin:-4px 8px -4px -6px;padding:0;border:0;border-radius:50%;background:#2a2016;color:#f3d48a;font:700 .8rem/1 var(--body);box-shadow:0 0 0 1px #c99c5999;cursor:pointer;position:relative}
+#app .battle .log .pw-histbtn::after{content:"";position:absolute;inset:-9px}
+#app .battle .log .pw-histbtn.chosen{background:linear-gradient(var(--pw-gold-hi),var(--pw-gold));color:#1b1610}
+#app .battle .log .pw-histbtn:focus-visible{outline:2px solid var(--pw-gold);outline-offset:2px}
+#app .battle .pw-hist{position:fixed;z-index:60;top:calc(var(--pw-hud-h,48px) + 10px);left:50%;translate:-50% 0;box-sizing:border-box;width:min(520px,calc(100vw/var(--pw-zoom,1) - 24px));max-height:calc(var(--pw-vh,100dvh) - 230px);overflow:auto;overscroll-behavior:contain;padding:14px 56px 12px 16px;border-radius:14px;background:linear-gradient(#1b1610f7,#0d0b08f7);box-shadow:0 0 0 1px #c99c5999,0 18px 40px #000d;color:#efe6d2;text-align:left;animation:pw-menu-card .18s ease-out}
+#app .battle .pw-hist>b{font:700 .8rem/1.2 Cinzel,serif;letter-spacing:.12em;text-transform:uppercase;color:var(--pw-gold)}
+#app .battle .pw-hist ol{margin:8px 0 0;padding-left:1.3em;display:grid;gap:4px;font:500 .74rem/1.35 var(--body)}
+#app .battle .pw-hist li:last-child{color:#f3d48a}
+#app .battle .pw-hist>.pw-x{top:6px;right:6px}
+/* phone upright: one action band (Attack all, End turn) on the right, the whole hand above the bottom edge, readable small text */
+@media (max-aspect-ratio:3999/5000){
+ #app .battle .controls{grid-template-columns:minmax(0,1fr) auto minmax(150px,auto)!important;align-items:center}
+ #app .battle .controls>[data-act=all]{grid-column:2!important;grid-row:2;justify-self:end;min-height:44px;padding:0 14px;background:#1d1711;border:1px solid #c99c5999;color:#efe6d2;opacity:1}
+ #app .battle .controls>[data-act=all]:disabled{color:#9a8f7c;border-color:#c99c5944}
+ #app .battle .controls>[data-act=end]{grid-column:3!important;grid-row:2;width:100%}
+ #app .battle .controls>:is([data-act=arrange],[data-act=sac]){grid-column:1!important;grid-row:2;justify-self:start}
+ #app .battle .controls>[data-act=cancel]{grid-column:1/-1!important;grid-row:3}
+ #app .battle .hand{padding-bottom:max(10px,env(safe-area-inset-bottom,0px))!important}
+ #app .battle .hand>.card{translate:0 0!important;transform-origin:50% 100%}
+ #app .battle .hand .card .head b{font-size:.62rem!important;letter-spacing:0!important}
+ #app .battle .piles>span{font-size:.7rem!important}
+}
+/* Attack all reads as a real secondary button everywhere, and its label wraps instead of clipping */
+#app .battle .controls>[data-act=all]{background:#1d1711!important;border:1px solid #c99c5999!important;color:#efe6d2!important;opacity:1!important;white-space:normal;line-height:1.15;padding-inline:8px!important;text-wrap:balance}
+#app .battle .controls>[data-act=all]:disabled{color:#9a8f7c!important;border-color:#c99c5944!important}
+/* ---------- G2 map (29 Oct, Randall picked all six ideas from the map design PDF) ---------- */
+/* paths: curves; walked = brass, open ways forward flow gold, future faint, behind you almost gone */
+.pw-paths path{fill:none;stroke-linecap:round;transition:opacity .18s ease-out,stroke-width .18s ease-out}
+.pw-paths path.future{stroke:#c9b48a;stroke-opacity:.32;stroke-width:1.6;stroke-dasharray:2 6}
+.pw-paths path.behind{stroke:#c9b48a;stroke-opacity:.1;stroke-width:1.2;stroke-dasharray:2 6}
+.pw-paths path.walked{stroke:#b08a4a;stroke-opacity:.85;stroke-width:3;filter:drop-shadow(0 0 2px #00000099)}
+.pw-paths path.ahead{stroke:#ffd98a;stroke-width:3;stroke-dasharray:10 8;filter:drop-shadow(0 0 4px #e8b95bcc);animation:pw-flow 1.1s linear infinite}
+@keyframes pw-flow{to{stroke-dashoffset:-18}}
+@media (prefers-reduced-motion:reduce){.pw-paths path.ahead{animation:none}}
+html.pw-calm .pw-paths path.ahead{animation:none}
+/* route preview while a node is hovered, focused or held */
+.map.pw-cascade .pw-paths path{opacity:.12}
+.map.pw-cascade .pw-paths path.pw-reach{opacity:1;stroke:#ffe2a0;stroke-opacity:.95;stroke-width:3.2;stroke-dasharray:none;filter:drop-shadow(0 0 5px #e8b95bcc)}
+.map.pw-cascade .node[data-r]:not(.pw-reach){opacity:.38;transition:opacity .18s}
+.map.pw-cascade .node.pw-reach{opacity:1}
+/* empty cells keep the grid's spacing but show nothing */
+#app .map .node.pw-gap{visibility:hidden!important;pointer-events:none}
+/* node offsets: a little jitter, and each row drifts like a road (landscape: lanes are rows of the screen, kept low so the sky and the cathedral stay clear) */
+@media (min-aspect-ratio:4/5){
+ #app .map .maprow>.node[data-r]:not(.boss){translate:calc(var(--ja,0) * 12px) calc(var(--jb,0) * 9px + var(--m,0) * 16px + (2 - var(--lane,1)) * 26px)!important}
+}
+@media (max-aspect-ratio:3999/5000){
+ #app .map .maprow>.node[data-r]:not(.boss){translate:calc(var(--ja,0) * 9px + var(--m,0) * 14px) calc(var(--jb,0) * 8px)!important}
+}
+/* labels: the medallion says what a node is; the name stays for screen readers, the title and the hold card */
+#app .map .node .nl{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important;margin:-1px!important;padding:0!important}
+/* three tiers by stakes: plain fights and events small, shops/rests/treasure medium, legends and dungeons large */
+#app .map .maprow>.node[data-r]:is([data-t=fight],[data-t=event]){--ns:30px;--is:15px}
+#app .map .maprow>.node[data-r]:is([data-t=rest],[data-t=shop],[data-t=treasure],[data-t=bargain]){--ns:38px;--is:19px}
+#app .map .maprow>.node[data-r]:is([data-t=elite],[data-t=dungeon]){--ns:46px;--is:24px}
+#app .map .maprow>.node[data-r][data-t=elite]::before{box-shadow:0 0 0 2px #7a1a14,0 0 16px #c8303099}
+#app .map .maprow>.node[data-r][data-t=dungeon]::before{box-shadow:0 0 0 2px #2e4a6a,0 0 14px #6fa0d899}
+/* the soft dark band behind the route keeps medallions readable on the painting */
+#app .map>svg.pw-paths{background:radial-gradient(ellipse 62% 44% at 50% 62%,#00000066,transparent 72%)}
+@media (max-aspect-ratio:3999/5000){#app .map>svg.pw-paths{background:radial-gradient(ellipse 55% 60% at 50% 55%,#0000005c,transparent 74%)}}
+/* audit G2 minors: future medallions a touch brighter on dark ground, solid Full heal chip off the link line, boss clear of the act title */
+#app .map .node[data-r]:disabled:not(.past):not(.done)::before{filter:brightness(1.18)}
+#app .map .node.boss .heal{background:#0d1a10!important;box-shadow:0 0 0 2px #0b0d12,0 2px 6px #000a;translate:0 6px}
+/* the boss seal's rune ring is wider than its box: room on both sides, so it sits off the last Rest row and inside the painted frame, clear of the act label */
+@media (min-aspect-ratio:4/5){#app .map .maprow>.node.boss{margin-inline:26px 44px!important}#app .map .maprow:last-of-type{margin-inline-start:20px}}
+@media (min-aspect-ratio:4/5) and (min-width:1000px){#app .map .maprow>.node.boss{margin-inline:40px 72px!important}}
+@media (min-aspect-ratio:4/5) and (min-width:1200px){#app .map .maprow>.node.boss{margin-inline:40px 104px!important}}
+/* narrow landscape maps (phones, 1024 tablets): the act caption has no column of its own, so the boss ring keeps clear of it by not having it; the act name stays on the act-start screen and the journal */
+@media (min-aspect-ratio:4/5) and (max-width:1199px){#app .map>.plane:first-of-type{display:none!important}}
+/* node info card: a lighter dim so the lit route still shows behind it */
+.pw-zoom.pw-node-zoom{background:#0000008c!important;backdrop-filter:none!important}
+/* ---------- H2 hand touch (29 Oct): flick, rubber band, aim arrow, two-finger peek ---------- */
+#app .battle .hand>.card.pw-rub{translate:var(--rbx,0) var(--rby,0)!important;transition:none!important}
+#app .battle .hand>.card.pw-snap{transition:translate .45s cubic-bezier(.34,1.56,.64,1)!important}
+.pw-short{animation:pw-short .5s ease-out}
+@keyframes pw-short{30%{box-shadow:0 0 0 3px #ff5a4a,0 0 20px 4px #ff5a4acc;scale:1.15}}
+/* aim arrow: hero ink (Chandra red, Elspeth bone-gold), dark outline, a drop shadow, two-tone head */
+body{--aim:#e8473a;--aim-d:#9e1c16;--aim-hi:#ff9a7c;--aim-o:#2a0705}
+body[data-hero=W]{--aim:#f1d88c;--aim-d:#b88a34;--aim-hi:#fff6d6;--aim-o:#2d1f08}
+.pw-arrow{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9998;overflow:visible;transition:opacity .13s}
+.pw-arrow.pw-arrow-out{opacity:0}
+.pw-arrow path{stroke-linejoin:round}
+.pw-arrow-sh{transform:translate(0,4px);opacity:.42}
+.pw-arrow-sh path{fill:#000;stroke:#000;stroke-width:3}
+.pw-arrow-body .pw-arrow-segs{fill:var(--aim);stroke:var(--aim-o);stroke-width:1.6;opacity:.9;transition:opacity .12s}
+.pw-arrow-body .pw-arrow-hi{fill:var(--aim-hi);opacity:.45}
+.pw-arrow-body .pw-arrow-face{fill:var(--aim-hi)}
+.pw-arrow-body .pw-arrow-face2{fill:var(--aim-d)}
+.pw-arrow-body .pw-arrow-head{fill:none;stroke:var(--aim-o);stroke-width:2.2}
+.pw-arrow.pw-hot .pw-arrow-body{filter:drop-shadow(0 0 6px var(--aim))}
+.pw-arrow.pw-hot .pw-arrow-body .pw-arrow-segs{opacity:1}
+.pw-lock{position:fixed;pointer-events:none;z-index:9997;animation:pw-lock-in .22s cubic-bezier(.34,1.6,.64,1)}
+.pw-lock>i{position:absolute;width:18px;height:18px;border:3.5px solid var(--aim);filter:drop-shadow(0 0 1.5px var(--aim-o)) drop-shadow(0 2px 3px #000a);animation:pw-lock-breathe .7s ease-in-out .22s infinite alternate}
+.pw-lock>i:nth-child(1){left:0;top:0;border-right:0;border-bottom:0;border-top-left-radius:5px;--bx:-3px;--by:-3px}
+.pw-lock>i:nth-child(2){right:0;top:0;border-left:0;border-bottom:0;border-top-right-radius:5px;--bx:3px;--by:-3px}
+.pw-lock>i:nth-child(3){left:0;bottom:0;border-right:0;border-top:0;border-bottom-left-radius:5px;--bx:-3px;--by:3px}
+.pw-lock>i:nth-child(4){right:0;bottom:0;border-left:0;border-top:0;border-bottom-right-radius:5px;--bx:3px;--by:3px}
+@keyframes pw-lock-in{from{scale:1.35;opacity:0}}
+@keyframes pw-lock-breathe{to{translate:var(--bx) var(--by)}}
+#app .battle .unit .bar{position:relative}
+#app .battle .unit .bar>.pw-hpghost{position:absolute;top:0;bottom:0;background:#fff;border-radius:inherit;box-shadow:0 0 6px #fff;animation:pw-hpghost .5s ease-in-out infinite alternate;pointer-events:none}
+@keyframes pw-hpghost{from{opacity:.95}to{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.pw-lock,.pw-lock>i,#app .battle .unit .bar>.pw-hpghost{animation:none}}
+#app .battle .hand>.card.pw-lifted.pw-aiming{opacity:1!important;translate:0 -16px!important;box-shadow:0 0 0 2px var(--aim-hi),0 0 24px 4px var(--aim)!important}
+.pw-ghost.pw-flung{transition:translate .18s ease-in,opacity .18s ease-in!important;translate:0 -150px!important;opacity:0!important}
+.pw-zoom.pw-holding{pointer-events:none}
+.pw-zoom.pw-peek{inset:auto;left:50%;translate:-50% 0;display:block;width:max-content;max-width:calc(100vw - 24px);padding:0;background:none!important;backdrop-filter:none!important;border:0;box-shadow:none;pointer-events:none;z-index:9997;animation:none}
+.pw-zoom.pw-peek>.pw-info{margin:0;box-sizing:border-box;width:auto;max-width:min(380px,calc(100vw - 24px));padding:10px 14px;font:500 13px/1.4 var(--body);background:#0b0a0cf2;box-shadow:0 10px 30px #000b}
+.pw-zoom.pw-peek>.pw-info b{font-size:14px}
+.pw-zoom.pw-peek>.pw-info p{margin:4px 0 0;font-size:13px}
+#app .pw-peeked{outline:2px solid #ffd27a;outline-offset:3px;border-radius:10px}
+#app .battle .hand>.card.pw-rub:disabled{filter:brightness(.85) saturate(.8)}
+#app .battle .card .cost.pw-short-on{background:#d8402f!important;color:#fff!important;box-shadow:0 0 0 2px #ff9a8a,0 0 12px #ff5a4a!important;scale:1.2;opacity:1!important}
+#app .battle .energy.pw-short-on{box-shadow:0 0 0 3px #ff5a4a,0 0 22px 4px #ff5a4acc!important}
+@media (prefers-reduced-motion:reduce){.pw-arrow-line{animation:none}.pw-snap{transition-duration:.2s!important}.pw-short{animation-duration:.3s}}
+/* app-wide design pass (4.3.34): Formation switch */
+.formtoggle{display:inline-flex!important;align-items:center;gap:10px;min-height:44px;padding:0 14px!important;border:1px solid #e8b95b40!important;border-radius:999px!important;font-size:.8rem}.formtoggle i{position:relative;width:34px;height:20px;border-radius:999px;background:#ffffff1f;transition:background .2s ease}.formtoggle i::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#d9d2c3;transition:transform .2s ease}.formtoggle.chosen i{background:#e8b95b}.formtoggle.chosen i::after{transform:translateX(14px);background:#1b1406}.formtoggle b{min-width:2.2em;text-align:left;font-weight:600}
+/* ---------- C2 clipping pass (29 Oct): APK status bar, hero badges ---------- */
+/* the HUD row grows by the status bar (48px on the APK), and every screen starts below it */
+:root{--pw-hud-h:calc(48px + env(safe-area-inset-top,0px))}
+#app:has(>.top)>section.screen{padding-top:calc(var(--pw-hud-h) + 8px)!important}
+/* hero colour badge: inside the card's top-right corner, clear of the 14px rounded edge (the generic option frame moved it) */
+#app .screen .option.hero-pick::before{inset:auto;top:12px;right:12px;left:auto;bottom:auto;width:32px;height:32px;border-radius:50%;border:0}
+#app .screen .option.hero-pick::after{content:"";position:absolute;inset:3px;border-radius:11px;border:1px solid var(--pw-hair);pointer-events:none}
+/* the HUD row's height includes the status bar, so --pw-hud-h is its true bottom edge */
+#app>.top{box-sizing:border-box}
+#app .top>:is(.btn,a.btn,.pw-menubtn),#app .top .deck>summary{min-width:44px!important;min-height:44px!important}
+/* deck list: nothing laid out while closed; open, it drops below the HUD, centred and on screen */
+#app details.deck:not([open])>.decklist{display:none!important}
+#app details.deck[open]>.decklist{position:fixed;top:calc(var(--pw-hud-h) + 8px);left:50%;right:auto;translate:-50% 0;width:min(320px,calc(100vw - 32px));max-height:calc(100dvh - var(--pw-hud-h) - 60px);z-index:40}
+/* combat log line: the ≡ button sits beside the text instead of inside its clamp, with a 44px hit area */
+#app .battle .controls .log{display:flex!important;align-items:center;justify-content:center;gap:6px;overflow:visible!important;-webkit-line-clamp:unset!important;white-space:normal!important;text-overflow:clip!important}
+#app .battle .controls .log .pw-logt{min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+#app .battle .log .pw-histbtn{position:relative;flex:none;margin:0!important}
+#app .battle .log .pw-histbtn::after{content:none}
+#app .battle .log .pw-histbtn::before{content:"";position:absolute;inset:-9px;border-radius:50%}
+/* close buttons on overlays sit below the HUD row, never under the status bar or the ☰ */
+.pw-zoom>.pw-x{top:calc(var(--pw-hud-h) + 8px)!important}
+.pw-help{padding-top:calc(var(--pw-hud-h) + 8px)!important}
+/* sliders get a 44px touch row */
+.pw-menu-vol input{height:44px}
+/* map medallions: 44px tap targets at every size */
+#app .map .node:not(.boss){min-width:44px;min-height:44px}
+/* hero select: the Formation switch clears the gesture bar */
+#app .screen.heroes{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 12px)!important}
+/* unit name plates: the body face fits names at 11px on two lines without "…" */
+#app .unit .name{font-family:var(--body)!important;font-weight:700!important;letter-spacing:0!important;text-transform:none!important;font-variant:normal!important;display:block!important;-webkit-line-clamp:unset!important;overflow:visible!important;text-overflow:clip!important;white-space:normal!important;overflow-wrap:break-word;hyphens:auto;line-height:1.12!important}
+/* block preview chip: short lines that fit the creature's width */
+#app .battle .unit .pv{line-height:1.15!important;padding:2px 4px!important}
+#app .battle .piles>.bankhint{white-space:nowrap}
+/* the fanned hand's rotated corners stay above the gesture bar */
+#app>.battle{padding-bottom:max(6px,calc(env(safe-area-inset-bottom,0px) * 1.65))!important}
+#app .battle .controls .log{margin-bottom:6px!important}
+/* hero select fits under the taller HUD row: cards share what's left after the title and the Formation switch */
+@media (min-aspect-ratio:4/5){#app .screen.heroes .hero-pick{height:auto!important;min-height:calc(var(--pw-vh,100dvh) - var(--pw-hud-h) - 196px - env(safe-area-inset-bottom,0px))!important}#app .screen.heroes{align-content:center}}
+@media (min-aspect-ratio:4/5) and (max-height:500px){#app .screen.heroes>p{display:none}#app .screen.heroes>h2{margin:0 0 6px!important}#app .screen.heroes .hero-pick{height:calc(var(--pw-vh,100dvh) - var(--pw-hud-h) - 118px - env(safe-area-inset-bottom,0px))!important}}
+
+/* the hit preview sits over the art, so the name under it stays readable */
+#app .battle .unit>.pw-prev{top:56%!important;bottom:auto!important;translate:-50% -50%!important}
+/* battle camera: touch.js measures how far both sides can zoom and still fit */
+#app .battle .field>.side{zoom:var(--pw-cam,1)}
+/* side by side, the two sides meet in the middle (with a no-man's-land gap) so the camera has room to zoom in */
+/* fixed zones (Randall: "keep same zone, don't switch them up when having more mobs"): on a wide screen you are always on
+   the left and the enemies on the right; on a tall screen the enemies are always on top. Only the camera zoom changes. */
+@media (min-aspect-ratio:1/1){
+ #app#app .battle .field{grid-template-columns:max-content max-content!important;grid-template-rows:auto!important;justify-content:center!important;align-content:center!important;column-gap:clamp(24px,6vw,120px)!important;row-gap:0!important}
+ #app#app .battle .field>.side{order:0!important;grid-row:1!important;width:auto!important;max-width:none!important;margin:0!important;flex-wrap:nowrap!important}
+ #app#app .battle .field>.side.you{grid-column:1!important}
+ #app#app .battle .field>.side.foe{grid-column:2!important}}
+@media (max-aspect-ratio:999/1000){
+ #app#app .battle .field{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;align-content:space-evenly!important;justify-content:stretch!important}
+ #app#app .battle .field>.side{width:auto!important;margin:0!important;justify-content:center!important;flex-wrap:nowrap!important}
+ #app#app .battle .field>.side.foe{order:-1!important;grid-row:1!important;grid-column:1!important}
+ #app#app .battle .field>.side.you{order:0!important;grid-row:2!important;grid-column:1!important}}
+/* hero select: signature emblem and starter deck sit under the abilities, like Spire's starting relic */
+#app .screen.heroes .hero-pick .pw-kit{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-top:8px;padding-top:8px;border-top:1px solid var(--pw-hair);position:relative;z-index:1}
+#app .screen.heroes .hero-pick .pw-kit em{display:block;font:700 .66rem/1.1 Cinzel,serif;letter-spacing:.12em;text-transform:uppercase;color:#c9a35a;font-style:normal;margin-bottom:2px}
+#app .screen.heroes .hero-pick .pw-hsig{display:flex;align-items:center;gap:8px;font:700 .8rem/1.15 var(--body);color:#f3e6c4;flex:none}
+#app .screen.heroes .hero-pick .pw-hsig>:is(.emb-art,svg.emb){width:34px;height:34px;flex:none;margin:0}
+#app .screen.heroes .hero-pick .pw-starter{flex:1 1 180px;min-width:0;font:500 .74rem/1.3 var(--body);color:#d8cdb4}
+#app .screen.heroes .hero-pick .pw-starter>span:not(:last-child)::after{content:"·";margin:0 5px 0 4px;color:#8d8170}
+#app .screen.heroes .hero-pick .pw-starter>span{display:inline-block;white-space:nowrap}
+#app .screen.heroes .hero-pick>b{padding-right:44px}
+@media (min-aspect-ratio:4/5) and (max-height:500px){#app .screen.heroes .hero-pick{height:auto!important;min-height:150px!important;justify-content:flex-end}#app .screen.heroes .hero-pick>b{font-size:1rem!important}#app .screen.heroes .hero-pick>.muted{display:none}#app .screen.heroes .hero-pick .pw-kit{flex-wrap:nowrap;margin-top:4px;padding-top:6px;gap:12px}#app .screen.heroes .hero-pick .pw-hsig{font-size:.74rem}#app .screen.heroes .hero-pick .pw-hsig>:is(.emb-art,svg.emb){width:28px;height:28px}}
+/* pause menu and help: rows keep 44px in landscape too; the help title clears the close button */
+.pw-menu .pw-menu-row,.pw-menu .btn{min-height:44px!important}
+.pw-help .pw-menu-card>h2,.pw-help .pw-menu-card>b:first-of-type{min-height:44px;display:flex;align-items:center;justify-content:center;padding:0 52px;margin-bottom:8px}
+#app .map .node:not(.boss){min-width:46px;min-height:46px}
+#app .battle .log .pw-histbtn{min-width:46px;min-height:46px}
+/* the HUD lines up with the app's page gutter (16px on phones, the centred 1196px column on desktop) */
+#app:has(>:is(.battle,.map,.screen))>.top,#app>.top{padding-left:max(calc(16px / var(--pw-zoom,1)),calc((100vw - 1196px)/2/var(--pw-zoom,1)),env(safe-area-inset-left,0px))!important;padding-right:max(calc(16px / var(--pw-zoom,1)),calc((100vw - 1196px)/2/var(--pw-zoom,1)),env(safe-area-inset-right,0px))!important}
+/* phones: the HUD has no room for the title, so it stays for screen readers only, on the 16px gutter */
+@media (max-aspect-ratio:3999/5000){#app .top h1{display:block!important;position:absolute!important;left:16px;top:0;width:1px;height:1px;margin:0;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}}
+/* Fury label and the saved-energy note stack without touching */
+#app .battle .chain>span{line-height:1.1!important}
+#app .battle .piles>.bankhint{margin-top:4px!important;line-height:1.2!important}
+/* wide screens: the message line rides a little higher so the fanned hand's tilted corners never slip under it */
+@media (min-aspect-ratio:5/4){#app .battle .controls .log{translate:0 -8px}}
+@media (min-aspect-ratio:5/4) and (max-height:500px){#app .battle .controls .log{translate:0 -6px}#app .battle .piles>.bankhint{margin-top:2px!important;line-height:1!important}#app .battle .chain>span{line-height:1!important}#app .battle .hand>.card{zoom:.86}}
+/* a crowded line keeps a gap between name plates */
+#app .battle .field:has(.side.foe .unit:nth-child(4)) .side.you{gap:10px!important}
+
+/* the room banner lives outside the zoomed app, so it clears the HUD at its zoomed height */
+.pw-room{top:calc(var(--pw-hud-h) * var(--pw-zoom,1) + 8px)!important}
+/* phone landscape: less wobble on the map so 46px nodes in neighbouring lanes never touch */
+@media (min-aspect-ratio:4/5) and (max-height:500px){#app .map .maprow>.node[data-r]:not(.boss){translate:calc(var(--ja,0) * 5px) calc(var(--jb,0) * 3px + var(--m,0) * 6px + (2 - var(--lane,1)) * 10px)!important;min-height:46px!important}}
+/* "Taken from X" ribbon: never cut with an ellipsis; it wraps upward from the card top, and the row leaves room for it */
+.screen .choices>.card[data-sig]>.pw-sig{top:auto!important;bottom:calc(100% + 4px);white-space:normal!important;text-overflow:clip!important;text-align:center;width:max-content;max-width:100%!important;font-size:.56rem!important;line-height:1.15!important;padding:3px 12px 4px!important}
+.screen .choices:has(>.card[data-sig]){margin-top:40px!important}
+@media (prefers-reduced-motion:reduce){.screen .choices>.card[data-sig]{animation:none!important}}
+/* a name plate never spills past its unit into the neighbour */
+#app .battle .unit>.name{max-width:100%!important;box-sizing:border-box!important;margin-inline:0!important}
+.pw-room.pw-gone{opacity:0!important;transition:opacity .4s}
+/* phone landscape: the log button draws smaller and keeps its 54px hit area, so it stays clear of the hand */
+@media (min-aspect-ratio:5/4) and (max-height:500px){#app .battle .log .pw-histbtn{min-width:0!important;min-height:0!important;width:34px!important;height:34px!important}#app .battle .log .pw-histbtn::before{inset:-10px!important}}
+/* reward on phone landscape: smaller cards so the row clears the gesture bar; Skip keeps 44px */
+@media (min-aspect-ratio:5/4) and (max-height:500px){#app .screen .choices>.card{zoom:.8}#app .screen>.summary{margin-block:2px 4px!important}#app .screen:has(>.choices>.card){align-content:start!important}#app .screen:not(.shop)>.choices:has(>.card){margin-top:30px!important}#app .screen [data-act=skip],#app .screen .btn{min-height:44px!important}
+/* short desktop windows shrink the screen a little; Skip keeps a 44px target after that */
+
+ #app .screen.heroes>h2{display:none}}
+/* the inspect zoom shows the whole name */
+.pw-zoom .unit .name{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;-webkit-line-clamp:unset!important;display:block!important}
+/* 130% text, landscape phones: wider hero cards and the starter list wraps under the signature */
+@media (min-aspect-ratio:4/5) and (max-height:500px){#app .screen.heroes .hero-pick{width:min(400px,calc((100vw / var(--pw-zoom,1) - 72px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))/2))!important}
+ #app .screen.heroes .hero-pick .pw-kit{flex-wrap:wrap!important;gap:4px 12px!important}
+ #app .screen.heroes .hero-pick .pw-starter{flex:1 1 100%!important;line-height:1.25}
+ #app .screen.heroes .hero-pick .pw-starter>em{display:inline-block!important;margin-right:6px;line-height:1.25}
+ #app .screen.heroes .hero-pick .pw-hsig em{display:inline!important;margin-right:6px}}
+#app .screen.pw-tight>.summary{display:none!important}
+#app .screen.heroes.pw-tight .hero-pick>.muted+.muted{display:none!important}
+/* inspect zoom: the name already sits under the art, so the panel opens on the stats line */
+.pw-zoom .inspect>b,.pw-zoom .inspect .pw-sep{display:none!important}.pw-zoom .inspect>.muted{display:block}
+/* landscape phones: the hint shortens to "2 saved" beside the energy orb */
+@media (min-aspect-ratio:5/4) and (max-height:500px){#app .battle .piles>.bankhint .bh-e{display:none}}
+/* shop on landscape phones: the gold line repeats the top bar, so it goes; cards keep their full height and the rows size to content */
+@media (min-aspect-ratio:5/4) and (max-height:500px){#app .screen.shop>.summary{display:none!important}
+ #app .screen.shop>.choices:has(>.buy){justify-content:safe center!important;padding-inline:0 150px!important;box-sizing:border-box}
+ #app .screen.shop .buy>.card>.kind{display:none!important}#app .screen.shop .buy,#app .screen.shop .buy>.card{width:128px!important;max-width:none!important}#app .screen.shop .buy>.card{grid-template-rows:auto auto minmax(0,1fr)!important}}
+/* shop cards on phones: a long rules text grows the card instead of running under its price */
+@media (max-aspect-ratio:3999/5000){#app .screen.shop .buy>.card{height:auto!important}#app .screen.shop .buy>.card>span:last-child{overflow:visible!important;-webkit-line-clamp:unset!important;max-height:none!important}}
+/* shop cards never squeeze below their text; on landscape phones the services drop their one-line blurbs */
+#app .screen.shop .buy>.card{flex:1 0 auto!important}#app .screen.shop .buy{flex:none!important}#app .screen.shop>.choices:has(>.buy){min-height:max-content!important}
+@media (min-aspect-ratio:5/4) and (max-height:500px){#app .screen.shop>.choices:not(:has(>.buy))>.option .muted{display:none!important}}
+#app .screen.shop{grid-auto-rows:max-content!important;grid-template-rows:none!important;align-content:start!important}
+#app .screen.pw-tight>p:not([class]){display:none!important}#app .screen.pw-tight:not(.heroes){overflow:auto!important}
+/* Hand names (design gate): the name owns the title bar and the cost gem sits on the art's corner, so a name only needs the strip of its card that no neighbour covers */
+#app .battle .hand>.card .head{display:block!important}
+#app .battle .hand>.card .head>b{display:-webkit-box!important;-webkit-line-clamp:3;-webkit-box-orient:vertical;white-space:normal!important;overflow:hidden;text-overflow:clip}
+#app .battle .hand>.card .head>.cost{position:absolute;top:auto;left:auto;margin-top:4px;z-index:2}
+#app .battle .hand.pw-flat{--rot:0deg}
+#app .battle .hand.pw-rows{display:grid!important;grid-template-columns:repeat(var(--cols),calc(var(--cw) / 2 + 2px));justify-content:center;align-content:end;row-gap:6px;height:auto!important}
+#app .battle .hand.pw-rows>.card{transform:none;width:var(--cw)!important;margin:0!important;justify-self:center}
+/* Turn line (design gate): a compact pill around its text; the log button is drawn small and keeps a 46px hit area */
+#app .battle .log .pw-histbtn{min-width:0!important;min-height:0!important;width:30px!important;height:30px!important}
+#app .battle .log .pw-histbtn::before{inset:auto!important;left:50%;top:50%;width:46px;height:46px;translate:-50% -50%}
+#app .battle .controls .log{justify-self:center;width:auto;max-width:100%;padding:4px 14px 4px 6px!important}
+/* the pile counts read in the game's body face, not a code font */
+#app .battle .piles,#app .battle .piles>span{font-family:var(--body)!important}
+#app .battle .piles>.bankhint{display:block!important}
+/* wide screens: the draw pile stands beside the energy orb, never on it */
+#app[data-pw-roomy] .battle .piles>span:nth-child(1){margin-left:66px!important}
+/* the loyalty diamond sits on the portrait's top corner, clear of the incoming-damage pill above it */
+#app .battle .unit.hero .loyal{top:6px!important;left:auto!important;right:6px!important;transform:none!important}
+#app[data-pw-roomy] .battle .piles>span:nth-child(1){margin-left:70px!important;letter-spacing:.02em}
+/* a unit name whose longest word can't fit even at the floor size: one line with an ellipsis, never past its art */
+#app .battle .unit>.name.pw-clip{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;display:block!important;-webkit-line-clamp:unset!important}
+/* phones: the hero's incoming-damage pill gets its own space above the portrait instead of sitting on the foes' names */
+@media (max-aspect-ratio:4/5){#app .battle .field>.side.you{padding-top:18px!important}}
+/* short landscape: the turn line moves to the top of the right-hand column, so it never sits on the crowd's name plates; the hand rides 3px higher, clear of the gesture bar */
+@media (min-aspect-ratio:5/4) and (max-height:500px){
+ #app .battle .controls .log{grid-column:3!important;grid-row:1!important;align-self:start!important;justify-self:stretch!important;margin:6px 0 0!important;translate:none!important;border-radius:14px!important;padding:4px 8px 4px 4px!important;justify-content:flex-start!important;text-align:left}
+ #app .battle .hand>.card{translate:0 -3px!important}
+}
+#app .battle .unit .tag.pw-tag-off{visibility:hidden}
+/* market on short landscape: the art takes the card's spare height, and scrolling screens end clear of the gesture bar */
+@media (min-aspect-ratio:5/4) and (max-height:500px){
+ #app .screen.shop .buy>.card{grid-template-rows:auto minmax(56px,1fr) auto!important}
+ #app .screen.shop .buy>.card>.pic{height:auto!important;min-height:56px}
+ #app .screen:is(.shop,.pw-tight){padding-bottom:calc(env(safe-area-inset-bottom,0px) + 12px)!important}
+}
+/* the Rare mark leaves the art: it heads the rules text instead */
+.screen .card[data-rar=R] .pic::after{content:none!important}
+.screen .card[data-rar=R]>span:last-child::before{content:"Rare";float:right;margin:0 0 2px 6px;background:var(--pw-gold);color:#1b1406;font:800 .5rem/1.6 var(--body);letter-spacing:.12em;text-transform:uppercase;padding:0 6px;border-radius:99px;box-shadow:0 0 0 1px #000}
+#app .battle .hand.pw-rows[style*="--ch"]>.card{height:var(--ch)!important}
+/* auditor r2: the draw pile stands 8px clear of the orb's gold ring; the Fury label sits 4px under its diamonds;
+   the block preview keeps one line per fact, over its own unit */
+@media (min-aspect-ratio:4/5){#app .battle .piles>span:nth-child(1){margin-left:67px!important}}
+#app[data-pw-roomy] .battle .piles>span:nth-child(1){margin-left:81px!important}
+#app .battle .chain>span{margin-top:4px!important}
+#app .battle .unit .pv{white-space:nowrap!important;right:auto!important;left:50%!important;transform:translateX(-50%)!important;min-width:calc(100% + 4px);box-sizing:border-box}
+/* tips: what an icon, chip or button is, on hover, tap or hold (pw-tips.js) */
+.pw-tip{position:fixed;z-index:90;box-sizing:border-box;max-width:min(260px,calc(100vw - 16px));padding:8px 12px;border-radius:10px;background:linear-gradient(#1a1612f7,#0d0b09f7);border:1px solid #c9a24a;box-shadow:0 0 0 1px #000a,0 8px 24px #000c,inset 0 0 12px #c9a24a22;font:500 13px/1.4 var(--body);color:var(--ob-text,#efe6d4);text-align:left;pointer-events:none;animation:pwTipIn .14s ease-out}
+.pw-tip::before{content:"";position:absolute;left:calc(var(--ax,50%) - 5px);top:-6px;width:9px;height:9px;rotate:45deg;background:#1a1612;border:solid #c9a24a;border-width:1px 0 0 1px}
+.pw-tip.up::before{top:auto;bottom:-6px;background:#0d0b09;border-width:0 1px 1px 0}
+@keyframes pwTipIn{from{opacity:0;translate:0 4px}}
+@media (prefers-reduced-motion:reduce){.pw-tip{animation:none}}
+/* deck list: one strip per card with its art fading in from the right, cost gem, count */
+#app details.deck[open]>.decklist{display:flex;flex-direction:column;gap:4px;padding:8px;overflow:auto;overscroll-behavior:contain;width:min(340px,calc(100vw - 32px))}
+#app .decklist>.dk{position:relative;flex:none;display:flex;align-items:center;gap:8px;min-height:40px;padding:0 10px 0 6px;border-radius:7px;overflow:hidden;
+ background:linear-gradient(90deg,#100d0b 30%,#100d0bd9 52%,#100d0b33 78%,#100d0b00),var(--img,var(--pw-paint)) right 18%/62% auto no-repeat,#16120e;box-shadow:inset 0 0 0 1px #000,inset 0 0 0 2px #c9a24a33}
+#app .decklist>.dk[data-rar=R]{box-shadow:inset 0 0 0 1px #000,inset 0 0 0 2px #d9b25c99}
+#app .decklist>.dk[data-rar=M]{box-shadow:inset 0 0 0 1px #000,inset 0 0 0 2px #e8743aaa}
+#app .decklist>.dk[data-rar=K]{filter:saturate(.5)}
+#app .decklist>.dk.foil::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,#0000 40%,#ffe9a833 50%,#9ad8ff22 56%,#0000 64%);mix-blend-mode:screen}
+#app .decklist .dk-e{flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff2c4,#c9a24a 55%,#6d5218);color:#1b1206;font:800 13px/1 var(--display);box-shadow:0 0 0 1px #000,0 2px 4px #000a}
+#app .decklist>.dk b{flex:1;min-width:0;font:700 14px/1.15 var(--display);color:#f3e7cf;text-shadow:0 1px 2px #000,0 0 6px #000;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#app .decklist .dk-q{flex:none;font:800 13px/1 var(--display);color:#f2c45a;padding:4px 7px;border-radius:999px;background:#0b0907d9;box-shadow:0 0 0 1px #c9a24a66}
+/* emblems under the HUD read as relics: bigger, with a gold rim */
+#app>.top .emblems .emb-art{width:36px;height:36px;box-shadow:0 0 0 1.5px #c9a24a,0 0 0 3px #000b,0 4px 10px #000b}
+#app>.top .emblems .emb-art[data-r=M]{box-shadow:0 0 0 1.5px #e8743a,0 0 0 3px #000b,0 0 14px #f08a4b66}
+/* Skip on reward screens is a real 44px target at every size (it sits top-right as a small pill on wide screens) */
+#app [data-act=skip].btn{min-height:44px!important;min-width:76px}
+/* ---------- landscape-only play (Randall 30 Oct 21:45Z) ---------- */
+/* tall landscape screens on touch (tablets, foldables, square windows): the whole hand sits on screen like Slay the Spire, nothing tucked under the bottom edge */
+@media (min-aspect-ratio:4/5){
+ #app[data-pw-tall] .battle{grid-template-rows:minmax(0,1fr) 22px 118px!important}
+ #app[data-pw-tall][data-pw-roomy] .battle{grid-template-rows:minmax(0,1fr) 26px 142px!important}
+ #app[data-pw-tall] .battle .hand{height:118px!important;align-self:end!important;align-items:end;padding:0 0 12px!important;box-sizing:border-box}
+ #app[data-pw-tall][data-pw-roomy] .battle .hand{height:142px!important}
+ #app[data-pw-tall] .battle .hand>.card{translate:0 0!important;transform-origin:50% 100%}
+}
+/* landscape phones: the two hero cards sit centred in the stage instead of hugging the HUD */
+@media (min-aspect-ratio:4/5) and (max-height:500px){#app .screen.heroes{min-height:calc(var(--pw-vh,100dvh) - var(--pw-hud-h));box-sizing:border-box;align-content:center!important}}
+/* market in landscape: the art fills whatever height the card row gives it instead of a 24px strip over an empty panel */
+@media (min-aspect-ratio:4/5){#app .screen>.choices>.buy .pic{height:auto!important;min-height:24px;align-self:stretch}}
+/* scaled-up tablets (phone layout zoomed): the market fits one screen, title and gold line tight, wares and services close */
+@media (min-aspect-ratio:4/5){
+ #app[data-pw-zoom] .screen.shop>h2{margin-block:0 2px!important}
+ #app[data-pw-zoom] .screen.shop>p{margin-block:0 4px!important}
+ #app[data-pw-zoom] .screen.shop>.choices{gap:8px!important;margin-block:0!important}
+ #app[data-pw-zoom] .screen.shop{gap:6px!important}
+ #app[data-pw-zoom] .screen.shop .buy>.card>span:last-child{line-height:1.15!important}
+}
+/* long card names on narrow ware/reward cards: one notch smaller instead of breaking inside a word */
+#app .screen .choices .card .head b[data-long]{font-size:.74em!important;letter-spacing:-.01em!important;overflow-wrap:anywhere!important;hyphens:auto}
+/* zoomed tablets: the gold line duplicates the HUD coin, so it goes; services share one row with the emblem given the wider column */
+@media (min-aspect-ratio:4/5){
+ #app[data-pw-zoom] .screen.shop>p.summary{display:none!important}
+ #app[data-pw-zoom]:has(>.top)>section.screen.shop{padding-top:calc(var(--pw-hud-h) + 4px)!important}
+ #app[data-pw-zoom] .screen.shop>.choices:not(:has(>.buy)){display:grid!important;grid-template-columns:1fr 1fr 1.5fr;gap:8px!important;align-items:stretch}
+ #app[data-pw-zoom] .screen.shop>.choices:not(:has(>.buy))>.option{width:auto!important;max-width:none!important;min-width:0}
+}
+
+/* sweep 30 Oct: bonfire and event options share one height; the end screens sit in the middle like every other screen */
+#app .screen:is(.bonfire,.event)>.choices{align-items:stretch!important}
+#app .screen:is(.bonfire,.event)>.choices>.option{align-content:start}
+#app .screen.event>.choices>.option{align-content:center}
+/* long-press card of a unit: no rank word chip on the art, the intent reads at full size above the art */
+.pw-zoom .unit .art .tag{display:none!important}
+.pw-zoom .pi{width:1.1em;height:1.1em;fill:currentColor;flex:none;filter:drop-shadow(0 1px 0 #000)}
+.pw-zoom .unit>.intent{position:static!important;transform:none!important;margin:0 auto 8px!important;justify-self:center;display:inline-flex!important;align-items:center;gap:5px;font-size:.95rem!important;line-height:1.2!important;padding:4px 12px!important;max-width:none!important}
+.pw-zoom .unit>.intent .mod .pi{width:.95em;height:.95em}
+
+/* the "You arrive here" caption stays centred between the corner scrollwork */
+#app .map>.plane:last-of-type{text-align:center!important;padding-inline:clamp(48px,8vw,104px)!important;box-sizing:border-box}
+
+/* dragged card over the board: an art token (name + art), not a shrunken card with unreadable text */
+.pw-ghost.pw-chip{transform:scale(.58)!important;grid-template-rows:auto minmax(0,1fr)!important}
+.pw-ghost.pw-chip>.kind,.pw-ghost.pw-chip>span:last-child{display:none!important}
+.pw-ghost.pw-chip>.pic{min-height:0}
+
+/* reward/shop cards (Randall 31 Oct 04:08Z): the archetype chip sits in the art's top-right corner, off the picture's subject, and the name row
+   always reserves two lines, so a long or foil name no longer squashes its art shorter than its neighbours' */
+#app .screen .card>.pic>.pw-pairs.pw-arch{left:auto!important;right:4px!important;top:4px!important;bottom:auto!important;translate:0!important;padding:1px 7px!important;font-size:.44rem!important}
+
+/* reward / gift / event choices (Randall 31 Oct 04:08Z): every card in a row stands the same height and its art is the same size,
+   so a wrapped name or kind line, a foil mark or the archetype chip never squashes one card's art shorter than its neighbours'.
+   The art row sizes from the card width (16:9.4), the rules text takes what is left. Shop cards already line up through their subgrid. */
+#app#app .screen:not(.journal) .choices{align-items:stretch!important}
+#app#app .screen:not(.journal) .choices>.card{height:auto!important;align-self:stretch!important;grid-template-rows:auto auto auto minmax(0,1fr)!important}
+#app#app .screen:not(.journal) .choices>.card>.pic{height:auto!important;min-height:0!important;max-height:none!important;aspect-ratio:1.7!important}

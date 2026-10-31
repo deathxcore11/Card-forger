@@ -1,0 +1,429 @@
+/* Planeswalk painted UI kit (Wave 2). Stone face from Randall's Gothic Stone playmat, gold hairlines, lacquer variants.
+   All decoration is background or box-shadow, so nothing sticks out of its box and nothing intercepts taps. */
+:root{--pwk-stone:url("data:image/webp;base64,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");--pwk-gold:#e8b95b;--pwk-gold-hi:#f6d58e;--pwk-gold-lo:#8a5a1c;--pwk-ink:#0b0a0d;--pwk-red:#8c1f24;
+--pwk-rim:0 0 0 1px #000,0 0 0 2.5px var(--pwk-gold-lo),0 0 0 3.5px #f3d38a66,0 6px 14px #000b}
+.pwk-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;min-width:44px;padding:0 22px;border:0;border-radius:10px;
+ font:700 .92rem/1 Cinzel,Georgia,serif;letter-spacing:.06em;color:var(--pwk-gold-hi);text-shadow:0 1px 0 #000,0 0 10px #0009;cursor:pointer;
+ background:linear-gradient(180deg,#ffffff1f 0,#ffffff05 38%,#0000 50%,#00000080 100%),linear-gradient(180deg,#2b2620cc,#100e0ccc),var(--pwk-stone) center/240px auto;
+ box-shadow:inset 0 1px 0 #ffffff30,inset 0 -2px 0 #000a,inset 0 0 0 1px #f3d38a22,var(--pwk-rim);transition:transform .08s,box-shadow .08s,filter .12s}
+.pwk-btn:hover{filter:brightness(1.12)}
+.pwk-btn:active,.pwk-btn.is-pressed{transform:translateY(1.5px);box-shadow:inset 0 3px 9px #000d,inset 0 0 0 1px #f3d38a18,0 0 0 1px #000,0 0 0 2.5px var(--pwk-gold-lo),0 2px 5px #000b}
+.pwk-btn:focus-visible{outline:2px solid var(--pwk-gold-hi);outline-offset:5px}
+.pwk-btn:disabled{filter:grayscale(.8) brightness(.6);cursor:default}
+.pwk-btn.primary{color:#1b1406;text-shadow:0 1px 0 #fff3cf88;background:linear-gradient(180deg,#fff6d8 0,#f3d38a 18%,#c9973f 55%,#7a4e16 100%),var(--pwk-stone) center/240px auto;background-blend-mode:hard-light,normal}
+.pwk-btn.danger{color:#ffe1d6;background:linear-gradient(180deg,#ffffff26 0,#0000 45%,#00000080 100%),linear-gradient(180deg,#a8282ee6,#4a0b0ee6),var(--pwk-stone) center/240px auto}
+.pwk-btn.wide{width:100%}
+.pwk-back{width:44px;height:44px;padding:0;border-radius:50%;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2040%2040%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23fff1c4%22/%3E%3Cstop%20offset%3D%22.4%22%20stop-color%3D%22%23e8b95b%22/%3E%3Cstop%20offset%3D%22.75%22%20stop-color%3D%22%238a5a1c%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23f3d38a%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath%20d%3D%22M30%2020H13%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M19%2011l-9%209%209%209%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%223.4%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3Cpath%20d%3D%22M33%2020l-3-3-3%203%203%203z%22%20fill%3D%22url%28%23g%29%22/%3E%3C/svg%3E") center/26px no-repeat,radial-gradient(circle at 40% 35%,#3a332b,#0f0d0b 70%),var(--pwk-stone) center/120px}
+.pwk-panel{position:relative;border-radius:14px;padding:22px 20px;color:#ece6dc;
+ background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2048%2048%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23fff1c4%22/%3E%3Cstop%20offset%3D%22.4%22%20stop-color%3D%22%23e8b95b%22/%3E%3Cstop%20offset%3D%22.75%22%20stop-color%3D%22%238a5a1c%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23f3d38a%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M3%2030V9a6%206%200%200%201%206-6h21%22%20stroke-width%3D%222.4%22/%3E%3Cpath%20d%3D%22M8%2036V13a5%205%200%200%201%205-5h23%22%20stroke-width%3D%221%22%20opacity%3D%22.7%22/%3E%3Cpath%20d%3D%22M14%2014c4-1%208%201%209%205c-4%200-6-2-6-5%22%20stroke-width%3D%221.4%22/%3E%3Cpath%20d%3D%22M3%2030c0%204%203%207%207%207M30%203c4%200%207%203%207%207%22%20stroke-width%3D%221.4%22/%3E%3C/g%3E%3Cpath%20d%3D%22M9%203l3%203-3%203-3-3z%22%20fill%3D%22url%28%23g%29%22%20stroke%3D%22%233a2208%22%20stroke-width%3D%22.6%22%20transform%3D%22translate%280%200%29%22/%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222.2%22%20fill%3D%22%23c8404f%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221%22/%3E%3C/svg%3E") top 4px left 4px/38px no-repeat,url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2048%2048%22%3E%3Cg%20transform%3D%22translate%2848%200%29%20scale%28-1%201%29%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23fff1c4%22/%3E%3Cstop%20offset%3D%22.4%22%20stop-color%3D%22%23e8b95b%22/%3E%3Cstop%20offset%3D%22.75%22%20stop-color%3D%22%238a5a1c%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23f3d38a%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M3%2030V9a6%206%200%200%201%206-6h21%22%20stroke-width%3D%222.4%22/%3E%3Cpath%20d%3D%22M8%2036V13a5%205%200%200%201%205-5h23%22%20stroke-width%3D%221%22%20opacity%3D%22.7%22/%3E%3Cpath%20d%3D%22M14%2014c4-1%208%201%209%205c-4%200-6-2-6-5%22%20stroke-width%3D%221.4%22/%3E%3Cpath%20d%3D%22M3%2030c0%204%203%207%207%207M30%203c4%200%207%203%207%207%22%20stroke-width%3D%221.4%22/%3E%3C/g%3E%3Cpath%20d%3D%22M9%203l3%203-3%203-3-3z%22%20fill%3D%22url%28%23g%29%22%20stroke%3D%22%233a2208%22%20stroke-width%3D%22.6%22%20transform%3D%22translate%280%200%29%22/%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222.2%22%20fill%3D%22%23c8404f%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221%22/%3E%3C/g%3E%3C/svg%3E") top 4px right 4px/38px no-repeat,url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2048%2048%22%3E%3Cg%20transform%3D%22translate%280%2048%29%20scale%281%20-1%29%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23fff1c4%22/%3E%3Cstop%20offset%3D%22.4%22%20stop-color%3D%22%23e8b95b%22/%3E%3Cstop%20offset%3D%22.75%22%20stop-color%3D%22%238a5a1c%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23f3d38a%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M3%2030V9a6%206%200%200%201%206-6h21%22%20stroke-width%3D%222.4%22/%3E%3Cpath%20d%3D%22M8%2036V13a5%205%200%200%201%205-5h23%22%20stroke-width%3D%221%22%20opacity%3D%22.7%22/%3E%3Cpath%20d%3D%22M14%2014c4-1%208%201%209%205c-4%200-6-2-6-5%22%20stroke-width%3D%221.4%22/%3E%3Cpath%20d%3D%22M3%2030c0%204%203%207%207%207M30%203c4%200%207%203%207%207%22%20stroke-width%3D%221.4%22/%3E%3C/g%3E%3Cpath%20d%3D%22M9%203l3%203-3%203-3-3z%22%20fill%3D%22url%28%23g%29%22%20stroke%3D%22%233a2208%22%20stroke-width%3D%22.6%22%20transform%3D%22translate%280%200%29%22/%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222.2%22%20fill%3D%22%23c8404f%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221%22/%3E%3C/g%3E%3C/svg%3E") bottom 4px left 4px/38px no-repeat,url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2048%2048%22%3E%3Cg%20transform%3D%22translate%2848%2048%29%20scale%28-1%20-1%29%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23fff1c4%22/%3E%3Cstop%20offset%3D%22.4%22%20stop-color%3D%22%23e8b95b%22/%3E%3Cstop%20offset%3D%22.75%22%20stop-color%3D%22%238a5a1c%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23f3d38a%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M3%2030V9a6%206%200%200%201%206-6h21%22%20stroke-width%3D%222.4%22/%3E%3Cpath%20d%3D%22M8%2036V13a5%205%200%200%201%205-5h23%22%20stroke-width%3D%221%22%20opacity%3D%22.7%22/%3E%3Cpath%20d%3D%22M14%2014c4-1%208%201%209%205c-4%200-6-2-6-5%22%20stroke-width%3D%221.4%22/%3E%3Cpath%20d%3D%22M3%2030c0%204%203%207%207%207M30%203c4%200%207%203%207%207%22%20stroke-width%3D%221.4%22/%3E%3C/g%3E%3Cpath%20d%3D%22M9%203l3%203-3%203-3-3z%22%20fill%3D%22url%28%23g%29%22%20stroke%3D%22%233a2208%22%20stroke-width%3D%22.6%22%20transform%3D%22translate%280%200%29%22/%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222.2%22%20fill%3D%22%23c8404f%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221%22/%3E%3C/g%3E%3C/svg%3E") bottom 4px right 4px/38px no-repeat,
+ radial-gradient(120% 80% at 50% 0%,#ffffff0d,#0000 60%),linear-gradient(180deg,#17141ae6,#0b0a0df2),var(--pwk-stone) center/360px;
+ box-shadow:inset 0 0 0 1px #f3d38a2a,inset 0 0 40px #000c,0 0 0 1px #000,0 0 0 2px var(--pwk-gold-lo),0 18px 40px #000c}
+.pwk-title{font:700 clamp(1.4rem,6vw,2rem)/1.1 Cinzel,Georgia,serif;letter-spacing:.06em;text-align:center;color:var(--pwk-gold-hi);text-shadow:0 2px 0 #000,0 0 22px #e8b95b44;margin:0}
+.pwk-rule{height:10px;margin:10px auto 16px;width:70%;background:radial-gradient(circle,var(--pwk-gold) 0 3px,#0000 3.5px) center/10px 10px no-repeat,linear-gradient(90deg,#0000,var(--pwk-gold) 30%,var(--pwk-gold) 70%,#0000) center/100% 1px no-repeat}
+.pwk-ribbon{position:relative;display:inline-grid;place-items:center;text-align:center;text-wrap:balance;max-width:calc(100% - 8px);box-sizing:border-box;min-height:40px;padding:6px 40px;font:700 1rem/1.1 Cinzel,Georgia,serif;letter-spacing:.1em;color:var(--pwk-gold-hi);text-shadow:0 2px 0 #000;
+ clip-path:polygon(0 0,100% 0,calc(100% - 16px) 50%,100% 100%,0 100%,16px 50%);
+ background:linear-gradient(180deg,#0000 0 3px,#f3d38a99 3px 4px,#0000 4px calc(100% - 4px),#f3d38a99 calc(100% - 4px) calc(100% - 3px),#0000 0),linear-gradient(180deg,#b3262c,#6e1217 60%,#4a0b0e)}
+.pwk-ribbon.ivory{color:#2a1d0c;text-shadow:0 1px 0 #fff8;background:linear-gradient(180deg,#0000 0 3px,#8a5a1c 3px 4px,#0000 4px calc(100% - 4px),#8a5a1c calc(100% - 4px) calc(100% - 3px),#0000 0),linear-gradient(180deg,#f6ecd2,#d9c59a)}
+.pwk-turn{display:grid;justify-items:center;gap:2px;filter:drop-shadow(0 8px 18px #000c)}
+.pwk-turn .pwk-ribbon{font-size:clamp(1.3rem,6vw,1.9rem);min-height:58px;padding:8px 54px;clip-path:polygon(0 0,100% 0,calc(100% - 22px) 50%,100% 100%,0 100%,22px 50%)}
+.pwk-turn small{font:600 .72rem/1 var(--body,system-ui);letter-spacing:.18em;text-transform:uppercase;color:#ece6dccc}
+.pwk-orb{position:relative;width:72px;height:72px;border-radius:50%;display:grid;place-items:center;font:700 1.25rem/1 Cinzel,Georgia,serif;color:#fff4dc;text-shadow:0 2px 3px #000,0 0 12px #ff8a3d;
+ background:radial-gradient(circle at 35% 28%,#fff3 0 8%,#0000 22%),radial-gradient(circle at 50% 60%,#ffb347,#e0562a 38%,#7a1408 70%,#2a0604 100%);
+ box-shadow:inset 0 -8px 16px #0009,inset 0 4px 10px #ffd58a55,0 0 0 2px #000,0 0 0 4px var(--pwk-gold-lo),0 0 0 5px #f3d38a88,0 0 22px #e0562a66}
+.pwk-orb.spent{filter:grayscale(.85) brightness(.55)}
+.pwk-pile{position:relative;width:52px;height:62px;min-width:44px;border:0;padding:0;cursor:pointer;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2044%2054%22%3E%3Cg%20transform%3D%22translate%289%207%29%22%20opacity%3D%22.55%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2242%22%20rx%3D%223%22%20fill%3D%22%233b2414%22%20stroke%3D%22%23e8b95b%22%20stroke-width%3D%221.2%22/%3E%3Crect%20x%3D%223.5%22%20y%3D%223.5%22%20width%3D%2225%22%20height%3D%2237%22%20rx%3D%222%22%20fill%3D%22%236b4423%22/%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%2222%22%20rx%3D%2210%22%20ry%3D%2215%22%20fill%3D%22%232c3f6b%22%20stroke%3D%22%23c9a46a%22%20stroke-width%3D%221%22/%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%2222%22%20rx%3D%227%22%20ry%3D%2211.5%22%20fill%3D%22%238a5a2b%22%20opacity%3D%22.55%22/%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2213.5%22%20r%3D%222%22%20fill%3D%22%23f4ecd0%22/%3E%3Ccircle%20cx%3D%2222%22%20cy%3D%2218.5%22%20r%3D%222%22%20fill%3D%22%234f8fd8%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2227.5%22%20r%3D%222%22%20fill%3D%22%232a2228%22%20stroke%3D%22%23aaa%22%20stroke-width%3D%22.4%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2227.5%22%20r%3D%222%22%20fill%3D%22%23d8503a%22/%3E%3Ccircle%20cx%3D%2210%22%20cy%3D%2218.5%22%20r%3D%222%22%20fill%3D%22%233e9a55%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%286%204%29%22%20opacity%3D%22.8%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2242%22%20rx%3D%223%22%20fill%3D%22%233b2414%22%20stroke%3D%22%23e8b95b%22%20stroke-width%3D%221.2%22/%3E%3Crect%20x%3D%223.5%22%20y%3D%223.5%22%20width%3D%2225%22%20height%3D%2237%22%20rx%3D%222%22%20fill%3D%22%236b4423%22/%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%2222%22%20rx%3D%2210%22%20ry%3D%2215%22%20fill%3D%22%232c3f6b%22%20stroke%3D%22%23c9a46a%22%20stroke-width%3D%221%22/%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%2222%22%20rx%3D%227%22%20ry%3D%2211.5%22%20fill%3D%22%238a5a2b%22%20opacity%3D%22.55%22/%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2213.5%22%20r%3D%222%22%20fill%3D%22%23f4ecd0%22/%3E%3Ccircle%20cx%3D%2222%22%20cy%3D%2218.5%22%20r%3D%222%22%20fill%3D%22%234f8fd8%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2227.5%22%20r%3D%222%22%20fill%3D%22%232a2228%22%20stroke%3D%22%23aaa%22%20stroke-width%3D%22.4%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2227.5%22%20r%3D%222%22%20fill%3D%22%23d8503a%22/%3E%3Ccircle%20cx%3D%2210%22%20cy%3D%2218.5%22%20r%3D%222%22%20fill%3D%22%233e9a55%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%283%201%29%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2242%22%20rx%3D%223%22%20fill%3D%22%233b2414%22%20stroke%3D%22%23e8b95b%22%20stroke-width%3D%221.2%22/%3E%3Crect%20x%3D%223.5%22%20y%3D%223.5%22%20width%3D%2225%22%20height%3D%2237%22%20rx%3D%222%22%20fill%3D%22%236b4423%22/%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%2222%22%20rx%3D%2210%22%20ry%3D%2215%22%20fill%3D%22%232c3f6b%22%20stroke%3D%22%23c9a46a%22%20stroke-width%3D%221%22/%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%2222%22%20rx%3D%227%22%20ry%3D%2211.5%22%20fill%3D%22%238a5a2b%22%20opacity%3D%22.55%22/%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2213.5%22%20r%3D%222%22%20fill%3D%22%23f4ecd0%22/%3E%3Ccircle%20cx%3D%2222%22%20cy%3D%2218.5%22%20r%3D%222%22%20fill%3D%22%234f8fd8%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2227.5%22%20r%3D%222%22%20fill%3D%22%232a2228%22%20stroke%3D%22%23aaa%22%20stroke-width%3D%22.4%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2227.5%22%20r%3D%222%22%20fill%3D%22%23d8503a%22/%3E%3Ccircle%20cx%3D%2210%22%20cy%3D%2218.5%22%20r%3D%222%22%20fill%3D%22%233e9a55%22/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;filter:drop-shadow(0 4px 6px #000b)}
+.pwk-pile.discard{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2048%2054%22%3E%3Cg%20transform%3D%22rotate%28-12%2016%2026%29%20translate%282%206%29%22%20opacity%3D%22.6%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2242%22%20rx%3D%223%22%20fill%3D%22%231a1512%22%20stroke%3D%22%233a2a18%22%20stroke-width%3D%221%22/%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2226%22%20height%3D%2238%22%20rx%3D%222%22%20fill%3D%22%23d9c49a%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%224.5%22%20width%3D%2223%22%20height%3D%224%22%20rx%3D%221%22%20fill%3D%22%23efe3c4%22/%3E%3Ccircle%20cx%3D%2225%22%20cy%3D%226.5%22%20r%3D%221.6%22%20fill%3D%22%23d8503a%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2210%22%20width%3D%2223%22%20height%3D%2213%22%20fill%3D%22%237a2a1c%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2224.5%22%20width%3D%2223%22%20height%3D%223%22%20fill%3D%22%23efe3c4%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2229%22%20width%3D%2223%22%20height%3D%2210%22%20fill%3D%22%23efe3c4%22/%3E%3Cpath%20d%3D%22M7%2032h18M7%2035h14%22%20stroke%3D%22%237a6a50%22%20stroke-width%3D%22.9%22/%3E%3C/g%3E%3Cg%20transform%3D%22rotate%287%2030%2026%29%20translate%2812%205%29%22%20opacity%3D%22.8%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2242%22%20rx%3D%223%22%20fill%3D%22%231a1512%22%20stroke%3D%22%233a2a18%22%20stroke-width%3D%221%22/%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2226%22%20height%3D%2238%22%20rx%3D%222%22%20fill%3D%22%23d9c49a%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%224.5%22%20width%3D%2223%22%20height%3D%224%22%20rx%3D%221%22%20fill%3D%22%23efe3c4%22/%3E%3Ccircle%20cx%3D%2225%22%20cy%3D%226.5%22%20r%3D%221.6%22%20fill%3D%22%23d8503a%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2210%22%20width%3D%2223%22%20height%3D%2213%22%20fill%3D%22%237a2a1c%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2224.5%22%20width%3D%2223%22%20height%3D%223%22%20fill%3D%22%23efe3c4%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2229%22%20width%3D%2223%22%20height%3D%2210%22%20fill%3D%22%23efe3c4%22/%3E%3Cpath%20d%3D%22M7%2032h18M7%2035h14%22%20stroke%3D%22%237a6a50%22%20stroke-width%3D%22.9%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%288%206%29%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2242%22%20rx%3D%223%22%20fill%3D%22%231a1512%22%20stroke%3D%22%233a2a18%22%20stroke-width%3D%221%22/%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2226%22%20height%3D%2238%22%20rx%3D%222%22%20fill%3D%22%23d9c49a%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%224.5%22%20width%3D%2223%22%20height%3D%224%22%20rx%3D%221%22%20fill%3D%22%23efe3c4%22/%3E%3Ccircle%20cx%3D%2225%22%20cy%3D%226.5%22%20r%3D%221.6%22%20fill%3D%22%23d8503a%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2210%22%20width%3D%2223%22%20height%3D%2213%22%20fill%3D%22%237a2a1c%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2224.5%22%20width%3D%2223%22%20height%3D%223%22%20fill%3D%22%23efe3c4%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2229%22%20width%3D%2223%22%20height%3D%2210%22%20fill%3D%22%23efe3c4%22/%3E%3Cpath%20d%3D%22M7%2032h18M7%2035h14%22%20stroke%3D%22%237a6a50%22%20stroke-width%3D%22.9%22/%3E%3C/g%3E%3C/svg%3E")}
+.pwk-pile b{position:absolute;right:-6px;bottom:-4px;min-width:24px;height:24px;padding:0 5px;border-radius:12px;display:grid;place-items:center;font:700 .78rem/1 var(--body,system-ui);color:#1b1406;background:linear-gradient(180deg,#fff1c4,#e8b95b 60%,#a8752a);box-shadow:0 0 0 1.5px #000,0 2px 4px #000a}
+.pwk-pile:focus-visible{outline:2px solid var(--pwk-gold-hi);outline-offset:4px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){.pwk-btn{transition:none}}
+/* hero theming */
+/* The game sets body[data-hero] (R = Chandra, W = Elspeth). Each hero's mana symbol and colour run through the chrome. */
+:root{--pwk-mana:none;--pwk-hero-a:#b3262c;--pwk-hero-b:#6e1217;--pwk-hero-c:#4a0b0e;--pwk-hero-ink:var(--pwk-gold-hi);--pwk-hero-glow:#e0562a}
+body[data-hero=W]{--pwk-mana:none;--pwk-hero-a:#f6ecd2;--pwk-hero-b:#e3d2a6;--pwk-hero-c:#bfa874;--pwk-hero-ink:#2a1d0c;--pwk-hero-glow:#f6e7b0}
+.pwk-mana{display:inline-block;flex:none;width:1.5em;height:1.5em;vertical-align:middle;background:var(--pwk-mana) center/contain no-repeat;filter:drop-shadow(0 2px 2px #000a)}
+
+.pwk-ribbon.hero{display:inline-flex;align-items:center;justify-content:center;color:var(--pwk-hero-ink);text-shadow:none;background:linear-gradient(180deg,#0000 0 3px,#f3d38a99 3px 4px,#0000 4px calc(100% - 4px),#f3d38a99 calc(100% - 4px) calc(100% - 3px),#0000 0),linear-gradient(180deg,var(--pwk-hero-a),var(--pwk-hero-b) 60%,var(--pwk-hero-c))}
+body[data-hero=R] .pwk-ribbon.hero{color:var(--pwk-gold-hi);text-shadow:0 2px 0 #000}
+.pwk-ribbon .pwk-mana{margin-right:.45em;width:1.25em;height:1.25em}
+.pwk-turn .pwk-crest{width:52px;height:52px;margin-bottom:-14px;position:relative;z-index:1;border-radius:50%;background:var(--pwk-mana) center/contain no-repeat;filter:drop-shadow(0 4px 8px #000c) drop-shadow(0 0 12px var(--pwk-hero-glow))}
+.pwk-orb{background:radial-gradient(circle at 35% 28%,#fff3 0 8%,#0000 22%),radial-gradient(circle at 50% 60%,#ffb347,#e0562a 38%,#7a1408 70%,#2a0604 100%);}
+body[data-hero=W] .pwk-orb{color:#2a1d0c;text-shadow:0 1px 0 #fff8,0 0 10px #fff;background:radial-gradient(circle at 35% 28%,#fff8 0 9%,#0000 24%),radial-gradient(circle at 50% 60%,#fffbe8,#f3dfa6 40%,#b99a55 72%,#4a3a1a 100%);box-shadow:inset 0 -8px 16px #0006,inset 0 4px 10px #fff8,0 0 0 2px #000,0 0 0 4px var(--pwk-gold-lo),0 0 0 5px #f3d38a88,0 0 22px #f6e7b088}
+.pwk-title .pwk-mana{width:.9em;height:.9em;margin:0 .3em .12em}
+.pwk-btn .pwk-mana{width:1.3em;height:1.3em;margin-left:-6px}
+.pwk-turn .pwk-ribbon{white-space:nowrap}
+/* Fury pips: small mana tokens set into the top of the orb's gold rim. Lit ones are the hero's mana symbol, glowing; unlit ones are dark sockets. */
+.pwk-orb{margin-top:8px}
+.pwk-orb .pips{position:absolute;inset:0;pointer-events:none}
+.pwk-orb .pips i{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px;border-radius:50%;transform:rotate(var(--a)) translateY(-36px) rotate(calc(var(--a) * -1));
+ background:var(--pwk-mana) center/contain no-repeat;filter:grayscale(1) brightness(.32) contrast(1.2);box-shadow:0 0 0 1.5px #000,0 0 0 2.5px var(--pwk-gold-lo)}
+.pwk-orb .pips i.on{filter:saturate(1.4) brightness(1.15) drop-shadow(0 0 5px var(--pwk-hero-glow));box-shadow:0 0 0 1.5px #000,0 0 0 2.5px var(--pwk-gold-hi)}
+.pwk-orb .pips i.on.new{animation:pwk-pip .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pwk-pip{from{transform:rotate(var(--a)) translateY(-36px) rotate(calc(var(--a) * -1)) scale(1.8);opacity:0}}
+@media (prefers-reduced-motion:reduce){.pwk-orb .pips i.on.new{animation:none}}
+/* classic mana symbols (Randall's WUBRG set) sit in a thin gold setting */
+.pwk-mana,.pwk-turn .pwk-crest{border-radius:50%;box-shadow:0 0 0 1.5px #000,0 0 0 2.5px var(--pwk-gold-lo),0 0 0 3px #f3d38a66}
+
+/* ===== the kit on the game's own elements ===== */
+:root{--pwk-pile-draw:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2044%2054%22%3E%3Cg%20transform%3D%22translate%289%207%29%22%20opacity%3D%22.55%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2242%22%20rx%3D%223%22%20fill%3D%22%233b2414%22%20stroke%3D%22%23e8b95b%22%20stroke-width%3D%221.2%22/%3E%3Crect%20x%3D%223.5%22%20y%3D%223.5%22%20width%3D%2225%22%20height%3D%2237%22%20rx%3D%222%22%20fill%3D%22%236b4423%22/%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%2222%22%20rx%3D%2210%22%20ry%3D%2215%22%20fill%3D%22%232c3f6b%22%20stroke%3D%22%23c9a46a%22%20stroke-width%3D%221%22/%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%2222%22%20rx%3D%227%22%20ry%3D%2211.5%22%20fill%3D%22%238a5a2b%22%20opacity%3D%22.55%22/%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2213.5%22%20r%3D%222%22%20fill%3D%22%23f4ecd0%22/%3E%3Ccircle%20cx%3D%2222%22%20cy%3D%2218.5%22%20r%3D%222%22%20fill%3D%22%234f8fd8%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2227.5%22%20r%3D%222%22%20fill%3D%22%232a2228%22%20stroke%3D%22%23aaa%22%20stroke-width%3D%22.4%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2227.5%22%20r%3D%222%22%20fill%3D%22%23d8503a%22/%3E%3Ccircle%20cx%3D%2210%22%20cy%3D%2218.5%22%20r%3D%222%22%20fill%3D%22%233e9a55%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%286%204%29%22%20opacity%3D%22.8%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2242%22%20rx%3D%223%22%20fill%3D%22%233b2414%22%20stroke%3D%22%23e8b95b%22%20stroke-width%3D%221.2%22/%3E%3Crect%20x%3D%223.5%22%20y%3D%223.5%22%20width%3D%2225%22%20height%3D%2237%22%20rx%3D%222%22%20fill%3D%22%236b4423%22/%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%2222%22%20rx%3D%2210%22%20ry%3D%2215%22%20fill%3D%22%232c3f6b%22%20stroke%3D%22%23c9a46a%22%20stroke-width%3D%221%22/%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%2222%22%20rx%3D%227%22%20ry%3D%2211.5%22%20fill%3D%22%238a5a2b%22%20opacity%3D%22.55%22/%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2213.5%22%20r%3D%222%22%20fill%3D%22%23f4ecd0%22/%3E%3Ccircle%20cx%3D%2222%22%20cy%3D%2218.5%22%20r%3D%222%22%20fill%3D%22%234f8fd8%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2227.5%22%20r%3D%222%22%20fill%3D%22%232a2228%22%20stroke%3D%22%23aaa%22%20stroke-width%3D%22.4%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2227.5%22%20r%3D%222%22%20fill%3D%22%23d8503a%22/%3E%3Ccircle%20cx%3D%2210%22%20cy%3D%2218.5%22%20r%3D%222%22%20fill%3D%22%233e9a55%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%283%201%29%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2242%22%20rx%3D%223%22%20fill%3D%22%233b2414%22%20stroke%3D%22%23e8b95b%22%20stroke-width%3D%221.2%22/%3E%3Crect%20x%3D%223.5%22%20y%3D%223.5%22%20width%3D%2225%22%20height%3D%2237%22%20rx%3D%222%22%20fill%3D%22%236b4423%22/%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%2222%22%20rx%3D%2210%22%20ry%3D%2215%22%20fill%3D%22%232c3f6b%22%20stroke%3D%22%23c9a46a%22%20stroke-width%3D%221%22/%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%2222%22%20rx%3D%227%22%20ry%3D%2211.5%22%20fill%3D%22%238a5a2b%22%20opacity%3D%22.55%22/%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2213.5%22%20r%3D%222%22%20fill%3D%22%23f4ecd0%22/%3E%3Ccircle%20cx%3D%2222%22%20cy%3D%2218.5%22%20r%3D%222%22%20fill%3D%22%234f8fd8%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2227.5%22%20r%3D%222%22%20fill%3D%22%232a2228%22%20stroke%3D%22%23aaa%22%20stroke-width%3D%22.4%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2227.5%22%20r%3D%222%22%20fill%3D%22%23d8503a%22/%3E%3Ccircle%20cx%3D%2210%22%20cy%3D%2218.5%22%20r%3D%222%22%20fill%3D%22%233e9a55%22/%3E%3C/g%3E%3C/svg%3E");--pwk-pile-discard:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2048%2054%22%3E%3Cg%20transform%3D%22rotate%28-12%2016%2026%29%20translate%282%206%29%22%20opacity%3D%22.6%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2242%22%20rx%3D%223%22%20fill%3D%22%231a1512%22%20stroke%3D%22%233a2a18%22%20stroke-width%3D%221%22/%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2226%22%20height%3D%2238%22%20rx%3D%222%22%20fill%3D%22%23d9c49a%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%224.5%22%20width%3D%2223%22%20height%3D%224%22%20rx%3D%221%22%20fill%3D%22%23efe3c4%22/%3E%3Ccircle%20cx%3D%2225%22%20cy%3D%226.5%22%20r%3D%221.6%22%20fill%3D%22%23d8503a%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2210%22%20width%3D%2223%22%20height%3D%2213%22%20fill%3D%22%237a2a1c%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2224.5%22%20width%3D%2223%22%20height%3D%223%22%20fill%3D%22%23efe3c4%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2229%22%20width%3D%2223%22%20height%3D%2210%22%20fill%3D%22%23efe3c4%22/%3E%3Cpath%20d%3D%22M7%2032h18M7%2035h14%22%20stroke%3D%22%237a6a50%22%20stroke-width%3D%22.9%22/%3E%3C/g%3E%3Cg%20transform%3D%22rotate%287%2030%2026%29%20translate%2812%205%29%22%20opacity%3D%22.8%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2242%22%20rx%3D%223%22%20fill%3D%22%231a1512%22%20stroke%3D%22%233a2a18%22%20stroke-width%3D%221%22/%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2226%22%20height%3D%2238%22%20rx%3D%222%22%20fill%3D%22%23d9c49a%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%224.5%22%20width%3D%2223%22%20height%3D%224%22%20rx%3D%221%22%20fill%3D%22%23efe3c4%22/%3E%3Ccircle%20cx%3D%2225%22%20cy%3D%226.5%22%20r%3D%221.6%22%20fill%3D%22%23d8503a%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2210%22%20width%3D%2223%22%20height%3D%2213%22%20fill%3D%22%237a2a1c%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2224.5%22%20width%3D%2223%22%20height%3D%223%22%20fill%3D%22%23efe3c4%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2229%22%20width%3D%2223%22%20height%3D%2210%22%20fill%3D%22%23efe3c4%22/%3E%3Cpath%20d%3D%22M7%2032h18M7%2035h14%22%20stroke%3D%22%237a6a50%22%20stroke-width%3D%22.9%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%288%206%29%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2242%22%20rx%3D%223%22%20fill%3D%22%231a1512%22%20stroke%3D%22%233a2a18%22%20stroke-width%3D%221%22/%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2226%22%20height%3D%2238%22%20rx%3D%222%22%20fill%3D%22%23d9c49a%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%224.5%22%20width%3D%2223%22%20height%3D%224%22%20rx%3D%221%22%20fill%3D%22%23efe3c4%22/%3E%3Ccircle%20cx%3D%2225%22%20cy%3D%226.5%22%20r%3D%221.6%22%20fill%3D%22%23d8503a%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2210%22%20width%3D%2223%22%20height%3D%2213%22%20fill%3D%22%237a2a1c%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2224.5%22%20width%3D%2223%22%20height%3D%223%22%20fill%3D%22%23efe3c4%22/%3E%3Crect%20x%3D%224.5%22%20y%3D%2229%22%20width%3D%2223%22%20height%3D%2210%22%20fill%3D%22%23efe3c4%22/%3E%3Cpath%20d%3D%22M7%2032h18M7%2035h14%22%20stroke%3D%22%237a6a50%22%20stroke-width%3D%22.9%22/%3E%3C/g%3E%3C/svg%3E")}
+/* energy orb in the hero's colour, gold rims; Fury sockets ride the rim */
+#app .battle .energy{--orb:52px;position:relative;width:var(--orb)!important;height:var(--orb)!important;border-radius:50%;border:0!important;display:grid;place-items:center;overflow:visible;
+ font:700 1.15rem/1 var(--display)!important;color:#fff4dc;text-shadow:0 2px 3px #000,0 0 12px #ff8a3d;
+ background:radial-gradient(circle at 35% 28%,#fff3 0 8%,#0000 22%),radial-gradient(circle at 50% 60%,#ffb347,#e0562a 38%,#7a1408 70%,#2a0604 100%)!important;
+ box-shadow:inset 0 -8px 16px #0009,inset 0 4px 10px #ffd58a55,0 0 0 2px #000,0 0 0 4px var(--pwk-gold-lo),0 0 0 5px #f3d38a88,0 0 22px #e0562a66!important}
+body[data-hero=W] #app .battle .energy{color:#2a1d0c;text-shadow:0 1px 0 #fff8,0 0 10px #fff;background:radial-gradient(circle at 35% 28%,#fff8 0 9%,#0000 24%),radial-gradient(circle at 50% 60%,#fffbe8,#f3dfa6 40%,#b99a55 72%,#4a3a1a 100%)!important;
+ box-shadow:inset 0 -8px 16px #0006,inset 0 4px 10px #fff8,0 0 0 2px #000,0 0 0 4px var(--pwk-gold-lo),0 0 0 5px #f3d38a88,0 0 22px #f6e7b088!important}
+#app .battle .energy.pw-short-on{box-shadow:0 0 0 2px #000,0 0 0 4px #ff5a4a,0 0 22px 4px #ff5a4acc!important}
+#app .battle .energy .e-n{display:flex;align-items:baseline;white-space:nowrap}
+#app .battle .energy .e-of{font-size:.62em;opacity:.85;margin-left:1px}
+#app .battle .energy>small{z-index:1}
+#app .battle .energy .pips{position:absolute;inset:0;pointer-events:none}
+#app .battle .energy .pips i{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px;border-radius:50%;transform:rotate(var(--a)) translateY(calc(var(--orb) / -2 - 1px)) rotate(calc(var(--a) * -1));
+ background:var(--pwk-mana) center/contain no-repeat;filter:grayscale(1) brightness(.32) contrast(1.2);box-shadow:0 0 0 1.5px #000,0 0 0 2.5px var(--pwk-gold-lo)}
+#app .battle .energy .pips i.on{filter:saturate(1.4) brightness(1.15) drop-shadow(0 0 5px var(--pwk-hero-glow));box-shadow:0 0 0 1.5px #000,0 0 0 2.5px var(--pwk-gold-hi)}
+#app[data-pw-roomy] .battle .energy{--orb:60px}
+/* draw and discard piles: painted card stacks with a gold count */
+#app .battle .piles>span[data-pile]{position:relative;box-sizing:border-box;width:44px!important;height:54px!important;padding:0!important;font-size:0!important;letter-spacing:0!important;
+ background:var(--pwk-pile-draw) center/contain no-repeat!important;filter:drop-shadow(0 4px 6px #000b);display:block!important}
+#app .battle .piles>span[data-pile=discard]{background-image:var(--pwk-pile-discard)!important}
+#app .battle .piles>span[data-pile]::before{content:none!important;display:none!important}
+#app .battle .piles>span[data-pile] b{position:absolute;right:-6px;bottom:-4px;min-width:22px;height:22px;padding:0 5px;box-sizing:border-box;border-radius:11px;display:grid;place-items:center;
+ font:700 12px/1 var(--body)!important;color:#1b1406;background:linear-gradient(180deg,#fff1c4,#e8b95b 60%,#a8752a);box-shadow:0 0 0 1.5px #000,0 2px 4px #000a}
+/* End turn: the gold lacquer button on stone */
+#app .battle .controls .btn.main{border:0!important;border-radius:10px!important;font-family:var(--display)!important;letter-spacing:.06em;color:#1b1406!important;text-shadow:0 1px 0 #fff3cf88!important;
+ background:linear-gradient(180deg,#fff6d8 0,#f3d38a 18%,#c9973f 55%,#7a4e16 100%),var(--pwk-stone) center/240px auto!important;background-blend-mode:hard-light,normal!important;
+ box-shadow:inset 0 1px 0 #ffffff30,inset 0 -2px 0 #000a,inset 0 0 0 1px #f3d38a22,var(--pwk-rim)!important}
+#app .battle .controls .btn.main::before{filter:brightness(.2)}
+#app .battle .controls .btn.main:disabled{filter:grayscale(.8) brightness(.6)}
+/* other battle buttons on stone */
+#app .battle .controls .btn:not(.main):not(.pw-histbtn){border:0!important;font-family:var(--display);letter-spacing:.04em;color:var(--pwk-gold-hi);
+ background:linear-gradient(180deg,#ffffff1f 0,#ffffff05 38%,#0000 50%,#00000080 100%),linear-gradient(180deg,#2b2620cc,#100e0ccc),var(--pwk-stone) center/240px auto!important;
+ box-shadow:inset 0 1px 0 #ffffff30,inset 0 -2px 0 #000a,inset 0 0 0 1px #f3d38a22,0 0 0 1px #000,0 0 0 2px var(--pwk-gold-lo)!important}
+#app .battle .controls .btn:not(.main):disabled{filter:grayscale(.7) brightness(.62)}
+/* phones held upright: a painted bar along the bottom (draw · orb · End turn · discard), the hand above it */
+@media (max-aspect-ratio:3999/5000){
+ #app .battle{--kb:calc(env(safe-area-inset-bottom,0px) + 10px);--kw:min(calc(100vw - 20px),440px);--kl:calc(50vw - var(--kw) / 2);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 92px)!important}
+ #app .battle::after{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(env(safe-area-inset-bottom,0px) + 82px);z-index:3;pointer-events:none;
+  background:linear-gradient(180deg,#0000,#000a 40%),var(--pwk-stone) center/360px;-webkit-mask:linear-gradient(#0000,#000 26px);mask:linear-gradient(#0000,#000 26px)}
+ #app .battle .energy{--orb:62px;position:fixed!important;z-index:5;left:calc(var(--kl) + 52px);bottom:calc(var(--kb) + 2px);margin:0!important;font-size:1.25rem!important}
+ #app .battle .energy>small{bottom:-12px}
+ #app .battle .piles>span[data-pile]{position:fixed!important;z-index:5;bottom:calc(var(--kb) + 6px);margin:0!important}
+ #app .battle .piles>span[data-pile=draw]{left:var(--kl)}
+ #app .battle .piles>span[data-pile=discard]{right:var(--kl)}
+ #app .battle .piles>.bankhint{display:none!important}
+ #app .battle .controls .btn.main{position:fixed!important;z-index:5;left:calc(var(--kl) + 128px);right:calc(var(--kl) + 56px);bottom:calc(var(--kb) + 8px);width:auto!important;min-height:48px;margin:0!important;font-size:1rem!important}
+ /* while aiming, Cancel takes End turn's place instead of pushing a new row into the field */
+ #app .battle .controls>[data-act=cancel]{position:fixed!important;z-index:5;left:calc(var(--kl) + 128px);right:calc(var(--kl) + 56px);bottom:calc(var(--kb) + 8px);width:auto!important;min-height:48px;margin:0!important;border-radius:10px}
+}
+/* Paused menu: the kit's carved panel */
+body>.pw-menu .pw-menu-card.pwk-panel{border:0!important;max-height:calc((100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 16px) / var(--pw-zoom,1))!important;overflow:auto!important;overscroll-behavior:contain}
+@media (max-aspect-ratio:3999/5000){body>.pw-menu .pw-menu-card.pwk-panel{padding:22px 18px!important}}
+body>.pw-menu .pw-menu-card .pwk-title{font-size:clamp(1.4rem,6vw,1.9rem)!important;display:flex;align-items:center;justify-content:center}
+body>.pw-menu .pw-menu-card .pwk-btn.primary{width:100%;min-height:48px;font-size:1rem}
+body>.pw-menu .pw-menu-row{border:0!important;background:linear-gradient(180deg,#ffffff14 0,#0000 45%,#00000066 100%),linear-gradient(180deg,#2b2620cc,#100e0ccc),var(--pwk-stone) center/240px auto!important;
+ box-shadow:inset 0 1px 0 #ffffff26,inset 0 0 0 1px #f3d38a1a,0 0 0 1px #000,0 0 0 2px #8a5a1c88!important}
+body>.pw-menu .pw-menu-row.pw-armed,body>.pw-menu .pw-menu-exit{background:linear-gradient(180deg,#ffffff1a 0,#0000 45%,#00000080 100%),linear-gradient(180deg,#7a1c20e6,#3a0a0ce6),var(--pwk-stone) center/240px auto!important}
+/* events: the painting above, the hero's ribbon for the name, a quote box, choice rows with icons */
+#app .screen.event{justify-content:flex-end}
+#app .screen.event>h2.pwk-ribbon{align-self:center;width:max-content;max-width:calc(100% - 8px);box-sizing:border-box;white-space:normal;margin:0 auto 10px;font-size:1rem;min-height:40px;padding:6px 40px;text-transform:none}
+#app .screen.event>.note{margin:0 0 10px;padding:10px 14px;border-radius:12px;background:#0b0a0dcc;border:1px solid #f3d38a33;font-style:italic;text-align:center}
+#app .screen.event .option{display:grid!important;grid-template-columns:44px minmax(0,1fr);column-gap:12px;align-items:center;text-align:left;min-height:60px;
+ background:linear-gradient(90deg,#1d1a20f2,#121015e6)!important;box-shadow:inset 0 1px 0 #ffffff14,0 0 0 1px #000,0 0 0 2px #8a5a1c,0 6px 14px #000a!important;border:0!important}
+#app .screen.event .option>.ev-ic{grid-row:1 / span 9;width:44px;height:44px;display:grid;place-items:center}
+#app .screen.event .option>.ev-ic>.emb-art{width:44px;height:44px}
+#app .screen.event .option>.ev-ic>.pwk-mana{width:34px;height:34px}
+#app .screen.event .option>.ev-ic>.pwk-back{display:block;width:40px;height:40px;border-radius:50%;box-shadow:var(--pwk-rim)}
+#app .screen.event .option>:not(.ev-ic){grid-column:2}
+/* short landscape: the discard pile sits left of End turn (no room above it), and the saved-energy note gives way to the Fury sockets */
+@media (min-aspect-ratio:4/5) and (max-height:560px){
+ #app .battle .piles>span[data-pile=discard]{align-self:end!important;justify-self:start!important;margin:0 0 4px -54px!important}
+ #app .battle .piles>.bankhint{display:none!important}
+}
+#app .battle .energy .pips i{width:12px;height:12px;margin:-6px;transform:rotate(var(--a)) translateY(calc(var(--orb) / -2 - 2px)) rotate(calc(var(--a) * -1))}
+@media (max-aspect-ratio:3999/5000){#app .battle .energy .pips i{width:14px;height:14px;margin:-7px}}
+
+/* ===== battle icons (Randall 30 Oct: emblems, not word soup) ===== */
+#app .battle .pi{width:1.1em;height:1.1em;flex:none;fill:currentColor;filter:drop-shadow(0 1px 0 #000)}
+#app .battle .intent{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:3px;white-space:nowrap;line-height:1}
+#app .battle .intent>b{font:800 1em/1 var(--display)}
+#app .battle .intent .mod,#app .battle .kw .mod{display:inline-grid;place-items:center;font-style:normal}
+#app .battle .intent .mod .pi{width:.9em;height:.9em;opacity:.9}
+#app .battle .intent.enrage .pi-flame{color:#ffb35a}
+#app .battle .pv{display:inline-flex!important;align-items:center;justify-content:center;gap:2px;white-space:nowrap!important}
+#app .battle .pv>b{font:800 1em/1 var(--display)}
+#app .battle .pv .pi-skull{color:#ff8a7a}
+#app .battle .kw{display:flex!important;justify-content:center;gap:4px;color:var(--pwk-gold-hi)}
+#app .battle .kw .pi{width:14px;height:14px}
+#app .battle .shield,#app .battle .ward{display:inline-flex!important;align-items:center;gap:2px}
+#app .battle .shield .pi,#app .battle .ward .pi{width:1em;height:1em}
+#app .battle .unit.hero .incoming.lethal{display:grid!important;place-items:center;width:30px!important;height:30px!important;padding:0!important;border-radius:50%;color:#ffd0c8;background:#5a0d0de6!important;box-shadow:0 0 0 1.5px #000,0 0 0 3px #ff5a4a,0 0 14px #ff5a4a99!important}
+#app .battle .unit.hero .incoming.lethal .pi{width:18px;height:18px}
+/* Attack with every ready ally: a crossed-swords button */
+#app .battle .controls .pw-allbtn{display:inline-flex!important;align-items:center;justify-content:center;gap:0;width:52px!important;min-width:52px;height:48px;padding:0!important;justify-self:start}
+#app .battle .controls .pw-allbtn .pi{width:20px;height:20px;color:var(--pwk-gold-hi)}
+#app .battle .controls .pw-allbtn .pi+.pi{margin-left:-12px;transform:scaleX(-1)}
+/* whose turn: the side that is acting glows */
+@keyframes pwTurnGlow{50%{filter:brightness(1.12)}}
+#app .battle.your-turn .side.you .unit .art{box-shadow:0 0 0 2px var(--pwk-hero-glow),0 0 18px 2px var(--pwk-hero-glow)!important}
+#app .battle.foes-turn .side.foe .unit .art{box-shadow:0 0 0 2px #ff4a3a,0 0 18px 2px #ff4a3acc!important}
+@media (prefers-reduced-motion:no-preference){#app .battle.your-turn .side.you .unit .art,#app .battle.foes-turn .side.foe .unit .art{animation:pwTurnGlow 2.4s ease-in-out infinite}}
+/* inspect panel on upright phones: a wide card under the HUD that scrolls, never a narrow column */
+@media (max-aspect-ratio:3999/5000){
+ #app .battle .controls .inspect{position:fixed!important;left:16px!important;right:16px!important;top:calc(var(--pw-hud-h,96px) + 10px)!important;bottom:auto!important;width:auto!important;max-width:440px;margin:0 auto!important;
+  max-height:calc(100dvh - var(--pw-hud-h,96px) - env(safe-area-inset-bottom,0px) - 120px);overflow:auto;z-index:50;padding:14px 16px!important;font-size:.86rem!important;box-shadow:0 0 0 1px #000,0 0 0 2px var(--pwk-gold-lo),0 18px 40px #000c!important}
+}
+/* the intents ride above the top row: keep them clear of the HUD's torn edge */
+@media (max-aspect-ratio:3999/5000){#app .battle .field{margin-top:18px!important}}
+#app .battle .controls .pw-allbtn{position:relative}
+#app .battle .controls .pw-allbtn .pi{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px}
+#app .battle .controls .pw-allbtn .pi+.pi{margin-left:-11px;transform:scaleX(-1)}
+/* 4v4: the fourth foe stands where the field meets the action column, so attack-all waits just above End turn, off the field */
+@media (min-aspect-ratio:4000/5000){#app .battle .controls .pw-allbtn{grid-row:3!important;align-self:end!important;justify-self:end!important;margin:0 0 54px!important}}
+#app .battle .piles>.bankhint{display:none!important}
+
+.pw-tip{text-wrap:balance}
+/* the market's Leave button stays above the gesture band */
+#app .screen.shop{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 12px)!important}
+/* short landscape: a compact crest and Resume so the three Sound rows fit without scrolling */
+@media (min-aspect-ratio:4/5) and (max-height:500px){
+ body>.pw-menu .pw-menu-card.pwk-panel{padding:10px 14px 12px!important;row-gap:6px!important}
+ body>.pw-menu .pw-menu-card .pwk-title{font-size:1.15rem!important;line-height:1!important}
+ body>.pw-menu .pw-menu-card .pwk-title .pwk-mana{width:1em;height:1em}
+ body>.pw-menu .pw-menu-card .pw-menu-sub{margin:0!important;font-size:.72rem}
+ body>.pw-menu .pw-menu-card .pwk-btn.primary{min-height:44px!important;height:44px}
+}
+
+/* the orb's rim: one mana symbol per mana this turn, lit while it is still there to spend */
+#app .battle .energy .e-n{font-size:1.25em}
+#app .battle .energy .pips i:not(.on){filter:grayscale(1) brightness(.4) contrast(1.1);opacity:.85}
+/* Fury: four small flames that light as you play cards (Chandra) */
+#app .battle .chain{display:flex!important;gap:2px;align-items:center;padding:3px 6px!important;border-radius:99px;background:#0b0907d9!important;box-shadow:0 0 0 1px #000,0 0 0 2px #8a5a1c88!important}
+#app .battle .chain>i{width:14px!important;height:14px!important;transform:none!important;background:none!important;box-shadow:none!important;border:0!important;color:#5a3a2a;display:grid;place-items:center}
+#app .battle .chain>i .pi{width:14px;height:14px;fill:currentColor}
+#app .battle .chain>i.on{color:#ff9a3d;filter:drop-shadow(0 0 4px #ff6a2a)}
+#app .battle .chain>span{display:none!important}
+#app .battle .tally{display:none!important}
+@media (max-aspect-ratio:3999/5000){
+ #app .battle{--kb:calc(env(safe-area-inset-bottom,0px) + 14px)}
+ #app .battle .chain{position:fixed!important;z-index:5;left:calc(var(--kl) + 126px);bottom:calc(var(--kb) + 60px);margin:0!important}
+ #app .battle .piles>span[data-pile] b{bottom:-2px}
+}
+#app .battle .unit.ally .art>.stats{padding-inline:3px!important;white-space:nowrap;max-width:100%!important;box-sizing:border-box!important;min-width:0!important}
+/* mana symbols inside rules text */
+.card .ms{display:inline-flex;align-items:center;justify-content:center;width:1.1em;height:1.1em;margin:0 .04em;vertical-align:-.2em;filter:none}
+.card .ms-g{border-radius:50%;background:#cfc6b8;color:#16110c;font:800 .78em/1 var(--display,serif);box-shadow:0 1px 0 #0008}
+/* coloured keywords in emblem text: keep each line's glyph box clear of the next line */
+#app .option :has(>i.k){line-height:1.42}
+/* Paused: Drag tips and Report a bug ride beside Resume (sideways) or under it (upright) */
+body>.pw-menu .pw-menu-help{display:flex;gap:8px}
+body>.pw-menu .pw-menu-mini{flex:1;min-height:44px;margin:0;padding:0 10px;border-radius:10px;border:1px solid #c99c5940;background:#ffffff08;color:#efe4cf;font:600 .78rem/1.15 var(--body);cursor:pointer}
+body>.pw-menu .pw-menu-mini:hover{background:#ffffff12}
+body>.pw-menu .pw-menu-mini:focus-visible{outline:2px solid var(--pw-gold);outline-offset:1px}
+body>.pw-menu .pw-menu-mini.pw-done{color:#c9f3d6;border-color:#5fb87a99}
+body>.pw-menu .pw-menu-text b{flex:none;width:38px;text-align:center;font:700 1rem/1 Cinzel,serif;color:var(--pw-gold)}
+@media (min-aspect-ratio:4/5){
+ body>.pw-menu .pw-menu-card>.btn.main{grid-column:1/3}
+ body>.pw-menu .pw-menu-card>.pw-menu-help{grid-column:3;align-self:stretch}
+ body>.pw-menu .pw-menu-mini{min-height:40px}
+}
+@media (min-aspect-ratio:4/5) and (max-height:500px){body>.pw-menu .pw-menu-mini{min-height:44px}}
+/* aiming a card: a skull on each enemy it would kill */
+#app .battle .side.foe .unit>.pw-lethal{position:absolute;left:50%;top:36%;z-index:5;translate:-50% -50%;display:grid;place-items:center;width:30px!important;height:30px!important;padding:0!important;border-radius:50%;color:#fff1ea;background:radial-gradient(#8f1d13,#3e0806);box-shadow:0 0 0 2px #000,0 0 0 3.5px #ff5a4a,0 0 18px #ff5a4acc;pointer-events:none;animation:pw-lethal 1.1s ease-in-out infinite}
+#app .battle .side.foe .unit>.pw-lethal .pi{width:18px!important;height:18px!important}
+@keyframes pw-lethal{50%{scale:1.1}}
+#app .battle .pw-prev[data-dies] .pi{width:14px;height:14px;vertical-align:-2px}
+/* your portrait: what the enemies deal if you end the turn now */
+#app .battle .unit.hero>.incoming:not(.lethal){display:inline-flex!important;align-items:center;gap:3px;padding:2px 9px 2px 6px!important;font:800 .8rem/1 var(--display,serif)!important;color:#ffe2d8;background:#3a120be6!important;border:1px solid #e8705a!important}
+#app .battle .unit.hero>.incoming:not(.lethal) .pi{width:14px;height:14px}
+/* End turn with mana and a playable card left: one pulse on the button and the cards, then a second press ends it */
+#app .battle .pw-nudge{animation:pw-nudge .8s ease-out 1}
+#app .battle .hand>.card.pw-nudge{animation-name:pw-nudge-card}
+@keyframes pw-nudge{0%,100%{box-shadow:none}35%{box-shadow:0 0 0 3px var(--pw-gold-hi,#ffe39a),0 0 22px var(--pw-gold,#e8b95b)}}
+@keyframes pw-nudge-card{0%,100%{filter:none}35%{filter:drop-shadow(0 0 10px var(--pw-gold,#e8b95b)) brightness(1.15)}}
+/* Shape coding (works without colour): attacks are square, drains and curses round, buffs and guards shield-shaped; rarity gets a gem shape */
+#app .battle .intent{border-radius:3px}
+#app .battle .intent.drain,#app .battle .intent.stun{border-radius:99px}
+#app .battle .intent.buff,#app .battle .intent.summon,#app .battle .intent.transform{border-radius:3px 3px 12px 12px}
+/* rarity sits where a real card's set symbol does: right end of the type line, shape + colour, no word */
+#app .card .kind:has(.gem){gap:0 .4em;flex-wrap:wrap}
+#app .card .kind .gem{display:inline-block;flex:none;width:.72em;height:.72em;margin:0 3px 0 auto;background:#2a2a2e;box-shadow:0 0 0 1px #ffffff55}
+#app .card[data-rar=C] .kind .gem{border-radius:50%}
+#app .card[data-rar=U] .kind .gem{transform:rotate(45deg) scale(.86);background:linear-gradient(135deg,#eef3f8,#8d99a6)}
+#app .card[data-rar=R] .kind .gem{clip-path:polygon(50% 0,100% 100%,0 100%);box-shadow:none;background:linear-gradient(180deg,#ffe7a0,#b8862b)}
+#app .card[data-rar=M] .kind .gem{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);box-shadow:none;background:linear-gradient(180deg,#ffb27a,#d4472a)}
+/* the chosen card stays in place (its gold frame marks it) instead of lifting, so it never rides into the Cancel row above the hand */
+@media (hover:none),(max-width:600px){#app .battle .hand>.card[data-chosen]{transform:rotate(0)!important}}
+/* Journal: runs, cards and emblems met so far */
+#app .pw-jopen,#app .pw-share{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px}
+#app .pw-jopen .pi,#app .pw-share .pi,#app .pw-run-go .pi{width:18px;height:18px;flex:none}
+#app .screen.heroes .pw-jopen{margin-top:4px;padding-inline:18px}
+#app .screen.journal{display:grid;grid-template-rows:auto auto auto;gap:10px;justify-items:stretch;width:100%;box-sizing:border-box;max-width:880px;margin-inline:auto}
+#app .pw-jtabs{display:grid;grid-template-columns:44px repeat(4,minmax(0,1fr));gap:6px}
+#app .pw-jback{display:grid;place-items:center;min-height:44px;padding:0}
+#app .pw-jback .pi{width:20px;height:20px}
+#app .pw-jtab{min-height:44px;padding:4px 3px;min-width:0;font-size:.8rem;white-space:normal;line-height:1.1;}
+#app .pw-jtab[aria-pressed=true]{border-color:#e8b45a;color:#ffe7b0;box-shadow:inset 0 -2px 0 #e8b45a,0 0 12px #e8b45a33}
+#app .pw-jbody{display:grid;align-content:start;gap:10px;padding:2px;min-width:0}
+#app .pw-jbody h3{margin:6px 0 0;text-align:left;font:700 .9rem var(--display);color:#e9d9b8}
+#app .pw-jcount{margin:0;font:800 .9rem var(--display);color:#e9d9b8}
+#app .pw-runs{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+#app .pw-run{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--pw-line,#ffffff22);border-radius:10px;background:linear-gradient(180deg,#1b1b20f2,#0f0f12f5);text-align:left}
+#app .pw-run[data-won="1"]{border-color:#e8b45a88}
+#app .pw-run-r{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:radial-gradient(#5a120c,#2a0504);color:#f3e6cc;box-shadow:0 0 0 1.5px #e8705a}
+#app .pw-run[data-won="1"] .pw-run-r{background:radial-gradient(#5a420e,#2a1d04);color:#ffe7b0;box-shadow:0 0 0 1.5px #e8b45a}
+#app .pw-run-r .pi{width:24px;height:24px}
+#app .pw-run-t{display:grid;gap:2px;min-width:0}
+#app .pw-run-t b{font:700 .86rem var(--display);overflow-wrap:anywhere}
+#app .pw-run-t .muted{font-size:.74rem;line-height:1.3}
+#app .pw-run-go{display:inline-flex;align-items:center;gap:5px;min-height:44px;min-width:44px;padding:4px 10px;font-variant-numeric:tabular-nums}
+#app .pw-comp{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;justify-items:center}
+#app .pw-comp>.card{width:100%;max-width:138px;min-width:0;min-height:0;font-size:.6rem;padding:4px;grid-template-rows:auto minmax(64px,1fr) auto auto}
+#app .pw-comp>.card .head b{font-size:.6rem;white-space:normal;line-height:1.05}
+/* compendium tiles: name, cost and art; the full card is one long-press away like everywhere else */
+#app .pw-comp>.card{grid-template-rows:auto 64px}
+#app .pw-comp>.card>.kind,#app .pw-comp>.card>span:last-child:not(.pic){display:none}
+#app .pw-csil{display:grid;place-items:center;width:100%;max-width:138px;min-height:96px;box-sizing:border-box;border-radius:11px;background:radial-gradient(circle at 50% 40%,#25252b,#0d0d10);border:1px dashed #ffffff2e;box-shadow:none}
+#app .pw-sil-q{font:800 1.6rem var(--display);color:#ffffff2e}
+#app .pw-jembs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+#app .pw-jemb{display:grid;justify-items:center;align-content:start;gap:4px;min-width:0;text-align:center}
+#app .pw-jemb>svg,#app .pw-jemb>.emb,#app .pw-jemb>:first-child:not(b){width:64px;height:64px}
+#app .pw-jemb>b{font:700 .72rem/1.2 var(--body);overflow-wrap:anywhere}
+#app .pw-jemb.pw-sil{width:64px;height:64px;justify-self:center;place-items:center;display:grid;border-radius:50%;background:radial-gradient(#25252b,#0d0d10);border:1px dashed #ffffff2e}
+#app .pw-jemb.pw-sil .pw-sil-q{font-size:1.2rem}
+/* Rank bar on the run-end screen */
+#app .pw-rank{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;width:min(420px,100%);box-sizing:border-box;padding-inline:6px;margin:2px auto 0}
+#app .pw-rank-n{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:99px;background:#3a2a08;color:#ffe7b0;box-shadow:0 0 0 1.5px #e8b45a}
+#app .pw-rank-n .pi{width:15px;height:15px}
+#app .pw-rank-n b{font:800 .95rem/1 var(--display)}
+#app .pw-rank-bar{position:relative;height:10px;border-radius:99px;background:#ffffff14;box-shadow:inset 0 0 0 1px #ffffff22;overflow:hidden}
+#app .pw-rank-bar>i{position:absolute;inset:0 auto 0 0;border-radius:inherit;background:linear-gradient(90deg,#8a5a1a,#e8b45a)}
+#app .pw-rank-bar>i.gain{background:linear-gradient(90deg,#ffe7b0,#fff6dc);box-shadow:0 0 10px #ffe7b0aa;transform-origin:0 50%;animation:pw-rank-fill .9s .25s ease-out both}
+#app .pw-rank-xp{font:800 .9rem var(--display);color:#ffe7b0}
+@keyframes pw-rank-fill{from{transform:scaleX(0)}}
+@media (prefers-reduced-motion:reduce){#app .pw-rank-bar>i.gain{animation:none}}
+html.pw-calm #app .pw-rank-bar>i.gain{animation:none}
+#app .pw-jfoes{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+#app .pw-jfoe{display:grid;justify-items:center;align-content:start;gap:4px;min-width:0;text-align:center}
+#app .pw-jfoe>i{display:grid;place-items:center;width:76px;height:92px;border-radius:38px 38px 10px 10px;background:var(--img,radial-gradient(#25252b,#0d0d10)) center 22%/cover no-repeat,#15151a;box-shadow:0 0 0 1.5px #ffffff33}
+#app .pw-jfoe[data-rank=elite]>i{box-shadow:0 0 0 1.5px #e8b45a}
+#app .pw-jfoe[data-rank=boss]>i{box-shadow:0 0 0 2px #e8705a,0 0 12px #e8705a66}
+#app .pw-jfoe.pw-sil>i{background:radial-gradient(#25252b,#0d0d10);box-shadow:none;border:1px dashed #ffffff2e}
+#app .pw-jfoe>b{font:700 .72rem/1.2 var(--body);overflow-wrap:normal;hyphens:auto;justify-self:stretch;margin-inline:-4px;min-width:0}
+/* First-fight tutorial: a soft gold ring that breathes, no words */
+#app .battle .pw-tut{outline:2px solid #ffe7b0;outline-offset:3px;animation:pw-tut 1.4s ease-in-out infinite}
+@keyframes pw-tut{50%{outline-color:#ffe7b000;outline-offset:6px}}
+@media (prefers-reduced-motion:reduce){#app .battle .pw-tut{animation:none}}
+html.pw-calm #app .battle .pw-tut{animation:none}
+#app .pw-rank.up .pw-rank-n{box-shadow:0 0 0 1.5px #ffe7b0,0 0 14px #e8b45a99}
+#app .screen .pw-comp>.card{min-height:0!important;height:auto!important;align-self:start;grid-template-rows:auto 64px!important;width:100%!important;max-width:138px}
+#app .screen .pw-comp>.card>.head{min-height:0;align-self:start}
+/* units glow on their art (the button itself is a plain box) */
+#app .battle .unit.pw-tut{outline:0;animation:none}
+#app .battle .unit.pw-tut>.art{animation:pw-tut-u 1.4s ease-in-out infinite;box-shadow:0 0 0 2px #ffe7b0,0 0 16px #ffe7b099}
+@keyframes pw-tut-u{50%{box-shadow:0 0 0 2px #ffe7b000,0 0 4px #ffe7b000}}
+@media (prefers-reduced-motion:reduce){#app .battle .unit.pw-tut>.art{animation:none}}
+html.pw-calm #app .battle .unit.pw-tut>.art{animation:none}
+#app .top>.pw-jtop{display:grid;place-items:center;padding:0}
+#app .top>.pw-jtop .pi{width:20px;height:20px}
+/* icons outside the battle take the text colour too (the battle sets its own) */
+#app .pi,body>.pw-menu .pi{fill:currentColor}
+#app .top>.pw-jtop{color:#efe4cf}
+#app .screen.pw-end>p{text-wrap:balance}
+/* Text size: a segmented control like the other options */
+body>.pw-menu .pw-menu-text{cursor:default;padding-block:0}
+body>.pw-menu .pw-menu-text>span:first-child{flex:1;min-width:0}
+body>.pw-menu .pw-seg{display:inline-flex;flex:none;align-self:stretch;align-items:center;gap:2px}
+body>.pw-menu .pw-seg>button{min-width:44px;min-height:44px;padding:0 4px;border:0;border-radius:10px;background:#3a3127;box-shadow:inset 0 0 0 1px #c99c5955;color:#c8b8a0;font:600 .72rem/1 var(--body);cursor:pointer}
+body>.pw-menu .pw-seg>button[aria-pressed=true]{background:linear-gradient(var(--pw-gold-hi),var(--pw-gold));color:#1b1610}
+/* a scrolling Paused panel fades out at the bottom instead of cutting a row */
+body>.pw-menu .pw-menu-card.pwk-panel::after{content:"";grid-column:1/-1;position:sticky;bottom:0;display:block;height:24px;margin-top:-24px;background:linear-gradient(#100e0c00,#100e0cf2);pointer-events:none;z-index:2}
+/* Escalation dial (Nightfall moon in Act 1, the Hunger's maw in Act 2): the ring fills toward Doom */
+#app .battle>.pw-esc{position:absolute;z-index:4;left:max(10px,env(safe-area-inset-left,0px));top:calc(var(--pw-hud-h,48px) + 10px);display:grid;place-items:center;width:42px;height:42px;border-radius:50%;color:#f3e6cc;
+ background:radial-gradient(circle,#15121a 0 60%,transparent 61%),conic-gradient(#c9b8ff calc(var(--f)*360deg),#ffffff1c 0);box-shadow:0 0 0 1.5px #000,0 2px 8px #000a;pointer-events:auto}
+#app .battle>.pw-esc[data-face=maw]{background:radial-gradient(circle,#15121a 0 60%,transparent 61%),conic-gradient(#b48cff calc(var(--f)*360deg),#ffffff1c 0)}
+#app .battle>.pw-esc.on{color:#fff}
+#app .battle>.pw-esc.doom{color:#ffd2c4;background:radial-gradient(circle,#3e0806 0 60%,transparent 61%),conic-gradient(#ff5a4a 360deg,#0000 0);box-shadow:0 0 0 1.5px #000,0 0 14px #ff5a4a99}
+#app .battle>.pw-esc .pi{width:20px;height:20px;fill:currentColor}
+#app .battle>.pw-esc>b{position:absolute;right:-4px;bottom:-4px;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:99px;display:grid;place-items:center;background:#15121a;box-shadow:0 0 0 1.5px #c9b8ff;font:800 11px/1 var(--display);color:#f3e6cc}
+#app .battle>.pw-esc.on>b{box-shadow:0 0 0 1.5px #ff9f43;color:#ffd2a0}
+
+#app .screen .choices>.card .kind,#app .screen .choices>.buy>.card .kind{letter-spacing:.04em}
+
+/* screen-reader text (the HUD ☰ has a painted icon; the glyph must never show beside it) */
+.pw-sr{position:absolute!important;width:1px!important;height:1px!important;margin:-1px!important;padding:0!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important}
+/* the escalation dial and the emblem seals both hang under the HUD on the left; seals step past the dial */
+body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,env(safe-area-inset-left,0px)) + 54px)}
+/* wide screens: the emblem seals ride in the HUD row itself, in the free run between gold and the buttons, like relics on a top bar */
+@media (min-aspect-ratio:4/5) and (min-width:700px){#app>.top .emblems{position:static!important;margin-left:8px;gap:4px!important}#app>.top .emblems .emb-art{width:34px;height:34px}}
+@media (min-aspect-ratio:4/5) and (min-width:700px) and (max-width:999px){#app>.top .emblems .emb-art{width:30px;height:30px}#app>.top .emblems .emb-art+.emb-art{margin-left:-5px}}
+/* while a hand card is lifted by hover, its hit area reaches down to where it stood, so the pointer never falls off it and the card never bobs */
+@media (hover:hover){#app .battle .hand>.card:not(:disabled):hover::before{content:"";position:absolute;left:-6px;right:-6px;top:100%;height:44px;z-index:-1}}
+/* Desktop (mouse): the card under the pointer is the readable card itself, grown in place the way Slay the Spire does it. planeswalk-touch.js
+   sets .pw-big and trades width for margin so the fan footprint stays put and no other card moves; the type line and rules text come back
+   while it is big. Disabled (unaffordable) cards grow too, so they can be read. The scale divides out the hand's own zoom, so the big card
+   is the same size on every monitor. */
+#app#app .battle .hand>.card.pw-big{width:130px!important;flex:0 0 130px!important;transform:translateY(-10px) rotate(0) scale(max(1.25,calc(1.6 / var(--pw-zoom,1))))!important;transform-origin:50% 100%;z-index:12;height:auto!important;min-height:0!important;grid-template-rows:auto minmax(64px,1fr) auto auto!important;aspect-ratio:auto;filter:none!important;opacity:1!important;transition:transform .12s ease-out}
+#app#app .battle .hand>.card.pw-big .kind{display:flex!important;font-size:.46rem;padding:2px 5px;white-space:normal;overflow:visible;text-overflow:clip}
+#app#app .battle .hand>.card.pw-big>span:last-child{display:block!important;font-size:.5rem;line-height:1.3;padding:3px 6px 5px}
+#app#app .battle .hand>.card.pw-big .pic{min-height:64px}
+#app#app .battle .hand>.card.pw-big .head{overflow:visible}
+#app#app .battle .hand>.card.pw-big .head b{white-space:normal;overflow:visible;-webkit-line-clamp:unset;display:block;max-width:none!important;margin-left:0!important;font-size:.6rem}
+/* reward and shop rows: text panels share a floor of three lines, so cards in one row carry their art at the same height; longer texts still grow */
+#app .screen .choices>.card>span:last-child,#app .screen .choices>.buy>.card>span:last-child{min-height:3.9em}
+/* page gutter token: the first column of content sits on the 16px gutter, or on the Android landscape inset when that is wider */
+@property --gutter{syntax:'<length>';inherits:true;initial-value:16px}
+:root{--gutter:max(16px,env(safe-area-inset-left,0px))}
+/* Act-start emblem pick (Randall 30 Oct 22:14Z "diff sizes eww"): the three cards share one grid, so icon, title, text and rarity
+   sit on the same rows in every card (subgrid), and the hint line goes (hard rule 10) */
+#app .screen.actstart>p:has(+.choices){display:none!important}
+#app .screen.actstart>.choices{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:auto minmax(0,1fr) auto auto;gap:0 12px;align-items:stretch;justify-items:stretch;width:min(100%,900px);justify-self:center}
+#app .screen.actstart>.choices>.option{display:grid!important;grid-row:1 / span 4;grid-template-rows:subgrid;grid-template-columns:52px minmax(0,1fr);column-gap:12px;row-gap:0;align-content:start;max-width:none!important;width:auto!important;min-width:0;height:auto!important;padding:12px 14px 12px!important;animation-delay:0s}
+#app .screen.actstart>.choices>.option>.emb,#app .screen.actstart>.choices>.option>svg.emb,#app .screen.actstart>.choices>.option>.emb-art{grid-column:1;grid-row:1 / span 3;float:none!important;margin:0!important;align-self:start;width:52px;height:52px}
+#app .screen.actstart>.choices>.option>b{grid-column:2;grid-row:1;align-self:start;line-height:1.15;text-wrap:balance;padding-right:0;margin:0 0 4px}
+#app .screen.actstart>.choices>.option>.muted{grid-column:2;grid-row:2;align-self:start;margin:0}
+#app .screen.actstart>.choices>.option>.costline{grid-column:2;grid-row:3;align-self:start;margin-top:4px}
+#app .screen.actstart>.choices>.option>.rar{grid-column:1 / -1;grid-row:4;position:static!important;justify-self:start;align-self:end;margin-top:8px!important;width:max-content}
+@media (max-aspect-ratio:3999/5000){#app .screen.actstart>.choices{grid-template-columns:minmax(0,1fr);grid-template-rows:none;gap:10px}#app .screen.actstart>.choices>.option{grid-row:auto;grid-template-rows:auto minmax(0,1fr) auto auto}}
+@media (min-aspect-ratio:4/5) and (max-height:500px){#app .screen.actstart>.choices>.option{padding:8px 10px!important;grid-template-columns:40px minmax(0,1fr);column-gap:10px}#app .screen.actstart>.choices>.option>:is(.emb,svg.emb,.emb-art){width:40px;height:40px}}
+/* emblem seals carry no mana symbol anywhere (Randall 30 Oct: mana lives on the action-point orb only) */
+#app .emb-art .emb-mana,#app .emb-mana{display:none!important}
+/* the rarity gem on the type line is the one rarity mark on a card; the older "Rare" pills (floated in the text, on the art, in the corner) go */
+#app .screen .card[data-rar=R]>span:last-child::before,#app .card[data-rar=R] .pic::after,#app .screen .card[data-rar=R]::before{display:none!important;content:none!important}
+/* phone landscape: the boss medallion's heal chip is the heart alone, so it never runs into the last Rest node */
+@media (min-aspect-ratio:4/5) and (max-height:500px){#app .map .node.boss .heal .t{display:none}#app .map .node.boss .heal{padding-inline:6px!important}}
+/* zoomed stages: a map node keeps a 45px finger target in screen pixels, not 45px times the zoom, so the dense middle row keeps air between nodes */
+@media (min-aspect-ratio:4/5){#app[data-pw-zoom] .map .node:not(.boss){min-width:calc(45px / var(--pw-zoom,1))!important;min-height:calc(45px / var(--pw-zoom,1))!important}}
+/* ware and reward cards: cost gem on the art's top-left corner, name band full width */
+#app .screen .choices .card .pic{position:relative}
+#app .screen .choices .card .pic>.cost{position:absolute;top:4px;left:4px;z-index:3;margin:0!important;flex:none}
+#app .screen .choices .card .head{padding-right:6px}
+#app .screen .choices .card .head b{max-width:none!important;flex:1 1 auto;min-width:0}
+#app .screen .choices .card .head b[data-long]{overflow-wrap:normal!important;hyphens:manual!important}
+
+/* ally state as an icon chip (title/aria carry the word) */
+#app .battle .unit.ally .tag:not(:empty){display:grid;place-items:center;width:18px;height:18px;padding:0;border-radius:50%;font-size:0;line-height:0;background:#0b0d12d9;border:1px solid #ffffff38;box-shadow:0 2px 6px #0009;color:#e8e2d4}
+#app .battle .unit.ally .tag .st{display:contents}
+#app .battle .unit.ally .tag .pi{width:11px;height:11px;fill:currentColor;filter:drop-shadow(0 1px 0 #000)}
+#app .battle .unit.ally .tag:has(>.st-moon){color:#cfd5ff;border-color:#8f97d8aa}
+#app .battle .unit.ally .tag:has(>.st-skull){color:#ffb0a8;border-color:#e0566a;background:#1a0a0ce6}
+#app .battle .unit.ally .tag:has(>.st-bolt){color:#ffd27a;border-color:#e8b95b}
+#app .battle .unit.ally .tag:has(>.st-sword){color:#ffd2c4;border-color:#e8705a}
+#app .battle .unit.ally .tag:has(>.st-shield){color:#bfe3ff;border-color:#7fb6e8aa}
+#app .battle .unit.ally .tag:has(>.st-cycle){color:#d8d2c4}
+/* event options: a painted stone roundel with the action's icon, never a mana symbol */
+#app .screen.event .option>.ev-ic>.ev-ring{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#3a332b,#0f0d0b 70%),var(--pwk-stone) center/120px;box-shadow:var(--pwk-rim);color:#f3d38a}
+#app .screen.event .option>.ev-ic>.ev-ring .pi{width:22px;height:22px;fill:currentColor;filter:drop-shadow(0 1px 0 #000)}
+#app .screen.event .option:disabled>.ev-ic>.ev-ring{filter:grayscale(1) brightness(.7)}
+/* shop wares line up: one shared row grid for name, art, type and text across all cards */
+@media (min-aspect-ratio:4/5){
+#app .screen.shop>.choices:has(>.buy){display:grid!important;grid-auto-flow:column;grid-auto-columns:max-content;grid-template-rows:auto minmax(0,1fr) auto auto auto;align-items:stretch}
+#app .screen.shop>.choices>.buy{display:grid!important;grid-row:1 / span 5;grid-template-rows:subgrid;row-gap:0;justify-items:center}
+#app .screen.shop>.choices>.buy>.card{grid-row:1 / span 4;display:grid!important;grid-template-rows:subgrid!important;row-gap:0;height:auto!important;min-height:0!important;flex:none!important}
+#app .screen.shop>.choices>.buy>.price{grid-row:5;align-self:start;margin-top:8px}
+}
+@media (min-aspect-ratio:4/5) and (min-height:501px){#app .screen.shop>.choices>.buy>.card .pic{min-height:130px}}
+/* crowded landscape hands: the fit routine slims the cards (--hw) so every name keeps a readable strip */
+@media (min-aspect-ratio:4/5){#app#app .battle .hand>.card[style*="--hw"]:not(.pw-big){width:var(--hw)!important;flex:0 0 var(--hw)!important;height:calc(var(--hw) * 4 / 3)!important;min-height:0!important}}
+#app .battle .hand.pw-dense>.card{zoom:1!important}
+#app .battle .hand.pw-flat{translate:var(--hshift,0px) 0}
+#app .battle .hand.pw-nameless>.card:not(.pw-big) .head>b{display:none!important}
+#app .battle .hand>.card.pw-noname:not(.pw-big) .head>b{display:none!important}

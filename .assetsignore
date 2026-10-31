@@ -141,3 +141,6 @@ experiments/forge-proof/*
 !experiments/forge-proof/table-emotes.mjs
 !experiments/forge-proof/native-panel.mjs
 !experiments/forge-proof/motion-kit.mjs
+
+# Planeswalk sources: built into planeswalk.html, never served
+planeswalk-src
