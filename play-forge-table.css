@@ -2379,7 +2379,8 @@ body.practice-table-open img{-webkit-user-drag:none}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-stack .forge-stack-item>:not(.forge-stack-head,.forge-stack-menu){grid-column:1/-1}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-stack-name{grid-column:1;grid-row:2;overflow:hidden;text-overflow:ellipsis}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-stack-count{grid-column:2;grid-row:2;white-space:nowrap;align-self:center}
- :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-stack-list{max-height:calc(100dvh - 252px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-stack-list{max-height:calc(100dvh - 272px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-stack-summary{-webkit-line-clamp:1}
 }
 /* Chat bubbles step back while a sheet asks you something. */
 body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forge-emote-bubble{opacity:0;pointer-events:none}
@@ -2404,6 +2405,8 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-current-stats{bottom:2px}
  /* The board runs the full width here, so the phase track moves off the divider to the top bar, beside the menu. */
  :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-phase-track{top:calc(env(safe-area-inset-top,0px) + 18px);left:calc(max(14px,env(safe-area-inset-left,0px)) + 66px);translate:none}
+ /* In a pod the opponents' chips hold the top bar, so the track sits just under them. */
+ :where(body.practice-table-open) .play-match-table[data-forge-native]:has(.play-pod-rail) .forge-phase-track{top:calc(env(safe-area-inset-top,0px) + 62px)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions:not([data-complex=true]):not(:has(.forge-order-cards,.forge-zone-search)){overflow:visible}
  /* Your name under the portrait keeps clear of the bottom edge at 130% text. */
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=you]{bottom:calc(var(--edge,16px) + 28px)!important}
