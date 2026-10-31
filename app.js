@@ -6452,6 +6452,8 @@ const scanCtx = {
   details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };
 scanCtx.aiAccount=()=>!!cloudInfo().user;
+// The scanner's "Add to" chips: remember a place or make a binder for it, in the same commit path as the collection.
+scanCtx.rememberLocation=(g,name,{createBinder=false}={})=>commit(s=>{rememberLocation(s,g,name,{createBinder});},{rerender:false});
 scanCtx.lookupCandidates=createScannerLookup({requestMagic:api,sources:T.SOURCES,candById:scanCtx.candById,match:scanCtx.match});
 registerScanner(scanCtx);
 
