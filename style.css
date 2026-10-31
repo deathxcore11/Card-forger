@@ -4284,7 +4284,7 @@ html.settings-open,html.settings-open body {overflow:hidden;}
 @media(prefers-reduced-motion:reduce){.home-search-pill::before {animation:none;background-position:50% 0;}}
 
 /* Info and optional, non-blocking contextual help. */
-.info-centre {max-width:920px;margin:auto}.info-centre h2{font-size:clamp(21px,3vw,30px);max-width:25ch}.info-search{display:grid;gap:8px;font-size:13px;color:var(--muted);margin-top:20px}.info-search input{width:100%;min-height:48px}.info-topics{display:grid;gap:12px}.info-topic{padding:0;min-width:0}.info-topic summary{display:grid;gap:8px;position:relative;padding:20px 42px 20px 20px;cursor:pointer;list-style:none}.info-topic summary::after{content:'＋';position:absolute;right:18px;top:24px;color:var(--gold)}.info-topic[open] summary::after{content:'−'}.info-topic summary b{font-size:18px}.info-topic-body{padding:0 20px 20px}.info-topic-body p{font-size:15px;line-height:1.65}.info-topic[hidden]{display:none}.context-guide{display:flex;align-items:center;gap:12px;padding:10px 14px;margin:0 0 16px;border:1px solid var(--line);border-radius:16px;background:var(--panel);font-size:13px}.context-guide>span{flex:1}.context-guide b{display:block}.context-guide .icon{width:44px;height:44px;flex:none}.context-guide .link{min-height:44px}
+.info-centre {max-width:920px;margin:auto}.info-centre h2{font-size:clamp(21px,3vw,30px);max-width:25ch}.info-search{display:grid;gap:8px;font-size:13px;color:var(--muted);margin-top:20px}.info-search input{width:100%;min-height:48px}.info-topics{display:grid;gap:12px}.info-topic{padding:0;min-width:0}.info-topic summary{display:grid;gap:8px;position:relative;padding:20px 42px 20px 20px;cursor:pointer;list-style:none}.info-topic summary::after{content:'＋';position:absolute;right:18px;top:24px;color:var(--gold)}.info-topic[open] summary::after{content:'−'}.info-topic summary b{font-size:18px}.info-topic-body{padding:0 20px 20px}.info-topic-body p{font-size:15px;line-height:1.65}.info-topic[hidden]{display:none}.context-guide{display:flex;align-items:center;gap:12px;padding:10px 14px;margin:0 0 16px;border:1px solid var(--line);border-radius:16px;background:var(--panel);font-size:13px}.context-guide>span{flex:1 1 200px;min-width:0}.context-guide b{display:block}.context-guide .icon{width:44px;height:44px;flex:none}.context-guide .link{min-height:44px}
 /* A native modal keeps focus inside the guide and preserves the task underneath. */
 dialog.action-tour{inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;border:0;background:transparent;display:none;overflow:auto;padding:16px;z-index:1500}dialog.action-tour[open]{display:grid;place-items:center}dialog.action-tour::backdrop{background:rgba(6,7,10,.76);backdrop-filter:blur(8px)}.action-tour .tour-card{width:min(100%,550px);max-width:550px;max-height:calc(100dvh - 32px);overflow:auto;padding-top:44px}.tour-v3>h2{font-size:clamp(21px,3vw,27px)}.tour-v3>.eyebrow{font-size:10px;letter-spacing:.14em;margin-bottom:8px}.tour-v3>p:not(.eyebrow){font-size:14px;max-width:46ch}.tour-v3 .tour-preview{height:clamp(290px,44dvh,400px);margin:0 0 12px;background:#101318}.demo-label{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:10px;margin:18px 0 8px}.demo-caption{min-height:3em;color:var(--text)!important;font-size:13px!important;line-height:1.5}.demo-playback{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:10px 0 18px}.demo-playback button{min-height:44px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:8px 12px;color:var(--text);font:inherit;font-size:12px}.tour-lessons{display:grid;gap:10px;margin-top:20px}.tour-lessons>button{display:grid;gap:8px;text-align:left;cursor:pointer;color:var(--text);font:inherit}.tour-lessons span{font-size:13px;color:var(--muted)}.tour-lessons em{font-size:12px;color:var(--gold)}.tour-v3 .tour-actions .btn{min-width:0}
 /* Sample scenes reuse glass controls and compact collection rows. Captions live
@@ -5256,8 +5256,10 @@ dialog.sheet, #sheetBody { max-height: min(92dvh, calc(100dvh - env(safe-area-in
 body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)) { height:auto;min-height:100dvh;overflow:visible; }
 body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)) > #content { flex:none;min-height:0;overflow:visible; }
 #app .scan-workspace.is-camera:not(.is-live),#app .scan-workspace.is-camera:not(.is-live) > .scan-panel { flex:none;min-height:0; }
-#app .scan-workspace.is-camera:not(.is-live) .cam-wrap { flex:none;height:auto;min-height:clamp(260px,42dvh,420px); }
-#app .scan-workspace.is-camera:not(.is-live) .scan-tray { flex:none;margin:10px var(--page-edge,16px) 0; }
+#app .scan-workspace.is-camera:not(.is-live):has(.scan-panel) > .scan-toolbar { position:static;width:auto;margin:8px 0 4px;padding:6px var(--page-edge,16px);border:0;border-radius:0;background:none;backdrop-filter:none;box-shadow:none; }
+#app .scan-workspace.is-camera:not(.is-live) .cam-wrap { flex:none;height:auto;min-height:clamp(170px,calc(100dvh - 610px),480px); }
+#app .scan-workspace.is-camera:not(.is-live) .cam-wrap .scan-drop { inset:16px; }
+#app .scan-workspace.is-camera:not(.is-live) .scan-tray { flex:none;margin:10px var(--page-edge,16px) 10px; }
 @media (max-height:520px) and (orientation:landscape) { #app .scan-workspace.is-camera:not(.is-live) .cam-wrap { min-height:0; } }
 #app .scan-workspace.is-live .cam-status,#app .scan-workspace.is-live .scan-status-line { bottom:206px; }
 #app .scan-workspace.is-camera:has(.scan-tray:not(.is-empty)) .scan-drop > .small { display:none; }
@@ -5283,7 +5285,10 @@ body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)) > #cont
 
 /* Your scans: a plain scrolling page. The camera waits behind it. */
 .scan-workspace.is-grid { max-width:none;padding-bottom:96px; }
-.scan-workspace.is-grid.is-selecting { padding-bottom:340px; }
+.scan-workspace.is-grid.is-selecting { padding-bottom:110px; }
+.scan-workspace.is-grid:has(.scan-select-bar.is-open) { padding-bottom:340px; }
+/* Sub-pages of the scanner (Your scans, Fix card) have no room for the onboarding banner. */
+body[data-view="scan"] #content:has(.scan-workspace.is-grid) > .context-guide { display:none; }
 .scan-grid-head { display:flex;align-items:center;gap:10px;min-height:44px;margin:0 0 12px; }
 .scan-grid-head .icon { color:var(--text); }
 .scan-grid-head .icon .ico { width:20px;height:20px; }
@@ -5293,8 +5298,7 @@ body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)) > #cont
 .scan-grid-head .btn.small { min-height:44px;padding:0 14px;font-size:14px;font-weight:700; }
 .scan-dest { display:flex;align-items:center;gap:8px;min-width:0; }
 .scan-dest-label { flex:none;font-size:12.5px;font-weight:700;color:var(--muted); }
-.scan-dest-chips { display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto;padding:3px 2px;scrollbar-width:none; }
-.scan-dest-chips::-webkit-scrollbar { display:none; }
+.scan-dest-chips { display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0;padding:3px 2px; }
 .scan-dest-chips .scan-chip { flex:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 14px;white-space:nowrap;background:var(--surface); }
 .scan-dest-chips .scan-chip .ico { width:16px;height:16px;stroke-width:2.6; }
 .scan-dest-chips .scan-chip[aria-checked="true"] { background:linear-gradient(180deg,#f3cd7c,#d9a743);color:var(--gold-ink);font-weight:800; }
@@ -5333,7 +5337,12 @@ body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)) > #cont
 .scan-grid-bar .btn { min-height:52px;padding:0 18px;border-radius:16px;font:800 16px/1.1 Manrope,sans-serif;white-space:nowrap; }
 .scan-grid-bar .btn:not(.ghost) { flex:1;min-width:0;white-space:normal;background:linear-gradient(180deg,#f3cd7c,#d9a743);color:var(--gold-ink);border-color:transparent;box-shadow:0 6px 18px rgba(232,185,91,.3); }
 .scan-grid-bar .btn:disabled { opacity:.5;box-shadow:none; }
-.scan-grid-bar.is-select { position:static;padding:2px 0 0;background:none; }
+.scan-grid-bar.is-select { position:static;flex-wrap:wrap;padding:2px 0 0;background:none; }
+.scan-grid-bar.is-select .btn:not(.ghost) { flex:1 1 150px; }
+.scan-select-bar > * { min-width:0; }
+.scan-grid-bar.is-select .scan-select-more[aria-expanded="true"] { width:52px;padding:0; }
+.scan-grid-bar.is-select .scan-select-more .ico { width:22px;height:22px;stroke-width:2.6; }
+@media (max-width:380px) { .scan-grid-bar.is-select .btn.ghost { padding:0 12px; } }
 .scan-select-bar { position:fixed;z-index:20;left:0;right:0;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));display:grid;gap:4px;max-height:calc(50vh - var(--nav-h) - env(safe-area-inset-bottom) - 2px);overflow:auto;padding:6px max(16px,calc((100% - 1196px) / 2)) 8px;border-top:1px solid var(--line);background:var(--surface); }
 .scan-select-row { display:flex;align-items:center;flex-wrap:wrap;gap:2px 8px; }
 .scan-select-label { flex:none;width:72px;font-size:12.5px;line-height:1.2;font-weight:700;color:var(--muted); }
@@ -5345,9 +5354,15 @@ body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)) > #cont
 .scan-select-qty button:disabled { opacity:.4;cursor:default; }
 .scan-select-qty output { min-width:44px;text-align:center;font-weight:800;font-size:15px; }
 .scan-select-remove { margin-left:auto;min-height:44px; }
-@media (min-width:1200px) { .scan-grid-bar,.scan-select-bar { bottom:env(safe-area-inset-bottom); } }
+@media (min-width:1200px) { .scan-grid-bar,.scan-select-bar { bottom:env(safe-area-inset-bottom); } .scan-grid { grid-template-columns:repeat(auto-fill,minmax(136px,1fr)); } }
 @media (max-width:380px) { .scan-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .scan-select-label { width:100%; } .scan-select-chips .scan-chip { padding:0 11px; } }
 @media (min-width:700px) and (max-height:450px) { .scan-select-bar { grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;column-gap:16px;row-gap:4px;max-height:none;padding-top:4px;padding-bottom:4px; } .scan-select-bar .scan-grid-bar.is-select { grid-column:2; } .scan-select-bar .scan-grid-bar.is-select .btn { min-height:44px; } }
+/* Short landscape screens: the bars sit in the page flow, so the header, the cards and Save all stay reachable. */
+@media (max-height:520px) and (orientation:landscape) {
+  .scan-grid-bar,.scan-select-bar { position:static;max-height:none;padding:12px 0 0;border-top:0;background:none; }
+  .scan-select-bar { padding:10px 0 0;border-top:1px solid var(--line); }
+  .scan-workspace.is-grid,.scan-workspace.is-grid.is-selecting,.scan-workspace.is-grid:has(.scan-select-bar.is-open) { padding-bottom:16px; }
+}
 @media (max-height:450px) { .scan-confirm .printing-slide-art { height:min(32dvh,150px); } .scan-fix-figure img,.scan-fix-figure .img-missing { width:86px;height:120px; } .scan-fix-figure { width:86px; } }
 
 /* Fix card sheet: your photo beside the match, then finish, condition and copies as chips. */

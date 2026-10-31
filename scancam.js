@@ -792,7 +792,7 @@ export function scanConfirmation(g, st, prefs) {
   // candidate rail (with the photo above it) when there is more than one.
   const single=chosen&&options.length===1&&!q.inline,sure=!!candidate.exact&&!candidate.identityConflict||candidate.reviewSource==='printing-picker';
   const compare=single?`<div class="scan-fix-compare">${shot}<figure class="scan-fix-figure is-match">${candidate.card?artworkHTML(candidate.card,'',true):`<img src="${esc(candidate.image||'')}" alt="">`}<span class="scan-fix-state ${sure?'is-ok':'is-warn'}" aria-hidden="true">${sure?'✓':'?'}</span><figcaption>${candidate.reviewSource==='printing-picker'?'Printing selected by you':candidate.identityConflict?'Title evidence disagrees · check card identity':candidate.exact?'Verified match':'Possible match'}</figcaption></figure></div><div class="scan-fix-name"><b>${esc(candidate.name)}</b><span>${esc(candidate.sub||'')}</span></div>`:'';
-  const photoRow=st.shot?`<div class="scan-fix-photo-row"><img src="${esc(st.shot)}" alt="Your photo of the card"><span>Your photo. Swipe to the printing that matches it, then tap it.</span></div>`:'';
+  const photoRow=st.shot?`<figure class="scan-fix-photo-row"><img src="${esc(st.shot)}" alt=""><figcaption>Your photo</figcaption></figure>`:'';
   const cards=compare||(q.inline?photoRow+scannerBrowseHTML(q.inline):`<div class="scan-fix-candidates">${shot}${scannerCandidateCarousel(st)}</div>`);
   const title=inGrid?'Fix card':`${GAME_LABEL[g]} · ${!chosen||q.inline&&!q.inline.selectedKey?'Find your printing':q.finish?'Ready to add':'Choose '+kind.toLowerCase()}`;
   const primary=inGrid&&isBatch?`<button class="btn" data-act="scanFixSave" ${q.saving||q.aiBusy||st.lookup||!chosen||!q.finish?'disabled':''}>Save</button>`
@@ -1761,7 +1761,8 @@ export function registerScanner(ctx) {
   const toggleSelected=id=>{const st=s();if(!st.select)return;st.select.ids=st.select.ids.includes(id)?st.select.ids.filter(x=>x!==id):[...st.select.ids,id];render();};
   A.scanTile=t=>{const st=s(),id=t.dataset.id||'';if(st.select){toggleSelected(id);return;}if(!st.batchSaving&&!st.confirm?.saving&&!st.gridBusy)openBatchReview(id);};
   A.scanSelectToggle=()=>{const st=s();if(st.gridBusy)return;closeReview();st.select=st.select?null:{ids:[]};st.destDraft=null;render();};
-  A.scanSelectAll=()=>{const st=s();st.select={ids:loadBatch().map(r=>r.id)};render();};
+  A.scanSelectAll=()=>{const st=s();st.select={...(st.select||{}),ids:loadBatch().map(r=>r.id)};render();};
+  A.scanSelectMore=()=>{const st=s();if(!st.select)return;st.select.more=!st.select.more;render();};
   A.scanSelectNone=()=>{const st=s();if(st.select){st.select.ids=[];render();}};
   const updateSelected=fn=>{const ids=selectedIds();if(!ids.size||s().gridBusy)return;saveBatch(loadBatch().map(r=>ids.has(r.id)?fn(r)||r:r));render();};
   A.scanSelectCondition=t=>{const v=t.dataset.value;if(CONDITIONS.some(([c])=>c===v))updateSelected(r=>({...r,condition:v}));};
