@@ -51,7 +51,7 @@ try{
  assert.ok(seen.creature>seen.land+400,'the creature lands well after the land, on its own beat');
  assert.ok(seen.life>seen.creature+400,'the attack lands after the creature');
  assert.ok(seen.decision>seen.life,'your turn opens last');
- assert.ok(seen.decision>=3500&&seen.decision<=9000,`the CPU turn takes a natural few seconds (${seen.decision} ms)`);
+ assert.ok(seen.decision>=3000&&seen.decision<=6000,`the CPU turn takes a natural few seconds (${seen.decision} ms)`);
  await open();
  const skipped=await page.evaluate(turn,true);console.log('with a tap at 300 ms:',JSON.stringify(skipped));
  assert.ok(skipped.decision<seen.decision/3,'a tap opens the decision at once');

@@ -21,10 +21,10 @@ test('a backlog of CPU updates hurries a little, and flush shows the latest boar
  const shown=[],timers=[],fns=[];
  const q=new CpuActionPlaybackQueue({present:(s,busy)=>shown.push([s.status.revision,busy]),schedule:(fn,ms)=>{timers.push(ms);fns.push(fn);return timers.length;},cancel:()=>{}});
  q.push(snap(1,[]));q.push(snap(2,[card(1)]));q.push(snap(3,[card(1),card(2)]));q.push(snap(4,[card(1),card(2),card(3)]));q.push(snap(5,[card(1),card(2),card(3),card(4)]));
- assert.equal(timers[0],850,'a lone update plays at full pace');
+ assert.equal(timers[0],800,'a lone update plays at full pace');
  fns[0]();fns[1]?.();
- assert.ok(timers.slice(1).some(ms=>ms===510),'with two more updates waiting, the next beats run a little quicker');
- assert.ok(timers.every(ms=>ms>=510),'a backlog never races');
+ assert.ok(timers.slice(1).some(ms=>ms===480),'with two more updates waiting, the next beats run a little quicker');
+ assert.ok(timers.every(ms=>ms>=480),'a backlog never races');
  q.flush();assert.deepEqual(shown.at(-1),[5,false],'flush presents the latest board, unlocked');assert.equal(q.busy,false);
 });
 
@@ -122,6 +122,7 @@ test('the board moves one beat at a time: land, then spell, then the attack and 
  assert.equal(at(2).status.surface.cards.find(c=>c.id===1).tapped,true,'the CPU taps its land for the spell');
  assert.deepEqual(ids(at(3)),[1,3,4,6,7],'the creature lands when it resolves');
  assert.equal(at(3).status.surface.cards.find(c=>c.id===4).attacking,undefined);
+ assert.equal(at(2).status.surface.cards.find(c=>c.id===4).tapped,false,'the attacker is not tapped as a mana source');
  assert.equal(at(4).status.surface.cards.find(c=>c.id===4).attacking,true,'then it attacks');
  assert.equal(at(4).status.surface.players[0].life,20,'life holds until the damage beat');
  assert.equal(at(5).status.surface.players[0].life,18);
