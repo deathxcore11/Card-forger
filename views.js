@@ -50,7 +50,7 @@ import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { ICON, actionIcon, labelIcon } from "./icons.js";
 import { searchEmblem } from "./home-search.js";
 import { tierOf, tierAttrs, tierStyle, tierGem } from "./tier.js";
-import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab } from "./importance.js";
+import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab, hasCardMeta } from "./importance.js";
 import { tileChrome } from "./tiles.js";
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview} from "./workbench-ui.js";
 import { binderShelf } from "./binders.js";
@@ -348,7 +348,10 @@ function mtgCardMeta(c) {
 export function cardSheet(c, ctx = {}) {
   const name = c.name,
     shown = ctx.print || c, // the printing currently being looked at
-    tab = ctx.tab === "legal" ? "rulings" : ctx.tab && ctx.tab !== "trade" ? ctx.tab : "overview", // Trade tab retired for now
+    // Meta shows only for cards with meta data; Versions lives in Overview's printings strip.
+    tabList = [["overview", "Overview", "info"], ...(hasCardMeta("mtg", c) ? [["meta", "Meta", "trophy"]] : []), ["guide", "Play guide", "ideas"], ["prices", "Prices", "bag"], ["rulings", "Rules & legality", "book"]],
+    asked = ctx.tab === "legal" ? "rulings" : ctx.tab, // Trade tab retired for now
+    tab = tabList.some(([id]) => id === asked) ? asked : "overview",
     i = inv(name),
     inDecks = S.state.decks.filter((d) => d.cards.some((x) => key(x.name) === key(name))),
     deck = ctx.deckId ? deckById(ctx.deckId) : null,
@@ -410,7 +413,7 @@ export function cardSheet(c, ctx = {}) {
       <div class="pt-row"><span class="pt-label">${esc(shown.set_name || "This printing")} <small class="muted">${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")}</small></span>${Object.values(src[3]).map((k) => `<span>${money(shown.prices?.[k], src[2])}</span>`).join("")}</div>
     </div>
     <p class="foot">${esc(src[1])} ${src[2] === "TIX" ? "price for Magic Online tickets" : "market estimate"} from Scryfall, updated daily${shown.checkedAt ? " · checked " + esc(new Date(shown.checkedAt).toLocaleDateString()) : ""}. Condition prices (NM, LP…) and stock are on the store’s page.</p>
-    ${prints ? `<p class="small">${ctx.printsComplete ? "Across" : "Among"} ${prints.length} ${ctx.printsComplete ? "printings" : "loaded printings"}: <b class="ok-text">${usd(cheapest(prints))}</b> cheapest · <b>${usd(dearest(prints))}</b> priciest <button class="link small" data-act="cardTab" data-tab="versions">Compare all →</button></p>` : ""}
+    ${prints ? `<p class="small">${ctx.printsComplete ? "Across" : "Among"} ${prints.length} ${ctx.printsComplete ? "printings" : "loaded printings"}: <b class="ok-text">${usd(cheapest(prints))}</b> cheapest · <b>${usd(dearest(prints))}</b> priciest <button class="link small" data-act="magicPrintings">Compare all →</button></p>` : ""}
     ${chosen ? `<p class="small">Your shopping price: <b>${usd(chosen.price)}</b> · ${esc(chosen.label)}</p>` : ""}
     </details>`;
   const rulings = ctx.rulings
@@ -424,16 +427,15 @@ export function cardSheet(c, ctx = {}) {
   return `<div class="sheet-head overlay">${S.ui.sheetBack ? `<button class="icon" data-act="sheetBack" aria-label="Back to deck idea">←</button>` : "<span></span>"}<button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="cs-banner"><div class="cs-hero mtg">${img(heroArt, name, "cs-art")}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(name)}</h2><p class="type-line">${esc(faces[face]?.type_line || typeText(shown))} ${detailOwnedSummary(i.owned)}</p></div>${manaCost(faces[face] || shown)}</div></div>
-  ${cardTabs(tab, [["overview", "Overview", "info"], ["meta", "Meta", "trophy"], ["guide", "Play guide", "ideas"], ["versions", `Versions${prints ? " · " + prints.length + (ctx.printsNext ? "+" : "") : ""}`, "viewStacks"], ["prices", "Prices", "bag"], ["rulings", "Rules & legality", "book"]])}
+  ${cardTabs(tab, tabList)}
   ${emblemChips("mtg", c)}
   <div class="cs-meta">
     ${(()=>{const st=S.ui.set,info=S.ui.sets.list.find(s=>s.code===shown.set)||(st.code===shown.set?st.info:null);return detailSetSummary({action:shown.set?`data-act="set" data-code="${esc(shown.set)}"`:'',identity:`${setIcon(shown.set, shown.rarity, 24)}<span><b>${esc(shown.set_name || (shown.set || "").toUpperCase())}${shown.set?' <span class="set-go">›</span>':''}</b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></span>`,progress:magicSetProgress(shown.set,info)});})()}
     ${compactPriceSummary("mtg",shown,buyContext("mtg",shown,{...ctx,priceFinish},S.state))}
   </div>
   ${cardPanel("overview", tab, overview)}
-  ${cardPanel("meta", tab, mtgCardMeta(c))}
+  ${tabList.some(([id]) => id === "meta") ? cardPanel("meta", tab, mtgCardMeta(c)) : ""}
   ${cardPanel("guide", tab, mtgCardGuide(c))}
-  ${cardPanel("versions", tab, `<section class="prints"><button class="btn ghost block" data-act="magicPrintings">Browse all printings · sort &amp; filter</button>${ctx.printsError ? `<p class="note warn" role="status">${esc(ctx.printsError)}</p>` : ""}${prints ? printList(prints, shown, name, chosen) : `<p class="muted small">${ctx.printsError ? "Printings could not be loaded." : "Loading printings…"}</p>`}${ctx.printsNext || ctx.printsError ? `<button class="btn ghost block" data-act="magicVersionsMore" ${ctx.printsBusy || ctx.detailsBusy ? "disabled" : ""}>${ctx.printsBusy || ctx.detailsBusy ? "Loading…" : ctx.printsError ? "Retry printings" : "Load more printings"}</button>` : ""}${prints && !ctx.printsComplete ? `<p class="foot">${prints.length} verified printings loaded${ctx.printsTotal ? ` of ${ctx.printsTotal}` : ""}. Prices and sorting cover loaded printings only.</p>` : ""}</section>`)}
   ${cardPanel("prices", tab, pricesTab)}
   ${tab === "trade" ? cardPanel("trade", tab, mtgTradePanel(name, shown, ctx)) : ""}
   ${cardPanel("rulings", tab, `<section class="card-legality-section"><h3>Format legality</h3>${legality}</section><section class="card-rulings-section"><h3>Official rulings</h3>${rulings}</section><button class="chip tool-chip" data-act="mtgWikiOpen" data-wiki-topic="${esc(name)}">Explore this card in Wiki</button>`)}`;
@@ -467,19 +469,6 @@ function mtgTradePanel(name, shown, ctx={}) {
 const allPrices = (prints) => prints.flatMap((p) => ["nonfoil", "foil", "etched"].map((f) => Number(priceOfFinish(p, f))).filter((x) => x > 0));
 const cheapest = (prints) => (allPrices(prints).length ? Math.min(...allPrices(prints)) : null);
 const dearest = (prints) => (allPrices(prints).length ? Math.max(...allPrices(prints)) : null);
-
-function printList(prints, shown, name, chosen) {
-  if (!prints.length) return `<p class="muted small">No paper printings found.</p>`;
-  return `<div class="print-list">${prints
-    .map((p, i) => {
-      const fin = ["nonfoil", "foil", "etched"].filter((f) => p.finishes?.includes(f) || priceOfFinish(p, f));
-      return `<div class="print ${p.id === shown.id ? "on" : ""}">
-        <button class="print-main" data-act="viewPrint" data-i="${i}">${img(p.image_uris?.small || p.card_faces?.[0]?.image_uris?.small, p.set_name, "print-thumb")}<span class="print-name">${setIcon(p.set, p.rarity, 16)}<span class="ellip"><b>${esc(p.set_name)}</b><small>${esc(p.set.toUpperCase())} #${esc(p.collector_number)} · ${esc((p.released_at || "").slice(0, 4))}${p.promo ? " · promo" : ""}${p.full_art ? " · full art" : ""}${(p.frame_effects || []).includes("showcase") ? " · showcase" : ""}${(p.frame_effects || []).includes("extendedart") ? " · extended" : ""}${p.border_color === "borderless" ? " · borderless" : ""}</small></span></span></button>
-        <span class="print-prices"><button class="pp buy" data-act="buyCard" data-i="${i}" data-finish="${fin[0] || "nonfoil"}" aria-label="Buy the ${esc(p.set_name)} printing">Buy</button>${fin.length ? fin.map((f) => `<button class="pp ${chosen?.id === p.id && chosen?.finish === f ? "on" : ""}" data-act="choosePrint" data-i="${i}" data-finish="${f}" data-name="${esc(name)}" title="Use this price for shopping"><small>${f === "nonfoil" ? "reg" : f}</small>${usd(priceOfFinish(p, f))}</button>`).join("") : '<span class="muted small">—</span>'}</span>
-      </div>`;
-    })
-    .join("")}</div><p class="foot">Tap a printing for its art and details, or a price to use it. Foil effects may not show in the picture.</p>`;
-}
 
 /* ---------- Sets ---------- */
 

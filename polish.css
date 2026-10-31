@@ -39,6 +39,8 @@ nav.tabs > button { flex: none; padding: 8px 14px; white-space: nowrap; }
   color: var(--muted); font-weight: 650; letter-spacing: -.01em; cursor: pointer;
   transition: color .35s var(--glide-ease), transform .2s var(--glide-ease);
 }
+/* Card sheet tabs share any spare width, so the row stays even when a tab (like Meta) is left out. */
+.cs-tabs > button { flex: 1 0 auto; }
 @media (hover: hover) { :is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) > button:not(.on):hover { color: var(--text); } }
 :is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) > :is(.on, [aria-selected="true"], [aria-pressed="true"]) { color: var(--gold-ink); animation: none; }
 :is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) > button:active { transform: scale(.96); }

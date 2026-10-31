@@ -2798,13 +2798,6 @@ A.viewPrint = (t) => {
   refreshSheet();
   $("#sheetBody").scrollTo({ top: 0, behavior: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 };
-A.magicVersionsMore = () => {
-  const ctx = S.ui.sheetCtx;
-  if (ctx?.type !== "card" || ctx.detailsBusy) return;
-  const card = ctx.print || meta(ctx.name);
-  if (ctx.printsNext) return loadMagicVersions(ctx, true);
-  return !card?.full ? loadCardExtras(ctx) : loadMagicVersions(ctx);
-};
 A.magicPrintings = () => {
   const ctx = S.ui.sheetCtx, card = ctx?.print || meta(ctx?.name);
   if (ctx?.type !== "card" || T.game() !== "mtg" || !card?.oracle_id) return toast("This card's verified Magic identity is not loaded yet. Try again in a moment.");
@@ -4029,7 +4022,7 @@ A.mtgWikiAsk=()=>{const text=$('#wikiQ')?.value.trim()||currentWikiPage().state.
 A.cardTab = async (t) => {
   const commit=scopedCommit();
   const ctx = S.ui.sheetCtx;
-  if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","versions","prices","rulings","legal","trade"].includes(t.dataset.tab)) return;
+  if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","prices","rulings","legal","trade"].includes(t.dataset.tab)) return;
   ctx.tab = t.dataset.tab === "legal" ? "rulings" : t.dataset.tab;
   for (const b of $$("#sheetBody .cs-tabs [data-tab]")) {
     const on = b.dataset.tab === ctx.tab;
@@ -4241,8 +4234,8 @@ function backToCard(scrollTo) {
 A.buyBack = () => backToCard();
 A.buyCompare = () => {
   const ctx = S.ui.sheetCtx;
-  if (ctx?.back) ctx.back.tab = "versions";
-  backToCard(".cs-tabs");
+  if (ctx?.back) ctx.back.tab = "overview";
+  backToCard(".card-printing-preview");
 };
 
 /* ---------- deck review ---------- */
