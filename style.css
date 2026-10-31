@@ -5026,6 +5026,12 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 #content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { animation: tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite, aura-orbit 10s linear infinite; }
 #content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art { animation: tier-shine 2.6s ease-in-out infinite, aura-orbit 6s linear infinite; }
 @media (prefers-reduced-motion: reduce) { #content.view-gallery .display-list .lot .lot-art { animation: none !important; } }
+/* Aura room. Lots and grid cards use content-visibility:auto (paint containment), which cuts any glow at their own
+   box: that is the hard, boxy edge under a card's light. Each tile gets a transparent margin of light (padding,
+   cancelled by an equal negative margin so the layout is unchanged) and a tighter, feathered blur that fades out
+   well inside that margin, so the light always ends soft. */
+#content.view-gallery .display-list > .lot[data-tier]:not(.wanted),
+.view-gallery .card-grid > .grid-card[data-tier] { --aura-blur: 18px; --aura-room: 28px; padding: var(--aura-room); margin: calc(-1 * var(--aura-room)); }
 
 /* ===== One frame for every card. Set and search grids and deck grids wear the collection's price band on
    the card image (5px, 12px corners). The card page draws the same band on the card's holder instead, so

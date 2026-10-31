@@ -86,6 +86,7 @@ nav.tabs > button { flex: none; padding: 8px 14px; white-space: nowrap; }
   .home-personal-deck:hover, section.home-resume:has(.home-card-hit):not(.home-personal-resume > *):hover {
     transform: translateY(-2px); box-shadow: 0 16px 36px -12px #000c; border-color: color-mix(in srgb, var(--gold) 38%, #ffffff26);
   }
+  .home-personal-deck:hover::after { background: linear-gradient(155deg, #f6d891, #ffffff4d 26%, #ffffff1a 52%, #ffffff0f 70%, #f1d08a99); }
 }
 .home-personal-deck:active, section.home-resume:has(.home-card-hit):not(.home-personal-resume > *):active { transform: scale(.985); }
 @media (prefers-reduced-motion: reduce) { .home-personal-deck, section.home-resume { transition: none; transform: none !important; } }
