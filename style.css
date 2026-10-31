@@ -3821,8 +3821,8 @@ body[data-view="scan"] #app:has(.scan-workspace.is-camera) > #toast .toast-undo 
 #sheetBody .vendor-row:hover {background:color-mix(in srgb,var(--gold) 7%,var(--surface));}
 #sheetBody .vendor-copy,#sheetBody .vendor-quote {display:grid;gap:5px;min-width:0;overflow-wrap:anywhere;}
 #sheetBody .vendor-copy b {font-size:14px;line-height:1.4;}
-#sheetBody .vendor-copy small,#sheetBody .vendor-quote small {font-size:10px;line-height:1.5;color:var(--muted);}
-#sheetBody .vendor-copy .vendor-provenance {font-size:10px;}
+#sheetBody .vendor-copy small,#sheetBody .vendor-quote small {font-size:11px;line-height:1.5;color:var(--muted);}
+#sheetBody .vendor-copy .vendor-provenance {font-size:11px;}
 #sheetBody .vendor-quote {text-align:right;}
 #sheetBody .vendor-quote strong {font-size:17px;line-height:1.3;font-variant-numeric:tabular-nums;}
 #sheetBody .vendor-action {font-size:11px;color:var(--gold);line-height:1.5;}

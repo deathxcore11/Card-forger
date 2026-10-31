@@ -460,22 +460,23 @@ body[data-view="settings"] .profile-menu>.sr-only{display:none}
 /* Room for the last letter's tracking, so the label never runs past its own box. */
 .cs-plate-label{padding-right:2px}
 
-/* ---------- Card sheet · Play guide (with Rules & legality) ----------
-   Glass panels, gold hairline accents, numbered steps. Every line is card data, not filler. */
+/* ---------- Card sheet · Play guide, Rules & legality, Prices ----------
+   Uniform with the rest of the card sheet: the same panel as the set summary and price history
+   (1px line, 18px radius, glass sheen), 16px section titles, the game's accent for the one
+   primary element, 44px rows. Every line is card data, not filler. */
+#sheetBody :is(.card-guide .guide-panel, .guide-hero, .price-hero, .price-copy) {
+  padding: 14px 16px; border: 1px solid var(--line); border-radius: 18px;
+  background: linear-gradient(135deg, #ffffff09, #ffffff03); box-shadow: inset 0 1px #ffffff0a; backdrop-filter: blur(16px);
+}
+#sheetBody :is(.guide-hero, .price-hero) { background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 5%, var(--surface)), var(--surface)); }
 .card-guide { display: grid; gap: 14px; margin-top: 6px; }
 .card-guide .guide-sec { margin: 0; min-width: 0; }
-.card-guide .guide-sec > h3 { margin: 0 0 10px; font-size: 15px; letter-spacing: -.01em; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
-.card-guide .guide-panel, .guide-hero {
-  padding: 14px 16px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, #fff 3%), color-mix(in srgb, var(--surface) 96%, transparent));
-  box-shadow: inset 0 1px 0 #ffffff0d, 0 10px 28px -18px #000c;
-}
-.guide-hero { position: relative; overflow: hidden; display: grid; gap: 8px; }
-.guide-hero::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--gold) 70%, transparent), transparent); pointer-events: none; }
+.card-guide .guide-sec > h3 { margin: 0 0 12px; font-size: 16px; line-height: 1.4; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.guide-hero { display: grid; gap: 10px; }
 .guide-hero .eyebrow { margin: 0; }
 .guide-roles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
-.guide-role { display: inline-flex; align-items: center; min-height: 30px; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--text); border: 1px solid color-mix(in srgb, var(--line) 90%, transparent); background: color-mix(in srgb, var(--surface-2) 80%, transparent); }
-.guide-role.main { color: var(--gold-ink); border-color: transparent; background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 80%, #fff 20%), var(--gold)); box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--gold) 70%, transparent); }
+.guide-role { display: inline-flex; align-items: center; min-height: 30px; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--text); border: 1px solid var(--line); background: var(--glass-2, var(--surface-2)); }
+.guide-role.main { color: var(--gold-ink); border-color: transparent; background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 78%, #fff 22%), var(--gold) 58%, color-mix(in srgb, var(--gold) 86%, #000 14%)); }
 .card-guide .guide-what { margin: 0; font-size: 15px; line-height: 1.5; }
 .guide-steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; gap: 10px; }
 .guide-steps li { counter-increment: step; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; line-height: 1.5; }
@@ -483,50 +484,44 @@ body[data-view="settings"] .profile-menu>.sr-only{display:none}
 .card-guide .guide-list { padding-left: 18px; gap: 8px; }
 .card-guide .guide-list li::marker { color: var(--gold); }
 .guide-along { display: grid; gap: 6px; }
-.guide-along-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(60px, 34%) 40px; gap: 10px; align-items: center; min-height: 44px; padding: 6px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--line) 80%, transparent); background: color-mix(in srgb, var(--surface) 94%, transparent); color: var(--text); text-align: left; cursor: pointer; }
+.guide-along-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(60px, 34%) 40px; gap: 10px; align-items: center; min-height: 44px; padding: 6px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
 .guide-along-row b { text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; }
-.guide-meter { height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--line) 70%, transparent); overflow: hidden; }
-.guide-meter i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 60%, transparent), var(--gold)); }
+.guide-meter { height: 5px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.guide-meter i { display: block; height: 100%; border-radius: inherit; background: var(--gold); }
+.card-guide .pair-list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.card-guide .pair-shared { margin: 0 0 10px; }
 .card-guide .guide-limits { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; margin: 0 0 10px; }
-.card-guide .guide-limits span { position: relative; gap: 2px; padding: 8px 12px 8px 14px; border-radius: 12px; overflow: hidden; }
+.card-guide .guide-limits span { position: relative; gap: 2px; padding: 8px 12px 8px 14px; border-radius: 14px; overflow: hidden; }
 .card-guide .guide-limits span::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--good); }
 .card-guide .guide-limits span.warn::before { background: var(--warn); }
 .card-guide .guide-limits span.bad::before { background: var(--bad); }
 .card-guide .guide-limits span.bad b { color: var(--bad); }
-.guide-rulings { margin-top: 12px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
-.guide-rulings .rulings li { background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+.guide-rulings { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
 .guide-link-list { display: grid; gap: 6px; }
-.guide-link { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 8px 14px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--line) 80%, transparent); background: color-mix(in srgb, var(--surface-2) 60%, transparent); color: var(--text); text-decoration: none; font-weight: 650; }
+.guide-link { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); text-decoration: none; font-weight: 650; }
 .guide-rule-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .guide-rule-links .chip { min-height: 44px; }
+#sheetBody .card-discovery > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
 
-/* ---------- Card sheet · Prices ----------
-   A glass hero with the one number that matters, then your copy at its condition. */
-.price-hero {
-  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px 12px;
-  margin: 6px 0 12px; padding: 16px 18px; border-radius: 18px; overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
-  background: radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 60%), linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, #fff 3%), color-mix(in srgb, var(--surface) 96%, transparent));
-  box-shadow: inset 0 1px 0 #ffffff12, 0 14px 32px -20px #000d;
-}
-.price-hero::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--gold) 70%, transparent), transparent); pointer-events: none; }
+/* Prices: one hero with the number that matters, then your copy at its condition. */
+#sheetBody .price-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px 12px; margin: 6px 0 12px; }
 .price-hero-main { display: grid; gap: 2px; min-width: 0; }
 .price-hero .eyebrow { margin: 0; }
-.price-hero-value { font-size: 34px; line-height: 1.1; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.price-hero-value { font-size: 32px; line-height: 1.15; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .price-hero-id { color: var(--muted); font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
-.price-fresh { align-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid color-mix(in srgb, var(--line) 90%, transparent); background: color-mix(in srgb, var(--surface-2) 70%, transparent); color: var(--muted); }
+.price-fresh { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid var(--line); background: var(--glass-2, var(--surface-2)); color: var(--muted); }
 .price-fresh::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .price-fresh.fresh { color: var(--good); }
 .price-fresh.stale { color: var(--warn); }
 .price-hero > :is(.price-selectors, .current-printing-reference, .history-status) { grid-column: 1 / -1; margin: 4px 0 0; }
-.price-copy { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; margin: 0 0 12px; padding: 12px 16px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--line) 85%, transparent); background: color-mix(in srgb, var(--surface) 94%, transparent); }
+#sheetBody .price-hero select { width: 100%; min-width: 0; min-height: 44px; }
+#sheetBody .price-copy { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; margin: 0 0 12px; }
 .price-copy-label, .price-copy-value { display: grid; gap: 2px; min-width: 0; }
+.price-copy-label b { font-size: 14px; }
 .price-copy-value { text-align: right; }
 .price-copy small { color: var(--muted); font-size: 12px; }
 .price-copy-value b { font-size: 18px; font-variant-numeric: tabular-nums; }
 .price-copy .foot { grid-column: 1 / -1; margin: 2px 0 0; }
-@media (max-width: 420px) { .price-hero { grid-template-columns: minmax(0, 1fr); } .price-fresh { justify-self: start; } }
-#sheetBody .price-hero select{width:100%;min-width:0;min-height:44px}
-#sheetBody .card-discovery > summary{min-height:44px;display:flex;align-items:center;cursor:pointer}
-.card-guide .pair-list{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
-.card-guide .pair-shared{margin:0 0 10px}
+@media (max-width: 420px) { #sheetBody .price-hero { grid-template-columns: minmax(0, 1fr); } .price-fresh { justify-self: start; } }
+/* Rows in the guide wear the same frosted glass as pairing rows and list tiles. */
+body.glass :is(.guide-along-row, .guide-link) { background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 45%), var(--glass); border-color: var(--glass-line); box-shadow: var(--glass-hi), 0 10px 30px rgba(0, 0, 0, 0.22); }
