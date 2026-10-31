@@ -5286,8 +5286,9 @@ body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)) { heigh
 body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)) > #content { flex:none;min-height:0;overflow:visible; }
 #app .scan-workspace.is-camera:not(.is-live),#app .scan-workspace.is-camera:not(.is-live) > .scan-panel { flex:none;min-height:0; }
 #app .scan-workspace.is-camera:not(.is-live):has(.scan-panel) > .scan-toolbar { position:static;width:auto;margin:8px 0 4px;padding:6px var(--page-edge,16px);border:0;border-radius:0;background:none;backdrop-filter:none;box-shadow:none; }
-#app .scan-workspace.is-camera:not(.is-live) .cam-wrap { flex:none;height:auto;min-height:clamp(170px,calc(100dvh - 610px),480px); }
-#app .scan-workspace.is-camera:not(.is-live) .cam-wrap .scan-drop { inset:16px; }
+#app .scan-workspace.is-camera:not(.is-live) .cam-wrap { display:flex;flex-direction:column;justify-content:center;flex:none;height:auto;min-height:clamp(170px,calc(100dvh - 610px),480px); }
+/* The idle frame is in the flow: it grows with its text (empty batch shows the subtitle; 130% text is taller), so nothing is ever cropped. */
+#app .scan-workspace.is-camera:not(.is-live) .cam-wrap .scan-drop { position:relative;inset:auto;flex:none;width:auto;margin:16px auto;min-height:0; }
 #app .scan-workspace.is-camera:not(.is-live) .scan-tray { flex:none;margin:10px var(--page-edge,16px) 10px; }
 @media (max-height:520px) and (orientation:landscape) { #app .scan-workspace.is-camera:not(.is-live) .cam-wrap { min-height:0; } }
 #app .scan-workspace.is-live .cam-status,#app .scan-workspace.is-live .scan-status-line { bottom:206px; }
