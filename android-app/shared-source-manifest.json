@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "version": "4.3.39",
-  "commit": "499ad51b3d5f4e7e387ab503cd53c411a5af55d4",
-  "tree": "2c2b3bfd97cf266e10fc9f5d6b75f7721dc29a84",
+  "commit": "ae01ee543f51a0968a932939e169bf23d65907e8",
+  "tree": "1986bbdd54e2759dd60d20518110dc8c53820a35",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -2928,8 +2928,8 @@
     },
     {
       "path": "experiments/forge-proof/cpu-action-playback.mjs",
-      "bytes": 21440,
-      "sha256": "aca76d527dc20cda7ce9a4e16e885385816e5ffed41e09394130cdcc8ec46e75"
+      "bytes": 27496,
+      "sha256": "468148642791c2c9bbd8357cba4bfa171f3847b320c56dd3d280a232de073fc9"
     },
     {
       "path": "experiments/forge-proof/forge-session.mjs",
@@ -2938,8 +2938,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 187708,
-      "sha256": "5c802e8d08873044ff6aa3780b6e68420311208b87f8dae16b2a579f3477c3ca"
+      "bytes": 189349,
+      "sha256": "15260062f639638e99b251f08c859c26f6b8faa58a20ea6b3655a870b2ca4c42"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -3708,8 +3708,8 @@
     },
     {
       "path": "play-forge-artwork.js",
-      "bytes": 3765,
-      "sha256": "674569a79ad2ed8019ff9d6efbe10691f235dbdfe351473cf1289e3be5b5c685"
+      "bytes": 4324,
+      "sha256": "83caae1f62c3e6149359969bcab46660f0cc8b1a35157196a52a14fe25f19028"
     },
     {
       "path": "play-forge-cpu-policy.js",
@@ -3748,8 +3748,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 396931,
-      "sha256": "6f2f5bb7a2a8a67483e2fac88545253679f53a7d85325f73e00de9307604462d"
+      "bytes": 398026,
+      "sha256": "c4ef7b9d329385c5b53538ea84361e35bd8502972ebea3b3825b610dace3325b"
     },
     {
       "path": "play-match-record.js",
@@ -3983,8 +3983,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 733,
-      "sha256": "fa58f95c3496698e90a5a24e2daf247a426c1f7f1568cfc357aef9a753112ba5"
+      "bytes": 866,
+      "sha256": "5f813bd1db75fafb6cce1a11d5bbd243e7379a4ed8067259588dcc2695726752"
     },
     {
       "path": "release-status.js",
@@ -4350,6 +4350,16 @@
       "path": "tcgcompare.js",
       "bytes": 5949,
       "sha256": "41be760b1d962e9488cf8edaa123b01e40244189e97b9b9e8c1bd6397d610f25"
+    },
+    {
+      "path": "test-play-forge-launch.mjs",
+      "bytes": 21452,
+      "sha256": "9cf24b99957fdf4216bd566896165f18ffca03d0301954ef9a7ea42143a94a4a"
+    },
+    {
+      "path": "test-play-forge-playback.mjs",
+      "bytes": 12248,
+      "sha256": "f35e0afe91418e145f3c73ba87025f9547daff887a2836d27856ad69c8c6fc4a"
     },
     {
       "path": "tests/fixtures/anniversary-frames/30th-001-high.webp",
@@ -5740,6 +5750,11 @@
       "path": "tests/fixtures/pokemon-promos/swsh3-161.webp",
       "bytes": 37646,
       "sha256": "0f43edeb1cbb64b8301f9206546fa67c94f8f93f796a2f6c70be850988026572"
+    },
+    {
+      "path": "tests/forge-table-cpu-pacing-browser.mjs",
+      "bytes": 5740,
+      "sha256": "8e07e16f1c1d483ff0c3e2af058a17897bf45d5048ee5df2dfc13c7df3c0f06b"
     },
     {
       "path": "tests/frame-art/dp1-31.webp",
