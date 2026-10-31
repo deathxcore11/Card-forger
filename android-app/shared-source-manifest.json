@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.38",
-  "commit": "88cae962ae1170ac5350d82a78a29bc51976d171",
-  "tree": "8914700ee7f721db2be3df9be0d74b4815b8ff1a",
+  "version": "4.3.39",
+  "commit": "499ad51b3d5f4e7e387ab503cd53c411a5af55d4",
+  "tree": "2c2b3bfd97cf266e10fc9f5d6b75f7721dc29a84",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -108,8 +108,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 448421,
-      "sha256": "85d8773de8bda37eeeec328dc8ff671dc462c4014e6aacba1bf27d3cf41cdce4"
+      "bytes": 448672,
+      "sha256": "05107b72e0bdc47df624acfefb2edf1648b06e33ea558a758149a08f31c537d7"
     },
     {
       "path": "artwork.js",
@@ -1939,7 +1939,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "bbcaabcf810670739109ba8c5eac97cce10e3a758dae9bb238d0c5d96b6e3d40"
+      "sha256": "6dfec8426ba8e0893de891a42ea6f673a1812dbc1bc094ddfeccdf548aee880b"
     },
     {
       "path": "core.js",
@@ -3609,7 +3609,7 @@
     {
       "path": "package.json",
       "bytes": 11982,
-      "sha256": "301fb0404c1651900744433c9c4742a896ddf9c844bdfcedb8395406c74f0687"
+      "sha256": "6caf262f3fb1ff996a56b7d71666fc283ce01894f6196efc7a6c7b32a1de3536"
     },
     {
       "path": "pairing.js",
@@ -3983,8 +3983,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1080,
-      "sha256": "41faae1254d8bf75652893cef1906f9012990bcbfc52827e8143bc427d0fb184"
+      "bytes": 733,
+      "sha256": "fa58f95c3496698e90a5a24e2daf247a426c1f7f1568cfc357aef9a753112ba5"
     },
     {
       "path": "release-status.js",
@@ -4053,8 +4053,8 @@
     },
     {
       "path": "scan-batch.js",
-      "bytes": 5646,
-      "sha256": "cff6f6255fd31ef6d4cb84bd67b45088d9b1ddf4bf849d98a6947dbbf855fa02"
+      "bytes": 5729,
+      "sha256": "2185bc2676a4182bab30669716681ca76c6f1ff31bedf9837cabe0cda5d9fc7d"
     },
     {
       "path": "scan-catalog.js",
@@ -4065,6 +4065,11 @@
       "path": "scan-collector.js",
       "bytes": 11600,
       "sha256": "15b1b1dbe984ffc4838a5c005c077101e72ba075add91480537ccf3cad5901db"
+    },
+    {
+      "path": "scan-grid.js",
+      "bytes": 12974,
+      "sha256": "48b0958a41e8dc86aab852bdeab6a5cc6a9f6e0df97aecfcb4123f9ccb8f07d3"
     },
     {
       "path": "scan-identify-route.js",
@@ -4093,8 +4098,8 @@
     },
     {
       "path": "scancam.js",
-      "bytes": 158627,
-      "sha256": "67ff9626a20ccb0bffeef43e082dfbaaaa1819eb6d1f368106b910dc164524bd"
+      "bytes": 172872,
+      "sha256": "5713aec9726f0d7c0c6d9c1b9e80e6183a6b0460fedfb7a0d1d2856965798b32"
     },
     {
       "path": "scanidx/TCGDEX-LICENSE.txt",
@@ -4178,13 +4183,13 @@
     },
     {
       "path": "scanner-review.js",
-      "bytes": 11144,
-      "sha256": "4c52b8525781cc166ddef8d01d9666128ea642eec31d6ba5fa07f51a15d4ce60"
+      "bytes": 11283,
+      "sha256": "d2a445a60b374cd78d58f35f92f8a9581c84abcd8a577941a5a20a19e5b4b54b"
     },
     {
       "path": "scansession.js",
-      "bytes": 4995,
-      "sha256": "b2c3af4685e9667dae1c4180ceebce1d38a3c9a093f4d50e082959130c5533f9"
+      "bytes": 5015,
+      "sha256": "25996602f3be003dcafdad3b06df9bb3e7d08ee2fb976112c9659571ac80cc8e"
     },
     {
       "path": "scouting.js",
@@ -4298,8 +4303,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 543090,
-      "sha256": "9d6e0a230035267eff8acf10cc109535092ca21f5c97a054f4e8d74e2b82698c"
+      "bytes": 562735,
+      "sha256": "eb3bcd085bdfd90710ec8c0392157c25365f54a18251be30c06b8782a6d3a0af"
     },
     {
       "path": "suggest.js",
@@ -4308,8 +4313,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15626,
-      "sha256": "b7c2f2f54a53555fa1ccd38290367e3fe5349e3f3eb9f47ff7ad3ea005950941"
+      "bytes": 15649,
+      "sha256": "b8de1f009d549907b072a9fba0eee353da0fea3ba2b812950eb16bfe6778b538"
     },
     {
       "path": "sync-merge.js",
