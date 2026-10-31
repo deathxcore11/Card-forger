@@ -371,3 +371,7 @@ def tbl_combat_alt():
     s.melody(lead, P, (8, 32), 7, 'harm', [[(0, 1), (1, .5), (1.5, .5), (2, 2)], [(0, .5), (.5, .5), (1, 1), (2, 1), (3, 1)]], low=65, high=82, vel=88, cadence=4, seed=44)
     s.arp(dulc, P, (16, total), [0, 1, 2, 3, 2, 1, 2, 3], low=67, vel=50, dur=.9)
     return s, total, True
+
+# The blessing patrons' themes (MUS-PWG-01..12) live in patrons.py.
+from patrons import PATRONS
+CUES.update(PATRONS)

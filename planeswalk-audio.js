@@ -10,6 +10,8 @@ addEventListener('click',e=>{if(e.target.closest?.('.pw-sndbtn'))setTimeout(()=>
  // The hero's loyalty diamond opens the ability fan; the game stops that click at #app, so listen above it.
  if(e.target.closest?.('.battle .loyal'))sfx('APP-007',{volume:.6});},true);
 const app=document.getElementById('app');
+const GIVERS={ugin:'MUS-PWG-01',sigarda:'MUS-PWG-02',geist:'MUS-PWG-03',tamiyo:'MUS-PWG-04',noyan:'MUS-PWG-05',kiora:'MUS-PWG-06',
+ anowon:'MUS-PWG-07',zada:'MUS-PWG-08',teferi:'MUS-PWG-09',niv:'MUS-PWG-10',kaya:'MUS-PWG-11',rakdos:'MUS-PWG-12'};
 const CLICK={go:'PW-006',hero:'PW-003',take:'PW-017',skip:'PW-018',emb:'PW-026',bossemb:'PW-026',startemb:'PW-026',buyemb:'PW-020',buy:'PW-020',
  end:'PWB-017',play:'PWB-003',plus:'PWB-009',minus:'PWB-009',ult:'PWB-009',target:'CARD-017',heal:'PW-023',restburn:'PW-023',tend:'PW-023',
  foil:'PW-024',foilpick:'PW-024',shopfoil:'PW-024',shopfoilpick:'PW-024',remove:'PW-022',shopremove:'PW-022',shopremovepick:'PW-022',
@@ -24,6 +26,8 @@ if(app){
  new MutationObserver(l=>{for(const m of l)for(const n of m.addedNodes)if(n.classList?.contains('pw-room'))sfx('RAV-004');}).observe(document.body,{childList:true});
  const read=()=>{
   const q=s=>app.querySelector(s),act=+document.body.dataset.actnum||1;
+  // Each blessing patron has a theme of their own; the blessing screen names its patron in data-giver.
+  const g=q('[data-giver]');if(g&&GIVERS[g.dataset.giver])return ['giver-'+g.dataset.giver,GIVERS[g.dataset.giver]];
   if(q('.screen.heroes'))return ['heroes','MUS-PW-01'];
   // Ugin's blessing in the Blind Eternities has its own music.
   if(q('.screen.blind-eternities, [data-scene="blind-eternities"]'))return ['eternities','MUS-PW-13'];
