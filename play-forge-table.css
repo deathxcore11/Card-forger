@@ -2413,9 +2413,9 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
  /* Their 44px tap area reaches past the button, so the button lets it show; the label grows the button instead of eliding. */
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions .forge-native-panel :is(.forge-native-actions>button,.forge-attack-all){overflow:visible;text-overflow:clip}
 }
-/* The pile count is part of the pile: it takes a tap (passing it to the top card) and sits clear of the name strip,
-   below the middle of an upright stack and under a tapped one. */
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-wrap>.play-match-pile-count{pointer-events:auto;cursor:pointer;top:60%}
+/* The pile count is part of the pile: it takes a tap (passing it to the top card) and hangs under the stack,
+   clear of the name strip that runs along the top. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-wrap>.play-match-pile-count{pointer-events:auto;cursor:pointer;top:auto;bottom:-12px}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-wrap:has(>.play-match-card[data-tapped=true])>.play-match-pile-count{top:auto;bottom:-12px}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-crest-where{font-size:11px;letter-spacing:.04em}
 /* Sideways phones: the ask line sits in the open strip between your seat and the turn dock, above the hand,
@@ -2432,3 +2432,11 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
 }
 /* Board names sit on a tight line, so a long name at large text stays above the stats pill. */
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-name{line-height:1.15;padding-bottom:0}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-battlefields .play-match-card-name[data-cut]{visibility:hidden}
+/* Sideways phones: a compact phase track beside the menu, "Turn 5 · Main" in the colour of whoever's turn it is. */
+@media (min-width:640px) and (max-width:959px) and (min-height:300px) and (max-height:599px) and (min-aspect-ratio:3/2){
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-phase-track{display:flex;top:calc(env(safe-area-inset-top,0px) + 42px);left:calc(max(14px,env(safe-area-inset-left,0px)) + 60px);translate:none;gap:8px;padding:5px 10px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-phase-track :is(.forge-phase-who,li:not([data-now]),li>i){display:none}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-phase-track>b{color:var(--track,#8fdcff)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]:has(.play-pod-rail) .forge-phase-track{top:calc(env(safe-area-inset-top,0px) + 58px)}
+}

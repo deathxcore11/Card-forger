@@ -686,6 +686,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
    }
    if(!over||k<=.4)break;k=Math.max(.4,k-.04);}
+  // A pile's top card shows its name only when the whole name fits; otherwise the ×N badge and art carry it
+  // (the full name stays in its title, label and peek), so a cut-off name never pokes out over the pile.
+  for(const n of root.querySelectorAll('.play-match-battlefields .play-match-card-wrap[data-pile-top=true] .play-match-card-name')){const cut=n.scrollWidth>n.clientWidth+1;if(n.hasAttribute('data-cut')!==cut)n.toggleAttribute('data-cut',cut);}
+  // Target rings and aim lines follow the cards to wherever this fit (or a later resize refit) put them.
+  queueArrows();
  }
  const queueBoard=()=>{if(!boardFrame)boardFrame=win.requestAnimationFrame(fitBoard);};
  win.addEventListener('resize',queueBoard);
@@ -746,7 +751,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(!track){track=doc.createElement('div');track.className='forge-phase-track';track.setAttribute('role','status');mat.append(track);}
   if(track.dataset.key===key)return;track.dataset.key=key;track.dataset.owner=owner;
   const step=PHASE_STEPS[at]?.[0]||'';track.setAttribute('aria-label',`${owner==='you'?'Your':'CPU'} turn ${surface.turn}${step?', '+step:''}`);
-  track.innerHTML=`<b>${owner==='you'?'You':'CPU'} · Turn ${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
+  track.innerHTML=`<b><span class="forge-phase-who">${owner==='you'?'You':'CPU'} · </span>Turn ${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
  }
  const trackerSeen=new Map(),trackerOpen={deck:false,opponent:false},trackerIdentity=new Map();
  // The deck-list name of one physical card. Forge keeps a card's id when it transforms or becomes a
