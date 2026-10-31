@@ -24,7 +24,7 @@ const tramples=e=>{try{return typeof TRAMPLES==='function'&&TRAMPLES(e)}catch(er
 
 /* ---------- cast data ---------- */
 let D=null,BY={},BYG={},BYN={},BYA={},dataP=null;
-function loadData(){if(dataP)return dataP;dataP=fetch(BASE+'cast.json').then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{D=d;for(const e of d){BY[e.key]=e;if(e.act==='allies'){BYA[e.name]=e;continue}BYN[e.name]=e;if(e.game&&e.game!=='planned'&&e.game!=='hero')BYG[e.game]=e}return d}).catch(err=>{console.warn('cast data',err);D=[]});return dataP}
+function loadData(){preloadSheets();if(dataP)return dataP;dataP=fetch(BASE+'cast.json').then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{D=d;for(const e of d){BY[e.key]=e;if(e.act==='allies'){BYA[e.name]=e;continue}BYN[e.name]=e;if(e.game&&e.game!=='planned'&&e.game!=='hero')BYG[e.game]=e}return d}).catch(err=>{console.warn('cast data',err);D=[]});return dataP}
 function entryForFoe(e,g){if(!e||e.thrallOf)return null;const k=e.key;return BYG[k]||(g.E[k]&&g.E[k].figure&&BY[g.E[k].figure])||BY[ALIAS[k]]||(g.E[k]&&(BYN[g.E[k].name]||BYN[g.E[k].art]))||null}/* a registry row can name its figure key (figure:'kozilek-drone') */// a boss's second form (heraldB) names its art
 // a summoned creature or token: its entry by card name (stand-in sheets until its own art lands)
 function entryForAlly(a){return a&&BYA[a.name]||null}
@@ -431,6 +431,15 @@ function ground(){const b=app.querySelector('.battle'),field=b&&b.querySelector(
  b.style.setProperty('--pw-bg-size',Wg.toFixed(1)+'px '+Hg.toFixed(1)+'px');b.style.setProperty('--pw-bg-pos',leftG.toFixed(1)+'px '+topG.toFixed(1)+'px');b.style.setProperty('--pw-mat','url("'+im.src+'")');
  b.classList.add('pw-ground')}
 /* ---------- wiring ---------- */
+/* ---------- painted spell sheets: planeswalk-cast/fx/<name>.webp, 3x2 cells, played once at 12 fps where the card lands ----------
+   The game sends pw-spellfx {sheet, sel, late}: sel is the unit (or side) it lands on; late waits for the render that adds it. */
+function sheetAt(name,sel){const u=document.querySelector(sel);if(!u)return;const a=u.querySelector(':scope>.art')||u,r=a.getBoundingClientRect();if(!r.width)return;
+ const side=u.matches('.side'),s=side?Math.min(r.width*.8,innerHeight*.45):Math.max(r.width,r.height)*1.5,x=r.left+r.width/2,y=r.top+r.height*(side?.62:.55);
+ if(!fxLayer.isConnected)document.body.append(fxLayer);const d=document.createElement('div');d.className='fxe pw-fxsheet';Object.assign(d.style,{left:x-s/2+'px',top:y-s/2+'px',width:s+'px',height:s+'px',backgroundImage:`url(${BASE}fx/${name}.webp)`});fxLayer.appendChild(d);
+ let f=0;const step=()=>{if(f>5||!d.isConnected){d.remove();return}d.style.backgroundPosition=`${(f%3)*50}% ${f<3?0:100}%`;f++;setTimeout(step,83)};step()}
+const SHEETS=['fireball','grapeshot','summon-red','growth-red','quake-red','mana-red','draw'],SHEET_IMG=[];let sheetsP=false;
+function preloadSheets(){if(sheetsP||RM)return;sheetsP=true;for(const n of SHEETS){const i=new Image();i.src=BASE+'fx/'+n+'.webp';SHEET_IMG.push(i)}}
+addEventListener('pw-spellfx',ev=>{const d=ev.detail||{};if(RM||!d.sheet||!d.sel)return;const go=()=>sheetAt(d.sheet,d.sel);if(d.late)requestAnimationFrame(()=>requestAnimationFrame(go));else go()});
 window.PW_CAST={stats,owns:id=>rigs.has(String(id))||rigs.has('a:'+id)||[...ghosts].some(R=>R.id===String(id)),impactDelay:id=>{const t=holds.get(String(id));return t?Math.max(0,Math.round(t-performance.now())):undefined},rigs,load,ready,resetPerf:()=>{perf.ms=[];perf.i=0;perf.max=0}};
 if(app){new MutationObserver(()=>sync()).observe(app,{childList:true});addEventListener('resize',()=>{for(const R of rigs.values())fit(R);ground()});loadData().then(()=>sync())}
 })();

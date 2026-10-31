@@ -31,7 +31,7 @@ def main(root):
     d = json.load(open(p))
     miss = []
     for e in d:
-        src = next((os.path.join(root, 'atlas', f"{e['key']}.{x}") for x in ('webp', 'png') if os.path.exists(os.path.join(root, 'atlas', f"{e['key']}.{x}"))), None)
+        src = next((os.path.join(root, 'atlas', f"{e.get('file') or e['key']}.{x}") for x in ('webp', 'png') if os.path.exists(os.path.join(root, 'atlas', f"{e.get('file') or e['key']}.{x}"))), None)
         if not src:
             miss.append(e['key']); continue
         e['cx'], e['hx'], e['cw'], e['bx'] = measure(src, e)

@@ -34,6 +34,7 @@
 .pw-cast-fx .ring{border:2px solid;border-radius:50%;box-sizing:border-box}
 .pw-cast-fx .dot{width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%}
 .pw-cast-fx .puff{width:14px;height:8px;margin:-4px 0 0 -7px;border-radius:50%;background:radial-gradient(ellipse,#c9b79a 0,#8a7a5e88 55%,#8a7a5e00 75%)}
+.pw-cast-fx .pw-fxsheet{background-size:300% 200%;background-repeat:no-repeat;background-position:0 0}
 .pw-cast-fx .drop{transform-origin:50% 0;height:auto}
 .pw-cast-fx canvas.pw-cast{pointer-events:none}
 /* the held copy of a figure (long press) shows its idle pose at card size */

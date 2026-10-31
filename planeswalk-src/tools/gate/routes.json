@@ -180,5 +180,46 @@
   "id": "pw-battle-mode",
   "setup": "__pw.fight(['diregraf','geist']);c.hand[0]={key:'stance',id:8899,foil:false};render();document.querySelector('#app .battle .hand>[data-i=\"0\"]').click()",
   "wait": 600
+ },
+ {
+  "id": "pw-4v4-R1",
+  "setup": "__pw.fight(['diregraf','geist','patrol','cultist']);summon(C.giant.ally(),C.giant.name);summon(C.rgoblin.ally(),C.rgoblin.name);summon(C.king.ally(),C.king.name);summon(C.glory.ally(),C.glory.name);render()",
+  "wait": 2500
+ },
+ {
+  "id": "pw-4v4-W1",
+  "setup": "__pw.fight(['interloper','geist','patrol','crawler'],'W');summon(C.serra.ally(),C.serra.name);summon(C.vanguard.ally(),C.vanguard.name);summon(C.knight.ally(),C.knight.name);summon(C.warden.ally(),C.warden.name);render()",
+  "wait": 2500
+ },
+ {
+  "id": "pw-4v4-R1-big",
+  "setup": "__pw.fight(['ironalpha','geist','diregraf','geist']);summon(C.shivan.ally(),C.shivan.name);summon(C.marauder.ally(),C.marauder.name);summon(C.pyro.ally(),C.pyro.name);summon(C.mob.ally(),C.mob.name);render()",
+  "wait": 2500
+ },
+ {
+  "id": "pw-4v4-R2",
+  "setup": "__pw.run();run.act=2;loadActArt();startFight(['baloth','herder','intruder','scion'],'fight',0);summon(C.giant.ally(),C.giant.name);summon(C.guide.ally(),C.guide.name);summon(C.snipe.ally(),C.snipe.name);summon(C.shivan.ally(),C.shivan.name);render()",
+  "wait": 2500
+ },
+ {
+  "id": "pw-4v4-W2",
+  "setup": "__pw.run('W');run.act=2;loadActArt();startFight(['skyfisher','ranger','wolf','spawn'],'fight',0);summon(C.serra.ally(),C.serra.name);summon(C.pguard.ally(),C.pguard.name);summon(C.knight.ally(),C.knight.name);summon(C.warden.ally(),C.warden.name);render()",
+  "wait": 2500
+ },
+ {
+  "id": "t-4foes",
+  "setup": "__pw.fight(['diregraf','geist','patrol','cultist']);render()"
+ },
+ {
+  "id": "t-fx-fireball",
+  "setup": "__pw.fight(['diregraf','geist','patrol','cultist']);c.energy=5;c.hand[0]={key:'fireball',id:9901};render();setTimeout(()=>play(0,c.enemies[1]),2750)"
+ },
+ {
+  "id": "t-fx-quake",
+  "setup": "__pw.fight(['diregraf','geist','patrol','cultist']);c.tremors=1;c.energy=5;render();setTimeout(()=>{summon({p:1,t:1,goblin:1},'Goblin token');render()},2750)"
+ },
+ {
+  "id": "t-fx-rite",
+  "setup": "__pw.fight(['diregraf','geist']);c.hand[0]={key:'rite',id:9902};render();setTimeout(()=>play(0),2750)"
  }
 ]

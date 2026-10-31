@@ -768,7 +768,8 @@ function summon(base,name){
  const a=body(base,name);a.id=++uid;c.allies.unshift(a);
  if(run.emblems.includes('season')&&/token|Elemental/.test(name)&&!c.seasoning){c.seasoning=1;summon({...base},name);c.seasoning=0}
  if(a.goblin&&run.emblems.includes('legion')&&!c.legioned&&!base.legion){c.legioned=1;summon({p:2,t:1,goblin:1,haste:1,legion:1},'Goblin token')}
- if(c.tremors)c.enemies.forEach(e=>hit(e,c.tremors));
+ if(/Goblin token|Elemental/.test(name))spellFx('summon-red',a,1);
+ if(c.tremors){spellFx('quake-red','foes');c.enemies.forEach(e=>hit(e,c.tremors))}
  c.allies.forEach(x=>{if(x!==a&&x.warden)heal(x.warden)});
  if(c.crusade)c.allies.forEach(x=>{x.p+=c.crusade});
  if(a.titan)alive().forEach(e=>hit(e,a.titan));
@@ -792,6 +793,11 @@ function canPlay(card){
  if(d.pickHand&&!c.hand.some(h=>h.id!==card.id))return false;
  return true;
 }
+// Painted spell sheets (pw-cast.js plays them where the card lands, before it resolves so a killed target still shows it).
+const SPELLFX={fireball:'fireball',grape:'grapeshot',brute:'growth-red',rite:'mana-red',song:'mana-red',simian:'mana-red',impulse:'draw',clarity:'draw'};
+function spellFx(sheet,t,late){if(SIM||typeof PW_HEADLESS!=='undefined'||!sheet)return;const B='#app .battle ';
+ const sel=t==='foes'?B+'.side.foe':!t||t===c?B+'.side.you .unit.hero':c.enemies.includes(t)?B+`.side.foe .unit[data-id="${t.id}"]`:B+`.side.you .unit[data-id="${t.id}"]`;
+ try{dispatchEvent(new CustomEvent('pw-spellfx',{detail:{sheet,sel,late}}))}catch(e){}}
 function play(i,t,m){
  const card=c.hand[i];if(!card||!canPlay(card))return;const d0=C[card.key];
  if(d0.modes&&m==null){if(SIM||typeof PW_HEADLESS!=='undefined'){m=d0.simMode?d0.simMode():0;const M=d0.modes[m];if(M.aim&&!t){t=(M.aim==='enemy'?alive().filter(M.ok||(()=>1)).sort((x,y)=>(y.pow+y.buff)-(x.pow+x.buff))[0]:c.allies[0]);if(!t){m=0}}}else{c.pending={kind:'mode',cid:card.id};c.log=`${d0.name}: choose a mode.`;return render()}}
@@ -800,6 +806,7 @@ function play(i,t,m){
  if(d.ok&&t&&!d.ok(t)){c.log=`${d0.name}: that enemy has less than 4 attack.`;return render()}if(!SIM&&!(d.aim&&!t&&!solo()))buzz(8);
  if(d.aim&&!t){const only=d.aim==='enemy'?solo():c.allies.length===1?c.allies[0]:null;if(only&&(!d.ok||d.ok(only)))t=only;else{c.pending={kind:'card',cid:card.id,aim:d.aim,mode:m};c.log=`${d.name}: choose ${d.aim==='enemy'?'an enemy':'one of your allies'}.`;return render()}}
  c.pending=null;
+ spellFx(SPELLFX[card.key],t);
  c.casting=!d.ally;
  if(c.pact&&((c.pact==='creature')===!!d.ally)){hurt(3);c.log=`The pact takes 3 life for that ${c.pact}.`}
  if(d.ally)c.nCre=(c.nCre||0)+1;else{c.nSpell=(c.nSpell||0)+1;c.tSpell=(c.tSpell||0)+1;const ob=c.tSpell>2&&c.enemies.find(e=>e.hp>0&&E[e.key].spellTax);if(ob){hurt(E[ob.key].spellTax,'spelltax');c.callout=`−${E[ob.key].spellTax} life`}}
@@ -1159,7 +1166,7 @@ const P=c.pending;const F=c.busy?{you:0,dead:new Set(),took:new Map(),over:0}:fo
    <button class="btn" data-act="plus" ${c.used||c.busy?'disabled':''}>${HERO.plusLabel()}</button>
    <button class="btn" data-act="minus" ${c.used||c.busy||c.loyalty<3?'disabled':''}>${HERO.minusLabel}</button>
    <button class="btn ult" data-act="ult" ${c.used||c.busy||c.loyalty<6?'disabled':''} title="Loyalty carries between fights. Save up for this.">${HERO.ultLabel}</button>
-   ${anyReady&&!c.busy?`<button class="btn pw-allbtn" data-act="all" aria-label="Attack with all ready" title="Attack with all ready">${ico('sword')}${ico('sword')}</button>`:''}${FORM&&c.allies.length>1?`<button class="btn${c.arrange?' chosen':''}" data-act="arrange" ${c.busy?'disabled':''} title="Tap an ally to move it to the front. The front ally blocks first.">${c.arrange?'✓ Done':'⇄ Formation'}</button>`:''}${c.bombard?`<button class="btn ult" data-act="sac" ${c.busy||!c.allies.length?'disabled':''}>✸ Sacrifice for ${c.bombard}</button>`:''}
+   ${anyReady&&!c.busy&&!c.pending?`<button class="btn pw-allbtn" data-act="all" aria-label="Attack with all ready" title="Attack with all ready">${ico('sword')}${ico('sword')}</button>`:''}${FORM&&c.allies.length>1?`<button class="btn${c.arrange?' chosen':''}" data-act="arrange" ${c.busy?'disabled':''} title="Tap an ally to move it to the front. The front ally blocks first.">${c.arrange?'✓ Done':'⇄ Formation'}</button>`:''}${c.bombard?`<button class="btn ult" data-act="sac" ${c.busy||!c.allies.length?'disabled':''}>✸ Sacrifice for ${c.bombard}</button>`:''}
    ${P?'<button class="btn" data-act="cancel">Cancel</button>':''}<span class="spacer"></span>
    ${(c.inspect&&c.enemies.find(e=>e.id===c.inspect))?enemyInfo(c.enemies.find(e=>e.id===c.inspect)):''}${c.showHist?`<div class="pw-hist" role="dialog" aria-label="Combat log"><button type="button" class="pw-x" data-act="closeinspect" aria-label="Close">✕</button><b>This fight</b><ol>${c.hist.slice(-14).map(l=>`<li>${l}</li>`).join('')}</ol></div>`:''}
    <button class="btn main" data-act="end" ${c.busy?'disabled':''}>End turn</button>
@@ -1253,7 +1260,7 @@ function render(){if(SIM)return;
  const body=view==='ante'?anteView():view==='actstart'?actStartView():view==='bossreward'?bossRewardView():view==='shop'?shopView():view==='map'?mapView():view==='battle'?battleView():view==='reward'?rewardView():view==='rest'?restView():view==='event'?eventView():endView(view==='victory');
  document.getElementById('app').innerHTML=topBar()+body+`<details class="howto"><summary>How to play</summary><p class="note">${HERO.ramp?`You get ${HERO.ramp[0]} mana on your first turn and 1 more each turn, up to ${HERO.ramp[1]}.`:`You get ${HERO.energy} mana a turn. Rituals like Rite of Flame add more for this turn only.`} Unspent mana empties at the end of your turn. ${HERO.short}'s loyalty carries between fights: spend it now or save 6 for the ultimate. ${HERO.fury?'Play 4 cards in one turn for Fury: it burns every enemy and adds {R}.':''} The chip over ${HERO.short} shows what the enemies will do if you end your turn now. New creatures are asleep: they can block but not attack, unless they have haste. Tap a glowing creature, then an enemy, to attack. Targeted spells work the same way. Enemies strike back, and tapped creatures can't block. Your run saves on the map after every node.</p>${FORM?`<p class="note">Formation: your front ally blocks first. Tap ⇄ Formation, then an ally, then an enemy, to have that ally guard against it. ↷ flying: only flying or reach allies can block it. ⤳ bypass: skips your line unless an ally guards against it. ⇶ trample: a blocker that dies doesn't stop the hit. +N/turn: enrage, its attack grows every turn. A creature that dies blocking soaks the whole hit; a token soaks only its toughness.</p>`:''}</details><p class="note record">Runs ${profile.runs} · Wins ${profile.wins} · Best turn ${profile.bestTurn}</p>`+(gift&&view==='map'?`<div class="pw-gift" role="dialog" aria-modal="true" aria-label="New card"><div class="pw-gift-box"><p class="pw-gift-why">${gift.why}</p>${cardHtml({key:gift.k,foil:!!gift.foil},'tabindex="-1"')}<button class="btn main" data-act="giftok">${gift.foil?'Nice':'Keep it'}</button></div></div>`:'');
  // Skin hooks: every screen can read the act (for its location art) and its own kind.
- try{document.body.dataset.actnum=run.act||1;const sec=document.querySelector('#app section.screen');const k=view==='shop'?'shop':view==='event'?'event':view==='reward'&&reward&&reward.treasure?'treasure':'';if(sec&&k)sec.classList.add(k)}catch(e){}
+ try{document.body.dataset.actnum=run.act||1;const sec=document.querySelector('#app section.screen');const k=view==='shop'?'shop':view==='event'?'event':view==='reward'&&reward&&reward.treasure?'treasure':'';if(sec&&k)sec.classList.add(k);if(sec&&k==='event'&&reward&&reward.ev)sec.dataset.ev=reward.removing?'':reward.ev;if(view==='map')evArt()}catch(e){}
  saveRun();
  try{if(view==='battle'&&c&&c.pending){placeModes();requestAnimationFrame(()=>requestAnimationFrame(placeModes))}}catch(e){}
  try{if(run&&((run.act||1)>=2||(run.pos&&run.pos.r>=3)))loadActArt();tutGlow()}catch(e){}
@@ -1275,6 +1282,8 @@ const rankOf=x=>{let n=1,need=60;while(x>=need){x-=need;n++;need+=30}return {n,i
 const offerLog=(kind,offered,picked)=>{try{window.pwCloud?.logOffer(kind,offered,picked)}catch{}};
 // The journal: the last 20 runs, and every card and emblem met so far (the rest stay silhouettes).
 // Zendikar's art lives in planeswalk-art-zen.css (build.py), fetched near the end of Act 1.
+// Each event has its own painting (planeswalk-art/ev-<act>-<id>.webp, rules in planeswalk-skin.css); the map warms the act's set so an event never opens on a blank.
+let EVART={};function evArt(){const a=run&&run.act===2?'zen':run&&run.act===1?'inn':null;if(!a||EVART[a])return;EVART[a]=[...(ACTS[run.act].events||[]),'bargain'].map(id=>{const i=new Image();i.src='./planeswalk-art/ev-'+a+'-'+id+'.webp';return i})}
 let ACTART=false;function loadActArt(){if(ACTART||typeof document==='undefined'||!document.head)return;ACTART=true;const l=document.createElement('link');l.rel='stylesheet';l.href='./planeswalk-art-zen.css';document.head.append(l)}
 // The first fight of the first run teaches by glow alone: energy and a playable card on turn 1, then targets,
 // then End turn once nothing is left to play; on turn 2 the enemy intents, on turn 3 your front line.

@@ -93,7 +93,7 @@ for (const f of cast) {
   castKeys.add(f.key);
   for (const fld of ['key', 'name', 'rank', 'fw', 'fh', 'frames', 'idle', 'foot']) if (f[fld] == null) fail(id, 'missing ' + fld);
   if (f.frames && !f.frames[f.idle]) fail(id, `idle frame '${f.idle}' is not in frames`);
-  if (!['webp', 'png'].some(x => exists(`planeswalk-cast/atlas/${f.key}.${x}`))) fail(id, 'no atlas file');
+  if (!['webp', 'png'].some(x => exists(`planeswalk-cast/atlas/${f.file || f.key}.${x}`))) fail(id, 'no atlas file');
   for (const a of ['cx', 'hx', 'cw', 'bx']) if (f[a] == null) fail(id, `no '${a}' anchor: run tools/cast-anchors.py`);
 }
 

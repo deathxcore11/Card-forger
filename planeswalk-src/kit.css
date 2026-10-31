@@ -176,6 +176,8 @@ body>.pw-menu .pw-menu-row.pw-armed,body>.pw-menu .pw-menu-exit{background:linea
 #app .battle .controls .pw-allbtn{position:relative}
 #app .battle .controls .pw-allbtn .pi{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px}
 #app .battle .controls .pw-allbtn .pi+.pi{margin-left:-11px;transform:scaleX(-1)}
+/* 4v4: the fourth foe stands where the field meets the action column, so attack-all waits just above End turn, off the field */
+@media (min-aspect-ratio:4000/5000){#app .battle .controls .pw-allbtn{grid-row:3!important;align-self:end!important;justify-self:end!important;margin:0 0 54px!important}}
 #app .battle .piles>.bankhint{display:none!important}
 
 .pw-tip{text-wrap:balance}
