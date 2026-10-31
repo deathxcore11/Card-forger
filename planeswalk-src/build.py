@@ -45,7 +45,9 @@ assert s.count('<script id="pw-game">')==1
 # art registries (no placeholders): a card whose name has no [data-n] art rule, and a UI piece (token, exile pile...) with no [data-ui] rule, stay out until their art lands
 _cardart=sorted(set(re.findall(r'\[data-n="([^"]+)"\]\{--img',css)))
 _uiart=sorted(set(re.findall(r'\[data-ui="([^"]+)"\]\{--img',css)))
-s=s.replace('<script id="pw-game">','<script id="pw-figs">window.PW_FIGS='+json.dumps(_figs)+';window.PW_CARDART='+json.dumps(_cardart)+';window.PW_UIART='+json.dumps(_uiart)+';</script>\n<script id="pw-game">')
+_pdir=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','planeswalk-art','patrons')
+_patrons=sorted(f[:-5] for f in os.listdir(_pdir) if f.endswith('.webp')) if os.path.isdir(_pdir) else []  # a patron rolls only once its portrait is in
+s=s.replace('<script id="pw-game">','<script id="pw-figs">window.PW_FIGS='+json.dumps(_figs)+';window.PW_CARDART='+json.dumps(_cardart)+';window.PW_UIART='+json.dumps(_uiart)+';window.PW_PATRONS='+json.dumps(_patrons)+';</script>\n<script id="pw-game">')
 # the ink map reads the classic mana symbols from the emblem art file
 mana=re.search(r'const MANA=(\{.*?\}),COLOR',open(W+'/emblem-art.js').read(),re.S).group(1)
 open(W+'/pw-mana.js','w').write('window.PW_MANA='+mana+';')

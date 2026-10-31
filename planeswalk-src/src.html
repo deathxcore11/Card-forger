@@ -685,7 +685,7 @@ function enter(r,l){
  else if(t==='boss'){const bk=bossOf();try{profile.lastBoss={...profile.lastBoss,[run.act||1]:bk};store.set(PROF,profile)}catch{}startFight([bk],'boss',(run.act||1)>1?1:0)}
  else if(t==='bargain'){const mp=Object.keys(EMB).filter(k=>EMB[k].r==='M'&&!run.emblems.includes(k)&&forHero(k)),rp=Object.keys(EMB).filter(k=>EMB[k].r==='R'&&!run.emblems.includes(k)&&!BOSSEMB[k]&&forHero(k));view='event';reward={ev:'bargain',myth:mp.length?pick(mp):null,rare:rp.length?pick(rp):null};render()}
  else if(t==='rest'){view='rest';render()}
- else if(t==='shop'){c=null;reward={shop:makeShop()};view='shop';render()}
+ else if(t==='shop'){c=null;reward={shop:makeShop()};if(run.shopX2){run.shopX2=0;const sh=reward.shop;sh.cards.forEach(x=>x.price*=2);sh.remove.price*=2;if(sh.foil)sh.foil.price*=2;if(sh.emb)sh.emb.price*=2}/* Kiora's Deep Bargain */view='shop';render()}
  else if(t==='treasure'){c=null;run.gold+=20+Math.floor(rng()*4);reward={cards:treasureCards(),embs:rng()<TREASURE_EMB?treasureEmblems():[],treasure:1};view='reward';render()}
  else {view='event';reward={ev:pick(ACTS[run.act||1].events||['shrine','cart'])};render()}
 }
@@ -706,6 +706,10 @@ function startFight(keys,kind,depth=0,ante=null,dun=null){
  c={kind,depth,doomT:kind==='boss'?DOOM_BT:DOOM_T,roll:Math.floor(Math.random()*3),enemies:keys.map(k=>foe(k,depth)),allies:[],hand:[],draw:shuffle(run.deck.filter(x=>!ante||x.id!==ante.id).map(x=>({...x}))),discard:[],energy:0,bank:0,loyalty:run.loyalty,used:false,turn:0,chain:0,ult:false,stats:{dealt:0,best:0,kills:0},tremors:0,target:null,haunt:0,exile:[],lost:[],
   tax:keys.some(k=>E[k].tax),pending:null,log:'Your turn.',busy:false};
  c.roster=keys.slice();if(dun)Object.assign(c,dun);
+ if(run.mercy>0&&!dun){run.mercy--;c.enemies.forEach(e=>{e.hp=Math.min(e.hp,10);e.max=Math.min(e.max,10)})}/* Ugin's Mercy */
+ if(run.settle&&kind==='elite'){const m=c.enemies.filter(e=>!e.rank).sort((x,y)=>y.hp-x.hp)[0];if(m)c.enemies=c.enemies.filter(e=>e!==m)}/* Kaya's Settle Accounts */
+ if(run.eliteAtk&&kind==='elite'){run.eliteAtk=0;c.enemies.forEach(e=>{if(e.rank)e.buff+=1})}
+ if(run.spawnFirst&&kind!=='boss'&&E.spawn&&c.enemies.length<FIGHT.foes){run.spawnFirst=0;c.enemies.push(foe('spawn',depth))}
  if(ante){c.ante={...ante};c.anteBy=ANTE_TURNS_OF();c.enemies[0].buff+=1}
  view='battle'; startTurn(); render();
 }
@@ -730,6 +734,7 @@ function startTurn(){
  if(c.enemies.some(e=>e.hp<=0))cleanup();
  c.energy=(HERO.ramp?Math.min(HERO.ramp[1],HERO.ramp[0]+c.turn-1):HERO.energy)+(c.stone||0)+(c.orchid||0)+(run.emblems.includes('signet')&&c.turn>1?1:0)+(c.turn===1&&run.emblems.includes('contract')?2:0)+(run.emblems.includes('surge')&&c.turn%2===1?1:0)+(run.emblems.includes('spark')?c.turn===1?2:c.turn===2?1:0:0)-(c.dungeon==='ruins'?1:0);c.eMax=c.energy; c.banked=c.bank; c.bank=0; c.chain=0; c.tSpell=0; c.used=false; if(c.archived>0){const k=c.exile.find(x=>x.id===c.archived);if(k){c.exile.splice(c.exile.indexOf(k),1);c.hand.push(k)}c.archived=-1} draw(5+(c.siegeK||0)-c.haunt+(c.dungeon==='ruins'?1:0)+(run.emblems.includes('contract')?2:0)); c.haunt=0;
  c.tax=c.enemies.some(e=>E[e.key].tax);
+ if(c.turn===1){if(run.landfall)c.energy+=1;if(run.draw1)draw(1)}/* patron signatures: Landfall, Teferi's extra card */
 }
 function draw(n){for(let i=0;i<n;i++){if(!c.draw.length){c.draw=shuffle(c.discard);c.discard=[];if(c.dungeon==='crypt'&&c.draw.length>1){(c.lost=c.lost||[]).push(c.draw.pop());c.callout='The crypt takes a card'}}if(!c.draw.length)break;c.hand.push(c.draw.pop())}}
 const lords=a=>a.goblin?c.allies.filter(x=>x.lord&&x!==a).length:0;
@@ -757,7 +762,7 @@ function shield(n){if(!c||n<=0)return;c.ward=(c.ward||0)+n;juice(`◈ +${n} Shie
  for(const e of c.enemies)if(e.hp>0&&E[e.key].onShield){e.buff+=E[e.key].onShield;e.flash=1;c.callout=`${e.name.replace(/,.*$/,'')} +${E[e.key].onShield}`}}// balance PDF #2: Thalia punishes turtling
 // Balance PDF #4: rituals add no mana while you already have 10 or more, so loops still pop off but end.
 const RITUAL_CAP=10;function ritual(n){if(c.energy>=RITUAL_CAP){juice('10+ mana: no ritual');return}c.energy+=n}
-function hurt(n,why){if(n<=0)return;if(run.emblems.includes('furnace'))n+=1;if(c&&view==='battle'&&c.busy&&c.emanc)n+=c.emanc;if(c&&view==='battle'&&c.busy&&c.ward){const a=Math.min(c.ward,n);c.ward-=a;n-=a;c.warded=(c.warded||0)+a;if(n<=0)return}if(SIM)SIM.you+=n;else if(typeof PW_DMG!=='undefined')PW_DMG[why||'other']=(PW_DMG[why||'other']||0)+n;run.hp-=n;run.pop=(run.pop||0)+n;if(c&&view==='battle'&&!c.busy&&run.emblems.includes('font'))c.font=(c.font||0)+1}
+function hurt(n,why){if(n<=0)return;if(run.riot&&c&&view==='battle'&&c.busy)n+=1;if(run.emblems.includes('furnace'))n+=1;if(c&&view==='battle'&&c.busy&&c.emanc)n+=c.emanc;if(c&&view==='battle'&&c.busy&&c.ward){const a=Math.min(c.ward,n);c.ward-=a;n-=a;c.warded=(c.warded||0)+a;if(n<=0)return}if(SIM)SIM.you+=n;else if(typeof PW_DMG!=='undefined')PW_DMG[why||'other']=(PW_DMG[why||'other']||0)+n;run.hp-=n;if(run.hp<=0&&run.heron===(run.act||1)&&!run.heronUsed){run.hp=1;run.heronUsed=1;if(c&&view==='battle')juice("Heron's Grace",1)}run.pop=(run.pop||0)+n;if(c&&view==='battle'&&!c.busy&&run.emblems.includes('font'))c.font=(c.font||0)+1}
 // Juice stack: each bonus that touches a hit pops on the turn tally, flat (+) before multiplier (×).
 function juice(t,mul){if(!c||c.busy)return;c.juice=c.juice||[];const l=c.juice[c.juice.length-1];if(l&&l.t===t){l.n++;return}c.juice.push({t,mul:!!mul,n:1});if(c.juice.length>6)c.juice.shift()}
 // The body a summon adds, before it arrives (roomFor uses the same one).
@@ -822,9 +827,9 @@ function play(i,t,m){
  if(c.pact&&((c.pact==='creature')===!!d.ally)){hurt(3);c.log=`The pact takes 3 life for that ${c.pact}.`}
  if(d.ally)c.nCre=(c.nCre||0)+1;else{c.nSpell=(c.nSpell||0)+1;c.tSpell=(c.tSpell||0)+1;const ob=c.tSpell>2&&c.enemies.find(e=>e.hp>0&&E[e.key].spellTax);if(ob){hurt(E[ob.key].spellTax,'spelltax');c.callout=`−${E[ob.key].spellTax} life`}}
  if(d.e==='X'){const x=c.energy-(c.tax?1:0);c.lastX=x;c.energy=0;hit(t,x*(d.xper?d.xper(card.foil):card.foil?4:3))}
- else{let cst=costOf(card);if(d.ally&&c.pstone){const ps=Math.min(c.pstone,cst);c.pstone-=ps;cst-=ps}const pay=Math.min(c.energy,cst);c.energy-=pay;if(cst>pay){hurt(2*(cst-pay),'phyrexian');juice(`−${2*(cst-pay)} life`)}if(c.standard&&!d.ally)c.stdT=c.turn;if(d.ally)summon(d.ally(card.foil),d.name);else d.play(card.foil,t)}
+ else{let cst=costOf(card);if(d.ally&&c.pstone){const ps=Math.min(c.pstone,cst);c.pstone-=ps;cst-=ps}const pay=Math.min(c.energy,cst);c.energy-=pay;if(cst>pay){hurt(2*(cst-pay),'phyrexian');juice(`−${2*(cst-pay)} life`)}if(c.standard&&!d.ally)c.stdT=c.turn;if(d.ally)summon(d.ally(card.foil),d.name);else{d.play(card.foil,t);if(run.hedron&&d.aim==='ally'&&t)c.allies.filter(x=>x!==t).forEach(x=>d.play(card.foil,x))}}/* Zada's Hedron Overload */
  if(!d.ally){
-  if(run.emblems.includes('twin')&&!c.twinned&&!d.power){c.twinned=1;c.callout='Echo!';juice('×2 Echo',1);
+  const tw0=run.emblems.includes('twin')&&!c.twinned,ov0=run.overload&&!c.overloaded;if((tw0||ov0)&&!d.power){if(tw0)c.twinned=1;else c.overloaded=1;c.callout=tw0?'Echo!':'Overload!';juice(tw0?'×2 Echo':'×2 Overload',1);
    const t2=d.aim==='enemy'?(t&&t.hp>0?t:alive()[0]):d.aim==='ally'?(c.allies.includes(t)?t:c.allies[0]):t;
    if(d.e==='X')hit(t2,c.lastX*(d.xper?d.xper(card.foil):card.foil?4:3));else if(t2||!d.aim)d.play(card.foil,t2)}
   if(run.emblems.includes('paradox'))c.allies.forEach(a=>{untap(a);a.p++;a.t++});
@@ -850,13 +855,14 @@ function attack(a,t){
  if(a.law&&!ALLATK&&c.energy>=1&&!t.tapN&&!(t.rank&&t.ccUsed)){c.energy--;a.tapped=true;a.swung=true;hold(t);c.log=`${a.name} taps ${t.name}: it skips its next attack.`;return after()}/* Gideon's Lawkeeper: pay 1 and tap it to tap an enemy (Attack all still swings) */
  if(a.yhero){a.p++;a.t++}
  if(c.sigil&&c.sigilT!==c.turn){c.sigilT=c.turn;const k=c.sigil*(c.allies.length-1);if(k){a.temp1=(a.temp1||0)+k;a.tough4=(a.tough4||0)+k;juice(`+${k} Sigil`)}}
- const dmg=pow(a)+(a.raid||0), eFirst=E[t.key].first&&!fst(a);
+ const dmg=(pow(a)+(a.raid||0))*(run.riot?2:1), eFirst=E[t.key].first&&!fst(a);
  let hitBack=0;const back=()=>{if(a.flying&&!t.fly)return;if(c.drums&&a.goblin)return;if(a.prot){a.prot=0;return}hitBack=t.pow;a.dmg+=t.pow;if(E[t.key].feed&&a.dmg>=tough(a))t.pow++};
  if(eFirst){back();if(a.dmg>=tough(a)){a.tapped=true;c.log=`${a.name} is struck down by first strike.`;return after()}}
  if(fst(a)){deal(a,t,dmg);if(t.hp>0&&!eFirst)back()}
  else{deal(a,t,dmg);if(!eFirst)back()}
  if(t.rank==='boss')t.loyalty=Math.max(0,t.loyalty-1);
  if(a.drana)c.allies.forEach(x=>{if(x!==a)x.p++});
+ if(run.ll3&&(c.llN||0)<3){c.llN=(c.llN||0)+1;heal(Math.min(dmg,Math.max(0,t.hp+dmg)))}/* Anowon: the first 3 attacks each fight have lifelink */
  if(!a.vigilance)a.tapped=true; a.swung=true; a.attacks=(a.attacks||0)+1;
  {const gone=[t.hp<=0&&t.name,a.dmg>=tough(a)&&a.name].filter(Boolean);
   c.log=`${a.name} hits ${t.name} for ${dmg}.`+(hitBack?` ${t.name} strikes back for ${hitBack}.`:t.hp>0&&a.flying&&!t.fly?` It flies, so ${t.name} can't strike back.`:'')+(gone.length?` ${gone.join(' and ')} ${gone.length>1?'are':'is'} defeated.`:'')}
@@ -931,6 +937,7 @@ function blocker(e){
 }
 function bloodfeed(n){const s=c&&n>0&&c.enemies.find(x=>x.hp>0&&x.phase2&&E[x.key].bloodfeed);if(s&&s.hp<s.max){const h=Math.min(n,s.max-s.hp);s.hp+=h;s.heal=(s.heal||0)+h}}
 function strike(e,n){
+ if(run.phase&&!c.phased){c.phased=1;return `${e.name}'s attack phases out.`}/* Teferi's Phase Out: the first enemy attack each fight misses */
  const b=blocker(e);
  if(!b){hurt(n,E[e.key].bypass&&FORM?'bypass':e.fly?'unblocked-flyer':'unblocked');if(E[e.key].ingest&&c.draw.length){(c.lost=c.lost||[]).push(c.draw.pop());return `${e.name} hits ${HERO.short} for ${n} and ingests the top card of your deck (this fight only).`}return `${e.name} hits ${HERO.short} for ${n}.`}
  if(b.prot){b.prot=0;b.flash=1;if(pow(b)>0)hit(e,b.deathtouch&&!e.rank?99:pow(b));return `${b.name} blocks ${e.name} and takes no damage.`}
@@ -1038,7 +1045,7 @@ function win(){if(SIM)return;
  run.fights++; if(run.emblems.includes('hearth')&&!c.dungeon){if(c.kind==='elite'){run.max+=2;run.hp+=2}const h=Math.min(8,run.max-run.hp);run.hp+=h;run.heal=(run.heal||0)+h} run.loyalty=Math.min(8,c.loyalty+1);
  if(c.kind==='boss'){if((run.act||1)<ACTS.length-1){const bk=bossOf();const sg=FEAT.sig&&SIG[bk]?sigOf(bk):null;if(sg&&C[sg.k]){run.claimed={k:sg.k,from:E[bk].name}}return nextAct('')}view='victory';return render()}
  if(c.dungeon&&run.dun&&run.dun.room<DUN[run.dun.act].rooms){run.dun.room++;{const h=Math.min(Math.round(run.max*.15),run.max-run.hp);run.hp+=h;run.heal=(run.heal||0)+h}return startRoom()}
- const cards=[];let guard=0;while(cards.length<3&&guard++<50){const k=rollCard(c.kind==='elite'&&cards.length===0?'R':false);if(!cards.includes(k))cards.push(k)}
+ const cards=[];let guard=0;while(cards.length<(c.kind==='elite'&&run.ruinAct===(run.act||1)?4:3)&&guard++<50){const k=rollCard(c.kind==='elite'&&cards.length===0?'R':false);if(!cards.includes(k))cards.push(k)}
  const anteOk=c.ante&&c.turn<=c.anteBy;if(c.ante&&!anteOk){run.deck=run.deck.filter(x=>x.id!==c.ante.id)}
  if(anteOk){const d=run.deck.find(x=>x.id===c.ante.id);if(d&&['C','U'].includes(C[d.key].r))d.foil=true;if(d&&!HERO.fury)d.shield2=1;cards.length=0;let g2=0;while(cards.length<3&&g2++<50){const k=rollCard('R');if(!cards.includes(k))cards.push(k)}run.gold+=25}
  let sig=null;if(FEAT.sig&&!c.dungeon){const src=[...c.roster].sort((a,b)=>(E[b].rank?100:0)+E[b].hp-(E[a].rank?100:0)-E[a].hp)[0];const sg=sigOf(src);if(sg&&!cards.includes(sg.k)){cards[cards.length-1]=sg.k;sig={k:sg.k,from:E[src].name,fb:sg.fb,foil:!C[sg.k].sig&&C[sg.k].r!=='C'}}}
@@ -1132,7 +1139,7 @@ const kws=a=>['haste','flying','reach','first','vigilance','deathtouch','lifelin
 
 // The escalation dial: fills toward Doom; the number is the turns left before Doom.
 function escDial(){const a=run.act||1,face=a>1?'maw':'moon',name=a>1?'The Hunger':'Nightfall',t=c.turn,DT=fightDoomT(),doom=t>=DT,left=DT-t;
- /* Act 1 painted Nightfall faces (beta lane C): 1 before escalation, 2-4 as Doom nears, then the blood moon */
+ /* painted dial faces (beta lane C): Nightfall in Act 1, the Hunger in Act 2; 1 before escalation, 2-4 as Doom nears, then the Doom face */
  const n=a>1?'':doom?'doom':t<ESC_T?'1':String(Math.min(4,2+Math.floor(2*(t-ESC_T)/Math.max(1,DT-1-ESC_T))));
  const lab=doom?`${name}: Doom. Enemies grow fast and trample`:t>=ESC_T?`${name}: enemies grow every turn. Doom in ${left}`:`${name} comes on turn ${ESC_T}. Doom on turn ${DT}`;
  return `<span class="pw-esc${doom?' doom':t>=ESC_T?' on':''}" data-face="${face}"${n?` data-n="${n}"`:''} style="--f:${Math.min(1,t/DT).toFixed(3)}" role="img" aria-label="${lab}" title="${lab}">${ico(doom?'skull':face)}${doom?'':`<b>${left}</b>`}</span>`}
@@ -1256,10 +1263,10 @@ function bossRewardView(){
 function nextAct(k){if(k)run.emblems.push(k);if(k==='contract'){run.max-=4;run.hp=Math.min(run.hp,run.max)}run.act=(run.act||1)+1;run.hp=run.max;run.map=genMap(run.act);run.edges=genEdges(run.map);run.pos=null;run.done=[];rollBoss(run.act);c=null;actStart()}
 // Each act opens with a pick of 1 of 3 items: mostly common, sometimes rare, rarely mythic.
 const START_ODDS={M:.05,R:.2};
-function actStart(){const out=[];const left=k=>!run.emblems.includes(k)&&!out.includes(k)&&!BOSSEMB[k]&&forHero(k);
+function actStart(){preloadPatrons(run.act||1);const out=[];const left=k=>!run.emblems.includes(k)&&!out.includes(k)&&!BOSSEMB[k]&&forHero(k);
  const bk=(run.act||1)>1?shuffle(Object.keys(BOSSEMB).filter(k=>!run.emblems.includes(k)))[0]:null;if(bk)out.push(bk);
  for(let n=out.length;n<3;n++){const x=rng(),want=x<START_ODDS.M?'M':x<START_ODDS.M+START_ODDS.R?'R':undefined;let pool=Object.keys(EMB).filter(k=>left(k)&&EMB[k].r===want);if(!pool.length)pool=Object.keys(EMB).filter(k=>left(k)&&!EMB[k].r);if(!pool.length)pool=Object.keys(EMB).filter(left);if(pool.length)out.push(pick(pool))}
- run.startPick=out;if(!out.length){run.startPick=null;return toMap()}view='actstart';reward=null;render()}
+ run.startPick=out;if(!out.length){run.startPick=null;return patronStart()}view='actstart';reward=null;render()}
 function actStartView(){const A=ACTS[run.act||1];return `<section class="screen actstart" data-actnum="${run.act||1}"><h2>Act ${A.num}: ${A.name}</h2>${(run.act||1)>1?`<p>${E[bossOf(run.act-1)].name} is defeated. You are healed to full.</p>`:''}${run.claimed?`<div class="sig-claim"><p>${run.claimed.from.split(',')[0]} drops ${C[run.claimed.k].name}. Tap it to add it to your deck.</p>${cardHtml({key:run.claimed.k,foil:false},`data-act="claim" data-sig="${run.claimed.from}"${pairOf(run.claimed.k)}`)}</div>`:''}<p>Before you set out, take one item. It lasts the whole run.</p><div class="choices">${run.startPick.map(k=>`<button class="option" data-act="startemb" data-k="${k}" data-col="${EMB[k].col||''}" data-rar="${EMB[k].r||'C'}">${embSvg(k)}<b>${EMB[k].name}</b><span class="muted">${EMB[k].gain||EMB[k].text}</span>${EMB[k].cost?`<span class="costline">Cost: ${k==='contract'?`max life ${run.max} → ${run.max-4}`:EMB[k].cost}</span>`:''}<span class="rar">${{M:'Mythic',R:'Rare',B:'Boss'}[EMB[k].r]||'Common'}</span></button>`).join('')}</div></section>`}
 function heroesView(){
  return `<header class="top"><h1>Planeswalk</h1><span class="spacer"></span>${profile.runs?`<button class="btn pw-jtop" data-act="journal" aria-label="Journal" title="Journal">${ico('book')}</button>`:''}</header><section class="screen heroes"><h2>Choose your planeswalker</h2><div class="choices">${Object.values(HEROES).map(h=>`<button class="option hero-pick" data-act="hero" data-k="${h.key}" data-n="${h.name}"><b>${h.name}</b><span class="muted">${h.color} · ${h.life} life · ${h.theme}</span><span class="muted">${h.plusLabel()} · ${h.minusLabel} · ${h.ultLabel}</span><span class="pw-kit"><span class="pw-hsig">${embSvg(h.sig)}<span><em>Signature</em>${EMB[h.sig].name.replace(/^Emblem of the /,'')}</span></span><span class="pw-starter"><em>Starter deck</em>${starterList(h)}</span></span></button>`).join('')}</div></section>`;
@@ -1270,11 +1277,169 @@ function endView(won){
  return `<section class="screen pw-end"><h2>${won?bossShort(bossOf())+' falls':HERO.short+' falls'}</h2><p>${won?`You cleared ${(run.act||1)>1?'Innistrad and Zendikar':'Innistrad'} with ${run.deck.length} cards and ${run.emblems.length} emblems, after ${run.fights} fights. Biggest hit: ${run.best}. Best turn: ${run.bestTurn||0} damage.`:`The run ends after ${run.fights} fights. Biggest hit: ${run.best}. Best turn: ${run.bestTurn||0} damage.`}</p>
  ${!won&&c&&c.ante?`<div class="ante-result" data-r="lost">${anteCard(c.ante)}<p>The wager is lost with the run.</p></div>`:''}${rankBar()}<div class="choices"><button class="btn main" data-act="new">New run</button><button class="btn" data-act="replay">Replay seed ${seed}</button><button class="btn pw-share" data-act="share">${ico('share')}<span>Share</span></button></div></section>`;
 }
+// ===== Act patrons (blessing-givers.md 17:17Z, build spec section 9, rulings #3-#6, #25, #26; 4.3.44) =====
+// Every act start ends with one patron, rolled from that act's 4 (3 patrons + 1 wildcard) with the run seed:
+// never last run's patron for that act, a new save meets Ugin first, at most one wildcard per run, none without art.
+// A normal patron offers 3 (one free, one trade, one big with a catch); its signature shows at most once.
+// A wildcard offers 3 sealed offers (weak gift / anti-gift / jackpot by the act's odds) or walking away.
+// Rows that do nothing or can't be paid are dropped when the screen opens. Lines are data, the most specific wins.
+const PATRON_ART=typeof PW_PATRONS!=='undefined'&&Array.isArray(PW_PATRONS)?new Set(PW_PATRONS):null;
+const PATRONS={
+ ugin:{act:1,name:'Ugin, the Spirit Dragon',pool:['life8','pick3','remove1','gold100','embC','trLife8Rare','trGold2Rem','trCurseEmb','bigBossEmb','bigTransform2','bigRareCurse'],sig:'ghostfire',
+  lines:[['first','Another spark wakes. Come. The walk begins in the dark, as it always has.'],['again','You return. The Eternities remember you, even when you do not.'],['diedto:sorin','Sorin has outlived better than you. Not many. Some.'],['hero:R','Fire is a fine start. It is a poor ending.']]},
+ sigarda:{act:1,name:'Sigarda, Host of Herons',pool:['life10','healFull','defend2','trRareLife15'],sig:'heron',
+  lines:[['first','Few still walk these roads by choice. Fewer walk them twice.'],['lowlife','You bleed already. Let me close what I can.'],['hero:W','Elspeth. The light you carry is borrowed. Spend it well.']]},
+ tamiyo:{act:1,name:'Tamiyo, the Moon Sage',pool:['pick5','gold60','remove1','trLife6Up2'],sig:'moonpage',
+  lines:[['first','Hold still. I am writing you down. In case you do not come back.'],['again','Your chapter grows long. That is a compliment, here.'],['bigdeck','So many pages. Do you read them all, or just carry them?']]},
+ traft:{act:1,name:'Geist of Saint Traft',wild:[.55,.35],needs:'angel',weak:['gold3','heal5'],anti:['wound','maxm4','eliteAtk'],jack:'lastcharge',
+  lines:[['first','Ha. Still breathing? Give it time.'],['deaths5','We have died the same death, you and I. Mine just stuck.'],['thindeck','Light pack. Good. The dead do not carry much either.']],anti_line:'Ah. Well. Neither did mine.'},
+ noyan:{act:2,name:'Noyan Dar, Roil Shaper',pool:['healFull','upg2','pick3U','trLife10EmbR'],sig:'landfall',
+  lines:[['first','Another walker. The last one fed the Roil. Mind your footing.'],['hero:R','Burn what you like. The land burns back here.'],['diedto:nissa','She was gentle once. The land made her otherwise. Do not hate her for it.']]},
+ kiora:{act:2,name:"Kiora, the Tide's Fury",pool:['goldX2','randRare','trGold2Rare','bigShuffle3'],sig:'deep',
+  lines:[['first',"A walker on my coast. Let's talk prices."],['rich','All that coin, and still so far from the sea.'],['again','Back for more? The tide always is.']]},
+ anowon:{act:2,name:'Anowon, the Ruin Sage',pool:['lifelink3','trRem2Life10','trBossEmbLife15'],sig:'ruinlore',
+  lines:[['first','Kneel, or do not. The ruins are patient either way.'],['lowlife','You smell of endings. I collect those.'],['wins:3','Three survivals. Statistically, you are overdue.']]},
+ zada:{act:2,name:'Zada, Hedron Grinder',wild:[.45,.45],weak:['upgRand1','gold25'],anti:['woundCard','goldm30','maxm6','spawnFirst'],jack:'hedron',
+  lines:[['first','Ooh, a walker! Hold this. No, the other end.'],['again','You came back! Nobody comes back.'],['lowlife','You look broken. I fix broken things. Mostly.']]},
+ teferi:{act:3,name:'Teferi, Master of Time',pool:['healFull','upg3','draw1'],sig:'phase',
+  lines:[['first','I have watched this hour many times. You are new in it.'],['diedto:bolas','He beat you last time. He was not watching you closely. Make him.']]},
+ niv:{act:3,name:'Niv-Mizzet, the Firemind',pool:['bigTransform3','upgAtkCurse','randMythic'],sig:'overload',
+  lines:[['first','A specimen. Hold still. This may sting.'],['hero:R','Fire. Adequate. I will improve it.'],['thindeck','Efficient. I approve of almost nothing, so treasure this.']]},
+ kaya:{act:3,name:'Kaya, Ghost Assassin',pool:['remove2','cleanse','goldForLife'],sig:'settle',
+  lines:[['first',"Everyone owes someone. Today, it's me you owe."],['rich','Look at you. The Syndicate would love you.'],['deaths5',"You die a lot for someone who's still talking to me."]]},
+ rakdos:{act:3,name:'Rakdos, Lord of Riots',wild:[.3,.6],weak:['heal10','randCommon'],anti:['wound2','maxm10','loseEmb'],jack:'riot',
+  lines:[['first',"A walker at my show. Sit. Bleed a little. It's polite."],['rich',"Coin! I don't want it. I want to watch you lose it."],['diedto:bolas','The dragon killed you? He has no sense of theatre.']]},
+};
+const curses=()=>run.deck.filter(x=>C[x.key].r==='K'),deckMin=()=>run.deck.filter(x=>C[x.key].r!=='K').length>8;
+const canUp=()=>run.deck.some(d=>!d.foil&&C[d.key].kind!=='Curse');
+const addCards=ks=>ks.forEach(k=>k&&run.deck.push(mk(k)));
+const randOf=r=>{const p=poolOf(r);return p.length?pick(p):null};
+const loseMax=n=>{run.max=Math.max(10,run.max-n);run.hp=Math.min(run.hp,run.max)},gainMax=n=>{run.max+=n;run.hp+=n};
+const transform=(n,colorless)=>{const pool=colorless?POOL.filter(k=>C[k].col==='C'):null;shuffle(run.deck.filter(d=>C[d.key].r!=='K'&&C[d.key].r!=='S'||colorless&&C[d.key].r==='S')).slice(0,n).forEach(d=>{const k=colorless?(pool.length?pick(pool):null):randOf(C[d.key].r);if(k){d.key=k;d.foil=false}})};
+const embOf=r=>{const p=Object.keys(EMB).filter(k=>!run.emblems.includes(k)&&!BOSSEMB[k]&&forHero(k)&&(r==='C'?!EMB[k].r:EMB[k].r===r));return p.length?pick(p):null};
+const bossEmb=()=>{const p=Object.keys(BOSSEMB).filter(k=>!run.emblems.includes(k));return p.length?pick(p):null};
+const takeEmb=k=>{if(!k)return;run.emblems.push(k);if(k==='contract'){run.max-=4;run.hp=Math.min(run.hp,run.max)}};
+const defendKey=()=>{const p=POOL.filter(k=>/Shield/.test(C[k].text?C[k].text(false):'')&&C[k].r==='C');return p.length?pick(p):null};
+// slot: f(ree) t(rade) b(ig); ico from the PWI kit; go() applies it, or returns a follow-up step {pick|remove|upgrade|copy}
+const BOONS={
+ life8:{s:'f',ico:'heart',name:'Ember of life',text:'+8 max life.',go:()=>gainMax(8)},
+ life10:{s:'f',ico:'heart',name:'Heron feather',text:'+10 max life.',go:()=>gainMax(10)},
+ healFull:{s:'f',ico:'drop',name:'Mend',text:'Heal to full.',ok:()=>run.hp<run.max,go:()=>heal(run.max-run.hp)},
+ heal5:{s:'f',ico:'drop',name:'A little warmth',text:'Heal 5.',go:()=>heal(5)},
+ heal10:{s:'f',ico:'drop',name:'Stitched up',text:'Heal 10.',go:()=>heal(10)},
+ pick3:{s:'f',ico:'card',name:'Three paths',text:'Choose 1 of 3 cards.',go:()=>({pick:[...new Set([randOf('C'),randOf('U'),randOf('C')])].filter(Boolean)})},
+ pick5:{s:'f',ico:'book',name:'Open book',text:'Choose 1 of 5 cards.',go:()=>({pick:[...new Set([randOf('C'),randOf('C'),randOf('U'),randOf('U'),randOf('R')])].filter(Boolean)})},
+ pick3U:{s:'f',ico:'card',name:'Roil-carved',text:'Choose 1 of 3 uncommons.',go:()=>({pick:[...new Set(shuffle(poolOf('U').slice()).slice(0,3))]})},
+ remove1:{s:'f',ico:'ban',name:'Let it go',text:'Remove 1 card.',ok:deckMin,go:()=>({remove:1})},
+ remove2:{s:'f',ico:'ban',name:'Settle it',text:'Remove 2 cards.',ok:deckMin,go:()=>({remove:2})},
+ gold100:{s:'f',ico:'coin',name:'Dragon hoard',text:'Gain 100 gold.',go:()=>{run.gold+=100}},
+ gold60:{s:'f',ico:'coin',name:'Spare coin',text:'Gain 60 gold.',go:()=>{run.gold+=60}},
+ embC:{s:'f',ico:'star',name:'Eternal spark',text:'A random common emblem.',ok:()=>!!embOf('C'),go:()=>takeEmb(embOf('C'))},
+ upg2:{s:'f',ico:'up',name:'Shaped by the Roil',text:'Upgrade 2 cards.',ok:canUp,go:()=>({upgrade:2})},
+ upg3:{s:'f',ico:'up',name:'Borrowed hours',text:'Upgrade 3 cards.',ok:canUp,go:()=>({upgrade:3})},
+ goldX2:{s:'f',ico:'coin',name:'High tide',text:'Double your gold.',ok:()=>run.gold>0,go:()=>{run.gold*=2}},
+ randRare:{s:'f',ico:'card',name:'Wreck salvage',text:'A random rare card.',go:()=>addCards([randOf('R')])},
+ cleanse:{s:'f',ico:'ghost',name:'Debts forgiven',text:'Remove every Curse.',ok:()=>curses().length>0,go:()=>{run.deck=run.deck.filter(x=>C[x.key].r!=='K')}},
+ draw1:{s:'f',ico:'hourglass',name:'A moment more',text:'Draw 1 extra card on your first turn of every fight.',go:()=>{run.draw1=1}},
+ lifelink3:{s:'f',ico:'heart',name:'Blood of the ruins',text:'Your first 3 attacks each fight have lifelink.',go:()=>{run.ll3=1}},
+ defend2:{s:'t',ico:'shield',name:'Twin wards',text:'Add 2 upgraded copies of a defend card. Lose 4 max life.',ok:()=>!!defendKey()&&run.max>14,go:()=>{const k=defendKey();for(let i=0;i<2;i++){const d=mk(k);d.foil=true;run.deck.push(d)}loseMax(4)}},
+ trLife8Rare:{s:'t',ico:'heart',name:'Blood for a rare',text:'Lose 8 max life. Choose 1 of 3 rares.',ok:()=>run.max>16,go:()=>{loseMax(8);return {pick:[...new Set(shuffle(poolOf('R').slice()).slice(0,3))]}}},
+ trGold2Rem:{s:'t',ico:'coin',name:'Pay the ferryman',text:'Lose all gold. Remove 2 cards.',ok:()=>run.gold>0&&deckMin(),go:()=>{run.gold=0;return {remove:2}}},
+ trCurseEmb:{s:'t',ico:'skull',name:'A doubt for a gift',text:'Add a Doubt (Curse). Gain a random rare emblem.',ok:()=>!!embOf('R')&&!!C.doubt,go:()=>{addCards(['doubt']);takeEmb(embOf('R'))}},
+ trRareLife15:{s:'t',ico:'heart',name:'Give up your treasure',text:'Remove your rarest card. +15 max life.',ok:()=>run.deck.some(d=>['R','M'].includes(C[d.key].r)),go:()=>{const d=run.deck.filter(d=>['R','M'].includes(C[d.key].r)).sort((a,b)=>(C[b.key].r==='M')-(C[a.key].r==='M'))[0];run.deck=run.deck.filter(x=>x!==d);gainMax(15)}},
+ trLife6Up2:{s:'t',ico:'up',name:'Ink and blood',text:'Lose 6 max life. Upgrade 2 cards.',ok:()=>run.max>14&&canUp(),go:()=>{loseMax(6);return {upgrade:2}}},
+ trLife10EmbR:{s:'t',ico:'star',name:'Land-pact',text:'Lose 10 max life. Gain a random rare emblem.',ok:()=>run.max>20&&!!embOf('R'),go:()=>{loseMax(10);takeEmb(embOf('R'))}},
+ trGold2Rare:{s:'t',ico:'coin',name:'Everything on the tide',text:'Lose all gold. Gain 2 random rares.',ok:()=>run.gold>0,go:()=>{run.gold=0;addCards([randOf('R'),randOf('R')])}},
+ trRem2Life10:{s:'t',ico:'ban',name:'Bury the dead',text:'Remove 2 cards. Lose 10 max life.',ok:()=>run.max>20&&deckMin(),go:()=>{loseMax(10);return {remove:2}}},
+ trBossEmbLife15:{s:'t',ico:'crown',name:"A tyrant's relic",text:'Lose 15 max life. Gain a random boss emblem.',ok:()=>run.max>25&&!!bossEmb(),go:()=>{loseMax(15);takeEmb(bossEmb())}},
+ goldForLife:{s:'t',ico:'coin',name:'Blood price',text:'Pay gold to heal, 1 gold per life.',ok:()=>run.gold>0&&run.hp<run.max,go:()=>{const n=Math.min(run.gold,run.max-run.hp);run.gold-=n;heal(n)}},
+ bigBossEmb:{s:'b',ico:'crown',name:'Older power',text:'Swap your starting emblem for a random boss emblem.',ok:()=>run.emblems.length>0&&!!bossEmb(),go:()=>{const k=run.emblems[run.emblems.length-1];run.emblems=run.emblems.filter(x=>x!==k);takeEmb(bossEmb())}},
+ bigTransform2:{s:'b',ico:'cycle',name:'Remade',text:'Transform 2 random cards into new ones of the same rarity.',go:()=>transform(2)},
+ bigTransform3:{s:'b',ico:'cycle',name:'Experiment',text:'Transform 3 random cards into new ones of the same rarity.',go:()=>transform(3)},
+ bigShuffle3:{s:'b',ico:'waves',name:'Undertow',text:'Shuffle 3 random cards into new random ones.',go:()=>transform(3)},
+ bigRareCurse:{s:'b',ico:'skull',name:'A gift with teeth',text:'Choose 1 of 3 rares. Add a Doubt (Curse).',ok:()=>!!C.doubt,go:()=>{addCards(['doubt']);return {pick:[...new Set(shuffle(poolOf('R').slice()).slice(0,3))]}}},
+ upgAtkCurse:{s:'b',ico:'bolt',name:'Overclock',text:'Upgrade every attack card. Add a Doubt (Curse).',ok:()=>!!C.doubt&&run.deck.some(d=>!d.foil&&C[d.key].aim==='enemy'),go:()=>{run.deck.forEach(d=>{if(C[d.key].aim==='enemy')d.foil=true});addCards(['doubt'])}},
+ randMythic:{s:'b',ico:'star',name:'A spark of genius',text:'A random mythic card. Add a Doubt (Curse).',ok:()=>!!C.doubt&&poolOf('M').some(k=>C[k].r==='M'),go:()=>{addCards([randOf('M'),'doubt'])}},
+ // signatures (one per patron, about a rare emblem)
+ ghostfire:{s:'b',sig:1,ico:'flame',name:'Ghostfire',text:'Transform 2 cards into colorless cards.',ok:()=>POOL.some(k=>C[k].col==='C'),go:()=>transform(2,1)},
+ heron:{s:'b',sig:1,ico:'wing',name:"Heron's Grace",text:'The first hit this act that would kill you leaves you at 1 life.',go:()=>{run.heron=run.act||1}},
+ moonpage:{s:'b',sig:1,ico:'moon',name:'Moonlit Page',text:'Copy one card in your deck.',go:()=>({copy:1})},
+ landfall:{s:'b',sig:1,ico:'up',name:'Landfall',text:'Gain 1 extra mana on the first turn of every fight.',go:()=>{run.landfall=1}},
+ deep:{s:'b',sig:1,ico:'waves',name:'Deep Bargain',text:'A random mythic card. Your next shop costs double.',ok:()=>poolOf('M').some(k=>C[k].r==='M'),go:()=>{addCards([randOf('M')]);run.shopX2=1}},
+ ruinlore:{s:'b',sig:1,ico:'book',name:'Ruin Lore',text:'Every elite this act offers an extra card.',go:()=>{run.ruinAct=run.act||1}},
+ phase:{s:'b',sig:1,ico:'hourglass',name:'Phase Out',text:'The first enemy attack each fight misses.',go:()=>{run.phase=1}},
+ overload:{s:'b',sig:1,ico:'bolt',name:'Izzet Overload',text:'Your first spell each fight is cast twice.',go:()=>{run.overload=1}},
+ settle:{s:'b',sig:1,ico:'ghost',name:'Settle Accounts',text:'At the start of every elite fight, the strongest minion is exiled.',go:()=>{run.settle=1}},
+ mercy:{s:'f',ico:'heart',name:"Ugin's Mercy",text:'Enemies that start your first 3 fights begin at 10 life.',go:()=>{run.mercy=3}},
+ // wildcard rolls (sealed)
+ gold3:{ico:'coin',name:'Three coins',text:'Gain 3 gold.',go:()=>{run.gold+=3}},
+ gold25:{ico:'coin',name:'A pocket of coin',text:'Gain 25 gold.',go:()=>{run.gold+=25}},
+ upgRand1:{ico:'up',name:'Tinkered',text:'Upgrade 1 random card.',ok:canUp,go:()=>{const d=pick(run.deck.filter(d=>!d.foil&&C[d.key].kind!=='Curse'));if(d)d.foil=true}},
+ randCommon:{ico:'card',name:'A trinket',text:'A random common card.',go:()=>addCards([randOf('C')])},
+ wound:{anti:1,ico:'skull',name:'A Doubt',text:'Add a Doubt (Curse) to your deck.',ok:()=>!!C.doubt,go:()=>addCards(['doubt'])},
+ wound2:{anti:1,ico:'skull',name:'Two Doubts',text:'Add 2 Doubts (Curses) to your deck.',ok:()=>!!C.doubt,go:()=>addCards(['doubt','doubt'])},
+ woundCard:{anti:1,ico:'skull',name:'Ground down',text:'A random card becomes a Doubt (Curse).',ok:()=>!!C.doubt&&deckMin(),go:()=>{const d=pick(run.deck.filter(d=>C[d.key].r!=='K'));if(d){d.key='doubt';d.foil=false}}},
+ maxm4:{anti:1,ico:'heart',name:'A cold touch',text:'Lose 4 max life.',go:()=>loseMax(4)},
+ maxm6:{anti:1,ico:'heart',name:'Hedron splinter',text:'Lose 6 max life.',go:()=>loseMax(6)},
+ maxm10:{anti:1,ico:'heart',name:'Bled for the show',text:'Lose 10 max life.',go:()=>loseMax(10)},
+ goldm30:{anti:1,ico:'coin',name:'Dropped it',text:'Lose 30 gold.',ok:()=>run.gold>0,go:()=>{run.gold=Math.max(0,run.gold-30)}},
+ eliteAtk:{anti:1,ico:'sword',name:'Restless dead',text:'Your next elite gets +1 attack.',go:()=>{run.eliteAtk=1}},
+ spawnFirst:{anti:1,ico:'maw',name:'Stowaway',text:'Your next fight starts with an extra Eldrazi Spawn.',go:()=>{run.spawnFirst=1}},
+ loseEmb:{anti:1,ico:'star',name:'Confiscated',text:'Lose your lowest-rarity emblem.',ok:()=>run.emblems.some(k=>!EMB[k].r),go:()=>{const k=run.emblems.find(k=>!EMB[k].r);run.emblems=run.emblems.filter(x=>x!==k)}},
+ lastcharge:{jack:1,ico:'wing',name:"Saint's Last Charge",text:'Every 5th turn, a 4/4 flying Angel fights beside you for that turn. All run.',go:()=>{run.lastCharge=1}},
+ hedron:{jack:1,ico:'cycle',name:'Hedron Overload',text:'Spells that target one of your allies copy themselves onto each other ally.',go:()=>{run.hedron=1}},
+ riot:{jack:1,ico:'crown',name:"Riot's Crown",text:'Your attacks deal double damage for the rest of the run. You take 1 extra damage from every hit.',go:()=>{run.riot=1}},
+};
+const boonOk=k=>BOONS[k]&&(!BOONS[k].ok||BOONS[k].ok());
+function preloadPatrons(a){try{if(SIM||typeof Image==='undefined')return;const L=Object.keys(PATRONS).filter(k=>PATRONS[k].act===a&&(!PATRON_ART||PATRON_ART.has(k))).map(k=>`./planeswalk-art/patrons/${k}.webp`);L.push('./planeswalk-art/patrons/sealed-back.webp',`./planeswalk-art/blessing-${['','inn','zen','rav'][a]}${innerWidth/innerHeight>1.8?'-wide':''}.webp`);(window.__pwPre=window.__pwPre||[]).push(...L.map(u=>{const i=new Image();i.decoding='async';i.src=u;return i}))}catch(e){}}
+function patronStart(){
+ if(SIM||typeof PW_HEADLESS!=='undefined')return toMap();// the sim pair measures blessings separately (spec 9.5)
+ const a=run.act||1,P=profile.patrons=profile.patrons||{last:{},met:{}},last=P.last[a];
+ const has=k=>(!PATRON_ART||PATRON_ART.has(k))&&!PATRONS[k].needs&&(!PATRONS[k].wild||!PATRON_ART||PATRON_ART.has('sealed-back'));// Saint Traft waits for his Angel token figure (spec 9.6)
+ let ks=Object.keys(PATRONS).filter(k=>PATRONS[k].act===a&&has(k));
+ if(!ks.length)return toMap();
+ const mercy=a===1&&profile.mercy;
+ if(a===1&&!Object.keys(P.met).length&&ks.includes('ugin'))ks=['ugin'];
+ else{let r=ks.filter(k=>k!==last&&!(PATRONS[k].wild&&(run.wildMet||mercy||P.lastWild&&P.lastWild[a]===k)));if(!r.length)r=ks.filter(k=>!PATRONS[k].wild);ks=r.length?r:ks}
+ const k=pick(ks),G=PATRONS[k];P.last[a]=k;if(G.wild){run.wildMet=1;(P.lastWild=P.lastWild||{})[a]=k}
+ const seen=!!P.met[k];P.met[k]=(P.met[k]||0)+1;try{store.set(PROF,profile)}catch(e){}
+ const tags=[];const add=t=>tags.push(t);
+ if(profile.diedTo)add('diedto:'+profile.diedTo);if((profile.runs||0)-(profile.wins||0)>=5)add('deaths5');for(const n of [5,3,1])if((profile.wins||0)>=n){add('wins:'+n);break}
+ add('hero:'+HERO.key);if(run.hp<=run.max*.4)add('lowlife');if(run.gold>=200)add('rich');if(run.deck.length>=25)add('bigdeck');if(run.deck.length<=12)add('thindeck');add(seen?'again':'first');
+ const lines=G.lines.filter(([t])=>tags.includes(t)&&P.lastLine!==t+k);const ln=lines.sort((x,y)=>(['first','again'].includes(x[0]))-(['first','again'].includes(y[0])))[0];if(ln)P.lastLine=ln[0]+k;
+ let offers=[];
+ if(G.wild){const roll=()=>{const x=rng(),L=x<G.wild[0]?G.weak:x<G.wild[0]+G.wild[1]?G.anti:[G.jack];const ok=shuffle(L.filter(boonOk).slice());return ok[0]||G.weak.find(boonOk)};offers=[roll(),roll(),roll()].filter(Boolean)}
+ else{const used=new Set();for(const s of ['f','t','b']){let pool=G.pool.filter(b=>BOONS[b].s===s&&boonOk(b)&&!used.has(b));if(s==='f'&&mercy&&k!=='traft')pool=['mercy'];if(s==='b'&&boonOk(G.sig)&&(rng()<.6||!pool.length))pool=[G.sig];if(!pool.length)pool=G.pool.filter(b=>boonOk(b)&&!used.has(b));if(pool.length){const b=pick(pool);used.add(b);offers.push(b)}}}
+ run.patron={k,act:a,offers,line:ln?ln[1]:'',wild:!!G.wild,sel:null,step:null,open:null};view='patron';reward=null;render()}
+function patronView(){const P=run.patron,G=PATRONS[P.k],st=P.step;
+ const panel=`<figure class="pw-patron"><img src="./planeswalk-art/patrons/${P.k}.webp" alt="${G.name}" draggable="false"><figcaption>${G.name}</figcaption></figure>`;
+ const line=P.line?`<p class="pw-pline">${P.line}</p>`:'';
+ if(st&&st.pick)return `<section class="screen blessing" data-giver="${P.k}">${panel}<div class="choices">${st.pick.map(k=>cardHtml({key:k,foil:false},`data-act="bpick" data-k="${k}"`)).join('')}</div><button class="btn" data-act="bskip">${ico('back')}</button></section>`;
+ if(st&&(st.remove||st.upgrade||st.copy)){const L=st.upgrade?run.deck.filter(d=>!d.foil&&C[d.key].kind!=='Curse'):run.deck;const act=st.remove?'bremove':st.upgrade?'bupg':'bcopy';
+  return `<section class="screen blessing" data-giver="${P.k}">${panel}<div class="choices">${L.map(card=>cardHtml(card,`data-act="${act}" data-id="${card.id}"`)).join('')}</div></section>`}
+ if(P.wild){if(P.open!=null){const b=BOONS[P.offers[P.open]];return `<section class="screen blessing wild" data-giver="${P.k}">${panel}${b.anti&&G.anti_line?`<p class="pw-pline">${G.anti_line}</p>`:line}<div class="pw-seals"><div class="pw-seal open${b.anti?' anti':b.jack?' jack':''}"><span class="pw-boon-ico">${ico(b.ico)}</span><b>${b.name}</b><span class="muted">${b.text}</span></div></div><button class="btn primary" data-act="bdone">${ico('up')}</button></section>`}
+  return `<section class="screen blessing wild" data-giver="${P.k}">${panel}${line}<div class="pw-seals">${P.offers.map((b,i)=>`<button class="pw-seal" data-act="bseal" data-i="${i}" aria-label="Sealed offer ${i+1}"></button>`).join('')}</div><button class="btn" data-act="bdone" aria-label="Walk away">${ico('back')}</button></section>`}
+ return `<section class="screen blessing" data-giver="${P.k}">${panel}${line}<div class="choices pw-boons">${P.offers.map((k,i)=>{const b=BOONS[k],on=P.sel===i;return `<button class="option pw-boon${b.sig?' sig':''}" data-act="boon" data-i="${i}" data-slot="${b.s}" aria-pressed="${on}" title="${b.name}: ${b.text}"><span class="pw-boon-ico">${ico(b.ico)}</span><b>${b.name}</b>${on?`<span class="muted">${b.text}</span>`:''}</button>`}).join('')}</div>${P.sel!=null?`<button class="btn primary" data-act="btake" aria-label="Take ${BOONS[P.offers[P.sel]].name}">${ico('up')}</button>`:''}</section>`}
+function patronApply(k){const r=BOONS[k].go();const P=run.patron;P.step=r&&(r.pick&&r.pick.length||r.remove||r.upgrade||r.copy)?r:null;if(P.step&&P.step.pick)P.step.pick=P.step.pick.filter(Boolean);if(!P.step)patronDone();else render()}
+function patronDone(){run.patron=null;toMap()}
+function patronStep(){const st=run.patron.step;for(const n of ['remove','upgrade','copy'])if(st[n]){st[n]--;if(st[n]>0&&(n!=='upgrade'||canUp())&&(n!=='remove'||deckMin()))return render()}patronDone()}
+// clicks (wired from the main handler)
+function patronClick(a,b){const P=run&&run.patron;if(!P)return false;
+ if(a==='boon'){const i=+b.dataset.i;P.sel=P.sel===i?null:i;render();return true}
+ if(a==='btake'){if(P.sel==null)return true;const k=P.offers[P.sel];P.taken=k;patronApply(k);return true}
+ if(a==='bseal'){const i=+b.dataset.i;P.open=i;const k=P.offers[i];BOONS[k].go();render();return true}
+ if(a==='bdone'){patronDone();return true}
+ if(a==='bskip'){patronDone();return true}
+ if(a==='bpick'){addCards([b.dataset.k]);patronDone();return true}
+ if(a==='bremove'){run.deck=run.deck.filter(d=>d.id!==+b.dataset.id);run.removed=(run.removed||0)+1;patronStep();return true}
+ if(a==='bupg'){const d=run.deck.find(d=>d.id===+b.dataset.id);if(d)d.foil=true;patronStep();return true}
+ if(a==='bcopy'){const d=run.deck.find(d=>d.id===+b.dataset.id);if(d){const n=mk(d.key);n.foil=d.foil;run.deck.push(n)}patronStep();return true}
+ return false}
 function render(){if(SIM)return;
  if(view==='over'||view==='victory')endRun(view==='victory');
  markSeen();
  if(view==='heroes'||view==='journal'){document.getElementById('app').innerHTML=view==='journal'?journalView():heroesView();try{delete document.body.dataset.actnum}catch(e){}return}
- const body=view==='ante'?anteView():view==='actstart'?actStartView():view==='bossreward'?bossRewardView():view==='shop'?shopView():view==='map'?mapView():view==='battle'?battleView():view==='reward'?rewardView():view==='rest'?restView():view==='event'?eventView():endView(view==='victory');
+ const body=view==='patron'&&run.patron?patronView():view==='ante'?anteView():view==='actstart'?actStartView():view==='bossreward'?bossRewardView():view==='shop'?shopView():view==='map'?mapView():view==='battle'?battleView():view==='reward'?rewardView():view==='rest'?restView():view==='event'?eventView():endView(view==='victory');
  document.getElementById('app').innerHTML=topBar()+body+`<details class="howto"><summary>How to play</summary><p class="note">${HERO.ramp?`You get ${HERO.ramp[0]} mana on your first turn and 1 more each turn, up to ${HERO.ramp[1]}.`:`You get ${HERO.energy} mana a turn. Rituals like Rite of Flame add more for this turn only.`} Unspent mana empties at the end of your turn. ${HERO.short}'s loyalty carries between fights: spend it now or save 6 for the ultimate. ${HERO.fury?'Play 4 cards in one turn for Fury: it burns every enemy and adds {R}.':''} The chip over ${HERO.short} shows what the enemies will do if you end your turn now. New creatures are asleep: they can block but not attack, unless they have haste. Tap a glowing creature, then an enemy, to attack. Targeted spells work the same way. Enemies strike back, and tapped creatures can't block. Your run saves on the map after every node.</p>${FORM?`<p class="note">Formation: your front ally blocks first. Tap ⇄ Formation, then an ally, then an enemy, to have that ally guard against it. ↷ flying: only flying or reach allies can block it. ⤳ bypass: skips your line unless an ally guards against it. ⇶ trample: a blocker that dies doesn't stop the hit. +N/turn: enrage, its attack grows every turn. A creature that dies blocking soaks the whole hit; a token soaks only its toughness.</p>`:''}</details><p class="note record">Runs ${profile.runs} · Wins ${profile.wins} · Best turn ${profile.bestTurn}</p>`+(gift&&view==='map'?`<div class="pw-gift" role="dialog" aria-modal="true" aria-label="New card"><div class="pw-gift-box"><p class="pw-gift-why">${gift.why}</p>${cardHtml({key:gift.k,foil:!!gift.foil},'tabindex="-1"')}<button class="btn main" data-act="giftok">${gift.foil?'Nice':'Keep it'}</button></div></div>`:'');
  // Skin hooks: every screen can read the act (for its location art) and its own kind.
  try{document.body.dataset.actnum=run.act||1;const sec=document.querySelector('#app section.screen');const k=view==='shop'?'shop':view==='event'?'event':view==='reward'&&reward&&reward.treasure?'treasure':'';if(sec&&k)sec.classList.add(k);if(sec&&k==='event'&&reward&&reward.ev)sec.dataset.ev=reward.removing?'':reward.ev;if(view==='map')evArt()}catch(e){}
@@ -1290,6 +1455,7 @@ let profile=store.get(PROF)||{runs:0,wins:0,bestTurn:0,bestFights:0};
 function saveRun(){if(view==='map'&&run&&run.hp>0)store.set(SAVE,{seed,rs,uid,run})}
 function endRun(won){if(run.recorded)return;run.recorded=1;store.del(SAVE);profile.runs++;if(won)profile.wins++;profile.bestTurn=Math.max(profile.bestTurn,run.bestTurn||0);profile.bestFights=Math.max(profile.bestFights,run.fights||0);
  const foe=!won&&c&&c.enemies&&c.enemies.find(e=>e.hp>0),act=run.act||1,floor=(run.pos?run.pos.r:0)+1;
+ try{profile.mercy=!won&&act===1&&!(c&&c.kind==='boss');profile.diedTo=!won&&c&&c.kind==='boss'?(E[bossOf(act)]?E[bossOf(act)].name:bossOf(act)).toLowerCase().split(/[ ,]/)[0]:null}catch(e){}/* patrons: Ugin's Mercy and diedto lines */
  run.xpFrom=profile.xp||0;run.xpGain=(run.fights||0)*3+(act-1)*15+(won?30:0);profile.xp=run.xpFrom+run.xpGain;
  const h={at:Date.now(),hero:HERO.key,seed,act,floor,won:!!won,killedBy:foe?foe.name.replace(/,.*$/,''):'',fights:run.fights||0,bestTurn:run.bestTurn||0,turns:c?c.turn:0};
  store.set(HIST,[h,...(store.get(HIST)||[])].slice(0,20));store.set(PROF,profile);
@@ -1335,11 +1501,12 @@ async function shareRun(b){const won=view==='victory',act=run.act||1,url=`${SHAR
  let ok=false;try{if(navigator.share){await navigator.share({title:'Planeswalk',text});ok=true}}catch(e){if(e&&e.name==='AbortError')return}
  if(!ok){try{await navigator.clipboard.writeText(text);ok=true}catch{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{ok=document.execCommand('copy')}catch{}ta.remove()}}
  const l=b&&b.querySelector('span');if(l){l.textContent=ok?'Copied':'Copy failed';setTimeout(()=>{if(l.isConnected)l.textContent='Share'},1600)}}
-function resumeRun(){const sv=store.get(SAVE);if(!sv||!sv.run||!sv.run.map)return false;seed=sv.seed;rng=mulberry(0);rs=sv.rs;uid=sv.uid;run=sv.run;setHero(run.hero||'R');view=run.startPick&&run.startPick.length?'actstart':'map';c=null;reward=null;render();return true}
+function resumeRun(){const sv=store.get(SAVE);if(!sv||!sv.run||!sv.run.map)return false;seed=sv.seed;rng=mulberry(0);rs=sv.rs;uid=sv.uid;run=sv.run;setHero(run.hero||'R');view=run.startPick&&run.startPick.length?'actstart':run.patron?'patron':'map';c=null;reward=null;render();return true}
 document.getElementById('app').addEventListener('click',ev=>{
  if(c&&c.busy&&!c.fast){c.fast=1;c.log='Speeding up the enemy turn…'}
  const b=ev.target.closest('[data-act]');if(!b||b.disabled)return;const a=b.dataset.act;
  logAct(a,b.dataset);
+ if(view==='patron'&&patronClick(a,b))return;
  if(a!=='giftok')gift=null;
  if(a==='new'){if(run&&run.hp>0&&view!=='over'&&view!=='victory'&&(run.fights||run.pos)&&!confirm('Abandon this run and start a new one?'))return;store.del(SAVE);return newRun()}
  if(a==='replay')return newRun(seed,run&&run.hero);
@@ -1387,7 +1554,7 @@ document.getElementById('app').addEventListener('click',ev=>{
  if(a==='shopremove'){const sh=reward.shop;if(run.gold>=sh.remove.price){run.gold-=sh.remove.price;sh.remove.sold=true;run.removed=(run.removed||0)+1;run.deck=run.deck.filter(d=>d.id!==+b.dataset.id)}reward.removing=0;return render()}
  if(a==='sac'){c.pending={kind:'sac',aim:'ally'};c.log='Goblin Bombardment: choose an ally to sacrifice.';return render()}
  if(a==='bossemb')return nextAct(b.dataset.k);
- if(a==='startemb'){run.claimed=null;if(run.startPick&&run.startPick.includes(b.dataset.k)){run.emblems.push(b.dataset.k);if(b.dataset.k==='contract'){run.max-=4;run.hp=Math.min(run.hp,run.max)}}run.startPick=null;return toMap()}
+ if(a==='startemb'){run.claimed=null;if(run.startPick&&run.startPick.includes(b.dataset.k)){run.emblems.push(b.dataset.k);if(b.dataset.k==='contract'){run.max-=4;run.hp=Math.min(run.hp,run.max)}}run.startPick=null;return patronStart()}
  if(a==='pactmyth'){offerLog('bargain',[reward.myth&&EMB[reward.myth].name,reward.rare&&EMB[reward.rare].name].filter(Boolean),reward.myth&&EMB[reward.myth].name);run.max-=15;run.hp=Math.min(run.hp,run.max);if(reward.myth)run.emblems.push(reward.myth);return toMap()}
  if(a==='pactcurse'){offerLog('bargain',[reward.myth&&EMB[reward.myth].name,reward.rare&&EMB[reward.rare].name].filter(Boolean),reward.rare&&EMB[reward.rare].name);if(reward.rare)run.emblems.push(reward.rare);run.deck.push(mk('doubt'));return toMap()}
  if(a==='heal'){heal(Math.round(run.max*.3));return toMap()}
