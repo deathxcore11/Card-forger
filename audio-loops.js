@@ -1,6 +1,13 @@
 // Loop points [start, end] in seconds for each looping music track (written by scripts/music/render.py).
 // Each file wraps a second of its loop on both sides, so the seam is inside continuous audio.
 export const LOOPS = {
+  "MUS-BOSS-BOLAS": [1.0, 161.0],
+  "MUS-BOSS-HERALD": [1.0, 145.0],
+  "MUS-BOSS-LAZAV": [1.0, 183.857146],
+  "MUS-BOSS-OB": [1.0, 181.0],
+  "MUS-BOSS-OLIVIA": [1.0, 116.2],
+  "MUS-BOSS-SORIN": [1.0, 167.956521],
+  "MUS-BOSS-VRASKA": [1.0, 175.545458],
   "MUS-PW-01": [1.0, 212.034479],
   "MUS-PW-02": [1.0, 262.818188],
   "MUS-PW-03": [1.0, 241.0],

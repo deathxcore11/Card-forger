@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-pw-fights-patron-themes-v397";
+const CACHE = "cardforge-shell-pw-fights-boss-themes-v398";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",

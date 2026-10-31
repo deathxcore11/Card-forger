@@ -10,6 +10,7 @@ addEventListener('click',e=>{if(e.target.closest?.('.pw-sndbtn'))setTimeout(()=>
  // The hero's loyalty diamond opens the ability fan; the game stops that click at #app, so listen above it.
  if(e.target.closest?.('.battle .loyal'))sfx('APP-007',{volume:.6});},true);
 const app=document.getElementById('app');
+const BOSS_THEMES=[[/^sorin/i,'SORIN'],[/^olivia/i,'OLIVIA'],[/^ob(\b| nixilis)/i,'OB'],[/herald/i,'HERALD'],[/^vraska/i,'VRASKA'],[/^lazav/i,'LAZAV'],[/bolas/i,'BOLAS']];
 const GIVERS={ugin:'MUS-PWG-01',sigarda:'MUS-PWG-02',geist:'MUS-PWG-03',tamiyo:'MUS-PWG-04',noyan:'MUS-PWG-05',kiora:'MUS-PWG-06',
  anowon:'MUS-PWG-07',zada:'MUS-PWG-08',teferi:'MUS-PWG-09',niv:'MUS-PWG-10',kaya:'MUS-PWG-11',rakdos:'MUS-PWG-12'};
 const CLICK={go:'PW-006',hero:'PW-003',take:'PW-017',skip:'PW-018',emb:'PW-026',bossemb:'PW-026',startemb:'PW-026',buyemb:'PW-020',buy:'PW-020',
@@ -34,6 +35,9 @@ if(app){
   // Fights have a track per act: MUS-PW-05/06/10 for Innistrad, -2 Zendikar, -3 Ravnica.
   const A=act>1?'-'+Math.min(3,act):'';
   if(q('section.battle[data-dungeon]'))return ['dungeon','MUS-PW-06'+A];
+  // Every boss has a theme of its own, found by the boss's name on its card (or data-boss on the battle).
+  const bu=q('section.battle .unit.boss'),bn=(q('section.battle[data-boss]')?.dataset.boss||bu?.dataset.n||'');
+  const bt=bu&&BOSS_THEMES.find(([re])=>re.test(bn));if(bt)return ['boss','MUS-BOSS-'+bt[1]];
   if(q('section.battle'))return q('section.battle .unit.boss')?['boss','MUS-PW-10'+A]:q('section.battle .unit.elite')?['elite','MUS-PW-06'+A]:['battle','MUS-PW-05'+A];
   if(q('section.map')||q('.screen.actstart')||q('.screen.bosspick'))return ['map',['MUS-PW-02','MUS-PW-03','MUS-PW-04'][Math.min(2,act-1)]];
   if(q('section.screen.ante'))return ['ante',''];

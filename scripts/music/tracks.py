@@ -375,3 +375,6 @@ def tbl_combat_alt():
 # The blessing patrons' themes (MUS-PWG-01..12) live in patrons.py.
 from patrons import PATRONS
 CUES.update(PATRONS)
+# A theme for every boss (MUS-BOSS-*) lives in bosses.py.
+from bosses import BOSSES
+CUES.update(BOSSES)
