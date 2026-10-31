@@ -16,11 +16,15 @@ export function createTableEmotes({root,doc=root.ownerDocument,win=doc.defaultVi
   // The visible bubble drops the "You:"/"CPU:" prefix; screen readers keep it.
   b.innerHTML=`<span class="forge-emote-sr">${who==='you'?'You':'CPU'}: </span>${text.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c])}`;
   doc.body.append(b);bubbles.add(b);
+  // The bubble keeps 8px inside the safe area (a sideways phone's camera band), read through the bubble's own style.
+  b.style.left='calc(env(safe-area-inset-left,0px) + 8px)';b.style.right='calc(env(safe-area-inset-right,0px) + 8px)';
+  const cs=win.getComputedStyle(b),edgeL=parseFloat(cs.left)||8,edgeR=parseFloat(cs.right)||8;b.style.removeProperty('right');
   const w=b.offsetWidth,h=b.offsetHeight,vw=win.innerWidth,vh=win.innerHeight;
   // Your line rises above your portrait; the CPU's drops below its name (over its face-down hand), never over the name.
   const name=seat(who)?.querySelector('.play-match-player>strong,.play-match-player-name'),nb=name?.getBoundingClientRect(),below=Math.max(r.bottom,nb&&nb.height?nb.bottom:r.bottom+16);
-  const left=Math.min(Math.max(8,r.left+r.width/2-w/2),vw-w-8),top=who==='you'?Math.max(8,r.top-h-10):Math.min(vh-h-8,below+8);
-  b.style.left=left+'px';b.style.top=top+'px';
+  const left=Math.min(Math.max(edgeL,r.left+r.width/2-w/2),vw-w-edgeR),top=who==='you'?Math.max(8,r.top-h-10):Math.min(vh-h-8,below+8);
+  // Anchored on the side nearer its edge, so a bubble that grows later (larger text) grows inward.
+  if(left+w/2>vw/2){b.style.removeProperty('left');b.style.right=(vw-left-w)+'px';}else b.style.left=left+'px';b.style.top=top+'px';
   later(()=>{b.dataset.leaving='true';later(()=>{b.remove();bubbles.delete(b);},260);},2600);
  }
  function cpuReply(id){

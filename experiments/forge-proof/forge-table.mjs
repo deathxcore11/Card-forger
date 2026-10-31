@@ -631,8 +631,13 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  }
  function closeLaneTray(){const tray=root.querySelector(':scope>.forge-lane-tray');if(!tray)return;doc.removeEventListener('pointerdown',tray._away,true);tray.remove();}
  const growLimit=()=>Math.min(win.innerWidth,win.innerHeight)<600&&win.matchMedia?.('(pointer:coarse)').matches?1.7:1;
+ // Tall touch screens lift the turn buttons above a full-width hand (play-forge-table.css), into your side's lower edge.
+ const raisedDock=()=>!!win.matchMedia?.('(hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px)').matches;
+ // A side that changes size after the fit (fonts landing, a chip appearing, 130% text) fits again.
+ let boardSizes=null;
  function fitBoard(){
   boardFrame=0;if(closed||!presentation.hosted)return;
+  if(typeof ResizeObserver==='function'){boardSizes??=new ResizeObserver(()=>queueBoard());for(const a of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area,.play-match-hand-area'))boardSizes.observe(a);}
   // Your side stops above your hand where it rests, not where a lift or a popped card has carried it, so
   // hovering the hand never shrinks the board. Both sides then share one scale, so cards read the same size.
   const g=handGeometry(),rest=g?g.wraps.map(w=>{const l=g.local(w);return {top:g.box.top+l.y,left:g.box.left+l.x,right:g.box.left+l.x+l.w,width:l.w};}):[];
@@ -642,15 +647,20 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Where the board is laid out on its own (a Fold opened up), it ends above the stack strip and the hand
   // slider instead of running under them, so both sides lay out in the room that is left.
   {const bf=root.querySelector('.play-match-battlefields');if(bf){bf.style.removeProperty('bottom');const floats=[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()).filter(r=>r.height);
-   if(floats.length&&getComputedStyle(bf).position==='absolute'){const top=Math.min(...floats.map(r=>r.top)),b=bf.getBoundingClientRect();if(b.bottom>top-6)bf.style.setProperty('bottom',`${Math.round(parseFloat(getComputedStyle(bf).bottom)+b.bottom-top+6)}px`,'important');}}}
+   // Only a strip that runs under the board counts: a side panel beside it (the stack in a sideways
+   // phone's right column) starts above the board's middle and would otherwise squeeze the board to nothing.
+   const b=bf.getBoundingClientRect(),under=floats.filter(r=>r.right>b.left&&r.left<b.right&&r.top>b.top+b.height/2);
+   if(under.length&&getComputedStyle(bf).position==='absolute'){const top=Math.min(...under.map(r=>r.top));if(b.bottom>top-6)bf.style.setProperty('bottom',`${Math.round(parseFloat(getComputedStyle(bf).bottom)+b.bottom-top+6)}px`,'important');}}}
   // A Commander pod's CPU side holds one board per opponent: the one on show, or all of them side by side.
   const zonesOf=area=>{const all=[...area.querySelectorAll(':scope>.play-match-zone')];for(const z of all){z.style.removeProperty('transform');z.style.removeProperty('width');delete z.dataset.scaled;}return all.filter(z=>z.getClientRects().length);};
   for(const area of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area'))for(const zone of zonesOf(area)){
    const columns=area.querySelectorAll(':scope>.play-match-zone').length>1&&getComputedStyle(area).display==='grid';
    // Your side stops above your hand; the CPU's stops below its row of card backs.
-   // On a portrait screen the stack strip and the hand slider float over your side, so it stops above them too.
-   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect())]:[...root.querySelectorAll('.play-match-opponent-fan,.play-pod-rail')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
-   const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+4)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
+   // On a portrait screen the stack strip and the hand slider float over your side, so it stops above them too;
+   // a sideways phone's hand button and control emblems sit just over the hand, and a tall screen's turn buttons
+   // ride above it, so it stops above those as well.
+   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()),...[...root.querySelectorAll('.forge-hand-expand,.forge-control-emblem')].map(n=>n.getBoundingClientRect()),...[...(raisedDock()?root.querySelectorAll('.play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search))'):[])].map(n=>n.getBoundingClientRect()).filter(r=>r.height&&r.top>box.top+40)]:[...root.querySelectorAll('.play-match-opponent-fan,.play-pod-rail')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
+   const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+8)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
    const W=columns?Math.floor(zone.getBoundingClientRect().width):area.clientWidth,H=Math.min(area.clientHeight,Math.round(bottom-top))-(columns?22:0);if(!W||H<=0)continue;
    // Side-by-side lanes (a grid) have fixed boxes: a row that spills out of its lane shrinks inside it.
    const fitRows=()=>{for(const row of zone.querySelectorAll('.play-match-card-row')){row.style.removeProperty('transform');const lane=row.closest('.play-match-lane'),h=lane?.clientHeight||0;
@@ -661,23 +671,38 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     const wraps=[...row.querySelectorAll(':scope>.play-match-card-wrap')];let more=row.querySelector(':scope>.forge-lane-more');for(const w of wraps)if(w.hidden)w.hidden=false;
     let kr=scaleOf();
     if(kr<.62&&wraps.length>=4){let keep=Math.max(1,Math.floor(wraps.length*(kr/.75)**2)-1);
-     if(!more){more=doc.createElement('button');more.type='button';more.className='forge-lane-more';more.dataset.nativeKey='lane-more';more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const row=more.parentElement,k=Number(more.dataset.keep)||0;openLaneTray([...row.querySelectorAll(':scope>.play-match-card-wrap')].slice(k),more);});row.append(more);}
+     if(!more){more=doc.createElement('button');more.type='button';more.className='forge-lane-more';more.dataset.nativeKey='lane-more';more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const row=more.parentElement,k=Number(more.dataset.keep)||0;openLaneTray([...row.querySelectorAll(':scope>.play-match-card-wrap')].slice(k),more);});row.append(more);}more.hidden=false;
      const fold=k=>{wraps.forEach((w,i)=>{const hide=i>=k;if(w.hidden!==hide)w.hidden=hide;});const label=`+${wraps.length-k}`;if(more.textContent!==label){more.textContent=label;more.setAttribute('aria-label',`${wraps.length-k} more cards`);}more.dataset.keep=String(k);};
      fold(keep);while(keep>1&&scaleOf()<.72){keep--;fold(keep);}kr=scaleOf();}
     else if(more)more.remove();
     if(kr<.995){row.style.transformOrigin='top center';row.style.transform=`scale(${kr.toFixed(3)})`;}}};
    // On a phone the pieces start small; a board with room to spare grows them to fill it (Arena's cards fill the table).
-   // The largest scale whose reflowed layout (rows wrap at width W/k) still fits both ways, found by halving.
-   fitRows();const fitsAt=k=>{zone.style.width=`${W/k}px`;return zone.scrollHeight*k<=H+1&&zone.scrollWidth*k<=W+1;};let k=growLimit();if(!fitsAt(k)){let lo=.4,hi=k;for(let i=0;i<6;i++){const mid=(lo+hi)/2;if(fitsAt(mid))lo=mid;else hi=mid;}k=lo;}
-   fits.push({area,zone,own,W,k,fitRows});
+   // The largest scale whose reflowed layout (rows wrap at width W/k) still fits both ways. Height is not monotonic in
+   // k (a wider layout grows its pieces until a back row joins the lands), so step down to the first fit, then refine.
+   // Trials measure every row unscaled and unfolded, the same way on every pass, so the result never depends on
+   // what the previous pass folded (a fold adds or removes a chip, which redraws the table and fits again).
+   const rows=[...zone.querySelectorAll('.play-match-card-row')];
+   const fitsAt=k=>{zone.dataset.scaled='true';zone.style.width=`${W/k}px`;for(const r of rows){r.style.removeProperty('transform');for(const w of r.querySelectorAll(':scope>.play-match-card-wrap[hidden]'))w.hidden=false;const more=r.querySelector(':scope>.forge-lane-more');if(more)more.hidden=true;}return zone.scrollHeight*k<=H+1&&zone.scrollWidth*k<=W+1;};let k=growLimit();
+   if(!fitsAt(k)){let lo=.4,hi=k;for(let t=k-.05;t>.4;t-=.05)if(fitsAt(t)){lo=t;hi=t+.05;break;}for(let i=0;i<3;i++){const mid=(lo+hi)/2;if(fitsAt(mid))lo=mid;else hi=mid;}k=lo;}
+   fits.push({area,zone,own,W,H,k,fitRows,drop:own?0:Math.max(0,top-box.top)});
   }
-  const k=Math.min(growLimit(),...fits.map(f=>f.k));
-  for(const f of fits){const {area,zone,own,W,fitRows}=f;
-   if(Math.abs(k-1)<.005){zone.style.removeProperty('width');fitRows();continue;}
-   zone.style.width=`${W/k}px`;fitRows();
-   const h=zone.scrollHeight*k,lift=own||area.querySelectorAll(':scope>.play-match-zone').length>1?0:Math.max(0,area.clientHeight-h);
-   zone.dataset.scaled='true';zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
-  }
+  // A row that fits its lane at one width can fold or shrink differently at another, so the shared scale is checked
+  // once laid out and stepped down until every side really fits.
+  let k=Math.min(growLimit(),...fits.map(f=>f.k));
+  for(let pass=0;pass<8;pass++){let over=false;
+   for(const f of fits){const {area,zone,own,W,H,fitRows,drop}=f;
+    if(Math.abs(k-1)<.005){zone.style.removeProperty('width');zone.style.removeProperty('transform');delete zone.dataset.scaled;fitRows();if(drop)zone.style.transform=`translateY(${drop.toFixed(1)}px)`;if(zone.scrollHeight>H+1)over=true;continue;}
+    zone.dataset.scaled='true';zone.style.width=`${W/k}px`;fitRows();
+    // The CPU side settles toward the divider, leaving room for keyword badges hanging under its cards.
+    const h=zone.scrollHeight*k,lift=own?0:area.querySelectorAll(':scope>.play-match-zone').length>1?drop:Math.max(0,area.clientHeight-h-10);if(h>H+1)over=true;
+    zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
+   }
+   if(!over||k<=.4)break;k=Math.max(.4,k-.04);}
+  // A pile's top card shows its name only when the whole name fits; otherwise the ×N badge and art carry it
+  // (the full name stays in its title, label and peek), so a cut-off name never pokes out over the pile.
+  for(const n of root.querySelectorAll('.play-match-battlefields .play-match-card-wrap[data-pile-top=true] .play-match-card-name')){const cut=n.scrollWidth>n.clientWidth+1;if(n.hasAttribute('data-cut')!==cut)n.toggleAttribute('data-cut',cut);}
+  // Target rings and aim lines follow the cards to wherever this fit (or a later resize refit) put them.
+  queueArrows();
  }
  const queueBoard=()=>{if(!boardFrame)boardFrame=win.requestAnimationFrame(fitBoard);};
  win.addEventListener('resize',queueBoard);
@@ -693,6 +718,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // native panel comes or goes, unlike a :has() test that rechecks the whole table each redraw.
   root.toggleAttribute('data-forge-native',!!root.querySelector('.forge-native-panel'));
   doc.body.toggleAttribute('data-forge-search',!!root.querySelector('.forge-zone-search'));
+  // While a full-screen sheet asks (a library search, ordering triggers), the board behind it is out of reach.
+  {const main=root.querySelector(':scope>.play-match-main'),sheet=!!root.querySelector('.forge-zone-search,.forge-order-cards');if(main&&main.inert!==sheet)main.inert=sheet;}
   if(before&&(!blocked||staged)){glide(before);boardEffects(previous,s,before,leaving);}
   if(presentation.hosted)tableAudio.update(previous,s);
   // Arena's low-life state: under 10 life the portrait cracks, under 6 it also bleeds a slow red glow.
@@ -726,7 +753,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const mine=surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===surface.seat),k=mode==='attack'?mine.filter(c=>c.attacking).length:mine.filter(c=>c.blockingIds?.length||c.blocking).length;
   const key=`${mode}|${k}`;if(!line){line=combatLine=doc.createElement('div');line.className='forge-combat-line';line.setAttribute('aria-hidden','true');}const mat=root.querySelector('.play-match-mat');if(mat&&line.parentElement!==mat){if(line.parentElement||line.dataset.key)line.dataset.settled='';mat.append(line);}
   if(line.dataset.key!==key){line.dataset.key=key;line.dataset.mode=mode;line.innerHTML=k?`<i></i><span><b>${k}</b><small>${mode==='attack'?'attacking':'blocking'}</small></span>`:'<i></i><i></i>';}
-  const r=zone.getBoundingClientRect(),v=`${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}`;if(line.dataset.at!==v){line.dataset.at=v;line.style.left=Math.round(r.left)+'px';line.style.top=Math.round(r.top)+'px';line.style.width=Math.round(r.width)+'px';}
+  // Measured on your side's box, not the zone: the zone is laid out wider and scaled down, so its box changes mid-fit.
+  const r=(zone.closest('.play-match-seat-area')||zone).getBoundingClientRect(),v=`${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}`;if(line.dataset.at!==v){line.dataset.at=v;line.style.left=Math.round(r.left)+'px';line.style.top=Math.round(r.top)+'px';line.style.width=Math.round(r.width)+'px';}
  }
  let manaOpen=false;
  const PHASE_STEPS=[['Upkeep',['Untap','Upkeep']],['Draw',['Draw']],['Main',['PreCombatMain']],['Combat',['BeginningOfCombat','DeclareAttackers','DeclareBlockers','FirstStrikeDamage','CombatDamage','EndCombat']],['Main 2',['PostCombatMain']],['End',['End','Cleanup']]];
@@ -736,7 +764,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(!track){track=doc.createElement('div');track.className='forge-phase-track';track.setAttribute('role','status');mat.append(track);}
   if(track.dataset.key===key)return;track.dataset.key=key;track.dataset.owner=owner;
   const step=PHASE_STEPS[at]?.[0]||'';track.setAttribute('aria-label',`${owner==='you'?'Your':'CPU'} turn ${surface.turn}${step?', '+step:''}`);
-  track.innerHTML=`<b>${owner==='you'?'You':'CPU'} · Turn ${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
+  track.innerHTML=`<b><span class="forge-phase-who">${owner==='you'?'You':'CPU'} · </span>Turn ${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
  }
  const trackerSeen=new Map(),trackerOpen={deck:false,opponent:false},trackerIdentity=new Map();
  // The deck-list name of one physical card. Forge keeps a card's id when it transforms or becomes a
@@ -1298,7 +1326,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function placeHandSlider(hand){const slider=root.querySelector(':scope>.forge-hand-slider');if(!slider||!hand.length||root.dataset.handLift==='true')return;
   const rects=hand.map(w=>(w.querySelector('.play-match-card')||w).getBoundingClientRect()),pill=root.querySelector('.forge-hand-expand')?.getBoundingClientRect(),cardTop=Math.min(...rects.map(r=>r.top));
   const l=Math.max(16,Math.min(...rects.map(r=>r.left))),r=Math.min(win.innerWidth-16,Math.max(...rects.map(r=>r.right)),pill?.width?pill.left-8:Infinity),top=Math.min(pill?.height?pill.top+pill.height/2-22:Infinity,cardTop-8-44);
-  slider.style.left=`${Math.round(l)}px`;slider.style.width=`${Math.round(Math.max(120,r-l))}px`;slider.style.right='auto';slider.style.top=`${Math.round(top)}px`;}
+  // A turn dock that reaches down beside the hand (a tall touch screen) ends the slider at its left edge.
+  const dock=root.querySelector('.play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search))')?.getBoundingClientRect(),end=dock?.height&&dock.top<top+44&&dock.bottom>top&&dock.left>l?Math.min(r,dock.left-8):r;
+  // A hand squeezed too narrow for a slider beside its expand pill drops the slider; the pill opens the whole hand.
+  slider.style.display=end-l<120?'none':'';
+  slider.style.left=`${Math.round(l)}px`;slider.style.width=`${Math.round(Math.max(120,end-l))}px`;slider.style.right='auto';slider.style.top=`${Math.round(top)}px`;}
  function layoutHand(){const g=handGeometry();if(!g)return;const fi=g.wraps.indexOf(handFocus);
   for(const w of g.wraps){if(w!==handFocus)w.removeAttribute('data-hand-focus');}
   if(fi<0){delete root.dataset.handFocused;handFocusRect=null;}else root.dataset.handFocused='true';
@@ -1391,5 +1423,5 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   rope.style.setProperty('--burn',(left/ROPE_RUN).toFixed(3));rope.dataset.hot=String(secs<=10);const b=rope.querySelector('b');if(secs<=10&&b.textContent!==String(secs)){b.textContent=String(secs);if(secs<=5)haptic('tick');}else if(secs>10)b.textContent='';
  },200):0;
  doc.addEventListener('pointerdown',ropeReset,true);doc.addEventListener('keydown',ropeReset,true);doc.addEventListener('visibilitychange',ropeReset);
- return {destroy(){closed=true;doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
