@@ -6948,7 +6948,7 @@ async function boot() {
     // A tab left open (phones keep them for days) checks for a release each time it comes back,
     // and switches to it in the same untouched moment, or the next time it comes back.
     const updating = !!navigator.serviceWorker.controller;let opened = Date.now(), touched = false, waiting = false, checked = 0, registration = null;
-    const quiet = () => !document.querySelector("dialog[open]") && !/^#\/?play/.test(location.hash);
+    const quiet = () => !document.querySelector("dialog[open]") && !/^#\/?(play|scan)/.test(location.hash) && !document.activeElement?.matches?.("input,textarea,select,[contenteditable]") && ![...document.querySelectorAll("input:not([type=hidden]):not([type=checkbox]):not([type=radio]),textarea")].some((f) => f.value && f.value !== f.defaultValue);
     for (const type of ["pointerdown", "keydown"]) addEventListener(type, () => { touched = true; }, { capture: true });
     navigator.serviceWorker.addEventListener("controllerchange", () => { if (updating && !touched && Date.now() - opened < 12000 && quiet()) location.reload(); else waiting = true; });
     document.addEventListener("visibilitychange", () => {
