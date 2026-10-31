@@ -506,6 +506,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Over a decision the story is told in the activity line and the stack's arrows; a spotlight
   // there would cover the very prompt it explains.
   if(playback?.overlay){updateActivity();return;}
+  // A land has no spotlight: it drops into its row (the staged board moves it) and the line says so.
+  if(beat.kind==='land'){queueArrows();updateActivity();return;}
   if(beat.kind==='phase'){
    const banner=doc.createElement('div');banner.className='forge-playback-status';banner.setAttribute('role','status');banner.textContent=beat.label;if(beat.tone)banner.dataset.tone=beat.tone;mat?.append(banner);
   }else if(beat.card){
@@ -671,7 +673,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  win.addEventListener('resize',queueBoard);
  const queueRails=()=>{if(!railFrame)railFrame=win.requestAnimationFrame(fitRails);};
  win.addEventListener('resize',queueRails);
- function renderAccepted(s,blocked=false){
+ // A held board normally redraws without motion; a CPU playback beat (staged) moves it as it goes.
+ function renderAccepted(s,blocked=false,staged=false){
   const previous=displayed,lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
   const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null;
   const before=presentation.hosted?positions():null,leaving=presentation.hosted?new Map([...root.querySelectorAll('.play-match-card[data-instance]')].map(el=>[el.dataset.instance,el.closest('.play-match-card-wrap')||el])):null;
@@ -680,7 +683,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // native panel comes or goes, unlike a :has() test that rechecks the whole table each redraw.
   root.toggleAttribute('data-forge-native',!!root.querySelector('.forge-native-panel'));
   doc.body.toggleAttribute('data-forge-search',!!root.querySelector('.forge-zone-search'));
-  if(before&&!blocked){glide(before);boardEffects(previous,s,before,leaving);}
+  if(before&&(!blocked||staged)){glide(before);boardEffects(previous,s,before,leaving);}
   if(presentation.hosted)tableAudio.update(previous,s);
   // Arena's low-life state: under 10 life the portrait cracks, under 6 it also bleeds a slow red glow.
   if(presentation.hosted)for(const p of s.status?.surface?.players||[]){const seat=seatEl(p.seat),band=typeof p.life!=='number'?'':p.life<=5?'critical':p.life<10?'low':'';if(seat&&(seat.dataset.lifeBand||'')!==band){if(band)seat.dataset.lifeBand=band;else delete seat.dataset.lifeBand;}}
