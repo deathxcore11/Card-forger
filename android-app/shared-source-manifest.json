@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "version": "4.3.38",
-  "commit": "bb92e3e0a7ea6db919143895c69b105f09d15758",
-  "tree": "17a6df2893a90a4a7fe63cb0e793f44404bea587",
+  "commit": "88cae962ae1170ac5350d82a78a29bc51976d171",
+  "tree": "8914700ee7f721db2be3df9be0d74b4815b8ff1a",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -3638,8 +3638,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 4263456,
-      "sha256": "cd28b4fdeda658b50e8c60fbad9d1589065cbed93580c09acfc64cc02207c2f3"
+      "bytes": 4311204,
+      "sha256": "c73ee4464ce827d48ce150a97f0fdb906a5cbdfdcce28eaf14300a9849132eec"
     },
     {
       "path": "planner.js",
@@ -3983,8 +3983,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 956,
-      "sha256": "712a8cac8efdd4796058306b13e8912d510f4ce29f2c609adca55e65d3ceccdb"
+      "bytes": 1080,
+      "sha256": "41faae1254d8bf75652893cef1906f9012990bcbfc52827e8143bc427d0fb184"
     },
     {
       "path": "release-status.js",

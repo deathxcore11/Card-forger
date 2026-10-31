@@ -1,6 +1,6 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "bb92e3e0a7ea6db919143895c69b105f09d15758",
+  "commit": "88cae962ae1170ac5350d82a78a29bc51976d171",
   "sourceVersion": "4.3.38",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
@@ -4515,8 +4515,8 @@
     },
     {
       "path": "native-display.js",
-      "bytes": 675,
-      "sha256": "23e566fd7581beaa596fb675c843d91728a016574f835d97e64adefb6d47a50c"
+      "bytes": 960,
+      "sha256": "896fedca11cd19feb6baa956d80203aa93157cea85bd265006bf982bdeab9d18"
     },
     {
       "path": "native-documents.js",
@@ -4525,8 +4525,8 @@
     },
     {
       "path": "native-entry.js",
-      "bytes": 4904,
-      "sha256": "762923117dc131cf7b56333e3f4b0f6b8a40e349277a566f8d9d65ef3e0405ae"
+      "bytes": 5446,
+      "sha256": "26ece5519f50da983bb4a5895b850fa5ad98aa9f4f67adb01f31cbfba8b69c20"
     },
     {
       "path": "native-integration.css",
@@ -4535,8 +4535,8 @@
     },
     {
       "path": "native-planeswalk.js",
-      "bytes": 1385,
-      "sha256": "93a259a0d21465715da26d73373e32e6df71fa009a2f9be3f1aaf974ae185216"
+      "bytes": 2079,
+      "sha256": "6ce0e9bc8082e27522dba471eb88b9e3d296369dd3fbb08f28aa5645e9d884df"
     },
     {
       "path": "native-service-policy.js",
@@ -4585,8 +4585,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 4263501,
-      "sha256": "0d3ea78a372fd32a9373ae4e963e5031a7f337b26fb6e860fa1effeff516e74e"
+      "bytes": 4311249,
+      "sha256": "9b5e549e8161253d4c861740d4cfc38784179615a6a67f9979fd6e716aea8f5a"
     },
     {
       "path": "planner.js",
@@ -4930,8 +4930,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 956,
-      "sha256": "712a8cac8efdd4796058306b13e8912d510f4ce29f2c609adca55e65d3ceccdb"
+      "bytes": 1080,
+      "sha256": "41faae1254d8bf75652893cef1906f9012990bcbfc52827e8143bc427d0fb184"
     },
     {
       "path": "release-status.js",
