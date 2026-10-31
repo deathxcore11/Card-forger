@@ -119,7 +119,7 @@ export function eventPlaybackBeats(before,after){
    const parts=[toYou&&`you take ${toYou}`,...toCpu.map(([id,n])=>`${cpuName(id)} takes ${n}`),creatures&&`${count(creatures,'creature')} damaged`].filter(Boolean);
    if(!parts.length)continue;
    const combat=all.some(x=>x.combat===true||x.kind==='Combat');
-   push(e,{kind:'phase',tone:'damage',life:true,patch:Object.fromEntries(all.filter(x=>x.target?.kind==='card'&&now.has(x.target.id)).map(x=>[x.target.id,{damage:now.get(x.target.id).damage||0}])),label:(combat?'COMBAT DAMAGE · ':'DAMAGE · ')+parts.join(' · ').toUpperCase(),line:`${combat?'Combat damage':'Damage'}: ${parts.join(', ')}.`,duration:600});
+   push(e,{kind:'phase',tone:'damage',combat,life:true,patch:Object.fromEntries(all.filter(x=>x.target?.kind==='card'&&now.has(x.target.id)).map(x=>[x.target.id,{damage:now.get(x.target.id).damage||0}])),label:(combat?'COMBAT DAMAGE · ':'DAMAGE · ')+parts.join(' · ').toUpperCase(),line:`${combat?'Combat damage':'Damage'}: ${parts.join(', ')}.`,duration:600});
    continue;
   }
   if(e.type==='zone'&&e.from==='Battlefield'&&e.to==='Graveyard'&&e.token!==true){

@@ -355,7 +355,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // The board fitter adds, relabels and removes a crowded lane's "+N" chip itself. Those changes must not
  // start another pass: the fitter measures the lane twice (natural width, then fitted) and the two can
  // disagree on the count, which re-ran the fitter forever and froze the table (seen at 740x360).
- const fitterOnly=list=>list.every(m=>m.target.classList?.contains('forge-lane-more')||[...m.addedNodes,...m.removedNodes].every(n=>n.classList?.contains('forge-lane-more')));
+ // Effects laid over the table (impact rings, life deltas, the rope, the emote button that mounts after
+ // each redraw) don't move the board either; each extra pass is a full layout, and a CPU turn redraws per beat.
+ const overlay=n=>n.classList?.contains('forge-lane-more')||n.classList?.contains('forge-fx-ring')||n.classList?.contains('forge-life-delta')||n.classList?.contains('forge-rope')||n.classList?.contains('forge-emote-button');
+ const fitterOnly=list=>list.every(m=>m.target.classList?.contains('forge-lane-more')||[...m.addedNodes,...m.removedNodes].every(overlay));
  const observer=new MutationObserver(list=>{if(!fitterOnly(list))enhance();});observer.observe(root,{childList:true,subtree:true});
  // Cards keep their engine identity between renders, so a card that moves (hand to
  // battlefield, a lane change) glides from where it was to where Forge put it, and a
@@ -466,7 +469,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   }
   // 3b. Declared: a new attacker surges forward toward what it attacks and settles; a new blocker
   // steps across to meet its attacker with a blue shield flash. Arrows then hold the pairing.
-  const lean=(el,to,amount,ms)=>{const w=el?.closest('.play-match-card-wrap'),r=rectOf(el),t=rectOf(to);if(!w||!r)return;const dx=t?(t.left+t.width/2-(r.left+r.width/2))*amount:0,dy=t?(t.top+t.height/2-(r.top+r.height/2))*amount:0;
+  // The surge is measured in card sizes, not screen pixels: a far target on a big screen otherwise threw a
+  // small fitted card most of a slot sideways, over its neighbour. It leans mostly forward, out of its row.
+  const lean=(el,to,amount,ms)=>{const w=el?.closest('.play-match-card-wrap'),r=rectOf(el),t=rectOf(to);if(!w||!r)return;let dx=t?(t.left+t.width/2-(r.left+r.width/2))*amount:0,dy=t?(t.top+t.height/2-(r.top+r.height/2))*amount:0;
+   dx*=.15;const len=Math.hypot(dx,dy),cap=r.height*.22;if(len>cap){dx*=cap/len;dy*=cap/len;}
    w.animate([{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(1.08)`,offset:.45},{transform:'none'}],{duration:ms,easing:'cubic-bezier(.3,.1,.3,1)'});};
   b.cards.filter(c=>onField(c)&&c.attacking&&was.get(c.id)?.zone==='Battlefield'&&!was.get(c.id)?.attacking).slice(0,8).forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(!el?.isConnected)return;
    const to=c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seatEl(defenderOf(b.players,c));
@@ -513,8 +519,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A land has no spotlight: it drops into its row (the staged board moves it) and the line says so.
   // A turn change is shown by the staged board's own turn banner; a second one would repeat it.
   if(beat.kind==='land'||beat.tone==='turn'){queueArrows();updateActivity();return;}
-  // An attack is told by the swing and its arrow, as on Arena; a banner there would cover the attackers.
-  if(beat.tone==='attack'){queueArrows();updateActivity();return;}
+  // An attack is told by the swing and its arrow, as on Arena, and its damage by the falling life total;
+  // a banner there would cover the attackers or the CPU's front row.
+  if(beat.tone==='attack'||beat.tone==='damage'&&beat.combat){queueArrows();updateActivity();return;}
   if(beat.kind==='phase'){
    const banner=doc.createElement('div');banner.className='forge-playback-status';banner.setAttribute('role','status');banner.textContent=beat.label;if(beat.tone)banner.dataset.tone=beat.tone;mat?.append(banner);
   }else if(beat.card){
@@ -634,10 +641,13 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // Tall touch screens lift the turn buttons above a full-width hand (play-forge-table.css), into your side's lower edge.
  const raisedDock=()=>!!win.matchMedia?.('(hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px)').matches;
  // A side that changes size after the fit (fonts landing, a chip appearing, 130% text) fits again.
- let boardSizes=null;
+ let boardSizes=null;const boardSeen=new Map(),boardKey=a=>a.dataset.seat||a.className,boardSize=a=>`${a.offsetWidth}x${a.offsetHeight}`;
  function fitBoard(){
   boardFrame=0;if(closed||!presentation.hosted)return;
-  if(typeof ResizeObserver==='function'){boardSizes??=new ResizeObserver(()=>queueBoard());for(const a of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area,.play-match-hand-area'))boardSizes.observe(a);}
+  // A redraw replaces the sides, and a newly observed box always reports its size once; only a size this
+  // fit has not seen yet fits again (each fit is a full layout pass, so a redraw must not cost three).
+  if(typeof ResizeObserver==='function'){boardSizes??=new ResizeObserver(list=>{if(list.some(e=>e.target.isConnected&&boardSeen.get(boardKey(e.target))!==boardSize(e.target)))queueBoard();});boardSizes.disconnect();
+   for(const a of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area,.play-match-hand-area')){boardSeen.set(boardKey(a),boardSize(a));boardSizes.observe(a);}}
   // Your side stops above your hand where it rests, not where a lift or a popped card has carried it, so
   // hovering the hand never shrinks the board. Both sides then share one scale, so cards read the same size.
   const g=handGeometry(),rest=g?g.wraps.map(w=>{const l=g.local(w);return {top:g.box.top+l.y,left:g.box.left+l.x,right:g.box.left+l.x+l.w,width:l.w};}):[];
@@ -713,7 +723,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const previous=displayed,lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
   const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null;
   const before=presentation.hosted?positions():null,leaving=presentation.hosted?new Map([...root.querySelectorAll('.play-match-card[data-instance]')].map(el=>[el.dataset.instance,el.closest('.play-match-card-wrap')||el])):null;
-  localError='';table.render(session.snapshot());enhance();if(root.dataset.stage==='match')emotes?.mount();
+  localError='';table.render(session.snapshot());enhance();observer.takeRecords();if(root.dataset.stage==='match')emotes?.mount();
   // The stylesheet scopes the Forge table by this attribute. It changes only when the
   // native panel comes or goes, unlike a :has() test that rechecks the whole table each redraw.
   root.toggleAttribute('data-forge-native',!!root.querySelector('.forge-native-panel'));

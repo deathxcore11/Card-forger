@@ -2449,3 +2449,13 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
 @media (max-height:500px) and (orientation:landscape){:where(body.practice-table-open) .forge-activity{top:calc(max(10px,env(safe-area-inset-top,0px)) + 58px);transform:none}}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-turn-banner::after{transform:none;background-size:300% 100%;background-position:100% 0;animation:forge-banner-glint-pos .8s .25s ease-out both}
 @keyframes forge-banner-glint-pos{from{background-position:100% 0}to{background-position:0 0}}
+/* A swinging attacker leans out of its row for a beat. Its swing is ink, not layout: the board fit
+   (forge-table.mjs fitBoard) measures scroll sizes, which count transforms, so without this the whole
+   board shrank and grew again while the swing's transition ran, and the seat clipped the attacker's foot.
+   The room a tapped card keeps (margin-block above) waits until the swing ends, so the board doesn't
+   resize and glide every card mid-attack. The swing draws over its neighbours and past its seat instead. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-battlefields .play-match-card-wrap:has(>.play-match-card[data-combat=attacking]){contain:layout;z-index:3;margin-block:0}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-battlefields .play-match-seat-area:has(.play-match-card[data-combat=attacking]){overflow:visible;position:relative;z-index:4}
+/* A striker flies out of its seat toward its target: its own seat rides above the other one for the flight,
+   so the far side's lanes never cut through it. */
+:where(body.practice-table-open) .play-match-table[data-forge-native][data-cs-striking] .play-match-seat-area:has([data-cs-striker]){z-index:5}
