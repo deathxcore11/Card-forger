@@ -574,3 +574,27 @@ body .topbar .home-search-pill>input { padding-left:18px; }
 .meta-row:not(:has(>.meta-art :is(img,.pk-crop:not(.img-missing)))) { padding-left:14px; }
 .meta-row:not(:has(>.meta-art :is(img,.pk-crop:not(.img-missing)))) > .meta-art { display:none; }
 @media (max-width:419px) { .arch-grid .arch { min-height:176px; } }
+
+/* One search for the whole app (Randall 31 Oct): grouped answers from CardStashy itself (your decks, sets,
+   tournament decks, wiki, news, pages) above the card matches, in the same slim glass rows. */
+.home-app-results { display:grid; gap:2px; }
+.home-app-group { display:grid; }
+.home-app-group+.home-app-group, .home-app-results+.home-app-group, .home-app-results+.home-result-status { margin-top:6px; }
+.home-app-label { margin:4px 10px 2px; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:color-mix(in srgb,var(--gold) 80%,#fff 0%); opacity:.85; }
+.home-app-row { display:grid; grid-template-columns:34px minmax(0,1fr) auto; align-items:center; gap:12px; width:100%; min-height:48px; padding:6px 10px;
+  border:0; border-radius:12px; background:transparent; color:var(--text); text-align:left; cursor:pointer; transition:background-color .15s; }
+.home-app-row+.home-app-row { box-shadow:inset 0 1px 0 #ffffff0d; }
+.home-app-row:hover, .home-app-row[aria-selected="true"] { background:#ffffff0f; }
+.home-app-row:focus-visible { outline:2px solid var(--gold); outline-offset:-2px; }
+.home-app-art { display:grid; place-items:center; width:34px; height:34px; border-radius:9px; overflow:hidden; background:#ffffff0a; color:var(--gold); font-size:16px; line-height:1; }
+.home-app-art img { width:100%; height:100%; object-fit:cover; }
+.home-app-art img.is-icon { width:22px; height:22px; object-fit:contain; filter:invert(1) brightness(.92) sepia(.35) saturate(1.6) hue-rotate(5deg); }
+:root[data-theme="light"] .home-app-art img.is-icon { filter:none; }
+.home-app-text { display:grid; gap:1px; min-width:0; }
+.home-app-text b { font-size:14px; font-weight:650; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.home-app-text small { font-size:11.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.home-app-out { color:var(--muted); font-size:13px; }
+.home-suggestions.has-app .home-app-group>.display-list { margin:0; }
+/* Card matches sit in the same rhythm as the app's own rows: art, name and set, price on the right. */
+.home-suggestions .display-list>.lot.home-result { grid-template-columns:34px minmax(0,1fr) auto; gap:12px; }
+.home-suggestions .lot.home-result .lot-side { grid-column:auto; justify-self:end; align-self:center; }

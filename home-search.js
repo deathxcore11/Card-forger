@@ -3,6 +3,7 @@ import {esc,usd,cardImage} from './ui.js';
 import {presentationQuote} from './pricing-presentation.js';
 import {nameDistance} from './scan-signals.js';
 import {SEARCH_PROMPT} from './search-hints.js';
+import {appSectionsMarkup} from './universal-search.js';
 
 export const homeQueries={};
 const key=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -11,9 +12,11 @@ export function homeIntent(q){
  if(/^(?:how|why|when|can|could|should|which|what|where|does|do|is|are)\b/i.test(q)||/\b(?:build|explain|compare|recommend|help|finish my|my collection|my deck|ruling)\b/i.test(q))return 'ask';
  return 'cards';
 }
-export function rankHomeCards(cards,q,limit=7){
- const query=key(q),seen=new Set();
- return cards.filter(c=>c?.id&&c.name&&!c.pocket&&!seen.has(String(c.id))&&seen.add(String(c.id))).map(c=>{
+export function rankHomeCards(cards,q,limit=7,{byName=false}={}){
+ // Magic shows each card once (its first printing); Pokémon and Yu-Gi-Oh! cards that share a name are different cards.
+ const query=key(q),seen=new Set(),id=c=>byName?key(c.name):String(c.id),priced=c=>Number(c?.prices?.usd||c?.prices?.usd_foil)>0?0:1;
+ if(byName)cards=[...cards].sort((a,b)=>priced(a)-priced(b));
+ return cards.filter(c=>c?.id&&c.name&&!c.pocket&&!seen.has(id(c))&&seen.add(id(c))).map(c=>{
   const n=key(c.name),distance=n===query?0:n.startsWith(query)?1:n.includes(query)?2:query.length>=5?3+nameDistance(n,query,3):99;
   return {c,distance};
  }).filter(x=>x.distance<=6).sort((a,b)=>a.distance-b.distance||a.c.name.localeCompare(b.c.name)).slice(0,limit).map(x=>x.c);
@@ -28,8 +31,8 @@ export function homeResultRow(game,c,i){
 }
 export function homeSearchMarkup(game){return `<div class="home-search-wrap"><div class="home-search-pill"><span class="home-sr-only" id="home-search-label">Cards & answers</span><input id="homeQ" type="search" data-home-search="${game}" value="${esc(homeQueries[game]||'')}" placeholder="${SEARCH_PROMPT}" maxlength="300" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="homeSearchResults" aria-label="Find cards or ask CardStashy" aria-describedby="home-search-label" autocomplete="off" enterkeyhint="search"></div></div>`;}
 
-export function attachHomeSearch({game,lookup,open,submit}){
- let field=null,box=null,rows=[],active=-1,ticket=0,timer;
+export function attachHomeSearch({game,lookup,open,submit,local=()=>({sections:[]}),run=()=>{}}){
+ let field=null,box=null,rows=[],items=[],sections=[],build=null,active=-1,ticket=0,timer;
  const close=()=>{clearTimeout(timer);ticket++;box?.remove();box=null;active=-1;field?.setAttribute('aria-expanded','false');field?.removeAttribute('aria-activedescendant');};
  function position(){
   if(!box)return;if(!field?.isConnected||!field.getClientRects().length||game()!==field.dataset.homeSearch)return close();
@@ -40,32 +43,39 @@ export function attachHomeSearch({game,lookup,open,submit}){
  }
  function show(cards,status){
   if(!field?.isConnected||document.activeElement!==field||game()!==field.dataset.homeSearch)return;
-  rows=cards;active=-1;
+  rows=cards;active=-1;items=sections.flatMap(s=>s.items);
   if(!box){box=document.createElement('div');box.id='homeSearchPopup';box.className='home-suggestions view-compact';box.setAttribute('role','region');box.setAttribute('aria-label','Matching cards');document.body.append(box);
    box.addEventListener('pointerdown',e=>{if(e.target.closest('button'))e.preventDefault();});
-   box.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-home-pick'))pick(Number(b.dataset.homePick));else{const q=field.value;close();submit(q,b.dataset.homeAction);}});
+   box.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-home-pick'))pick(Number(b.dataset.homePick));else if(b.hasAttribute('data-home-item'))choose(Number(b.dataset.homeItem));else{const q=field.value;close();submit(q,b.dataset.homeAction);}});
   }
   // Smart actions: a question goes straight to CardStashy AI; a card name leads with the app's own matches, and
   // AI is offered as the second choice only. No counts or filler lines, only a status when something needs saying.
   const asking=homeIntent(field.value.trim())==='ask',all=!asking&&cards.length>1;
   const askBtn=`<button type="button" class="home-assistant-action${asking||!cards.length?' is-lead':''}" data-home-action="ask">${aiOrb()}<span>${asking?esc(field.value.trim()):'Ask about this'}<small>CardStashy AI</small></span></button>`;
   box.classList.toggle('is-asking',asking);
-  box.innerHTML=`${status?`<p class="home-result-status" role="status">${esc(status)}</p>`:''}${cards.length?`<div class="display-list" id="homeSearchResults" role="listbox" aria-label="Matching cards">${cards.map((c,i)=>homeResultRow(game(),c,i)).join('')}</div>`:''}<div class="home-result-actions">${all?`<button type="button" class="home-catalogue-action" data-home-action="cards">${searchEmblem()}<span>View all matches</span></button>`:''}${askBtn}</div>`;
+  const buildBtn=build?`<button type="button" class="home-assistant-action is-lead" data-home-action="build">${aiOrb()}<span>Build ${esc(build)}<small>CardStashy AI</small></span></button>`:'';
+  box.classList.toggle('has-app',!!items.length);
+  box.innerHTML=`${items.length?`<div class="home-app-results" role="listbox" aria-label="In CardStashy">${appSectionsMarkup(sections)}</div>`:''}${status?`<p class="home-result-status" role="status">${esc(status)}</p>`:''}${cards.length?`<div class="home-app-group"${items.length?'':' data-only'}>${items.length?'<p class="home-app-label">Cards</p>':''}<div class="display-list" id="homeSearchResults" role="listbox" aria-label="Matching cards">${cards.map((c,i)=>homeResultRow(game(),c,i)).join('')}</div></div>`:''}<div class="home-result-actions">${all?`<button type="button" class="home-catalogue-action" data-home-action="cards">${searchEmblem()}<span>View all matches</span></button>`:''}${buildBtn||(items.some(x=>x.score===0)&&!asking&&!cards.length?'':askBtn)}</div>`;
   field.setAttribute('aria-expanded','true');position();
  }
  function pick(i){const c=rows[i],g=field?.dataset.homeSearch;if(!c||game()!==g)return;close();open(g,c);}
+ function choose(i){const item=items[i],g=field?.dataset.homeSearch;if(!item||game()!==g)return;close();run(item,g);}
  async function update(){
   const f=field,g=f?.dataset.homeSearch,q=f?.value.trim(),id=++ticket;
   if(!q||q.length<2)return close();
-  if(homeIntent(q)==='ask')return show([],'');
+  // The app's own answers are local and instant; cards follow from the card source.
+  let found={sections:[]};try{found=local(g,q)||found;}catch{}
+  sections=found.sections||[];build=found.build||null;
+  if(homeIntent(q)==='ask'&&!build&&!sections.length)return show([],'');
   show([],'');
+  if(homeIntent(q)==='ask'||found.skipCards)return;
   try{const result=await lookup(g,q);if(id!==ticket||field!==f||f.value.trim()!==q||game()!==g)return;
-   show(result.cards,result.corrected&&result.cards.length?'Did you mean':result.cards.length?'':result.error?'Card search is offline right now.':'No card by that name.');
-  }catch{if(id===ticket)show([],'Card source unavailable. Try again.');}
+   show(result.cards,result.corrected&&result.cards.length?'Did you mean':result.cards.length||sections.length?'':result.error?'Card search is offline right now.':'No card by that name.');
+  }catch{if(id===ticket)show([],sections.length?'':'Card source unavailable. Try again.');}
  }
  document.addEventListener('focusin',e=>{const f=e.target.closest?.('[data-home-search]');if(!f)return;close();field=f;update();});
  document.addEventListener('input',e=>{if(!e.target.matches?.('[data-home-search]'))return;field=e.target;homeQueries[field.dataset.homeSearch]=field.value;close();timer=setTimeout(update,220);});
- document.addEventListener('keydown',e=>{if(e.target!==field)return;if(e.key==='Escape'){e.preventDefault();close();}else if(['ArrowDown','ArrowUp'].includes(e.key)&&rows.length&&box){e.preventDefault();active=(active+(e.key==='ArrowDown'?1:-1)+rows.length)%rows.length;box.querySelectorAll('[data-home-pick]').forEach((n,i)=>{n.setAttribute('aria-selected',String(i===active));if(i===active)n.scrollIntoView({block:'nearest'});});field.setAttribute('aria-activedescendant','home-result-'+active);}else if(e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation();if(box&&active>=0)pick(active);else{const q=field.value;close();submit(q,homeIntent(q));}}},true);
+ document.addEventListener('keydown',e=>{if(e.target!==field)return;if(e.key==='Escape'){e.preventDefault();close();}else if(['ArrowDown','ArrowUp'].includes(e.key)&&box&&box.querySelector('[role=option]')){e.preventDefault();const opts=[...box.querySelectorAll('[role=option]')];active=(active+(e.key==='ArrowDown'?1:-1)+opts.length)%opts.length;opts.forEach((n,i)=>{n.setAttribute('aria-selected',String(i===active));if(i===active)n.scrollIntoView({block:'nearest'});});field.setAttribute('aria-activedescendant',opts[active].id);}else if(e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation();const sel=box&&active>=0?[...box.querySelectorAll('[role=option]')][active]:null;if(sel)sel.click();else{const q=field.value;close();submit(q,homeIntent(q));}}},true);
  document.addEventListener('pointerdown',e=>{if(box&&!box.contains(e.target)&&!e.target.closest('[data-home-search]'))close();},{passive:true});
  document.addEventListener('focusout',()=>setTimeout(()=>{if(box&&!box.contains(document.activeElement)&&document.activeElement!==field)close();},150));
  if(typeof MutationObserver!=='undefined')new MutationObserver(()=>{if(box&&(!field?.isConnected||game()!==field.dataset.homeSearch))close();}).observe(document.querySelector('#content'),{childList:true});

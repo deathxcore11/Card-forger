@@ -109,6 +109,9 @@ import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
 import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS, DEFAULT_MTG_META_FORMAT, allCachedMeta } from "./meta.js";
+import {searchApp,parseQuery} from './universal-search.js';
+import {searchGameConcepts} from './game-wiki-knowledge.js';
+import {communityState,communitySlideUrl} from './community-feed.js';
 import { mtgPower, mtgMetaKey, asShown, shownPower } from "./power.js";
 import { playedAlongside } from "./guide.js";
 import { mtgPairQueries, rankPairs, edhPop } from "./pairing.js";
@@ -3675,12 +3678,12 @@ async function homeLookup(g,q){
  const cached=g==='mtg'?Object.values(S.catalog):Object.values(T.cache[g]||{}),pack=catalogState(g).pack;
  const local=[...cached];
  if(pack){const query=q.toLowerCase();for(const [name,indexes]of pack.names)if(name.includes(query)||name.startsWith(query.slice(0,3)))for(const i of indexes.slice(0,3))local.push(catalogCandidate(pack,i).card);}
- let cards=rankHomeCards(local,q),error=false,corrected=false;
+ let cards=rankHomeCards(local,q,7,{byName:g==='mtg'}),error=false,corrected=false;
  if(cards.length<5){try{
    if(g==='mtg'){
     let data;try{data=await api('/cards/search?'+new URLSearchParams({q:q+' game:paper',unique:'prints',order:'released'}));}catch(e){if(e.status!==404&&!/404|no cards|not found|zero results|didn.t match/i.test(e.message||''))throw e;data={data:[]};}
     if(!data.data?.length){try{const c=await api('/cards/named?'+new URLSearchParams({fuzzy:q}));data={data:[c]};corrected=true;}catch(e){if(e.status!==404&&!/404|no cards|not found|zero results|ambiguous|didn.t match/i.test(e.message||''))throw e;}}
-    cards=rankHomeCards([...cards,...(data.data||[])],q);
+    cards=rankHomeCards([...cards,...(data.data||[])],q,7,{byName:true});
    }else{
     let result=await T.SOURCES[g].search({q,size:7,page:0});
     if(!result.cards.length&&q.length>=5){result=await T.SOURCES[g].search({q:q.slice(0,3),size:40,page:0});corrected=true;}
@@ -3691,6 +3694,7 @@ async function homeLookup(g,q){
 }
 async function submitHome(q,mode){
  q=String(q||'').trim();if(!q)return;const g=T.game();homeQueries[g]=q;
+ if(mode==='build'){const core=parseQuery(q).core;return A.askOpen({query:isDeckBuildRequest(q)?q:`Build me a ${core} deck`});}
  if((mode||homeIntent(q))==='ask'){
   if(!isDeckBuildRequest(q)&&/\b(?:rules?|ruling|resolve|stack|trigger|can i (?:cast|summon|attack|activate)|when can)\b/i.test(q)){
    A.askRules({dataset:{game:g}});const input=document.querySelector('.rules-ask-dialog .ask-input');if(input){input.value=q;input.focus();}return;
@@ -3820,7 +3824,47 @@ A.cardDeckAdd=async()=>{
  await A[ctx.game==='mtg'?'addToDeck':'tAddToDeck']({dataset:{id:ctx.id,name:ctx.name}});
  if(S.ui.sheetCtx===ctx)A.sheetHistoryBack();
 };
-const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,open:async(g,c)=>{
+// Everything in the app the search bar can reach, gathered from what is already on the device.
+let searchSetWarm={};
+function homeAppSources(g){
+ const mtg=g==='mtg',decks=(mtg?S.state:T.gs(g)).decks||[],sets=mtg?S.ui.sets.list:(T.ui(g).sets?.list||[]);
+ if(!sets.length&&!searchSetWarm[g]){searchSetWarm[g]=1;setTimeout(()=>{try{mtg?loadSetIndex():tcgCtx.loadSets?.(g);}catch{}},0);}
+ const year=d=>String(d||'').slice(0,4);
+ const meta=[];
+ for(const [k,v] of Object.entries(allCachedMeta())){
+  const data=v?.data;if(!data||!(mtg?k.startsWith('mtg:'):k===g||k.startsWith(g+':')))continue;
+  const fmt=mtg?k.slice(4):(k.includes(':')?k.split(':')[1]:'');
+  for(const a of (data.archetypes||[]).slice(0,40)){const key=a.best||a.representative?.key;if(!key)continue;
+   meta.push({title:a.name,sub:[fmt,Number.isFinite(a.share)?(a.share*100).toFixed(a.share<.1?1:0)+'% of the field':''].filter(Boolean).join(' · '),kind:'meta',act:mtg?'mtgProven':'tMetaDeck',data:mtg?{key,format:fmt}:{key,metaKey:k}});}
+ }
+ const N=communityState(g).data;
+ return {
+  decks:decks.map(d=>({title:d.name||'Untitled deck',sub:[d.commander,d.format].filter(Boolean).join(' · '),route:(mtg?'#deck/':'#tdeck/')+encodeURIComponent(d.id)})),
+  sets:sets.filter(x=>!x.digital).map(x=>({title:x.name,code:x.code||x.id||'',sub:[String(x.code||'').toUpperCase(),year(x.released_at||x.releaseDate||x.date)].filter(Boolean).join(' · '),icon:mtg?x.icon:'',route:'#set/'+encodeURIComponent(mtg?String(x.code).toLowerCase():x.id)})),
+  meta,
+  wiki:[],
+  news:(N?.items||[]).filter(x=>x.title).map(x=>({title:x.title,sub:typeof x.source==='string'?x.source:(x.source?.name||x.sourceName||''),url:communitySlideUrl(g,x)})).filter(x=>x.url),
+ };
+}
+function homeLocal(g,q){
+ const src=homeAppSources(g),P=parseQuery(q);
+ src.wiki=searchGameConcepts(g,P.core,{limit:3}).map(c=>({title:c.label,sub:c.summary?String(c.summary).slice(0,90):'',route:'#wiki/'+encodeURIComponent(c.label)}));
+ const found=searchApp(q,src);
+ // A deck nobody has made yet: offer to build it, the one place AI earns its spot.
+ const hasDeck=found.sections.some(s=>(s.id==='deck'||s.id==='meta')&&s.items.some(i=>i.score<=2));
+ const theme=P.core.replace(/\b\w/g,c=>c.toUpperCase());
+ found.build=P.hint==='deck'&&!hasDeck&&P.core.length>=3?`${/^[aeiou]/i.test(theme)?'an':'a'} ${theme} deck`:null;
+ found.skipCards=!!found.build;
+ return found;
+}
+function runHomeItem(item,g){
+ if(T.game()!==g)return;
+ if(item.url){window.open(item.url,'_blank','noopener');return;}
+ if(item.act){const fn=A[item.act];if(fn)return fn({dataset:{...item.data}});return;}
+ if(item.route==='planeswalk.html'){location.href='planeswalk.html';return;}
+ if(item.route)return go(item.route);
+}
+const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,local:homeLocal,run:runHomeItem,open:async(g,c)=>{
  if(T.game()!==g)return;
  if(g==='mtg'){
   if(c.oracle_text!==undefined||c.card_faces?.some(f=>f.oracle_text!==undefined))return A.card({dataset:{name:c.name},printing:c});
