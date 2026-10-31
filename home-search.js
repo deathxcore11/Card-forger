@@ -24,9 +24,9 @@ export function homeResultRow(game,c,i){
  const quote=presentationQuote(game,c,game==='mtg'?'nonfoil':'reference'),value=quote.value;
  const set=game==='mtg'?[c.set_name||c.set,c.collector_number&&'#'+c.collector_number,c.rarity]:[c.set?.name||c.set?.id,c.set?.number&&'#'+c.set.number,c.rarity];
  const image=game==='mtg'?cardImage(c):c.image||c.imageLarge||'';
- return `<button type="button" role="option" aria-selected="false" id="home-result-${i}" data-home-pick="${i}" class="lot home-result"><span class="lot-art">${image?`<img src="${esc(image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:'◇'}</span><span class="lot-info"><b class="lot-name">${esc(c.name)}</b><span class="lot-sub">${esc(set.filter(Boolean).join(' · ')||'Open for printing details')}</span></span><span class="lot-side"><b class="price">${value==null?'Price unavailable':usd(value)}</b><small>${value==null?'':esc(quote.label||'Reference quote')+' · USD'}</small></span></button>`;
+ return `<button type="button" role="option" aria-selected="false" id="home-result-${i}" data-home-pick="${i}" class="lot home-result"><span class="lot-art">${image?`<img src="${esc(image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:'◇'}</span><span class="lot-info"><b class="lot-name">${esc(c.name)}</b><span class="lot-sub">${esc(set.filter(Boolean).join(' · ')||'Open for printing details')}</span></span>${value==null?'':`<span class="lot-side"><b class="price">${usd(value)}</b></span>`}</button>`;
 }
-export function homeSearchMarkup(game){return `<div class="home-search-wrap"><div class="home-search-pill"><span class="home-ai-label" id="home-search-label">Cards & answers</span><input id="homeQ" type="search" data-home-search="${game}" value="${esc(homeQueries[game]||'')}" placeholder="${SEARCH_PROMPT}" maxlength="300" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="homeSearchResults" aria-label="Find cards or ask CardStashy" aria-describedby="home-search-label" autocomplete="off"><button class="home-search-submit" data-act="homeSearch" aria-label="Search cards">${searchEmblem()}</button></div><button class="home-ai-submit" data-act="homeAsk" aria-label="Ask CardStashy">${aiOrb()}</button></div>`;}
+export function homeSearchMarkup(game){return `<div class="home-search-wrap"><div class="home-search-pill"><span class="home-sr-only" id="home-search-label">Cards & answers</span><input id="homeQ" type="search" data-home-search="${game}" value="${esc(homeQueries[game]||'')}" placeholder="${SEARCH_PROMPT}" maxlength="300" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="homeSearchResults" aria-label="Find cards or ask CardStashy" aria-describedby="home-search-label" autocomplete="off" enterkeyhint="search"></div></div>`;}
 
 export function attachHomeSearch({game,lookup,open,submit}){
  let field=null,box=null,rows=[],active=-1,ticket=0,timer;
@@ -45,16 +45,22 @@ export function attachHomeSearch({game,lookup,open,submit}){
    box.addEventListener('pointerdown',e=>{if(e.target.closest('button'))e.preventDefault();});
    box.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-home-pick'))pick(Number(b.dataset.homePick));else{const q=field.value;close();submit(q,b.dataset.homeAction);}});
   }
-  box.innerHTML=`<p class="home-result-status" role="status">${esc(status)}</p><div class="display-list" id="homeSearchResults" role="listbox" aria-label="Matching cards">${cards.map((c,i)=>homeResultRow(game(),c,i)).join('')}</div><div class="home-result-actions"><button type="button" class="home-catalogue-action" data-home-action="cards">${searchEmblem()}<span>View all matches</span></button><button type="button" class="home-assistant-action" data-home-action="ask">${aiOrb()}<span>Ask about this<small>CardStashy AI</small></span></button></div>`;
+  // Smart actions: a question goes straight to CardStashy AI; a card name leads with the app's own matches, and
+  // AI is offered as the second choice only. No counts or filler lines, only a status when something needs saying.
+  const asking=homeIntent(field.value.trim())==='ask',all=!asking&&cards.length>1;
+  const askBtn=`<button type="button" class="home-assistant-action${asking||!cards.length?' is-lead':''}" data-home-action="ask">${aiOrb()}<span>${asking?esc(field.value.trim()):'Ask about this'}<small>CardStashy AI</small></span></button>`;
+  box.classList.toggle('is-asking',asking);
+  box.innerHTML=`${status?`<p class="home-result-status" role="status">${esc(status)}</p>`:''}${cards.length?`<div class="display-list" id="homeSearchResults" role="listbox" aria-label="Matching cards">${cards.map((c,i)=>homeResultRow(game(),c,i)).join('')}</div>`:''}<div class="home-result-actions">${all?`<button type="button" class="home-catalogue-action" data-home-action="cards">${searchEmblem()}<span>View all matches</span></button>`:''}${askBtn}</div>`;
   field.setAttribute('aria-expanded','true');position();
  }
  function pick(i){const c=rows[i],g=field?.dataset.homeSearch;if(!c||game()!==g)return;close();open(g,c);}
  async function update(){
   const f=field,g=f?.dataset.homeSearch,q=f?.value.trim(),id=++ticket;
   if(!q||q.length<2)return close();
-  show([],'Looking for matching cards…');
+  if(homeIntent(q)==='ask')return show([],'');
+  show([],'');
   try{const result=await lookup(g,q);if(id!==ticket||field!==f||f.value.trim()!==q||game()!==g)return;
-   show(result.cards,result.corrected?'Similar names · choose the card you meant':result.cards.length?`${result.cards.length} matching cards`:result.error?'Card source unavailable. Try again or ask about this.':'No matching cards yet. Try a shorter name or ask about this.');
+   show(result.cards,result.corrected&&result.cards.length?'Did you mean':result.cards.length?'':result.error?'Card search is offline right now.':'No card by that name.');
   }catch{if(id===ticket)show([],'Card source unavailable. Try again.');}
  }
  document.addEventListener('focusin',e=>{const f=e.target.closest?.('[data-home-search]');if(!f)return;close();field=f;update();});

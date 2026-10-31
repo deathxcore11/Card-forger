@@ -458,3 +458,40 @@ body[data-view="settings"] .profile-menu>.sr-only{display:none}
 @media(max-width:700px){.pl-lobby .pl-startbar{position:sticky}.pl-lobby .pl-startbar::before{content:"";position:absolute;left:-20px;right:-20px;bottom:calc(100% - 1px);height:28px;background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--bg) 92%,transparent));pointer-events:none}}
 /* Room for the last letter's tracking, so the label never runs past its own box. */
 .cs-plate-label{padding-right:2px}
+
+/* ===== Search bar speaks for itself (Randall 31 Oct): no icon buttons beside or inside it. Typing wakes a gold
+   bezel that sweeps the rim; the dropdown is one glass sheet with the app's own matches first and AI only when it helps. ===== */
+.home-search-wrap { gap:0; }
+.home-search-wrap>.home-search-pill,
+body .topbar .home-search-pill,
+.home-search-pill { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr); padding-right:0; }
+.home-search-pill>input { grid-row:1; align-self:center; padding:0 22px; min-height:48px; }
+body .topbar .home-search-pill>input { padding-left:18px; }
+.home-search-pill { transition:box-shadow .35s ease, border-color .35s ease, background-color .35s ease; }
+.home-search-pill:focus-within { outline:0; border-color:color-mix(in srgb,var(--gold) 70%,transparent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 14%,transparent),0 0 28px -8px color-mix(in srgb,var(--gold) 70%,transparent),inset 0 1px 0 #ffffff14; }
+.home-search-pill:focus-within::before { padding:1.5px; animation-duration:2.6s;
+  background:linear-gradient(110deg,transparent 12%,#c99a4b 34%,#fff4d0 50%,#c99a4b 66%,transparent 88%); background-size:250% 100%; }
+.home-search-pill:has(input:not(:placeholder-shown))::before { animation-duration:1.6s; }
+@media (prefers-reduced-motion: reduce) { .home-search-pill:focus-within::before { animation:none; background-position:50% 0; } }
+.home-suggestions { border-radius:20px; border:1px solid color-mix(in srgb,var(--gold) 26%,#ffffff14);
+  background:linear-gradient(160deg,#1d1f29f2,#12141bf5); backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2);
+  box-shadow:0 24px 50px -18px #000e,inset 0 1px 0 #ffffff12; padding:8px; }
+.home-suggestions .home-result-status { margin:4px 8px 8px; font-size:11px; letter-spacing:.04em; color:var(--gold); }
+.home-result-actions { padding:6px 0 0; gap:8px; }
+.home-suggestions.is-asking .home-result-actions, .home-result-actions:only-child { padding-top:0; }
+.home-result-actions>button { border-radius:14px; border-color:#ffffff14; background:#ffffff08; transition:background-color .2s, border-color .2s; }
+.home-result-actions>button:hover { background:#ffffff12; border-color:color-mix(in srgb,var(--gold) 45%,transparent); }
+.home-result-actions .home-assistant-action.is-lead { flex:1 1 100%; justify-content:flex-start; padding-inline:14px;
+  border-color:color-mix(in srgb,var(--gold) 55%,transparent); background:linear-gradient(115deg,#2c2638,#1b2232); }
+.home-assistant-action>span { min-width:0; overflow-wrap:anywhere; }
+/* Result rows: one quiet line per printing, art + name + set, price only when known. No boxes, hairline separators. */
+.home-suggestions .display-list { gap:0; }
+.home-suggestions .display-list>.lot.home-result { min-height:56px; padding:6px 10px; gap:12px; border:0; border-radius:12px; background:transparent; box-shadow:none; }
+.home-suggestions .display-list>.lot.home-result+.lot.home-result { box-shadow:inset 0 1px 0 #ffffff0d; }
+.home-suggestions .display-list>.lot.home-result:is(:hover,[aria-selected="true"]) { background:#ffffff0c; }
+.home-suggestions .lot.home-result .lot-art { width:34px; height:47px; border-radius:4px; overflow:hidden; }
+.home-suggestions .lot.home-result .lot-name { font-size:14px; }
+.home-suggestions .lot.home-result .lot-sub { font-size:11px; color:var(--muted); }
+.home-suggestions .lot.home-result .lot-side { align-self:center; }
+.home-suggestions .lot.home-result .price { font-size:13px; color:var(--gold); }
