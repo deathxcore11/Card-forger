@@ -5029,13 +5029,14 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 /* Aura room. Lots and grid cards use content-visibility:auto (paint containment), which cuts any glow at their own
    box: that is the hard, boxy edge under a card's light. Each tile gets a transparent margin of light (padding,
    cancelled by an equal negative margin so the layout is unchanged) and a tighter, feathered blur that fades out
-   well inside that margin, so the light always ends soft. */
-#content.view-gallery .display-list > .lot[data-tier]:not(.wanted),
+   well inside that margin, so the light always ends soft. Deck cards (.deck-row) already wear their tier ring
+   and keep their own box, so they get no room. */
+#content.view-gallery .display-list > .lot[data-tier]:not(.wanted, .deck-row),
 .view-gallery .card-grid > .grid-card[data-tier] { --aura-blur: 18px; --aura-room: 28px; padding: var(--aura-room); margin: calc(-1 * var(--aura-room)); }
 /* The room is light only, never hit area: taps in it fall through to the neighbouring card. */
-#content.view-gallery .display-list > .lot[data-tier]:not(.wanted),
+#content.view-gallery .display-list > .lot[data-tier]:not(.wanted, .deck-row),
 .view-gallery .card-grid > .grid-card[data-tier] { pointer-events: none; }
-#content.view-gallery .display-list > .lot[data-tier]:not(.wanted) > *,
+#content.view-gallery .display-list > .lot[data-tier]:not(.wanted, .deck-row) > *,
 .view-gallery .card-grid > .grid-card[data-tier] > * { pointer-events: auto; }
 
 /* ===== One frame for every card. Set and search grids and deck grids wear the collection's price band on
