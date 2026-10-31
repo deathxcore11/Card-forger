@@ -2809,6 +2809,8 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
 /* the hp pill on the bar clears the name plate; in a crowd the hero's incoming chip clears the foe row above */
 #app .battle .unit.pw-fig>.name{margin-bottom:5px!important}
 #app#app#app .battle .field.pw-rows>.side.you{margin-top:28px!important}
+/* a blocker's kill-preview chip keeps the name's row under the seal, clear of the stats pill */
+#app .battle .field.pw-small .side.you .unit.ally:has(>.pv)>.name{display:block!important;visibility:hidden}
 
 </style>
 
@@ -5292,13 +5294,14 @@ function snap(g){const c=g.c;const foes=new Map();for(const e of c.enemies)foes.
 function unmountAll(){for(const R of rigs.values()){R.cv.remove();ro.unobserve(R.cv)}rigs.clear();holds.clear()}
 function sync(){const g=G();if(!g||!g.c||g.view!=='battle'||!app.querySelector('.battle .field')){if(rigs.size)unmountAll();prev=null;fightC=null;if(g&&D&&D.length&&g.view!=='battle')preload([entryForHero(g)&&entryForHero(g).key,...actKeys(g)]);return}
  if(!D){loadData().then(()=>sync());return}
- const now=snap(g);if(fightC!==now.c){fightC=now.c;fightReady=false;unmountAll();prev=null}
+ const now=snap(g);if(fightC!==now.c){fightC=now.c;fightReady=false;plates=null;unmountAll();prev=null}
  // the fight opens with every figure ready, or it stays on the portraits until they are
  const hero=app.querySelector('.battle .unit.hero'),foeEls=[...app.querySelectorAll('.battle .side.foe .unit[data-id]')];
  const want=[];const hE=entryForHero(g);if(hE)want.push(hE.key);for(const el of foeEls){const en=entryForFoe(now.c.enemies.find(x=>String(x.id)===el.dataset.id),g);if(en)want.push(en.key)}
  if(!fightReady){const miss=want.filter(k=>!ready(k));if(miss.length){Promise.all(miss.map(load)).then(()=>{if(fightC===now.c&&!fightReady)sync()});prev=now;return}fightReady=true}
+ const field=app.querySelector('.battle .field');const seats=size(field,hero,foeEls,now,g,hE);
+ if(seats===false){if(rigs.size)unmountAll();prev=now;return}
  if(prev)diff(prev,now,g);prev=now;
- const field=app.querySelector('.battle .field');size(field,hero,foeEls,now,g,hE);
  const seen=new Set();
  if(hero&&hE&&ready(hE.key)){mount('hero',hero,hE,1);seen.add('hero')}
  for(const el of foeEls){const id=el.dataset.id,fe=now.c.enemies.find(x=>String(x.id)===id),en=entryForFoe(fe,g);if(!en)continue;if(!ready(en.key)){load(en.key).then(()=>{if(fightC===now.c)sync()});continue}mount(id,el,en,-1);seen.add(id)}
@@ -5306,7 +5309,9 @@ function sync(){const g=G();if(!g||!g.c||g.view!=='battle'||!app.querySelector('
  if(rigs.size||ghosts.size)startLoop()}
 // Figure height: the field's room, less the chips above and the name and bar below, and the row must fit side by side.
 // When one row would leave the figures tiny, the foes take a row above the hero (class pw-rows on the field).
-const ALLY=.42,SEAL=.5,CHROME=67;
+// Under the floor (96px, or 13% of the screen height) the figures read as specks, so a fight that cannot seat them at the floor keeps the portrait plates
+// (decided once per fight and viewport; a fight already on figures only drops to plates when a summon crowds it hard).
+const ALLY=.42,SEAL=.5,CHROME=67;const floor=()=>Math.max(96,innerHeight*.13);let plates=null;
 function size(field,hero,foeEls,now,g,hE){if(!field)return;const you=field.querySelector('.side.you'),foe=field.querySelector('.side.foe');if(!you||!foe)return;
  const cs=getComputedStyle(field),W=field.clientWidth,Hf=field.clientHeight;
  const gapF=px(cs.columnGap)||px(cs.gap)||12,gapY=px(getComputedStyle(you).columnGap)||px(getComputedStyle(you).gap)||8,gapE=px(getComputedStyle(foe).columnGap)||px(getComputedStyle(foe).gap)||8;
@@ -5318,8 +5323,11 @@ function size(field,hero,foeEls,now,g,hE){if(!field)return;const you=field.query
  let H1=Math.min(Hf-CHROME,(W-gapF-(nY-1)*gapY-(nF-1)*gapE-8)/(arY+arF));if(H1*ALLY<44)H1=Math.min(Hf-CHROME,(W-gapF-(nY-1)*gapY-(nF-1)*gapE-8-nA*44)/(arH+arF));
  let H2=Math.min((Hf-2*CHROME-36)/2,(W-(nY-1)*gapY-8)/arY,(W-(nF-1)*gapE-8)/arF);if(H2*ALLY<44)H2=Math.min((Hf-2*CHROME-36)/2,(W-(nY-1)*gapY-8-nA*44)/arH,(W-(nF-1)*gapE-8)/arF);
  const rows=H1<100&&H2>H1*1.2;const H=Math.max(44,rows?H2:H1);
- window.__pwSize={W,Hf,gapF,gapY,gapE,arY,arF,nY,nF,H1,H2,rows,H};
- field.classList.toggle('pw-rows',rows);field.classList.toggle('pw-small',H*ALLY<64);field.style.setProperty('--pw-fh',Math.floor(H)+'px')}
+ const sc=field.getBoundingClientRect().width/(W||1)||1,Hs=H*sc;// on-screen pixels: tablets scale the phone layout up
+ const vk=innerWidth+'x'+innerHeight;if(!plates||plates.vk!==vk)plates={vk,on:Hs<floor()};else if(!plates.on&&Hs<floor()*.75)plates.on=true;
+ window.__pwSize={W,Hf,gapF,gapY,gapE,arY,arF,nY,nF,H1,H2,rows,H,sc,Hs,plates:plates.on};
+ if(plates.on){field.classList.add('pw-plates');field.classList.remove('pw-rows','pw-small');field.style.removeProperty('--pw-fh');return false}
+ field.classList.remove('pw-plates');field.classList.toggle('pw-rows',rows);field.classList.toggle('pw-small',H*ALLY<64);field.style.setProperty('--pw-fh',Math.floor(H)+'px');return true}
 function mount(id,el,entry,face){const art=el.querySelector(':scope>.art');if(!art)return;let R=rigs.get(id);
  if(!R){R=rig(entry,id,face);rigs.set(id,R);R.fadeIn=T}
  else if(R.cur.key!==entry.key&&!R.act){morph(R,entry)}
