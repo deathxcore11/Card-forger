@@ -768,7 +768,7 @@ function summon(base,name){
  const a=body(base,name);a.id=++uid;c.allies.unshift(a);
  if(run.emblems.includes('season')&&/token|Elemental/.test(name)&&!c.seasoning){c.seasoning=1;summon({...base},name);c.seasoning=0}
  if(a.goblin&&run.emblems.includes('legion')&&!c.legioned&&!base.legion){c.legioned=1;summon({p:2,t:1,goblin:1,haste:1,legion:1},'Goblin token')}
- if(/Goblin token|Elemental/.test(name))spellFx('summon-red',a,1);
+ if(/Goblin token|Elemental/.test(name))spellFx('summon-red',a,1);else if(/Soldier token/.test(name))spellFx('soldier-arrival',a,1);
  if(c.tremors){spellFx('quake-red','foes');c.enemies.forEach(e=>hit(e,c.tremors))}
  c.allies.forEach(x=>{if(x!==a&&x.warden)heal(x.warden)});
  if(c.crusade)c.allies.forEach(x=>{x.p+=c.crusade});
@@ -794,7 +794,11 @@ function canPlay(card){
  return true;
 }
 // Painted spell sheets (pw-cast.js plays them where the card lands, before it resolves so a killed target still shows it).
-const SPELLFX={fireball:'fireball',grape:'grapeshot',brute:'growth-red',rite:'mana-red',song:'mana-red',simian:'mana-red',impulse:'draw',clarity:'draw'};
+const SPELLFX={fireball:'fireball',grape:'grapeshot',brute:'growth-red',rite:'mana-red',song:'mana-red',simian:'mana-red',impulse:'draw',clarity:'draw',
+ shock:'embers',bolt:'embers',ambush:'embers',bombard:'embers',cannon:['fire-wave','foes'],banish:'exile',heroism:'holy-burst',charge:'holy-burst',pacifism:'holy-burst'};
+// two-mode cards take the sheet of the mode picked (the mode's icon); the white heal and pacify sheets are still owed, so they borrow holy-burst
+const MODEFX={shield:'shield',heart:'holy-burst',sword:'sun-spear',card:'draw',flame:'embers'};
+function cardFx(card,d0,m,t){let f=d0.modes&&m!=null&&d0.modes[m]?MODEFX[d0.modes[m].ico]:SPELLFX[card.key];if(!f)return;if(Array.isArray(f))spellFx(f[0],f[1]);else spellFx(f,f==='shield'?null:t)}
 function spellFx(sheet,t,late){if(SIM||typeof PW_HEADLESS!=='undefined'||!sheet)return;const B='#app .battle ';
  const sel=t==='foes'?B+'.side.foe':!t||t===c?B+'.side.you .unit.hero':c.enemies.includes(t)?B+`.side.foe .unit[data-id="${t.id}"]`:B+`.side.you .unit[data-id="${t.id}"]`;
  try{dispatchEvent(new CustomEvent('pw-spellfx',{detail:{sheet,sel,late}}))}catch(e){}}
@@ -806,7 +810,7 @@ function play(i,t,m){
  if(d.ok&&t&&!d.ok(t)){c.log=`${d0.name}: that enemy has less than 4 attack.`;return render()}if(!SIM&&!(d.aim&&!t&&!solo()))buzz(8);
  if(d.aim&&!t){const only=d.aim==='enemy'?solo():c.allies.length===1?c.allies[0]:null;if(only&&(!d.ok||d.ok(only)))t=only;else{c.pending={kind:'card',cid:card.id,aim:d.aim,mode:m};c.log=`${d.name}: choose ${d.aim==='enemy'?'an enemy':'one of your allies'}.`;return render()}}
  c.pending=null;
- spellFx(SPELLFX[card.key],t);
+ cardFx(card,d0,m,t);
  c.casting=!d.ally;
  if(c.pact&&((c.pact==='creature')===!!d.ally)){hurt(3);c.log=`The pact takes 3 life for that ${c.pact}.`}
  if(d.ally)c.nCre=(c.nCre||0)+1;else{c.nSpell=(c.nSpell||0)+1;c.tSpell=(c.tSpell||0)+1;const ob=c.tSpell>2&&c.enemies.find(e=>e.hp>0&&E[e.key].spellTax);if(ob){hurt(E[ob.key].spellTax,'spelltax');c.callout=`−${E[ob.key].spellTax} life`}}
@@ -817,7 +821,7 @@ function play(i,t,m){
    const t2=d.aim==='enemy'?(t&&t.hp>0?t:alive()[0]):d.aim==='ally'?(c.allies.includes(t)?t:c.allies[0]):t;
    if(d.e==='X')hit(t2,c.lastX*(d.xper?d.xper(card.foil):card.foil?4:3));else if(t2||!d.aim)d.play(card.foil,t2)}
   if(run.emblems.includes('paradox'))c.allies.forEach(a=>{untap(a);a.p++;a.t++});
-  for(const a of [...c.allies]){if(a.snipe)c.enemies.forEach(e=>hit(e,a.snipe));if(a.pyro)summon({p:1,t:1,haste:1},'Elemental')}
+  for(const a of [...c.allies]){if(a.snipe){spellFx('embers','foes');c.enemies.forEach(e=>hit(e,a.snipe))}if(a.pyro)summon({p:1,t:1,haste:1},'Elemental')}
  }
  if(card.shield2)shield(2);
  c.hand.splice(i,1);if(card.fbCast){card.fbCast=0;(c.fbUsed=c.fbUsed||[]).push(card.id);c.exile.push(card)}else if(d.ultimatum){run.deck=run.deck.filter(x=>x.id!==card.id);c.exile.push(card);exiled(card)}else if(d.exile&&!card.stamp)exiled(card,1);else if(!d.power)c.discard.push(card);
