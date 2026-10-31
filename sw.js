@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-pw-improve-v394";
+const CACHE = "cardforge-shell-scan-redesign-v395";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
@@ -282,6 +282,7 @@ const ASSETS = [
   "./zoom.js",
   "./scansession.js",
   "./scancam.js",
+  "./scan-grid.js",
   "./scan-batch.js",
   "./scan-catalog.js",
   "./scan-collector.js",
