@@ -41,7 +41,7 @@ import {collectionSortControls,compareCollectionRows} from "./collection-sort.js
 import { hapticsOn } from "./feel.js";
 import { audioSettings } from "./audio.js";
 import { tradePanel } from "./trade.js";
-import { skeletonGrid } from "./ui.js";
+import { skeletonGrid, cardBleed } from "./ui.js";
 import { pickBanner, bannerHead } from "./collection-banner.js";
 import { searchFanMarkup } from "./search-fan.js";
 import { trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
@@ -430,7 +430,7 @@ export function cardSheet(c, ctx = {}) {
     : `<p class="muted small" id="rulingsLoading">Loading official rulings…</p>`;
   const ruleLinks = `<button class="chip tool-chip" data-act="go" data-to="#rules">Banlists &amp; format rules</button><button class="chip tool-chip" data-act="mtgWikiOpen" data-wiki-topic="${esc(name)}">Explore this card in Wiki</button>`;
   return `<div class="sheet-head overlay">${S.ui.sheetBack ? `<button class="icon" data-act="sheetBack" aria-label="Back to deck idea">←</button>` : "<span></span>"}<button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
-  ${heroArt ? `<div class="cs-bleed" aria-hidden="true"><img src="${esc(heroArt)}" alt="" decoding="async" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></div>` : ""}
+  ${heroArt ? cardBleed("mtg", (cls) => `<img${cls ? ` class="${cls}"` : ""} src="${esc(heroArt)}" alt="" decoding="async" referrerpolicy="no-referrer" onerror="this.closest('.cs-bleed')?.remove()">`) : ""}
   <div class="cs-banner"><div class="cs-hero mtg">${img(heroArt, name, "cs-art")}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(name)}</h2><p class="type-line">${esc(faces[face]?.type_line || typeText(shown))} ${detailOwnedSummary(i.owned)}</p></div>${manaCost(faces[face] || shown)}</div></div>
   ${cardTabs(tab, tabList)}
