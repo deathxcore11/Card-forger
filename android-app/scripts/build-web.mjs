@@ -47,9 +47,9 @@ for (const file of await readdir(path.join(source, 'data/mtg-boosters')).catch((
 // Sound effects ship with the app (Opus only; the AAC copies are for Safari). Music streams from the website
 // and is cached on the phone after its first play (audio.js), so it never adds to the download.
 for (const file of await readdir(path.join(source, 'assets/audio/sfx')).catch(() => [])) if (/^[A-Z]{2,4}-\d{3}\.ogg$/.test(file)) extras.push(`assets/audio/sfx/${file}`);
-// Planeswalk's painted characters (planeswalk-cast/): each figure's key-pose atlas, light mask and drip sprite, so fights animate offline.
+// Planeswalk's painted characters (planeswalk-cast/): each figure's key-pose atlas, light mask and drip sprite, plus the spell effect art (fx/), so fights animate offline.
 extras.push('planeswalk-cast/cast.json');
-for (const dir of ['atlas', 'mask', 'drop']) for (const file of await readdir(path.join(source, `planeswalk-cast/${dir}`)).catch(() => [])) if (/^[a-z0-9-]+\.webp$/.test(file)) extras.push(`planeswalk-cast/${dir}/${file}`);
+for (const dir of ['atlas', 'mask', 'drop', 'fx']) for (const file of await readdir(path.join(source, `planeswalk-cast/${dir}`)).catch(() => [])) if (/^[a-z0-9-]+\.webp$/.test(file)) extras.push(`planeswalk-cast/${dir}/${file}`);
 // Planeswalk's painted fight mats (planeswalk-art/<key>.webp and their <key>-wide.webp phone twins), so fights open on their painting offline.
 for (const file of await readdir(path.join(source, 'planeswalk-art')).catch(() => [])) if (/^[a-z0-9-]+\.webp$/.test(file)) extras.push(`planeswalk-art/${file}`);
 // Only files the website itself serves: .assetsignore is gitignore syntax (last matching rule wins,
