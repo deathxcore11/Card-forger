@@ -233,7 +233,7 @@ const {sharedHistory,historyKey}=await import('./shared-history.js');
 const fallbackQuote=quoteModel('mtg',mtg,'nonfoil');assert.equal(fallbackQuote.value,12.5);
 recordQuote(S.state,quoteModel('ptcg',dated,'holofoil'),'2026-10-17T00:00:00Z');assert.deepEqual(S.state.settings.marketHistory||{},{} ,'old observed value must not become a new current observation');
 const histQuote=quoteModel('mtg',mtg,'foil');sharedHistory.set(historyKey(histQuote),{series:[{source:'Fixture separate archive',label:'Exact foil',archived:true,currency:'USD',finish:'foil',points:[{date:'2025-01-01',value:0},{date:'2025-01-04',value:3}]}]});
-let html=historyPanel(histQuote,'all');assert.match(html,/Source is stale/);assert.match(html,/Dated values · 2/);assert.match(html,/Range \$0.00 to \$3.00/);assert.doesNotMatch(html,/Infinity|NaN/);assert.match(html,/Archive · last observed/);
+let html=historyPanel(histQuote,'all');assert.match(html,/Source is stale/);assert.match(html,/2 dated values/);assert.match(html,/Range \$0.00 to \$3.00/);assert.doesNotMatch(html,/Infinity|NaN/);assert.match(html,/Archive · last observed/);
 html=historyPanel(histQuote,'30');assert.match(html,/No recorded quotes in the selected calendar range/);
 const one=quoteModel('ptcg',pk,'holofoil');sharedHistory.set(historyKey(one),{game:one.game,cardId:one.cardId,finish:one.finish,productId:one.productId,series:[{source:'One point',currency:'USD',finish:'holofoil',points:[{date:'2026-10-01',value:5}]}]});assert.match(historyPanel(one,'all'),/1 verified observation/);
 S.state.tcg={ygo:{collection:[{id:'owned',...worn,conditionQuotes:[provider]}]}};

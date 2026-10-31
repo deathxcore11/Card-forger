@@ -149,6 +149,9 @@ const remember = (card) => {
     return prev;
   }
   if (!card.brief) recordCardPrice(card.game, card);
+  // Fresh card data has no condition quotes: keep the ones already learned (NM/LP… prices),
+  // so a saved copy's condition keeps its price across refreshes.
+  if (!card.conditionQuotes && prev?.conditionQuotes?.length) card.conditionQuotes = prev.conditionQuotes;
   cache[card.game][card.id] = card;
   saveCacheSoon();
   return card;
