@@ -750,7 +750,7 @@ export function tcgSearch() {
     ],
     count = `${list.length.toLocaleString()} shown · ${loaded.length.toLocaleString()} loaded${Number.isFinite(U.total) ? ` · ${U.total.toLocaleString()} provider matches before local filters` : ""}`;
   return `${U.discoveryNote?`<p class="note small" role="status">${esc(U.discoveryNote)}</p>`:""}<div class="page-head"><h1>Search cards</h1>${viewControl(g,"search")}</div>
-  <div class="searchbar search-query"><input type="search" data-suggest="${g}" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Name or code (BLZD-EN010)" : "Card name or set + number"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off"><button class="btn search-go" data-act="tSearch" aria-label="${U.busy ? "Search again" : "Search"}">${searchEmblem()}<span>${U.busy ? "Search again" : "Search"}</span></button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI">${brandMark("assistant-button-mark")}<span>Ask</span></button></div>
+  <div class="searchbar search-query"><input type="search" data-suggest="${g}" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Name or code (BLZD-EN010)" : "Card name or set + number"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off" enterkeyhint="search"><button class="ask-launch" data-act="askOpen" aria-label="Ask AI">${brandMark("assistant-button-mark")}<span>Ask</span></button></div>
   <div class="search-tools" aria-label="Search shortcuts"><button class="chip tool-chip" data-act="tCompareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">${actionIcon("sets")}<span>Sets</span></button><button class="chip tool-chip" data-act="mtgWikiOpen" aria-label="Open Wiki">${actionIcon("wiki")}<span>Wiki</span></button><button class="chip tool-chip" data-act="tRandomCard" aria-label="Random card">${actionIcon("random")}<span>Random</span></button></div>
   ${chips.length ? `<div class="filter-chips" aria-label="Active filters">${chips.map(([k,l]) => `<button class="fchip" data-act="tChip" data-field="${esc(k)}" aria-label="Remove ${esc(l)}"><span class="fchip-label">${esc(l)}</span> <span aria-hidden="true">×</span></button>`).join("")}<button class="link small" data-act="tClear">Clear all</button></div>` : ""}
   ${savedSearches(g).length ? `<div class="saved-searches"><span class="muted small">Saved:</span>${savedSearches(g).map((x,i) => `<span class="schip"><button data-act="tSaved" data-i="${i}">${esc(x.label)}</button><button data-act="tSavedDel" data-i="${i}" aria-label="Delete saved search ${esc(x.label)}">×</button></span>`).join("")}</div>` : ""}
@@ -1194,11 +1194,16 @@ const metaStatus = (g, M) =>
       ? `<div class="note warn">${esc(M.error)} <button class="link" data-act="tMetaRefresh">Try again</button></div>`
       : "";
 
-function metaDeckRow(g, d, m) {
+// A deck row shows the true artwork crop of its cover (local copy first), not a full card face.
+const ygoRowArt = (id) => { const urls = [`img/ygo/a/${encodeURIComponent(id)}.jpg`, `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(id)}.jpg`]; return `<img class="mini-art" src="${esc(urls[0])}" data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="" loading="lazy" referrerpolicy="no-referrer">`; };
+function metaDeckRow(g, d, m, used = null) {
   const o = metaOwned(g, d, m),
-    cover = g === "ygo" ? cardOf("ygo", d.cover) : metaPokemonCover(d);
+    ygoIds = g === "ygo" ? [d.cover, ...(d.main || [])].map(String).filter((id) => id && id !== "undefined") : [],
+    ygoId = used ? ygoIds.find((id) => !used.has(id)) || ygoIds[0] : d.cover,
+    cover = g === "ygo" ? null : metaPokemonCover(d);
+  if (used && ygoId) used.add(ygoId);
   return `<button class="meta-row" data-act="tMetaDeck" data-key="${esc(d.key)}" data-meta-key="${esc(g==='ptcg'&&d.formatId&&d.formatId!=='standard'?'ptcg:'+d.formatId:g)}">
-    <span class="meta-art">${g === "ygo" ? (cover ? imgTag(cover, "mini-art") : `<img class="mini-art" src="${esc(ygoImageDirect(d.cover))}" alt="" loading="lazy" referrerpolicy="no-referrer">`) : cover ? pokemonArtCrop(cover, "meta-card-art") : (d.icons||[]).map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("")}</span>
+    <span class="meta-art">${g === "ygo" ? (ygoId ? ygoRowArt(ygoId) : "") : cover ? pokemonArtCrop(cover, "meta-card-art") : (d.icons||[]).map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("")}</span>
     <span class="meta-main"><b class="ellip">${esc(d.name)}</b><small class="muted ellip">${esc(d.place)} · ${esc(cleanName(d.event))}${d.players ? ` · ${d.players} players` : ""}</small>
       <span class="meta-own">${bar(o.pct)}<small>${Math.round(o.pct * 100)}% owned${o.cost !== null && o.pct < 1 ? ` · ${usd(o.cost, 0)} to finish` : ""}</small></span></span></button>`;
 }
@@ -1248,28 +1253,31 @@ function metaView(g) {
     data = M.data,
     format = ui(g).metaFormat || META_FORMAT[g],
     label = formatOf(g,format).name,
-    header = `<section class="panel tournament-panel"><h3>Tournament results</h3><p class="muted small">Recent tournament lists, matched against your cards. Choose a format to see its coverage.</p><div class="fmt-chips" role="group" aria-label="Tournament format">${formatsOf(g).map(f=>`<button class="chip pick ${f.id===format?'on':''}" data-act="tMetaFormat" data-id="${f.id}" aria-pressed="${f.id===format}">${esc(f.name)}</button>`).join('')}</div>`;
+    header = `<section class="panel tournament-panel"><h3>Tournament results</h3><div class="fmt-chips" role="group" aria-label="Tournament format">${formatsOf(g).map(f=>`<button class="chip pick ${f.id===format?'on':''}" data-act="tMetaFormat" data-id="${f.id}" aria-pressed="${f.id===format}">${esc(f.name)}</button>`).join('')}</div>`;
   if(format!==META_FORMAT[g] && !(g==='ptcg' && PTCG_META_FORMATS[format]))return header+`<div class="meta-format-empty"><h3>${esc(label)}</h3><p class="muted">Tournament results for this format aren’t available from the connected feed yet.</p><button class="btn ghost small" data-act="tNewDeck" data-format="${esc(format)}">Create a ${esc(label)} deck</button><button class="link small" data-act="tMetaFormat" data-id="${META_FORMAT[g]}">View ${esc(formatOf(g,META_FORMAT[g]).name)} results</button></div></section>`;
   if (!data) return header+(metaStatus(g, M) || `<p class="muted small center pad">Loading recent ${esc(label)} results…</p>`)+`</section>`;
   const top = data.top.slice(0, 12);
-  return header+`<p class="evidence small"><b>${esc(label)}</b> · ${esc(data.source)} · updated ${esc(new Date(M.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))} <button class="link small" data-act="tMetaRefresh">⟳ Refresh</button></p>
+  const used = new Set();
+  return header+`<details class="meta-source"><summary>${esc(label)} · ${esc(data.source)} · updated ${esc(new Date(M.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))}</summary><p>${g === "ygo" ? "Lists from YGOPRODeck’s Tournament Meta Decks (WCQ Regionals, YCS and more)." : `Top 8 lists from recent ${esc(label)} events on Limitless.`} “Owned” matches your collection${g === "ptcg" ? " by card name; basic Energy counts as owned" : ""}.</p></details>
   ${M.error ? `<p class="small warn-text">${esc(M.error)}</p>` : ""}
-  <div class="section-head"><h2>Top decks right now</h2></div>
+  <div class="section-head"><h2>Top decks right now</h2><button class="link small" data-act="tMetaRefresh">⟳ Refresh</button></div>
   <div class="arch-grid">${data.archetypes
     .slice(0, 8)
     .map((a) => {
       const best = data.decks.find((d) => d.key === a.best),
         cover = g === "ptcg" ? metaPokemonCover(best, a.cover) : null,
-        art = g === "ygo" && best?.cover ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(best.cover)}.jpg` : "",
+        ygoArt = g === "ygo" && best ? [best.cover, ...(best.main || [])].map(String).filter((id) => id && id !== "undefined") : [],
+        artId = ygoArt.find((id) => !used.has(id)) || ygoArt[0] || "",
+        art = artId ? (used.add(artId), `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(artId)}.jpg`) : "",
         illustrated = art || cover;
-      return `<button class="arch ${illustrated ? "has-art" : "no-cover"}" data-act="tMetaDeck" data-key="${esc(a.best||a.representative?.key||'')}" data-meta-key="${esc(metaBrowseKey(g))}" ${a.best||a.representative ? "" : "disabled"}>${cover ? pokemonArtCrop(cover, "arch-art") : art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.closest('.arch').classList.add('no-cover')">` : `<span class="arch-art arch-art-fallback" aria-hidden="true"></span>`}<span class="arch-art-state">Art unavailable</span><span class="arch-icons">${g === "ptcg" ? (a.icons||[]).map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="clamp2">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${!a.best && g === "ptcg" ? `<small class="arch-list-state">${a.representative?`View list · ${esc(a.representative.place)}`:"No published list available"}</small>` : ""}${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
+      return `<button class="arch ${illustrated ? "has-art" : "no-cover"}" data-act="tMetaDeck" data-key="${esc(a.best||a.representative?.key||'')}" data-meta-key="${esc(metaBrowseKey(g))}" ${a.best||a.representative ? "" : "disabled"}>${cover ? pokemonArtCrop(cover, "arch-art") : art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.closest('.arch').classList.add('no-cover')">` : `<span class="arch-art arch-art-fallback" aria-hidden="true"></span>`}<span class="arch-art-state">Art unavailable</span><span class="arch-icons">${g === "ptcg" ? (a.icons||[]).map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><span class="arch-body"><b class="clamp2">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${!a.best && g === "ptcg" ? `<small class="arch-list-state">${a.representative?`View list · ${esc(a.representative.place)}`:"No published list available"}</small>` : ""}${bar(a.share / (data.archetypes[0]?.share || 1))}</span></button>`;
     })
     .join("")}</div>
   <div class="section-head"><h2>Most played cards</h2></div>
   <div class="chips wrap">${top.map((t) => `<button class="chip" ${g === "ygo" ? `data-act="tCard" data-id="${esc(t.id)}"` : `data-act="tOtherPrintings" data-name="${esc(t.name)}"`}>${esc(t.name)} <span class="muted">${Math.round(t.pct)}%</span></button>`).join("")}</div>
   <div class="section-head"><h2>Recent top lists</h2></div>
-  <div class="list">${data.decks.slice(0, 40).map((d) => metaDeckRow(g, d, m)).join("")}</div>
-  <p class="foot">${g === "ygo" ? "Lists from YGOPRODeck’s Tournament Meta Decks (WCQ Regionals, YCS and more)." : `Top 8 lists from recent ${esc(label)} events on Limitless.`} “Owned” matches your collection${g === "ptcg" ? " by card name; basic Energy counts as owned" : ""}.</p></section>`;
+  <div class="list">${((rowArt) => data.decks.slice(0, 40).map((d) => metaDeckRow(g, d, m, rowArt)).join(""))(new Set())}</div>
+</section>`;
 }
 
 /* ---------- closest proven deck (shared by all three games) ---------- */

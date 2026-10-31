@@ -238,6 +238,7 @@ const ASSETS = [
   "./suggest.js",
   "./tour.js",
   "./home-search.js",
+  "./universal-search.js",
   "./search-fan.js",
   "./app-info.js",
   "./tabletop.js", "./tabletop-themes.js",

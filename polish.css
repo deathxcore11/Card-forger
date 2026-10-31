@@ -458,3 +458,143 @@ body[data-view="settings"] .profile-menu>.sr-only{display:none}
 @media(max-width:700px){.pl-lobby .pl-startbar{position:sticky}.pl-lobby .pl-startbar::before{content:"";position:absolute;left:-20px;right:-20px;bottom:calc(100% - 1px);height:28px;background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--bg) 92%,transparent));pointer-events:none}}
 /* Room for the last letter's tracking, so the label never runs past its own box. */
 .cs-plate-label{padding-right:2px}
+
+/* ===== Search bar speaks for itself (Randall 31 Oct): no icon buttons beside or inside it. Typing wakes a gold
+   bezel that sweeps the rim; the dropdown is one glass sheet with the app's own matches first and AI only when it helps. ===== */
+.home-search-wrap { gap:0; }
+.home-search-wrap>.home-search-pill,
+body .topbar .home-search-pill,
+.home-search-pill { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr); padding-right:0; }
+.home-search-pill>input { grid-row:1; align-self:center; padding:0 22px; min-height:48px; }
+body .topbar .home-search-pill>input { padding-left:18px; }
+.home-search-pill { transition:box-shadow .35s ease, border-color .35s ease, background-color .35s ease; }
+.home-search-pill:focus-within { outline:0; border-color:color-mix(in srgb,var(--gold) 70%,transparent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 14%,transparent),0 0 28px -8px color-mix(in srgb,var(--gold) 70%,transparent),inset 0 1px 0 #ffffff14; }
+.home-search-pill:focus-within::before { padding:1.5px; animation-duration:2.6s;
+  background:linear-gradient(110deg,transparent 12%,#c99a4b 34%,#fff4d0 50%,#c99a4b 66%,transparent 88%); background-size:250% 100%; }
+.home-search-pill:has(input:not(:placeholder-shown))::before { animation-duration:1.6s; }
+@media (prefers-reduced-motion: reduce) { .home-search-pill:focus-within::before { animation:none; background-position:50% 0; } }
+.home-suggestions { border-radius:20px; border:1px solid color-mix(in srgb,var(--gold) 26%,#ffffff14);
+  background:linear-gradient(160deg,#1d1f29f2,#12141bf5); backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2);
+  box-shadow:0 24px 50px -18px #000e,inset 0 1px 0 #ffffff12; padding:8px; }
+.home-suggestions .home-result-status { margin:4px 8px 8px; font-size:11px; letter-spacing:.04em; color:var(--gold); }
+.home-result-actions { padding:6px 0 0; gap:8px; }
+.home-suggestions.is-asking .home-result-actions, .home-result-actions:only-child { padding-top:0; }
+.home-result-actions>button { border-radius:14px; border-color:#ffffff14; background:#ffffff08; transition:background-color .2s, border-color .2s; }
+.home-result-actions>button:hover { background:#ffffff12; border-color:color-mix(in srgb,var(--gold) 45%,transparent); }
+.home-result-actions .home-assistant-action.is-lead { flex:1 1 100%; justify-content:flex-start; padding-inline:14px;
+  border-color:color-mix(in srgb,var(--gold) 55%,transparent); background:linear-gradient(115deg,#2c2638,#1b2232); }
+.home-assistant-action>span { min-width:0; overflow-wrap:anywhere; }
+/* Result rows: one quiet line per printing, art + name + set, price only when known. No boxes, hairline separators. */
+.home-suggestions .display-list { gap:0; }
+.home-suggestions .display-list>.lot.home-result { min-height:56px; padding:6px 10px; gap:12px; border:0; border-radius:12px; background:transparent; box-shadow:none; }
+.home-suggestions .display-list>.lot.home-result+.lot.home-result { box-shadow:inset 0 1px 0 #ffffff0d; }
+.home-suggestions .display-list>.lot.home-result:is(:hover,[aria-selected="true"]) { background:#ffffff0c; }
+.home-suggestions .lot.home-result .lot-art { width:34px; height:47px; border-radius:4px; overflow:hidden; }
+.home-suggestions .lot.home-result .lot-name { font-size:14px; }
+.home-suggestions .lot.home-result .lot-sub { font-size:11px; color:var(--muted); }
+.home-suggestions .lot.home-result .lot-side { align-self:center; }
+.home-suggestions .lot.home-result .price { font-size:13px; color:var(--gold); }
+
+/* Idea tiles share the deck-tile art direction (Randall 31 Oct): full-bleed art, a soft melt into the dark backing,
+   a glass band at the bottom carrying a Cinzel title, a slim stats line and the action. One style, two markups:
+   Pokémon / Yu-Gi-Oh! "build around" (.collection-idea) and Magic "Build from my cards" (.build-own .idea). */
+:is(.collection-idea,.build-own .idea) { position:relative; isolation:isolate; display:flex; flex-direction:column; justify-content:flex-end;
+  min-height:248px; overflow:hidden; border:0; border-radius:18px; background:#0d0f15;
+  box-shadow:0 18px 34px -20px #000e,0 3px 10px -4px #0009; }
+:is(.collection-idea,.build-own .idea)::after { content:''; position:absolute; inset:0; z-index:2; border-radius:inherit; pointer-events:none; padding:1px;
+  background:linear-gradient(155deg,#f1d08ab3,#ffffff38 26%,#ffffff12 52%,#ffffff0a 70%,#f1d08a66);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0); }
+.collection-idea>.idea-card-open, .build-own .idea>.idea-art { position:absolute; inset:0; z-index:0; height:auto; background:transparent; }
+.collection-idea>.idea-card-open .idea-row-art { height:100%; }
+.build-own .idea>.idea-art img { height:100%; object-position:50% 30%; }
+.collection-idea>.idea-card-open::after, .build-own .idea>.idea-art::after { content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(0deg,#0b0e15f5,#0b0e15b8 38%,#0b0e1540 64%,#0b0e1500 82%); }
+:is(.collection-idea>.idea-card-body,.build-own .idea>.idea-body) { position:relative; z-index:1; margin:0; padding:34px 16px 14px; color:#f5f6fa;
+  background:linear-gradient(180deg,#0b0e1500,#0b0e1566 40%,#0b0e15a6);
+  -webkit-backdrop-filter:blur(10px) saturate(1.15); backdrop-filter:blur(10px) saturate(1.15);
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 30px); mask-image:linear-gradient(180deg,transparent,#000 30px); }
+:is(.collection-idea .idea-card-name,.build-own .idea .idea-title) { font:700 17px/1.2 Cinzel,Georgia,serif; letter-spacing:.02em; color:#f8f1e1; text-shadow:0 1px 2px #000b,0 0 14px #0008; }
+:is(.collection-idea .idea-card-facts,.build-own .idea .idea-body small,.build-own .idea .idea-body .row) { color:#dfe3ea; }
+.build-own .idea .idea-art .chip { z-index:1; }
+.collection-idea:has(.idea-card-open:focus-visible), .build-own .idea:has(.idea-art:focus-visible) { outline:2px solid var(--gold); outline-offset:3px; }
+
+/* Meta decks share the deck-tile art direction too (Randall 31 Oct, all 3 games): "Top decks right now" tiles are
+   full-bleed art melting into a glass base with a Cinzel title; "Recent top lists" rows carry their deck art as a
+   strip that fades into the row. The long source text sits behind a quiet one-line, tap-to-reveal summary. */
+.meta-source { margin:2px 0 14px; color:var(--muted); font-size:12px; }
+.meta-source>summary { display:inline-flex; align-items:center; gap:6px; min-height:32px; cursor:pointer; list-style:none; opacity:.8; transition:opacity .2s; }
+.meta-source>summary::-webkit-details-marker { display:none; }
+.meta-source>summary::after { content:''; width:6px; height:6px; margin-left:2px; border:solid currentColor; border-width:0 1.5px 1.5px 0; transform:rotate(45deg) translateY(-2px); transition:transform .2s; }
+.meta-source[open]>summary::after { transform:rotate(-135deg) translate(-1px,-1px); }
+.meta-source>summary:hover, .meta-source[open]>summary { opacity:1; }
+.meta-source>p { margin:4px 0 0; max-width:68ch; line-height:1.5; }
+
+.arch-grid { gap:12px; }
+.arch-grid .arch { isolation:isolate; display:flex; flex-direction:column; justify-content:flex-end; min-height:212px; padding:0; gap:0;
+  border:0; border-radius:18px; background:#0d0f15; box-shadow:0 18px 34px -20px #000e,0 3px 10px -4px #0009; transition:transform .25s ease, box-shadow .25s ease; }
+.arch-grid .arch::after, .meta-row::after { content:''; position:absolute; inset:0; z-index:3; border-radius:inherit; pointer-events:none; padding:1px;
+  background:linear-gradient(155deg,#f1d08ab3,#ffffff38 26%,#ffffff12 52%,#ffffff0a 70%,#f1d08a66);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0); }
+.meta-row::after { background:linear-gradient(155deg,#f1d08a80,#ffffff24 30%,#ffffff0d 60%,#f1d08a40); }
+.arch-grid .arch>.arch-art { position:absolute; inset:0; z-index:0; width:100%; height:100%; opacity:1; filter:saturate(1.1) contrast(1.05); transition:transform .6s cubic-bezier(.2,.8,.2,1); }
+.arch-grid .arch::before { content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:linear-gradient(0deg,#0b0e15f5,#0b0e15b8 38%,#0b0e1540 64%,#0b0e1500 82%); }
+.arch-grid .arch>.arch-body { position:relative; z-index:2; display:grid; gap:4px; padding:30px 14px 12px; color:#f5f6fa;
+  background:linear-gradient(180deg,#0b0e1500,#0b0e1566 40%,#0b0e15a6);
+  -webkit-backdrop-filter:blur(10px) saturate(1.15); backdrop-filter:blur(10px) saturate(1.15);
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 26px); mask-image:linear-gradient(180deg,transparent,#000 26px); }
+.arch-grid .arch .arch-body b { font:700 16px/1.2 Cinzel,Georgia,serif; letter-spacing:.02em; color:#f8f1e1; text-shadow:0 1px 2px #000b,0 0 14px #0008; }
+.arch-grid .arch .arch-body small { color:#dfe3ea; text-shadow:0 1px 2px #000a; }
+.arch-grid .arch .arch-body .bar { height:3px; margin:4px 0 0; background:#ffffff1a; }
+.arch-grid .arch .arch-body .bar>span { background:linear-gradient(90deg,#c9a45c,#f1d08a); }
+.arch-grid .arch>.arch-icons:not(:empty) { z-index:2; }
+.arch-grid .arch>.arch-art-state { z-index:2; }
+@media (hover:hover) {
+  .arch-grid .arch:not(:disabled):hover { transform:translateY(-2px); box-shadow:0 24px 40px -20px #000,0 4px 14px -4px #000a; }
+  .arch-grid .arch:not(:disabled):hover>.arch-art { transform:scale(1.04); }
+  .meta-row:hover>.meta-art { transform:scale(1.04); }
+}
+.arch-grid .arch:focus-visible, .meta-row:focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
+
+.meta-row { position:relative; isolation:isolate; overflow:hidden; display:grid; grid-template-columns:minmax(0,1fr); min-height:76px;
+  padding:12px 14px 12px clamp(96px,30%,190px); border:0; border-radius:14px; background:#0f1219; box-shadow:0 10px 22px -16px #000d; }
+.meta-row:hover { border-color:transparent; }
+.meta-row>.meta-art { position:absolute; inset:0 auto 0 0; z-index:-1; width:clamp(150px,46%,300px); min-height:0; display:flex; justify-content:center; align-items:center; gap:4px;
+  -webkit-mask-image:linear-gradient(90deg,#000 35%,transparent); mask-image:linear-gradient(90deg,#000 35%,transparent); transition:transform .6s cubic-bezier(.2,.8,.2,1); }
+.meta-row>.meta-art :is(.mini-art,.meta-card-art) { width:100%; height:100%; border-radius:0; object-fit:cover; object-position:50% 30%; filter:saturate(1.1) contrast(1.05); }
+.meta-row>.meta-art .pk-icon { width:32px; height:32px; }
+.meta-row .meta-main>b { text-shadow:0 1px 2px #000c,0 0 10px #000a; }
+.meta-row .meta-main small { text-shadow:0 1px 2px #000c; }
+.meta-row .meta-own .bar { height:3px; margin:4px 0; background:#ffffff1a; }
+.meta-row .meta-own .bar>span { background:linear-gradient(90deg,#c9a45c,#f1d08a); }
+.list:has(>.meta-row) { display:grid; gap:8px; }
+.meta-row { color:#f5f6fa; }
+.meta-row :is(.muted,.meta-own small) { color:#c4cad4; }
+.meta-row:not(:has(>.meta-art :is(img,.pk-crop:not(.img-missing)))) { padding-left:14px; }
+.meta-row:not(:has(>.meta-art :is(img,.pk-crop:not(.img-missing)))) > .meta-art { display:none; }
+@media (max-width:419px) { .arch-grid .arch { min-height:176px; } }
+
+/* One search for the whole app (Randall 31 Oct): grouped answers from CardStashy itself (your decks, sets,
+   tournament decks, wiki, news, pages) above the card matches, in the same slim glass rows. */
+.home-app-results { display:grid; gap:2px; }
+.home-app-group { display:grid; }
+.home-app-group+.home-app-group, .home-app-results+.home-app-group, .home-app-results+.home-result-status { margin-top:6px; }
+.home-app-label { margin:4px 10px 2px; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:color-mix(in srgb,var(--gold) 80%,#fff 0%); opacity:.85; }
+.home-app-row { display:grid; grid-template-columns:34px minmax(0,1fr) auto; align-items:center; gap:12px; width:100%; min-height:48px; padding:6px 10px;
+  border:0; border-radius:12px; background:transparent; color:var(--text); text-align:left; cursor:pointer; transition:background-color .15s; }
+.home-app-row+.home-app-row { box-shadow:inset 0 1px 0 #ffffff0d; }
+.home-app-row:hover, .home-app-row[aria-selected="true"] { background:#ffffff0f; }
+.home-app-row:focus-visible { outline:2px solid var(--gold); outline-offset:-2px; }
+.home-app-art { display:grid; place-items:center; width:34px; height:34px; border-radius:9px; overflow:hidden; background:#ffffff0a; color:var(--gold); font-size:16px; line-height:1; }
+.home-app-art img { width:100%; height:100%; object-fit:cover; }
+.home-app-art img.is-icon { width:22px; height:22px; object-fit:contain; filter:invert(1) brightness(.92) sepia(.35) saturate(1.6) hue-rotate(5deg); }
+:root[data-theme="light"] .home-app-art img.is-icon { filter:none; }
+.home-app-text { display:grid; gap:1px; min-width:0; }
+.home-app-text b { font-size:14px; font-weight:650; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.home-app-text small { font-size:11.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.home-app-out { color:var(--muted); font-size:13px; }
+.home-suggestions.has-app .home-app-group>.display-list { margin:0; }
+/* Card matches sit in the same rhythm as the app's own rows: art, name and set, price on the right. */
+.home-suggestions .display-list>.lot.home-result { grid-template-columns:34px minmax(0,1fr) auto; gap:12px; }
+.home-suggestions .lot.home-result .lot-side { grid-column:auto; justify-self:end; align-self:center; }
