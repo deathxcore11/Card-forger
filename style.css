@@ -5032,6 +5032,11 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
    well inside that margin, so the light always ends soft. */
 #content.view-gallery .display-list > .lot[data-tier]:not(.wanted),
 .view-gallery .card-grid > .grid-card[data-tier] { --aura-blur: 18px; --aura-room: 28px; padding: var(--aura-room); margin: calc(-1 * var(--aura-room)); }
+/* The room is light only, never hit area: taps in it fall through to the neighbouring card. */
+#content.view-gallery .display-list > .lot[data-tier]:not(.wanted),
+.view-gallery .card-grid > .grid-card[data-tier] { pointer-events: none; }
+#content.view-gallery .display-list > .lot[data-tier]:not(.wanted) > *,
+.view-gallery .card-grid > .grid-card[data-tier] > * { pointer-events: auto; }
 
 /* ===== One frame for every card. Set and search grids and deck grids wear the collection's price band on
    the card image (5px, 12px corners). The card page draws the same band on the card's holder instead, so

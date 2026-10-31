@@ -77,6 +77,7 @@ body[data-view="home"] .home-intro .home-value {
 .home-personal-art:after { content:''; position:absolute; inset:0; background:linear-gradient(0deg,#0b0e15f7,#0b0e1590 55%,#0b0e1522); }
 .home-personal-art>img,.home-personal-art>.pk-crop,.home-personal-art>.home-personal-pokemon { width:100%; height:100%; max-width:none; object-fit:cover; }
 .home-personal-art>.pk-crop { position:absolute; inset:0; }
+.home-personal-copy,.home-personal-resume .home-resume>div { text-shadow:0 1px 2px #000b,0 0 12px #0008; }
 .home-personal-copy { display:grid; gap:6px; width:100%; min-width:0; padding:18px; }
 .home-personal-copy>b { font-size:17px; line-height:1.2; overflow-wrap:anywhere; }
 .home-personal-copy>small { font-size:11px; color:#e0e3eb; }
