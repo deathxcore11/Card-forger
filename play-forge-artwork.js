@@ -14,8 +14,12 @@ export function createForgeArtworkPreparation({ resolveNames, lookup, fetchPrint
       const ticket = ++generation;
       checkLaunch = launchCurrent; current(); prepared = false; frozen = new Map();
       const requests = new Map();
-      for (const deck of [setup.selected, setup.opponent]) {
-        for (const row of [...(deck?.cards || []), ...(deck?.side || [])]) {
+      // Every seat at the table: a Commander pod's extra CPUs too, and a commander or companion
+      // kept beside the list rather than in it, so no card reaches the table without its art.
+      for (const deck of [setup.selected, setup.opponent, ...(Array.isArray(setup.extraOpponents) ? setup.extraOpponents.map(o => o?.deck) : [])]) {
+        const named = [deck?.commander, deck?.companion].filter(n => typeof n === 'string' && n).map(name => ({ name }));
+        for (const row of [...(deck?.cards || []), ...(deck?.side || []), ...(deck?.commanders || []).map(r => typeof r === 'string' ? { name: r } : r), ...named]) {
+          if (typeof row?.name !== 'string' || !row.name) continue;
           const id = row.printingId || deck.referencePriceSelections?.[selectionKey(row.name)]?.printingId || null;
           requests.set(identity(row.name, id), { name: row.name, id });
         }

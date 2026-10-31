@@ -352,7 +352,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function paintFan(){const fan=root.querySelector('.forge-hand-expand');if(!fan)return;const open=root.dataset.handExpanded==='true',count=root.querySelectorAll('.play-match-hand .play-match-card-wrap').length,label=open?'Close hand':`View full hand (${count})`;if(fan.textContent!==label)fan.textContent=label;fan.setAttribute('aria-pressed',String(open));}
  const saveInput=e=>{if(e.target.dataset?.nativeKey==='native-value'){const n=session.snapshot().native;nativeValueDraft={revision:n.revision,promptId:n.prompt?.id,value:e.target.value};}};
  root.addEventListener('input',saveInput);root.addEventListener('change',saveInput);
- const observer=new MutationObserver(()=>enhance());observer.observe(root,{childList:true,subtree:true});
+ // The board fitter adds, relabels and removes a crowded lane's "+N" chip itself. Those changes must not
+ // start another pass: the fitter measures the lane twice (natural width, then fitted) and the two can
+ // disagree on the count, which re-ran the fitter forever and froze the table (seen at 740x360).
+ const fitterOnly=list=>list.every(m=>m.target.classList?.contains('forge-lane-more')||[...m.addedNodes,...m.removedNodes].every(n=>n.classList?.contains('forge-lane-more')));
+ const observer=new MutationObserver(list=>{if(!fitterOnly(list))enhance();});observer.observe(root,{childList:true,subtree:true});
  // Cards keep their engine identity between renders, so a card that moves (hand to
  // battlefield, a lane change) glides from where it was to where Forge put it, and a
  // permanent that appears from nowhere fades in. Purely visual; placement is Forge's.
@@ -506,6 +510,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Over a decision the story is told in the activity line and the stack's arrows; a spotlight
   // there would cover the very prompt it explains.
   if(playback?.overlay){updateActivity();return;}
+  // A land has no spotlight: it drops into its row (the staged board moves it) and the line says so.
+  // A turn change is shown by the staged board's own turn banner; a second one would repeat it.
+  if(beat.kind==='land'||beat.tone==='turn'){queueArrows();updateActivity();return;}
+  // An attack is told by the swing and its arrow, as on Arena; a banner there would cover the attackers.
+  if(beat.tone==='attack'){queueArrows();updateActivity();return;}
   if(beat.kind==='phase'){
    const banner=doc.createElement('div');banner.className='forge-playback-status';banner.setAttribute('role','status');banner.textContent=beat.label;if(beat.tone)banner.dataset.tone=beat.tone;mat?.append(banner);
   }else if(beat.card){
@@ -513,11 +522,14 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    castShow.innerHTML=`<figure>${art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:''}</figure><p><span>${esc(beat.label)}</span><strong>${esc(c.name)}</strong></p>${beat.text?`<div class="forge-cast-text">${symbolText(beat.text)}</div>`:''}`;
    // Drawn art sits under the photo, so a slow image never leaves the spotlight blank for its beat.
    castShow.querySelector('figure').prepend(drawnArtwork(doc,c,surfaceColors(c)));
-   castShow.dataset.open='true';castShow.dataset.kind=beat.kind;
+   castShow.dataset.open='true';castShow.dataset.kind=beat.kind;doc.body.dataset.forgeSpotlight='true';
   }
   queueArrows();updateActivity();
  }
- function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
+ // The spotlight's photo starts loading when the story is queued, not when its beat opens.
+ const preloaded=new Set();
+ function preloadBeatArt(beats){for(const b of beats){if(!b.card||b.kind==='land')continue;const url=resolvePracticeArtwork(b.card)?.imageUrl;if(!url||preloaded.has(url))continue;if(preloaded.size>200)preloaded.clear();preloaded.add(url);const img=new win.Image();img.referrerPolicy='no-referrer';img.decoding='async';img.src=url;}}
+ function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';delete doc.body.dataset.forgeSpotlight;root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
  let activityKey='';
  // Like Snap and Master Duel, CPU turns can play at Normal or Fast; the choice stays on this device.
  const SPEED_KEY='cardstashy-cpu-speed';let cpuSpeed='normal';try{if(win.localStorage?.getItem(SPEED_KEY)==='fast')cpuSpeed='fast';}catch{/* blocked storage keeps Normal */}
@@ -671,7 +683,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  win.addEventListener('resize',queueBoard);
  const queueRails=()=>{if(!railFrame)railFrame=win.requestAnimationFrame(fitRails);};
  win.addEventListener('resize',queueRails);
- function renderAccepted(s,blocked=false){
+ // A held board normally redraws without motion; a CPU playback beat (staged) moves it as it goes.
+ function renderAccepted(s,blocked=false,staged=false){
   const previous=displayed,lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
   const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null;
   const before=presentation.hosted?positions():null,leaving=presentation.hosted?new Map([...root.querySelectorAll('.play-match-card[data-instance]')].map(el=>[el.dataset.instance,el.closest('.play-match-card-wrap')||el])):null;
@@ -680,7 +693,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // native panel comes or goes, unlike a :has() test that rechecks the whole table each redraw.
   root.toggleAttribute('data-forge-native',!!root.querySelector('.forge-native-panel'));
   doc.body.toggleAttribute('data-forge-search',!!root.querySelector('.forge-zone-search'));
-  if(before&&!blocked){glide(before);boardEffects(previous,s,before,leaving);}
+  if(before&&(!blocked||staged)){glide(before);boardEffects(previous,s,before,leaving);}
   if(presentation.hosted)tableAudio.update(previous,s);
   // Arena's low-life state: under 10 life the portrait cracks, under 6 it also bleeds a slow red glow.
   if(presentation.hosted)for(const p of s.status?.surface?.players||[]){const seat=seatEl(p.seat),band=typeof p.life!=='number'?'':p.life<=5?'critical':p.life<10?'low':'';if(seat&&(seat.dataset.lifeBand||'')!==band){if(band)seat.dataset.lifeBand=band;else delete seat.dataset.lifeBand;}}
@@ -879,7 +892,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(idleKey===key)return;idleKey=key;clearTimeout(idleTimer);
   idleTimer=setTimeout(()=>{idleTimer=0;const now=session.snapshot();if(closed||!idleReady(now)||now.native.revision!==n.revision)return;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?250:900);
  }
- playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,reducedMotion,speed:()=>cpuSpeed==='fast'?.45:1.3});
+ playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,preload:preloadBeatArt,reducedMotion,speed:()=>cpuSpeed==='fast'?.5:1});
  // A tap skips held playback. Playback over a decision never holds the board, so a tap there
  // only clears the spotlight and goes on to whatever was tapped.
  const skipPlayback=e=>{if(!playback.running||e.button>0)return;if(playback.overlay){playback.stop();return;}suppressUntil=Date.now()+400;playback.flush();};

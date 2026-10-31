@@ -27,6 +27,14 @@ test('artwork prepares both complete lists, keeps printings distinct and freezes
  assert.equal(p.lookup('Test Commander','human-printing').id,'human-printing');assert.equal(p.lookup('Test Commander','cpu-printing').id,'cpu-printing');
  const count=network,copy=p.lookup('Side card',null);copy.name='mutated';cards.get('Side card').name='changed catalogue';assert.equal(p.lookup('Side card',null).name,'Side card');assert.equal(network,count);
 });
+test('artwork covers a Commander pod\'s extra CPU decks and commanders kept beside the list',async()=>{
+ const s={...setup(),extraOpponents:[{deck:{name:'Pod deck',format:'Commander',commanders:[{name:'Pod Commander',qty:1}],cards:[{name:'Pod card',qty:99}]},difficulty:'Medium'}]},names=[];
+ const known=new Map(['Test Commander','Plains','Side card','Pod Commander','Pod card'].map(n=>[n,{id:n,name:n}]));
+ const p=createForgeArtworkPreparation({isCurrent:()=>true,resolveNames:async n=>{names.push(...n);},lookup:(name,id)=>id?null:known.get(name),fetchPrinting:async id=>({id,name:'Test Commander'})});
+ await p.prepare(s);
+ assert.ok(names.includes('Pod Commander')&&names.includes('Pod card'),'the third and fourth seats get art too');
+ assert.equal(p.lookup('Pod card',null)?.name,'Pod card');
+});
 test('artwork outage and wrong printing do not substitute a card or reject deck access',async()=>{
  const p=createForgeArtworkPreparation({isCurrent:()=>true,resolveNames:async()=>{throw Error('offline');},lookup:()=>({id:'wrong',name:'Test Commander'}),fetchPrinting:async()=>({id:'wrong',name:'Test Commander'})});
  await p.prepare(setup());assert.equal(p.lookup('Test Commander','human-printing'),null);assert.equal(p.lookup('Plains','selected-plains'),null);
