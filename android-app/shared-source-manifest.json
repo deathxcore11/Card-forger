@@ -1,15 +1,25 @@
 {
   "schema": 1,
-  "version": "4.3.42",
-  "commit": "584d94e8e5eb523be1f03c058920a3e2c6da9a9c",
-  "tree": "83b2a09931be82e63f2d7538919c6deb9dbe3bdf",
+  "version": "4.3.43",
+  "commit": "ec687d4b4b8677304b8cbe664b6506c6bd966998",
+  "tree": "595bd81f35623ac990431e0acf31240132d3b892",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
     {
       "path": ".assetsignore",
-      "bytes": 4068,
-      "sha256": "f7fe3bc8d62249c8860b89e41577a41d3ca930105963ebc327b69769adf60e1b"
+      "bytes": 4147,
+      "sha256": "38524f907772caab28a6229cd3b3cc51249daa2958d69efa7e945dd14d29f6a8"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 362,
+      "sha256": "b01aef9191349cde60da8c2ad3674e90071b84ad37d69393c7f94d33fad874a5"
+    },
+    {
+      "path": "_headers",
+      "bytes": 749,
+      "sha256": "fb189ee7a01f18d143762b1d5566f70c8cc2ca4b071a169b905f7793bfcd5262"
     },
     {
       "path": "account-scope.js",
@@ -120,6 +130,196 @@
       "path": "ask-navigation.js",
       "bytes": 7176,
       "sha256": "b20f8667d6e04461f254a0af370302dd1ec09bb6cd9db4940a4d49eaa4d04b33"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-BOLAS.m4a",
+      "bytes": 1991010,
+      "sha256": "6750890bbc223a4f3c007b6a14718c42d1386eeb1005a7617a6414c08f270240"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-BOLAS.ogg",
+      "bytes": 1361869,
+      "sha256": "4082544f6278308fc25e2b7d0adc97d9afbd443d9644326e2ee0e0f438b81b3e"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-HERALD.m4a",
+      "bytes": 1813711,
+      "sha256": "9fb76849f6cb41ed454674f9ac5ac20c6295ee549e98ca1c8fff410256065176"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-HERALD.ogg",
+      "bytes": 1244527,
+      "sha256": "4e9eb1cc4cb10a37215406aa88606772087446b3df12ff46495cf893acb971f5"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-LAZAV.m4a",
+      "bytes": 2210170,
+      "sha256": "19d097d727377a05801ce984403679f63438ad90c6716274858d40d4dcd2945f"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-LAZAV.ogg",
+      "bytes": 1699577,
+      "sha256": "0d19095d22ba894bbb14f25e4e11897045969d257638a1412c058f7fc88d2769"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-OB.m4a",
+      "bytes": 2236667,
+      "sha256": "67d188bf092a6e48243870ebb52453cff1d9e8c3589af48612962dba4ff4f840"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-OB.ogg",
+      "bytes": 1607674,
+      "sha256": "a26e8097d33ecefbac7420be73cb1bd5aafc30b0446e6e863bad6b6b99489f54"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-OLIVIA.m4a",
+      "bytes": 1434014,
+      "sha256": "758292644abd12497bc1e0a51a13cf2db8ed774e15fd5098448465c3cf84218a"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-OLIVIA.ogg",
+      "bytes": 1086643,
+      "sha256": "b51f19a2b9bda26918695508863f6f4b136813e17728d27755213a12225a5c71"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-SORIN.m4a",
+      "bytes": 2071480,
+      "sha256": "00d5b653149f34ed85c87413dcbec937cf63313bbbf3eefe75fb0d3ebc53fbb3"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-SORIN.ogg",
+      "bytes": 1541276,
+      "sha256": "e0ae6d7118e3653693113efced3a73f33749a75429f9a6d44abd1b92dca7915b"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-VRASKA.m4a",
+      "bytes": 2170368,
+      "sha256": "1b2d07e422037bfe128b0af3e852939b3bc93d1617cb383336a58fd5f4cafb6f"
+    },
+    {
+      "path": "assets/audio/music/MUS-BOSS-VRASKA.ogg",
+      "bytes": 1832923,
+      "sha256": "6384f09e297a97985f0055bc527717b656ffea05fe9db06687571c19a20b19e6"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-01.m4a",
+      "bytes": 3936409,
+      "sha256": "d88a8587538fa82acc5ce2aff8423bca5ca32c8ce277cc135610156e65cb5006"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-01.ogg",
+      "bytes": 2891611,
+      "sha256": "627e622db28456f814a14e55aabe413cb08dc384b18163d2e5283a197f0b38d7"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-02.m4a",
+      "bytes": 3547102,
+      "sha256": "441661ff9d4699c010a87515874118d14b095afd795cca60819e2b88a2ff5de5"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-02.ogg",
+      "bytes": 2750930,
+      "sha256": "499de5454c31db1f3e911ee0502100bf476cc0f145f3dde62d8be142576d5b1a"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-03.m4a",
+      "bytes": 1745167,
+      "sha256": "4b5293f157879582aa04629de34619e996a4815a5729ffd97805595df32cddaf"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-03.ogg",
+      "bytes": 1332190,
+      "sha256": "59068eef436c18eae073c5f25e367217d5d14b3f1d540dc6b67866b1bfae4bda"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-04.m4a",
+      "bytes": 3226116,
+      "sha256": "42a76a7db6406a1b2670e19a6a3b7dacebfcfd46ba2fe1923f5b761255101151"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-04.ogg",
+      "bytes": 2654183,
+      "sha256": "3c8a85758b99b849c8888cf22c447ce6d6edc7b023e5c1d95689437bf43d175f"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-05.m4a",
+      "bytes": 3793004,
+      "sha256": "a40de5918dffc7a24e3eff28f427cc5f6b66d39952b10d66d78d8f968dcf1598"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-05.ogg",
+      "bytes": 2950506,
+      "sha256": "f3b66c03b17734bb659ec0853e1dee4af7117c4375cefe7d2c634213584832ae"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-06.m4a",
+      "bytes": 1915620,
+      "sha256": "4f1fa2a86d4ed9edc15ab5f66213cb55005f49d377d45129f80050813d2343d9"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-06.ogg",
+      "bytes": 1508984,
+      "sha256": "6e4c1adb2f17bbb646cfec5889127e2ad5e2a82a506c995b65b12ff4a9f96009"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-07.m4a",
+      "bytes": 3548090,
+      "sha256": "4b15cddacc8d619c8f3a0b37e3ba464ac625c50cb63f6c149493295012f8b7a3"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-07.ogg",
+      "bytes": 2714858,
+      "sha256": "ad5ca20afe9d5282e60fa8d1edfba6e722a4223ab925dc491ed455f575df79e8"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-08.m4a",
+      "bytes": 2142541,
+      "sha256": "7ba2864bcade8f16d5d90459b406432340df27f72d7dd6cac6179957ec19ced4"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-08.ogg",
+      "bytes": 1566158,
+      "sha256": "0cadb136f98e63624db01ae58546ae6036459440dc173bb6246aa5d443f39d68"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-09.m4a",
+      "bytes": 2969033,
+      "sha256": "8afb6aee9e1d9c23c5bc8373077a9c50a107fb94d3d16db57dc9cb1856af2783"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-09.ogg",
+      "bytes": 2344054,
+      "sha256": "a2650e3f9914f5a2606d603a275eaa938e034f6c86a71cec963358498e8a596e"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-10.m4a",
+      "bytes": 2135143,
+      "sha256": "74cce13f9959b8cf72f0959e2a5200252cd0d45f00d7965757274982c50bac6f"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-10.ogg",
+      "bytes": 1593677,
+      "sha256": "cb3b4407d31c547c11e61387ca81150c108c10b65d0e82d35acad5104b5e78c5"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-11.m4a",
+      "bytes": 2823855,
+      "sha256": "93fd04d9f5850d700142ff5e194f3111b82b6966db8470bdaebfece083ce5e89"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-11.ogg",
+      "bytes": 2406520,
+      "sha256": "4ebdf4b67cec6e9646ab884eff72107601c265add7d9403610586d0b1c9e37a5"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-12.m4a",
+      "bytes": 1391385,
+      "sha256": "62d539b1354af5d57355093eb215f1c435f9848107a6107b71079f2bfab8cbb9"
+    },
+    {
+      "path": "assets/audio/music/MUS-PWG-12.ogg",
+      "bytes": 993544,
+      "sha256": "563cc7b4d17e2592a8cc9b22d16a54debe7f7543c9077a2c0802801f1522954d"
     },
     {
       "path": "assets/audio/sfx/AMB-001.ogg",
@@ -1743,8 +1943,8 @@
     },
     {
       "path": "audio-loops.js",
-      "bytes": 881,
-      "sha256": "50e4f8569b52ef6a602c5561866725ed5c75b12812fdfe794560840151f508f7"
+      "bytes": 1529,
+      "sha256": "fade6a20de4438b2be2957392f5df71460791e65ce88e6cdfd3a0677dfdcd9ec"
     },
     {
       "path": "audio.js",
@@ -1944,7 +2144,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "135418df5219d9ed4f4a32adc6918d1fe73a4af294fb4779cedcdf7464d7fa75"
+      "sha256": "49abd072306f0ad3b224ed810a53fee7dd01a04dc9c4c23aaa56f7928eda7b90"
     },
     {
       "path": "core.js",
@@ -2948,8 +3148,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 195010,
-      "sha256": "b59ae67d4031bf241c83d974c84448864c6969fb8992499848c822fdb9fe81db"
+      "bytes": 200523,
+      "sha256": "f8531f42b8eea0b317fb3f619c52bf324bf80a8ac7399a7093a9f344d565b062"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -3629,7 +3829,7 @@
     {
       "path": "package.json",
       "bytes": 12049,
-      "sha256": "8bf50f23194e40ffc4241eb189f5dffeb940e6ddd5575758fd113dcbda61458b"
+      "sha256": "e93c5add4223a11a4c09f8713e3a3f99131e3e419e3a8896fd030a8f0a4e7b64"
     },
     {
       "path": "pairing.js",
@@ -3647,9 +3847,1459 @@
       "sha256": "20dc45cc46e74db778141d8da24121c41bb19f92b4a461ca6f8cffff8b91d32b"
     },
     {
+      "path": "planeswalk-art/ev-inn-bargain.webp",
+      "bytes": 156134,
+      "sha256": "7db104926cd497ca3c0dba51ad350be8df150f24744907aa79ead7d973f0df31"
+    },
+    {
+      "path": "planeswalk-art/ev-inn-cart.webp",
+      "bytes": 160154,
+      "sha256": "366db951dd8b05429693643078af4b30dcf2e28415211b8edaa46889e18cc9c5"
+    },
+    {
+      "path": "planeswalk-art/ev-inn-cathar.webp",
+      "bytes": 158654,
+      "sha256": "88b58e80eafc66f9c642c45a842d5adbc673ccde1f0c8eaf19c3801efc5b1ae9"
+    },
+    {
+      "path": "planeswalk-art/ev-inn-shrine.webp",
+      "bytes": 148006,
+      "sha256": "4b8c55f3e0c15aa4b54307bf1c758b7b653d38ebc97943e2feab37832980d0c8"
+    },
+    {
+      "path": "planeswalk-art/ev-zen-bargain.webp",
+      "bytes": 154812,
+      "sha256": "13953d9f9cd8c11415f64779da4b1d9a7aa8d5c57fda70c6119683493f241d38"
+    },
+    {
+      "path": "planeswalk-art/ev-zen-hedron.webp",
+      "bytes": 205726,
+      "sha256": "125a2c0b7aced948d8a7bf2592d18cb38c2f271a0ce247914fd3581908d0a6ec"
+    },
+    {
+      "path": "planeswalk-art/ev-zen-ruins.webp",
+      "bytes": 198082,
+      "sha256": "1c8926e936c6e3ec304d397d07b428f3f68310cfbe526b84cc756635c80af4c1"
+    },
+    {
+      "path": "planeswalk-art/ev-zen-shrine.webp",
+      "bytes": 192816,
+      "sha256": "0eaff1615706f503026212f61e381602f115a019c22e10a2e2e20cee1e61f3e5"
+    },
+    {
+      "path": "planeswalk-art/inn-area-graveyard-wide.webp",
+      "bytes": 298804,
+      "sha256": "d9c6a3a8f9c3e9f41ce0ca6d99deec4fd216120affbf6063140c7a20f5a5f20b"
+    },
+    {
+      "path": "planeswalk-art/inn-area-graveyard.webp",
+      "bytes": 292090,
+      "sha256": "78ff5f03026a78b4f8199776053be9eca15ca88fbdf5364099b0f64dc3b30b9c"
+    },
+    {
+      "path": "planeswalk-art/inn-area-manor-wide.webp",
+      "bytes": 281050,
+      "sha256": "6f118fbaa72c9b5c00cd67b36a8b8c2a81dd2b10cd6a5d3fe7eb0bea436a6005"
+    },
+    {
+      "path": "planeswalk-art/inn-area-manor.webp",
+      "bytes": 318596,
+      "sha256": "33236f02b5a785829e312c79418651f32fa46220c33bb1a4acd70c691a03bc7e"
+    },
+    {
+      "path": "planeswalk-art/inn-area-village-wide.webp",
+      "bytes": 351000,
+      "sha256": "a5ba017be557a4eae2c51d329677e28354d7ce6d35d91ccdf8b3261fdea2c35b"
+    },
+    {
+      "path": "planeswalk-art/inn-area-village.webp",
+      "bytes": 329294,
+      "sha256": "7606ab4d38cf9813365796293fadf6f55faa5f388dd994d8ba69f2f48c0faa0c"
+    },
+    {
+      "path": "planeswalk-art/inn-boss-avacyn-wide.webp",
+      "bytes": 271616,
+      "sha256": "dd13dbcea32a8e4b8a4adf77a565ffc9312a1d25437144491d5056aa9aca24b3"
+    },
+    {
+      "path": "planeswalk-art/inn-boss-avacyn.webp",
+      "bytes": 297642,
+      "sha256": "a19e7fcb361ce85305a9ad0ad3b4fa4df832fe488c537ea1e3ccb6aa70c2b73d"
+    },
+    {
+      "path": "planeswalk-art/inn-boss-liliana-wide.webp",
+      "bytes": 182934,
+      "sha256": "9d349cf836ff9de5a355759755ece19d198d3498bf86fb1270799dbc99eb2a0d"
+    },
+    {
+      "path": "planeswalk-art/inn-boss-liliana.webp",
+      "bytes": 225236,
+      "sha256": "69d7feb20b5eb9a854bde642679259c4a5fa98370f541eaba124193a3f5b83de"
+    },
+    {
+      "path": "planeswalk-art/inn-boss-sorin-wide.webp",
+      "bytes": 213382,
+      "sha256": "ab1c67706a3d874dc26df211f995d0afd541434fab3d819fcdd3f3cb9f9841c2"
+    },
+    {
+      "path": "planeswalk-art/inn-boss-sorin.webp",
+      "bytes": 210866,
+      "sha256": "0e12b4e70c8aacbc80011413252d8332501b28574c4506a248fe8b6b51b066ab"
+    },
+    {
+      "path": "planeswalk-art/inn-dungeon-1-wide.webp",
+      "bytes": 214044,
+      "sha256": "b7e8a74ddcb1c7ee7c95d3fcfb7a90f73e4e28365a87c7ee392e08a7000150ba"
+    },
+    {
+      "path": "planeswalk-art/inn-dungeon-1.webp",
+      "bytes": 231134,
+      "sha256": "2f4f54ce8281770105cbc73dc7c725ff1a23c58b30af55eea42419bd7e08c80a"
+    },
+    {
+      "path": "planeswalk-art/inn-dungeon-2-wide.webp",
+      "bytes": 195330,
+      "sha256": "e3d8e14cddc77d4b68ab04a44b37c9b5889fd97f57da443fc95244a794e0d2a7"
+    },
+    {
+      "path": "planeswalk-art/inn-dungeon-2.webp",
+      "bytes": 220524,
+      "sha256": "bc6b3dbf055cbd0f98982ceecfcf30efbcffd6d8ee18779bd8f6d3b38795558d"
+    },
+    {
+      "path": "planeswalk-art/inn-dungeon-3-wide.webp",
+      "bytes": 218962,
+      "sha256": "c9e6bfbf84872e41b454efdd8cd7f112ddc18caf53949cb817febf92abb2e917"
+    },
+    {
+      "path": "planeswalk-art/inn-dungeon-3.webp",
+      "bytes": 189498,
+      "sha256": "0b32af3cf04630d9eac6b1b18f46f0e45e6e85f9bec3a9d7819ea47c10419ee7"
+    },
+    {
+      "path": "planeswalk-art/inn-elite-gisa-wide.webp",
+      "bytes": 208300,
+      "sha256": "33e5f4f26043a9415c9ccfbb876b06e6e9dd44ca8fa89ab0c1f8d9aeb8a04f99"
+    },
+    {
+      "path": "planeswalk-art/inn-elite-gisa.webp",
+      "bytes": 219756,
+      "sha256": "3865199ff6e4a5375e7306cbc62b92227db7c2b46a1197cc2db749e03118a791"
+    },
+    {
+      "path": "planeswalk-art/inn-elite-olivia-wide.webp",
+      "bytes": 184908,
+      "sha256": "d2ef48c56a1b58a048cde8a21c74b3f09be59fb6705462af3a4c1e0ae5f89b73"
+    },
+    {
+      "path": "planeswalk-art/inn-elite-olivia.webp",
+      "bytes": 203456,
+      "sha256": "83b3831908247e26419086f3413740b952a5cc2aea9820e997e529f3c4f2d0ee"
+    },
+    {
+      "path": "planeswalk-art/inn-elite-thalia-wide.webp",
+      "bytes": 275118,
+      "sha256": "12d117cbcfd9bc9e501d9959bb4656c7cff4506c3998f206f6a0c0bac1db16ee"
+    },
+    {
+      "path": "planeswalk-art/inn-elite-thalia.webp",
+      "bytes": 301326,
+      "sha256": "f15e78da8c098b1f75ea67dd0174ec20c2836ffb27a9751ebebe95047010bf38"
+    },
+    {
+      "path": "planeswalk-art/zen-area-coast-wide.webp",
+      "bytes": 347436,
+      "sha256": "bf9f985c7a522e29881037b71f52aeda6fb943d1ecb122bda1f02dd930108e49"
+    },
+    {
+      "path": "planeswalk-art/zen-area-coast.webp",
+      "bytes": 341628,
+      "sha256": "32bafc9c93c10281fa6945cb3773716bf62774fdff0adc34048786545b5a498e"
+    },
+    {
+      "path": "planeswalk-art/zen-area-jungle-wide.webp",
+      "bytes": 361200,
+      "sha256": "293fcc9011a03f6d29dd71b9664a129bf3829940b059bc3734759fb8f17aa56b"
+    },
+    {
+      "path": "planeswalk-art/zen-area-jungle.webp",
+      "bytes": 381938,
+      "sha256": "923373c1547944e791095fabad45353fe6cacfc828e35f55e51d979824121d11"
+    },
+    {
+      "path": "planeswalk-art/zen-area-wastes-wide.webp",
+      "bytes": 267610,
+      "sha256": "3e00f7dc03f0d9d1c5efdb0daefe044cacd065d54b23269c92c9058d7b8c58f6"
+    },
+    {
+      "path": "planeswalk-art/zen-area-wastes.webp",
+      "bytes": 264314,
+      "sha256": "c04c3aa0efd133bbacd6e65d7043a08ee938482ca0de2610047886d1ce732f07"
+    },
+    {
+      "path": "planeswalk-art/zen-boss-nissa-wide.webp",
+      "bytes": 395204,
+      "sha256": "538560251fe99b38f415b044af73abcb7fcbd1a34b4367785a97109f77708479"
+    },
+    {
+      "path": "planeswalk-art/zen-boss-nissa.webp",
+      "bytes": 416918,
+      "sha256": "77370d04328ea8ad56253d74c0db52f9a790617992b11a4f8deae45f6856bd1d"
+    },
+    {
+      "path": "planeswalk-art/zen-boss-obnixilis-wide.webp",
+      "bytes": 278090,
+      "sha256": "559b7f618893334b8290d017b758db75327b26c88a071bcdbdc53af438297980"
+    },
+    {
+      "path": "planeswalk-art/zen-boss-obnixilis.webp",
+      "bytes": 282744,
+      "sha256": "8b97f7d9b2f3429475ac0ebd6a4f0343d59b3bf01c2e3821604b2eff0f8c6a12"
+    },
+    {
+      "path": "planeswalk-art/zen-boss-ulamog-wide.webp",
+      "bytes": 269404,
+      "sha256": "a69cbc95ba2c83b0a6622100b2e880c48aaa78f1fcc8daacc0aa58939758fcbb"
+    },
+    {
+      "path": "planeswalk-art/zen-boss-ulamog.webp",
+      "bytes": 240440,
+      "sha256": "97b8722733e1595a1a62800f404d4f6f8947afe6ca844b952e0a6b787bbf3255"
+    },
+    {
+      "path": "planeswalk-art/zen-dungeon-1-wide.webp",
+      "bytes": 360712,
+      "sha256": "79365e102e58c9bc9437fce8f74bdd119a643b0cda4d494216105a87fe8795cf"
+    },
+    {
+      "path": "planeswalk-art/zen-dungeon-1.webp",
+      "bytes": 409248,
+      "sha256": "cf6f3417c2129538ca9334e3d191bf85e5b02a4de4386349dbe5fcee4f24574d"
+    },
+    {
+      "path": "planeswalk-art/zen-dungeon-2-wide.webp",
+      "bytes": 333256,
+      "sha256": "42b37a5bd4a4625e11bc36e3af408c266d30bb28f532b3c90672c74dba95387e"
+    },
+    {
+      "path": "planeswalk-art/zen-dungeon-2.webp",
+      "bytes": 319622,
+      "sha256": "3aa107dc9f9141d3250059e51caab040947202cf044feec2f36513b23b5626df"
+    },
+    {
+      "path": "planeswalk-art/zen-dungeon-3-wide.webp",
+      "bytes": 267260,
+      "sha256": "4513f297f244014becbdac4028e036ebbf7b138af486561cefc4f1a4ed45c249"
+    },
+    {
+      "path": "planeswalk-art/zen-dungeon-3.webp",
+      "bytes": 290466,
+      "sha256": "49cec0f48db26365e0573f3b263ce0c5588fcf817f014817a18573d8a0291ae1"
+    },
+    {
+      "path": "planeswalk-art/zen-elite-drana-wide.webp",
+      "bytes": 283050,
+      "sha256": "828d6374728a5c6f93e5ffba4dfe49c9e18da132933e2e774a5620f5a7c1f9a6"
+    },
+    {
+      "path": "planeswalk-art/zen-elite-drana.webp",
+      "bytes": 263176,
+      "sha256": "cb06f6dc92bb3b80bd5c00bf224a12fbad034f3ab4c030bcf84fd9518bca424c"
+    },
+    {
+      "path": "planeswalk-art/zen-elite-kozilek-wide.webp",
+      "bytes": 281422,
+      "sha256": "7a0a7230d068af91517453bfb04f5fa52fc5d09621bc2f17a43cdf5a5b03f4ca"
+    },
+    {
+      "path": "planeswalk-art/zen-elite-kozilek.webp",
+      "bytes": 256978,
+      "sha256": "e4cba6f9ca3b311b8b54de3abaccac5c375122a9fe2df3b498d62ebd3661fde7"
+    },
+    {
+      "path": "planeswalk-art/zen-elite-omnath-wide.webp",
+      "bytes": 255676,
+      "sha256": "86ea09f1d0f0cf1f6412cb33b42041f7dd06f8842b0858e4ab28b030b590c926"
+    },
+    {
+      "path": "planeswalk-art/zen-elite-omnath.webp",
+      "bytes": 269728,
+      "sha256": "599617fb94156beb2a458a5e6805b0c7e9cde51fac383397cff393964ab1aeba"
+    },
+    {
       "path": "planeswalk-audio.js",
-      "bytes": 5284,
-      "sha256": "9110cb746d08a74fd27c0264acba96670b255a2ba99cba574074154fd171d0ff"
+      "bytes": 6237,
+      "sha256": "4d0d6e0e174c2d96e0865d9530892dcb8b4c8039364dcb8e7f8034da146fa03e"
+    },
+    {
+      "path": "planeswalk-cast/atlas/ajanis-pridemate.webp",
+      "bytes": 245446,
+      "sha256": "40f8c757d00f1471ce6fe85bfe840288a6d191516722abc28b53ed27a0996223"
+    },
+    {
+      "path": "planeswalk-cast/atlas/angel-token.webp",
+      "bytes": 320886,
+      "sha256": "fd76ac56a7e2123996166cc9dc278e93a213630b8c5c665676488ad006d4dc69"
+    },
+    {
+      "path": "planeswalk-cast/atlas/angels-escort.webp",
+      "bytes": 263386,
+      "sha256": "75e1dccbdf1a1216dd9b6e8f2eddf2134781370ba6197b4e99c912f11b9fcfcc"
+    },
+    {
+      "path": "planeswalk-cast/atlas/ashen-scholar.webp",
+      "bytes": 213878,
+      "sha256": "1dc59cd26db234fb67adea0292edb581011939c128eb56383dde1fe060f8f6e9"
+    },
+    {
+      "path": "planeswalk-cast/atlas/attended-knight.webp",
+      "bytes": 221572,
+      "sha256": "64331b1319a4cc83ef725ce0e94376a44921ce91ed17d1578e0543496ebd69df"
+    },
+    {
+      "path": "planeswalk-cast/atlas/aurelia.webp",
+      "bytes": 274050,
+      "sha256": "5e6450e795e930faf308f8778e012cc3fd7f4632e569ab0424c85c3af543551f"
+    },
+    {
+      "path": "planeswalk-cast/atlas/avacyn.webp",
+      "bytes": 279702,
+      "sha256": "0b093397b928f46706c09d36b7a737c01c25c018bf9d68431b61958a33b9feac"
+    },
+    {
+      "path": "planeswalk-cast/atlas/azorius-hussar.webp",
+      "bytes": 207232,
+      "sha256": "91d3a4185936032ff2f234a1dbdac422d00b37d3ebd8f109b7c79dde08a9a7a9"
+    },
+    {
+      "path": "planeswalk-cast/atlas/azorius-lawmage.webp",
+      "bytes": 235156,
+      "sha256": "982c06be1491e4e8c8cc523bfb4364092d2795253a5b73ca4552defd60c766b9"
+    },
+    {
+      "path": "planeswalk-cast/atlas/baneslayer-angel.webp",
+      "bytes": 272222,
+      "sha256": "a3a614b6e8d2275f089aa8e7b5bbe6e1cf0d6ca5ebe3bce723b84191f321d04a"
+    },
+    {
+      "path": "planeswalk-cast/atlas/blight-herder.webp",
+      "bytes": 267358,
+      "sha256": "5fcd742163656502b44967b1e68862a169cf2087dfa54b1d79a09c3221566017"
+    },
+    {
+      "path": "planeswalk-cast/atlas/bolas.webp",
+      "bytes": 200814,
+      "sha256": "f688a5dbddec2d7d51e96f0c731445d2300f2a8714d43d8a74f07103c1463038"
+    },
+    {
+      "path": "planeswalk-cast/atlas/borderland-marauder.webp",
+      "bytes": 204284,
+      "sha256": "70a110fc18628cc21f5c477593d45a645ed77b33ce23bf0ddf875125756421fa"
+    },
+    {
+      "path": "planeswalk-cast/atlas/cackling-witch.webp",
+      "bytes": 273478,
+      "sha256": "771f007a011fab597d58f1b1382d8ab1aa7fdc5f010afd3c4b4f61da6ff5ba4e"
+    },
+    {
+      "path": "planeswalk-cast/atlas/cathar-guard-token.webp",
+      "bytes": 214570,
+      "sha256": "8607253c61c26b5724018e39fbf03930d8f3ca556b530ebebc497229128757de"
+    },
+    {
+      "path": "planeswalk-cast/atlas/chandra.webp",
+      "bytes": 426626,
+      "sha256": "9de871d4bf503991a2f9d780b91d193e11bbfe0c589ddd0ac789a3507ca0560f"
+    },
+    {
+      "path": "planeswalk-cast/atlas/chapel-geist.webp",
+      "bytes": 221878,
+      "sha256": "92a987d60267fe371ebe91f525938000fb90fd3b8e3b30b7d397655f79b95be2"
+    },
+    {
+      "path": "planeswalk-cast/atlas/dimir-agent.webp",
+      "bytes": 193254,
+      "sha256": "89a6b40a687a0fe271089eda1923acf0f376804550bd0e75922cd1ddc1684a99"
+    },
+    {
+      "path": "planeswalk-cast/atlas/diregraf-ghoul.webp",
+      "bytes": 260060,
+      "sha256": "1b50dacb07fbdf98b2f6681f6cfd103c00fba6801406115c39ea95d9a1790e64"
+    },
+    {
+      "path": "planeswalk-cast/atlas/drana.webp",
+      "bytes": 241838,
+      "sha256": "319d92068a51bb9def2656cc55d07383a4995ec1f1090586cac2f9a7413dcd60"
+    },
+    {
+      "path": "planeswalk-cast/atlas/dreadhorde-eternal.webp",
+      "bytes": 231740,
+      "sha256": "fdb22357eac62b098fd9561ac5d49d3a143badf0dc2e8f71d47448b7cd98cf09"
+    },
+    {
+      "path": "planeswalk-cast/atlas/echo-adept.webp",
+      "bytes": 225848,
+      "sha256": "4a08a292073136da755da162f49ece3165ad89e9e041386f78c017d086b85ef0"
+    },
+    {
+      "path": "planeswalk-cast/atlas/eldrazi-scion.webp",
+      "bytes": 275444,
+      "sha256": "5817f4ec7d4a6a7c22d463a1a5de6f9951336230f45e32a2c2d35d4eb6c09fba"
+    },
+    {
+      "path": "planeswalk-cast/atlas/eldrazi-spawn.webp",
+      "bytes": 284380,
+      "sha256": "70b40dbd0bb5d4c28f2f27e1cf9bd5e1f1cab665bbf484e4b5837da52475ecf7"
+    },
+    {
+      "path": "planeswalk-cast/atlas/elemental.webp",
+      "bytes": 173824,
+      "sha256": "219ba37593c2b757832e72520d3f307d3d6d66b751f0ec8b56d68e218e62ed93"
+    },
+    {
+      "path": "planeswalk-cast/atlas/elite-vanguard.webp",
+      "bytes": 211006,
+      "sha256": "6a14917e6144ffa2e47bebdf90f68a001edea499089b34d080a8363894aaa7df"
+    },
+    {
+      "path": "planeswalk-cast/atlas/elspeth.webp",
+      "bytes": 297146,
+      "sha256": "aed9afa3bf41f08b9176687011838ed222084f4362cb43395abaafa57ea2f616"
+    },
+    {
+      "path": "planeswalk-cast/atlas/ember-conductor.webp",
+      "bytes": 230702,
+      "sha256": "af309ed345a676c75d82aa537d540a91dc1ed2135a76fae5bf9e8846cf4af8f8"
+    },
+    {
+      "path": "planeswalk-cast/atlas/ember-hauler.webp",
+      "bytes": 145954,
+      "sha256": "d9896a2350e4f499f408e9f00cbdd65d6de219a486d5b82c650c371c5e974d2d"
+    },
+    {
+      "path": "planeswalk-cast/atlas/ember-imp.webp",
+      "bytes": 213018,
+      "sha256": "8bc31ca78d844f94bb678a00f6932f65d62e239cc18d218816db6d4a3adefdec"
+    },
+    {
+      "path": "planeswalk-cast/atlas/ember-sprite.webp",
+      "bytes": 260280,
+      "sha256": "9ceb491e9d795dbf8b3979662f341e806ed5f7e5f0498b037f0939c1e00067c5"
+    },
+    {
+      "path": "planeswalk-cast/atlas/eternal-skylord.webp",
+      "bytes": 277608,
+      "sha256": "8652ad29b73f27baaa75069af24f229ec91e68b39e0d416bd0324e7a5b8a3af8"
+    },
+    {
+      "path": "planeswalk-cast/atlas/furnace-juggernaut.webp",
+      "bytes": 583570,
+      "sha256": "b08ad936d3fd3d1d849602c71f6a635a8e1d4d8b87eb802cf72b1f5f10181c2a"
+    },
+    {
+      "path": "planeswalk-cast/atlas/gavony-siege-wagon.webp",
+      "bytes": 557596,
+      "sha256": "fdbe596c101d48c383ff505895677de694a98f2133a1f294f6aed5b1f58b522e"
+    },
+    {
+      "path": "planeswalk-cast/atlas/gisa.webp",
+      "bytes": 198192,
+      "sha256": "dfd6aa4514b9ceb1bcf8c3b892d4a3be6ab4df3ea0dbaa851f7112a2e0d89c02"
+    },
+    {
+      "path": "planeswalk-cast/atlas/glorybringer.webp",
+      "bytes": 338854,
+      "sha256": "8eebf75e05f04201041350aea9cbe80492dbda3985a28318999d8ff40b45e129"
+    },
+    {
+      "path": "planeswalk-cast/atlas/goblin-electromancer.webp",
+      "bytes": 225522,
+      "sha256": "a760177da1f0403445556f6719c4fd192bb83e1191e4f75e7ad82c0d0d22f3fe"
+    },
+    {
+      "path": "planeswalk-cast/atlas/goblin-flak-slinger.webp",
+      "bytes": 269208,
+      "sha256": "8c3bfd5953e7ae15be29fc344855b290390123638dc205d48d362c84dbb7cd00"
+    },
+    {
+      "path": "planeswalk-cast/atlas/goblin-guard.webp",
+      "bytes": 274746,
+      "sha256": "218061d16cfe2eef0b7021313851f10a911ebc2eb4ef5a6d2176939a04d67bf8"
+    },
+    {
+      "path": "planeswalk-cast/atlas/goblin-guide.webp",
+      "bytes": 236696,
+      "sha256": "05daf1f213d33a9d3578ccc7718f37d29189f2d5c796a82652da7c36192dba21"
+    },
+    {
+      "path": "planeswalk-cast/atlas/goblin-king.webp",
+      "bytes": 203218,
+      "sha256": "9146e8b885ce43a55640212a4312ed1a03ce1913ce1d1379607a347ffd03d46a"
+    },
+    {
+      "path": "planeswalk-cast/atlas/goblin-piker.webp",
+      "bytes": 255418,
+      "sha256": "bd0112985611c288b5fc476149886e44d9d90c07cbc51970b84016d52050ec55"
+    },
+    {
+      "path": "planeswalk-cast/atlas/goblin-token.webp",
+      "bytes": 249384,
+      "sha256": "872fefd6e46693506d39d1e55de31d55902b7aa5ef26101f286e522194be9617"
+    },
+    {
+      "path": "planeswalk-cast/atlas/goblin-warchief.webp",
+      "bytes": 272420,
+      "sha256": "3101060322ced4ead471f4a4e8664ce3adaf25471837f3701c3ff439bf90d92d"
+    },
+    {
+      "path": "planeswalk-cast/atlas/golgari-guard.webp",
+      "bytes": 202616,
+      "sha256": "72963de824aab6106f4e1a1794419deb14b715acb12763149bbe42075f468559"
+    },
+    {
+      "path": "planeswalk-cast/atlas/golgari-rot-shambler.webp",
+      "bytes": 283286,
+      "sha256": "12b241d213d93a1844a1b7612ae0d7abc61bbd7f5944917f243f51460d2a372f"
+    },
+    {
+      "path": "planeswalk-cast/atlas/golgari-swarm.webp",
+      "bytes": 375032,
+      "sha256": "20714c414e2a70b888df10610dd871a994c32c8f239a466bc2d9719357e82231"
+    },
+    {
+      "path": "planeswalk-cast/atlas/gravecrawler.webp",
+      "bytes": 253800,
+      "sha256": "8eca3e26c84652146e7078793e3fb0272566e7dbdc454627da200bae29a63fe4"
+    },
+    {
+      "path": "planeswalk-cast/atlas/gruul-boar.webp",
+      "bytes": 282338,
+      "sha256": "dae90a2322f8602e240eaa3761fed61af8a9673bb0063a6e9ef50760587e5961"
+    },
+    {
+      "path": "planeswalk-cast/atlas/gruul-siege-breaker.webp",
+      "bytes": 227854,
+      "sha256": "8e0829a5afdb256a40ae834636892efb1ef08e1086e0577a7589e17ef5a4831c"
+    },
+    {
+      "path": "planeswalk-cast/atlas/gutter-ooze.webp",
+      "bytes": 243022,
+      "sha256": "3a07ecf3e85de49a51e774c00e2890dd56059ac5bc8da2e6670e2b752c3d77fb"
+    },
+    {
+      "path": "planeswalk-cast/atlas/guttersnipe.webp",
+      "bytes": 191386,
+      "sha256": "4218adaac3fbd5a829d4f13e3c92c98c454af0c3c80ce5dc56b1478168f94a8d"
+    },
+    {
+      "path": "planeswalk-cast/atlas/halimar-tidecaller.webp",
+      "bytes": 291572,
+      "sha256": "039a9ee476817a339036f84eff01af2f1fb6d5cfcd49301a45314f2ccd2f9158"
+    },
+    {
+      "path": "planeswalk-cast/atlas/healers-hawk.webp",
+      "bytes": 336514,
+      "sha256": "f3a9c3adb0640b310788ce08351b612b639b414565605eb434b15692e446df7c"
+    },
+    {
+      "path": "planeswalk-cast/atlas/hedron-crab.webp",
+      "bytes": 213076,
+      "sha256": "78fa650a9a66c950e0ac4008fb8c961fa2090070dbff1bfd8cf02d3b2073c072"
+    },
+    {
+      "path": "planeswalk-cast/atlas/hill-giant.webp",
+      "bytes": 150344,
+      "sha256": "4b6f3ebbe7ae43b30aff862d317f0bd041c931063e9985dbde6e77be0002a343"
+    },
+    {
+      "path": "planeswalk-cast/atlas/inferno-titan.webp",
+      "bytes": 217134,
+      "sha256": "1b4497fe29ed85d617fd050206ba926c4e7cfdf76b0de212821817ffff954a8a"
+    },
+    {
+      "path": "planeswalk-cast/atlas/inspiring-overseer.webp",
+      "bytes": 170508,
+      "sha256": "1a9c74daacfe18651449f6c85ede289f824b611d903573788d11871c8a03b13e"
+    },
+    {
+      "path": "planeswalk-cast/atlas/ironclaw-hatchling.webp",
+      "bytes": 169618,
+      "sha256": "58f211008138c742ed86ef2af4f57db96fd3eb7b16edbb8b0891b19d212bbf36"
+    },
+    {
+      "path": "planeswalk-cast/atlas/ironfang.webp",
+      "bytes": 226032,
+      "sha256": "6f9b2655250db843af608ea0476b27941262c1fde4eb1b3df73a89a39d2bfc05"
+    },
+    {
+      "path": "planeswalk-cast/atlas/izzet-weird.webp",
+      "bytes": 295036,
+      "sha256": "3d0e3d72704271c2a46a1f32bd1b862b2b1291b13b618d5bdc2640b09e04b247"
+    },
+    {
+      "path": "planeswalk-cast/atlas/knight-of-the-white-orchid.webp",
+      "bytes": 118476,
+      "sha256": "48b505dc54a74c7e84b6fa3b6e1458264598b18f7ddae110a0a70123e6a8de76"
+    },
+    {
+      "path": "planeswalk-cast/atlas/kor-skyfisher.webp",
+      "bytes": 251418,
+      "sha256": "c42543679c69b9f6dc24b7d69e15e2f7c7604a0748c9681b12fd20171a68cdfd"
+    },
+    {
+      "path": "planeswalk-cast/atlas/kor-skyguard.webp",
+      "bytes": 233350,
+      "sha256": "c36272543435395fa808fb8cf7824f2db8d50d7aa8a8d10126aec61f12ac57ed"
+    },
+    {
+      "path": "planeswalk-cast/atlas/kozilek-herald.webp",
+      "bytes": 245900,
+      "sha256": "c20dd8496c1538f1f49bc53801827bf1834aa0750fe55bcefbf1549f60efc8ff"
+    },
+    {
+      "path": "planeswalk-cast/atlas/krenko.webp",
+      "bytes": 132678,
+      "sha256": "d241cdfd39807b36f472cf7e4a477a469cbe076fcb2a8a7bb8c20c99ab96e9c0"
+    },
+    {
+      "path": "planeswalk-cast/atlas/lantern-familiar.webp",
+      "bytes": 249772,
+      "sha256": "c572da467b5bbdc04d4d56d99010545ec9dcdb4c97658c57e9cbcfa8b1f72bd5"
+    },
+    {
+      "path": "planeswalk-cast/atlas/lazav.webp",
+      "bytes": 286902,
+      "sha256": "55f66c9e1c46e22114aab3ee010ec6a0f1dea737f79d8c06fed7040d3b08b896"
+    },
+    {
+      "path": "planeswalk-cast/atlas/liliana.webp",
+      "bytes": 264334,
+      "sha256": "070de789528857b36d4f2a2407fe4c59a05863c7fc21529e9d94ca30661c571c"
+    },
+    {
+      "path": "planeswalk-cast/atlas/melek.webp",
+      "bytes": 250926,
+      "sha256": "73a4ba400e45d15a68e069d02a1c0a4917f6fa539e2de7ddf856241f96aebe15"
+    },
+    {
+      "path": "planeswalk-cast/atlas/mist-intruder.webp",
+      "bytes": 210388,
+      "sha256": "a1e7c17303a522c7b4688da21e2449481363f1488a840d8087ab3bfa62bc1ae2"
+    },
+    {
+      "path": "planeswalk-cast/atlas/mogg-fanatic.webp",
+      "bytes": 225760,
+      "sha256": "75a5bdef18f4ad8383518f6880427ecdf019a3e3059a75f6a0c0a8153be06289"
+    },
+    {
+      "path": "planeswalk-cast/atlas/nissa-elemental.webp",
+      "bytes": 261568,
+      "sha256": "97f2e654968edec6845d02a3418ab26792977a4d811845034c438761fdbf496a"
+    },
+    {
+      "path": "planeswalk-cast/atlas/nissa.webp",
+      "bytes": 229706,
+      "sha256": "3583c6801332375d2df3b723713db728ee75b84be4499c7dbe01254ef880874b"
+    },
+    {
+      "path": "planeswalk-cast/atlas/ob-nixilis.webp",
+      "bytes": 221978,
+      "sha256": "1362e46ebb8fb8a83f79fe09bd7dccfc604702e98f6ede2b617061846fede344"
+    },
+    {
+      "path": "planeswalk-cast/atlas/olivia.webp",
+      "bytes": 270544,
+      "sha256": "58844b009feeeb4bf96c5720bde82c0904700557b35e562aa14ef55b538416c0"
+    },
+    {
+      "path": "planeswalk-cast/atlas/omnath.webp",
+      "bytes": 300398,
+      "sha256": "841277464a61944c630930a7b9c9187b1dc5ebabf3f61ba3ff48959a9af2b6e3"
+    },
+    {
+      "path": "planeswalk-cast/atlas/orzhov-syndic.webp",
+      "bytes": 181344,
+      "sha256": "d11fbac8adafeda36b0e4cf234a094d2d0cc0e8ace35c1db3f95effa153d23f9"
+    },
+    {
+      "path": "planeswalk-cast/atlas/orzhov-thrull.webp",
+      "bytes": 193612,
+      "sha256": "8e96ea33b2971a0ce350560cdcaf2b4466cb81f17fe475e6be8b805e6254e48a"
+    },
+    {
+      "path": "planeswalk-cast/atlas/palace-guard.webp",
+      "bytes": 237198,
+      "sha256": "f626fe7a09afa58ebfc3a78b3e14ffd25ff8600340e3ab0043d6b29656be6cf3"
+    },
+    {
+      "path": "planeswalk-cast/atlas/pyre-herald.webp",
+      "bytes": 243006,
+      "sha256": "c10b4df40fcf36fea521bfa042ce9d8531c02c1b85e57a110810c614c0c088b2"
+    },
+    {
+      "path": "planeswalk-cast/atlas/raging-goblin.webp",
+      "bytes": 325516,
+      "sha256": "b7b21c4da8ea2a469f8845a32777ca6d234b65449f610f1ed6724336e54dc66a"
+    },
+    {
+      "path": "planeswalk-cast/atlas/rakdos-devil.webp",
+      "bytes": 279362,
+      "sha256": "0eae67650a84d1d15551672a709dbeb9ce88381370c16734e5c73d33af2c2860"
+    },
+    {
+      "path": "planeswalk-cast/atlas/rakdos-goblin.webp",
+      "bytes": 254656,
+      "sha256": "9c47a4f82502eda67b710b5f82c7d3b830b08106bca5aa6d49d2b5a3f16f0408"
+    },
+    {
+      "path": "planeswalk-cast/atlas/saproling.webp",
+      "bytes": 341336,
+      "sha256": "d67ccaca6d755817c46603af0b7d5caeddc911f38c25468b256dd8277ec4c2a5"
+    },
+    {
+      "path": "planeswalk-cast/atlas/serra-angel.webp",
+      "bytes": 321802,
+      "sha256": "5e35d625b87a1dd1c9d48459be49fad8d85871cfb80b107e31882dd73029a755"
+    },
+    {
+      "path": "planeswalk-cast/atlas/shivan-dragon.webp",
+      "bytes": 261804,
+      "sha256": "7d379859895e68afd4b696c1dd8ce102af63780e53494cba632923973caa3a41"
+    },
+    {
+      "path": "planeswalk-cast/atlas/simic-krasis.webp",
+      "bytes": 223232,
+      "sha256": "6f4dad9b36447ed64b0f5663b9cf09b1994b722bfb57b927e67eb5822203c747"
+    },
+    {
+      "path": "planeswalk-cast/atlas/skirsdag-cultist.webp",
+      "bytes": 227372,
+      "sha256": "938468f99064ac786ffe3f81e78b7f86c5cceeb51128bc7c20d3e46a79e9d9b6"
+    },
+    {
+      "path": "planeswalk-cast/atlas/soldier-token.webp",
+      "bytes": 204910,
+      "sha256": "eba409b307e10e6c33b3f3c92a5c438d72e0069f37a6170e6cf672e945f13c8c"
+    },
+    {
+      "path": "planeswalk-cast/atlas/sorin.webp",
+      "bytes": 188326,
+      "sha256": "2ea7476e2711b4386d7beb96fdaadbc03f7b348aaa5747d944f2bec38e42e2c4"
+    },
+    {
+      "path": "planeswalk-cast/atlas/soul-warden.webp",
+      "bytes": 194476,
+      "sha256": "7a4e2c1deb0b344418ee38bf12306013ac9da1bb51cf5bc1b761455431dace9b"
+    },
+    {
+      "path": "planeswalk-cast/atlas/spirit-token.webp",
+      "bytes": 243896,
+      "sha256": "e0b49de61306be7ae58e0d8f102535aa399e3cb86ddd8b6af3aa2e812578e7e3"
+    },
+    {
+      "path": "planeswalk-cast/atlas/stromkirk-patrol.webp",
+      "bytes": 198192,
+      "sha256": "99c055fa0722fa331d762964621bcd9f1f38b7364968731dd7a027aa81017885"
+    },
+    {
+      "path": "planeswalk-cast/atlas/territorial-baloth.webp",
+      "bytes": 231718,
+      "sha256": "f926021f0823a867693ab6207291327fb8928984bc91554bb97da4ac7b584d7e"
+    },
+    {
+      "path": "planeswalk-cast/atlas/teysa.webp",
+      "bytes": 232354,
+      "sha256": "d5b7c0ddedb782d70f4ef2476e1116ec0c7fdd38805ec668af08e339aea13a40"
+    },
+    {
+      "path": "planeswalk-cast/atlas/thalia.webp",
+      "bytes": 197556,
+      "sha256": "cf919980b4fcd9ed30328d069bd50e84b93a8dca00b99c5fb0e551c0d3130fb2"
+    },
+    {
+      "path": "planeswalk-cast/atlas/thraben-inquisitor.webp",
+      "bytes": 197516,
+      "sha256": "bc80374a67fb8a47fec377af033e879bf19ad266c04299e7227ff6024f62a96d"
+    },
+    {
+      "path": "planeswalk-cast/atlas/turntimber-ranger.webp",
+      "bytes": 179510,
+      "sha256": "76b7d6c64633cc97ce314d6726b2501fa7625644157fb79d1d35d0e9ef3230dd"
+    },
+    {
+      "path": "planeswalk-cast/atlas/ulamog-avatar.webp",
+      "bytes": 272606,
+      "sha256": "422025c469e4c3432afb5447c9712e091d594e410bc6cd4b640da42708f9bd86"
+    },
+    {
+      "path": "planeswalk-cast/atlas/valley-dasher.webp",
+      "bytes": 346076,
+      "sha256": "5e5f60c6b18f96cb94677dd8c877311dcf28a7b2204d055bde9512bd1cb55945"
+    },
+    {
+      "path": "planeswalk-cast/atlas/vampire-interloper.webp",
+      "bytes": 196150,
+      "sha256": "4506f4d5087287b94169c9d32fb6b3c14cbe4c9acffbfb63c29592c8caa36594"
+    },
+    {
+      "path": "planeswalk-cast/atlas/village-ironsmith.webp",
+      "bytes": 155428,
+      "sha256": "c773bd559a7f4537dce2e7d26aa5244944e75bb95e9c7a1d49ab808dc7f97d16"
+    },
+    {
+      "path": "planeswalk-cast/atlas/vraska-assassin.webp",
+      "bytes": 262050,
+      "sha256": "70dfb67e4e0af994d9b2a629684f17f56b2df094f3eb3438c1768b16b1db7b50"
+    },
+    {
+      "path": "planeswalk-cast/atlas/vraska.webp",
+      "bytes": 228932,
+      "sha256": "a9c1002ebb44038917825fb507758b0639fb7debc70c5564bc6fa78d05281b65"
+    },
+    {
+      "path": "planeswalk-cast/atlas/wolf-token.webp",
+      "bytes": 191746,
+      "sha256": "c4cede62901652b84e150892c009e1c9083a8137f03253a6ef895bb76df9aa0e"
+    },
+    {
+      "path": "planeswalk-cast/atlas/young-pyromancer.webp",
+      "bytes": 205054,
+      "sha256": "26084ee25acc66a6379470b9a7d2e84ce87cf61faed180a160b16b6b0ba64819"
+    },
+    {
+      "path": "planeswalk-cast/atlas/zombie-token.webp",
+      "bytes": 175568,
+      "sha256": "718d2d17d8c4ee6b75ac4195fa67cc507c869736876795971c270c2588334623"
+    },
+    {
+      "path": "planeswalk-cast/cast.json",
+      "bytes": 58720,
+      "sha256": "4a4d5089865210547391431b0f1a711b2e673ba96455bcac7b358d3ae9a53cee"
+    },
+    {
+      "path": "planeswalk-cast/drop/gutter-ooze.webp",
+      "bytes": 6950,
+      "sha256": "c550df5a165816b453bf40274961cc32b1fb3b606f2e4aafde3e0be58a3fade5"
+    },
+    {
+      "path": "planeswalk-cast/fx/anthem.webp",
+      "bytes": 85688,
+      "sha256": "61a05f2e58d3707c07034c68415531c19c6f23e4687be998ca5f91cc1d4694c6"
+    },
+    {
+      "path": "planeswalk-cast/fx/draw.webp",
+      "bytes": 169582,
+      "sha256": "dd71441a1ae1cd1b8385baabd65e1ff0aa90ccb2e56ddb7cdac21df7d36a146f"
+    },
+    {
+      "path": "planeswalk-cast/fx/embers.webp",
+      "bytes": 195450,
+      "sha256": "2d0c95409da2cee90611cbf8f1d8ac18a5dc75da4c5e1fd0c0d463960604a04a"
+    },
+    {
+      "path": "planeswalk-cast/fx/exile.webp",
+      "bytes": 201740,
+      "sha256": "dcbbdf4f2ec9ee21119391d3186e9f51a2cea3ac1843df367dce4c11c87af9d0"
+    },
+    {
+      "path": "planeswalk-cast/fx/fire-wave.webp",
+      "bytes": 161176,
+      "sha256": "ba417361e4c017f615b11e527df5d0398cd444da415720cec015f9c898dd920b"
+    },
+    {
+      "path": "planeswalk-cast/fx/fireball.webp",
+      "bytes": 163728,
+      "sha256": "034d3a7b2ce6c3137c4f02fbc407ee55e0487ca08b2db2166927543e3ddc50c8"
+    },
+    {
+      "path": "planeswalk-cast/fx/grapeshot.webp",
+      "bytes": 234682,
+      "sha256": "2d573df74a24a7cbac5db85bfa57799b4a222c4068a476045d1dcd92d6bccfbd"
+    },
+    {
+      "path": "planeswalk-cast/fx/growth-red.webp",
+      "bytes": 297920,
+      "sha256": "7de35b866332d49aea510c474f1f0155c84abfa0d318884f07340f19178a0363"
+    },
+    {
+      "path": "planeswalk-cast/fx/holy-burst.webp",
+      "bytes": 220220,
+      "sha256": "4c59c31f6ce0bf60612c84821643ec0c90a0bd34cb836ac8b8f5895ddfbf481e"
+    },
+    {
+      "path": "planeswalk-cast/fx/mana-red.webp",
+      "bytes": 121212,
+      "sha256": "75fa0d8a35cf5e6aeb7d465a12f39567c2fa7518009459b5050f1267094979ad"
+    },
+    {
+      "path": "planeswalk-cast/fx/quake-red.webp",
+      "bytes": 219268,
+      "sha256": "fb66f99d32a1054ede7ce1089704f2a7381835fb83402eef498426fc1b402628"
+    },
+    {
+      "path": "planeswalk-cast/fx/sacrifice.webp",
+      "bytes": 125128,
+      "sha256": "1b5ae0a7745f48bd87e2be60117fded394a06f65b180b51f3ed114a57be67319"
+    },
+    {
+      "path": "planeswalk-cast/fx/shield.webp",
+      "bytes": 45632,
+      "sha256": "35845ba1dc1f9e575572cecd465aabc2bea0d8ddb597b3178a6bcd3066a2e41c"
+    },
+    {
+      "path": "planeswalk-cast/fx/soldier-arrival.webp",
+      "bytes": 291188,
+      "sha256": "9f82c60b79c94fd40935ccd09f61b57e4a57fe00b34db9f2b09bfd3552fbde78"
+    },
+    {
+      "path": "planeswalk-cast/fx/summon-red.webp",
+      "bytes": 183286,
+      "sha256": "574acdb4bc2fb9b2fda34d8142b01bf5e27abed273a921225fa768002df7b5a3"
+    },
+    {
+      "path": "planeswalk-cast/fx/sun-spear.webp",
+      "bytes": 176590,
+      "sha256": "41c29b1d4413616939a542a78c9a4c50cee753b2d79443b0baab318108b78f0d"
+    },
+    {
+      "path": "planeswalk-cast/mask/ajanis-pridemate.webp",
+      "bytes": 7302,
+      "sha256": "1bf9ee6f5b902dd291dc722c5da9f33fe75b6154e3f23c66526e502cd11a9007"
+    },
+    {
+      "path": "planeswalk-cast/mask/angel-token.webp",
+      "bytes": 8056,
+      "sha256": "140d82b219caac8c6df5cfc522060bad42b4603058899ba7cf8d263b538e4ce8"
+    },
+    {
+      "path": "planeswalk-cast/mask/angels-escort.webp",
+      "bytes": 6836,
+      "sha256": "637cd326819b42848663966454ecd7aac4af5def30ff7f42a9964108001a579c"
+    },
+    {
+      "path": "planeswalk-cast/mask/ashen-scholar.webp",
+      "bytes": 6972,
+      "sha256": "dd661e3ee4f4ae8c66022f45c0e638f69258d7ebd9c70a444e75100146ff64e9"
+    },
+    {
+      "path": "planeswalk-cast/mask/attended-knight.webp",
+      "bytes": 7202,
+      "sha256": "bd4bbc435349e764915704c4c01d80a7fbf266f6d567a71c58d33b801783c654"
+    },
+    {
+      "path": "planeswalk-cast/mask/aurelia.webp",
+      "bytes": 8012,
+      "sha256": "6fae237213116d458ec778ecc3e782c465ce90d64ff84a6eb508a2b11d288319"
+    },
+    {
+      "path": "planeswalk-cast/mask/avacyn.webp",
+      "bytes": 7630,
+      "sha256": "dc2aea325848527c0cacedbf5c3d53a5964aabb7fc711a5d3a4f71a08d99c5d5"
+    },
+    {
+      "path": "planeswalk-cast/mask/azorius-hussar.webp",
+      "bytes": 6824,
+      "sha256": "70a835be71a09b68f71625369d8f879a13b089306961adfa28e1420b8515ed6d"
+    },
+    {
+      "path": "planeswalk-cast/mask/azorius-lawmage.webp",
+      "bytes": 6868,
+      "sha256": "caa2fa2bddc944a99fd893b965c6bacbdda92d979146ed2ae04e196d8b763ca0"
+    },
+    {
+      "path": "planeswalk-cast/mask/baneslayer-angel.webp",
+      "bytes": 8316,
+      "sha256": "d9232eae9dc1bf8c7361c9856ec35fb1f1d93b2049b3600997b73f2096c2efcf"
+    },
+    {
+      "path": "planeswalk-cast/mask/blight-herder.webp",
+      "bytes": 7568,
+      "sha256": "9ddef9cc6a5b3cfe5be0d08664fe9e46958bf70a21059ddc3e9670483ba9655f"
+    },
+    {
+      "path": "planeswalk-cast/mask/bolas.webp",
+      "bytes": 7362,
+      "sha256": "19ca55ce215584a9c3cde2d55fe06282327c409533d585a55ca09ba7cf2cb634"
+    },
+    {
+      "path": "planeswalk-cast/mask/borderland-marauder.webp",
+      "bytes": 7744,
+      "sha256": "9171a7c7752f0b0238dc407bfa3e73a3411c3e6758aaf2c8827127e72f19fbc8"
+    },
+    {
+      "path": "planeswalk-cast/mask/cackling-witch.webp",
+      "bytes": 7106,
+      "sha256": "986aaf07a3fe8bc924b2ead429e1fe0d59ec625b23e9f3629d1ccf214c3b8212"
+    },
+    {
+      "path": "planeswalk-cast/mask/cathar-guard-token.webp",
+      "bytes": 6652,
+      "sha256": "d1b5ebd4c222139cc6599102a5d5939445b8810235dc27814a9d48e432f6ce42"
+    },
+    {
+      "path": "planeswalk-cast/mask/chandra.webp",
+      "bytes": 8080,
+      "sha256": "7b23a1978134007f00a826ca112039a68d9910eb391155cbf998589b4078f402"
+    },
+    {
+      "path": "planeswalk-cast/mask/chapel-geist.webp",
+      "bytes": 7238,
+      "sha256": "a105c7753046bfec892964e56428070ade9c1b03b8aed2de68dd0affd6c0bafd"
+    },
+    {
+      "path": "planeswalk-cast/mask/dimir-agent.webp",
+      "bytes": 6888,
+      "sha256": "48c472bef616ed2ee37f0fce02f7d8b2b602dc30c404134f05208fef27c16774"
+    },
+    {
+      "path": "planeswalk-cast/mask/diregraf-ghoul.webp",
+      "bytes": 7438,
+      "sha256": "ce0c037111acabf66f2f12954f09069466331221ea6a5ce574412bead8b0a8c5"
+    },
+    {
+      "path": "planeswalk-cast/mask/drana.webp",
+      "bytes": 8070,
+      "sha256": "11d37c46250f66d72bb042f493c7d5b51bd209d89fc0a9d96229eb9daafb9697"
+    },
+    {
+      "path": "planeswalk-cast/mask/dreadhorde-eternal.webp",
+      "bytes": 7304,
+      "sha256": "c86184cb79c73190206c1e776f0dd170c8e8f488bb5711a0974bad844a36580e"
+    },
+    {
+      "path": "planeswalk-cast/mask/echo-adept.webp",
+      "bytes": 7000,
+      "sha256": "9a3a37f32324ff37face14049687262680b2942aac3da3deeaa0783e304b0764"
+    },
+    {
+      "path": "planeswalk-cast/mask/eldrazi-scion.webp",
+      "bytes": 8010,
+      "sha256": "72247a692ea498341e792ca6f813213e2a5b339f6dfddcadeca6e9316a3fed70"
+    },
+    {
+      "path": "planeswalk-cast/mask/eldrazi-spawn.webp",
+      "bytes": 8090,
+      "sha256": "901dc3bfd0200c00a514fde7847275c06f86ad2c18376c0c8e37936ce9f87b9f"
+    },
+    {
+      "path": "planeswalk-cast/mask/elemental.webp",
+      "bytes": 7962,
+      "sha256": "7e3486b974faff04dee6ba74e329132603f65655fad868f797439c4c675e1901"
+    },
+    {
+      "path": "planeswalk-cast/mask/elite-vanguard.webp",
+      "bytes": 6840,
+      "sha256": "06007ccb0f782acaefcdeeb1118b4b2a4b98b44e6bae6698b2976ec071cc8d62"
+    },
+    {
+      "path": "planeswalk-cast/mask/elspeth.webp",
+      "bytes": 7776,
+      "sha256": "63a492d4fe4276e65de9b7856381e25467bef2a465c0c0e87638935218652188"
+    },
+    {
+      "path": "planeswalk-cast/mask/ember-conductor.webp",
+      "bytes": 7282,
+      "sha256": "a1040ce93caad78f90153cf67e922e4d7a0a6887342f2a3ef639d25ff936f2e7"
+    },
+    {
+      "path": "planeswalk-cast/mask/ember-hauler.webp",
+      "bytes": 6886,
+      "sha256": "73f6dca5996191b4bc4b5a40720a426fc6b02fad76ca61312318857925f5f8ca"
+    },
+    {
+      "path": "planeswalk-cast/mask/ember-imp.webp",
+      "bytes": 7524,
+      "sha256": "d74f6d8e10db19fdf2555fbf6773854c29baa59c40e07b284e60e66479dc2f98"
+    },
+    {
+      "path": "planeswalk-cast/mask/ember-sprite.webp",
+      "bytes": 8746,
+      "sha256": "ab0caf0a4ad4549b2f6eed8b7166ea97a82849a0f36d11847faba8ffc509e56c"
+    },
+    {
+      "path": "planeswalk-cast/mask/eternal-skylord.webp",
+      "bytes": 8006,
+      "sha256": "a079a8f97f2681964f9aad0e982c667d09579550c0502d55e23bb9a6f47cbbfb"
+    },
+    {
+      "path": "planeswalk-cast/mask/furnace-juggernaut.webp",
+      "bytes": 8752,
+      "sha256": "bdd7df8a9428c315e06ffd1142737bbe9064c24d671afb929e37be28265e953d"
+    },
+    {
+      "path": "planeswalk-cast/mask/gavony-siege-wagon.webp",
+      "bytes": 8220,
+      "sha256": "f285c281a691b0782766041776351eb3259dff5210196fcd243dadc9418068b8"
+    },
+    {
+      "path": "planeswalk-cast/mask/gisa.webp",
+      "bytes": 6968,
+      "sha256": "4ca28666e36aad3a50ef4fbccb691dd9ef61bd31e2fa98bce1d46d9a83d35c0b"
+    },
+    {
+      "path": "planeswalk-cast/mask/glorybringer.webp",
+      "bytes": 9776,
+      "sha256": "f628a7fb6fcc7defc1f2acf8e6c13b4cec473b3e4e8c36bee1712ece09850884"
+    },
+    {
+      "path": "planeswalk-cast/mask/goblin-electromancer.webp",
+      "bytes": 8072,
+      "sha256": "d111074dd3018b950db8300df6767d5771da73d86935f9c4d7ba7890b89659ce"
+    },
+    {
+      "path": "planeswalk-cast/mask/goblin-flak-slinger.webp",
+      "bytes": 7112,
+      "sha256": "747406f32197253a8ac11377c94a9958b4627702e1c1687d52a93c5fc8ade732"
+    },
+    {
+      "path": "planeswalk-cast/mask/goblin-guard.webp",
+      "bytes": 6886,
+      "sha256": "6fcc272146e288b00a97485ace6d561901a51d79d679dc2cc1c9a8327269ac9b"
+    },
+    {
+      "path": "planeswalk-cast/mask/goblin-guide.webp",
+      "bytes": 7722,
+      "sha256": "d9df08bab1ab481f5e7bafba2c828504d94ab18b10ec58c760a457ae9f1118fd"
+    },
+    {
+      "path": "planeswalk-cast/mask/goblin-king.webp",
+      "bytes": 6830,
+      "sha256": "1bbbf87765693447687d6853c049282d2bdccca456962d00be43f985cf03eb8c"
+    },
+    {
+      "path": "planeswalk-cast/mask/goblin-piker.webp",
+      "bytes": 7762,
+      "sha256": "e7d04737c6f442815cf13b02230018aa2221f6c9f06141fdf8a86b00ca6c275d"
+    },
+    {
+      "path": "planeswalk-cast/mask/goblin-token.webp",
+      "bytes": 7404,
+      "sha256": "b6aeff143898e853d98135b2576a3ba1f4742a7c07a64fd8a3d48fa536ff4476"
+    },
+    {
+      "path": "planeswalk-cast/mask/goblin-warchief.webp",
+      "bytes": 7358,
+      "sha256": "916d704745123d0e46d7c5ac59a913151703545f47a860568ab6100e01bc2f26"
+    },
+    {
+      "path": "planeswalk-cast/mask/golgari-guard.webp",
+      "bytes": 7066,
+      "sha256": "cbf5ffc9daba3b5e2e1ad47a4b3576c717edf32cb6101f48559bb0d38936bee1"
+    },
+    {
+      "path": "planeswalk-cast/mask/golgari-rot-shambler.webp",
+      "bytes": 7240,
+      "sha256": "3ed8ff03250a53bcb9565efdcd7abec2bc77fe47fe71210e7170a041847845c5"
+    },
+    {
+      "path": "planeswalk-cast/mask/golgari-swarm.webp",
+      "bytes": 7650,
+      "sha256": "b125e1dcc498125796f2f532a1469aaab0d7c325174ae458454746300ad14820"
+    },
+    {
+      "path": "planeswalk-cast/mask/gravecrawler.webp",
+      "bytes": 7050,
+      "sha256": "96cf0e705024c56cc8223c7ac279223751d4df0d7cdd93eb3ffc02c3b931bcbf"
+    },
+    {
+      "path": "planeswalk-cast/mask/gruul-boar.webp",
+      "bytes": 7026,
+      "sha256": "d0452963dc39c39c100a3053edc05b00fbd0eb11f121f2af424224e36c31cefa"
+    },
+    {
+      "path": "planeswalk-cast/mask/gruul-siege-breaker.webp",
+      "bytes": 6742,
+      "sha256": "d02c063ced13f99779931b608806fdd81772825f3c1476473282463e1a2007cc"
+    },
+    {
+      "path": "planeswalk-cast/mask/gutter-ooze.webp",
+      "bytes": 7136,
+      "sha256": "08205bc79802e590b556cb64761a4efd53973de193c88afa493e90de155f92b7"
+    },
+    {
+      "path": "planeswalk-cast/mask/guttersnipe.webp",
+      "bytes": 7490,
+      "sha256": "6f85c21faa719e2b3ca8bba3a12fef350d793fec8cff5a19ef4e00501db87d11"
+    },
+    {
+      "path": "planeswalk-cast/mask/halimar-tidecaller.webp",
+      "bytes": 7904,
+      "sha256": "2a16c3193bfb156021d81c6c02ba63e4d5d1a558651708a2b3817981112cf272"
+    },
+    {
+      "path": "planeswalk-cast/mask/healers-hawk.webp",
+      "bytes": 8214,
+      "sha256": "cd55e055052cea7ea64f6e5cea3f92fe536e2d6d05a10f0553704cf1a4c810bd"
+    },
+    {
+      "path": "planeswalk-cast/mask/hedron-crab.webp",
+      "bytes": 6820,
+      "sha256": "e90e5f2f6c895d99dad1bae48937322cb9361140c9cfed532dc80b7d6b310d6b"
+    },
+    {
+      "path": "planeswalk-cast/mask/hill-giant.webp",
+      "bytes": 6720,
+      "sha256": "136c28d26e56dcba668866c8529f9058b3b362f559901e11a4566315a4d47300"
+    },
+    {
+      "path": "planeswalk-cast/mask/inferno-titan.webp",
+      "bytes": 8170,
+      "sha256": "99ff02a99a39772314716f7143b021c474a503b54cc432fb47b7d91bb9e7ef0a"
+    },
+    {
+      "path": "planeswalk-cast/mask/inspiring-overseer.webp",
+      "bytes": 8458,
+      "sha256": "5b23e76b4be6fd9bfa1873fdeab9b2ab18b38c5c9bd0a91471ecc0986bf30a37"
+    },
+    {
+      "path": "planeswalk-cast/mask/ironclaw-hatchling.webp",
+      "bytes": 7440,
+      "sha256": "be2c3760225ac1fac9acec4174f7bacfad048da2d25254f1a3eca8cdcf8b7316"
+    },
+    {
+      "path": "planeswalk-cast/mask/ironfang.webp",
+      "bytes": 7108,
+      "sha256": "96e8d08e917896911fc1d7daff61815d7b5bc2ac36813f26c8d63aa3021e6d1d"
+    },
+    {
+      "path": "planeswalk-cast/mask/izzet-weird.webp",
+      "bytes": 7842,
+      "sha256": "b8352ee0f9467b4108cb97bc4fc8563c0e0b688b681d368fff752319485efeb5"
+    },
+    {
+      "path": "planeswalk-cast/mask/knight-of-the-white-orchid.webp",
+      "bytes": 6744,
+      "sha256": "04c72f45192889257acf14d26d27f205a30717a86259d1876732c2fd31a4ef6d"
+    },
+    {
+      "path": "planeswalk-cast/mask/kor-skyfisher.webp",
+      "bytes": 7700,
+      "sha256": "426c794f1ab04e1012f7548a351f01ccfe5335db087501e09f3f7f7f57f1727f"
+    },
+    {
+      "path": "planeswalk-cast/mask/kor-skyguard.webp",
+      "bytes": 7336,
+      "sha256": "ebd27abcc6c27bbd05d79c2e884f5336e6ef3ea5eb5f17cdd7c8587e58a79b3a"
+    },
+    {
+      "path": "planeswalk-cast/mask/kozilek-herald.webp",
+      "bytes": 7716,
+      "sha256": "c99ba39069c02c7daf5261cd843bb32c50480a0d86dc37450d53f18935d33791"
+    },
+    {
+      "path": "planeswalk-cast/mask/krenko.webp",
+      "bytes": 6590,
+      "sha256": "415f133a06c110acc65f22b1c27577d99a469c6277cf46bbcc612c96336ecf2c"
+    },
+    {
+      "path": "planeswalk-cast/mask/lantern-familiar.webp",
+      "bytes": 7900,
+      "sha256": "6dcc86a137443a04aa26c994be26cc0b6efc8aee74ea5b0db56351e36b6a688b"
+    },
+    {
+      "path": "planeswalk-cast/mask/lazav.webp",
+      "bytes": 6736,
+      "sha256": "b8de0f661c686c63f7c2be800e694404e7bdef990f060fab51efd49e2a8a032c"
+    },
+    {
+      "path": "planeswalk-cast/mask/liliana.webp",
+      "bytes": 7486,
+      "sha256": "b3ae5421aa92b8f4b21184acf820828f445afbded90abf17fd21fc5d97dcfaf5"
+    },
+    {
+      "path": "planeswalk-cast/mask/melek.webp",
+      "bytes": 7586,
+      "sha256": "eccd8cbf5cb160bc052ca41318efddeaa46f15dbb7faf29e71f36be327423c6b"
+    },
+    {
+      "path": "planeswalk-cast/mask/mist-intruder.webp",
+      "bytes": 7516,
+      "sha256": "7a9315acb1218d54ba6b092f5e412be52199b23a7c4d1e10d6d764fc9a4dbc31"
+    },
+    {
+      "path": "planeswalk-cast/mask/mogg-fanatic.webp",
+      "bytes": 7338,
+      "sha256": "a704940b6ff4d7ec3fd9054f1a4388b51888a808bc9fd73b28ce0127ca19f018"
+    },
+    {
+      "path": "planeswalk-cast/mask/nissa-elemental.webp",
+      "bytes": 7108,
+      "sha256": "31578c397eba085e42ca3e24884eadcf50b6a1a0d0f296777761e44704e76010"
+    },
+    {
+      "path": "planeswalk-cast/mask/nissa.webp",
+      "bytes": 7080,
+      "sha256": "6c4fcf9e139a9c0e37afd3c3d79dff752888d8d0e1c85a8aa9981157c2e6ce46"
+    },
+    {
+      "path": "planeswalk-cast/mask/ob-nixilis.webp",
+      "bytes": 7616,
+      "sha256": "2e1445db787bee108ba144e71cccac5b5d1fba6f596d07aae6023f99b1bc574c"
+    },
+    {
+      "path": "planeswalk-cast/mask/olivia.webp",
+      "bytes": 7636,
+      "sha256": "dfbc99a46679e0a0f1cae0196a4c057769a15d05bd26d82f8e89247cf7d2acf6"
+    },
+    {
+      "path": "planeswalk-cast/mask/omnath.webp",
+      "bytes": 7916,
+      "sha256": "38cf221336d8f36641a1e8a4bfd2cae97140ee404a8905519c09dabc0261966a"
+    },
+    {
+      "path": "planeswalk-cast/mask/orzhov-syndic.webp",
+      "bytes": 6400,
+      "sha256": "f6009e5b1d5211ca90e1d3af0338cdbeb809f6ef64904d44e3d8522ab24457cf"
+    },
+    {
+      "path": "planeswalk-cast/mask/orzhov-thrull.webp",
+      "bytes": 6502,
+      "sha256": "2634a5059d1033acc10caf283a2540c06e8542fb852efeaa518f6a06b3145f0d"
+    },
+    {
+      "path": "planeswalk-cast/mask/palace-guard.webp",
+      "bytes": 6932,
+      "sha256": "bf5b8dafd3ad075c12dc20a65016946779a223056fffaf6439404b55270ad786"
+    },
+    {
+      "path": "planeswalk-cast/mask/pyre-herald.webp",
+      "bytes": 7382,
+      "sha256": "d50fb31215dbfc01e581c7290b9e3bd777a39dde06c9cc1693186f293c5f71ec"
+    },
+    {
+      "path": "planeswalk-cast/mask/raging-goblin.webp",
+      "bytes": 7632,
+      "sha256": "2b8fee224bcd7fb829c2f98f5e6f9728a650703a4d6021587e0cd9726e218d66"
+    },
+    {
+      "path": "planeswalk-cast/mask/rakdos-devil.webp",
+      "bytes": 7532,
+      "sha256": "de4c7714f26af15c3e20af49b841fada84145949a00ecd2ea8515e2851ea9cbd"
+    },
+    {
+      "path": "planeswalk-cast/mask/rakdos-goblin.webp",
+      "bytes": 7544,
+      "sha256": "318c46f4c9078eb05592e45bec3c612295c2fefe989a909b18d462d07623d7af"
+    },
+    {
+      "path": "planeswalk-cast/mask/saproling.webp",
+      "bytes": 7294,
+      "sha256": "eb22065dda0acb241fa32026e5ac3073106879c83bf6773bead71900c2274d32"
+    },
+    {
+      "path": "planeswalk-cast/mask/serra-angel.webp",
+      "bytes": 7952,
+      "sha256": "7d1d6ce82a47fb1059a61b90f493be547b335ba3b4232910507604f2fd7fbe08"
+    },
+    {
+      "path": "planeswalk-cast/mask/shivan-dragon.webp",
+      "bytes": 8134,
+      "sha256": "f474cc7e221cf38cb1680c944e38a8813462d0abbfe89bcd5544d72b181edc4c"
+    },
+    {
+      "path": "planeswalk-cast/mask/simic-krasis.webp",
+      "bytes": 7334,
+      "sha256": "0d4a15096defbc188dec2fef1deaf22db90f219df783c8df91e3fa4aad819c8c"
+    },
+    {
+      "path": "planeswalk-cast/mask/skirsdag-cultist.webp",
+      "bytes": 7000,
+      "sha256": "6989df774f6399333f0ca9a91a34b7ebb68adcb2ef7f993f63bc4f2728e62f63"
+    },
+    {
+      "path": "planeswalk-cast/mask/soldier-token.webp",
+      "bytes": 6662,
+      "sha256": "122460420dd9d83967f8d2181669744418b5108186057b45e9526c5cb9cfb72d"
+    },
+    {
+      "path": "planeswalk-cast/mask/sorin.webp",
+      "bytes": 6936,
+      "sha256": "8aced7b4f0967f2963c73ce0a61e9d4d2816502e2aaf71ef0e116586d37b3bb8"
+    },
+    {
+      "path": "planeswalk-cast/mask/soul-warden.webp",
+      "bytes": 6738,
+      "sha256": "d2db605f76a6dae59c9d2be4c165fe17043d2ed263eee91a214adaf186d019fe"
+    },
+    {
+      "path": "planeswalk-cast/mask/spirit-token.webp",
+      "bytes": 7162,
+      "sha256": "cfccd99c8102770c99734b92520025bdfd91887d7f49b738bbe16cfd6cc25665"
+    },
+    {
+      "path": "planeswalk-cast/mask/stromkirk-patrol.webp",
+      "bytes": 7062,
+      "sha256": "717293f46659db897965f2c45af32b63745a7019ba5ae7213420e26d98d8f0f6"
+    },
+    {
+      "path": "planeswalk-cast/mask/territorial-baloth.webp",
+      "bytes": 7050,
+      "sha256": "47e86b9e8f0ae8855277065ba8148e76cfb01ff71146765770134431e2b65fdd"
+    },
+    {
+      "path": "planeswalk-cast/mask/teysa.webp",
+      "bytes": 6750,
+      "sha256": "f6f215f8673c95c50a7c9a35e64d021efdaf71fc78770eb119ba852e81804c46"
+    },
+    {
+      "path": "planeswalk-cast/mask/thalia.webp",
+      "bytes": 7170,
+      "sha256": "6bc4ea5aace78ca91e0592139e494f5a1833b20db3e5741ec92e6be9ee69eaf2"
+    },
+    {
+      "path": "planeswalk-cast/mask/thraben-inquisitor.webp",
+      "bytes": 6868,
+      "sha256": "dc79400a5504498f81903931617903bd7b9dc336c22520f60f605ea802a3c589"
+    },
+    {
+      "path": "planeswalk-cast/mask/turntimber-ranger.webp",
+      "bytes": 7038,
+      "sha256": "4075e61e84e337335d0f77d4fdc2621a4fc1413a43e08ec1c3619d4f799a564a"
+    },
+    {
+      "path": "planeswalk-cast/mask/ulamog-avatar.webp",
+      "bytes": 7746,
+      "sha256": "a922067e0c3c7ed3a973bf04f5838807a533e1690e9ef7c0f8a851604f828aea"
+    },
+    {
+      "path": "planeswalk-cast/mask/valley-dasher.webp",
+      "bytes": 7778,
+      "sha256": "614f7da079c17a87377f8e5d4e7157266dd000b99043c8957e995344304ddab1"
+    },
+    {
+      "path": "planeswalk-cast/mask/vampire-interloper.webp",
+      "bytes": 7324,
+      "sha256": "d7b0e70076ff287410a06cf6df029ce4c6fe94c9eaff6f5c64cefded5b5a3972"
+    },
+    {
+      "path": "planeswalk-cast/mask/village-ironsmith.webp",
+      "bytes": 6724,
+      "sha256": "e153b0fcb05b65d16679a4c725b536827e100fe1a5cb486a139da2213a2c8dac"
+    },
+    {
+      "path": "planeswalk-cast/mask/vraska-assassin.webp",
+      "bytes": 7580,
+      "sha256": "8fb31ff96fd42c89697652a52d3417f5f376ab8bd97526d36e2c546a3c700c23"
+    },
+    {
+      "path": "planeswalk-cast/mask/vraska.webp",
+      "bytes": 7516,
+      "sha256": "b25b28abe2bb25b9338483a9b4d0034070f6af9c64e4871678dd9b2d9e5d9d20"
+    },
+    {
+      "path": "planeswalk-cast/mask/wolf-token.webp",
+      "bytes": 6806,
+      "sha256": "a0a5783b5dafd36f9f364d016cfd89a00a354fd0edb5200e0c5af97ab913e4b6"
+    },
+    {
+      "path": "planeswalk-cast/mask/young-pyromancer.webp",
+      "bytes": 7502,
+      "sha256": "798087738797b88cadb2f353a30b1f0f161e007c5c84a328f0a21034c913e43a"
+    },
+    {
+      "path": "planeswalk-cast/mask/zombie-token.webp",
+      "bytes": 7048,
+      "sha256": "0fc04cd489502459aec71ce2e338a69cd972b8aee97421f68fc68612cbbfb50a"
     },
     {
       "path": "planeswalk-cloud.js",
@@ -3657,9 +5307,149 @@
       "sha256": "a3b5fdb46e7a74fa65e170c996c855882ad03a86ada5896e3a86429a9e1bd562"
     },
     {
+      "path": "planeswalk-src/README.md",
+      "bytes": 2562,
+      "sha256": "e1b129c3b7b0864bc93f375a7b2f02eacff7ecd8dc319ad96b83202b9187f6ee"
+    },
+    {
+      "path": "planeswalk-src/build.py",
+      "bytes": 6546,
+      "sha256": "d1f783e10f5e73aba3b31be06c39257e7443a37dc6a3c97fc4cfa475d535ee00"
+    },
+    {
+      "path": "planeswalk-src/cast.css",
+      "bytes": 36474,
+      "sha256": "acd25b7398622a1ef081472e7e313b398d7b4fb98d4217cdfc9026266cfe4251"
+    },
+    {
+      "path": "planeswalk-src/emblem-art.css",
+      "bytes": 5809,
+      "sha256": "9095dfa144f86c8e90009d9bbfcc6626a2cbdba0eb6490b9635a53655dda30ed"
+    },
+    {
+      "path": "planeswalk-src/emblem-art.js",
+      "bytes": 272402,
+      "sha256": "502dd264bdc53f234e94b826df849fb56e41608896cf2cc9c25d61cbf083eb61"
+    },
+    {
+      "path": "planeswalk-src/extra.css",
+      "bytes": 45094,
+      "sha256": "409a3fa764dca9b91569f059889bfa55cbec7d58872cd1a5b5d2c6ae015a3b79"
+    },
+    {
+      "path": "planeswalk-src/kit.css",
+      "bytes": 75877,
+      "sha256": "87834768e0a0d884afebbe81998b23d862e7be69d304b5b5202cb473c1f08a82"
+    },
+    {
+      "path": "planeswalk-src/motion/build-motion.sh",
+      "bytes": 627,
+      "sha256": "1bd6f02f94a75b85e8d721a025bf054f0238c36c151d68f662367d14755ff93b"
+    },
+    {
+      "path": "planeswalk-src/motion/fx/embers.webp",
+      "bytes": 59580,
+      "sha256": "d749ffed105dc5ca7d63c2ed66a6c5b620d715c4c2f0fdc20f0e759c4028ae7f"
+    },
+    {
+      "path": "planeswalk-src/motion/fx/fire.webp",
+      "bytes": 56602,
+      "sha256": "48e30b774210aa7cb9f05eade0ced7fc987abee16d5a31ad9b411479e4a7bd99"
+    },
+    {
+      "path": "planeswalk-src/motion/fx/halo.webp",
+      "bytes": 51934,
+      "sha256": "1d6dec62aa4e93d0bb72fbae7b889ffd80c8c563c5a0f1ac47355c8603a7980d"
+    },
+    {
+      "path": "planeswalk-src/motion/motion-kit.mjs",
+      "bytes": 10108,
+      "sha256": "f1895d754ed7a01cb696e220c893f4f61da6ebe8335944505439fccb08edb5ca"
+    },
+    {
+      "path": "planeswalk-src/motion/pw-motion-glue.js",
+      "bytes": 17076,
+      "sha256": "78c7235ce108890a9bbd8f1c4038f4d044d3ee709d6c9a4559fef6e8917bfd17"
+    },
+    {
+      "path": "planeswalk-src/planeswalk-ink-map.js",
+      "bytes": 36063,
+      "sha256": "87e460cd9c9a1f59c43ecef524e2bec52809d6d7d7482761fa0969954f32ddf6"
+    },
+    {
+      "path": "planeswalk-src/planeswalk-motion.js",
+      "bytes": 251509,
+      "sha256": "15ca052c0d75248a374ef44781ce07c58157a447372859cb0ac3bdff98320685"
+    },
+    {
+      "path": "planeswalk-src/planeswalk-skin.css",
+      "bytes": 5112397,
+      "sha256": "3877e93fb75068c30b47056b35cb104b0f39546a509cc66ab0a38daf93d20af3"
+    },
+    {
+      "path": "planeswalk-src/planeswalk-touch.js",
+      "bytes": 80713,
+      "sha256": "8398aa07a3941c0be2d612160cda39f387e47b201d367a0f9529ffc2aaa51aa2"
+    },
+    {
+      "path": "planeswalk-src/pw-cast.js",
+      "bytes": 58854,
+      "sha256": "26d0082473006ef7d141e6a530197f66c5555bc45d39e82634be0c832a90b670"
+    },
+    {
+      "path": "planeswalk-src/pw-kit.js",
+      "bytes": 1872,
+      "sha256": "77defaa55afcf767147d59736147e96028b87c0172d2c3190fcac22ff64eace2"
+    },
+    {
+      "path": "planeswalk-src/pw-tips.js",
+      "bytes": 4858,
+      "sha256": "cdcba7d84f520170cbd447c824d1729faf225a100b1d9fb5b0f3dec4f40606be"
+    },
+    {
+      "path": "planeswalk-src/src.html",
+      "bytes": 361181,
+      "sha256": "eeba6f30d0468bc856eb48b634985567115ff34a75f34e5b3005a36b9d119f83"
+    },
+    {
+      "path": "planeswalk-src/tools/addart.py",
+      "bytes": 2664,
+      "sha256": "0dda42f8242d72da98309bfd1e94e0a2430929448e5085dde043fdd682d9a00a"
+    },
+    {
+      "path": "planeswalk-src/tools/cast-anchors.py",
+      "bytes": 2201,
+      "sha256": "e967a4533ebe7fa6fc63257cec9d09999761c5a7a8a1e26c3b8dbd31cb6d33c6"
+    },
+    {
+      "path": "planeswalk-src/tools/content-check.cjs",
+      "bytes": 11412,
+      "sha256": "5cbe8efffd413cc576c4ed6d4ec43928491b242dd014c0052f57982f609f513e"
+    },
+    {
+      "path": "planeswalk-src/tools/gate/prun.js",
+      "bytes": 5933,
+      "sha256": "d63c05599158cea587ff85fdfb173ddb5ed32d78922ef5bad33cc30f469b05ef"
+    },
+    {
+      "path": "planeswalk-src/tools/gate/routes.json",
+      "bytes": 9184,
+      "sha256": "cc69cc336e4e9b05891c2282264c9b71bc1efcc8591a5d7c0cbb9c6f11860c6b"
+    },
+    {
+      "path": "planeswalk-src/tools/gate/summ.py",
+      "bytes": 850,
+      "sha256": "a407d976adadd96cec61d56d1ca6809dfa190e37aaeb09981d57ef980a1769b2"
+    },
+    {
+      "path": "planeswalk-src/tools/sim.cjs",
+      "bytes": 23331,
+      "sha256": "9d77124e8102fb864d234548203c0b3aa90ec82f73901e9094a9855dfeda92d4"
+    },
+    {
       "path": "planeswalk.html",
-      "bytes": 4311204,
-      "sha256": "c73ee4464ce827d48ce150a97f0fdb906a5cbdfdcce28eaf14300a9849132eec"
+      "bytes": 5583525,
+      "sha256": "771ab0f1fc62bcafa339a19f5c5b90db004a1bbe8de14f1181bd266b0cae34cc"
     },
     {
       "path": "planner.js",
@@ -3913,8 +5703,8 @@
     },
     {
       "path": "polish.css",
-      "bytes": 63108,
-      "sha256": "b1573f0405fdfbb8bf30e929e1538fec9aaa5e6ad4b4b727f879667433279fad"
+      "bytes": 66865,
+      "sha256": "b51cb0f39c17ddf862ac94bee2a09bc25c4a8e471ac65d6284a83e3f5bcae2b9"
     },
     {
       "path": "power.js",
@@ -4008,8 +5798,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 724,
-      "sha256": "6a5892e64c93aac1bfe68078bc38b09fb1f8d8abfd14fd8c86fb3fac48e0ffde"
+      "bytes": 850,
+      "sha256": "246cc8465fdcb959fb508a80ab9918fa8f81e1d412821198c06265ca4e95e2de"
     },
     {
       "path": "release-status.js",
@@ -4222,6 +6012,21 @@
       "sha256": "51d95c80bd65fa3cb8ddc8df812cb098a1a4e1e9edeb912d045a5fb31e8c6aa1"
     },
     {
+      "path": "scripts/music/bosses.py",
+      "bytes": 12487,
+      "sha256": "202edb877eb4f0c17af6c973cf3b8720e5fad87a63f352b0f28fbb29bed866ad"
+    },
+    {
+      "path": "scripts/music/patrons.py",
+      "bytes": 16997,
+      "sha256": "cbbe56a37a626c10890bd034b398c3da8f4a230e1f5256ffbe3762991c98e863"
+    },
+    {
+      "path": "scripts/music/tracks.py",
+      "bytes": 22029,
+      "sha256": "2e93163d90ba5caf74940f9e1d0e260f665428d05a358d241f6f7389736715c2"
+    },
+    {
       "path": "scripts/verify-deployed-assets.py",
       "bytes": 19302,
       "sha256": "48a3f73e31eff89674355e40da688cab6f5f386a250f55817c54c0b055e54c50"
@@ -4343,8 +6148,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15870,
-      "sha256": "c1a86f77cee976c38ee7376d16dea3e9dc8a9199e2886e908736dbb4fc437654"
+      "bytes": 15866,
+      "sha256": "9286bb2627f8ac919bd76f21b228e7b7194d0f9b100200500f009e29eb57656a"
     },
     {
       "path": "sync-merge.js",
@@ -4368,8 +6173,8 @@
     },
     {
       "path": "tcg.js",
-      "bytes": 366862,
-      "sha256": "cfb0fc7cbe80dc5a98d629b61f70748581ec75de1c002c4f521bb5cfa757f248"
+      "bytes": 366856,
+      "sha256": "7c38315288ad6eed70c395f7f9120be5f9a519cc36cf390c4d71bfb4a80951a7"
     },
     {
       "path": "tcgbuild.js",
@@ -6088,8 +7893,8 @@
     },
     {
       "path": "ui.js",
-      "bytes": 13912,
-      "sha256": "5c08643d3f3ead3877d0e5a602d6111a1ff655d5070a55a333b987c0dcc511e4"
+      "bytes": 14702,
+      "sha256": "5bc1716c1ca288db3f5bf2c3201970a83da6237b5d5fad07932ef50795d27e0d"
     },
     {
       "path": "universal-search.js",
@@ -6138,8 +7943,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 196562,
-      "sha256": "ebfca6125e101d9075de9e5b118f77f8e3d87c0e2262fb9cce630d6c9b3ed4bf"
+      "bytes": 196595,
+      "sha256": "d238965922d414892cebf073b8b6a92b5bf4dc9465b864e8937d7c36a827e4b4"
     },
     {
       "path": "wiki-article-content.js",
