@@ -2753,16 +2753,18 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
    its .art box is the figure's own box (height --pw-fh from the field, width from the figure's shape), feet on the
    bottom edge, with a ground shadow drawn by the rig. The canvas reaches past the box so a lunge never clips. */
 #app .battle .field>.side{align-items:flex-end!important}
-#app .battle .unit.pw-fig{width:auto!important;flex:none!important;min-width:0;max-width:none!important}
+#app#app#app .battle .unit.pw-fig{width:auto!important;flex:none!important;min-width:0!important;max-width:none!important}/* three ids: the skin's crowd rules (tall screens, five foes) pin unit widths with !important */
 #app .battle .unit.pw-fig>.art{width:calc(var(--pw-fh,120px) * var(--k,1) * var(--ar,1))!important;height:calc(var(--pw-fh,120px) * var(--k,1))!important;aspect-ratio:auto!important;max-width:none!important;
  background:none!important;box-shadow:none!important;border:0!important;border-radius:0!important;overflow:visible!important;padding:0!important;display:block!important;position:relative;
  transition:none!important;animation:none!important;transform:none!important;outline:none!important;filter:none!important}
 #app .battle .unit.pw-fig>.art::after,#app .battle .unit.pw-fig>.art::before{display:none!important}
 #app .battle .unit.pw-fig>.art>canvas.pw-cast{position:absolute;left:-22%;width:144%;top:-8%;height:108%;pointer-events:none;z-index:0;display:block}
 #app .battle .unit.pw-fig>.art>.tag,#app .battle .unit.pw-fig>.art>.glyph{display:none!important}
-#app .battle .unit.pw-fig>.bar{position:relative;overflow:visible!important;width:88%!important;margin-inline:auto!important}
-#app .battle .unit.pw-fig>.bar>.stats{position:absolute;left:50%;top:50%;translate:-50% -50%;z-index:2;margin:0!important;line-height:1.1;padding:0 5px;border-radius:99px;background:#0b0d12e6;box-shadow:0 0 0 1px #ffffff22}
-#app .battle .unit.pw-fig.hero>.bar>.stats{display:none!important}
+/* the Test Fight bar: wide under the feet, the life written inside it, red for everyone */
+#app .battle .unit.pw-fig>.bar{position:relative;overflow:hidden!important;width:84%!important;margin-inline:auto!important;height:15px!important;border-radius:4px!important;background:#1a0608!important;box-shadow:0 0 0 1px #000,inset 0 0 0 1px #ffffff1f!important}
+#app .battle .unit.pw-fig>.bar>i{display:block;height:100%!important;border-radius:0!important;background:linear-gradient(180deg,#d94a33,#8f1f14)!important}
+#app .battle .unit.pw-fig>.bar::after{content:attr(data-hp);position:absolute;inset:0;z-index:2;display:grid;place-items:center;font:700 calc(max(11px,11px) * var(--pw-ts,1))/1 var(--display,serif);color:#ffe9dc;text-shadow:0 1px 1px #000,0 0 2px #000;letter-spacing:.02em;pointer-events:none}
+#app .battle .unit.pw-fig>.bar>.stats{display:none!important}
 /* aim: a ring on the ground instead of a dashed frame */
 #app .battle .foe .unit.pw-fig.aim>.art::before{display:block!important;content:"";position:absolute;left:4%;right:4%;bottom:-5%;height:14%;border:2px dashed var(--gold,#e8b95b);border-radius:50%;opacity:.9;pointer-events:none}
 #app .battle .foe .unit.pw-fig.aim:hover>.art::before,#app .battle .foe .unit.pw-fig.aim.pw-over>.art::before{border-style:solid;box-shadow:0 0 14px -2px var(--gold,#e8b95b)}
@@ -2794,11 +2796,11 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
 /* perf readout */
 .pw-cast-perf{position:fixed;left:50%;top:max(4px,calc(env(safe-area-inset-top,0px) / var(--pw-zoom,1)));translate:-50% 0;z-index:200;font:600 calc(max(11px,11px) * var(--pw-ts,1))/1.3 var(--mono,monospace);color:#ffe7a8;background:#0b0d12d9;border:1px solid #ffffff2a;border-radius:8px;padding:3px 8px;pointer-events:none;white-space:nowrap}
 /* the battle camera (touch.js) zooms seals to fill the field; figures are sized to the field already */
-#app .battle .field:has(.unit.pw-fig)>.side{zoom:1!important}
+#app .battle .field.pw-stage>.side{zoom:1!important}
 /* beside figures: allies are small seals at the hero's feet, empty slots vanish, a thrall keeps a half-size seal */
-#app .battle .field:has(.unit.pw-fig) .side.you .slot{display:none!important}
-#app .battle .field:has(.unit.pw-fig) .side.you .unit.ally{width:max(44px,calc(var(--pw-fh,120px) * .42))!important;flex:none!important}
-#app .battle .field:has(.unit.pw-fig) .side.foe .unit:not(.pw-fig){width:max(44px,calc(var(--pw-fh,120px) * .5))!important;flex:none!important}
+#app .battle .field.pw-stage .side.you .slot{display:none!important}
+#app#app#app .battle .field.pw-stage .side.you .unit.ally:not(.pw-fig){width:max(44px,calc(var(--pw-fh,120px) * .42))!important;flex:none!important}
+#app#app#app .battle .field.pw-stage .side.foe .unit:not(.pw-fig){width:max(44px,calc(var(--pw-fh,120px) * .5))!important;flex:none!important}
 /* a crowd: the foes take the row above the hero, each row sized on its own */
 #app#app#app .battle .field.pw-rows{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;align-content:space-evenly!important;justify-content:stretch!important;row-gap:8px!important}
 #app#app#app .battle .field.pw-rows>.side{width:auto!important;margin:0!important;justify-content:center!important;flex-wrap:nowrap!important;max-width:none!important}
@@ -2811,6 +2813,22 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
 #app#app#app .battle .field.pw-rows>.side.you{margin-top:28px!important}
 /* a blocker's kill-preview chip keeps the name's row under the seal, clear of the stats pill */
 #app .battle .field.pw-small .side.you .unit.ally:has(>.pv)>.name{display:block!important;visibility:hidden}
+/* ally figures: the p/t pill sits at the feet, the status tag over the head, the kill chip below, and a ready one stands on a blue ring */
+#app .battle .unit.ally.pw-fig>.art>.stats{position:absolute;left:50%;right:auto;bottom:2px;transform:translateX(-50%);z-index:3;margin:0!important;line-height:1.1;padding:0 5px;border-radius:99px;background:#0b0d12e6;box-shadow:0 0 0 1px #ffffff22}
+#app .battle .unit.ally.pw-fig>.art>.tag{display:inline-flex!important;position:absolute;left:50%;top:-6px;translate:-50% 0;margin:0!important;z-index:3;max-width:none}
+#app .battle .unit.ally.pw-fig>.pv{bottom:-18px!important}
+#app .battle .unit.ally.pw-fig.ready>.art::before{display:block!important;content:"";position:absolute;left:4%;right:4%;bottom:-5%;height:14%;border:2px solid #8fdcff;border-radius:50%;box-shadow:0 0 14px -2px #5cc8ff;opacity:.9;pointer-events:none}
+#app .battle .unit.ally.pw-fig.chosen>.art::before{border-color:var(--gold,#e8b95b);box-shadow:0 0 14px -2px var(--gold,#e8b95b)}
+#app .battle .unit.ally.pw-fig.tapped>.art>canvas.pw-cast,#app .battle .unit.ally.pw-fig.sick>.art>canvas.pw-cast{filter:saturate(.6) brightness(.8)}
+/* a figure fight takes the whole width of the stage and stands on the ground just above the hand; the sides keep 20px of air */
+#app .battle .field.pw-stage{grid-column:1/-1!important;column-gap:20px!important;padding-bottom:4px!important;padding-inline:max(16px,calc(var(--pw-fh,120px) * .24))!important;justify-content:space-evenly!important;align-items:end!important}
+#app#app#app .battle .field.pw-stage{align-content:end!important}/* feet low, even when the width limits the figures */
+/* the stage is one ground line: no formation hairlines, no foe-side divider, a faint lit floor band under the feet; the painting's floor line is placed by pw-cast.js */
+#app .battle .field.pw-stage>.side.formation{background:none!important}
+#app#app:not([data-pw-tall]) .battle .field.pw-stage>.side.foe{padding-left:0!important;border-left:0!important;border-image:none!important;background:none!important}
+#app .battle .field.pw-stage::before{content:"";position:absolute;left:6%;right:6%;bottom:0;height:52px;pointer-events:none;z-index:0;background:radial-gradient(50% 15px at 50% calc(100% - 19px),#f3dbb33a,#f3dbb300 72%)}
+#app .battle.pw-ground::after{background-size:var(--pw-bg-size)!important;background-position:var(--pw-bg-pos)!important}
+#app .battle .field.pw-stage:not(.pw-rows)>.side{justify-content:center!important}
 
 </style>
 
@@ -5076,9 +5094,11 @@ const intent=e=>{try{return intentOf(e)[0]}catch(err){return ''}};
 const tramples=e=>{try{return typeof TRAMPLES==='function'&&TRAMPLES(e)}catch(err){return false}};
 
 /* ---------- cast data ---------- */
-let D=null,BY={},BYG={},BYN={},dataP=null;
-function loadData(){if(dataP)return dataP;dataP=fetch(BASE+'cast.json').then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{D=d;for(const e of d){BY[e.key]=e;BYN[e.name]=e;if(e.game&&e.game!=='planned'&&e.game!=='hero')BYG[e.game]=e}return d}).catch(err=>{console.warn('cast data',err);D=[]});return dataP}
+let D=null,BY={},BYG={},BYN={},BYA={},dataP=null;
+function loadData(){if(dataP)return dataP;dataP=fetch(BASE+'cast.json').then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{D=d;for(const e of d){BY[e.key]=e;if(e.act==='allies'){BYA[e.name]=e;continue}BYN[e.name]=e;if(e.game&&e.game!=='planned'&&e.game!=='hero')BYG[e.game]=e}return d}).catch(err=>{console.warn('cast data',err);D=[]});return dataP}
 function entryForFoe(e,g){if(!e||e.thrallOf)return null;const k=e.key;return BYG[k]||BY[ALIAS[k]]||(g.E[k]&&BYN[g.E[k].name])||null}
+// a summoned creature or token: its entry by card name (stand-in sheets until its own art lands)
+function entryForAlly(a){return a&&BYA[a.name]||null}
 function entryForHero(g){return BY[g.HERO&&g.HERO.key==='W'?'elspeth':'chandra']||null}
 
 /* ---------- shared WebGL canvas ---------- */
@@ -5127,16 +5147,17 @@ const TEX=new Map(),IMGS={};
 function mkTex(img,mip){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
  if(mip&&GL2){gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR)}else gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);return t}
-function load(key){if(!key||!BY[key])return Promise.resolve(null);if(IMGS[key])return IMGS[key].p;const o=IMGS[key]={},e=BY[key];
+const fileOf=k=>{const e=BY[k];return e?(e.file||k):k};
+function load(key){if(!key||!BY[key])return Promise.resolve(null);const f=fileOf(key);if(IMGS[f])return IMGS[f].p;const o=IMGS[f]={},e=BY[key];
  const li=src=>new Promise((res,rej)=>{const i=new Image();i.decoding='async';i.onload=()=>res(i);i.onerror=rej;i.src=BASE+src});
- o.p=Promise.all([li('atlas/'+key+'.webp'),li('mask/'+key+'.webp'),e.drop?li(e.drop).then(i=>{o.d=i}).catch(()=>{}):null]).then(([a,m])=>{o.a=a;o.m=m;o.ok=true;return o}).catch(err=>{o.err=1;console.warn('cast load',key,err)});return o.p}
-const ready=key=>!!(IMGS[key]&&IMGS[key].ok);
-function gtex(key){let t=TEX.get(key);if(!t){const o=IMGS[key];if(!o||!o.ok)return null;t={a:mkTex(o.a,true),m:mkTex(o.m,false)};TEX.set(key,t);if(TEX.size>12)evict()}t.used=T;return t}
+ o.p=Promise.all([li('atlas/'+f+'.webp'),li('mask/'+f+'.webp'),e.drop?li(e.drop).then(i=>{o.d=i}).catch(()=>{}):null]).then(([a,m])=>{o.a=a;o.m=m;o.ok=true;return o}).catch(err=>{o.err=1;console.warn('cast load',key,err)});return o.p}
+const ready=key=>{const o=IMGS[fileOf(key)];return !!(o&&o.ok)};
+function gtex(key){key=fileOf(key);let t=TEX.get(key);if(!t){const o=IMGS[key];if(!o||!o.ok)return null;t={a:mkTex(o.a,true),m:mkTex(o.m,false)};TEX.set(key,t);if(TEX.size>12)evict()}t.used=T;return t}
 function evict(){const keep=new Set([...rigs.values()].map(R=>R.cur.key));const old=[...TEX].filter(([k])=>!keep.has(k)).sort((a,b)=>a[1].used-b[1].used);
  while(TEX.size>12&&old.length){const [k,t]=old.shift();gl.deleteTexture(t.a);gl.deleteTexture(t.m);TEX.delete(k)}}
 // Preload one at a time (the hero first, then the act's foes) while the player is on the map, so a fight opens with its art ready.
 let preQ=[],preBusy=false;
-function preload(keys){for(const k of keys)if(k&&BY[k]&&!IMGS[k]&&!preQ.includes(k))preQ.push(k);pump()}
+function preload(keys){for(const k of keys)if(k&&BY[k]&&!IMGS[fileOf(k)]&&!preQ.includes(k))preQ.push(k);pump()}
 function pump(){if(preBusy||!preQ.length)return;preBusy=true;load(preQ.shift()).then(()=>{preBusy=false;pump()})}
 function actKeys(g){const out=[];try{const act=(g.run&&g.run.act)||1;for(const e of D){if(e.game==='planned'||e.game==='hero')continue;if(e.act==='act'+act)out.push(e.key)}}catch(err){}return out}
 
@@ -5247,14 +5268,14 @@ function portal(R){if(!R.box)return;const c=R.ac,x=R.box.fx+R.face*.46*R.box.w,w
  const p=fxEl(R,'bolt',x,R.box.fy-4,{width:'6px',height:.5*R.box.h+'px',marginLeft:'-3px',marginTop:-.5*R.box.h+'px',background:`linear-gradient(0deg,${cssa(c,.85)},${cssa(c,0)})`,transformOrigin:'50% 100%'});
  anim(p,[{transform:'scaleY(0)',opacity:0},{transform:'scaleY(1)',opacity:.9,offset:.35},{transform:'scaleY(1)',opacity:0}],800)}
 function puff(R,dir){if(!R.box)return;for(const s of [-1,1]){const d=fxEl(R,'puff',R.box.fx+s*.12*R.box.w,R.box.fy-3);anim(d,[{transform:'translateX(0) scale(.4)',opacity:.9},{transform:`translateX(${(dir||s)*-18}px) scale(1.2)`,opacity:0}],520)}}
-function drip(R,gr){const I=R.cur,o=IMGS[I.key];if(!I.drop||!I.tips||!I.tips.length||R.dead||!R.box||!o||!o.d)return;const b=R.box,tp=I.tips[Math.floor(Math.random()*I.tips.length)],d=document.createElement('img');
+function drip(R,gr){const I=R.cur,o=IMGS[fileOf(I.key)];if(!I.drop||!I.tips||!I.tips.length||R.dead||!R.box||!o||!o.d)return;const b=R.box,tp=I.tips[Math.floor(Math.random()*I.tips.length)],d=document.createElement('img');
  d.className='fxe drop';d.alt='';d.src=o.d.src;const dw=Math.max(5,I.dw*b.w*.8);const [X,Y]=at(R,b.x+tp[0]*b.w,b.y+tp[1]*b.h);d.style.left=X+'px';d.style.top=Y+'px';d.style.width=dw+'px';if(!fxLayer.isConnected)document.body.append(fxLayer);fxLayer.appendChild(d);
  const fall=Math.max(6,(I.foot[1]-tp[1])*b.h-dw*.5),g=5.2*b.h,tf=Math.max(140,Math.sqrt(2*fall/g)*1000),grow=gr||900+Math.random()*700,neck=140,spl=240,TT=grow+neck+tf+spl,X2='translate(-50%,-35%) ';
  d.animate([{transform:X2+'scale(.2,.3)',opacity:0,easing:'ease-out'},{transform:X2+'scale(.55,.7)',opacity:1,offset:.25*grow/TT,easing:'ease-in-out'},{transform:X2+'scale(.8,1.1)',opacity:1,offset:grow/TT,easing:'ease-in'},{transform:'translate(-50%,-5%) scale(.7,1.35)',opacity:1,offset:(grow+neck)/TT,easing:'cubic-bezier(.55,.085,.68,.53)'},{transform:`translate(-50%,${fall}px) scale(.72,1.3)`,opacity:1,offset:(grow+neck+tf)/TT,easing:'ease-out'},{transform:`translate(-50%,${fall+dw*.25}px) scale(1.9,.28)`,opacity:.85,offset:(grow+neck+tf+spl*.35)/TT},{transform:`translate(-50%,${fall+dw*.3}px) scale(2.2,.18)`,opacity:0}],{duration:TT,fill:'forwards'}).onfinish=()=>d.remove()}
 
 /* ---------- draw ---------- */
 const perf={ms:[],i:0,max:0};
-function draw(R,t){const e=R.cur,o=IMGS[e.key];if(!o||!o.ok||!R.box||!R.W)return;const c2=R.ctx,b=R.box;
+function draw(R,t){const e=R.cur,o=IMGS[fileOf(e.key)];if(!o||!o.ok||!R.box||!R.W)return;const c2=R.ctx,b=R.box;
  let pose=null,fname=null;if(R.act){const a=actPose(R,t);if(a){pose=a.p;fname=a.f}}
  const idleF=R.phase2&&e.frames.phase2?'phase2':e.idle;
  if(!pose){pose=idlePose(R,t);if(!RM&&!R.dead){if(!R.nf)R.nf=t+2+Math.random()*7;if(t>R.nf&&atRest(R,t)){R.nf=t+7+Math.random()*8;fidget(R,t)}}}
@@ -5291,47 +5312,57 @@ function px(v){const n=parseFloat(v);return isNaN(n)?0:n}
 function snap(g){const c=g.c;const foes=new Map();for(const e of c.enemies)foes.set(String(e.id),{e,key:e.key,hp:e.hp,shield:e.shield||0,acting:!!e.acting,phase2:!!e.phase2,intent:intent(e)});
  const allies=new Map();for(const a of c.allies)allies.set(String(a.id),{a,dmg:a.dmg,tapped:!!a.tapped});
  return {c,foes,allies,hp:g.run.hp,ward:c.ward||0,busy:!!c.busy}}
-function unmountAll(){for(const R of rigs.values()){R.cv.remove();ro.unobserve(R.cv)}rigs.clear();holds.clear()}
+function unmountAll(){for(const R of rigs.values()){R.cv.remove();ro.unobserve(R.cv)}rigs.clear();holds.clear();const b=app.querySelector('.battle');if(b)b.classList.remove('pw-ground')}
 function sync(){const g=G();if(!g||!g.c||g.view!=='battle'||!app.querySelector('.battle .field')){if(rigs.size)unmountAll();prev=null;fightC=null;if(g&&D&&D.length&&g.view!=='battle')preload([entryForHero(g)&&entryForHero(g).key,...actKeys(g)]);return}
  if(!D){loadData().then(()=>sync());return}
  const now=snap(g);if(fightC!==now.c){fightC=now.c;fightReady=false;plates=null;unmountAll();prev=null}
  // the fight opens with every figure ready, or it stays on the portraits until they are
- const hero=app.querySelector('.battle .unit.hero'),foeEls=[...app.querySelectorAll('.battle .side.foe .unit[data-id]')];
- const want=[];const hE=entryForHero(g);if(hE)want.push(hE.key);for(const el of foeEls){const en=entryForFoe(now.c.enemies.find(x=>String(x.id)===el.dataset.id),g);if(en)want.push(en.key)}
+ const hero=app.querySelector('.battle .unit.hero'),foeEls=[...app.querySelectorAll('.battle .side.foe .unit[data-id]')],allyEls=[...app.querySelectorAll('.battle .side.you .unit.ally[data-id]')];
+ const allyOf=el=>entryForAlly(now.c.allies.find(x=>String(x.id)===el.dataset.id));
+ const want=[];const hE=entryForHero(g);if(hE)want.push(hE.key);for(const el of foeEls){const en=entryForFoe(now.c.enemies.find(x=>String(x.id)===el.dataset.id),g);if(en)want.push(en.key)}for(const el of allyEls){const en=allyOf(el);if(en)want.push(en.key)}
  if(!fightReady){const miss=want.filter(k=>!ready(k));if(miss.length){Promise.all(miss.map(load)).then(()=>{if(fightC===now.c&&!fightReady)sync()});prev=now;return}fightReady=true}
- const field=app.querySelector('.battle .field');const seats=size(field,hero,foeEls,now,g,hE);
+ const field=app.querySelector('.battle .field');field.classList.add('pw-stage');// the stage layout (full width, feet low) must be on before the measure
+ const seats=size(field,hero,foeEls,now,g,hE,allyOf);
  if(seats===false){if(rigs.size)unmountAll();prev=now;return}
  if(prev)diff(prev,now,g);prev=now;
  const seen=new Set();
- if(hero&&hE&&ready(hE.key)){mount('hero',hero,hE,1);seen.add('hero')}
- for(const el of foeEls){const id=el.dataset.id,fe=now.c.enemies.find(x=>String(x.id)===id),en=entryForFoe(fe,g);if(!en)continue;if(!ready(en.key)){load(en.key).then(()=>{if(fightC===now.c)sync()});continue}mount(id,el,en,-1);seen.add(id)}
+ if(hero&&hE&&ready(hE.key)){mount('hero',hero,hE,1,Math.max(0,g.run.hp)+'/'+g.run.max);seen.add('hero')}
+ for(const el of foeEls){const id=el.dataset.id,fe=now.c.enemies.find(x=>String(x.id)===id),en=entryForFoe(fe,g);if(!en)continue;if(!ready(en.key)){load(en.key).then(()=>{if(fightC===now.c)sync()});continue}mount(id,el,en,-1,Math.max(0,fe.hp)+'/'+fe.max);seen.add(id)}
+ for(const el of allyEls){const id='a:'+el.dataset.id,en=allyOf(el);if(!en)continue;if(!ready(en.key)){load(en.key).then(()=>{if(fightC===now.c)sync()});continue}mount(id,el,en,1);seen.add(id)}
  for(const [id,R] of rigs){if(seen.has(id))continue;rigs.delete(id);if(R.dying){R.ghost=true;ghosts.add(R);ghost(R)}else{R.cv.remove();ro.unobserve(R.cv)}}
- if(rigs.size||ghosts.size)startLoop()}
+ fitWidth(field);ground();if(rigs.size||ghosts.size)startLoop()}
+// The estimate above cannot see every skin rule (chip widths, crowd rules); if the mounted line still overflows the field, the figures shrink to fit.
+function fitWidth(field){const you=field.querySelector('.side.you'),foe=field.querySelector('.side.foe');if(!you||!foe||field.classList.contains('pw-rows'))return;
+ const cs=getComputedStyle(field),sc=field.getBoundingClientRect().width/(field.clientWidth||1)||1,room=field.clientWidth-px(cs.paddingLeft)-px(cs.paddingRight);
+ for(let i=0;i<3;i++){const y=you.getBoundingClientRect(),f=foe.getBoundingClientRect(),used=(Math.max(y.right,f.right)-Math.min(y.left,f.left))/sc;if(used<=room+.5)return;// the gaps do not shrink with the figures, so it takes a pass or two
+  const H=parseFloat(field.style.getPropertyValue('--pw-fh'))||0,H2=Math.max(44,Math.floor(H*room/used)-1);if(!H||H2>=H)return;field.style.setProperty('--pw-fh',H2+'px');for(const R of rigs.values())fit(R)}}
 // Figure height: the field's room, less the chips above and the name and bar below, and the row must fit side by side.
 // When one row would leave the figures tiny, the foes take a row above the hero (class pw-rows on the field).
-// Under the floor (96px, or 13% of the screen height) the figures read as specks, so a fight that cannot seat them at the floor keeps the portrait plates
+// Under the floor (96px, or 11% of the screen height) the figures read as specks, so a fight that cannot seat them at the floor keeps the portrait plates
 // (decided once per fight and viewport; a fight already on figures only drops to plates when a summon crowds it hard).
-const ALLY=.42,SEAL=.5,CHROME=36;const floor=()=>Math.max(96,innerHeight*.13);let plates=null;
-function size(field,hero,foeEls,now,g,hE){if(!field)return;const you=field.querySelector('.side.you'),foe=field.querySelector('.side.foe');if(!you||!foe)return;
- const cs=getComputedStyle(field),W=field.clientWidth,Hf=field.clientHeight;
- const gapF=px(cs.columnGap)||px(cs.gap)||12,gapY=px(getComputedStyle(you).columnGap)||px(getComputedStyle(you).gap)||8,gapE=px(getComputedStyle(foe).columnGap)||px(getComputedStyle(foe).gap)||8;
- let arY=0,arF=0,nY=0,nF=0;
- for(const el of you.children){if(el.matches('.slot'))continue;if(el===hero&&hE)arY+=hE.fw/hE.fh;else if(el.matches('.unit'))arY+=ALLY;else continue;nY++}
+const ALLY=.42,SEAL=.5,CHROME=36;const floor=()=>Math.max(96,innerHeight*.11);let plates=null;
+function size(field,hero,foeEls,now,g,hE,allyOf){if(!field)return;const you=field.querySelector('.side.you'),foe=field.querySelector('.side.foe');if(!you||!foe)return;
+ const cs=getComputedStyle(field),W=field.clientWidth-px(cs.paddingLeft)-px(cs.paddingRight),Hf=field.clientHeight;// the room between the paddings
+ const gapF=Math.min(20,px(cs.columnGap)||px(cs.gap)||12),// figure fields get a 20px column gap (cast.css); the first measure happens before any figure mounts
+  gapY=px(getComputedStyle(you).columnGap)||px(getComputedStyle(you).gap)||8,gapE=px(getComputedStyle(foe).columnGap)||px(getComputedStyle(foe).gap)||8;
+ let arY=0,arF=0,nY=0,nF=0,nA=0;
+ for(const el of you.children){if(el.matches('.slot'))continue;if(el===hero&&hE)arY+=hE.fw/hE.fh;else if(el.matches('.unit')){const ae=el.matches('.ally[data-id]')&&allyOf?allyOf(el):null;if(ae){const k=ae.scale||.8;arY+=k*ae.fw/ae.fh;el.style.setProperty('--k',k)}else{arY+=ALLY;nA++}}else continue;nY++}
  for(const el of foeEls){const fe=now.c.enemies.find(x=>String(x.id)===el.dataset.id),en=entryForFoe(fe,g);if(en){const k=KSCALE[fe.rank||(en.rank==='token'?'token':'regular')]||.8;arF+=k*en.fw/en.fh;el.style.setProperty('--k',k)}else arF+=SEAL;nF++}
  if(!arY&&!arF)return;
- const nA=Math.max(0,nY-(hE?1:0)),arH=arY-nA*ALLY;
+ const arH=arY-nA*ALLY;
  let H1=Math.min(Hf-CHROME,(W-gapF-(nY-1)*gapY-(nF-1)*gapE-8)/(arY+arF));if(H1*ALLY<44)H1=Math.min(Hf-CHROME,(W-gapF-(nY-1)*gapY-(nF-1)*gapE-8-nA*44)/(arH+arF));
  let H2=Math.min((Hf-2*CHROME-36)/2,(W-(nY-1)*gapY-8)/arY,(W-(nF-1)*gapE-8)/arF);if(H2*ALLY<44)H2=Math.min((Hf-2*CHROME-36)/2,(W-(nY-1)*gapY-8-nA*44)/arH,(W-(nF-1)*gapE-8)/arF);
- const rows=H1<100&&H2>H1*1.2;const H=Math.max(44,rows?H2:H1);
- const sc=field.getBoundingClientRect().width/(W||1)||1,Hs=H*sc;// on-screen pixels: tablets scale the phone layout up
- const vk=innerWidth+'x'+innerHeight;if(!plates||plates.vk!==vk)plates={vk,on:Hs<floor()};else if(!plates.on&&Hs<floor()*.75)plates.on=true;
+ // rows, once chosen, hold for the fight: a death must not reshuffle the field
+ const vk=innerWidth+'x'+innerHeight;if(plates&&plates.vk!==vk)plates=null;const sc=field.getBoundingClientRect().width/(field.clientWidth||1)||1;const rows=(plates&&plates.rows)||(H1*sc<floor()&&H2>H1*1.2);// one line on the floor first; the foes take a row above only when one line cannot seat the figures
+ const H=Math.min(innerHeight*.42/sc,Math.max(44,rows?H2:H1)),Hs=H*sc;// a figure never takes more than 42% of the screen height// on-screen pixels: tablets scale the phone layout up
+ if(!plates)plates={vk,on:Hs<floor(),rows};else{plates.rows=rows;if(!plates.on&&Hs<floor()*.75)plates.on=true}
  window.__pwSize={W,Hf,gapF,gapY,gapE,arY,arF,nY,nF,H1,H2,rows,H,sc,Hs,plates:plates.on};
- if(plates.on){field.classList.add('pw-plates');field.classList.remove('pw-rows','pw-small');field.style.removeProperty('--pw-fh');return false}
+ if(plates.on){field.classList.add('pw-plates');field.classList.remove('pw-rows','pw-small','pw-stage');field.style.removeProperty('--pw-fh');return false}
  field.classList.remove('pw-plates');field.classList.toggle('pw-rows',rows);field.classList.toggle('pw-small',H*ALLY<64);field.style.setProperty('--pw-fh',Math.floor(H)+'px');return true}
-function mount(id,el,entry,face){const art=el.querySelector(':scope>.art');if(!art)return;let R=rigs.get(id);
+function mount(id,el,entry,face,hp){const art=el.querySelector(':scope>.art');if(!art)return;let R=rigs.get(id);
  if(!R){R=rig(entry,id,face);rigs.set(id,R);R.fadeIn=T}
  else if(R.cur.key!==entry.key&&!R.act){morph(R,entry)}
- const st=art.querySelector(':scope>.stats'),bar=el.querySelector(':scope>.bar');if(st&&bar&&st.parentNode!==bar)bar.appendChild(st);
+ const st=art.querySelector(':scope>.stats'),bar=el.querySelector(':scope>.bar');if(st&&bar&&st.parentNode!==bar)bar.appendChild(st);if(bar&&hp)bar.dataset.hp=hp;// the life reads inside the bar, Test Fight style
  R.el=el;el.classList.add('pw-fig');el.style.setProperty('--ar',(R.cur.fw/R.cur.fh).toFixed(3));if(R.cv.parentNode!==art)art.prepend(R.cv);fit(R)}
 // A dead enemy keeps its last place on a fixed canvas while it falls.
 function ghost(R){const r=R.lastRect||R.cv.getBoundingClientRect();if(!r.width){done(R);return}if(!fxLayer.isConnected)document.body.append(fxLayer);Object.assign(R.cv.style,{position:'fixed',left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});
@@ -5352,12 +5383,13 @@ function cssHit(el,cls){if(!el||!el.isConnected)return;el.classList.remove(cls);
 function diff(p,n,g){if(RM)return;const heroR=rigs.get('hero'),hEl=heroEl();
  // enemies acting: their intent picks the motion; whoever got hurt takes the hit on the beat
  let acted=false,beat=0;const dead=[];for(const [id] of p.foes)if(!n.foes.has(id)&&rigs.get(id))dead.push(rigs.get(id));
+ for(const [aid] of p.allies)if(!n.allies.has(aid)&&rigs.get('a:'+aid))dead.push(rigs.get('a:'+aid));
  for(const [id,f] of n.foes){const pf=p.foes.get(id);if(!pf)continue;const R=rigs.get(id);
   if(f.key!==pf.key&&R){const to=entryForFoe(f.e,g);if(to&&to.key!==R.cur.key){act_(R,'transform',{to});continue}}
   if(f.phase2&&!pf.phase2&&R&&!R.act)act_(R,'phase');
   if(f.acting&&!pf.acting){acted=true;const kind=kindOf(pf,f.e,g);
    const tg=[];if(n.hp<p.hp||n.ward<p.ward)tg.push({el:hEl,R:heroR,rect:rectOf(hEl)});
-   for(const [aid,a] of p.allies){const na=n.allies.get(aid);if(!na||na.dmg>a.dmg)tg.push({el:allyEl(aid),rect:rectOf(allyEl(aid))})}
+   for(const [aid,a] of p.allies){const na=n.allies.get(aid);if(!na||na.dmg>a.dmg)tg.push({el:allyEl(aid),R:rigs.get('a:'+aid),rect:rectOf(allyEl(aid))})}
    const ms=R?act_(R,kind,{target:tg[0]||null}):0;beat=Math.max(beat,ms);
    if(ms){for(const t of tg)hold(t.el,ms);setTimeout(()=>{for(const t of tg){if(t.R)act_(t.R,'hit');else cssHit(t.el,'pw-recoil')}},ms)}
    else for(const t of tg){if(t.R)act_(t.R,'hit');else cssHit(t.el,'pw-recoil')}}}
@@ -5365,8 +5397,8 @@ function diff(p,n,g){if(RM)return;const heroR=rigs.get('hero'),hEl=heroEl();
  // your turn: a creature that just tapped lunged; otherwise a spell flew from the hero
  const hurt=[];for(const [id,f] of n.foes){const pf=p.foes.get(id);if(pf&&f.hp<pf.hp)hurt.push({id,el:foeEl(id),R:rigs.get(id)})}
  for(const R of dead)hurt.push({id:R.id,el:null,R,dead:true});
- if(hurt.length){const att=[...n.allies].filter(([aid,a])=>a.tapped&&p.allies.get(aid)&&!p.allies.get(aid).tapped).map(([aid])=>allyEl(aid)).filter(Boolean);
-  let ms=0;if(att.length){att.forEach(el=>cssHit(el,'pw-lunge'));ms=250}
+ if(hurt.length){const att=[...n.allies].filter(([aid,a])=>a.tapped&&p.allies.get(aid)&&!p.allies.get(aid).tapped).map(([aid])=>[allyEl(aid),rigs.get('a:'+aid)]).filter(x=>x[0]||x[1]);
+  let ms=0;if(att.length){const t=hurt.find(h=>h.el);for(const [el,R] of att){if(R&&!R.act){const en=R.cur,kind=(en.acts&&en.acts[0]&&en.acts[0][1])||'strike';ms=Math.max(ms,act_(R,kind,{target:t?rectOf(t.el):null}))}else{cssHit(el,'pw-lunge');ms=Math.max(ms,250)}}}
   else if(heroR&&!heroR.act){const t=hurt.find(h=>h.el);ms=act_(heroR,'cast',{target:t?rectOf(t.el):null})}
   for(const h of hurt){if(h.dead){h.R.dying=true;h.R.dyingAt=ms}else if(ms)hold(h.el,ms)}
   const land=()=>{for(const h of hurt){if(h.dead)continue;if(h.R)act_(h.R,'hit');else cssHit(h.el,'pw-recoil')}};
@@ -5375,7 +5407,7 @@ function diff(p,n,g){if(RM)return;const heroR=rigs.get('hero'),hEl=heroEl();
 
 /* ---------- zoom card: the held copy of a figure shows its idle pose ---------- */
 new MutationObserver(ms=>{for(const m of ms)for(const nd of m.addedNodes){if(!(nd instanceof Element)||!nd.classList.contains('pw-zoom'))continue;const u=nd.querySelector('.unit.pw-fig');if(!u)continue;
- const src=[...rigs.values()].find(R=>R.el&&R.el.dataset.n===u.dataset.n)||[...rigs.values()][0];if(!src)continue;const e=src.cur,o=IMGS[e.key];if(!o||!o.ok)continue;
+ const src=[...rigs.values()].find(R=>R.el&&R.el.dataset.n===u.dataset.n)||[...rigs.values()][0];if(!src)continue;const e=src.cur,o=IMGS[fileOf(e.key)];if(!o||!o.ok)continue;
  u.style.setProperty('--ar',(e.fw/e.fh).toFixed(3));const cv=u.querySelector('canvas.pw-cast');if(!cv)continue;requestAnimationFrame(()=>{const r=cv.getBoundingClientRect(),a=cv.parentNode.getBoundingClientRect();cv.width=Math.round(r.width*DPR);cv.height=Math.round(r.height*DPR);const x=a.left-r.left,y=a.top-r.top,fr=e.frames[e.idle];const c2=cv.getContext('2d');c2.setTransform(DPR,0,0,DPR,0,0);c2.drawImage(o.a,fr[0],fr[1],e.fw,e.fh,x,y,a.width,a.height)})}}).observe(document.body,{childList:true});
 
 /* ---------- perf readout (?castperf=1 or localStorage pw-castperf): rigs, frame ms, textures ---------- */
@@ -5385,9 +5417,27 @@ function stats(){const a=perf.ms.filter(x=>x!=null);const avg=a.length?a.reduce(
 function perfTick(ms){if(!perfEl.isConnected)document.body.append(perfEl);if((perf.i&15)===0){const s=stats();perfEl.textContent=`cast ${s.rigs} rigs · ${s.frameMsAvg} ms avg · ${s.frameMsMax} ms max · ${s.textures} tex ${s.textureMB} MB${s.jsHeapMB!=null?' · heap '+s.jsHeapMB+' MB':''} · ${s.webgl2?'webgl2':s.webgl?'webgl':'2d'}`}}
 try{if(/[?&]castperf=1/.test(location.search)||localStorage.getItem('pw-castperf')==='1'){perfEl=document.createElement('div');perfEl.className='pw-cast-perf';perfEl.setAttribute('aria-hidden','true')}}catch(err){}
 
+/* ---------- ground: the painting's floor line lands under the feet ---------- */
+// floor = fraction of the image height where the feet stand (backgrounds thread, GROUND.md, tuned by eye); a scene with no floor keeps centre/cover.
+// The image grows past cover when the floor would otherwise fall short of the feet; the sky is what gets cropped.
+const FLOORS={'inn-battle':.68,'zen-battle':.55};
+let bgSig=null,bgKey=null,bgImg=null;
+function ground(){const b=app.querySelector('.battle'),hero=b&&b.querySelector('.field.pw-stage .unit.hero.pw-fig>.art');
+ if(!b||!hero||!rigs.size){if(b)b.classList.remove('pw-ground');return}
+ const v=getComputedStyle(b).getPropertyValue('--pw-bg').trim(),sig=v.slice(0,200);
+ if(sig!==bgSig){bgSig=sig;bgKey=null;bgImg=null;const rs=getComputedStyle(document.documentElement);
+  for(const k in FLOORS){const u=rs.getPropertyValue('--pw-x-'+k).trim();if(u&&u.slice(0,200)===sig){bgKey=k;break}}
+  if(bgKey){const m=/^url\((['"]?)([\s\S]*?)\1\)$/.exec(v);if(m){const im=new Image();im.onload=()=>{if(bgImg===im)ground()};im.src=m[2];bgImg=im}}}
+ if(!bgKey||!bgImg||!bgImg.naturalHeight){b.classList.remove('pw-ground');return}
+ const f=FLOORS[bgKey],r=b.getBoundingClientRect(),zb=r.width/(b.offsetWidth||1)||1;// the battle is zoomed on tablets and desktops: work in its own px
+ const Wb=b.offsetWidth+20,Hb=b.offsetHeight+20,ar=bgImg.naturalWidth/bgImg.naturalHeight;// the ::after box sits 10px outside the battle
+ const Ys=(hero.getBoundingClientRect().bottom-r.top)/zb+10;// the feet
+ const Hi=Math.max(Hb,Wb/ar,Ys/f,(Hb-Ys)/(1-f)),Wi=Hi*ar;
+ b.style.setProperty('--pw-bg-size',Wi.toFixed(1)+'px '+Hi.toFixed(1)+'px');b.style.setProperty('--pw-bg-pos',((Wb-Wi)/2).toFixed(1)+'px '+(Ys-f*Hi).toFixed(1)+'px');b.classList.add('pw-ground')}
+
 /* ---------- wiring ---------- */
-window.PW_CAST={stats,owns:id=>rigs.has(String(id))||[...ghosts].some(R=>R.id===String(id)),impactDelay:id=>{const t=holds.get(String(id));return t?Math.max(0,Math.round(t-performance.now())):undefined},rigs,load,ready,resetPerf:()=>{perf.ms=[];perf.i=0;perf.max=0}};
-if(app){new MutationObserver(()=>sync()).observe(app,{childList:true});addEventListener('resize',()=>{for(const R of rigs.values())fit(R)});loadData().then(()=>sync())}
+window.PW_CAST={stats,owns:id=>rigs.has(String(id))||rigs.has('a:'+id)||[...ghosts].some(R=>R.id===String(id)),impactDelay:id=>{const t=holds.get(String(id));return t?Math.max(0,Math.round(t-performance.now())):undefined},rigs,load,ready,resetPerf:()=>{perf.ms=[];perf.i=0;perf.max=0}};
+if(app){new MutationObserver(()=>sync()).observe(app,{childList:true});addEventListener('resize',()=>{for(const R of rigs.values())fit(R);ground()});loadData().then(()=>sync())}
 })();
 
 </script>
