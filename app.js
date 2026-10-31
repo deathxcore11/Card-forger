@@ -2801,6 +2801,7 @@ A.viewPrint = (t) => {
   refreshSheet();
   $("#sheetBody").scrollTo({ top: 0, behavior: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 };
+// Continue or retry loading this card's details and printings (the Retry button on a paused load).
 A.magicVersionsMore = () => {
   const ctx = S.ui.sheetCtx;
   if (ctx?.type !== "card" || ctx.detailsBusy) return;
@@ -4073,14 +4074,16 @@ A.mtgWikiAsk=()=>{const text=$('#wikiQ')?.value.trim()||currentWikiPage().state.
 A.cardTab = async (t) => {
   const commit=scopedCommit();
   const ctx = S.ui.sheetCtx;
-  if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","versions","prices","rulings","legal","trade"].includes(t.dataset.tab)) return;
-  ctx.tab = t.dataset.tab === "legal" ? "rulings" : t.dataset.tab;
+  if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","prices","rulings","legal","trade"].includes(t.dataset.tab)) return;
+  ctx.tab = ["legal","rulings"].includes(t.dataset.tab) ? "guide" : t.dataset.tab; // Rules & legality live in the Play guide
   for (const b of $$("#sheetBody .cs-tabs [data-tab]")) {
     const on = b.dataset.tab === ctx.tab;
     b.classList.toggle("on", on);
     b.setAttribute("aria-selected", on);
     b.tabIndex = on ? 0 : -1;
   }
+  // Set progress, quick price and badges belong to Overview; the other tabs open on their own content.
+  for (const el of $$("#sheetBody [data-overview-only]")) el.hidden = ctx.tab !== "overview";
   for (const p of $$("#sheetBody .cs-panel")) {
     p.hidden = p.dataset.tab !== ctx.tab;
     if (!p.hidden) { p.classList.remove("tab-enter"); void p.offsetWidth; p.classList.add("tab-enter"); }
@@ -4100,8 +4103,8 @@ A.cardTab = async (t) => {
     if(S.ui.sheetCtx === ctx)refreshSheet();
   }
   sheetScrolled();
-  // Official rulings load the first time the tab opens.
-  if (ctx.tab === "rulings" && ctx.type === "card" && !ctx.rulings) {
+  // Official rulings (inside the Play guide) load the first time it opens.
+  if (ctx.tab === "guide" && ctx.type === "card" && !ctx.rulings) {
     const c = ctx.print || meta(ctx.name);
     try {
       const r = await api("/cards/" + encodeURIComponent(c.id) + "/rulings");
@@ -4285,8 +4288,8 @@ function backToCard(scrollTo) {
 A.buyBack = () => backToCard();
 A.buyCompare = () => {
   const ctx = S.ui.sheetCtx;
-  if (ctx?.back) ctx.back.tab = "versions";
-  backToCard(".cs-tabs");
+  if (ctx?.back) ctx.back.tab = "overview";
+  backToCard(".card-printing-preview");
 };
 
 /* ---------- deck review ---------- */
@@ -5217,7 +5220,7 @@ async function mtgGuideLoad(c) {
   const ranked = rankPairs("mtg", c, cands);
   S.ui.guide[k] = {
     cards: ranked.map((p) => ({ name: p.card.name, image: p.card.image_uris?.small || p.card.card_faces?.[0]?.image_uris?.small || "", attrs: `data-act="card" data-name="${esc(p.card.name)}"`, reasons: p.reasons, score: p.score, fallback: p.fallback })),
-    note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings, popularity and what you own." : results.some((r) => !r) ? "Couldn’t reach Scryfall right now." : "No strong pairings found in its text — try Build decks around it.",
+    note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings, popularity and what you own." : results.some((r) => !r) ? "Couldn’t reach Scryfall right now." : "No strong pairings found in its text or tournament lists.",
   };
   refreshSheet();
 }

@@ -36,7 +36,7 @@ export function cardRuleHelp(g,card){
  const context=ruleCardContext(g,card),text=context.text.toLowerCase();
  const terms=Object.entries(ruleTerms(g)).filter(([key])=>text.includes(key.toLowerCase())).slice(0,12);
  if(g==='mtg')for(const id of ['bloodlust','bloodthirst'])if(!terms.some(([key])=>key.toLowerCase()===id)&&mechanicCardMatches(card,[id]))terms.push([id,ruleTerms(g)[id]]);
- return `<section class="guide-sec card-rule-help" data-rule-card-context="${esc(JSON.stringify(context))}"><h3>Explore the rules</h3><p class="small muted">Keep this card’s wording in view while you explore a mechanic. Costs, timing and exceptions still matter.</p><div class="row wrap">${terms.map(([key,r])=>`<button type="button" class="chip" data-act="ruleHint" data-game="${g}" data-rule="${esc(key)}">${esc(r.label)}</button>`).join('')}<button type="button" class="btn ghost small" data-act="learnGame" data-game="${g}">Rules & how to play →</button></div></section>`;
+ return `<section class="guide-sec card-rule-help" data-rule-card-context="${esc(JSON.stringify(context))}"><h3>Explore the rules</h3><div class="row wrap">${terms.map(([key,r])=>`<button type="button" class="chip" data-act="ruleHint" data-game="${g}" data-rule="${esc(key)}">${esc(r.label)}</button>`).join('')}<button type="button" class="btn ghost small" data-act="learnGame" data-game="${g}">Rules & how to play →</button></div></section>`;
 }
 const states=new WeakMap(),attached=new WeakSet(),handledEvents=new WeakSet();
 function stateFor(root){if(!states.has(root))states.set(root,{game:root.dataset.game,view:'home',seq:0,history:[],pack:null,query:'',doc:'',chapter:'',limit:25});return states.get(root);}

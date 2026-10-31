@@ -39,6 +39,8 @@ nav.tabs > button { flex: none; padding: 8px 14px; white-space: nowrap; }
   color: var(--muted); font-weight: 650; letter-spacing: -.01em; cursor: pointer;
   transition: color .35s var(--glide-ease), transform .2s var(--glide-ease);
 }
+/* Card sheet tabs share any spare width, so the row stays even when a tab (like Meta) is left out. */
+.cs-tabs > button { flex: 1 0 auto; }
 @media (hover: hover) { :is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) > button:not(.on):hover { color: var(--text); } }
 :is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) > :is(.on, [aria-selected="true"], [aria-pressed="true"]) { color: var(--gold-ink); animation: none; }
 :is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) > button:active { transform: scale(.96); }
@@ -598,3 +600,104 @@ body .topbar .home-search-pill>input { padding-left:18px; }
 /* Card matches sit in the same rhythm as the app's own rows: art, name and set, price on the right. */
 .home-suggestions .display-list>.lot.home-result { grid-template-columns:34px minmax(0,1fr) auto; gap:12px; }
 .home-suggestions .lot.home-result .lot-side { grid-column:auto; justify-self:end; align-self:center; }
+/* ---------- Card sheet · Play guide, Rules & legality, Prices ----------
+   Uniform with the rest of the card sheet: the same panel as the set summary and price history
+   (1px line, 18px radius, glass sheen), 16px section titles, the game's accent for the one
+   primary element, 44px rows. Every line is card data, not filler. */
+#sheetBody :is(.card-guide .guide-panel, .guide-hero, .price-hero, .price-copy) {
+  padding: 14px 16px; border: 1px solid var(--line); border-radius: 18px;
+  background: linear-gradient(135deg, #ffffff09, #ffffff03); box-shadow: inset 0 1px #ffffff0a; backdrop-filter: blur(16px);
+}
+#sheetBody :is(.guide-hero, .price-hero) { background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 5%, var(--surface)), var(--surface)); }
+.card-guide { display: grid; gap: 14px; margin-top: 6px; }
+.card-guide .guide-sec { margin: 0; min-width: 0; }
+.card-guide .guide-sec > h3 { margin: 0 0 12px; font-size: 16px; line-height: 1.4; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.guide-hero { display: grid; gap: 10px; }
+.guide-hero .eyebrow { margin: 0; }
+.guide-roles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+.guide-role { display: inline-flex; align-items: center; min-height: 30px; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--text); border: 1px solid var(--line); background: var(--glass-2, var(--surface-2)); }
+.guide-role.main { color: var(--gold-ink); border-color: transparent; background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 78%, #fff 22%), var(--gold) 58%, color-mix(in srgb, var(--gold) 86%, #000 14%)); }
+.card-guide .guide-what { margin: 0; font-size: 15px; line-height: 1.5; }
+.guide-steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; gap: 10px; }
+.guide-steps li { counter-increment: step; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; line-height: 1.5; }
+.guide-steps li::before { content: counter(step); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font-size: 12px; font-weight: 800; color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent); background: color-mix(in srgb, var(--gold) 10%, transparent); }
+.card-guide .guide-list { padding-left: 18px; gap: 8px; }
+.card-guide .guide-list li::marker { color: var(--gold); }
+.guide-along { display: grid; gap: 6px; }
+.guide-along-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(60px, 34%) 40px; gap: 10px; align-items: center; min-height: 44px; padding: 6px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
+.guide-along-row b { text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; }
+.guide-meter { height: 5px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.guide-meter i { display: block; height: 100%; border-radius: inherit; background: var(--gold); }
+.card-guide .pair-list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.card-guide .pair-shared { margin: 0 0 10px; }
+.card-guide .guide-limits { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; margin: 0 0 10px; }
+.card-guide .guide-limits span { position: relative; gap: 2px; padding: 8px 12px 8px 14px; border-radius: 14px; overflow: hidden; }
+.card-guide .guide-limits span::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--good); }
+.card-guide .guide-limits span.warn::before { background: var(--warn); }
+.card-guide .guide-limits span.bad::before { background: var(--bad); }
+.card-guide .guide-limits span.bad b { color: var(--bad); }
+.guide-rulings { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.guide-link-list { display: grid; gap: 6px; }
+.guide-link { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); text-decoration: none; font-weight: 650; }
+.guide-rule-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.guide-rule-links .chip { min-height: 44px; }
+#sheetBody .card-discovery > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+
+/* Prices: one hero with the number that matters, then your copy at its condition. */
+#sheetBody .price-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px 12px; margin: 6px 0 12px; }
+.price-hero-main { display: grid; gap: 2px; min-width: 0; }
+.price-hero .eyebrow { margin: 0; }
+.price-hero-value { font-size: 32px; line-height: 1.15; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.price-hero-id { color: var(--muted); font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.price-fresh { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid var(--line); background: var(--glass-2, var(--surface-2)); color: var(--muted); }
+.price-fresh::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.price-fresh.fresh { color: var(--good); }
+.price-fresh.stale { color: var(--warn); }
+.price-hero > :is(.price-selectors, .current-printing-reference, .history-status) { grid-column: 1 / -1; margin: 4px 0 0; }
+#sheetBody .price-hero select { width: 100%; min-width: 0; min-height: 44px; }
+#sheetBody .price-copy { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; margin: 0 0 12px; }
+.price-copy-label, .price-copy-value { display: grid; gap: 2px; min-width: 0; }
+.price-copy-label b { font-size: 14px; }
+.price-copy-value { text-align: right; }
+.price-copy small { color: var(--muted); font-size: 12px; }
+.price-copy-value b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.price-copy .foot { grid-column: 1 / -1; margin: 2px 0 0; }
+@media (max-width: 420px) { #sheetBody .price-hero { grid-template-columns: minmax(0, 1fr); } .price-fresh { justify-self: start; } }
+/* Rows in the guide wear the same frosted glass as pairing rows and list tiles. */
+body.glass :is(.guide-along-row, .guide-link) { background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 45%), var(--glass); border-color: var(--glass-line); box-shadow: var(--glass-hi), 0 10px 30px rgba(0, 0, 0, 0.22); }
+/* Phones: card tabs are text-only so Overview · Meta · Play guide · Prices all fit in one row,
+   the same on every card whether or not it has a Meta tab. */
+@media (max-width: 480px) {
+  .cs-tabs[aria-label="Card details"] > button { padding-inline: clamp(8px, 2.6vw, 16px); gap: 0; }
+  .cs-tabs[aria-label="Card details"] > button .label-ico { display: none; }
+}
+
+/* Card detail art: the frame hugs the printed card on every game.
+   Pokémon (600×825 and 734×1024) and Yu-Gi-Oh! (421×614) scans are not Magic's 488×680, so the
+   shared cover box cropped them and slid the scan's rounded corner off the clip, which let the
+   dark fill show between card and frame. Their art keeps its own shape, the way the collection
+   grid already does, and any see-through corner pixel shows the frame, never a dark fill. */
+.cd-img .cd-zoom > img.card-img[data-tier] { background: transparent; }
+.cd-img:is([data-finish-game="ptcg"], [data-finish-game="ygo"]) .card-img { height: auto; aspect-ratio: auto 600 / 825; object-fit: contain; }
+.cd-img[data-finish-game="ygo"] .card-img { aspect-ratio: auto 421 / 614; }
+
+/* Card sheet header: the whole picture, bleeding into the glass.
+   The sharp art shows its full picture (Magic art crop, Pokémon art window, Yu-Gi-Oh! cropped
+   art) at its own shape and dissolves at the edges instead of being cut. A blurred copy sits
+   behind the top of the sheet and fades out under the tabs and first panels, so the glass
+   carries the art's colour. */
+#sheetBody:has(> .cs-bleed) { position: relative; isolation: isolate; }
+#sheetBody > .cs-bleed { position: absolute; top: 0; left: 0; right: 0; height: clamp(560px, 150vw, 720px); z-index: -1; pointer-events: none; -webkit-mask-image: linear-gradient(180deg, #000 34%, transparent 100%); mask-image: linear-gradient(180deg, #000 34%, transparent 100%); }
+#sheetBody > .cs-bleed > :is(img, .pk-crop) { display: block; width: 100%; height: 100%; object-fit: cover; filter: blur(44px) saturate(1.4) brightness(.6); }
+#sheetBody > .cs-bleed::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0, #0000002e 40%, #00000073 100%); }
+/* The banner is as tall as the art needs to show its whole width on phones, within limits. */
+.cs-banner:not(.no-art) { --art-ratio: 1.37; --banner-art-height: clamp(220px, calc(100vw / var(--art-ratio)), min(340px, 78vw, 62dvh)); }
+.cs-banner:has(> .cs-hero.ptcg) { --art-ratio: 1.68; }
+.cs-banner:has(> .cs-hero.ygo) { --art-ratio: 1; }
+@media (min-width: 700px) { .cs-banner:not(.no-art) { --banner-art-height: min(340px, 62dvh); } }
+.cs-banner > .cs-hero:not(.compact) .cs-art { position: absolute; top: 0; left: 50%; translate: -50% 0; width: auto; max-width: 100%; height: 100%; aspect-ratio: auto var(--art-ratio); object-fit: cover; object-position: center; transform: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent), linear-gradient(180deg, #000 50%, transparent 100%); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent), linear-gradient(180deg, #000 50%, transparent 100%); mask-composite: intersect; }
+.cs-banner > .cs-hero.ptcg:not(.compact) .cs-art.pk-crop { inset: 0 auto 0 50%; width: auto; aspect-ratio: var(--art-ratio); }
+.cs-banner > .cs-hero.ptcg .pk-crop .pk-win { transform: none; }
+.cs-banner > .cs-hero:not(.compact) .cs-shade { background: linear-gradient(180deg, #0004 0, transparent 32%); }

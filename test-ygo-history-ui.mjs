@@ -32,7 +32,7 @@ mock();
 let noPrint=presentationQuote('ygo',cardA),noEdition=quote(cardA,''),html=priceOverview('ygo',cardA,{type:'tcard',priceEdition:q.editionKey});
 assert.equal(noPrint.printing,null);assert.equal(priceSelectionState(noPrint),'printing-required');assert.equal(priceSelectionState(noEdition),'edition-required');
 hasState(historyPanel(noPrint),'printing-required');hasState(historyPanel(noEdition),'edition-required');
-assert.match(html,/data-change="historyYgoEdition"/);assert.match(html,/value="" selected>Edition not specified/);assert.match(html,/not every printing has every edition/);assert.doesNotMatch(html,/data-history-state="unsupported"|No recorded quotes|\$0\.00/);
+assert.match(html,/data-change="historyYgoEdition"/);assert.match(html,/value="" selected>Edition not specified/);assert.doesNotMatch(html,/data-history-state="unsupported"|No recorded quotes|\$0\.00/);
 assert.equal(priceSelectionState(quote(cardA,'normal')),'edition-required');assert.equal(calls.length,0);
 // Browser-mode rendering issues precisely one deduplicated pair per eligible key.
 globalThis.window={};

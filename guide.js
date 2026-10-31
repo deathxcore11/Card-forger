@@ -11,6 +11,11 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const nameKey = (n) => String(n || "").split(" // ")[0].toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "");
 const BASIC = /^(?:snow-covered )?(?:plains|island|swamp|mountain|forest|wastes)$|^(?:basic )?(?:grass|fire|water|lightning|psychic|fighting|darkness|metal|fairy) energy$/i;
 
+// Pokémon damage as printed: "20+" and "30×" are not caps, so never call them "up to".
+const damageText = (d) => { const s = String(d ?? "").trim(); return /\+$/.test(s) ? `${parseInt(s, 10)} or more` : /[×x]$/.test(s) ? `${parseInt(s, 10)} × a count` : s; };
+// Multi-Prize Pokémon by name (ex, EX, GX, V, VMAX, VSTAR); Prism Star is Rule Box but gives one Prize.
+const multiPrize = (c) => (Number.isFinite(c.prize) ? c.prize > 1 : /\b(ex|EX|GX|V|VMAX|VSTAR)\b/.test(c.name || ""));
+
 /* ---------- Magic ---------- */
 
 // [id, test(text, card), label, what it means, when to use it, synergy note, Scryfall query for cards that feed it]
@@ -66,7 +71,7 @@ function mtgGuide(c) {
     text = faces.map((f) => f.oracle_text || "").join("\n").toLowerCase(),
     type = faces.map((f) => f.type_line || "").join(" // ") || c.type_line || "",
     cmc = Number(c.cmc) || 0,
-    power = Number(faces[0]?.power) || 0;
+    power = Number(faces[0]?.power); // NaN for */X power: no size-based advice then
   let roles = MTG_RULES.filter(([, re]) => re.test(text)).map(([id, , label, what, when, syn, query]) => ({ id, label, what, when, syn, query }));
   // Looting already covers drawing; a wipe already covers removal.
   if (roles.some((r) => r.id === "loot")) roles = roles.filter((r) => r.id !== "draw");
@@ -81,7 +86,9 @@ function mtgGuide(c) {
   if (/Planeswalker/.test(type)) tips.push("Planeswalker — use an ability each turn; protect it from attacks with your creatures.");
   for (const k of c.keywords || []) if (MTG_KEYWORDS[k]) tips.push(MTG_KEYWORDS[k]);
   const kind = /Instant/.test(type) ? "instant" : /Sorcery/.test(type) ? "sorcery" : /Creature/.test(type) ? "creature" : /Land/.test(type) ? "land" : /Artifact/.test(type) ? "artifact" : /Enchantment/.test(type) ? "enchantment" : /Planeswalker/.test(type) ? "planeswalker" : "card";
-  const timing = kind === "instant" ? "Instant: cast it any time, even on your opponent's turn." : kind === "sorcery" ? "Sorcery: cast it on your own turn when nothing else is happening." : kind === "land" ? "" : `Costs ${cmc} mana — usually played around turn ${Math.max(1, Math.min(7, Math.round(cmc)))}.`;
+  // Casting speed lives in "Rules for this card"; here only the mana curve, and never for X spells.
+  const xCost = /\{X\}/.test(faces.map((f) => f.mana_cost || "").join("") || c.mana_cost || "");
+  const timing = kind === "land" || xCost || !cmc ? "" : `Costs ${cmc} mana — castable on turn ${cmc} if you hit every land drop.`;
   return { roles, tips: [timing, ...tips].filter(Boolean), kind };
 }
 
@@ -109,11 +116,11 @@ function ygoGuide(c) {
     t = String(c.typeLine || "");
   if (c.category === "Monster") {
     if (c.extra) tips.push(`An Extra Deck monster (${t.match(/Fusion|Synchro|Xyz|Link/)?.[0] || "Extra Deck"}) — check its summoning requirements on the card and plan which materials you'll use.`);
-    else if (Number(c.level) >= 7) tips.push(`Level ${c.level} — needs two Tributes to Normal Summon, so it usually needs a Special Summon effect.`);
-    else if (Number(c.level) >= 5) tips.push(`Level ${c.level} — needs one Tribute to Normal Summon.`);
+    else if (/cannot be normal summoned/.test(text)) tips.push("Can't be Normal Summoned or Set — it's Special Summoned the way its text describes.");
+    else if (Number(c.level) >= 5) tips.push(`Level ${c.level} — ${Number(c.level) >= 7 ? "two Tributes" : "one Tribute"} to Normal Summon it, unless an effect Special Summons it.`);
     if (/tuner/i.test(t)) tips.push("Tuner — combine with non-Tuners to Synchro Summon.");
-    if (/pendulum/i.test(t)) tips.push("Pendulum — can be placed in a Pendulum Zone to summon several monsters at once.");
-    if (Number(c.atk) >= 2500) tips.push(`${c.atk} ATK — strong enough to beat most monsters in battle.`);
+    const scale = (c.stats || []).find(([k]) => k === "Scale")?.[1];
+    if (/pendulum/i.test(t)) tips.push(`Pendulum — can be activated as a Spell in a Pendulum Zone${scale != null ? ` (Scale ${scale})` : ""}; with two Scales set you can Pendulum Summon monsters whose Levels fall between them.`);
   } else if (c.category === "Spell") {
     tips.push(/quick-play/i.test(t + c.race) ? "Quick-Play Spell — can be used on your opponent's turn if Set first." : /field/i.test(t + c.race) ? "Field Spell — stays out and affects every turn; search it early." : /continuous/i.test(t + c.race) ? "Continuous Spell — keeps working while face-up." : "Spell — play it on your turn, usually before summoning.");
   } else if (c.category === "Trap") {
@@ -145,21 +152,18 @@ function ptcgGuide(c) {
     tips = [],
     t = String(c.typeLine || "");
   if (c.category === "Pokemon") {
-    if (/\b(ex|EX|GX|V|VMAX|VSTAR)\b/.test(c.name)) tips.push("Rule Box Pokémon — your opponent takes extra Prize cards when it's Knocked Out, so protect it and don't trade it away cheaply.");
+    if (multiPrize(c)) tips.push("Multi-Prize Pokémon — your opponent takes 2 or more Prize cards when it's Knocked Out, so protect it and don't trade it away cheaply.");
     if (c.stage === "Stage2") tips.push(`Stage 2 — evolves from ${c.evolveFrom || "a Stage 1"}. Rare Candy lets you skip the Stage 1 and evolve straight from the Basic.`);
     else if (c.stage === "Stage1") tips.push(`Stage 1 — evolves from ${c.evolveFrom || "a Basic Pokémon"}; play the Basic first and evolve next turn.`);
-    else if(c.stage==='Basic')tips.push("Basic Pokémon — you can put it straight onto your Bench or start with it.");
     else if(c.stage==='LEVEL-UP')tips.push("LEVEL-UP — follow this card's Level-Up instructions; it is not an ordinary Basic or Evolution Pokémon.");
-    else tips.push("Placement rules incomplete — check the printed stage and setup instructions.");
-    if ((c.abilities || []).length) tips.push(`${c.abilities[0].type||'Ability'}${c.abilities[0].name?` “${c.abilities[0].name}”`:''} — check its printed activation condition and whether it requires the Active Spot, damage, or a particular timing.`);
+    else if (c.stage !== "Basic") tips.push("Placement rules incomplete — check the printed stage and setup instructions.");
+    // The costliest attack, counted honestly: one manual attachment per turn without acceleration.
     const big = [...(c.attacks || [])].sort((a, b) => (b.cost?.length || 0) - (a.cost?.length || 0))[0];
-    if (big?.cost?.length) tips.push(`Its biggest attack “${big.name}” needs ${big.cost.length} Energy${big.damage ? ` for ${big.damage} damage` : ""} — plan your attachments a few turns ahead.`);
+    if (big?.cost?.length >= 3) tips.push(`“${big.name}” costs ${big.cost.length} Energy${big.damage ? ` (${damageText(big.damage)} damage)` : ""}: that's ${big.cost.length} turns of attachments on its own, so Energy acceleration speeds it up.`);
     if (Number(c.retreat) >= 3) tips.push(`Retreat cost ${c.retreat} — heavy; pair it with switching cards.`);
-    else if (c.retreat === 0) tips.push("Free retreat — a good pivot to start Active.");
-  } else if (c.category === "Trainer") {
-    const kind = (t.match(/Supporter|Item|Stadium|Tool/i) || [""])[0];
-    tips.push(kind === "Supporter" ? "Supporter — only one per turn, so pick the one that fits the turn best." : kind === "Stadium" ? "Stadium — stays in play for both players until replaced." : kind === "Tool" ? "Pokémon Tool — attach to a Pokémon; it stays until the Pokémon leaves." : "Item — play as many as you like during your turn.");
-  } else if (c.category === "Energy") tips.push(c.basicEnergy ? "Basic Energy — attach one per turn to power attacks." : "Special Energy — has an extra effect; check whether it can be discarded or blocked.");
+    else if (c.retreat === 0 && c.stage !== "Basic") tips.push("Free retreat — it can switch out at no cost.");
+  }
+  // Trainer and Energy play limits are listed once, under "Rules for this card".
   return { roles, tips };
 }
 
@@ -168,17 +172,17 @@ function ptcgGuide(c) {
 function structuralRoles(game, c) {
   const R = (id, label, what, when) => ({ id, label, what, when, syn: "" });
   if (game === "ptcg" && c.category === "Pokemon") {
-    const dmg = Math.max(0, ...(c.attacks || []).map((a) => parseInt(a.damage, 10) || 0)),
-      ability = (c.abilities || []).length,
-      rulebox = /\b(ex|EX|GX|V|VMAX|VSTAR)\b/.test(c.name || "");
-    if (dmg >= 120 || (rulebox && dmg >= 90)) return [R("attacker", "Main attacker", `Hits for up to ${dmg} — built to take Knock Outs.`, "Power it up over a couple of turns (spread Energy across turns) and keep it safe on the Bench until it can attack.")];
-    if (ability && dmg < 90) return [R("support", "Support Pokémon", "Its printed power may support your deck.", "Check the power's condition and timing before choosing the Bench or Active Spot; it may require being Active and damaged.")];
-    if(!['Basic','Stage1','Stage2'].includes(c.stage))return [];
-    if (c.stage !== "Basic" || (c.stage === "Basic" && dmg < 60 && !ability && (c.retreat ?? 2) >= 1)) {
-      if (c.stage === "Basic" && (c.retreat ?? 2) <= 1 && dmg < 60) return [R("pivot", "Pivot / starter", "A cheap Basic to start Active and retreat out of.", "Start with it Active, then retreat into your real attacker once it's ready.")];
-      if (dmg < 90) return [R("step", "Evolution step", "Mostly a stepping stone toward its evolution.", "Bench it early so it can evolve next turn; don't spend Energy on its attacks unless you must.")];
-    }
-    return [R("attacker", dmg >= 60 ? "Early attacker" : "Attacker", `Attacks for up to ${dmg}.`, "Use it to take early Prize cards or to trade with your opponent's smaller Pokémon.")];
+    const attacks = (c.attacks || []).map((a) => ({ ...a, dmg: parseInt(a.damage, 10) || 0, energy: a.cost?.length || 0 })),
+      top = attacks.reduce((b, a) => (a.dmg > (b?.dmg ?? -1) ? a : b), null),
+      dmg = top?.dmg || 0,
+      ability = (c.abilities || [])[0],
+      cheapHit = attacks.some((a) => a.dmg >= 60 && a.energy <= 2);
+    const hit = top && dmg ? `“${top.name}” does ${damageText(top.damage)} for ${top.energy} Energy.` : "";
+    if (ability && dmg < 90) return [R("support", "Support Pokémon", `Played for its ${ability.type || "Ability"}${ability.name ? ` “${ability.name}”` : ""}.`, "Read the Ability's condition first: some only work while Active, once per turn, or when it's played.")];
+    if (dmg >= 120 || (multiPrize(c) && dmg >= 90)) return [R("attacker", "Main attacker", hit, "Build its Energy over a couple of turns on the Bench, then bring it Active to take Knock Outs.")];
+    if (c.stage === "Basic" && (c.retreat ?? 2) <= 1 && dmg < 60) return [R("pivot", "Pivot / starter", `A Basic with ${c.retreat ? "a 1-Energy" : "a free"} retreat.`, "Start with it Active, then retreat into your real attacker once it's ready.")];
+    if (cheapHit) return [R("attacker", "Early attacker", hit, "It can attack with 1–2 Energy, so it takes early Prize cards while bigger attackers power up.")];
+    return dmg ? [R("attacker", "Attacker", hit, "")] : [];
   }
   if (game === "ygo") {
     const tl = c.typeLine || "", atk = Number(c.atk) || 0, lvl = Number(c.level) || 0;
@@ -187,7 +191,7 @@ function structuralRoles(game, c) {
       if (/Normal/.test(tl)) return [R("normal", "Normal monster", `A vanilla Level ${lvl} monster${atk ? ` with ${atk} ATK` : ""}.`, "Its value comes from support cards that name Normal monsters, its archetype, or as material.")];
       if (/tuner/i.test(tl)) return [R("material", "Tuner / material", "A Tuner for Synchro Summons.", "Pair it with non-Tuner monsters whose Levels add up to your Synchro monster's Level.")];
       if (/Flip/.test(tl)) return [R("flip", "Flip monster", "Its effect triggers when it's flipped face-up.", "Set it face-down; it activates when flipped by an attack or by your card effects.")];
-      return [R("beater", atk >= 2000 ? "Beater" : "Material / utility monster", atk >= 2000 ? `${atk} ATK beats most monsters in battle.` : `A Level ${lvl} monster — useful as material for Xyz/Link summons.`, atk >= 2000 ? "Summon it to pressure Life Points or to clear weaker monsters." : "Use it as Tribute or Extra Deck material once its effect has done its job.")];
+      return [R("beater", atk >= 2000 ? "Beater" : "Material / utility monster", atk >= 2000 ? `A Level ${lvl} monster with ${atk} ATK.` : `A Level ${lvl} monster — useful as material for Xyz/Link summons.`, atk >= 2000 ? "Summon it to pressure Life Points or to clear weaker monsters." : "Use it as Tribute or Extra Deck material once its effect has done its job.")];
     }
     const kind = (tl.match(/Equip|Field|Continuous|Counter|Quick-Play|Ritual/) || [""])[0];
     if (kind) return [R(kind.toLowerCase(), kind + (c.category === "Trap" ? " Trap" : " Spell"), { Equip: "Attaches to a monster to change it.", Field: "Changes the field for both players.", Continuous: "Keeps working while face-up.", Counter: "Responds to your opponent's actions.", "Quick-Play": "Can be used in response, even on your opponent's turn (if Set).", Ritual: "Ritual Summons a Ritual monster." }[kind], { Equip: "Equip it to the monster that benefits most; it leaves if that monster does.", Field: "Play it early to get value every turn.", Continuous: "Play it before the turns you need it working.", Counter: "Set it and keep it for your opponent's key play.", "Quick-Play": "Set it to surprise your opponent during their turn.", Ritual: "Keep it with the Ritual monster and tributes it needs." }[kind])];
@@ -201,10 +205,11 @@ function structuralRoles(game, c) {
     return [R("mana", /any color|two colors|\{[wubrg]\} or \{[wubrg]\}|search your library/.test(t) ? "Mana fixing" : "Mana", /any color|search your library/.test(t) ? "Makes more than one color of mana." : "A source of mana.", "Play a land every turn you can; fixing lands matter most in decks with two or more colors.")];
   }
   if (game === "mtg" && /Creature/.test(c.type_line || c.card_faces?.[0]?.type_line || "")) {
-    const f = c.card_faces?.[0] || c, p = Number(f.power) || 0, t = Number(f.toughness) || 0, cmc = Number(c.cmc) || 0,
+    const f = c.card_faces?.[0] || c, p = Number(f.power), t = Number(f.toughness), cmc = Number(c.cmc) || 0,
       kw = c.keywords || [];
     if (["Flying", "Menace", "Trample", "Shadow", "Fear", "Intimidate"].some((k) => kw.includes(k))) return [R("evasive", "Evasive threat", "Hard to block, so it keeps hitting.", "Attack every turn; it's a good target for pump spells and Equipment.")];
-    if (p >= cmc + 1) return [R("beater", "Efficient attacker", `A ${p}/${t} for ${cmc} — above-curve power.`, "Play it on curve and attack early.")];
+    if (!Number.isFinite(p) || !Number.isFinite(t)) return [R("body", "Creature", `Its power/toughness is ${f.power}/${f.toughness} — it changes with the game state.`, "Check what sets its size before counting on it in combat.")];
+    if (cmc >= 1 && p >= cmc + 1) return [R("beater", "Efficient attacker", `A ${p}/${t} for ${cmc} — above-curve power.`, "Play it on curve and attack early.")];
     if (t >= p + 2) return [R("blocker", "Blocker", `A ${p}/${t} — better at defending than attacking.`, "Keep it back to hold off attackers while your plan comes together.")];
     return [R("body", "Creature", `A ${p}/${t} for ${cmc}.`, "Judge it against the other creatures you could play at this cost.")];
   }
@@ -330,37 +335,48 @@ export function cardRules(game, c) {
  *         complementsLoading, complementsNote, extra }
  */
 export function guideHtml(game, card, g, opts = {}) {
-  const roleBlock = g.roles.length
-    ? `<div class="guide-roles">${g.roles.map((r) => `<span class="chip guide-chip">${esc(r.label)}</span>`).join("")}</div>
-      <p class="guide-what">${esc(g.roles.map((r) => r.what).join(" "))}</p>`
-    : g.rulesText ? `<p class="guide-what">${esc(g.rulesText)}</p><p class="muted small">This effect has no specific strategy classification yet. Compare its cost, targets, restrictions and outcome with alternatives; the rules text still applies.</p>` : `<p class="guide-what muted">No additional rules text is available for this card. Check its printed text before deciding how to use it.</p>`;
-  const when = [...g.roles.map((r) => r.when), ...g.tips].filter(Boolean);
+  // Every line comes from the card's own text and stats or from tournament lists on this device.
+  // The full rules text is already on Overview, so it isn't repeated here.
+  const role = g.roles.length
+    ? `<section class="guide-hero" aria-label="What it does"><p class="eyebrow">Its job</p><div class="guide-roles">${g.roles.map((r, i) => `<span class="guide-role${i ? "" : " main"}">${esc(r.label)}</span>`).join("")}</div>${g.roles.some((r) => r.what) ? `<p class="guide-what">${esc(g.roles.map((r) => r.what).filter(Boolean).join(" "))}</p>` : ""}</section>`
+    : "";
+  const when = [...new Set([...g.roles.map((r) => r.when), ...g.tips].filter(Boolean))];
   const syn = g.roles.map((r) => r.syn).filter(Boolean);
   const al = opts.alongside;
-  return `<section class="guide-sec"><h3>What it does</h3>${roleBlock}${g.rulesText && g.roles.length ? `<details class="guide-text"><summary>Full effect · conditions and restrictions</summary><p>${esc(g.rulesText)}</p></details>` : ""}</section>
-  ${when.length ? `<section class="guide-sec"><h3>How and when to play it</h3><ul class="guide-list">${when.slice(0, 7).map((t) => `<li>${esc(t)}</li>`).join("")}</ul></section>` : ""}
-  ${syn.length ? `<section class="guide-sec"><h3>Synergies</h3><ul class="guide-list">${syn.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></section>` : ""}
-  ${al?.cards?.length ? `<section class="guide-sec"><h3>Played alongside it <span class="muted small">in ${al.lists} tournament list${al.lists === 1 ? "" : "s"} · partners first</span></h3><div class="list compact">${al.cards.map((x) => `<button class="mini-row" ${opts.alongsideAttrs(x)}><span class="ellip">${esc(opts.alongsideName(x))}</span><span class="small muted">${Math.round(x.share)}% of them${x.overall < x.share - 5 ? ` · ${Math.round(x.overall)}% overall` : ""}</span></button>`).join("")}</div></section>` : ""}
-  ${opts.complements !== undefined ? `<section class="guide-sec"><h3>Cards that pair well</h3>${opts.complementsLoading ? `<p class="muted small">Finding cards that work with it…</p>` : opts.complements?.length ? pairGroups(opts.complements) + (opts.complementsNote ? `<p class="foot">${esc(opts.complementsNote)}</p>` : "") : `<p class="muted small">${esc(opts.complementsNote || "Nothing specific found.")}</p>`}</section>` : ""}
-  ${rulesHtml(opts.rules)}${cardRuleHelp(game,card)}
+  return `<div class="card-guide">${role}
+  ${when.length ? `<section class="guide-sec guide-panel"><h3>How to play it</h3><ol class="guide-steps">${when.slice(0, 6).map((t) => `<li>${esc(t)}</li>`).join("")}</ol></section>` : ""}
+  ${syn.length ? `<section class="guide-sec guide-panel"><h3>Synergies</h3><ul class="guide-list">${syn.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></section>` : ""}
+  ${al?.cards?.length ? `<section class="guide-sec"><h3>Played alongside it <span class="muted small">in ${al.lists} tournament list${al.lists === 1 ? "" : "s"}</span></h3><div class="guide-along">${al.cards.map((x) => `<button class="guide-along-row" ${opts.alongsideAttrs(x)}><span class="ellip">${esc(opts.alongsideName(x))}</span><span class="guide-meter" aria-hidden="true"><i style="width:${Math.max(4, Math.min(100, Math.round(x.share)))}%"></i></span><b>${Math.round(x.share)}%</b></button>`).join("")}</div><p class="foot">Share of those lists that also run each card, rarest partners first.</p></section>` : ""}
+  ${opts.complements !== undefined ? `<section class="guide-sec"><h3>Cards that pair well</h3>${opts.complementsLoading ? `<p class="muted small" role="status">Finding cards that work with it…</p>` : opts.complements?.length ? pairGroups(opts.complements) + (opts.complementsNote ? `<p class="foot">${esc(opts.complementsNote)}</p>` : "") : `<p class="muted small">${esc(opts.complementsNote || "No direct synergies found in its text or tournament lists.")}</p>`}</section>` : ""}
+  ${rulesHtml(opts.rules, opts.rulings, opts.ruleLinks)}${cardRuleHelp(game,card)}
   ${opts.extra || ""}
-  <p class="foot">This guide is generated from the card's rules text, its stats and the tournament lists on this device — a starting point, not expert strategy.</p>`;
+  <p class="foot">Built from this card's text, stats and the tournament lists on this device.</p></div>`;
 }
 
 // Real pairings first; fallbacks (format staples, popular in its colors) under their own heading.
 const pairRow = (x) => `<button class="pair-row ${x.fallback ? "fallback" : ""}" ${x.attrs}>${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="pair-noimg"></span>`}<span class="pair-txt"><b>${esc(x.name)}</b>${x.reasons?.length ? `<small>${esc(x.reasons.slice(0, 3).join(" · "))}</small>` : ""}</span>${x.score && !x.fallback ? `<span class="pair-score" title="Pairing score">${x.score}</span>` : ""}</button>`;
 function pairGroups(list) {
-  const best = list.filter((x) => !x.fallback),
-    also = list.filter((x) => x.fallback);
-  return `${best.length ? `<div class="pair-list">${best.map(pairRow).join("")}</div>` : `<p class="muted small">No direct synergies in its text or tournament lists.</p>`}
+  const best0 = list.filter((x) => !x.fallback),
+    also = list.filter((x) => x.fallback),
+    // A reason every pairing shares is said once, above the list, not on every row.
+    shared = best0.length > 1 ? (best0[0].reasons || []).filter((r) => best0.every((x) => (x.reasons || []).includes(r))) : [],
+    best = shared.length ? best0.map((x) => ({ ...x, reasons: x.reasons.filter((r) => !shared.includes(r)) })) : best0;
+  return `${shared.length ? `<p class="small muted pair-shared">All ${best.length}: ${esc(shared.join(" · "))}</p>` : ""}${best.length ? `<div class="pair-list">${best.map(pairRow).join("")}</div>` : `<p class="muted small">No direct synergies in its text or tournament lists.</p>`}
     ${also.length ? `<p class="list-head">${best.length ? "Also works with" : "Good in most decks"}</p><div class="pair-list">${also.map(pairRow).join("")}</div>` : ""}`;
 }
 
-function rulesHtml(r) {
+// Rules & legality in one panel: how the card is played, copies allowed per format (the
+// format's legality, colour-coded), then official rulings or where they're published.
+// Formats that allow the same number share one tile ("Standard · Modern — Up to 4").
+const limitGroups = (limits) => [...limits.reduce((m, [f, n]) => m.set(n, [...(m.get(n) || []), f]), new Map())];
+function rulesHtml(r, rulings = "", links = "") {
   if (!r) return "";
-  return `<section class="guide-sec"><h3>Rules for this card</h3><ul class="guide-list">${r.turn.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
-    ${r.limits.length ? `<p class="list-head">Copies allowed per deck</p><div class="guide-limits">${r.limits.map(([f, n]) => `<span><small>${esc(f)}</small><b class="${/Banned|Forbidden|Not/.test(n) ? "bad" : ""}">${esc(n)}</b></span>`).join("")}</div>` : ""}
-    <p class="small muted">${esc(r.deck)}</p></section>`;
+  const tone = (n) => (/Banned|Forbidden|Not/.test(n) ? "bad" : /Limited|restricted|singleton|^1\b/.test(n) ? "warn" : "ok");
+  return `<section class="guide-sec guide-panel guide-rules" aria-label="Rules and legality"><h3>Rules &amp; legality</h3><ul class="guide-list">${r.turn.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
+    ${r.limits.length ? `<p class="list-head">Formats · copies per deck</p><div class="guide-limits">${limitGroups(r.limits).map(([n, fs]) => `<span class="${tone(n)}"><small>${esc(fs.join(" · "))}</small><b>${esc(n)}</b></span>`).join("")}</div>` : ""}
+    <p class="small muted">${esc(r.deck)}</p>
+    ${rulings ? `<div class="guide-rulings"><p class="list-head">Official rulings</p>${rulings}</div>` : ""}
+    ${links ? `<div class="guide-rule-links">${links}</div>` : ""}</section>`;
 }
 
 // The Scryfall search for cards that feed this card's strongest synergy, within its colors.

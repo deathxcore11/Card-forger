@@ -77,13 +77,11 @@ assert(collection.indexOf(`data-entry="${saved.id}"`)<collection.indexOf('data-e
 S.state.settings.game='ptcg';
 const lugia={...normalizePtcg({id:'neo1-9',name:'Lugia',category:'Pokemon',rarity:'Rare',image:'https://example.invalid/lugia',localId:'9',set:{id:'neo1',name:'Neo Genesis',cardCount:{official:111}},variants:{holo:true},legal:{expanded:false}}),variantSchema:POKEMON_VARIANT_SCHEMA,priceFallbackSchema:3,fetchedAt:new Date().toISOString(),prices:{usd:20},variants:[{key:'holofoil',label:'Holofoil',usd:20,productId:86903},{key:'1st-edition-holofoil',label:'First Edition Holofoil',usd:100,productId:86903}]};
 ui('ptcg').sets.list=[{id:'neo1',name:'Neo Genesis',count:111},{id:'cel25',name:'Celebrations',count:25}];cache.ptcg[lugia.id]=lugia;
-for(const scopedFinish of ['', 'holofoil','1st-edition-holofoil']){
- const ctx={type:'tcard',game:'ptcg',id:lugia.id,...(scopedFinish?{setId:'neo1',setVariant:scopedFinish,priceFinish:scopedFinish}:{})};
- const html=tcgCardSheet(lugia,ctx),rows=[...html.matchAll(/<span class="variant-actions"><a[^>]*href="([^"]+)"/g)].map(m=>m[1].replaceAll('&amp;','&'));
- assert.equal(rows.length,2);
- for(const [i,v] of lugia.variants.entries())assert.equal(rows[i],sellerModels('ptcg',lugia,{priceFinish:v.key})[0].url);
- assert.equal(new URL(rows[0]).searchParams.get('Printing'),'Holofoil');assert.equal(new URL(rows[1]).searchParams.get('Printing'),'1st Edition Holofoil');assert.notEqual(rows[0],rows[1]);
-}
+// Each finish picked on Overview drives the one Buy link through the same resolver, with exact filters.
+const buyFor=finish=>{const html=tcgCardSheet(lugia,{type:'tcard',game:'ptcg',id:lugia.id,setId:'neo1',setVariant:finish,priceFinish:finish});const m=html.match(/<a class="btn small card-buy-link"[^>]*href="([^"]+)"/);assert(m,'Buy link renders for '+finish);return m[1].replaceAll('&amp;','&');};
+const buys=lugia.variants.map(v=>buyFor(v.key));
+for(const [i,v] of lugia.variants.entries())assert.equal(buys[i],sellerModels('ptcg',lugia,{priceFinish:v.key})[0].url);
+assert.equal(new URL(buys[0]).searchParams.get('Printing'),'Holofoil');assert.equal(new URL(buys[1]).searchParams.get('Printing'),'1st Edition Holofoil');assert.notEqual(buys[0],buys[1]);
 assert.equal(needsCardRefresh('ptcg',{...lugia,variantSchema:9}),true);assert.equal(needsCardRefresh('ptcg',lugia),false);
 
 // A preview must keep enriched cached identities, visible cached rows, page coverage and failures.
