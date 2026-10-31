@@ -11,3 +11,7 @@
 # Planeswalk painted characters (atlas, mask and drop sheets); versioned by content, cached a week.
 /planeswalk-cast/*
   Cache-Control: public, max-age=604800
+
+# Planeswalk fight grounds (painted floors the characters stand on); versioned by content, cached a week.
+/planeswalk-art/*
+  Cache-Control: public, max-age=604800
