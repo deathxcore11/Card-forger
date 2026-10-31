@@ -122,7 +122,7 @@ const cpuName=msg=>String(seatWords(msg)).replace(/Forge AI\b.*?\s(?=(?:revealed
 export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
  const doc=container.ownerDocument,s=snapshot,n=s.native;if(!n)return;
  // On phones the dock is transformed, so a fixed ask line inside it can't float above the hand; this body-level line does.
- const askLine=text=>{if(!doc.body)return;let line=doc.body.querySelector(':scope>.forge-ask-line');if(!line){line=doc.createElement('div');line.className='forge-ask-line';line.setAttribute('role','status');line.setAttribute('aria-live','polite');doc.body.append(line);}line.textContent=text;line.hidden=!text;};askLine('');
+ const askLine=text=>{if(!doc.body)return;let line=doc.body.querySelector(':scope>.forge-ask-line');if(!line){line=doc.createElement('div');line.className='forge-ask-line';line.setAttribute('role','status');line.setAttribute('aria-live','polite');doc.body.append(line);}line.textContent=text;line.title=text;line.hidden=!text;};askLine('');
  const copy=(player,proof)=>presentation.hosted?player:proof;
  const phaseNames={UNTAP:'Untap',UPKEEP:'Upkeep',DRAW:'Draw',MAIN1:'Main phase',COMBAT_BEGIN:'Beginning of combat',COMBAT_DECLARE_ATTACKERS:'Choose attackers',COMBAT_DECLARE_BLOCKERS:'Choose blockers',COMBAT_FIRST_STRIKE_DAMAGE:'First strike damage',COMBAT_DAMAGE:'Combat damage',COMBAT_END:'End of combat',MAIN2:'Second main phase',END_OF_TURN:'End step',CLEANUP:'Cleanup'};
  const node=(tag,text,cls)=>{const e=doc.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
@@ -235,7 +235,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const projected=choice.card||(choice.visible&&zoneSearch.kind==='prompt'?session.promptCardArtwork?.(choice.index,n.revision):null),imageUrl=searchImage(projected);
    if(imageUrl){const image=node('img');image.src=imageUrl;image.alt='';image.loading='lazy';image.decoding='async';image.referrerPolicy='no-referrer';image.addEventListener('error',()=>{image.hidden=true;b.dataset.artUnavailable='true';},{once:true});b.append(image);}
    else b.dataset.artUnavailable='true';
-   const caption=node('span',choice.name,'forge-zone-search-name');b.append(caption,node('span',chosen?'Selected':choice.zone,'forge-zone-search-state'));row.append(b);
+   const caption=node('span',choice.name,'forge-zone-search-name');caption.title=choice.name;b.append(caption,node('span',chosen?'Selected':choice.zone,'forge-zone-search-state'));row.append(b);
   }
   dialog.append(row);
   const summary=node('p',selected.length?`${selected.length} selected`:'No card selected','forge-zone-search-summary');summary.setAttribute('role','status');dialog.append(summary);

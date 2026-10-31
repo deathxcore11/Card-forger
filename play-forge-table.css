@@ -2211,7 +2211,7 @@ body.practice-table-open img{-webkit-user-drag:none}
 /* With no CPU seat or hand fan above it, a pod's CPU board starts just under the rail. */
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-pod=true] .play-match-mat{padding-top:calc(var(--t,0px) + 64px)!important}
 /* 4.3.34 Play sweep. Trigger order: a centred sheet that always fits the screen, cards sized by height too, Done always visible. */
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions[data-complex]:has(.forge-order-cards){position:fixed!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;translate:-50% -50%!important;transform:none!important;margin:0!important;width:min(760px,calc(100vw - 16px))!important;max-height:calc(100dvh - 16px)!important;z-index:2600!important;display:flex;flex-direction:column}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions[data-complex]:has(.forge-order-cards){position:fixed!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;translate:-50% -50%!important;transform:none!important;margin:0!important;width:min(760px,calc(100vw - 16px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)))!important;max-height:calc(100dvh - 16px)!important;z-index:2600!important;display:flex;flex-direction:column}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-decisions .forge-native-panel:has(.forge-order-cards){display:flex!important;flex-direction:column;align-items:center;max-height:calc(100dvh - 16px);min-height:0;overflow:hidden;padding:clamp(12px,2.4dvh,22px) clamp(12px,3vw,24px);gap:clamp(6px,1.4dvh,14px);width:100%;box-sizing:border-box}
 :where(body.practice-table-open) .forge-native-panel:has(.forge-order-cards) h2{font-size:clamp(18px,3.2dvh,24px);white-space:normal}
 :where(body.practice-table-open) .forge-native-panel:has(.forge-order-cards) .forge-order-hint{max-width:100%;overflow-wrap:anywhere}
@@ -2282,7 +2282,7 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table[data-forge-native] :is(.forge-control-emblem,.forge-emote-button,.forge-attack-all,[data-native-key=cancel],[data-native-key^=zone-]){position:relative}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-emote-button{position:absolute}
 :where(body.practice-table-open) .play-match-table[data-forge-native] :is(.forge-control-emblem,.forge-emote-button)::before{content:"";position:absolute;inset:-7px;border-radius:50%}
-:where(body.practice-table-open) .play-match-table[data-forge-native] :is(.forge-attack-all,[data-native-key=cancel],[data-native-key^=zone-])::before{content:"";position:absolute;inset:-8px 0}
+:where(body.practice-table-open) .play-match-table[data-forge-native] :is(.forge-attack-all,[data-native-key=cancel],button[data-native-key^=zone-])::before{content:"";position:absolute;inset:-8px 0}
 /* 4.3.39 Every match is sideways (Randall, 30 Oct: phones, tablets and computers all play landscape, like Slay the
    Spire and Arena on a phone). Every control on the table is a 44px target. */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-header>.play-match-menu>summary{min-width:44px!important;min-height:44px!important}
@@ -2359,12 +2359,15 @@ body.practice-table-open img{-webkit-user-drag:none}
  :where(body.practice-table-open) .forge-zone-search-cards{min-height:0;padding:6px 4px}
  :where(body.practice-table-open) .forge-zone-search-card{flex-basis:84px;width:84px;height:124px}
  :where(body.practice-table-open) .forge-zone-search-card img{height:112px}
+ :where(body.practice-table-open) .forge-zone-search-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-decisions .forge-native-panel:has(.forge-order-cards){padding:8px 16px!important;gap:6px}
  :where(body.practice-table-open) .forge-native-panel:has(.forge-order-cards) h2{font-size:17px}
- :where(body.practice-table-open) .forge-native-panel .forge-order-cards{padding-top:10px;gap:14px}
- :where(body.practice-table-open) .forge-native-panel .forge-order-card{width:min(300px,40vw);grid-template-columns:clamp(56px,17dvh,84px) 1fr;align-items:center;gap:10px;text-align:left}
+ :where(body.practice-table-open) .forge-native-panel .forge-order-cards{padding:10px 12px 0;gap:14px}
+ :where(body.practice-table-open) .forge-native-panel .forge-order-card{width:min(300px,calc(50% - 7px));grid-template-columns:clamp(56px,17dvh,84px) 1fr;align-items:center;gap:10px;text-align:left}
  :where(body.practice-table-open) .forge-native-panel .forge-order-cap small{font-size:11px}
  :where(body.practice-table-open) .forge-native-panel .forge-order-actions>button{min-height:44px}
+ /* A turn button that grows with large text reaches left past the dock instead of being cut. */
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions:not([data-complex=true]):not(:has(.forge-order-cards,.forge-zone-search)){overflow:visible}
 }
 /* Chat bubbles step back while a sheet asks you something. */
 body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forge-emote-bubble{opacity:0;pointer-events:none}
@@ -2389,3 +2392,15 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-wrap>.play-match-pile-count{pointer-events:auto;cursor:pointer;top:60%}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-wrap:has(>.play-match-card[data-tapped=true])>.play-match-pile-count{top:auto;bottom:-12px}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-crest-where{font-size:11px;letter-spacing:.04em}
+/* Sideways phones: the ask line sits in the open strip between your seat and the turn dock, above the hand,
+   on one line (the full ask stays in its title when large text runs it long). */
+@media (min-width:640px) and (max-height:520px) and (min-aspect-ratio:3/2){
+ :where(body.practice-table-open) .forge-ask-line{top:calc(var(--forge-ask-top,var(--forge-hand-top,60vh)) - 4px);left:calc(50% + (244px - 184px)/2 + (env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))/2);max-width:calc(100vw - 444px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+/* On the board the chosen tick and the Auto badge ride ::after, so ::before stays free for the 44px touch hit area. */
+:where(body.practice-table-open) .play-match-table[data-stage][data-forge-native] .play-match-battlefields .play-match-card[data-instance][data-forge-role=chosen]::after{display:block;content:'\2713';position:absolute;top:-11px;right:-11px;left:auto;bottom:auto;inset-inline-start:auto;z-index:12;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:var(--ob-chosen);color:#1b1408;font:800 13px/22px 'DM Sans',system-ui,sans-serif;text-align:center;box-shadow:0 2px 8px #000b;opacity:1;animation:none;pointer-events:none}
+:where(body.practice-table-open) .play-match-table[data-stage][data-forge-native] .play-match-battlefields .play-match-card[data-instance][data-auto-tap=true]::after{display:block;content:'Auto';position:absolute;inset:auto auto 6px 50%;translate:-50% 0;z-index:5;width:auto;height:auto;padding:2px 8px;border:0;border-radius:999px;background:linear-gradient(180deg,#f6dc9a,#d9a64a);color:#1b1406;font:800 10px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.06em;box-shadow:none;opacity:1;animation:none;pointer-events:none}
+:where(body.practice-table-open) .play-match-table[data-stage][data-forge-native] .play-match-battlefields .play-match-card[data-instance]:is([data-forge-role=chosen],[data-auto-tap=true])::before{content:none}
+@media (pointer:coarse){
+ :where(body.practice-table-open) .play-match-table[data-stage][data-forge-native] .play-match-battlefields .play-match-card[data-instance]:is([data-forge-role=chosen],[data-auto-tap=true])::before{content:"";position:absolute;inset:50% auto auto 50%;width:max(100%,44px);height:max(100%,44px);translate:-50% -50%;padding:0;border:0;border-radius:0;background:none;box-shadow:none;z-index:auto}
+}

@@ -647,6 +647,13 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
  .pl-seat--cpu:has(.pl-backs) .pl-seat-copy{max-width:calc(100% - 126px)}.pl-backs{opacity:1}
  .pl-mode-copy{min-height:0}
 }
+/* Narrow side-by-side seats (a phone or small tablet held sideways): the backs shrink and fade behind the copy,
+   so the opponent's name keeps whole words. */
+@media(min-width:701px) and (max-width:1100px){
+ .pl-backs i{left:calc(11% + 33px);width:66px;height:92px;margin:-46px 0 0 -33px}
+ .pl-backs i:nth-child(1){transform:rotate(-12deg) translateX(-22px)}.pl-backs i:nth-child(3){transform:rotate(12deg) translateX(22px)}
+ .pl-backs{opacity:.45}.pl-seat--cpu:has(.pl-backs) .pl-seat-copy{max-width:100%}
+}
 .pl-cpu-levels .pl-cpu-tag{flex:none;width:76px;min-width:0;box-sizing:border-box}
 .pl-lobby .play-search>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(min-width:701px){.pl-startbar:has(.pl-status[data-empty]){background:none;backdrop-filter:none;padding-block:4px}}
