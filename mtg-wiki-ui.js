@@ -4,7 +4,6 @@ import {WIKI_SOURCES,wikiSourceForGame} from './wiki-sources.js';
 import {readGameWikiReference,readGameWikiDaily,readGameWikiArticle} from './mtg-wiki-client.js';
 import {wikiArticleMarkup,bindWikiArticleImages} from './game-wiki-article.js';
 import {dailyDate} from './daily-clock.js';
-import {searchEmblem} from './home-search.js';
 import {aiOrb} from './ai-ui.js';
 
 // Public game topics only. This module never reads an account, collection,
@@ -111,7 +110,7 @@ export function mtgWikiDailyMarkup(daily={},at=Date.now(),game='mtg'){
 const localSuggestions=(query,game='mtg')=>searchGameConcepts(game,query,{limit:6}).map(c=>({title:c.label,url:c.source.url,kind:'local',extract:c.summary}));
 const suggestionKey=row=>clean(row.title).toLowerCase();
 function suggestionContent(state){
- return `<div class="list compact" id="wikiSuggestionList" role="listbox" aria-label="Wiki topics">${(state.suggestions||[]).map((row,i)=>`<button type="button" class="mini-row" id="wiki-suggestion-${i}" role="option" aria-selected="${i===state.suggestionIndex}" data-wiki-suggestion="${i}"><b>${esc(row.title)}</b><span class="small muted">${row.kind==='wiki'?provider(state.game||'mtg').name:'CardStashy topic'}</span></button>`).join('')}</div>${state.suggestionStatus?`<p class="home-result-status small" role="status">${esc(state.suggestionStatus)}</p>`:''}`;
+ return `<div class="list compact" id="wikiSuggestionList" role="listbox" aria-label="Wiki topics">${(state.suggestions||[]).map((row,i)=>`<button type="button" class="mini-row" id="wiki-suggestion-${i}" role="option" aria-selected="${i===state.suggestionIndex}" data-wiki-suggestion="${i}"><b>${esc(row.title)}</b><span class="small muted">${row.kind==='wiki'?provider(state.game||'mtg').name:'CardStashy topic'}</span></button>`).join('')}</div>${state.suggestionStatus?`<p class="home-result-status small" role="status">${esc(state.suggestionStatus)}</p>`:''}${clean(state.query||'')?`<div class="home-result-actions"><button type="button" class="home-assistant-action is-lead" data-act="mtgWikiAsk">${aiOrb()}<span>Ask about this<small>CardStashy AI</small></span></button></div>`:''}`;
 }
 // The built-in glossary answers first and needs no network; the wiki article
 // is a "Read more" link, with an optional in-app load beneath the entry.
@@ -141,7 +140,7 @@ export function mtgWikiPageContent(state={},at=Date.now()){
 }
 export function mtgWikiPageMarkup(state={}){
  const shown=!!state.suggestionsOpen,game=state.game||'mtg',sourceInfo=provider(game),example={mtg:'Lifelink, a card, a player, a mechanic…',ptcg:'Pokémon ex, retreat, a Trainer, a card…',ygo:'Synchro Summon, a card, an archetype…'}[game];
- return `<div class="wiki-page" data-mtg-wiki-page><div class="page-head wiki-page-head"><div><p class="eyebrow">${esc(gameName(game))} · ${esc(sourceInfo.name)}</p><h1>Wiki</h1></div><button class="chip tool-chip" data-act="go" data-to="#sets">◈ Sets</button></div><form data-mtg-wiki-form class="wiki-search-form"><div class="home-search-wrap"><div class="home-search-pill"><span class="home-ai-label" id="wiki-search-label">Wiki &amp; answers</span><input id="wikiQ" data-mtg-wiki-query type="search" role="combobox" aria-label="Search ${esc(gameName(game))} Wiki topics" aria-describedby="wiki-search-label" aria-autocomplete="list" aria-expanded="${shown}" aria-controls="wikiSuggestionList" autocomplete="off" maxlength="180" placeholder="${esc(example)}" value="${esc(state.query||'')}"><button type="submit" class="home-search-submit" aria-label="Search Wiki">${searchEmblem()}</button></div><button type="button" class="home-ai-submit" data-act="mtgWikiAsk" aria-label="Ask CardStashy about this ${esc(gameName(game))} topic">${aiOrb()}</button></div><div id="wikiSuggestions" class="home-suggestions wiki-suggestions" ${shown?'':'hidden'}>${suggestionContent(state)}</div></form>${mtgWikiPageContent(state)}</div>`;
+ return `<div class="wiki-page" data-mtg-wiki-page><div class="page-head wiki-page-head"><div><p class="eyebrow">${esc(gameName(game))} · ${esc(sourceInfo.name)}</p><h1>Wiki</h1></div><button class="chip tool-chip" data-act="go" data-to="#sets">◈ Sets</button></div><form data-mtg-wiki-form class="wiki-search-form"><div class="home-search-wrap"><div class="home-search-pill"><span class="home-sr-only" id="wiki-search-label">Wiki &amp; answers</span><input id="wikiQ" data-mtg-wiki-query type="search" role="combobox" aria-label="Search ${esc(gameName(game))} Wiki topics" aria-describedby="wiki-search-label" aria-autocomplete="list" aria-expanded="${shown}" aria-controls="wikiSuggestionList" autocomplete="off" maxlength="180" enterkeyhint="search" placeholder="${esc(example)}" value="${esc(state.query||'')}"></div></div><div id="wikiSuggestions" class="home-suggestions wiki-suggestions" ${shown?'':'hidden'}>${suggestionContent(state)}</div></form>${mtgWikiPageContent(state)}</div>`;
 }
 
 export function createMtgWikiPageController({active=()=>false,root,scope=()=>()=>true,fetcher=fetch,now=Date.now,storage,game='mtg',navigate}={}){
