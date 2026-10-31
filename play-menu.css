@@ -445,7 +445,8 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-scrim{position:fixed;inset:0;z-index:1500;background:#05060a8c;backdrop-filter:blur(3px)}
 .pl-sheet.play-inspector{position:fixed;top:0;right:0;bottom:0;z-index:1501;width:min(460px,100%);margin:0;border-radius:22px 0 0 22px;border:1px solid var(--line);border-right:0;background:color-mix(in srgb,var(--surface) 97%,transparent);box-shadow:-30px 0 70px #0009;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);animation:pl-sheet-in .28s cubic-bezier(.2,.8,.2,1) both}
 .pl-sheet[hidden],.pl-scrim[hidden]{display:none!important}
-.pl-sheet .play-inspector-scroll{flex:1;max-height:none}
+/* The deck sheet scrolls on its own, also on touch screens (pointer:coarse lets other panels grow instead). */
+.pl-sheet .play-inspector-scroll{flex:1 1 auto;min-height:0;max-height:none;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .pl-sheet .page-head{display:flex;align-items:center;justify-content:space-between}
 .pl-sheet-tools{display:flex;align-items:center;gap:8px}
 .pl-sheet-close{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer}

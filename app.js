@@ -6945,10 +6945,19 @@ async function boot() {
   if ("serviceWorker" in navigator) {
     // The app opens from its saved copy. A release that arrives in the first moments, before anything
     // has been touched, is switched to straight away; otherwise it is used from the next open.
-    const updating = !!navigator.serviceWorker.controller, opened = Date.now();let touched = false;
-    for (const type of ["pointerdown", "keydown"]) addEventListener(type, () => { touched = true; }, { once: true, capture: true });
-    navigator.serviceWorker.addEventListener("controllerchange", () => { if (updating && !touched && Date.now() - opened < 12000 && !document.querySelector("dialog[open]")) location.reload(); });
-    navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch(() => {});
+    // A tab left open (phones keep them for days) checks for a release each time it comes back,
+    // and switches to it in the same untouched moment, or the next time it comes back.
+    const updating = !!navigator.serviceWorker.controller;let opened = Date.now(), touched = false, waiting = false, checked = 0, registration = null;
+    const quiet = () => !document.querySelector("dialog[open]") && !/^#\/?play/.test(location.hash);
+    for (const type of ["pointerdown", "keydown"]) addEventListener(type, () => { touched = true; }, { capture: true });
+    navigator.serviceWorker.addEventListener("controllerchange", () => { if (updating && !touched && Date.now() - opened < 12000 && quiet()) location.reload(); else waiting = true; });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState !== "visible") return;
+      if (waiting && quiet()) return location.reload();
+      opened = Date.now(); touched = false;
+      if (registration && opened - checked > 600000) { checked = opened; registration.update().catch(() => {}); }
+    });
+    navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).then((r) => { registration = r; checked = Date.now(); }).catch(() => {});
   }
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.
   // TCGplayer prices for printings Scryfall leaves unpriced arrive in the background.
