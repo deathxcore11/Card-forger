@@ -382,7 +382,7 @@ export function cardSheet(c, ctx = {}) {
     </section>`,
     )
     .join("")}
-  ${!c.full ? `<p class="muted small center" id="cardLoading">${ctx.detailsError ? esc(ctx.detailsError) : "Loading flavor text and printings…"}</p>` : ""}
+  ${!c.full ? `<p class="muted small center" id="cardLoading">${ctx.detailsError ? `${esc(ctx.detailsError)} <button class="link small" type="button" data-act="magicVersionsMore" ${ctx.detailsBusy ? "disabled" : ""}>Retry</button>` : "Loading flavor text and printings…"}</p>` : ""}
   <div class="card-rules-entry"><button type="button" class="chip" data-act="learnGame" data-game="mtg">Interactive rules · how to play →</button></div>
   </div>`;
   const overview = `
@@ -423,6 +423,7 @@ export function cardSheet(c, ctx = {}) {
     : `<p class="muted small" id="rulingsLoading">Loading official rulings…</p>`;
   const ruleLinks = `<button class="chip tool-chip" data-act="go" data-to="#rules">Banlists &amp; format rules</button><button class="chip tool-chip" data-act="mtgWikiOpen" data-wiki-topic="${esc(name)}">Explore this card in Wiki</button>`;
   return `<div class="sheet-head overlay">${S.ui.sheetBack ? `<button class="icon" data-act="sheetBack" aria-label="Back to deck idea">←</button>` : "<span></span>"}<button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+  ${heroArt ? `<div class="cs-bleed" aria-hidden="true"><img src="${esc(heroArt)}" alt="" decoding="async" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></div>` : ""}
   <div class="cs-banner"><div class="cs-hero mtg">${img(heroArt, name, "cs-art")}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(name)}</h2><p class="type-line">${esc(faces[face]?.type_line || typeText(shown))} ${detailOwnedSummary(i.owned)}</p></div>${manaCost(faces[face] || shown)}</div></div>
   ${cardTabs(tab, tabList)}

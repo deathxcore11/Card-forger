@@ -2798,6 +2798,14 @@ A.viewPrint = (t) => {
   refreshSheet();
   $("#sheetBody").scrollTo({ top: 0, behavior: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 };
+// Continue or retry loading this card's details and printings (the Retry button on a paused load).
+A.magicVersionsMore = () => {
+  const ctx = S.ui.sheetCtx;
+  if (ctx?.type !== "card" || ctx.detailsBusy) return;
+  const card = ctx.print || meta(ctx.name);
+  if (ctx.printsNext) return loadMagicVersions(ctx, true);
+  return !card?.full ? loadCardExtras(ctx) : loadMagicVersions(ctx);
+};
 A.magicPrintings = () => {
   const ctx = S.ui.sheetCtx, card = ctx?.print || meta(ctx?.name);
   if (ctx?.type !== "card" || T.game() !== "mtg" || !card?.oracle_id) return toast("This card's verified Magic identity is not loaded yet. Try again in a moment.");

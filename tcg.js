@@ -845,6 +845,7 @@ export function tcgCardSheet(c, sctx = {}) {
         ${(p.others || []).map(([k, v]) => `<div class="pt-row"><span class="pt-label">${esc(k)}</span><span><b>${usd(v)}</b></span></div>`).join("")}</div>
         ${ygoPrintings ? `<h3 class="price-printings-head">Every printing</h3>${ygoPrintings}` : ""}`;
   return `<div class="sheet-head overlay"><span></span><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+  ${g === "ptcg" ? (artworkSources(c, true).length ? `<div class="cs-bleed" aria-hidden="true">${pokemonArtCrop(c, "cs-bleed-art")}</div>` : "") : heroSrc ? `<div class="cs-bleed" aria-hidden="true"><img src="${esc(heroSrc)}" alt="" decoding="async" referrerpolicy="no-referrer" onerror="${heroFallback ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(heroFallback)}'}else ` : ""}this.parentNode.remove()"></div>` : ""}
   <div class="cs-banner ${!artworkSources(c, true).length && !heroSrc ? "no-art" : ""}"><div class="cs-hero ${g}">${g === "ptcg" ? pokemonArtCrop(c, "cs-art") : heroSrc ? `<img class="cs-art" src="${esc(heroSrc)}" alt="${esc(c.name)}" referrerpolicy="no-referrer" onerror="${heroFallback ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(heroFallback)}'}else ` : ""}this.remove()">` : ""}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(c.name)}</h2><p class="type-line">${esc(c.typeLine || "")} ${detailOwnedSummary(detailOwnedLots(g,ownedLots,c).reduce((n,e)=>n+Number(e.qty),0))}</p></div>${gameEmblems(c)}</div></div>
   ${tabs(tab, tabList)}
