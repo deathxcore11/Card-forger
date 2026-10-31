@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "cfe1fe1eb162c689aaa2b0aec9bb9612f668e634",
-  "sourceVersion": "4.3.39",
+  "commit": "265b3b7fa2275d9eab7ad1fafba4f36fe93ecd4a",
+  "sourceVersion": "4.3.40",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -895,6 +895,7 @@
     "tour/power.webm",
     "trade.js",
     "ui.js",
+    "universal-search.js",
     "value-history.js",
     "value-page.css",
     "value-page.js",
@@ -1027,8 +1028,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 454435,
-      "sha256": "79fa4492846f106681deaecfe06b9078a0c842bb747518c2f8eabc967030814e"
+      "bytes": 457924,
+      "sha256": "848fba217432ad17c1343eec0531f560a06947936f9c6dcbb731237f35c444c5"
     },
     {
       "path": "artwork.js",
@@ -2853,7 +2854,7 @@
     {
       "path": "config.js",
       "bytes": 629,
-      "sha256": "b19e3ca2ad452c72133686997dea4b6b0e5b7e8754b3420f43bb3a6a27d8f891"
+      "sha256": "2cfa74507beece53765014d39f1ebcd494eabee62bf3930952d6f886914916eb"
     },
     {
       "path": "core.js",
@@ -3757,8 +3758,8 @@
     },
     {
       "path": "deck-experience.js",
-      "bytes": 42166,
-      "sha256": "d5d8bfc2308c93c4e5e89a2f04cc3ad69dd27e9cb29ae8a1effc303824e11a9b"
+      "bytes": 42698,
+      "sha256": "d1bff0e378aa57b0f74b83dd5311bc76febaa91b1ba6a0fa73fc68edb8c4f931"
     },
     {
       "path": "deck-flow.js",
@@ -3802,13 +3803,13 @@
     },
     {
       "path": "deck-viewer.css",
-      "bytes": 19793,
-      "sha256": "5ffa047f7f10939d72bb71727a0116f740bcb4c0becd41c5d97bc0bdbfc14b8a"
+      "bytes": 27861,
+      "sha256": "0042cd4a1a991de24b4f1c13450c9dcf6e3f63976a5609ad199f24bfff4985cc"
     },
     {
       "path": "deck-viewer.js",
-      "bytes": 10027,
-      "sha256": "aee2ae1fd78926330b8bf57b94e3c6ef9086d0cf3b87b5f4f56e047331fdd526"
+      "bytes": 12474,
+      "sha256": "0f7d384d566eb724ab7ba94690103e999efd6dc44d27139473ace96022ef8570"
     },
     {
       "path": "deckaudit.js",
@@ -4132,8 +4133,8 @@
     },
     {
       "path": "finish-preview.js",
-      "bytes": 21782,
-      "sha256": "6bc3da23fedb2ca81de41d455f5b5b721fa4bb3d7386cdf4ebc831fe52c98d50"
+      "bytes": 21676,
+      "sha256": "c7f3629657d8a813618f5e90e07ffcff1ae2363f284c2eb31b2a7ec837e0c032"
     },
     {
       "path": "foil-fx.css",
@@ -4232,8 +4233,8 @@
     },
     {
       "path": "guide.js",
-      "bytes": 44314,
-      "sha256": "209b1f5e9493a6fab286ff09a83b131f3f645651128976a7666b5c9d8a6793b0"
+      "bytes": 45416,
+      "sha256": "33ea509a8eab44553f5f187fb7d24b113e4bf946be29b4fa1118cec1a4bb63fc"
     },
     {
       "path": "historical-archive.js",
@@ -4247,13 +4248,13 @@
     },
     {
       "path": "home-overview.css",
-      "bytes": 13136,
-      "sha256": "f6637bf94fec15a598c40a5133b50578112b97ac7a4e4356c850d48398c4b91e"
+      "bytes": 14183,
+      "sha256": "61fe6f0f970d550f187576de0f037c99a31f6aaf7a677c1610492d15d309acf4"
     },
     {
       "path": "home-search.js",
-      "bytes": 9541,
-      "sha256": "c052b11cfb2cf660051f342d58d7683ce60ce0ebc9d5381e405635b8f6e9993b"
+      "bytes": 11306,
+      "sha256": "be5bb55c1cdfbf02dddc5590b49988ea6a9d124d1137a592f5fb9aeae67bc269"
     },
     {
       "path": "home-swipe.js",
@@ -4312,8 +4313,8 @@
     },
     {
       "path": "importance.js",
-      "bytes": 20547,
-      "sha256": "b8185eb8c103e0457fd22efc1e7a7bd5b3c75b462f7666cbbbc5b6c5f9853c3d"
+      "bytes": 20878,
+      "sha256": "750c25066caa1030753280c5218b15b3e227fbd8d9847677b70948c554625505"
     },
     {
       "path": "index.html",
@@ -4502,8 +4503,8 @@
     },
     {
       "path": "mtg-wiki-ui.js",
-      "bytes": 30311,
-      "sha256": "fcf3846a6a2a2f35e06586197e688a9a1db39b8e78dfb9dec43313db271320af"
+      "bytes": 30257,
+      "sha256": "254714e09918c79add2c0e9fde36c32b1673dd5b53bc1f4ece1454c9d9bd7a2d"
     },
     {
       "path": "native-art-storage.js",
@@ -4707,13 +4708,13 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 86499,
-      "sha256": "85592529eb1996a34d9a83b759d8428c34fda2d33ae99d2e44b920248346140e"
+      "bytes": 86593,
+      "sha256": "f14ad413d7d72752c25916c6e29cf2533a6e0e8deaa42c22914eaa3aafadc229"
     },
     {
       "path": "play-menu.js",
-      "bytes": 26323,
-      "sha256": "c2ccd2f2f55ffdaca00d989c2dedddb457b3e0abdc90557c3c1a650579b5ac87"
+      "bytes": 26143,
+      "sha256": "f2725ddc561ae8486e578e107256112bf8c0b2429bc256c15266a9f608f9bc81"
     },
     {
       "path": "play-opponent-build.js",
@@ -4842,8 +4843,8 @@
     },
     {
       "path": "polish.css",
-      "bytes": 37888,
-      "sha256": "5c6bce16b24a06b6e2081dbd64ce821799d3cc16359553c3e76e927e8aa5662c"
+      "bytes": 62832,
+      "sha256": "3ff69d8aff35e92f9ee19ba7ed38a74379a11fccbb51f98e9b2b296e3a05e0aa"
     },
     {
       "path": "power.js",
@@ -4937,8 +4938,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1017,
-      "sha256": "91ad61e5a355e4326d8387026922ee6076ef320a558ba5b8aa8039d6cfdb2461"
+      "bytes": 1173,
+      "sha256": "979af6e589c1b3f7632158c3202f16e864f9b9b7eeed741743e51384849dbeae"
     },
     {
       "path": "release-status.js",
@@ -4967,8 +4968,8 @@
     },
     {
       "path": "rule-learning.js",
-      "bytes": 22647,
-      "sha256": "fe89c6738f0afd122548ffc584403250dbefcd446096b306caa364ed4d3879e6"
+      "bytes": 22513,
+      "sha256": "86d4c8feb8810990602dcca5efd073f2912503f42b6749004bf305ce7f4917ae"
     },
     {
       "path": "rule-lessons.js",
@@ -5212,8 +5213,8 @@
     },
     {
       "path": "shared-deck-view.js",
-      "bytes": 3062,
-      "sha256": "21661302c1dd27441e637438c5b432d5ac28050face89a196206882041b77ae5"
+      "bytes": 2935,
+      "sha256": "2f14eaa124bb6e573d6668705752c783ebe97191a62b0913b08bd9200e3f61e9"
     },
     {
       "path": "shared-history.js",
@@ -5237,8 +5238,8 @@
     },
     {
       "path": "store.js",
-      "bytes": 5666,
-      "sha256": "47598d7e7d6080f41ade8ba8142742aa2d4eb7e02b1b0b3bf72e7e443d4dc66b"
+      "bytes": 6041,
+      "sha256": "984c0cb07a20a6e8c6f76b92c7faca3299fb2b0bd67297b3a3c930fde323fb34"
     },
     {
       "path": "strategy-risk.js",
@@ -5252,8 +5253,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 565183,
-      "sha256": "310368a2929f62ccebc252cb5c201e9a84bf1027964d9b4cd3856c41b2a83ed6"
+      "bytes": 569648,
+      "sha256": "10df08c3b5f43c41e806b73b6404d59a49de7bfc2ad1b4502883d663e486f864"
     },
     {
       "path": "suggest.js",
@@ -5282,8 +5283,8 @@
     },
     {
       "path": "tcg.js",
-      "bytes": 367771,
-      "sha256": "f1cfa46a14478ea913bc5dddb46e812ae422b68edb2e58f2b8c9551707f46c8e"
+      "bytes": 365856,
+      "sha256": "7c1e655bc5e1fe7f0af34d281ce69629079d45feba083f47c5fb29ba4bf4f312"
     },
     {
       "path": "tcgbuild.js",
@@ -5317,8 +5318,8 @@
     },
     {
       "path": "tour-scenes.js",
-      "bytes": 7349,
-      "sha256": "4deca64ae56b8939a1d98eb07300a6166ffb9e460d535ecf424fc05f2e77df96"
+      "bytes": 7304,
+      "sha256": "1bb97790ce12b94e4d85e07abbd1951b9d4564b1e1b45b4653b44fb466973d62"
     },
     {
       "path": "tour.js",
@@ -5386,6 +5387,11 @@
       "sha256": "5c08643d3f3ead3877d0e5a602d6111a1ff655d5070a55a333b987c0dcc511e4"
     },
     {
+      "path": "universal-search.js",
+      "bytes": 5616,
+      "sha256": "500129f7016443a14a6db2516bd9adfa8d9f1a4fc203d7690e618041b166557d"
+    },
+    {
       "path": "value-history.js",
       "bytes": 2418,
       "sha256": "482ac6ef703375918982aca5e8e608628ae10036297f7a90de2b1589e89bf96f"
@@ -5432,8 +5438,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 199514,
-      "sha256": "96817fde921434c2a0f8063d17e24093d08135d14a5f8a751191d42973b9bfec"
+      "bytes": 197433,
+      "sha256": "de1f3ef780762fba5905d7a414cbf3884651bdbcc82fed911c30692f251f8da6"
     },
     {
       "path": "wiki-card-handoff.js",
@@ -5452,8 +5458,8 @@
     },
     {
       "path": "workbench-ui.js",
-      "bytes": 35281,
-      "sha256": "d3681046869aae7a8db535d7aec660eb29661462f51862b8df375e468900fcc0"
+      "bytes": 39528,
+      "sha256": "34912f8c7943475e4b0d58f577e20175bfe7f44e08ab513133afa7fb0bbe3bb9"
     },
     {
       "path": "ygo-foil-analysis.js",
