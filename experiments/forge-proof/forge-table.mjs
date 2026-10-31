@@ -89,6 +89,9 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  if(lowPower)root.dataset.lowPower='true';
  // Where the finger let a played card go: glide() lands it from here (read within 3 s, then cleared).
  let lastDrop=null;
+// A card let go over the table hangs where it was dropped until Forge answers, then snaps into its slot
+// (or floats back to the hand if the play didn't happen). Never more than DROP_HOLD ms.
+let heldDrop=null;const DROP_HOLD=2500;
  const peek=doc.createElement('div');let peekFor=null,peekPinned=false,peekTimer=0,pressTimer=0,pressAt=null,pressShown=false,peekKey='',lastPointerType='mouse';
  const failedArt=new Set(),castShow=doc.createElement('div');castShow.className='forge-cast';castShow.setAttribute('role','status');castShow.setAttribute('aria-live','polite');castShow.dataset.open='false';doc.body.append(castShow);
  // Your own spell while you choose its targets or pay for it. Forge has already moved it to the stack but lists it
@@ -373,10 +376,13 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function land(w,id,dx,dy,s){
   const r=w.getBoundingClientRect(),drop=lastDrop&&lastDrop.instance===id&&Date.now()-lastDrop.at<3000?lastDrop.rect:null;lastDrop=null;
   if(drop){dx=drop.left-r.left;dy=drop.top-r.top;s=Math.max(.4,Math.min(2.2,drop.width/r.width));}
-  const tilt=Math.max(-8,Math.min(8,-dx/40)),ms=MOTION.land+200;
+  const tilt=Math.max(-8,Math.min(8,-dx/40)),ms=drop?MOTION.snap:MOTION.land+200;
   // Let the card leave its clipped lane while it flies, as a strike does.
   root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+ms);setTimeout(()=>{if(Date.now()>=strikeEnd-20)delete root.dataset.csStriking;},ms+40);
-  w.animate([{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${tilt}deg)`,zIndex:50,easing:'cubic-bezier(.2,.7,.3,1)'},{transform:`translate(${dx*.12}px,${dy*.12-26}px) scale(1.2) rotate(${tilt*.3}deg)`,zIndex:50,offset:.5,easing:'cubic-bezier(.6,0,.9,.5)'},{transform:'translateY(3px) scale(.95)',zIndex:50,offset:.8,easing:'ease-out'},{transform:'translateY(-1px) scale(1.01)',zIndex:50,offset:.9},{transform:'none',zIndex:50}],{duration:ms});
+  // Dragged there, it goes straight from your finger into its slot, Arena style: no second lift, just a quick
+  // glide that seats with a small press and settle. Tapped to play, it rises off the hand, hangs, then slams.
+  if(drop)w.animate([{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${tilt}deg)`,zIndex:50,easing:'cubic-bezier(.25,.8,.3,1)'},{transform:'translateY(2px) scale(.96)',zIndex:50,offset:.72,easing:'ease-out'},{transform:'translateY(-1px) scale(1.01)',zIndex:50,offset:.88},{transform:'none',zIndex:50}],{duration:ms});
+  else w.animate([{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${tilt}deg)`,zIndex:50,easing:'cubic-bezier(.2,.7,.3,1)'},{transform:`translate(${dx*.12}px,${dy*.12-26}px) scale(1.2) rotate(${tilt*.3}deg)`,zIndex:50,offset:.5,easing:'cubic-bezier(.6,0,.9,.5)'},{transform:'translateY(3px) scale(.95)',zIndex:50,offset:.8,easing:'ease-out'},{transform:'translateY(-1px) scale(1.01)',zIndex:50,offset:.9},{transform:'none',zIndex:50}],{duration:ms});
   setTimeout(()=>{if(!w.isConnected)return;catchFoil(w);motion.ring(w,'#f0d48a',420);motion.sparks(w,{n:6,spread:40,color:'#f0d48a'});
    for(const n of w.parentElement?.children||[]){if(n===w)continue;const nr=n.getBoundingClientRect(),side=Math.sign(nr.left-r.left);if(!side||Math.abs(nr.left-r.left)>r.width*2.4)continue;n.animate([{transform:'none'},{transform:`translateX(${side*5}px)`,offset:.35},{transform:'none'}],{duration:260,easing:'ease-out'});}},ms*.8);
  }
@@ -416,10 +422,21 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   ring.animate([{opacity:.9,transform:'scale(.92)'},{opacity:0,transform:'scale(1.18)'}],{duration:kind==='land'?380:520,easing:'ease-out'}).finished.then(()=>ring.remove(),()=>ring.remove());
  }
  // One motion scale for the table, tunable in one place: press, move, land, lunge.
- const MOTION={press:120,move:220,land:360,lunge:500,stagger:140};
+ const MOTION={press:120,move:220,land:360,snap:300,lunge:500,stagger:140};
  let strikeEnd=0,hitAt=0;
- function strike(el,to,{face=false,delay=0,big=false,power=0}={}){
-  const w=el?.closest('.play-match-card-wrap');if(!w||!rectOf(el)||!rectOf(to))return;
+ // Where a blow lands: a player's portrait rather than the middle of their whole seat panel, a card's frame.
+ const aimOf=to=>{if(!to?.getBoundingClientRect)return to;const p=to.matches?.('.play-match-seat')&&to.querySelector('.play-match-profile-badge');return p&&rectOf(p)?p:(to.closest?.('.play-match-card-wrap')||to);};
+ const boxOf=to=>to?.getBoundingClientRect?rectOf(to):to?.width>0?to:null;
+ // Arena's lunge travels until the striker's leading edge meets what it hits, with a little bite, however near
+ // or far the two sit (a fixed share of the distance stopped short across a PC table and overshot on a phone).
+ const contactReach=(a,b)=>{const dx=b.left+b.width/2-(a.left+a.width/2),dy=b.top+b.height/2-(a.top+a.height/2),d=Math.hypot(dx,dy);if(d<1)return 0;
+  const ux=Math.abs(dx/d),uy=Math.abs(dy/d),ea=(ux*a.width+uy*a.height)/2*1.16,eb=(ux*b.width+uy*b.height)/2,bite=Math.min(a.height,b.height)*.14;
+  // Even a blocker right across the line gets a real swing, not a twitch: at least 40% of a card height.
+  return Math.min(.96,Math.max(d-ea-eb+bite,a.height*.4)/d);};
+ // `to` is an element or, for a creature the same blow killed, the rect it stood in. `stand` lunges a
+ // stand-in instead of the card (an attacker that dies in the exchange still swings first). Returns when it is home.
+ function strike(el,to,{face=false,delay=0,big=false,power=0,stand=null}={}){
+  const w=stand||el?.closest('.play-match-card-wrap'),aim=aimOf(to),a=rectOf(w),b=boxOf(aim);if(!w||!a||!b)return 0;
   // The battlefields clip their overflow; let the striker leave its lane for the flight.
   const ms=MOTION.lunge+20;root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+delay+ms);
   // The arrows would point from where the striker was; hide them for the flight and bring them back after.
@@ -430,10 +447,14 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Wind-up, lunge, a short freeze on contact (hit-stop), then spring back. The target shakes on contact, harder
   // the more power behind the hit (light under 4, medium 4-7, heavy 8+); a big hit (5 or more) nudges the
   // whole board, and a heavy one shakes it harder, unless low power is on.
-  motion.strike(w,to.closest?.('.play-match-card-wrap')||to,{reach:face?.8:.5,ms,delay,onHit:()=>{if(!to.isConnected)return;pulse(to,face?'face':'hit');haptic(big||face?'warn':'tick');
-   const target=to.closest('.play-match-seat')||to.closest('.play-match-card-wrap')||to,tier=power>=8?1.6:power>=4?1.2:.8;motion.shake(target,(face?9:6)*tier,360);
+  const node=aim?.getBoundingClientRect?aim:null;
+  // The kit moves the card in its own pixels; a board the fitter has scaled down needs the reach scaled up to match.
+  const host=stand?null:w.parentElement,k=host?.offsetWidth?host.getBoundingClientRect().width/host.offsetWidth:1,scale=k>.2&&k<5?k:1;
+  motion.strike(w,node||b,{reach:contactReach(a,b)/scale,ms,delay,onHit:()=>{haptic(big||face?'warn':'tick');if(!node?.isConnected)return;pulse(node,face?'face':'hit');
+   const target=node.closest('.play-match-seat')||node.closest('.play-match-card-wrap')||node,tier=power>=8?1.6:power>=4?1.2:.8;motion.shake(target,(face?9:6)*tier,360);
    if(big)motion.shake(root.querySelector('.play-match-main')||root,power>=8?8:4,power>=8?380:260,{garnish:true});
    if(face){target.classList.remove('cs-face-hit');void target.offsetWidth;target.classList.add('cs-face-hit');setTimeout(()=>target.classList.remove('cs-face-hit'),700);}}});
+  return delay+ms;
  }
  function popNumber(el,text,kind,size=''){if(rectOf(el))motion.number(el.closest('.play-match-card-wrap')||el,text,{kind,size});}
  function boardEffects(prev,next,before,leaving){
@@ -456,15 +477,21 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const damaged=b.cards.filter(c=>onField(c)&&c.known&&(c.damage||0)>(was.get(c.id)?.damage||0)&&was.get(c.id)?.zone==='Battlefield');
   const lifeLost=b.players.some(p=>p.life<(a.players.find(x=>x.seat===p.seat)?.life??p.life));
   const combat=/Damage$/.test(String(b.phase||''))||/Damage$/.test(String(a.phase||''));
-  if(combat&&(damaged.length||lifeLost)){
+  // A creature in the fight that left the battlefield (died in it): a trade marks no damage and may cost no life.
+  const gone=c=>b.cards.find(x=>x.id===c.id)?.zone!=='Battlefield',fell=a.cards.filter(c=>onField(c)&&(c.attacking||c.blockingIds?.length)&&gone(c));
+  const dying=new Map();
+  if(combat&&(damaged.length||lifeLost||fell.length)){
    // Arena's strike: an unblocked attacker flies at the defending player's portrait and hits it;
-   // a blocked one crashes into its blocker. Both spring back to their place.
+   // a blocked one crashes into its blocker, even one the blow kills. Both spring back to their place.
    const blockerOf=new Map();for(const c of [...a.cards,...b.cards])for(const id of c.blockingIds||[])if(!blockerOf.has(id))blockerOf.set(id,c.id);
+   const live=id=>{const now=b.cards.find(x=>x.id===id),el=now?.zone==='Battlefield'?cardEl(id):null;return el||before?.get(String(id))?.r||null;};
    let struck=0;
-   for(const c of a.cards.filter(c=>c.attacking&&b.cards.some(x=>x.id===c.id))){const el=cardEl(c.id);if(!el)continue;
-    const seat=seatEl(defenderOf(b.players,c));
-    const blocker=blockerOf.has(c.id)?cardEl(blockerOf.get(c.id)):null,to=blocker||(c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seat);
-    strike(el,to,{face:!blocker&&to===seat,delay:struck++*MOTION.stagger,big:(c.power||0)>=5,power:c.power||0});}
+   for(const c of a.cards.filter(c=>c.attacking&&onField(c))){const dies=gone(c),el=dies?null:cardEl(c.id);if(!dies&&!el)continue;
+    const seat=seatEl(defenderOf(b.players,c)),blocked=blockerOf.has(c.id)?live(blockerOf.get(c.id)):null;
+    const to=blocked||(c.attackTarget?.kind==='card'?live(c.attackTarget.id):seat);if(!to)continue;
+    const opts={face:!blocked&&to===seat,delay:struck++*MOTION.stagger,big:(c.power||0)>=5,power:c.power||0};
+    // An attacker that dies in the exchange swings as a stand-in (drawn below with the other deaths).
+    if(dies)dying.set(c.id,{to,opts});else strike(el,to,opts);}
    damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=c.damage-(was.get(c.id)?.damage||0);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},MOTION.lunge*.58+i*60));
   }
   // 3b. Declared: a new attacker surges forward toward what it attacks and settles; a new blocker
@@ -486,10 +513,12 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // 5. Death: a permanent that went to a graveyard or exile (or a token that ceased to exist) breaks
   // into shards where it stood. The shards sit outside the table's scoped styles, so they carry the
   // art of the element the redraw just replaced on a plain frame.
-  if(leaving?.size){let broke=0;const at=Math.max(0,hitAt-Date.now()+80);for(const c of a.cards){if(!onField(c)||broke>=4)continue;const now=b.cards.find(x=>x.id===c.id);if(now&&!/^(Graveyard|Exile)$/.test(now.zone))continue;
-   const old=leaving.get(String(c.id)),r=before?.get(String(c.id))?.r;if(!old||!r)continue;broke++;const src=old.querySelector('img')?.currentSrc||old.querySelector('img')?.src||'',shot={rect:{left:r.left,top:r.top,width:r.width,height:r.height},html:`<div class="forge-shard-face" style="background-image:${src?`url(&quot;${esc(src)}&quot;)`:'none'}"></div>`};
+  if(leaving?.size){let broke=0;const shots=[];for(const c of a.cards){if(!onField(c)||broke>=4)continue;const now=b.cards.find(x=>x.id===c.id);if(now&&!/^(Graveyard|Exile)$/.test(now.zone))continue;
+   const old=leaving.get(String(c.id)),r=before?.get(String(c.id))?.r;if(!old||!r)continue;broke++;const src=old.querySelector('img')?.currentSrc||old.querySelector('img')?.src||'';shots.push({c,shot:{rect:{left:r.left,top:r.top,width:r.width,height:r.height},html:`<div class="forge-shard-face" style="background-image:${src?`url(&quot;${esc(src)}&quot;)`:'none'}"></div>`}});}
+   // An attacker the exchange kills lunges as its stand-in first, and breaks once it is back in its place.
+   const swung=new Map();for(const {c,shot} of shots){const lunge=dying.get(c.id),stand=lunge&&motion.ghost(shot.rect,shot.html);if(stand)swung.set(c.id,{stand,end:strike(null,lunge.to,{...lunge.opts,stand})});}
    // Until the blow that kills it lands, a stand-in holds its place so it never just blinks out.
-   const wait=at+broke*60,stand=wait>30?motion.ghost(shot.rect,shot.html):null;setTimeout(()=>{stand?.remove();motion.shatter(shot);},wait);}}
+   const at=Math.max(0,hitAt-Date.now()+80);shots.forEach(({c,shot},i)=>{const own=swung.get(c.id),wait=own?own.end+40:at+(i+1)*60,stand=own?.stand||(wait>30?motion.ghost(shot.rect,shot.html):null);setTimeout(()=>{stand?.remove();motion.shatter(shot);},wait);});}
   // 5b. Cast: your card lifts as it goes on the stack (it waits in hand, dimmed, until Forge confirms),
   // and a spell that resolves from your hand flies to the middle of the table and bursts there.
   for(const c of b.cards){if(!c.inTransit||was.get(c.id)?.inTransit||c.controller!==b.seat)continue;const el=cardEl(c.id);if(!el)continue;
@@ -723,7 +752,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const previous=displayed,lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
   const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null;
   const before=presentation.hosted?positions():null,leaving=presentation.hosted?new Map([...root.querySelectorAll('.play-match-card[data-instance]')].map(el=>[el.dataset.instance,el.closest('.play-match-card-wrap')||el])):null;
+  if(heldDrop?.ghost.isConnected&&lastDrop?.instance===String(heldDrop.id))lastDrop={...lastDrop,rect:heldDrop.ghost.getBoundingClientRect(),at:Date.now()};
   localError='';table.render(session.snapshot());enhance();observer.takeRecords();if(root.dataset.stage==='match')emotes?.mount();
+  if(heldDrop&&!heldDrop.ghost.isConnected)root.append(heldDrop.ghost);
   // The stylesheet scopes the Forge table by this attribute. It changes only when the
   // native panel comes or goes, unlike a :has() test that rechecks the whole table each redraw.
   root.toggleAttribute('data-forge-native',!!root.querySelector('.forge-native-panel'));
@@ -731,6 +762,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // While a full-screen sheet asks (a library search, ordering triggers), the board behind it is out of reach.
   {const main=root.querySelector(':scope>.play-match-main'),sheet=!!root.querySelector('.forge-zone-search,.forge-order-cards');if(main&&main.inert!==sheet)main.inert=sheet;}
   if(before&&(!blocked||staged)){glide(before);boardEffects(previous,s,before,leaving);}
+  dropHeld();
   if(presentation.hosted)tableAudio.update(previous,s);
   // Arena's low-life state: under 10 life the portrait cracks, under 6 it also bleeds a slow red glow.
   if(presentation.hosted)for(const p of s.status?.surface?.players||[]){const seat=seatEl(p.seat),band=typeof p.life!=='number'?'':p.life<=5?'critical':p.life<10?'low':'';if(seat&&(seat.dataset.lifeBand||'')!==band){if(band)seat.dataset.lifeBand=band;else delete seat.dataset.lifeBand;}}
@@ -1219,6 +1251,21 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const followGhost=()=>{ghostFrame=0;if(!ghost||!drag?.active)return;const g=drag.g;g.x+=(g.tx-g.x)*.62;g.y+=(g.ty-g.y)*.62;g.tilt+=(Math.max(-14,Math.min(14,(g.tx-g.x)*.5))-g.tilt)*.3;ghost.style.translate=`${g.x.toFixed(1)}px ${g.y.toFixed(1)}px`;ghost.style.setProperty('--tilt',`${g.tilt.toFixed(2)}deg`);if(Math.abs(g.tx-g.x)+Math.abs(g.ty-g.y)+Math.abs(g.tilt)>.3)ghostFrame=win.requestAnimationFrame(followGhost);};
  // A drop that plays nothing floats the card back to its slot instead of vanishing.
  const returnGhost=(el,source,home)=>{const r=home?{left:home.ox,top:home.oy,width:0,height:0}:source?.isConnected&&source.getBoundingClientRect();if(!r||typeof el.animate!=='function'||win.matchMedia?.('(prefers-reduced-motion: reduce)').matches){el.remove();return;}const [x,y]=(el.style.translate||'0px 0px').split(' ').map(parseFloat);const a=el.animate([{translate:`${x}px ${y}px`,scale:1},{translate:`${r.left+r.width/2}px ${r.top+r.height/2}px`,scale:.9,opacity:.6}],{duration:220,easing:'cubic-bezier(.3,.7,.2,1)'});a.onfinish=a.oncancel=()=>el.remove();};
+ // The dropped card stays where your finger let it go (cancel() leaves a held ghost alone) until the next
+ // accepted board says where it went: onto the battlefield it snaps into its slot from here (land() reads
+ // lastDrop, refreshed from this ghost just before the redraw); still in your hand (refused, or waiting
+ // there dimmed while it is cast) it floats back to it. If Forge says nothing within DROP_HOLD it floats back too.
+ function holdDrop(pending){if(reducedMotion())return;dropHeld(true);const g=ghost;ghost=null;g.dataset.held='true';heldDrop={ghost:g,id:pending.id,revision:session.snapshot().status?.revision,gone:pending.gone,timer:setTimeout(()=>dropHeld(true),DROP_HOLD)};}
+ function dropHeld(force=false){
+  const h=heldDrop;if(!h)return;const s=session.snapshot(),c=s.status?.surface.cards.find(x=>x.id===h.id);
+  if(!force&&c?.zone==='Hand'&&!c.inTransit&&(s.busy||s.status?.revision===h.revision)&&!s.native?.lastActionError)return;
+  heldDrop=null;clearTimeout(h.timer);const el=cardEl(h.id),fade=()=>{const a=h.ghost.animate?.([{opacity:1},{opacity:0,scale:1.12}],{duration:180,easing:'ease-out',fill:'forwards'});if(a)a.onfinish=a.oncancel=()=>h.ghost.remove();else h.ghost.remove();};
+  if(force&&!c)return h.ghost.remove();
+  if(c?.zone==='Battlefield'&&el&&!el.closest('.play-match-hand'))return h.ghost.remove();
+  // Anything else starts from the hand when it does arrive (a spell waits there, dimmed, while it is cast).
+  lastDrop=null;if(c?.zone==='Hand'&&el){if(h.gone?.isConnected)delete h.gone.dataset.handGone;return returnGhost(h.ghost,el);}
+  fade();
+ }
  const cancel=(back=false)=>{if(ghostFrame)win.cancelAnimationFrame(ghostFrame);ghostFrame=0;drag?.source?.classList.remove('forge-drag-source');
   // A card that goes back reopens its slot; a played one keeps it shut until the hand redraws (or the play doesn't land).
   const gone=drag?.gone,reopen=()=>{if(gone?.isConnected)delete gone.dataset.handGone;};if(gone){if(back)reopen();else setTimeout(reopen,1500);}
@@ -1283,7 +1330,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const up=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;if(pressShown){pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}}
   if(!drag||drag.pointerId!==e.pointerId)return;if(drag.swipe){suppressUntil=Date.now()+350;for(const el of root.querySelectorAll('[data-forge-swiped]'))el.removeAttribute('data-forge-swiped');cancel();return;}const pending=drag,target=doc.elementFromPoint(e.clientX,e.clientY)?.closest('[data-placement-zone=battlefield],.forge-native-panel'),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top,fromHand=!!pending.source.closest('.play-match-hand'),overHand=!!doc.elementFromPoint(e.clientX,e.clientY)?.closest('.play-match-hand-area'),aboveHand=presentation.hosted&&fromHand&&handTop!==undefined&&e.clientY<handTop&&!overHand;if(pending.active)suppressUntil=Date.now()+300;const combatTarget=pending.active?dropTargetAt(e.clientX,e.clientY):null;// A quick upward flick plays a playable card even when it is let go short of the play line.
   const flick=presentation.hosted&&fromHand&&pending.active&&!pending.rubber&&(pending.vy||0)>.55&&pending.y-e.clientY>=36;
-  const plays=pending.active&&!combatTarget&&(presentation.hosted&&fromHand?pending.source.dataset.forgeRole==='playable'&&(playDropAt(e.clientX,e.clientY)||flick):target&&root.contains(target)||aboveHand);if(plays&&ghost)lastDrop={instance:String(pending.id),rect:ghost.getBoundingClientRect(),at:Date.now()};cancel(pending.active&&!plays&&!combatTarget);if(plays||combatTarget)haptic('tap');if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(plays){const now=session.snapshot().status?.revision,go=()=>act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));const plan=tapPlan(pending.id),warn=plan?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go,plan.amount);else go();}};
+  const plays=pending.active&&!combatTarget&&(presentation.hosted&&fromHand?pending.source.dataset.forgeRole==='playable'&&(playDropAt(e.clientX,e.clientY)||flick):target&&root.contains(target)||aboveHand);if(plays&&ghost){lastDrop={instance:String(pending.id),rect:ghost.getBoundingClientRect(),at:Date.now()};holdDrop(pending);}cancel(pending.active&&!plays&&!combatTarget);if(plays||combatTarget)haptic('tap');if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(plays){const now=session.snapshot().status?.revision,go=()=>act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));const plan=tapPlan(pending.id),warn=plan?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go,plan.amount);else go();}};
  // A press that the browser takes over (a scroll, a system gesture) ends the preview and its click guard.
  // A long press's 60 s click guard ends with that press even when a redraw, scroll or
  // resize already closed its preview; otherwise the table would ignore taps for a minute.
@@ -1433,5 +1480,5 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   rope.style.setProperty('--burn',(left/ROPE_RUN).toFixed(3));rope.dataset.hot=String(secs<=10);const b=rope.querySelector('b');if(secs<=10&&b.textContent!==String(secs)){b.textContent=String(secs);if(secs<=5)haptic('tick');}else if(secs>10)b.textContent='';
  },200):0;
  doc.addEventListener('pointerdown',ropeReset,true);doc.addEventListener('keydown',ropeReset,true);doc.addEventListener('visibilitychange',ropeReset);
- return {destroy(){closed=true;boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;if(heldDrop){clearTimeout(heldDrop.timer);heldDrop.ghost.remove();heldDrop=null;}boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
