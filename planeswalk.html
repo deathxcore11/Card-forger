@@ -2760,7 +2760,7 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
 #app .battle .unit.pw-fig>.art::after,#app .battle .unit.pw-fig>.art::before{display:none!important}
 #app .battle .unit.pw-fig>.art>canvas.pw-cast{position:absolute;left:-22%;width:144%;top:-8%;height:108%;pointer-events:none;z-index:0;display:block}
 #app .battle .unit.pw-fig>.art>.tag,#app .battle .unit.pw-fig>.art>.glyph{display:none!important}
-#app .battle .unit.pw-fig>.bar{position:relative;overflow:visible!important}
+#app .battle .unit.pw-fig>.bar{position:relative;overflow:visible!important;width:88%!important;margin-inline:auto!important}
 #app .battle .unit.pw-fig>.bar>.stats{position:absolute;left:50%;top:50%;translate:-50% -50%;z-index:2;margin:0!important;line-height:1.1;padding:0 5px;border-radius:99px;background:#0b0d12e6;box-shadow:0 0 0 1px #ffffff22}
 #app .battle .unit.pw-fig.hero>.bar>.stats{display:none!important}
 /* aim: a ring on the ground instead of a dashed frame */
@@ -2806,8 +2806,8 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
 #app#app#app .battle .field.pw-rows>.side.you{order:0!important;grid-row:2!important;grid-column:1!important}
 /* tiny ally seals keep their art and stats; the name shows on hold or hover */
 #app .battle .field.pw-small .side.you .unit.ally>.name,#app .battle .field.pw-small .side.foe .unit:not(.pw-fig)>.name{display:none!important}
-/* the hp pill on the bar clears the name plate; in a crowd the hero's incoming chip clears the foe row above */
-#app .battle .unit.pw-fig>.name{margin-bottom:5px!important}
+/* no name plate under a figure (Test Fight look): the name shows on hover and hold and on the zoom card; in a crowd the hero's incoming chip clears the foe row above */
+#app .battle .unit.pw-fig>.name{display:none!important}
 #app#app#app .battle .field.pw-rows>.side.you{margin-top:28px!important}
 /* a blocker's kill-preview chip keeps the name's row under the seal, clear of the stats pill */
 #app .battle .field.pw-small .side.you .unit.ally:has(>.pv)>.name{display:block!important;visibility:hidden}
@@ -5311,7 +5311,7 @@ function sync(){const g=G();if(!g||!g.c||g.view!=='battle'||!app.querySelector('
 // When one row would leave the figures tiny, the foes take a row above the hero (class pw-rows on the field).
 // Under the floor (96px, or 13% of the screen height) the figures read as specks, so a fight that cannot seat them at the floor keeps the portrait plates
 // (decided once per fight and viewport; a fight already on figures only drops to plates when a summon crowds it hard).
-const ALLY=.42,SEAL=.5,CHROME=67;const floor=()=>Math.max(96,innerHeight*.13);let plates=null;
+const ALLY=.42,SEAL=.5,CHROME=36;const floor=()=>Math.max(96,innerHeight*.13);let plates=null;
 function size(field,hero,foeEls,now,g,hE){if(!field)return;const you=field.querySelector('.side.you'),foe=field.querySelector('.side.foe');if(!you||!foe)return;
  const cs=getComputedStyle(field),W=field.clientWidth,Hf=field.clientHeight;
  const gapF=px(cs.columnGap)||px(cs.gap)||12,gapY=px(getComputedStyle(you).columnGap)||px(getComputedStyle(you).gap)||8,gapE=px(getComputedStyle(foe).columnGap)||px(getComputedStyle(foe).gap)||8;
