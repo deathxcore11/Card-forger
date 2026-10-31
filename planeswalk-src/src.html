@@ -444,7 +444,7 @@ Object.assign(C,{
 });
 // Which card each enemy gives up. Legends give their own signature; minions give a pool card in the hero's colors.
 const SIG={gisa:'sig_gisa',olivia:'sig_olivia',oliviaB:'sig_olivia',drone:'sig_kozilek',heraldB:'sig_kozilek',thalia:'sig_thalia',drana:'sig_drana',kozilek:'sig_kozilek',omnath:'sig_omnath',sorin:'sig_sorin',
- diregraf:{R:'king',W:'alarm'},zombie:{R:'king',W:'alarm'},crawler:{R:'hauler',W:'stance'},interloper:{R:'guide',W:'hawk'},geist:{R:'pyro',W:'grace'},
+ diregraf:{R:'king',W:'alarm'},zombie:{R:'king',W:'alarm'},crawler:{R:'hauler',W:'stance'},interloper:{R:'guide',W:'hawk'},geist:{R:'pyro',W:'grace'},sentinel:{R:'brute',W:'stance'},ghast:{R:'pyro',W:'hawk'},
  patrol:{R:'warchief',W:'knight'},cultist:{R:'rite',W:'grace'},acolyte:{R:'rite',W:'grace'},ironsmith:{R:'brute',W:'stance'},ironfang:{R:'hauler',W:'overseer'},
  spawn:{R:'mana',W:'sungrace'},scion:{R:'mana',W:'sungrace'},intruder:{R:'snipe',W:'eagle'},herder:{R:'cannon',W:'charge'},baloth:{R:'warchief',W:'knight'},
  ranger:{R:'king',W:'alarm'},wolf:{R:'hauler',W:'overseer'},skyfisher:{R:'guide',W:'sungrace'}};
@@ -536,6 +536,9 @@ const E={
  // Elite that replaces Olivia: Ironfang already turned; it gains trample when Nightfall comes (turn 4).
  ironalpha:{name:'Ironfang Alpha',art:'Ironfang',hp:36,pow:5,g:'W',rank:'elite',double:1,trample:1,intents:[['atk',4],['atk',4],['buff',2]]},
  // Balance PDF #2: the Alpha sleeps 2 turns in the Ironsmith's shape (a setup window), then wakes and hits twice (a wall).
+ // Beta lane enemies (31 Oct): the Sentinel shields the weakest foe beside it; the Ghast hooks your front blocker out of the line.
+ sentinel:{name:'Grave Sentinel',hp:14,pow:2,g:'Gs',zombie:1,intents:[['ward',4],['atk',4]]},
+ ghast:{name:'Gravehook Ghast',hp:9,pow:2,g:'Gh',zombie:1,intents:[['pull',3],['atk',3]]},
  alphasmith:{name:'Ironfang Alpha',art:'Village Ironsmith',hp:36,pow:3,g:'W',rank:'elite',intents:[['sleep',2],['transform','ironalpha',1]]},
 };
 Object.assign(E,{
@@ -571,10 +574,10 @@ const BOSSEMB={
  contract:{name:"Ob Nixilis's Contract",g:'✒',r:'B',text:'Draw 2 more cards each turn. Start each fight with 2 extra energy. Gain 1 energy for each enemy you kill. Your max life is 4 lower.',gain:'Draw 2 more cards each turn. Start each fight with 2 extra energy. Gain 1 energy for each enemy you kill.',cost:'Max life −4.'},
 };
 Object.assign(EMB,BOSSEMB);
-const EASY=[['diregraf','diregraf'],['acolyte','diregraf'],['crawler','crawler','diregraf'],['geist','diregraf']];
+const EASY=[['diregraf','diregraf'],['acolyte','diregraf'],['crawler','crawler','diregraf'],['geist','diregraf'],['ghast','diregraf']];
 // Act 1 hard pool from the approved encounter design, built from enemies that exist today (new ones come with the content wave):
 // burst, race, flyer race, taxer, kill priority.
-const HARD=[['ironsmith'],['patrol','interloper'],['interloper','interloper','interloper'],['geist','geist','cultist'],['cultist','diregraf','diregraf']];
+const HARD=[['ironsmith'],['patrol','interloper'],['interloper','interloper','interloper'],['geist','geist','cultist'],['cultist','diregraf','diregraf'],['sentinel','cultist','diregraf'],['sentinel','ghast','interloper']];
 // Enemies get tougher as you climb: depth 0 at the bottom of the map, up to 2 near the top.
 // Without formation, enemies carry 1.2x life to pay for the act-start item pick.
 // 0.9 with formation since every enemy now acts each turn (audit bug 13).
@@ -985,6 +988,8 @@ function act2_(e){
  else if(t==='drain'){hurt(v,'drain');e.hp=Math.min(e.max,e.hp+v);e.heal=v;msg=`${e.name} drains ${v} life from ${HERO.short}.`}
  else if(t==='buff'){e.buff+=v;msg=`${e.name} grows stronger (+${v} attack).`}
  else if(t==='guard'){e.shield+=v;msg=`${e.name} raises a guard of ${v}.`}
+ else if(t==='ward'){const o=c.enemies.filter(x=>x!==e&&x.hp>0).sort((x,y)=>x.hp-y.hp)[0]||e;o.shield+=v;msg=`${e.name} wards ${o===e?'itself':o.name}: it absorbs the next ${v} damage.`}
+ else if(t==='pull'){const b=blocker(e);if(b){b.dmg+=v;b.tapped=true;b.flash=1;msg=`${e.name} hooks ${b.name} out of your line: ${v} damage and it can't block this turn.`}else{hurt(v,'unblocked');msg=`${e.name} hooks ${HERO.short} for ${v}.`}}
  else if(t==='haunt'){c.haunt=1;msg='Chapel Geist haunts you: 1 fewer card next turn.'}
  else if(t==='summon'){if(c.enemies.length<FIGHT.foes){addFoe(v);msg=`${e.name} calls a ${E[v].name}.`}else msg=`${e.name} calls for help, but no one comes.`}
  else if(t==='sac'){const s=c.enemies.find(x=>x!==e&&x.hp>0&&!x.rank);if(s){s.hp=0;s.noKill=1;hurt(v,'sac');msg=`The Cultist sacrifices ${s.name} and hits ${HERO.short} for ${v}.`}else msg=strike(e,2)}
@@ -1111,6 +1116,8 @@ const intentLabel=e=>{const I=(k,cls,tip,n,m='')=>`<span data-audit-repeat class
  if(t==='drain')return I('drop','drain',`Drains ${v}: hits ${HERO.short} directly and heals itself`,v);
  if(t==='buff')return I('up','buff',`Its attacks get +${v}`,'+'+v);
  if(t==='guard')return I('shield','buff',`Guard: absorbs the next ${v} damage`,v);
+ if(t==='ward')return I('shield','buff',`Wards another enemy: it absorbs the next ${v} damage`,v,mod('plus','Another enemy'));
+ if(t==='pull')return I('sword','drain',`Hooks your front blocker: ${v} damage and it can't block this turn`,v,mod('back','Pulls it out of your line'));
  if(t==='haunt')return I('ghost','drain','Haunt: you draw 1 fewer card next turn','');
  if(t==='summon')return I('plus','summon','Summons another minion','');
  if(t==='sac')return I('skull','drain',`Sacrifices another minion to hit you for ${v}`,v);
@@ -1123,7 +1130,7 @@ const intentLabel=e=>{const I=(k,cls,tip,n,m='')=>`<span data-audit-repeat class
  if(t==='annihilate')return I('sword','drain',`Attacks for ${v+e.buff}, then destroys your weakest ally`,v+e.buff,mod('skull','Then destroys your weakest ally'));
  if(t==='pay')return I('up','buff',`Pays ${v} life, then its next attack gets +${v}`,'+'+v,mod('drop',`Pays ${v} life`));
  return I('moon','transform','Night falls: it transforms',intentOf(e)[2]||'')};
-const ACT={scion:()=>'empower the biggest enemy',process:v=>`process a Lost card into ${v} Spawn`,sweep:v=>`${v} damage to each of your allies`,bolster:v=>`give an ally +${v} attack`,rally:v=>`all enemies +${v} attack`,annihilate:v=>`attack for ${v}, then destroy your weakest ally`,pay:v=>`pay ${v} life, then its next attack gets +${v}`,atk:v=>`attack for ${v}`,drain:v=>`drain ${v} life`,buff:v=>`gain +${v} attack`,guard:v=>`guard ${v}`,haunt:()=>'haunt (you draw 1 fewer)',summon:v=>`summon a ${E[v]?E[v].name:v}`,sac:v=>`sacrifice a minion to hit you for ${v}`,transform:()=>'transform at night'};
+const ACT={ward:v=>`ward another enemy for ${v}`,pull:v=>`hook your front blocker for ${v}`,scion:()=>'empower the biggest enemy',process:v=>`process a Lost card into ${v} Spawn`,sweep:v=>`${v} damage to each of your allies`,bolster:v=>`give an ally +${v} attack`,rally:v=>`all enemies +${v} attack`,annihilate:v=>`attack for ${v}, then destroy your weakest ally`,pay:v=>`pay ${v} life, then its next attack gets +${v}`,atk:v=>`attack for ${v}`,drain:v=>`drain ${v} life`,buff:v=>`gain +${v} attack`,guard:v=>`guard ${v}`,haunt:()=>'haunt (you draw 1 fewer)',summon:v=>`summon a ${E[v]?E[v].name:v}`,sac:v=>`sacrifice a minion to hit you for ${v}`,transform:()=>'transform at night'};
 function enemyInfo(e){const d=E[e.key];const tr=[e.clock&&`${(run.act||1)>1?'The Hunger':'Nightfall'}: +${e.clock} attack so far, and more each turn.${e.doom?' Doom: it tramples.':''}`,e.thrallOf&&`Taken by Olivia. It returns to you when she drops below a quarter of her life.`,e.phase2&&d.bloodfeed&&'Bloodfeed: heals for the damage your allies take.',e.pacified&&(e.rank?'Pacified: its next attack is stopped, then it shakes it off.':'Pacified: it can\'t attack this fight.'),e.pacImmune&&'Immune to Pacifism this fight.',e.tapN&&'Tapped: it skips its next attack.',e.detSp&&'Detained: it skips its next move that is not an attack.',e.ccUsed&&'Immune to Tap and Detain for the rest of this fight.',goaded(e)&&'Goaded: this turn it attacks the enemy beside it instead of you.',d.fly&&'Flying: only flying or reach allies can block it.',FORM&&d.bypass&&'Bypass: skips your line and hits you, unless one of your allies guards against it.',FORM&&d.intents.some(x=>x[0]==='sac')&&'Its sacrifice hits you directly. Guard can\'t stop that.',FORM&&d.enrage&&`Enrage: its attacks grow by ${d.enrage} each turn it lives.`,FORM&&TRAMPLES(e)&&'Trample: a blocker that dies doesn\'t stop this hit.',d.first&&'First strike: hits your attacker first.',d.tax&&'Your noncreature spells cost 1 more.',d.onShield&&`Gets +${d.onShield} attack whenever you gain Shield.`,d.double&&'Hits twice.',d.wide&&`After ${(d.wideEvery||1)>1?'every other one of its turns':'each of its turns'}, if you have ${d.wideAt||3} or more allies, each ally takes ${d.wide}.`,d.spellTax&&`Each spell you cast after your second this turn, you lose ${d.spellTax} life.`,d.capTax&&'Your cards that cost 4 or more cost 1 more.',d.raise&&'Dead minions come back as Zombies.',d.feed&&'Gets +1 attack each time a creature she damaged dies.',d.crawl&&'Returns once while another Zombie stands.',d.phase2&&'Below half life: shield 10 and a harder pattern.',d.loyalty&&'Loyalty: ultimate at 8. Each creature hit removes 1.',d.ingest&&'Unblocked hits make the top card of your draw pile Lost this fight.',d.spawnDie&&'When it dies, other Eldrazi get +1 attack.',d.landfall&&`Gets +${d.landfall} attack whenever another enemy enters.`,d.rage&&`Deals ${d.rage} to you whenever another enemy enters.`,d.pact&&'If you have played at least as many spells as creatures this fight, he names spells, and each one costs you 3 life. Below half life he names whichever type you have played more.'].filter(Boolean);
  // the pattern it is really on (paired ghouls swap to their pair moves), read from the move it shows now
  const pi=ghoulPair(e),src=e.phase2?d.phase2:pi>=0?d.pairIntents:d.intents,at=(e.i+Math.max(0,pi))%src.length;

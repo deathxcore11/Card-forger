@@ -145,7 +145,7 @@ function actPose(R,t){const A=R.act;let el=(t-A.t0)*1000;
  for(const s of A.segs){if(!s.fired){s.fired=1;s.at&&s.at(R)}if(el<s.d){const q=EZ[s.e](el/s.d),p={};for(const k in s.p1)p[k]=s.p0[k]+(s.p1[k]-s.p0[k])*q;if(s.shake)p.dx+=Math.sin(el*.11)*.008;return {p,f:s.f}}el-=s.d}
  R.act=null;R.nf=t+3+Math.random()*5;A.done&&A.done(R);return null}
 // Impact beat of each motion (ms after it starts): the number, bar, sound and hit reaction land there.
-const IMPACT={strike:250,quick:170,double:250,charge:310,crawl:280,swoop:280,cast:400,drain:400,reach:250};
+const IMPACT={strike:250,quick:170,double:250,charge:310,crawl:280,swoop:280,cast:400,drain:400,reach:250,pull:270};
 function act_(R,k,o){o=o||{};if(R.dead&&k!=='defeat')return 0;if(R.act&&k!=='hit'&&k!=='defeat')R.act=null;
  const e=R.cur,F=e.frames,f=R.face,has=n=>F[n]?n:null;
  const A=has('attack'),Rc=has('recover'),Pp=has('cast-prep'),Fo=has('attack-follow'),H=has('hit'),HR=has('hit-recover'),D1=has('defeat-1')||has('defeat-start')||H,D2=has('defeat-2')||D1;
@@ -165,6 +165,7 @@ function act_(R,k,o){o=o||{};if(R.dead&&k!=='defeat')return 0;if(R.act&&k!=='hit
   case 'swoop':s(170,null,{dx:-f*.02,dy:-.05},'out');s(110,A,{dx:f*.14,dy:.015},'in');s(60,A,{},'lin');s(300,Rc,{dx:0,dy:0});break;
   case 'cast':s(180,Pp,{dx:-f*.015,aura:1},'out',orb);s(110,A,{dx:f*.02},'out',R=>bolt(R,R.ac,tgt,220));s(Fo?100:60,Fo||A,{aura:.8},'lin');s(260,Rc,{dx:0,aura:0});break;
   case 'drain':R.ac=[1,.32,.36];s(180,Pp,{dx:-f*.015,aura:1},'out',orb);s(110,A,{dx:f*.02},'out',R=>bolt(R,R.ac,tgt,220));s(60,A,{},'lin');s(420,Rc,{dx:0,aura:.6},'io',R=>bolt(R,[1,.4,.45],tgt,300,true));s(220,null,{aura:0});break;
+  case 'pull':{const Pl=has('pull')||A;s(160,Pp,{dx:f*.03,sx:1.01,sy:.98},'out');s(110,Pl,{dx:-f*.06},'out');s(320,Pl,{},'lin');s(260,Rc,{dx:0,sx:1,sy:1});break}
   case 'guard':R.ac=[.78,.9,1];s(150,null,{dx:-f*.01,sx:1.015,sy:.98,aura:.6},'out',shield);s(900,null,{},'lin');s(260,null,{dx:0,sx:1,sy:1,aura:0});break;
   case 'rally':s(200,null,{sx:1.012,sy:.975},'out');s(260,null,{sx:.995,sy:1.03,dy:-.008,aura:1},'out',sparks);s(520,null,{aura:.7},'lin');s(320,null,{sx:1,sy:1,dy:0,aura:0});break;
   case 'summon':s(180,Pp,{dx:-f*.015,aura:1},'out',orb);s(120,A,{dx:f*.01},'out',portal);s(420,A,{aura:.7},'lin');s(280,Rc,{dx:0,aura:0});break;
@@ -348,7 +349,7 @@ function ghost(R){const r=R.lastRect||R.cv.getBoundingClientRect();if(!r.width){
 /* ---------- game logic to motion ---------- */
 function kindOf(p,fe,g){const t=p.intent,d=g.E[p.key]||{};
  if(t==='atk'){if(fe.key==='sorin'||d.double)return 'double';if(d.first)return 'quick';if(tramples(fe))return 'charge';if(fe.key==='crawler')return 'crawl';if(fe.fly)return 'swoop';return 'strike'}
- if(t==='drain')return 'drain';if(t==='guard'||t==='shield'||t==='bolster')return 'guard';if(t==='buff'||t==='enrage'||t==='rally')return 'rally';
+ if(t==='drain')return 'drain';if(t==='pull')return 'pull';if(t==='guard'||t==='shield'||t==='bolster'||t==='ward')return 'guard';if(t==='buff'||t==='enrage'||t==='rally')return 'rally';
  if(t==='summon'||t==='raise'||t==='scion'||t==='sweep')return 'summon';if(t==='transform')return 'transform';
  return 'cast'}
 const rectOf=el=>{const a=el&&el.querySelector(':scope>.art');let r=(a||el)&&(a||el).getBoundingClientRect();if(r&&a&&el.classList.contains('pw-fig')){const q=el.getBoundingClientRect();r={left:q.left,right:q.right,width:q.width,top:r.top,bottom:r.bottom,height:r.height}}return r?{rect:r}:null};// a figure's body is its unit's width (the frame overhangs)
