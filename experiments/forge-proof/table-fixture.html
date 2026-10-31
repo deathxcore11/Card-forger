@@ -7,7 +7,8 @@
 <!-- Development fixture only (not deployed; see .assetsignore). Mounts the live
      Forge table with a fixed native snapshot so layout changes can be compared
      on the same board. No transport, account or rules logic is involved. -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="../../assets/fonts/fonts.css">
+<script>for(const f of ["600 16px Manrope","600 16px Cinzel","16px \"DM Sans\""])document.fonts?.load(f);</script>
 <link rel="stylesheet" href="../../style.css">
 <link rel="stylesheet" href="../../community-curation.css">
 <link rel="stylesheet" href="../../magic-matchups.css">
@@ -26,6 +27,9 @@
 <!-- Loaded by app.js when a match opens, in this order. -->
 <link rel="stylesheet" id="practiceTableStyles" href="../phase-engine/match-table.css">
 <link rel="stylesheet" id="forgeHostedTableStyles" href="../../play-forge-table.css">
+<!-- The fixture has no server, so it refuses every action the table sends. That refusal is not a layout
+     state the design gate should judge; hide the connection toast and diagnostic here only. -->
+<style>.forge-toast,.forge-diagnostic,.forge-diagnostic+button,.forge-activity[data-kind=connection]{display:none!important}</style>
 </head>
 <body class="glass practice-table-open" data-view="play" data-game="mtg">
 <main id="practicePlayerMat" aria-label="Practice player mat" data-engine="forge-hosted"></main>
@@ -118,9 +122,13 @@ const names = [...new Set([
   ...(STATE === 'search' ? ['Forest', 'Mountain', 'Island', 'Plains', 'Swamp', 'Wastes'] : []),
 ].filter(n => n !== 'Goblin' && n !== 'Food'))];
 const scry = new Map();
+// A saved copy of the Scryfall cards this fixture uses (fixture-cards.json) loads first, so the board lays out the same
+// with or without a network (the design-gate runner only lets GET through); anything missing comes from Scryfall.
+try { for (const [name, c] of Object.entries(await (await fetch('./fixture-cards.json')).json())) scry.set(name, c); } catch {}
 try {
-  for (let i = 0; i < names.length; i += 70) {
-    const r = await fetch('https://api.scryfall.com/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({identifiers: names.slice(i, i + 70).map(name => ({name}))})});
+  const missing = names.filter(n => !scry.has(n));
+  for (let i = 0; i < missing.length; i += 70) {
+    const r = await fetch('https://api.scryfall.com/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({identifiers: missing.slice(i, i + 70).map(name => ({name}))})});
     for (const c of (await r.json()).data || []) scry.set(c.name, c);
   }
 } catch (e) { console.warn('Scryfall unavailable; fixture uses drawn crests', e); }

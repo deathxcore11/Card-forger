@@ -3506,7 +3506,7 @@ body[data-view="scan"] #content { padding-top:14px; }
 .scan-batch-review .scan-confirm-controls select { min-height:40px; }
 .scan-batch-review .scan-confirm-options { max-height:145px;overflow:auto; }
 .scan-batch-review .scan-confirm-options [aria-pressed="true"] { border-color:var(--gold); }
-.scan-review-more summary { font-size:11px;color:var(--muted);cursor:pointer; }
+.scan-review-more summary { display:flex;align-items:center;min-height:44px;font-size:12px;color:var(--muted);cursor:pointer; }
 .scan-review-more>label { display:flex;gap:8px;align-items:center;font-size:12px; }
 .scan-batch-review>.link { display:block;margin:8px auto 0; }
 .scan-legacy-session { margin-top:16px; }
@@ -4284,7 +4284,7 @@ html.settings-open,html.settings-open body {overflow:hidden;}
 @media(prefers-reduced-motion:reduce){.home-search-pill::before {animation:none;background-position:50% 0;}}
 
 /* Info and optional, non-blocking contextual help. */
-.info-centre {max-width:920px;margin:auto}.info-centre h2{font-size:clamp(21px,3vw,30px);max-width:25ch}.info-search{display:grid;gap:8px;font-size:13px;color:var(--muted);margin-top:20px}.info-search input{width:100%;min-height:48px}.info-topics{display:grid;gap:12px}.info-topic{padding:0;min-width:0}.info-topic summary{display:grid;gap:8px;position:relative;padding:20px 42px 20px 20px;cursor:pointer;list-style:none}.info-topic summary::after{content:'＋';position:absolute;right:18px;top:24px;color:var(--gold)}.info-topic[open] summary::after{content:'−'}.info-topic summary b{font-size:18px}.info-topic-body{padding:0 20px 20px}.info-topic-body p{font-size:15px;line-height:1.65}.info-topic[hidden]{display:none}.context-guide{display:flex;align-items:center;gap:12px;padding:10px 14px;margin:0 0 16px;border:1px solid var(--line);border-radius:16px;background:var(--panel);font-size:13px}.context-guide>span{flex:1}.context-guide b{display:block}.context-guide .icon{width:44px;height:44px;flex:none}.context-guide .link{min-height:44px}
+.info-centre {max-width:920px;margin:auto}.info-centre h2{font-size:clamp(21px,3vw,30px);max-width:25ch}.info-search{display:grid;gap:8px;font-size:13px;color:var(--muted);margin-top:20px}.info-search input{width:100%;min-height:48px}.info-topics{display:grid;gap:12px}.info-topic{padding:0;min-width:0}.info-topic summary{display:grid;gap:8px;position:relative;padding:20px 42px 20px 20px;cursor:pointer;list-style:none}.info-topic summary::after{content:'＋';position:absolute;right:18px;top:24px;color:var(--gold)}.info-topic[open] summary::after{content:'−'}.info-topic summary b{font-size:18px}.info-topic-body{padding:0 20px 20px}.info-topic-body p{font-size:15px;line-height:1.65}.info-topic[hidden]{display:none}.context-guide{display:flex;align-items:center;gap:12px;padding:10px 14px;margin:0 0 16px;border:1px solid var(--line);border-radius:16px;background:var(--panel);font-size:13px}.context-guide>span{flex:1 1 200px;min-width:0}.context-guide b{display:block}.context-guide .icon{width:44px;height:44px;flex:none}.context-guide .link{min-height:44px}
 /* A native modal keeps focus inside the guide and preserves the task underneath. */
 dialog.action-tour{inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;border:0;background:transparent;display:none;overflow:auto;padding:16px;z-index:1500}dialog.action-tour[open]{display:grid;place-items:center}dialog.action-tour::backdrop{background:rgba(6,7,10,.76);backdrop-filter:blur(8px)}.action-tour .tour-card{width:min(100%,550px);max-width:550px;max-height:calc(100dvh - 32px);overflow:auto;padding-top:44px}.tour-v3>h2{font-size:clamp(21px,3vw,27px)}.tour-v3>.eyebrow{font-size:10px;letter-spacing:.14em;margin-bottom:8px}.tour-v3>p:not(.eyebrow){font-size:14px;max-width:46ch}.tour-v3 .tour-preview{height:clamp(290px,44dvh,400px);margin:0 0 12px;background:#101318}.demo-label{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:10px;margin:18px 0 8px}.demo-caption{min-height:3em;color:var(--text)!important;font-size:13px!important;line-height:1.5}.demo-playback{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:10px 0 18px}.demo-playback button{min-height:44px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:8px 12px;color:var(--text);font:inherit;font-size:12px}.tour-lessons{display:grid;gap:10px;margin-top:20px}.tour-lessons>button{display:grid;gap:8px;text-align:left;cursor:pointer;color:var(--text);font:inherit}.tour-lessons span{font-size:13px;color:var(--muted)}.tour-lessons em{font-size:12px;color:var(--gold)}.tour-v3 .tour-actions .btn{min-width:0}
 /* Sample scenes reuse glass controls and compact collection rows. Captions live
@@ -5218,3 +5218,190 @@ dialog.sheet, #sheetBody { max-height: min(92dvh, calc(100dvh - env(safe-area-in
 .scan-settings .ss-set input { margin-top: 1px; }
 .scan-settings .field > small { font-size: 11.5px; }
 .scan-settings .settings-disclosure summary { display: flex; align-items: center; min-height: 44px; }
+
+/* ===== Scanner redesign: camera tray, Your scans grid, select mode, Fix card sheet =====
+   Scan many cards without stopping; review only what needs a look; add everything in one tap.
+   Every control is 44px or taller, every label 11px or larger, and the tray never covers the camera buttons. */
+.scan-tray { display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:22px;border:1px solid var(--line);background:var(--surface-2); }
+.scan-tray-top { display:grid;gap:4px;min-width:0; }
+.scan-tray-strip { display:flex;gap:8px;overflow-x:auto;padding:4px 2px;scrollbar-width:none;scroll-snap-type:x proximity; }
+.scan-tray-strip::-webkit-scrollbar { display:none; }
+.scan-tray-strip .scan-batch-thumb { width:44px;height:62px;border-radius:7px;scroll-snap-align:end;border-color:#ffffff33; }
+.scan-tray-strip .scan-batch-thumb.review,.scan-tray-strip .scan-batch-thumb.unresolved { box-shadow:inset 0 0 0 2px var(--warn); }
+.scan-tray-strip .scan-batch-thumb span { right:-1px;bottom:-1px;min-width:18px;min-height:18px;border-radius:6px 0 0 0;font-size:11px; }
+.scan-tray-empty { display:block;width:44px;height:62px;border-radius:7px;border:1.5px dashed #ffffff40; }
+.scan-tray-summary { margin:0;font-size:12px;line-height:1.3;color:var(--muted); }
+.scan-tray-row { display:flex;align-items:center;justify-content:space-between;gap:10px; }
+.scan-tray-pick { display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:52px;min-height:52px;padding:0 12px;border-radius:16px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-weight:700;font-size:14px;cursor:pointer; }
+.scan-tray-pick .ico { width:24px;height:24px; }
+.scan-tray-pick-wide { flex:1;min-width:0; }
+.scan-tray .scan-shutter { position:static;transform:none;flex:none;width:64px;height:64px;border-width:4px;outline:1px solid #ffffff65;outline-offset:4px;background:#ffffffed;color:#15181f;box-shadow:0 2px 16px #0006; }
+.scan-tray .scan-shutter .ico { width:26px;height:26px; }
+.scan-tray .scan-pile { flex:none;flex-direction:row;align-items:center;gap:10px;width:auto;min-width:0;min-height:52px;padding:0 16px 0 10px;border-radius:16px;background:linear-gradient(180deg,#f3cd7c,#d9a743);color:var(--gold-ink);text-shadow:none;font:800 16px/1 Manrope,sans-serif;box-shadow:0 6px 18px rgba(232,185,91,.3); }
+.scan-tray .scan-pile:disabled { opacity:.5;box-shadow:none; }
+.scan-tray .scan-pile-cards { width:30px;height:40px;flex:none; }
+.scan-tray .scan-pile-cards i { border-radius:4px;border-color:#ffffffc8; }
+.scan-tray .scan-pile-cards b { right:-10px;top:-8px;min-width:20px;height:20px;border-color:#d9a743;background:#15181f;color:#fff;font-size:11px; }
+.scan-tray .scan-pile-text { display:inline-flex;align-items:center;gap:4px;white-space:nowrap; }
+.scan-tray .scan-pile-text .ico { width:18px;height:18px;stroke-width:2.6; }
+.scan-tray .scan-pile-alerts { position:static;width:auto;margin-top:2px; }
+.scan-tray.is-empty .scan-tray-top { display:none; }
+/* Camera mode: the tray floats over the bottom of the preview as glass; the status pill moves above it. */
+#app .scan-workspace.is-camera.is-live .scan-tray { position:fixed;z-index:40;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:calc(var(--scan-nav-space,0px) + 10px);border-color:#ffffff1f;background:rgba(10,12,16,.74);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff; }
+#app .scan-workspace.is-camera.is-live .scan-tray-summary { color:#d4d7df; }
+#app .scan-workspace.is-camera.is-live .scan-tray-pick { border-color:#ffffff22;background:rgba(255,255,255,.09);color:#fff; }
+#app .scan-workspace.is-camera.is-live .scan-tray-strip .scan-batch-thumb { background:#1a1e26; }
+/* Camera off: the page flows and scrolls. The idle frame keeps a real height and the tray is a plain row under it,
+   so Start camera is never squeezed by the tray or by 130% text. */
+body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)) { height:auto;min-height:100dvh;overflow:visible; }
+body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)) > #content { flex:none;min-height:0;overflow:visible; }
+#app .scan-workspace.is-camera:not(.is-live),#app .scan-workspace.is-camera:not(.is-live) > .scan-panel { flex:none;min-height:0; }
+#app .scan-workspace.is-camera:not(.is-live):has(.scan-panel) > .scan-toolbar { position:static;width:auto;margin:8px 0 4px;padding:6px var(--page-edge,16px);border:0;border-radius:0;background:none;backdrop-filter:none;box-shadow:none; }
+#app .scan-workspace.is-camera:not(.is-live) .cam-wrap { flex:none;height:auto;min-height:clamp(170px,calc(100dvh - 610px),480px); }
+#app .scan-workspace.is-camera:not(.is-live) .cam-wrap .scan-drop { inset:16px; }
+#app .scan-workspace.is-camera:not(.is-live) .scan-tray { flex:none;margin:10px var(--page-edge,16px) 10px; }
+@media (max-height:520px) and (orientation:landscape) { #app .scan-workspace.is-camera:not(.is-live) .cam-wrap { min-height:0; } }
+#app .scan-workspace.is-live .cam-status,#app .scan-workspace.is-live .scan-status-line { bottom:206px; }
+#app .scan-workspace.is-camera:has(.scan-tray:not(.is-empty)) .scan-drop > .small { display:none; }
+#app .scan-workspace.is-live:has(.scan-tray.is-empty) .cam-status,#app .scan-workspace.is-live:has(.scan-tray.is-empty) .scan-status-line { bottom:118px; }
+@media (max-height:600px) {
+  #app .scan-workspace.is-camera.is-live .scan-tray { bottom:calc(var(--scan-nav-space,0px) + 6px);padding:8px 10px;gap:6px; }
+  #app .scan-workspace.is-camera.is-live .scan-tray-summary { display:none; }
+  #app .scan-workspace.is-camera .scan-tray .scan-shutter { width:54px;height:54px; }
+  #app .scan-workspace.is-live .cam-status,#app .scan-workspace.is-live .scan-status-line { bottom:168px; }
+}
+@media (max-height:520px) and (orientation:landscape) { #app .scan-workspace.is-camera:not(.is-live) .cam-wrap .scan-drop { inset:auto; } }
+@media (min-width:700px) and (max-height:450px) {
+  #app .scan-workspace.is-camera .scan-tray { flex-direction:row;align-items:center;padding:8px 10px; }
+  #app .scan-workspace.is-camera.is-live .scan-tray { left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right)); }
+  #app .scan-workspace.is-camera .scan-tray-top { flex:1;min-width:0; }
+  #app .scan-workspace.is-camera .scan-tray-strip { padding:2px; }
+  #app .scan-workspace.is-camera .scan-tray-row { flex:none; }
+  #app .scan-workspace.is-live .cam-status,#app .scan-workspace.is-live .scan-status-line { bottom:100px;left:14px;transform:none;max-width:calc(60% - 40px);text-align:left; }
+  #app .scan-workspace.is-live:has(.scan-tray.is-empty) .cam-status { bottom:100px; }
+}
+@media (min-width:900px) { #app .scan-workspace.is-camera.is-live .scan-tray { left:50%;right:auto;transform:translateX(-50%);width:min(640px,calc(100% - 28px)); } }
+@media (min-width:1200px) { #app .scan-workspace.is-camera.is-live .scan-tray { bottom:calc(env(safe-area-inset-bottom) + 14px); } }
+
+/* Your scans: a plain scrolling page. The camera waits behind it. */
+.scan-workspace.is-grid { max-width:none;padding-bottom:96px; }
+.scan-workspace.is-grid.is-selecting { padding-bottom:110px; }
+.scan-workspace.is-grid:has(.scan-select-bar.is-open) { padding-bottom:340px; }
+/* Sub-pages of the scanner (Your scans, Fix card) have no room for the onboarding banner. */
+body[data-view="scan"] #content:has(.scan-workspace.is-grid) > .context-guide { display:none; }
+.scan-grid-head { display:flex;align-items:center;gap:10px;min-height:44px;margin:0 0 12px; }
+.scan-grid-head .icon { color:var(--text); }
+.scan-grid-head .icon .ico { width:20px;height:20px; }
+.scan-grid-title { flex:1;min-width:0;display:grid;gap:2px; }
+.scan-grid-title h1 { margin:0;font-size:22px;line-height:1.15;letter-spacing:-.02em; }
+.scan-grid-title span { font-size:13px;color:var(--muted); }
+.scan-grid-head .btn.small { min-height:44px;padding:0 14px;font-size:14px;font-weight:700; }
+.scan-dest { display:flex;align-items:center;gap:8px;min-width:0; }
+.scan-dest-label { flex:none;font-size:12.5px;font-weight:700;color:var(--muted); }
+.scan-dest-chips { display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0;padding:3px 2px; }
+.scan-dest-chips .scan-chip { flex:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 14px;white-space:nowrap;background:var(--surface); }
+.scan-dest-chips .scan-chip .ico { width:16px;height:16px;stroke-width:2.6; }
+.scan-dest-chips .scan-chip[aria-checked="true"] { background:linear-gradient(180deg,#f3cd7c,#d9a743);color:var(--gold-ink);font-weight:800; }
+.scan-dest-chips .scan-dest-new-chip { border-style:dashed;border-color:#3a4150;background:transparent;color:var(--gold); }
+.scan-dest-chips .scan-dest-new-chip .ico { width:16px;height:16px; }
+.scan-dest-new { display:flex;gap:8px;align-items:center;margin-top:10px; }
+.scan-dest-new input { flex:1;min-width:0;min-height:44px;font-size:15px; }
+.scan-dest-new .btn { min-height:44px;padding:0 16px; }
+.scan-grid-error { margin:10px 0 0;font-size:13px;color:var(--bad); }
+.scan-grid-note { margin:10px 0 0;font-size:13px;color:var(--muted); }
+.scan-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px 10px;margin-top:16px; }
+.scan-tile { display:grid;gap:6px;align-content:start;padding:0;border:0;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;border-radius:12px; }
+.scan-tile:disabled { cursor:default;opacity:.7; }
+.scan-tile:focus-visible { outline:2px solid var(--gold);outline-offset:3px; }
+.scan-tile-art { position:relative;display:block;aspect-ratio:5 / 7;border-radius:12px;overflow:hidden;background:var(--surface-2); }
+.scan-tile-art img,.scan-tile-art .img-missing,.scan-tile-empty { position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:grid;place-items:center;font-size:12px;color:var(--muted); }
+.scan-tile.is-review .scan-tile-art,.scan-tile.is-unresolved .scan-tile-art { box-shadow:inset 0 0 0 2px var(--warn); }
+.scan-tile.is-reading .scan-tile-art img,.scan-tile.is-captured .scan-tile-art img { opacity:.6; }
+.scan-tile-state { position:absolute;top:8px;right:8px;display:grid;place-items:center;font-weight:800;line-height:1; }
+.scan-tile-state.is-ok { width:26px;height:26px;border-radius:50%;background:var(--good);color:#04150d; }
+.scan-tile-state.is-ok .ico { width:15px;height:15px;stroke-width:3; }
+.scan-tile-state.is-warn { min-height:24px;padding:0 9px;border-radius:999px;background:var(--warn);color:var(--gold-ink);font-size:11.5px; }
+.scan-tile-state.is-reading { width:26px;height:26px;border-radius:50%;background:var(--gold);color:var(--gold-ink);font-size:14px; }
+.scan-tile-tick { position:absolute;right:8px;bottom:8px;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid #ffffffb0;background:rgba(10,12,16,.45); }
+.scan-tile-tick.is-on { border-color:var(--gold);background:var(--gold);color:var(--gold-ink); }
+.scan-tile-tick .ico { width:16px;height:16px;stroke-width:3; }
+.scan-tile.is-selected .scan-tile-art { box-shadow:0 0 0 3px var(--gold); }
+.scan-grid.is-selecting .scan-tile:not(.is-selected) .scan-tile-art { opacity:.78; }
+.scan-tile-name { font-size:13.5px;font-weight:700;line-height:1.2;overflow-wrap:anywhere; }
+.scan-tile-meta { font-size:12px;line-height:1.25;color:var(--muted); }
+.scan-tile-meta.is-warn { color:var(--warn); }
+.scan-grid-empty { display:grid;gap:14px;justify-items:center;padding:48px 16px;text-align:center;color:var(--muted); }
+.scan-grid-empty p { margin:0;max-width:320px;font-size:14px;line-height:1.45; }
+.scan-grid-empty .btn { display:inline-flex;align-items:center;gap:8px;min-height:48px; }
+.scan-grid-bar { position:fixed;z-index:20;left:0;right:0;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));display:flex;gap:10px;padding:22px max(16px,calc((100% - 1196px) / 2)) 12px;background:linear-gradient(180deg,rgba(15,17,21,0) 0%,var(--bg) 40%); }
+.scan-grid-bar .btn { min-height:52px;padding:0 18px;border-radius:16px;font:800 16px/1.1 Manrope,sans-serif;white-space:nowrap; }
+.scan-grid-bar .btn:not(.ghost) { flex:1;min-width:0;white-space:normal;background:linear-gradient(180deg,#f3cd7c,#d9a743);color:var(--gold-ink);border-color:transparent;box-shadow:0 6px 18px rgba(232,185,91,.3); }
+.scan-grid-bar .btn:disabled { opacity:.5;box-shadow:none; }
+.scan-grid-bar.is-select { position:static;flex-wrap:wrap;padding:2px 0 0;background:none; }
+.scan-grid-bar.is-select .btn:not(.ghost) { flex:1 1 150px; }
+.scan-select-bar > * { min-width:0; }
+.scan-grid-bar.is-select .scan-select-more[aria-expanded="true"] { width:52px;padding:0; }
+.scan-grid-bar.is-select .scan-select-more .ico { width:22px;height:22px;stroke-width:2.6; }
+@media (max-width:380px) { .scan-grid-bar.is-select .btn.ghost { padding:0 12px; } }
+.scan-select-bar { position:fixed;z-index:20;left:0;right:0;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));display:grid;gap:4px;max-height:calc(50vh - var(--nav-h) - env(safe-area-inset-bottom) - 2px);overflow:auto;padding:6px max(16px,calc((100% - 1196px) / 2)) 8px;border-top:1px solid var(--line);background:var(--surface); }
+.scan-select-row { display:flex;align-items:center;flex-wrap:wrap;gap:2px 8px; }
+.scan-select-label { flex:none;width:72px;font-size:12.5px;line-height:1.2;font-weight:700;color:var(--muted); }
+.scan-select-chips { display:flex;flex:1;flex-wrap:wrap;gap:6px;min-width:0; }
+.scan-select-chips .scan-chip { min-width:44px;padding:0 13px;border-radius:12px;background:var(--surface-2); }
+.scan-select-chips .scan-chip[aria-pressed="true"] { background:linear-gradient(180deg,#f3cd7c,#d9a743);color:var(--gold-ink);border-color:transparent;font-weight:800; }
+.scan-select-qty { display:inline-flex;align-items:center;border-radius:999px;border:1px solid var(--line);background:var(--surface-2); }
+.scan-select-qty button { width:44px;height:44px;border:0;border-radius:999px;background:transparent;color:var(--text);font-size:20px;font-weight:800;cursor:pointer; }
+.scan-select-qty button:disabled { opacity:.4;cursor:default; }
+.scan-select-qty output { min-width:44px;text-align:center;font-weight:800;font-size:15px; }
+.scan-select-remove { margin-left:auto;min-height:44px; }
+@media (min-width:1200px) { .scan-grid-bar,.scan-select-bar { bottom:env(safe-area-inset-bottom); } .scan-grid { grid-template-columns:repeat(auto-fill,minmax(136px,1fr)); } }
+@media (max-width:380px) { .scan-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .scan-select-label { width:100%; } .scan-select-chips .scan-chip { padding:0 11px; } }
+@media (min-width:700px) and (max-height:450px) { .scan-select-bar { grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;column-gap:16px;row-gap:4px;max-height:none;padding-top:4px;padding-bottom:4px; } .scan-select-bar .scan-grid-bar.is-select { grid-column:2; } .scan-select-bar .scan-grid-bar.is-select .btn { min-height:44px; } }
+/* Short landscape screens: the bars sit in the page flow, so the header, the cards and Save all stay reachable. */
+@media (max-height:520px) and (orientation:landscape) {
+  .scan-grid-bar,.scan-select-bar { position:static;max-height:none;padding:12px 0 0;border-top:0;background:none; }
+  .scan-select-bar { padding:10px 0 0;border-top:1px solid var(--line); }
+  .scan-workspace.is-grid,.scan-workspace.is-grid.is-selecting,.scan-workspace.is-grid:has(.scan-select-bar.is-open) { padding-bottom:16px; }
+}
+@media (max-height:450px) { .scan-confirm .printing-slide-art { height:min(32dvh,150px); } .scan-fix-figure img,.scan-fix-figure .img-missing { width:86px;height:120px; } .scan-fix-figure { width:86px; } }
+
+/* Fix card sheet: your photo beside the match, then finish, condition and copies as chips. */
+/* Fix card inside Your scans is a page: it scrolls like one, and Save docks above the nav like the grid bar. */
+#app .scan-confirm.is-fix-page { position:static;display:block;transform:none;width:auto;max-width:none;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;backdrop-filter:none;animation:none;overflow:visible; }
+#app .scan-confirm.is-fix-page .scan-confirm-body { overflow:visible;max-width:760px;margin:0 auto;padding:0; }
+#app .scan-confirm.is-fix-page > .scan-grid-head { gap:10px;justify-content:flex-start;margin:0 0 8px; }
+#app .scan-confirm.is-fix-page .scan-fix-compare { margin-top:4px; }
+.scan-grid-bar.scan-fix-bar { justify-content:center; }
+.scan-grid-bar.scan-fix-bar .btn:not(.ghost) { max-width:760px; }
+.scan-grid-bar.scan-fix-bar .btn.ghost { flex:none;white-space:nowrap; }
+/* The camera-mode sheet is header, scrolling body, footer: Save and Remove never sit on top of the chips. */
+.scan-confirm { display:flex;flex-direction:column;overflow:hidden; }
+.scan-confirm > header { flex:none; }
+.scan-confirm-body { flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;margin:0 -4px;padding:0 4px; }
+.scan-confirm > .scan-confirm-actions { position:static;flex:none;margin-top:8px;padding:10px 0 0;border-top:1px solid #ffffff14;background:none; }
+.scan-fix-compare { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:10px 0 6px; }
+.scan-fix-compare:has(> :only-child) { grid-template-columns:1fr; }
+.scan-fix-figure { position:relative;width:118px;margin:0;justify-self:center;display:grid;gap:6px;justify-items:center; }
+.scan-fix-figure img,.scan-fix-figure .img-missing { display:block;width:118px;height:165px;object-fit:cover;border-radius:10px;background:var(--surface);box-shadow:0 10px 24px rgba(0,0,0,.45); }
+.scan-fix-figure .img-missing { display:grid;place-items:center;font-size:12px;color:var(--muted);text-align:center; }
+.scan-fix-figure.is-match img { outline:2px solid var(--gold);outline-offset:2px; }
+.scan-fix-figure figcaption { font-size:12px;font-weight:700;line-height:1.25;color:var(--muted);text-align:center; }
+.scan-fix-state { position:absolute;top:8px;right:8px;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;font-size:14px;font-weight:800; }
+.scan-fix-state.is-ok { background:var(--good);color:#04150d; }
+.scan-fix-state.is-warn { background:var(--warn);color:var(--gold-ink); }
+.scan-fix-name { display:grid;gap:2px;margin:4px 0 2px;text-align:center; }
+.scan-fix-name b { font:800 18px/1.2 Manrope,sans-serif;letter-spacing:-.01em;overflow-wrap:anywhere; }
+.scan-fix-name span { font-size:13px;color:var(--muted); }
+.scan-fix-name span:empty { display:none; }
+.scan-fix-candidates { display:grid;gap:8px;margin-top:8px; }
+.scan-fix-candidates .scan-fix-figure.is-photo { width:72px; }
+.scan-fix-candidates .scan-fix-figure.is-photo img { width:72px;height:100px;border-radius:8px;box-shadow:0 6px 14px rgba(0,0,0,.4); }
+.scan-confirm .scan-confirm-conditions button { min-height:44px;border-radius:12px;font-size:13px; }
+.scan-confirm .scan-confirm-conditions [aria-pressed=true] { background:linear-gradient(180deg,#f3cd7c,#d9a743);color:var(--gold-ink); }
+.scan-confirm .ss-qty button { width:44px;height:44px;border-radius:12px; }
+.scan-confirm .ss-qty output { min-width:28px;text-align:center;font-weight:800;font-size:16px; }
+.scan-confirm-actions .btn.ghost { white-space:nowrap; }
+
+.scan-fix-photo-row { display:flex;align-items:center;gap:12px;margin:8px 0 2px;padding:8px 10px;border-radius:14px;background:var(--surface);border:1px solid var(--line); }
+.scan-fix-photo-row img { flex:none;width:52px;height:72px;object-fit:cover;border-radius:7px; }
+.scan-fix-photo-row span { font-size:13px;line-height:1.35;color:var(--muted); }

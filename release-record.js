@@ -1,7 +1,7 @@
-// Website 4.3.38 ships with Android 0.12.10 beta, which bundles this same website.
+// Website 4.3.39 ships with Android 0.12.11 beta, which bundles this same website.
 export const RELEASE = Object.freeze({
- id:'web-4.3.38-planeswalk-journal-android-0.12.10',date:'2026-10-30',webVersion:'4.3.38',
- changes:["Planeswalk: a run journal, a rank bar, shareable runs, attack previews on aim, 1x/2x battle speed, a text size setting, a guided first fight, and faster art loading.","Planeswalk plays sideways: landscape layouts for every play screen, a Pressure meter on runs, and a sweep of small fixes.","Scanning: an AI read of each photo races the on-device text reader for faster, more accurate matches in all three games, with a picture check for same-name printings. Turn it off in scanner settings (Read with AI).","Android app 0.12.10 beta brings this to the app."],
+ id:'web-4.3.39-scan-redesign-android-0.12.11',date:'2026-10-31',webVersion:'4.3.39',
+ changes:["Scanning redesign: snap many cards fast, see them all in one grid, fix only the ones that need a look, and add everything to your collection or a binder in one tap.","Magic matches: CPU turns play out beat by beat in about 4 seconds, like Arena, and one tap skips ahead. Also fixes a table freeze.","Every Magic match now plays sideways, on phones, tablets and computers, with a board laid out like Arena on a phone and 44px tap targets throughout.","Android app 0.12.11 beta brings this to the app."],
 
- android:Object.freeze({version:'0.12.10 beta',versionName:'0.12.10-beta',versionCode:46,interfaceVersion:'4.3.38',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.12.10.apk',bytes:59429676,sha256:'f40e87974d35ef1ad3d6f77988e0fb744b5943447a770dfa19839aa9a7af6fd3'})
+ android:Object.freeze({version:'0.12.11 beta',versionName:'0.12.11-beta',versionCode:47,interfaceVersion:'4.3.39',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.12.11.apk',bytes:59453943,sha256:'30f22880a161e77d49b60f5dc6570a109ca928cfe943afd2cc9fb2c0e261a747'})
 });

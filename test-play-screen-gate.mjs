@@ -1,7 +1,7 @@
 // Play on tablets and unfolded foldables: who is admitted, who sees the bigger-screen
 // notice, and how a match waits while the screen is too small.
 import assert from 'node:assert/strict';
-import {playScreenFits,playTyping,playDeviceEligibility,playDeviceGate,playScreenPauseApplies,playTableSupported,createPlayScreenPause,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
+import {playScreenFits,playTableFits,playTyping,playDeviceEligibility,playDeviceGate,playScreenPauseApplies,playTableSupported,createPlayScreenPause,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
 
 // Shortest side 600 CSS px or more, in either orientation.
 for(const [w,h] of [[820,1180],[1180,820],[884,1104],[1104,884],[744,1133],[1024,768],[600,600]])assert.equal(playScreenFits(w,h),true,`${w}x${h} fits`);
@@ -72,4 +72,7 @@ assert.equal(playScreenPauseApplies({Capacitor:{isNativePlatform:()=>true},navig
  quiet.update(false);quiet.destroy();advance(5000);assert.deepEqual(events,[],'a destroyed pause never expires');
 }
 assert.equal(PLAY_SMALL_SCREEN_LIMIT_MS,5*60*1000);
-console.log('PASS: tablets and unfolded foldables play in both orientations in every current browser, upright phones are asked to turn sideways and sideways phones play, desktops never pause, and the pause resumes, ticks and expires once.');
+// An open match is sideways only: upright phones and tablets wait, setup still admits them.
+assert.equal(playScreenFits(390,844),true);assert.equal(playTableFits(390,844),false);assert.equal(playTableFits(768,1024),false);
+assert.equal(playTableFits(844,390),true);assert.equal(playTableFits(1024,768),true);assert.equal(playTableFits(0,0),null);
+console.log('PASS: open matches are sideways only;  tablets and unfolded foldables play in both orientations in every current browser, upright phones are asked to turn sideways and sideways phones play, desktops never pause, and the pause resumes, ticks and expires once.');

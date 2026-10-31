@@ -455,3 +455,5 @@ body[data-view="settings"] .profile-menu>.sr-only{display:none}
 @media(min-width:1200px){body .topbar .home-search-pill>.home-ai-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}body .topbar .home-search-pill{grid-template-rows:minmax(0,1fr)}body .topbar .home-search-pill>input{grid-row:1;padding-top:9px;min-height:44px}body .topbar .home-search-pill>:not(.home-ai-label):not(input){grid-row:1}}
 /* Phones: a short fade above the pinned Play bar so the panel it covers reads as sliding under a dock, not as cut. */
 @media(max-width:700px){.pl-lobby .pl-startbar{position:sticky}.pl-lobby .pl-startbar::before{content:"";position:absolute;left:-20px;right:-20px;bottom:calc(100% - 1px);height:28px;background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--bg) 92%,transparent));pointer-events:none}}
+/* Room for the last letter's tracking, so the label never runs past its own box. */
+.cs-plate-label{padding-right:2px}

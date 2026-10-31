@@ -4,7 +4,7 @@ import {privateKey} from './account-scope.js';
 // Captures are staged, never collection writes. Mixed-game review survives reloads.
 // A failed storage write keeps the batch in memory and is surfaced by the UI.
 export const BATCH_LIMIT = 48;
-export const CAPTURE_BUFFER_LIMIT = 4;
+export const CAPTURE_BUFFER_LIMIT = 8; // Reads run in parallel while captures wait, so a fast scanner rarely fills this.
 // localStorage is shared with the rest of the app. These are conservative
 // application ceilings, not a promise that the browser has this much space.
 // A detailed 1280px card can exceed 256KB after JPEG/base64 encoding. Keep

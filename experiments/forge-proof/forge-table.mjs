@@ -352,7 +352,14 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function paintFan(){const fan=root.querySelector('.forge-hand-expand');if(!fan)return;const open=root.dataset.handExpanded==='true',count=root.querySelectorAll('.play-match-hand .play-match-card-wrap').length,label=open?'Close hand':`View full hand (${count})`;if(fan.textContent!==label)fan.textContent=label;fan.setAttribute('aria-pressed',String(open));}
  const saveInput=e=>{if(e.target.dataset?.nativeKey==='native-value'){const n=session.snapshot().native;nativeValueDraft={revision:n.revision,promptId:n.prompt?.id,value:e.target.value};}};
  root.addEventListener('input',saveInput);root.addEventListener('change',saveInput);
- const observer=new MutationObserver(()=>enhance());observer.observe(root,{childList:true,subtree:true});
+ // The board fitter adds, relabels and removes a crowded lane's "+N" chip itself. Those changes must not
+ // start another pass: the fitter measures the lane twice (natural width, then fitted) and the two can
+ // disagree on the count, which re-ran the fitter forever and froze the table (seen at 740x360).
+ // Effects laid over the table (impact rings, life deltas, the rope, the emote button that mounts after
+ // each redraw) don't move the board either; each extra pass is a full layout, and a CPU turn redraws per beat.
+ const overlay=n=>n.classList?.contains('forge-lane-more')||n.classList?.contains('forge-fx-ring')||n.classList?.contains('forge-life-delta')||n.classList?.contains('forge-rope')||n.classList?.contains('forge-emote-button');
+ const fitterOnly=list=>list.every(m=>m.target.classList?.contains('forge-lane-more')||[...m.addedNodes,...m.removedNodes].every(overlay));
+ const observer=new MutationObserver(list=>{if(!fitterOnly(list))enhance();});observer.observe(root,{childList:true,subtree:true});
  // Cards keep their engine identity between renders, so a card that moves (hand to
  // battlefield, a lane change) glides from where it was to where Forge put it, and a
  // permanent that appears from nowhere fades in. Purely visual; placement is Forge's.
@@ -462,7 +469,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   }
   // 3b. Declared: a new attacker surges forward toward what it attacks and settles; a new blocker
   // steps across to meet its attacker with a blue shield flash. Arrows then hold the pairing.
-  const lean=(el,to,amount,ms)=>{const w=el?.closest('.play-match-card-wrap'),r=rectOf(el),t=rectOf(to);if(!w||!r)return;const dx=t?(t.left+t.width/2-(r.left+r.width/2))*amount:0,dy=t?(t.top+t.height/2-(r.top+r.height/2))*amount:0;
+  // The surge is measured in card sizes, not screen pixels: a far target on a big screen otherwise threw a
+  // small fitted card most of a slot sideways, over its neighbour. It leans mostly forward, out of its row.
+  const lean=(el,to,amount,ms)=>{const w=el?.closest('.play-match-card-wrap'),r=rectOf(el),t=rectOf(to);if(!w||!r)return;let dx=t?(t.left+t.width/2-(r.left+r.width/2))*amount:0,dy=t?(t.top+t.height/2-(r.top+r.height/2))*amount:0;
+   dx*=.15;const len=Math.hypot(dx,dy),cap=r.height*.22;if(len>cap){dx*=cap/len;dy*=cap/len;}
    w.animate([{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(1.08)`,offset:.45},{transform:'none'}],{duration:ms,easing:'cubic-bezier(.3,.1,.3,1)'});};
   b.cards.filter(c=>onField(c)&&c.attacking&&was.get(c.id)?.zone==='Battlefield'&&!was.get(c.id)?.attacking).slice(0,8).forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(!el?.isConnected)return;
    const to=c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seatEl(defenderOf(b.players,c));
@@ -506,6 +516,12 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Over a decision the story is told in the activity line and the stack's arrows; a spotlight
   // there would cover the very prompt it explains.
   if(playback?.overlay){updateActivity();return;}
+  // A land has no spotlight: it drops into its row (the staged board moves it) and the line says so.
+  // A turn change is shown by the staged board's own turn banner; a second one would repeat it.
+  if(beat.kind==='land'||beat.tone==='turn'){queueArrows();updateActivity();return;}
+  // An attack is told by the swing and its arrow, as on Arena, and its damage by the falling life total;
+  // a banner there would cover the attackers or the CPU's front row.
+  if(beat.tone==='attack'||beat.tone==='damage'&&beat.combat){queueArrows();updateActivity();return;}
   if(beat.kind==='phase'){
    const banner=doc.createElement('div');banner.className='forge-playback-status';banner.setAttribute('role','status');banner.textContent=beat.label;if(beat.tone)banner.dataset.tone=beat.tone;mat?.append(banner);
   }else if(beat.card){
@@ -513,11 +529,14 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    castShow.innerHTML=`<figure>${art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:''}</figure><p><span>${esc(beat.label)}</span><strong>${esc(c.name)}</strong></p>${beat.text?`<div class="forge-cast-text">${symbolText(beat.text)}</div>`:''}`;
    // Drawn art sits under the photo, so a slow image never leaves the spotlight blank for its beat.
    castShow.querySelector('figure').prepend(drawnArtwork(doc,c,surfaceColors(c)));
-   castShow.dataset.open='true';castShow.dataset.kind=beat.kind;
+   castShow.dataset.open='true';castShow.dataset.kind=beat.kind;doc.body.dataset.forgeSpotlight='true';
   }
   queueArrows();updateActivity();
  }
- function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
+ // The spotlight's photo starts loading when the story is queued, not when its beat opens.
+ const preloaded=new Set();
+ function preloadBeatArt(beats){for(const b of beats){if(!b.card||b.kind==='land')continue;const url=resolvePracticeArtwork(b.card)?.imageUrl;if(!url||preloaded.has(url))continue;if(preloaded.size>200)preloaded.clear();preloaded.add(url);const img=new win.Image();img.referrerPolicy='no-referrer';img.decoding='async';img.src=url;}}
+ function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';delete doc.body.dataset.forgeSpotlight;root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
  let activityKey='';
  // Like Snap and Master Duel, CPU turns can play at Normal or Fast; the choice stays on this device.
  const SPEED_KEY='cardstashy-cpu-speed';let cpuSpeed='normal';try{if(win.localStorage?.getItem(SPEED_KEY)==='fast')cpuSpeed='fast';}catch{/* blocked storage keeps Normal */}
@@ -619,8 +638,16 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  }
  function closeLaneTray(){const tray=root.querySelector(':scope>.forge-lane-tray');if(!tray)return;doc.removeEventListener('pointerdown',tray._away,true);tray.remove();}
  const growLimit=()=>Math.min(win.innerWidth,win.innerHeight)<600&&win.matchMedia?.('(pointer:coarse)').matches?1.7:1;
+ // Tall touch screens lift the turn buttons above a full-width hand (play-forge-table.css), into your side's lower edge.
+ const raisedDock=()=>!!win.matchMedia?.('(hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px)').matches;
+ // A side that changes size after the fit (fonts landing, a chip appearing, 130% text) fits again.
+ let boardSizes=null;const boardSeen=new Map(),boardKey=a=>a.dataset.seat||a.className,boardSize=a=>`${a.offsetWidth}x${a.offsetHeight}`;
  function fitBoard(){
   boardFrame=0;if(closed||!presentation.hosted)return;
+  // A redraw replaces the sides, and a newly observed box always reports its size once; only a size this
+  // fit has not seen yet fits again (each fit is a full layout pass, so a redraw must not cost three).
+  if(typeof ResizeObserver==='function'){boardSizes??=new ResizeObserver(list=>{if(list.some(e=>e.target.isConnected&&boardSeen.get(boardKey(e.target))!==boardSize(e.target)))queueBoard();});boardSizes.disconnect();
+   for(const a of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area,.play-match-hand-area')){boardSeen.set(boardKey(a),boardSize(a));boardSizes.observe(a);}}
   // Your side stops above your hand where it rests, not where a lift or a popped card has carried it, so
   // hovering the hand never shrinks the board. Both sides then share one scale, so cards read the same size.
   const g=handGeometry(),rest=g?g.wraps.map(w=>{const l=g.local(w);return {top:g.box.top+l.y,left:g.box.left+l.x,right:g.box.left+l.x+l.w,width:l.w};}):[];
@@ -630,15 +657,20 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Where the board is laid out on its own (a Fold opened up), it ends above the stack strip and the hand
   // slider instead of running under them, so both sides lay out in the room that is left.
   {const bf=root.querySelector('.play-match-battlefields');if(bf){bf.style.removeProperty('bottom');const floats=[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()).filter(r=>r.height);
-   if(floats.length&&getComputedStyle(bf).position==='absolute'){const top=Math.min(...floats.map(r=>r.top)),b=bf.getBoundingClientRect();if(b.bottom>top-6)bf.style.setProperty('bottom',`${Math.round(parseFloat(getComputedStyle(bf).bottom)+b.bottom-top+6)}px`,'important');}}}
+   // Only a strip that runs under the board counts: a side panel beside it (the stack in a sideways
+   // phone's right column) starts above the board's middle and would otherwise squeeze the board to nothing.
+   const b=bf.getBoundingClientRect(),under=floats.filter(r=>r.right>b.left&&r.left<b.right&&r.top>b.top+b.height/2);
+   if(under.length&&getComputedStyle(bf).position==='absolute'){const top=Math.min(...under.map(r=>r.top));if(b.bottom>top-6)bf.style.setProperty('bottom',`${Math.round(parseFloat(getComputedStyle(bf).bottom)+b.bottom-top+6)}px`,'important');}}}
   // A Commander pod's CPU side holds one board per opponent: the one on show, or all of them side by side.
   const zonesOf=area=>{const all=[...area.querySelectorAll(':scope>.play-match-zone')];for(const z of all){z.style.removeProperty('transform');z.style.removeProperty('width');delete z.dataset.scaled;}return all.filter(z=>z.getClientRects().length);};
   for(const area of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area'))for(const zone of zonesOf(area)){
    const columns=area.querySelectorAll(':scope>.play-match-zone').length>1&&getComputedStyle(area).display==='grid';
    // Your side stops above your hand; the CPU's stops below its row of card backs.
-   // On a portrait screen the stack strip and the hand slider float over your side, so it stops above them too.
-   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect())]:[...root.querySelectorAll('.play-match-opponent-fan,.play-pod-rail')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
-   const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+4)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
+   // On a portrait screen the stack strip and the hand slider float over your side, so it stops above them too;
+   // a sideways phone's hand button and control emblems sit just over the hand, and a tall screen's turn buttons
+   // ride above it, so it stops above those as well.
+   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()),...[...root.querySelectorAll('.forge-hand-expand,.forge-control-emblem')].map(n=>n.getBoundingClientRect()),...[...(raisedDock()?root.querySelectorAll('.play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search))'):[])].map(n=>n.getBoundingClientRect()).filter(r=>r.height&&r.top>box.top+40)]:[...root.querySelectorAll('.play-match-opponent-fan,.play-pod-rail')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
+   const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+8)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
    const W=columns?Math.floor(zone.getBoundingClientRect().width):area.clientWidth,H=Math.min(area.clientHeight,Math.round(bottom-top))-(columns?22:0);if(!W||H<=0)continue;
    // Side-by-side lanes (a grid) have fixed boxes: a row that spills out of its lane shrinks inside it.
    const fitRows=()=>{for(const row of zone.querySelectorAll('.play-match-card-row')){row.style.removeProperty('transform');const lane=row.closest('.play-match-lane'),h=lane?.clientHeight||0;
@@ -649,38 +681,56 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     const wraps=[...row.querySelectorAll(':scope>.play-match-card-wrap')];let more=row.querySelector(':scope>.forge-lane-more');for(const w of wraps)if(w.hidden)w.hidden=false;
     let kr=scaleOf();
     if(kr<.62&&wraps.length>=4){let keep=Math.max(1,Math.floor(wraps.length*(kr/.75)**2)-1);
-     if(!more){more=doc.createElement('button');more.type='button';more.className='forge-lane-more';more.dataset.nativeKey='lane-more';more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const row=more.parentElement,k=Number(more.dataset.keep)||0;openLaneTray([...row.querySelectorAll(':scope>.play-match-card-wrap')].slice(k),more);});row.append(more);}
+     if(!more){more=doc.createElement('button');more.type='button';more.className='forge-lane-more';more.dataset.nativeKey='lane-more';more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const row=more.parentElement,k=Number(more.dataset.keep)||0;openLaneTray([...row.querySelectorAll(':scope>.play-match-card-wrap')].slice(k),more);});row.append(more);}more.hidden=false;
      const fold=k=>{wraps.forEach((w,i)=>{const hide=i>=k;if(w.hidden!==hide)w.hidden=hide;});const label=`+${wraps.length-k}`;if(more.textContent!==label){more.textContent=label;more.setAttribute('aria-label',`${wraps.length-k} more cards`);}more.dataset.keep=String(k);};
      fold(keep);while(keep>1&&scaleOf()<.72){keep--;fold(keep);}kr=scaleOf();}
     else if(more)more.remove();
     if(kr<.995){row.style.transformOrigin='top center';row.style.transform=`scale(${kr.toFixed(3)})`;}}};
    // On a phone the pieces start small; a board with room to spare grows them to fill it (Arena's cards fill the table).
-   // The largest scale whose reflowed layout (rows wrap at width W/k) still fits both ways, found by halving.
-   fitRows();const fitsAt=k=>{zone.style.width=`${W/k}px`;return zone.scrollHeight*k<=H+1&&zone.scrollWidth*k<=W+1;};let k=growLimit();if(!fitsAt(k)){let lo=.4,hi=k;for(let i=0;i<6;i++){const mid=(lo+hi)/2;if(fitsAt(mid))lo=mid;else hi=mid;}k=lo;}
-   fits.push({area,zone,own,W,k,fitRows});
+   // The largest scale whose reflowed layout (rows wrap at width W/k) still fits both ways. Height is not monotonic in
+   // k (a wider layout grows its pieces until a back row joins the lands), so step down to the first fit, then refine.
+   // Trials measure every row unscaled and unfolded, the same way on every pass, so the result never depends on
+   // what the previous pass folded (a fold adds or removes a chip, which redraws the table and fits again).
+   const rows=[...zone.querySelectorAll('.play-match-card-row')];
+   const fitsAt=k=>{zone.dataset.scaled='true';zone.style.width=`${W/k}px`;for(const r of rows){r.style.removeProperty('transform');for(const w of r.querySelectorAll(':scope>.play-match-card-wrap[hidden]'))w.hidden=false;const more=r.querySelector(':scope>.forge-lane-more');if(more)more.hidden=true;}return zone.scrollHeight*k<=H+1&&zone.scrollWidth*k<=W+1;};let k=growLimit();
+   if(!fitsAt(k)){let lo=.4,hi=k;for(let t=k-.05;t>.4;t-=.05)if(fitsAt(t)){lo=t;hi=t+.05;break;}for(let i=0;i<3;i++){const mid=(lo+hi)/2;if(fitsAt(mid))lo=mid;else hi=mid;}k=lo;}
+   fits.push({area,zone,own,W,H,k,fitRows,drop:own?0:Math.max(0,top-box.top)});
   }
-  const k=Math.min(growLimit(),...fits.map(f=>f.k));
-  for(const f of fits){const {area,zone,own,W,fitRows}=f;
-   if(Math.abs(k-1)<.005){zone.style.removeProperty('width');fitRows();continue;}
-   zone.style.width=`${W/k}px`;fitRows();
-   const h=zone.scrollHeight*k,lift=own||area.querySelectorAll(':scope>.play-match-zone').length>1?0:Math.max(0,area.clientHeight-h);
-   zone.dataset.scaled='true';zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
-  }
+  // A row that fits its lane at one width can fold or shrink differently at another, so the shared scale is checked
+  // once laid out and stepped down until every side really fits.
+  let k=Math.min(growLimit(),...fits.map(f=>f.k));
+  for(let pass=0;pass<8;pass++){let over=false;
+   for(const f of fits){const {area,zone,own,W,H,fitRows,drop}=f;
+    if(Math.abs(k-1)<.005){zone.style.removeProperty('width');zone.style.removeProperty('transform');delete zone.dataset.scaled;fitRows();if(drop)zone.style.transform=`translateY(${drop.toFixed(1)}px)`;if(zone.scrollHeight>H+1)over=true;continue;}
+    zone.dataset.scaled='true';zone.style.width=`${W/k}px`;fitRows();
+    // The CPU side settles toward the divider, leaving room for keyword badges hanging under its cards.
+    const h=zone.scrollHeight*k,lift=own?0:area.querySelectorAll(':scope>.play-match-zone').length>1?drop:Math.max(0,area.clientHeight-h-10);if(h>H+1)over=true;
+    zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
+   }
+   if(!over||k<=.4)break;k=Math.max(.4,k-.04);}
+  // A pile's top card shows its name only when the whole name fits; otherwise the ×N badge and art carry it
+  // (the full name stays in its title, label and peek), so a cut-off name never pokes out over the pile.
+  for(const n of root.querySelectorAll('.play-match-battlefields .play-match-card-wrap[data-pile-top=true] .play-match-card-name')){const cut=n.scrollWidth>n.clientWidth+1;if(n.hasAttribute('data-cut')!==cut)n.toggleAttribute('data-cut',cut);}
+  // Target rings and aim lines follow the cards to wherever this fit (or a later resize refit) put them.
+  queueArrows();
  }
  const queueBoard=()=>{if(!boardFrame)boardFrame=win.requestAnimationFrame(fitBoard);};
  win.addEventListener('resize',queueBoard);
  const queueRails=()=>{if(!railFrame)railFrame=win.requestAnimationFrame(fitRails);};
  win.addEventListener('resize',queueRails);
- function renderAccepted(s,blocked=false){
+ // A held board normally redraws without motion; a CPU playback beat (staged) moves it as it goes.
+ function renderAccepted(s,blocked=false,staged=false){
   const previous=displayed,lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
   const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null;
   const before=presentation.hosted?positions():null,leaving=presentation.hosted?new Map([...root.querySelectorAll('.play-match-card[data-instance]')].map(el=>[el.dataset.instance,el.closest('.play-match-card-wrap')||el])):null;
-  localError='';table.render(session.snapshot());enhance();if(root.dataset.stage==='match')emotes?.mount();
+  localError='';table.render(session.snapshot());enhance();observer.takeRecords();if(root.dataset.stage==='match')emotes?.mount();
   // The stylesheet scopes the Forge table by this attribute. It changes only when the
   // native panel comes or goes, unlike a :has() test that rechecks the whole table each redraw.
   root.toggleAttribute('data-forge-native',!!root.querySelector('.forge-native-panel'));
   doc.body.toggleAttribute('data-forge-search',!!root.querySelector('.forge-zone-search'));
-  if(before&&!blocked){glide(before);boardEffects(previous,s,before,leaving);}
+  // While a full-screen sheet asks (a library search, ordering triggers), the board behind it is out of reach.
+  {const main=root.querySelector(':scope>.play-match-main'),sheet=!!root.querySelector('.forge-zone-search,.forge-order-cards');if(main&&main.inert!==sheet)main.inert=sheet;}
+  if(before&&(!blocked||staged)){glide(before);boardEffects(previous,s,before,leaving);}
   if(presentation.hosted)tableAudio.update(previous,s);
   // Arena's low-life state: under 10 life the portrait cracks, under 6 it also bleeds a slow red glow.
   if(presentation.hosted)for(const p of s.status?.surface?.players||[]){const seat=seatEl(p.seat),band=typeof p.life!=='number'?'':p.life<=5?'critical':p.life<10?'low':'';if(seat&&(seat.dataset.lifeBand||'')!==band){if(band)seat.dataset.lifeBand=band;else delete seat.dataset.lifeBand;}}
@@ -713,7 +763,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const mine=surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===surface.seat),k=mode==='attack'?mine.filter(c=>c.attacking).length:mine.filter(c=>c.blockingIds?.length||c.blocking).length;
   const key=`${mode}|${k}`;if(!line){line=combatLine=doc.createElement('div');line.className='forge-combat-line';line.setAttribute('aria-hidden','true');}const mat=root.querySelector('.play-match-mat');if(mat&&line.parentElement!==mat){if(line.parentElement||line.dataset.key)line.dataset.settled='';mat.append(line);}
   if(line.dataset.key!==key){line.dataset.key=key;line.dataset.mode=mode;line.innerHTML=k?`<i></i><span><b>${k}</b><small>${mode==='attack'?'attacking':'blocking'}</small></span>`:'<i></i><i></i>';}
-  const r=zone.getBoundingClientRect(),v=`${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}`;if(line.dataset.at!==v){line.dataset.at=v;line.style.left=Math.round(r.left)+'px';line.style.top=Math.round(r.top)+'px';line.style.width=Math.round(r.width)+'px';}
+  // Measured on your side's box, not the zone: the zone is laid out wider and scaled down, so its box changes mid-fit.
+  const r=(zone.closest('.play-match-seat-area')||zone).getBoundingClientRect(),v=`${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}`;if(line.dataset.at!==v){line.dataset.at=v;line.style.left=Math.round(r.left)+'px';line.style.top=Math.round(r.top)+'px';line.style.width=Math.round(r.width)+'px';}
  }
  let manaOpen=false;
  const PHASE_STEPS=[['Upkeep',['Untap','Upkeep']],['Draw',['Draw']],['Main',['PreCombatMain']],['Combat',['BeginningOfCombat','DeclareAttackers','DeclareBlockers','FirstStrikeDamage','CombatDamage','EndCombat']],['Main 2',['PostCombatMain']],['End',['End','Cleanup']]];
@@ -723,7 +774,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(!track){track=doc.createElement('div');track.className='forge-phase-track';track.setAttribute('role','status');mat.append(track);}
   if(track.dataset.key===key)return;track.dataset.key=key;track.dataset.owner=owner;
   const step=PHASE_STEPS[at]?.[0]||'';track.setAttribute('aria-label',`${owner==='you'?'Your':'CPU'} turn ${surface.turn}${step?', '+step:''}`);
-  track.innerHTML=`<b>${owner==='you'?'You':'CPU'} · Turn ${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
+  track.innerHTML=`<b><span class="forge-phase-who">${owner==='you'?'You':'CPU'} · </span>Turn ${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
  }
  const trackerSeen=new Map(),trackerOpen={deck:false,opponent:false},trackerIdentity=new Map();
  // The deck-list name of one physical card. Forge keeps a card's id when it transforms or becomes a
@@ -879,7 +930,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(idleKey===key)return;idleKey=key;clearTimeout(idleTimer);
   idleTimer=setTimeout(()=>{idleTimer=0;const now=session.snapshot();if(closed||!idleReady(now)||now.native.revision!==n.revision)return;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?250:900);
  }
- playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,reducedMotion,speed:()=>cpuSpeed==='fast'?.45:1.3});
+ playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,preload:preloadBeatArt,reducedMotion,speed:()=>cpuSpeed==='fast'?.5:1});
  // A tap skips held playback. Playback over a decision never holds the board, so a tap there
  // only clears the spotlight and goes on to whatever was tapped.
  const skipPlayback=e=>{if(!playback.running||e.button>0)return;if(playback.overlay){playback.stop();return;}suppressUntil=Date.now()+400;playback.flush();};
@@ -1285,7 +1336,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function placeHandSlider(hand){const slider=root.querySelector(':scope>.forge-hand-slider');if(!slider||!hand.length||root.dataset.handLift==='true')return;
   const rects=hand.map(w=>(w.querySelector('.play-match-card')||w).getBoundingClientRect()),pill=root.querySelector('.forge-hand-expand')?.getBoundingClientRect(),cardTop=Math.min(...rects.map(r=>r.top));
   const l=Math.max(16,Math.min(...rects.map(r=>r.left))),r=Math.min(win.innerWidth-16,Math.max(...rects.map(r=>r.right)),pill?.width?pill.left-8:Infinity),top=Math.min(pill?.height?pill.top+pill.height/2-22:Infinity,cardTop-8-44);
-  slider.style.left=`${Math.round(l)}px`;slider.style.width=`${Math.round(Math.max(120,r-l))}px`;slider.style.right='auto';slider.style.top=`${Math.round(top)}px`;}
+  // A turn dock that reaches down beside the hand (a tall touch screen) ends the slider at its left edge.
+  const dock=root.querySelector('.play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search))')?.getBoundingClientRect(),end=dock?.height&&dock.top<top+44&&dock.bottom>top&&dock.left>l?Math.min(r,dock.left-8):r;
+  // A hand squeezed too narrow for a slider beside its expand pill drops the slider; the pill opens the whole hand.
+  slider.style.display=end-l<120?'none':'';
+  slider.style.left=`${Math.round(l)}px`;slider.style.width=`${Math.round(Math.max(120,end-l))}px`;slider.style.right='auto';slider.style.top=`${Math.round(top)}px`;}
  function layoutHand(){const g=handGeometry();if(!g)return;const fi=g.wraps.indexOf(handFocus);
   for(const w of g.wraps){if(w!==handFocus)w.removeAttribute('data-hand-focus');}
   if(fi<0){delete root.dataset.handFocused;handFocusRect=null;}else root.dataset.handFocused='true';
@@ -1378,5 +1433,5 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   rope.style.setProperty('--burn',(left/ROPE_RUN).toFixed(3));rope.dataset.hot=String(secs<=10);const b=rope.querySelector('b');if(secs<=10&&b.textContent!==String(secs)){b.textContent=String(secs);if(secs<=5)haptic('tick');}else if(secs>10)b.textContent='';
  },200):0;
  doc.addEventListener('pointerdown',ropeReset,true);doc.addEventListener('keydown',ropeReset,true);doc.addEventListener('visibilitychange',ropeReset);
- return {destroy(){closed=true;doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {destroy(){closed=true;boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }

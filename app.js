@@ -19,6 +19,7 @@ import {forgeDeckSupport,forgeCpuDeckComplete} from './play-forge-setup-review.j
 import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
 import {setPlaymatChoice,mountPlaymatScene,nextPlaymat,unmountPlaymatScene} from './play-playmats.js';
+import {lockPlayLandscape,releasePlayOrientation} from './play-orientation.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {createPlayerMat} from './play-player-mat.js';
 import {createPlayUpdateGate} from './play-update-gate.js';
@@ -1591,7 +1592,7 @@ A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profil
 // pass. The account/table lifecycle below is testable independently of activation.
 const PLAY_MATCH_RELEASE_READY=true;
 let playerMatHost=null,playerMatRoot=null,practicePregame=null,playStarting=false;
-function closePlayerMat(){setMusic("play",null);practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;unmountPlaymatScene();document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
+function closePlayerMat(){setMusic("play",null);void releasePlayOrientation();practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;unmountPlaymatScene();document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
 // A failed Play download must never leave the app inert behind an empty layer.
 // The screen offers Return (restores the app) and Reload (fetches the current
 // release, which also covers an old page asking for a chunk a deploy removed).
@@ -1623,7 +1624,7 @@ A.playStartCandidate=async()=>{
  if(FORGE_PLAY_TEST_ENABLED){const names=await loadEngineCardNames(),seats=playSetup.snapshot();for(const [deck,label] of [[seats.selected,'Your deck'],[seats.opponent,'The CPU deck'],...(seats.extraOpponents||[]).map(o=>[o.deck,'A CPU deck'])]){const unknown=engineUnknownCards(deck,names);if(unknown.length){quickStatus={busy:false,error:engineMissingText(label,unknown)};return refreshPlayMenu();}}}
  if(await playUpdates.beforeMatch())return; // The page reopens Play on the current release.
  if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
- playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
+ playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');void lockPlayLandscape();const app=document.getElementById('app');if(app)app.inert=true;
  const beginGame=async options=>{
   practicePregame?.destroy();practicePregame=null;
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
@@ -6452,6 +6453,8 @@ const scanCtx = {
   details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };
 scanCtx.aiAccount=()=>!!cloudInfo().user;
+// The scanner's "Add to" chips: remember a place or make a binder for it, in the same commit path as the collection.
+scanCtx.rememberLocation=(g,name,{createBinder=false}={})=>commit(s=>{rememberLocation(s,g,name,{createBinder});},{rerender:false});
 scanCtx.lookupCandidates=createScannerLookup({requestMagic:api,sources:T.SOURCES,candById:scanCtx.candById,match:scanCtx.match});
 registerScanner(scanCtx);
 

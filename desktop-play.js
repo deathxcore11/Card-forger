@@ -5,9 +5,9 @@ export const PLAY_TOUCH_MIN_EDGE = 600;
 // On touch devices the table fits when its shortest side has room: tablets and
 // unfolded foldables in either orientation. A phone (or a folded cover screen) fits
 // held sideways, where the table has its own compact phone layout, the way Arena
-// plays on a phone. Held upright it fits too, with its own portrait layout; the table
-// follows however the phone is held and never forces a turn. Size alone decides: browsers
-// report no hinge or fold state.
+// plays on a phone. Held upright it is admitted so setup works either way; the match
+// itself turns the device sideways (play-orientation.js, playTableFits). Size alone
+// decides: browsers report no hinge or fold state.
 export const PLAY_PHONE_MIN = {width:640, height:300, ratio:1.5};
 export const playPhoneSideways=(width,height)=>width>=PLAY_PHONE_MIN.width&&height>=PLAY_PHONE_MIN.height&&width>=height*PLAY_PHONE_MIN.ratio;
 export function playScreenFits(width, height, {screenMin=0, typing=false}={}) {
@@ -16,7 +16,7 @@ export function playScreenFits(width, height, {screenMin=0, typing=false}={}) {
   if(typing)return width>=PLAY_TOUCH_MIN_EDGE;
   if(Math.min(width,height)>=PLAY_TOUCH_MIN_EDGE)return true;
   if(playPhoneSideways(width,height))return true;
-  // Upright phones get the portrait table.
+  // Upright phones can set up a match; the table turns them sideways.
   if(playPhoneSideways(height,width))return true;
   // A tablet held sideways loses height to the browser's own bars; its screen still decides.
   return screenMin>=PLAY_TOUCH_MIN_EDGE&&width>=PLAY_TOUCH_MIN_EDGE&&height>=520;
@@ -24,9 +24,15 @@ export function playScreenFits(width, height, {screenMin=0, typing=false}={}) {
 const NOT_TEXT=new Set(['button','checkbox','radio','range','submit','reset','file','color','image','hidden']);
 export const playTyping=el=>!!el&&(el.isContentEditable===true||el.tagName==='TEXTAREA'||el.tagName==='INPUT'&&!NOT_TEXT.has(String(el.type||'text').toLowerCase()));
 const screenMinOf=view=>{try{return Math.min(Number(view.screen?.width)||0,Number(view.screen?.height)||0);}catch{return 0;}};
-export function readPlayScreen(view=globalThis,root=view.document) {
-  const width=root?.documentElement?.clientWidth||view.innerWidth||0,height=root?.documentElement?.clientHeight||view.innerHeight||0;
-  return {width,height,fits:playScreenFits(width,height,{screenMin:screenMinOf(view),typing:playTyping(root?.activeElement)})};
+// An open match is sideways only (Randall, 30 Oct): an upright phone or tablet waits under the
+// "turn sideways" notice. Setup screens still follow however the device is held.
+export function playTableFits(width,height,options={}) {
+  const fits=playScreenFits(width,height,options);
+  return fits===true&&height>width?false:fits;
+}
+export function readPlayScreen(view=globalThis,root=view.document,{table=false}={}) {
+  const width=root?.documentElement?.clientWidth||view.innerWidth||0,height=root?.documentElement?.clientHeight||view.innerHeight||0,options={screenMin:screenMinOf(view),typing:playTyping(root?.activeElement)};
+  return {width,height,fits:(table?playTableFits:playScreenFits)(width,height,options)};
 }
 // The table's layout needs container queries, :has() and pointer events. Every current
 // tablet browser has them (Chrome, Samsung Internet, Edge, Opera, Firefox, Safari);

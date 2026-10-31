@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-pw-improve-v394";
+const CACHE = "cardforge-shell-scan-redesign-v395";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
@@ -28,6 +28,7 @@ const ASSETS = [
   "./play-token-art.js",
   "./play-token-printing.js",
   "./play-playmats.js",
+  "./play-orientation.js",
   "./experiments/forge-proof/native-panel.mjs",
   "./experiments/phase-engine/choice-presentation.mjs",
   "./play-card-support.js",
@@ -282,6 +283,7 @@ const ASSETS = [
   "./zoom.js",
   "./scansession.js",
   "./scancam.js",
+  "./scan-grid.js",
   "./scan-batch.js",
   "./scan-catalog.js",
   "./scan-collector.js",

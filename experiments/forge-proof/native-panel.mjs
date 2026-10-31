@@ -122,7 +122,7 @@ const cpuName=msg=>String(seatWords(msg)).replace(/Forge AI\b.*?\s(?=(?:revealed
 export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
  const doc=container.ownerDocument,s=snapshot,n=s.native;if(!n)return;
  // On phones the dock is transformed, so a fixed ask line inside it can't float above the hand; this body-level line does.
- const askLine=text=>{if(!doc.body)return;let line=doc.body.querySelector(':scope>.forge-ask-line');if(!line){line=doc.createElement('div');line.className='forge-ask-line';line.setAttribute('role','status');line.setAttribute('aria-live','polite');doc.body.append(line);}line.textContent=text;line.hidden=!text;};askLine('');
+ const askLine=text=>{if(!doc.body)return;let line=doc.body.querySelector(':scope>.forge-ask-line');if(!line){line=doc.createElement('div');line.className='forge-ask-line';line.setAttribute('role','status');line.setAttribute('aria-live','polite');doc.body.append(line);}line.textContent=text;line.title=text;line.hidden=!text;};askLine('');
  const copy=(player,proof)=>presentation.hosted?player:proof;
  const phaseNames={UNTAP:'Untap',UPKEEP:'Upkeep',DRAW:'Draw',MAIN1:'Main phase',COMBAT_BEGIN:'Beginning of combat',COMBAT_DECLARE_ATTACKERS:'Choose attackers',COMBAT_DECLARE_BLOCKERS:'Choose blockers',COMBAT_FIRST_STRIKE_DAMAGE:'First strike damage',COMBAT_DAMAGE:'Combat damage',COMBAT_END:'End of combat',MAIN2:'Second main phase',END_OF_TURN:'End step',CLEANUP:'Cleanup'};
  const node=(tag,text,cls)=>{const e=doc.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
@@ -221,13 +221,13 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   const wasOpen=!!container.querySelector?.('.forge-zone-search-dialog');keepStripLeft=wasOpen?container.querySelector('.forge-zone-search-cards')?.scrollLeft||0:0;
   const overlay=node('div',undefined,'forge-zone-search'),dialog=node('section',undefined,'forge-zone-search-dialog');
   dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label',`${zoneSearch.zones.join(' / ')} card selection`);
-  const heading=node('h2',presentation.hosted&&lines[0]?cpuName(lines[0]):lines[0]||`Choose from ${zoneSearch.zones.join(' / ')}`);heading.tabIndex=-1;heading.dataset.nativeKey='zone-search-title';dialog.append(heading);
+  const heading=node('h2',presentation.hosted&&lines[0]?cpuName(lines[0]):lines[0]||`Choose from ${zoneSearch.zones.join(' / ')}`);heading.title=heading.textContent;heading.tabIndex=-1;heading.dataset.nativeKey='zone-search-title';dialog.append(heading);
   if(lines.length>1)dialog.append(node('p',presentation.hosted?lines.slice(1).map(cpuName).join('\n'):lines.slice(1).join('\n'),'forge-zone-search-instruction'));
   dialog.append(node('p',`Choose from the ${zoneSearch.choices.length} card${zoneSearch.choices.length===1?'':'s'} offered by this effect.`,'forge-zone-search-hint'));
   const selected=zoneSearch.kind==='prompt'?(s.nativeDraft?.revision===n.revision&&s.nativeDraft?.promptId===p.id?s.nativeDraft.indexes:[]):(n.selection?.chosen||[]).filter(r=>r.kind==='card').map(r=>r.id);
   const expectedRevision=n.revision,expectedPromptId=p?.id;
   const currentPrompt=fn=>()=>{const latest=session.snapshot();if(latest.native?.revision!==expectedRevision||latest.native?.prompt?.id!==expectedPromptId)throw Error('STALE_CHOICE');return fn();};
-  const row=node('div',undefined,'forge-zone-search-cards');row.setAttribute('role','group');row.setAttribute('aria-label','Eligible cards');
+  const row=node('div',undefined,'forge-zone-search-cards');row.dataset.auditScroll='';row.setAttribute('role','group');row.setAttribute('aria-label','Eligible cards');
   for(const choice of zoneSearch.choices){
    const chosen=selected.includes(zoneSearch.kind==='prompt'?choice.index:choice.cardId),pick=zoneSearch.kind==='prompt'?currentPrompt(()=>session.selectPrompt(choice.index)):()=>session.nativeSelect('card',choice.cardId,n.revision);
    const b=button('',pick,!choice.visible,choice.key);b.className='forge-zone-search-card';b.setAttribute('aria-pressed',String(chosen));b.setAttribute('aria-label',`${choice.name} · ${choice.zone}${chosen?' · selected':''}`);
@@ -235,7 +235,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const projected=choice.card||(choice.visible&&zoneSearch.kind==='prompt'?session.promptCardArtwork?.(choice.index,n.revision):null),imageUrl=searchImage(projected);
    if(imageUrl){const image=node('img');image.src=imageUrl;image.alt='';image.loading='lazy';image.decoding='async';image.referrerPolicy='no-referrer';image.addEventListener('error',()=>{image.hidden=true;b.dataset.artUnavailable='true';},{once:true});b.append(image);}
    else b.dataset.artUnavailable='true';
-   const caption=node('span',choice.name,'forge-zone-search-name');b.append(caption,node('span',chosen?'Selected':choice.zone,'forge-zone-search-state'));row.append(b);
+   const caption=node('span',choice.name,'forge-zone-search-name');caption.title=choice.name;b.append(caption,node('span',chosen?'Selected':choice.zone,'forge-zone-search-state'));row.append(b);
   }
   dialog.append(row);
   const summary=node('p',selected.length?`${selected.length} selected`:'No card selected','forge-zone-search-summary');summary.setAttribute('role','status');dialog.append(summary);
@@ -383,7 +383,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const named=id=>{const c=s.status?.surface?.cards?.find(c=>c.id===id);if(c)return c.known?c.name:'Face-down card';const pl=n.players?.find(p=>p.id===id);return pl?(pl.isViewer?'You':'CPU'):null;};
    const compact=(item,top,count)=>{const mine=item.activatingPlayer===n.viewer,raw=plainText(item.text||''),src=item.source?.name||raw.match(/^([^-\u2014:]{1,40}?)\s+[-\u2014:]\s/)?.[1]||'',body=src&&raw.startsWith(src)?raw.slice(src.length).replace(/^\s*[-\u2014:]\s*/,''):raw;
     const short=body.replace(/\s*\([^)]*\)/g,'').trim(),first=short.match(/^.*?[.!?](?=\s|$)/)?.[0]||short,summary=first.length>110?first.slice(0,107).replace(/\s+\S*$/,'')+'…':first;
-    const card=node('article',undefined,'forge-stack-item');card.dataset.top=String(top);card.dataset.mine=String(mine);if(item.yielded)card.dataset.yielded='true';
+    const card=node('article',undefined,'forge-stack-item');card.dataset.full='';card.dataset.top=String(top);card.dataset.mine=String(mine);if(item.yielded)card.dataset.yielded='true';
     const head=button('',()=>session.nativeSelect('stack',item.id,n.revision),false,`stack-${item.id}`);head.className='forge-stack-head';const kind=node('span',`${mine?'Your':'CPU'} ${item.ability===true?'ability':'spell'}${top?' · Next':''}`,'forge-stack-kind');kind.dataset.short=`${mine?'You':'CPU'}${top?' · Next':''}`;head.append(kind,node('strong',src||summary||`Stack item ${item.id}`,'forge-stack-name'));
     if(count>1){const c=node('b',`×${count}`,'forge-stack-count');head.append(c);head.setAttribute('aria-label',`${count} identical: ${src||summary}`);}card.append(head);
     if(src&&summary)card.append(node('p',symbols?undefined:summary,'forge-stack-summary'));if(src&&summary&&symbols)card.lastChild.innerHTML=symbols(summary);
