@@ -121,7 +121,6 @@ function ygoGuide(c) {
     if (/tuner/i.test(t)) tips.push("Tuner — combine with non-Tuners to Synchro Summon.");
     const scale = (c.stats || []).find(([k]) => k === "Scale")?.[1];
     if (/pendulum/i.test(t)) tips.push(`Pendulum — can be activated as a Spell in a Pendulum Zone${scale != null ? ` (Scale ${scale})` : ""}; with two Scales set you can Pendulum Summon monsters whose Levels fall between them.`);
-    if (Number(c.atk) >= 2500) tips.push(`${c.atk} ATK — strong enough to beat most monsters in battle.`);
   } else if (c.category === "Spell") {
     tips.push(/quick-play/i.test(t + c.race) ? "Quick-Play Spell — can be used on your opponent's turn if Set first." : /field/i.test(t + c.race) ? "Field Spell — stays out and affects every turn; search it early." : /continuous/i.test(t + c.race) ? "Continuous Spell — keeps working while face-up." : "Spell — play it on your turn, usually before summoning.");
   } else if (c.category === "Trap") {
@@ -192,7 +191,7 @@ function structuralRoles(game, c) {
       if (/Normal/.test(tl)) return [R("normal", "Normal monster", `A vanilla Level ${lvl} monster${atk ? ` with ${atk} ATK` : ""}.`, "Its value comes from support cards that name Normal monsters, its archetype, or as material.")];
       if (/tuner/i.test(tl)) return [R("material", "Tuner / material", "A Tuner for Synchro Summons.", "Pair it with non-Tuner monsters whose Levels add up to your Synchro monster's Level.")];
       if (/Flip/.test(tl)) return [R("flip", "Flip monster", "Its effect triggers when it's flipped face-up.", "Set it face-down; it activates when flipped by an attack or by your card effects.")];
-      return [R("beater", atk >= 2000 ? "Beater" : "Material / utility monster", atk >= 2000 ? `${atk} ATK beats most monsters in battle.` : `A Level ${lvl} monster — useful as material for Xyz/Link summons.`, atk >= 2000 ? "Summon it to pressure Life Points or to clear weaker monsters." : "Use it as Tribute or Extra Deck material once its effect has done its job.")];
+      return [R("beater", atk >= 2000 ? "Beater" : "Material / utility monster", atk >= 2000 ? `A Level ${lvl} monster with ${atk} ATK.` : `A Level ${lvl} monster — useful as material for Xyz/Link summons.`, atk >= 2000 ? "Summon it to pressure Life Points or to clear weaker monsters." : "Use it as Tribute or Extra Deck material once its effect has done its job.")];
     }
     const kind = (tl.match(/Equip|Field|Continuous|Counter|Quick-Play|Ritual/) || [""])[0];
     if (kind) return [R(kind.toLowerCase(), kind + (c.category === "Trap" ? " Trap" : " Spell"), { Equip: "Attaches to a monster to change it.", Field: "Changes the field for both players.", Continuous: "Keeps working while face-up.", Counter: "Responds to your opponent's actions.", "Quick-Play": "Can be used in response, even on your opponent's turn (if Set).", Ritual: "Ritual Summons a Ritual monster." }[kind], { Equip: "Equip it to the monster that benefits most; it leaves if that monster does.", Field: "Play it early to get value every turn.", Continuous: "Play it before the turns you need it working.", Counter: "Set it and keep it for your opponent's key play.", "Quick-Play": "Set it to surprise your opponent during their turn.", Ritual: "Keep it with the Ritual monster and tributes it needs." }[kind])];

@@ -525,3 +525,9 @@ body[data-view="settings"] .profile-menu>.sr-only{display:none}
 @media (max-width: 420px) { #sheetBody .price-hero { grid-template-columns: minmax(0, 1fr); } .price-fresh { justify-self: start; } }
 /* Rows in the guide wear the same frosted glass as pairing rows and list tiles. */
 body.glass :is(.guide-along-row, .guide-link) { background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 45%), var(--glass); border-color: var(--glass-line); box-shadow: var(--glass-hi), 0 10px 30px rgba(0, 0, 0, 0.22); }
+/* Phones: card tabs are text-only so Overview · Meta · Play guide · Prices all fit in one row,
+   the same on every card whether or not it has a Meta tab. */
+@media (max-width: 480px) {
+  .cs-tabs[aria-label="Card details"] > button { padding-inline: clamp(8px, 2.6vw, 16px); gap: 0; }
+  .cs-tabs[aria-label="Card details"] > button .label-ico { display: none; }
+}
