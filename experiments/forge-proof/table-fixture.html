@@ -27,6 +27,9 @@
 <!-- Loaded by app.js when a match opens, in this order. -->
 <link rel="stylesheet" id="practiceTableStyles" href="../phase-engine/match-table.css">
 <link rel="stylesheet" id="forgeHostedTableStyles" href="../../play-forge-table.css">
+<!-- The fixture has no server, so it refuses every action the table sends. That refusal is not a layout
+     state the design gate should judge; hide the connection toast and diagnostic here only. -->
+<style>.forge-toast,.forge-diagnostic,.forge-diagnostic+button,.forge-activity[data-kind=connection]{display:none!important}</style>
 </head>
 <body class="glass practice-table-open" data-view="play" data-game="mtg">
 <main id="practicePlayerMat" aria-label="Practice player mat" data-engine="forge-hosted"></main>

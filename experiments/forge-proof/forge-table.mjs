@@ -658,17 +658,23 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     else if(more)more.remove();
     if(kr<.995){row.style.transformOrigin='top center';row.style.transform=`scale(${kr.toFixed(3)})`;}}};
    // On a phone the pieces start small; a board with room to spare grows them to fill it (Arena's cards fill the table).
-   // The largest scale whose reflowed layout (rows wrap at width W/k) still fits both ways, found by halving.
-   fitRows();const fitsAt=k=>{zone.style.width=`${W/k}px`;return zone.scrollHeight*k<=H+1&&zone.scrollWidth*k<=W+1;};let k=growLimit();if(!fitsAt(k)){let lo=.4,hi=k;for(let i=0;i<6;i++){const mid=(lo+hi)/2;if(fitsAt(mid))lo=mid;else hi=mid;}k=lo;}
-   fits.push({area,zone,own,W,k,fitRows});
+   // The largest scale whose reflowed layout (rows wrap at width W/k) still fits both ways. Height is not monotonic in
+   // k (a wider layout grows its pieces until a back row joins the lands), so step down to the first fit, then refine.
+   fitRows();const fitsAt=k=>{zone.dataset.scaled='true';zone.style.width=`${W/k}px`;return zone.scrollHeight*k<=H+1&&zone.scrollWidth*k<=W+1;};let k=growLimit();
+   if(!fitsAt(k)){let lo=.4,hi=k;for(let t=k-.05;t>.4;t-=.05)if(fitsAt(t)){lo=t;hi=t+.05;break;}for(let i=0;i<3;i++){const mid=(lo+hi)/2;if(fitsAt(mid))lo=mid;else hi=mid;}k=lo;}
+   fits.push({area,zone,own,W,H,k,fitRows});
   }
-  const k=Math.min(growLimit(),...fits.map(f=>f.k));
-  for(const f of fits){const {area,zone,own,W,fitRows}=f;
-   if(Math.abs(k-1)<.005){zone.style.removeProperty('width');fitRows();continue;}
-   zone.style.width=`${W/k}px`;fitRows();
-   const h=zone.scrollHeight*k,lift=own||area.querySelectorAll(':scope>.play-match-zone').length>1?0:Math.max(0,area.clientHeight-h);
-   zone.dataset.scaled='true';zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
-  }
+  // A row that fits its lane at one width can fold or shrink differently at another, so the shared scale is checked
+  // once laid out and stepped down until every side really fits.
+  let k=Math.min(growLimit(),...fits.map(f=>f.k));
+  for(let pass=0;pass<8;pass++){let over=false;
+   for(const f of fits){const {area,zone,own,W,H,fitRows}=f;
+    if(Math.abs(k-1)<.005){zone.style.removeProperty('width');zone.style.removeProperty('transform');delete zone.dataset.scaled;fitRows();if(zone.scrollHeight>H+1)over=true;continue;}
+    zone.dataset.scaled='true';zone.style.width=`${W/k}px`;fitRows();
+    const h=zone.scrollHeight*k,lift=own||area.querySelectorAll(':scope>.play-match-zone').length>1?0:Math.max(0,area.clientHeight-h);if(h>H+1)over=true;
+    zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
+   }
+   if(!over||k<=.4)break;k=Math.max(.4,k-.04);}
  }
  const queueBoard=()=>{if(!boardFrame)boardFrame=win.requestAnimationFrame(fitBoard);};
  win.addEventListener('resize',queueBoard);
