@@ -50,7 +50,7 @@ for (const file of await readdir(path.join(source, 'assets/audio/sfx')).catch(()
 // Planeswalk's painted characters (planeswalk-cast/): each figure's key-pose atlas, light mask and drip sprite, so fights animate offline.
 extras.push('planeswalk-cast/cast.json');
 for (const dir of ['atlas', 'mask', 'drop']) for (const file of await readdir(path.join(source, `planeswalk-cast/${dir}`)).catch(() => [])) if (/^[a-z0-9-]+\.webp$/.test(file)) extras.push(`planeswalk-cast/${dir}/${file}`);
-// Planeswalk's painted fight floors (planeswalk-art/<scene>-floor.webp) sit in front of each backdrop under the figures.
+// Planeswalk's painted fight mats (planeswalk-art/<key>.webp and their <key>-wide.webp phone twins), so fights open on their painting offline.
 for (const file of await readdir(path.join(source, 'planeswalk-art')).catch(() => [])) if (/^[a-z0-9-]+\.webp$/.test(file)) extras.push(`planeswalk-art/${file}`);
 // Only files the website itself serves: .assetsignore is gitignore syntax (last matching rule wins,
 // nothing under an ignored directory is served), so .mjs ships only where a ! rule publishes it.

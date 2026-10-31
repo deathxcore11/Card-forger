@@ -2819,25 +2819,13 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
 #app .battle .field.pw-stage>.side{zoom:1!important}
 /* beside figures: allies are small seals at the hero's feet, empty slots vanish, a thrall keeps a half-size seal */
 #app .battle .field.pw-stage .side.you .slot{display:none!important}
-#app#app#app .battle .field.pw-stage .side.you .unit.ally:not(.pw-fig){width:max(44px,calc(var(--pw-fh,120px) * .42))!important;flex:none!important}
-#app#app#app .battle .field.pw-stage .side.foe .unit:not(.pw-fig){width:max(44px,calc(var(--pw-fh,120px) * .5))!important;flex:none!important}
+#app#app#app .battle .field.pw-stage .side.you .unit.ally:not(.pw-fig){width:max(var(--pw-tap,44px),calc(var(--pw-fh,120px) * .42))!important;flex:none!important}
+#app#app#app .battle .field.pw-stage .side.foe .unit:not(.pw-fig){width:max(var(--pw-tap,44px),calc(var(--pw-fh,120px) * .5))!important;flex:none!important}
 /* a crowd: the foes take the row above the hero, each row sized on its own */
-#app#app#app .battle .field.pw-rows{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;align-content:space-evenly!important;justify-content:stretch!important;row-gap:8px!important}
-#app#app#app .battle .field.pw-rows>.side{width:auto!important;margin:0!important;justify-content:center!important;flex-wrap:nowrap!important;max-width:none!important}
-#app#app#app .battle .field.pw-rows>.side.foe{order:-1!important;grid-row:1!important;grid-column:1!important}
-#app#app#app .battle .field.pw-rows>.side.you{order:0!important;grid-row:2!important;grid-column:1!important}
 /* tiny ally seals keep their art and stats; the name shows on hold or hover */
 #app .battle .field.pw-small .side.you .unit.ally>.name,#app .battle .field.pw-small .side.foe .unit:not(.pw-fig)>.name{display:none!important}
 /* no name plate under a figure (Test Fight look): the name shows on hover and hold and on the zoom card; in a crowd the hero's incoming chip clears the foe row above */
 #app .battle .unit.pw-fig>.name{display:none!important}
-#app#app#app .battle .field.pw-rows>.side.you{margin-top:28px!important}
-/* the far row (Slay the Spire back line): foes at 85%, standing on the picture's far ground line behind the heroes (pw-cast backRow slides them down) */
-#app#app#app .battle .field.pw-rows>.side.foe .unit.pw-fig>.art{width:calc(var(--pw-fh,120px) * var(--k,1) * var(--ar,1) * var(--pw-far,1))!important;height:calc(var(--pw-fh,120px) * var(--k,1) * var(--pw-far,1))!important}
-#app#app#app .battle .field.pw-rows>.side.foe{position:relative;z-index:0;will-change:transform}
-#app#app#app .battle .field.pw-rows>.side.you{position:relative;z-index:1}
-/* a far-row foe reads from above: bar, then intent, then the figure, so the near row's feet and bars stay clear */
-#app#app#app .battle .field.pw-rows>.side.foe .unit.pw-fig>.bar{order:-2;margin-bottom:2px}
-#app#app#app .battle .field.pw-rows>.side.foe .unit.pw-fig>.intent{order:-1}
 /* a blocker's kill-preview chip keeps the name's row under the seal, clear of the stats pill */
 #app .battle .field.pw-small .side.you .unit.ally:has(>.pv)>.name{display:block!important;visibility:hidden}
 /* ally figures: the p/t pill sits at the feet, the status tag over the head, the kill chip below, and a ready one stands on a blue ring */
@@ -2854,7 +2842,7 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
 #app .battle .field.pw-stage>.side.formation{background:none!important}
 #app#app:not([data-pw-tall]) .battle .field.pw-stage>.side.foe{padding-left:0!important;border-left:0!important;border-image:none!important;background:none!important}
 #app .battle .field.pw-stage::before{content:"";position:absolute;left:6%;right:6%;bottom:0;height:52px;pointer-events:none;z-index:0;background:radial-gradient(50% 15px at 50% calc(100% - 19px),#f3dbb33a,#f3dbb300 72%)}
-#app .battle .field.pw-stage:not(.pw-rows)>.side{justify-content:center!important}
+#app .battle .field.pw-stage>.side{justify-content:center!important}
 
 /* the loyalty diamond sits at the figure's shoulder, not at the far corner of a wide canvas box (auditor round 4) */
 #app#app .battle .unit.hero.pw-fig .loyal{left:calc(50% + var(--pw-fh,120px) * var(--k,1) * .2)!important;right:auto!important;top:3%!important;transform:none!important}
@@ -2902,6 +2890,64 @@ body[data-actnum="2"] #app#app .battle:has(.unit.boss[data-n^="Kozilek"]){--pw-b
  clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,8px 100%,0 50%)}
 /* the portrait ring sits a few px off the top edge on phones (Randall's note on the mock) */
 #app#app:has(>.battle) .top .ink-hero{translate:0 3px}
+/* one line on every screen shape (the tall Fold layout used to stack the foes above the hero): heroes left, foes right, feet on the mat's floor line */
+#app#app#app .battle .field.pw-stage{grid-template-columns:auto auto!important;grid-template-rows:auto!important;justify-content:space-evenly!important;row-gap:0!important}
+#app#app#app .battle .field.pw-stage>.side{order:0!important;width:auto!important;max-width:none!important;margin:0!important;flex-wrap:nowrap!important}
+#app#app#app .battle .field.pw-stage>.side.you{grid-area:1/1!important}
+#app#app#app .battle .field.pw-stage>.side.foe{grid-area:1/2!important}
+/* the roomy zoom made the figures' line narrower in its own px (fixed gaps and seals took more of it): figures size from the screen instead */
+#app#app[data-pw-roomy] .battle .field.pw-stage{zoom:1!important}
+/* portrait plates (a fight too crowded for figures) keep the same sides on one line: heroes left, foes right, never a foe row above the hero */
+#app#app#app .battle .field.pw-plates{grid-column:1/-1!important;grid-template-columns:auto auto!important;grid-template-rows:auto!important;justify-content:space-evenly!important;align-items:end!important;align-content:end!important}
+#app#app#app .battle .field.pw-plates>.side{order:0!important;width:auto!important;margin:0!important;flex-wrap:nowrap!important;justify-content:center!important}
+#app#app#app .battle .field.pw-plates>.side>.unit{flex:none!important}
+#app#app[data-pw-roomy] .battle .field.pw-plates{zoom:1!important}
+/* plates read like the figures: no name plate (it shows on hover, hold and the zoom card), so a crowd never truncates names */
+#app#app#app .battle .field.pw-plates .unit>.name{display:none!important}
+#app#app#app .battle .field.pw-plates>.side.you{grid-area:1/1!important}
+#app#app#app .battle .field.pw-plates>.side.foe{grid-area:1/2!important}
+/* plates drop the old divider line and side glow, like the figures: the mat's floor is the only line */
+#app#app#app .battle .field.pw-plates>.side{border-left:0!important;border-image:none!important;background:none!important;padding-left:0!important}
+/* an ally's "dies" preview sits above its plate so it never covers the plate's stats */
+#app#app#app .battle .field:is(.pw-stage,.pw-plates) .side.you .unit.ally:not(.pw-fig)>.pv{bottom:auto!important;top:-21px!important}
+/* no name labels on the field in any layout (they read on hover, hold and the zoom card): a token portrait among the figures used to show one, and a reserved name line lifted the doomed ones off the floor */
+#app#app#app .battle .field:is(.pw-stage,.pw-plates) .unit>.name{display:none!important}
+/* a stack's count chip stays on its own portrait, and a doomed stack's chip sits clear above it */
+#app#app#app .battle .field:is(.pw-stage,.pw-plates) .unit.group:not(.pw-fig)::after{right:-3px!important}
+#app#app#app .battle .field:is(.pw-stage,.pw-plates) .side.you .unit.ally.group:not(.pw-fig)>.pv{top:-32px!important}
+/* the painted dungeon mats read like every other fight (the old dark, blurred crypt filter was for the stand-in backdrop) */
+#app#app>.battle[data-dungeon]:not([data-dungeon=vaults])::after{filter:brightness(.82) saturate(1.02)!important}
+/* a boss's loyalty sits at its own shoulder, mirroring the hero's (auditor round 6 minor 1: it floated between the two) */
+#app#app .battle .side.foe .unit.pw-fig .loyal{right:calc(50% + var(--pw-fh,120px) * var(--k,1) * .2)!important;left:auto!important;top:3%!important;transform:none!important;translate:none!important}
+
+/* Slay the Spire's block reads at the left end of the life bar: the shield chip sits there on every figure instead of a line of its own (it lifted a guarded figure's feet off the floor) */
+#app#app .battle .unit.pw-fig>.shield{position:absolute!important;left:calc(50% + var(--pw-fx,0) * 100% - var(--pw-bw) / 2)!important;bottom:7.5px!important;translate:-50% 50%!important;z-index:4;margin:0!important;display:inline-flex!important;align-items:center;gap:2px;padding:2px 6px!important;border-radius:999px!important;background:#0b1626f2!important;border:1.5px solid #6fb3ff!important;box-shadow:0 0 0 1px #000,0 0 8px #6fb3ff55!important;color:#d8ecff!important;line-height:1!important;white-space:nowrap}
+#app#app .battle .unit.pw-fig>.shield>b{font-weight:800}
+/* a boss's loyalty sits on its own life bar (right end), never loose in the sky (review: it floated by the top bar and touched the intent chip) */
+#app#app#app .battle .side.foe .unit.pw-fig .loyal{left:calc(50% + var(--pw-fx,0) * 100% + var(--pw-bw) / 2)!important;right:auto!important;top:auto!important;bottom:7.5px!important;translate:-50% 50%!important;transform:none!important;z-index:4;filter:drop-shadow(0 0 0 #000) drop-shadow(0 0 1.5px #e8b95b) drop-shadow(0 0 6px #e8b95b88)}
+/* the life bar is about the figure's own width and sits under its feet (review: a leaning zombie's bar ran far past its foot and its chip floated over empty air) */
+#app#app .battle .unit.pw-fig{--pw-bw:min(84%,max(56px,calc(var(--pw-fh,120px) * var(--k,1) * .78)))}
+#app#app .battle .unit.pw-fig>.bar{width:var(--pw-bw)!important;margin-left:calc(50% + var(--pw-fx,0) * 100% - var(--pw-bw) / 2)!important;margin-right:0!important}
+#app#app .battle .unit.pw-fig>.intent{position:relative;left:calc(var(--pw-fx,0) * 100%);top:calc(var(--pw-top,0) * var(--pw-fh,120px) * var(--k,1))}
+/* (the intent drops by the figure's own headroom so it sits on the head, not on the empty top of the frame: review saw boss chips hugging the top bar) */
+/* the aim ring and the lethal skull follow the feet too */
+#app#app .battle .unit.pw-fig>.art::before{left:calc(50% + var(--pw-fx,0) * 100% - var(--pw-bw) / 2)!important;right:auto!important;width:var(--pw-bw)}
+#app#app .battle .side.foe .unit.pw-fig>.pw-lethal{left:calc(50% + var(--pw-fx,0) * 100%)!important}
+/* the menu glyph keeps its 22px: in a squeezed bar the button's side padding used to crush it to a dot */
+#app#app>.top .pw-menubtn::before{flex:none!important}
+#app#app>.top .pw-menubtn{padding-inline:0!important;justify-content:center!important}
+/* a full bar first slims its emblems and gaps; the hero portrait (the battle's main cue) is the last thing to go */
+#app>.top.ink-tight2 .emblems .emb-art{width:27px!important;height:27px!important}
+#app>.top.ink-tight2 .emblems .emb-art+.emb-art{margin-left:-7px}
+/* in a plates fight the hero's loyalty sits on the plate's top corner, not over her face */
+#app#app#app .battle .field.pw-plates .unit.hero .loyal{left:auto!important;right:-10px!important;top:-10px!important;transform:none!important;translate:none!important}
+/* game-feel pass (31 Oct): while a figure has block its life bar reads blue, the way Slay the Spire shows it */
+#app#app .battle .unit.pw-fig:has(>.shield)>.bar>i{background:linear-gradient(180deg,#4f9be8,#1f4f8f)!important}
+#app#app .battle .unit.pw-fig:has(>.shield)>.bar{box-shadow:0 0 0 1px #000,0 0 0 2px #6fb3ff99,inset 0 0 0 1px #ffffff1f!important}
+/* the hero's loyalty diamond sits on the right end of her own life bar, like the boss's (it floated off her shoulder) */
+#app#app#app .battle .unit.hero.pw-fig .loyal{left:calc(50% + var(--pw-fx,0) * 100% + var(--pw-bw) / 2)!important;right:auto!important;top:auto!important;bottom:7.5px!important;translate:-50% 50%!important;transform:none!important;z-index:4}
+/* a portrait is never narrower than its own stat pill (44 on-screen px for the tap, but "4/5" needs ~3.2em of the plate text; em follows the text size) */
+#app#app#app .battle .field:is(.pw-stage,.pw-plates) .side .unit:not(.pw-fig){min-width:3.3em!important}
 
 </style>
 
@@ -4343,7 +4389,7 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
   el=document.createElement('div');el.className='pw-room';
   // a 2.4s title card over the whole battle (design gate: an overlay, so it may cover the page)
   el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Room '+b.dataset.room);
-  const rule=b.querySelector('.dungeon-rule')?.textContent.trim()||RULE[b.dataset.dungeon]||'';
+  const rule=(b.querySelector('.dungeon-rule')?.textContent.trim()||RULE[b.dataset.dungeon]||'').replace(/\s*[^.]*\bshine here\.$/,'');/* the card states the room's rule only, no deck-building hint (no hint text in battles) */
   el.innerHTML=`<b>Room ${b.dataset.room} of ${b.dataset.rooms||3}</b>${rule?`<span>${rule}</span>`:''}`;
   if(!fresh){el=null;return}document.body.append(el);clearTimeout(tm);tm=setTimeout(()=>{el?.classList.add('pw-gone');setTimeout(()=>{if(el?.classList.contains('pw-gone')){el.remove();el=null}},400)},2400)};
  const SH=[[0,0,55,0,40,45,0,38],[55,0,100,0,100,30,62,50,40,45],[0,38,40,45,30,100,0,100],[40,45,62,50,70,100,30,100],[62,50,100,30,100,100,70,100]];
@@ -4986,9 +5032,9 @@ const apply=()=>{const t=document.querySelector('#app>.top');const h=hero();
  if(t&&!t.querySelector('.ink-hero')){const p=document.createElement('span');p.className='ink-hero';p.setAttribute('aria-hidden','true');
   p.style.setProperty('--hero-img',art(h==='W'?'Elspeth, Sun\'s Champion':'Chandra, Torch of Defiance'));p.innerHTML=`<i style='--pip:${pip(h)}'></i>`;const h1=t.querySelector(':scope>h1');h1?h1.after(p):t.prepend(p)}
  // a full top bar (big text, narrow phone) drops the portrait seal before anything spills off the screen
- if(t){// the bar is tight once its items reach within 4px of the screen edge: first the portrait goes, then the gaps and the deck button slim down
+ if(t){// the bar is tight once its items reach within 4px of the screen edge: first the gaps, emblems and deck button slim down, then the portrait goes
   const edge=()=>{const T=t.getBoundingClientRect();return [...t.children].some(e=>{const r=e.getBoundingClientRect();return r.width&&(r.left<T.left+4||r.right>T.right-4)})};
-  t.classList.remove('ink-tight','ink-tight2');if(edge()){t.classList.add('ink-tight');if(edge())t.classList.add('ink-tight2')}}
+  t.classList.remove('ink-tight','ink-tight2');if(edge()){t.classList.add('ink-tight2');if(edge())t.classList.add('ink-tight')}}
  const m=document.querySelector('#app .map');if(m&&!m.querySelector('.ink-vig')){const v=document.createElement('div');v.className='ink-vig';m.prepend(v)}
  const b=document.querySelector('#app .map .node.boss');if(b&&!b.querySelector('.ink-pips')){const s=document.createElement('span');s.className='ink-pips';s.setAttribute('aria-hidden','true');s.innerHTML=['W','B'].map(c=>`<i style='--pip:${pip(c)}'></i>`).join('');b.append(s)}};
 let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;apply()})}}).observe(document.getElementById('app'),{childList:true,subtree:true,attributes:true,attributeFilter:['style']});addEventListener('resize',apply);apply();
@@ -5156,7 +5202,7 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const DPR=Math.min(2,window.devicePixelRatio||1);
 const GC={warm:[1,.55,.25],green:[.55,1,.4],cool:[.45,.78,1],violet:[.78,.5,1],holy:[1,.86,.52],none:[1,.84,.6]};
 const ALIAS={ironalpha:'ironfang',oliviaB:'olivia',acolyte:'skirsdag-cultist'};
-const KSCALE={hero:1,boss:1.25,elite:1.1,regular:.8,token:.66};// of the hero's height: the repaint guide's 32% / 40% / 55% of the picture, held back so a boss fight keeps the hero readable
+const KSCALE={hero:1,boss:1.35,elite:1.12,regular:.8,token:.66};// of the hero's height: the repaint guide's 32% / 40% / 55% of the picture, held back so a boss fight keeps the hero readable
 const MORPH={'village-ironsmith':'ironfang'};
 const sm=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x)};
 function br(u){const s=u*3.8;if(s<2.2){const q=s/2.2;return q*q*(3-2*q)}if(s<2.95){const q=(s-2.2)/.75;return 1-q*q}const q=(s-2.95)/.85;return -.28*Math.sin(q*Math.PI)*(1-q*.5)}
@@ -5311,7 +5357,7 @@ function act_(R,k,o){o=o||{};if(R.dead&&k!=='defeat')return 0;if(R.act&&k!=='hit
   default:return 0}
  play(R,S);return IMPACT[k]||0}
 function done(R){if(R.ghost){ghosts.delete(R);R.cv.remove();ro.unobserve(R.cv)}}
-function morph(R,to){if(!to||!ready(to.key))return;R.cur=to;R.e=to;R.oz=to.body==='soft';R.moves=to.moves.map(m=>m==='flame'&&to.glowArea<.003?'gust':m);if(R.el)R.el.style.setProperty('--ar',(to.fw/to.fh).toFixed(3));layout(R)}
+function morph(R,to){if(!to||!ready(to.key))return;R.cur=to;R.e=to;R.oz=to.body==='soft';R.moves=to.moves.map(m=>m==='flame'&&to.glowArea<.003?'gust':m);if(R.el)R.el.style.setProperty('--pw-fx',((to.foot?to.foot[0]:.5)-.5).toFixed(3));if(R.el)R.el.style.setProperty('--pw-top',(to.top||0).toFixed(3));if(R.el)R.el.style.setProperty('--ar',(to.fw/to.fh).toFixed(3));layout(R)}
 
 /* ---------- effects: DOM sprites on a fixed layer over the field ---------- */
 function at(R,x,y){const r=R.cv.getBoundingClientRect();return [r.left+x,r.top+y]}
@@ -5411,16 +5457,18 @@ function clearTop(field){const hud=app.querySelector(':scope>.top');if(!hud||!fi
  if(moved)for(const R of rigs.values())fit(R)}
 // Text size and summons change the foes' row height without a re-render: re-check the HUD clearance and the ground then.
 let foeRO=null,foeSeen=null;function watchFoes(field){const foe=field&&field.querySelector(':scope>.side.foe');if(!foe||foe===foeSeen)return;foeSeen=foe;
- if(!foeRO)foeRO=new ResizeObserver(()=>requestAnimationFrame(()=>{const f=app.querySelector('.battle .field.pw-stage');if(f){clearTop(f);ground()}}));foeRO.disconnect();foeRO.observe(foe)}
-function fitWidth(field){const you=field.querySelector('.side.you'),foe=field.querySelector('.side.foe');if(!you||!foe||field.classList.contains('pw-rows'))return;
- const cs=getComputedStyle(field),sc=field.getBoundingClientRect().width/(field.clientWidth||1)||1,room=field.clientWidth-px(cs.paddingLeft)-px(cs.paddingRight);
- for(let i=0;i<3;i++){const y=you.getBoundingClientRect(),f=foe.getBoundingClientRect(),used=(Math.max(y.right,f.right)-Math.min(y.left,f.left))/sc;if(used<=room+.5)return;// the gaps do not shrink with the figures, so it takes a pass or two
+ if(!foeRO)foeRO=new ResizeObserver(()=>requestAnimationFrame(()=>{const f=app.querySelector('.battle .field.pw-stage');if(f){fitWidth(f);clearTop(f);ground()}}));foeRO.disconnect();foeRO.observe(foe);const you=field.querySelector(':scope>.side.you');if(you)foeRO.observe(you)}/* both sides: a bigger text size widens the portraits after render, and the line must still fit */
+function fitWidth(field){const you=field.querySelector('.side.you'),foe=field.querySelector('.side.foe');if(!you||!foe)return;
+ const sc=field.getBoundingClientRect().width/(field.clientWidth||1)||1,room=field.clientWidth-8;// the whole line, glow canvases included, stays inside the field
+ for(let i=0;i<3;i++){const y=you.getBoundingClientRect(),f=foe.getBoundingClientRect();let l=Math.min(y.left,f.left),r=Math.max(y.right,f.right);
+  for(const c of field.querySelectorAll('canvas.pw-cast')){const q=c.getBoundingClientRect();if(q.width){l=Math.min(l,q.left);r=Math.max(r,q.right)}}
+  const fr=field.getBoundingClientRect(),cx=fr.left+fr.width/2,used=2*Math.max(cx-l,r-cx)/sc;if(used<=room+.5)return;// measured from the centre: a big glow on one side must fit too; the gaps do not shrink with the figures, so it takes a pass or two
   const H=parseFloat(field.style.getPropertyValue('--pw-fh'))||0,H2=Math.max(44,Math.floor(H*room/used)-1);if(!H||H2>=H)return;field.style.setProperty('--pw-fh',H2+'px');for(const R of rigs.values())fit(R)}}
 // Figure height: the field's room, less the chips above and the name and bar below, and the row must fit side by side.
-// When one row would leave the figures tiny, the foes take a row above the hero (class pw-rows on the field).
+// Everyone stands on one line, heroes left and foes right (Randall 31 Oct: never stack the foes above the hero).
 // Under the floor (96px, or 11% of the screen height) the figures read as specks, so a fight that cannot seat them at the floor keeps the portrait plates
 // (decided once per fight and viewport; a fight already on figures only drops to plates when a summon crowds it hard).
-const ALLY=.42,SEAL=.5,CHROME=36;/* under 84px (or 11% of the screen) the figures read as specks; a 5-on-5 at phone height just makes it, Slay the Spire style, instead of falling back to plates */const floor=()=>Math.max(84,innerHeight*.11);let plates=null;
+const ALLY=.42,SEAL=.5,CHROME=36;/* under 80px on screen the figures read as specks; a 5-on-5 on a phone or the Fold just makes it, Slay the Spire style, instead of falling back to plates */const floor=()=>80;let plates=null;
 function size(field,hero,foeEls,now,g,hE,allyOf){if(!field)return;const you=field.querySelector('.side.you'),foe=field.querySelector('.side.foe');if(!you||!foe)return;
  const cs=getComputedStyle(field),W=field.clientWidth-px(cs.paddingLeft)-px(cs.paddingRight),Hf=field.clientHeight;// the room between the paddings
  const gapF=Math.min(20,px(cs.columnGap)||px(cs.gap)||12),// figure fields get a 20px column gap (cast.css); the first measure happens before any figure mounts
@@ -5430,21 +5478,20 @@ function size(field,hero,foeEls,now,g,hE,allyOf){if(!field)return;const you=fiel
  for(const el of foeEls){const fe=now.c.enemies.find(x=>String(x.id)===el.dataset.id),en=entryForFoe(fe,g);if(en){const k=KSCALE[fe.rank||(en.rank==='token'?'token':'regular')]||.8;arF+=k*en.fw/en.fh;el.style.setProperty('--k',k);if(k>kmax)kmax=k}else arF+=SEAL;nF++}
  if(!arY&&!arF)return;
  const arH=arY-nA*ALLY;
- const Hmax=(Hf-CHROME)/Math.min(kmax,1.1);// a boss fight: the hero gives up a little height, the boss takes what the field allows (below)
- let H1=Math.min(Hmax,(W-gapF-(nY-1)*gapY-(nF-1)*gapE-8)/(arY+arF));if(H1*ALLY<44)H1=Math.min(Hmax,(W-gapF-(nY-1)*gapY-(nF-1)*gapE-8-nA*44)/(arH+arF));
- const H2max=(Hf-2*CHROME-36)/2;let H2=Math.min(H2max,(W-(nY-1)*gapY-8)/arY,(W-(nF-1)*gapE-8)/arF);if(H2*ALLY<44)H2=Math.min(H2max,(W-(nY-1)*gapY-8-nA*44)/arH,(W-(nF-1)*gapE-8)/arF);
- // rows, once chosen, hold for the fight: a death must not reshuffle the field
- const vk=innerWidth+'x'+innerHeight;if(plates&&plates.vk!==vk)plates=null;const sc=field.getBoundingClientRect().width/(field.clientWidth||1)||1;const rows=(plates&&plates.rows)||(H1*sc<floor()&&H2>H1*1.2);// one line on the floor first; the foes take a row above only when one line cannot seat the figures
- const H=Math.min(innerHeight*.42/sc,Math.max(44,rows?H2:H1)),Hs=H*sc;// a figure never takes more than 42% of the screen height// on-screen pixels: tablets scale the phone layout up
- if(!plates)plates={vk,on:Hs<floor(),rows};else{plates.rows=rows;if(!plates.on&&Hs<floor()*.75)plates.on=true}
- window.__pwSize={W,Hf,gapF,gapY,gapE,arY,arF,nY,nF,H1,H2,rows,H,sc,Hs,plates:plates.on};
- if(plates.on){field.classList.add('pw-plates');field.classList.remove('pw-rows','pw-small','pw-stage');field.style.removeProperty('--pw-fh');return false}
- field.classList.remove('pw-plates');field.classList.toggle('pw-rows',rows);field.style.setProperty('--pw-far',rows?'.85':'1');for(const el of foeEls){const k=parseFloat(el.style.getPropertyValue('--k'))||1;if(k>1)el.style.setProperty('--k',Math.min(k,(Hf-CHROME-8)/H).toFixed(3))}/* the chip above and the bar below must stay inside the field, clear of the HUD */field.classList.toggle('pw-small',H*ALLY<64);field.style.setProperty('--pw-fh',Math.floor(H)+'px');return true}
+ const Hmax=(Hf-CHROME)/kmax;// a boss fight: the hero gives up a little height, the boss takes what the field allows (below)
+ const sc=field.getBoundingClientRect().width/(field.clientWidth||1)||1,tap=Math.max(44/Math.max(1,sc),37);/* and never under the plate's stat pill (cast.css min-width 3.3em) */field.style.setProperty('--pw-tap',tap.toFixed(2)+'px');/* a portrait needs 44 on-screen px to tap, not 44 of the zoomed phone layout's px (on the Fold those dwarfed the figures) */
+ let H1=Math.min(Hmax,(W-gapF-(nY-1)*gapY-(nF-1)*gapE-8)/(arY+arF));if(H1*ALLY<tap)H1=Math.min(Hmax,(W-gapF-(nY-1)*gapY-(nF-1)*gapE-8-nA*tap)/(arH+arF));
+ const vk=innerWidth+'x'+innerHeight;if(plates&&plates.vk!==vk)plates=null;
+ const H=Math.min(innerHeight*.42/sc,Math.max(44,H1)),Hs=H*sc;// a figure never takes more than 42% of the screen height// on-screen pixels: tablets scale the phone layout up
+ if(!plates)plates={vk,on:Hs<floor()};else if(!plates.on&&Hs<floor()*.75)plates.on=true
+ window.__pwSize={W,Hf,gapF,gapY,gapE,arY,arF,nY,nF,H1,H,sc,Hs,plates:plates.on};
+ if(plates.on){field.classList.add('pw-plates');field.classList.remove('pw-small','pw-stage');field.style.removeProperty('--pw-fh');return false}
+ field.classList.remove('pw-plates');for(const el of foeEls){const k=parseFloat(el.style.getPropertyValue('--k'))||1;if(k>1)el.style.setProperty('--k',Math.min(k,(Hf-CHROME-8)/H).toFixed(3))}/* the chip above and the bar below must stay inside the field, clear of the HUD */field.classList.toggle('pw-small',H*ALLY<64);field.style.setProperty('--pw-fh',Math.floor(H)+'px');return true}
 function mount(id,el,entry,face,hp){const art=el.querySelector(':scope>.art');if(!art)return;let R=rigs.get(id);
  if(!R){R=rig(entry,id,face);rigs.set(id,R);R.fadeIn=T}
  else if(R.cur.key!==entry.key&&!R.act){morph(R,entry)}
  const st=art.querySelector(':scope>.stats'),bar=el.querySelector(':scope>.bar');if(st&&bar&&st.parentNode!==bar)bar.appendChild(st);if(bar&&hp)bar.dataset.hp=hp;// the life reads inside the bar, Test Fight style
- R.el=el;el.classList.add('pw-fig');el.style.setProperty('--ar',(R.cur.fw/R.cur.fh).toFixed(3));if(R.cv.parentNode!==art)art.prepend(R.cv);fit(R)}
+ R.el=el;el.classList.add('pw-fig');el.style.setProperty('--ar',(R.cur.fw/R.cur.fh).toFixed(3));el.style.setProperty('--pw-fx',((R.cur.foot?R.cur.foot[0]:.5)-.5).toFixed(3));el.style.setProperty('--pw-top',(R.cur.top||0).toFixed(3));/* bar and chips centre on the feet, the intent sits on the head, not the frame */if(R.cv.parentNode!==art)art.prepend(R.cv);fit(R)}
 // A dead enemy keeps its last place on a fixed canvas while it falls.
 function ghost(R){const r=R.lastRect||R.cv.getBoundingClientRect();if(!r.width){done(R);return}if(!fxLayer.isConnected)document.body.append(fxLayer);Object.assign(R.cv.style,{position:'fixed',left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});
  const b=R.box;fxLayer.appendChild(R.cv);R.W=r.width;R.H=r.height;R.box=b;R.el=null;const ms=R.dyingAt||0;if(ms)setTimeout(()=>act_(R,'defeat'),ms);else act_(R,'defeat')}
@@ -5502,12 +5549,11 @@ try{if(/[?&]castperf=1/.test(location.search)||localStorage.getItem('pw-castperf
 // A fight scene is one positioned box holding the mat (ground built in, feet line at 62% of the picture, floor from 48%).
 // The box is placed so the feet line lands under the hero's feet at every size and never falls short of the screen; a wide
 // phone cuts the sky, so the feet slide up a little first, and a wide twin of the mat (2.2:1) takes over where one exists.
-// In a crowded fight the foes' row comes down behind the heroes onto the far edge of the floor instead of floating in the sky.
 // The painted mats (planeswalk-art/<key>.webp, 3:2, ground built in): the feet line sits at 62% of the picture, the floor opens at 48%.
 const ART='./planeswalk-art/';
 const MATS=['inn-area-graveyard','inn-area-village','inn-area-manor','inn-elite-thalia','inn-elite-gisa','inn-elite-olivia','inn-boss-sorin','inn-boss-liliana','inn-boss-avacyn','inn-dungeon-1','inn-dungeon-2','inn-dungeon-3',
  'zen-area-jungle','zen-area-coast','zen-area-wastes','zen-elite-kozilek','zen-elite-omnath','zen-elite-drana','zen-boss-obnixilis','zen-boss-ulamog','zen-boss-nissa','zen-dungeon-1','zen-dungeon-2','zen-dungeon-3'];
-const FEET=.62,FAR=.50,SLIDE=.07,CROP=.15,NEAR=.85;// feet line; the far row's line (just past the floor's edge); how far the feet may slide up on a wide phone; the sky a phone may crop before they slide; the lowest the near row may stand
+const FEET=.62,SLIDE=.07,CROP=.15;// feet line; how far the feet may slide up on a wide phone; the sky a phone may crop before they slide
 const WIDE=new Set(MATS);// mats that also come as <key>-wide.webp (2272x1024): a battle wider than 1.8:1 takes that one, so a phone keeps the whole sky
 const WIDE_AT=1.8,ACTS={1:'inn',2:'zen',3:'rav'};
 const gready=im=>im.complete&&im.naturalHeight>0;
@@ -5522,31 +5568,19 @@ function sceneOf(b){const v=getComputedStyle(b).getPropertyValue('--pw-bg').trim
 function groundLoad(b){const k=b&&sceneOf(b);if(!k)return null;const im=matImg(b,k);return gready(im)?null:gwait(im)}
 // The act's mats load one after another while the map shows, so a fight opens on its painting without a wait.
 function preloadGround(){const a=ACTS[document.body.dataset.actnum]||'inn',wide=innerWidth/innerHeight>WIDE_AT;let q=Promise.resolve();for(const k of MATS)if(k.startsWith(a))q=q.then(()=>gwait(bimg(k,wide)))}
-function groundOff(b){if(!b)return;b.classList.remove('pw-ground');b.style.removeProperty('--pw-mat');const foe=b.querySelector('.field>.side.foe');if(foe)foe.style.transform=''}
+function groundOff(b){if(!b)return;b.classList.remove('pw-ground');b.style.removeProperty('--pw-mat')}
 function ground(){const b=app.querySelector('.battle'),field=b&&b.querySelector('.field.pw-stage'),hero=field&&field.querySelector('.unit.hero.pw-fig>.art');
  if(!b||!hero||!rigs.size)return groundOff(b);
  const k=sceneOf(b),im=k&&matImg(b,k);if(!im||!gready(im))return groundOff(b);const BOX=im.naturalWidth/im.naturalHeight;
  const r=b.getBoundingClientRect(),zb=r.width/(b.offsetWidth||1)||1;// the battle is zoomed on tablets and desktops: work in its own px
  const Wb=b.offsetWidth+20,Hb=b.offsetHeight+20;// the backdrop sits 10px outside the battle (its ::after)
  const Ys=(hero.getBoundingClientRect().bottom-r.top)/zb+10;// the hero's feet
- const Yf=backRow(field,r,zb);// a crowded fight: the foes' feet on the far row
- let f=FEET,Hg,topG;
- if(Yf!=null){Hg=Math.max(Hb,Wb/BOX,Yf/FAR,(Hb-Yf)/(1-FAR),(Ys-Yf)/(NEAR-FAR));topG=Yf-FAR*Hg;f=(Ys-topG)/Hg}// the far row stands on the floor's far edge, the near row lower on the same floor
- else{const boxH=f=>Math.max(Hb,Wb/BOX,Ys/f,(Hb-Ys)/(1-f));Hg=boxH(f);// the picture's feet line under the feet, never short of the screen
-  while(f>FEET-SLIDE+1e-6&&f*Hg-Ys>CROP*Hg){f=Math.max(FEET-SLIDE,f-.01);Hg=boxH(f)}// a wide phone cuts the sky: the feet slide up before the landmarks go
-  topG=Ys-f*Hg}
+ let f=FEET;const boxH=f=>Math.max(Hb,Wb/BOX,Ys/f,(Hb-Ys)/(1-f));let Hg=boxH(f);// the picture's feet line under the feet, never short of the screen
+ while(f>FEET-SLIDE+1e-6&&f*Hg-Ys>CROP*Hg){f=Math.max(FEET-SLIDE,f-.01);Hg=boxH(f)}// a wide phone cuts the sky: the feet slide up before the landmarks go
+ const topG=Ys-f*Hg;
  const Wg=Hg*BOX,leftG=(Wb-Wg)/2;
  b.style.setProperty('--pw-bg-size',Wg.toFixed(1)+'px '+Hg.toFixed(1)+'px');b.style.setProperty('--pw-bg-pos',leftG.toFixed(1)+'px '+topG.toFixed(1)+'px');b.style.setProperty('--pw-mat','url("'+im.src+'")');
  b.classList.add('pw-ground')}
-// Two rows (a crowded fight): the foes come down as far as the heroes' row allows, standing behind it on the far edge of the floor, instead of floating in the sky. Returns their feet in battle px.
-function backRow(field,r,zb){const foe=field.querySelector(':scope>.side.foe'),you=field.querySelector(':scope>.side.you');if(!foe||!you)return null;
- if(!field.classList.contains('pw-rows')){foe.style.transform='';return null}
- foe.style.transform='';let feet=0;for(const a of foe.querySelectorAll('.unit>.art'))feet=Math.max(feet,a.getBoundingClientRect().bottom);if(!feet)return null;
- let top=Infinity;for(const u of you.querySelectorAll('.unit, .unit .incoming, .unit .intent, .unit .loyal'))top=Math.min(top,u.getBoundingClientRect().top);if(top===Infinity)return null;// the hero's incoming chip floats above the unit
- const zf=foe.getBoundingClientRect().height/(foe.offsetHeight||1)||1,d=Math.max(0,(top-4-feet)/zf);
- if(d>0)foe.style.transform='translateY('+d.toFixed(1)+'px)';
- return (feet+d*zf-r.top)/zb+10}
-
 /* ---------- wiring ---------- */
 window.PW_CAST={stats,owns:id=>rigs.has(String(id))||rigs.has('a:'+id)||[...ghosts].some(R=>R.id===String(id)),impactDelay:id=>{const t=holds.get(String(id));return t?Math.max(0,Math.round(t-performance.now())):undefined},rigs,load,ready,resetPerf:()=>{perf.ms=[];perf.i=0;perf.max=0}};
 if(app){new MutationObserver(()=>sync()).observe(app,{childList:true});addEventListener('resize',()=>{for(const R of rigs.values())fit(R);ground()});loadData().then(()=>sync())}
