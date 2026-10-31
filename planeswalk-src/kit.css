@@ -427,3 +427,6 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,env(safe-ar
 #app .battle .hand.pw-flat{translate:var(--hshift,0px) 0}
 #app .battle .hand.pw-nameless>.card:not(.pw-big) .head>b{display:none!important}
 #app .battle .hand>.card.pw-noname:not(.pw-big) .head>b{display:none!important}
+/* 4.3.44: the exile pile shows once its painted icon is Checked (data-ui="exile-pile"), styled like the draw and discard piles */
+#app .battle .piles>span[data-pile=exile]{background-image:var(--img)!important}
+@media (max-aspect-ratio:3999/5000){#app .battle .piles>span[data-pile=exile]{right:var(--kl);bottom:calc(var(--kb) + 66px)}}

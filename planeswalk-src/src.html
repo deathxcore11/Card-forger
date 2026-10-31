@@ -401,7 +401,7 @@ function tokenDrop(kind){if(!beltOn())return null;run.belt=run.belt||[];let k=nu
  if(k&&run.belt.length<BELT_SLOTS()){run.belt.push(k);return k}return null}
 function useToken(i,t){const k=run.belt&&run.belt[i],T=k&&TOKENS[k];if(!T||!c||c.busy||view!=='battle')return;
  if(T.aim&&!t){const only=T.aim==='enemy'?solo():c.allies.length===1?c.allies[0]:null;if(only)t=only;else{if(T.aim==='ally'&&!c.allies.length)return;c.pending={kind:'belt',slot:i,aim:T.aim};c.log=`${T.name}: choose ${T.aim==='enemy'?'an enemy':'one of your allies'}.`;return render()}}
- c.pending=null;run.belt.splice(i,1);T.use(t);c.tokUsed=(c.tokUsed||0)+1;
+ c.pending=null;run.belt.splice(i,1);T.use(t);c.tokUsed=(c.tokUsed||0)+1;spellFx('belt-sacrifice',t||c);
  if(run.emblems.includes('scrap')&&alive()[0])hit(alive()[0],2);
  if(run.emblems.includes('satchel')&&!c.satchel){c.satchel=k}
  c.log=`You sacrifice a ${T.name}.`;after()}
