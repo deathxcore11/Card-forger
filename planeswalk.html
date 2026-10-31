@@ -2747,6 +2747,7 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
 #app .battle .hand.pw-dense>.card{zoom:1!important}
 #app .battle .hand.pw-flat{translate:var(--hshift,0px) 0}
 #app .battle .hand.pw-nameless>.card:not(.pw-big) .head>b{display:none!important}
+#app .battle .hand>.card.pw-noname:not(.pw-big) .head>b{display:none!important}
 
 </style>
 
@@ -4285,7 +4286,7 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
  const ro=new ResizeObserver(()=>{if(raf){cancelAnimationFrame(raf)}fit()});
  const fit=()=>{raf=0;const h=app.querySelector('.battle .hand');if(!h)return;const cs=[...h.children].filter(x=>x.classList.contains('card'));
   const bs=cs.map(x=>x.querySelector('.head>b'));bs.forEach(b=>b&&ro.observe(b));h.classList.remove('pw-flat','pw-rows','pw-dense','pw-nameless');['--cols','--cw','--ch','--hshift'].forEach(p=>h.style.removeProperty(p));
-  cs.forEach((x,i)=>{['margin-inline','grid-column','grid-row','--hw'].forEach(p=>x.style.removeProperty(p));bs[i]&&['max-width','margin-left'].forEach(p=>bs[i].style.removeProperty(p))});
+  cs.forEach((x,i)=>{x.classList.remove('pw-noname');['margin-inline','grid-column','grid-row','--hw'].forEach(p=>x.style.removeProperty(p));bs[i]&&['max-width','margin-left'].forEach(p=>bs[i].style.removeProperty(p))});
   if(cs.length<2)return;
   const n=cs.length,H=h.getBoundingClientRect(),kz=H.width/(h.offsetWidth||1);let w=cs[0].offsetWidth,k=kz*(parseFloat(getComputedStyle(cs[0]).zoom)||1);
   const set=m=>cs.forEach(x=>x.style.setProperty('margin-inline',m+'px','important'));
@@ -4297,13 +4298,13 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
   const pad=Math.max(lo-H.left,H.right-hi),inside=r=>Math.min(...r.map(q=>q.left))>=lo&&Math.max(...r.map(q=>q.right))<=hi;
   let r,m;
   // each name keeps to the strip of its card that neither neighbour's box covers; true when every name fits its strip
-  const names=r=>{let ok=true;bs.forEach((b,i)=>{if(!b)return;b.style.removeProperty('max-width');b.style.removeProperty('margin-left');const q=b.getBoundingClientRect(),L=i?r[i-1].right+2:-1e9,R=i<n-1?r[i+1].left-2:1e9;
+  const names=r=>{let ok=true;bs.forEach((b,i)=>{if(!b)return;b.style.removeProperty('max-width');b.style.removeProperty('margin-left');cs[i].classList.remove('pw-noname');if(b.scrollWidth>b.clientWidth+1){cs[i].classList.add('pw-noname');return}const q=b.getBoundingClientRect(),L=i?r[i-1].right+2:-1e9,R=i<n-1?r[i+1].left-2:1e9;
    const sh=Math.max(0,L-q.left)/k;if(sh)b.style.setProperty('margin-left',sh+'px');b.style.setProperty('max-width',Math.max(0,Math.min(q.right,R)-Math.max(q.left,L))/k+'px');
    if(b.scrollWidth>b.clientWidth+1||b.scrollHeight>b.clientHeight+4||b.clientWidth<24){ok=false;if(window.PW_FIT_DEBUG)(window.__pwFit=window.__pwFit||[]).push([cs[0].style.getPropertyValue('--hw'),b.textContent,b.scrollWidth,b.clientWidth,b.scrollHeight,b.clientHeight])}});return ok};
   const lay=()=>{h.classList.remove('pw-flat');cs.forEach(x=>x.style.removeProperty('margin-inline'));w=cs[0].offsetWidth;k=kz*(parseFloat(getComputedStyle(cs[0]).zoom)||1);
    // 1. spread: neighbours' boxes (tilt included) stay 4px apart
    r=rs();m=parseFloat(getComputedStyle(cs[0]).marginLeft)||0;
-   const ov=Math.max(...r.slice(1).map((q,i)=>r[i].right-q.left));m+=(ov+4)/2/k;set(m);if(inside(rs()))return true;
+   const ov=Math.max(...r.slice(1).map((q,i)=>r[i].right-q.left));m+=(ov+4)/2/k;set(m);if(inside(rs()))return names(rs());
    // 2. overlap, flat: each name keeps to the strip between the card on its left and the card on its right
    // the row fills the room between its bounds (deck pile on the left, discard on the right) and slides over to sit centred in it
    h.classList.add('pw-flat');m=((hi-lo)/k-n*w-6/k)/(2*n);set(m);h.style.setProperty('--hshift',(((lo+hi)/2-(H.left+H.right)/2)/kz)+'px');
