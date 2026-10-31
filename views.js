@@ -889,6 +889,10 @@ function ideasView() {
 // Recent tournament results through the site's Worker: Magic Online (constructed), MTGTop8 (Commander),
 // TopDeck.gg when a key is set. Matched against your cards.
 const scryArt = (name) => (name ? `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&format=image&version=art_crop` : "");
+// Each meta deck gets its own art: its cover card first, then its commanders and most-played spells.
+const BASIC_LAND = /^(Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest)$|^Wastes$/;
+const metaArtNames = (cover, deck) => [cover, ...(deck?.commanders || []).map((r) => r.name), ...[...(deck?.main || [])].filter((r) => !r.land && !BASIC_LAND.test(r.name)).sort((x, y) => y.qty - x.qty).map((r) => r.name)].filter(Boolean);
+const uniqueCover = (names, used) => { const pick = names.find((n) => !used.has(n)) || names[0] || ""; if (pick) used.add(pick); return pick; };
 const SOURCE_CREDIT = {
   "Magic Online (official decklists)": `Decklists from <a href="https://www.mtgo.com/decklists" target="_blank" rel="noopener">Magic Online</a> (Wizards of the Coast).`,
   "MTGTop8 (competitive Commander)": `Results and decklists from <a href="https://www.mtgtop8.com/format?f=cEDH" target="_blank" rel="noopener">MTGTop8</a>; most events are reported through <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.`,
@@ -908,19 +912,21 @@ function tournamentPanel() {
   else {
     const c = data.coverage || {},
       decks = data.decks.slice(0, 30),
+      usedArt = new Set(),
+      rowArt = new Set(),
       when = new Date(data.fetchedAt || M.at).toLocaleDateString([], { month: "short", day: "numeric" });
     const counts =
       c.challenges !== undefined
         ? `${c.challenges} Challenge${c.challenges === 1 ? "" : "s"} (${c.players.toLocaleString()} entries, ${c.challengeLists} ranked lists published)${c.leagues ? ` + ${c.leagueLists} League 5-0 lists from ${c.leagues} League${c.leagues === 1 ? "" : "s"} (field size not published)` : ""}`
         : `${c.events} event${c.events === 1 ? "" : "s"}${c.players ? ` · ${c.players.toLocaleString()} entries` : ""} · ${data.decks.length} published list${data.decks.length === 1 ? "" : "s"}`;
-    body = `<p class="evidence small">Tournament-backed · ${esc(label)} · last ${data.days} days · ${counts} · ${esc(data.source)} · updated ${esc(when)}${data.stale ? " · <span class=\"warn-text\">showing the last good data</span>" : ""}<br>${esc(data.shareNote || "Shares are of the published lists shown here — not overall popularity or win rate.")}${data.labelNote ? " " + esc(data.labelNote) : ""}</p>
+    body = `<details class="meta-source"><summary>${esc(label)} · last ${data.days} days · ${esc(String(data.source).replace(/\s*\(.*\)$/, ""))} · updated ${esc(when)}${data.stale ? " · <span class=\"warn-text\">last good data</span>" : ""}</summary><p>Tournament-backed: ${counts}. ${esc(data.shareNote || "Shares are of the published lists shown here — not overall popularity or win rate.")}${data.labelNote ? " " + esc(data.labelNote) : ""}</p></details>
       ${
         data.decks.length || data.archetypes.length
           ? `<div class="section-head"><h2>${edh ? "Top commanders" : "Top decks right now"}</h2><button class="link small" data-act="mtgMetaReload">⟳ Refresh</button></div><div class="arch-grid">${data.archetypes
               .slice(0, 8)
               .map((a) => {
-                const art = a.art || scryArt(a.cover);
-                return `<button class="arch ${art ? "has-art" : ""}" data-act="mtgProven" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}>${art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<span class="arch-icons"></span><b class="clamp2">${esc(a.name)}</b><small>${edh && Number.isFinite(a.conversion) ? `${(a.share * 100).toFixed(1)}% of entries · ${Math.round(a.conversion * 100)}% top-cut rate` : `${a.lists} list${a.lists === 1 ? "" : "s"} · ${Math.round(a.share * 100)}%`}</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
+                const art = a.art || scryArt(uniqueCover(metaArtNames(a.cover, data.decks.find((d) => d.key === a.best)), usedArt));
+                return `<button class="arch ${art ? "has-art" : "no-cover"}" data-act="mtgProven" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}>${art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : `<span class="arch-art arch-art-fallback" aria-hidden="true"></span>`}<span class="arch-body"><b class="clamp2">${esc(a.name)}</b><small>${edh && Number.isFinite(a.conversion) ? `${(a.share * 100).toFixed(1)}% of entries · ${Math.round(a.conversion * 100)}% top-cut rate` : `${a.lists} list${a.lists === 1 ? "" : "s"} · ${Math.round(a.share * 100)}%`}</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</span></button>`;
               })
               .join("")}</div>
       <div class="section-head"><h2>Recent top lists</h2></div><div class="list">${decks
@@ -930,7 +936,7 @@ function tournamentPanel() {
             have = names.reduce((a, r) => a + Math.min(r.qty, inv(r.name).owned), 0),
             cost = names.reduce((a, r) => a + Math.max(0, r.qty - inv(r.name).owned) * (Number(meta(r.name)?.prices?.usd) || 0), 0),
             priced = names.every((r) => meta(r.name) || r.land),
-            cover = d.art || scryArt(d.cover);
+            cover = d.art || scryArt(uniqueCover(metaArtNames(d.cover, d), rowArt));
           return `<button class="meta-row" data-act="mtgProven" data-key="${esc(d.key)}"><span class="meta-art">${cover ? `<img class="mini-art" src="${esc(cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}</span><span class="meta-main"><b class="ellip">${esc(d.name)}</b><small class="muted ellip">${esc(d.place)} · ${esc(d.event)}${d.players ? ` · ${d.players} players` : ""}${d.record ? " · " + esc(d.record) : ""}</small><span class="meta-own">${bar(total ? have / total : 0)}<small>${total ? Math.round((have / total) * 100) : 0}% owned${priced && have < total ? ` · ${usd(cost, 0)} to finish` : ""}</small></span></span></button>`;
         })
         .join("")}</div>`
@@ -938,7 +944,7 @@ function tournamentPanel() {
       }
       <p class="foot">${SOURCE_CREDIT[data.source] || ""}</p>`;
   }
-  return `<section class="panel"><h3>Tournament results</h3><p class="muted small">Recent tournament lists, matched against your cards. Open one for the original, a budget version, or a draft from your cards.</p>${chips}${body}</section>`;
+  return `<section class="panel"><h3>Tournament results</h3>${chips}${body}</section>`;
 }
 
 function inspirationView() {
