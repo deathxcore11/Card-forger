@@ -373,7 +373,7 @@ try{
  await openAsk(page);await page.locator('.ask-input').fill(question);await page.locator('.ask-send').click();
  await page.locator('#sheet[open] .deck-flow-result').waitFor();
  assert.equal(askCalls,1,'complete result ends after one proposal');const result=page.locator('#sheet[open] .deck-flow-result'),preview=await result.innerText();
- assert.match(preview,/60 main/);assert.match(preview,/Reviewable draft · complete list · structure checked/);assert.match(preview,/Some request checks remain unmet or unverified/);assert.doesNotMatch(preview,/Generated deck · Complete · structure checked/);assert.match(preview,/Reference estimate/);assert.doesNotMatch(preview,/Target \$25/);assert.equal(await page.locator('#sheet[open]').count(),1,'Ask hands the completed deck to the existing independent deck sheet');assert.equal(await page.locator('.ask-dialog[open]').count(),0,'Ask closes before the deck sheet opens');assert.equal(await page.locator('#sheet').evaluate(n=>n.contains(document.activeElement)),true,'focus enters the completed deck sheet');
+ assert.match(preview,/60 main/);assert.match(preview,/\bDraft\b/);assert.match(preview,/Some request checks remain unmet or unverified/);assert.doesNotMatch(preview,/✓ Checked/);assert.match(preview,/Reference estimate/);assert.doesNotMatch(preview,/Target \$25/);assert.equal(await page.locator('#sheet[open]').count(),1,'Ask hands the completed deck to the existing independent deck sheet');assert.equal(await page.locator('.ask-dialog[open]').count(),0,'Ask closes before the deck sheet opens');assert.equal(await page.locator('#sheet').evaluate(n=>n.contains(document.activeElement)),true,'focus enters the completed deck sheet');
  const displayed=await result.locator('[data-act="flowCard"]').evaluateAll(ns=>ns.map(n=>({qty:Number(n.dataset.flowQty),name:n.dataset.flowName})));assert.equal(sumQty(displayed),60);
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheet','Standard deck sheet '+width);await result.locator('[data-act="flowSave"]').scrollIntoViewIfNeeded();await capture(page,'goal-preview-'+width);}
  assert.equal(await inventorySnapshot(page),initial,'reviewing a built list never saves it');await page.locator('#sheet [data-act="closeSheet"]').first().click();
@@ -507,7 +507,7 @@ try{
    const put=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(v,k){record(v,k);return put.call(this,v,k);};const set=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){record(v,k);return set.call(this,k,v);};
   });
   const original=group.cases.find(x=>x.deck.id===group.save).deck,newName=original.name+' saved';
-  await openProbe(original.id);await fp.locator('.deck-hero .fmt-chip[data-act="tDeckMenu"]').click();await fp.locator('#sheet .context-edit > summary').first().click();await fp.locator('#sheet[open] #tDmName').fill(newName);await fp.locator('#sheet[open] [data-act="tDeckSave"]').click();
+  await openProbe(original.id);await fp.locator('.deck-hero .ds-menu[data-act="tDeckMenu"]').click();await fp.locator('#sheet .context-edit > summary').first().click();await fp.locator('#sheet[open] #tDmName').fill(newName);await fp.locator('#sheet[open] [data-act="tDeckSave"]').click();
   await fp.waitForFunction(({game,id,name})=>window.__uiTestState.state.tcg[game].decks.find(x=>x.id===id)?.name===name&&!document.querySelector('#sheet').open,{game:group.game,id:original.id,name:newName});
   await fp.locator('.deck-hero [data-act="go"][data-to="#decks"]').click();await fp.waitForFunction(()=>window.__uiTestState.ui.view==='decks');await openProbe(original.id);
   const saved=await fp.evaluate(({game,id})=>JSON.parse(JSON.stringify(window.__uiTestState.state.tcg[game].decks.find(x=>x.id===id))),{game:group.game,id:original.id}),reopened=await stateOf();
@@ -560,7 +560,7 @@ try{
   assert.equal(await inventorySnapshot(bp),before,'generating never saves or changes ownership');assert.deepEqual(await bp.evaluate(()=>window.__fixtureSensitiveWrites),[]);
   // Every probe has a complete, checked candidate in its pool: the result must be that whole list.
   assert(r.ok,'a complete candidate exists, so the result is the list, not an error: '+r.alert);
-  assert.equal(r.total,size,'the full deck, not a partial draft');assert.match(r.text,/Generated deck · Complete · structure checked/);assert.doesNotMatch(r.text,/Reviewable draft/,'supported non-Magic builder control retains the complete-result label');
+  assert.equal(r.total,size,'the full deck, not a partial draft');assert.match(r.text,/✓ Checked/);assert.doesNotMatch(r.text,/Reviewable draft/,'supported non-Magic builder control retains the complete-result label');
   assert(r.rows.find(row=>row.name===seedName)?.qty>=1,'the requested build-around is in the result');
   for(const row of r.rows)assert(row.qty<=(x.game==='ptcg'?(/^Basic .* Energy$/.test(row.name)?60:4):3),'copy limit for '+row.name);
   if(x.game==='ptcg'){const energy=r.rows.find(row=>row.name==='Basic Fire Energy');assert(energy?.qty>=8,'the Fire attacker is paid for by Fire Energy, not left without resources');}

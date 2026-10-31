@@ -32,7 +32,7 @@ try {
  assert.equal(energyRows[0].owned,0,'unowned Basic Energy must not acquire fabricated collection quantities');
  assert.equal(energyRows[0].price,null,'an exact printing without a quote remains unpriced, not free');
  assert.equal(energyRows[0].matchPending,false,'printing identity can be resolved independently of its price');
- assert.match(energyHTML,/<b>0\/2<\/b><span>owned/);assert.match(energyHTML,/2 unpriced · Incomplete total/);assert.match(energyHTML,/Price unavailable/);
+ assert.match(energyHTML,/<b>0\/2<\/b><span>owned/);assert.match(energyHTML,/2 cards without a price/);assert.match(energyHTML,/Price unavailable/);
  assert.doesNotMatch(energyHTML,/Basic Energy · assumed|✓ owned/);
  await spec.save(energyRows,'original');const savedEnergy=S.state.tcg.ptcg.decks[0];
  assert.deepEqual(savedEnergy.zones.main.map(r=>[r.cardId,r.qty]),[['mee-013',2]]);

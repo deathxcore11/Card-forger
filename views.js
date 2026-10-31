@@ -102,8 +102,14 @@ export function goldfishFor(d, cards = d.cards, tag = "") {
   }
   return S.ui.gold.get(sig);
 }
-const coverOf = (d) =>
-  art(meta(d.commander) || d.cards.map((c) => meta(c.name)).find((c) => art(c)));
+// Cover: the commander, else the first creature or planeswalker, else any spell; a land only when nothing else has art.
+const coverRank = (c) => /\b(Creature|Planeswalker)\b/.test(c.type_line || "") ? 0 : /\bLand\b/.test(c.type_line || "") ? 2 : 1;
+const coverOf = (d) => {
+  const lead = meta(d.commander);
+  if (lead && art(lead)) return art(lead);
+  const pool = d.cards.map((c) => meta(c.name)).filter((c) => c && art(c));
+  return art(pool.reduce((best, c) => (!best || coverRank(c) < coverRank(best) ? c : best), null));
+};
 
 export const deckArtwork = d => d && Array.isArray(d.cards) && d.cards.every(c=>c&&typeof c.name==='string') ? img(coverOf(d), '') : '';
 
@@ -1128,9 +1134,9 @@ export function deckPage() {
   const power = shownPower(mtgPower(d)), countOk = fm.exact ? mainCopies === target : mainCopies >= target;
   return `${deckShell({game:"mtg",source:"mine",artHtml:img(coverOf(d), d.name, "hero-art"),title:d.name,
     back:`<button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button>`,
-    menu:deckBoxMarkup(d,{images:d.cards.slice(0,3).map(r=>cardImage(meta(r.name))),open:true,button:true}),
+    menu:`<button class="ds-menu" data-act="deckMenu" aria-label="Deck options for ${esc(d.name)}" title="Rename, format, deck box, delete">⋯</button>`,
     badge:"My deck",
-    format:`<button class="chip dark fmt-chip" data-act="deckMenu" title="${esc(sizeLabel(fm))}${fm.note ? " · " + esc(fm.note) : ""}">Magic · ${esc(fm.name)}</button>${fm.commander ? colorDots(meta(d.commander)) : ""}${d.locked ? '<span class="chip dark">Assembled</span>' : ""}`,
+    format:`<span class="chip dark" title="${esc(sizeLabel(fm))}${fm.note ? " · " + esc(fm.note) : ""}">Magic · ${esc(fm.name)}</span>${fm.commander ? colorDots(meta(d.commander)) : ""}${d.locked ? '<span class="chip dark">Assembled</span>' : ""}`,
     legality:reviewBadge(d),
     line:fm.commander ? `<span class="deck-hero-commander">${esc(d.commander || "No commander yet")}</span>` : "",
     stats:[

@@ -1301,6 +1301,8 @@ export function provenModel(spec) {
   }) : candidates;
   return { similar, engine, pool, full };
 }
+// Player words for a partial total: the + on the amount and this note say some cards have no price yet.
+const noPrice = (n) => `${n} card${n === 1 ? "" : "s"} without a price`;
 export function provenSheetHtml() {
   const base = proven.spec;
   if (!base) return "";
@@ -1355,13 +1357,13 @@ export function provenSheetHtml() {
     const d = ownedDraft(spec.rows);
     body = `<div class="note ${d.open ? "warn" : ""}"><b>${d.open ? `Draft — ${d.open} slot${d.open === 1 ? "" : "s"} open` : side.some(r => r.qty > (r.owned || 0)) ? "Main deck ready — sideboard still needs cards" : spec.rows.some(r=>r.assumedOwned) ? "Ready — all card slots covered" : "Ready — you own every card"}</b>${d.open ? ` · you own ${total - d.open} of ${total}` : ""}</div>
       ${d.rows.length ? `<p class="list-head">${spec.rows.some(r=>r.assumedOwned)?"Cards covered":"Cards you own"} <span class="muted">${total - d.open}</span></p><div class="list compact deck-compact-list" data-deck-list>${d.rows.map((r) => row(r, "✓ owned")).join("")}</div>` : `<p class="muted small">You don’t own any cards from this list yet.</p>`}
-      ${d.open ? `<p class="list-head">To finish · cheapest first <span class="muted">${usd(d.cost, 0)}${d.unpriced ? ` known subtotal · ${d.unpriced} unpriced · Incomplete total` : ""}</span></p><div class="list compact deck-compact-list" data-deck-list>${d.missing.map((r) => row({ ...r, owned: 0 })).join("")}</div>` : ""}`;
+      ${d.open ? `<p class="list-head">To finish · cheapest first <span class="muted">${usd(d.cost, 0)}${d.unpriced ? `+ · ${noPrice(d.unpriced)}` : ""}</span></p><div class="list compact deck-compact-list" data-deck-list>${d.missing.map((r) => row({ ...r, owned: 0 })).join("")}</div>` : ""}`;
   }
   // Magic tournament lists keep their sideboard: shown in every mode and saved with every version.
   if (side.length) {
     const sn = side.reduce((a, r) => a + r.qty, 0),
       sc = costToFinish(side);
-    body += `<details class="group side-group" ${mode === "original" ? "open" : ""}><summary><span>Sideboard <em>${sn}</em></span><span class="muted small">${usd(sc, 0)} ${sideUnpriced ? `known subtotal · ${sideUnpriced} unpriced · Incomplete total` : "to finish"}</span></summary><p class="small muted">Saved with ${mode === "original" ? "the deck" : "every version"} as the tournament player ran it. Swap these in between games.</p><div class="list compact deck-compact-list" data-deck-list>${side.map((r) => row(r,"","side")).join("")}</div></details>`;
+    body += `<details class="group side-group" ${mode === "original" ? "open" : ""}><summary><span>Sideboard <em>${sn}</em></span><span class="muted small">${usd(sc, 0)}${sideUnpriced ? `+ to finish · ${noPrice(sideUnpriced)}` : " to finish"}</span></summary><p class="small muted">Saved with ${mode === "original" ? "the deck" : "every version"} as the tournament player ran it. Swap these in between games.</p><div class="list compact deck-compact-list" data-deck-list>${side.map((r) => row(r,"","side")).join("")}</div></details>`;
   }
   const hero = spec.heroFor?.(spec.rows), saveLabel = saving ? "Saving…" : mode === "original" ? "Save deck" : mode === "budget" ? "Save adaptation" : "Save draft";
   return `<div class="ds-page">${deckShell({game:spec.g,source:"meta",art:hero || "",title:spec.title,
@@ -1371,7 +1373,8 @@ export function provenSheetHtml() {
     stats:[
       {value:`${total}`,label:side.length ? `main · ${side.reduce((a, r) => a + r.qty, 0)} sideboard` : "cards"},
       {value:`${have}/${total}`,label:spec.rows.some(r=>r.assumedOwned) ? "covered" : "owned"},
-      {cls:"ds-cost",value:have >= total ? "complete ✓" : usd(M.full, 0),label:have >= total ? "to finish" : unpriced ? `known subtotal · ${unpriced} unpriced · Incomplete total` : "to finish"}],
+      {cls:"ds-cost",value:have >= total ? "complete ✓" : usd(M.full, 0)+(unpriced ? "+" : ""),label:have >= total || !unpriced ? "to finish" : `to finish · ${noPrice(unpriced)}`,
+       more:!proven.busy && spec.load && (proven.msg || incomplete || saveError) ? `<button class="link ds-retry" data-act="provenRetry">${spec.rows.some(r=>r.matchPending)?"Retry card matching":"Retry prices"}</button>` : ""}],
     owned:total ? have / total : 0,
     actions:[
       {label:saveLabel,primary:true,attrs:'data-act="provenSave"',disabled:saving || mode === "budget" && incomplete},
@@ -1379,7 +1382,7 @@ export function provenSheetHtml() {
       ...(spec.sourceUrl ? [{html:`<a class="btn ghost" href="${esc(safeHref(spec.sourceUrl))}" target="_blank" rel="noopener noreferrer">${esc(spec.sourceLabel || "Source")}</a>`}] : [])],
     status:`${proven.busy ? buildOverlay(proven.msg, { title: "Fitting the tournament deck", note: "Matching the winning list to your cards and budget, card by card. This can take up to a minute." }) : proven.msg ? `<p class="small warn-text" role="status">${esc(proven.msg)}</p>` : ""}
   ${saveError?`<p class="note warn" role="alert">${esc(saveError)}</p>`:""}
-  ${!proven.busy && spec.load && (proven.msg || incomplete || saveError) ? `<div class="actions"><button class="btn small" data-act="provenRetry">${spec.rows.some(r=>r.matchPending)?"Retry card matching":"Retry prices"}</button></div>` : ""}`,
+`,
     versions:segmented("provenMode", mode, [["original", "Original"], ["budget", "Budget"], ["draft", "My cards"]])})}
   ${deckViewer(spec.g,body)}
   ${spec.extraActions ? `<div class="actions wrap sheet-actions">${spec.extraActions}</div>` : ""}
@@ -1421,9 +1424,9 @@ export function tcgDeck(id) {
   const tab = S.ui.tdeckTab?.[g+":"+d.id] || "cards";
   return `${deckShell({game:g,source:"mine",artHtml:g === "ptcg" && cover ? pokemonArtCrop(cover, "hero-art") : imgTag(cover, "hero-art", true),title:d.name,
     back:`<button class="icon light" data-act="go" data-to="#decks" aria-label="Back">←</button>`,
-    menu:deckBoxMarkup(d,{game:g,images:(d.zones.main||[]).slice(0,3).map(r=>artworkSources(cardOf(g,r.cardId)).find(u=>u.startsWith("https://"))),open:true,button:true}),
+    menu:`<button class="ds-menu" data-act="tDeckMenu" data-id="${esc(d.id)}" aria-label="Deck options for ${esc(d.name)}" title="Rename, format, deck box, delete">⋯</button>`,
     badge:"My deck",
-    format:`<button class="chip dark fmt-chip" data-act="tDeckMenu" data-id="${esc(d.id)}">${esc(GAMES[g].short)} · ${esc(f.name)}</button>`,
+    format:`<span class="chip dark">${esc(GAMES[g].short)} · ${esc(f.name)}</span>`,
     legality:`<button class="review-badge ${deckCheckTone(issues)}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? esc(deckCheckLabel(issues)) : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>`,
     stats:[
       {value:g === "ygo" ? `${zoneCount("main")}` : `${zoneCount("main")}/60`,label:g === "ygo" ? `main${zoneCount("extra") ? ` · ${zoneCount("extra")} extra` : ""}` : "cards"},

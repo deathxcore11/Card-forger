@@ -107,29 +107,31 @@ export function deckResultMarkup(result,id,{coach='',saved=false,saving=false}={
   return `<button class="mini-row art-row deck-compact-row" ${deckCardAttrs(r.name,r.qty,r.zone,c,r.name===result.deck.commander?'Commander':'')} data-act="flowCard" data-result="${esc(id)}" data-row="${index}" data-flow-qty="${r.qty}" data-flow-name="${esc(r.name)}">${artOf(c)?`<img class="row-thumb" src="${esc(artOf(c))}" alt="" loading="lazy">`:'<span class="row-thumb img-missing" aria-hidden="true"></span>'}<span class="deck-compact-copy"><b>${r.qty}× ${esc(r.name)}</b>${referencePrintingPills(printing)}${r.referencePriceSelection?`<span class="tag" data-reference-finish="${esc(r.referencePriceSelection.finish)}">${r.referencePriceSelection.finish==='foil'?'Foil':'Nonfoil'} ${r.referencePriceSelection.verified?'estimate':'quote unverified'}</span><span class="foot">${esc(r.referencePriceSelection.provider)} · ${esc(r.referencePriceSelection.printingId)} · ${esc(r.referencePriceSelection.retrievedAt||'quote time unavailable')}</span>`:''}${request.game==='ygo'&&c?.archetype?`<span class="tag">${esc(c.archetype)}</span>`:''}${r.name===result.deck.commander?'<span class="tag">Commander</span>':''}</span><span class="small muted">${r.price===null?'Unpriced':usd(r.price*r.qty)}</span></button>`;
  };
  const plan=`<p class="small">Built around ${esc(name)}${request.theme?' · requested theme: '+esc(request.theme):''}. ${request.easy?'Ranked to prefer fewer setup requirements. ':''}${request.game==='ptcg'&&result.plan.attackers?.length?'Attack with '+result.plan.attackers.map(c=>esc(c.name)+(c.evolveFrom?' (evolves from '+esc(c.evolveFrom)+')':'')).join(', ')+'. The selected Energy supports at least one attack on each. ':''}Card interactions and performance still need playtesting.</p>`;
+ // Caveats sit between the header and Save, so a player reads them before saving.
+ const lead=`  ${requestRestrictions(request)}
+  ${request.budget!==null?`<p class="small ${result.delta>0?'warn-text':'muted'}">${request.budgetMode==='cap'?'Cap':'Target'} ${usd(request.budget)}${delta?' · '+delta:''}</p>`:''}
+  ${rebuildSummary(result.rebuild)}
+  ${result.requestSatisfied===false?'<p class="evidence small warn-text">Some request checks remain unmet or unverified. Review the details before saving.</p>':''}
+  ${pricing.unpriced?`<p class="note warn">${pricing.unpriced} copies are unpriced. The total and budget fit are unverified.</p>`:''}
+  ${result.budgetStatus==='outside-target'?'<p class="note warn">This complete candidate exceeds the allowed overage. The loaded pool did not produce a checked list near your target.</p>':''}
+  ${prerequisiteSummary(result.plan.theme)}${strategySummary(result.plan.strategy)}${mechanic.summary}${loop.summary}`;
  return `<article class="deck-flow-result ds-page" data-flow-result="${esc(id)}">
   ${deckShell({game:request.game,source:random?'random':'ai',art:hero||'',title:name,
    back:'<button class="icon light" data-act="closeSheet" aria-label="Back">←</button>',
    badge:random?'Random build':'AI build',format:`<span class="chip dark">${esc(request.formatName)}</span>`,
    legality:`<span class="review-badge ${result.requestSatisfied===false||draft?'warn':'ok'}">${result.requestSatisfied===false?'Checks unmet':draft?'Draft':'✓ Checked'}</span>`,
-   line:`${esc(sectionCounts)}<br>${draft?'Reviewable draft · complete list · structure checked':'Generated deck · Complete · structure checked'}`,
+   line:esc(sectionCounts),
    stats:[
     {value:String(pricing.copies),label:'cards'},
     {value:`${pricing.ownedCopies}/${pricing.copies}`,label:'owned'},
     {value:pricing.estimate===null&&!pricing.subtotal?'—':usd(pricing.estimate??pricing.subtotal,0)+(pricing.estimate===null?'+':''),label:`${pricing.estimate===null?(pricing.subtotal?'Known subtotal':'No checked prices yet'):'Reference estimate'} · ${pricing.basis==='purchase'?'to finish':'whole deck'}`,cls:'ds-cost'},
     ...(result.power?[{value:String(shownPower(result.power)??'—'),label:shownPower(result.power)==null?'power unavailable':'power'}]:[])],
    owned:pricing.copies?pricing.ownedCopies/pricing.copies:0,
+   lead,
    actions:[
     {label:saved?'Saved to My decks':saving?'Saving…':'Save deck',primary:true,attrs:`data-act="flowSave" data-result="${esc(id)}"`,disabled:saved||saving},
     {html:coach},
     {html:`<details class="ds-rebuild"><summary class="btn ghost">Rebuild</summary><div class="deck-budget-rebuild"><label class="field">Budget ($)<input data-flow-budget type="number" min="0" max="100000" step="0.01" inputmode="decimal" value="" placeholder="Enter amount" required></label><button class="btn ghost" data-act="flowAdjust" data-result="${esc(id)}">Rebuild with budget</button><p class="small" role="status" data-flow-status></p></div></details>`}]})}
-  ${requestRestrictions(request)}
-  ${request.budget!==null?`<p class="small ${result.delta>0?'warn-text':'muted'}">${request.budgetMode==='cap'?'Cap':'Target'} ${usd(request.budget)}${delta?' · '+delta:''}</p>`:''}
-  ${rebuildSummary(result.rebuild)}
-  ${result.requestSatisfied===false?'<p class="evidence small warn-text">Some request checks remain unmet or unverified. Review the details before saving.</p>':''}
-  ${pricing.unpriced?`<p class="note warn">${pricing.unpriced} copies are unpriced. The total and budget fit are unverified.</p>`:''}
-  ${result.budgetStatus==='outside-target'?'<p class="note warn">This complete candidate exceeds the allowed overage. The loaded pool did not produce a checked list near your target.</p>':''}
-  ${prerequisiteSummary(result.plan.theme)}${strategySummary(result.plan.strategy)}${mechanic.summary}${loop.summary}
   ${result.deck.constructionBasis?`<p class="foot">Construction: ${result.deck.constructionBasis==='reference'?(result.deck.referenceQualifiedForBuild===true?'resolved current source-list candidate':'preserved previous source-based list · source not requalified for this build'):'bounded heuristic search'}${result.deck.referenceAdaptation?` · ${esc(result.deck.referenceAdaptation.kind)}`:''}. Source results do not certify this deck’s performance.</p>`:''}
   ${loop.details}${mechanic.details}
   ${deckViewer(request.game,`<div class="deck-flow-cards">${zones.filter(z=>count(z)>0).map(z=>`<section><h3>${z==='main'?'Main deck':z==='extra'?'Extra Deck':request.game==='mtg'?'Sideboard':'Side Deck'} <span>${count(z)}</span></h3><div class="list compact deck-compact-list" data-deck-list>${rows.map((r,i)=>({r,i})).filter(({r})=>r.zone===z).map(({r,i})=>cardRow(r,i)).join('')}</div></section>`).join('')}</div>`)}

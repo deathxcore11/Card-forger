@@ -208,7 +208,7 @@
 .ds-foot::before{content:"";position:absolute;inset:-34px 0 0;z-index:-1;border-radius:inherit;pointer-events:none;background:linear-gradient(0deg,#0b0e15d9,#0b0e1566 60%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);-webkit-mask-image:linear-gradient(transparent,#000 46px);mask-image:linear-gradient(transparent,#000 46px)}
 .ds-stats{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;padding:12px 18px 14px}
 .ds-stat{display:inline-flex;align-items:baseline;gap:5px;min-width:0;padding:0;border:0;background:none;color:#cfd4de;font:inherit;font-size:12px;text-align:left}
-.ds-stat b{font:800 15px/1.2 Manrope,sans-serif;color:#fff}
+.ds-stat b{font:800 15px/1.2 Manrope,sans-serif;color:#fff;white-space:nowrap}
 .ds-stat span{font-size:12px}
 button.ds-stat{cursor:pointer;position:relative;min-height:28px}
 button.ds-stat::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:44px;translate:-50% -50%}
@@ -217,10 +217,18 @@ button.ds-stat b{display:inline-grid;place-items:center;min-width:30px;padding:1
 .ds-stat:last-child:not(:first-child){margin-left:auto}
 .ds-bar{position:relative;display:block;height:3px;margin:0;border-radius:0 0 18px 18px;background:#ffffff14;overflow:hidden}
 .ds-bar>i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 70%,#fff),var(--gold));border-radius:inherit}
-.ds-hero .deck-box-control{margin-top:-24px;margin-right:2px;z-index:4}
+/* Deck options: an obsidian icon button with a gold glyph, the same size and shape as the back button. */
+.ds-menu{display:grid;place-items:center;width:44px;height:44px;flex:none;padding:0 0 4px;border-radius:12px;border:1px solid color-mix(in srgb,var(--gold) 42%,transparent);background:#0b0e15c7;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:var(--gold);font:700 22px/1 Manrope,sans-serif;text-shadow:none;cursor:pointer;box-shadow:inset 0 1px 0 #ffffff14}
+.ds-menu:hover{background:#0b0e15e6;border-color:color-mix(in srgb,var(--gold) 70%,transparent)}
+.ds-menu:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+/* Retry lives in the price line as a quiet text action. */
+.ds-retry{position:relative;margin-left:6px;padding:0;border:0;background:none;color:var(--gold);font:600 12px/1.2 inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.ds-retry::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:44px;translate:-50% -50%}
 /* Actions, status and versions sit under the hero. */
 .ds-head{display:grid;gap:12px;margin:14px 0}
 .ds-head:empty{display:none}
+.ds-lead{display:grid;gap:8px}
+.ds-lead>*{margin:0}
 .ds-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch}
 .ds-actions .btn{min-height:46px;flex:0 1 auto}
 .ds-actions .ds-primary{min-width:180px}
@@ -260,3 +268,5 @@ dialog.sheet:has(.ds-page) #sheetBody{max-height:none;height:100%;overflow-x:aut
 .deck-viewer .lot-name .set-badge[data-act]{position:relative}
 .deck-viewer .lot-name .set-badge[data-act]::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:44px;translate:-50% -50%}
 dialog.sheet:has(.ds-page){overflow:visible}
+/* A full-page deck covers the page under it; stop painting that page while the deck is open. */
+body:has(#sheet[open] .ds-page) #content{visibility:hidden}

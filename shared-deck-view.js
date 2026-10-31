@@ -1,6 +1,5 @@
 import {deckViewer,deckCardAttrs,deckShell} from './deck-viewer.js';
 import {esc,usd} from './ui.js';
-import {deckBoxMarkup} from './deck-box.js';
 // The shared deck is a read-only mode of the same proven-deck inspector.
 // Sections come from the owner's snapshot; no format or zone is guessed.
 export function sharedDeckSheet(spec){
@@ -10,7 +9,6 @@ export function sharedDeckSheet(spec){
  const actions=reference?[{label:'Import deck',primary:true,attrs:`data-act="wikiDeckImport" data-wiki-result="${esc(reference.token)}"`},{label:'Export list',attrs:`data-act="wikiDeckExport" data-wiki-result="${esc(reference.token)}"`},{html:`<a class="btn ghost" href="${esc(reference.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(reference.sourceLabel)}</a>`}]:[{label:'Save to my decks',primary:true,attrs:'data-act="provenSave"',disabled:!(item.deckSchema===1&&item.format)}];
  return `<div class="ds-page">${deckShell({game:item.game,source:reference?'wiki':'shared',art:hero||'',title:item.title,
   back:'<button class="icon light" data-act="closeSheet" aria-label="Back">←</button>',
-  menu:deckBoxMarkup({id:item.key,name:item.title,boxAppearance:item.appearance},{game:item.game,images:rows.map(c=>c.image),open:true}),
   badge:reference?'Wiki deck':'Shared deck',format:`<span class="chip dark">${esc(item.format||(reference?'Source deck':'Shared deck'))}</span>`,
   line:item.commander?`Commander · ${esc(item.commander)}`:'',
   stats:[{value:String(total),label:'cards'},...(priced.length?[{value:usd(value,0)+(priced.length<rows.length?'+':''),label:'reference value'}]:[])],
