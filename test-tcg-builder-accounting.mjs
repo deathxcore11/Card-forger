@@ -59,7 +59,7 @@ for(const entry of ['manual','random','ai']){
  const tiers=await build({entry}),full=forBudget(tiers,Infinity),low=forBudget(tiers,10);
  assert.equal(full.total,60);assert(full.cost>25,'real unowned Energy prevents a fabricated sub25 list');assert.equal(full.buildDiagnostics.ownedCopies,0);assert.equal(full.unknown,0);assert.equal(full.buildDiagnostics.purchaseEstimate,Math.round(full.cost*100)/100);
  assert(low.total<60,'fillOpen cannot replace unaffordable Energy with Trainers even with60+ available Trainer copies');assert(low.buildDiagnostics.missingEnergy>0);assert.equal(low.buildDiagnostics.ready,false);assert(low.cost<=10);
- let saved=await saveReopen(low);assert.match(saved.message,/Saved draft/);assert.match(saved.html,/Incomplete draft: \d+ slots remain/);assert.match(saved.html,/<b>0%<\/b>owned/);
+ let saved=await saveReopen(low);assert.match(saved.message,/Saved draft/);assert.match(saved.html,/Incomplete draft: \d+ slots remain/);assert.match(saved.html,/<b>0%<\/b><span>owned/);
  saved=await saveReopen(full);assert.match(saved.message,/Saved complete list/);assert.equal(saved.saved.buildDiagnostics.purchaseEstimateVerified,true);assert.deepEqual(saved.saved.zones,JSON.parse(JSON.stringify(full.zones)));
  const index=tiers.indexOf(full);await A.tTierBuy({dataset:{i:String(index)}});const bought=purchases.at(-1).rows.find(r=>r.name===energy.name);assert(bought?.qty>0,'Buy includes missing Energy');assert.equal(bought.set,energy.set.name);assert.equal(bought.code,energy.set.id,'Buy preserves selected Energy printing instead of substituting SVE');
 }
@@ -68,9 +68,9 @@ for(const quote of ['', '   ']){const versions=await build({quote}),uncapped=for
 let tiers=await build({quote:null}),full=forBudget(tiers,Infinity),low=forBudget(tiers,10);
 assert.equal(full.total,60);assert(full.unknown>=11);assert.equal(full.buildDiagnostics.purchaseEstimate,null);assert.equal(full.buildDiagnostics.ready,true,'uncapped legal completeness is distinct from unknown price');assert.equal(full.buildDiagnostics.withinBudget,false);assert(low.total<60);assert.equal(low.unknown,0,'unpriced purchases excluded under finite cap are not fabricated free cards');
 let preview=T.tcgBuildSheet();assert.match(preview,/Known purchase subtotal only/);assert.match(preview,/Save deck · cost unverified/);assert.doesNotMatch(preview,/Basic Energy is assumed owned/);
-let saved=await saveReopen(full);assert.match(saved.message,/unpriced purchases, cost unverified/);assert.match(saved.html,/unpriced.*unverified, not free/);assert.equal(saved.saved.buildDiagnostics.unpricedPurchaseCopies,full.unknown);assert.match(saved.html,/<b>0%<\/b>owned/);
+let saved=await saveReopen(full);assert.match(saved.message,/unpriced purchases, cost unverified/);assert.match(saved.html,/unpriced.*unverified, not free/);assert.equal(saved.saved.buildDiagnostics.unpricedPurchaseCopies,full.unknown);assert.match(saved.html,/<b>0%<\/b><span>owned/);
 tiers=await build({quote:2,ownedEnergy:5});full=forBudget(tiers,Infinity);assert.equal(full.buildDiagnostics.ownedCopies,5);const energyQty=full.zones.main.find(r=>r.cardId===energy.id).qty;assert.equal(Math.round(full.cost*100)/100,Math.round(((60-energyQty)*.1+(energyQty-5)*2)*100)/100);
-saved=await saveReopen(full);assert.match(saved.html,/<b>8%<\/b>owned/);assert.equal(S.state.tcg.ptcg.collection[0].qty,5);
+saved=await saveReopen(full);assert.match(saved.html,/<b>8%<\/b><span>owned/);assert.equal(S.state.tcg.ptcg.collection[0].qty,5);
 tiers=await build({quote:null,ownedEnergy:20});full=forBudget(tiers,10);assert.equal(full.total,60);assert.equal(full.unknown,0,'actual owned Energy needs no purchase quote');assert.equal(full.buildDiagnostics.ready,true);
 const zero=forBudget(tiers,0);assert.equal(zero.total,14);assert.equal(zero.buildDiagnostics.ownedCopies,14,'owned-only14 is allowed only from20 actually owned copies');
 tiers=await build({quote:null});assert.equal(forBudget(tiers,0).total,0,'owned-only no longer invents14 unowned Energy');

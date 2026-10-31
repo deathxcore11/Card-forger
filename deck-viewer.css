@@ -185,3 +185,88 @@
 .deck-toolbar>.deck-view-toolbar{margin:0 0 0 auto;display:flex;align-items:center;gap:8px}
 .deck-toolbar>.deck-view-toolbar>span{display:none}
 .deck-chip,.deck-group,.deck-add-toggle{white-space:nowrap;flex:none}
+
+/* 31 Oct master deck view: one header for every deck source and game, in the same art direction as the
+   premium deck tiles (PR #75): full-bleed art, dark vignette, gold-to-glass hairline, Cinzel title over the
+   art, slim stats on a glass base that fades up into the art, and the owned bar along the bottom edge. */
+.ds-hero{--ds-h:clamp(300px,34vw,380px);position:relative;isolation:isolate;display:block;min-height:var(--ds-h);margin:4px 0 0;border-radius:18px;overflow:visible;background:linear-gradient(135deg,#252936,#141720);box-shadow:0 22px 40px -22px #000e,0 3px 10px -4px #0009}
+.ds-hero>.hero-art{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;object-position:50% 28%;border-radius:inherit;clip-path:inset(0 round 18px)}
+.ds-hero>.hero-art.img-missing{visibility:hidden}
+.ds-hero>.hero-shade{position:absolute;inset:0;z-index:-1;border-radius:inherit;background:linear-gradient(0deg,#0b0e15fa 0%,#0b0e15d9 30%,#0b0e1570 58%,#0b0e1514 100%),linear-gradient(90deg,#0b0e15b3 0%,transparent 55%);box-shadow:inset 0 1px 0 #ffffff1f,inset 0 0 34px -6px #000d}
+.ds-hero::after{content:"";position:absolute;inset:0;z-index:0;border-radius:inherit;pointer-events:none;padding:1px;background:linear-gradient(155deg,#f1d08ab3,#ffffff38 26%,#ffffff12 52%,#ffffff0a 70%,#f1d08a66);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.ds-hero .hero-body{position:relative;z-index:1;display:grid;grid-template-rows:auto 1fr auto;gap:10px;min-height:var(--ds-h);padding:14px 18px 0;text-shadow:0 1px 2px #000b,0 0 12px #0008}
+.ds-hero .ds-nav{min-height:44px;align-items:flex-start}
+.ds-hero .deck-hero-id{align-self:end;display:grid;gap:6px;min-width:0;max-width:min(760px,100%)}
+.ds-hero .hero-body h1{margin:0;font-family:Cinzel,Georgia,serif;font-weight:700;letter-spacing:.02em;font-size:clamp(26px,3.6vw,40px);line-height:1.08;color:#fff;overflow-wrap:anywhere}
+.ds-hero .deck-hero-eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0!important}
+.ds-badge{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
+.ds-hero .review-badge{position:relative;margin:0;min-height:34px;text-shadow:none}
+.ds-hero .review-badge::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);translate:-50% -50%}
+.ds-line{margin:0!important;color:#e0e3eb!important;font-size:13px!important;line-height:1.4;display:block!important}
+/* Slim stats on a glass base. */
+.ds-foot{position:relative;isolation:isolate;margin:0 -18px;border-radius:0 0 18px 18px}
+.ds-foot::before{content:"";position:absolute;inset:-34px 0 0;z-index:-1;border-radius:inherit;pointer-events:none;background:linear-gradient(0deg,#0b0e15d9,#0b0e1566 60%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);-webkit-mask-image:linear-gradient(transparent,#000 46px);mask-image:linear-gradient(transparent,#000 46px)}
+.ds-stats{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;padding:12px 18px 14px}
+.ds-stat{display:inline-flex;align-items:baseline;gap:5px;min-width:0;padding:0;border:0;background:none;color:#cfd4de;font:inherit;font-size:12px;text-align:left}
+.ds-stat b{font:800 15px/1.2 Manrope,sans-serif;color:#fff;white-space:nowrap}
+.ds-stat span{font-size:12px}
+button.ds-stat{cursor:pointer;position:relative;min-height:28px}
+button.ds-stat::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:44px;translate:-50% -50%}
+button.ds-stat b{display:inline-grid;place-items:center;min-width:30px;padding:1px 7px;border-radius:7px;background:color-mix(in srgb,var(--gold) 26%,#0b0e15);color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent)}
+.ds-stat.warn b{color:var(--warn)}
+.ds-stat:last-child:not(:first-child){margin-left:auto}
+.ds-bar{position:relative;display:block;height:3px;margin:0;border-radius:0 0 18px 18px;background:#ffffff14;overflow:hidden}
+.ds-bar>i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 70%,#fff),var(--gold));border-radius:inherit}
+/* Deck options: an obsidian icon button with a gold glyph, the same size and shape as the back button. */
+.ds-menu{display:grid;place-items:center;width:44px;height:44px;flex:none;padding:0 0 4px;border-radius:12px;border:1px solid color-mix(in srgb,var(--gold) 42%,transparent);background:#0b0e15c7;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:var(--gold);font:700 22px/1 Manrope,sans-serif;text-shadow:none;cursor:pointer;box-shadow:inset 0 1px 0 #ffffff14}
+.ds-menu:hover{background:#0b0e15e6;border-color:color-mix(in srgb,var(--gold) 70%,transparent)}
+.ds-menu:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+/* Retry lives in the price line as a quiet text action. */
+.ds-retry{position:relative;margin-left:6px;padding:0;border:0;background:none;color:var(--gold);font:600 12px/1.2 inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.ds-retry::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:44px;translate:-50% -50%}
+/* Actions, status and versions sit under the hero. */
+.ds-head{display:grid;gap:12px;margin:14px 0}
+.ds-head:empty{display:none}
+.ds-lead{display:grid;gap:8px}
+.ds-lead>*{margin:0}
+.ds-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch}
+.ds-actions .btn{min-height:46px;flex:0 1 auto}
+.ds-actions .ds-primary{min-width:180px}
+.ds-actions .deck-play-cpu[hidden]{display:none}
+.ds-actions .deck-coach-action{display:contents}
+.ds-actions .deck-coach-action small{display:none}
+.ds-actions .deck-coach-action>.btn{width:auto;flex:0 1 auto}
+.ds-rebuild{display:contents}
+.ds-rebuild>summary{list-style:none}
+.ds-rebuild>summary::-webkit-details-marker{display:none}
+.ds-rebuild[open]>.deck-budget-rebuild{flex:1 0 100%;order:9}
+.ds-versions .seg{width:100%}
+.ds-versions .seg>button{flex:1 1 0}
+@media(max-width:699px){
+ .ds-hero{--ds-h:300px}
+ .ds-hero .hero-body{padding:12px 14px 0}
+ .ds-foot{margin:0 -14px}
+ .ds-stats{padding:10px 14px 12px;gap:4px 14px}
+ .ds-actions .btn{flex:1 1 0;min-width:0;padding-inline:10px}
+ .ds-actions .ds-primary{flex-basis:100%}
+}
+/* The deck tabs wrap instead of scrolling past the screen edge on phones, Fold and big text. */
+@media(max-width:899px){
+ .ds-hero~.tabs{position:static;flex-wrap:wrap;overflow:visible;row-gap:2px}
+ .ds-hero~.tabs>button{flex:1 1 auto;min-height:44px;justify-content:center}
+}
+/* Previews (Meta, AI, Random, shared) open as a full page, not a pop-up sheet. */
+dialog.sheet:has(.ds-page){width:100%;max-width:none;height:100%;max-height:none;margin:0;border:0;border-radius:0;animation:none}
+dialog.sheet:has(.ds-page) #sheetBody{max-height:none;height:100%;overflow-x:auto;padding:calc(env(safe-area-inset-top) + 10px) max(var(--gutter),calc((100% - 1196px)/2)) calc(env(safe-area-inset-bottom) + 28px)}
+.deck-flow-result.ds-page{max-width:none}
+/* Gate fixes. */
+.deck-viewer .deck-printing .set-badge,.deck-viewer .deck-printing .tag{font-size:11px}
+.issues-panel>summary{min-height:44px;display:flex;align-items:center}
+.deck-toolbar .deck-chip,.deck-toolbar .deck-add-toggle,.deck-toolbar .deck-group{min-height:44px}
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) .lot-info .lot-name{min-height:44px;line-height:44px}
+.deck-viewer .lot-name .set-badge{font-size:11px;line-height:1.2}
+.deck-viewer .lot-name .set-badge[data-act]{position:relative}
+.deck-viewer .lot-name .set-badge[data-act]::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:44px;translate:-50% -50%}
+dialog.sheet:has(.ds-page){overflow:visible}
+/* A full-page deck covers the page under it; stop painting that page while the deck is open. */
+body:has(#sheet[open] .ds-page) #content{visibility:hidden}

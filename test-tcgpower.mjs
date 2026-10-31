@@ -40,7 +40,7 @@ S.ui.tdeckTab = { "ygo:y1": "insights" };
 html = tcgDeck("y1");
 assert.match(html, /Deck Power/);
 assert.match(html, /Matches: Mitsurugi/);
-assert.match(html, /power unavailable<\/button>/);assert.doesNotMatch(html, /<b>null<\/b>/);
+assert.match(html, /power unavailable<\/span><\/button>/);assert.doesNotMatch(html, /<b>null<\/b>/);
 S.ui.tdeckTab = { "ygo:y1": "upgrade" };
 html = tcgDeck("y1");
 assert.match(html, /Make it play like Mitsurugi/);

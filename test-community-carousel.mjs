@@ -43,6 +43,6 @@ const {S,blank}=await import('./store.js'),{tcgDeck,cache}=await import('./tcg.j
 for(const game of ['ptcg','ygo']){
  S.state=blank();S.state.settings.game=game;S.state.tcg={ptcg:{collection:[],decks:[],wishlist:[]},ygo:{collection:[],decks:[],wishlist:[]}};S.state.tcg[game].decks=[{id:'nameless',name:'Recovered deck',format:game==='ptcg'?'standard':'tcg',zones:{main:CARDS[game].slice(0,3).map(c=>({cardId:c.id,qty:1})),extra:[],side:[]}}];
  for(const c of CARDS[game])cache[game][c.id]=c;
- assert.match(tcgDeck('nameless'),/deck-box-control/);assert.match(tcgDeck('nameless'),/deck-box-case.*?<img src="https:/,'Deck box uses an absolute artwork candidate even when the first source is a relative proxy');
+ assert.match(tcgDeck('nameless'),/class="ds-menu" data-act="tDeckMenu" data-id="nameless" aria-label="Deck options for Recovered deck"/);
 }
 console.log('PASS: production Pokémon/Yu-Gi-Oh! deck render survives cached rows without names.');

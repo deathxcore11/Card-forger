@@ -1,4 +1,4 @@
-import {deckViewer,deckCardAttrs} from './deck-viewer.js';
+import {deckViewer,deckCardAttrs,deckShell} from './deck-viewer.js';
 import {discoverCardMarkup} from './card-discovery.js';
 import {versionsMarkup,releaseDot} from './release-status.js';
 import {mtgWikiPageMarkup,mtgWikiCredit} from './mtg-wiki-ui.js';
@@ -102,8 +102,14 @@ export function goldfishFor(d, cards = d.cards, tag = "") {
   }
   return S.ui.gold.get(sig);
 }
-const coverOf = (d) =>
-  art(meta(d.commander) || d.cards.map((c) => meta(c.name)).find((c) => art(c)));
+// Cover: the commander, else the first creature or planeswalker, else any spell; a land only when nothing else has art.
+const coverRank = (c) => /\b(Creature|Planeswalker)\b/.test(c.type_line || "") ? 0 : /\bLand\b/.test(c.type_line || "") ? 2 : 1;
+const coverOf = (d) => {
+  const lead = meta(d.commander);
+  if (lead && art(lead)) return art(lead);
+  const pool = d.cards.map((c) => meta(c.name)).filter((c) => c && art(c));
+  return art(pool.reduce((best, c) => (!best || coverRank(c) < coverRank(best) ? c : best), null));
+};
 
 export const deckArtwork = d => d && Array.isArray(d.cards) && d.cards.every(c=>c&&typeof c.name==='string') ? img(coverOf(d), '') : '';
 
@@ -1048,13 +1054,16 @@ export function sharedPage() {
     (groups[t] = groups[t] || []).push(c);
   }
   const order = ["Commander", "Creatures", "Planeswalkers", "Artifacts", "Enchantments", "Instants", "Sorcerys", "Battles", "Others", "Lands", "Unresolved"];
-  return `<section class="deck-hero">${img(art(meta(d.commander)) || art(meta(d.cards[0]?.name)), d.name, "hero-art")}<div class="hero-shade"></div>
-    <div class="hero-body"><div class="row between"><button class="icon light" data-act="go" data-to="#home" aria-label="Home">←</button><span class="chip dark">Shared deck</span></div>
-      <h1>${esc(d.name)}</h1>
-      <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "") + " · " : ""}<span class="chip dark">${esc(fm.name)}</span>${d.author ? ` · by <b>${esc(d.author)}</b>` : ""}</p>
-      <div class="hero-stats"><span><b class="${(fm.exact ? sumQty(d.cards) === target : sumQty(d.cards) >= target) ? "" : "warn-text"}">${sumQty(d.cards)}/${target}</b>cards</span><span><b>${shownPower(mtgPower(d)) ?? "—"}</b>${shownPower(mtgPower(d)) == null ? "power unavailable" : "power"}</span>${br ? `<span><b>${br.bracket}</b>bracket est.</span>` : ""}<span><b>${d.budget !== null ? usd(d.budget, 0) : "—"}</b>budget</span></div>
-    </div></section>
-  <div class="actions wrap share-actions"><button class="btn" data-act="sharedBuild">Make my version</button><button class="btn ghost" data-act="sharedSave">Save to Inspiration</button><button class="btn ghost" data-act="sharedCopy">Copy list</button></div>
+  return `${deckShell({game:"mtg",source:"shared",artHtml:img(art(meta(d.commander)) || art(meta(d.cards[0]?.name)), d.name, "hero-art"),title:d.name,
+    back:`<button class="icon light" data-act="go" data-to="#home" aria-label="Home">←</button>`,
+    badge:"Shared deck",format:`<span class="chip dark">Magic · ${esc(fm.name)}</span>${fm.commander ? colorDots(meta(d.commander)) : ""}`,
+    line:`${fm.commander ? esc(d.commander || "") : ""}${fm.commander && d.author ? " · " : ""}${d.author ? `by <b>${esc(d.author)}</b>` : ""}`,
+    stats:[
+      {value:`${sumQty(d.cards)}/${target}`,label:"cards",tone:(fm.exact ? sumQty(d.cards) === target : sumQty(d.cards) >= target) ? "" : "warn"},
+      {value:shownPower(mtgPower(d)) ?? "—",label:shownPower(mtgPower(d)) == null ? "power unavailable" : "power"},
+      ...(br ? [{value:br.bracket,label:"bracket est."}] : []),
+      {value:d.budget !== null ? usd(d.budget, 0) : "—",label:"budget"}],
+    actions:[{label:"Make my version",primary:true,attrs:'data-act="sharedBuild"'},{label:"Save to Inspiration",attrs:'data-act="sharedSave"'},{label:"Copy list",attrs:'data-act="sharedCopy"'}]})}
   ${d.about ? `<section class="panel"><h3>About this deck</h3><p class="about">${esc(d.about)}</p><p class="foot">Written by ${esc(d.author || "the person who shared it")}.</p></section>` : ""}
   <section class="panel"><div class="row between"><h3>Match against my collection</h3><span class="chip ${sc.missing ? "" : "ok"}">${pct(sc.ratio)} owned</span></div>
     ${S.state.collection.length ? `<div class="kpis small"><div class="kpi"><b>${sc.owned}</b><span>you own</span></div><div class="kpi"><b>${sc.missing}</b><span>missing</span></div><div class="kpi"><b>${usd(sc.cost, 0)}</b><span>to finish${sc.unknown ? ` · ${sc.unknown} unknown` : ""}</span></div></div>${bar(sc.ratio, "good")}` : `<p class="muted small">Add your collection to see what you already own. <button class="link" data-act="importCollection">Import collection</button></p>`}
@@ -1116,24 +1125,24 @@ export function deckPage() {
     tab = S.ui.deckTab === "shop" ? "cards" : S.ui.deckTab,
     tabs = [["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["engine", "Power", "trophy"], ["matchups", "Matchups", "sword"], ["upgrade", "Upgrade lab", "build"], ["versions", "Versions", "viewStacks"], ["playtest", "Playtest", "random"]];
   const power = shownPower(mtgPower(d)), countOk = fm.exact ? mainCopies === target : mainCopies >= target;
-  return `<section class="deck-hero deck-hero--feature">${img(coverOf(d), d.name, "hero-art")}<div class="hero-shade"></div>
-    <div class="hero-body">
-      <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button>${deckBoxMarkup(d,{images:d.cards.slice(0,3).map(r=>cardImage(meta(r.name))),open:true,button:true})}</div>
-      <div class="deck-hero-main">
-        <div class="deck-hero-id">
-          <p class="deck-hero-eyebrow"><button class="chip dark fmt-chip" data-act="deckMenu" title="${esc(sizeLabel(fm))}${fm.note ? " · " + esc(fm.note) : ""}">${esc(fm.name)}</button>${fm.commander ? colorDots(meta(d.commander)) : ""}${d.locked ? '<span class="chip dark">Assembled</span>' : ""}</p>
-          <h1>${esc(d.name)}</h1>
-          ${fm.commander ? `<p class="deck-hero-commander">${esc(d.commander || "No commander yet")}</p>` : ""}
-          <div class="hero-stats">
-            <span><b class="${countOk ? "" : "warn-text"}">${mainCopies}/${target}</b>cards${sideCopies ? ` · ${sideCopies} sideboard` : ""}</span>
-            <button data-act="deckTab" data-id="engine"><b>${power ?? "—"}</b>${power == null ? "power unavailable" : "power"}</button>
-            ${reviewBadge(d)}
-          </div>
-        </div>
-        <div class="deck-hero-cta"><button class="btn deck-play-cpu cs-plate" data-act="deckPlayCpu" data-id="${esc(d.id)}" data-desktop-play-entry="practice" hidden disabled><span class="cs-plate-label">Play vs CPU</span></button></div>
-      </div>
-    </div>
-  </section>
+  return `${deckShell({game:"mtg",source:"mine",artHtml:img(coverOf(d), d.name, "hero-art"),title:d.name,
+    back:`<button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button>`,
+    menu:`<button class="ds-menu" data-act="deckMenu" aria-label="Deck options for ${esc(d.name)}" title="Rename, format, deck box, delete">⋯</button>`,
+    badge:"My deck",
+    format:`<span class="chip dark" title="${esc(sizeLabel(fm))}${fm.note ? " · " + esc(fm.note) : ""}">Magic · ${esc(fm.name)}</span>${fm.commander ? colorDots(meta(d.commander)) : ""}${d.locked ? '<span class="chip dark">Assembled</span>' : ""}`,
+    legality:reviewBadge(d),
+    line:fm.commander ? `<span class="deck-hero-commander">${esc(d.commander || "No commander yet")}</span>` : "",
+    stats:[
+      {value:`${mainCopies}/${target}`,label:"cards"+(sideCopies ? ` · ${sideCopies} sideboard` : ""),tone:countOk ? "" : "warn"},
+      {value:`${t.covered}/${t.copies}`,label:"owned"},
+      // An incomplete draft has empty slots, so a purchase total would mislead.
+      mainCopies < target ? {value:`${target - mainCopies}`,label:"open slots",tone:"warn"} : {value:usd(t.pricedGap, 0)+(t.unpriced ? "+" : ""),label:t.unpriced ? "to finish · some unpriced" : "to finish"},
+      {value:power ?? "—",label:power == null ? "power unavailable" : "power",attrs:'data-act="deckTab" data-id="engine"'}],
+    owned:t.copies ? t.covered / t.copies : 0,
+    actions:[
+      {html:`<button class="btn ds-primary deck-play-cpu cs-plate" data-act="deckPlayCpu" data-id="${esc(d.id)}" data-desktop-play-entry="practice" hidden disabled><span class="cs-plate-label">Play vs CPU</span></button>`},
+      {label:"Playtest",attrs:'data-act="deckTab" data-id="playtest"'},
+      {label:"Share",attrs:'data-act="deckShare"'}]})}
   ${mainCopies < target ? `<div class="note warn">Incomplete draft: ${target - mainCopies} slots remain. Power is unavailable. The listed-card price does not include empty slots.${(d.buildDiagnostics?.warnings || []).slice(0, 2).map(w => `<p class="small">${esc(w)}</p>`).join("")}</div>` : ""}
   <nav class="tabs" role="tablist">${tabs.map(([id, l, icon]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${labelIcon(icon)}${l}</button>`).join("")}</nav>
   ${fm.commander && !canLead(meta(d.commander), fm) && tab !== "upgrade" ? `<button class="note warn block-note" data-act="deckTab" data-id="upgrade">⚠ No ${fm.commander === "planeswalker" ? "Oathbreaker" : "commander"} set — tap to choose one so colors and synergy are checked.</button>` : ""}
