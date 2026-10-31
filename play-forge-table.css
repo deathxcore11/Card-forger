@@ -2320,7 +2320,7 @@ body.practice-table-open img{-webkit-user-drag:none}
 }
 /* Sideways phones: your hand fans between your seat's zone counts and the turn buttons, clear of both. */
 @media (min-width:640px) and (min-height:300px) and (max-height:599px) and (min-aspect-ratio:3/2){
- :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand-area{left:244px;right:156px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand-area{left:calc(244px + env(safe-area-inset-left,0px));right:calc(156px + env(safe-area-inset-right,0px))}
 }
 /* A tapped permanent leans 20°, so its corners reach past its own box; the slot keeps that much room above and
    below so a tapped land never runs into the creature lane or past the seat edge. */
@@ -2345,3 +2345,28 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-sick] .play-match-piece-art:before{inset:0;background-size:160% 160%;animation:cs-sick-drift 6s ease-in-out infinite alternate}
 @keyframes cs-sick-drift{from{background-position:0% 100%}to{background-position:100% 0%}}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-card[data-kw-sick] .play-match-piece-art:before{animation:none}}
+/* A long hand on a sideways phone runs off to the right (under the turn buttons' column), never left into your zone counts. */
+@media (min-width:640px) and (min-height:300px) and (max-height:599px) and (min-aspect-ratio:3/2){
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card-row{justify-content:safe center}
+}
+/* The trigger-order sheet is one column on every screen: on a short phone a wrapping column sent the cards and
+   their buttons off the right edge. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-decisions .forge-native-panel:has(.forge-order-cards){flex-wrap:nowrap!important}
+/* Sideways phones (360-450px tall): the library search and the trigger-order sheet fit whole, buttons included. */
+@media (max-height:450px) and (min-aspect-ratio:3/2){
+ :where(body.practice-table-open) .forge-zone-search-dialog{gap:4px;padding:8px 16px}
+ :where(body.practice-table-open) .forge-zone-search-dialog h2{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ :where(body.practice-table-open) .forge-zone-search-cards{min-height:0;padding:6px 4px}
+ :where(body.practice-table-open) .forge-zone-search-card{flex-basis:84px;width:84px;height:124px}
+ :where(body.practice-table-open) .forge-zone-search-card img{height:112px}
+ :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-decisions .forge-native-panel:has(.forge-order-cards){padding:8px 16px!important;gap:6px}
+ :where(body.practice-table-open) .forge-native-panel:has(.forge-order-cards) h2{font-size:17px}
+ :where(body.practice-table-open) .forge-native-panel .forge-order-cards{padding-top:10px;gap:14px}
+ :where(body.practice-table-open) .forge-native-panel .forge-order-card{width:min(300px,40vw);grid-template-columns:clamp(56px,17dvh,84px) 1fr;align-items:center;gap:10px;text-align:left}
+ :where(body.practice-table-open) .forge-native-panel .forge-order-cap small{font-size:11px}
+ :where(body.practice-table-open) .forge-native-panel .forge-order-actions>button{min-height:44px}
+}
+/* Chat bubbles step back while a sheet asks you something. */
+body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forge-emote-bubble{opacity:0;pointer-events:none}
+:where(body.practice-table-open) .forge-zone-search{padding-inline:max(clamp(12px,3vw,28px),calc(env(safe-area-inset-left,0px) + 8px)) max(clamp(12px,3vw,28px),calc(env(safe-area-inset-right,0px) + 8px))}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-decisions:has(.forge-zone-search){overflow:visible!important}

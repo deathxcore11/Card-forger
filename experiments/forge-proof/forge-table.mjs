@@ -639,8 +639,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   for(const area of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area'))for(const zone of zonesOf(area)){
    const columns=area.querySelectorAll(':scope>.play-match-zone').length>1&&getComputedStyle(area).display==='grid';
    // Your side stops above your hand; the CPU's stops below its row of card backs.
-   // On a portrait screen the stack strip and the hand slider float over your side, so it stops above them too.
-   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect())]:[...root.querySelectorAll('.play-match-opponent-fan,.play-pod-rail')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
+   // On a portrait screen the stack strip and the hand slider float over your side, so it stops above them too;
+   // a sideways phone's hand button and control emblems sit just over the hand, so it stops above those as well.
+   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()),...[...root.querySelectorAll('.forge-hand-expand,.forge-control-emblem')].map(n=>n.getBoundingClientRect())]:[...root.querySelectorAll('.play-match-opponent-fan,.play-pod-rail')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
    const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+4)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
    const W=columns?Math.floor(zone.getBoundingClientRect().width):area.clientWidth,H=Math.min(area.clientHeight,Math.round(bottom-top))-(columns?22:0);if(!W||H<=0)continue;
    // Side-by-side lanes (a grid) have fixed boxes: a row that spills out of its lane shrinks inside it.
@@ -652,7 +653,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     const wraps=[...row.querySelectorAll(':scope>.play-match-card-wrap')];let more=row.querySelector(':scope>.forge-lane-more');for(const w of wraps)if(w.hidden)w.hidden=false;
     let kr=scaleOf();
     if(kr<.62&&wraps.length>=4){let keep=Math.max(1,Math.floor(wraps.length*(kr/.75)**2)-1);
-     if(!more){more=doc.createElement('button');more.type='button';more.className='forge-lane-more';more.dataset.nativeKey='lane-more';more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const row=more.parentElement,k=Number(more.dataset.keep)||0;openLaneTray([...row.querySelectorAll(':scope>.play-match-card-wrap')].slice(k),more);});row.append(more);}
+     if(!more){more=doc.createElement('button');more.type='button';more.className='forge-lane-more';more.dataset.nativeKey='lane-more';more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const row=more.parentElement,k=Number(more.dataset.keep)||0;openLaneTray([...row.querySelectorAll(':scope>.play-match-card-wrap')].slice(k),more);});row.append(more);}more.hidden=false;
      const fold=k=>{wraps.forEach((w,i)=>{const hide=i>=k;if(w.hidden!==hide)w.hidden=hide;});const label=`+${wraps.length-k}`;if(more.textContent!==label){more.textContent=label;more.setAttribute('aria-label',`${wraps.length-k} more cards`);}more.dataset.keep=String(k);};
      fold(keep);while(keep>1&&scaleOf()<.72){keep--;fold(keep);}kr=scaleOf();}
     else if(more)more.remove();
@@ -660,7 +661,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // On a phone the pieces start small; a board with room to spare grows them to fill it (Arena's cards fill the table).
    // The largest scale whose reflowed layout (rows wrap at width W/k) still fits both ways. Height is not monotonic in
    // k (a wider layout grows its pieces until a back row joins the lands), so step down to the first fit, then refine.
-   fitRows();const fitsAt=k=>{zone.dataset.scaled='true';zone.style.width=`${W/k}px`;return zone.scrollHeight*k<=H+1&&zone.scrollWidth*k<=W+1;};let k=growLimit();
+   // Trials measure every row unscaled and unfolded, the same way on every pass, so the result never depends on
+   // what the previous pass folded (a fold adds or removes a chip, which redraws the table and fits again).
+   const rows=[...zone.querySelectorAll('.play-match-card-row')];
+   const fitsAt=k=>{zone.dataset.scaled='true';zone.style.width=`${W/k}px`;for(const r of rows){r.style.removeProperty('transform');for(const w of r.querySelectorAll(':scope>.play-match-card-wrap[hidden]'))w.hidden=false;const more=r.querySelector(':scope>.forge-lane-more');if(more)more.hidden=true;}return zone.scrollHeight*k<=H+1&&zone.scrollWidth*k<=W+1;};let k=growLimit();
    if(!fitsAt(k)){let lo=.4,hi=k;for(let t=k-.05;t>.4;t-=.05)if(fitsAt(t)){lo=t;hi=t+.05;break;}for(let i=0;i<3;i++){const mid=(lo+hi)/2;if(fitsAt(mid))lo=mid;else hi=mid;}k=lo;}
    fits.push({area,zone,own,W,H,k,fitRows});
   }

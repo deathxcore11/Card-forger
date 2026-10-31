@@ -221,7 +221,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   const wasOpen=!!container.querySelector?.('.forge-zone-search-dialog');keepStripLeft=wasOpen?container.querySelector('.forge-zone-search-cards')?.scrollLeft||0:0;
   const overlay=node('div',undefined,'forge-zone-search'),dialog=node('section',undefined,'forge-zone-search-dialog');
   dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label',`${zoneSearch.zones.join(' / ')} card selection`);
-  const heading=node('h2',presentation.hosted&&lines[0]?cpuName(lines[0]):lines[0]||`Choose from ${zoneSearch.zones.join(' / ')}`);heading.tabIndex=-1;heading.dataset.nativeKey='zone-search-title';dialog.append(heading);
+  const heading=node('h2',presentation.hosted&&lines[0]?cpuName(lines[0]):lines[0]||`Choose from ${zoneSearch.zones.join(' / ')}`);heading.title=heading.textContent;heading.tabIndex=-1;heading.dataset.nativeKey='zone-search-title';dialog.append(heading);
   if(lines.length>1)dialog.append(node('p',presentation.hosted?lines.slice(1).map(cpuName).join('\n'):lines.slice(1).join('\n'),'forge-zone-search-instruction'));
   dialog.append(node('p',`Choose from the ${zoneSearch.choices.length} card${zoneSearch.choices.length===1?'':'s'} offered by this effect.`,'forge-zone-search-hint'));
   const selected=zoneSearch.kind==='prompt'?(s.nativeDraft?.revision===n.revision&&s.nativeDraft?.promptId===p.id?s.nativeDraft.indexes:[]):(n.selection?.chosen||[]).filter(r=>r.kind==='card').map(r=>r.id);
