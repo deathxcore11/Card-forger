@@ -1,6 +1,6 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "ae01ee543f51a0968a932939e169bf23d65907e8",
+  "commit": "cfe1fe1eb162c689aaa2b0aec9bb9612f668e634",
   "sourceVersion": "4.3.39",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
@@ -762,6 +762,7 @@
     "play-menu.css",
     "play-menu.js",
     "play-opponent-build.js",
+    "play-orientation.js",
     "play-player-mat.js",
     "play-playmats.js",
     "play-precon-formats.js",
@@ -1026,8 +1027,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 454300,
-      "sha256": "fc7754b4be6b2e004535d927c959fef697e9e669cb93417bbfd9301e63a1106f"
+      "bytes": 454435,
+      "sha256": "79fa4492846f106681deaecfe06b9078a0c842bb747518c2f8eabc967030814e"
     },
     {
       "path": "artwork.js",
@@ -3821,8 +3822,8 @@
     },
     {
       "path": "desktop-play.js",
-      "bytes": 10779,
-      "sha256": "dda68942faa2f80744f607c637e039d0b7ea3287a645d02edffeeca104c3e3dd"
+      "bytes": 11207,
+      "sha256": "64ea81c07605a111a3034d09edba08291d56290865b7eba587ae153028882fbe"
     },
     {
       "path": "dialog.js",
@@ -3841,8 +3842,8 @@
     },
     {
       "path": "experiments/forge-proof/cpu-action-playback.mjs",
-      "bytes": 27496,
-      "sha256": "468148642791c2c9bbd8357cba4bfa171f3847b320c56dd3d280a232de073fc9"
+      "bytes": 27503,
+      "sha256": "67e7187dd5b006ecf6f0dd57bdec7d97eeac47470564c6f4024cab66b2340b6c"
     },
     {
       "path": "experiments/forge-proof/forge-session.mjs",
@@ -3851,8 +3852,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 189349,
-      "sha256": "15260062f639638e99b251f08c859c26f6b8faa58a20ea6b3655a870b2ca4c42"
+      "bytes": 195010,
+      "sha256": "b59ae67d4031bf241c83d974c84448864c6969fb8992499848c822fdb9fe81db"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -3861,13 +3862,13 @@
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
-      "bytes": 58898,
-      "sha256": "d2a09224d016d0bbf4f7206d628e9310073f05262eef4f7e7865e986ae306b38"
+      "bytes": 59022,
+      "sha256": "5fe48e02a6cbf3eb5d9f63e32e1e7f6c433b4bf34e56a069157a3f2024bda64c"
     },
     {
       "path": "experiments/forge-proof/table-emotes.mjs",
-      "bytes": 5560,
-      "sha256": "7a3593c898fb84069a10e6e51c26cf8d42c36b235b8fa99bd5cffee9376b5df2"
+      "bytes": 6118,
+      "sha256": "ced52d6d7e42150db37fa55b5a47e7a98dca335007e9578d2c76ac00b04f536d"
     },
     {
       "path": "experiments/phase-engine/card-placement.mjs",
@@ -3986,8 +3987,8 @@
     },
     {
       "path": "experiments/phase-engine/match-table.mjs",
-      "bytes": 74163,
-      "sha256": "18e510a7b06df361b8d467cc289fc50fbbf75523c2f1ccf392c70a4ade2f18c4"
+      "bytes": 74543,
+      "sha256": "6e5b67e93fa03bcef906a6286435e230cea7a46f49961eb9b8cadad69ed13d26"
     },
     {
       "path": "experiments/phase-engine/practice-authority.mjs",
@@ -4681,8 +4682,8 @@
     },
     {
       "path": "play-forge-player-mat.js",
-      "bytes": 35562,
-      "sha256": "518a1141f52a3982f258c77c4a3556a85485813381fd7bc16ef56c36ced47a52"
+      "bytes": 35650,
+      "sha256": "57ce49f4bf0aaad78af08a0e6fccf63aef397078ef3834b34e47b7e0c5b0d43b"
     },
     {
       "path": "play-forge-pregame.js",
@@ -4696,8 +4697,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 398691,
-      "sha256": "e33e741e556bbb9db7eec956ab4da79b2d6ab3e4fa614636992d5a2a97556c10"
+      "bytes": 423142,
+      "sha256": "b32752ee518dedcbb511d792215222200f841dea915f7a3d16158c61a4a252b7"
     },
     {
       "path": "play-match-record.js",
@@ -4706,8 +4707,8 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 85414,
-      "sha256": "ed825996a69844f1e0bc4c949b04f725778f36bc51e66be09035ac845ce9262a"
+      "bytes": 86499,
+      "sha256": "85592529eb1996a34d9a83b759d8428c34fda2d33ae99d2e44b920248346140e"
     },
     {
       "path": "play-menu.js",
@@ -4718,6 +4719,11 @@
       "path": "play-opponent-build.js",
       "bytes": 3208,
       "sha256": "f58c41c789832a59fd339ee8c49fcf36e9caf733f3f78c79f02bc29ead8c8ce8"
+    },
+    {
+      "path": "play-orientation.js",
+      "bytes": 1737,
+      "sha256": "e9fa3a171b7d5f89b229d6f8086d53922954d0fd8dd6dfc2830ac7de7b5642b4"
     },
     {
       "path": "play-player-mat.js",
@@ -4836,8 +4842,8 @@
     },
     {
       "path": "polish.css",
-      "bytes": 37768,
-      "sha256": "3e66ade960a5ebe1c265908b8f52748f3ba082739686e2d6314e8bebdbf161a3"
+      "bytes": 37888,
+      "sha256": "5c6bce16b24a06b6e2081dbd64ce821799d3cc16359553c3e76e927e8aa5662c"
     },
     {
       "path": "power.js",
@@ -4931,8 +4937,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 866,
-      "sha256": "5f813bd1db75fafb6cce1a11d5bbd243e7379a4ed8067259588dcc2695726752"
+      "bytes": 1017,
+      "sha256": "91ad61e5a355e4326d8387026922ee6076ef320a558ba5b8aa8039d6cfdb2461"
     },
     {
       "path": "release-status.js",
