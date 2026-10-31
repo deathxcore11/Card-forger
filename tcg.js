@@ -441,17 +441,6 @@ export function gameBinders(active = game()) {
 export const formatsOf = (g) => SOURCES[g].formats;
 const formatOf = (g, id) => formatsOf(g).find((f) => f.id === id) || formatsOf(g)[0];
 
-function legalChips(g, c) {
-  return `<div class="legal">${formatsOf(g)
-    .map((f) => {
-      const l = SOURCES[g].legality(c, f),
-        lim = g === "ygo" ? SOURCES.ygo.limit(c, f) : null,
-        label = l === "banned" ? "Forbidden" : l === "limited" ? "Limited" : l === "semi" ? "Semi-Limited" : l === "not_legal" ? "" : "";
-      return `<span class="lg ${l === "legal" ? "yes" : l === "not_legal" ? "no" : l === "banned" ? "ban" : "res"}" title="${esc(f.name)}${lim !== null && l !== "not_legal" ? ` · up to ${lim}` : ""}">${esc(f.name)}${label ? " · " + label : ""}</span>`;
-    })
-    .join("")}</div>`;
-}
-
 /* ---------- art hero (all games) ---------- */
 
 const HERO_KEY = "cardforge-hero-v2";
@@ -793,8 +782,8 @@ export function tcgCardSheet(c, sctx = {}) {
   c=finishArtworkCard(c.game,c,sctx);
   const g = c.game,
     // Meta shows only for cards with meta data; Versions lives in Overview's printings strip.
-    tabList = [["overview", "Overview", "info"], ...(hasCardMeta(g, c) ? [["meta", "Meta", "trophy"]] : []), ["guide", "Play guide", "ideas"], ["prices", "Prices", "bag"], ["rulings", "Rules & legality", "book"]],
-    asked = sctx.tab === "legal" ? "rulings" : sctx.tab, // Trade tab retired for now
+    tabList = [["overview", "Overview", "info"], ...(hasCardMeta(g, c) ? [["meta", "Meta", "trophy"]] : []), ["guide", "Play guide", "ideas"], ["prices", "Prices", "bag"]],
+    asked = ["legal", "rulings"].includes(sctx.tab) ? "guide" : sctx.tab, // Rules & legality now live in the Play guide; Trade tab retired
     tab = tabList.some(([id]) => id === asked) ? asked : "overview",
     own = c.setContext ? setCardOwnedCount(g,c,c.setContext.releaseId) : ownedOf(g, c),
     savedUnverifiedLot = g==="ygo" && sctx.game===g && String(sctx.id)===String(c.id) && sctx.entryId && c.setContext?.status!=="resolved" ? gs(g).collection.find(e=>
@@ -852,10 +841,6 @@ export function tcgCardSheet(c, sctx = {}) {
         <div class="pt-row"><span class="pt-label">Cardmarket</span><span><b>${eur(p.eur)}</b></span></div>
         ${(p.others || []).map(([k, v]) => `<div class="pt-row"><span class="pt-label">${esc(k)}</span><span><b>${usd(v)}</b></span></div>`).join("")}</div>
         ${ygoPrintings ? `<h3 class="price-printings-head">Every printing</h3>${ygoPrintings}` : ""}`;
-  const rulings = `<p class="small">${g === "ygo" ? "Konami publishes card rulings in its official database rather than as data, so they open there." : "Pokémon rulings are published by The Pokémon Company rather than as data, so they open there."}</p>
-    <div class="list compact">${RULES_LINKS[g].map(([l, u]) => `<a class="mini-row store" href="${esc(safeHref(u(c)))}" target="_blank" rel="noopener noreferrer"><span>${esc(l)}</span></a>`).join("")}</div>
-    <button class="btn ghost small" data-act="go" data-to="#rules">${esc(GAMES[g].short)} rules reference →</button>`;
-  const legal = `${legalChips(g, c)}<p class="foot">${g === "ygo" ? "Forbidden = 0 copies, Limited = 1, Semi-Limited = 2, otherwise 3. Banlists from YGOPRODeck." : "Standard/Expanded legality from TCGdex; Gym Leader Challenge also bans Rule Box Pokémon."} <button class="link small" data-act="go" data-to="#rules">Banlists & format rules →</button></p>`;
   return `<div class="sheet-head overlay"><span></span><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="cs-banner ${!artworkSources(c, true).length && !heroSrc ? "no-art" : ""}"><div class="cs-hero ${g}">${g === "ptcg" ? pokemonArtCrop(c, "cs-art") : heroSrc ? `<img class="cs-art" src="${esc(heroSrc)}" alt="${esc(c.name)}" referrerpolicy="no-referrer" onerror="${heroFallback ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(heroFallback)}'}else ` : ""}this.remove()">` : ""}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(c.name)}</h2><p class="type-line">${esc(c.typeLine || "")} ${detailOwnedSummary(detailOwnedLots(g,ownedLots,c).reduce((n,e)=>n+Number(e.qty),0))}</p></div>${gameEmblems(c)}</div></div>
@@ -870,8 +855,7 @@ export function tcgCardSheet(c, sctx = {}) {
   ${tabList.some(([id]) => id === "meta") ? panel("meta", tab, tcgCardMeta(g, c)) : ""}
   ${panel("guide", tab, tcgCardGuide(g, c))}
   ${tab === "trade" ? panel("trade", tab, tcgTradePanel(g, c, own, sctx)) : ""}
-  ${panel("prices", tab, priceOverview(g,c,sctx,SOURCES[g].buy(c)) + `<details class="market-details"><summary>Market details · sources & finishes</summary>` + prices + `<p class="foot">${esc(p.source || "")}${p.updated ? " · updated " + esc(new Date(p.updated).toLocaleDateString()) : c.fetchedAt ? " · checked " + esc(new Date(c.fetchedAt).toLocaleDateString()) : ""}. Condition prices and stock are on the store’s page.</p>` + `</details>`)}
-  ${panel("rulings", tab, `<section class="card-legality-section"><h3>Format legality</h3>${legal}</section><section class="card-rulings-section"><h3>Official rulings</h3>${rulings}</section>`)}`;
+  ${panel("prices", tab, priceOverview(g,c,sctx,SOURCES[g].buy(c)) + `<details class="market-details"><summary>Market details · sources & finishes</summary>` + prices + `<p class="foot">${esc(p.source || "")}${p.updated ? " · updated " + esc(new Date(p.updated).toLocaleDateString()) : c.fetchedAt ? " · checked " + esc(new Date(c.fetchedAt).toLocaleDateString()) : ""}. Condition prices and stock are on the store’s page.</p>` + `</details>`)}`;
 }
 // The card's Play guide tab: what it does, when to play it, synergies and cards that pair well.
 function tcgCardGuide(g, c) {
@@ -884,6 +868,9 @@ function tcgCardGuide(g, c) {
     complementsLoading: !cache || cache.loading,
     complementsNote: cache?.note || "",
     rules: cardRules(g, c),
+    // Konami and The Pokémon Company publish rulings on their own sites, not as data.
+    rulings: `<div class="guide-link-list">${RULES_LINKS[g].map(([l, u]) => `<a class="guide-link" href="${esc(safeHref(u(c)))}" target="_blank" rel="noopener noreferrer"><span>${esc(l)}</span><span aria-hidden="true">↗</span></a>`).join("")}</div>`,
+    ruleLinks: `<button class="chip tool-chip" data-act="go" data-to="#rules">Banlists &amp; format rules</button>`,
   });
 }
 // The card's Meta tab: where it's played, the tournament decks that play it, and decks to build around it.

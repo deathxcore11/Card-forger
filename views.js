@@ -288,7 +288,6 @@ function deckLegalLine(c, deck) {
   return `<p class="small deck-legal ${l === "legal" ? "ok-text" : l === "restricted" ? "warn-text" : "bad-text"}">${l === "legal" ? "✓" : l === "restricted" ? "▲" : "●"} ${esc(LEGALITY_WORD[l])} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span>${l === "restricted" ? " — one copy only" : ""}</p>`;
 }
 const MAIN_LEGAL = ["standard", "pioneer", "modern", "legacy", "vintage", "pauper", "commander", "brawl"];
-const legalChip = (f, legal) => `<span class="lg ${legal[f.legality] === "legal" ? "yes" : legal[f.legality] === "restricted" ? "res" : legal[f.legality] === "banned" ? "ban" : "no"}" title="${esc(f.name)}: ${esc(LEGALITY_WORD[legal[f.legality]] || "Not legal")}">${esc(f.name)}${legal[f.legality] === "banned" ? " · banned" : legal[f.legality] === "restricted" ? " · 1 copy" : ""}</span>`;
 
 export const setIcon = (code, rarity = "common", size = 18) =>
   code
@@ -314,7 +313,7 @@ const MTG_SOURCES = [
 const money = (v, cur) => (v === null || v === undefined || v === "" ? "—" : cur === "USD" ? usd(v) : cur === "EUR" ? "€" + Number(v).toFixed(2) : Number(v).toFixed(2) + " tix");
 
 // The card's Play guide tab: what it does, when to play it, synergies and cards that pair well.
-function mtgCardGuide(c) {
+function mtgCardGuide(c, rulings = "", ruleLinks = "") {
   const g = playGuide("mtg", c),
     cache = S.ui.guide?.["mtg:" + c.name];
   return guideHtml("mtg", c, g, {
@@ -325,6 +324,8 @@ function mtgCardGuide(c) {
     complementsLoading: !cache || cache.loading,
     complementsNote: cache?.note || "",
     rules: cardRules("mtg", c),
+    rulings,
+    ruleLinks,
   });
 }
 
@@ -349,8 +350,8 @@ export function cardSheet(c, ctx = {}) {
   const name = c.name,
     shown = ctx.print || c, // the printing currently being looked at
     // Meta shows only for cards with meta data; Versions lives in Overview's printings strip.
-    tabList = [["overview", "Overview", "info"], ...(hasCardMeta("mtg", c) ? [["meta", "Meta", "trophy"]] : []), ["guide", "Play guide", "ideas"], ["prices", "Prices", "bag"], ["rulings", "Rules & legality", "book"]],
-    asked = ctx.tab === "legal" ? "rulings" : ctx.tab, // Trade tab retired for now
+    tabList = [["overview", "Overview", "info"], ...(hasCardMeta("mtg", c) ? [["meta", "Meta", "trophy"]] : []), ["guide", "Play guide", "ideas"], ["prices", "Prices", "bag"]],
+    asked = ["legal", "rulings"].includes(ctx.tab) ? "guide" : ctx.tab, // Rules & legality now live in the Play guide; Trade tab retired
     tab = tabList.some(([id]) => id === asked) ? asked : "overview",
     i = inv(name),
     inDecks = S.state.decks.filter((d) => d.cards.some((x) => key(x.name) === key(name))),
@@ -366,7 +367,6 @@ export function cardSheet(c, ctx = {}) {
     clean = shown.image_status === "placeholder" ? (ctx.prints || []).find((p) => p.illustration_id && p.illustration_id === shown.illustration_id && p.image_status === "highres_scan" && p.image_uris?.art_crop) : null,
     heroArt = (imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.art_crop : null) || art(clean || shown),
     chosen = S.state.priceChoices?.[key(name)],
-    legal = c.legalities || {},
     prints = ctx.prints || null,
     src = MTG_SOURCES.find((x) => x[0] === (ctx.source || "tcgplayer")) || MTG_SOURCES[0];
   ensureTcgPrices([shown]);
@@ -419,11 +419,9 @@ export function cardSheet(c, ctx = {}) {
   const rulings = ctx.rulings
     ? ctx.rulings.length
       ? `<ul class="rulings">${ctx.rulings.map((r) => `<li><p>${symbolText(r.comment)}</p><small class="muted">${esc(r.source === "wotc" ? "Wizards of the Coast" : "Scryfall")} · ${esc(r.published_at || "")}</small></li>`).join("")}</ul>`
-      : `<p class="muted small">No official rulings for this card. The <button class="link" data-act="go" data-to="#rules">Magic rules reference</button> covers the general rules.</p>`
+      : `<p class="muted small">No official rulings for this card.</p>`
     : `<p class="muted small" id="rulingsLoading">Loading official rulings…</p>`;
-  const legality = `${deck ? deckLegalLine(c, deck) : ""}
-    <div class="legal">${ALL_FORMATS.filter((f) => f.legality).map((f) => legalChip(f, legal)).join("")}</div>
-    <p class="foot">From Scryfall’s current data. Green = legal, red = banned, gold = restricted. <button class="link small" data-act="go" data-to="#rules">Banned lists & format rules →</button></p>`;
+  const ruleLinks = `<button class="chip tool-chip" data-act="go" data-to="#rules">Banlists &amp; format rules</button><button class="chip tool-chip" data-act="mtgWikiOpen" data-wiki-topic="${esc(name)}">Explore this card in Wiki</button>`;
   return `<div class="sheet-head overlay">${S.ui.sheetBack ? `<button class="icon" data-act="sheetBack" aria-label="Back to deck idea">←</button>` : "<span></span>"}<button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="cs-banner"><div class="cs-hero mtg">${img(heroArt, name, "cs-art")}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(name)}</h2><p class="type-line">${esc(faces[face]?.type_line || typeText(shown))} ${detailOwnedSummary(i.owned)}</p></div>${manaCost(faces[face] || shown)}</div></div>
@@ -435,10 +433,9 @@ export function cardSheet(c, ctx = {}) {
   </div>
   ${cardPanel("overview", tab, overview)}
   ${tabList.some(([id]) => id === "meta") ? cardPanel("meta", tab, mtgCardMeta(c)) : ""}
-  ${cardPanel("guide", tab, mtgCardGuide(c))}
+  ${cardPanel("guide", tab, mtgCardGuide(c, rulings, ruleLinks))}
   ${cardPanel("prices", tab, pricesTab)}
-  ${tab === "trade" ? cardPanel("trade", tab, mtgTradePanel(name, shown, ctx)) : ""}
-  ${cardPanel("rulings", tab, `<section class="card-legality-section"><h3>Format legality</h3>${legality}</section><section class="card-rulings-section"><h3>Official rulings</h3>${rulings}</section><button class="chip tool-chip" data-act="mtgWikiOpen" data-wiki-topic="${esc(name)}">Explore this card in Wiki</button>`)}`;
+  ${tab === "trade" ? cardPanel("trade", tab, mtgTradePanel(name, shown, ctx)) : ""}`;
 }
 
 // Trade tab: fair swaps from your collection and wishlist (trade.js).

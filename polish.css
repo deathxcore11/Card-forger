@@ -459,3 +459,43 @@ body[data-view="settings"] .profile-menu>.sr-only{display:none}
 @media(max-width:700px){.pl-lobby .pl-startbar{position:sticky}.pl-lobby .pl-startbar::before{content:"";position:absolute;left:-20px;right:-20px;bottom:calc(100% - 1px);height:28px;background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--bg) 92%,transparent));pointer-events:none}}
 /* Room for the last letter's tracking, so the label never runs past its own box. */
 .cs-plate-label{padding-right:2px}
+
+/* ---------- Card sheet · Play guide (with Rules & legality) ----------
+   Glass panels, gold hairline accents, numbered steps. Every line is card data, not filler. */
+.card-guide { display: grid; gap: 14px; margin-top: 6px; }
+.card-guide .guide-sec { margin: 0; min-width: 0; }
+.card-guide .guide-sec > h3 { margin: 0 0 10px; font-size: 15px; letter-spacing: -.01em; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.card-guide .guide-panel, .guide-hero {
+  padding: 14px 16px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, #fff 3%), color-mix(in srgb, var(--surface) 96%, transparent));
+  box-shadow: inset 0 1px 0 #ffffff0d, 0 10px 28px -18px #000c;
+}
+.guide-hero { position: relative; overflow: hidden; display: grid; gap: 8px; }
+.guide-hero::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--gold) 70%, transparent), transparent); pointer-events: none; }
+.guide-hero .eyebrow { margin: 0; }
+.guide-roles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+.guide-role { display: inline-flex; align-items: center; min-height: 30px; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--text); border: 1px solid color-mix(in srgb, var(--line) 90%, transparent); background: color-mix(in srgb, var(--surface-2) 80%, transparent); }
+.guide-role.main { color: var(--gold-ink); border-color: transparent; background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 80%, #fff 20%), var(--gold)); box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--gold) 70%, transparent); }
+.card-guide .guide-what { margin: 0; font-size: 15px; line-height: 1.5; }
+.guide-steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; gap: 10px; }
+.guide-steps li { counter-increment: step; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; line-height: 1.5; }
+.guide-steps li::before { content: counter(step); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font-size: 12px; font-weight: 800; color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent); background: color-mix(in srgb, var(--gold) 10%, transparent); }
+.card-guide .guide-list { padding-left: 18px; gap: 8px; }
+.card-guide .guide-list li::marker { color: var(--gold); }
+.guide-along { display: grid; gap: 6px; }
+.guide-along-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(60px, 34%) 40px; gap: 10px; align-items: center; min-height: 44px; padding: 6px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--line) 80%, transparent); background: color-mix(in srgb, var(--surface) 94%, transparent); color: var(--text); text-align: left; cursor: pointer; }
+.guide-along-row b { text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; }
+.guide-meter { height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--line) 70%, transparent); overflow: hidden; }
+.guide-meter i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 60%, transparent), var(--gold)); }
+.card-guide .guide-limits { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; margin: 0 0 10px; }
+.card-guide .guide-limits span { position: relative; gap: 2px; padding: 8px 12px 8px 14px; border-radius: 12px; overflow: hidden; }
+.card-guide .guide-limits span::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--good); }
+.card-guide .guide-limits span.warn::before { background: var(--warn); }
+.card-guide .guide-limits span.bad::before { background: var(--bad); }
+.card-guide .guide-limits span.bad b { color: var(--bad); }
+.guide-rulings { margin-top: 12px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.guide-rulings .rulings li { background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+.guide-link-list { display: grid; gap: 6px; }
+.guide-link { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 8px 14px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--line) 80%, transparent); background: color-mix(in srgb, var(--surface-2) 60%, transparent); color: var(--text); text-decoration: none; font-weight: 650; }
+.guide-rule-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.guide-rule-links .chip { min-height: 44px; }

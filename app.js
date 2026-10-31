@@ -4023,7 +4023,7 @@ A.cardTab = async (t) => {
   const commit=scopedCommit();
   const ctx = S.ui.sheetCtx;
   if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","prices","rulings","legal","trade"].includes(t.dataset.tab)) return;
-  ctx.tab = t.dataset.tab === "legal" ? "rulings" : t.dataset.tab;
+  ctx.tab = ["legal","rulings"].includes(t.dataset.tab) ? "guide" : t.dataset.tab; // Rules & legality live in the Play guide
   for (const b of $$("#sheetBody .cs-tabs [data-tab]")) {
     const on = b.dataset.tab === ctx.tab;
     b.classList.toggle("on", on);
@@ -4049,8 +4049,8 @@ A.cardTab = async (t) => {
     if(S.ui.sheetCtx === ctx)refreshSheet();
   }
   sheetScrolled();
-  // Official rulings load the first time the tab opens.
-  if (ctx.tab === "rulings" && ctx.type === "card" && !ctx.rulings) {
+  // Official rulings (inside the Play guide) load the first time it opens.
+  if (ctx.tab === "guide" && ctx.type === "card" && !ctx.rulings) {
     const c = ctx.print || meta(ctx.name);
     try {
       const r = await api("/cards/" + encodeURIComponent(c.id) + "/rulings");
