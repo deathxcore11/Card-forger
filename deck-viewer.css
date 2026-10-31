@@ -241,6 +241,9 @@ button.ds-stat b{display:inline-grid;place-items:center;min-width:30px;padding:1
  .ds-stats{padding:10px 14px 12px;gap:4px 14px}
  .ds-actions .btn{flex:1 1 0;min-width:0;padding-inline:10px}
  .ds-actions .ds-primary{flex-basis:100%}
+}
+/* The deck tabs wrap instead of scrolling past the screen edge on phones, Fold and big text. */
+@media(max-width:899px){
  .ds-hero~.tabs{position:static;flex-wrap:wrap;overflow:visible;row-gap:2px}
  .ds-hero~.tabs>button{flex:1 1 auto;min-height:44px;justify-content:center}
 }
@@ -256,3 +259,4 @@ dialog.sheet:has(.ds-page) #sheetBody{max-height:none;height:100%;overflow-x:aut
 .deck-viewer .lot-name .set-badge{font-size:11px;line-height:1.2}
 .deck-viewer .lot-name .set-badge[data-act]{position:relative}
 .deck-viewer .lot-name .set-badge[data-act]::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:44px;translate:-50% -50%}
+dialog.sheet:has(.ds-page){overflow:visible}
