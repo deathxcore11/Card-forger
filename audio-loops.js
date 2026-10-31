@@ -1,6 +1,13 @@
 // Loop points [start, end] in seconds for each looping music track (written by scripts/music/render.py).
 // Each file wraps a second of its loop on both sides, so the seam is inside continuous audio.
 export const LOOPS = {
+  "MUS-BOSS-BOLAS": [1.0, 161.0],
+  "MUS-BOSS-HERALD": [1.0, 145.0],
+  "MUS-BOSS-LAZAV": [1.0, 183.857146],
+  "MUS-BOSS-OB": [1.0, 181.0],
+  "MUS-BOSS-OLIVIA": [1.0, 116.2],
+  "MUS-BOSS-SORIN": [1.0, 167.956521],
+  "MUS-BOSS-VRASKA": [1.0, 175.545458],
   "MUS-PW-01": [1.0, 212.034479],
   "MUS-PW-02": [1.0, 262.818188],
   "MUS-PW-03": [1.0, 241.0],
@@ -18,6 +25,18 @@ export const LOOPS = {
   "MUS-PW-10-2": [1.0, 165.571438],
   "MUS-PW-10-3": [1.0, 156.675667],
   "MUS-PW-13": [1.0, 231.4],
+  "MUS-PWG-01": [1.0, 321.0],
+  "MUS-PWG-02": [1.0, 289.0],
+  "MUS-PWG-03": [1.0, 141.869563],
+  "MUS-PWG-04": [1.0, 262.818188],
+  "MUS-PWG-05": [1.0, 309.571438],
+  "MUS-PWG-06": [1.0, 155.285708],
+  "MUS-PWG-07": [1.0, 289.0],
+  "MUS-PWG-08": [1.0, 173.8],
+  "MUS-PWG-09": [1.0, 247.857146],
+  "MUS-PWG-10": [1.0, 173.8],
+  "MUS-PWG-11": [1.0, 228.368417],
+  "MUS-PWG-12": [1.0, 112.724146],
   "MUS-TBL-03": [1.0, 165.571438],
   "MUS-TBL-04": [1.0, 183.857146],
   "MUS-TBL-05": [1.0, 206.714292]
