@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "88895dd0739b1788bf10e59b8ef625b6418a9cb7",
-  "sourceVersion": "4.3.41",
+  "commit": "584d94e8e5eb523be1f03c058920a3e2c6da9a9c",
+  "sourceVersion": "4.3.42",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -1029,8 +1029,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 459449,
-      "sha256": "8eb864aa37a4c4ea3548cbc41b20325c9bd8ab9775dedc0a747147e2907bc9fc"
+      "bytes": 460408,
+      "sha256": "f0bdf202e05808f4d0c4f1eea96c3dece8e5c408a821c3381af617a1a8f11a24"
     },
     {
       "path": "artwork.js",
@@ -2860,7 +2860,7 @@
     {
       "path": "config.js",
       "bytes": 629,
-      "sha256": "c7a78c2bc52c59e2f08416e9e2ad3891e8d755ad18af916da538ad1f7bc4c268"
+      "sha256": "d0234e33a7fdb2d8e629816fbe798ff78f9a9f16f559eba182f5c6af2fe41041"
     },
     {
       "path": "core.js",
@@ -4714,8 +4714,8 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 86593,
-      "sha256": "f14ad413d7d72752c25916c6e29cf2533a6e0e8deaa42c22914eaa3aafadc229"
+      "bytes": 86820,
+      "sha256": "7f916691e9e7d72ffcdf4a992a00946d9189e6e51d3adc69e50c32da8ddd1ac4"
     },
     {
       "path": "play-menu.js",
@@ -4944,8 +4944,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 716,
-      "sha256": "389b93ae2cb0cde2bef6d638d34012541c81784b15b79184cdbe45954a90edbf"
+      "bytes": 724,
+      "sha256": "6a5892e64c93aac1bfe68078bc38b09fb1f8d8abfd14fd8c86fb3fac48e0ffde"
     },
     {
       "path": "release-status.js",

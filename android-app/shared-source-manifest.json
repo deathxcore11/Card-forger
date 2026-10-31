@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.41",
-  "commit": "88895dd0739b1788bf10e59b8ef625b6418a9cb7",
-  "tree": "76da092d0eb711ec2a1a38d0f7395c369e933569",
+  "version": "4.3.42",
+  "commit": "584d94e8e5eb523be1f03c058920a3e2c6da9a9c",
+  "tree": "83b2a09931be82e63f2d7538919c6deb9dbe3bdf",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -108,8 +108,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 453821,
-      "sha256": "fd077770a997d56e1963c5be9168bdddca42db70d5b7f61d09d5ca9f27ad1d6e"
+      "bytes": 454780,
+      "sha256": "7659042ded741f0df38f7fab2291666edc6b3a218cafbc473dd45a84dc053576"
     },
     {
       "path": "artwork.js",
@@ -1944,7 +1944,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "5d297b7aa261e1b45a1bdd5f4304f66e835a0738d68f102a95e04b80f0b9da9a"
+      "sha256": "135418df5219d9ed4f4a32adc6918d1fe73a4af294fb4779cedcdf7464d7fa75"
     },
     {
       "path": "core.js",
@@ -3629,7 +3629,7 @@
     {
       "path": "package.json",
       "bytes": 12049,
-      "sha256": "c843f68d3f963892a71751a4d4ade6c34332a35156c858eb2f06215be5d4cd31"
+      "sha256": "8bf50f23194e40ffc4241eb189f5dffeb940e6ddd5575758fd113dcbda61458b"
     },
     {
       "path": "pairing.js",
@@ -3778,8 +3778,8 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 86353,
-      "sha256": "e03fc8adbd8195d202023d5687324687be913ec6a63f3088335dfd6f513f4238"
+      "bytes": 86580,
+      "sha256": "031e8e31d96c7ebf66fdc08e17f864a481b975b28fc1ac0a0b96880512935a11"
     },
     {
       "path": "play-menu.js",
@@ -4008,8 +4008,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 716,
-      "sha256": "389b93ae2cb0cde2bef6d638d34012541c81784b15b79184cdbe45954a90edbf"
+      "bytes": 724,
+      "sha256": "6a5892e64c93aac1bfe68078bc38b09fb1f8d8abfd14fd8c86fb3fac48e0ffde"
     },
     {
       "path": "release-status.js",
@@ -4343,8 +4343,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15735,
-      "sha256": "81c77ee8b56a4aa68423de75ad4b635ac7aaf9698edb6cfdcfa01ee96f88303c"
+      "bytes": 15870,
+      "sha256": "c1a86f77cee976c38ee7376d16dea3e9dc8a9199e2886e908736dbb4fc437654"
     },
     {
       "path": "sync-merge.js",
